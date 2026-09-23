@@ -1121,3 +1121,15 @@ was taken, and three statuses moved because the merged code earns them.
 - FP-04 and AGT-01 read `built`: every FP-04 scenario (FP-S8 to FP-S15) and every AGT-01
   scenario (AGT-S1, AGT-S2, AGT-S10, AGT-S15) is un-skipped and green over the merged
   branch.
+
+## security-review-c3-f03: chunk 3 and the 0.3 features, reviewed (2026-09-23)
+
+Recorded in `docs/security/CHUNK3_F03_REVIEW_2026-09-23.md`. Nothing blocks and nothing
+needs a decision.
+
+- H16 is built (ADR 0058, D-83) and holds as reviewed: no chunk 14 cut to accept. Its
+  proofs cover all twelve proposal kinds and every module that opens the watch door; the
+  per-function refinement is HARDENING H30.
+- One medium finding waits as a named fix task, `merge-moved-ids` (H23): a vocabulary
+  merge's audit row counts the records it moved but does not name them. Default: it is
+  built with the next batch that owns `proposals/apply.py`.
