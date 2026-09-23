@@ -178,7 +178,7 @@ function AnswerPanel({ answer, stopReason, t, ctx }: { answer: Answer; stopReaso
           </li>
         ))}
       </ol>
-      <AnswerFeedback answerId={answer.id} t={t} />
+      <AnswerFeedback key={answer.id} answerId={answer.id} t={t} />
     </section>
   );
 }

@@ -290,4 +290,22 @@ describe('AskPanel feedback', () => {
     expect(await screen.findByText('Rating an answer is not switched on yet.')).toBeVisible();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Helpful' })).toBeEnabled());
   });
+
+  it('offers a fresh verdict on the next answer', async () => {
+    serve();
+    let calls = 0;
+    stubFetch(() => {
+      calls += 1;
+      return sseResponse(calls === 1 ? answered() : framesOf([{ event: 'start', id: 'ans-2' }, { event: 'statement', statement: STATEMENT }, { event: 'answer', answer: answer({ id: 'ans-2', statements: [STATEMENT] }), stopReason: 'end_turn' }]));
+    });
+    renderPanel();
+    ask();
+    fireEvent.click(await screen.findByRole('button', { name: 'Helpful' }));
+    await screen.findByText('Thank you. Your feedback is logged with the answer.');
+
+    ask('And afterwards?');
+    await waitFor(() => expect(document.querySelectorAll('[data-ask-statement]')).toHaveLength(1));
+    expect(await screen.findByRole('button', { name: 'Helpful' })).toBeEnabled();
+    expect(screen.queryByText('Thank you. Your feedback is logged with the answer.')).toBeNull();
+  });
 });
