@@ -9,18 +9,26 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: SRC.
 """
 
+import importlib.util
+import json
+import sys
+import tempfile
 import uuid
+from pathlib import Path
+from types import ModuleType
 from typing import Any, ClassVar
 from unittest import mock, skip
 
+from django.conf import settings
 from django.contrib.postgres.search import SearchQuery
 from django.db import connection
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 
 from apps.identity.models import User
 from apps.library.models import ProblemReport, SubjectType
 from apps.library.seeds import seed_languages
+from apps.search.eval import SPEC, Retriever
 from apps.search.indexing import index_write
 from apps.search.models import SearchChunk, SearchSource
 from apps.search.tests_hybrid import (
@@ -75,15 +83,78 @@ class SearchScenarioTests(TestCase):
         Saved searches notify and show what changed since the last visit (SRC-04).
         """
 
-    @skip("pending: SRC-S8")
     def test_src_s8(self) -> None:
         """SRC-S8
 
         The evaluation set gates releases (SRC-05).
 
+        `scripts/search_eval.py` runs the real retriever, `apps.search.eval:Retriever`: hybrid
+        search over the fixture library, seeded and indexed in this test's database, asked
+        the committed questions. It reports recall and accuracy per language. A mock anywhere
+        in the chain scores but is never recorded, so a mock embedder behind a real reranker
+        (`none`, the fused order) is refused by `--record` and the baseline is untouched. A
+        chain with no mock in it — the keyword leg and the fused order, which is what D-09
+        leaves a deployment with until a model is chosen — passes a recorded baseline it
+        matches and fails one it falls short of by more than the tolerance, naming the
+        metric. That baseline is synthetic: the committed one stays unrecorded until a real
+        embedder earns it (docs/TODO_FOR_alex.md, D-09).
+
         Operations: `rateAnswer`, the reader's verdict the evaluation set reads back.
         It answers 501 not_built until the Ask backend lands.
         """
+        gate = _load_search_eval()
+        questions = gate.load_jsonl(gate.EVAL / "retrieval.jsonl")
+        # The classifier is not this app's; the mock stands in for it so the report shows
+        # the classification track's languages beside the retrieval track's.
+        texts = [dict(row, predictions=row["expected"]) for row in gate.load_jsonl(gate.EVAL / "classification.jsonl")]
+        tolerance = gate.load_json(gate.EVAL / "tolerance.json")["metrics"]
+        committed = gate.load_json(gate.EVAL / "baseline.json")
+
+        with tempfile.TemporaryDirectory() as folder:
+            paths = gate.Paths(
+                retrieval=gate.EVAL / "retrieval.jsonl",
+                classification=Path(folder) / "classification.jsonl",
+                baseline=Path(folder) / "baseline.json",
+                tolerance=gate.EVAL / "tolerance.json",
+            )
+            paths.classification.write_text("\n".join(json.dumps(row) for row in texts), encoding="utf-8")
+
+            def run(baseline: dict[str, Any], *argv: str) -> tuple[int, list[str]]:
+                paths.baseline.write_text(json.dumps(baseline), encoding="utf-8")
+                lines: list[str] = []
+                return gate.run(["--retriever", SPEC, *argv], paths, out=lines.append), lines
+
+            with override_settings(EMBEDDER_PROVIDER="mock", RERANKER_PROVIDER="none"):
+                code, lines = run(committed, "--record")
+
+            self.assertEqual(code, 1, lines)
+            self.assertEqual(lines[-1], "search_eval: nothing to record: no real evaluator ran")
+            self.assertEqual(json.loads(paths.baseline.read_text(encoding="utf-8")), committed)
+            self.assertIn(f"  retrieval: {len(questions)} rows, evaluator {SPEC} (embedder mock, reranker none)", lines)
+            for track, rows in (("retrieval", questions), ("classification", texts)):
+                report = _track_report(lines, track)
+                first = gate.TRACKS[track][0].split("_", 1)[1]  # the report drops the track's prefix
+                for language in sorted({row["language"] for row in rows}):
+                    with self.subTest(track=track, language=language):
+                        self.assertTrue(any(line.startswith(f"    by language {language}: {first} ") for line in report), report)
+
+            with override_settings(EMBEDDER_PROVIDER="none", RERANKER_PROVIDER="none"):
+                retriever = Retriever()
+                self.assertFalse(retriever.is_mock, retriever.name)
+                measured = gate.evaluate_retrieval(questions, retriever).metrics
+                matched, _ = run(_recorded(committed, measured, rows=len(questions)))
+                short = {metric: value + tolerance[metric] + 0.01 for metric, value in measured.items()}
+                code, lines = run(_recorded(committed, short, rows=len(questions)))
+                with override_settings(RERANKER_PROVIDER="mock"):
+                    self.assertTrue(retriever.is_mock, "a mock reranker alone makes the chain a mock")
+
+        self.assertEqual(matched, 0, "a real chain within its tolerance passes")
+        self.assertEqual(code, 1, lines)
+        self.assertEqual(lines[-1], "search_eval: FAILED")
+        for metric in gate.RETRIEVAL_METRICS:
+            self.assertTrue(
+                any(line.startswith(f"  {metric}: {measured[metric]:.3f} is under the floor ") for line in lines), lines
+            )
 
     @skip("pending: SRC-S9")
     def test_src_s9(self) -> None:
@@ -293,3 +364,33 @@ class HybridSearchScenarioTests(CorpusMixin, TestCase):
             DutyType.objects.get(key="reporting").labels.filter(language="en").update(text="Supervisory returns")
 
         self.assertEqual(self.search(body), answer, "the filter carried a key, so a new label changes nothing")
+
+
+# ---------------------------------------------------------------------------------------
+# SRC-S8: the release gate's harness, loaded from scripts/ the way the gate runs it
+# ---------------------------------------------------------------------------------------
+def _load_search_eval() -> ModuleType:
+    script = Path(settings.BASE_DIR) / "scripts" / "search_eval.py"
+    spec = importlib.util.spec_from_file_location("search_eval_under_test", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    with mock.patch.dict(sys.modules, {spec.name: module}):  # its dataclasses look themselves up
+        spec.loader.exec_module(module)
+    return module
+
+
+def _track_report(lines: list[str], track: str) -> list[str]:
+    """One track's lines of the report: its heading and everything indented under it."""
+    start = next(index for index, line in enumerate(lines) if line.startswith(f"  {track}: "))
+    end = next((index for index in range(start + 1, len(lines)) if not lines[index].startswith("    ")), len(lines))
+    return lines[start:end]
+
+
+def _recorded(baseline: dict[str, Any], metrics: dict[str, float], *, rows: int) -> dict[str, Any]:
+    """A synthetic baseline with the retrieval track recorded at these values. It is never
+    written to eval/baseline.json, which only a real run's `--record` may change."""
+    synthetic = json.loads(json.dumps(baseline))
+    synthetic["recorded"] = True
+    synthetic["tracks"]["retrieval"] = {"recorded": True, "recorded_at": "SRC-S8", "evaluator": SPEC, "rows": rows}
+    synthetic["metrics"].update(metrics)
+    return synthetic

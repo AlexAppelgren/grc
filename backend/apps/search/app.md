@@ -41,7 +41,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | SRC-02 | Filters from vocabularies, an "as of" date, and the match kind on every hit | M | R1 | built |
 | SRC-03 | Cited answers grounded only in the inventory, pending changes flagged, "no answer" instead of a guess | M | R1 | pending |
 | SRC-04 | Saved searches with notification, and "what changed since my last visit" | S | R3 | pending |
-| SRC-05 | An evaluation set that gates releases | M | R1 | pending |
+| SRC-05 | An evaluation set that gates releases | M | R1 | in_progress |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 

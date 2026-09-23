@@ -500,3 +500,13 @@ section. Copied here as chunk3-rest-T20 requires.
       roadmap page already shows. Default if you say nothing: it stays as built, and a feed
       never disagrees with the roadmap page beside it, which is the rule chunk 6 ruling 5 set
       for these two reads.
+
+## search-eval-gate: the release gate does not check search quality yet (2026-09-23, SRC-05)
+
+- [ ] **The retrieval track of the release gate is unrecorded until D-09's key arrives, so a
+      retrieval regression would not fail CI until then.** The real retriever is wired
+      (`apps.search.eval:Retriever`, hybrid search over the sample library) and SRC-S8 proves
+      the gate fails when a recorded score drops, but with only the mock embedder there is
+      nothing honest to record: a mock can never set the bar. Nothing to do beyond the D-09
+      key already listed under "Before the first test deploy"; the run that chooses the
+      model records the baseline and removes this line (`backend/eval/README.md`).
