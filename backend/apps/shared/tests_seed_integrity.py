@@ -21,6 +21,7 @@ the test named the tenant and the property.
 from __future__ import annotations
 
 import datetime
+from collections import Counter
 from io import StringIO
 
 from django.core.management import call_command
@@ -33,6 +34,7 @@ from apps.home.roadmap import quarter_of
 from apps.identity import tokens
 from apps.identity.models import ApiKey, Invitation, Membership, PlatformRoleAssignment, User, UserStatus, WebAuthnCredential
 from apps.shared import tenancy
+from apps.shared.adapters.mailer import MockMailer, OutgoingMail
 from apps.shared.e2e_logins import (
     E2E_INVITATION_TOKEN_ANNA,
     LIBRARY_EDITOR_ROLE,
@@ -42,7 +44,7 @@ from apps.shared.e2e_logins import (
     TENANT_B_SLUG,
 )
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
-from apps.library.models import Instrument, Obligation, ObligationVersion, ProblemReport, ReportStatus, Verification
+from apps.library.models import Authority, DatePrecision, Instrument, Obligation, ObligationVersion, ProblemReport, ReportStatus, Verification
 from apps.proposals.logic import parsed_payload, sourced_fields
 from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
 from apps.search.models import SearchChunk, SearchSource
@@ -57,6 +59,7 @@ from apps.shared.e2e_seed import (
     EXPECTED_PROBLEM_REPORT,
     EXPECTED_PROPOSALS,
     EXPECTED_TENANTS,
+    EXPECTED_WATCHED_MARKETS,
     PRO_S7_OBLIGATION,
     RECHECK_OBLIGATION,
     SUGGESTED_LINK_OBLIGATION,
@@ -68,7 +71,7 @@ from apps.shared.e2e_seed import (
 from apps.shared.models import AuditEvent, Tenant
 from apps.watch.models import ChangeDocument, ChangeEvent, ChangeObligation, ChangeTerm, CheckStatus, RegulatoryChange, Source, SourceCheck, SourceCheckKind
 from apps.taxonomy.matching import footprint_of, in_footprint, in_footprint_sql, opt_in_dimensions, restricting_dimensions
-from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm
+from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm, WatchedMarket
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
 
@@ -100,6 +103,11 @@ def _waiting_for(expected: SeedProposal) -> list[Proposal]:
     return list(open_of_kind.filter(
         target_id=Obligation.objects.get(stable_key=expected.target).id,
     ))
+
+
+# The sweeper key's runs per status: chunk 5's closed run and its open run, plus the open
+# run each of the four agent proposals the seed files through that key is attached to.
+EXPECTED_SWEEPER_RUNS = Counter({"succeeded": 1, "running": 5})
 
 
 @override_settings(E2E_MODE=True)
@@ -566,19 +574,23 @@ class SeedIntegrityGuard(TestCase):
         suggested = ChangeObligation.objects.get(change=change, obligation__stable_key=SUGGESTED_LINK_OBLIGATION)
         self.assertIsNone(suggested.confirmed_by_id)
 
-    def test_chunk5_seeds_two_platform_agent_runs_and_a_recheck(self) -> None:
-        """c5-seed-watch (AGT-01, item 3): a closed and an open platform run with no tenant,
-        and a `recheck` line beside the sweep lines so the coverage log can tell the two
-        apart."""
+    def test_the_watch_sweeper_key_holds_platform_runs_by_status_and_a_recheck(self) -> None:
+        """c5-seed-watch (AGT-01, item 3): the sweeper's platform key carries chunk 5's closed
+        run, its open run and the open run each agent proposal it files is attached to,
+        counted per status so an extra or a missing run cannot hide behind another of the
+        same status; none of them belongs to a bank. A `recheck` line sits beside the sweep
+        lines so the coverage log can tell the two apart."""
         seed_e2e()
         key = ApiKey.objects.get(name="Watch sweeper (E2E)")
         self.assertIsNone(key.tenant_id)
         assert key.agent is not None
         self.assertEqual(key.agent.key, "watch-sweeper")
-        runs = {run.status: run for run in AgentRun.objects.filter(api_key=key)}
-        self.assertEqual(set(runs), {"succeeded", "running"})
-        self.assertIsNone(runs["succeeded"].tenant_id)
-        self.assertIsNone(runs["running"].tenant_id)
+        runs = AgentRun.objects.filter(api_key=key)
+        self.assertEqual(Counter(runs.values_list("status", flat=True)), EXPECTED_SWEEPER_RUNS)
+        self.assertFalse(runs.filter(tenant_id__isnull=False).exists())
+        proposal_runs = {expected.agent_run for expected in EXPECTED_PROPOSALS if expected.agent_run is not None}
+        self.assertEqual(len(proposal_runs), 4)
+        self.assertLessEqual(proposal_runs, set(runs.filter(status="running").values_list("id", flat=True)))
 
         recheck = SourceCheck.objects.get(kind=SourceCheckKind.RECHECK.value, source__name=EXPECTED_CHUNK5_WATCH.healthy_source)
         self.assertEqual(recheck.subject_id, Obligation.objects.get(stable_key=RECHECK_OBLIGATION).id)
@@ -739,3 +751,61 @@ class SeedIntegrityGuard(TestCase):
             spoken_for,
             "FP-S4 keeps this obligation outside tenant A's scope: point the proposal or record that names it at one that stays inside",
         )
+
+    # --- tax-nordic-seed (FP-04, FP-S10) ---------------------------------------------------
+    def test_tenant_a_watches_denmark_through_the_audited_write_and_tenant_b_nothing(self) -> None:
+        """FP-S10, FP-04: the seed watches a market through markets_logic.watch(), the write
+        the product makes, so each watch leaves one `markets.watch_added` audit row; a reseed
+        adds neither a row nor an audit event."""
+        seed_e2e()
+        seed_e2e()
+        for slug, keys in EXPECTED_WATCHED_MARKETS.items():
+            with self.subTest(tenant=slug):
+                tenant = Tenant.objects.get(slug=slug)
+                tenancy.activate(tenant.id)
+                watched = WatchedMarket.objects.filter(tenant=tenant)
+                self.assertEqual(sorted(watched.values_list("jurisdiction__key", flat=True)), sorted(keys))
+                audited = AuditEvent.objects.filter(tenant=tenant, action="markets.watch_added")
+                self.assertEqual(sorted(audited.values_list("subject_title", flat=True)), sorted(keys))
+        self.assertEqual(EXPECTED_WATCHED_MARKETS[TENANT_A_SLUG], ("dk",))
+        self.assertEqual(EXPECTED_WATCHED_MARKETS[TENANT_B_SLUG], ())
+
+    def test_the_library_holds_a_danish_and_a_norwegian_supervisor_and_act(self) -> None:
+        """FP-04: the markets journeys need Danish and Norwegian rules. Each country has its
+        financial supervisory authority and one act under a regime term, with a dated
+        in-force precision, and between them obligations for Custody and for Advice that
+        reach tenant A, whose scope names no jurisdiction."""
+        seed_e2e()
+        for key, country in (("finanstilsynet-dk", "dk"), ("finanstilsynet-no", "no")):
+            with self.subTest(authority=key):
+                self.assertEqual(Authority.objects.get(key=key).jurisdiction.key, country)
+        services: set[str] = set()
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        footprint = footprint_of(tenant_a.id)
+        restricting = restricting_dimensions()
+        for country in ("dk", "no"):
+            with self.subTest(jurisdiction=country):
+                instrument = Instrument.objects.select_related("regime__dimension").get(jurisdiction__key=country)
+                self.assertEqual(instrument.regime.dimension.key, "regime")
+                self.assertIsNotNone(instrument.in_force_from)
+                self.assertEqual(instrument.in_force_from_precision, DatePrecision.DAY.value)
+                obligations = Obligation.objects.filter(instrument=instrument).select_related("instrument__regime__dimension").prefetch_related("terms__dimension")
+                self.assertTrue(obligations.exists())
+                for obligation in obligations:
+                    self.assertTrue(in_footprint(_scope(obligation), footprint, restricting=restricting), obligation.stable_key)
+                    services |= _scope(obligation).get("service_type", set())
+        self.assertLessEqual({"custody", "advice"}, services)
+
+    def test_the_seed_starts_from_an_empty_mock_outbox(self) -> None:
+        """The mock outbox is one cache entry that never expires, and an E2E run recreates the
+        database but not the cache, so a journey could read an earlier run's mail. The seed
+        empties it before anything else; a reseed sends nothing of its own, so after one the
+        outbox is empty."""
+        seed_e2e()
+        earlier = OutgoingMail(to="earlier-run@example-bank.test", subject="An earlier run", body="An earlier run")
+        MockMailer().send(earlier)
+        self.assertIn(earlier, MockMailer.sent)
+        seed_e2e()
+        self.assertEqual(MockMailer.sent, [])
+    # --- end tax-nordic-seed -----------------------------------------------------------------
