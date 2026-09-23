@@ -1,10 +1,11 @@
 import { api } from '@/shared/utils/api-client';
 import type { components, operations } from '@/types/api.generated';
 
-// Thin typed wrappers returning `.data` (playbook 6.1). Nothing here writes:
-// a change is a library record, and the tenant's own decisions about it live
-// on its case. Every shape is the generated one, never a hand-written copy,
-// so a contract change is a type error here rather than a wrong screen.
+// Thin typed wrappers returning `.data` (playbook 6.1). A change is a library
+// record and nothing here writes one: the only writes are this bank's own
+// decisions about it, which live on its case (WAT-04, WAT-05). Every shape is
+// the generated one, never a hand-written copy, so a contract change is a
+// type error here rather than a wrong screen.
 
 type Schemas = components['schemas'];
 
@@ -17,6 +18,10 @@ export type SourceCoverage = Schemas['WatchSourceCoverage'];
 /** `{ref: {key, kind, label}, confidence, suggested}` — the fact is under `ref`. */
 export type ChangeFact = Schemas['WatchFact'];
 export type LibraryRef = Schemas['LibraryRef'];
+/** This bank's decision about one suggested obligation link, as the change read carries it. */
+export type CaseObligationDecision = Schemas['WatchCaseObligationDecision'];
+export type CaseSoWhat = Schemas['CasesSoWhat'];
+export type CaseObligationLink = Schemas['CasesObligationLink'];
 
 /** The feed's filters, exactly as the route declares them. */
 export type ChangeQuery = NonNullable<operations['listChanges']['parameters']['query']>;
@@ -50,6 +55,26 @@ export async function getChange(changeId: string): Promise<ChangeDetail> {
 
 export async function listObligationChanges(obligationId: string, page: { limit?: number; offset?: number } = {}): Promise<ObligationChangePage> {
   return (await api.get<ObligationChangePage>(`${OBLIGATIONS}/${obligationId}/changes`, { params: page })).data;
+}
+
+/** WAT-05: this bank's own wording, replacing the draft on its case. Saving is the decision, so it confirms too. */
+export async function saveSoWhat(changeId: string, text: string): Promise<CaseSoWhat> {
+  return (await api.put<CaseSoWhat>(`${CHANGES}/${changeId}/so-what`, { text })).data;
+}
+
+/** WAT-05: the draft on this bank's case accepted as it stands. */
+export async function confirmSoWhat(changeId: string): Promise<CaseSoWhat> {
+  return (await api.post<CaseSoWhat>(`${CHANGES}/${changeId}/so-what/confirm`)).data;
+}
+
+/** WAT-04: a suggested obligation really is affected for this bank. Writes this bank's case, never the library's link. */
+export async function acceptCaseObligationLink(changeId: string, obligationId: string): Promise<CaseObligationLink> {
+  return (await api.post<CaseObligationLink>(`${CHANGES}/${changeId}/case/obligation-links`, { obligationId })).data;
+}
+
+/** WAT-04: a suggested obligation is not related to this bank. Stored as a decision on its case; the library's link stays. */
+export async function removeCaseObligationLink(changeId: string, obligationId: string): Promise<CaseObligationLink> {
+  return (await api.delete<CaseObligationLink>(`${CHANGES}/${changeId}/case/obligation-links/${obligationId}`)).data;
 }
 
 /** WAT-01: the last check per source, with the stale rows the tab marks. An empty registry is a 200 and an empty list. */
