@@ -438,6 +438,12 @@
     "label_sv": "Privat källa",
     "kind": null,
     "usage_note": "A source only one tenant follows. Findings never enter the shared library."
+   },
+   "standards_body": {
+    "label_en": "Standards body",
+    "label_sv": "Standardiseringsorgan",
+    "kind": null,
+    "usage_note": "A standards publisher's own pages. Registered with automated checks off until a lawyer has read the publisher's terms (D-45)."
    }
   },
   "link_kind": {
