@@ -48,9 +48,9 @@ from apps.search.tests_hybrid import (
     CorpusMixin,
 )
 from apps.shared import factories, permissions as perms, tenancy
-from apps.shared.adapters import embedder
+from apps.shared.adapters import embedder, reranker
 from apps.shared.errors import ProblemError
-from apps.shared.models import AuditEvent
+from apps.shared.models import AuditEvent, Tenant
 from apps.shared.testing import sign_in
 
 SEARCH = "/api/v1/search"
@@ -77,7 +77,7 @@ def similar(
     caller_id: uuid.UUID | None = None,
 ) -> Any:
     body = SimilarRequest(text=text, types=types or [], limit=limit)
-    return hybrid.find_similar(body, caller_id=caller_id or uuid.uuid4())
+    return hybrid.find_similar(body, caller_id=caller_id or uuid.uuid4(), tenant_id=None)
 
 
 def titles_of(response: Any) -> list[str]:
@@ -254,6 +254,24 @@ class SimilarRouteTests(CorpusMixin, TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()["requiredPermission"], perms.SCOPE_SEARCH_READ)
+
+    def test_a_banks_own_key_sends_no_text_to_a_model_once_the_bank_switched_its_ai_off(self) -> None:
+        """A bank's key may hold `search:read`, and the text it sends is the bank's own. The
+        bank's switch covers it as it covers a reader's search (D-07, owner item 14;
+        security-review-c7, M1): off, the text is compared by its words alone."""
+        bank_key = factories.api_key(self.tenant, scopes=(perms.SCOPE_SEARCH_READ,))
+        Tenant.objects.filter(pk=self.tenant.pk).update(ai_enabled=False)
+        with (
+            mock.patch.object(embedder.MockEmbedder, "embed") as embed,
+            mock.patch.object(reranker.MockReranker, "rerank") as judged,
+        ):
+            response = self.post({"text": FFFS}, plain_key=bank_key.plain_key)
+
+        self.assertEqual(response.status_code, 200, response.content)
+        embed.assert_not_called()
+        judged.assert_not_called()
+        kinds = {hit["matchKind"] for hit in response.json()["items"]}
+        self.assertEqual(kinds, {"keyword"})
 
     def test_a_person_is_refused_however_much_they_may_do(self) -> None:
         """No permission in the PRD's matrix gives a person a similarity read, so this is

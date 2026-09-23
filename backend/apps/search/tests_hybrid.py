@@ -322,6 +322,23 @@ class HybridLegsTests(CorpusMixin, TestCase):
         self.assertTrue(unjudged)
         self.assertEqual(unjudged[0], COSTS_TITLE_SV)
 
+    def test_a_bank_that_switched_its_ai_off_sends_its_query_to_no_model(self) -> None:
+        """D-07, owner item 14: the bank's switch covers every model its own words would
+        reach, and what a reader types is the bank's own words. Switched off, the search
+        reads by the words alone, as a deployment with no embedder and no reranker does:
+        narrower, never wrong (security-review-c7, M1)."""
+        Tenant.objects.filter(pk=self.tenant.pk).update(ai_enabled=False)
+        with (
+            mock.patch.object(embedder.MockEmbedder, "embed") as embed,
+            mock.patch.object(reranker.MockReranker, "rerank") as judged,
+        ):
+            response = search("kostnader och avgifter", tenant=self.tenant, lang="sv")
+
+        embed.assert_not_called()
+        judged.assert_not_called()
+        self.assertIn(COSTS_TITLE_SV, titles_of(response))
+        self.assertEqual({hit.match_kind for hit in response.items}, {SearchMatchKind.KEYWORD})
+
     def test_keyword_only_when_no_embedding_model_is_contracted(self) -> None:
         """`EMBEDDER_PROVIDER=none` is a contracted state (D-09), not a failure: the vector
         leg is simply not there, and nothing asks the adapter for a vector."""

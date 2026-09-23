@@ -369,6 +369,7 @@ class ChangeSearch(TestCase):
         response = hybrid.find_similar(
             SimilarRequest(text="amended rules on paying for investment research", types=[SearchHitType.CHANGE], limit=10),
             caller_id=uuid.uuid4(),
+            tenant_id=None,
         )
 
         self.assertIn(self.securities.id, {hit.id for hit in response.items})

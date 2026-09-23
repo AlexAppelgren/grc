@@ -37,9 +37,12 @@ reader asked about the duty. The page therefore carries the chunk whose own lang
 the query best and not its translations beside it, which is also why a Swedish query lands
 on the Swedish text and a Finnish one on the Finnish text (SRC-S2).
 
-**The query text is the bank's own.** It reaches the text search, the embedder and nothing
-else: no log line, no audit row, no outbox payload and no URL (playbook 4.7). `POST /search`
-writes nothing at all, which is why its scenarios assert the audit count is unchanged.
+**The query text is the bank's own.** It reaches the text search, the embedder and the
+reranker and nothing else: no log line, no audit row, no outbox payload and no URL
+(playbook 4.7). The embedder and the reranker are models, so a bank that switched its AI
+features off sends them nothing: its search reads by the words alone, as a deployment with
+neither does (D-07, owner item 14). `POST /search` writes nothing at all, which is why its
+scenarios assert the audit count is unchanged.
 
 **`find_similar` is the same statement, read by an agent.** `POST /search/similar` is the
 agents' route (AGT-02): a watch agent sends a passage it fetched and asks which library
@@ -163,21 +166,26 @@ def run_search(body: SearchRequest, *, tenant_id: uuid.UUID | None, user_id: uui
         tenant=tenant,
         as_of=as_of,
         limit=body.limit,
+        models=tenant.ai_enabled,
     )
-    ranked = _best_per_record(_reranked(body.q, found))
+    ranked = _best_per_record(_reranked(body.q, found, models=tenant.ai_enabled))
     return SearchResponse(items=[_hit(row, body.q) for row in ranked[: body.limit]], as_of=as_of)
 
 
-def find_similar(body: SimilarRequest, *, caller_id: uuid.UUID) -> SearchResponse:
+def find_similar(body: SimilarRequest, *, caller_id: uuid.UUID, tenant_id: uuid.UUID | None) -> SearchResponse:
     """`POST /search/similar`. The agents' nearest-neighbour read over library chunks
-    (AGT-02): no tenant row is read, and none is returned.
+    (AGT-02): no bank's record is read or returned; a bank's key reads its bank's switch.
 
     The passage carries no language and no `asOf`, because an agent has neither: it sends
     what it fetched and asks what the library holds near it today. So the words are read
     in every content language's configuration and the ranking is taken at today, UTC.
+
+    A bank's own key may hold `search:read` too, and then the text is the bank's own: it
+    reaches the embedder and the reranker only while that bank has its AI features on.
     """
     limits.search_bucket(caller_id)
     as_of = timezone.localdate()
+    models = tenant_id is None or Tenant.objects.filter(pk=tenant_id, ai_enabled=True).exists()
     found = _candidates(
         body.text,
         configurations=tuple(TEXT_SEARCH_CONFIGS.values()),
@@ -186,8 +194,9 @@ def find_similar(body: SimilarRequest, *, caller_id: uuid.UUID) -> SearchRespons
         tenant=None,
         as_of=as_of,
         limit=body.limit,
+        models=models,
     )
-    ranked = _best_per_record(_reranked(body.text, found))
+    ranked = _best_per_record(_reranked(body.text, found, models=models))
     return SearchResponse(items=[_hit(row, body.text) for row in ranked[: body.limit]], as_of=as_of)
 
 
@@ -201,7 +210,9 @@ def passages(
     so an answer can never rest on a record the reader could not have found, and nothing
     outside the bank's scope is read at all. Obligations only, because a citation points at
     an obligation version. A row carries the chunk's whole `body` rather than a snippet,
-    since that is the text the model is given. It spends no search bucket: `POST /ask`
+    since that is the text the model is given. It reaches the embedder and the reranker
+    without asking the bank's switch again, because `ask.answer_events` refused a bank
+    that switched off before calling this. It spends no search bucket: `POST /ask`
     spends its own (`limits.ask_bucket`).
 
     Never an obligation under a standard (INV-08, D-81). The library holds a standard's
@@ -218,9 +229,10 @@ def passages(
         tenant=tenant,
         as_of=as_of,
         limit=depth,
+        models=True,
         standards=False,
     )
-    return _best_per_record(_reranked(question, found))[:depth]
+    return _best_per_record(_reranked(question, found, models=True))[:depth]
 
 
 # ---------------------------------------------------------------------------------------
@@ -235,14 +247,16 @@ def _candidates(
     tenant: Tenant | None,
     as_of: datetime.date,
     limit: int,
+    models: bool,
     standards: bool = True,
 ) -> list[dict[str, Any]]:
-    """The rows either leg found, best fused first. One query, however many hits."""
+    """The rows either leg found, best fused first. One query, however many hits. With
+    `models` false the query reaches no embedder: the vector leg finds nothing."""
     asked = _asked(text, configurations)
     rows = _filtered(types=types, filters=filters, tenant=tenant, as_of=as_of, standards=standards)
     rows = rows.annotate(
         keyword_score=SearchRank(F("tsv"), asked),
-        similarity=_similarity(text),
+        similarity=_similarity(text) if models else Value(None, output_field=FloatField()),
         record_key=_record_key(),
     )
     rows = rows.annotate(
@@ -459,15 +473,16 @@ def _heading() -> Coalesce:
 # ---------------------------------------------------------------------------------------
 # Ranking and the hit
 # ---------------------------------------------------------------------------------------
-def _reranked(query: str, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _reranked(query: str, rows: list[dict[str, Any]], *, models: bool) -> list[dict[str, Any]]:
     """The reranker's verdict on the fused window, added to the fused score.
 
     A row the reranker did not judge keeps its fused score alone, and since the window is
     the top of the fused order it can never overtake one that was judged. That is what
     makes `RERANKER_PROVIDER=none` a contracted state rather than a broken one: it scores
-    every candidate 0.0, and the fused order stands.
+    every candidate 0.0, and the fused order stands, which is also what `models` false asks
+    for: the query reaches no reranker.
     """
-    adapter = reranker.get_reranker()
+    adapter = reranker.get_reranker() if models else reranker.NoReranker(settings.RERANKER_TOP_K)
     window = rows[: adapter.top_k]
     judged = (
         {candidate.index: candidate.score for candidate in adapter.rerank(query=query, documents=_documents(window))}

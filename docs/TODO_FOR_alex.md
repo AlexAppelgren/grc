@@ -1121,3 +1121,16 @@ was taken, and three statuses moved because the merged code earns them.
 - FP-04 and AGT-01 read `built`: every FP-04 scenario (FP-S8 to FP-S15) and every AGT-01
   scenario (AGT-S1, AGT-S2, AGT-S10, AGT-S15) is un-skipped and green over the merged
   branch.
+
+## security-review-c7: the chunk 7 security review (2026-09-23, D-07, SRC-01, SRC-03)
+
+- [ ] **May a bank's search text reach the embedder and the reranker?** D-07 says the Ask
+      question is the only text of a bank's that we send to a model; a hybrid search sends
+      what a reader types to the embedder and the reranker too, and so does a bank's own
+      key through `POST /search/similar`. The chunk 7 plan made that conditional on your
+      approval of the embedder (D-09). Since this review both are under the bank's AI
+      switch (D-8x): off, the search reads by words alone. Default if you say nothing: with
+      the switch on, the query reaches the contracted EU embedder and reranker, and D-07's
+      wording gains "and the search query, for retrieval only, under the same switch".
+      The alternative is keyword-only search for every bank.
+
