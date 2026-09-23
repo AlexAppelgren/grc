@@ -9,7 +9,7 @@ sets here and compares the result with the recorded baseline within the toleranc
 | `classification.jsonl` | 42 labelled change texts (8 from the prototype, 34 authored Nordic variants) plus 10 texts with embedded instructions for the AGT-07 screen | Filled |
 | `baseline.json` | The last accepted value of every metric, per track, with who recorded it and when | `recorded: false`. The retrieval track is wired and **not yet recorded**: see below |
 | `tolerance.json` | How far a metric may fall under the baseline before the gate fails, with the rationale | Filled |
-| `tests_scoring.py` | Unit tests for the scoring and gate logic, run by `search_eval.py --self-test` | Filled |
+| `tests_scoring.py` | Unit tests for the scoring and gate logic, run by `search_eval.py --self-test` and, so that a build runs them, by the backend suite (`apps/search/tests_eval.py`) | Filled |
 
 Lines starting with `#` are comments. The corpus is the obligations, provisions and
 changes of `apps/library/fixtures/prototype_data.json`, referenced by stable key, so

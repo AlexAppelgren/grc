@@ -1,7 +1,9 @@
 """Unit tests for the scoring and gate logic of scripts/search_eval.py.
 
-Run with `python scripts/search_eval.py --self-test` (not by `manage.py test apps`: this
-directory is not a Django app, and the harness needs no database)."""
+Run with `python scripts/search_eval.py --self-test`. This directory is not a Django app and
+the harness needs no database, so `manage.py test apps` does not find these tests itself;
+`apps/search/tests_eval.py` runs the self-test instead, because CI runs the gate without
+`--self-test` and nothing that blocks a build would run them otherwise."""
 
 from __future__ import annotations
 

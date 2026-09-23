@@ -9,17 +9,13 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: SRC.
 """
 
-import importlib.util
 import json
-import sys
 import tempfile
 import uuid
 from pathlib import Path
-from types import ModuleType
 from typing import Any, ClassVar
 from unittest import mock, skip
 
-from django.conf import settings
 from django.contrib.postgres.search import SearchQuery
 from django.db import connection
 from django.test import Client, TestCase, override_settings
@@ -31,6 +27,7 @@ from apps.library.seeds import seed_languages
 from apps.search.eval import SPEC, Retriever
 from apps.search.indexing import index_write
 from apps.search.models import SearchChunk, SearchSource
+from apps.search.tests_eval import load_search_eval
 from apps.search.tests_hybrid import (
     COSTS_TITLE_FI,
     COSTS_TITLE_SV,
@@ -48,6 +45,8 @@ from apps.taxonomy.models import DutyType
 from apps.shared.tenancy import library_write
 
 SEARCH = "/api/v1/search"
+# SRC-S8's stand-in for the agents' classifier, named to the gate the way a real one is.
+CLASSIFIER = "apps.search.tests_scenarios:LabelledClassifier"
 
 
 class SearchScenarioTests(TestCase):
@@ -95,20 +94,24 @@ class SearchScenarioTests(TestCase):
         (`none`, the fused order) is refused by `--record` and the baseline is untouched. A
         chain with no mock in it — the keyword leg and the fused order, which is what D-09
         leaves a deployment with until a model is chosen — passes a recorded baseline it
-        matches and fails one it falls short of by more than the tolerance, naming the
-        metric. That baseline is synthetic: the committed one stays unrecorded until a real
-        embedder earns it (docs/TODO_FOR_alex.md, D-09).
+        matches and fails one it falls short of by more than the tolerance, naming every
+        metric of both tracks. That baseline is synthetic: the committed one stays
+        unrecorded until a real embedder earns it (docs/TODO_FOR_alex.md, D-09). The
+        classifier is the agents' and not this app's, so a stand-in answering the labels
+        takes its place (`LabelledClassifier`). A question the library cannot answer gets
+        no hit at all from the real retriever, which is the one answer the gate scores right.
 
         Operations: `rateAnswer`, the reader's verdict the evaluation set reads back.
         It answers 501 not_built until the Ask backend lands.
         """
-        gate = _load_search_eval()
+        gate = load_search_eval()
         questions = gate.load_jsonl(gate.EVAL / "retrieval.jsonl")
-        # The classifier is not this app's; the mock stands in for it so the report shows
-        # the classification track's languages beside the retrieval track's.
+        # The mock classifier reads these predictions, so the first report shows the
+        # classification track's languages beside the retrieval track's.
         texts = [dict(row, predictions=row["expected"]) for row in gate.load_jsonl(gate.EVAL / "classification.jsonl")]
         tolerance = gate.load_json(gate.EVAL / "tolerance.json")["metrics"]
         committed = gate.load_json(gate.EVAL / "baseline.json")
+        counts = {"retrieval": len(questions), "classification": len(texts)}
 
         with tempfile.TemporaryDirectory() as folder:
             paths = gate.Paths(
@@ -141,20 +144,29 @@ class SearchScenarioTests(TestCase):
             with override_settings(EMBEDDER_PROVIDER="none", RERANKER_PROVIDER="none"):
                 retriever = Retriever()
                 self.assertFalse(retriever.is_mock, retriever.name)
-                measured = gate.evaluate_retrieval(questions, retriever).metrics
-                matched, _ = run(_recorded(committed, measured, rows=len(questions)))
+                measured = {
+                    **gate.evaluate_retrieval(questions, retriever).metrics,
+                    **gate.evaluate_classification(texts, LabelledClassifier()).metrics,
+                }
+                real = ("--classifier", CLASSIFIER)
+                matched, _ = run(_recorded(committed, measured, rows=counts), *real)
                 short = {metric: value + tolerance[metric] + 0.01 for metric, value in measured.items()}
-                code, lines = run(_recorded(committed, short, rows=len(questions)))
+                code, lines = run(_recorded(committed, short, rows=counts), *real)
+                silent = retriever.search("quidditch", "en", None)
                 with override_settings(RERANKER_PROVIDER="mock"):
                     self.assertTrue(retriever.is_mock, "a mock reranker alone makes the chain a mock")
 
         self.assertEqual(matched, 0, "a real chain within its tolerance passes")
         self.assertEqual(code, 1, lines)
         self.assertEqual(lines[-1], "search_eval: FAILED")
-        for metric in gate.RETRIEVAL_METRICS:
-            self.assertTrue(
-                any(line.startswith(f"  {metric}: {measured[metric]:.3f} is under the floor ") for line in lines), lines
-            )
+        self.assertEqual(sorted(measured), sorted(gate.METRICS), "both tracks were measured")
+        for metric in gate.METRICS:
+            with self.subTest(metric=metric):
+                self.assertTrue(
+                    any(line.startswith(f"  {metric}: {measured[metric]:.3f} is under the floor ") for line in lines), lines
+                )
+        self.assertEqual(silent, [], "a question the library cannot answer gets no hit")
+        self.assertEqual((gate.recall_at_k([], silent), gate.reciprocal_rank([], silent)), (1.0, 1.0))
 
     @skip("pending: SRC-S9")
     def test_src_s9(self) -> None:
@@ -367,16 +379,23 @@ class HybridSearchScenarioTests(CorpusMixin, TestCase):
 
 
 # ---------------------------------------------------------------------------------------
-# SRC-S8: the release gate's harness, loaded from scripts/ the way the gate runs it
+# SRC-S8: the release gate's harness, run the way the gate runs it
 # ---------------------------------------------------------------------------------------
-def _load_search_eval() -> ModuleType:
-    script = Path(settings.BASE_DIR) / "scripts" / "search_eval.py"
-    spec = importlib.util.spec_from_file_location("search_eval_under_test", script)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    with mock.patch.dict(sys.modules, {spec.name: module}):  # its dataclasses look themselves up
-        spec.loader.exec_module(module)
-    return module
+class LabelledClassifier:
+    """SRC-S8's stand-in for the agents' classifier, which is not this app's: it answers every
+    text of the committed set with its label. It is not a mock, so the gate holds it to a
+    recorded classification baseline the way it will hold the real one, and the only
+    baseline it ever meets is SRC-S8's synthetic one in a temporary folder."""
+
+    name = CLASSIFIER
+    is_mock = False
+
+    def __init__(self) -> None:
+        gate = load_search_eval()
+        self._labels = {row["text"]: row["expected"] for row in gate.load_jsonl(gate.EVAL / "classification.jsonl")}
+
+    def classify(self, text: str) -> dict[str, Any]:
+        return dict(self._labels[text])
 
 
 def _track_report(lines: list[str], track: str) -> list[str]:
@@ -386,11 +405,12 @@ def _track_report(lines: list[str], track: str) -> list[str]:
     return lines[start:end]
 
 
-def _recorded(baseline: dict[str, Any], metrics: dict[str, float], *, rows: int) -> dict[str, Any]:
-    """A synthetic baseline with the retrieval track recorded at these values. It is never
+def _recorded(baseline: dict[str, Any], metrics: dict[str, float], *, rows: dict[str, int]) -> dict[str, Any]:
+    """A synthetic baseline with every track in `rows` recorded at these values. It is never
     written to eval/baseline.json, which only a real run's `--record` may change."""
     synthetic = json.loads(json.dumps(baseline))
     synthetic["recorded"] = True
-    synthetic["tracks"]["retrieval"] = {"recorded": True, "recorded_at": "SRC-S8", "evaluator": SPEC, "rows": rows}
+    for track, count in rows.items():
+        synthetic["tracks"][track] = {"recorded": True, "recorded_at": "SRC-S8", "evaluator": "synthetic", "rows": count}
     synthetic["metrics"].update(metrics)
     return synthetic

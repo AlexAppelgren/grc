@@ -1,4 +1,4 @@
-"""The evaluation retriever's database (SRC-05): never the development one.
+"""The release gate's harness and the evaluation retriever's database (SRC-05).
 
 `apps.search.eval.Retriever` seeds the fixture library before it answers a question, so
 the database it seeds is the whole safety of running it. Inside the test runner it is the
@@ -6,17 +6,40 @@ runner's throwaway database; from the command line it is one of its own, made by
 test machinery under a name nothing else uses and dropped when the process ends. SRC-S8
 proves the first path by running; this pins the second, which a test process cannot take
 for real without making a database inside a database's test run.
+
+The harness's own unit tests (`eval/tests_scoring.py`: the no-answer rule, the line naming
+the tracks that do not gate yet, the recording rules) run here too. CI runs
+`scripts/search_eval.py` without `--self-test`, so without this nothing that blocks a build
+would run them.
 """
 
 from __future__ import annotations
 
+import contextlib
+import importlib.util
+import io
 import os
+import sys
+from pathlib import Path
+from types import ModuleType
 from unittest import mock
 
+from django.conf import settings
 from django.db import connection
 from django.test import SimpleTestCase
 
 from apps.search.eval import _drop, _throwaway_database
+
+
+def load_search_eval() -> ModuleType:
+    """`scripts/search_eval.py`, loaded from its file the way the gate runs it."""
+    script = Path(settings.BASE_DIR) / "scripts" / "search_eval.py"
+    spec = importlib.util.spec_from_file_location("search_eval_under_test", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    with mock.patch.dict(sys.modules, {spec.name: module}):  # its dataclasses look themselves up
+        spec.loader.exec_module(module)
+    return module
 
 
 class ThrowawayDatabaseTests(SimpleTestCase):
@@ -58,3 +81,15 @@ class ThrowawayDatabaseTests(SimpleTestCase):
 
         self.assertEqual(calls.mock_calls, [mock.call.connections.close_all(), mock.call.teardown([], verbosity=0)])
 
+
+class HarnessUnitTests(SimpleTestCase):
+    def test_the_harness_passes_its_own_unit_tests(self) -> None:
+        gate = load_search_eval()
+        output = io.StringIO()
+        # The self-test puts eval/ and scripts/ on the path and imports from there; both
+        # are put back afterwards, so nothing leaks into the rest of the suite.
+        with mock.patch.object(sys, "path", list(sys.path)), mock.patch.dict(sys.modules), contextlib.redirect_stderr(output):
+            code = gate.run(["--self-test"])
+
+        self.assertEqual(code, 0, output.getvalue())
+        self.assertRegex(output.getvalue(), r"Ran \d+ tests", "the unit tests were found and run")
