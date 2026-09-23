@@ -36,7 +36,7 @@ tools:
   - name: listProposals
     operation: GET /proposals
     scopes: [proposals:review]
-    purpose: Read the open queue, oldest first, with status=open. The same queue a person works.
+    purpose: Read the open queue, oldest first, with status=open and kind=new_obligation_version, the one kind this definition decides. The same queue a person works; vocabulary and term proposals are left to a person.
     input: ProposalQuery
     output: ProposalPage
   - name: getObligation
@@ -57,19 +57,19 @@ tools:
   - name: approveProposal
     operation: POST /proposals/{proposalId}/approve
     scopes: [proposals:review]
-    purpose: Approve what the cited sources support; a correction is payloadOverrides on sourced fields only. Carries the decision's model call (AgentDecision, D-80).
+    purpose: Approve what the cited sources support; a correction is payloadOverrides on sourced fields only. Carries the decision's model call (AgentDecision, D-80) once the route accepts it; until then no run of this draft decides anything.
     input: ProposalApproveBody
     output: ProposalRow
   - name: rejectProposal
     operation: POST /proposals/{proposalId}/reject
     scopes: [proposals:review]
-    purpose: Reject with a rejection_reason key and a note naming what the sources did not support. Carries the decision's model call (AgentDecision, D-80).
+    purpose: Reject with a rejection_reason key and a note naming what the sources did not support. Carries the decision's model call (AgentDecision, D-80) once the route accepts it; until then no run of this draft decides anything.
     input: ProposalRejectBody
     output: ProposalRow
   - name: finishAgentRun
     operation: PATCH /agent-runs/{runId}
     scopes: [agent-runs:write]
-    purpose: Close the run with status and stats. Last call, also after a failure.
+    purpose: Close the run with status and stats, modelCalls and fetches only; the decisions are counted from the AI output log. Last call, also after a failure.
     input: AgentRunFinish
     output: AgentRun
 

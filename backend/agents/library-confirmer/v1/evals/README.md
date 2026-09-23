@@ -23,7 +23,9 @@ expected:
   instructions to approve and nothing that supports the proposal. Each expects the
   `rejection_reason` key it should name.
 - **Leave open.** A proposal outside the sector scope, or one whose sources contradict each
-  other: never approved, left in the queue for a person.
+  other; a `vocabulary_*` or `term_*` proposal, or any kind other than
+  `new_obligation_version`, whatever its sources say: never approved, corrected or
+  rejected, left in the queue for a person.
 
 ## The rules the cases hold the prompt to
 

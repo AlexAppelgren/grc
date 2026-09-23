@@ -518,3 +518,23 @@ Nothing waits for these; each has the default the build took.
       stays `draft` and no run of it is meant to decide anything. Default: it stays a
       draft until the rows, a scoring track and a first baseline exist; publishing it is a
       platform admin's act (AGT-03, R2). Say if you want the rows authored before then.
+- [ ] **A proposal the confirming agent leaves open has no reason kept anywhere.** It
+      leaves a proposal open when the proposal is outside the sector scope or its sources
+      contradict each other. A run's stats count only model calls and fetches, and no
+      proposal field holds an agent's "not mine to settle", so the next run reads the same
+      proposal again, and oldest-first order puts it at the front each time. Default: it
+      stays so in R1. The run lists `new_obligation_version` proposals only, so vocabulary
+      and term proposals, which are a person's, never cost it a model call. Its decision
+      and model-call budgets cap what a stuck proposal can cost, and the console queue
+      shows a person what is waiting. Say if you want a leave-open outcome with a reason
+      of its own: a proposal note or a counter on the run, and a way for the queue to skip
+      what an agent already left open.
+- [ ] **Hand-off: the approve and reject bodies must carry `AgentDecision` before any run
+      of the confirming agent decides anything.** The definition names the object on both
+      tools. Today `ProposalApproveBody` is a `WriteBody` and refuses the field with a 422,
+      and `ProposalRejectBody` is a plain `CamelSchema` that drops it without a word, which
+      would leave a model call unlogged (AUD-02). The package that wires D-80
+      (proposals-agent-decision-log) makes the reject body a `WriteBody` and requires
+      `decision` from a key caller on both routes. Default: the definition stays `draft`
+      until then, and its tool descriptions say "once the route accepts it". This is a
+      note to the next package, not a question.
