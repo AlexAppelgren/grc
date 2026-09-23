@@ -68,6 +68,11 @@ vocabularies_read_at_run_start:
   - taxonomy_term        # every dimension, restricts_footprint and descriptive alike
   - authority
   - source
+  - instrument_level     # this and the four below: what a proposal's payload names (AGT-S3)
+  - jurisdiction
+  - relation_type
+  - duty_type
+  - provision_kind
 
 # What the run must emit for every classification (WAT-03, WAT-04).
 classification_contract:
