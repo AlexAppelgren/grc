@@ -142,8 +142,58 @@ test.describe('governance journeys', () => {
     }
   });
 
-  test.fixme("AUD-S4: Every model output is logged with its review state", async () => {
-    // pending: AUD-S4 (AUD-02, chunk 7)
+  test("AUD-S4: Every model output is logged with its review state", async ({ page, apiGuard }, testInfo) => {
+    // AUD-02: a reader asks, marks the answer wrong with a reason, and an approver, who
+    // holds ai_log.read, finds that answer in the AI log with the verdict and the reason,
+    // still labelled AI because nobody confirmed it. The answer this run wrote is pinned
+    // by the id its feedback was posted to, never by a count. The integration half
+    // (the So what? review state per bank) is governance's tests_scenarios.py.
+    allowFreshContext(apiGuard);
+    const reason = `AUD-S4 misses the exemption ${Date.now().toString(36)}-${testInfo.retry}`;
+
+    await signInAs(page, LOGINS.reader);
+    await page.goto('/search?mode=ask');
+    await page.getByRole('searchbox', { name: 'Question' }).fill('What does the appropriateness assessment require?');
+    await page.getByRole('button', { name: 'Ask', exact: true }).click();
+    const answer = page.locator('[data-ask-answer="done"]');
+    await expect(answer).toBeVisible();
+    await answer.getByRole('button', { name: 'Wrong', exact: true }).click();
+    await answer.getByLabel('What is wrong?').fill(reason);
+    const rated = page.waitForResponse((r) => /\/api\/v1\/answers\/[^/]+\/feedback$/.test(r.url()) && r.request().method() === 'POST' && r.ok());
+    await answer.getByRole('button', { name: 'Send', exact: true }).click();
+    const answerId = /\/answers\/([^/]+)\/feedback$/.exec((await rated).url())?.[1] ?? '';
+    expect(answerId).not.toBe('');
+    await expect(answer.getByText('Thank you. Your feedback is logged with the answer.')).toBeVisible();
+
+    // A reader holds no ai_log.read: Admin does not offer the AI log.
+    await page.goto('/admin');
+    await expect(page.locator('[data-admin-section="admin-audit-log"]')).toBeVisible();
+    await expect(page.locator('[data-admin-section="admin-ai-log"]')).toHaveCount(0);
+
+    await signOut(page);
+    await signInAs(page, LOGINS.approver);
+    await page.goto('/admin');
+    await page.locator('[data-admin-section="admin-ai-log"]').click();
+    await expect(page).toHaveURL(/\/admin\/ai-log$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'AI log' })).toBeVisible();
+
+    await page.getByLabel('Purpose').selectOption('answer');
+    await page.getByLabel('Review').selectOption('draft');
+    const row = page.locator(`[data-ai-row][data-generation-id="${answerId}"]`);
+    await expect(row).toBeVisible();
+    await expect(row).toHaveAttribute('data-purpose', 'answer');
+    await expect(row).toHaveAttribute('data-status', 'draft');
+    await expect(row).toHaveAttribute('data-feedback', 'wrong');
+    await expect(row.getByText('Ask answer', { exact: true })).toBeVisible();
+    await expect(row.getByText('Not yet reviewed', { exact: true })).toBeVisible();
+    await expect(row.getByText('Marked wrong', { exact: true })).toBeVisible();
+    await expect(row.locator('time')).toHaveAttribute('datetime', /^\d{4}-\d{2}-\d{2}T/);
+
+    await row.getByRole('button', { name: 'Show what it wrote' }).click();
+    const output = row.locator('[data-ai-output]');
+    await expect(output.getByText('Written by AI. No person has confirmed it.')).toBeVisible();
+    await expect(output.locator('[data-feedback-note]')).toHaveText(`Reason given: ${reason}`);
+    await expect(output.getByRole('list', { name: 'Sources' }).getByRole('link').first()).toBeVisible();
   });
 
   test("AUD-S5: A problem report stays inside the bank that filed it", async ({ page, apiGuard }, testInfo) => {

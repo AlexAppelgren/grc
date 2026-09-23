@@ -976,7 +976,6 @@ to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WA
       Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
       note says only that each national body adopts the edition under its own
       reference. A person verifies them before the note names any.
-
 ## ai-log-read: a shared "So what?" reads each bank's own review state (2026-09-23, AUD-02)
 
 - [ ] **A library "So what?" in the AI log shows the reading bank's own review, not one
@@ -1032,7 +1031,6 @@ Nothing waits for these; each has the default the build took.
       footprint of the bank whose case they belong to, so no cached scope verdict moved; the
       one visible difference is that tenant B's feed now shows the AI-mapping change as
       outside its scope, since tenant B does not follow the AI and ICT regime.
-
 ## ask-screen: what a reader is told when the model cut an answer off (2026-09-23, SRC-03, AUD-02, D-82)
 
 - [ ] **An Ask answer the model stopped at its length limit (`ASK_MAX_TOKENS`, 1024 tokens)
