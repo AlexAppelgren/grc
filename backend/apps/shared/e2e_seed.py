@@ -1173,11 +1173,14 @@ class SeedOutsideScope:
     change: str
 
 
-# The journey cannot narrow the scope itself: FP-S2 and FP-S5 change tenant A's scope, and
+# The journey cannot narrow the scope itself: FP-S5 (J-6) changes tenant A's scope, and
 # every home and watch journey reads it in parallel. So tenant A holds the prototype's scope
 # less pension accounts, which leaves exactly one library obligation outside it (the
-# pension transfer right, which only pension accounts carry and no other journey names) and
-# the outside-scope change, which carries the same term.
+# pension transfer right, which only pension accounts carry and which no seeded proposal
+# or named seed record uses; the seed-integrity guard fails if one comes to) and the
+# outside-scope change, which carries the same term. `seed_footprints()` only adds terms,
+# so a database seeded while pension was still in the scope keeps it and must be
+# recreated; the E2E run recreates its database every time.
 EXPECTED_OUTSIDE_SCOPE = SeedOutsideScope(
     term="account_type:pension",
     obligation="obl-pension-transfer-right",

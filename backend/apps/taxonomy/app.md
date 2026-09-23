@@ -302,16 +302,17 @@ Reports are the note below.
 > work that is theirs (chunk 6 defaults).
 
 > **Note — the journey.** The `@e2e` half walks tenant A's scope as seeded and never
-> changes it, because FP-S2 and FP-S5 change that scope and the home and watch journeys read
-> it in parallel; dropping Advice and watching records hide is FP-S5's (J-6) and the
-> integration half's. The E2E seed leaves pension accounts out of tenant A's scope
+> changes it, because FP-S5 changes that scope and the home and watch journeys read it in
+> parallel; dropping Advice and watching records hide is FP-S5's (J-6) and the integration
+> half's. The E2E seed leaves pension accounts out of tenant A's scope
 > (`EXPECTED_OUTSIDE_SCOPE` in `apps/shared/e2e_seed.py`), so one obligation, the pension
 > transfer right, and one change, `chg-e2e-outside-scope`, fall outside it through that term
 > alone. The journey finds the change absent from the feed and then marked under "Show
 > outside our scope", the obligation absent from the inventory and then marked under the
 > same switch, and the change absent from the roadmap and the briefing. The seed-integrity
 > guard checks every seeded case's cached verdict against the rule, so a case can no longer
-> read as outside on the roadmap while the feed shows its change inside.
+> read as outside on the roadmap while the feed shows its change inside, and it fails when
+> a seeded proposal or a named seed record comes to use the outside obligation.
 
 > **Note — the Instruments tab.** Chunk3-rest (T17) split the inventory into an
 > Obligations tab and an Instruments tab. Both filter through the same footprint rule

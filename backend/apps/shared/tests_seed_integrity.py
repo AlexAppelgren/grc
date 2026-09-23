@@ -652,10 +652,11 @@ class SeedIntegrityGuard(TestCase):
 
     def test_fp_s4_finds_an_obligation_and_a_change_outside_tenant_a_scope_as_seeded(self) -> None:
         """FP-S4, FP-03: the journey walks tenant A's scope as seeded and never changes it,
-        because FP-S2 and FP-S5 change that scope and every home and watch journey reads it
-        in parallel. So the seed leaves one term out of it on purpose, and one obligation and
-        one change fall outside through that term alone. The obligation is no record another
-        journey or seeded proposal depends on, so nothing else needs it in scope."""
+        because FP-S5 (J-6) changes that scope and every home and watch journey reads it in
+        parallel. So the seed leaves one term out of it on purpose, and one obligation and
+        one change fall outside through that term alone. The obligation is neither a seeded
+        proposal's target nor one of the seed's named records, the constants other journeys
+        find their records by, so none of those needs it in scope."""
         seed_e2e()
         tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
         tenancy.activate(tenant_a.id)
@@ -682,4 +683,8 @@ class SeedIntegrityGuard(TestCase):
             CONFIRMED_LINK_OBLIGATION,
             SUGGESTED_LINK_OBLIGATION,
         }
-        self.assertNotIn(EXPECTED_OUTSIDE_SCOPE.obligation, spoken_for)
+        self.assertNotIn(
+            EXPECTED_OUTSIDE_SCOPE.obligation,
+            spoken_for,
+            "FP-S4 keeps this obligation outside tenant A's scope: point the proposal or record that names it at one that stays inside",
+        )
