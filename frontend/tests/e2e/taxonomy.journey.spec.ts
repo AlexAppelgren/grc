@@ -763,7 +763,9 @@ test.describe('taxonomy journeys', () => {
         // Following it reveals the duty, hides nothing and warns of no narrowing.
         const follow = await draftStandard(page, true);
         await expect(follow.locator('[data-preview-side="reveals"]').getByText(/^[1-9]\d* obligations?$/)).toBeVisible();
-        await expect(follow.locator('[data-preview-side="hides"]').getByText(/^0 obligations$/)).toBeVisible();
+        // Now that open cases are counted too (tax-preview-cases), a side that moves nothing
+        // of any kind says so in one word.
+        await expect(follow.locator('[data-preview-side="hides"]').getByText('Nothing.', { exact: true })).toBeVisible();
         await expect(follow.locator('[data-notice="warn"]')).toHaveCount(0);
         await expect(follow.getByText(/will start to filter/)).toHaveCount(0);
         await sendDraft(page);

@@ -387,12 +387,12 @@ test.describe('the watch feed', () => {
 
   test('a reader arriving at a scope with nothing in it is shown the way back', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
-    await signInAs(page, LOGINS.reader);
+    // Tenant B watches no market (tenant A watches Denmark, whose seeded change
+    // FP-S15 reads), so its "Markets we watch" is empty rather than quietly
+    // showing the ordinary feed under another name.
+    await signInAs(page, LOGINS.secondBankAdmin);
     await openFeed(page, '?scope=watched');
 
-    // "Markets we watch" is declared and empty until a change takes its
-    // jurisdiction from its authority, so the feed is empty rather than
-    // quietly showing the ordinary one under another name.
     await expect(page.getByText('Nothing matches these filters')).toBeVisible();
     await page.getByRole('link', { name: 'Clear filters' }).click();
     await expect(page).toHaveURL(/\/watch$/);
