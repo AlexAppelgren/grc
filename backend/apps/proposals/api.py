@@ -378,7 +378,7 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     auth=REVIEWER_AUTH,
     operation_id="getProposal",
     by_alias=True,
-    summary="Open one proposal and read it against the library version it replaces",
+    summary="Open one proposal and read it against the library version it is compared with",
 )
 @answers_problems
 def get_proposal(

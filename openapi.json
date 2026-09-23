@@ -22377,7 +22377,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Open one proposal and read it against the library version it replaces",
+        "summary": "Open one proposal and read it against the library version it is compared with",
         "tags": [
           "Proposals"
         ]

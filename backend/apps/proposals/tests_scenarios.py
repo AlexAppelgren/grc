@@ -678,6 +678,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         reviewer_key = agents_testing.reviewer_api_key()
         reviewer_headers = {"HTTP_X_API_KEY": reviewer_key.plain_key}
         sent = agents_testing.decision(reviewer_key)
+        another_agents_run = agents_testing.decision(agents_testing.reviewer_api_key())["agentRunId"]
 
         # It reads the pending proposals through the queue route a person reads, with the
         # same source beside the same diff.
@@ -697,9 +698,18 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual([segment["op"] for segment in detail["diff"]], ["delete", "insert"])
         self.assertEqual([source["field"] for source in detail["sources"]], ["effectiveFrom", "summaries.en", "summaries.sv", "terms"])
 
+        # A decision without the model call behind it is refused, and so is one counted in a
+        # run of another agent's key, as a run that never existed is (AUD-02, D-80).
+        for without, status, code in (
+            ({"agentRunId": sent["agentRunId"]}, 422, "validation_error"),
+            ({**sent, "agentRunId": another_agents_run}, 404, "not_found"),
+        ):
+            refused = self._post(f"/proposals/{proposal['id']}/approve", without, reviewer_headers)
+            self.assertEqual((refused.status_code, refused.json()["code"]), (status, code), refused.content)
+
         # Its correction may not move which language the summary was written in: that would
         # store the machine translation as the unlabelled original (INV-05). Refused, and
-        # nothing applies.
+        # like the two above, nothing applies.
         moved = self._post(f"/proposals/{proposal['id']}/approve", {"payloadOverrides": {"originalLanguage": "en"}, **sent}, reviewer_headers)
         self.assertEqual(moved.status_code, 422, moved.content)
         self.assertEqual(moved.json()["code"], "validation_error")
@@ -792,7 +802,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         # and the library is left exactly as it was.
         rejected = self._post(
             f"/proposals/{waiting['id']}/reject",
-            {"rejectionCode": "duplicate", "note": "Version 2 already says this.", **sent},
+            {"rejectionCode": "duplicate", "note": "Version 2 already says this.", **sent, "decision": agents_testing.REJECTION_DECISION},
             reviewer_headers,
         )
         self.assertEqual(rejected.status_code, 200, rejected.content)

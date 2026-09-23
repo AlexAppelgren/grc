@@ -2762,7 +2762,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Open one proposal and read it against the library version it replaces
+         * Open one proposal and read it against the library version it is compared with
          * @description One proposal as a reviewer decides it: the record it would change, the wording it is
          *     compared with against what this would make it say, the two compared sentence by
          *     sentence, the source behind every changed value, and the scope before and after. Call it
