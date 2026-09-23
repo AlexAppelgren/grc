@@ -75,6 +75,8 @@ def body(**overrides: Any) -> dict[str, Any]:  # compliance: allow-kwargs test h
         "events": [CONSULTATION, ADOPTED, IN_FORCE],
         "documents": [{"url": FIRST_PAGE, "title": "FI adopts amended rules", "isPrimary": True}],
         "model": "agent pipeline 0.4",
+        # Every change carries a regime (D-39, AC-AGT1), so every registration here names one.
+        "termIds": [str(watch_build.term(SECURITIES).id)],
     }
     payload.update(overrides)
     return payload
@@ -287,6 +289,39 @@ class ABanksKeyWritesNothingToTheWatch(RegistrationCase):
         self.assertEqual(change.documents.count(), 1)
         self.assertEqual(change.events.count(), 3)
         self.assertEqual(AuditEvent.objects.count(), before, "a refusal writes nothing, not even its audit row")
+
+
+class EveryChangeCarriesARegime(RegistrationCase):
+    """D-39, AC-AGT1: a change with no regime would reach every bank whatever its scope, so a
+    new one is refused before anything is written, and the refusal lists the regimes the
+    caller may choose from."""
+
+    def test_a_new_change_without_a_regime_is_refused_with_the_regimes_listed(self) -> None:
+        written = OutboxEvent.objects.count()
+        cases = {
+            "no term at all": [],
+            "a channel term but no regime": [str(watch_build.term("channel:digital").id)],
+        }
+        for case, term_ids in cases.items():
+            with self.subTest(case=case):
+                response = self.register(body(agentRunId=str(self.open_run.id), termIds=term_ids))
+                self.assertEqual(response.status_code, 422, response.content)
+                problem = response.json()
+                self.assertEqual(problem["code"], "regime_required")
+                self.assertEqual(problem["dimension"], "regime")
+                self.assertIn("securities", problem["validKeys"])
+                self.assertIn("aml", problem["validKeys"])
+                self.assertNotIn("digital", problem["validKeys"], "only the regime dimension's keys are listed")
+        self.assertEqual(RegulatoryChange.objects.count(), 0, "a refusal stores nothing")
+        self.assertEqual(OutboxEvent.objects.count(), written, "and opens no case anywhere")
+
+    def test_a_second_sighting_needs_no_regime_because_it_changes_no_scope(self) -> None:
+        """A merge adds pages and milestones and never touches the stored terms, so the rule
+        that guards a change's scope has nothing to guard there (AC-WAT1)."""
+        self.register()
+        again = self.register(body(agentRunId=str(self.open_run.id), termIds=[]))
+        self.assertEqual(again.status_code, 200, again.content)
+        self.assertEqual([link.term.key for link in self.stored().term_links.filter(term__isnull=False) if link.term], ["securities"])
 
 
 class SightingAReformAgain(RegistrationCase):

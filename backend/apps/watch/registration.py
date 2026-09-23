@@ -115,6 +115,8 @@ def register_change(
     existing = keys.change_with_stable_key(body.stable_key)
     if existing is not None:
         return 200, _merge(existing, actor=actor, order=order, body=body, risk_flags=risk_flags)
+    # A merge touches no stored term, so only a new change must name its regime (D-39).
+    keys.require_regime(terms)
 
     origin = OriginType.AGENT.value if who.kind is PrincipalKind.AGENT else OriginType.USER.value
     change = keys.new_change(

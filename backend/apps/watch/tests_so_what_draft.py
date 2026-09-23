@@ -72,6 +72,8 @@ def body(**overrides: Any) -> dict[str, Any]:  # compliance: allow-kwargs test h
         "sourceUrl": "https://www.fi.se/",
         "documents": [{"url": "https://www.fi.se/en/published/news/2026/research-payments/", "isPrimary": True}],
         "model": "agent pipeline 0.4",
+        # Every change carries a regime (D-39, AC-AGT1).
+        "termIds": [str(watch_build.term(SECURITIES).id)],
     }
     payload.update(overrides)
     return payload

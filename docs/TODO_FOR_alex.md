@@ -860,3 +860,16 @@ Nothing waits for these; each has the default the build took.
       only this bank's sessions. Default if you say nothing: it stays as built, and the
       published description of `GET /me/sessions` says a person sees only this bank's
       sessions there.
+
+## watch-regime-required: every change names a regime (2026-09-23, D-39, AC-AGT1)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **Every change must name a regime (D-39), and a merge is exempt.** `createChange` for a
+      new change and an `updateChange` that replaces `termIds` answer 422 `regime_required`
+      with the regime keys. A second sighting of a known `stableKey` adds pages and
+      milestones and never touches the stored terms, so it is not held to the rule. The six
+      E2E-seeded changes that carried no regime now carry one each, chosen inside the
+      footprint of the bank whose case they belong to, so no cached scope verdict moved; the
+      one visible difference is that tenant B's feed now shows the AI-mapping change as
+      outside its scope, since tenant B does not follow the AI and ICT regime.
