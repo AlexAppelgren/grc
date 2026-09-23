@@ -3,10 +3,8 @@ lists the action, no business logic (playbook 4.1).
 
 Four operations, the designed contract's (`docs/inputs/openapi.yaml`). Each one hands its
 validated body to the module that answers it — `hybrid.py` for searching and for the
-agents' nearest-neighbour read, `ask.py` for the answer and its feedback — and the one
-that has not landed yet, the reader's verdict on an answer, answers `not_built` until it
-does (PARALLEL_PLAN rule 3). The gate runs first, so a caller without it is refused before
-it learns whether anything is built.
+agents' nearest-neighbour read, `ask.py` for the answer and its feedback. The gate runs
+first, so a caller without it is refused before it learns anything.
 
 Both search routes spend from a bucket of their own before anything else runs
 (`limits.py`): the reader's session or the agent's key, sixty a minute each, answered 429
@@ -24,14 +22,15 @@ Who may call what: a person searching, asking or rating an answer holds `search.
 (PRD §6, "everyone"). `POST /search/similar` is the agents' route, gated on the
 `search:read` key scope alone (AGT-02, INPUT_DELTAS §7): no permission in the matrix
 gives a person a similarity read, and a console surface that wants one comes with its own
-permission and its own review. Nothing here writes, so nothing here needs step-up or
-four eyes.
+permission and its own review. The one write, the reader's verdict on an answer, goes
+through the audit trail; playbook 4.2 lists none of these, so none needs step-up or four
+eyes.
 """
 
 from collections.abc import Iterator
 
 from django.http import HttpRequest
-from ninja import SSE, Router
+from ninja import SSE, Path, Router
 
 from apps.search import ask, hybrid
 from apps.search.schemas import (
@@ -209,7 +208,19 @@ def ask_question(request: HttpRequest, body: AskRequest) -> Iterator[AskEvent]:
 )
 @requires_permission(perms.SEARCH_USE)
 @answers_problems
-def rate_answer(request: HttpRequest, answer_id: str, body: AnswerFeedbackBody) -> tuple[int, None]:
+def rate_answer(
+    request: HttpRequest,
+    body: AnswerFeedbackBody,
+    answer_id: str = Path(
+        ...,
+        description=(
+            "The answer to rate, as a UUID: the `id` of the `start` event that `POST /ask` "
+            "streamed first, which is also the answer's row in the AI log. It must be an "
+            "answer of the caller's own bank. Another bank's answer, an id that is no answer "
+            "and a value that is not a UUID all answer `not_found`, never saying which."
+        ),
+    ),
+) -> tuple[int, None]:
     """Record a reader's verdict on one answer — helpful or wrong, with an optional note
     — so the people who tune retrieval know where it fails (AUD-02, SRC-05).
 
@@ -224,8 +235,16 @@ def rate_answer(request: HttpRequest, answer_id: str, body: AnswerFeedbackBody) 
 
     Shape of the call: the one write in this contract. It goes through the audit trail
     like any other write, and it needs no idempotency key because it is idempotent by
-    nature: the same verdict on the same answer twice leaves one row. Neither the
-    question nor the answer nor the note reaches the audit summary.
+    nature: the same verdict and note on the same answer twice leaves one row and one
+    audit row. A different verdict replaces the earlier one, and the audit trail keeps
+    both. Neither the question nor the answer nor the note reaches the audit row.
+
+    Errors: `not_found` (404) for an answer that is not one of the bank's own, or a
+    session that belongs to no bank; `validation_error` (422) for a verdict other than
+    `helpful` or `wrong`, a note over the cap or a field the contract does not name;
+    `permission_denied` (403) without `search.use`; `unauthenticated` (401) without a
+    session.
     """
-    ask.rate_answer(uuid_or_404(answer_id), body, user_id=principal(request).subject_id)
+    who = principal(request)
+    ask.rate_answer(uuid_or_404(answer_id), body, tenant_id=who.tenant_id, user_id=who.subject_id)
     return 204, None
