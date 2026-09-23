@@ -14,6 +14,7 @@ Prefixes hosted: PRO.
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from datetime import date
 from typing import Any
@@ -533,12 +534,18 @@ class ProposalsScenarioTests(ScenarioTestCase):
         # No platform session returns it, proven by behaviour rather than by the routes'
         # methods: each platform role signs in and drives every problem-report route the API
         # serves, which refuses it; the console has no problem-report route at all; and no
-        # read a platform session can make without naming a record answers with the
-        # report's id or its words.
-        ids = {"obligation_id": str(obligation.id), "instrument_id": str(obligation.instrument_id)}
+        # read a platform session can make, on its own or naming the reported duty, its
+        # instrument or the proposal the editor just opened, answers with the report's id
+        # or its words.
+        ids = {"obligation_id": str(obligation.id), "instrument_id": str(obligation.instrument_id), "proposal_id": proposal["id"]}
         filing = [op for op in iter_operations(api) if "problem-report" in op.path]
         self.assertTrue(filing, "the report routes are what this drives")
-        reads = [op.path for op in iter_operations(api) if op.method == "GET" and "{" not in op.path]
+        reads = [
+            op.path.format(**ids)
+            for op in iter_operations(api)
+            if op.method == "GET" and all(name in ids for name in re.findall(r"{(\w+)}", op.path))
+        ]
+        self.assertIn(f"/proposals/{proposal['id']}", reads, "the proposal beside the reported duty is read too")
         for person in (self.editor, factories.platform_user(roles=("platform_admin",))):
             platform = sign_in(person)
             for op in filing:
@@ -552,6 +559,8 @@ class ProposalsScenarioTests(ScenarioTestCase):
                 body = self.client.get(f"{V1}{path}", **platform).content.decode()
                 self.assertNotIn(report_id, body, path)
                 self.assertNotIn(words, body, path)
+        # The editor's read of that proposal is a full answer, not a refusal, so its body was really searched.
+        self.assertEqual(self.client.get(f"{V1}/proposals/{proposal['id']}", **sign_in(self.editor)).status_code, 200)
         self.activate(self.tenant)
         self.assertEqual(ProblemReport.objects.filter(subject_id=obligation.id).count(), 1, "no platform session filed one either")
 
