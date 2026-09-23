@@ -34,4 +34,5 @@ E2E_PASSKEYS: dict[str, E2EPasskey] = {
     "editor2@bleqq.test": E2EPasskey(credential_id="suqmTkUo_TtcyQzOTs0MFg", public_key_cose="pQECAyYgASFYIGnvriTFg5RjG-o-ngyFgjsrCYFqIllPLCnOkV-n7nciIlggp-_-35VGX7hrSDy6vs79WZVCvxyBf9IRekhfocljwtY", aaguid=E2E_AAGUID),
     "agent-keys@bleqq.test": E2EPasskey(credential_id="RUlGV1nowK17BmGcPQ7zbQ", public_key_cose="pQECAyYgASFYIJb6zYxQJ3MD6TPpue_LRFO5VbnqBmxsKHjfwxc9iPO6IlggYr5FqbJyanDkQqIR5EUlpSCIqEkg9l_dE2OEfQXwmWo", aaguid=E2E_AAGUID),
     "reader-sv@example-bank.test": E2EPasskey(credential_id="Z6-QX06Ma-mkrsHpz1QBQg", public_key_cose="pQECAyYgASFYIBE2OjZKXyrGd5phiNsGkwt-yXTWixWrSzvGQOGjh9P4Ilgg4BVFHfb-b7xW09RMGUnMPnzKbIevigg7M6sHgkcO1J8", aaguid=E2E_AAGUID),
+    "language@example-bank.test": E2EPasskey(credential_id="CsD6EpLYQKiDdv88Ld3F-g", public_key_cose="pQECAyYgASFYILRgCTnN45WAgTTT4F_X28DQ3M9n2KkySUtpDDj-HBKhIlggUwhmR2Wkfe08kUtEenLSFstB1SVDJ4yNEwYHi0EBqio", aaguid=E2E_AAGUID),
 }

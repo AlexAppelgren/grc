@@ -63,6 +63,8 @@ export const LOGINS = {
   agentKeys: 'agent-keys@bleqq.test',
   /** The one login whose own `locale` is Swedish (WAT-S2); read-only, so not reserved. */
   readerSv: 'reader-sv@example-bank.test',
+  /** Reserved for I18N-S3: it switches this member's own interface language, which every session of theirs follows. */
+  language: 'language@example-bank.test',
 } as const;
 
 export const ANNA_INVITE_TOKEN = 'e2e-invite-anna';
