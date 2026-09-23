@@ -135,6 +135,9 @@ And a changed tone, label or slot order fails the spec
 Given the token pipeline output and brand.css
 When the contrast test runs over every text and surface pair the design uses, including the six pill tones
 Then each pair reaches the AA ratio in light and in dark
+Given the pill gallery and the seeded Today, Watch, Inventory, an instrument, Roadmap, Search and the console queue in a browser under a light and a dark system theme
+When every named pair and every pill on screen is measured from the colours the browser computes
+Then text and pills reach 4.5:1 and non-text 3:1 in both themes
 ```
 
 ### NFR-S10 — Tone is never chosen by a person and the API never sends a phrase `@integration` (NFR-03)
@@ -145,15 +148,6 @@ Then it answers 422
 Given every list and detail response
 Then pills are derivable from key, kind and counts only, and no response field holds a rendered phrase
 ```
-
-> **Note — chunk 3's rest.** The instrument header (level, binding, jurisdiction, regime),
-> the lineage pills and the provision tree's in-force chips (chunk3-rest T13, T17, T18) all
-> hold this rule the same way the obligation card already did: no response field named tone
-> or pill, the frontend chooses the slot and `tone-by-kind.ts` chooses the tone by kind, and
-> every pill renders through `Pill`. NFR-03 stays pending, not because this changed: NFR-S8
-> and NFR-S9, the pill gallery screenshot and the WCAG contrast sweep, are still unbuilt, and
-> until they run over the new instrument and provision surfaces too the design's own
-> reproduction is unverified even though the rule behind it holds.
 
 ### NFR-S11 — An unrecognised environment name is treated as production `@integration` (NFR-04)
 ```gherkin
