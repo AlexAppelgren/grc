@@ -88,7 +88,7 @@ def _tag_rows() -> list[SystemRow]:
 # start outside every seeded bank's scope, and its one term is seeded inactive (below).
 _EXTRA_DIMENSIONS: list[SystemRow] = [
     SystemRow("jurisdiction", {"en": "Jurisdiction", "sv": "Jurisdiktion"}, "Where the rule applies: the Union or a country. Terms mirror the jurisdiction table.", TermDimensionKind.SCOPE.value, {"restricts_footprint": True}),
-    SystemRow("theme", {"en": "Theme", "sv": "Tema"}, "What the rule is about, for browsing and briefings. Never narrows the footprint.", TermDimensionKind.CLASSIFICATION.value, {"restricts_footprint": False}),
+    SystemRow("theme", {"en": "Theme", "sv": "Tema"}, "What the rule is about, for browsing and briefings. Never narrows the regulatory scope.", TermDimensionKind.CLASSIFICATION.value, {"restricts_footprint": False}),
     SystemRow("licensed_activity", {"en": "Licensed activity", "sv": "Tillståndspliktig verksamhet"}, "The licence under which the firm acts: banking, securities, insurance, fund management.", TermDimensionKind.SCOPE.value, {"restricts_footprint": True}),
     SystemRow("product_type", {"en": "Product type", "sv": "Produkttyp"}, "The financial product the rule concerns.", TermDimensionKind.SCOPE.value, {"restricts_footprint": True}),
     SystemRow(
