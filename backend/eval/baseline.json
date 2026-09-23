@@ -1,5 +1,5 @@
 {
-  "_comment": "Last accepted metric values (playbook 16: evaluation is a gate). recorded is false until a real evaluator scores a track and search_eval.py --record writes it here; while a track is not recorded a missing evaluator passes as 'not available yet', afterwards it fails. Metrics: retrieval recall@10 and MRR over eval/retrieval.jsonl; classification accuracy per field over eval/classification.jsonl (change type exact, flags set equality, scope mean Jaccard over the named dimensions, screen = AGT-07 risk flags set equality). Never edit the numbers by hand: an accepted improvement is re-recorded with --record in the same commit as the change that earned it.",
+  "_comment": "Last accepted metric values (playbook 16: evaluation is a gate). recorded is false until a real evaluator scores a track and search_eval.py --record writes it here; while a track is not recorded a missing evaluator passes as 'not available yet', afterwards it fails. Metrics: retrieval recall@10 and MRR over eval/retrieval.jsonl; classification accuracy per field over eval/classification.jsonl (change type exact, flags set equality, scope mean Jaccard over the named dimensions, screen = AGT-07 risk flags set equality, in-scope = AGT-08 in_scope equal, standard term = AGT-08 standard_terms set equality). Never edit the numbers by hand: an accepted improvement is re-recorded with --record in the same commit as the change that earned it.",
   "recorded": false,
   "tracks": {
     "retrieval": {
@@ -21,6 +21,8 @@
     "classification_change_type_accuracy": null,
     "classification_flags_accuracy": null,
     "classification_scope_accuracy": null,
-    "classification_screen_accuracy": null
+    "classification_screen_accuracy": null,
+    "classification_in_scope_accuracy": null,
+    "classification_standard_term_accuracy": null
   }
 }

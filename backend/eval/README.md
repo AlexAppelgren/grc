@@ -1,4 +1,4 @@
-# Evaluation sets (SRC-05, AC-SRC1, AGT-07, playbook 16)
+# Evaluation sets (SRC-05, AC-SRC1, AGT-07, AGT-08, AC-AGT1, playbook 16)
 
 `scripts/search_eval.py` is a CI gate. It scores two evaluators against the labelled
 sets here and compares the result with the recorded baseline within the tolerance.
@@ -6,7 +6,7 @@ sets here and compares the result with the recorded baseline within the toleranc
 | File | Holds | State |
 |---|---|---|
 | `retrieval.jsonl` | 53 labelled questions over the prototype corpus, en 16, sv 16, da 7, nb 7, fi 7 | Filled (chunk 3 data work) |
-| `classification.jsonl` | 42 labelled change texts (8 from the prototype, 34 authored Nordic variants) plus 10 texts with embedded instructions for the AGT-07 screen | Filled |
+| `classification.jsonl` | 42 labelled change texts (8 from the prototype, 34 authored Nordic variants), 10 texts with embedded instructions for the AGT-07 screen, and 8 AGT-08 texts: 4 off-sector, 1 law that cites a standard, 3 about a standard | Filled |
 | `baseline.json` | The last accepted value of every metric, per track, with who recorded it and when | `recorded: false` until chunk 5 (classifier) and chunk 7 (retriever) record |
 | `tolerance.json` | How far a metric may fall under the baseline before the gate fails, with the rationale | Filled |
 | `tests_scoring.py` | Unit tests for the scoring and gate logic, run by `search_eval.py --self-test` | Filled |
@@ -28,13 +28,39 @@ own. `as_of` means the version effective on that date is the one expected; the
 retriever receives it as a `date`.
 
 Classification: `{"id", "language", "jurisdiction", "authority", "source", "text",
-"expected": {"change_type", "flags", "scope": {dimension: [term keys]}, "risk_flags"},
-"injection", "injection_kind"?, "note"?}`. Keys are vocabulary keys from the fixture.
+"expected": {"in_scope", "change_type", "flags", "scope": {dimension: [term keys]},
+"risk_flags", "standard_terms"?}, "injection", "injection_kind"?, "cites_standard"?,
+"note"?}`. Keys are vocabulary keys from the fixture.
 Scoring per field: change type exact, flags set equality, scope the mean Jaccard over the
 dimensions the expectation names (empty matches empty), screen the set equality of
 `risk_flags`, where the ten injection rows expect `["embedded_instructions"]` and every
-other row expects `[]`. Metrics are reported per language and split into clean and
-injection rows.
+other row expects `[]`. Metrics are reported per language and per kind of text: clean,
+injection, off-sector, a law that cites a standard, and a standard's own record.
+
+The sector scope (AGT-08, AC-AGT1) adds two metrics, each scored on every row:
+
+- **In-scope accuracy**: `in_scope` equal to the expectation, which every row states. A
+  text inside the scope names at least one regime and a text outside it names none,
+  because nothing is registered from it; the harness refuses a row where the two
+  disagree. A classifier that does not say is scored wrong.
+- **Standard-term accuracy**: the set equality of `standard_terms`, the opt-in terms as
+  `standard:<key>`, which default to none. Only a standard's own record inside the scope
+  expects one (`standard:iso_iec_27001`); a law that cites a standard (`cites_standard`)
+  and an off-sector text expect none, and the harness refuses a row that says otherwise.
+  The term sits apart from `scope` because the taxonomy seeds carry the opt-in `standard`
+  dimension (D-36) and the fixture `check_prototype_data --eval` reads does not.
+
+Their tolerances, each with its reason, are in `tolerance.json`: 0 for both, so no
+off-sector text can be registered and no law can be tagged without a red build. A standard
+is named in the set by its reference only, never by its title or a clause, and every AGT-08
+text is our own words about a public fact.
+
+An off-sector row is scored on the other fields too. It expects no flags and an empty
+scope, which a classifier that names none matches, and the change type its text describes,
+because the classifier reads every text whole before `in_scope` decides what the agent
+does with it (`check_prototype_data --eval` also requires a change type on every row that
+is not an injection case). A classifier that stops at `in_scope: false` and names no type
+loses that row's change-type point and nothing else.
 
 ## The evaluator interface
 
@@ -47,7 +73,7 @@ class Retriever(Protocol):
 class Classifier(Protocol):
     name: str
     is_mock: bool
-    def classify(self, text: str) -> dict: ...  # {"change_type", "flags", "scope", "risk_flags"}
+    def classify(self, text: str) -> dict: ...  # {"in_scope", "change_type", "flags", "scope", "risk_flags", "standard_terms"}
 ```
 
 Name a real one as `module:Class` (constructed with no arguments; it may set up Django

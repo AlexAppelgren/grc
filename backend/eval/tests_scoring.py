@@ -17,7 +17,7 @@ sys.path.insert(0, str(BACKEND / "scripts"))
 
 import search_eval as se  # noqa: E402
 
-EXPECTED = {"change_type": "adopted", "flags": ["ai"], "scope": {"regime": ["securities", "ai_ict"], "service_type": ["advice"]}, "risk_flags": []}
+EXPECTED = {"in_scope": True, "change_type": "adopted", "flags": ["ai"], "scope": {"regime": ["securities", "ai_ict"], "service_type": ["advice"]}, "risk_flags": []}
 
 
 def blank_baseline() -> dict:
@@ -109,6 +109,75 @@ class ClassificationScoring(unittest.TestCase):
         self.assertEqual(result.per_language["da"]["classification_change_type_accuracy"], 1.0)
 
 
+class SectorScopeScoring(unittest.TestCase):
+    """AGT-08, AC-AGT1: whether a text is inside the sector scope, and whether a standard's
+    opt-in term sits on the standard's own records and nowhere else, each scored on its own."""
+
+    def test_in_scope_must_be_stated_and_match(self) -> None:
+        off_sector = dict(OFF_SECTOR)
+        self.assertEqual(se.score_classification(off_sector, {"in_scope": False})["classification_in_scope_accuracy"], 1.0)
+        self.assertEqual(se.score_classification(off_sector, {"in_scope": True})["classification_in_scope_accuracy"], 0.0)
+        self.assertEqual(se.score_classification(EXPECTED, {})["classification_in_scope_accuracy"], 0.0, "a classifier that does not say is wrong")
+
+    def test_standard_terms_compare_as_sets_and_expect_none_unless_stated(self) -> None:
+        standard = dict(EXPECTED, standard_terms=[TERM])
+        self.assertEqual(se.score_classification(standard, {"standard_terms": [TERM]})["classification_standard_term_accuracy"], 1.0)
+        self.assertEqual(se.score_classification(standard, {})["classification_standard_term_accuracy"], 0.0)
+        self.assertEqual(se.score_classification(EXPECTED, {})["classification_standard_term_accuracy"], 1.0)
+        self.assertEqual(se.score_classification(EXPECTED, {"standard_terms": [TERM]})["classification_standard_term_accuracy"], 0.0)
+
+    def test_the_mock_reports_both_metrics_overall_and_per_group(self) -> None:
+        rows = scope_rows()
+        # The mock registers the medical-device rule and tags the law that cites the standard.
+        rows[0]["predictions"] = dict(rows[0]["expected"], in_scope=True)
+        rows[1]["predictions"] = dict(rows[1]["expected"], standard_terms=[TERM])
+        result = se.evaluate_classification(rows, se.MockClassifier(rows))
+        self.assertTrue(result.is_mock)
+        self.assertAlmostEqual(result.metrics["classification_in_scope_accuracy"], 3 / 4)
+        self.assertAlmostEqual(result.metrics["classification_standard_term_accuracy"], 3 / 4)
+        self.assertEqual(result.per_group["off_sector"]["classification_in_scope_accuracy"], 0.0)
+        self.assertEqual(result.per_group["cites_standard"]["classification_standard_term_accuracy"], 0.0)
+        self.assertEqual(result.per_group["standard"]["classification_standard_term_accuracy"], 1.0)
+        self.assertEqual(result.per_group["clean"]["classification_in_scope_accuracy"], 1.0)
+
+    def test_the_set_refuses_a_row_that_breaks_the_scope_rules(self) -> None:
+        for name, row, message in (
+            ("no in_scope", scope_row("x", {k: v for k, v in EXPECTED.items() if k != "in_scope"}), "expected.in_scope missing"),
+            ("in_scope not a boolean", scope_row("x", dict(EXPECTED, in_scope="yes")), "in_scope must be true or false"),
+            ("inside without a regime", scope_row("x", dict(OFF_SECTOR, in_scope=True)), "in_scope and regime disagree"),
+            ("outside with a regime", scope_row("x", dict(EXPECTED, in_scope=False)), "in_scope and regime disagree"),
+            ("a term not in the opt-in dimension", scope_row("x", dict(EXPECTED, standard_terms=["regime:ai_ict"])), "standard_terms must be"),
+            ("a term on an off-sector text", scope_row("x", dict(OFF_SECTOR, standard_terms=[TERM])), "a standard's own record"),
+            ("a term on a law citing a standard", dict(scope_row("x", dict(EXPECTED, standard_terms=[TERM])), cites_standard=True), "a standard's own record"),
+        ):
+            with self.subTest(name), self.assertRaises(ValueError) as caught:
+                se.validate_classification([row])
+            self.assertIn(message, str(caught.exception))
+        se.validate_classification(scope_rows())
+
+
+TERM = "standard:iso_iec_27001"
+OFF_SECTOR = {"in_scope": False, "change_type": "adopted", "flags": [], "scope": {"regime": [], "service_type": []}, "risk_flags": []}
+
+
+def scope_row(row_id: str, expected: dict) -> dict:
+    return {"id": row_id, "language": "en", "text": f"text {row_id}", "injection": False, "expected": expected}
+
+
+def scope_rows() -> list[dict]:
+    """An off-sector text, a law citing a standard, the standard's own record and a plain
+    change, each predicted exactly by default."""
+    rows = [
+        scope_row("off", OFF_SECTOR),
+        dict(scope_row("cites", dict(EXPECTED, standard_terms=[])), cites_standard=True),
+        scope_row("standard", dict(EXPECTED, standard_terms=[TERM])),
+        scope_row("clean", EXPECTED),
+    ]
+    for row in rows:
+        row["predictions"] = json.loads(json.dumps(row["expected"]))
+    return rows
+
+
 class Gate(unittest.TestCase):
     def test_not_available_passes_only_while_unrecorded(self) -> None:
         missing = se.TrackResult("not_available", "none", False)
@@ -137,6 +206,21 @@ class Gate(unittest.TestCase):
         self.assertEqual(se.decide("classification", result, recorded_baseline(), tol), [])
         result.metrics["classification_screen_accuracy"] = 0.899
         self.assertEqual(len(se.decide("classification", result, recorded_baseline(), tol)), 1)
+
+    def test_in_scope_and_standard_term_accuracy_fail_below_their_tolerance(self) -> None:
+        tol = tolerance()
+        tol["metrics"]["classification_standard_term_accuracy"] = 0.0
+        result = se.TrackResult("scored", "real", False, metrics={m: 0.9 for m in se.CLASSIFICATION_METRICS})
+        self.assertEqual(se.decide("classification", result, recorded_baseline(), tol), [])
+        result.metrics["classification_in_scope_accuracy"] = 0.86
+        self.assertEqual(se.decide("classification", result, recorded_baseline(), tol), [], "within the tolerance")
+        result.metrics["classification_in_scope_accuracy"] = 0.84
+        result.metrics["classification_standard_term_accuracy"] = 0.899
+        failures = se.decide("classification", result, recorded_baseline(), tol)
+        self.assertEqual(
+            [failure.split(":")[0] for failure in failures],
+            ["classification_in_scope_accuracy", "classification_standard_term_accuracy"],
+        )
 
     def test_record_writes_scored_real_tracks_and_refuses_mock(self) -> None:
         real = se.TrackResult("scored", "apps.search.eval:Retriever", False, metrics={"retrieval_recall_at_10": 0.91234, "retrieval_mrr": 0.8}, rows=53)
@@ -238,6 +322,14 @@ class EndToEnd(unittest.TestCase):
         self.assertEqual(self.run_cli(), 1)
         self.assertIn("injection and risk_flags disagree", self.output[-1])
 
+    def test_the_mock_reports_in_scope_and_standard_term_accuracy(self) -> None:
+        retrieval, _ = self.rows(True)
+        self.write(retrieval, scope_rows(), blank_baseline())
+        self.assertEqual(self.run_cli(), 0)
+        self.assertTrue(any("classification_in_scope_accuracy: 1.000" in line for line in self.output))
+        self.assertTrue(any("classification_standard_term_accuracy: 1.000" in line for line in self.output))
+        self.assertTrue(any(line.strip().startswith("by group off_sector:") for line in self.output))
+
     def test_unknown_evaluator_spec_fails(self) -> None:
         self.write(*self.rows(False), blank_baseline())
         self.assertEqual(self.run_cli("--retriever", "no.such.module:Thing"), 1)
@@ -283,6 +375,25 @@ class RealSets(unittest.TestCase):
         self.assertTrue(all("predictions" not in r for r in retrieval + classification), "committed sets carry no mock predictions")
         se.validate_baseline(se.load_json(se.EVAL / "baseline.json"))
         se.validate_tolerance(se.load_json(se.EVAL / "tolerance.json"))
+
+    def test_the_sector_scope_rows_are_in_the_committed_set(self) -> None:
+        """AGT-08's rows, proved over the file: every row states whether it is inside the
+        sector scope, and there are at least four off-sector texts, one law that cites a
+        standard and three records of a standard, each metric with its tolerance explained
+        and small enough that one text judged wrong fails the gate."""
+        rows = se.load_jsonl(se.EVAL / "classification.jsonl")
+        self.assertTrue(all(isinstance(r["expected"].get("in_scope"), bool) for r in rows))
+        off_sector = [r for r in rows if not r["expected"]["in_scope"]]
+        cites = [r for r in rows if r.get("cites_standard")]
+        standards = [r for r in rows if r["expected"].get("standard_terms")]
+        self.assertGreaterEqual(len(off_sector), 4)
+        self.assertGreaterEqual(len(cites), 1)
+        self.assertGreaterEqual(len(standards), 3)
+        self.assertEqual({t for r in standards for t in r["expected"]["standard_terms"]}, {TERM})
+        tolerance = se.load_json(se.EVAL / "tolerance.json")
+        for metric in ("classification_in_scope_accuracy", "classification_standard_term_accuracy"):
+            self.assertIn(metric, tolerance["_rationale"])
+            self.assertLess(tolerance["metrics"][metric], 1 / len(rows), f"{metric}: one text judged wrong fails the gate")
 
 
 if __name__ == "__main__":

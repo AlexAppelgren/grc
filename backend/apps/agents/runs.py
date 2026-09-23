@@ -235,7 +235,11 @@ def finish_run(*, who: Principal, run_id: uuid.UUID, body: AgentRunFinish) -> Ag
     output_ref = body.output_ref or ""
     error = body.error or ""
     if run.status != RunStatus.RUNNING.value:
-        if (run.status, run.stats, run.output_ref, run.error) != (body.status, stats, output_ref, error):
+        # Both sides as a reader reads them, so a close stored before a counter existed is
+        # still the same close when it is sent again: the missing counter reads 0 on both.
+        stored = _stats(AgentRunStats.model_validate(run.stats), run.stats)
+        sent = _stats(body.stats, stored)
+        if (run.status, stored, run.output_ref, run.error) != (body.status, sent, output_ref, error):
             raise ValidationError(
                 "This run is already closed, so it cannot be closed again with different values.",
                 code="invalid_transition",

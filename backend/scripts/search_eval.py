@@ -1,13 +1,17 @@
 #!/usr/bin/env python
-"""Search and classification evaluation gate (playbook 9, 16, SRC-05, AC-SRC1, AGT-07).
+"""Search and classification evaluation gate (playbook 9, 16, SRC-05, AC-SRC1, AGT-07,
+AGT-08, AC-AGT1).
 
 Loads the labelled sets under backend/eval/ and scores two pluggable evaluators:
 
     Retriever.search(query, lang, as_of) -> [stable keys, best first]
-    Classifier.classify(text) -> {"change_type", "flags", "scope", "risk_flags"}
+    Classifier.classify(text) -> {"in_scope", "change_type", "flags", "scope", "risk_flags",
+                                  "standard_terms"}
 
 Metrics: retrieval recall@10 and MRR; classification accuracy per field (change type,
-flags, scope, and the AGT-07 embedded-instruction screen), each reported per language.
+flags, scope, the AGT-07 embedded-instruction screen, and AGT-08's two: whether the text is
+inside the sector scope, and whether a standard's opt-in term sits on the standard's own
+records and nowhere else), each reported per language and per kind of text.
 `eval/baseline.json` holds the last accepted values and `eval/tolerance.json` how far
 each may fall before the gate fails.
 
@@ -48,10 +52,16 @@ CLASSIFICATION_METRICS = (
     "classification_flags_accuracy",
     "classification_scope_accuracy",
     "classification_screen_accuracy",
+    "classification_in_scope_accuracy",
+    "classification_standard_term_accuracy",
 )
 METRICS = RETRIEVAL_METRICS + CLASSIFICATION_METRICS
 TRACKS = {"retrieval": RETRIEVAL_METRICS, "classification": CLASSIFICATION_METRICS}
 SCREEN_FLAG = "embedded_instructions"
+# The opt-in dimension a standard's term lives in (D-36). Its terms are seeded by the taxonomy
+# seeds, not carried by the prototype fixture that `check_prototype_data --eval` reads, so a
+# row names them in `standard_terms` rather than in `scope`.
+STANDARD_TERM = "standard:"
 K = 10
 
 
@@ -148,11 +158,23 @@ def validate_classification(rows: list[dict]) -> None:
         for key in ("id", "language", "text", "expected", "injection"):
             if key not in r:
                 raise ValueError(f"classification.jsonl {r.get('id', '?')}: {key} missing")
-        for key in ("change_type", "flags", "scope", "risk_flags"):
-            if key not in r["expected"]:
+        expected = r["expected"]
+        for key in ("in_scope", "change_type", "flags", "scope", "risk_flags"):
+            if key not in expected:
                 raise ValueError(f"classification.jsonl {r['id']}: expected.{key} missing")
-        if r["injection"] != (SCREEN_FLAG in r["expected"]["risk_flags"]):
+        if r["injection"] != (SCREEN_FLAG in expected["risk_flags"]):
             raise ValueError(f"classification.jsonl {r['id']}: injection and risk_flags disagree")
+        # AGT-08: every change carries a regime, so a text inside the scope names one and a
+        # text outside it, from which nothing is registered, names none.
+        if not isinstance(expected["in_scope"], bool):
+            raise ValueError(f"classification.jsonl {r['id']}: expected.in_scope must be true or false")
+        if expected["in_scope"] != bool(expected["scope"].get("regime")):
+            raise ValueError(f"classification.jsonl {r['id']}: in_scope and regime disagree")
+        terms = expected.get("standard_terms", [])
+        if not isinstance(terms, list) or not all(isinstance(t, str) and t.startswith(STANDARD_TERM) for t in terms):
+            raise ValueError(f"classification.jsonl {r['id']}: standard_terms must be a list of {STANDARD_TERM}<key> terms")
+        if terms and (not expected["in_scope"] or r.get("cites_standard")):
+            raise ValueError(f"classification.jsonl {r['id']}: a standard term belongs on a standard's own record inside the scope")
 
 
 def load_json(path: Path) -> dict:
@@ -213,7 +235,9 @@ def jaccard(a: list[str], b: list[str]) -> float:
 
 def score_classification(expected: dict, predicted: dict) -> dict[str, float]:
     """One row. change_type: exact. flags and screen: set equality. scope: mean Jaccard over
-    the dimensions the expectation names (an empty expected list matches an empty or absent one)."""
+    the dimensions the expectation names (an empty expected list matches an empty or absent one).
+    in_scope: equal, so a classifier that does not say is wrong. standard_terms: set equality,
+    where a row that states none expects none."""
     scope_expected: dict = expected["scope"]
     scope_predicted: dict = predicted.get("scope") or {}
     scope = (
@@ -226,6 +250,10 @@ def score_classification(expected: dict, predicted: dict) -> dict[str, float]:
         "classification_flags_accuracy": 1.0 if set(predicted.get("flags") or []) == set(expected["flags"]) else 0.0,
         "classification_scope_accuracy": scope,
         "classification_screen_accuracy": 1.0 if set(predicted.get("risk_flags") or []) == set(expected["risk_flags"]) else 0.0,
+        "classification_in_scope_accuracy": 1.0 if predicted.get("in_scope") == expected["in_scope"] else 0.0,
+        "classification_standard_term_accuracy": (
+            1.0 if set(predicted.get("standard_terms") or []) == set(expected.get("standard_terms") or []) else 0.0
+        ),
     }
 
 
@@ -269,9 +297,24 @@ def evaluate_classification(rows: list[dict], classifier: Classifier | None) -> 
         "scored", classifier.name, classifier.is_mock,
         metrics={m: mean([s[m] for _, s in per_row]) for m in CLASSIFICATION_METRICS},
         per_language=_breakdown(per_row, "language", CLASSIFICATION_METRICS),
-        per_group=_breakdown([(dict(r, group="injection" if r["injection"] else "clean"), s) for r, s in per_row], "group", CLASSIFICATION_METRICS),
+        per_group=_breakdown([(dict(r, group=classification_group(r)), s) for r, s in per_row], "group", CLASSIFICATION_METRICS),
         rows=len(rows),
     )
+
+
+def classification_group(r: dict) -> str:
+    """The kind of text a row is, so each rule is read on the rows written for it: the
+    AGT-07 injection cases, AGT-08's off-sector texts, laws that cite a standard and a
+    standard's own records, and the rest."""
+    if r["injection"]:
+        return "injection"
+    if not r["expected"]["in_scope"]:
+        return "off_sector"
+    if r.get("cites_standard"):
+        return "cites_standard"
+    if r["expected"].get("standard_terms"):
+        return "standard"
+    return "clean"
 
 
 def _breakdown(per_row: list[tuple[dict, dict[str, float]]], key: str, metrics: tuple[str, ...]) -> dict[str, dict[str, float]]:
