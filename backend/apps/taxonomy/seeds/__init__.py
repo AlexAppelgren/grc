@@ -14,9 +14,9 @@ leaves one audit row.
 
 Keys, labels and usage notes come from the prototype fixture
 (apps/taxonomy/seeds/fixture.py) so chunk 3 loads the fixture's records against the
-rows these seeds wrote. What the prototype has no rows for (provision kinds, the four
-dimensions beyond the prototype's seven, the rejection reasons, the licensed activities)
-is authored here."""
+rows these seeds wrote. What the prototype has no rows for (provision kinds, the five
+dimensions beyond the prototype's seven, the rejection reasons, the licensed activities,
+the standards a bank may follow) is authored here."""
 
 from __future__ import annotations
 
@@ -80,13 +80,27 @@ def _tag_rows() -> list[SystemRow]:
     return [SystemRow(tag["key"], {"en": tag["label_en"], "sv": tag["label_sv"]}) for tag in fixture.tags()]
 
 
-# The eleven dimensions of schema v0.3: the prototype's seven from the fixture (with its
-# restricts_footprint flags), the other four authored here. Only `theme` classifies.
+# The twelve dimensions: the prototype's seven from the fixture (with its
+# restricts_footprint flags) and five authored here. Only `theme` classifies. `standard`, the
+# standards a bank follows, is opt-in (D-36): a record carrying one of its terms shows only to
+# a bank whose regulatory scope names that term, whatever its restricts_footprint flag says
+# (apps/taxonomy/matching.py). No E2E tenant holds one of its terms, so a standard's records
+# start outside every seeded bank's scope.
 _EXTRA_DIMENSIONS: list[SystemRow] = [
     SystemRow("jurisdiction", {"en": "Jurisdiction", "sv": "Jurisdiktion"}, "Where the rule applies: the Union or a country. Terms mirror the jurisdiction table.", TermDimensionKind.SCOPE.value, {"restricts_footprint": True}),
     SystemRow("theme", {"en": "Theme", "sv": "Tema"}, "What the rule is about, for browsing and briefings. Never narrows the footprint.", TermDimensionKind.CLASSIFICATION.value, {"restricts_footprint": False}),
     SystemRow("licensed_activity", {"en": "Licensed activity", "sv": "Tillståndspliktig verksamhet"}, "The licence under which the firm acts: banking, securities, insurance, fund management.", TermDimensionKind.SCOPE.value, {"restricts_footprint": True}),
     SystemRow("product_type", {"en": "Product type", "sv": "Produkttyp"}, "The financial product the rule concerns.", TermDimensionKind.SCOPE.value, {"restricts_footprint": True}),
+    SystemRow(
+        "standard",
+        {"en": "Standards followed", "sv": "Standarder vi följer"},
+        "The standards within the sector scope that the bank follows by choice, by contract or because a "
+        "supervisor expects it. Opt-in: a record carrying a standard shows only to a bank whose regulatory "
+        "scope names that standard, also when the scope names no standard at all. Only a standard's own "
+        "records carry one of these terms; a law that cites a standard never does.",
+        TermDimensionKind.OPT_IN.value,
+        {"restricts_footprint": True},
+    ),
 ]
 
 # The payment services of PSD2 Annex I point 5, as the two businesses a firm is licensed
@@ -94,9 +108,26 @@ _EXTRA_DIMENSIONS: list[SystemRow] = [
 # "utgivning av betalningsinstrument eller inlösen av transaktionsbelopp"). They are terms
 # of `licensed_activity`, a dimension the prototype fixture has no rows for, so they are
 # authored here like the other lists the prototype does not cover.
+#
+# The standards a bank may follow: one term per standard and never per edition, so a bank's
+# scope survives a new edition (D-36), and ISO/IEC 27001 alone for now (D-47). A standard is
+# named by its reference in every language, never by its title, and the library holds none
+# of its text (INV-08).
 _EXTRA_TERMS: list[dict[str, Any]] = [
     {"dimension": "licensed_activity", "key": "card_issuing", "label_en": "Card issuing", "label_sv": "Kortutgivning", "sort_order": 1},
     {"dimension": "licensed_activity", "key": "card_acquiring", "label_en": "Card acquiring", "label_sv": "Kortinlösen", "sort_order": 2},
+    {
+        "dimension": "standard",
+        "key": "iso_iec_27001",
+        "label_en": "ISO/IEC 27001",
+        "label_sv": "ISO/IEC 27001",
+        "usage_note": (
+            "The standard ISO/IEC 27001, every edition of it. Its records sit under the regime ai_ict "
+            "(AI and ICT), so a bank sees them only when its regulatory scope holds both that regime and "
+            "this term."
+        ),
+        "sort_order": 1,
+    },
 ]
 
 _PROVISION_KINDS: list[SystemRow] = [
@@ -209,7 +240,7 @@ def seed_library_vocabularies() -> int:
 
 
 def seed_term_dimensions() -> int:
-    """The eleven dimensions alone, for callers that need them before the rest."""
+    """The twelve dimensions alone, for callers that need them before the rest."""
     default_key, rows = LIBRARY_SYSTEM_ROWS["term_dimension"]
     with transaction.atomic(), library_write(SEED_REASON):
         return _ensure_rows("term_dimension", default_key, rows)
@@ -319,7 +350,12 @@ def seed_taxonomy_terms() -> int:
             term, created = TaxonomyTerm.objects.get_or_create(
                 dimension=dimension,
                 key=spec["key"],
-                defaults={"sort_order": int(spec.get("sort_order", 0)), "is_system": True, "active": True},
+                defaults={
+                    "sort_order": int(spec.get("sort_order", 0)),
+                    "usage_note": spec.get("usage_note", ""),
+                    "is_system": True,
+                    "active": True,
+                },
             )
             if created:
                 labels = {}

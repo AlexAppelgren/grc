@@ -1,50 +1,92 @@
-"""Footprint matching (FP-01, playbook 8.1: tests required with every change).
+"""Footprint matching (FP-01, D-36, playbook 8.1: tests required with every change).
 
 `in_footprint()` is exhaustively tested here as a pure function, then the SQL function
-`taxonomy_in_footprint(tenant, term_ids[])` from the taxonomy migration is run against
+`taxonomy_in_footprint(tenant, term_ids[])` from the taxonomy migrations is run against
 every case with real rows and must agree. The rule: for every dimension the record
 carries terms in, at least one must be in the footprint; a dimension with no terms does
-not restrict; a dimension whose `restricts_footprint` is false is ignored."""
+not restrict, except an opt-in dimension, where a record carrying one of its terms matches
+only when the footprint names that term; a dimension whose `restricts_footprint` is false
+is ignored, unless it is opt-in, which restricts whatever the flag says."""
 
 from __future__ import annotations
 
 import itertools
 import uuid
+from collections.abc import Iterable
 
 from django.db import connection
 from django.test import TestCase
 
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, tenancy
+from apps.shared.tenancy import library_write
 from apps.taxonomy import matching, tenant_lists_logic
-from apps.taxonomy.models import FootprintTerm, TermDimension
+from apps.taxonomy.models import FootprintTerm, TaxonomyTerm, TermDimension
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 
-# (record terms, footprint, restricting dimensions or None for "all restrict", expected)
-CASES: list[tuple[dict[str, set[str]], dict[str, set[str]], set[str] | None, bool]] = [
+# The restricting dimensions each pure case is decided against.
+SCOPE = matching.Restricting({"service_type", "client_category"}, opt_in=())
+SERVICES = matching.Restricting({"service_type"}, opt_in=())
+STANDARDS = matching.Restricting({"service_type"}, opt_in={"standard"})
+
+# (record terms, footprint, restricting dimensions, expected)
+CASES: list[tuple[dict[str, set[str]], dict[str, set[str]], matching.Restricting, bool]] = [
     # Empty record matches every footprint, including an empty one.
-    ({}, {}, None, True),
-    ({}, {"service_type": {"custody"}}, None, True),
+    ({}, {}, SCOPE, True),
+    ({}, {"service_type": {"custody"}}, SCOPE, True),
     # One dimension, hit and miss.
-    ({"service_type": {"custody"}}, {"service_type": {"custody"}}, None, True),
-    ({"service_type": {"advice"}}, {"service_type": {"custody"}}, None, False),
+    ({"service_type": {"custody"}}, {"service_type": {"custody"}}, SCOPE, True),
+    ({"service_type": {"advice"}}, {"service_type": {"custody"}}, SCOPE, False),
     # Any one term of the dimension in the footprint is enough.
-    ({"service_type": {"advice", "custody"}}, {"service_type": {"custody"}}, None, True),
+    ({"service_type": {"advice", "custody"}}, {"service_type": {"custody"}}, SCOPE, True),
     # A dimension the footprint has no terms in does not restrict.
-    ({"service_type": {"custody"}, "client_category": {"retail"}}, {"service_type": {"custody"}}, None, True),
-    ({"client_category": {"retail"}}, {}, None, True),
+    ({"service_type": {"custody"}, "client_category": {"retail"}}, {"service_type": {"custody"}}, SCOPE, True),
+    ({"client_category": {"retail"}}, {}, SCOPE, True),
     # Every carried dimension must hit: two dimensions, one miss.
-    ({"service_type": {"custody"}, "client_category": {"retail"}}, {"service_type": {"custody"}, "client_category": {"professional"}}, None, False),
-    ({"service_type": {"custody"}, "client_category": {"retail"}}, {"service_type": {"custody"}, "client_category": {"retail", "professional"}}, None, True),
+    ({"service_type": {"custody"}, "client_category": {"retail"}}, {"service_type": {"custody"}, "client_category": {"professional"}}, SCOPE, False),
+    ({"service_type": {"custody"}, "client_category": {"retail"}}, {"service_type": {"custody"}, "client_category": {"retail", "professional"}}, SCOPE, True),
     # An empty footprint restricts nothing (no dimension has terms).
-    ({"service_type": {"advice"}}, {}, None, True),
+    ({"service_type": {"advice"}}, {}, SCOPE, True),
     # A dimension that does not restrict is ignored, whatever the footprint says about it.
-    ({"channel": {"branch"}}, {"channel": {"digital"}}, {"service_type"}, True),
-    ({"service_type": {"advice"}, "channel": {"digital"}}, {"service_type": {"custody"}, "channel": {"digital"}}, {"service_type"}, False),
-    ({"service_type": {"custody"}, "channel": {"branch"}}, {"service_type": {"custody"}, "channel": {"digital"}}, {"service_type"}, True),
+    ({"channel": {"branch"}}, {"channel": {"digital"}}, SERVICES, True),
+    ({"service_type": {"advice"}, "channel": {"digital"}}, {"service_type": {"custody"}, "channel": {"digital"}}, SERVICES, False),
+    ({"service_type": {"custody"}, "channel": {"branch"}}, {"service_type": {"custody"}, "channel": {"digital"}}, SERVICES, True),
     # A record with empty term sets carries no restriction for that dimension.
-    ({"service_type": set()}, {"service_type": {"custody"}}, None, True),
+    ({"service_type": set()}, {"service_type": {"custody"}}, SCOPE, True),
+    # Opt-in (D-36): a record carrying a standard matches only a footprint that names it,
+    # also when the footprint is empty or has no entry for the dimension at all.
+    ({"standard": {"iso_iec_27001"}}, {}, STANDARDS, False),
+    ({"standard": {"iso_iec_27001"}}, {"service_type": {"custody"}}, STANDARDS, False),
+    ({"standard": {"iso_iec_27001"}}, {"standard": set()}, STANDARDS, False),
+    ({"standard": {"iso_iec_27001"}}, {"standard": {"iso_iec_27001"}}, STANDARDS, True),
+    ({"standard": {"iso_iec_27001"}}, {"standard": {"iso_22301"}}, STANDARDS, False),
+    # Any one of the record's standards named is enough, as in every other dimension.
+    ({"standard": {"iso_iec_27001", "iso_22301"}}, {"standard": {"iso_22301"}}, STANDARDS, True),
+    # A named standard does not rescue a miss in another dimension.
+    ({"standard": {"iso_iec_27001"}, "service_type": {"advice"}}, {"standard": {"iso_iec_27001"}, "service_type": {"custody"}}, STANDARDS, False),
+    # A record carrying no standard is unaffected by the opt-in dimension, and an empty scope
+    # dimension still does not restrict next to it.
+    ({"service_type": {"custody"}}, {"service_type": {"custody"}}, STANDARDS, True),
+    ({"service_type": {"advice"}}, {"standard": {"iso_iec_27001"}}, STANDARDS, True),
+    ({"standard": set()}, {}, STANDARDS, True),
+    ({}, {}, STANDARDS, True),
 ]
+
+
+def _as_dict(refs: Iterable[str]) -> dict[str, set[str]]:
+    result: dict[str, set[str]] = {}
+    for ref in refs:
+        dimension, key = ref.split(":")
+        result.setdefault(dimension, set()).add(key)
+    return result
+
+
+def _seed() -> None:
+    seed_languages()
+    seed_jurisdictions()
+    seed_library_vocabularies()
+    seed_term_dimensions()
+    seed_taxonomy_terms()
 
 
 class InFootprintRule(TestCase):
@@ -54,11 +96,27 @@ class InFootprintRule(TestCase):
                 self.assertIs(matching.in_footprint(record, footprint, restricting=restricting), expected)
 
     def test_inputs_are_not_mutated(self) -> None:
-        record = {"service_type": {"custody"}}
+        record = {"service_type": {"custody"}, "standard": {"iso_iec_27001"}}
         footprint = {"service_type": {"custody"}}
-        matching.in_footprint(record, footprint)
-        self.assertEqual(record, {"service_type": {"custody"}})
+        matching.in_footprint(record, footprint, restricting=STANDARDS)
+        self.assertEqual(record, {"service_type": {"custody"}, "standard": {"iso_iec_27001"}})
         self.assertEqual(footprint, {"service_type": {"custody"}})
+
+    def test_the_restricting_dimensions_are_required_and_must_name_the_opt_in_ones(self) -> None:
+        """No caller can forget the opt-in dimensions: leaving the argument out, or passing a
+        plain set of keys that cannot say which of them are opt-in, is a TypeError rather than
+        a silent verdict that shows every standard to every bank."""
+        with self.assertRaises(TypeError):
+            matching.in_footprint({"standard": {"iso_iec_27001"}}, {})  # type: ignore[call-arg]
+        with self.assertRaises(TypeError):
+            matching.in_footprint({"standard": {"iso_iec_27001"}}, {}, restricting={"service_type", "standard"})
+        with self.assertRaises(TypeError):
+            matching.Restricting({"service_type"})  # type: ignore[call-arg]
+
+    def test_every_opt_in_dimension_restricts(self) -> None:
+        self.assertEqual(STANDARDS, {"service_type", "standard"})
+        self.assertEqual(STANDARDS.opt_in, {"standard"})
+        self.assertEqual(SCOPE.opt_in, frozenset())
 
 
 class SqlMirrorsPython(TestCase):
@@ -66,11 +124,7 @@ class SqlMirrorsPython(TestCase):
     seeded terms in three dimensions, two of which restrict."""
 
     def setUp(self) -> None:
-        seed_languages()
-        seed_jurisdictions()
-        seed_library_vocabularies()
-        seed_term_dimensions()
-        seed_taxonomy_terms()
+        _seed()
         self.tenant = factories.tenant(slug="match")
         tenancy.activate(self.tenant.id)
         self.terms = {
@@ -83,13 +137,6 @@ class SqlMirrorsPython(TestCase):
         self.restricting = matching.restricting_dimensions()
         self.assertFalse(TermDimension.objects.get(key="channel").restricts_footprint)
 
-    def _as_dict(self, refs: tuple[str, ...]) -> dict[str, set[str]]:
-        result: dict[str, set[str]] = {}
-        for ref in refs:
-            dimension, key = ref.split(":")
-            result.setdefault(dimension, set()).add(key)
-        return result
-
     def test_every_combination_agrees(self) -> None:
         refs = tuple(self.terms)
         subsets = [combo for n in range(len(refs) + 1) for combo in itertools.combinations(refs, n)]
@@ -99,9 +146,9 @@ class SqlMirrorsPython(TestCase):
             for ref in footprint_refs:
                 FootprintTerm.objects.create(tenant=self.tenant, term=self.terms[ref])
             footprint = matching.footprint_of(self.tenant.id)
-            self.assertEqual(footprint, self._as_dict(footprint_refs))
+            self.assertEqual(footprint, _as_dict(footprint_refs))
             for record_refs in subsets:
-                expected = matching.in_footprint(self._as_dict(record_refs), footprint, restricting=self.restricting)
+                expected = matching.in_footprint(_as_dict(record_refs), footprint, restricting=self.restricting)
                 actual = matching.in_footprint_sql(self.tenant.id, [self.terms[ref].id for ref in record_refs])
                 self.assertIs(actual, expected, f"record {record_refs} footprint {footprint_refs}")
                 checked += 1
@@ -133,3 +180,79 @@ class SqlMirrorsPython(TestCase):
         with connection.cursor() as cursor:
             cursor.execute("SELECT taxonomy_in_footprint(%s, %s::uuid[])", [str(self.tenant.id), [str(uuid.uuid4())]])
             self.assertTrue(cursor.fetchone()[0], "an id that is no term carries no dimension and so restricts nothing")
+
+
+class OptInMirror(TestCase):
+    """The opt-in half of the mirror (FP-01, D-36, migration 0006): a scope dimension and the
+    seeded opt-in dimension `standard`, with a second standard beside ISO/IEC 27001 so that
+    "names that term" and "names another standard" are told apart. Every combination of
+    record and footprint terms must get the same answer from both, with the dimension's flag
+    set as seeded and again with it cleared, and from a stored footprint that has no entry
+    for the opt-in dimension at all."""
+
+    def setUp(self) -> None:
+        _seed()
+        self.tenant = factories.tenant(slug="opt-in")
+        tenancy.activate(self.tenant.id)
+        self.standard = TermDimension.objects.get(key="standard")
+        with library_write("test"):
+            second = TaxonomyTerm.objects.create(dimension=self.standard, key="second_standard")
+        self.terms = {
+            "service_type:custody": tenant_lists_logic.term_by_ref("service_type", "custody"),
+            "service_type:advice": tenant_lists_logic.term_by_ref("service_type", "advice"),
+            "standard:iso_iec_27001": tenant_lists_logic.term_by_ref("standard", "iso_iec_27001"),
+            "standard:second_standard": second,
+        }
+
+    def _set_flag(self, restricts: bool) -> None:
+        with library_write("test"):
+            TermDimension.objects.filter(pk=self.standard.pk).update(restricts_footprint=restricts)
+
+    def _every_combination_agrees(self) -> None:
+        restricting = matching.restricting_dimensions()
+        refs = tuple(self.terms)
+        subsets = [combo for n in range(len(refs) + 1) for combo in itertools.combinations(refs, n)]
+        hidden_by_the_opt_in_rule = 0
+        for footprint_refs in subsets:
+            FootprintTerm.objects.filter(tenant=self.tenant).delete()
+            for ref in footprint_refs:
+                FootprintTerm.objects.create(tenant=self.tenant, term=self.terms[ref])
+            footprint = matching.footprint_of(self.tenant.id)
+            for record_refs in subsets:
+                record = _as_dict(record_refs)
+                expected = matching.in_footprint(record, footprint, restricting=restricting)
+                actual = matching.in_footprint_sql(self.tenant.id, [self.terms[ref].id for ref in record_refs])
+                self.assertIs(actual, expected, f"record {record_refs} footprint {footprint_refs}")
+                if "standard" in record and "standard" not in footprint:
+                    self.assertFalse(expected, f"record {record_refs} footprint {footprint_refs}")
+                    hidden_by_the_opt_in_rule += 1
+        # Every record carrying a standard, against every footprint naming none: 12 x 4.
+        self.assertEqual(hidden_by_the_opt_in_rule, 12 * 4)
+
+    def test_every_combination_agrees_with_the_flag_as_seeded(self) -> None:
+        self.assertTrue(self.standard.restricts_footprint)
+        self.assertEqual(matching.opt_in_dimensions(), {"standard"})
+        self._every_combination_agrees()
+
+    def test_every_combination_agrees_with_the_flag_cleared(self) -> None:
+        """Clearing the flag changes nothing: the kind, not the flag, makes it opt-in."""
+        self._set_flag(False)
+        self.assertIn("standard", matching.restricting_dimensions())
+        self.assertEqual(matching.opt_in_dimensions(), {"standard"})
+        self._every_combination_agrees()
+
+    def test_a_retired_opt_in_dimension_restricts_nothing_in_either(self) -> None:
+        iso = self.terms["standard:iso_iec_27001"]
+        self.assertFalse(matching.in_footprint_sql(self.tenant.id, [iso.id]))
+        with library_write("test"):
+            TermDimension.objects.filter(pk=self.standard.pk).update(active=False)
+        restricting = matching.restricting_dimensions()
+        self.assertNotIn("standard", restricting)
+        self.assertEqual(matching.opt_in_dimensions(), frozenset())
+        self.assertTrue(matching.in_footprint({"standard": {"iso_iec_27001"}}, {}, restricting=restricting))
+        self.assertTrue(matching.in_footprint_sql(self.tenant.id, [iso.id]))
+
+    def test_restricting_dimensions_is_one_query(self) -> None:
+        with self.assertNumQueries(1):
+            restricting = matching.restricting_dimensions()
+        self.assertEqual(restricting.opt_in, {"standard"})

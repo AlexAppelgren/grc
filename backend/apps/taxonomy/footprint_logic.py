@@ -38,6 +38,7 @@ from apps.taxonomy.models import (
     FootprintChangeRequest,
     FootprintHistory,
     FootprintTerm,
+    TermDimensionKind,
 )
 from apps.taxonomy.schemas import (
     FootprintDimension,
@@ -62,7 +63,9 @@ def view(tenant_id: uuid.UUID, order: list[str]) -> FootprintView:
     in it, whether it restricts the footprint at all, the pending request if one waits, and
     every active country's market level (FP-04). A dimension with no terms is not an error
     and not an omission: it means "no restriction", which the screen says in words
-    (playbook 4.5)."""
+    (playbook 4.5), except in an opt-in dimension, whose kind the reference carries: there it
+    means "none followed" (D-36). An opt-in dimension restricts whatever its flag says, so
+    the read says so too, as the matcher does."""
     selected = terms_logic.selected_terms_by_dimension(tenant_id, order)
     dimensions: list[FootprintDimension] = []
     for ref, restricts, term_count in terms_logic.dimensions_for_footprint(order):
@@ -70,7 +73,7 @@ def view(tenant_id: uuid.UUID, order: list[str]) -> FootprintView:
         dimensions.append(
             FootprintDimension(
                 dimension=ref,
-                restricts_footprint=restricts,
+                restricts_footprint=restricts or ref.kind == TermDimensionKind.OPT_IN.value,
                 terms=terms,
                 all_selected=bool(term_count) and len(terms) == term_count,
             )
