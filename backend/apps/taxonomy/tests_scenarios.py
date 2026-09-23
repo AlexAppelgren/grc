@@ -982,19 +982,183 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertIn("`GET /taxonomy/terms`", INPUT_DELTAS.read_text(encoding="utf-8"))
         self.assertEqual(Proposal.objects.filter(status=ProposalStatus.OPEN.value, kind=ProposalKind.TERM_CREATE.value).count(), 0)
 
-    @skip("pending: FP-S8 (FP-04, R1)")
+    def _obligation_per_jurisdiction(self, scenario: str, keys: tuple[str, ...]) -> dict[str, Obligation]:
+        """One custody obligation under a securities instrument of each jurisdiction named,
+        so the jurisdiction is the only thing that tells them apart."""
+        from apps.library import testing as library_build
+
+        return {
+            key: library_build.obligation(
+                library_build.instrument(key=f"{scenario}-{key}", regime="regime:securities", jurisdiction=key),
+                key=f"{scenario}-{key}-custody",
+                terms=("service_type:custody",),
+            )
+            for key in keys
+        }
+
+    def _inventory(self, headers: dict[str, Any]) -> set[str]:
+        response = self._get("/obligations", headers)
+        self.assertEqual(response.status_code, 200, response.content)
+        return {row["stableKey"] for row in response.json()["items"]}
+
     def test_fp_s8(self) -> None:
         """FP-S8
 
         Turning on a country brings the EU rules that reach it (FP-04, AC-FP2).
-        """
 
-    @skip("pending: FP-S9 (FP-04, R1)")
+        The officer's request holds the one jurisdiction they turned on; the Union rules that
+        reach it come from each record's instrument at match time (D-28, D-29), so the
+        preview never counts them as hidden and the inventory keeps them.
+        """
+        built = self._obligation_per_jurisdiction("fp-s8", ("eu", "se", "dk", "no"))
+        self._set_footprint(["regime:securities"])
+        reader = sign_in(self.reader, tenant=self.tenant)
+        before = self._inventory(reader)
+        self.assertEqual(before, {obligation.stable_key for obligation in built.values()}, "no jurisdiction in the scope restricts nothing")
+
+        # When the officer turns on Denmark and chooses "Preview".
+        officer = sign_in(self.officer, tenant=self.tenant)
+        denmark = {"adds": [{"dimension": "jurisdiction", "key": "dk"}], "removes": []}
+        preview = self._preview("/tenant/footprint/requests?dryRun=true", denmark, officer)
+        self.assertEqual(preview.status_code, 200, preview.content)
+        counted = preview.json()["preview"]["obligations"]
+
+        # When they send it and a second person approves it with a fresh step-up.
+        created = self._post("/tenant/footprint/requests", denmark, officer)
+        self.assertEqual(created.status_code, 201, created.content)
+        request = created.json()
+        self.assertEqual(([term["key"] for term in request["adds"]], request["removes"]), (["dk"], []))
+        self.activate(self.tenant)
+        held = FootprintChangeRequest.objects.get(pk=request["id"])
+        self.assertEqual(
+            ([link.term.jurisdiction_id for link in held.add_links.select_related("term")], held.remove_links.count()),
+            ([Jurisdiction.objects.get(key="dk").id], 0),
+            "the request held Denmark only: no Union term and no derived one",
+        )
+        approver = sign_in(self.approver, tenant=self.tenant, step_up=True)
+        approved = self._post(f"/tenant/footprint/requests/{request['id']}/approve", {}, approver, HTTP_IF_MATCH=str(request["version"]))
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+        # Then the inventory lists the Union and Danish obligations and no Swedish or
+        # Norwegian one, and the preview counted exactly those two as hidden.
+        after = self._inventory(sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual(after, {built["eu"].stable_key, built["dk"].stable_key})
+        self.assertEqual(before - after, {built["se"].stable_key, built["no"].stable_key})
+        self.assertEqual(counted, {"hidden": len(before - after), "revealed": 0, "available": True})
+
+        # One audit event and one history row for the term.
+        self.activate(self.tenant)
+        events = AuditEvent.objects.filter(tenant=self.tenant, action__in=("footprint.term_added", "footprint.term_removed"))
+        self.assertEqual([(event.action, event.after["request"]) for event in events], [("footprint.term_added", request["id"])])
+        history = FootprintHistory.objects.filter(tenant=self.tenant, request_id=request["id"]).select_related("term")
+        self.assertEqual([(row.action, row.term.key) for row in history], [("added", "dk")])
+
     def test_fp_s9(self) -> None:
         """FP-S9
 
         A record's jurisdiction comes from its instrument, and EU rules reach the member countries and Norway (FP-04, AC-FP2).
+
+        The derivation is `library.reading.instrument_scopes()` and its SQL twin (D-28,
+        D-29): read from the mirror link and the jurisdiction's parent at match time, never
+        stored, and appended to the array the database function has always been handed.
         """
+        import ast
+        import inspect
+        import re
+        import textwrap
+
+        from apps.library import reading
+        from apps.library.models import JurisdictionLabel
+        from apps.taxonomy import matching
+
+        # Given a footprint whose only jurisdiction is Norway, and one obligation each from
+        # an EU, a Norwegian and a Swedish instrument.
+        built = self._obligation_per_jurisdiction("fp-s9", ("eu", "no", "se"))
+        self._set_footprint(["jurisdiction:no"])
+        reader = sign_in(self.reader, tenant=self.tenant)
+
+        # Then the EU and Norwegian obligations match and the Swedish one does not, and the
+        # Swedish one says it is outside by its jurisdiction.
+        self.assertEqual(self._inventory(reader), {built["eu"].stable_key, built["no"].stable_key})
+        everything = self._get("/obligations?outsideFootprint=true", reader).json()["items"]
+        swedish = next(row for row in everything if row["stableKey"] == built["se"].stable_key)
+        self.assertEqual(
+            [(reason["dimension"]["key"], [term["key"] for term in reason["terms"]]) for reason in swedish["outsideReason"]],
+            [("jurisdiction", ["se"])],
+        )
+
+        # The rule and the SQL function, called unchanged, give the same answers from the
+        # same derived terms: the Union's own and every country it reaches, Norway included.
+        self.activate(self.tenant)
+        scopes = reading.obligation_scopes([obligation.id for obligation in built.values()])
+        handed = dict(
+            Obligation.objects.filter(id__in=[obligation.id for obligation in built.values()])
+            .annotate(term_ids=reading.scope_term_ids())
+            .values_list("id", "term_ids")
+        )
+        footprint, restricting = matching.footprint_of(self.tenant.id), matching.restricting_dimensions()
+        verdicts = {}
+        for key, obligation in built.items():
+            scope = scopes[obligation.id]
+            with self.subTest(key):
+                self.assertEqual(set(handed[obligation.id]), {term.id for terms in scope.values() for term in terms})
+                pure = matching.in_footprint({d: {term.key for term in terms} for d, terms in scope.items()}, footprint, restricting=restricting)
+                self.assertIs(matching.in_footprint_sql(self.tenant.id, handed[obligation.id]), pure)
+                verdicts[key] = pure
+        self.assertEqual(verdicts, {"eu": True, "no": True, "se": False})
+        self.assertEqual(
+            {key: [term.key for term in scopes[obligation.id]["jurisdiction"]] for key, obligation in built.items()},
+            {"eu": ["eu", "se", "dk", "no", "fi"], "no": ["no"], "se": ["se"]},
+        )
+
+        # And no jurisdiction term is stored for any of them.
+        self.assertFalse(ObligationTerm.objects.filter(obligation__in=list(built.values()), term__jurisdiction__isnull=False).exists())
+
+        # When a proposal filed before the mirror rule would tag an obligation with a
+        # jurisdiction term, applying it answers 422 and scopes nothing.
+        filed = Proposal.objects.create(
+            kind=ProposalKind.NEW_OBLIGATION_VERSION.value,
+            title="Filed before the mirror rule",
+            payload={
+                "summaries": {"en": "The firm keeps client assets apart."},
+                "originalLanguage": "en",
+                "effectiveFromPrecision": "day",
+                "terms": ["service_type:custody", "jurisdiction:no"],
+            },
+            origin="user",
+            proposed_by_user=self.editor,
+            target_type="obligation",
+            target_id=built["se"].id,
+        )
+        refused = self._post(f"/proposals/{filed.id}/approve", {}, sign_in(self.second_editor, step_up=True))
+        self.assertEqual((refused.status_code, refused.json()["code"]), (422, "jurisdiction_term_mirrored"), refused.content)
+        self.assertEqual(Proposal.objects.get(pk=filed.pk).status, ProposalStatus.OPEN.value)
+        self.assertFalse(ObligationTerm.objects.filter(obligation=built["se"], term__jurisdiction__isnull=False).exists())
+
+        # And the code that decides this names no country and no dimension: no string in the
+        # derivation or its SQL twin, docstrings aside, is a jurisdiction's key or label or a
+        # dimension's key, and nothing in it selects a term through its dimension.
+        names = {
+            *Jurisdiction.objects.values_list("key", flat=True),
+            *JurisdictionLabel.objects.values_list("text", flat=True),
+            *TermDimension.objects.values_list("key", flat=True),
+        }
+
+        def named_in(source: str) -> set[str]:
+            tree = ast.parse(textwrap.dedent(source))
+            docstrings = {id(node.body[0].value) for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and isinstance(node.body[0], ast.Expr)}
+            found: set[str] = set()
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Constant) and isinstance(node.value, str) and id(node) not in docstrings:
+                    found |= {name for name in names if re.search(rf"\b{re.escape(name)}\b", node.value, re.IGNORECASE)}
+                if isinstance(node, ast.keyword) and node.arg and node.arg.startswith("dimension"):
+                    found.add(node.arg)
+            return found
+
+        derivation = (reading.instrument_scopes, reading.obligation_scopes, reading._instrument_scope, reading.instrument_scope_term_ids, reading.scope_term_ids)
+        self.assertEqual({function.__name__: named_in(inspect.getsource(function)) for function in derivation}, {function.__name__: set() for function in derivation})
+        # The guard bites: a derivation that picked Norway's term by its dimension is named.
+        self.assertEqual(named_in('def pick():\n    return TaxonomyTerm.objects.filter(dimension__key="jurisdiction", key="no")\n'), {"dimension__key", "jurisdiction", "no"})
 
     def test_fp_s10(self) -> None:
         """FP-S10

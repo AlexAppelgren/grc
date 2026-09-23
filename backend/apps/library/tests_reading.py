@@ -31,7 +31,7 @@ from apps.agents import testing as agents_testing
 from apps.identity.models import User
 from apps.library import reading
 from apps.library import testing as build
-from apps.library.models import Instrument, Obligation, Provision
+from apps.library.models import Instrument, Obligation, ObligationTerm, Provision
 from apps.library.reading import instrument_scope_term_ids, instrument_scopes, obligation_scopes, scope_term_ids
 from apps.library.schemas import ObligationRow
 from apps.library.seeds import seed_jurisdictions, seed_languages
@@ -186,7 +186,9 @@ class ObligationListTests(TestCase):
         self.assertEqual([term["key"] for term in scope["regime"]["terms"]], ["securities"], "the instrument's regime is inherited")
         self.assertEqual([term["key"] for term in scope["service_type"]["terms"]], ["non_advised", "execution_only"])
         self.assertEqual(scope["client_category"]["terms"], [], "an empty dimension is listed: it means no restriction")
-        self.assertEqual(scope["jurisdiction"]["terms"], [], "no jurisdiction term is inherited")
+        self.assertEqual(
+            [term["key"] for term in scope["jurisdiction"]["terms"]], ["se"], "the instrument's jurisdiction is derived, never stored"
+        )
         self.assertEqual(row["version"], {"versionNumber": 1, "effectiveFrom": None, **SEEDED})
         self.assertIsNone(row["upcomingVersion"])
         self.assertEqual((row["inFootprint"], row["outsideReason"]), (True, []))
@@ -403,6 +405,74 @@ class ObligationListPerformance(TestCase):
         finally:
             sys.settrace(tracer)
         self.assertLess(min(spent), settings.API_BUDGET_MS)
+
+
+class JurisdictionDerivationTests(TestCase):
+    """FP-04, D-28, D-29, D-38: the jurisdictions an instrument's rules reach are derived by
+    the one scope rule at match time, from the mirror link and the jurisdiction's parent, and
+    never stored. A Union rule reaches the Union and every country whose parent it is,
+    Norway included; a national rule its own country; a standards body's jurisdiction, which
+    no term mirrors, nothing. The SQL twins agree, and an obligation carries each term once."""
+
+    tenant: Tenant
+    reader: User
+    instruments: dict[str, Instrument]
+    obligations: dict[str, Obligation]
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        seed_reference()
+        cls.tenant = factories.tenant(slug="derived-jurisdictions")
+        cls.reader = factories.member_user(cls.tenant, roles=("reader",))
+        cls.instruments = {
+            key: build.instrument(key=f"derived-{key}", regime="regime:securities", jurisdiction=key) for key in ("eu", "se", "dk", "no", "intl")
+        }
+        cls.obligations = {key: build.obligation(instrument, key=f"obl-derived-{key}") for key, instrument in cls.instruments.items()}
+        # Its own regime term as well as its instrument's: the review finding behind the
+        # merge's de-duplication.
+        cls.obligations["twice"] = build.obligation(cls.instruments["se"], key="obl-derived-twice", terms=("regime:securities",))
+
+    def derived(self, scope: dict[str, list[Any]]) -> list[str]:
+        return [term.key for term in scope.get("jurisdiction", [])]
+
+    def test_a_union_rule_reaches_every_member_country_and_norway_and_a_national_rule_its_own(self) -> None:
+        scopes = instrument_scopes([instrument.id for instrument in self.instruments.values()])
+        self.assertEqual(
+            {key: self.derived(scopes[instrument.id]) for key, instrument in self.instruments.items()},
+            {"eu": ["eu", "se", "dk", "no", "fi"], "se": ["se"], "dk": ["dk"], "no": ["no"], "intl": []},
+        )
+        self.assertEqual({key: [term.key for term in scopes[i.id]["regime"]] for key, i in self.instruments.items()}, {key: ["securities"] for key in self.instruments})
+        obligations = obligation_scopes([obligation.id for obligation in self.obligations.values()])
+        self.assertEqual(self.derived(obligations[self.obligations["eu"].id]), ["eu", "se", "dk", "no", "fi"], "an obligation inherits it")
+        self.assertFalse(ObligationTerm.objects.filter(term__jurisdiction__isnull=False).exists(), "nothing is stored")
+
+    def test_an_inherited_term_the_obligation_already_carries_is_listed_once(self) -> None:
+        scope = obligation_scopes([self.obligations["twice"].id])[self.obligations["twice"].id]
+        self.assertEqual([term.key for term in scope["regime"]], ["securities"])
+
+    def test_the_scope_rule_and_its_sql_twins_agree_on_every_derived_term(self) -> None:
+        instruments = instrument_scopes()
+        sql = {row.id: set(row.term_ids) for row in Instrument.objects.annotate(term_ids=instrument_scope_term_ids())}
+        self.assertEqual({key: {term.id for terms in instruments[key].values() for term in terms} for key in sql}, sql)
+        obligations = obligation_scopes()
+        sql = {row.id: set(row.term_ids) for row in Obligation.objects.annotate(term_ids=scope_term_ids())}
+        self.assertEqual({key: {term.id for terms in obligations[key].values() for term in terms} for key in sql}, sql)
+
+    def test_the_scope_block_and_the_outside_reason_show_the_derived_terms(self) -> None:
+        """The reading D-28 and D-29 give: the derived terms are the record's scope as the
+        rule sees it, so the card lists them and names them when they hide the record."""
+        set_footprint(self.tenant, ("jurisdiction:dk",))
+        response = self.client.get(URL, {"outsideFootprint": "true"}, **sign_in(self.reader, tenant=self.tenant))
+        rows = {row["stableKey"]: row for row in response.json()["items"]}
+        union = {entry["dimension"]["key"]: entry for entry in rows["obl-derived-eu"]["scope"]}["jurisdiction"]
+        self.assertEqual(([term["key"] for term in union["terms"]], union["allSelected"]), (["eu", "se", "dk", "no", "fi"], True))
+        self.assertEqual((rows["obl-derived-eu"]["inFootprint"], rows["obl-derived-dk"]["inFootprint"]), (True, True))
+        swedish = rows["obl-derived-se"]
+        self.assertEqual(
+            (swedish["inFootprint"], [(r["dimension"]["key"], [t["key"] for t in r["terms"]]) for r in swedish["outsideReason"]]),
+            (False, [("jurisdiction", ["se"])]),
+        )
+        self.assertTrue(rows["obl-derived-intl"]["inFootprint"], "a jurisdiction no term mirrors hides nothing")
 
 
 class ObligationDetailTests(TestCase):

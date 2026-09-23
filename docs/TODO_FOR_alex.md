@@ -795,6 +795,19 @@ Nothing waits for these; each has the default the build took.
       of the 53 questions can come back in a different order from one fresh database to the
       next.
 
+## tax-jurisdiction-derivation: where a record's derived jurisdictions show (2026-09-23, FP-04, D-28, D-29)
+
+- [ ] **A record's scope block and its "outside our scope" reason now list the
+      jurisdictions its instrument's rules reach.** They are derived at match time and never
+      stored, as D-28 and D-29 say, and the card shows the scope the rule matched on: a
+      Swedish obligation lists Sweden, a Union one lists the European Union, Sweden,
+      Denmark, Norway and Finland (every term, so the group reads as all selected), and an
+      obligation hidden by a Denmark-only scope says it is outside by its jurisdiction,
+      Sweden. A standard's obligation lists none (International is mirrored by no term,
+      D-38). The other reading would show only the instrument's own jurisdiction on the
+      card, or none, while still matching on all of them. Default if you say nothing: the
+      card shows every derived term, because the card and the rule then cannot disagree.
+
 ## Ask sends a reader's question to the model (search-ask-backend, 2026-09-23)
 
 - [ ] Ask's backend now works: `POST /ask` sends the question a reader types, and the
