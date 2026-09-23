@@ -410,7 +410,8 @@ class WatchScenarioTests(TestCase):
         # Then an ai_generation row carries model, version and purpose
         with transaction.atomic():
             tenancy.clear_tenant()
-            logged = AiGeneration.objects.get(subject_id=change_id)
+            # The draft's own row; the filing's classification is a `scope_suggestion` row beside it.
+            logged = AiGeneration.objects.get(subject_id=change_id, purpose="so_what")
             self.assertEqual(
                 (logged.purpose, logged.model, logged.model_version, logged.status),
                 ("so_what", "claude-opus-5", "2026-05-01", "draft"),

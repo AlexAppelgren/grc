@@ -118,9 +118,11 @@ class SoWhatFilingCase(ScenarioTestCase):
             return RegulatoryChange.objects.get(stable_key=STABLE_KEY)
 
     def generations(self) -> list[AiGeneration]:
+        """The So what rows only: the same filing also logs its suggested classification
+        as a `scope_suggestion` row, which `tests_registration.py` proves."""
         with transaction.atomic():
             tenancy.clear_tenant()
-            return list(AiGeneration.objects.order_by("created_at", "id"))
+            return list(AiGeneration.objects.filter(purpose=AiPurpose.SO_WHAT.value).order_by("created_at", "id"))
 
 
 class ARunFilesWhatAChangeMeans(SoWhatFilingCase):
@@ -200,7 +202,7 @@ class ADraftIsNeverFiledUnattributably(SoWhatFilingCase):
         response = self.register(body(agentRunId=str(self.platform_run.id), soWhat={**SO_WHAT, "citations": []}))
         self.assertEqual((response.status_code, response.json()["code"]), (422, "validation_error"))
 
-    def test_a_change_filed_with_no_draft_is_registered_and_logs_nothing(self) -> None:
+    def test_a_change_filed_with_no_draft_is_registered_and_logs_no_so_what(self) -> None:
         response = self.register(body(agentRunId=str(self.platform_run.id)))
         self.assertEqual(response.status_code, 201, response.content)
         self.assertEqual(self.stored().so_what_draft, "")

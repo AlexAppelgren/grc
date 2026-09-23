@@ -560,6 +560,14 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     call that names none answers `regime_required` with the valid regime keys; the terms'
     ids are on `GET /taxonomy/terms`. A merge adds no scope, so it needs none.
 
+    **A run's classification is logged as AI output** (AUD-02, D-66). When a key registers a
+    new change, its type, flags, scope terms and urgency are recorded as one row in the AI
+    output log with the purpose "scope_suggestion", under the run that filed it. bleqq made no
+    model call, so the model and version on that row are the run's own report: the ones in
+    `soWhat` when the call carries one, else the model and pipeline version the run was
+    opened with, and the row says so (`modelMetadataReportedByAgent`). A library editor's
+    registration is a person's classification and logs no row.
+
     **The drafted “So what?” comes from the run that read the source** (D-66). Send
     it in `soWhat` with the model and the model version that wrote it and the public pages
     it rests on; the words are stored on the shared change, copied unconfirmed into every
