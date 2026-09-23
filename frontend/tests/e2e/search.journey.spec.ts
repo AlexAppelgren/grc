@@ -75,7 +75,7 @@ test.describe('search journeys', () => {
   });
 
   test.fixme("SRC-S7: Saved searches notify and show what changed since the last visit", async () => {
-    // pending: SRC-S7 (SRC-04)
+    // pending: SRC-S7 (SRC-04, chunk 13)
   });
 
   test.fixme("SRC-S10 J-7 @smoke: search by identifier and by concept, then Ask with citations and \"as of\"", async () => {

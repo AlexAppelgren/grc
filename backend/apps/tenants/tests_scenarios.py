@@ -89,35 +89,35 @@ class TenantsScenarioTests(ScenarioTestCase):
         self.assertTrue(steps["footprint"])
         self.assertFalse(steps["vocabularies"])
 
-    @skip("pending: TEN-S2 (TEN-02, R2)")
+    @skip("pending: TEN-S2 (TEN-02, chunk 8)")
     def test_ten_s2(self) -> None:
         """TEN-S2
 
         Legal entities and products are scoped like obligations (TEN-02).
         """
 
-    @skip("pending: TEN-S3 (TEN-03, R2)")
+    @skip("pending: TEN-S3 (TEN-03, chunk 8)")
     def test_ten_s3(self) -> None:
         """TEN-S3
 
         A team can own work and the ownership survives a member leaving (TEN-03).
         """
 
-    @skip("pending: TEN-S4 (TEN-04, R2)")
+    @skip("pending: TEN-S4 (TEN-04, chunk 8)")
     def test_ten_s4(self) -> None:
         """TEN-S4
 
         An out-of-office delegate receives approvals and reminders (TEN-04).
         """
 
-    @skip("pending: TEN-S5 (TEN-05, R2)")
+    @skip("pending: TEN-S5 (TEN-05, chunk 8)")
     def test_ten_s5(self) -> None:
         """TEN-S5
 
         Removing a member with open work offers bulk reassignment (TEN-05).
         """
 
-    @skip("pending: TEN-S6 (TEN-06, R2)")
+    @skip("pending: TEN-S6 (TEN-06, chunk 8)")
     def test_ten_s6(self) -> None:
         """TEN-S6
 

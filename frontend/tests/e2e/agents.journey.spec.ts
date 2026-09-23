@@ -7,23 +7,23 @@ import { test } from './support/api-guard';
 
 test.describe('agents journeys', () => {
   test.fixme("AGT-S4: Agent definitions are versioned and owned by the platform", async () => {
-    // pending: AGT-S4 (AGT-03)
+    // pending: AGT-S4 (AGT-03, chunk 11)
   });
 
   test.fixme("AGT-S5: A tenant controls its agents without touching their instructions", async () => {
-    // pending: AGT-S5 (AGT-04)
+    // pending: AGT-S5 (AGT-04, chunk 11)
   });
 
   test.fixme("AGT-S13: A bank cannot switch off, pause or re-scope one of bleqq's agents", async () => {
-    // pending: AGT-S13 (AGT-03, AGT-04)
+    // pending: AGT-S13 (AGT-03, AGT-04, chunk 11)
   });
 
   test.fixme("AGT-S6: The budget cap pauses runs and the AI off switch stops every model call", async () => {
-    // pending: AGT-S6 (AGT-04)
+    // pending: AGT-S6 (AGT-04, chunk 11)
   });
 
   test.fixme("AGT-S7: Research requests ask an agent to check, research or re-tag", async () => {
-    // pending: AGT-S7 (AGT-05)
+    // pending: AGT-S7 (AGT-05, chunk 11)
   });
 
   test.fixme("AGT-S10 J-4 @smoke: an agent registers a change and a proposal, an editor approves, the tenant sees what changed", async () => {

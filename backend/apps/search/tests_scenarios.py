@@ -68,7 +68,7 @@ class SearchScenarioTests(TestCase):
         The Ask question is the only tenant text sent to a model, and a tenant can switch it off (SRC-03).
         """
 
-    @skip("pending: SRC-S7")
+    @skip("pending: SRC-S7 (SRC-04, chunk 13)")
     def test_src_s7(self) -> None:
         """SRC-S7
 

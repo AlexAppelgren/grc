@@ -311,8 +311,9 @@ header, follows no sign-in and subscribes by web address alone (D-52, ADR
 0045). A token in the path would land in a hosting edge's request line, which
 is the finding that moved invitation tokens out of paths; our own access log
 prints the route and drops the query, proved by
-`apps/shared/tests_no_query_in_logs.py` and, for this route, by a test in
-`apps/home/tests_calendar.py` that captures the log handler. The address is
+`apps/shared/tests_no_query_in_logs.py` and, for this route, by
+`test_no_token_prefix_or_secret_reaches_a_log_line` in `apps/home/tests_feed.py`,
+which captures every configured logger at its handler. The address is
 shown once, kept as a lookup prefix beside the secret's hash, revocable with
 immediate effect, and it is never put in a screen's URL, in browser storage or
 in a log line. `apps/home/tests_contract.py` reads the published contract and

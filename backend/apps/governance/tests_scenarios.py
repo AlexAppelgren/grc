@@ -164,21 +164,21 @@ class GovernanceScenarioTests(ScenarioTestCase):
         """
         self._prove(audit_guards.AppendOnlyHolds, append_only_guards.EveryAppendOnlyTableRunsAGuard)
 
-    @skip("pending: AUD-S4")
+    @skip("pending: AUD-S4 (AUD-02, chunk 7)")
     def test_aud_s4(self) -> None:
         """AUD-S4
 
         Every model output is logged with its review state (AUD-02).
         """
 
-    @skip("pending: AUD-S5")
+    @skip("pending: AUD-S5 (AUD-03, chunk 4)")
     def test_aud_s5(self) -> None:
         """AUD-S5
 
         A problem report stays inside the bank that filed it (AUD-03).
         """
 
-    @skip("pending: AUD-S6")
+    @skip("pending: AUD-S6 (AUD-04, chunk 12)")
     def test_aud_s6(self) -> None:
         """AUD-S6
 
@@ -314,7 +314,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
                 self.assertEqual(refused.status_code, 403, refused.content)
                 self.assertTrue(refused.json()["requiredPermission"])
 
-    @skip("pending: ADM-S5")
+    @skip("pending: ADM-S5 (ADM-02, chunk 14)")
     def test_adm_s5(self) -> None:
         """ADM-S5
 

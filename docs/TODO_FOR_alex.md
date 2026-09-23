@@ -13,7 +13,7 @@ Ordered by what blocks testing first. Nothing here is blocked on code.
 
 ## Found by the cold-start journey (2026-09-20)
 - [ ] `bootstrap_platform` prints the one-time enrolment link to the shell as well as emailing it, and `FIRST_RUN_SETUP.md` said it "prints nothing secret". The runbook now says what it is and warns you to close the shell afterwards, and the cold-start journey reads the printed link, which is how it can enrol the first admin before any mail sender is proven. Decide whether the deployed command should keep printing it: dropping the line would make step 4 depend on a working mail sender on the first day, and the journey would read the mock outbox instead.
-- [ ] A brand-new bank's Watch tab answers "Not found": `/watch` is in the navigation registry and its route arrives with chunk 5, as Roadmap does with chunk 6 and Search with chunk 7. The cold-start journey keeps the watch feed's empty state as a `test.fixme` naming chunk 5; nothing to do until then, but a first-run demo before chunk 5 will show it.
+- [x] A brand-new bank's Watch tab answered "Not found" before chunk 5. **Corrected in the review of `645b1c3..2492f80`:** `/watch` has its route now, with the feed's own empty state, as Roadmap and Search have theirs, so a first-run demo no longer shows it. Nothing for you here; the cold-start journey's watch step is still a `test.fixme` naming chunk 5 and is engineering's to turn on.
 
 ## Before any real user enrols
 - [ ] Confirm who adds a library flag in journey J-5. The PRD's journey says "Admin adds a flag", but a flag is a library vocabulary, so adding one is a proposal (VOC-07), and the PRD's permission table (section 6) gives `proposals.create` only to the compliance officer. The build follows the table: the compliance officer proposes, a library editor approves. If the tenant admin should propose too, say so and the admin role gains `proposals.create`.
@@ -319,17 +319,27 @@ change what four eyes means and are marked as such.
       sees what changed". It is the intervention path and it stays tested end to end. The
       agent-confirmed path is `PRO-S13`, whose journey half waits for chunk 5. Say the word if the
       agent path should become the journey and the person's path the variant.
-- [x] **Who confirms a watch item's curation now?** (Your item 16, `q-editor-confirm`.)
+- [ ] **Who confirms a watch item's curation now?** (Your item 16, `q-editor-confirm`.)
       **Answered 2026-09-21: an agent of a different definition and key confirms, and the item
-      reads machine-confirmed** (D-74). The control on the console's Change facts detail is built
-      as the intervention path a person still has; the routine confirmation is an agent's.
-      What this settles of the three things the question asked for: the principal is a confirming
-      agent, the write goes through the **watch door** rather than the proposal door and so adds
-      no second exception to the library invariant (`change_term` and `change_obligation` are
-      watch tables behind `watch_write()`, which D-64 already separated from the inventory), and
-      it takes no passkey step-up, because a key cannot step up and the scope separation is the
-      gate. `regulatory_change.change_type` gains `suggested`, `confirmed_by` and `confirmed_at`
-      in one migration, so a type can be settled like a term or a link.
+      reads machine-confirmed** (D-74). The answer stands. The box is open again because **none
+      of it is built yet**: the review of `645b1c3..2492f80` found this entry describing the
+      build as done. On `main` there is no confirm route; `change_term` and `change_obligation`
+      carry no agent columns, and their `confirmed_by` is a foreign key to a user, so an agent
+      cannot be recorded as the one who confirmed; `regulatory_change.change_type` has no
+      `suggested`, `confirmed_by` or `confirmed_at`; and the console's Change facts detail has no
+      Confirm control. Until that lands, `PUT /changes/{changeId}/obligations` and
+      `PATCH /changes/{changeId}` answer 501 `not_built` to an editor whose call would unmake a
+      confirmation (a link on the first, a flag or a term on the second) and refuse a key outright,
+      and an agent's suggestion keeps reading as a suggestion. Nothing waits on you for it.
+      What the answer settles for the build, of the three things the question asked for: the
+      principal is a confirming agent, with a Confirm control on the console's Change facts
+      detail as the intervention path a person keeps; the write goes through the **watch door**
+      rather than the proposal door and so adds no second exception to the library invariant
+      (`change_term` and `change_obligation` are watch tables behind `watch_write()`, which D-64
+      already separated from the inventory); and it takes no passkey step-up, because a key
+      cannot step up and the scope separation is the gate. `regulatory_change.change_type` is to
+      gain `suggested`, `confirmed_by` and `confirmed_at` in one migration, so a type can be
+      settled like a term or a link.
 
       Still worth your eye, but not blocking: a curation confirmation carries no four eyes behind
       it. A proposal's does, through a check constraint on the proposal row; there is no proposal

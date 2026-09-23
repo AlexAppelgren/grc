@@ -52,19 +52,19 @@ test.describe('tenants journeys', () => {
   });
 
   test.fixme("TEN-S2: Legal entities and products are scoped like obligations", async () => {
-    // pending: TEN-S2 (TEN-02)
+    // pending: TEN-S2 (TEN-02, chunk 8)
   });
 
   test.fixme("TEN-S4: An out-of-office delegate receives approvals and reminders", async () => {
-    // pending: TEN-S4 (TEN-04)
+    // pending: TEN-S4 (TEN-04, chunk 8)
   });
 
   test.fixme("TEN-S5: Removing a member with open work offers bulk reassignment", async () => {
-    // pending: TEN-S5 (TEN-05)
+    // pending: TEN-S5 (TEN-05, chunk 8)
   });
 
   test.fixme("TEN-S6: Support access is requested by the platform, approved by the bank and time-boxed", async () => {
-    // pending: TEN-S6 (TEN-06)
+    // pending: TEN-S6 (TEN-06, chunk 8)
   });
 
   test("TEN-S7 J-8 @smoke: tenant B cannot see tenant A", async ({ page, apiGuard }) => {

@@ -81,35 +81,35 @@ class AgentsScenarioTests(TestCase):
         Agents read the vocabularies at run start and may use existing keys only (AGT-02).
         """
 
-    @skip("pending: AGT-S4")
+    @skip("pending: AGT-S4 (AGT-03, chunk 11)")
     def test_agt_s4(self) -> None:
         """AGT-S4
 
         Agent definitions are versioned and owned by the platform (AGT-03).
         """
 
-    @skip("pending: AGT-S5")
+    @skip("pending: AGT-S5 (AGT-04, chunk 11)")
     def test_agt_s5(self) -> None:
         """AGT-S5
 
         A tenant controls its agents without touching their instructions (AGT-04).
         """
 
-    @skip("pending: AGT-S6")
+    @skip("pending: AGT-S6 (AGT-04, chunk 11)")
     def test_agt_s6(self) -> None:
         """AGT-S6
 
         The budget cap pauses runs and the AI off switch stops every model call (AGT-04).
         """
 
-    @skip("pending: AGT-S7")
+    @skip("pending: AGT-S7 (AGT-05, chunk 11)")
     def test_agt_s7(self) -> None:
         """AGT-S7
 
         Research requests ask an agent to check, research or re-tag (AGT-05).
         """
 
-    @skip("pending: AGT-S8")
+    @skip("pending: AGT-S8 (AGT-06, chunk 11)")
     def test_agt_s8(self) -> None:
         """AGT-S8
 
