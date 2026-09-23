@@ -1610,6 +1610,51 @@ def seed_machine_confirmed() -> int:
     return 2
 # --- end lib-machine-confirmed-journey ---------------------------------------------------
 
+# ---------------------------------------------------------------------------------------
+# ask-journeys (SRC-S4, SRC-S5, SRC-S10): a pending change for Ask to flag, and a question
+# the library cannot answer
+# ---------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class SeedAsk:
+    """What search.journey.spec.ts asks and reads back. Ask flags a cited obligation that a
+    change the library confirmed will move after the answer's "as of" (SRC-S4), so the lead
+    change of the home journeys gets a confirmed link to the research payment duty: it is
+    adopted (a kind that moves the law) and dated twenty days after the tenant-local today.
+    The answered question retrieves that duty; the unsupported one retrieves nothing in the
+    seeded library, so no model is asked and the answer is "no answer" (SRC-S5). The spec
+    carries the same two questions; the seed-integrity guard proves both."""
+
+    pending_change: str
+    pending_obligation: str
+    answered_question: str
+    unsupported_question: str
+
+
+EXPECTED_ASK = SeedAsk(
+    pending_change=EXPECTED_HOME.lead_change,
+    pending_obligation=RESEARCH_OBLIGATION,
+    answered_question="What are our obligations on research payments?",
+    unsupported_question="Do we need a licence for crypto custody?",
+)
+
+
+def seed_ask_pending_link() -> None:
+    """The lead change's confirmed link to the research payment duty, confirmed by a library
+    editor this week as WAT-04 has one confirm it. A link is library-zone, so no tenant is
+    active; it adds a row to the roadmap's and the change page's obligations and changes
+    nothing a home or watch journey counts. Runs after `seed_logins()`, because the editor
+    must already exist."""
+    tenancy.clear_tenant()
+    editor = User.objects.get(email=CONFIRMING_EDITOR_EMAIL)
+    change = django_apps.get_model("watch", "RegulatoryChange").objects.get(stable_key=EXPECTED_ASK.pending_change)
+    watch_e2e_seed.seed_obligation_link(
+        change,
+        _obligation(EXPECTED_ASK.pending_obligation),
+        confidence=0.9,
+        confirmed_by_id=editor.id,
+        confirmed_at=timezone_now_this_week(TENANT_A.timezone),
+    )
+
 
 def seed_e2e() -> dict[str, int]:
     """Run the whole seed. Returns counts the command prints and the guard asserts."""
@@ -1654,6 +1699,7 @@ def seed_e2e() -> dict[str, int]:
         closed_run, _open_run = seed_platform_agent_runs()
         seed_chunk5_sources(closed_run)
         seed_chunk5_changes(closed_run)
+        seed_ask_pending_link()
         chunk5_cases = seed_chunk5_cases(tenants)
         seed_watched_market_change()
         seed_standard_change()
