@@ -225,8 +225,8 @@ And a filtered list that matches nothing answers 200 with an empty collection
 ### I18N-S3 — Every UI string is in the catalog for every shipped language `@e2e` (I18N-02)
 ```gherkin
 Given the message catalogs for en and sv
-When messages-check.mjs runs
-Then it fails on any key missing in either language and on any string literal in JSX text
+When messages-check.mjs and ESLint run
+Then messages-check.mjs fails on any key missing in either language and ESLint on any string literal in JSX text
 When a user switches the UI language to sv
 Then every screen renders in sv with vocabulary labels from their sv rows
 ```
