@@ -170,6 +170,8 @@
   "admin.securityLog.event.reenrolment_issued": "Ny registrering utfärdad",
   "admin.securityLog.event.key_used": "Nyckel använd",
   "admin.securityLog.event.key_revoked": "Nyckel återkallad",
+  "admin.securityLog.event.key_created": "Nyckel skapad",
+  "admin.securityLog.event.key_scopes_withheld": "Omfattningar undanhållna från nyckel",
   "admin.securityLog.method.email_code": "E-postkod",
   "admin.securityLog.method.passkey": "Nyckel",
   "admin.securityLog.method.api_key": "API-nyckel",
