@@ -362,6 +362,20 @@ if API_PAGE_OFFSET_MAX < API_PAGE_SIZE_MAX:
     )
 
 # ---------------------------------------------------------------------------------------
+# ===== NFR-02 the performance harness (backend/perf/, scripts/perf_report.py) ============
+# Ask's budget is the time to its first streamed chunk, not to the whole answer (playbook
+# 10): the harness adds the wait for that chunk to the stream's Server-Timing. The other two
+# are the harness's own. Twenty timed requests per route make the 95th percentile the
+# second-slowest of them rather than a single outlier. A route fails the report when its
+# median is more than PERF_REGRESSION_PCT per cent above its recorded baseline: tighter and
+# the noise of a busy laptop fails routes nobody changed, looser and a real slowdown hides.
+# The harness refuses a deployed environment, so the last two are never set on one.
+# ---------------------------------------------------------------------------------------
+ASK_FIRST_TOKEN_BUDGET_MS = env_int("ASK_FIRST_TOKEN_BUDGET_MS", 2000)
+PERF_SAMPLES = env_int("PERF_SAMPLES", 20)
+PERF_REGRESSION_PCT = env_int("PERF_REGRESSION_PCT", 20)
+
+# ---------------------------------------------------------------------------------------
 # ===== SRC-01..03 search and ask input caps (apps/search/schemas.py) =====================
 # What a caller may send to search, to the similarity read and to Ask. Each is a cap at a
 # trust boundary: the text reaches a text-search query, the embedder and, for Ask, a model
