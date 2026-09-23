@@ -1058,6 +1058,28 @@ the platform alone reads it (governance 0002). `AiCitation` moves from `apps/gov
 `apps/shared/schemas.py` beside it, unchanged, because the shared shape cites with it and a
 governance import from there would be a cycle.
 
+### The log's read narrows to one record and carries the review and the feedback (2026-09-23, ai-log-read)
+
+`GET /ai-generations` (`listAiGenerations`) gains the designed `subjectId` filter, and
+`AiGenerationRow` gains `feedback`, `feedbackNote` and `reviewedBy` (`{id, name}`), beside the
+`status` and `reviewedAt` it already carried. The designed table has `feedback`, the
+reviewer and the review time; the read now returns them. Two departures, both about the
+shared "So what?":
+
+- A library "So what?" row's `status`, `reviewedBy` and `reviewedAt` are **computed for the
+  reading bank** from its own `change_case` (`so_what_confirmed_by`, `so_what_confirmed_at`),
+  and nothing shared is written (D-62; resolves chunk 5 ruling I). The designed column is one
+  review state per row, but that row is every bank's, and one bank's confirmation must not
+  read as another's. A case settles the newest draft of the change logged by the time it was
+  confirmed: `confirmed` when the bank's words are the draft's, `edited` when the bank
+  rewrote them, and `draft` for every other draft of that change. The `status` filter reads
+  the same computed state. The stored columns stay the platform's.
+- `feedbackNote` is added: the reader's own words with a verdict (`POST
+  /answers/{answerId}/feedback`, SRC-05) are stored beside the answer and returned only on
+  the bank's own row. The designed table has the verdict alone.
+
+`agent_review` rows stay out of a bank's read (D-80).
+
 ## 12. Two reads that are on `main` in a shape of their own (review-fixes, 2026-09-23)
 
 `backend/scripts/contract_drift_pending.txt` still listed both as chunk 1 work to come.

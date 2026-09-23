@@ -337,8 +337,8 @@ _STATUSES = (
 
 
 class AiGenerationQuery(CamelSchema):
-    """Filters of the AI output log, each optional and combined with AND. Leaving both out
-    lists everything the reader may see."""
+    """Filters of the AI output log, each optional and combined with AND. Leaving all three
+    out lists everything the reader may see."""
 
     purpose: str | None = Field(
         default=None,
@@ -356,10 +356,40 @@ class AiGenerationQuery(CamelSchema):
         max_length=16,
         description=(
             f"Show only rows in one review state, a fixed kind: {_STATUSES}. At most 16 "
-            "characters. A value that is not one of them matches nothing and answers 200 "
-            "with an empty page."
+            "characters. It reads the state as this bank sees it (see `status` on a row), so "
+            "`confirmed` lists a shared “So what?” this bank stood behind and not "
+            "one only another bank did. A value that is not one of them matches nothing and "
+            "answers 200 with an empty page."
         ),
         examples=["draft"],
+    )
+    subject_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "Show only the calls about one record, by the UUID a row carries in `subjectId`: "
+            "for a “So what?” the regulatory change's id, so a change's screen can "
+            "list every draft of what it means. A value that is not a UUID is refused with "
+            "`validation_error` (422); an id no row names answers 200 with an empty page."
+        ),
+        examples=["c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19"],
+    )
+
+
+class AiGenerationReviewer(CamelSchema):
+    """The person who stood behind a model's output: id and name, the only personal data
+    the log carries about them (playbook 4.7)."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30", "name": "Anna Lindqvist"}]}
+    )
+
+    id: uuid.UUID = Field(
+        description="The person's user id, as a UUID.",
+        examples=["8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30"],
+    )
+    name: str = Field(
+        description="The person's name as it stands now, at most 200 characters, for display.",
+        examples=["Anna Lindqvist"],
     )
 
 
@@ -387,7 +417,10 @@ class AiGenerationRow(CamelSchema):
                         }
                     ],
                     "status": "draft",
+                    "reviewedBy": None,
                     "reviewedAt": None,
+                    "feedback": "",
+                    "feedbackNote": "",
                     "inputTokens": 1840,
                     "outputTokens": 96,
                     "stopReason": "",
@@ -479,15 +512,54 @@ class AiGenerationRow(CamelSchema):
         )
     )
     status: str = Field(
-        description=f"How far a person has got with it, a fixed kind: {_STATUSES}.",
+        description=(
+            f"How far a person has got with it, a fixed kind: {_STATUSES}. Computed for the "
+            "reading bank. On a bank's own row it is that row's state. A shared “So "
+            "what?” (`tenantScoped` false) is one row every bank reads and no bank may "
+            "move, so its state here is this bank's own, taken from this bank's case for the "
+            "change and never written to the shared row: `confirmed` when someone here "
+            "confirmed the draft as it stands, `edited` when they rewrote it, and `draft` "
+            "otherwise. A case settles the newest draft of the change logged by the time it "
+            "was confirmed, so an earlier draft, or one logged after the confirmation, reads "
+            "`draft` because nobody here stood behind those words. Another bank's decision "
+            "never shows."
+        ),
         examples=["draft"],
+    )
+    reviewed_by: AiGenerationReviewer | None = Field(
+        description=(
+            "Who moved the row out of `draft`, computed for the reading bank as `status` is: "
+            "on a shared “So what?” the person at this bank who confirmed or rewrote "
+            "it on the case. Null while `status` is `draft`."
+        ),
+        examples=[None],
     )
     reviewed_at: datetime | None = Field(
         description=(
             "When a person moved the row out of `draft`, as an RFC 3339 timestamp in UTC "
-            "(`2026-09-17T09:12:00Z`). Null while nobody has."
+            "(`2026-09-17T09:12:00Z`), computed for the reading bank as `status` is. Null "
+            "while nobody has."
         ),
         examples=[None],
+    )
+    feedback: str = Field(
+        description=(
+            "A reader's verdict on an Ask answer, at most 16 characters: `helpful` or "
+            "`wrong`, as `POST /answers/{answerId}/feedback` stored it, and the latest verdict "
+            "when it was given more than once. Empty when nobody gave one, and always empty "
+            "on a row that is not an Ask answer. Source: a person in this bank."
+        ),
+        examples=[""],
+    )
+    feedback_note: str = Field(
+        description=(
+            "What the reader wrote with the verdict, as they wrote it, at most "
+            f"{settings.SEARCH_FEEDBACK_NOTE_MAX_CHARS} characters, the limit "
+            "`POST /answers/{answerId}/feedback` accepts. Empty when they wrote nothing or "
+            "gave no verdict. It is this bank's own text and appears only on this bank's own "
+            "row."
+        ),
+        examples=[""],
     )
     input_tokens: int = Field(
         description="How many tokens went into the call, as the provider counted them. 0 when unknown.",

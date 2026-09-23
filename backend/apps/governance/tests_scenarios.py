@@ -50,8 +50,13 @@ from apps.tenants import logic as tenants_logic
 from config.api import api
 
 V1 = "/api/v1"
-# The mixed tables that exist so far (app.md, AC "Mixed tables"); ai_generation joins with AUD-02.
-MIXED_TABLES = ("audit_event", "outbox_event", "problem_report", "api_key")
+# The mixed tables (app.md, AC "Mixed tables"), each with its library read rule as
+# PostgreSQL renders it back: every library row, except that a confirming agent's decisions
+# in `ai_generation` are the platform's alone (D-80).
+MIXED_TABLES = ("audit_event", "outbox_event", "problem_report", "api_key", "ai_generation")
+LIBRARY_READ_RULES = dict.fromkeys(MIXED_TABLES, "(tenant_id IS NULL)") | {
+    "ai_generation": "((tenant_id IS NULL) AND ((purpose)::text <> 'agent_review'::text))",
+}
 
 PLATFORM_ROLES = ("library_editor", "platform_admin")
 _ANY_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
@@ -253,7 +258,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
             self.assertIn(own_zone, write_rule[2], f"{table} accepts a write outside the session's zone")
             read_rule = policies[(table, rls_guards.LIBRARY_READ_POLICY)]
             self.assertEqual(
-                (read_rule[0], read_rule[1]), ("SELECT", "(tenant_id IS NULL)"), f"{table} is not shared-or-mine"
+                (read_rule[0], read_rule[1]), ("SELECT", LIBRARY_READ_RULES[table]), f"{table} is not shared-or-mine"
             )
 
     def _call(self, method: str, path: str, payload: dict[str, Any] | None, headers: dict[str, Any]) -> Any:
