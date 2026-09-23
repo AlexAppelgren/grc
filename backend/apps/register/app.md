@@ -33,6 +33,18 @@ Deliberately simplified: the whole register is R2 (chunk 8). Yearly
 attestation and waivers are R3. Copying units forward to a new edition or
 another entity, and evidence per unit, are deferred (D-41).
 
+PRD 0.5 (D-76, ADR 0057) lets the bank's own agents read this register. With the
+tenant reach switch on (ACC-08, `apps/governance`) and the per-entry toggle set,
+an agent access credential holding `tenant:read` reads the register decisions on
+the obligations in its scope: applicability and its reason per legal entity,
+compliance status and status note, how we read this rule, owner, process, system,
+next review and the linked internal items. Never gaps, never cases or their
+assessments, never comments, never evidence of any kind, never the audit log, and
+never a private record, which D-57 keeps away from every model. A `tenant:read`
+is a read of settled decisions: a gap or an open case is the bank arguing with
+itself, and it is not what an agent building a service needs in order to build it
+right.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -47,6 +59,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | REG-06 | Yearly attestation by the owner, and waivers | C | R3 | pending |
 | REG-07 | Recurring duties on the roadmap from recurrence rules | S | R2 | pending |
 | REG-08 | Statement of Applicability: units per following legal entity, by reference and in the tenant's own words, entered one by one or pasted with a dry run, each with applicability, a reason, a status and gaps, fixed once it has history; nothing written under a standard is indexed, sent to a model or shown to another tenant | M | R2 | pending |
+| ACC-04 | An agent access credential holding `tenant:read`, under an entry with tenant reach on, reads the register decisions on the obligations in its scope. Never gaps, cases, comments, evidence, the audit log or a private record | M | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -238,4 +251,15 @@ And the officer pastes three invented units with applicability and reasons
 And confirms all three in one call
 Then the register filtered by that standard and Example Bank AB shows the three decisions
 And the roadmap shows the next audit as "Our deadline"
+```
+
+### ACC-S4 — With tenant reach on, an entry reads the register decisions in its scope and nothing else `@integration` (ACC-04)
+```gherkin
+Given an entry with tenant reach on, holding tenant:read, whose scope covers four obligations the bank has decided on
+When it reads the register
+Then each row carries applicability and its reason per legal entity, compliance status, the status note, how we read this rule, the owner, the process, the system, the next review and the linked internal items
+And no gap, case, assessment, comment, evidence row or audit row appears in any response
+And a private record of the bank appears in none of them
+When it reads a register entry for an obligation outside its scope
+Then the request answers 404
 ```

@@ -1,6 +1,6 @@
 # ADR 0007 — LLM provider adapter and the inference region
 
-**Date:** 2026-09-19 · **Status:** accepted by default (DECISIONS D-07; the owner contracts an EU-pinned path before the first bank tenant)
+**Date:** 2026-09-19 · **Status:** accepted by default (DECISIONS D-07; the owner contracts an EU-pinned path before the first bank tenant); amended by ADR 0057 (D-72, D-76): **we** send no tenant-zone text to a model except Ask's question, and a bank pulling its own register decisions into its own agent through agent access, after two of its own people switched tenant reach on, is the bank's act and not ours
 
 ## Context
 

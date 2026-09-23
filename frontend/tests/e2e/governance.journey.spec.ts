@@ -221,4 +221,8 @@ test.describe('governance journeys', () => {
     await expect(page.locator(`[data-tenant-id="${secondTenantId}"]`)).toHaveAttribute('data-tenant-slug', secondSlug);
     expect(secondTenantId).not.toBe(tenantId);
   });
+
+  test.fixme("ACC-S11: Tenant reach needs two people, and off means off", async () => {
+    // pending: ACC-S11 (ACC-08, AC-ACC2, chunk 11)
+  });
 });

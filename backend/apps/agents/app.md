@@ -75,6 +75,19 @@ carries the model call behind it (`AgentDecision`), logged in `ai_generation`
 under the purpose `agent_review` as that agent's own report, naming its run and the
 record decided, and read by the platform alone (D-80).
 
+PRD 0.5 (Alex, 2026-09-20; D-70 to D-73, D-76 and D-77, ADRs 0055 to 0057) adds a
+third thing called an agent, and it is not one of the two above. **Agent access** is
+an agent the *bank* runs, on its own infrastructure: a coding agent building a trading
+or payment service, a product agent shaping an account type, a procurement agent
+reading a contract, an assistant answering a staff question. We never see its prompt
+and we never run it. It registers here so it can read, it holds a credential, and
+through R2 it reads only. `agent_access` rows carry a name, a purpose, the owning
+team, the departments and products the agent serves, and the per-entry half of the
+tenant reach switch; `api_key.agent_access` binds a credential to one. The Agents
+screen gains a second tab for them, and each tab says in one line what that kind of
+agent does, because a reader who confuses the two will assume a bank's coding agent
+can change the register. The full design is `docs/plans/briefs/AGENT_ACCESS.md`.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -89,6 +102,10 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | pending |
 | AGT-07 | Fetched content screened for embedded instructions | M | R1 | built |
 | AGT-08 | Agents stay inside the sector scope: an out-of-scope document is a counted source check and nothing else; a standard's text is never fetched, quoted, summarised, translated or restated; a blocked page is a failed check; a law that cites a standard never carries its term | M | R1 | built |
+| ACC-01 | A tenant registers each agent it runs itself: name, purpose, owning team, and the departments and products it serves. `agent_access.manage` and a step-up; revoking stops every credential under it on the next request | M | R2 | pending |
+| ACC-06 | One call takes a description of what is being built and returns a labelled, logged summary above the deterministic full list of register entries and obligations in scope; the model never shortens the list and the list survives the model failing or AI being switched off | M | R2 | pending |
+| ACC-07 | A narrowed entry never narrows silently: every answer states the scope it was answered in, and an answer touching the footprint outside that scope names the dimensions and terms it could not see, from labels and never from records | M | R2 | pending |
+| ACC-10 | An entry records that a named application or system touches a register entry and how, as a linked internal item under REG-05 | C | R3 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -260,4 +277,46 @@ And its run records the proposals it decided, as a sweep records what it registe
 When a key of the proposing definition tries to confirm the same proposal
 Then the request answers 409 with code "four_eyes_violation"
 And no confirming-agent path writes a library row except through the approved proposal
+```
+
+### ACC-S1 — An entry is registered, narrowed to a department, and revoking it stops its credentials `@integration` `@e2e` (ACC-01, J-11)
+```gherkin
+Given a tenant admin with agent_access.manage and a Trading department with its products
+When they register "Trading platform coding agent", name that department, and issue a service key with a step-up
+Then the key is shown once, stored hashed, and the entry lists it with no last use
+And the same request without a fresh assertion answers 403 "step_up_required"
+When the key reads an obligation carrying only the card product type
+Then the request answers 404, the answer another tenant would get
+When the admin revokes the entry
+Then the next call on that key answers 401 and the security log shows the revocation
+```
+
+### ACC-S5 — What applies returns a labelled summary above a full list the model never shortens `@integration` (ACC-06)
+```gherkin
+Given an entry with tenant reach on and eleven register entries in its scope
+When it asks what applies to "a new order-routing service for professional clients"
+Then the response carries a summary labelled as AI-drafted, with a fixed sentence that the bank's confirmed applicability is the decision
+And the AI output log records the model, its version, the purpose and the citations
+And the full list holds all eleven, ranked, with none removed by the model
+When the model call fails or the tenant's AI off switch is on
+Then the eleven are still returned and the summary slot says why there is no summary
+```
+
+### ACC-S6 — A narrowed entry never narrows silently `@integration` `@e2e` (ACC-07, AC-ACC1)
+```gherkin
+Given a Trading entry, and a tenant footprint that also covers card issuing and card acquiring
+When the entry asks what applies to "a feature that issues virtual cards against a trading account"
+Then the answer states the entry's name, its departments and products and its "as of" date
+And it names "Licensed activity: Card issuing" and "Product type: Cards" among what it could not see
+And it says to ask compliance about them
+And no record carrying those terms appears anywhere in the response
+```
+
+### ACC-S10 — An entry records which application touches a register entry `@integration` (ACC-10)
+```gherkin
+Given an entry whose scope covers an obligation the bank has decided applies
+When it records that the application "order-router" reads customer classifications under that obligation
+Then a linked internal item of the system kind is written through record() with the entry named as its actor
+And the register entry lists the application with what it does
+And the same record sent twice writes one item
 ```

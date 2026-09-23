@@ -488,38 +488,37 @@ section. Copied here as chunk3-rest-T20 requires.
       FP-04), plus TEN-02's `LegalEntity`, which does not exist until chunk 8. Say when
       to schedule a proper planning pass for it (a brief, the way `AGENT_ACCESS.md` got
       one, before chunk 8 or as part of it) — it should not land as a slice on an
-      unrelated push. `AGENT_ACCESS.md` is not on main: it is parked with the
-      agent-access design in commit `cee7cf2` on `origin/claude/r1-integration` (below).
+      unrelated push. That brief is `docs/plans/briefs/AGENT_ACCESS.md`, and its entry
+      scope is one more reader of the footprint this reshapes (D-70).
 
-## Parked for your review (2026-09-23, lost-content)
+## Landed from `origin/claude/r1-integration` (2026-09-23, lost-content)
 
-Two designs live on `origin/claude/r1-integration` and nowhere on main. Each lands
-only after you answer it in chat, as its own docs-only change, and never on an
-approval relayed by an agent: (b) takes a four-eyes approval out of what CLAUDE.md
-section 5 guards, and (a) carries a CLAUDE.md paragraph, which no agent may edit.
-When either lands, its decision rows take the numbers `docs/DECISIONS.md` reserves
-for them, matched by title and never by arithmetic.
+Two designs lived on `origin/claude/r1-integration` and nowhere on main. Each landed
+only on your own answer in chat to the session that merged it, never on an approval
+relayed by an agent: (b) D-75 in `f753830`, and (a) agent access on your answer of
+2026-09-23, "Land the design now as decided". Their decision rows took the numbers
+`docs/DECISIONS.md` had reserved for them, matched by title and never by arithmetic.
 
-- [ ] **Keep the branch that holds them.** Main has only the summaries below. The full
-      designs are the commits `cee7cf2` and `b5b70c5`, and only
-      `origin/claude/r1-integration` holds both. If that branch is deleted, both are
-      eventually lost. Keep it until both have landed or you have declined them. Or tag
-      the two commits yourself (for example `parked/agent-access` and `parked/d75`) and
-      push the tags, and then the branch can go.
+- [x] **Keep the branch that holds them.** Both designs are on main now, so
+      `origin/claude/r1-integration` no longer has to be kept for these two; whether it
+      holds anything else worth keeping is yours to judge before it goes. Originally: the
+      full designs were the commits `cee7cf2` and `b5b70c5`, and only that branch held
+      both.
 
-### (a) PRD 0.5: agent access, the agents a bank runs itself (commit `cee7cf2`)
+### (a) PRD 0.5: agent access, the agents a bank runs itself (commit `cee7cf2`, landed 2026-09-23)
 
 A bank registers its own agents (a coding agent, a product agent, a procurement
 agent, an internal assistant), narrows each to the departments and products it
 serves, and gives it a service key or a personal access token. The agent only
 reads, through MCP or the API; it reaches the bank's register only after two people
 holding `security.manage` switched tenant reach on. Module ACC (ACC-01 to ACC-09 in
-chunk 11, ACC-10 in chunk 13). The commit carries the PRD 0.5 row and module, ADRs
-0055 to 0057, the brief `docs/plans/briefs/AGENT_ACCESS.md`, and scenarios in the
-agents, governance, identity, integrations, register and taxonomy specs.
+chunk 11, ACC-10 in chunk 13). It landed as the PRD 0.5 row and module, ADRs 0055 to
+0057, the brief `docs/plans/briefs/AGENT_ACCESS.md`, and scenarios in the agents,
+governance, identity, integrations, register and taxonomy specs. Nothing ACC is
+built: those are specs, decisions and skipped test stubs.
 
-Its decisions, by title, with the numbers they land under (the branch numbers them
-D-68 to D-73, and its PRD 0.5 row still cites "D-63 to D-68"):
+Its decisions, by title, with the numbers they landed under (the branch numbered them
+D-68 to D-73, and its PRD 0.5 row cited "D-63 to D-68"):
 
 - "What a bank's own agent may read": D-76 (D-68 on the branch)
 - "How a bank's own agent authenticates": D-77 (D-69 on the branch)
@@ -528,44 +527,56 @@ D-68 to D-73, and its PRD 0.5 row still cites "D-63 to D-68"):
 - "How a bank lets its own register leave its zone": D-72
 - "When agent access is built": D-73
 
-Its seven open questions, copied from that commit with the numbers above. Nothing
-here blocks the build, each has a default, and each is reversible.
+Its seven open questions, each answered by default by your answer of 2026-09-23. The
+build takes the default named in each; nothing here blocks it, each is reversible, and
+you can still overrule any one by saying so in chat.
 
-- [ ] **Comments.** Your free text said the agent should reach "any comments they
-      provided per entry", and your answer on what it reads chose register decisions
-      alone. The build reads that as: the structured notes on the entry are in (the
-      applicability reason, the status note, "how we read this rule"), and COL-01
-      comment threads are out. Say if it is the other way round. Reversing it adds a
-      `comments:read` scope and a decision about mentions of people who never agreed to
-      a machine reading them (D-76).
-- [ ] **REG-04 in chunk 8.** "How we read this rule" is a cuttable Should today, and it
-      is the single field that turns a list of obligations into an answer a developer
-      can build from. Recommended: move it above the descope line in chunk 8's list.
-      D-26 made the order of a chunk's list the thing that protects work, so only you
-      can reorder it (D-73).
-- [ ] **`tokens.create` defaults.** Built as Admin, Compliance officer and Owner; not
-      Approver, Contributor, Reader or Auditor. An auditor running automated evidence
-      pulls is a real case, so say if Auditor should have it by default (D-77).
-- [ ] **Credential expiry.** 90 days for both a service key and a personal access
-      token, settable per environment. Say if a service key should be allowed to live
-      longer (D-77).
-- [ ] **A bank's own model endpoint.** We say a bank pulling its own register into its
-      own agent is the bank's decision, which is what makes it compatible with D-07. A
-      bank running that agent on a model endpoint outside the EU is also the bank's
-      decision, and the first procurement review will ask what we do about it.
-      Proposed: state it plainly in the assurance pack, record the tenant switch's
-      approval and the access log, and do not police the endpoint (ADR 0057).
-- [ ] **An auditor's agent.** An external auditor reading the register through an agent
-      during fieldwork fits this model exactly, but it is a third party inside the
-      bank's tenant. Proposed: the bank registers it like any other entry, under the
-      named engagement, and the entry's expiry does the work. TEN-06's support access
-      grants are the nearer pattern if that is wrong.
-- [ ] **Where the tab lives.** Agent access is built as the second tab of the Agents
-      screen, per your answer. The two tabs must read as different things, because one
-      kind of agent writes on our schedule and the other only reads on the bank's; each
-      tab states in one line what it is. Confirm once you see the screen card.
+- [ ] **Comments.** **Answered by default** (Alex, 2026-09-23: "Land the design now as
+      decided"). Default: the structured notes on the entry are in (the applicability
+      reason, the status note, "how we read this rule"), and COL-01 comment threads are
+      out, so there is no `comments:read` scope. Your free text said the agent should
+      reach "any comments they provided per entry", and your answer on what it reads
+      chose register decisions alone. Say if it is the other way round. Reversing it
+      adds a `comments:read` scope and a decision about mentions of people who never
+      agreed to a machine reading them (D-76).
+- [ ] **REG-04 in chunk 8.** **Answered by default** (Alex, 2026-09-23: "Land the design
+      now as decided"). Default: chunk 8's order stands, so "How we read this rule"
+      stays a cuttable Should below the descope line. It is the single field that turns
+      a list of obligations into an answer a developer can build from, so moving it
+      above the line is still recommended; D-26 made the order of a chunk's list the
+      thing that protects work, so only you can reorder it (D-73).
+- [ ] **`tokens.create` defaults.** **Answered by default** (Alex, 2026-09-23: "Land the
+      design now as decided"). Default: Admin, Compliance officer and Owner hold it;
+      Approver, Contributor, Reader and Auditor do not, and a bank may grant it to any
+      role. An auditor running automated evidence pulls is a real case, so say if
+      Auditor should have it by default (D-77).
+- [ ] **Credential expiry.** **Answered by default** (Alex, 2026-09-23: "Land the design
+      now as decided"). Default: 90 days for both a service key and a personal access
+      token, settable per environment (`AGENT_ACCESS_KEY_MAX_DAYS`,
+      `PERSONAL_TOKEN_MAX_DAYS`), and a credential cannot be issued without one. Say if
+      a service key should be allowed to live longer (D-77).
+- [ ] **A bank's own model endpoint.** **Answered by default** (Alex, 2026-09-23: "Land
+      the design now as decided"). Default: a bank running its agent on a model endpoint
+      outside the EU is the bank's decision, as pulling its own register into its own
+      agent is, which is what makes it compatible with D-07. The assurance pack states
+      it plainly, the tenant switch's approval and the access log are recorded, and we
+      do not police the endpoint. The first procurement review will ask what we do about
+      it (ADR 0057).
+- [ ] **An auditor's agent.** **Answered by default** (Alex, 2026-09-23: "Land the
+      design now as decided"). Default: the bank registers an external auditor's agent
+      like any other entry, under the named engagement, and it ends when the engagement
+      does: the bank revokes the entry, and its credentials expire in any case. It is a
+      third party inside the bank's tenant, so if that is wrong, TEN-06's support access
+      grants are the nearer pattern.
+- [ ] **Where the tab lives.** **Answered by default** (Alex, 2026-09-23: "Land the
+      design now as decided"). Default: agent access is built as the second tab of the
+      Agents screen, per your answer. The two tabs must read as different things,
+      because one kind of agent writes on our schedule and the other only reads on the
+      bank's; each tab states in one line what it is, and the access tab says read-only.
+      Confirm once you see the screen card.
 
-The CLAUDE.md text that comes with it, which you add yourself:
+The CLAUDE.md text that comes with it. No agent edits CLAUDE.md, so it did not land
+with the design; add it yourself:
 
 - [ ] Section 3, the R2 row's outcome ends: "tenant-controlled agents, agent access for
       the agents a bank runs itself".
@@ -602,7 +613,7 @@ Everything it changes, all in the documents:
 
 - PRD: REG-01, J-10 and AC-REG1 (today "an approver with a fresh step-up decides 93
   pending unit requests" and a request the caller filed answers 409
-  `four_eyes_violation`), plus a version row. That row is 0.6, because 0.5 is held
+  `four_eyes_violation`), plus a version row. That row is 0.6, because 0.5 was kept
   for (a).
 - The register spec (`backend/apps/register/app.md`): its context, the REG-01 row,
   AC-REG1 and the acceptance bullet on requests, and REG-S1, REG-S2, REG-S4 and
