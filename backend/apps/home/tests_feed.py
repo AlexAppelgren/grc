@@ -15,8 +15,10 @@ credential, so what is proved here is everything that stands in place of a sign-
   request, and each one revokes the row and records a system actor doing it.
 
 `tests_calendar.py` holds the other half of HOM-04, the public list, because
-`apps/home/calendar.py` holds the code for it. The clock is frozen at a fixed instant and
-every date is written out (playbook 8.3).
+`apps/home/calendar.py` holds the code for it. The clock is frozen at a fixed instant for
+the whole of every test, sessions and calls alike, and every date is written out (playbook
+8.3): a session minted at the frozen instant and a call made on the real clock would stop
+agreeing the moment the real clock passed it.
 """
 
 from __future__ import annotations
@@ -60,6 +62,10 @@ LATER = datetime.date(2027, 1, 20)
 
 def a_change(*, title: str, key_date: datetime.date) -> RegulatoryChange:
     return watch_build.change(title=title, key_date=key_date, key_date_label="In force")
+
+
+def frozen_at(moment: datetime.datetime) -> Any:
+    return mock.patch("django.utils.timezone.now", return_value=moment)
 
 
 FEEDS = "/api/v1/calendar-feeds"
@@ -123,23 +129,27 @@ class FeedFixture(TestCase):
         cls.reader = cls.member.user
         cls.change = a_dated_case(cls.tenant, title="Research payments", key_date=SOON)
 
+    def setUp(self) -> None:
+        # One frozen clock for the whole test, so a session minted at the instant and every
+        # call made with it agree about how old it is whatever day the suite runs on. A call
+        # that needs another moment nests its own patch inside this one.
+        frozen = frozen_at(INSTANT)
+        frozen.start()
+        self.addCleanup(frozen.stop)
+
     def headers(self, user: User | None = None) -> dict[str, Any]:
         """A session minted at the frozen instant, so it is young enough to mint an address
         (D-52: a recent sign-in or a fresh passkey assertion)."""
-        with mock.patch("django.utils.timezone.now", return_value=INSTANT):
-            return sign_in(user or self.reader, tenant=self.tenant)
+        return sign_in(user or self.reader, tenant=self.tenant)
 
     def subscribe(self, headers: dict[str, Any] | None = None) -> Any:
-        with mock.patch("django.utils.timezone.now", return_value=INSTANT):
-            return self.client.post(
-                FEEDS, data={}, content_type="application/json", **(headers or self.headers())
-            )
+        return self.client.post(FEEDS, data={}, content_type="application/json", **(headers or self.headers()))
 
     def token_of(self, response: Any) -> str:
         return parse_qs(urlsplit(response.json()["url"]).query)["token"][0]
 
     def fetch(self, token: str, *, at: datetime.datetime = INSTANT) -> Any:
-        with mock.patch("django.utils.timezone.now", return_value=at):
+        with frozen_at(at):
             return self.client.get(ICS, {"token": token})
 
     def own_rows(self) -> Any:
@@ -441,7 +451,7 @@ class TheServerStopsASubscriptionItself(FeedFixture):
         minted by the person as they were is not one the person as they are now asked for."""
         token = self.token_of(self.subscribe())
         tenancy.activate(self.tenant.id)
-        with mock.patch("django.utils.timezone.now", return_value=INSTANT + datetime.timedelta(minutes=1)):
+        with frozen_at(INSTANT + datetime.timedelta(minutes=1)):
             LoginEvent.objects.create(
                 tenant=self.tenant,
                 user=self.reader,

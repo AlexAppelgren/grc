@@ -236,10 +236,15 @@ class HomeScenarioTests(TestCase):
         makes that address answer 404 from the next fetch on.
 
         What each half rests on is proved next door and not repeated here:
-        `tests_calendar.py` holds the shape of the public row, two banks reading
-        byte-identical bodies, the one 404 an unknown, revoked or expired token shares, the
-        four rules that stop a subscription by themselves, and the proof that no token,
-        prefix or secret reaches a log line.
+        `tests_calendar.py` holds the shape of the public row and two banks reading
+        byte-identical bodies; `tests_feed.py` holds the one 404 an unknown, revoked or
+        expired token shares, the four rules that stop a subscription by themselves, what a
+        calendar event may carry, the cap and the proof that no token, prefix or secret
+        reaches a log line.
+
+        Every step runs under one frozen clock: the session is minted at the instant, and
+        a call made on the real clock would find it older than a session may be as soon
+        as the real clock passed that instant (playbook 8.3).
         """
         watch_build.seed_watch_reference()
         tenant = factories.tenant(slug="hom-s5", timezone="Europe/Stockholm")
@@ -252,54 +257,51 @@ class HomeScenarioTests(TestCase):
         # The bank's own judgement on that reform. Nothing below may carry it out.
         cases_build.case(tenant, change, so_what_text="Three regulations change for us.")
 
-        # The agent reads the public list with its own key: library facts, and no case,
-        # footprint or judgement of this bank's.
         with mock.patch("django.utils.timezone.now", return_value=INSTANT):
+            # The agent reads the public list with its own key: library facts, and no case,
+            # footprint or judgement of this bank's.
             with stub_api_key(agent_principal(scopes={perms.SCOPE_UPCOMING_READ})):
                 public = self.client.get("/api/v1/upcoming", HTTP_X_API_KEY=API_KEY_FOR_TESTS)
-        self.assertEqual(public.status_code, 200)
-        row = public.json()[0]
-        self.assertEqual((row["title"], row["keyDate"]), (change.title, "2026-10-15"))
-        self.assertEqual(row["changeType"]["key"], "adopted")
-        self.assertNotIn(b"Three regulations change for us.", public.content)
+            self.assertEqual(public.status_code, 200)
+            row = public.json()[0]
+            self.assertEqual((row["title"], row["keyDate"]), (change.title, "2026-10-15"))
+            self.assertEqual(row["changeType"]["key"], "adopted")
+            self.assertNotIn(b"Three regulations change for us.", public.content)
 
-        # The person subscribes. The address comes back once and carries the token.
-        with mock.patch("django.utils.timezone.now", return_value=INSTANT):
+            # The person subscribes. The address comes back once and carries the token.
             headers = sign_in(reader, tenant=tenant)
             created = self.client.post(
                 "/api/v1/calendar-feeds", data={}, content_type="application/json", **headers
             )
-        self.assertEqual(created.status_code, 201)
-        feed_id = created.json()["feed"]["id"]
-        token = parse_qs(urlsplit(created.json()["url"]).query)["token"][0]
-        self.assertEqual(
-            {event.action for event in AuditEvent.objects.filter(subject_type="calendar_feed")},
-            {"calendar_feed.created"},
-        )
+            self.assertEqual(created.status_code, 201)
+            feed_id = created.json()["feed"]["id"]
+            token = parse_qs(urlsplit(created.json()["url"]).query)["token"][0]
+            self.assertEqual(
+                {event.action for event in AuditEvent.objects.filter(subject_type="calendar_feed")},
+                {"calendar_feed.created"},
+            )
 
-        # The address serves their roadmap as a calendar: the date, what the date is and
-        # the reform's title, and nothing the bank decided about it.
-        with mock.patch("django.utils.timezone.now", return_value=INSTANT):
+            # The address serves their roadmap as a calendar: the date, what the date is and
+            # the reform's title, and nothing the bank decided about it.
             calendar = self.client.get("/api/v1/calendar/feed.ics", {"token": token})
-        self.assertEqual(calendar.status_code, 200)
-        self.assertEqual(calendar.headers["Content-Type"], "text/calendar; charset=utf-8")
-        body = calendar.content.decode()
-        self.assertIn("DTSTART;VALUE=DATE:20261015", body)
-        self.assertIn(f"SUMMARY:In force: {change.title}", body)
-        self.assertNotIn("Three regulations change for us.", body)
-        self.assertNotIn(tenant.name, body)
+            self.assertEqual(calendar.status_code, 200)
+            self.assertEqual(calendar.headers["Content-Type"], "text/calendar; charset=utf-8")
+            body = calendar.content.decode()
+            self.assertIn("DTSTART;VALUE=DATE:20261015", body)
+            self.assertIn(f"SUMMARY:In force: {change.title}", body)
+            self.assertNotIn("Three regulations change for us.", body)
+            self.assertNotIn(tenant.name, body)
 
-        # The list shows the subscription and never the address.
-        listed = self.client.get("/api/v1/calendar-feeds", **headers).json()
-        self.assertEqual([feed["id"] for feed in listed], [feed_id])
-        self.assertNotIn(token, str(listed))
+            # The list shows the subscription and never the address.
+            listed = self.client.get("/api/v1/calendar-feeds", **headers).json()
+            self.assertEqual([feed["id"] for feed in listed], [feed_id])
+            self.assertNotIn(token, str(listed))
 
-        # Revoking it makes the address answer 404 from the next fetch on.
-        revoked = self.client.delete(f"/api/v1/calendar-feeds/{feed_id}", **headers)
-        self.assertEqual(revoked.status_code, 204)
-        with mock.patch("django.utils.timezone.now", return_value=INSTANT):
+            # Revoking it makes the address answer 404 from the next fetch on.
+            revoked = self.client.delete(f"/api/v1/calendar-feeds/{feed_id}", **headers)
+            self.assertEqual(revoked.status_code, 204)
             gone = self.client.get("/api/v1/calendar/feed.ics", {"token": token})
-        self.assertEqual((gone.status_code, gone.json()["code"]), (404, "not_found"))
+            self.assertEqual((gone.status_code, gone.json()["code"]), (404, "not_found"))
 
     @skip("pending: HOM-S7 (HOM-05, chunk 8)")
     def test_hom_s7(self) -> None:
