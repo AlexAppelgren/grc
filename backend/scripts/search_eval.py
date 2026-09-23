@@ -189,15 +189,15 @@ def validate_baseline(data: dict) -> None:
     for track in TRACKS:
         if track not in data["tracks"] or "recorded" not in data["tracks"][track]:
             raise ValueError(f"baseline.json: tracks.{track}.recorded missing")
+    for metric in METRICS:
+        if metric not in data["metrics"]:
+            raise ValueError(f"baseline.json: metric {metric} missing")
     recorded_tracks = [t for t in TRACKS if data["tracks"][t]["recorded"]]
     if bool(recorded_tracks) != bool(data["recorded"]):
         raise ValueError("baseline.json: recorded must be true exactly when a track is recorded")
-    # A recorded track holds a number for every metric it scores. An unrecorded one may leave
-    # a metric out, which is how a metric added to it arrives without a hand edit here:
-    # `--record` writes it with the rest.
     for track in recorded_tracks:
         for metric in TRACKS[track]:
-            if not isinstance(data["metrics"].get(metric), (int, float)):
+            if not isinstance(data["metrics"][metric], (int, float)):
                 raise ValueError(f"baseline.json: {metric} must be a number once {track} is recorded")
 
 

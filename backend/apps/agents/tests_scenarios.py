@@ -234,31 +234,47 @@ class AgentsScenarioTests(TestCase):
         self.assertIs(law["expected"]["in_scope"], True)
         self.assertEqual(law["expected"]["standard_terms"], [])
 
-        # When the evaluation runs, on the mock that needs no key and no model call
+        # When the evaluation runs, on the mock that needs no key and no model call, against a
+        # baseline of its own that records nothing: the committed one is recorded once a real
+        # classifier and retriever run, and a mock never satisfies a recorded track
         with tempfile.TemporaryDirectory() as scratch:
             predicted = Path(scratch) / "classification.jsonl"
             predicted.write_text(
                 "\n".join(json.dumps(dict(row, predictions=row["expected"])) for row in rows), encoding="utf-8"
             )
+            unrecorded = Path(scratch) / "baseline.json"
+            unrecorded.write_text(
+                json.dumps(
+                    {
+                        "recorded": False,
+                        "tracks": {track: {"recorded": False} for track in gate.TRACKS},
+                        "metrics": {metric: None for metric in gate.METRICS},
+                    }
+                ),
+                encoding="utf-8",
+            )
             printed: list[str] = []
-            self.assertEqual(gate.run([], gate.Paths(classification=predicted), out=printed.append), 0, printed)
+            paths = gate.Paths(classification=predicted, baseline=unrecorded)
+            self.assertEqual(gate.run([], paths, out=printed.append), 0, printed)
 
         # Then in-scope accuracy and standard-term accuracy are reported
         for metric in (_IN_SCOPE_ACCURACY, _STANDARD_TERM_ACCURACY):
             self.assertTrue(any(line.strip().startswith(f"{metric}: 1.000") for line in printed), printed)
 
         # And the gate fails when either falls below its tolerance, against the committed
-        # tolerances and a baseline recorded from a classifier that gets every row right
+        # tolerances and a baseline recorded from a classifier that gets every row right:
+        # any one off-sector text registered fails it, and so does the law tagged
         tolerance = gate.load_json(gate.EVAL / "tolerance.json")
         right = gate.evaluate_classification(rows, _Classifier(rows))
         baseline = gate.record(gate.load_json(gate.EVAL / "baseline.json"), {"classification": right})
         self.assertEqual(gate.decide("classification", right, baseline, tolerance), [])
-        for wrong, metric in (
-            (_Classifier(rows, registers=_OFF_SECTOR), _IN_SCOPE_ACCURACY),
-            (_Classifier(rows, tags=(_CITES_STANDARD,)), _STANDARD_TERM_ACCURACY),
+        for name, wrong, metric in (
+            *((row_id, _Classifier(rows, registers=(row_id,)), _IN_SCOPE_ACCURACY) for row_id in _OFF_SECTOR),
+            (_CITES_STANDARD, _Classifier(rows, tags=(_CITES_STANDARD,)), _STANDARD_TERM_ACCURACY),
         ):
-            failures = gate.decide("classification", gate.evaluate_classification(rows, wrong), baseline, tolerance)
-            self.assertEqual([failure.split(":")[0] for failure in failures], [metric])
+            with self.subTest(name):
+                failures = gate.decide("classification", gate.evaluate_classification(rows, wrong), baseline, tolerance)
+                self.assertEqual([failure.split(":")[0] for failure in failures], [metric])
 
         # Given a run that checked two out-of-scope documents, one on each of two sources
         watch_build.seed_watch_reference()
@@ -301,15 +317,15 @@ class AgentsScenarioTests(TestCase):
         )
         self.assertEqual(closed.status_code, 200, closed.content)
 
-        # Then the run history shows two source checks, no change and no proposal from them,
-        # and the count 2
+        # Then the run history shows the count 2 and no change and no proposal counted; the two
+        # source checks are the rows logged against the run, and nothing was registered or
+        # proposed under it. The server's own refusal of a change with no regime is WAT-S11's.
         with stub_session(user_principal(permissions={perms.SYSTEM_HEALTH})):
             history = self.client.get("/api/v1/agent-runs", HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}")
         self.assertEqual(history.status_code, 200, history.content)
         run = next(item for item in history.json()["items"] if item["id"] == run_id)
         self.assertEqual(run["status"], "succeeded")
         self.assertEqual(run["stats"]["outOfScope"], 2)
-        self.assertEqual(run["stats"]["sourcesChecked"], 2)
         self.assertEqual((run["stats"]["changesRegistered"], run["stats"]["proposalsSubmitted"]), (0, 0))
         self.assertEqual(SourceCheck.objects.filter(agent_run_id=run_id).count(), 2)
         self.assertFalse(RegulatoryChange.objects.filter(agent_run_id=run_id).exists())

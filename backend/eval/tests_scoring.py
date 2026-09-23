@@ -222,22 +222,6 @@ class Gate(unittest.TestCase):
             ["classification_in_scope_accuracy", "classification_standard_term_accuracy"],
         )
 
-    def test_a_metric_added_to_an_unrecorded_track_needs_no_hand_edit(self) -> None:
-        """AGT-08 added two classification metrics after baseline.json was written. While the
-        track is unrecorded the file may leave a metric out; once it is recorded, each of its
-        metrics is a number, and `--record` is what writes the new ones."""
-        older = blank_baseline()
-        del older["metrics"]["classification_in_scope_accuracy"]
-        se.validate_baseline(older)
-        recorded = recorded_baseline()
-        del recorded["metrics"]["classification_in_scope_accuracy"]
-        with self.assertRaises(ValueError):
-            se.validate_baseline(recorded)
-        scored = se.TrackResult("scored", "real", False, metrics={m: 1.0 for m in se.CLASSIFICATION_METRICS}, rows=8)
-        updated = se.record(older, {"classification": scored})
-        self.assertEqual(updated["metrics"]["classification_in_scope_accuracy"], 1.0)
-        se.validate_baseline(updated)
-
     def test_record_writes_scored_real_tracks_and_refuses_mock(self) -> None:
         real = se.TrackResult("scored", "apps.search.eval:Retriever", False, metrics={"retrieval_recall_at_10": 0.91234, "retrieval_mrr": 0.8}, rows=53)
         mocked = se.TrackResult("scored", "mock", True, metrics={m: 1.0 for m in se.CLASSIFICATION_METRICS})
@@ -395,7 +379,8 @@ class RealSets(unittest.TestCase):
     def test_the_sector_scope_rows_are_in_the_committed_set(self) -> None:
         """AGT-08's rows, proved over the file: every row states whether it is inside the
         sector scope, and there are at least four off-sector texts, one law that cites a
-        standard and three records of a standard, each with its tolerance explained."""
+        standard and three records of a standard, each metric with its tolerance explained
+        and small enough that one text judged wrong fails the gate."""
         rows = se.load_jsonl(se.EVAL / "classification.jsonl")
         self.assertTrue(all(isinstance(r["expected"].get("in_scope"), bool) for r in rows))
         off_sector = [r for r in rows if not r["expected"]["in_scope"]]
@@ -405,9 +390,10 @@ class RealSets(unittest.TestCase):
         self.assertGreaterEqual(len(cites), 1)
         self.assertGreaterEqual(len(standards), 3)
         self.assertEqual({t for r in standards for t in r["expected"]["standard_terms"]}, {TERM})
-        rationale = se.load_json(se.EVAL / "tolerance.json")["_rationale"]
+        tolerance = se.load_json(se.EVAL / "tolerance.json")
         for metric in ("classification_in_scope_accuracy", "classification_standard_term_accuracy"):
-            self.assertIn(metric, rationale)
+            self.assertIn(metric, tolerance["_rationale"])
+            self.assertLess(tolerance["metrics"][metric], 1 / len(rows), f"{metric}: one text judged wrong fails the gate")
 
 
 if __name__ == "__main__":

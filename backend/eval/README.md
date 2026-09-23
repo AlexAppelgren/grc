@@ -50,10 +50,17 @@ The sector scope (AGT-08, AC-AGT1) adds two metrics, each scored on every row:
   The term sits apart from `scope` because the taxonomy seeds carry the opt-in `standard`
   dimension (D-36) and the fixture `check_prototype_data --eval` reads does not.
 
-Their tolerances, each with its reason, are in `tolerance.json`. A standard is named in
-the set by its reference only, never by its title or a clause, and every AGT-08 text is
-our own words about a public fact. A metric added to a track whose baseline is not
-recorded yet needs no edit to `baseline.json`: `--record` writes it with the rest.
+Their tolerances, each with its reason, are in `tolerance.json`: 0 for both, so no
+off-sector text can be registered and no law can be tagged without a red build. A standard
+is named in the set by its reference only, never by its title or a clause, and every AGT-08
+text is our own words about a public fact.
+
+An off-sector row is scored on the other fields too. It expects no flags and an empty
+scope, which a classifier that names none matches, and the change type its text describes,
+because the classifier reads every text whole before `in_scope` decides what the agent
+does with it (`check_prototype_data --eval` also requires a change type on every row that
+is not an injection case). A classifier that stops at `in_scope: false` and names no type
+loses that row's change-type point and nothing else.
 
 ## The evaluator interface
 

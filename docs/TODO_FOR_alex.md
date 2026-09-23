@@ -500,3 +500,19 @@ section. Copied here as chunk3-rest-T20 requires.
       roadmap page already shows. Default if you say nothing: it stays as built, and a feed
       never disagrees with the roadmap page beside it, which is the rule chunk 6 ruling 5 set
       for these two reads.
+
+## agents-sector-scope-eval: the two AGT-08 tolerances are defaults (2026-09-23, AC-AGT1)
+
+- [ ] **In-scope accuracy and standard-term accuracy may not fall at all under their
+      recorded baseline.** Both tolerances in `backend/eval/tolerance.json` are 0, with
+      their reasons in its `_rationale`. Each metric is the mean over all 60 classification
+      texts, where one text is 0.017, so any tolerance of 0.017 or more lets one of the four
+      off-sector texts be registered, or the law that cites a standard be tagged, without a
+      red build. That is the failure AGT-08 exists to prevent, and the screen's tolerance is
+      0 for the same reason. Two things 0 does not settle, for your ruling: a real,
+      non-deterministic classifier that flips one text between runs turns the build red
+      until the baseline is re-recorded; and a change that puts one text right and another
+      wrong keeps the mean and passes. Gating the off-sector and cites-a-standard texts on
+      their own would close the second, but needs the baseline to record a value per kind
+      of text, which it does not today. Default if you say nothing: 0 for both, and the
+      report's lines per kind of text are read by the person recording the baseline.
