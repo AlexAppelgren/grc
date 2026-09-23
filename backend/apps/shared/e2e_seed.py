@@ -409,6 +409,14 @@ LIBRARY_EDITOR_EMAIL = "editor@bleqq.test"
 APPROPRIATENESS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000001")
 COSTS_CHARGES_RUN = uuid.UUID("00000000-0000-4000-9000-000000000002")
 CLIENT_ASSETS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000003")
+# --- pro-s13-journey (PRO-S13) ---------------------------------------------------------------
+# The sweeper's proposal the confirming agent decides through the API, end to end. Its target
+# is version 1 only, reaches tenant A with or without Advice, and is named by no other spec,
+# seed constant or seeded proposal, so its version 2 is the confirming agent's and nobody
+# else's (tests_seed_integrity.py checks all three).
+PRO_S13_OBLIGATION = "obl-product-governance"
+PRO_S13_RUN = uuid.UUID("00000000-0000-4000-9000-000000000013")
+# --- end pro-s13-journey ---------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -432,6 +440,7 @@ EXPECTED_PROPOSALS: tuple[SeedProposal, ...] = (
     SeedProposal("PRO-S9", ProposalKind.NEW_OBLIGATION_VERSION.value, "obl-client-assets", CLIENT_ASSETS_RUN),
     SeedProposal("PRO-S7", ProposalKind.NEW_OBLIGATION_VERSION.value, PRO_S7_OBLIGATION, AUTOMATED_DECISIONS_RUN),
     SeedProposal("PRO-S5", ProposalKind.VOCABULARY_RELABEL.value, "flag:ai", proposed_by_email=LIBRARY_EDITOR_EMAIL),
+    SeedProposal("PRO-S13", ProposalKind.NEW_OBLIGATION_VERSION.value, PRO_S13_OBLIGATION, PRO_S13_RUN),
 )
 
 
@@ -684,6 +693,27 @@ def seed_proposals() -> int:
         effective_from="2027-01-01",
         source_label="EUR-Lex, Regulation (EU) 2016/679, Article 22, consolidated text",
         source_url="https://eur-lex.europa.eu/",
+    )
+    # pro-s13-journey (PRO-S13): see PRO_S13_OBLIGATION above.
+    _propose_obligation_version(
+        obligation=PRO_S13_OBLIGATION,
+        agent_run=PRO_S13_RUN,
+        title="Add version 2 of the product governance obligation, with a yearly review of each target market",
+        summaries={
+            "sv": (
+                "Institutet ska för varje produkt som det tar fram eller distribuerar fastställa en "
+                "målgrupp och en distributionsstrategi som passar den, och se över båda minst en gång "
+                "om året och när något inträffar som kan påverka produktens risker för målgruppen."
+            ),
+            "en": (
+                "For each product it manufactures or distributes, the institution defines a target "
+                "market and a distribution strategy suited to it, and reviews both at least once a year "
+                "and whenever an event could change the product's risks for that market."
+            ),
+        },
+        effective_from="2027-02-01",
+        source_label="Finansinspektionen, amended product governance rules",
+        source_url="https://www.fi.se/",
     )
     _propose_flag_relabel()
     return len(EXPECTED_PROPOSALS)
