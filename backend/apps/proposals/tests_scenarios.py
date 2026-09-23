@@ -645,6 +645,15 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual([segment["op"] for segment in detail["diff"]], ["delete", "insert"])
         self.assertEqual([source["field"] for source in detail["sources"]], ["effectiveFrom", "summaries.en", "summaries.sv", "terms"])
 
+        # Its correction may not move which language the summary was written in: that would
+        # store the machine translation as the unlabelled original (INV-05). Refused, and
+        # nothing applies.
+        moved = self._post(f"/proposals/{proposal['id']}/approve", {"payloadOverrides": {"originalLanguage": "en"}}, reviewer_headers)
+        self.assertEqual(moved.status_code, 422, moved.content)
+        self.assertEqual(moved.json()["code"], "validation_error")
+        self.assertEqual(Proposal.objects.get(pk=proposal["id"]).status, ProposalStatus.OPEN.value)
+        self.assertEqual(list(obligation.versions.values_list("version_number", flat=True)), [1])
+
         # It corrects the wording and approves through the same route a person calls, and
         # the decision applies exactly as a person's does, in one transaction. Its
         # correction claims the translation is a person's; no person confirmed it, so the

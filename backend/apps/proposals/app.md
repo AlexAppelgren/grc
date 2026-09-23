@@ -231,6 +231,7 @@ When that key reads the pending proposals through the queue route a person reads
 Then it sees the same proposal with the same source beside the same diff
 When it approves, corrects or rejects through the same routes
 Then the decision applies exactly as a person's does, in one transaction
+And a correction by the agent that moves the original language answers 422 and applies nothing
 And the audit row names the confirming agent, its definition version and its key, and carries no step-up assertion
 And a key without the review scope answers 403
 And no route under the review scope writes a library row except through apply

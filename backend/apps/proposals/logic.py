@@ -614,6 +614,11 @@ def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any])
     Only an obligation version may be corrected. A vocabulary row's labels are wording a
     person writes rather than a fact from an authority, so there is nothing to correct
     against a source, and a reviewer who disagrees rejects with a reason instead.
+
+    An agent's correction may reword a summary but not move `originalLanguage`: the
+    original is the one text stored without the machine label, so moving it would store a
+    machine translation as unlabelled and label the source-language text machine-made
+    (INV-05). It is compared as parsed, whichever spelling of the field arrived.
     """
     if proposal.kind not in OBLIGATION_KINDS:
         raise ValidationError(
@@ -623,7 +628,13 @@ def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any])
     merged = {**proposal.payload, **overrides}
     parsed = validated_payload(proposal.kind, merged)
     check_field_sources(parsed, proposal.field_sources)
-    proposal.corrected_payload = payload_dict(parsed)
+    stored = payload_dict(parsed)
+    if reviewer.user is None and stored.get("originalLanguage") != proposal.payload.get("originalLanguage"):
+        raise ValidationError(
+            "An agent cannot change which language a summary was written in. Reject it with a reason instead.",
+            code="validation_error",
+        )
+    proposal.corrected_payload = stored
     proposal.corrected_by = reviewer.user
     proposal.corrected_at = timezone.now()
     # The row's own date follows the correction, because a queue row that showed one date
