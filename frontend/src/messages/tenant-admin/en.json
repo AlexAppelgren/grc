@@ -11,6 +11,8 @@
   "admin.organisation.defaultLanguage": "Default language",
   "admin.organisation.contentLanguages": "Content languages, in order",
   "admin.organisation.contentLanguagesHint": "Summaries are offered in these languages, first one first.",
+  "admin.organisation.defaultLanguagePlaceholder": "Choose a language",
+  "admin.organisation.contentLanguagesRequired": "Choose at least one content language.",
   "admin.organisation.checklist": "Getting started",
   "admin.organisation.progress": "{done} of {total} done",
   "admin.organisation.step.profile": "Set the profile",
