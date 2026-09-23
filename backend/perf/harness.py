@@ -12,7 +12,8 @@ reader pays twice, then takes `PERF_SAMPLES` timed requests and reports:
   leave before any of its body is written, and Ask's budget is its first token;
 - the most queries any one sample ran, from `CaptureQueriesContext`, so an N+1 shows as a
   count that grows with the data. The count includes the savepoint a request opens inside
-  the harness's transaction.
+  the harness's transaction. The connection's query log is emptied before every sample,
+  because it keeps only its newest 9000 entries and a full one captures nothing.
 
 Everything runs inside one transaction that is rolled back, principal and fixture included:
 the session the harness mints, the audit row that session writes and whatever the route
@@ -41,7 +42,7 @@ from typing import Any
 from urllib.parse import quote, urlencode
 
 from django.conf import settings
-from django.db import connection, transaction
+from django.db import connection, reset_queries, transaction
 from django.http import HttpResponseBase, StreamingHttpResponse
 from django.test import Client
 from django.test.utils import CaptureQueriesContext
@@ -152,6 +153,9 @@ def measure(route: PerfRoute) -> Measurement:
             send = partial(client.generic, method, url, data=data, content_type="application/json", **headers)
             for sample in range(settings.PERF_SAMPLES + 1):  # sample 0 is the warm-up, dropped
                 with transaction.atomic():  # rolled back: the next request finds what this one found
+                    # The log keeps only its newest 9000 entries; once full, a capture reads
+                    # nothing, and every later route of a report would count 0 queries.
+                    reset_queries()
                     with CaptureQueriesContext(connection) as queries:
                         elapsed = _elapsed(send(), route)
                     transaction.set_rollback(True)

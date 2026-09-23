@@ -34,6 +34,7 @@ from typing import Any
 from unittest import mock
 
 from django.conf import settings
+from django.db import connection
 from django.http import HttpRequest, StreamingHttpResponse
 from django.test import TestCase, override_settings
 from django.urls import path
@@ -161,6 +162,15 @@ class HarnessMeasures(PlantedRoutes):
 
         self.assertGreater(two.queries, 2)
         self.assertEqual(five.queries - two.queries, 3, "one more query for every row: the N+1 shows in the count")
+
+    def test_the_query_count_survives_a_full_query_log(self) -> None:
+        """The connection's query log keeps its newest 9000 entries and the harness measures
+        route after route on one connection, so a full log once made every later route
+        report 0 queries (r1-perf, 2026-09-23). Each sample now starts from an empty log."""
+        connection.queries_log.extend({"sql": "SELECT 1", "time": "0.000"} for _ in range(connection.queries_log.maxlen or 0))
+        result = measure(PerfRoute("plantedBanks", anonymous, fixture=lambda: banks("perf-full-log", 2)))
+
+        self.assertGreater(result.queries, 2)
 
     def test_what_the_fixture_and_the_route_write_is_rolled_back(self) -> None:
         measure(PerfRoute("plantedBanks", anonymous, fixture=lambda: banks("perf-kept", 3)))
