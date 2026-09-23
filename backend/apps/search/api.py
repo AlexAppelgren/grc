@@ -2,11 +2,11 @@
 lists the action, no business logic (playbook 4.1).
 
 Four operations, the designed contract's (`docs/inputs/openapi.yaml`). Each one hands its
-validated body to the module of the logic package that builds it — `hybrid.py` for
-searching and for the agents' nearest-neighbour read, `ask.py` for the answer and its
-feedback — and one that has not landed yet answers `not_built` until it does
-(PARALLEL_PLAN rule 3). The gate runs first, so a caller without it is refused before it
-learns whether anything is built.
+validated body to the module that answers it — `hybrid.py` for searching and for the
+agents' nearest-neighbour read, `ask.py` for the answer and its feedback — and the one
+that has not landed yet, the reader's verdict on an answer, answers `not_built` until it
+does (PARALLEL_PLAN rule 3). The gate runs first, so a caller without it is refused before
+it learns whether anything is built.
 
 Both search routes spend from a bucket of their own before anything else runs
 (`limits.py`): the reader's session or the agent's key, sixty a minute each, answered 429
@@ -16,8 +16,9 @@ Both search routes spend from a bucket of their own before anything else runs
 (playbook 10, SRC-S9), which an answer that waits for its last sentence cannot meet. The
 route declares `SSE[AskEvent]`, Django sends a `StreamingHttpResponse` of
 `text/event-stream`, and `ask.py` owns every byte in it. Everything that can refuse the
-call before the first byte still does: the session, the permission and the question's cap
-are checked before the stream opens, and each answers a status with a problem body.
+call before the first byte still does: the session, the permission, the question's cap,
+the bank's AI switch, the rate limit and the language are checked before the stream
+opens, and each answers a status with a problem body.
 
 Who may call what: a person searching, asking or rating an answer holds `search.use`
 (PRD §6, "everyone"). `POST /search/similar` is the agents' route, gated on the
@@ -29,7 +30,7 @@ four eyes.
 
 from collections.abc import Iterator
 
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest
 from ninja import SSE, Router
 
 from apps.search import ask, hybrid
@@ -138,15 +139,22 @@ def find_similar(request: HttpRequest, body: SimilarRequest) -> SearchResponse:
     return hybrid.find_similar(body, caller_id=principal(request).subject_id)
 
 
-@router.post("/ask", response=SSE[AskEvent], auth=SESSION, operation_id="ask", by_alias=True)
+@router.post(
+    "/ask",
+    response=SSE[AskEvent],
+    auth=SESSION,
+    operation_id="ask",
+    by_alias=True,
+    summary="Ask a question and get an answer cited to the shared library",
+)
 @requires_permission(perms.SEARCH_USE)
-@answers_problems
-def ask_question(request: HttpRequest, body: AskRequest, response: HttpResponse) -> Iterator[AskEvent]:
+def ask_question(request: HttpRequest, body: AskRequest) -> Iterator[AskEvent]:
     """Answer a question in the reader's own words, grounded only in the shared library,
     every sentence carrying a citation and a pending change flagged (SRC-03).
 
-    Who may call it: a person with `search.use`, on their own session. An API key is
-    refused: Ask is a reading aid for people, and the question is tenant text.
+    Who may call it: a person with `search.use`, on their own session, in a bank that has
+    not switched its AI features off. An API key is refused: Ask is a reading aid for
+    people, and the question is tenant text.
 
     What comes back: an event stream (`text/event-stream`), not one body, because the
     budget is a first token under 2 s (NFR-02) and an answer that waits for its last
@@ -154,20 +162,41 @@ def ask_question(request: HttpRequest, body: AskRequest, response: HttpResponse)
     `statement` per cited sentence, and then either `answer` with the whole answer or
     `problem` with a `code` to branch on. A stream that has begun cannot change its
     status, so a failure found after the first byte arrives as a `problem` event; do not
-    read the status line alone as success.
+    read the status line alone as success. The answer rests only on the obligations the
+    reader's own search ranks first, inside the bank's regulatory scope and as they stood
+    on `asOf`; when none of them answers the question, the `answer` event says `noAnswer`
+    and no model is asked to guess.
 
     Limits and budgets: the question is at most 2000 characters
-    (`ASK_QUESTION_MAX_CHARS`), and a longer one answers 422 before any stream opens. The
-    first token arrives inside 2 s (NFR-02).
+    (`ASK_QUESTION_MAX_CHARS`), and a longer one answers 422 before any stream opens. Each
+    reader may ask 10 questions a minute (`ASK_RATE_PER_USER_PER_MINUTE`), counted per
+    person. The model is given at most 6 passages (`ASK_RETRIEVAL_DEPTH`) and may write at
+    most 1024 tokens (`ASK_MAX_TOKENS`). The first token arrives inside 2 s (NFR-02).
 
     Shape of the call: a read of the library and a model call. It needs no idempotency
     key, because asking twice costs two model calls and changes no record, and it writes
-    no audit row, only the AI log row every model call writes (AUD-02). The question is the
-    only text of the bank's own that ever reaches a model (D-07), and it reaches no log
-    line, no Sentry event and no URL.
+    no audit row, only the AI log row every model call writes (AUD-02), also when the
+    reader leaves before the answer is finished. The question is the only text of the
+    bank's own that ever reaches a model (D-07), and it reaches no log line, no Sentry
+    event and no URL.
+
+    Errors, each a status with a problem body before any stream opens:
+    `feature_off` (403) when the reader's bank has switched its AI features off, which is
+    the bank's decision and not a fault to retry; `rate_limited` (429) when that reader has
+    asked more than the limit above in the last minute, to wait out and retry;
+    `unknown_key` (422) for a `lang` that is not one of the library's language rows;
+    `validation_error` (422) for a question over the cap or a field the contract does not
+    name; `not_found` (404) when the session belongs to no bank; `permission_denied`
+    (403) without `search.use`; `unauthenticated` (401) without a session. After the first
+    byte, the one way a stream ends badly is a `problem` event with `model_unavailable`:
+    the model could not be reached, declined or ran out of time, and asking again may
+    succeed.
     """
+    # No `answers_problems` here: this route answers a stream, and a problem response
+    # handed back from inside it would be streamed as if it were events. Every refusal is
+    # raised instead, and config/api.py turns it into the one problem shape.
     who = principal(request)
-    return ask.answer_events(body, tenant_id=who.tenant_id, user_id=who.subject_id, response=response)
+    return ask.answer_events(body, tenant_id=who.tenant_id, user_id=who.subject_id)
 
 
 @router.post(

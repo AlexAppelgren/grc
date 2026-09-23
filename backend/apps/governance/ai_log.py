@@ -57,6 +57,8 @@ def log_generation(
     output_tokens: int = 0,
     cost_minor: int = 0,
     metadata_reported_by_agent: bool = False,
+    generation_id: uuid.UUID | None = None,
+    stop_reason: str = "",
 ) -> AiGeneration:
     """Write one row for one model call, in the caller's transaction.
 
@@ -67,6 +69,13 @@ def log_generation(
     The output is stored up to `AI_GENERATION_OUTPUT_MAX_CHARS`. Model output is untrusted
     text off a network, so the cap is at the boundary rather than left to the provider's
     own token limit, and a truncated row is still a true record of what was said first.
+
+    `generation_id` is for a caller that named its output before the model finished: an
+    Ask answer carries its id from the stream's first event, so a reader's verdict on it
+    can find this row (`rateAnswer`).
+
+    `stop_reason` is how the call ended, for a call bleqq made and watched end
+    (`apps/shared/ai.py`); an agent's filing leaves it empty.
     """
     if not connection.in_atomic_block:
         raise NotInTransaction(
@@ -79,6 +88,7 @@ def log_generation(
             code="validation_error",
         )
     return AiGeneration.objects.create(
+        id=generation_id or uuid.uuid4(),
         tenant_id=tenant_id,
         agent_run_id=agent_run_id,
         asker_id=asker_id,
@@ -96,7 +106,24 @@ def log_generation(
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         cost_minor=cost_minor,
+        stop_reason=stop_reason,
     )
+
+
+def answer_of(answer_id: uuid.UUID, tenant_id: uuid.UUID) -> AiGeneration | None:
+    """One of the bank's own Ask answers by the id its stream gave it, or nothing. An id of
+    another bank's answer is nothing too: row-level security has already hidden it, and the
+    tenant is named here as well so a query written before that policy could not reach it."""
+    return AiGeneration.objects.filter(pk=answer_id, tenant_id=tenant_id, purpose=AiPurpose.ANSWER.value).first()  # ordering: pk lookup, at most one row
+
+
+def set_feedback(row: AiGeneration, *, feedback: str, note: str) -> None:
+    """A reader's verdict on an answer (AUD-02, SRC-05), on its row. The caller writes the
+    audit row that goes with it (`apps/search/ask.py::rate_answer`), in the same
+    transaction; the note stays here, beside the answer, and never reaches the audit."""
+    row.feedback = feedback
+    row.feedback_note = note
+    row.save(update_fields=["feedback", "feedback_note"])
 
 
 def generations_for(
@@ -136,6 +163,7 @@ def generation_row(row: AiGeneration, tenant_id: uuid.UUID | None) -> AiGenerati
         reviewed_at=row.reviewed_at,
         input_tokens=row.input_tokens,
         output_tokens=row.output_tokens,
+        stop_reason=row.stop_reason,
         tenant_scoped=row.tenant_id is not None and row.tenant_id == tenant_id,
         created_at=row.created_at,
     )

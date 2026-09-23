@@ -134,6 +134,7 @@ class AiGenerationRow(CamelSchema):
                     "reviewedAt": None,
                     "inputTokens": 1840,
                     "outputTokens": 96,
+                    "stopReason": "",
                     "tenantScoped": False,
                     "createdAt": "2026-09-16T06:02:00Z",
                 }
@@ -239,6 +240,21 @@ class AiGenerationRow(CamelSchema):
     output_tokens: int = Field(
         description="How many tokens came back, as the provider counted them. 0 when unknown.",
         examples=[96],
+    )
+    stop_reason: str = Field(
+        description=(
+            "How a call bleqq made ended, at most 64 characters: `end_turn` (the model "
+            "finished), `max_tokens` or `model_context_window_exceeded` (the model stopped at "
+            "a limit, so `output` is cut short), `aborted` (the caller stopped reading before "
+            "the model finished, such as a reader closing an Ask answer; `output` holds what "
+            "was written by then), `failed` (the model failed once asked; `output` holds what "
+            "arrived first, possibly nothing), or another stop reason the provider names in "
+            "its own snake_case word. Token counts are 0 on an `aborted` or `failed` row, "
+            "because the provider reports usage only with its last word. Empty on a row an "
+            "agent filed (`modelMetadataReportedByAgent`), whose call bleqq did not watch "
+            "end, and on a row written before this was recorded. Source: the server."
+        ),
+        examples=["end_turn"],
     )
     tenant_scoped: bool = Field(
         description=(

@@ -1084,3 +1084,32 @@ instead and their pending lines are gone.
   `subjectId`, `actorId`, `from` (inclusive) and `to` (exclusive): `actorId` matches any
   actor, a person or an agent, where the designed `actorUserId` named a person only, and the
   designed `action` filter is not built.
+
+## 13. What an Ask statement says about a pending change (2026-09-23, search-ask-backend)
+
+`AnswerStatement` gains two optional fields the designed contract does not have, both
+additive: `pendingChangeInForceOn`, the day the flagged change takes effect as a plain
+date, and `pendingChangeInForceOnPrecision`, how exact that day is (`day`, `month`,
+`quarter`, `year`). The design's statement names a pending change by id and label only,
+which leaves the screen's "Change pending: in force 1 Oct" (SRC-S4) with nothing to print
+but a phrase it would have to invent; a legal date is a plain date with its precision
+(playbook 4.3), so the two travel together. Both are empty exactly when `pendingChangeId`
+is.
+
+What is flagged is also narrower than "an open change": only a change the library
+confirmed affects a cited obligation (a confirmed `change_obligation` link, never an
+agent's suggestion), still active, whose type's lifecycle kind moves the law on its key
+date (`adopted`, or `in_force` from a later day) and whose key date falls after the
+answer's `asOf`; of several, the earliest. A proposal, a supervisory statement or a
+recurring date moves no law on its date, and flagging one would warn a reader about a rule
+that may never exist.
+
+`Answer.model` is empty when no model was asked: a question no library passage supports is
+answered `noAnswer` at once, with no model call and so no `ai_generation` row.
+
+`ai_generation` gains `stop_reason` (`governance/0003_ai_generation_stop_reason.py`) and
+`AiGenerationRow` gains `stopReason`, neither of which the designed table or contract has:
+how a call bleqq made ended, the provider's own stop reason when the model finished,
+`aborted` when the caller stopped reading first and `failed` when the model failed once
+asked (D-82). A streamed Ask answer is logged however it ends, and without the column a
+call cut short read in the log exactly as a finished one. Empty on a row an agent filed.

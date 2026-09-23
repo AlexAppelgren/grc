@@ -367,19 +367,24 @@ class SearchRateLimitTests(CorpusMixin, TestCase):
 
     def test_both_search_operations_tell_a_caller_the_code_to_branch_on(self) -> None:
         """A limit a caller cannot see is a limit they will hit in production (Alex's API
-        rule, 2026-09-20). Both operations name `rate_limited` and the setting behind it,
-        and `POST /ask` does not, because nothing in `ask.py` spends a bucket yet: a code
-        documented on a route that cannot raise it is what `api_docs_gate.py` refuses."""
+        rule, 2026-09-20). Both search operations name `rate_limited` and the setting
+        behind it, and so does `POST /ask`, which spends a bucket of its own in `ask.py`
+        before anything else runs."""
         from config.api import api
 
         paths = api.get_openapi_schema()["paths"]
-        for path in ("/api/v1/search", "/api/v1/search/similar"):
+        search = ("SEARCH_RATE_PER_USER_PER_MINUTE", settings.SEARCH_RATE_PER_USER_PER_MINUTE)
+        ask = ("ASK_RATE_PER_USER_PER_MINUTE", settings.ASK_RATE_PER_USER_PER_MINUTE)
+        for path, (setting, limit) in (
+            ("/api/v1/search", search),
+            ("/api/v1/search/similar", search),
+            ("/api/v1/ask", ask),
+        ):
             with self.subTest(path=path):
                 description = " ".join(paths[path]["post"]["description"].split())
                 self.assertIn("`rate_limited`", description)
-                self.assertIn("SEARCH_RATE_PER_USER_PER_MINUTE", description)
-                self.assertIn(str(settings.SEARCH_RATE_PER_USER_PER_MINUTE), description)
-        self.assertNotIn("`rate_limited`", paths["/api/v1/ask"]["post"]["description"])
+                self.assertIn(setting, description)
+                self.assertIn(str(limit), description)
 
     def test_neither_limit_can_be_set_to_a_value_that_admits_everything(self) -> None:
         """Every limit is a setting with an env override (playbook 4.3), and neither of

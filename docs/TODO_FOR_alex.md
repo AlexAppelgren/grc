@@ -656,3 +656,17 @@ Nothing waits for these; each has the default the build took.
       mock), and hybrid search breaking ties on something a rebuild keeps, because today two
       of the 53 questions can come back in a different order from one fresh database to the
       next.
+
+## Ask sends a reader's question to the model (search-ask-backend, 2026-09-23)
+
+- [ ] Ask's backend now works: `POST /ask` sends the question a reader types, and the
+      library passages it rests on, to whatever `LLM_PROVIDER` names. Everywhere it runs
+      today that is `mock`, which answers from the passages and sends nothing anywhere.
+      `docs/runbooks/RAILWAY_VARIABLES.md` still lists `anthropic` for the Railway test
+      deploy (D-07), and an Anthropic key for it is on your list above. The moment both
+      are set, a tester's typed question goes to Anthropic's own endpoint, which offers US
+      or global inference and not the EU pin D-07 waits on. Say which it is: keep
+      `LLM_PROVIDER=mock` on the test deploy until the EU path is contracted, or approve
+      Anthropic's endpoint for the test deploy's made-up banks, knowing a question is
+      whatever the tester types. Default if you say nothing: nothing changes in code, and
+      the deploy follows whatever you set.

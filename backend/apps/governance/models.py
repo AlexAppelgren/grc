@@ -123,6 +123,12 @@ class AiGeneration(models.Model):
     reviewed_at = models.DateTimeField(null=True, blank=True)
     input_tokens = models.PositiveIntegerField(default=0)
     output_tokens = models.PositiveIntegerField(default=0)
+    # How a call bleqq made ended (AUD-02, D-82): the provider's own stop reason when the
+    # model finished (`end_turn`, or `max_tokens` when it stopped at the limit), `aborted`
+    # when the caller stopped reading first, `failed` when the model failed once asked. A
+    # record of what happened, which nothing branches on. Empty on a row an agent filed
+    # (D-66), whose call bleqq never saw end.
+    stop_reason = models.CharField(max_length=64, blank=True)
     # Integer minor units, the one money shape the playbook allows (billing reads it).
     cost_minor = models.PositiveIntegerField(default=0)
     # Filled by chunk 7's Ask feedback; built now so chunk 7 adds no migration.
