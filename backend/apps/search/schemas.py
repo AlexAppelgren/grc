@@ -1481,3 +1481,44 @@ class EvalRunPage(CamelSchema):
             "Do not read it as how many are on this page."
         )
     )
+
+
+class EvalBaselineOut(CamelSchema):
+    """The release gate's accepted retrieval scores in this build, each null until recorded."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"recorded": False, "recordedAt": None, "recallAt10": None, "mrr": None}]}
+    )
+
+    recorded: bool = Field(
+        description=(
+            "True once a real evaluator has scored the retrieval track and its scores were "
+            "recorded as the baseline the release gate compares every build with; false while "
+            "none has, and then each score is null. Source: `backend/eval/baseline.json` in this "
+            "build. Do not read false as search failing: an unrecorded track fails no build."
+        )
+    )
+    recorded_at: datetime | None = Field(
+        description=(
+            "When the baseline was recorded, as an ISO 8601 date-time in UTC, or null while "
+            "it is not. Source: the baseline file. Do not read it as when this build shipped."
+        )
+    )
+    recall_at_10: float | None = Field(
+        ge=0,
+        le=1,
+        description=(
+            "The accepted mean recall at 10, from 0 to 1, or null while nobody has recorded "
+            "it. Source: the baseline file. Do not read null as zero: a recorded 0 is a score, "
+            "null is the absence of one."
+        ),
+    )
+    mrr: float | None = Field(
+        ge=0,
+        le=1,
+        description=(
+            "The accepted mean reciprocal rank, from 0 to 1, or null while nobody has recorded "
+            "it. Source: the baseline file. Do not read null as zero: a recorded 0 is a score, "
+            "null is the absence of one."
+        ),
+    )

@@ -35,6 +35,7 @@ from django.db import transaction
 from apps.library.models import Language
 from apps.search.models import EvalQuestion, EvalRun
 from apps.search.schemas import (
+    EvalBaselineOut,
     EvalQuestionInput,
     EvalQuestionOut,
     EvalQuestionResult,
@@ -48,6 +49,7 @@ from apps.shared.audit import Actor, record
 
 RETRIEVAL_SET = Path(settings.BASE_DIR) / "eval" / "retrieval.jsonl"
 HARNESS = Path(settings.BASE_DIR) / "scripts" / "search_eval.py"
+BASELINE = Path(settings.BASE_DIR) / "eval" / "baseline.json"
 QUESTION_SUBJECT = "eval_question"
 RUN_SUBJECT = "eval_run"
 QUESTION_ADDED = "eval_question.created"
@@ -224,6 +226,19 @@ def list_runs(*, limit: int, offset: int) -> tuple[list[EvalRunOut], int]:
         )
         for run in runs[offset : offset + limit]
     ], runs.count()
+
+
+def retrieval_baseline() -> EvalBaselineOut:
+    """The retrieval track of the gate's baseline file in this build. A score nobody recorded
+    stays null, so the console can never show it as zero. A read: no audit row."""
+    data = json.loads(BASELINE.read_text(encoding="utf-8"))
+    track = data["tracks"]["retrieval"]
+    return EvalBaselineOut(
+        recorded=track["recorded"],
+        recorded_at=track["recorded_at"],
+        recall_at_10=data["metrics"]["retrieval_recall_at_10"],
+        mrr=data["metrics"]["retrieval_mrr"],
+    )
 
 
 # ---------------------------------------------------------------------------------------

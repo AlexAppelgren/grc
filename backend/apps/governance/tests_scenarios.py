@@ -116,6 +116,7 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
         {"key": "r-en-90", "lang": "en", "question": "costs and charges", "expected": [], "matchKind": "concept"},
     ),
     "listEvalRuns": ("GET", "/eval/runs", None),
+    "getEvalBaseline": ("GET", "/eval/baseline", None),
 }
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a
