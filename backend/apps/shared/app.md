@@ -33,6 +33,18 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | NFR-04 | EU-only hosting and the assurance pack of playbook 18 | M | R3 | pending |
 | I18N-02 | UI in `en` and `sv` at R1, the others by R3, from message catalogs | M | R1 | pending |
 
+> **Note — I18N-02 at R1.** `en` and `sv` are built. Every UI string is in both catalogs
+> (`check:messages`); a person switches their own interface language from the account menu
+> in the rail, which saves it on them through `PATCH /me` and refetches every cached answer,
+> so vocabulary labels arrive from their rows in the new language; dates, partial dates and
+> times format per language in the tenant's timezone, a Swedish quarter reading "kv. 4 2026".
+> I18N-S3 and I18N-S4 are the journeys. `da`, `nb` and `fi` come in chunk 13: their catalogs
+> in `c13-i18n-da`, `-nb` and `-fi`, then `c13-i18n-wiring` turns them on and extends both
+> journeys. Until then those language rows are content languages only, and the menu does not
+> offer them. The More sheet below 1024 px has no language choice yet, and `<html lang>`
+> stays the build default (an open question in `docs/TODO_FOR_alex.md`). The status cell
+> above is set by `r1-close-and-readiness` after the batch E2E run.
+
 ## 3. Acceptance criteria (from PRD, condensed)
 
 - **AC-NFR1** For every tenant route, a record of tenant A requested by tenant
