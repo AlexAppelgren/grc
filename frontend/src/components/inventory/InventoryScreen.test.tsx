@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
+import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 
@@ -70,10 +71,16 @@ const adviceOnly: Obligation = {
   complianceStatus: { key: 'gap', kind: 'gap', label: 'Gap' },
 };
 
-function renderIn(node: ReactNode) {
+function renderIn(node: ReactNode, permissions: readonly string[] = ['library.read']) {
   const { wrapper } = queryWrapper();
   const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-  return render(<Wrapper>{<LocaleProvider locale="en">{node}</LocaleProvider>}</Wrapper>);
+  return render(
+    <Wrapper>
+      <PermissionsProvider permissions={permissions}>
+        <LocaleProvider locale="en">{node}</LocaleProvider>
+      </PermissionsProvider>
+    </Wrapper>,
+  );
 }
 
 const fffs: Instrument = {
@@ -263,11 +270,18 @@ describe('InventoryScreen', () => {
     expect(screen.queryByRole('link', { name: 'Show outside our scope' })).toBeNull();
   });
 
-  it('points at the regulatory scope when nothing is in it yet', async () => {
+  it.each([['footprint.request'], ['footprint.approve']])('points a holder of %s at the regulatory scope when nothing is in it yet', async (permission) => {
     serve({ items: [], total: 0 });
-    renderIn(<InventoryScreen />);
+    renderIn(<InventoryScreen />, ['library.read', permission]);
     expect(await screen.findByText('The library has nothing in our scope yet')).toBeVisible();
     expect(screen.getByRole('link', { name: 'Check the regulatory scope under Admin' })).toHaveAttribute('href', '/admin/footprint');
+  });
+
+  it('shows the empty state without the link to a reader who cannot open the regulatory scope', async () => {
+    serve({ items: [], total: 0 });
+    renderIn(<InventoryScreen />, ['library.read']);
+    expect(await screen.findByText('The library has nothing in our scope yet')).toBeVisible();
+    expect(screen.queryByRole('link', { name: 'Check the regulatory scope under Admin' })).toBeNull();
   });
 
   it('reads as of a date, banners it and goes back to today', async () => {
