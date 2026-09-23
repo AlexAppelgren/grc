@@ -507,7 +507,7 @@ def scope_term_ids(*, reach: bool = True) -> Func:
 
 
 def _matches(tenant: Tenant, term_ids: Func | ArraySubquery) -> Func:
-    """`taxonomy_in_footprint(tenant, term_ids)`, the database's rule, called unchanged."""
+    """`taxonomy_in_footprint(tenant, term_ids)`, the database's rule, with the footprint read once per query."""
     return matching.in_footprint_expression(tenant.id, term_ids)
 
 
