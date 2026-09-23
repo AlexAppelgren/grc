@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { PillRow } from '@/components/ui/PillRow';
 import { useFormatContext } from '@/features/identity/hooks';
-import { outsideFootprintLabel, presentObligation, watchedMarketLabel, type ObligationFacts } from '@/features/library/obligation-presentation';
+import { machineConfirmedLabel, outsideFootprintLabel, presentObligation, watchedMarketLabel, type ObligationFacts } from '@/features/library/obligation-presentation';
 import type { Obligation } from '@/features/library/types';
 import { verifiedLabel, versionLabel } from '@/features/library/version-presentation';
 import type { Translate } from '@/shared/i18n';
@@ -37,14 +37,18 @@ export function factsOf(obligation: Obligation): ObligationFacts {
  * The meta line under the title: the terms the obligation carries in each
  * dimension it restricts, the version coming next, when it was last verified
  * and, outside the footprint, what puts it there, or under "Markets we watch"
- * the market it comes from.
+ * the market it comes from. Wording in force that an independent agent
+ * confirmed reads machine-confirmed in the verified date's place until a named
+ * person re-verifies the record after it (INV-05, D-74).
  */
 export function metaOf(obligation: Obligation, t: Translate, ctx: FormatContext, watched = false): string[] {
   const meta = obligation.scope.filter((dimension) => dimension.terms.length > 0).map((dimension) => dimension.terms.map((term) => term.label).join(', '));
   if (obligation.upcomingVersion !== null) {
     meta.push(versionLabel(obligation.upcomingVersion.versionNumber, obligation.upcomingVersion.effectiveFrom, t, ctx));
   }
-  if (obligation.lastVerifiedAt !== null) meta.push(verifiedLabel(obligation.lastVerifiedAt, t, ctx));
+  const machine = machineConfirmedLabel(obligation.version, obligation, t, ctx);
+  if (machine !== null) meta.push(machine);
+  else if (obligation.lastVerifiedAt !== null) meta.push(verifiedLabel(obligation.lastVerifiedAt, t, ctx));
   if (watched) {
     meta.push(watchedMarketLabel(obligation.jurisdiction, t));
   } else if (!obligation.inFootprint) {

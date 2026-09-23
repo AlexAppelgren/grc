@@ -75,3 +75,16 @@ export function outsideScopeLine(row: Pick<LibraryUpdateRow, 'inFootprint' | 'ou
   if (row.inFootprint || terms.length === 0) return null;
   return t('library.updates.outsideScope', { terms: terms.map((term) => term.label).join(', ') });
 }
+
+/**
+ * "Machine-confirmed: proposed by watch-sweeper, confirmed by library-confirmer": a change an
+ * independent agent confirmed never reads as a person's approval (INV-05, D-62). Decided by
+ * who confirmed alone, as the obligation card decides it; a person's approval says nothing.
+ */
+export function confirmedLine(row: Pick<LibraryUpdateRow, 'verifiedOrigin' | 'confirmedByAgent' | 'proposedByAgent'>, t: Translate): string | null {
+  if (row.verifiedOrigin !== 'agent') return null;
+  const confirmer = row.confirmedByAgent?.key ?? '';
+  return row.proposedByAgent === null || row.proposedByAgent === undefined
+    ? t('library.updates.machineConfirmedBy', { confirmer })
+    : t('library.updates.machineConfirmed', { proposer: row.proposedByAgent.key, confirmer });
+}

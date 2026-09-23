@@ -578,6 +578,7 @@ def _version_ref(version: ObligationVersion | None) -> ObligationVersionRef | No
     return ObligationVersionRef(
         version_number=version.version_number,
         effective_from=partial_date(version.effective_from, version.effective_from_precision),
+        approved_at=version.approved_at,
         verified_origin=confirmed.verified_origin,
         confirmed_by_agent=confirmed.confirmed_by_agent,
         proposed_by_agent=confirmed.proposed_by_agent,
@@ -612,7 +613,7 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
     queryset = in_view(queryset, tenant, query.footprint)
     total = queryset.count()
     page = list(
-        queryset.order_by("stable_key").select_related("instrument__level", "instrument__jurisdiction", "duty_type").prefetch_related("titles", versions_with_confirmation())[
+        queryset.order_by("stable_key").select_related("instrument__level", "instrument__jurisdiction", "duty_type", "verified_by").prefetch_related("titles", versions_with_confirmation())[
             offset : offset + limit
         ]
     )
@@ -654,6 +655,7 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
                 in_footprint=not outside,
                 outside_reason=outside,
                 last_verified_at=obligation.last_verified_at,
+                verified_by=None if obligation.verified_by is None else PersonRef(id=obligation.verified_by.id, name=obligation.verified_by.name),
                 open_change_count=0,
                 pending_applicability=None,
                 compliance_status=None,

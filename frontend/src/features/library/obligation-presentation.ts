@@ -9,7 +9,7 @@ import {
 import type { MessageKey, Translate } from '@/shared/i18n';
 import { formatDate, type FormatContext } from '@/shared/utils/format';
 
-import type { ObligationProvenance, ObligationVersionRow } from './types';
+import type { ObligationProvenance, ObligationVersionRow, VersionConfirmation } from './types';
 
 // Obligation row and header (design/system/pills-and-labels.md, slot order).
 // Row: instrument, "Guidance" if not binding ("Standard" for a standard), applicability, compliance
@@ -219,9 +219,10 @@ export function presentChangePending(formattedDate: string, t: Translate): Prese
 // for the "Last verified" slot: the label gives way only to one a named person
 // made after that approval, never to a seeded date nobody signed. A version
 // row passes null, because who approved a version does not change when
-// somebody later checks the record.
+// somebody later checks the record. An inventory row passes its own version
+// in force and stamp, so the list follows the same rule as the card.
 export function machineConfirmedLabel(
-  version: ObligationVersionRow | null,
+  version: Pick<ObligationVersionRow, 'approvedAt' | keyof VersionConfirmation> | null,
   stamp: Pick<ObligationProvenance, 'lastVerifiedAt' | 'verifiedBy'> | null,
   t: Translate,
   ctx: FormatContext,

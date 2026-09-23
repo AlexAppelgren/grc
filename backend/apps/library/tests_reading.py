@@ -191,7 +191,7 @@ class ObligationListTests(TestCase):
         self.assertEqual(
             [term["key"] for term in scope["jurisdiction"]["terms"]], ["se"], "the instrument's jurisdiction is derived, never stored"
         )
-        self.assertEqual(row["version"], {"versionNumber": 1, "effectiveFrom": None, **SEEDED})
+        self.assertEqual(row["version"], {"versionNumber": 1, "effectiveFrom": None, "approvedAt": None, **SEEDED})
         self.assertIsNone(row["upcomingVersion"])
         self.assertEqual((row["inFootprint"], row["outsideReason"]), (True, []))
         self.assertEqual(row["lastVerifiedAt"], "2026-06-30T08:00:00Z")
@@ -286,8 +286,8 @@ class ObligationListTests(TestCase):
 
     def test_as_of_returns_the_version_in_force_and_the_one_to_come(self) -> None:
         before = self.row("obl-d-research", {"asOf": EARLY.isoformat()})
-        self.assertEqual(before["version"], {"versionNumber": 1, "effectiveFrom": {"date": "2025-01-01", "precision": "day"}, **SEEDED})
-        self.assertEqual(before["upcomingVersion"], {"versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}, **SEEDED})
+        self.assertEqual(before["version"], {"versionNumber": 1, "effectiveFrom": {"date": "2025-01-01", "precision": "day"}, "approvedAt": None, **SEEDED})
+        self.assertEqual(before["upcomingVersion"], {"versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}, "approvedAt": None, **SEEDED})
         on = self.row("obl-d-research", {"asOf": CHANGE_DAY.isoformat()})
         self.assertEqual(on["version"]["versionNumber"], 2)
         self.assertIsNone(on["upcomingVersion"])
@@ -901,8 +901,10 @@ class MachineConfirmedVersionTests(TestCase):
 
         rows = self.read(URL, {"asOf": EARLY.isoformat()})["items"]
         row = next(row for row in rows if row["stableKey"] == self.obligation.stable_key)
-        self.assertEqual(row["version"], {"versionNumber": 1, "effectiveFrom": {"date": "2025-01-01", "precision": "day"}, **SEEDED})
-        self.assertEqual(row["upcomingVersion"], {"versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}, **agents})
+        self.assertEqual(row["version"], {"versionNumber": 1, "effectiveFrom": {"date": "2025-01-01", "precision": "day"}, "approvedAt": None, **SEEDED})
+        upcoming = row["upcomingVersion"]
+        self.assertEqual({key: upcoming[key] for key in upcoming if key != "approvedAt"}, {"versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}, **agents})
+        self.assertIsNotNone(upcoming["approvedAt"], "an approved version says when")
 
         card = self.read(f"{URL}/{self.obligation.id}", {"asOf": EARLY.isoformat()})
         self.assertEqual({key: card["provenance"][key] for key in agents}, SEEDED, "the version in force was seeded")
@@ -915,6 +917,29 @@ class MachineConfirmedVersionTests(TestCase):
 
         on = self.read(f"{URL}/{self.obligation.id}", {"asOf": CHANGE_DAY.isoformat()})
         self.assertEqual({key: on["provenance"][key] for key in agents}, agents, "in force, the provenance names the agents too")
+
+    def test_the_list_row_carries_the_approval_time_and_who_re_verified(self) -> None:
+        """The list row gets the same two facts the card uses to decide its "Last verified"
+        slot (INV-05, INV-06, D-74): when the version in force was approved, and which person,
+        if any, stamped the record. Without them, a row could only show a person's date
+        under wording that only agents have seen."""
+        agents = self.agents_apply(D(2026, 1, 1))
+
+        row = next(row for row in self.read(URL, {"asOf": EARLY.isoformat()})["items"] if row["stableKey"] == self.obligation.stable_key)
+        self.assertEqual({key: row["version"][key] for key in agents}, agents)
+        self.assertIsNotNone(row["version"]["approvedAt"])
+        self.assertIsNone(row["verifiedBy"], "nobody has re-verified it since the agents confirmed it")
+
+        stamped = self.client.post(
+            f"{URL}/{self.obligation.id}/verifications", {"outcome": "no_change"}, content_type="application/json", **sign_in(self.editor, step_up=True)
+        )
+        self.assertEqual(stamped.status_code, 201, stamped.content)
+        after = next(row for row in self.read(URL, {"asOf": EARLY.isoformat()})["items"] if row["stableKey"] == self.obligation.stable_key)
+        self.assertEqual(after["verifiedBy"], {"id": str(self.editor.id), "name": self.editor.name})
+        self.assertGreater(
+            datetime.datetime.fromisoformat(after["lastVerifiedAt"]), datetime.datetime.fromisoformat(after["version"]["approvedAt"])
+        )
+        self.assertEqual({key: after["version"][key] for key in agents}, agents, "who confirmed the version never changes")
 
     def test_naming_the_agents_costs_no_query_per_version(self) -> None:
         card, page = f"{URL}/{self.obligation.id}", URL

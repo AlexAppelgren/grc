@@ -43,6 +43,8 @@
   "library.updates.showWhatChanged": "Show what changed",
   "library.updates.open": "Open",
   "library.updates.thisLooksWrong": "This looks wrong",
+  "library.updates.machineConfirmed": "Machine-confirmed: proposed by {proposer}, confirmed by {confirmer}",
+  "library.updates.machineConfirmedBy": "Machine-confirmed by {confirmer}",
   "library.updates.outsideScope": "Outside our scope: {terms}",
   "library.updates.errorTitle": "Could not load the updates",
   "library.updates.empty.title": "Nothing changed since {date}",

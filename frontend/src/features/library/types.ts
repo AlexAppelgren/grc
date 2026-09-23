@@ -27,9 +27,10 @@ export interface LocalizedText {
 }
 
 /** A summary version by number and the date it takes effect; a null date means "since it began" (INV-04). */
-export interface ObligationVersion {
+export interface ObligationVersion extends VersionConfirmation {
   versionNumber: number;
   effectiveFrom: PartialDate | null;
+  approvedAt: string | null;
 }
 
 /** The record's terms in one dimension; an empty list means no restriction in it (FP-01). */
@@ -70,6 +71,8 @@ export interface Obligation {
   inFootprint: boolean;
   outsideReason: OutsideReason[];
   lastVerifiedAt: string | null;
+  /** The named person behind `lastVerifiedAt`, or null when nobody signed it. */
+  verifiedBy: PersonRef | null;
   openChangeCount: number;
   /** An applicability change waiting for approval; null until the register overlay lands (chunk 8). */
   pendingApplicability: boolean | null;
