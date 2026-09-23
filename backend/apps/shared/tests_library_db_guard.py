@@ -112,7 +112,14 @@ from apps.taxonomy.models import Flag, SourceKind, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.watch import curation, registration, so_what_draft, sources, testing as watch_testing
 from apps.watch.models import ChangeObligation, ChangeTerm, RegulatoryChange, Source
-from apps.watch.schemas import WatchChangeEventInput, WatchChangeInput, WatchChangePatch, WatchSoWhatInput, WatchSourceInput
+from apps.watch.schemas import (
+    WatchChangeEventInput,
+    WatchChangeInput,
+    WatchChangePatch,
+    WatchCurationConfirmInput,
+    WatchSoWhatInput,
+    WatchSourceInput,
+)
 from apps.watch.write import WATCH_TABLES, watch_write
 
 APP = "app"
@@ -604,6 +611,8 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
         editor = factories.platform_user(roles=("library_editor",), email="door-editor@bleqq.test")
         who = user_principal(permissions={perms.PROPOSALS_REVIEW, perms.SOURCES_MANAGE}, subject_id=editor.id)
         actor = factories.user_actor(user_id=editor.id)
+        # A second editor confirms what the first filed: nobody confirms their own suggestion.
+        confirmer = factories.platform_user(roles=("library_editor",), email="door-confirmer@bleqq.test")
         securities = watch_testing.term("regime:securities")
         proven: set[str] = set()
         with as_the_app_role():
@@ -648,6 +657,18 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
                     change_id=registered.id,
                     body=WatchChangeEventInput.model_validate({"label": "Adopted", "eventDate": "2026-06-15", "datePrecision": "day", "occurred": True}),
                 )
+                # The one writer of a confirmation, which updates the change and its links in
+                # place (D-74, security-review-c5).
+                curation.confirm_curation(
+                    who=user_principal(permissions={perms.PROPOSALS_REVIEW}, subject_id=confirmer.id),
+                    actor=factories.user_actor(user_id=confirmer.id),
+                    order=ORDER,
+                    change_id=registered.id,
+                    body=WatchCurationConfirmInput.model_validate(
+                        {"changeType": "adopted", "flags": ["advice_perimeter"], "obligationIds": [str(self.obligation.id)]}
+                    ),
+                    step_up_assertion_id=uuid.uuid4(),
+                )
             proven.add("watch/curation.py")
             with transaction.atomic():
                 tenancy.clear_tenant()
@@ -677,7 +698,9 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
         self.assertEqual(change.documents.count(), 1)
         self.assertTrue(change.term_links.filter(flag__key="advice_perimeter").exists())
         self.assertTrue(change.term_links.filter(term=securities).exists())
-        self.assertTrue(ChangeObligation.objects.filter(change=change, obligation=self.obligation).exists())
+        self.assertTrue(ChangeObligation.objects.filter(change=change, obligation=self.obligation, confirmed_by=confirmer).exists())
+        self.assertFalse(change.change_type_suggested)
+        self.assertTrue(change.term_links.filter(flag__key="advice_perimeter", confirmed_by=confirmer).exists())
         self.assertTrue(Source.objects.filter(pk=source.id, owner_tenant__isnull=True).exists())
 
 
