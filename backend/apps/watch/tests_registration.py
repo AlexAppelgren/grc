@@ -26,6 +26,7 @@ from apps.agents import testing as agent_build
 from apps.agents.models import RunStatus
 from apps.agents.screen import EMBEDDED_INSTRUCTIONS
 from apps.cases import creation, testing as case_build
+from apps.governance.models import AiGeneration, AiPurpose
 from apps.library import testing as library_build
 from apps.shared import factories, outbox, permissions as perms, tenancy
 from apps.shared.models import AuditEvent, OutboxEvent
@@ -48,6 +49,10 @@ ADOPTED = {"label": "Adopted", "eventDate": "2026-06-15", "datePrecision": "day"
 IN_FORCE = {"label": "In force", "eventDate": "2027-01-01", "datePrecision": "quarter", "sortOrder": 3}
 FIRST_PAGE = "https://www.fi.se/en/published/news/2026/research-payments/"
 SECOND_PAGE = "https://www.regeringen.se/pressmeddelanden/2026/research-payments/"
+
+# The reform a library editor files by hand. Held apart from the field that carries it: a
+# stable key beside the word for it reads to gitleaks' generic-api-key rule as a credential.
+BY_HAND = "chg-fi-2026-by-hand"
 
 # A page whose text tells a reader to ignore what it was asked to do. It is registered from
 # the factual content around it and never followed (AGT-07, agents/screen.py).
@@ -75,6 +80,8 @@ def body(**overrides: Any) -> dict[str, Any]:  # compliance: allow-kwargs test h
         "events": [CONSULTATION, ADOPTED, IN_FORCE],
         "documents": [{"url": FIRST_PAGE, "title": "FI adopts amended rules", "isPrimary": True}],
         "model": "agent pipeline 0.4",
+        # Every change carries a regime (D-39, AC-AGT1), so every registration here names one.
+        "termIds": [str(watch_build.term(SECURITIES).id)],
     }
     payload.update(overrides)
     return payload
@@ -287,6 +294,92 @@ class ABanksKeyWritesNothingToTheWatch(RegistrationCase):
         self.assertEqual(change.documents.count(), 1)
         self.assertEqual(change.events.count(), 3)
         self.assertEqual(AuditEvent.objects.count(), before, "a refusal writes nothing, not even its audit row")
+
+
+class EveryChangeCarriesARegime(RegistrationCase):
+    """D-39, AC-AGT1: a change with no regime would reach every bank whatever its scope, so a
+    new one is refused before anything is written, and the refusal lists the regimes the
+    caller may choose from."""
+
+    def test_a_new_change_without_a_regime_is_refused_with_the_regimes_listed(self) -> None:
+        written = OutboxEvent.objects.count()
+        cases = {
+            "no term at all": [],
+            "a channel term but no regime": [str(watch_build.term("channel:digital").id)],
+        }
+        for case, term_ids in cases.items():
+            with self.subTest(case=case):
+                response = self.register(body(agentRunId=str(self.open_run.id), termIds=term_ids))
+                self.assertEqual(response.status_code, 422, response.content)
+                problem = response.json()
+                self.assertEqual(problem["code"], "regime_required")
+                self.assertEqual(problem["dimension"], "regime")
+                self.assertIn("securities", problem["validKeys"])
+                self.assertIn("aml", problem["validKeys"])
+                self.assertNotIn("digital", problem["validKeys"], "only the regime dimension's keys are listed")
+        self.assertEqual(RegulatoryChange.objects.count(), 0, "a refusal stores nothing")
+        self.assertEqual(OutboxEvent.objects.count(), written, "and opens no case anywhere")
+
+    def test_a_second_sighting_needs_no_regime_because_it_changes_no_scope(self) -> None:
+        """A merge adds pages and milestones and never touches the stored terms, so the rule
+        that guards a change's scope has nothing to guard there (AC-WAT1)."""
+        self.register()
+        again = self.register(body(agentRunId=str(self.open_run.id), termIds=[]))
+        self.assertEqual(again.status_code, 200, again.content)
+        self.assertEqual([link.term.key for link in self.stored().term_links.filter(term__isnull=False) if link.term], ["securities"])
+
+
+class TheSuggestedClassificationIsLogged(RegistrationCase):
+    """AUD-02, D-66: a run's classification of a new change is machine output, so it leaves
+    one `scope_suggestion` row in the AI log with the model metadata the run reported."""
+
+    def generations(self) -> list[AiGeneration]:
+        return list(AiGeneration.objects.filter(purpose=AiPurpose.SCOPE_SUGGESTION.value).order_by("created_at"))
+
+    def test_a_runs_registration_logs_one_scope_suggestion_with_its_reported_model(self) -> None:
+        response = self.register()
+        self.assertEqual(response.status_code, 201, response.content)
+        change = self.stored()
+        [row] = self.generations()
+        self.assertEqual((row.subject_type, row.subject_id), ("regulatory_change", change.id))
+        self.assertEqual(row.agent_run_id, self.open_run.id)
+        self.assertEqual((row.model, row.model_version), (self.open_run.model, self.open_run.pipeline_version))
+        self.assertTrue(row.model_metadata_reported_by_agent, "the run's own account, never observed by bleqq")
+        self.assertEqual(row.status, "draft")
+        self.assertIsNone(row.tenant_id, "a library fact is nobody's")
+        for part in ("change_type:adopted", "flag:advice_perimeter", "regime:securities", "urgency:act_now"):
+            self.assertIn(part, row.output)
+        self.assertEqual([citation["url"] for citation in row.citations], ["https://www.fi.se/"])
+
+    def test_the_so_what_reports_the_model_when_the_filing_carries_one(self) -> None:
+        so_what = {
+            "text": "Teams that pay for research should confirm their quality criteria.",
+            "model": "claude-opus-5",
+            "modelVersion": "2026-05-01",
+            "citations": [{"label": "Finansinspektionen", "url": FIRST_PAGE}],
+        }
+        self.register(body(agentRunId=str(self.open_run.id), soWhat=so_what))
+        [row] = self.generations()
+        self.assertEqual((row.model, row.model_version), ("claude-opus-5", "2026-05-01"))
+
+    def test_a_person_and_a_second_sighting_log_nothing(self) -> None:
+        """A library editor's classification is a person's, and a merge stores no scope."""
+        self.register()
+        self.register()
+        editor = factories.platform_user(email="library.editor@bleqq.example")
+        with stub_session(user_principal(permissions={perms.PROPOSALS_REVIEW}, subject_id=editor.id)):
+            self.client.post(
+                CHANGES,
+                data=body(stableKey=BY_HAND),
+                content_type=JSON,
+                HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}",
+            )
+        self.assertTrue(RegulatoryChange.objects.filter(stable_key=BY_HAND).exists())
+        self.assertEqual(len(self.generations()), 1)
+
+    def test_a_refused_registration_logs_nothing(self) -> None:
+        self.register(body(agentRunId=str(self.open_run.id), termIds=[]))
+        self.assertEqual(self.generations(), [])
 
 
 class SightingAReformAgain(RegistrationCase):

@@ -753,7 +753,7 @@ def seed_watch_changes() -> SeedHome:
 
     today = datetime.datetime.now(ZoneInfo(TENANT_A.timezone)).date()
     near, far = _quarter_safe_offsets()
-    watch_e2e_seed.seed_change(
+    lead = watch_e2e_seed.seed_change(
         stable_key=EXPECTED_HOME.lead_change,
         title="FI adopts amended rules on paying for investment research",
         key_date=today + datetime.timedelta(days=near),
@@ -762,7 +762,7 @@ def seed_watch_changes() -> SeedHome:
         first_seen_at=timezone_now_this_week(TENANT_A.timezone),
         so_what_draft="Confirm the annual assessment criteria before the rules take effect.",
     )
-    watch_e2e_seed.seed_change(
+    later = watch_e2e_seed.seed_change(
         stable_key=EXPECTED_HOME.later_change,
         title="Amended reporting of securities financing transactions",
         key_date=today + datetime.timedelta(days=far),
@@ -770,7 +770,7 @@ def seed_watch_changes() -> SeedHome:
         urgency="six_months_plus",
         first_seen_at=timezone_now_this_week(TENANT_A.timezone),
     )
-    watch_e2e_seed.seed_change(
+    outside = watch_e2e_seed.seed_change(
         stable_key=EXPECTED_HOME.outside_scope_change,
         title="Insurance distribution guidance outside our scope",
         key_date=today + datetime.timedelta(days=near + 5),
@@ -778,7 +778,7 @@ def seed_watch_changes() -> SeedHome:
         urgency="within_3_months",
         first_seen_at=timezone_now_this_week(TENANT_A.timezone),
     )
-    watch_e2e_seed.seed_change(
+    last_week = watch_e2e_seed.seed_change(
         stable_key=EXPECTED_HOME.last_week_change,
         title="FI starts mapping how financial firms use AI",
         key_date=today + datetime.timedelta(days=far + 30),
@@ -787,6 +787,16 @@ def seed_watch_changes() -> SeedHome:
         first_seen_at=timezone_now_last_week(TENANT_A.timezone),
         so_what_draft="No obligation changes yet. Keep the AI tooling register current.",
     )
+    # Every change carries a regime (D-39, AC-AGT1), each one tenant A's scope holds, so the
+    # scope verdicts the cases below cache are the ones they had: the outside-scope change
+    # stays outside through its pension term (`seed_outside_scope_terms`).
+    for change, regime in (
+        (lead, "regime:securities"),
+        (later, "regime:securities"),
+        (outside, "regime:insurance"),
+        (last_week, "regime:ai_ict"),
+    ):
+        watch_e2e_seed.seed_scope_term_link(change, term_ref=regime)
     return EXPECTED_HOME
 
 
@@ -895,6 +905,9 @@ def seed_home_cases(tenants: list[Tenant], home: SeedHome) -> int:
         urgency="six_months_plus",
         first_seen_at=timezone_now_this_week(TENANT_B.timezone),
     )
+    # A regime each, one tenant B's scope holds, so both cases stay in scope (D-39).
+    watch_e2e_seed.seed_scope_term_link(change_b1, term_ref="regime:aml")
+    watch_e2e_seed.seed_scope_term_link(change_b2, term_ref="regime:securities")
     _seed_case(tenant_b, change_b1, urgency="within_3_months", footprint_match=True)
     _seed_case(tenant_b, change_b2, urgency="six_months_plus", footprint_match=True)
     return 6
