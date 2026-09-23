@@ -179,14 +179,15 @@ then rewrites it and saves; the page reads back the bank's own words, confirmed,
 time and no AI label, and tenant B's administrator still reads the draft with its label and
 is offered no control.
 
-Still pending in this scenario: **the person on screen.** "Confirmed with the person and
-time" needs the person's name on the change read, which carries `soWhatConfirmedAt` and no
-name (nor does an accepted link's `decidedAt`). The person is stored
-(`change_case.so_what_confirmed_by`, `case_obligation_link.decided_by`), audited, and named
-in the write's own answer, but a reload cannot show it. When the read carries
-`soWhatConfirmedByName` and `decidedByName`, the screen renders the design's "Confirmed by
+The person on screen: the change read and the feed now carry `case.soWhatConfirmedByName`
+and each decision's `decidedByName`, read from `change_case.so_what_confirmed_by` and
+`case_obligation_link.decided_by` in the same queries as the case (null while nobody has
+decided), pinned in `tests_case_reads.py`. The screen renders the design's "Confirmed by
 {name}, {date}" (`watch.soWhat.confirmedBy`, `watch.change.confirmedBy`) in place of
-"Confirmed {date}" and "Confirmed for us, {date}", and WAT-S6 and WAT-S7 assert the name.
+"Confirmed {date}" and "Confirmed for us, {date}", and WAT-S6 and WAT-S7 assert the name,
+in wave 3 (`watch-curation-confirm-frontend`). A link this bank removed leaves the
+obligation's related-changes panel for this bank: that change is out of its items, its
+total and its open count.
 
 ### WAT-S8 — A tenant requests a source and private sources stay private `@integration` `@e2e` (WAT-06)
 ```gherkin

@@ -46,6 +46,7 @@ const lead: Briefing['items'][number] = {
     ownerId: null,
     soWhatConfirmed: true,
     soWhatConfirmedAt: '2026-09-17T09:00:00Z',
+    soWhatConfirmedByName: 'Sara Lind',
     soWhatText: 'Confirm the annual assessment criteria before the rules take effect.',
     urgency: { key: 'act_now', kind: null, label: 'Act now' },
     urgencyConfirmed: true,

@@ -110,6 +110,7 @@ const change: ChangeDetail = {
     ownerId: null,
     soWhatConfirmed: false,
     soWhatConfirmedAt: null,
+    soWhatConfirmedByName: null,
     soWhatText: 'Teams that pay for external research should confirm the criteria exist.',
     urgency: null,
     urgencyConfirmed: false,
@@ -240,8 +241,8 @@ describe('the documents panel', () => {
 
 describe('the obligations affected', () => {
   const [suggested, libraryConfirmed] = change.obligations as [ObligationLink, ObligationLink];
-  const accepted: CaseObligationDecision = { obligationId: 'o-1', decision: 'accepted', decidedAt: '2026-09-17T09:12:00Z' };
-  const removed: CaseObligationDecision = { obligationId: 'o-1', decision: 'removed', decidedAt: '2026-09-17T09:12:00Z' };
+  const accepted: CaseObligationDecision = { obligationId: 'o-1', decision: 'accepted', decidedAt: '2026-09-17T09:12:00Z', decidedByName: 'Sara Lind' };
+  const removed: CaseObligationDecision = { obligationId: 'o-1', decision: 'removed', decidedAt: '2026-09-17T09:12:00Z', decidedByName: 'Sara Lind' };
   const decided = (decision: CaseObligationDecision): ChangeDetail => ({ ...change, case: { ...change.case!, obligationDecisions: [decision] } });
 
   beforeEach(() => {

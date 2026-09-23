@@ -53,6 +53,7 @@ from django.db.models import (
     Value,
 )
 
+from apps.cases.models import CaseLinkDecision as CaseLinkDecisionKind
 from apps.cases.models import CaseObligationLink, ChangeCase
 from apps.library.models import ObligationTitle
 from apps.library.reading import NOT_FOUND, localized, obligation_subject, outside_reasons, vocabulary_refs
@@ -86,20 +87,24 @@ from apps.watch.schemas import (
     WatchObligationLink,
 )
 
-# The columns of the reader's own case the feed answers, read off the one left join. A
-# foreign key is named without its `_id` suffix on purpose: `F("own_case__urgency")`
-# resolves to the column on `change_case` and adds no second join.
-_CASE_COLUMNS = (
-    "id",
-    "status",
-    "urgency",
-    "urgency_confirmed",
-    "owner",
-    "footprint_match",
-    "so_what_text",
-    "so_what_confirmed",
-    "so_what_confirmed_at",
-)
+# The columns of the reader's own case the feed answers, read off the one left join, by
+# the name each is read under and its path from the case. A foreign key is named without
+# its `_id` suffix on purpose: `F("own_case__urgency")` resolves to the column on
+# `change_case` and adds no second join. The confirming person's name is the one path that
+# does join, a left join to `app_user` in the same query, so naming them costs no query
+# per row (WAT-05).
+_CASE_COLUMNS = {
+    "id": "id",
+    "status": "status",
+    "urgency": "urgency",
+    "urgency_confirmed": "urgency_confirmed",
+    "owner": "owner",
+    "footprint_match": "footprint_match",
+    "so_what_text": "so_what_text",
+    "so_what_confirmed": "so_what_confirmed",
+    "so_what_confirmed_at": "so_what_confirmed_at",
+    "so_what_confirmed_by_name": "so_what_confirmed_by__name",
+}
 
 
 # ---------------------------------------------------------------------------------------
@@ -236,7 +241,7 @@ def _with_own_case(tenant: Tenant) -> QuerySet[RegulatoryChange]:
     braces."""
     queryset: QuerySet[RegulatoryChange] = RegulatoryChange.objects.annotate(
         own_case=FilteredRelation("cases", condition=Q(cases__tenant=tenant))
-    ).annotate(**{f"case_{column}": F(f"own_case__{column}") for column in _CASE_COLUMNS})
+    ).annotate(**{f"case_{name}": F(f"own_case__{path}") for name, path in _CASE_COLUMNS.items()})
     return queryset
 
 
@@ -318,6 +323,7 @@ def _case_of(
         so_what_text=case["so_what_text"] or None,
         so_what_confirmed=case["so_what_confirmed"],
         so_what_confirmed_at=case["so_what_confirmed_at"],
+        so_what_confirmed_by_name=case["so_what_confirmed_by_name"],
         obligation_decisions=decisions.get(case["id"], []),
         # The state machine that would move a case is chunk 9, so nothing is offered yet.
         # Empty means "no move is offered here", never "the case is stuck".
@@ -327,12 +333,16 @@ def _case_of(
 
 def _decisions_by_case(case_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, list[WatchCaseObligationDecision]]:
     """What this bank decided about the suggested links, its own rows under row-level
-    security. One query for the page."""
+    security, with the deciding person's name joined in. One query for the page."""
     by_case: dict[uuid.UUID, list[WatchCaseObligationDecision]] = {}
-    for row in CaseObligationLink.objects.filter(case_id__in=case_ids):
+    rows = CaseObligationLink.objects.filter(case_id__in=case_ids).annotate(decided_by_name=F("decided_by__name"))
+    for row in rows:
         by_case.setdefault(row.case_id, []).append(
             WatchCaseObligationDecision(
-                obligation_id=row.obligation_id, decision=cast(CaseLinkDecision, row.decision), decided_at=row.decided_at
+                obligation_id=row.obligation_id,
+                decision=cast(CaseLinkDecision, row.decision),
+                decided_at=row.decided_at,
+                decided_by_name=row.decided_by_name,
             )
         )
     return by_case
@@ -565,12 +575,20 @@ def list_obligation_changes(tenant: Tenant, order: list[str], obligation_id: uui
     `openCount` is counted by the database over every linked change and never over the
     page, so paging cannot change it. It counts this bank's own cases that are neither
     closed nor dismissed: it says the work is open, never that the bank does not comply,
-    which is a separate fact in the register (REG-02)."""
+    which is a separate fact in the register (REG-02).
+
+    A change this bank removed the link to — "not related to us" on its own case — is left
+    out of the items, the total and the open count alike. Its removal is this bank's alone:
+    the library link stays, and another bank still sees the change (WAT-04, ruling C)."""
     obligation = obligation_subject(obligation_id)
+    removed = CaseObligationLink.objects.filter(
+        tenant=tenant, obligation=obligation, decision=CaseLinkDecisionKind.REMOVED.value
+    )
     queryset = (
         _with_own_case(tenant)
         .annotate(link=FilteredRelation("obligation_links", condition=Q(obligation_links__obligation=obligation)))
         .filter(link__obligation=obligation)
+        .exclude(Exists(removed.filter(case_id=OuterRef("case_id"))))
         # A link a library editor confirmed comes first; the rest keep the feed's order.
         .annotate(link_confirmed=ExpressionWrapper(Q(link__confirmed_at__isnull=False), output_field=BooleanField()))
         .order_by("-link_confirmed", F("key_date").desc(nulls_last=True), "-first_seen_at", "id")
@@ -579,6 +597,7 @@ def list_obligation_changes(tenant: Tenant, order: list[str], obligation_id: uui
     open_count = (
         ChangeCase.objects.filter(tenant=tenant, change__obligation_links__obligation=obligation)
         .exclude(status__in=(CaseStatusCategory.CLOSED.value, CaseStatusCategory.DISMISSED.value))
+        .exclude(Exists(removed.filter(case_id=OuterRef("pk"))))
         .count()
     )
     page = list(queryset.select_related("change_type")[page_query.offset : page_query.offset + page_query.limit])
