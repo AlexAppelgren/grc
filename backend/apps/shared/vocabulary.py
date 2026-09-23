@@ -120,12 +120,15 @@ class LibraryVocabulary(Vocabulary, LibraryModel):
     proposal that relabels a row.
 
     Machine-confirmed provenance (INV-05, PRO-02, D-62, D-79), the same three facts an
-    obligation version carries: who confirmed the approval that wrote the row's current
-    wording (`verified_origin`: `agent` or `user`), the confirming agent when it was one,
-    and the proposal that wrote it, through which the proposing agent is read
-    (`applied_by_proposal.proposed_by_agent`), so both agents are named without a fourth
-    column. A create or a relabel sets all three; a retire, restore or merge writes no
-    wording and leaves them as they were. Blank and null on a seeded row."""
+    obligation version carries: who confirmed the row's wording (`verified_origin`: `agent`
+    or `user`), the confirming agent when it was one, and the proposal that wrote it,
+    through which the proposing agent is read (`applied_by_proposal.proposed_by_agent`), so
+    both agents are named without a fourth column. Unlike a version, a row is reworded in
+    place, so every label an agent's approval writes is machine-made on its own and the
+    stamp stays `agent` until a person has approved all the wording the agents left
+    (apps/proposals/apply.py, `_restamp`). An approval that writes no wording, such as a
+    sort order, a retire, a restore or a merge, leaves the three as they were. Blank and
+    null on a seeded row."""
 
     version = models.PositiveIntegerField(default=1)
     verified_origin = models.CharField(max_length=16, choices=ORIGIN_CHOICES, blank=True, default="")

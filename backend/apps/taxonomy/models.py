@@ -382,9 +382,8 @@ class TaxonomyTerm(LibraryModel):
     or a tagging in a mirrored dimension read this column rather than a dimension key.
 
     `verified_origin`, `verified_by_agent` and `applied_by_proposal` are the term's
-    machine-confirmed provenance, exactly as on every library list (`LibraryVocabulary`,
-    INV-05, D-62, D-79): set by the proposal that wrote its current wording, blank and null
-    on a seeded term."""
+    machine-confirmed provenance, kept exactly as on every library list
+    (`LibraryVocabulary`, INV-05, D-62, D-79); blank and null on a seeded term."""
 
     dimension = models.ForeignKey(TermDimension, on_delete=models.PROTECT, related_name="terms")
     key = models.SlugField(max_length=80)

@@ -27,6 +27,7 @@ import uuid
 from typing import Any
 
 from django.core.exceptions import ValidationError
+from django.db.models import QuerySet
 from django.utils import timezone
 
 from apps.library.models import (
@@ -289,28 +290,48 @@ def _row(entry: VocabularyList, key: str) -> Any:
 
 
 def _confirmation(proposal: Proposal, reviewer: Reviewer) -> dict[str, Any]:
-    """Who confirmed the wording a list row or a term now carries (INV-05, PRO-02, D-62,
-    D-79), the columns `LibraryVocabulary` and `TaxonomyTerm` hold for it: `agent` and the
-    confirming agent when an independent agent approved, `user` and no agent when a person
-    did. The proposing agent is read through the proposal, as an obligation version's is."""
+    """Who confirmed the wording an approval writes on a list row or a term (INV-05, PRO-02,
+    D-62, D-79), as the columns `LibraryVocabulary` and `TaxonomyTerm` hold it: `agent` and
+    the confirming agent when an independent agent approved, `user` and no agent when a
+    person did. The proposing agent is read through the proposal, as an obligation
+    version's is."""
     return {
-        "verified_origin": OriginType.AGENT.value if reviewer.agent_id is not None else OriginType.USER.value,
+        "verified_origin": (OriginType.AGENT if reviewer.agent_id is not None else OriginType.USER).value,
         "verified_by_agent_id": reviewer.agent_id,
         "applied_by_proposal": proposal,
     }
 
 
-def _machine_made(reviewer: Reviewer, *, is_original: bool, was_machine: bool = False) -> bool:
-    """Whether a label written under this approval is labelled machine-made (INV-05, D-12).
+def _restamp(
+    row: Any, proposal: Proposal, reviewer: Reviewer, labels: QuerySet[Any], *, usage_note_written: bool
+) -> None:
+    """Stamp an existing list row or term with the approval that just wrote some of its
+    wording (INV-05, D-62). Only a relabel or a term update that writes labels or a usage
+    note calls this: a sort order, a retire, a restore or a merge writes no wording, and the
+    row keeps the stamp it had.
 
-    A person's approval confirms the wording, so the label is theirs, exactly as before. An
-    agent's confirms nothing a person would: a translation it writes is machine-made, and
-    one already labelled so stays so. The original is the row's own wording, and the row's
-    `verified_origin` is what says an agent confirmed it."""
-    return reviewer.user is None and (was_machine or not is_original)
+    A row is reworded in place, a piece at a time, so a person's approval stamps `user`
+    only once nothing the agents confirmed is left on it. While a label is still
+    machine-made, or the row keeps a usage note this approval did not rewrite (the row
+    cannot tell who wrote it), an agent-stamped row keeps naming the agents and the
+    proposal they confirmed, so their wording never reads as a person's check. `labels` is
+    the row's label queryset, read after this approval wrote its labels."""
+    if (
+        reviewer.agent_id is None
+        and row.verified_origin == OriginType.AGENT.value
+        and (labels.filter(is_machine=True).exists() or (row.usage_note and not usage_note_written))
+    ):
+        return
+    for name, value in _confirmation(proposal, reviewer).items():
+        setattr(row, name, value)
 
 
 def _write_labels(entry: VocabularyList, row: Any, labels: dict[str, str], reviewer: Reviewer) -> None:
+    """Write `labels` onto a list row. Every label an agent's approval writes, the original
+    included, is machine-made, and an agent never clears the mark; a person's approval
+    confirms exactly the labels it writes (INV-05, D-12, D-62). A row is relabelled in
+    place, so each label carries its own mark rather than leaning on the row's stamp."""
+    machine = reviewer.agent_id is not None
     existing = {label.language: label for label in entry.label_model._default_manager.filter(vocabulary=row)}
     original = None
     if not any(label.is_original for label in existing.values()):
@@ -319,15 +340,11 @@ def _write_labels(entry: VocabularyList, row: Any, labels: dict[str, str], revie
         label = existing.get(language)
         if label is not None:
             label.text = text
-            label.is_machine = _machine_made(reviewer, is_original=label.is_original, was_machine=label.is_machine)
+            label.is_machine = machine
             label.save(update_fields=["text", "is_machine"])
         else:
             entry.label_model._default_manager.create(
-                vocabulary=row,
-                language=language,
-                text=text,
-                is_original=language == original,
-                is_machine=_machine_made(reviewer, is_original=language == original),
+                vocabulary=row, language=language, text=text, is_original=language == original, is_machine=machine
             )
 
 
@@ -376,8 +393,16 @@ def _vocabulary_relabel(
         row.usage_note = payload.usage_note
     if payload.sort_order is not None:
         row.sort_order = payload.sort_order
-    for name, value in {**extra_columns(entry, payload.extra), **_confirmation(proposal, reviewer)}.items():
+    for name, value in extra_columns(entry, payload.extra).items():
         setattr(row, name, value)
+    if payload.labels or payload.usage_note is not None:
+        _restamp(
+            row,
+            proposal,
+            reviewer,
+            entry.label_model._default_manager.filter(vocabulary=row),
+            usage_note_written=payload.usage_note is not None,
+        )
     row.version += 1
     row.save()
     record(
@@ -455,6 +480,8 @@ def _dimension(key: str) -> TermDimension:
 
 
 def _term_labels(term: TaxonomyTerm, labels: dict[str, str], reviewer: Reviewer) -> None:
+    """A term's labels, marked exactly as a list row's are (`_write_labels`)."""
+    machine = reviewer.agent_id is not None
     existing = {label.language: label for label in TaxonomyTermLabel.objects.filter(term=term)}
     original = None
     if not any(label.is_original for label in existing.values()):
@@ -463,15 +490,11 @@ def _term_labels(term: TaxonomyTerm, labels: dict[str, str], reviewer: Reviewer)
         label = existing.get(language)
         if label is not None:
             label.text = text
-            label.is_machine = _machine_made(reviewer, is_original=label.is_original, was_machine=label.is_machine)
+            label.is_machine = machine
             label.save(update_fields=["text", "is_machine"])
         else:
             TaxonomyTermLabel.objects.create(
-                term=term,
-                language=language,
-                text=text,
-                is_original=language == original,
-                is_machine=_machine_made(reviewer, is_original=language == original),
+                term=term, language=language, text=text, is_original=language == original, is_machine=machine
             )
 
 
@@ -529,8 +552,10 @@ def _term_update(
         term.usage_note = payload.usage_note
     if payload.sort_order is not None:
         term.sort_order = payload.sort_order
-    for name, value in _confirmation(proposal, reviewer).items():
-        setattr(term, name, value)
+    if payload.labels or payload.usage_note is not None:
+        _restamp(
+            term, proposal, reviewer, TaxonomyTermLabel.objects.filter(term=term), usage_note_written=payload.usage_note is not None
+        )
     term.version += 1
     term.save()
     record(

@@ -57,7 +57,6 @@ from django.core.exceptions import ValidationError
 from django.db.models import BooleanField, Count, Exists, F, Func, Model, OuterRef, Prefetch, Q, QuerySet, UUIDField, Value
 from django.utils import timezone
 
-from apps.agents.models import Agent
 from apps.library.logic import in_force, version_diff
 from apps.library.models import (
     Authority,
@@ -79,7 +78,6 @@ from apps.library.models import (
     Translation,
 )
 from apps.library.schemas import (
-    AgentRef,
     DiffSegment,
     InstrumentAuthorityRef,
     InstrumentDetail,
@@ -124,7 +122,7 @@ from apps.taxonomy.models import (
     TaxonomyTerm,
     TaxonomyTermLabel,
 )
-from apps.taxonomy.reading import Labels, label_of
+from apps.taxonomy.reading import Labels, agent_ref, label_of, proposing_agent
 from apps.taxonomy.schemas import PersonRef
 
 
@@ -379,11 +377,6 @@ def scope_and_verdict(
 # ---------------------------------------------------------------------------------------
 # GET /obligations
 # ---------------------------------------------------------------------------------------
-def agent_ref(agent: Agent | None) -> AgentRef | None:
-    """An agent as a screen names it: by its definition key (AUD-02)."""
-    return None if agent is None else AgentRef(id=agent.id, key=agent.key)
-
-
 def versions_with_confirmation() -> Prefetch[Any]:
     """An obligation's versions with the confirming agent and the proposing agent joined in
     the same query, so `confirmation_of()` never costs a query per version (playbook 10)."""
@@ -395,13 +388,13 @@ def versions_with_confirmation() -> Prefetch[Any]:
 def confirmation_of(version: ObligationVersion) -> VersionConfirmation:
     """Who confirmed the approval that wrote `version`, and which agent proposed it, as
     stored (INV-05, PRO-02, D-62). The version names its confirmer; the proposer is read
-    through the proposal that wrote it. The label is the screen's to decide: a later
-    re-verification by a person is on the record, not here."""
-    proposal = version.applied_by_proposal
+    through the proposal that wrote it, and withheld when a bank made that proposal
+    (PRO-03). The label is the screen's to decide: a later re-verification by a person is
+    on the record, not here."""
     return VersionConfirmation(
         verified_origin=version.verified_origin,
         confirmed_by_agent=agent_ref(version.verified_by_agent),
-        proposed_by_agent=agent_ref(None if proposal is None else proposal.proposed_by_agent),
+        proposed_by_agent=proposing_agent(version.applied_by_proposal),
     )
 
 

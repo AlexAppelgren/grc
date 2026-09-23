@@ -36,6 +36,7 @@ from apps.library.reading import instrument_scope_term_ids, instrument_scopes, o
 from apps.library.schemas import ObligationRow
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import seed_authorities
+from apps.proposals.models import Proposal
 from apps.shared import factories, tenancy
 from apps.shared import permissions as perms
 from apps.shared.logging import JsonFormatter
@@ -847,6 +848,18 @@ class MachineConfirmedVersionTests(TestCase):
         self.agents_apply(D(2026, 1, 1))
         self.agents_apply(CHANGE_DAY)
         self.assertEqual((self.queries_of(card, params), self.queries_of(page, params)), before)
+
+    def test_a_version_a_bank_proposed_names_no_proposing_agent(self) -> None:
+        """PRO-03: the queue never tells anyone who proposed on a bank's behalf, and neither
+        does the version it wrote, which every bank reads. A key bound to an agent is the
+        platform's in R1; R2's bank agents are the case this pins."""
+        agents = self.agents_apply(D(2026, 1, 1))
+        # The agents' proposal is the only one this obligation has.
+        self.assertEqual(Proposal.objects.filter(target_id=self.obligation.id).update(proposed_in_tenant=True), 1)
+
+        card = self.read(f"{URL}/{self.obligation.id}", {"asOf": EARLY.isoformat()})
+        self.assertEqual({key: card["provenance"][key] for key in agents}, {**agents, "proposedByAgent": None})
+        self.assertEqual({key: card["versions"][1][key] for key in agents}, {**agents, "proposedByAgent": None})
 
 
 @contextmanager

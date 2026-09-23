@@ -1,13 +1,16 @@
 """Machine-confirmed provenance on library lists and taxonomy terms (INV-05, PRO-02, VOC-07,
 AUD-02, D-62, D-79).
 
-A list row or a term records who confirmed the approval that wrote its current wording, the
-same three facts an obligation version records: `verified_origin`, the confirming agent,
-and the proposal that wrote it, through which the proposing agent is read. Under a
-person's approval the row says `user` and its labels are the person's, exactly as before.
-Under an independent agent's approval the row says `agent`, names both agents, and every
-translation the agent writes is labelled machine-made, because "AI output is labelled until
-a person confirms it" and D-62's "never reads as verified by a person".
+A list row or a term records who confirmed the approval that wrote its wording, the same
+three facts an obligation version records: `verified_origin`, the confirming agent, and the
+proposal, through which the proposing agent is read. A row is relabelled in place, where a
+version never is, so each label also carries its own mark: every label an independent
+agent's approval writes, the original included, is stored machine-made, and a person's
+approval clears the mark only on the labels it writes. The row keeps naming the agents until
+a person has confirmed every piece of wording they made, so nothing an agent confirmed ever
+reads as a person's check ("AI output is labelled until a person confirms it"; D-62's "never
+reads as verified by a person"). An approval that writes no wording leaves the row's stamp
+exactly as it was.
 
 An agent still cannot reach this through `approve()`: D-79's refusal (409
 `person_review_required`, apps/proposals/tests_decide.py) stands until Alex confirms the
@@ -22,6 +25,9 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
+
 from apps.agents import testing as agents_testing
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals import apply, logic
@@ -33,8 +39,9 @@ from apps.taxonomy.models import Flag, FlagLabel, TaxonomyTerm, TaxonomyTermLabe
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 
 V1 = "/api/v1"
-FLAG = {"list": "flag", "key": "client_money", "labels": {"en": "Client money", "sv": "Kundmedel"}}
-TERM = {"dimension": "regime", "key": "crypto_assets", "labels": {"en": "Crypto-assets", "sv": "Kryptotillgångar"}}
+FLAG: dict[str, Any] = {"list": "flag", "key": "client_money", "labels": {"en": "Client money", "sv": "Kundmedel"}}
+TERM: dict[str, Any] = {"dimension": "regime", "key": "crypto_assets", "labels": {"en": "Crypto-assets", "sv": "Kryptotillgångar"}}
+NOBODY = {"verifiedOrigin": "", "confirmedByAgent": None, "proposedByAgent": None}
 
 
 class ListAndTermProvenance(ScenarioTestCase):
@@ -78,6 +85,11 @@ class ListAndTermProvenance(ScenarioTestCase):
         )
         apply.apply(proposal, actor=reviewer.actor, reviewer=reviewer, step_up=None)
 
+    def _agents_apply(self, kind: str, payload: dict[str, Any]) -> Proposal:
+        proposal = self._agent_proposes(kind, payload)
+        self._agent_confirms(proposal)
+        return proposal
+
     def _person_proposes(self, kind: str, payload: dict[str, Any]) -> str:
         created = self.client.post(
             f"{V1}/proposals", data={"kind": kind, "title": f"{kind} {payload['key']}", "payload": payload},
@@ -95,110 +107,157 @@ class ListAndTermProvenance(ScenarioTestCase):
         self.assertEqual(approved.status_code, 200, approved.content)
         tenancy.clear_tenant()
 
+    def _person_applies(self, kind: str, payload: dict[str, Any]) -> str:
+        proposal_id = self._person_proposes(kind, payload)
+        self._person_approves(proposal_id)
+        return proposal_id
+
     def _read(self, path: str) -> Any:
         response = self.client.get(f"{V1}{path}", **sign_in(self.editor))
         self.assertEqual(response.status_code, 200, response.content)
         tenancy.clear_tenant()
         return response.json()
 
+    def _queries_of(self, path: str) -> int:
+        headers = sign_in(self.editor)
+        with CaptureQueriesContext(connection) as queries:
+            response = self.client.get(f"{V1}{path}", **headers)
+        self.assertEqual(response.status_code, 200, response.content)
+        tenancy.clear_tenant()
+        return len(queries.captured_queries)
+
+    def _listed(self, key: str) -> dict[str, Any]:
+        return dict(next(item for item in self._read("/vocab/flag")["items"] if item["key"] == key))
+
+    def _term_listed(self, key: str) -> dict[str, Any]:
+        items = self._read(f"/taxonomy/terms?dimension={TERM['dimension']}")["items"]
+        return dict(next(item for item in items if item["key"] == key))
+
     def _agents(self) -> dict[str, Any]:
         return {
+            "verifiedOrigin": "agent",
             "confirmedByAgent": {"id": str(self.confirming.agent.id), "key": self.confirming.agent.key},
             "proposedByAgent": {"id": str(self.proposing.agent.id), "key": self.proposing.agent.key},
         }
+
+    def _a_person_confirmed_the_agents_proposal(self) -> dict[str, Any]:
+        return {"verifiedOrigin": "user", "confirmedByAgent": None, "proposedByAgent": self._agents()["proposedByAgent"]}
 
     @staticmethod
     def _provenance(item: dict[str, Any]) -> dict[str, Any]:
         return {name: item[name] for name in ("verifiedOrigin", "confirmedByAgent", "proposedByAgent")}
 
     @staticmethod
+    def _stamp(row: Any) -> tuple[str, Any, Any]:
+        row.refresh_from_db()
+        return (row.verified_origin, row.verified_by_agent_id, row.applied_by_proposal_id)
+
+    @staticmethod
     def _labels(model: Any, **owner: Any) -> dict[str, tuple[str, bool, bool]]:
         return {label.language: (label.text, label.is_original, label.is_machine) for label in model.objects.filter(**owner)}
 
     # --- vocabulary rows --------------------------------------------------------------------
-    def test_a_row_an_agent_confirmed_names_both_agents_and_its_translations_are_machine_made(self) -> None:
-        proposal = self._agent_proposes("vocabulary_create", FLAG)
-        self._agent_confirms(proposal)
+    def test_a_row_an_agent_confirmed_names_both_agents_and_every_label_it_wrote_is_machine_made(self) -> None:
+        proposal = self._agents_apply("vocabulary_create", FLAG)
 
         row = Flag.objects.get(key=FLAG["key"])
-        self.assertEqual((row.verified_origin, row.verified_by_agent_id, row.applied_by_proposal_id), ("agent", self.confirming.agent.id, proposal.id))
-        # The original is the row's own wording, labelled by the row; the translation the
-        # agent wrote is machine-made, whatever the payload says, because no person saw it.
+        self.assertEqual(self._stamp(row), ("agent", self.confirming.agent.id, proposal.id))
+        # No person saw any of it, the original included: each label says so on its own, so
+        # a later partial relabel by a person can never make the rest read as theirs.
         self.assertEqual(
             self._labels(FlagLabel, vocabulary=row),
-            {"en": ("Client money", True, False), "sv": ("Kundmedel", False, True)},
+            {"en": ("Client money", True, True), "sv": ("Kundmedel", False, True)},
         )
 
         detail = self._read(f"/vocab/flag/{FLAG['key']}")
-        self.assertEqual(self._provenance(detail), {"verifiedOrigin": "agent", **self._agents()})
-        self.assertEqual((detail["originalLanguage"], detail["machineLanguages"]), ("en", ["sv"]))
-        listed = next(item for item in self._read("/vocab/flag")["items"] if item["key"] == FLAG["key"])
-        self.assertEqual(self._provenance(listed), {"verifiedOrigin": "agent", **self._agents()})
+        self.assertEqual(self._provenance(detail), self._agents())
+        self.assertEqual((detail["originalLanguage"], detail["machineLanguages"]), ("en", ["en", "sv"]))
+        self.assertEqual(self._provenance(self._listed(FLAG["key"])), self._agents())
 
-    def test_an_agent_relabel_never_clears_the_machine_label_and_a_person_relabel_confirms_it(self) -> None:
-        self._person_approves(self._person_proposes("vocabulary_create", FLAG))
+    def test_a_persons_partial_relabel_leaves_the_agents_named_until_a_person_confirmed_every_label(self) -> None:
+        created = self._person_applies("vocabulary_create", FLAG)
         row = Flag.objects.get(key=FLAG["key"])
-        self.assertEqual((row.verified_origin, row.verified_by_agent_id), ("user", None))
+        self.assertEqual(self._stamp(row), ("user", None, uuid.UUID(created)))
         self.assertEqual(self._labels(FlagLabel, vocabulary=row)["sv"], ("Kundmedel", False, False))
 
-        # The agent rewrites the person's Swedish label, rewords the original and adds a
-        # Finnish one: both translations are machine-made now, the original stays the row's.
-        relabel = self._agent_proposes(
+        # The agent rewords the original and the person's Swedish label and adds a Finnish
+        # one: all three are machine-made now, and the row names the agents.
+        self._agents_apply(
             "vocabulary_relabel",
             {"list": "flag", "key": FLAG["key"], "labels": {"en": "Client monies", "sv": "Klientmedel", "fi": "Asiakasvarat"}},
         )
-        self._agent_confirms(relabel)
-        row.refresh_from_db()
-        self.assertEqual((row.verified_origin, row.verified_by_agent_id, row.applied_by_proposal_id), ("agent", self.confirming.agent.id, relabel.id))
         self.assertEqual(
             self._labels(FlagLabel, vocabulary=row),
-            {"en": ("Client monies", True, False), "sv": ("Klientmedel", False, True), "fi": ("Asiakasvarat", False, True)},
+            {"en": ("Client monies", True, True), "sv": ("Klientmedel", False, True), "fi": ("Asiakasvarat", False, True)},
         )
-
-        # A second agent relabel of a label already machine-made leaves it machine-made.
-        again = self._agent_proposes("vocabulary_relabel", {"list": "flag", "key": FLAG["key"], "labels": {"sv": "Kundmedel"}})
-        self._agent_confirms(again)
+        # An agent never clears the mark: a second agent relabel keeps it.
+        again = self._agents_apply("vocabulary_relabel", {"list": "flag", "key": FLAG["key"], "labels": {"sv": "Kundmedel"}})
+        self.assertEqual(self._stamp(row), ("agent", self.confirming.agent.id, again.id))
         self.assertEqual(self._labels(FlagLabel, vocabulary=row)["sv"], ("Kundmedel", False, True))
 
-        # The agent proposes and a person confirms: the person's approval is what the row
-        # says, the label is the person's, and the proposing agent is still named.
-        confirmed = self._agent_proposes("vocabulary_relabel", {"list": "flag", "key": FLAG["key"], "labels": {"sv": "Klientmedel"}})
-        self._person_approves(confirmed.id)
-        row.refresh_from_db()
-        self.assertEqual((row.verified_origin, row.verified_by_agent_id, row.applied_by_proposal_id), ("user", None, confirmed.id))
+        # A person confirms the Swedish label only. That label is the person's now, but the
+        # original and the Finnish label are still the agents' wording: the row keeps naming
+        # them, and the stamp still points at the agents' approval.
+        swedish = self._agent_proposes("vocabulary_relabel", {"list": "flag", "key": FLAG["key"], "labels": {"sv": "Klientmedel"}})
+        self._person_approves(swedish.id)
+        self.assertEqual(self._stamp(row), ("agent", self.confirming.agent.id, again.id))
         self.assertEqual(self._labels(FlagLabel, vocabulary=row)["sv"], ("Klientmedel", False, False))
-        self.assertEqual(self._labels(FlagLabel, vocabulary=row)["fi"], ("Asiakasvarat", False, True))
         detail = self._read(f"/vocab/flag/{FLAG['key']}")
-        self.assertEqual(
-            self._provenance(detail),
-            {"verifiedOrigin": "user", "confirmedByAgent": None, "proposedByAgent": self._agents()["proposedByAgent"]},
-        )
-        self.assertEqual(detail["machineLanguages"], ["fi"])
+        self.assertEqual(self._provenance(detail), self._agents())
+        self.assertEqual(detail["machineLanguages"], ["en", "fi"])
 
-    def test_retire_restore_and_merge_write_no_wording_and_leave_the_provenance_as_it_was(self) -> None:
-        create = self._agent_proposes("vocabulary_create", FLAG)
-        self._agent_confirms(create)
+        # Once a person has confirmed every label an agent made, the row is the person's.
+        rest = self._person_applies("vocabulary_relabel", {"list": "flag", "key": FLAG["key"], "labels": {"en": "Client monies", "fi": "Asiakasvarat"}})
+        self.assertEqual(self._stamp(row), ("user", None, uuid.UUID(rest)))
+        detail = self._read(f"/vocab/flag/{FLAG['key']}")
+        self.assertEqual(self._provenance(detail), {"verifiedOrigin": "user", "confirmedByAgent": None, "proposedByAgent": None})
+        self.assertEqual(detail["machineLanguages"], [])
+
+    def test_a_usage_note_an_agent_confirmed_keeps_the_agents_named_until_a_person_rewrites_it(self) -> None:
+        create = self._agents_apply("vocabulary_create", {**FLAG, "usageNote": "Money a firm holds for its clients."})
+        row = Flag.objects.get(key=FLAG["key"])
+
+        # Every label is the person's now, but the usage note is still the agents' wording.
+        self._person_applies("vocabulary_relabel", {"list": "flag", "key": FLAG["key"], "labels": {"en": "Client money", "sv": "Kundmedel"}})
+        self.assertEqual(self._stamp(row), ("agent", self.confirming.agent.id, create.id))
+        self.assertEqual(self._labels(FlagLabel, vocabulary=row), {"en": ("Client money", True, False), "sv": ("Kundmedel", False, False)})
+
+        # The person rewrites the usage note an agent proposed: nothing the agents confirmed
+        # is left, and the row names the proposing agent beside the person's approval.
+        note = self._agent_proposes("vocabulary_relabel", {"list": "flag", "key": FLAG["key"], "usageNote": "Money held for clients."})
+        self._person_approves(note.id)
+        self.assertEqual(self._stamp(row), ("user", None, note.id))
+        self.assertEqual(self._provenance(self._listed(FLAG["key"])), self._a_person_confirmed_the_agents_proposal())
+
+    def test_an_approval_that_writes_no_wording_leaves_the_provenance_as_it_was(self) -> None:
+        create = self._agents_apply("vocabulary_create", FLAG)
         into = {"list": "flag", "key": "client_assets", "labels": {"en": "Client assets"}}
-        self._person_approves(self._person_proposes("vocabulary_create", into))
-        stamped = ("agent", self.confirming.agent.id, create.id)
+        into_created = uuid.UUID(self._person_applies("vocabulary_create", into))
+        agents_stamp = ("agent", self.confirming.agent.id, create.id)
+        row, target = Flag.objects.get(key=FLAG["key"]), Flag.objects.get(key=into["key"])
+
+        # A person moving the agents' row, and an agent moving the person's: a sort order is
+        # no wording, so neither changes who confirmed the words the row carries.
+        self._person_applies("vocabulary_relabel", {"list": "flag", "key": FLAG["key"], "sortOrder": 90})
+        self.assertEqual(self._stamp(row), agents_stamp)
+        self._agents_apply("vocabulary_relabel", {"list": "flag", "key": into["key"], "sortOrder": 91})
+        self.assertEqual(self._stamp(target), ("user", None, into_created))
+        self.assertEqual(target.sort_order, 91)
 
         for kind in ("vocabulary_retire", "vocabulary_restore"):
             with self.subTest(kind=kind):
-                self._person_approves(self._person_proposes(kind, {"list": "flag", "key": FLAG["key"]}))
-                row = Flag.objects.get(key=FLAG["key"])
-                self.assertEqual((row.verified_origin, row.verified_by_agent_id, row.applied_by_proposal_id), stamped)
-        self._person_approves(self._person_proposes("vocabulary_merge", {"list": "flag", "key": FLAG["key"], "into": into["key"]}))
-        merged = Flag.objects.get(key=FLAG["key"])
-        self.assertFalse(merged.active)
-        self.assertEqual((merged.verified_origin, merged.verified_by_agent_id, merged.applied_by_proposal_id), stamped)
-        target = Flag.objects.get(key=into["key"])
-        self.assertEqual((target.verified_origin, target.verified_by_agent_id), ("user", None))
+                self._person_applies(kind, {"list": "flag", "key": FLAG["key"]})
+                self.assertEqual(self._stamp(row), agents_stamp)
+        self._person_applies("vocabulary_merge", {"list": "flag", "key": FLAG["key"], "into": into["key"]})
+        self.assertEqual(self._stamp(row), agents_stamp)
+        self.assertFalse(row.active)
+        self.assertEqual(self._stamp(target), ("user", None, into_created))
 
     def test_a_seeded_row_and_a_banks_own_list_carry_no_confirmation(self) -> None:
         seeded = self._read("/vocab/flag")["items"]
         self.assertTrue(seeded)
         for item in seeded:
-            self.assertEqual(self._provenance(item), {"verifiedOrigin": "", "confirmedByAgent": None, "proposedByAgent": None})
+            self.assertEqual(self._provenance(item), NOBODY)
 
         tenant = factories.tenant()
         member = factories.member_user(tenant, roles=("reader",))
@@ -206,46 +265,71 @@ class ListAndTermProvenance(ScenarioTestCase):
         self.assertEqual(own.status_code, 200, own.content)
         self.assertTrue(own.json()["items"])
         for item in own.json()["items"]:
-            self.assertEqual(self._provenance(item), {"verifiedOrigin": "", "confirmedByAgent": None, "proposedByAgent": None})
+            self.assertEqual(self._provenance(item), NOBODY)
 
     # --- taxonomy terms ---------------------------------------------------------------------
-    def test_a_term_an_agent_created_and_updated_names_both_agents_and_its_translations_are_machine_made(self) -> None:
-        create = self._agent_proposes("term_create", TERM)
-        self._agent_confirms(create)
+    def test_a_term_the_agents_created_and_updated_stays_theirs_until_a_person_confirmed_all_of_it(self) -> None:
+        create = self._agents_apply("term_create", TERM)
         term = TaxonomyTerm.objects.get(dimension__key=TERM["dimension"], key=TERM["key"])
-        self.assertEqual((term.verified_origin, term.verified_by_agent_id, term.applied_by_proposal_id), ("agent", self.confirming.agent.id, create.id))
+        self.assertEqual(self._stamp(term), ("agent", self.confirming.agent.id, create.id))
         self.assertEqual(
             self._labels(TaxonomyTermLabel, term=term),
-            {"en": ("Crypto-assets", True, False), "sv": ("Kryptotillgångar", False, True)},
+            {"en": ("Crypto-assets", True, True), "sv": ("Kryptotillgångar", False, True)},
         )
 
-        update = self._agent_proposes(
+        update = self._agents_apply(
             "term_update", {"dimension": TERM["dimension"], "key": TERM["key"], "labels": {"en": "Crypto-assets (MiCA)", "da": "Kryptoaktiver"}}
         )
-        self._agent_confirms(update)
-        term.refresh_from_db()
-        self.assertEqual((term.verified_origin, term.verified_by_agent_id, term.applied_by_proposal_id), ("agent", self.confirming.agent.id, update.id))
+        self.assertEqual(self._stamp(term), ("agent", self.confirming.agent.id, update.id))
         self.assertEqual(
             self._labels(TaxonomyTermLabel, term=term),
-            {"en": ("Crypto-assets (MiCA)", True, False), "sv": ("Kryptotillgångar", False, True), "da": ("Kryptoaktiver", False, True)},
+            {"en": ("Crypto-assets (MiCA)", True, True), "sv": ("Kryptotillgångar", False, True), "da": ("Kryptoaktiver", False, True)},
         )
+        self.assertEqual(self._provenance(self._term_listed(TERM["key"])), self._agents())
 
-        listed = next(item for item in self._read(f"/taxonomy/terms?dimension={TERM['dimension']}")["items"] if item["key"] == TERM["key"])
-        self.assertEqual(self._provenance(listed), {"verifiedOrigin": "agent", **self._agents()})
+        # A person confirms the Swedish label and moves the term: the rest is still the
+        # agents' wording, so the term keeps naming them.
+        self._person_applies("term_update", {"dimension": TERM["dimension"], "key": TERM["key"], "labels": {"sv": "Kryptotillgångar"}, "sortOrder": 90})
+        self.assertEqual(self._stamp(term), ("agent", self.confirming.agent.id, update.id))
+        self.assertEqual(self._labels(TaxonomyTermLabel, term=term)["sv"], ("Kryptotillgångar", False, False))
+        self.assertEqual(self._provenance(self._term_listed(TERM["key"])), self._agents())
 
     def test_a_term_a_person_approved_says_a_person_confirmed_it(self) -> None:
-        self._person_approves(self._person_proposes("term_create", TERM))
+        self._person_applies("term_create", TERM)
         term = TaxonomyTerm.objects.get(dimension__key=TERM["dimension"], key=TERM["key"])
-        self.assertEqual((term.verified_origin, term.verified_by_agent_id), ("user", None))
+        self.assertEqual(self._stamp(term)[:2], ("user", None))
         self.assertEqual(self._labels(TaxonomyTermLabel, term=term)["sv"], ("Kryptotillgångar", False, False))
 
         update = self._agent_proposes("term_update", {"dimension": TERM["dimension"], "key": TERM["key"], "labels": {"sv": "Kryptotillgångar (MiCA)"}})
         self._person_approves(update.id)
-        term.refresh_from_db()
-        self.assertEqual((term.verified_origin, term.verified_by_agent_id, term.applied_by_proposal_id), ("user", None, update.id))
+        self.assertEqual(self._stamp(term), ("user", None, update.id))
         self.assertEqual(self._labels(TaxonomyTermLabel, term=term)["sv"], ("Kryptotillgångar (MiCA)", False, False))
-        listed = next(item for item in self._read(f"/taxonomy/terms?dimension={TERM['dimension']}")["items"] if item["key"] == TERM["key"])
-        self.assertEqual(
-            self._provenance(listed),
-            {"verifiedOrigin": "user", "confirmedByAgent": None, "proposedByAgent": self._agents()["proposedByAgent"]},
-        )
+        self.assertEqual(self._provenance(self._term_listed(TERM["key"])), self._a_person_confirmed_the_agents_proposal())
+
+        # An agent that only moves the term writes no wording: it stays the person's.
+        self._agents_apply("term_update", {"dimension": TERM["dimension"], "key": TERM["key"], "sortOrder": 90})
+        self.assertEqual(self._stamp(term), ("user", None, update.id))
+
+    # --- what every bank reads ----------------------------------------------------------------
+    def test_a_proposal_made_in_a_bank_names_no_proposing_agent(self) -> None:
+        """PRO-03: the queue withholds who proposed on a bank's behalf, and so does every
+        read of what that proposal wrote. A key bound to an agent is the platform's in R1;
+        R2's bank agents are the case this pins."""
+        for kind, payload in (("vocabulary_create", FLAG), ("term_create", TERM)):
+            proposal = self._agent_proposes(kind, payload)
+            Proposal.objects.filter(pk=proposal.pk).update(proposed_in_tenant=True)
+            proposal.refresh_from_db()
+            self._agent_confirms(proposal)
+        withheld = {**self._agents(), "proposedByAgent": None}
+        self.assertEqual(self._provenance(self._read(f"/vocab/flag/{FLAG['key']}")), withheld)
+        self.assertEqual(self._provenance(self._listed(FLAG["key"])), withheld)
+        self.assertEqual(self._provenance(self._term_listed(TERM["key"])), withheld)
+
+    def test_naming_the_agents_costs_no_query_per_row(self) -> None:
+        pages = ("/vocab/flag", f"/taxonomy/terms?dimension={TERM['dimension']}")
+        self._agents_apply("vocabulary_create", FLAG)
+        self._agents_apply("term_create", TERM)
+        before = [self._queries_of(page) for page in pages]
+        self._agents_apply("vocabulary_create", {"list": "flag", "key": "client_assets", "labels": {"en": "Client assets"}})
+        self._agents_apply("term_create", {"dimension": TERM["dimension"], "key": "stablecoins", "labels": {"en": "Stablecoins"}})
+        self.assertEqual([self._queries_of(page) for page in pages], before)

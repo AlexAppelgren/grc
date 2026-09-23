@@ -12,9 +12,9 @@ from typing import Any
 from uuid import UUID
 
 from django.conf import settings
-from pydantic import ConfigDict, Field, ModelWrapValidatorHandler, ValidationInfo, model_validator
+from pydantic import ConfigDict, Field
 
-from apps.shared.schemas import CamelSchema, WriteBody
+from apps.shared.schemas import CamelSchema, LibraryResponse, WriteBody
 from apps.taxonomy.schemas import AgentRef, PersonRef
 
 # The longest `q` a list accepts: a phrase to look for, never a document.
@@ -31,20 +31,6 @@ LIBRARY_FACT = (
     "record's provenance names, and changed only through a proposal a second, independent "
     "principal approved."
 )
-
-
-class LibraryResponse(CamelSchema):
-    """A response the server builds from plain values, never from an ORM object, and
-    pydantic validates natively when it is built. Ninja's own root validator wraps every
-    value in its Django getter, one Python call per field of every nested object, which was
-    most of a page's server time (NFR-02, measured 2026-09-19). Ninja answers a validated
-    instance of the route's response type as it is, without validating it again."""
-
-    @model_validator(mode="wrap")
-    @classmethod
-    def _run_root_validator(cls, values: Any, handler: ModelWrapValidatorHandler[Any], info: ValidationInfo) -> Any:
-        # Replaces ninja.Schema's validator of the same name, which wraps `values` in its getter.
-        return handler(values)
 
 
 class LibraryRef(LibraryResponse):
@@ -196,9 +182,10 @@ class VersionConfirmation(LibraryResponse):
         description=(
             "The agent that proposed this version, by its definition key, read from the "
             "approved proposal. Null whenever the proposer was not a key bound to an agent, "
-            "which is every proposal a person made, whoever confirmed it. It is independent "
-            "of `verifiedOrigin`: an agent's proposal a person approved names the agent here "
-            "beside `verifiedOrigin` `user`."
+            "which is every proposal a person made, whoever confirmed it, and whenever a bank "
+            "made the proposal, since who proposed on a bank's behalf is never shown. It is "
+            "independent of `verifiedOrigin`: an agent's proposal a person approved names the "
+            "agent here beside `verifiedOrigin` `user`."
         )
     )
 
@@ -842,10 +829,11 @@ class ObligationProvenance(LibraryResponse):
         description=(
             "The agent that proposed the version in force, by definition key, read from the "
             "approved proposal. Null whenever the proposer was not a key bound to an agent, "
-            "which is every proposal a person made, whoever confirmed it. It is independent "
-            "of `verifiedOrigin`: `agent` with this null means an agent confirmed what a "
-            "person, or a key bound to no agent, proposed, and `user` with this set means a "
-            "person approved an agent's proposal."
+            "which is every proposal a person made, whoever confirmed it, and whenever a bank "
+            "made the proposal, since who proposed on a bank's behalf is never shown. It is "
+            "independent of `verifiedOrigin`: `agent` with this null means an agent confirmed "
+            "what a person, a bank or a key bound to no agent proposed, and `user` with this "
+            "set means a person approved an agent's proposal."
         ),
     )
 

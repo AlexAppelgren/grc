@@ -690,8 +690,11 @@ your own answer in chat to the session that merges it.
       nothing about who may approve was built: every library list and every taxonomy term
       now records who confirmed the approval that wrote its wording (`user` or `agent`), the
       confirming agent, and the proposal, through which the proposing agent is named. Under
-      an agent's approval every translation it writes is stored machine-made, and an agent
-      never clears that label; a person's approval behaves exactly as before. The list and
+      an agent's approval every label it writes, the original included, is stored
+      machine-made, and an agent never clears that mark. A person's approval confirms the
+      labels it writes, and a row the agents worded keeps naming them until a person has
+      approved all of their wording, so a person fixing one Swedish label never makes the
+      agents' English read as checked by a person. The list and
       term reads (`GET /vocab/{list}`, `GET /vocab/{list}/{key}`, `GET /taxonomy/terms`)
       return it. The 409 `person_review_required` stays, and the confirming agent's
       definition (`library-confirmer` v1) still leaves list and term proposals to a person.
