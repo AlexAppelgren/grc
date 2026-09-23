@@ -1069,12 +1069,129 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(markets_logic.level_of(self.tenant.id, finland), markets_logic.NOT_FOLLOWED)
         self.assertFalse(WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction=finland).exists())
 
-    @skip("pending: FP-S12 (FP-04, R1)")
     def test_fp_s12(self) -> None:
         """FP-S12
 
         Jurisdiction terms mirror the jurisdiction rows and cannot be proposed (FP-04).
+
+        Exercises `createTerm`, `updateTerm`, `createProposal` and `updateChange` answering
+        422 `jurisdiction_term_mirrored`, a rule keyed on the link a mirrored term carries
+        and never on a dimension key, so its sentence names no dimension and no country.
         """
+        import re
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        from apps.library import testing as library_build
+        from apps.taxonomy.models import TaxonomyTerm
+        from apps.taxonomy.seeds import MIRRORED_JURISDICTION_KINDS
+
+        # A jurisdiction no bank operates in, as standards bodies issue under: whichever
+        # seed files it, it gets no term (D-38).
+        Jurisdiction.objects.get_or_create(
+            key="intl",
+            defaults={"kind": "international", "default_language": Language.objects.get(key="en"), "sort_order": 99, "is_system": True},
+        )
+        # As a deploy runs it: no tenant activated, so it sees every tenant.
+        tenancy.clear_tenant()
+        call_command("seed_reference", stdout=StringIO())
+        self.activate(self.tenant)
+
+        def labels(row: Any) -> dict[str, str]:
+            return {label.language: label.text for label in row.labels.all()}
+
+        # Given the seeded jurisdictions, the mirror is exact both ways.
+        rows = {
+            row.key: row
+            for row in Jurisdiction.objects.filter(active=True, kind__in=MIRRORED_JURISDICTION_KINDS).prefetch_related("labels")
+        }
+        mirrored = {
+            term.key: term
+            for term in TaxonomyTerm.objects.exclude(jurisdiction=None).select_related("dimension", "parent").prefetch_related("labels")
+        }
+        self.assertEqual(set(rows), {"eu", "se", "dk", "no", "fi"})
+        self.assertEqual(set(mirrored), set(rows), "every mirrored jurisdiction has a term, and no term invents one")
+        dimension = mirrored["eu"].dimension
+        self.assertEqual({term.dimension_id for term in mirrored.values()}, {dimension.id}, "one dimension holds the mirror")
+        self.assertEqual(set(TaxonomyTerm.objects.filter(dimension=dimension, active=True).values_list("key", flat=True)), set(rows))
+        for key, term in mirrored.items():
+            self.assertEqual((term.jurisdiction_id, labels(term)), (rows[key].id, labels(rows[key])), key)
+        self.assertEqual(
+            {key: term.parent.key if term.parent else None for key, term in mirrored.items()},
+            {"eu": None, "se": "eu", "dk": "eu", "no": "eu", "fi": "eu"},
+            "each country's term has the Union's as parent, Norway's included",
+        )
+        self.assertFalse(TaxonomyTerm.objects.filter(jurisdiction__key="intl").exists())
+        self.assertFalse(TaxonomyTerm.objects.filter(dimension=dimension, key="intl").exists())
+
+        # The regulatory scope lists the five terms, all of them when all are chosen.
+        self._set_footprint(["regime:securities", *(f"{dimension.key}:{key}" for key in rows)])
+        listed = next(
+            entry for entry in self._footprint(sign_in(self.reader, tenant=self.tenant))["dimensions"] if entry["dimension"]["key"] == dimension.key
+        )
+        self.assertEqual(
+            [(term["key"], term["label"]) for term in listed["terms"]],
+            [("eu", "European Union"), ("se", "Sweden"), ("dk", "Denmark"), ("no", "Norway"), ("fi", "Finland")],
+        )
+        self.assertTrue(listed["allSelected"])
+
+        # When a proposal adds or renames a term of the mirrored dimension, or tags a record
+        # with one, it answers 422 and nothing reaches the queue or the library.
+        norway = mirrored["no"]
+        instrument = library_build.instrument(key="fp-s12-instrument", regime="regime:securities")
+        obligation = library_build.obligation(instrument, key="fp-s12-obligation", terms=("service_type:custody",))
+        change = watch_build.change()
+        editor = sign_in(self.editor)
+        queued = Proposal.objects.count()
+        refusals = {
+            "a new term": self._post("/taxonomy/terms", {"dimension": dimension.key, "labels": {"en": "Iceland"}}, editor),
+            "a key the mirror holds": self._post("/taxonomy/terms", {"dimension": dimension.key, "key": "se", "labels": {"en": "Sweden"}}, editor),
+            "a rename": self._patch(f"/taxonomy/terms/{norway.id}", {"labels": {"en": "Kingdom of Norway"}}, editor),
+            "a new term filed directly": self._post(
+                "/proposals", {"kind": "term_create", "title": "Add Iceland", "payload": {"dimension": dimension.key, "key": "is", "labels": {"en": "Iceland"}}}, editor
+            ),
+            "a rename filed directly": self._post(
+                "/proposals", {"kind": "term_update", "title": "Rename Norway", "payload": {"dimension": dimension.key, "key": "no", "labels": {"en": "Kingdom of Norway"}}}, editor
+            ),
+            "an obligation tagged with a market": self._post(
+                "/proposals",
+                {
+                    "kind": "new_obligation_version",
+                    "title": "Version 2, in Norway",
+                    "targetType": "obligation",
+                    "targetId": str(obligation.id),
+                    "payload": {"summaries": {"en": "The firm keeps client assets apart."}, "originalLanguage": "en", "terms": ["service_type:custody", f"{dimension.key}:no"]},
+                    "fieldSources": {"summaries.en": "https://www.fi.se/", "terms": "https://www.fi.se/"},
+                },
+                editor,
+            ),
+            "a change tagged with a market": self._patch(f"/changes/{change.id}", {"termIds": [str(norway.id)]}, editor),
+        }
+        named = {dimension.key, *rows, *(text for row in rows.values() for text in labels(row).values())}
+        for what, response in refusals.items():
+            with self.subTest(what):
+                self.assertEqual((response.status_code, response.json()["code"]), (422, "jurisdiction_term_mirrored"), response.content)
+                detail = response.json()["detail"]
+                for word in named:
+                    self.assertIsNone(re.search(rf"\b{re.escape(word)}\b", detail, re.IGNORECASE), f"the refusal names {word!r}")
+        self.assertEqual(Proposal.objects.count(), queued, "nothing reached the queue")
+        self.assertFalse(TaxonomyTerm.objects.filter(dimension=dimension, key="is").exists())
+        self.assertEqual(TaxonomyTerm.objects.get(pk=norway.pk).version, norway.version)
+        self.assertFalse(change.term_links.exists())
+
+        # When seed_reference runs a second time, nothing changes and nothing is recorded.
+        def mirror_state() -> list[tuple[Any, ...]]:
+            terms = TaxonomyTerm.objects.filter(dimension=dimension).prefetch_related("labels")
+            return sorted((t.id, t.key, t.jurisdiction_id, t.parent_id, t.active, t.sort_order, t.version, sorted(labels(t).items())) for t in terms)
+
+        self.activate(self.tenant)  # the bank's own rows and the library's, read the same way before and after
+        before, recorded = mirror_state(), set(AuditEvent.objects.values_list("id", flat=True))
+        tenancy.clear_tenant()
+        call_command("seed_reference", stdout=StringIO())
+        self.activate(self.tenant)
+        self.assertEqual(mirror_state(), before)
+        self.assertEqual(list(AuditEvent.objects.exclude(id__in=recorded).values_list("action", "subject_title")), [])
 
     @skip("pending: FP-S13 (FP-04, chunk 3)")
     def test_fp_s13(self) -> None:

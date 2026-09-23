@@ -569,7 +569,9 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     Errors to branch on: `run_not_open` (422) when `agentRunId` names a run that is closed;
     `unknown_key` (422) when `changeType`, `suggestedUrgency`, a flag key, a `termId`, an
     `obligationId` or `authorityCode` names a row the library does not hold or has retired,
-    with the valid keys listed for a vocabulary; `validation_error` (422) for a body the
+    with the valid keys listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a
+    `termId` is a term that mirrors the jurisdiction list, since a change's market comes
+    from its authority and never from a tag; `validation_error` (422) for a body the
     schema refuses, for the same obligation named twice, for two pages both marked primary,
     and for a `soWhat` whose words carry no model, no model version or no citation; `not_found` (404) when `agentRunId` names a run belonging to another key;
     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
@@ -686,7 +688,9 @@ def update_change(
 
     Errors to branch on: `unknown_key` (422) when `changeType`, a flag key, a term id or
     `supersededBy` names a row the library does not hold or has retired, with the valid keys
-    listed for a vocabulary; `editor_only_field` (422) when a key sends `status` or
+    listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a term id is a term
+    that mirrors the jurisdiction list, since a change's market comes from its authority and
+    never from a tag; `editor_only_field` (422) when a key sends `status` or
     `supersededBy`; `confirmed_fact` (422) when a key's new set would drop a flag or a term
     a library editor confirmed; `not_built` (501) when an editor's call would do the same,
     which is the confirmation half of this feature; `validation_error` (422) for a field the

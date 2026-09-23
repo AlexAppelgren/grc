@@ -382,6 +382,24 @@ def list_terms(request: HttpRequest, query: Query[TaxonomyTermQuery]) -> Taxonom
 @router.post("/taxonomy/terms", response={202: ProposalAccepted}, auth=SESSION, operation_id="createTerm", by_alias=True)
 @answers_problems
 def create_term(request: HttpRequest, body: TaxonomyTermCreateBody) -> Any:
+    """Ask for a new taxonomy term in the shared library (VOC-07). Nothing is written to the
+    library here: the answer is 202 with the proposal this call put in the queue, and the
+    term exists only once a second person approves it in the console. The proposal's
+    creation is recorded in the audit log.
+
+    Needs `proposals.create` in the caller's bank or `library_vocab.manage` in the console.
+
+    The terms of a dimension that mirrors the jurisdiction list belong to the reference
+    seed, which keeps them in step with that list, so no call adds one (FP-S12).
+
+    Errors to branch on: `jurisdiction_term_mirrored` (422) when the dimension's terms
+    mirror the jurisdiction list, whatever key is sent; `unknown_key` (422) for a dimension
+    that is not one, a label in a language the platform does not hold, or a parent that is
+    not a term of the dimension; `duplicate_key` (409) when the key is taken in the
+    dimension, a retired term's included; `validation_error` (422) for a key that is not a
+    slug or a body the schema refuses; `permission_denied` (403) without either permission;
+    `unauthenticated` (401) without a session.
+    """
     # Ungated by design: logic-gate (proposals.create from a tenant, library_vocab.manage from the console; VOC-07).
     require_proposer(request)
     return _accepted(
@@ -399,6 +417,25 @@ def create_term(request: HttpRequest, body: TaxonomyTermCreateBody) -> Any:
 @router.patch("/taxonomy/terms/{term_id}", response={202: ProposalAccepted}, auth=SESSION, operation_id="updateTerm", by_alias=True)
 @answers_problems
 def update_term(request: HttpRequest, term_id: str, body: VocabularyPatchBody) -> Any:
+    """Ask for a change to a taxonomy term's labels, usage note or place in the list
+    (VOC-07). Nothing is written to the library here: the answer is 202 with the proposal
+    this call put in the queue, and the term changes only once a second person approves it
+    in the console. Send `If-Match` with the version last read to be told when someone
+    changed the term first. The proposal's creation is recorded in the audit log.
+
+    Needs `proposals.create` in the caller's bank or `library_vocab.manage` in the console.
+
+    A term that mirrors the jurisdiction list, and every other term of its dimension,
+    belongs to the reference seed and is never renamed here (FP-S12).
+
+    Errors to branch on: `jurisdiction_term_mirrored` (422) for a term of a dimension that
+    mirrors the jurisdiction list; `stale_write` (409) when `If-Match` names a version that
+    is no longer the term's; `unknown_key` (422) for a label in a language the platform
+    does not hold; `validation_error` (422) for an `If-Match` that is not a version or a
+    body the schema refuses; `not_found` (404) when no term has that id, and for anything
+    that is not a UUID; `permission_denied` (403) without either permission;
+    `unauthenticated` (401) without a session.
+    """
     # Ungated by design: logic-gate (proposals.create from a tenant, library_vocab.manage from the console; VOC-07).
     require_proposer(request)
     return _accepted(

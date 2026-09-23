@@ -416,3 +416,21 @@ class RegisteringOpensACaseInEveryBank(RegistrationCase):
             {self.banks.inside: 1, self.banks.outside: 1},
         )
         self.assertEqual(RegulatoryChange.objects.count(), 1)
+
+
+class AMarketIsNeverATag(RegistrationCase):
+    """FP-S12, FP-S15: a change's market comes from its authority, never from a tag. The terms
+    that mirror the jurisdiction rows are the reference seed's, so a run that tags a reform
+    with one is refused before anything is written, however right the rest of the call is."""
+
+    def test_a_term_that_mirrors_a_jurisdiction_is_refused_and_stores_nothing(self) -> None:
+        market = watch_build.term("jurisdiction:no")
+        payload = body(agentRunId=str(self.open_run.id), termIds=[str(watch_build.term(SECURITIES).id), str(market.id)])
+        written = OutboxEvent.objects.count()
+
+        response = self.register(payload)
+
+        self.assertEqual(response.status_code, 422, response.content)
+        self.assertEqual(response.json()["code"], "jurisdiction_term_mirrored")
+        self.assertEqual(RegulatoryChange.objects.count(), 0, "a refusal stores nothing")
+        self.assertEqual(OutboxEvent.objects.count(), written, "and opens no case anywhere")

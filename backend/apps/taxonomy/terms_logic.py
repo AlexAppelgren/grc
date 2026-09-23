@@ -9,10 +9,17 @@ calls `save`, `create`, `update`, `delete` or their bulk and get-or-create forms
 `term_by_ref()` is the one place a `dimension:key` pair becomes a row. An unknown pair is
 422 `unknown_key` naming the keys that would have worked, because an agent (AGT-02) and a
 person both need to be told what they may say, not merely that they were wrong.
+
+`refuse_mirrored()` is the one rule that keeps a mirrored dimension out of every write
+(FP-04, FP-S12, D-28, ADR 0026): no proposal adds or changes one of its terms, and no
+record is tagged with one, because the reference seed owns them and a record's market
+comes from its instrument or its authority. It reads the data, the `jurisdiction` link a
+mirrored term carries, and never a dimension key.
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Any
 
 from django.core.exceptions import ValidationError
@@ -22,6 +29,26 @@ from apps.taxonomy.reading import Labels, label_of
 from apps.taxonomy.schemas import TaxonomyDimensionRef, TaxonomyTermRow, TermRef
 
 MAX_KEYS_IN_MESSAGE = 12
+# Says what the rule is and where the fact comes from instead, and names no dimension and
+# no country: the rule is keyed on data, so its sentence is too.
+MIRRORED_REFUSAL = (
+    "Those terms mirror the markets the platform covers and follow them on every deploy: none is "
+    "added or renamed through a proposal, and a record is never tagged with one. A record's "
+    "market comes from its instrument or its authority."
+)
+
+
+def refuse_mirrored(dimension_ids: Iterable[Any]) -> None:
+    """422 `jurisdiction_term_mirrored` when any of these dimensions holds a term that mirrors
+    a jurisdiction row (FP-04, FP-S12). One query however many dimensions are named.
+
+    Keyed on the dimension rather than on the term alone, so a term of a mirrored dimension
+    that carries no link of its own is refused as firmly as a linked one. Called where a
+    proposal is made and again where it is applied, since a proposal filed before this rule
+    existed still waits in the queue, and wherever a record is tagged."""
+    wanted = set(dimension_ids)
+    if wanted and TaxonomyTerm.objects.filter(dimension_id__in=wanted, jurisdiction__isnull=False).exists():
+        raise ValidationError(MIRRORED_REFUSAL, code="jurisdiction_term_mirrored")
 
 
 def dimension_by_key(key: str) -> TermDimension:

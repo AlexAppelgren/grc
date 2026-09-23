@@ -199,9 +199,9 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
     elif isinstance(payload, ProposalObligationVersionPayload):
         _validate_obligation_payload(payload)
     else:
-        from apps.taxonomy.terms_logic import dimension_by_key
+        from apps.taxonomy.terms_logic import dimension_by_key, refuse_mirrored
 
-        dimension_by_key(getattr(payload, "dimension", ""))
+        refuse_mirrored([dimension_by_key(getattr(payload, "dimension", "")).id])
     if isinstance(payload, ProposalVocabularyCreatePayload | ProposalTermCreatePayload):
         payload.labels = lists.validated_labels(payload.labels)
     elif isinstance(payload, ProposalVocabularyRelabelPayload | ProposalTermUpdatePayload) and payload.labels:
@@ -215,8 +215,10 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
 def _validate_obligation_payload(payload: ProposalObligationVersionPayload) -> None:
     """A new obligation version carries the summary in real content languages, one of them
     the original it was written in (INV-05), a legal date with a precision (INV-S10), and
-    scope terms that exist, written as `dimension:key` (FP-01)."""
+    scope terms that exist, written as `dimension:key` (FP-01), none of them a mirrored
+    jurisdiction term: an obligation's market comes from its instrument (FP-S9, FP-S12)."""
     from apps.taxonomy import tenant_lists_logic as lists
+    from apps.taxonomy.terms_logic import refuse_mirrored
 
     payload.summaries = lists.validated_labels(payload.summaries)
     if payload.original_language not in payload.summaries:
@@ -236,7 +238,7 @@ def _validate_obligation_payload(payload: ProposalObligationVersionPayload) -> N
         # Stored once each, in the order given: the apply replaces the obligation's term
         # links, and a repeated ref would break its uniqueness constraint after approval.
         payload.terms = list(dict.fromkeys(payload.terms))
-        terms_of(payload.terms)
+        refuse_mirrored(term.dimension_id for term in terms_of(payload.terms))
 
 
 def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUID | None) -> None:
