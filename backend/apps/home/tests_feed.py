@@ -8,11 +8,14 @@ credential, so what is proved here is everything that stands in place of a sign-
   claim.
 - **One refusal.** Unknown, malformed, revoked, expired and wrong-secret tokens all leave
   by one 404 with one body, so no address ever says whether it existed.
-- **A public document.** The events are selected by this bank's roadmap and say only what
-  the library holds, pinned by asserting the property names emitted against a set, so a
-  field added to a roadmap item later fails here instead of reaching a phone.
+- **A public document.** The events are selected by this bank's roadmap — its regulatory
+  dates stated to the day, each keyed by the change's stable key — and say only what the
+  library holds, pinned by asserting the property names emitted against a set, so a field
+  added to a roadmap item later fails here instead of reaching a phone.
 - **Stopped by the server.** The four rules that end a subscription are read on the
-  request, and each one revokes the row and records a system actor doing it.
+  fetch, and the idle one on the list and the cap as well; each one revokes the row and
+  records a system actor doing it.
+- **One person, one cap.** Two subscribe calls at once cannot both mint the last address.
 
 `tests_calendar.py` holds the other half of HOM-04, the public list, because
 `apps/home/calendar.py` holds the code for it. The clock is frozen at a fixed instant for
@@ -28,26 +31,34 @@ import datetime
 import hashlib
 import itertools
 import logging
+import uuid
 from collections.abc import Iterator
 from typing import Any
 from unittest import mock
 from urllib.parse import parse_qs, urlsplit
 
 from django.conf import settings
-from django.test import TestCase, override_settings
+from django.db import DEFAULT_DB_ALIAS, OperationalError, connection, transaction
+from django.test import RequestFactory, TestCase, TransactionTestCase, override_settings
 
 from apps.cases import testing as cases_build
+from apps.cases.models import ChangeCase
 from apps.home import feed as feed_logic
+from apps.home import roadmap
 from apps.home.models import TOKEN_PREFIX_LENGTH, CalendarFeed
-from apps.identity.models import LoginEvent, LoginEventKind, LoginMethod, Membership, TenantRole, User
+from apps.home.schemas import HomeRoadmapQuery
+from apps.identity import invitation_logic, passkey_logic
+from apps.identity.models import LoginEvent, LoginEventKind, Membership, TenantRole, User
+from apps.library.models import DatePrecision
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.audit import ActorType
 from apps.shared.logging import JsonFormatter
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.routes import iter_operations
-from apps.shared.testing import sign_in
+from apps.shared.testing import sign_in, user_principal
 from apps.watch import testing as watch_build
 from apps.watch.models import RegulatoryChange
+from apps.watch.write import watch_write
 from config.api import api
 
 # Distinct slugs, because each fixture below builds its own bank.
@@ -60,8 +71,15 @@ SOON = datetime.date(2026, 10, 15)
 LATER = datetime.date(2027, 1, 20)
 
 
-def a_change(*, title: str, key_date: datetime.date) -> RegulatoryChange:
-    return watch_build.change(title=title, key_date=key_date, key_date_label="In force")
+def a_change(
+    *, title: str, key_date: datetime.date, precision: DatePrecision = DatePrecision.DAY
+) -> RegulatoryChange:
+    change = watch_build.change(title=title, key_date=key_date, key_date_label="In force")
+    if precision is not DatePrecision.DAY:
+        with watch_write("test: a key date stated less exactly than to the day"):
+            RegulatoryChange.objects.filter(pk=change.pk).update(key_date_precision=precision.value)
+        change.refresh_from_db()
+    return change
 
 
 def frozen_at(moment: datetime.datetime) -> Any:
@@ -75,6 +93,9 @@ ICS = "/api/v1/calendar/feed.ics"
 SO_WHAT = "Three regulations change for us and research budgets move."
 # A month after the instant everything here is frozen at: past the 30-day idle expiry.
 LONG_AGO = INSTANT - datetime.timedelta(days=40)
+# A re-enrolment a minute after the subscription, and a fetch after that.
+AFTER_ENROLMENT = INSTANT + datetime.timedelta(minutes=1)
+LATER_THAT_NIGHT = INSTANT + datetime.timedelta(minutes=5)
 # The loggers the settings give handlers of their own. A root handler alone would miss
 # them, because each one is configured `propagate: False`.
 LOGGERS = ("", "django", "django.request", "apps")
@@ -106,9 +127,11 @@ def captured_logs() -> Iterator[list[str]]:
             logger.setLevel(level)
 
 
-def a_dated_case(tenant: Tenant, *, title: str, key_date: datetime.date) -> RegulatoryChange:
+def a_dated_case(
+    tenant: Tenant, *, title: str, key_date: datetime.date, precision: DatePrecision = DatePrecision.DAY
+) -> RegulatoryChange:
     """One reform with a date, and this bank's own open case on it carrying a judgement."""
-    change = a_change(title=title, key_date=key_date)
+    change = a_change(title=title, key_date=key_date, precision=precision)
     cases_build.case(tenant, change, so_what_text=SO_WHAT)
     return change
 
@@ -151,6 +174,14 @@ class FeedFixture(TestCase):
     def fetch(self, token: str, *, at: datetime.datetime = INSTANT) -> Any:
         with frozen_at(at):
             return self.client.get(ICS, {"token": token})
+
+    def stopped_by_the_server(self) -> dict[uuid.UUID | None, str]:
+        """Every revocation the server made itself, as the row it stopped and the sentence
+        its audit row carries."""
+        return {
+            row.subject_id: row.summary
+            for row in AuditEvent.objects.filter(action="calendar_feed.revoked", actor_type=ActorType.SYSTEM.value)
+        }
 
     def own_rows(self) -> Any:
         tenancy.activate(self.tenant.id)
@@ -252,6 +283,117 @@ class MintingAnAddress(FeedFixture):
         self.assertEqual((refused.status_code, refused.json()["code"]), (404, "not_found"))
 
 
+class TheIdleRuleOnTheListAndTheCap(FeedFixture):
+    """ADR 0045's idle expiry, read where a person looks as well as where a client fetches.
+    A subscription nobody fetched for a month works for nobody, so it is stopped the moment
+    its owner lists or adds subscriptions — never counted against the cap, never shown as
+    live — and stopped the way a fetch stops it: a system actor, audited, in that request's
+    transaction."""
+
+    def age(self, feed_ids: list[uuid.UUID]) -> None:
+        self.own_rows().filter(pk__in=feed_ids).update(created_at=LONG_AGO, last_used_at=None)
+
+    def test_listing_stops_a_subscription_gone_idle_and_says_which_rule_did(self) -> None:
+        headers = self.headers()
+        idle = self.subscribe(headers).json()["feed"]["id"]
+        in_use = self.subscribe(headers).json()["feed"]["id"]
+        self.age([uuid.UUID(idle)])
+
+        listed = {row["id"]: row for row in self.client.get(FEEDS, **headers).json()}
+
+        self.assertIsNotNone(listed[idle]["revokedAt"], "an idle subscription is not listed as working")
+        self.assertIsNone(listed[in_use]["revokedAt"])
+        self.assertEqual(set(self.stopped_by_the_server()), {uuid.UUID(idle)})
+        self.assertIn(f"{settings.CALENDAR_FEED_IDLE_DAYS} days", self.stopped_by_the_server()[uuid.UUID(idle)])
+
+    def test_a_list_with_nothing_gone_idle_writes_nothing(self) -> None:
+        headers = self.headers()
+        self.subscribe(headers)
+        audited = AuditEvent.objects.count()
+        self.assertEqual(self.client.get(FEEDS, **headers).status_code, 200)
+        self.assertEqual(AuditEvent.objects.count(), audited, "a read that stopped nothing is not a decision")
+
+    def test_idle_subscriptions_are_stopped_rather_than_counted_against_the_cap(self) -> None:
+        """A person whose every address went quiet on replaced devices must not be told they
+        hold too many: none of them works."""
+        headers = self.headers()
+        for _ in range(settings.CALENDAR_FEEDS_PER_USER):
+            self.assertEqual(self.subscribe(headers).status_code, 201)
+        idle = list(self.own_rows().values_list("pk", flat=True))
+        self.age(idle)
+
+        created = self.subscribe(headers)
+
+        self.assertEqual(created.status_code, 201)
+        self.assertEqual(set(self.stopped_by_the_server()), set(idle))
+        self.assertEqual(
+            list(self.own_rows().filter(revoked_at__isnull=True).values_list("pk", flat=True)),
+            [uuid.UUID(created.json()["feed"]["id"])],
+        )
+
+    @override_settings(CALENDAR_FEED_REVOKED_SHOWN=2)
+    def test_the_list_holds_what_works_and_only_the_most_recently_stopped(self) -> None:
+        """Bounded by design rather than paged: what works is capped, and of what was
+        stopped only the most recent `CALENDAR_FEED_REVOKED_SHOWN` are shown, so a person
+        who has replaced addresses for years still reads one short list. Same shape and same
+        order as ever: newest first."""
+        headers = self.headers()
+        for _ in range(4):
+            self.subscribe(headers)
+        live, *stopped = list(self.own_rows())
+        for hours_ago, feed in enumerate(stopped, start=1):
+            self.own_rows().filter(pk=feed.pk).update(revoked_at=INSTANT - datetime.timedelta(hours=hours_ago))
+        oldest_stop = stopped[-1]
+
+        listed = self.client.get(FEEDS, **headers).json()
+
+        shown = [feed.id for feed in self.own_rows() if feed.id != oldest_stop.id]
+        self.assertEqual([uuid.UUID(row["id"]) for row in listed], shown)
+        self.assertIn(live.id, shown, "a subscription that works is always listed")
+        for row in listed:
+            with self.subTest(row=row["id"]):
+                self.assertEqual(set(row), {"id", "createdAt", "lastUsedAt", "revokedAt"})
+
+
+class TheCapHoldsUnderConcurrency(TransactionTestCase):
+    """Two subscribe calls at once must not both count four and both mint a fifth. The
+    lock is the caller's membership row: it exists for every caller, where their live rows
+    may be none, and a count over live rows never sees the row a concurrent call is
+    inserting. Proved with two connections rather than two threads: the application role
+    holds the lock a first call holds, and a second call is shown to wait for it."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def setUp(self) -> None:
+        # A TransactionTestCase does not wrap the test in a transaction, and the reference
+        # seeds audit every row they write, so record() needs one opened here.
+        with transaction.atomic():
+            watch_build.seed_watch_reference()
+        self.tenant = factories.tenant(slug=f"feed-lock-{uuid.uuid4().hex[:8]}")
+        self.member = factories.member(self.tenant, roles=("reader",))
+
+    def subscribe(self) -> None:
+        tenancy.activate(self.tenant.id)
+        feed_logic.create_feed(
+            tenant=self.tenant,
+            user=self.member.user,
+            actor=factories.user_actor(user_id=self.member.user.id),
+            request=RequestFactory().post(FEEDS),
+        )
+
+    def test_a_second_subscribe_waits_for_the_first(self) -> None:
+        with transaction.atomic(using="app"):
+            tenancy.activate(self.tenant.id, using="app")
+            Membership.objects.using("app").select_for_update().get(pk=self.member.pk)
+            with self.assertRaisesMessage(OperationalError, "lock timeout"), transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute("SET LOCAL lock_timeout = '200ms'")
+                self.subscribe()
+        with transaction.atomic():
+            self.subscribe()
+            self.assertEqual(CalendarFeed.objects.filter(tenant=self.tenant).count(), 1, "the waiting call wrote nothing")
+
+
 class FetchingTheCalendar(FeedFixture):
     """`GET /calendar/feed.ics`: what the document says, and what one refusal hides."""
 
@@ -286,6 +428,64 @@ class FetchingTheCalendar(FeedFixture):
             with self.subTest(judgement=judgement):
                 self.assertNotIn(judgement, body)
 
+    def test_an_events_uid_is_the_changes_stable_key_and_never_the_banks_case(self) -> None:
+        """ADR 0045: the stable key is the UID. It never changes, so a client updates the
+        event when a date moves instead of showing it twice, and it is the library's, so it
+        names nothing of the bank's — a case id is this bank's own row and has no business
+        on a phone."""
+        body = self.fetch(self.live_token()).content.decode()
+        domain = urlsplit(settings.APP_BASE_URL).hostname
+        self.assertIn(f"\r\nUID:{self.change.stable_key}@{domain}\r\n", body)
+        tenancy.activate(self.tenant.id)
+        case = ChangeCase.objects.get(change=self.change)
+        self.assertNotIn(str(case.id), body)
+
+    def test_a_date_the_source_gave_as_a_quarter_stays_off_the_calendar(self) -> None:
+        """ADR 0045: day precision only. An all-day event is one day, and a date published
+        as "Q1 2027" pinned to 1 January would state a day nobody published. The roadmap page
+        keeps it; the calendar leaves it out."""
+        quarter = a_dated_case(
+            self.tenant, title="Amended reporting of securities financing", key_date=LATER, precision=DatePrecision.QUARTER
+        )
+        body = self.fetch(self.live_token()).content.decode()
+        self.assertNotIn(quarter.title, body)
+        self.assertNotIn(quarter.stable_key, body)
+        self.assertIn(f"SUMMARY:In force: {self.change.title}\r\n", body, "a date stated to the day still is")
+        on_the_roadmap = [item["title"] for item in self.client.get("/api/v1/roadmap", **self.headers()).json()["items"]]
+        self.assertIn(quarter.title, on_the_roadmap)
+
+    def test_the_calendar_is_the_roadmaps_regulatory_items_stated_to_the_day(self) -> None:
+        """Only the dates the outside world set reach a calendar, never the bank's own
+        (AC-TEN1). The calendar's rows are the roadmap's `kind=regulatory` rows, in the
+        roadmap's order, less the ones not stated to the day — so when the bank's own
+        deadlines join the roadmap, nothing here can carry one out."""
+        a_dated_case(self.tenant, title="Transition ends for research payments", key_date=LATER)
+        a_dated_case(self.tenant, title="Guidance on outsourcing", key_date=LATER, precision=DatePrecision.MONTH)
+        tenancy.activate(self.tenant.id)
+        order = ["en"]
+
+        on_the_calendar = roadmap.calendar_items(self.tenant, order)
+
+        regulatory = roadmap.roadmap_items(self.tenant, order, HomeRoadmapQuery(kind="regulatory")).items
+        stated_to_the_day = set(
+            RegulatoryChange.objects.filter(key_date_precision=DatePrecision.DAY.value).values_list("pk", flat=True)
+        )
+        self.assertEqual(
+            [item.id for _, item in on_the_calendar],
+            [item.id for item in regulatory if item.change_id in stated_to_the_day],
+        )
+        self.assertEqual(
+            [item.title for _, item in on_the_calendar],
+            [self.change.title, "Transition ends for research payments"],
+            "the month-precision date is the one left out",
+        )
+        self.assertEqual({(item.kind, item.item_type) for _, item in on_the_calendar}, {("regulatory", "change_date")})
+        self.assertEqual(
+            [RegulatoryChange.objects.get(stable_key=key).pk for key, _ in on_the_calendar],
+            [item.change_id for _, item in on_the_calendar],
+            "each item beside its own change's stable key",
+        )
+
     def test_a_long_title_is_folded_rather_than_written_as_one_long_line(self) -> None:
         """RFC 5545 §3.1: a client that follows the standard reads an unfolded line as a
         broken one, and regulatory titles are regularly longer than 75 octets."""
@@ -298,7 +498,7 @@ class FetchingTheCalendar(FeedFixture):
         self.assertIn("\r\n ", body, "no line was continued")
         for line in body.split("\r\n"):
             with self.subTest(line=line[:30]):
-                self.assertLessEqual(len(line.encode()), 76)
+                self.assertLessEqual(len(line.encode()), feed_logic.FOLD_OCTETS)
 
     def test_a_comma_or_a_semicolon_in_a_title_is_escaped_rather_than_splitting_a_line(self) -> None:
         """RFC 5545 §3.3.11. A regulatory title regularly carries both, and an unescaped one
@@ -318,7 +518,7 @@ class FetchingTheCalendar(FeedFixture):
         self.assertIn(wide, body.decode("utf-8").replace("\r\n ", ""), "the characters survived the fold")
         for line in body.decode("utf-8").split("\r\n"):
             with self.subTest(line=line[:20]):
-                self.assertLessEqual(len(line.encode()), 76)
+                self.assertLessEqual(len(line.encode()), feed_logic.FOLD_OCTETS)
 
     def test_unknown_revoked_expired_and_malformed_all_answer_one_404(self) -> None:
         """The whole of D-52's indistinguishability: nothing an address answers says whether
@@ -446,21 +646,55 @@ class TheServerStopsASubscriptionItself(FeedFixture):
             )
         self.assert_stopped(token, because="lost access to the roadmap")
 
+    def enrol_again(self, bank: Tenant) -> None:
+        """An admin of `bank` re-issues the reader's enrolment a minute after they
+        subscribed, through the function the members screen and the console both call
+        (ID-05)."""
+        admin = factories.member_user(bank, roles=("admin",))
+        with frozen_at(AFTER_ENROLMENT):
+            tenancy.activate(bank.id)
+            invitation_logic.reissue_enrolment(
+                tenant=bank,
+                user=self.reader,
+                actor=factories.user_actor(user_id=admin.id),
+                actor_user=admin,
+                request=None,
+                step_up_assertion_id=None,
+            )
+
     def test_being_enrolled_again_stops_it(self) -> None:
         """A re-enrolment retires every passkey and revokes every session, so an address
         minted by the person as they were is not one the person as they are now asked for."""
+        factories.passkey(self.reader)
         token = self.token_of(self.subscribe())
-        tenancy.activate(self.tenant.id)
-        with frozen_at(INSTANT + datetime.timedelta(minutes=1)):
-            LoginEvent.objects.create(
-                tenant=self.tenant,
-                user=self.reader,
-                email=self.reader.email,
-                method=LoginMethod.EMAIL_CODE.value,
-                event=LoginEventKind.REENROLMENT_ISSUED.value,
-                success=True,
+        self.enrol_again(self.tenant)
+        self.assert_stopped(token, because="enrolled again", at=LATER_THAT_NIGHT)
+
+    def test_being_enrolled_again_by_another_bank_stops_it_too(self) -> None:
+        """A person's passkeys are theirs, not a bank's, and re-enrolment retires all of
+        them wherever it was issued. The security log's `reenrolment_issued` row is written
+        in the issuing bank alone, and row-level security hides it from this one, so it
+        cannot be what the rule reads."""
+        elsewhere = factories.tenant(slug=f"feed-elsewhere-{next(_slugs)}", timezone="Europe/Stockholm")
+        factories.member(elsewhere, roles=("reader",), user_row=self.reader)
+        factories.passkey(self.reader)
+        token = self.token_of(self.subscribe())
+        self.enrol_again(elsewhere)
+        self.assert_stopped(token, because="enrolled again", at=LATER_THAT_NIGHT)
+
+    def test_removing_one_passkey_while_keeping_another_is_not_enrolling_again(self) -> None:
+        """Replacing a phone retires its passkey and keeps the rest, and a person may never
+        remove their last one, so only re-enrolment leaves nobody with a passkey. That
+        moment is what the rule looks for, not any retirement at all."""
+        old_phone = factories.passkey(self.reader, nickname="Old phone")
+        factories.passkey(self.reader, nickname="Laptop")
+        token = self.token_of(self.subscribe())
+        with frozen_at(AFTER_ENROLMENT):
+            passkey_logic.remove_passkey(
+                user_principal(subject_id=self.reader.id, tenant_id=self.tenant.id), old_phone.id
             )
-        self.assert_stopped(token, because="enrolled again")
+        self.assertEqual(self.fetch(token, at=LATER_THAT_NIGHT).status_code, 200)
+        self.assertIsNone(self.own_rows().get().revoked_at)
 
     def test_a_subscription_nobody_fetches_expires(self) -> None:
         token = self.token_of(self.subscribe())

@@ -1,8 +1,9 @@
 """The roadmap by quarter (HOM-03, FP-03).
 
 One module owns the roadmap query, so no second one is ever written: `roadmap_items()`
-answers `GET /roadmap` and `coming_up()` answers Today's "Coming up" panel from the same
-rows, rather than asking the same question a second way (chunk 6 ruling 5).
+answers `GET /roadmap`, `coming_up()` answers Today's "Coming up" panel and
+`calendar_items()` a calendar subscription, all three from the same rows, rather than
+asking the same question a second way (chunk 6 ruling 5).
 
 A read module: nothing here writes. What it reads is two zones at once — the library's
 dated changes beside this bank's own cases — under row-level security with the caller's
@@ -44,7 +45,7 @@ from apps.home.schemas import (
     RoadmapItemKind,
     RoadmapItemType,
 )
-from apps.library.models import ObligationTitle
+from apps.library.models import DatePrecision, ObligationTitle
 from apps.library.reading import localized, today_for
 from apps.library.schemas import LibraryRef
 from apps.shared.models import Tenant
@@ -176,7 +177,7 @@ def _quarters(items: Iterable[HomeRoadmapItem]) -> list[str]:
 
 
 # ---------------------------------------------------------------------------------------
-# The two reads (chunk 6 ruling 5: these are the only roadmap queries there are)
+# The three reads (chunk 6 ruling 5: these are the only roadmap queries there are)
 # ---------------------------------------------------------------------------------------
 def roadmap_items(tenant: Tenant, order: list[str], query: HomeRoadmapQuery) -> HomeRoadmap:
     """`GET /roadmap`: every dated change the bank has open work on inside the window the
@@ -202,3 +203,26 @@ def coming_up(tenant: Tenant, order: list[str], limit: int) -> tuple[list[HomeRo
     """
     cases = _cases(tenant, HomeRoadmapQuery())
     return _items(list(cases[:limit]), order), cases.count()
+
+
+def calendar_items(tenant: Tenant, order: list[str]) -> list[tuple[str, HomeRoadmapItem]]:
+    """What a calendar subscription carries (HOM-04, ADR 0045, AC-TEN1): the roadmap's own
+    rows, narrowed twice, each beside its change's stable key, which is the event's UID.
+
+    - **The dates the outside world set, and no other.** The query names
+      `kind=regulatory` and this reads `_cases()`, the regulatory branch, alone. The bank's
+      own deadlines — a certificate's expiry, an action falling due — join the roadmap in
+      branches of their own (chunks 8 and 9) that this never calls, so none of them reaches
+      a calendar a provider outside the bank can read.
+    - **Stated to the day.** An all-day event is one day. A date the source gave as a month
+      or a quarter would be pinned to a day nobody published, so it stays on the roadmap
+      and off the calendar.
+
+    The stable key rides beside the item rather than in it because it is the calendar's
+    identifier and not the screen's: an item's own `id` names the bank's case, and a UID
+    leaves the bank.
+    """
+    cases = list(
+        _cases(tenant, HomeRoadmapQuery(kind="regulatory")).filter(change__key_date_precision=DatePrecision.DAY.value)
+    )
+    return list(zip((case.change.stable_key for case in cases), _items(cases, order), strict=True))
