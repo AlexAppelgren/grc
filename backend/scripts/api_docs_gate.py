@@ -100,7 +100,8 @@ def raisable_codes() -> frozenset[str]:
         found.update(CODE_LITERAL.findall(path.read_text(encoding="utf-8")))
     if len(found) < CODES_FLOOR:
         raise SystemExit(
-            f"api_docs_gate: only {len(found)} error codes found under backend/apps, below the floor of "
+            f"api_docs_gate: only {len(found)} error codes found under backend/apps and in the exception handlers "
+            f"of config/api.py, below the floor of "
             f"{CODES_FLOOR}. The scan is broken, not the contract; fix it rather than lowering the floor."
         )
     return frozenset(found)
