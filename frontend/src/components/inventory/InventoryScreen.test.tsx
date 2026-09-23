@@ -402,8 +402,8 @@ describe('InventoryScreen', () => {
     renderIn(<InventoryScreen />);
     const instrument = await screen.findByLabelText('Instrument');
     await waitFor(() => expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toBeDefined());
-    // The picker's own read, not the Instruments tab's page of 20.
-    expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toContainEqual(expect.objectContaining({ limit: 100 }));
+    // The picker's own read, and not the Instruments tab's page of 20, which only that tab shows.
+    expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toEqual([expect.objectContaining({ limit: 100 })]);
     fireEvent.change(instrument, { target: { value: 'fffs-2017-2' } });
     expect(nav.replace).toHaveBeenCalledWith('/inventory?instrument=fffs-2017-2');
   });

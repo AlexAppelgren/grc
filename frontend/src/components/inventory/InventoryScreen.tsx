@@ -190,7 +190,9 @@ export function InventoryScreen() {
   const tab = tabFrom(params);
   const filters = filtersFrom(params);
   const obligationCount = useObligations(queryOf(filters));
-  const instrumentCount = useInstruments(instrumentQueryOf(filters));
+  // The instruments' count is the instruments tab's lede and nothing else, so the
+  // obligations tab never asks for it beside its own rows (NFR-02).
+  const instrumentCount = useInstruments(instrumentQueryOf(filters), undefined, tab === 'instruments');
 
   const apply = (patch: Partial<InventoryFilters>) => {
     const search = searchOf(tab, { ...filters, ...patch });
