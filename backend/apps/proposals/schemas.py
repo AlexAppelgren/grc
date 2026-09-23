@@ -1089,9 +1089,64 @@ class LibraryUpdatesQuery(CamelSchema):
 
 
 class ProposalAccepted(CamelSchema):
-    """202 from a library-list write (VOC-07): nothing changed, a proposal is waiting."""
+    """The 202 a write to a shared library list or taxonomy term answers (VOC-07): nothing in the library
+    changed, and a proposal now waits for a second person or agent to decide it."""
 
-    proposal: ProposalRow
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "proposal": {
+                        "id": "2c7a5e91-4d3b-4f08-a6e2-9b1c0d8f7e35",
+                        "kind": "vocabulary_create",
+                        "status": "open",
+                        "title": "Add Supervisory statement to change_type",
+                        "targetType": "change_type",
+                        "targetId": None,
+                        "changeId": None,
+                        "payload": {
+                            "list": "change_type",
+                            "key": "supervisory_statement",
+                            "labels": {"en": "Supervisory statement", "sv": "Tillsynsuttalande"},
+                            "usageNote": "An authority's published view on how a rule is applied.",
+                            "kind": "supervisory",
+                            "extra": {},
+                        },
+                        "fieldSources": {},
+                        "scopeSuggestion": [],
+                        "sourceLabel": "",
+                        "sourceUrl": "",
+                        "effectiveFrom": None,
+                        "origin": "user",
+                        "agentRunId": None,
+                        "model": "",
+                        "proposedBy": None,
+                        "proposedByAgent": None,
+                        "fromOrganisation": True,
+                        "reviewedBy": None,
+                        "reviewedByAgent": None,
+                        "correctedBy": None,
+                        "correctedByAgent": None,
+                        "reviewedAt": None,
+                        "rejectionCode": "",
+                        "reviewNote": "",
+                        "appliedAt": None,
+                        "createdAt": "2026-09-18T09:40:00Z",
+                    }
+                }
+            ]
+        }
+    )
+
+    proposal: ProposalRow = Field(
+        description=(
+            "The proposal the write became, waiting in the platform's review queue with `status` `open`. "
+            "Nothing has changed yet: the shared list or taxonomy still says what it said, and it changes only when a "
+            "second, independent person or agent approves the proposal in the console, never the one who "
+            "made it. A proposal made inside a bank names no proposer (`fromOrganisation` is true); the bank "
+            "follows it in `GET /tenant/proposals`."
+        )
+    )
 
 
 class ProposalCreateBody(WriteBody):
