@@ -1113,3 +1113,16 @@ how a call bleqq made ended, the provider's own stop reason when the model finis
 `aborted` when the caller stopped reading first and `failed` when the model failed once
 asked (D-82). A streamed Ask answer is logged however it ends, and without the column a
 call cut short read in the log exactly as a finished one. Empty on a row an agent filed.
+
+## 14. A bank switches its own AI features off with a passkey (2026-09-23, ask-switch-route)
+
+`PUT /tenant/ai` (`setTenantAi`) and `TenantOut.aiEnabled` are not in the designed contract,
+which has no way to reach D-07's per-bank switch: `tenant.ai_enabled` (shared 0007) was read
+before every model call and nothing set it. The route takes `{enabled}`, a strict boolean
+and nothing else, and answers the profile as it now stands. It needs `security.manage` and a
+passkey step-up, because whether a bank's own words may leave it for a model is a security
+change (CLAUDE.md section 5), and it is recorded as `tenant.ai_switched` with the state
+before and after and the step-up assertion. It is a route of its own rather than a field on
+`PATCH /tenant` (`updateTenant`), which stays as designed, so a profile edit never needs a
+passkey and never moves the switch. The switch covers the bank's own Ask and drafts only; a
+platform run is in no bank's zone and never reads it (owner item 14).

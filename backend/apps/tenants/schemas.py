@@ -15,7 +15,7 @@ from datetime import datetime
 from pydantic import ConfigDict, Field, JsonValue
 
 from apps.identity.schemas import RoleRef
-from apps.shared.schemas import CamelSchema
+from apps.shared.schemas import CamelSchema, WriteBody
 
 __all__ = ["CamelSchema"]
 
@@ -104,6 +104,7 @@ class TenantOut(CamelSchema):
                     "status": "active",
                     "defaultLanguage": _EXAMPLE_LANGUAGE_SV,
                     "contentLanguages": [_EXAMPLE_LANGUAGE_SV, _EXAMPLE_LANGUAGE_EN],
+                    "aiEnabled": True,
                     "onboarding": {
                         "stepsDone": 3,
                         "steps": [
@@ -183,6 +184,17 @@ class TenantOut(CamelSchema):
             "data rather than a vocabulary an admin may extend."
         )
     )
+    ai_enabled: bool = Field(
+        description=(
+            "Whether this bank's own AI features are on: `true` means its members may use Ask "
+            "and have a model draft text for them, `false` means every such call is refused "
+            "with `feature_off` before any model is reached. It starts `true`. Only "
+            "`PUT /tenant/ai` changes it, with `security.manage` and a passkey step-up; the "
+            "profile edit ignores it. It covers this bank's own features only: the research "
+            "agents that keep the shared library current run for every bank and are not "
+            "switched here."
+        )
+    )
     onboarding: Onboarding = Field(
         description=(
             "How far the bank has got through first-run setup, computed by the server on "
@@ -244,6 +256,23 @@ class TenantPatch(CamelSchema):
             "active language row is refused with `unknown_key` naming the key. Keys such as "
             "`sv` and `en`, never labels."
         ),
+    )
+
+
+class TenantAiBody(WriteBody):
+    """Switch this bank's own AI features on or off. The body holds the one field and
+    nothing else; any other field is refused."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"enabled": False}]})
+
+    enabled: bool = Field(
+        strict=True,
+        description=(
+            "`false` switches this bank's AI features off: Ask and the drafts a model writes "
+            "for the bank's members answer `feature_off` from then on. `true` switches them "
+            "back on. A JSON boolean, never a string. Sending the value the bank already has "
+            "changes nothing and is still recorded in the audit log."
+        )
     )
 
 

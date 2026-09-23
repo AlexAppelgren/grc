@@ -70,6 +70,7 @@ def tenant_out(tenant: Tenant) -> dict[str, Any]:
         "status": tenant.status,
         "default_language": language_ref(tenant.default_language),
         "content_languages": [language_ref(language) for language in content_languages(tenant)],
+        "ai_enabled": tenant.ai_enabled,
         "onboarding": onboarding(tenant),
     }
 
@@ -151,6 +152,29 @@ def update_tenant(
         tenant_id=tenant.id,
         before=before,
         after=after,
+    )
+    return tenant
+
+
+def set_ai_enabled(*, tenant: Tenant, actor: Actor, enabled: bool, step_up_assertion_id: uuid.UUID | None) -> Tenant:
+    """The bank's own AI switch (D-07, SRC-03): a security change, stepped up and audited
+    with the assertion. `apps.shared.ai.ensure_enabled` reads it before any model call. The
+    row is locked so two switches at once each record the state the other left."""
+    tenant = Tenant.objects.select_for_update().get(pk=tenant.pk)
+    before = {"aiEnabled": tenant.ai_enabled}
+    tenant.ai_enabled = enabled
+    tenant.save(update_fields=["ai_enabled"])
+    record(
+        action="tenant.ai_switched",
+        actor=actor,
+        subject_type="tenant",
+        subject_id=tenant.id,
+        subject_title=tenant.name,
+        summary="AI features switched on." if enabled else "AI features switched off.",
+        tenant_id=tenant.id,
+        before=before,
+        after={"aiEnabled": enabled},
+        step_up_assertion_id=step_up_assertion_id,
     )
     return tenant
 
