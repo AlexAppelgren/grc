@@ -1457,23 +1457,25 @@ export interface paths {
         /**
          * Read the mail a test run sent (test environments only)
          * @description For automated end-to-end test runs only. Returns every message the stand-in mailer
-         *     has sent since the outbox was last cleared, oldest first, so a test journey can read
-         *     the enrolment code or invitation link a real person would find in their inbox, and can
-         *     prove that a code request for someone who already has a passkey sent nothing.
+         *     still holds, oldest first, so a test journey can read the enrolment code or invitation
+         *     link a real person would find in their inbox, and can prove that a code request for
+         *     someone who already has a passkey sent nothing.
          *
-         *     The route exists only when the server runs in end-to-end test mode (`E2E_MODE`) with
-         *     the stand-in mailer. Every deployed environment refuses to boot with that mode on, so
-         *     against a real bank's deployment this call always answers `not_found`, exactly like a
-         *     path that does not exist, and no mail ever sent there can be read back through it. It
-         *     stays in the published contract only so the test suite's client is typed against it;
-         *     an integrator never calls it.
+         *     The route is always registered, but it answers 404 with the problem code `not_found`
+         *     unless the server runs in end-to-end test mode (`E2E_MODE`) with the stand-in mailer.
+         *     Every deployed environment refuses to boot with that mode on, so against a real bank's
+         *     deployment this call always answers `not_found`, and no mail ever sent there can be
+         *     read back through it. It stays in the published contract because the contract lists
+         *     every route the server registers; an integrator never calls it.
          *
-         *     No credential is needed: the test mode is the whole gate. It changes nothing, writes
-         *     nothing to the audit log and does not page, because a test run sends a handful of
-         *     messages. An empty outbox is a 200 with an empty list.
+         *     No credential is needed: the test mode is the whole gate. It changes nothing and writes
+         *     nothing to the audit log. It returns the whole outbox in one answer, unpaged: the
+         *     stand-in mailer keeps every message until the server's cache is cleared, so the list
+         *     grows across test runs that share one cache. An empty outbox is a 200 with an empty
+         *     list.
          *
-         *     Errors: `not_found` whenever end-to-end test mode or the stand-in mailer is off, which
-         *     is always the case when deployed.
+         *     Errors: `not_found` (404) whenever end-to-end test mode or the stand-in mailer is off,
+         *     which is always the case when deployed.
          */
         get: operations["e2eMailOutbox"];
         put?: never;
