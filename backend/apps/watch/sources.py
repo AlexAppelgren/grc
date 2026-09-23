@@ -263,7 +263,8 @@ def record_check(*, who: Principal, actor: Actor, run_id: uuid.UUID, body: Watch
 
     Every refusal comes before the write, so a check that names a closed run or a source
     the registry does not hold logs nothing: a coverage log that recorded attempts nobody
-    could place would be worse than one that recorded none.
+    could place would be worse than one that recorded none. A re-check past the run's
+    budget (`WATCH_RUN_MAX_RECHECKS`) is refused with `run_budget_exhausted` (H24).
     """
     run = runs.require_open_run(who, run_id)
     source = keys.source_with_name(body.source_name)
@@ -286,6 +287,13 @@ def record_check(*, who: Principal, actor: Actor, run_id: uuid.UUID, body: Watch
     if not failed and body.error:
         raise ValidationError("A check that succeeded carries no error.", code="validation_error")
     with watch_write("a line of the coverage log"), transaction.atomic():
+        if body.kind == SourceCheckKind.RECHECK.value:
+            runs.spend(
+                run,
+                run.source_checks.filter(kind=SourceCheckKind.RECHECK.value),
+                limit=settings.WATCH_RUN_MAX_RECHECKS,
+                what=("re-check", "re-checks"),
+            )
         check = source.checks.create(
             agent_run=run,
             checked_at=body.checked_at or timezone.now(),
