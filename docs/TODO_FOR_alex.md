@@ -500,3 +500,16 @@ section. Copied here as chunk3-rest-T20 requires.
       roadmap page already shows. Default if you say nothing: it stays as built, and a feed
       never disagrees with the roadmap page beside it, which is the rule chunk 6 ruling 5 set
       for these two reads.
+
+## i18n-en-sv-switch: the interface language picker has no design card (2026-09-23, I18N-02)
+
+- [ ] **Confirm how a person picks their interface language, or draw it.** The shell card
+      (`design/screens/tenant-shell.html`) shows the account menu and the More sheet without
+      a language choice, and the prototype has none either (its English/Svenska chips switch
+      the content language of an obligation, not the interface). Default taken without
+      waiting: a "Language" group in the rail's account menu, between My sessions and Sign
+      out, holding one radio per interface language, each named in its own words ("English",
+      "Svenska"), the language in use marked, the menu staying open so the switch is seen to
+      land, and a short error line under the group if the save fails. The More sheet below
+      1024 px lays the same group out flat as touch rows. Say so if you want it elsewhere, for
+      example as a setting on a profile page, and the design card follows.
