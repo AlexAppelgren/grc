@@ -332,6 +332,13 @@ def seed_terms(*, tenant: Tenant, actor: Actor, terms: list[Any]) -> int:
     return _switch_on(tenant=tenant, actor=actor, terms=terms, request=None, step_up_assertion_id=None)
 
 
+def unseed_terms(*, tenant: Tenant, actor: Actor, terms: list[Any]) -> int:
+    """`seed_terms` undone, for an E2E journey that restores the seeded footprint it
+    changed (watch-standards, WAT-S10): the same writes a removal makes, history and audit
+    included."""
+    return _switch_off(tenant=tenant, actor=actor, terms=terms, request=None, step_up_assertion_id=None)
+
+
 def create_request(
     *,
     tenant: Tenant,

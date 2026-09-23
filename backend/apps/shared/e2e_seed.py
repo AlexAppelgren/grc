@@ -34,6 +34,7 @@ from django.db import transaction
 
 from apps.agents.models import AgentRun, RunStatus
 from apps.agents.seeds import seed_agent_definitions
+from apps.cases import matching as case_matching
 from apps.cases.creation import CHANGE_REGISTERED
 from apps.cases.models import ChangeCase
 from apps.home import tasks as home_tasks
@@ -1298,6 +1299,7 @@ def seed_e2e() -> dict[str, int]:
         seed_chunk5_sources(closed_run)
         seed_chunk5_changes(closed_run)
         chunk5_cases = seed_chunk5_cases(tenants)
+        seed_standard_change()
     return {
         "tenants": len(tenants),
         "logins": logins,
@@ -1314,3 +1316,84 @@ def seed_e2e() -> dict[str, int]:
 def anna_invitation() -> Invitation | None:
     """The open invitation of the one awaiting user, for the guard and journeys."""
     return invitation_logic.find_open_for_email("anna@example-bank.test")
+
+
+# ---------------------------------------------------------------------------------------
+# watch-standards (WAT-S10, WAT-07, CAS-01): a new edition of a standard, seen only by the
+# banks that follow it
+# ---------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class SeedStandardChange:
+    """The one change a standards body issued, and the term that decides who sees it.
+    Tenant A follows no standard as seeded (std-journeys' FP-S16 and INV-S11 start from
+    that), so WAT-S10's journey switches the term on for its own run through
+    `follow_the_standard()` and back off afterwards, on failure too."""
+
+    stable_key: str
+    title: str
+    key_date_label: str
+    term: str
+
+
+EXPECTED_STANDARD_CHANGE = SeedStandardChange(
+    stable_key="chg-e2e-iso-27001-amendment",
+    # The standard's reference and nothing of its official title (INV-08, D-35).
+    title="ISO/IEC 27001 amendment",
+    key_date_label="Transition ends",
+    term="standard:iso_iec_27001",
+)
+
+
+def seed_standard_change() -> None:
+    """The amendment as a sweep would file it: ISO/IEC as the authority, the AI and ICT
+    regime and the standard's term, a draft for comment and a publication on its timeline,
+    the end of the transition as its key date. Its cases come from the real fan-out, so
+    both banks hold one and neither is in scope as seeded. Runs last in `seed_e2e`.
+
+    The key date is 400 days after tenant A's today and the first sighting 30 days before
+    it, so while a journey has the term switched on the change sits last on tenant A's
+    roadmap and outside this and last week's briefing: HOM-S1's lead and Today's "Coming
+    up" list do not move. Urgency `monitor`, never `act_now`, for the same reason."""
+    tenancy.clear_tenant()
+    today = datetime.datetime.now(ZoneInfo(TENANT_A.timezone)).date()
+    spec = EXPECTED_STANDARD_CHANGE
+    is_new = not _regulatory_change_exists(spec.stable_key)
+    change = watch_e2e_seed.seed_change(
+        stable_key=spec.stable_key,
+        title=spec.title,
+        change_type="adopted",
+        authority="iso-iec",
+        authority_label="ISO/IEC",
+        published_on=today - datetime.timedelta(days=10),
+        key_date=today + datetime.timedelta(days=400),
+        key_date_label=spec.key_date_label,
+        urgency="monitor",
+        first_seen_at=timezone_now_this_week(TENANT_A.timezone) - datetime.timedelta(days=30),
+        so_what_draft="Plan the move to the amended edition before the transition ends.",
+        source_url="https://www.iso.org/",
+    )
+    watch_e2e_seed.seed_event(change, label="Draft for comment", event_date=today - datetime.timedelta(days=60), sort_order=1)
+    watch_e2e_seed.seed_event(change, label="Published", event_date=today - datetime.timedelta(days=10), sort_order=2)
+    watch_e2e_seed.seed_scope_term_link(change, term_ref="regime:ai_ict")
+    watch_e2e_seed.seed_scope_term_link(change, term_ref=spec.term)
+    if is_new:
+        _register_and_fan_out(change)
+    # The fan-out leaves the last bank's zone active; the seed ends in none, as it began.
+    tenancy.clear_tenant()
+
+
+def follow_the_standard(follow: bool) -> None:
+    """Tenant A starts or stops following ISO/IEC 27001, for WAT-S10's journey and its
+    restore (`manage.py e2e_follow_standard`). The same footprint writes the seed makes,
+    history and audit included, then the one recompute an approved change would trigger,
+    narrowed to the standard's change so no other case of the bank is touched. The E2E
+    stack runs no beat, so nothing else would deliver it. Refused when deployed."""
+    refuse_when_deployed("e2e_follow_standard")
+    tenant = Tenant.objects.get(slug=TENANT_A_SLUG)
+    change = django_apps.get_model("watch", "RegulatoryChange").objects.get(stable_key=EXPECTED_STANDARD_CHANGE.stable_key)
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        term = terms_logic.term_by_ref(*EXPECTED_STANDARD_CHANGE.term.split(":"))
+        switch = footprint_logic.seed_terms if follow else footprint_logic.unseed_terms
+        switch(tenant=tenant, actor=SEED_ACTOR, terms=[term])
+        case_matching._recompute(tenant.id, change_id=change.id)
