@@ -137,7 +137,8 @@ describe('the decision panel', () => {
     renderWith(detail({ status: 'approved', appliedAt: DECIDED_AT, reviewedAt: DECIDED_AT }));
     const panel = await decision('applied');
     expect(panel).toHaveTextContent(/^Applied [^.]+\.$/);
-    expect(panel).not.toHaveTextContent(/ by \.| by $/);
+    expect(panel).not.toHaveTextContent(/ by \./);
+    expect(panel).not.toHaveTextContent(/ by $/);
   });
 
   it('shows the four-eyes notice, and no Approve, when the server says the reader filed it', async () => {
