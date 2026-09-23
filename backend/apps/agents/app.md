@@ -62,8 +62,10 @@ key's id (ID-10).
 The flow of AGT-S1 is proven over the real routes (`tests_flow.py`): every
 change and proposal from a key bound to an agent names an open run of that key,
 a step naming another key's run is not found, and a bank's key writes nothing to
-the watch. AGT-01 stays `in_progress` until AGT-S10 (the J-4 journey) and AGT-S15
-(the confirming agent) are green as well.
+the watch. AGT-S10 (the J-4 journey, `@smoke`) walks the same flow in the real
+stack on a key a platform administrator mints in the console behind a passkey, and
+a bank's officer reads what the approval produced. AGT-01 stays `in_progress` until
+AGT-S15 (the confirming agent) is green as well.
 
 Two definitions ship: `watch-sweeper` (kind `watch`), which proposes, and
 `library-confirmer` (kind `review`, D-62, D-80), which decides what another
@@ -216,12 +218,17 @@ And the text is stored as data, never executed and never rendered as HTML
 
 ### AGT-S10 — J-4: an agent registers a change and a proposal, an editor approves, the tenant sees what changed `@e2e` (AGT-01, WAT-02, PRO-02, INV-04, J-4)
 ```gherkin
-Given the seeded agent key and library editor
-When the key registers a change and submits a proposal for an obligation summary
-And the editor approves it in the console
-Then the obligation shows version 2 with "Show what changed"
-And the tenant's "Library updates" lists the change
+Given a watch-sweeper key a platform administrator minted in the console with a passkey step-up
+When the key opens a run, registers a change with its regime term, files a new version of an obligation's summary under that change and run with a source per field, and closes the run
+And a library editor approves it in the console queue with a passkey step-up
+Then the bank's officer finds the version the approval produced on the obligation, with "Show what changed"
+And the bank's "Library updates" lists it
+And the watch feed shows the change under "Needs triage"
 ```
+
+The journey versions its own obligation (`J4_OBLIGATION` in `apps/shared/e2e_seed.py`),
+which no other spec or seed names, and asserts the version its approval produced rather
+than a number, so a retry proves the same thing.
 
 ### AGT-S11 — A tenant agent's default scope is the operating markets first, then the watched ones `@integration` (AGT-04)
 ```gherkin
