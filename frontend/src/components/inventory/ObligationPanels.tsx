@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { useFormatContext } from '@/features/identity/hooks';
-import { presentScope } from '@/features/library/obligation-presentation';
+import { machineConfirmedLabel, presentScope } from '@/features/library/obligation-presentation';
 import type { ObligationDetail, ObligationVersionRow, RelatedObligation } from '@/features/library/types';
 import { inForceLabel } from '@/features/library/version-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -89,19 +89,31 @@ export function DutyPanel({ obligation }: { obligation: ObligationDetail }) {
   );
 }
 
-/** Every version with the dates it runs between; nothing here is ever rewritten, so a correction is another row. */
+/**
+ * Every version with the dates it runs between; nothing here is ever rewritten,
+ * so a correction is another row. A version an independent agent confirmed
+ * says so where "Approved" would read, always: a person re-verifying the
+ * record later does not change who approved that version (D-74).
+ */
 export function VersionsPanel({ versions }: { versions: readonly ObligationVersionRow[] }) {
   const t = useT();
   const ctx = useFormatContext();
   return (
     <Panel title={t('inventory.obligation.versionsTitle')} data-versions-panel="">
       <div className="text-meta">
-        {versions.map((version) => (
-          <div key={version.versionNumber} className="border-b border-line py-2.5 last:border-b-0" data-version-row={version.versionNumber}>
-            <time className="block text-muted">{inForceLabel(version.effectiveFrom, version.effectiveTo, t, ctx)}</time>
-            {version.approvedAt === null ? null : t('inventory.obligation.versionApproved', { date: formatDate(version.approvedAt, ctx) })}
-          </div>
-        ))}
+        {versions.map((version) => {
+          const machine = machineConfirmedLabel(version, null, t, ctx);
+          return (
+            <div key={version.versionNumber} className="border-b border-line py-2.5 last:border-b-0" data-version-row={version.versionNumber}>
+              <time className="block text-muted">{inForceLabel(version.effectiveFrom, version.effectiveTo, t, ctx)}</time>
+              {machine !== null ? (
+                <span data-machine-confirmed="">{machine}</span>
+              ) : version.approvedAt === null ? null : (
+                t('inventory.obligation.versionApproved', { date: formatDate(version.approvedAt, ctx) })
+              )}
+            </div>
+          );
+        })}
       </div>
     </Panel>
   );
@@ -137,7 +149,11 @@ export function RelatedPanel({ related }: { related: readonly RelatedObligation[
  * "Where it comes from" (INV-06): the instrument, the public page the record
  * was taken from, when a person last held it against that page, and who
  * drafted it. "by <name>" appears only when somebody has verified it; a
- * seeded record carries a date and no name.
+ * seeded record carries a date and no name. When an independent agent
+ * confirmed the version on screen and no named person has re-verified the
+ * record since, the same slot says so and names the agents instead (INV-05):
+ * an older stamp, or one nobody signed, never vouches for wording no person
+ * has seen.
  */
 export function ProvenancePanel({ obligation, actions }: { obligation: ObligationDetail; actions?: React.ReactNode }) {
   const t = useT();
@@ -160,13 +176,23 @@ export function ProvenancePanel({ obligation, actions }: { obligation: Obligatio
       </a>
     ),
   });
+  const machine = machineConfirmedLabel(obligation.version, provenance, t, ctx);
   const verified =
-    provenance.lastVerifiedAt === null
+    machine ??
+    (provenance.lastVerifiedAt === null
       ? t('library.notVerifiedYet')
       : provenance.verifiedBy === null
         ? formatDate(provenance.lastVerifiedAt, ctx)
-        : t('library.lastVerifiedBy', { date: formatDate(provenance.lastVerifiedAt, ctx), name: provenance.verifiedBy.name });
-  facts.push({ key: 'verified', label: t('inventory.obligation.lastVerifiedLabel'), value: <span data-last-verified="">{verified}</span> });
+        : t('library.lastVerifiedBy', { date: formatDate(provenance.lastVerifiedAt, ctx), name: provenance.verifiedBy.name }));
+  facts.push({
+    key: 'verified',
+    label: t('inventory.obligation.lastVerifiedLabel'),
+    value: (
+      <span data-last-verified="" data-machine-confirmed={machine === null ? undefined : ''}>
+        {verified}
+      </span>
+    ),
+  });
   facts.push({
     key: 'created',
     label: t('inventory.obligation.createdLabel'),

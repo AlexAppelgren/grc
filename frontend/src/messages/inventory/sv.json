@@ -40,6 +40,8 @@
   "inventory.obligation.sanctionLabel": "Sanktionsrisk",
   "inventory.obligation.versionsTitle": "Versioner",
   "inventory.obligation.versionApproved": "Godkänd {date}",
+  "inventory.obligation.machineConfirmed": "Maskinbekräftad {date}: föreslagen av {proposer}, bekräftad av {confirmer}",
+  "inventory.obligation.machineConfirmedBy": "Maskinbekräftad {date} av {confirmer}",
   "inventory.obligation.relatedTitle": "Närliggande skyldigheter",
   "inventory.obligation.relatedEmpty": "Biblioteket placerar ingen annan skyldighet bredvid den här.",
   "inventory.obligation.provenanceTitle": "Varifrån den kommer",

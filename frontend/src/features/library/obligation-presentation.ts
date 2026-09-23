@@ -7,6 +7,9 @@ import {
   type ComplianceKind,
 } from '@/features/shared/tone-by-kind';
 import type { MessageKey, Translate } from '@/shared/i18n';
+import { formatDate, type FormatContext } from '@/shared/utils/format';
+
+import type { ObligationProvenance, ObligationVersionRow } from './types';
 
 // Obligation row and header (design/system/pills-and-labels.md, slot order).
 // Row: instrument, "Guidance" if not binding, applicability, compliance
@@ -185,4 +188,30 @@ export function outsideFootprintLabel(terms: readonly VocabularyRef[], t: Transl
 // waiting for approval. The caller formats the date with formatDate().
 export function presentChangePending(formattedDate: string, t: Translate): PresentedPill {
   return { key: 'change-pending', label: t('pill.changePending', { date: formattedDate }), tone: slotTone.changePending, order: 0 };
+}
+
+// "Machine-confirmed 17 Aug 2026: proposed by watch-sweeper, confirmed by
+// library-confirmer", read where a person's approval or verification would be
+// (INV-05, INV-06, PRO-02, D-74); null means the person wording stands. It
+// follows who confirmed alone, never which agents are named, since a person
+// may propose what an agent confirms. `stamp` is the record's re-verification
+// for the "Last verified" slot: the label gives way only to one a named person
+// made after that approval, never to a seeded date nobody signed. A version
+// row passes null, because who approved a version does not change when
+// somebody later checks the record.
+export function machineConfirmedLabel(
+  version: ObligationVersionRow | null,
+  stamp: Pick<ObligationProvenance, 'lastVerifiedAt' | 'verifiedBy'> | null,
+  t: Translate,
+  ctx: FormatContext,
+): string | null {
+  if (version === null || version.verifiedOrigin !== 'agent' || version.approvedAt === null) return null;
+  const personSawItLater =
+    stamp !== null && stamp.verifiedBy !== null && stamp.lastVerifiedAt !== null && Date.parse(stamp.lastVerifiedAt) > Date.parse(version.approvedAt);
+  if (personSawItLater) return null;
+  const date = formatDate(version.approvedAt, ctx);
+  const confirmer = version.confirmedByAgent?.key ?? '';
+  return version.proposedByAgent === null
+    ? t('inventory.obligation.machineConfirmedBy', { date, confirmer })
+    : t('inventory.obligation.machineConfirmed', { date, proposer: version.proposedByAgent.key, confirmer });
 }

@@ -159,9 +159,65 @@ class PartialDate(LibraryResponse):
     )
 
 
-class ObligationVersionRef(LibraryResponse):
+class AgentRef(LibraryResponse):
+    """One of the platform's research agents, named the way a screen may label it: its
+    definition key, which never changes, and never its internal id alone (AUD-02)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05", "key": "watch-sweeper"}]})
+
+    id: UUID = Field(description="The agent definition, as a UUID.")
+    key: str = Field(description="The agent definition's own key, stable and never changed, for example `watch-sweeper`.", examples=["watch-sweeper"])
+
+
+class VersionConfirmation(LibraryResponse):
+    """Who confirmed the approval that wrote a version, and which agent proposed it (INV-05,
+    PRO-02, D-62), exactly as stored and never combined into a verdict.
+
+    The proposer and the confirmer are separate facts, so all four pairings occur: `agent`
+    with both agents named (an agent proposed and an independent agent confirmed), `agent`
+    with only `confirmedByAgent` (a person, or a key bound to no agent, proposed and an
+    agent confirmed), `user` with only `proposedByAgent` (a person confirmed an agent's
+    proposal) and `user` with neither (a person, or a key bound to no agent, proposed and a
+    person confirmed). Decide the machine-confirmed label from `verifiedOrigin` alone, never
+    from which agent fields are present. These facts record who approved this version and
+    never change: a person who later re-verifies the record does not re-approve a version,
+    so a version keeps its label. That stamp is on the record's provenance, and this answer
+    applies no rule of its own."""
+
+    verified_origin: str = Field(
+        description=(
+            "Who confirmed the approval that wrote this version: `agent` when the reviewer "
+            "was a second, independent agent, which a screen labels machine-confirmed and "
+            "never as a person's verification; `user` when a person approved it, who is not "
+            "named here. An empty string on a version the library was seeded with or applied "
+            "before this was recorded, which reads the same as `user`. A fixed kind, not a "
+            "vocabulary."
+        ),
+        examples=["agent"],
+    )
+    confirmed_by_agent: AgentRef | None = Field(
+        description=(
+            "The independent agent that confirmed the approval, by its definition key, when "
+            "`verifiedOrigin` is `agent`. Null whenever a person approved it. It names a "
+            "platform agent definition, never a person or a bank."
+        )
+    )
+    proposed_by_agent: AgentRef | None = Field(
+        description=(
+            "The agent that proposed this version, by its definition key, read from the "
+            "approved proposal. Null whenever the proposer was not a key bound to an agent, "
+            "which is every proposal a person made, whoever confirmed it. It is independent "
+            "of `verifiedOrigin`: an agent's proposal a person approved names the agent here "
+            "beside `verifiedOrigin` `user`."
+        )
+    )
+
+
+class ObligationVersionRef(VersionConfirmation):
     """A summary version by number and the date it takes effect; null means since the
-    obligation began (INV-04)."""
+    obligation began (INV-04). It carries who confirmed its approval as well (the three
+    fields of `VersionConfirmation`), so a row saying new wording is coming can say whether
+    an independent agent, rather than a person, confirmed that wording (INV-05)."""
 
     version_number: int = Field(
         description=(
@@ -494,6 +550,15 @@ _SAMPLE_TAGS: list[Any] = [
     {"key": "third_party_payments", "kind": None, "label": "third-party payments"},
 ]
 
+# Version 1 was seeded; version 2 was proposed by the watch agent and confirmed by an
+# independent agent, so it reads machine-confirmed wherever it appears (INV-05, D-62).
+_SAMPLE_SEEDED: dict[str, Any] = {"verifiedOrigin": "", "confirmedByAgent": None, "proposedByAgent": None}
+_SAMPLE_BY_AGENTS: dict[str, Any] = {
+    "verifiedOrigin": "agent",
+    "confirmedByAgent": {"id": "2f7a9c14-3b8e-4d61-9a05-c8e1f4b27d93", "key": "library-confirmer"},
+    "proposedByAgent": {"id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05", "key": "watch-sweeper"},
+}
+
 _SAMPLE_ROW: dict[str, Any] = {
     "id": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
     "stableKey": "obl-research-payments",
@@ -505,8 +570,8 @@ _SAMPLE_ROW: dict[str, Any] = {
     "dutyType": {"key": "governance", "kind": None, "label": "Governance"},
     "tags": _SAMPLE_TAGS,
     "scope": _SAMPLE_SCOPE,
-    "version": {"versionNumber": 1, "effectiveFrom": None},
-    "upcomingVersion": {"versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}},
+    "version": {**_SAMPLE_SEEDED, "versionNumber": 1, "effectiveFrom": None},
+    "upcomingVersion": {**_SAMPLE_BY_AGENTS, "versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}},
     "inFootprint": True,
     "outsideReason": [],
     "lastVerifiedAt": "2026-06-30T07:12:44Z",
@@ -539,10 +604,12 @@ class ObligationPage(LibraryResponse):
     )
 
 
-class ObligationVersionRow(LibraryResponse):
+class ObligationVersionRow(VersionConfirmation):
     """One summary version on the card's version list (INV-04): when it took effect,
-    `effectiveTo` derived as the day before the next version did, and when a library editor
-    approved it. The approver is not named: the card names none."""
+    `effectiveTo` derived as the day before the next version did, when the proposal that
+    wrote it was approved, and who confirmed that approval (the three fields of
+    `VersionConfirmation`, INV-05). A person who approved is never named here; an agent
+    that confirmed is named by its definition key."""
 
     version_number: int = Field(
         description=(
@@ -570,10 +637,11 @@ class ObligationVersionRow(LibraryResponse):
     )
     approved_at: datetime.datetime | None = Field(
         description=(
-            "When a library editor approved the proposal that wrote this version, as a UTC "
-            "timestamp. Null on a version the library was seeded with rather than proposed. "
-            "It is the moment of the decision, never the date the wording takes effect, "
-            "which is `effectiveFrom`. The approver is not named: this card names none."
+            "When the proposal that wrote this version was approved, as a UTC timestamp, by "
+            "a person or by an independent agent: `verifiedOrigin` says which. Null on a "
+            "version the library was seeded with rather than proposed. It is the moment of "
+            "the decision, never the date the wording takes effect, which is `effectiveFrom`. "
+            "A person who approved is not named on this card."
         ),
         examples=["2026-09-15T14:02:11Z"],
     )
@@ -683,28 +751,23 @@ class RelatedObligation(LibraryResponse):
     )
 
 
-class AgentRef(LibraryResponse):
-    """One of the platform's research agents, named the way a screen may label it: its
-    definition key, which never changes, and never its internal id alone (AUD-02)."""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [{"id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05", "key": "watch-sweeper"}]})
-
-    id: UUID = Field(description="The agent definition, as a UUID.")
-    key: str = Field(description="The agent definition's own key, stable and never changed, for example `watch-sweeper`.", examples=["watch-sweeper"])
-
-
 class ObligationProvenance(LibraryResponse):
     """Where the record came from and when it was last checked against its source (INV-06).
     `verifiedBy` is a platform person or null: a seeded record has never been re-verified.
 
-    `verifiedOrigin`, `confirmedByAgent` and `proposedByAgent` (INV-05, PRO-02, D-62) are a
-    second pair of facts, about who confirmed the approval of the version now in force, not
-    about who last re-verified it: `agent` means two independent agents proposed and
-    confirmed it, naming both, and never reads as a person's verification; `user`, and
-    empty for a version applied before this existed, means a person confirmed it and
-    neither agent field is set. This response decides nothing itself: `verifiedBy` being
-    set is a person's own later re-verification, and the screen, not this answer, is where
-    that is read as superseding the machine-confirmed label."""
+    `verifiedOrigin`, `confirmedByAgent` and `proposedByAgent` (INV-05, PRO-02, D-62) are
+    other facts: who confirmed the approval that wrote the version in force on the read's
+    date, and which agent proposed it, the same three `version` carries. The proposer and
+    the confirmer are independent, so all four pairings occur: `agent` with both agents
+    named, `agent` with only `confirmedByAgent` (a person, or a key bound to no agent,
+    proposed and an agent confirmed), `user` with only `proposedByAgent` (a person approved
+    an agent's proposal) and `user` with neither (a person, or a key bound to no agent,
+    proposed and a person approved). Decide the machine-confirmed label from
+    `verifiedOrigin` alone. This answer applies no rule of its own: a person's
+    re-verification is `verifiedBy` and `lastVerifiedAt`, and a screen reads one that names
+    a person and is later than the version's `approvedAt` as superseding the
+    machine-confirmed label where the record's verification is shown. A `lastVerifiedAt`
+    with `verifiedBy` null names nobody and supersedes nothing."""
 
     created_origin: str = Field(
         description=(
@@ -768,10 +831,12 @@ class ObligationProvenance(LibraryResponse):
     verified_origin: str = Field(
         default="",
         description=(
-            "Who confirmed the approval of the version now in force: `agent` when a second, "
-            "independent agent did, `user` when a person did. Empty for a version applied "
-            "before this existed, which reads the same as `user`: a person's approval, "
-            "unlabelled. Never confuse this with `verifiedBy`, which is a later re-verification."
+            "Who confirmed the approval that wrote the version in force on the read's date: "
+            "`agent` when the reviewer was a second, independent agent, `user` when a person "
+            "approved it. Empty for a version the library was seeded with or applied before "
+            "this was recorded, and when no version is in force, which reads the same as "
+            "`user`: a person's approval, unlabelled. Never confuse this with `verifiedBy`, "
+            "which is a later re-verification."
         ),
         examples=["agent"],
     )
@@ -779,16 +844,18 @@ class ObligationProvenance(LibraryResponse):
         default=None,
         description=(
             "The independent agent that confirmed the approval, by definition key, when "
-            "`verifiedOrigin` is `agent`. Null when a person confirmed it."
+            "`verifiedOrigin` is `agent`. Null when a person approved it."
         ),
     )
     proposed_by_agent: AgentRef | None = Field(
         default=None,
         description=(
-            "The agent that proposed the version, by definition key, read from the "
-            "approving proposal and named beside `confirmedByAgent` so a machine-confirmed "
-            "record is never shown with only one agent's name. Null when a person proposed "
-            "it, whoever confirmed it."
+            "The agent that proposed the version in force, by definition key, read from the "
+            "approved proposal. Null whenever the proposer was not a key bound to an agent, "
+            "which is every proposal a person made, whoever confirmed it. It is independent "
+            "of `verifiedOrigin`: `agent` with this null means an agent confirmed what a "
+            "person, or a key bound to no agent, proposed, and `user` with this set means a "
+            "person approved an agent's proposal."
         ),
     )
 
@@ -835,6 +902,7 @@ _SAMPLE_DETAIL: dict[str, Any] = {
         {"text": _SAMPLE_SUMMARY_EN, "language": "en", "isOriginal": False, "isMachine": True},
     ],
     "version": {
+        **_SAMPLE_SEEDED,
         "versionNumber": 1,
         "effectiveFrom": None,
         "effectiveTo": {"date": "2026-09-30", "precision": "day"},
@@ -842,12 +910,14 @@ _SAMPLE_DETAIL: dict[str, Any] = {
     },
     "versions": [
         {
+            **_SAMPLE_SEEDED,
             "versionNumber": 1,
             "effectiveFrom": None,
             "effectiveTo": {"date": "2026-09-30", "precision": "day"},
             "approvedAt": None,
         },
         {
+            **_SAMPLE_BY_AGENTS,
             "versionNumber": 2,
             "effectiveFrom": {"date": "2026-10-01", "precision": "day"},
             "effectiveTo": None,
@@ -883,9 +953,8 @@ _SAMPLE_DETAIL: dict[str, Any] = {
         "lastVerifiedAt": "2026-06-30T07:12:44Z",
         "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
         "sourceLabel": "FFFS 2017:2, 9 kap. 6 §",
-        "verifiedOrigin": "user",
-        "confirmedByAgent": None,
-        "proposedByAgent": None,
+        # The version in force is version 1, which was seeded: no approval, so no one confirmed it.
+        **_SAMPLE_SEEDED,
     },
 }
 
@@ -1043,6 +1112,8 @@ _SAMPLE_DIFF: dict[str, Any] = {
     "toVersion": 2,
     "fromEffective": None,
     "toEffective": {"date": "2026-10-01", "precision": "day"},
+    "fromConfirmation": _SAMPLE_SEEDED,
+    "toConfirmation": _SAMPLE_BY_AGENTS,
     "language": "en",
     "isMachine": True,
     "segments": [
@@ -1067,8 +1138,9 @@ _SAMPLE_DIFF: dict[str, Any] = {
 
 class VersionDiff(LibraryResponse):
     """"Show what changed" between two versions (INV-04, AC-INV1, INV-05): the two version
-    numbers and the dates they took effect, the language both versions have and whether a
-    machine translated it, and the sentences. Serves obligations now and provisions next."""
+    numbers, the dates they took effect and who confirmed each one's approval, the language
+    both versions have and whether a machine translated it, and the sentences. Serves
+    obligations and provisions."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [_SAMPLE_DIFF]})
 
@@ -1099,6 +1171,21 @@ class VersionDiff(LibraryResponse):
             "The legal date the newer version starts binding the bank. It may be in the "
             "future, which is a change already approved and not yet in force; that is not by "
             "itself work this bank owes."
+        )
+    )
+    from_confirmation: VersionConfirmation | None = Field(
+        description=(
+            "Who confirmed the approval that wrote the older version, and which agent "
+            "proposed it, so wording an independent agent confirmed is labelled "
+            "machine-confirmed on either side of the comparison (INV-05). Null on a "
+            "provision's diff: a provision's text versions record no approval of their own."
+        )
+    )
+    to_confirmation: VersionConfirmation | None = Field(
+        description=(
+            "The same for the newer version, whose words are the ones a reader is weighing "
+            "when a change is assessed, and which may not be in force yet. Null on a "
+            "provision's diff, for the same reason."
         )
     )
     language: str = Field(

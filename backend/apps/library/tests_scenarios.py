@@ -581,21 +581,31 @@ class LibraryScenarioTests(ScenarioTestCase):
         self.assertEqual(approved.status_code, 200, approved.content)
 
         # The record's provenance names the proposing agent and the confirming agent:
-        # verified_origin is "agent" and no person is named as its verifier.
+        # verified_origin is "agent" and no person is named as its verifier. The version
+        # itself carries the same three facts, so its row in the version list says so too.
         card = self.card(obligation.stable_key)
-        provenance = card["provenance"]
-        self.assertEqual(provenance["verifiedOrigin"], "agent")
-        self.assertEqual(provenance["confirmedByAgent"]["key"], confirmer.agent.key)
-        self.assertEqual(provenance["proposedByAgent"]["key"], proposer.agent.key)
+        provenance, version = card["provenance"], card["version"]
+        for confirmation in (provenance, version):
+            self.assertEqual(confirmation["verifiedOrigin"], "agent")
+            self.assertEqual(confirmation["confirmedByAgent"]["key"], confirmer.agent.key)
+            self.assertEqual(confirmation["proposedByAgent"]["key"], proposer.agent.key)
         self.assertIsNone(provenance["verifiedBy"])
 
         # When a person later re-verifies the record against its source, the stamp names
-        # that person and the machine-confirmed label gives way to it.
+        # that person and is dated after the version's approval. That order is what the
+        # backend answers; letting the machine-confirmed label give way to it in the
+        # record's "Last verified" slot, and only there, is the screen's rule
+        # (obligation-presentation.ts), which the @e2e half proves.
         editor = sign_in(self.editor, step_up=True)
         reverified = self._post(f"/obligations/{obligation.id}/verifications", {"outcome": "no_change"}, editor)
         self.assertEqual(reverified.status_code, 201, reverified.content)
         after = self.card(obligation.stable_key)
         self.assertEqual(after["provenance"]["verifiedBy"]["name"], self.editor.name)
+        self.assertGreater(
+            datetime.datetime.fromisoformat(after["provenance"]["lastVerifiedAt"]),
+            datetime.datetime.fromisoformat(after["version"]["approvedAt"]),
+        )
         # The version's own machine-confirmed facts are untouched: nothing overwritten.
-        self.assertEqual(after["provenance"]["verifiedOrigin"], "agent")
-        self.assertEqual(after["provenance"]["confirmedByAgent"]["key"], confirmer.agent.key)
+        for confirmation in (after["provenance"], after["version"]):
+            self.assertEqual(confirmation["verifiedOrigin"], "agent")
+            self.assertEqual(confirmation["confirmedByAgent"]["key"], confirmer.agent.key)

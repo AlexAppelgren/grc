@@ -15,7 +15,7 @@ from uuid import UUID
 from django.conf import settings
 from pydantic import ConfigDict, Field, RootModel
 
-from apps.library.schemas import DiffSegment, LibraryRef, LocalizedText, OutsideReason, PartialDate
+from apps.library.schemas import AgentRef, DiffSegment, LibraryRef, LocalizedText, OutsideReason, PartialDate
 from apps.shared.schemas import CamelSchema, WriteBody
 
 __all__ = ["CamelSchema"]
@@ -633,13 +633,23 @@ class LibraryUpdateTarget(CamelSchema):
     instrument_short_name: str = Field(description="The short name of the law, regulation or guideline the duty sits in, for example \"FFFS 2017:2\".")
 
 
+# The watch agent proposed the change and an independent agent confirmed it (D-62).
+_SAMPLE_CONFIRMED_BY_AGENTS: dict[str, Any] = {
+    "verifiedOrigin": "agent",
+    "confirmedByAgent": {"id": "2f7a9c14-3b8e-4d61-9a05-c8e1f4b27d93", "key": "library-confirmer"},
+    "proposedByAgent": {"id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05", "key": "watch-sweeper"},
+}
+
+
 class LibraryUpdateRow(CamelSchema):
     """One change that reached the shared library while this reader was away (PRO-03,
-    INV-04): what changed, when it was applied, when it starts binding, and whether it
-    reaches this bank. It is a fact about the library and never a task: whether the duty
-    applies here, and whether this bank complies with it, are the bank's own judgements
-    recorded elsewhere. Nobody's name appears: who proposed a change is not a bank's
-    business, and a change another bank asked for reads exactly like any other."""
+    INV-04): what changed, when it was applied, when it starts binding, whether it reaches
+    this bank, and who confirmed it. It is a fact about the library and never a task:
+    whether the duty applies here, and whether this bank complies with it, are the bank's
+    own judgements recorded elsewhere. No person is named: who asked for a change is not a
+    bank's business, and a change another bank asked for reads exactly like any other. The
+    platform agents that proposed or confirmed it are named by definition key (INV-05,
+    D-62), so a change an independent agent confirmed never reads as a person's approval."""
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -660,6 +670,7 @@ class LibraryUpdateRow(CamelSchema):
                     "vocabulary": None,
                     "inFootprint": True,
                     "outsideReason": [],
+                    **_SAMPLE_CONFIRMED_BY_AGENTS,
                 }
             ]
         }
@@ -733,6 +744,31 @@ class LibraryUpdateRow(CamelSchema):
             "footprint, which is the usual case, and empty on a change to a shared list."
         ),
     )
+    verified_origin: str = Field(
+        description=(
+            "Who confirmed the approval that applied this change: `agent` when the reviewer was "
+            "a second, independent agent, which a screen labels machine-confirmed and never as a "
+            "person's verification; `user` when a person approved it, who is never named here. "
+            "A fixed kind, not a vocabulary."
+        ),
+        examples=["agent"],
+    )
+    confirmed_by_agent: AgentRef | None = Field(
+        description=(
+            "The independent agent that confirmed the change, by its definition key, when "
+            "`verifiedOrigin` is `agent`. Null whenever a person approved it. It names a platform "
+            "agent definition, never a person or a bank."
+        )
+    )
+    proposed_by_agent: AgentRef | None = Field(
+        description=(
+            "The agent that proposed the change, by its definition key. Null whenever the proposer "
+            "was not a key bound to an agent, which is every change a person asked for, whoever "
+            "confirmed it; that person is never named. It is independent of `verifiedOrigin`: a "
+            "person may have approved an agent's proposal, and an agent may have confirmed a "
+            "person's."
+        )
+    )
 
 
 class LibraryUpdateDay(CamelSchema):
@@ -770,6 +806,7 @@ class LibraryUpdatesPage(CamelSchema):
                                     "vocabulary": None,
                                     "inFootprint": True,
                                     "outsideReason": [],
+                                    **_SAMPLE_CONFIRMED_BY_AGENTS,
                                 }
                             ],
                         }

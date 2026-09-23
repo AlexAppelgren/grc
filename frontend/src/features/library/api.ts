@@ -5,6 +5,7 @@ import type { DatePrecision } from '@/shared/utils/format';
 import type { components } from '@/types/api.generated';
 
 import type {
+  AgentRef,
   DiffSegment,
   Instrument,
   InstrumentAuthorityRef,
@@ -131,12 +132,19 @@ export async function listObligations(query: ObligationQuery & PageQuery = {}): 
   return { items: data.items.map(obligationOf), total: data.total };
 }
 
+function agentOf(raw: Schemas['AgentRef'] | null | undefined): AgentRef | null {
+  return raw === null || raw === undefined ? null : { id: raw.id, key: raw.key };
+}
+
 function versionRowOf(raw: Schemas['ObligationVersionRow']): ObligationVersionRow {
   return {
     versionNumber: raw.versionNumber,
     effectiveFrom: partialDateOf(raw.effectiveFrom),
     effectiveTo: partialDateOf(raw.effectiveTo),
     approvedAt: raw.approvedAt,
+    verifiedOrigin: raw.verifiedOrigin,
+    confirmedByAgent: agentOf(raw.confirmedByAgent),
+    proposedByAgent: agentOf(raw.proposedByAgent),
   };
 }
 
@@ -153,6 +161,9 @@ function provenanceOf(raw: Schemas['ObligationProvenance']): ObligationProvenanc
     createdAt: raw.createdAt,
     createdOrigin: raw.createdOrigin,
     createdModel: raw.createdModel,
+    verifiedOrigin: raw.verifiedOrigin,
+    confirmedByAgent: agentOf(raw.confirmedByAgent),
+    proposedByAgent: agentOf(raw.proposedByAgent),
   };
 }
 

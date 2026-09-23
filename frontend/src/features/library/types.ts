@@ -95,8 +95,27 @@ export interface PersonRef {
   name: string;
 }
 
+/** A platform research agent, named by its definition key; never a person or a bank (D-62). */
+export interface AgentRef {
+  id: string;
+  key: string;
+}
+
+/**
+ * Who confirmed the approval that wrote a version, and which agent proposed it
+ * (INV-05, PRO-02). `verifiedOrigin` 'agent' is an independent agent's
+ * confirmation, which reads machine-confirmed and never as a person's; 'user'
+ * is a person's approval, and '' a seeded version nobody approved. The
+ * proposer is a separate fact: a person may propose what an agent confirms.
+ */
+export interface VersionConfirmation {
+  verifiedOrigin: string;
+  confirmedByAgent: AgentRef | null;
+  proposedByAgent: AgentRef | null;
+}
+
 /** One version of a summary with the dates it runs between; `effectiveTo` is derived, never stored (INV-04). */
-export interface ObligationVersionRow {
+export interface ObligationVersionRow extends VersionConfirmation {
   versionNumber: number;
   effectiveFrom: PartialDate | null;
   effectiveTo: PartialDate | null;
@@ -112,8 +131,11 @@ export interface InstrumentSummary {
   implementsNote: string;
 }
 
-/** Where the record came from and when a person last held it against its source (INV-06). */
-export interface ObligationProvenance {
+/**
+ * Where the record came from and when a person last held it against its
+ * source (INV-06), with who confirmed the version in force on the read's date.
+ */
+export interface ObligationProvenance extends VersionConfirmation {
   sourceUrl: string;
   sourceLabel: string;
   lastVerifiedAt: string | null;
