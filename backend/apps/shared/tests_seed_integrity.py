@@ -52,6 +52,7 @@ from apps.shared.e2e_seed import (
     EXPECTED_FOOTPRINTS,
     EXPECTED_HOME,
     EXPECTED_LIBRARY,
+    EXPECTED_OUTSIDE_SCOPE,
     EXPECTED_PENDING_REQUEST,
     EXPECTED_PROBLEM_REPORT,
     EXPECTED_PROPOSALS,
@@ -66,7 +67,7 @@ from apps.shared.e2e_seed import (
 )
 from apps.shared.models import AuditEvent, Tenant
 from apps.watch.models import ChangeDocument, ChangeEvent, ChangeObligation, ChangeTerm, CheckStatus, RegulatoryChange, Source, SourceCheck, SourceCheckKind
-from apps.taxonomy.matching import footprint_of, in_footprint, opt_in_dimensions, restricting_dimensions
+from apps.taxonomy.matching import footprint_of, in_footprint, in_footprint_sql, opt_in_dimensions, restricting_dimensions
 from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
@@ -220,9 +221,10 @@ class SeedIntegrityGuard(TestCase):
             self.assertEqual(set(created.values_list("actor_label", flat=True)), {"seed_e2e"})
 
     def test_each_tenant_has_exactly_its_seeded_footprint_and_the_pending_request(self) -> None:
-        """Chunk 2 (J-5, J-6): tenant A carries the prototype's footprint, tenant B a
-        different one, every tenant its system vocabulary rows, and one pending footprint
-        request authored by the compliance officer waits for the approver."""
+        """Chunk 2 (J-5, J-6): tenant A carries the prototype's footprint less FP-S4's one
+        outside term, tenant B a different one, every tenant its system vocabulary rows, and
+        one pending footprint request authored by the compliance officer waits for the
+        approver."""
         seed_e2e()
         for expected in EXPECTED_TENANTS:
             with self.subTest(tenant=expected.slug):
@@ -299,8 +301,9 @@ class SeedIntegrityGuard(TestCase):
 
     def test_switching_off_advice_hides_an_obligation_of_tenant_a(self) -> None:
         """J-6, FP-01, FP-03, AC-FP1: the pending request switches Advice off. With Advice in
-        tenant A's footprint no obligation is hidden; without it at least one is, the
-        advice-only sample obligation among them."""
+        tenant A's footprint the only obligation hidden is FP-S4's own outside one
+        (`EXPECTED_OUTSIDE_SCOPE`); without it at least one more is, the advice-only sample
+        obligation among them."""
         seed_e2e()
         tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
         tenancy.activate(tenant_a.id)
@@ -313,7 +316,7 @@ class SeedIntegrityGuard(TestCase):
         scopes = {
             o.stable_key: _scope(o) for o in Obligation.objects.select_related("instrument__regime__dimension").prefetch_related("terms__dimension")
         }
-        self.assertEqual([key for key, scope in scopes.items() if not in_footprint(scope, footprint, restricting=restricting)], [])
+        self.assertEqual([key for key, scope in scopes.items() if not in_footprint(scope, footprint, restricting=restricting)], [EXPECTED_OUTSIDE_SCOPE.obligation])
         hidden = [key for key, scope in scopes.items() if not in_footprint(scope, without, restricting=restricting)]
         self.assertIn(EXPECTED_LIBRARY.advice_only_obligation, hidden)
 
@@ -674,3 +677,65 @@ class SeedIntegrityGuard(TestCase):
         self.assertTrue(in_footprint(_scope(obligation), without, restricting=restricting))
         self.assertEqual(list(ObligationVersion.objects.filter(obligation=obligation).values_list("version_number", flat=True)), [1])
     # --- end library-updates-frontend ------------------------------------------------------
+
+    # --- FP-S4 (FP-03, tax-fp-s4-journey) ----------------------------------------------------
+    def test_every_seeded_case_carries_the_verdict_the_scope_rule_gives(self) -> None:
+        """FP-S4, FP-03: the roadmap and the briefing read the verdict cached on a case, while
+        the feed decides it again from the change's scope terms on every read. A seeded case
+        whose cache disagrees with the rule is in scope on one surface and out on the other,
+        and the first approved footprint change recomputes it and moves it. So every case of
+        both banks is checked against the database's own rule, and tenant A's case for the
+        outside-scope change is among them and answers false.
+
+        Proven to fail 2026-09-23 with the outside-scope change seeded without its scope
+        term: that change matches every bank by the rule, while its case says false."""
+        seed_e2e()
+        verdicts: dict[tuple[str, str], bool] = {}
+        for tenant in Tenant.objects.order_by("slug"):
+            tenancy.activate(tenant.id)
+            for case in ChangeCase.objects.select_related("change"):
+                term_ids = list(ChangeTerm.objects.filter(change_id=case.change_id, term__isnull=False).values_list("term_id", flat=True))
+                with self.subTest(tenant=tenant.slug, change=case.change.stable_key):
+                    self.assertEqual(case.footprint_match, in_footprint_sql(tenant.id, term_ids))
+                verdicts[(tenant.slug, case.change.stable_key)] = case.footprint_match
+        self.assertIs(verdicts[(TENANT_A_SLUG, EXPECTED_HOME.outside_scope_change)], False)
+        self.assertIs(verdicts[(TENANT_A_SLUG, EXPECTED_HOME.lead_change)], True)
+
+    def test_fp_s4_finds_an_obligation_and_a_change_outside_tenant_a_scope_as_seeded(self) -> None:
+        """FP-S4, FP-03: the journey walks tenant A's scope as seeded and never changes it,
+        because FP-S5 (J-6) changes that scope and every home and watch journey reads it in
+        parallel. So the seed leaves one term out of it on purpose, and one obligation and
+        one change fall outside through that term alone. The obligation is neither a seeded
+        proposal's target nor one of the seed's named records, the constants other journeys
+        find their records by, so none of those needs it in scope."""
+        seed_e2e()
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        dimension, key = EXPECTED_OUTSIDE_SCOPE.term.split(":")
+        footprint = footprint_of(tenant_a.id)
+        self.assertNotIn(key, footprint[dimension], "the scope leaves the term out")
+        self.assertIn(dimension, restricting_dimensions(), "and the dimension it sits in narrows the scope")
+
+        obligation = Obligation.objects.select_related("instrument__regime__dimension").get(stable_key=EXPECTED_OUTSIDE_SCOPE.obligation)
+        scope = _scope(obligation)
+        self.assertIn(key, scope[dimension])
+        self.assertFalse(in_footprint(scope, footprint, restricting=restricting_dimensions()))
+
+        change = RegulatoryChange.objects.get(stable_key=EXPECTED_OUTSIDE_SCOPE.change)
+        term_ids = list(ChangeTerm.objects.filter(change=change, term__isnull=False).values_list("term_id", flat=True))
+        self.assertTrue(ChangeTerm.objects.filter(change=change, term__dimension__key=dimension, term__key=key).exists())
+        self.assertFalse(in_footprint_sql(tenant_a.id, term_ids))
+
+        spoken_for = {proposal.target for proposal in EXPECTED_PROPOSALS} | {
+            EXPECTED_LIBRARY.advice_only_obligation,
+            EXPECTED_LIBRARY.research_obligation,
+            EXPECTED_PROBLEM_REPORT.obligation,
+            RECHECK_OBLIGATION,
+            CONFIRMED_LINK_OBLIGATION,
+            SUGGESTED_LINK_OBLIGATION,
+        }
+        self.assertNotIn(
+            EXPECTED_OUTSIDE_SCOPE.obligation,
+            spoken_for,
+            "FP-S4 keeps this obligation outside tenant A's scope: point the proposal or record that names it at one that stays inside",
+        )
