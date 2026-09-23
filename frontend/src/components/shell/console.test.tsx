@@ -277,7 +277,7 @@ describe('console vocabularies', () => {
     expect(rows.map((row) => row.getAttribute('href'))).toEqual(['/console/vocabularies/flag', '/console/vocabularies/library_tag']);
     expect(screen.queryByRole('tablist')).toBeNull();
     expect(screen.queryByRole('link', { name: /Admin/ })).toBeNull();
-    expect(screen.getByText('Every organisation shares these lists. A change you send waits for a second library editor.')).toBeInTheDocument();
+    expect(screen.getByText('Every organisation shares these lists. A change you send waits for someone else to approve it.')).toBeInTheDocument();
   });
 
   it('keeps the tenant screen as it was: both tabs and links under Admin', async () => {
@@ -294,7 +294,7 @@ describe('console vocabularies', () => {
     expect(await screen.findByRole('button', { name: 'Suggest a change' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '← Vocabularies' })).toHaveAttribute('href', '/console/vocabularies');
     expect(screen.getByText('Shared library list · 1 active')).toBeInTheDocument();
-    expect(screen.getByText('Every organisation shares these lists. A change you send waits for a second library editor.')).toBeInTheDocument();
+    expect(screen.getByText('Every organisation shares these lists. A change you send waits for someone else to approve it.')).toBeInTheDocument();
   });
 
   it('holds no tenant list: one opened by its address is not there', async () => {
