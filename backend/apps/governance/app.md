@@ -182,6 +182,7 @@ Given a library editor and a platform admin
 When each of them calls every console destination and endpoint that exists
 Then the proposal queue, its detail, approve and reject answer to the library editor and 403 the platform admin with requiredPermission "proposals.review"
 And the tenants list, creating a tenant and re-issuing an administrator's enrolment answer to the platform admin and 403 the library editor with the permission each wanted
+And the search evaluation set's questions, adding one and its runs answer to the library editor and 403 the platform admin with requiredPermission "eval.manage"
 And creating a proposal, whose caller a logic gate decides, 403s the platform admin with requiredPermission named
 And each console destination the other role holds is absent from that role's navigation
 ```

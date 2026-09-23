@@ -307,6 +307,16 @@ class ContractDocumentationTests(TestCase):
                 "AskProblemEvent",
                 "AnswerFeedbackKind",
                 "AnswerFeedbackBody",
+                # The evaluation set in the console (SRC-05, ADM-02).
+                "EvalScores",
+                "EvalRunConfig",
+                "EvalRunMetrics",
+                "EvalQuestionResult",
+                "EvalQuestionInput",
+                "EvalQuestionOut",
+                "EvalQuestionPage",
+                "EvalRunOut",
+                "EvalRunPage",
             },
         )
 

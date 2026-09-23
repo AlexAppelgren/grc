@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import enum
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from django.conf import settings
@@ -1082,4 +1082,402 @@ class AnswerFeedbackBody(WriteBody):
             "in it: it is stored beside the answer for the bank's own review, and the audit "
             "row that records the verdict carries none of this text."
         ),
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# The evaluation set in the console (SRC-05, ADM-02): GET and POST /eval/questions and
+# GET /eval/runs, platform staff only. Keys, never ids: a question names the library records
+# it expects by stable key, because the corpus the gate builds has new ids every time.
+# ---------------------------------------------------------------------------------------
+EVAL_KEY_PATTERN = r"^[a-z0-9][a-z0-9-]*$"
+_EXAMPLE_EVAL_QUESTION: dict[str, Any] = {
+    "id": "0b6f3c1e-5d7a-4a54-9c2e-7f1d8e2a4b90",
+    "key": "r-en-01",
+    "lang": "en",
+    "question": "FFFS 2017:2",
+    "expected": ["obl-costs-charges", "obl-research-payments", "obl-product-governance", "obl-client-assets"],
+    "matchKind": "keyword",
+    "asOf": None,
+    "notes": "An identifier is won by keyword. Every obligation under the instrument is relevant.",
+    "active": True,
+    "inGate": True,
+}
+_EXAMPLE_EVAL_SCORES: dict[str, Any] = {"recallAt10": 0.92, "mrr": 0.81}
+_EXAMPLE_EVAL_RUN: dict[str, Any] = {
+    "id": "5e2d9a47-1c3b-4f6e-8a0d-2b7c9e4f1a36",
+    "runAt": "2026-09-23T06:00:00Z",
+    "config": {"retriever": "apps.search.eval:Retriever (embedder none, reranker none)", "isMock": False, "questions": 53},
+    "metrics": {
+        "overall": _EXAMPLE_EVAL_SCORES,
+        "perLanguage": {"en": _EXAMPLE_EVAL_SCORES, "sv": {"recallAt10": 0.88, "mrr": 0.79}},
+        "perMatchKind": {"keyword": {"recallAt10": 1.0, "mrr": 0.97}, "concept": {"recallAt10": 0.8, "mrr": 0.66}},
+    },
+    "results": [
+        {
+            "questionKey": "r-en-01",
+            "returned": ["obl-costs-charges", "obl-client-assets", "obl-product-governance", "obl-research-payments"],
+            "recallAt10": 1.0,
+            "mrr": 1.0,
+        }
+    ],
+}
+_MATCH_KIND = (
+    "What the question expects to win it, which is what AC-SRC1 checks: `keyword` when an "
+    "identifier such as `FFFS 2017:2` must be found by its words, `concept` when a phrasing "
+    "such as `nudging in onboarding` must be found by meaning, `both` when one query needs "
+    "the two legs fused. The gate reports its scores per match kind, so a regression in one "
+    "leg shows on its own. Source: platform staff. Do not read it as how any hit was "
+    "actually found: that is the `matchKind` of a search hit."
+)
+_EXPECTED = (
+    "The library records a good answer contains, each by its stable key (an obligation's "
+    "`obl-costs-charges`, a provision's `sfs-2007-528/9`, a change's key), every one of them "
+    "relevant. Recall at 10 is the share of them found in the first ten hits and MRR the "
+    "reciprocal rank of the first. An empty list is a question the library has no answer "
+    "to: it scores right only when search returns nothing. At most "
+    f"{settings.API_PAGE_SIZE_MAX} keys, the widest page the gate's search asks for, each "
+    "1 to 200 characters; more answers 422. Source: platform staff; the keys are not "
+    "checked against the library, because the gate scores the sample corpus and not this "
+    "database's records. Do not read a key here as a record this deployment holds."
+)
+
+
+class EvalScores(CamelSchema):
+    """Two retrieval scores over a set of questions, each a mean between 0 and 1."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_EVAL_SCORES]})
+
+    recall_at_10: float = Field(
+        ge=0,
+        le=1,
+        description=(
+            "The mean share of the expected records found in the first ten hits, from 0 "
+            "(none found) to 1 (all found). Source: the server, computed by the release "
+            "gate's own scoring. Do not read it as precision: extra hits cost nothing here."
+        ),
+    )
+    mrr: float = Field(
+        ge=0,
+        le=1,
+        description=(
+            "The mean reciprocal rank of the first expected record, from 0 (never found) to "
+            "1 (always first). Source: the server, computed by the release gate's own "
+            "scoring. Do not read it as a share of questions answered."
+        ),
+    )
+
+
+class EvalRunConfig(CamelSchema):
+    """What a run scored: which retrieval chain, and over how many questions."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_EVAL_RUN["config"]]})
+
+    retriever: str = Field(
+        description=(
+            "The retrieval chain that answered, naming its embedder and reranker, for "
+            "example `apps.search.eval:Retriever (embedder none, reranker none)`. Source: "
+            "the server. Do not read it as the chain this deployment serves searches with: "
+            "the run scores the sample corpus in a database of its own."
+        )
+    )
+    is_mock: bool = Field(
+        description=(
+            "True when any adapter in the chain was a stand-in (a mock embedder or "
+            "reranker), so the scores say nothing about a real model; false when every "
+            "adapter was real or absent. Source: the server. Do not compare a mock run's "
+            "scores with a real one's."
+        )
+    )
+    questions: int = Field(
+        ge=0,
+        description=(
+            "How many active questions were asked in the run, 0 or more. Source: the server. "
+            "Do not read it as the size of the set: inactive questions are not asked."
+        ),
+    )
+
+
+class EvalRunMetrics(CamelSchema):
+    """A run's scores overall, per content language and per match kind."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_EVAL_RUN["metrics"]]})
+
+    overall: EvalScores = Field(
+        description=(
+            "The scores over every question asked. Source: the server. Do not read them as "
+            "the release gate's verdict: the gate compares them with a recorded baseline."
+        )
+    )
+    per_language: dict[str, EvalScores] = Field(
+        description=(
+            "The scores per content language of the questions, keyed by language key (`en`, "
+            "`sv`, `da`, `nb`, `fi`, the library's language rows). Source: the server. Do "
+            "not read a language that is absent as scoring zero: no question in it was asked."
+        )
+    )
+    per_match_kind: dict[str, EvalScores] = Field(
+        description=(
+            "The scores per expected match kind, keyed `keyword`, `concept` or `both`, so a "
+            "regression in the keyword or the vector leg shows on its own. Source: the "
+            "server. Do not read a kind that is absent as scoring zero: no question of it was asked."
+        )
+    )
+
+
+class EvalQuestionResult(CamelSchema):
+    """What one question got back in a run, and how it scored."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": _EXAMPLE_EVAL_RUN["results"]})
+
+    question_key: str = Field(
+        description=(
+            "The stable key of the question asked, for example `r-en-01`. Source: the "
+            "evaluation set. Do not read it as a library record's key."
+        )
+    )
+    returned: list[str] = Field(
+        description=(
+            "The stable keys of the first ten hits search returned, best first; empty when "
+            "it returned nothing. Source: the server. Do not read a key missing from here as "
+            "missing from the library: only the first ten are kept."
+        )
+    )
+    recall_at_10: float = Field(
+        ge=0,
+        le=1,
+        description=(
+            "This question's share of expected records found in the first ten hits, from 0 "
+            "to 1; a question with no answer scores 1 only when nothing came back. Source: "
+            "the server. Do not read 1 as every hit being relevant."
+        ),
+    )
+    mrr: float = Field(
+        ge=0,
+        le=1,
+        description=(
+            "The reciprocal rank of this question's first expected record, from 0 (not "
+            "found) to 1 (first): 0.5 means it came second. Source: the server. Do not read "
+            "it as how many expected records were found."
+        ),
+    )
+
+
+class EvalQuestionInput(WriteBody):
+    """`POST /eval/questions`: one labelled question. A field the schema does not name is
+    refused, never dropped."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "key": "r-sv-17",
+                    "lang": "sv",
+                    "question": "kostnader och avgifter före tjänsten",
+                    "expected": ["obl-costs-charges"],
+                    "matchKind": "concept",
+                    "notes": "Swedish phrasing of the cost disclosure, won by meaning.",
+                }
+            ]
+        }
+    )
+
+    key: str = Field(
+        min_length=1,
+        max_length=40,
+        pattern=EVAL_KEY_PATTERN,
+        description=(
+            "The question's stable key, which never changes: lower-case letters, digits and "
+            "hyphens, starting with a letter or digit, 1 to 40 characters, by convention "
+            "`r-<language>-<number>` as in `r-sv-17`. A key already in the set answers 409 "
+            "`duplicate_key`; one that breaks the pattern answers 422. Source: platform staff. "
+            "Do not reuse a retired question's key: a key names one question for good."
+        ),
+    )
+    lang: str = Field(
+        description=(
+            "The content language the question is asked in, as a language key: one of the "
+            "library's language rows (`en`, `sv`, `da`, `nb`, `fi` on day one), read from "
+            "`GET /reference/languages`. A key that names no row answers 422 `unknown_key`. "
+            "Source: platform staff. Do not send a label such as `Svenska`: only the key is "
+            "accepted."
+        )
+    )
+    question: str = Field(
+        min_length=1,
+        max_length=settings.SEARCH_QUERY_MAX_CHARS,
+        description=(
+            "What a reader would type into search, exactly as asked, 1 to "
+            f"{settings.SEARCH_QUERY_MAX_CHARS} characters, the most search itself accepts; "
+            "longer answers 422. Source: platform staff. Do not put a bank's own text in it: "
+            "the set is the platform's and is written to a file in the code repository."
+        ),
+    )
+    expected: list[Annotated[str, Field(min_length=1, max_length=200)]] = Field(
+        default_factory=list, max_length=settings.API_PAGE_SIZE_MAX, description=_EXPECTED
+    )
+    match_kind: SearchMatchKind = Field(description=_MATCH_KIND)
+    as_of: date | None = Field(
+        default=None,
+        description=(
+            "The legal date the question is asked on, as an ISO date: the version in force "
+            "that day is the one expected. Absent means the sample corpus's own anchor day. "
+            "Source: platform staff. Do not read it as the day the question was written."
+        ),
+    )
+    notes: str = Field(
+        default="",
+        max_length=settings.SEARCH_FEEDBACK_NOTE_MAX_CHARS,
+        description=(
+            "Why the question is in the set and what it proves, for the next person who "
+            f"reads it. At most {settings.SEARCH_FEEDBACK_NOTE_MAX_CHARS} characters; longer "
+            "answers 422. Source: platform staff. Do not put a bank's own text or a client's "
+            "data in it: the set is written to a file in the code repository."
+        ),
+    )
+
+
+class EvalQuestionOut(CamelSchema):
+    """One question of the evaluation set as the console shows it."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_EVAL_QUESTION]})
+
+    id: UUID = Field(
+        description=(
+            "The question's identifier in this database, a UUID. Source: the server. Do not "
+            "use it to name the question elsewhere: the stable `key` is what the gate's file "
+            "and every run use, and the id differs in every database."
+        )
+    )
+    key: str = Field(
+        description=(
+            "The question's stable key, for example `r-en-01`, which never changes and is "
+            "the `id` of its line in the release gate's file. Source: platform staff. Do not "
+            "read it as a library record's stable key."
+        )
+    )
+    lang: str = Field(
+        description=(
+            "The content language the question is asked in, as a key of the library's "
+            "language rows (`en`, `sv`, `da`, `nb`, `fi` on day one). Source: platform staff. "
+            "Do not read it as the language of the records it expects: a Swedish question "
+            "may expect an EU obligation."
+        )
+    )
+    question: str = Field(
+        description=(
+            "What is typed into search, exactly as asked, for example `FFFS 2017:2`. Source: "
+            "platform staff. Do not read it as a bank's question: the set is the platform's own."
+        )
+    )
+    expected: list[str] = Field(description=_EXPECTED)
+    match_kind: SearchMatchKind = Field(description=_MATCH_KIND)
+    as_of: date | None = Field(
+        description=(
+            "The legal date the question is asked on, or null for the sample corpus's own "
+            "anchor day. Source: platform staff. Do not read it as the day the question was "
+            "written."
+        )
+    )
+    notes: str = Field(
+        description=(
+            "Why the question is in the set and what it proves; empty when nobody wrote why. "
+            "Source: platform staff. Do not read an empty note as a question nobody checked."
+        )
+    )
+    active: bool = Field(
+        description=(
+            "True while the question belongs to the set; false once it has been retired, "
+            "which keeps it here for the record but leaves it out of every run and out of "
+            "the file the gate reads. Source: platform staff. Do not read false as the "
+            "question having failed."
+        )
+    )
+    in_gate: bool = Field(
+        description=(
+            "True when the release gate that built this deployment scores the question: its "
+            "key is a line of `backend/eval/retrieval.jsonl` in this build. False for a "
+            "question added in the console and not yet written to that file with the "
+            "dump_eval_questions command and shipped: it is kept, and scored by the "
+            "record_eval_run command, but a drop on it fails no build yet. Source: the "
+            "server. Do not read true as the question passing."
+        )
+    )
+
+
+class EvalQuestionPage(CamelSchema):
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_EVAL_QUESTION], "total": 53}]})
+
+    items: list[EvalQuestionOut] = Field(
+        description=(
+            "The questions on this page, ordered by key, retired ones included. An empty "
+            "list is a 200 and means the set holds no question yet. Source: platform staff "
+            "and the gate's file. Do not read a short page as the end unless `total` agrees."
+        )
+    )
+    total: int = Field(
+        description=(
+            "How many questions the set holds in total, retired ones included; use it to "
+            "size a pager. Source: the server. Do not read it as how many are on this page."
+        )
+    )
+
+
+class EvalRunOut(CamelSchema):
+    """One recorded run of the evaluation set: which chain, the scores, and each answer."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_EVAL_RUN]})
+
+    id: UUID = Field(
+        description=(
+            "The run's identifier, a UUID, which the audit row of the run names too. Source: "
+            "the server. Do not read its order as the order of the runs: use `runAt`."
+        )
+    )
+    run_at: datetime = Field(
+        description=(
+            "When the run was recorded, as an ISO 8601 date-time in UTC. Source: the server. "
+            "Do not read it as when the questions were last changed."
+        )
+    )
+    config: EvalRunConfig = Field(
+        description=(
+            "Which retrieval chain the run scored, and over how many questions. Source: the "
+            "server. Do not compare two runs whose chains differ as if only search changed."
+        )
+    )
+    metrics: EvalRunMetrics = Field(
+        description=(
+            "The run's scores overall, per language and per match kind. Source: the server. "
+            "Do not read them as the release gate's verdict, which is in CI against its baseline."
+        )
+    )
+    results: list[EvalQuestionResult] = Field(
+        description=(
+            "One entry per question asked, in the order asked: what came back and how it "
+            "scored. Source: the server. Do not read a question here as still active: one "
+            "retired since stays here, as it ran."
+        )
+    )
+
+
+class EvalRunPage(CamelSchema):
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_EVAL_RUN], "total": 1}]})
+
+    items: list[EvalRunOut] = Field(
+        description=(
+            "The runs on this page, newest first. An empty list is a 200 and means no run "
+            "has been recorded yet. Source: the server. Do not read an empty list as search "
+            "being unscored: the release gate scores it in CI either way."
+        )
+    )
+    total: int = Field(
+        description=(
+            "How many runs are recorded in total; use it to size a pager. Source: the server. "
+            "Do not read it as how many are on this page."
+        )
     )

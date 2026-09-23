@@ -158,6 +158,13 @@ OTHER_POLICIES = frozenset(
     + [(table, IDENTITY_LOOKUP_POLICY) for table in IDENTITY_LOOKUP_TABLES]
 )
 
+# Platform-only tables (SRC-05, search 0002): no tenant column, so the enumeration above
+# never sees them. Each carries forced row-level security and exactly one policy,
+# `platform_only`, FOR ALL, refusing any session with a tenant active: a bank never reads or
+# writes the evaluation set. Adding a table here is a review question.
+PLATFORM_ONLY_TABLES = frozenset({"eval_question", "eval_run"})
+PLATFORM_ONLY_POLICY = "platform_only"
+
 
 def own_zone_rule(column: str) -> str:
     """`<column> IS NOT DISTINCT FROM <the session's tenant>` as PostgreSQL renders it back
@@ -328,6 +335,35 @@ class RowLevelSecurityGuard(TestCase):
             [],
             "Write rules that accept more than the session's own zone:\n  " + "\n  ".join(problems),
         )
+
+    def test_every_platform_only_table_refuses_any_tenant_session(self) -> None:
+        """RLS enabled and forced, and one policy whose USING and WITH CHECK both demand
+        that the tenant setting is empty; the same policy name on any other table fails."""
+        problems: list[str] = []
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute(
+                "SELECT relname, relrowsecurity, relforcerowsecurity FROM pg_class WHERE relname = ANY(%s)",
+                [sorted(PLATFORM_ONLY_TABLES)],
+            )
+            flags = {name: (enabled, forced) for name, enabled, forced in cursor.fetchall()}
+            cursor.execute("SELECT DISTINCT tablename FROM pg_policies WHERE policyname = %s", [PLATFORM_ONLY_POLICY])
+            carriers = {row[0] for row in cursor.fetchall()}
+        for table in sorted(PLATFORM_ONLY_TABLES):
+            if flags.get(table) != (True, True):
+                problems.append(f"{table}: row-level security is not enabled and forced: {flags.get(table)}")
+            policies = self._policies(table)
+            if set(policies) != {PLATFORM_ONLY_POLICY}:
+                problems.append(f"{table}: policies {sorted(policies)}, not {PLATFORM_ONLY_POLICY} alone")
+                continue
+            cmd, qual, with_check = policies[PLATFORM_ONLY_POLICY]
+            for part, rule in (("USING", qual), ("WITH CHECK", with_check)):
+                if TENANT_SETTING not in rule or "IS NULL" not in rule:
+                    problems.append(f"{table}: {PLATFORM_ONLY_POLICY} {part} does not refuse a tenant session: {rule}")
+            if cmd != "ALL":
+                problems.append(f"{table}: {PLATFORM_ONLY_POLICY} is FOR {cmd}, not FOR ALL")
+        if carriers - PLATFORM_ONLY_TABLES:
+            problems.append(f"{sorted(carriers - PLATFORM_ONLY_TABLES)} carry {PLATFORM_ONLY_POLICY}; list them in PLATFORM_ONLY_TABLES")
+        self.assertEqual(problems, [], "Platform-only tables a tenant session could reach:\n  " + "\n  ".join(problems))
 
 
 class RowLevelSecurityEnforcement(TransactionTestCase):
