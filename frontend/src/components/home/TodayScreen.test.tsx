@@ -158,6 +158,28 @@ describe('TodayScreen', () => {
     expect(await screen.findByText('Nothing to show yet')).toBeInTheDocument();
   });
 
+  // The empty state's way to the regulatory scope shows only to a holder of a
+  // permission that opens it: anyone else would land on the restricted page.
+  it.each([['footprint.request'], ['footprint.approve']])('offers a holder of %s the way to the regulatory scope from the empty state', async (permission) => {
+    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
+    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0 } };
+    serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
+    render(shell(<TodayScreen />, ['watch.read', permission]));
+
+    expect(await screen.findByText('Nothing to show yet')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Set the regulatory scope under Admin' })).toHaveAttribute('href', '/admin/footprint');
+  });
+
+  it('leaves the link out of the empty state for a member who cannot open the regulatory scope', async () => {
+    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
+    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0 } };
+    serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
+    render(shell(<TodayScreen />, ['watch.read', 'roadmap.read', 'audit.read']));
+
+    expect(await screen.findByText('Nothing to show yet')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Set the regulatory scope under Admin' })).toBeNull();
+  });
+
   it('open decisions keep the page off the empty state even when nothing is dated', async () => {
     const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
     serve({ status: 200, data: quiet });

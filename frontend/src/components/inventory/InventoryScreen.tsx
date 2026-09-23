@@ -16,6 +16,8 @@ import { useFormatContext } from '@/features/identity/hooks';
 import { useInstruments, useObligations } from '@/features/library/hooks';
 import type { InstrumentQuery, ObligationQuery } from '@/features/library/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { findDestination, unlocks } from '@/shared/navigation/registry';
+import { usePermissions } from '@/shared/navigation/require-permission';
 import { formatDate } from '@/shared/utils/format';
 
 // /inventory (design/screens/tenant-inventory.html; INV-01, INV-03, INV-04,
@@ -87,10 +89,15 @@ export function isNarrowed(filters: InventoryFilters): boolean {
 function ObligationsTab({ filters, apply, pathname }: { filters: InventoryFilters; apply: (patch: Partial<InventoryFilters>) => void; pathname: string }) {
   const t = useT();
   const ctx = useFormatContext();
+  const permissions = usePermissions();
   const obligations = useObligations(queryOf(filters));
   const items = obligations.data?.items ?? [];
   const total = obligations.data?.total ?? 0;
   const outsideHref = `${pathname}?${searchOf('obligations', { ...filters, outsideFootprint: true })}`;
+  // The way to the regulatory scope shows only to someone the scope page opens for.
+  const scope = findDestination('admin-footprint');
+  const scopeAction =
+    scope !== undefined && unlocks(scope.anyOfPermissions, permissions ?? []) ? { label: t('inventory.empty.inScope.action'), href: scope.href } : undefined;
 
   return (
     <>
@@ -117,7 +124,7 @@ function ObligationsTab({ filters, apply, pathname }: { filters: InventoryFilter
             action={filters.outsideFootprint ? undefined : { label: t('inventory.showOutside'), href: outsideHref }}
           />
         ) : (
-          <EmptyState title={t('inventory.empty.inScope.title')} body={t('inventory.empty.inScope.body')} action={{ label: t('inventory.empty.inScope.action'), href: '/admin/footprint' }} />
+          <EmptyState title={t('inventory.empty.inScope.title')} body={t('inventory.empty.inScope.body')} action={scopeAction} />
         )
       ) : (
         <div className="grid gap-2" data-obligation-rows="">
