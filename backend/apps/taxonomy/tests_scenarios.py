@@ -588,7 +588,9 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         advice = tenant_lists_logic.term_by_ref("service_type", "advice")
         retail = tenant_lists_logic.term_by_ref("client_category", "retail")
         branch = tenant_lists_logic.term_by_ref("channel", "branch")
-        iso = tenant_lists_logic.term_by_ref("standard", "iso_iec_27001")
+        # Seeded inactive until its doors guard it (tests_matching.HeldStandard); the rule
+        # ignores a term's state.
+        iso = TaxonomyTerm.objects.get(dimension__key="standard", key="iso_iec_27001")
         self.assertTrue(matching.in_footprint_sql(self.tenant.id, [custody.id, retail.id]))
         self.assertFalse(matching.in_footprint_sql(self.tenant.id, [advice.id]))
         self.assertTrue(matching.in_footprint_sql(self.tenant.id, []))
@@ -1144,7 +1146,8 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             second = TaxonomyTerm.objects.create(dimension=standard, key="second_standard")
         terms = {
             "service_type:custody": tenant_lists_logic.term_by_ref("service_type", "custody"),
-            "standard:iso_iec_27001": tenant_lists_logic.term_by_ref("standard", "iso_iec_27001"),
+            # Seeded inactive (tests_matching.HeldStandard); the rule ignores a term's state.
+            "standard:iso_iec_27001": TaxonomyTerm.objects.get(dimension=standard, key="iso_iec_27001"),
             "standard:second_standard": second,
         }
         subsets = [combo for n in range(len(terms) + 1) for combo in itertools.combinations(terms, n)]
@@ -1157,7 +1160,10 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             return result
 
         def verdicts(footprint_refs: tuple[str, ...], record_refs: tuple[str, ...]) -> tuple[bool, bool]:
-            self._set_footprint(list(footprint_refs))
+            self.activate(self.tenant)
+            FootprintTerm.objects.filter(tenant=self.tenant).delete()
+            for ref in footprint_refs:
+                FootprintTerm.objects.create(tenant=self.tenant, term=terms[ref], added_by=self.admin)
             pure = matching.in_footprint(as_dict(record_refs), matching.footprint_of(self.tenant.id), restricting=matching.restricting_dimensions())
             return pure, matching.in_footprint_sql(self.tenant.id, [terms[ref].id for ref in record_refs])
 
