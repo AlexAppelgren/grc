@@ -340,6 +340,16 @@ describe('the obligations affected', () => {
     renderLinks({ ...change, obligations: [] });
     expect(screen.getByText('No obligation is linked yet')).toBeInTheDocument();
   });
+
+  it('when this bank removed every link, the page says so rather than that nothing is linked', () => {
+    const allRemoved: ChangeDetail = {
+      ...change,
+      case: { ...change.case!, obligationDecisions: change.obligations.map((link) => ({ ...removed, obligationId: link.obligationId })) },
+    };
+    renderLinks(allRemoved, ['cases.work']);
+    expect(screen.getByText('Every suggested obligation is marked not related for us')).toBeInTheDocument();
+    expect(screen.queryByText('No obligation is linked yet')).not.toBeInTheDocument();
+  });
 });
 
 describe('the change screen', () => {

@@ -2,6 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { homeKeys } from '@/features/home/hooks';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
@@ -92,7 +93,7 @@ describe('watch hooks', () => {
     expect(watchKeys.coverage).toEqual(['watch', 'coverage']);
   });
 
-  it('each write on the case re-reads every watch read, because each moves the page, the feed and a count', async () => {
+  it('each write on the case re-reads every watch read, and a So what write the home reads too', async () => {
     const sent = installAdapter(() => ({ status: 200, data: {} }));
     const { wrapper, queryClient } = queryWrapper();
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
@@ -112,7 +113,16 @@ describe('watch hooks', () => {
       ['post', '/api/v1/changes/c-1/case/obligation-links'],
       ['delete', '/api/v1/changes/c-1/case/obligation-links/ob-2'],
     ]);
-    expect(invalidate.mock.calls.map(([filters]) => filters?.queryKey)).toEqual([watchKeys.all, watchKeys.all, watchKeys.all, watchKeys.all]);
+    // A So what write also re-reads Today and the briefing, which show the same
+    // wording with its AI label; a link decision shows on neither.
+    expect(invalidate.mock.calls.map(([filters]) => filters?.queryKey)).toEqual([
+      watchKeys.all,
+      homeKeys.home,
+      watchKeys.all,
+      homeKeys.home,
+      watchKeys.all,
+      watchKeys.all,
+    ]);
   });
 
   it('a write the server refuses re-reads nothing', async () => {

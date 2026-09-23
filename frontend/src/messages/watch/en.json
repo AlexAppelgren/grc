@@ -125,5 +125,6 @@
   "watch.soWhat.draftedBy": "Drafted by {agent}, which read this change",
   "watch.soWhat.draftedByAgent": "Drafted by the agent that read this change",
   "watch.soWhat.confirmedAt": "Confirmed {date}",
-  "watch.change.linkAccepted": "Confirmed for us, {date}"
+  "watch.change.linkAccepted": "Confirmed for us, {date}",
+  "watch.change.allLinksRemoved": "Every suggested obligation is marked not related for us"
 }

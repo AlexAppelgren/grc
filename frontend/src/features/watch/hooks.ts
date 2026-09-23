@@ -10,6 +10,7 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 
+import { homeKeys } from '@/features/home/hooks';
 import { usePermissions } from '@/shared/navigation/require-permission';
 
 import * as watch from './api';
@@ -129,15 +130,28 @@ function useInvalidateWatch(): () => Promise<void> {
   return () => queryClient.invalidateQueries({ queryKey: watchKeys.all });
 }
 
+/**
+ * A So what write also moves Today and the briefing, which show the same
+ * wording with the same AI label from their own reads (`homeKeys.home` is
+ * the prefix of every home read). Without this, the label would stay on a
+ * wording a person just confirmed until those reads went stale.
+ */
+function useInvalidateSoWhat(): () => Promise<void> {
+  const queryClient = useQueryClient();
+  return async () => {
+    await Promise.all([queryClient.invalidateQueries({ queryKey: watchKeys.all }), queryClient.invalidateQueries({ queryKey: homeKeys.home })]);
+  };
+}
+
 /** WAT-05: "Save and confirm" on the rewrite form. */
 export function useSaveSoWhat(changeId: string): UseMutationResult<CaseSoWhat, unknown, string> {
-  const invalidate = useInvalidateWatch();
+  const invalidate = useInvalidateSoWhat();
   return useMutation({ mutationFn: (text) => watch.saveSoWhat(changeId, text), onSuccess: () => invalidate() });
 }
 
 /** WAT-05: "Confirm wording" on the drafted So what. */
 export function useConfirmSoWhat(changeId: string): UseMutationResult<CaseSoWhat, unknown, void> {
-  const invalidate = useInvalidateWatch();
+  const invalidate = useInvalidateSoWhat();
   return useMutation({ mutationFn: () => watch.confirmSoWhat(changeId), onSuccess: () => invalidate() });
 }
 

@@ -68,7 +68,10 @@ export function ChangeObligations({ change }: { change: ChangeDetail }) {
   const decisions = decisionsOf(change);
   // Every link except those this bank said are not related to it.
   const links = change.obligations.filter((link) => decisions.get(link.obligationId)?.decision !== 'removed');
-  if (links.length === 0) return <p className="text-meta text-muted">{t('watch.change.noObligations')}</p>;
+  if (change.obligations.length === 0) return <p className="text-meta text-muted">{t('watch.change.noObligations')}</p>;
+  // The library still links them; this bank said none applies. Saying "nothing
+  // is linked" would be untrue, so the page says what the bank decided.
+  if (links.length === 0) return <p className="text-meta text-muted">{t('watch.change.allLinksRemoved')}</p>;
   return (
     <Rows data-change-obligations="">
       {links.map((link) => {
