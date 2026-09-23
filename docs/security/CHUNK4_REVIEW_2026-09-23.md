@@ -630,11 +630,18 @@ Each has a row in `docs/plans/briefs/HARDENING.md`.
 
 ## Gates
 
-See the package report. Green:
-- the proposals, governance, tenants, identity, shared, taxonomy and library suites;
-- ruff and mypy;
-- migration drift and `migrate_from_zero`;
-- the compliance lint, requirements coverage, the API documentation gate and contract drift;
-- the frontend checks;
-- the E2E journeys of the scenarios in scope;
-- `prepush.sh --quick`.
+Run on this branch after the fixes, 2026-09-23. Every gate below was green.
+
+- The backend suites of every app the review read or changed, 1207 tests, OK with 51 skips
+  that were there before: `apps.proposals`, `apps.governance`, `apps.tenants`,
+  `apps.identity`, `apps.shared`, `apps.taxonomy`, `apps.library` and `apps.agents`.
+- Migration drift and `migrate_from_zero`, since proposals 0006 is new.
+- ruff and mypy.
+- The compliance lint, requirements coverage, the API documentation gate and contract drift.
+- Frontend lint (0 errors), typecheck, and the message and copy-drift checks. No frontend file
+  changed.
+- E2E: 7 of 7 journeys for the scenarios in scope, against the full stack: PRO-S3, PRO-S5,
+  PRO-S7, PRO-S13, AUD-S5, ADM-S4 and ADM-S6. PRO-S2, PRO-S14 and AUD-S7 have integration
+  tests only.
+- `scripts/prepush.sh --quick`, with the OpenAPI artefacts regenerated in the working tree and
+  not committed (runbook rule 4).
