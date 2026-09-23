@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 
 import { BackLink } from '@/components/admin/AdminGate';
 import { Button, ButtonBar } from '@/components/ui/Button';
+import { Chip } from '@/components/ui/Chip';
 import { CheckGroup, CheckRow, Field, TextArea } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { Notice } from '@/components/ui/Notice';
@@ -22,6 +23,7 @@ import {
   draftOf,
   hidesSomething,
   historyLine,
+  marketLevelLabel,
   narrowedGroups,
   pendingAdditions,
   pendingRemovals,
@@ -29,6 +31,7 @@ import {
   presentRequestStatus,
   previewLines,
   previewSummary,
+  reachLines,
   requestTitle,
   scopeGroups,
   toggleTerm,
@@ -41,15 +44,18 @@ import {
   useCreateFootprintRequest,
   useFootprint,
   useFootprintRequests,
+  useJurisdictions,
   usePreviewFootprintRequest,
   useRejectFootprintRequest,
   useTerms,
+  useUnwatchMarket,
+  useWatchMarket,
   useWithdrawFootprintRequest,
 } from '@/features/footprint/hooks';
-import type { FootprintChangeRequest, FootprintDimension, FootprintPreview, TaxonomyTerm, TermChange } from '@/features/footprint/types';
+import type { FootprintChangeRequest, FootprintDimension, FootprintPreview, Market, TaxonomyTerm, TermChange } from '@/features/footprint/types';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { usePermissions } from '@/shared/navigation/require-permission';
+import { humanisePermission, usePermissions } from '@/shared/navigation/require-permission';
 import { formatDate } from '@/shared/utils/format';
 import { hasProblemCode } from '@/shared/utils/problem';
 
@@ -61,6 +67,9 @@ import { hasProblemCode } from '@/shared/utils/problem';
 // approves behind a passkey step-up (the api client opens the ceremony on 403
 // step_up_required) or rejects with a reason; the requester can withdraw. After a send,
 // a decision or a withdrawal the message goes to the one status line and focus follows it.
+// The markets panel (states 17 to 19; FP-04, D-27, D-30) lists every country with its
+// computed level: an operating market changes only through a request above, and a
+// Watching toggle saves at once, with no second person, because watching hides nothing.
 
 type ApproveMutation = ReturnType<typeof useApproveFootprintRequest>;
 type RejectMutation = ReturnType<typeof useRejectFootprintRequest>;
@@ -83,7 +92,6 @@ function scopeSignature(dimensions: readonly FootprintDimension[]): string {
   return JSON.stringify(dimensions.map((d) => [d.dimension.key, d.terms.map((term) => term.key)]));
 }
 
-const JURISDICTION = 'jurisdiction';
 const REJECT_REASON = 'reject-reason';
 
 /** The changes with their labels, read from the groups they were ticked in (a held term no longer active is only there). */
@@ -121,7 +129,7 @@ function ReadGroup({ group, pending }: { group: ScopeGroup; pending: FootprintCh
   return (
     <div data-dimension={key}>
       <h3 className="mb-1 font-medium">{group.dimension.label}</h3>
-      {key === JURISDICTION ? <p className="mb-1 text-meta text-muted">{t('footprint.jurisdictionHint')}</p> : null}
+      {group.mirrored ? <p className="mb-1 text-meta text-muted">{t('footprint.jurisdictionHint')}</p> : null}
       {listed ? (
         <ul className="m-0 list-none p-0">
           {group.rows.map(({ term, held }) => {
@@ -156,7 +164,7 @@ function EditGroup({ group, draft, disabled, onToggle }: { group: ScopeGroup; dr
   const t = useT();
   const key = group.dimension.key;
   const held = draft[key] ?? new Set<string>();
-  const hint = held.size === 0 ? t('footprint.notRestricted') : key === JURISDICTION ? t('footprint.jurisdictionHint') : undefined;
+  const hint = held.size === 0 ? t('footprint.notRestricted') : group.mirrored ? t('footprint.jurisdictionHint') : undefined;
   return (
     <div data-dimension={key}>
       <CheckGroup legend={group.dimension.label} hint={hint}>
@@ -441,7 +449,7 @@ function RejectDialog({ request, reject, onClose, onDone }: { request: Footprint
 
 // ——— history ——————————————————————————————————————————————————————
 
-function History({ requests }: { requests: readonly FootprintChangeRequest[] }) {
+function History({ requests, more, loadingMore, onMore }: { requests: readonly FootprintChangeRequest[]; more: boolean; loadingMore: boolean; onMore: () => void }) {
   const t = useT();
   const ctx = useFormatContext();
   const decided = requests.filter((request) => request.status !== 'pending');
@@ -464,6 +472,80 @@ function History({ requests }: { requests: readonly FootprintChangeRequest[] }) 
           })}
         </ul>
       )}
+      {more ? (
+        <Button variant="outline" size="small" className="mt-3" disabled={loadingMore} onClick={onMore}>
+          {t('footprint.history.showMore')}
+        </Button>
+      ) : null}
+    </Panel>
+  );
+}
+
+// ——— markets we watch ——————————————————————————————————————————————
+
+/** One country: "Operating" as meta text, a Watching toggle for someone who can watch, or the level in words. */
+function MarketRowItem({ market, canWatch, onToggle }: { market: Market; canWatch: boolean; onToggle: () => void }) {
+  const t = useT();
+  return (
+    <li data-market={market.jurisdiction.key} className="flex min-h-11 items-center justify-between gap-3 border-b border-line py-1.5 last:border-b-0">
+      <span className="min-w-0">{market.jurisdiction.label}</span>
+      {market.level === 'operating' || !canWatch ? (
+        <span className="text-meta text-muted">{marketLevelLabel(market.level, t)}</span>
+      ) : (
+        <Chip pressed={market.level === 'watching'} onClick={onToggle}>
+          {t('footprint.markets.watching')}{' '}
+          <span className="sr-only">{market.jurisdiction.label}</span>
+        </Chip>
+      )}
+    </li>
+  );
+}
+
+function MarketsPanel({ markets, canWatch }: { markets: readonly Market[]; canWatch: boolean }) {
+  const t = useT();
+  const jurisdictions = useJurisdictions();
+  const watch = useWatchMarket();
+  const unwatch = useUnwatchMarket();
+  // The market whose save failed: the toggle keeps the level the server holds and the reason renders under the list.
+  const [notSaved, setNotSaved] = useState<string | null>(null);
+  const busy = watch.isPending || unwatch.isPending;
+  const toggle = (market: Market) => {
+    if (busy) return;
+    setNotSaved(null);
+    const save = market.level === 'watching' ? unwatch : watch;
+    save.mutate(market.jurisdiction.key, { onError: () => setNotSaved(market.jurisdiction.label) });
+  };
+  const reach = reachLines(markets, jurisdictions.data ?? [], t);
+  return (
+    <Panel title={t('footprint.markets.title')} data-markets="">
+      {canWatch ? null : <Notice className="mb-3">{t('footprint.markets.approverOnly', { permission: humanisePermission(FOOTPRINT_REQUEST) })}</Notice>}
+      <p className="mb-3 text-meta text-muted">{t('footprint.markets.intro')}</p>
+      <ul className="m-0 list-none p-0" aria-busy={busy}>
+        {markets.map((market) => (
+          <MarketRowItem key={market.jurisdiction.key} market={market} canWatch={canWatch} onToggle={() => toggle(market)} />
+        ))}
+      </ul>
+      {notSaved !== null ? (
+        <Notice tone="bad" className="mt-3 mb-0" data-market-not-saved="">
+          {t('footprint.markets.notSaved', { market: notSaved })}
+        </Notice>
+      ) : null}
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        {reach.length > 0 ? (
+          <div data-markets-reach="">
+            <h3 className="mb-1 font-medium">{t('footprint.markets.alsoIncluded')}</h3>
+            {reach.map((line) => (
+              <p key={line} className="text-meta text-muted">
+                {line}
+              </p>
+            ))}
+          </div>
+        ) : null}
+        <div>
+          <h3 className="mb-1 font-medium">{t('footprint.markets.everywhereElse')}</h3>
+          <p className="text-meta text-muted">{t('footprint.markets.sweep')}</p>
+        </div>
+      </div>
     </Panel>
   );
 }
@@ -652,7 +734,18 @@ export function FootprintScreen() {
         />
       ) : null}
 
-      {requests.isError ? <ProblemAlert error={requests.error} /> : <History requests={requests.data?.items ?? []} />}
+      {requests.isError ? (
+        <ProblemAlert error={requests.error} />
+      ) : (
+        <History
+          requests={requests.data?.pages.flatMap((page) => page.items) ?? []}
+          more={requests.hasNextPage}
+          loadingMore={requests.isFetchingNextPage}
+          onMore={() => void requests.fetchNextPage()}
+        />
+      )}
+
+      <MarketsPanel markets={footprint.data.markets} canWatch={canRequest} />
 
       {pending !== null && dialog === 'approve' ? (
         <ApproveDialog

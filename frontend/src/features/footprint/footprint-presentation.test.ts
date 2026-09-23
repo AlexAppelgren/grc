@@ -12,6 +12,7 @@ import {
   hidesSomething,
   historyLine,
   isRequester,
+  marketLevelLabel,
   narrowedGroups,
   pendingAdditions,
   pendingRemovals,
@@ -19,11 +20,12 @@ import {
   presentRequestStatus,
   previewLines,
   previewSummary,
+  reachLines,
   requestTitle,
   scopeGroups,
   toggleTerm,
 } from './footprint-presentation';
-import type { FootprintChangeRequest, FootprintDimension, FootprintPreview, TaxonomyTerm } from './types';
+import type { FootprintChangeRequest, FootprintDimension, FootprintPreview, JurisdictionRef, Market, TaxonomyTerm } from './types';
 
 const t = createT('en');
 const sv = createT('sv');
@@ -234,6 +236,16 @@ describe('scopeGroups, narrowedGroups and pendingTermPill', () => {
       ['legacy', true],
     ]);
     expect(groups[1]!.rows).toEqual([{ term: sweden, held: true }]);
+    expect(groups.map((g) => g.mirrored)).toEqual([false, false]);
+  });
+
+  it('marks the group whose terms mirror the jurisdictions, whatever its dimension is called', () => {
+    const markets: FootprintDimension = { dimension: { key: 'where_we_operate', kind: 'scope', label: 'Markets' }, restrictsFootprint: true, terms: [], allSelected: false };
+    const mirrored: TaxonomyTerm[] = [...allTerms, { key: 'se', kind: null, label: 'Sweden', dimension: 'where_we_operate', mirrored: true }];
+    expect(scopeGroups([service, markets], mirrored).map((g) => [g.dimension.key, g.mirrored])).toEqual([
+      ['service_type', false],
+      ['where_we_operate', true],
+    ]);
   });
 
   it('detects narrowing (empty in the stored scope, non-empty in the draft) and not widening', () => {
@@ -260,5 +272,30 @@ describe('historyLine', () => {
     expect(historyLine(rejected, t, defaultFormatContext).text).toBe('rejected "Remove Advice" requested by Sara Lindqvist: "ISK tax reporting is ours."');
     expect(historyLine(request({ status: 'withdrawn' }), t, defaultFormatContext)).toEqual({ when: formatDateTime('2026-09-18T12:00:00Z', defaultFormatContext), who: 'Sara Lindqvist', text: 'withdrew "Remove Advice".' });
     expect(historyLine(request(), t, defaultFormatContext).text).toBe('requested "Remove Advice".');
+  });
+});
+
+describe('markets', () => {
+  const market = (key: string, label: string, level: Market['level']): Market => ({ jurisdiction: { key, kind: 'country', label }, level });
+  const markets = [market('se', 'Sweden', 'operating'), market('dk', 'Denmark', 'watching'), market('no', 'Norway', 'watching'), market('fi', 'Finland', 'not_followed')];
+  const jurisdictions: JurisdictionRef[] = [
+    { key: 'eu', kind: 'supranational', label: 'European Union', parentKey: null },
+    { key: 'se', kind: 'country', label: 'Sweden', parentKey: 'eu' },
+    { key: 'dk', kind: 'country', label: 'Denmark', parentKey: 'eu' },
+    { key: 'no', kind: 'country', label: 'Norway', parentKey: 'eu' },
+    { key: 'fi', kind: 'country', label: 'Finland', parentKey: 'eu' },
+  ];
+
+  it('says every level in words', () => {
+    expect(markets.map((m) => marketLevelLabel(m.level, t))).toEqual(['Operating', 'Watching', 'Watching', 'Not watched']);
+    expect(markets.map((m) => marketLevelLabel(m.level, sv))).toEqual(['Verksamma', 'Bevakar', 'Bevakar', 'Bevakas inte']);
+  });
+
+  it('says which rules reach which markets, read from the parent of each, in the order of the markets', () => {
+    expect(reachLines(markets, jurisdictions, t)).toEqual(['European Union rules reach Sweden, Denmark, Norway and Finland, so they show wherever those markets do.']);
+    // A market with no parent, or one the reference list has not loaded, adds nothing.
+    const alone = [...jurisdictions.slice(0, 2), { key: 'dk', kind: 'country', label: 'Denmark', parentKey: null }];
+    expect(reachLines(markets.slice(0, 3), alone, t)).toEqual(['European Union rules reach Sweden, so they show wherever those markets do.']);
+    expect(reachLines(markets, [], t)).toEqual([]);
   });
 });
