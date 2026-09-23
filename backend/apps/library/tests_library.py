@@ -344,6 +344,37 @@ class SharedOrMineIsolation(TransactionTestCase):
             tenancy.activate(self.tenant_a.id, using="app")
             self.assertEqual(ProblemReport.objects.using("app").get().status, ReportStatus.OPEN.value)
 
+    def test_a_report_is_open_or_closed_with_who_when_and_a_note(self) -> None:
+        """library 0009 (AUD-03): the database refuses a closed report missing who closed it,
+        when or why, and an open one carrying any of the three."""
+        now = datetime.datetime.now(tz=datetime.UTC)
+        closed: dict[str, Any] = {"status": ReportStatus.FIXED.value, "resolution_note": "Checked against the source.", "closed_by": self.reporter, "closed_at": now}
+        broken: list[dict[str, Any]] = [
+            {**closed, "resolution_note": ""},
+            {**closed, "closed_by": None},
+            {**closed, "closed_at": None},
+            {"resolution_note": "A note on an open report."},
+            {"closed_at": now},
+        ]
+        for fields in broken:
+            with self.subTest(fields=sorted(fields)):
+                with self.assertRaisesMessage(IntegrityError, "problem_report_closed_with_note"), transaction.atomic(using="app"):
+                    tenancy.activate(self.tenant_a.id, using="app")
+                    self._report(**fields)
+        with transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_a.id, using="app")
+            self.assertEqual(self._report(**closed).status, ReportStatus.FIXED.value)
+
+    def _report(self, **fields: Any) -> ProblemReport:
+        return ProblemReport.objects.using("app").create(
+            tenant=self.tenant_a,
+            reporter=self.reporter,
+            subject_type=SubjectType.OBLIGATION.value,
+            subject_id=self.tenant_a.id,
+            text="The retention period looks wrong.",
+            **fields,
+        )
+
 
 class JurisdictionReach(TestCase):
     """`Jurisdiction.parent` is the jurisdiction whose rules reach this one (D-28, ADR 0026),
