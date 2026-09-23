@@ -45,11 +45,12 @@ export function languageLabel(key: string, languages: readonly { key: string; la
 
 export function presentQuestion(question: EvalQuestion, t: Translate, languages: readonly { key: string; label: string }[] | undefined): PresentedPill[] {
   const gate = gateKind(question);
-  return [
+  const pills: PresentedPill[] = [
     { key: `gate:${gate}`, label: t(GATE_KEY[gate]), tone: GATE_TONE[gate], order: QUESTION_SLOT_ORDER.gate },
-    { key: `lang:${question.lang}`, label: languageLabel(question.lang, languages), tone: slotTone.regime, order: QUESTION_SLOT_ORDER.language },
+    { key: `lang:${question.lang}`, label: languageLabel(question.lang, languages), tone: 'information', order: QUESTION_SLOT_ORDER.language },
     { key: `match:${question.matchKind}`, label: t(MATCH_KIND_KEY[question.matchKind]), tone: slotTone.matchKind, order: QUESTION_SLOT_ORDER.matchKind },
-  ].sort(byOrder);
+  ];
+  return pills.sort(byOrder);
 }
 
 /** A run scored with a stand-in adapter says nothing about a real model, and needs reading as such. */
