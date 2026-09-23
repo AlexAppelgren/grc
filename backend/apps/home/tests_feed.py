@@ -86,6 +86,15 @@ def frozen_at(moment: datetime.datetime) -> Any:
     return mock.patch("django.utils.timezone.now", return_value=moment)
 
 
+# Every property name a calendar document may hold, and no other.
+DOCUMENT_PROPERTIES = {"BEGIN", "END", "VERSION", "PRODID", "UID", "DTSTAMP", "DTSTART", "SUMMARY", "DESCRIPTION", "URL"}
+
+
+def property_names(body: str) -> set[str]:
+    """The name of every content line, a folded line's continuation not being one."""
+    return {line.split(":", 1)[0].split(";", 1)[0] for line in body.split("\r\n") if line and not line.startswith(" ")}
+
+
 FEEDS = "/api/v1/calendar-feeds"
 ICS = "/api/v1/calendar/feed.ics"
 # The bank's own judgement, seeded on the case behind every date below. Nothing in this
@@ -415,15 +424,7 @@ class FetchingTheCalendar(FeedFixture):
         """The guard ADR 0045 asks for. The property names are asserted as a set, so a field
         added to a roadmap item later fails here instead of reaching a phone."""
         body = self.fetch(self.live_token()).content.decode()
-        properties = {
-            line.split(":", 1)[0].split(";", 1)[0]
-            for line in body.split("\r\n")
-            if line and not line.startswith(" ")
-        }
-        self.assertEqual(
-            properties,
-            {"BEGIN", "END", "VERSION", "PRODID", "UID", "DTSTAMP", "DTSTART", "SUMMARY", "DESCRIPTION", "URL"},
-        )
+        self.assertEqual(property_names(body), DOCUMENT_PROPERTIES)
         for judgement in (SO_WHAT, self.tenant.name, "act_now", "urgency", "owner", "new"):
             with self.subTest(judgement=judgement):
                 self.assertNotIn(judgement, body)
@@ -439,6 +440,28 @@ class FetchingTheCalendar(FeedFixture):
         tenancy.activate(self.tenant.id)
         case = ChangeCase.objects.get(change=self.change)
         self.assertNotIn(str(case.id), body)
+
+    def test_a_stable_key_that_is_not_a_slug_adds_no_line_to_anyones_calendar(self) -> None:
+        """An agent that reads untrusted pages chooses the stable key, and the watch door
+        refuses one that is not a slug. The calendar does not lean on that alone: a key with
+        a line break, a comma and a semicolon in it is escaped like every other text value,
+        so it can never end the UID and begin a property of its own on the phone of every
+        member of every bank whose roadmap holds the change."""
+        crafted = watch_build.change(
+            stable_key="chg-x\r\nATTACH:https://evil.example/\r\nX-INJECTED:1,2;3",
+            title="Rules on outsourcing",
+            key_date=SOON,
+        )
+        cases_build.case(self.tenant, crafted, so_what_text=SO_WHAT)
+
+        body = self.fetch(self.live_token()).content.decode()
+
+        self.assertEqual(property_names(body), DOCUMENT_PROPERTIES, "the key began a property of its own")
+        domain = urlsplit(settings.APP_BASE_URL).hostname
+        self.assertIn(
+            f"\r\nUID:chg-x\\nATTACH:https://evil.example/\\nX-INJECTED:1\\,2\\;3@{domain}\r\n",
+            body.replace("\r\n ", ""),
+        )
 
     def test_a_date_the_source_gave_as_a_quarter_stays_off_the_calendar(self) -> None:
         """ADR 0045: day precision only. An all-day event is one day, and a date published

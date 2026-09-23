@@ -430,12 +430,14 @@ def _event(change_key: str, item: HomeRoadmapItem, now: datetime.datetime) -> li
     """One all-day event: five properties and not a sixth. The UID is the change's stable
     key, which never changes and names no bank, so a client updates the event when its date
     moves rather than showing it twice, and nothing of the bank's own rows — not its case id
-    — leaves in it. A stable key is a slug, so it needs no escaping."""
+    — leaves in it. An agent reading untrusted pages chooses the key, so it is escaped like
+    every other text value although the watch door accepts only a slug: a line break in it
+    would otherwise end the UID and begin a property of its own on every subscriber's phone."""
     summary = f"{item.label}: {item.title}" if item.label else item.title
     link = f"{settings.APP_BASE_URL.rstrip('/')}/watch/{item.change_id}"
     return [
         "BEGIN:VEVENT",
-        f"UID:{change_key}@{_uid_domain()}",
+        f"UID:{_escape(change_key)}@{_uid_domain()}",
         f"DTSTAMP:{now.astimezone(datetime.UTC):%Y%m%dT%H%M%SZ}",
         f"DTSTART;VALUE=DATE:{item.date:%Y%m%d}",
         f"SUMMARY:{_escape(summary)}",
