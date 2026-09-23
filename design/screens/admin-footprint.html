@@ -24,7 +24,8 @@
    States 17 to 19 are the markets panel (ADR 0026, D-27 to D-33): the operating
    markets are the jurisdictions in the scope above and change only through the
    request flow of states 3 to 13, and watching is a direct, audited write on the
-   same screen. The note at the foot lists every new string with its catalog key. */
+   same screen. State 20 is the opt-in group of the standards a bank follows. The note at
+   the foot lists every new string with its catalog key. */
 :root{
   --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
   --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
@@ -540,6 +541,42 @@ legend{padding:0;font-weight:500}
   <div class="notice bad" role="alert" style="margin:12px 0 0">Norway was not saved. Try again.</div>
 </div>
 
+<h2 class="k">20 · The standards a bank follows — an opt-in group with none followed</h2>
+<p class="cap">Read, then editing with the first standard ticked. Its dimension's kind is opt_in, so an empty group follows nothing and hides every record of a standard: it says "None followed.", never "Not restricted", and ticking a standard only reveals, so no group is said to start filtering.</p>
+<div class="panel">
+  <div class="groups">
+    <div class="group" data-dimension="standard">
+      <h3>Standards followed</h3>
+      <p style="margin:0">None followed.</p>
+    </div>
+    <fieldset class="group" data-dimension="standard" aria-describedby="h-standard">
+      <legend>Standards followed</legend>
+      <span class="hint" id="h-standard">None followed.</span>
+      <label class="check" for="c-iso27001"><input type="checkbox" id="c-iso27001">ISO/IEC 27001</label>
+    </fieldset>
+    <fieldset class="group" data-dimension="standard">
+      <legend>Standards followed</legend>
+      <label class="check" for="c-iso27001-on"><input type="checkbox" id="c-iso27001-on" checked>ISO/IEC 27001</label>
+    </fieldset>
+  </div>
+</div>
+<div class="panel" data-draft-preview>
+  <h2>Your change: Add ISO/IEC 27001</h2>
+  <div class="cols">
+    <div>
+      <h3>Hides</h3>
+      <p style="margin:0">Nothing.</p>
+      <p class="meta" style="margin:8px 0 0">Open cases: not counted yet</p>
+    </div>
+    <div>
+      <h3>Reveals</h3>
+      <p style="margin:0"><b>1 obligation</b></p>
+      <p class="meta" style="margin:8px 0 0">Open cases: not counted yet</p>
+    </div>
+  </div>
+  <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Request approval</button></div>
+</div>
+
 <p class="note">Regulatory scope card (/admin/footprint). The page is restricted to
 holders of footprint request or footprint approve; everyone else gets state 16, and
 FP-03 shows the scope to other members only where lists offer "Show outside our
@@ -595,6 +632,20 @@ request blocks the operating markets, not these toggles. A repeated watch answer
 an unwatched market 404; both render as state 19, and the toggle never invents a level the
 server did not send. Order follows the seed: Sweden, Denmark, Norway, Finland. The keys a
 market carries never reach a path or a query string (D-30), so nothing here is linkable.</p>
+
+<p class="note">Standards followed (state 20; FP-01, INV-08, AC-FP3, std-journeys). A
+standard is a term of the one dimension whose kind is opt_in, never a scope dimension: a
+record carrying a standard's term shows only to a bank whose scope names that term, and an
+empty group names none. So the group reads "None followed." where a scope group reads "Not
+restricted: every option applies.", in the read state and as the hint under its legend,
+and the screen tells the two apart by the dimension's kind, never its key. Following a
+standard reveals its records and hides nothing, so the draft never counts the group as
+starting to filter and the narrowing warning stays away; removing the last standard hides
+them again, which the preview counts and the hides warning names. It goes through the same
+request, second person and passkey as every other term. The group shows once its dimension
+has an active term; the seeded ISO/IEC 27001 term stays inactive outside E2E until the
+legal question in docs/TODO_FOR_alex.md is answered. New string:
+<b>footprint.noneFollowed</b> "None followed." (sv "Ingen följs.").</p>
 
 <p class="note">Strings and their catalog keys, added by f03-T23 to
 frontend/src/messages/en.json and sv.json: <b>footprint.jurisdictionHint</b> "The markets

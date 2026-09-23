@@ -271,6 +271,47 @@ describe('FootprintScreen: the read state', () => {
   });
 });
 
+// std-journeys (FP-S16; FP-01, INV-08, AC-FP3): an opt-in group holds the standards a bank
+// follows. Empty, it hides every record of a standard, so it never reads "not restricted".
+describe('FootprintScreen: the standards a bank follows', () => {
+  const STANDARDS = { dimension: { key: 'standard', kind: 'opt_in', label: 'Standards followed' }, restrictsFootprint: true, allSelected: false, terms: [] };
+  const WITH_STANDARDS = { ...TAXONOMY, items: [...TAXONOMY.items, term('standard', 'iso_iec_27001', 'ISO/IEC 27001')], total: TAXONOMY.total + 1 };
+
+  it('reads an empty opt-in group as none followed, in the read and the edit state, and following one warns of no narrowing', async () => {
+    const me = meOf(SARA, REQUEST_AND_APPROVE);
+    const { server } = serve(me, null, preview(0, 1), WITH_STANDARDS);
+    server.dimensions = [...DIMENSIONS, STANDARDS];
+    open(me);
+    await waitFor(() => expect(group('standard')).not.toBeNull());
+    expect(within(group('standard')).getByRole('heading', { level: 3, name: 'Standards followed' })).toBeVisible();
+    expect(within(group('standard')).getByText('None followed.')).toBeVisible();
+    expect(within(group('standard')).queryByText('Not restricted: every option applies.')).toBeNull();
+    expect(group('standard').querySelector('[data-term]')).toBeNull();
+    // A scope group with nothing held still reads as unrestricted.
+    expect(within(group('client_category')).getByText('Not restricted: every option applies.')).toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Propose a change' }));
+    expect(await screen.findByRole('group', { name: 'Standards followed' })).toHaveAccessibleDescription('None followed.');
+    fireEvent.click(screen.getByRole('checkbox', { name: 'ISO/IEC 27001' }));
+    const panel = document.querySelector<HTMLElement>('[data-draft-preview]')!;
+    expect(within(panel).getByRole('heading', { name: 'Your change: Add ISO/IEC 27001' })).toBeVisible();
+    expect(await within(panel.querySelector<HTMLElement>('[data-preview-side="reveals"]')!).findByText('1 obligation')).toBeVisible();
+    // Following a standard only reveals: no group starts to filter, and nothing is hidden.
+    expect(panel.querySelector('[data-notice="warn"]')).toBeNull();
+    expect(screen.getByRole('group', { name: 'Standards followed' })).not.toHaveAccessibleDescription('None followed.');
+  });
+
+  it('lists a followed standard as held', async () => {
+    const me = meOf(SARA, REQUEST_AND_APPROVE);
+    const { server } = serve(me, null, undefined, WITH_STANDARDS);
+    server.dimensions = [...DIMENSIONS, { ...STANDARDS, terms: [held('iso_iec_27001', 'ISO/IEC 27001')] }];
+    open(me);
+    await waitFor(() => expect(group('standard')).not.toBeNull());
+    expect(item('standard', 'iso_iec_27001')).toHaveTextContent('ISO/IEC 27001 In our scope');
+    expect(within(group('standard')).queryByText('None followed.')).toBeNull();
+  });
+});
+
 describe('FootprintScreen: proposing a change', () => {
   it('turns the groups into checkboxes with the focus on the first, and one Cancel that returns to "Propose a change"', async () => {
     const me = meOf(SARA, REQUEST_AND_APPROVE);

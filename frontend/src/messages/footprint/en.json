@@ -6,6 +6,7 @@
   "footprint.term.in": "In our scope",
   "footprint.term.out": "Not in our scope",
   "footprint.notRestricted": "Not restricted: every option applies.",
+  "footprint.noneFollowed": "None followed.",
   "footprint.jurisdictionHint": "The markets we operate in.",
   "footprint.pending.add": "Added when approved",
   "footprint.pending.remove": "Removed when approved",
