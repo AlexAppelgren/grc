@@ -860,3 +860,14 @@ Nothing waits for these; each has the default the build took.
       only this bank's sessions. Default if you say nothing: it stays as built, and the
       published description of `GET /me/sessions` says a person sees only this bank's
       sessions there.
+
+## tax-nordic-seed: Kapitalmarkedsloven has no issuer in the sample library (2026-09-23, FP-04)
+
+- [ ] **Folketinget as an authority.** The Danish sample act (`dk-lov-2017-650`, Lov om
+      kapitalmarkeder) is filed without an issuing authority. Retsinformation.dk states that
+      Folketinget passed it ("Folketinget har vedtaget ..."), but Folketinget's own site,
+      ft.dk, answered this build's fetches with a challenge page, so its address could not be
+      verified, and the rule is to invent nothing. The Norwegian act names Stortinget, whose
+      site answered. Default if you say nothing: the Danish act stays without an issuer until
+      someone files Folketinget (key `folketinget`, `https://www.ft.dk/`) after checking the
+      address, and then sets it on the instrument through a proposal.

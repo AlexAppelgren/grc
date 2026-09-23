@@ -27,6 +27,7 @@ from zoneinfo import ZoneInfo
 
 from apps.library.models import (
     Authority,
+    DatePrecision,
     Instrument,
     InstrumentRelation,
     InstrumentTitle,
@@ -132,6 +133,7 @@ def _instrument(spec: dict[str, Any], terms: dict[str, TaxonomyTerm], verified_o
             "authority": Authority.objects.get(key=spec["authority"]) if spec["authority"] else None,
             "regime": terms[spec["regime"]],
             "in_force_from": _date(spec["in_force_from"]),
+            "in_force_from_precision": spec.get("in_force_from_precision") or DatePrecision.DAY.value,
             "in_force_to": _date(spec["in_force_to"]),
             "implements_note": spec["implements_note"] or "",
             "status": spec["status"],
