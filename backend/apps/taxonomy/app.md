@@ -464,8 +464,8 @@ And a record carrying an opt-in term matches only when the scope names that term
 And an empty scope dimension still does not restrict
 And a record carrying no opt-in term is unaffected by the opt-in dimension
 When the opt-in dimension's restricts_footprint is false
-Then both still treat it as restricting
-And calling in_footprint without the opt_in argument raises a TypeError
+Then both still treat it as restricting, and the regulatory scope read says it restricts
+And calling in_footprint without restricting_dimensions()'s answer, which names the opt-in dimensions, raises a TypeError
 ```
 
 ### I18N-S1 — Languages and jurisdictions are rows, never columns or branches `@integration` (I18N-01)

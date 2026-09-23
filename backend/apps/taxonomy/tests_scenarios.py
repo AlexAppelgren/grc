@@ -1195,6 +1195,10 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         every_combination_agrees()
         self.assertEqual(verdicts(custody, iso), (False, False))
         self.assertEqual(verdicts(iso, iso), (True, True))
+        # The regulatory scope read says so too, so a reader never offers "not restricted".
+        view = self._footprint(sign_in(self.reader, tenant=self.tenant))
+        read = next(d for d in view["dimensions"] if d["dimension"]["key"] == "standard")
+        self.assertEqual((read["dimension"]["kind"], read["restrictsFootprint"]), ("opt_in", True))
         # Calling the pure rule without the opt-in dimensions is a TypeError: leaving the
         # argument out, or handing it a plain set that cannot say which dimensions are opt-in.
         with self.assertRaises(TypeError):

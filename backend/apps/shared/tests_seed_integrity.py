@@ -624,7 +624,7 @@ class SeedIntegrityGuard(TestCase):
         tenancy.activate(Tenant.objects.get(slug=TENANT_A_SLUG).id)
         self.assertEqual(ChangeCase.objects.count(), cases)
 
-    # --- tax-opt-in-rule (FP-01, D-36): no seeded bank follows a standard ------------------
+    # --- FP-01, D-36: no seeded bank follows a standard -------------------------------------
     def test_no_seeded_bank_follows_a_standard(self) -> None:
         """No E2E tenant's regulatory scope holds a term of an opt-in dimension, so a
         standard's records start outside every seeded bank's scope, and a journey that opts a
