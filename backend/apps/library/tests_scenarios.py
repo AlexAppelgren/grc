@@ -24,7 +24,8 @@ Prefixes hosted: INV.
 
 The scenarios that read an obligation (INV-S3 to INV-S6) run against the sample library
 the prototype's data seeds, so what a reader sees is what the product ships with. INV-S4
-and INV-S5 add versions of their own, dated, so no test depends on the day it runs.
+and INV-S5 add versions of their own, dated, and INV-S2 and INV-S6 read the seeded records
+as of the data's own anchor date, so no test depends on the day it runs.
 """
 
 from __future__ import annotations
@@ -64,6 +65,11 @@ FIRST_VERSION = D(2025, 1, 1)
 SECOND_VERSION = D(2026, 10, 1)
 FIRST_SUMMARY = "Research is paid from own resources. The institution keeps the records."
 SECOND_SUMMARY = "Research may be paid jointly with execution. The institution keeps the records."
+# The prototype data's own anchor date (`_meta.anchor_date`): the seeded research payment
+# obligation and 9 kap. 6 § are each on version 1, and each one's version 2 (2026-10-01)
+# is still to come. A read of a seeded record names it, so what it reads never moves with
+# the clock.
+SEEDED_DAY = D(2026, 9, 16)
 
 
 @contextlib.contextmanager
@@ -226,8 +232,8 @@ class LibraryScenarioTests(ScenarioTestCase):
         self.assertEqual([segment["op"] for segment in body["segments"]], ["delete", "insert"])
 
         # And the seeded FFFS 2017:2 tree: a chapter, its sections and one paragraph
-        # under a section (three levels), with 9 kap. 6 §'s own amendment.
-        fffs_tree = tree(self.instrument.id)
+        # under a section (three levels), with 9 kap. 6 §'s own amendment still to come.
+        fffs_tree = tree(self.instrument.id, {"asOf": SEEDED_DAY.isoformat()})
         fffs_chapter = next(node for node in fffs_tree if node["stableKey"] == "fffs-2017-2/9")
         fffs_section = next(child for child in fffs_chapter["children"] if child["stableKey"] == "fffs-2017-2/9-6")
         self.assertTrue(
@@ -235,6 +241,7 @@ class LibraryScenarioTests(ScenarioTestCase):
         )
         self.assertEqual([v["versionNumber"] for v in fffs_section["versions"]], [1, 2])
         self.assertTrue(fffs_section["versions"][1]["transitionalNote"])
+        self.assertEqual(fffs_section["inForceVersion"], 1, "the version in force on the seeded day, whatever today is")
 
     def test_inv_s3(self) -> None:
         """INV-S3
@@ -318,7 +325,8 @@ class LibraryScenarioTests(ScenarioTestCase):
         Text exists in the original language with labelled translations (INV-05).
         """
         # The reader's language order is en; the research payment summary was written in sv.
-        card = self.card("obl-research-payments")
+        card = self.card("obl-research-payments", {"asOf": SEEDED_DAY.isoformat()})
+        self.assertEqual(card["version"]["versionNumber"], 1, "the version in force on the seeded day, whatever today is")
         self.assertEqual(card["summary"]["language"], "en")
         self.assertTrue(card["summary"]["isMachine"], "a machine translation stays labelled until a person confirms it")
         self.assertFalse(card["summary"]["isOriginal"])

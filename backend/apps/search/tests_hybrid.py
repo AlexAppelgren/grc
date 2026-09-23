@@ -370,9 +370,13 @@ class SearchFilterTests(CorpusMixin, TestCase):
         self.assertEqual(today.items[0].version_no, 2)
 
     def test_as_of_defaults_to_today_where_the_bank_is(self) -> None:
-        response = search("capital adequacy", tenant=self.tenant)
+        """At 22:30 UTC on 30 September it is already 1 October in Stockholm, where the
+        corpus's bank is: a fixed instant on which the bank's day and the server's differ,
+        so the answer proves whose today it is and never moves with the day the suite runs."""
+        with mock.patch("django.utils.timezone.now", return_value=datetime.datetime(2026, 9, 30, 22, 30, tzinfo=datetime.UTC)):
+            response = search("capital adequacy", tenant=self.tenant)
 
-        self.assertEqual(response.as_of, datetime.date.today())
+        self.assertEqual(response.as_of, datetime.date(2026, 10, 1))
 
     def test_jurisdiction_and_duty_type_are_compared_as_keys(self) -> None:
         response = search(
