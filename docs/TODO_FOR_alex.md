@@ -319,33 +319,25 @@ change what four eyes means and are marked as such.
       sees what changed". It is the intervention path and it stays tested end to end. The
       agent-confirmed path is `PRO-S13`, whose journey half waits for chunk 5. Say the word if the
       agent path should become the journey and the person's path the variant.
-- [ ] **Who confirms a watch item's curation now?** (Your item 16, `q-editor-confirm`.)
+- [x] **Who confirms a watch item's curation now?** (Your item 16, `q-editor-confirm`.)
       **Answered 2026-09-21: an agent of a different definition and key confirms, and the item
-      reads machine-confirmed** (D-74). The answer stands. The box is open again because **none
-      of it is built yet**: the review of `645b1c3..2492f80` found this entry describing the
-      build as done. On `main` there is no confirm route; `change_term` and `change_obligation`
-      carry no agent columns, and their `confirmed_by` is a foreign key to a user, so an agent
-      cannot be recorded as the one who confirmed; `regulatory_change.change_type` has no
-      `suggested`, `confirmed_by` or `confirmed_at`; and the console's Change facts detail has no
-      Confirm control. Until that lands, `PUT /changes/{changeId}/obligations` and
-      `PATCH /changes/{changeId}` answer 501 `not_built` to an editor whose call would unmake a
-      confirmation (a link on the first, a flag or a term on the second) and refuse a key outright,
-      and an agent's suggestion keeps reading as a suggestion. Nothing waits on you for it.
-      What the answer settles for the build, of the three things the question asked for: the
-      principal is a confirming agent, with a Confirm control on the console's Change facts
-      detail as the intervention path a person keeps; the write goes through the **watch door**
-      rather than the proposal door and so adds no second exception to the library invariant
-      (`change_term` and `change_obligation` are watch tables behind `watch_write()`, which D-64
-      already separated from the inventory); and it takes no passkey step-up, because a key
-      cannot step up and the scope separation is the gate. `regulatory_change.change_type` is to
-      gain `suggested`, `confirmed_by` and `confirmed_at` in one migration, so a type can be
-      settled like a term or a link.
+      reads machine-confirmed** (D-74). The backend is built (`watch-curation-confirm-backend`,
+      2026-09-24): `POST /changes/{changeId}/confirmation`, the agent and key columns on a
+      change's type, flags, scope terms and obligation links (watch 0002), and the
+      machine-confirmed provenance on every read a bank or the console makes, the roadmap
+      included. The 501 `not_built` answers are gone. The write goes through the **watch door**
+      rather than the proposal door, so it adds no second exception to the library invariant.
+      What differs from the note that stood here: a confirming agent's key never steps up, but
+      a **person** who confirms or overturns a fact does, with a passkey (see the defaults under
+      `watch-curation-confirm-backend` below). The console's Confirm control, its seed and the
+      WAT-S4 journey are `watch-curation-confirm-frontend`'s.
 
       Still worth your eye, but not blocking: a curation confirmation carries no four eyes behind
       it. A proposal's does, through a check constraint on the proposal row; there is no proposal
-      here, so this is the one confirmation in the product resting on the scope separation alone.
-      If an assurance review finds that too thin, the way back is to make curation a proposal
-      like everything else, which costs a queue and nothing else.
+      here, so this is the one confirmation in the product resting on the scope separation and
+      the confirmer-is-not-the-suggester constraint alone. If an assurance review finds that too
+      thin, the way back is to make curation a proposal like everything else, which costs a
+      queue and nothing else.
 
 - [ ] **Should any change still need a person?** (Would change what four eyes means.) Default:
       **no** — every proposal kind may be confirmed by an agent. A carve-out is defensible for a
@@ -852,12 +844,13 @@ Nothing waits for these; each has the default the build took.
 
 ## watch-curation-confirm-backend: a watch fact's confirmation, and who may give it (2026-09-23, D-74, WAT-03, WAT-04)
 
-The backend half of D-74 has landed: `POST /changes/{changeId}/confirmation`, the agent and
-key columns on a change's type, flags, scope terms and obligation links (watch 0002), and the
-machine-confirmed provenance on the change and console reads. The entry above ("Who confirms
-a watch item's curation now?") is therefore out of date on the backend; the console's Confirm
-control, its seed and the WAT-S4 journey are still to come (`watch-curation-confirm-frontend`).
-Nothing blocks. Three defaults were taken; say if any is wrong.
+The backend half of D-74 has landed: `POST /changes/{changeId}/confirmation`, the person,
+agent and key columns on a change's type, flags, scope terms and obligation links (watch
+0002), and the machine-confirmed provenance on the change, feed, console and roadmap reads.
+The bank's change page and feed already say "Machine-confirmed" for an agent's confirmation
+and keep "Confirmed by a library editor" for a person's; the console's Confirm control, its
+seed and the WAT-S4 journey are still to come (`watch-curation-confirm-frontend`). Nothing
+blocks. Four defaults were taken; say if any is wrong.
 
 - [ ] **A person's confirmation needs a fresh passkey.** An agent of another definition is the
       routine confirmer and never steps up (a key cannot). A person holding
@@ -877,9 +870,22 @@ Nothing blocks. Three defaults were taken; say if any is wrong.
       the reads used to show the type of such a change as settled. It matches what the route
       already promised ("stored as a suggestion, whoever sent it") and keeps "confirmed" to
       mean the confirm route was used. Default if you say nothing: it stays a suggestion.
+- [ ] **Nobody confirms a watch fact they filed themselves, a person included.** D-74 says the
+      confirming agent is never the suggesting one. The same rule now holds for people: a
+      library editor who files or corrects a type, a flag, a term or a link is named as its
+      suggester, and the confirm route answers 409 `own_suggestion` if that same person then
+      tries to confirm it; another person, or an agent of another definition, may. A check
+      constraint holds it in the database as it does for agents. Without it, one editor could
+      file a fact and settle it for every bank alone, which nothing on the fact would show.
+      Default if you say nothing: one person cannot file and confirm alone.
 
-Built beyond the brief, for the reviewer: the suggesting **key** is stored beside the
-suggesting agent (`suggested_by_api_key`), so the confirm route can say which refusal it is:
+Built beyond the brief, for the reviewer: the confirming agent names the **type it checked**
+by its key (`changeType: "adopted"`), so a type corrected while the agent was reading is
+refused rather than confirmed unread; and each of the three curation writes locks the
+change's row before it reads what is confirmed, so a confirmation cannot land between a
+call's check and its write (proven with two real sessions). The suggesting **key** is stored
+beside the suggesting agent (`suggested_by_api_key`), so the confirm route can say which
+refusal it is:
 409 `own_suggestion` when the very key that filed a fact tries to confirm it, 409
 `same_agent` when another key of the same agent does. The check constraints refuse both on
 their own. A key bound to no agent names no suggester, and cannot confirm anything. Two notes
