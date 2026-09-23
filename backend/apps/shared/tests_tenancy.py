@@ -129,26 +129,46 @@ class IdentityLookupMode(TestCase):
         finally:
             connection.in_atomic_block = original
 
-    def _callers_of(self, name: str) -> list[str]:
-        """Every production module that calls `name`, as `apps/<path>:<line>`. Migrations,
-        tests and the testing helpers are not production code and are left out."""
+    def _callers_of(self, name: str) -> list[tuple[str, str, int]]:
+        """Every production call of `name`, as (`apps/<path>`, the top-level function or
+        class it sits in, line). Module-level code is `<module>`. Migrations, tests and the
+        testing helpers are not production code and are left out."""
         import ast
         from pathlib import Path
 
         apps_dir = Path(__file__).resolve().parent.parent
-        found: list[str] = []
+        found: list[tuple[str, str, int]] = []
         for path in sorted(apps_dir.rglob("*.py")):
             rel = path.relative_to(apps_dir).as_posix()
             if "/migrations/" in rel or rel.split("/")[-1].startswith("tests_") or rel.endswith("/testing.py"):
                 continue
             tree = ast.parse(path.read_text(encoding="utf-8"))
-            for node in ast.walk(tree):
-                if isinstance(node, ast.Call):
-                    func = node.func
-                    called = func.attr if isinstance(func, ast.Attribute) else func.id if isinstance(func, ast.Name) else None
-                    if called == name:
-                        found.append(f"apps/{rel}:{node.lineno}")
+            for top in tree.body:
+                scope = top.name if isinstance(top, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) else "<module>"
+                for node in ast.walk(top):
+                    if isinstance(node, ast.Call):
+                        func = node.func
+                        called = func.attr if isinstance(func, ast.Attribute) else func.id if isinstance(func, ast.Name) else None
+                        if called == name:
+                            found.append((f"apps/{rel}", scope, node.lineno))
         return found
+
+    @staticmethod
+    def _outside(callers: list[tuple[str, str, int]], allowed: set[str]) -> list[str]:
+        """The calls no entry of `allowed` covers. An entry is a whole module
+        (`apps/<path>`) or one top-level function in it (`apps/<path>::<function>`)."""
+        return [
+            f"{module}::{scope}:{line}"
+            for module, scope, line in callers
+            if module not in allowed and f"{module}::{scope}" not in allowed
+        ]
+
+    def test_a_function_entry_covers_that_function_and_no_other(self) -> None:
+        """What narrowing a module's entry to its functions buys (D-78): a new caller beside
+        an allowed one is named, where a module-wide entry would have waved it through."""
+        allowed = {"apps/a.py", "apps/b.py::door"}
+        callers = [("apps/a.py", "anything", 1), ("apps/b.py", "door", 2), ("apps/b.py", "beside_the_door", 3)]
+        self.assertEqual(self._outside(callers, allowed), ["apps/b.py::beside_the_door:3"])
 
     def test_only_the_auth_layer_calls_identity_lookup(self) -> None:
         allowed = {
@@ -163,7 +183,7 @@ class IdentityLookupMode(TestCase):
             # that row's tenant before it reads one row of the bank's own.
             "apps/home/feed.py",
         }
-        offenders = [caller for caller in self._callers_of("identity_lookup") if caller.rsplit(":", 1)[0] not in allowed]
+        offenders = self._outside(self._callers_of("identity_lookup"), allowed)
         self.assertEqual(offenders, [], f"identity_lookup() is for the auth layer only; allowed: {sorted(allowed)}")
 
     def test_only_record_leaves_the_tenant_zone(self) -> None:
@@ -171,7 +191,7 @@ class IdentityLookupMode(TestCase):
         a tenant (H15), so it belongs to the functions that are the only door into their
         ledger — `record()`, `log_event()` and, since chunk 7, `index_write()` — and to the
         tenancy module itself. A request that wants it for anything else is asking to write
-        outside its own zone.
+        outside its own zone. Every entry below is named, with its reason, in D-78.
 
         `apps/search/indexing.py` is the third door and was reviewed as one (D-65, owner
         item 4): a search chunk is derived data, every chunk in R1 belongs to no tenant,
@@ -179,6 +199,14 @@ class IdentityLookupMode(TestCase):
         `apps/search/sources.py` refuses to read if a bank owns it. Nothing a bank wrote
         can ride out of its zone this way, and no other module may write a chunk at all
         (`apps/search/tests_index_fence.py`).
+
+        `apps/identity/api_keys_logic.py` is allowed three functions and not the module
+        (D-78): resolving a platform key, and the two writes of a platform key. Each asserts
+        the zone the key's own row lives in — no tenant — rather than inheriting whatever
+        the connection last had, and each is reached only by a platform key or by a platform
+        session holding `agent_definitions.manage`, which no bank session can hold. A bank's
+        own key is written and revoked inside its bank and needs no opening, so a new
+        function in that module that calls `clear_tenant()` fails here until it is reviewed.
         """
         allowed = {
             "apps/shared/tenancy.py",
@@ -200,13 +228,17 @@ class IdentityLookupMode(TestCase):
             # The request that carries it may be the first on this connection since a
             # tenant-scoped one, so its own zone is asserted rather than inherited from
             # whatever the last request left active.
-            "apps/identity/api_keys_logic.py",
+            "apps/identity/api_keys_logic.py::resolve_api_key",
+            # Minting and revoking a platform agent key (ID-10, AGT-01, D-78): the row belongs
+            # to no tenant, and both are reached only by a platform session holding
+            # `agent_definitions.manage`, so the zone asserted is the one the caller is in.
+            "apps/identity/api_keys_logic.py::create_agent_key",
+            "apps/identity/api_keys_logic.py::revoke_agent_key",
         }
         offenders = [
-            caller
+            offender
             for name in ("platform_zone", "clear_tenant")
-            for caller in self._callers_of(name)
-            if caller.rsplit(":", 1)[0] not in allowed
+            for offender in self._outside(self._callers_of(name), allowed)
         ]
         self.assertEqual(
             offenders,

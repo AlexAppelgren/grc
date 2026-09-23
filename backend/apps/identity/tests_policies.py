@@ -296,7 +296,7 @@ class ApiKeyAuthClass(TestCase):
     def setUp(self) -> None:
         self.factory = RequestFactory()
         self.tenant = factories.tenant()
-        issued = factories.api_key(self.tenant, scopes=(perms.SCOPE_CHANGES_WRITE,))
+        issued = factories.api_key(self.tenant, scopes=(perms.SCOPE_LIBRARY_READ,))
         self.key = issued.row
         self.plain = issued.plain_key
 
@@ -307,7 +307,7 @@ class ApiKeyAuthClass(TestCase):
             assert principal is not None
             self.assertEqual(principal.kind, PrincipalKind.AGENT)
             self.assertEqual(principal.tenant_id, self.tenant.id)
-            self.assertTrue(principal.has_scope(perms.SCOPE_CHANGES_WRITE))
+            self.assertTrue(principal.has_scope(perms.SCOPE_LIBRARY_READ))
         self.assertIsNone(ApiKeyAuth()(self.factory.get("/", HTTP_AUTHORIZATION="Bearer v1.not.a.key.x")))
 
     def test_last_used_is_throttled_and_expiry_and_revocation_bite(self) -> None:
@@ -322,11 +322,11 @@ class ApiKeyAuthClass(TestCase):
         self.assertIsNone(api_keys_logic.resolve_api_key(self.plain))
         with self.assertRaises(ValidationError):
             api_keys_logic.create_api_key(
-                tenant=self.tenant, actor=factories.user_actor(), created_by=factories.user(), name=" ", scopes=[perms.SCOPE_CHANGES_WRITE], expires_at=None, step_up_assertion_id=None
+                tenant=self.tenant, actor=factories.user_actor(), created_by=factories.user(), name=" ", scopes=[perms.SCOPE_LIBRARY_READ], expires_at=None, step_up_assertion_id=None
             )
         with self.assertRaises(ValidationError):
             api_keys_logic.create_api_key(
-                tenant=self.tenant, actor=factories.user_actor(), created_by=factories.user(), name="x", scopes=[perms.SCOPE_CHANGES_WRITE], expires_at=timezone.now() - timedelta(days=1), step_up_assertion_id=None
+                tenant=self.tenant, actor=factories.user_actor(), created_by=factories.user(), name="x", scopes=[perms.SCOPE_LIBRARY_READ], expires_at=timezone.now() - timedelta(days=1), step_up_assertion_id=None
             )
         with self.assertRaises(ValidationError):
             api_keys_logic.revoke_api_key(tenant=self.tenant, actor=factories.user_actor(), key_id=uuid.uuid4())

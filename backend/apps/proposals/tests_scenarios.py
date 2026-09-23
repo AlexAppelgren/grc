@@ -264,12 +264,16 @@ class ProposalsScenarioTests(ScenarioTestCase):
         """
         # The library vocabulary half (chunk 2): an API key with every scope and a tenant admin
         # holding every tenant permission. Instruments, provisions and obligations follow in
-        # chunk 3 and reuse the same fence.
-        key = factories.api_key(self.tenant, scopes=tuple(sorted(perms.ALL_SCOPES)))
-        agent = {"HTTP_X_API_KEY": key.plain_key}
-        self.assertEqual(self._post("/vocab/flag", {"labels": {"en": "Client money"}}, agent).status_code, 401)
-        self.assertEqual(self.client.patch(f"{V1}/vocab/flag/ai", data={"labels": {"en": "x"}}, content_type="application/json", **agent).status_code, 401)
-        self.assertEqual(self._post("/taxonomy/terms", {"dimension": "regime", "labels": {"en": "Crypto"}}, agent).status_code, 401)
+        # chunk 3 and reuse the same fence. Only a platform key bound to an agent can hold every
+        # scope; a bank's key holds at most the bank's share, so both are tried (ID-S21).
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        every_scope = agents_testing.agent_key(scopes=tuple(sorted(perms.ALL_SCOPES)))
+        bank_key = factories.api_key(self.tenant, scopes=tuple(sorted(perms.TENANT_KEY_SCOPES)))
+        for key in (every_scope, bank_key):
+            agent = {"HTTP_X_API_KEY": key.plain_key}
+            self.assertEqual(self._post("/vocab/flag", {"labels": {"en": "Client money"}}, agent).status_code, 401)
+            self.assertEqual(self.client.patch(f"{V1}/vocab/flag/ai", data={"labels": {"en": "x"}}, content_type="application/json", **agent).status_code, 401)
+            self.assertEqual(self._post("/taxonomy/terms", {"dimension": "regime", "labels": {"en": "Crypto"}}, agent).status_code, 401)
         # A person with every tenant permission gets a proposal, never a row.
         everything = sign_in(self.admin, tenant=self.tenant, step_up=True)
         # Between them the tenant's system roles hold every tenant permission; none of them is

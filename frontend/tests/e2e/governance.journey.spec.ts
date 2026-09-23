@@ -147,10 +147,6 @@ test.describe('governance journeys', () => {
     // named here: the registry is the list, and the closing assertion is that it
     // divides cleanly between the two roles with nothing left over.
     allowFreshContext(apiGuard);
-    // Agent keys is the one chunk 5 console screen whose reads are not served
-    // yet: `c5-platform-agent-keys` builds them and each answers 501 until it
-    // does. The screen itself is walked like every other destination.
-    apiGuard.allow(/\/agent-keys$/, 501, 'the agent key reads are not built yet (c5-platform-agent-keys)');
     const editor = await consoleDestinationsOf(page, LOGINS.editor);
     await signOut(page);
     const platform = await consoleDestinationsOf(page, LOGINS.platform);

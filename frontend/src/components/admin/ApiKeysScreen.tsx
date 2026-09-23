@@ -22,18 +22,15 @@ import { formatDate, formatDateTime } from '@/shared/utils/format';
 // appears once, straight after creation, and never again. Creation asks
 // for a passkey through the api client's step-up prompt.
 
-// The scope constants of backend/apps/shared/permissions.py. None reaches
-// the library. A reference read replaces this list when one exists.
-export const API_KEY_SCOPES = ['agent-runs:write', 'sources:write', 'changes:write', 'proposals:write', 'search:read', 'library:read', 'upcoming:read', 'tenant:read'] as const;
+// The scopes a bank's key may hold (TENANT_KEY_SCOPES in
+// backend/apps/shared/permissions.py), in the design card's order. None
+// reaches the library; the watch writes belong to the platform's own agents
+// and the server refuses them here. A reference read replaces this list when
+// one exists.
+export const API_KEY_SCOPES = ['tenant:read', 'library:read', 'upcoming:read', 'search:read', 'proposals:write'] as const;
 
 function scopeDescription(scope: string, t: Translate): string {
   switch (scope) {
-    case 'agent-runs:write':
-      return t('admin.apiKeys.scope.agent-runs:write');
-    case 'sources:write':
-      return t('admin.apiKeys.scope.sources:write');
-    case 'changes:write':
-      return t('admin.apiKeys.scope.changes:write');
     case 'proposals:write':
       return t('admin.apiKeys.scope.proposals:write');
     case 'search:read':

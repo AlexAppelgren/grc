@@ -55,7 +55,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID-07 | Tenant credential policy: synced passkeys allowed, or attested device-bound authenticators required. It binds new registrations at once and existing passkeys from the admin's notice date; loosening applies at once (D-55) | S | R2 | pending |
 | ID-08 | Tenant session policy: idle and absolute limits within platform maximums | S | R2 | pending |
 | ID-09 | Permissions are code, roles are rows: seeded system roles plus tenant-defined roles; a tenant always keeps one admin | M | R1 | built |
-| ID-10 | Scoped API keys for agents and integrations, shown once, stored hashed, revocable, with last use | M | R1 | built |
+| ID-10 | Scoped API keys for agents and integrations, shown once, stored hashed, revocable, with last use. A bank's key holds reads and `proposals:write` only; a key bound to one of the platform's agents is minted in the console and alone holds the watch writes and `proposals:review` (D-61, D-62) | M | R1 | built |
 | ID-11 | Security log of sign-ins, failures, enrolments, recoveries and key use | M | R1 | built |
 | ID-12 | SSO (OIDC, SAML), verified domains and SCIM as a tenant option. SSO proves identity and never opens a session on its own; with enforcement on it is asked after the passkey at every sign-in (D-58) | C | R3 | pending |
 | ID-13 | Optional IP allow-list per tenant | C | R3 | pending |
@@ -272,19 +272,33 @@ Then the request answers 409 with code "last_admin"
 ### ID-S20 — An API key is shown once, stored hashed and revocable `@integration` `@e2e` (ID-10)
 ```gherkin
 Given an admin with integrations.manage and a fresh step-up assertion
-When they create a key with the scopes "watch.write" and "proposals.write"
+When they create a key with the scopes "library:read" and "proposals:write"
 Then the plain key appears in that one response and nowhere else
 And the row stores a hash, the scopes, created and an empty last used
 When the key is used
 Then last used updates
 When the key is revoked
 Then the next call with it answers 401
+When they ask for "agent-runs:write", "sources:write" or "changes:write"
+Then the request answers 422 with code "unknown_key" naming the scopes a bank's key may hold
+And a bank's key that already holds one works without it, and the security log records "key_scopes_withheld"
+Given a platform admin with agent_definitions.manage and a fresh step-up assertion
+When they read the platform's agent definitions
+Then each is listed by key, with its identifier, its version and whether it is released
+When they create a key bound to one of them, with scopes that may include "proposals:review"
+Then the plain key appears in that one response and nowhere else
+And the row stores its hash, no tenant and the agent
+And the audit event references the step-up assertion
+And the security log records "key_created", "key_used" and "key_revoked" for it
+When the key is revoked
+Then the next call with it answers 401
 ```
 
 ### ID-S21 — No API key scope allows a library edit `@integration` (ID-10, AC-PRO1)
 ```gherkin
-Given a key holding every scope that exists
-When it writes to an instrument, provision or obligation route directly
+Given a platform key bound to an agent, holding every scope that exists
+And a bank's key holding every scope a bank's key may hold
+When either writes to an instrument, provision or obligation route directly
 Then every such route answers 403 or does not exist
 And the only library-bound write it can make is a proposal
 ```

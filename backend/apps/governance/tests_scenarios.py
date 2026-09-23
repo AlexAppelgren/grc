@@ -12,8 +12,9 @@ GET /audit-events (chunk 4).
 
 Operations exercised (the audit-on-write guard reads these names): createProposal,
 approveProposal, createConsoleTenant, updateTenant, createFootprintRequest. ADM-S4 also drives the
-console routes other apps register — the source registry and the platform agent keys —
-by their gate alone; what each one then does is its own app's scenario.
+console routes other apps register — the source registry, the platform agent keys and the
+agent definitions they bind to — by their gate alone; what each one then does is its own
+app's scenario.
 
 Prefixes hosted: ADM, AUD.
 """
@@ -101,6 +102,8 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
         {"name": "Watch sweeper", "agentId": str(_ANY_ID), "scopes": ["changes:write"]},
     ),
     "revokeAgentKey": ("POST", f"/agent-keys/{_ANY_ID}/revoke", {}),
+    # The definitions a key is bound to, read under the same permission (ID-10, AGT-01).
+    "listAgentDefinitions": ("GET", "/agent-definitions", None),
     # The re-verification stamp (chunk 3, INV-S8): a console action on a library record,
     # so a platform_admin is refused it and a library_editor reaches it (and is then asked
     # for a passkey, which is a different refusal).
