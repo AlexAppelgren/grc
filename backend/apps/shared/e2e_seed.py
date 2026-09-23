@@ -390,7 +390,6 @@ def seed_pending_footprint_request(tenants: list[Tenant]) -> int:
 # below carry version 1 only, sit inside tenant A's footprint, are not advice-only and are
 # named by no other spec, so a decision on any of them is a clean version 2 nothing else is
 # watching, and the four journeys never race each other.
-AGENT_LABEL = "Research agent 0.4"
 AGENT_MODEL = "agent pipeline 0.4"
 # The library editor who files PRO-S5's proposal; the second editor decides everything else.
 LIBRARY_EDITOR_EMAIL = "editor@bleqq.test"
@@ -506,10 +505,20 @@ def _propose_obligation_version(
 ) -> None:
     """One agent's proposal for a new version of `obligation`, with a source per changed
     field (PRO-01): the summary in each language, the date, and the scope when it changes
-    one. All four cite the authority's own page, as a real run would."""
+    one. All four cite the authority's own page, as a real run would.
+
+    Filed as the create route files an agent's proposal (AGT-01): by the seeded sweeper's
+    key and its agent, under `agent_run`, an open run of that key, which this opens with
+    that fixed id when a reseed has not already. The watch-sweeper definition's own step
+    `POST /proposals` is the one this stands for."""
     target_id = _obligation_id(obligation)
     if _waiting(ProposalKind.NEW_OBLIGATION_VERSION.value, target_id=target_id):
         return
+    filer, agent = _sweeper_key()
+    AgentRun.objects.get_or_create(
+        pk=agent_run,
+        defaults={"agent": agent, "api_key": filer, "model": AGENT_MODEL, "pipeline_version": "0.4"},
+    )
     payload: dict[str, Any] = {
         "summaries": summaries,
         "original_language": "sv",
@@ -527,9 +536,11 @@ def _propose_obligation_version(
         title=title,
         payload=payload,
         proposer=Proposer(
-            actor=Actor(kind=ActorType.AGENT, id=agent_run, label=AGENT_LABEL),
-            agent_run_id=agent_run,
+            actor=Actor(kind=ActorType.AGENT, id=agent.id, label=agent.key),
+            api_key_id=filer.id,
+            agent_id=agent.id,
         ),
+        agent_run_id=agent_run,
         target_type="obligation",
         target_id=target_id,
         model=AGENT_MODEL,
@@ -949,8 +960,9 @@ def seed_platform_agent_runs() -> tuple[AgentRun, AgentRun]:
     and `AgentRun` are plain tables outside the library fence, so this module writes them
     directly, exactly as `apps/agents/testing.py` does for the backend suite.
 
-    Idempotent on the key's own name and each run's `idempotency_key`: a reseed finds the
-    same three rows rather than opening a second key or a second pair of runs.
+    Idempotent on the key's own name (`_sweeper_key`) and each run's `idempotency_key`: a
+    reseed finds the same three rows rather than opening a second key or a second pair of
+    runs.
 
     `api_key` and `agent_run` are mixed tables (playbook 14): their RLS policy accepts a
     `tenant_id` NULL row only from a session with no tenant active, exactly as a library
@@ -959,16 +971,8 @@ def seed_platform_agent_runs() -> tuple[AgentRun, AgentRun]:
     violates row-level security policy for table "api_key"`, from a session `seed_home_cases`
     had left on tenant B).
     """
-    seed_agent_definitions()
-    agent = _agent("watch-sweeper")
-    # Nothing in this seed authenticates as the key; it exists for the runs' FK alone, so
-    # its plain value is generated and immediately dropped rather than kept anywhere.
-    _plain, prefix, key_hash = tokens.new_api_key()
+    key, agent = _sweeper_key()
     with tenancy.platform_zone():
-        key, _created = ApiKey.objects.get_or_create(
-            name="Watch sweeper (E2E)",
-            defaults={"tenant": None, "agent": agent, "key_prefix": prefix, "key_hash": key_hash, "scopes": list(_WATCH_SCOPES)},
-        )
         closed, _ = AgentRun.objects.update_or_create(
             api_key=key,
             idempotency_key="e2e-seed-run-closed",
@@ -992,6 +996,24 @@ def seed_platform_agent_runs() -> tuple[AgentRun, AgentRun]:
 # The scopes a platform watch key holds in R1 (ID-10, PARALLEL_PLAN 7.2), mirroring
 # `apps/agents/testing.py`'s own list rather than a second literal.
 _WATCH_SCOPES: tuple[str, ...] = ("agent-runs:write", "sources:write", "changes:write", "library:read")
+
+
+def _sweeper_key() -> tuple[ApiKey, Any]:
+    """The watch sweeper's platform key, found by its name or made once, and the agent it is
+    bound to: the key its seeded runs were opened with and its seeded proposals filed by.
+    Nothing in this seed
+    authenticates as the key, so its plain value is generated and immediately dropped
+    rather than kept anywhere. Written in `tenancy.platform_zone()`, as every platform row
+    of a mixed table must be (H15)."""
+    seed_agent_definitions()
+    agent = _agent("watch-sweeper")
+    _plain, prefix, key_hash = tokens.new_api_key()
+    with tenancy.platform_zone():
+        key, _created = ApiKey.objects.get_or_create(
+            name="Watch sweeper (E2E)",
+            defaults={"tenant": None, "agent": agent, "key_prefix": prefix, "key_hash": key_hash, "scopes": list(_WATCH_SCOPES)},
+        )
+    return key, agent
 
 
 def seed_chunk5_sources(closed_run: AgentRun) -> None:

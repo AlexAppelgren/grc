@@ -373,6 +373,14 @@ class SeedIntegrityGuard(TestCase):
                 else:
                     self.assertIsNone(proposal.proposed_by_user, "an agent's proposal names no person, so any editor may decide it")
                     self.assertEqual(proposal.agent_run_id, expected.agent_run)
+                    # agent-flow-run-guards (AGT-01): the run is a real one, of the key and
+                    # the agent that filed the proposal, as the create path requires.
+                    assert proposal.agent_run_id is not None
+                    run = AgentRun.objects.get(pk=proposal.agent_run_id)
+                    self.assertEqual(
+                        (run.api_key_id, run.agent_id),
+                        (proposal.proposed_by_api_key_id, proposal.proposed_by_agent_id),
+                    )
 
     def test_no_proposal_waits_on_the_research_payment_obligation(self) -> None:
         """Its own version 2 is already filed from the fixture (apps/library/seeds/library.py),

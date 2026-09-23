@@ -16,7 +16,6 @@ as a number rather than in production as a slow screen.
 
 from __future__ import annotations
 
-import uuid
 from datetime import date
 from typing import Any
 
@@ -138,7 +137,7 @@ class QueueReads(ScenarioTestCase):
                 "effectiveFromPrecision": "day",
                 "terms": ["legal_entity:bank", "client_category:retail"],
             },
-            proposer=proposer or logic.Proposer(actor=factories.user_actor(), agent_run_id=uuid.uuid4()),
+            proposer=proposer or logic.Proposer(actor=factories.user_actor()),
             target_type="obligation",
             target_id=obligation.id,
             field_sources={
