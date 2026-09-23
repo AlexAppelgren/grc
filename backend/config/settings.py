@@ -803,6 +803,11 @@ if SENTRY_DSN:
 #  8. The WebAuthn RP ID is the exact app host (ADR 0002). A deployed environment that
 #     still says `localhost` would enrol passkeys nobody can use from the real host, so
 #     it refuses to boot until WEBAUTHN_RP_ID and WEBAUTHN_ORIGINS name the host.
+#  9. RATE_LIMITING_ENABLED=false switches every bucket off at once: the sign-in
+#     ceremonies' (ID-02) and search's and Ask's, which cap what one caller spends of the
+#     model budget (NFR-02). Each bucket's own size already refuses to boot below 1, so the
+#     switch is the one way left to turn them off, and it stays for laptops and tests only
+#     (security-review-c7, M2).
 # ---------------------------------------------------------------------------------------
 def _refuse(reason: str) -> None:
     raise ImproperlyConfigured(f"Refusing to boot: {reason}")
@@ -837,6 +842,8 @@ if IS_DEPLOYED_ENVIRONMENT and (
         f"WEBAUTHN_RP_ID={WEBAUTHN_RP_ID!r} / WEBAUTHN_ORIGINS={WEBAUTHN_ORIGINS!r} on deployed "
         f"environment {ENVIRONMENT!r}. Rule 8: set both to the app host (ADR 0002)."
     )
+if IS_DEPLOYED_ENVIRONMENT and not RATE_LIMITING_ENABLED:
+    _refuse(f"RATE_LIMITING_ENABLED=false on deployed environment {ENVIRONMENT!r}. Rule 9.")
 if STORAGE_BACKEND not in {"local", "s3"}:
     _refuse(f"STORAGE_BACKEND={STORAGE_BACKEND!r} is not one of local, s3.")
 
