@@ -25,7 +25,7 @@ from django.core.exceptions import ValidationError
 from apps.proposals import logic as proposals
 from apps.proposals.models import Proposal, ProposalKind
 from apps.taxonomy import tenant_lists_logic as lists
-from apps.taxonomy import terms_logic
+from apps.taxonomy import repoint, terms_logic
 from apps.taxonomy.schemas import VocabularyMerged
 
 
@@ -170,7 +170,7 @@ def propose_merge(
     count = int(getattr(source, "usage_count", 0))
     if dry_run:
         return VocabularyMerged(
-            **{"from": key}, into=into, usage_count=count, repointed=entry.repoint(source, target, dry_run=True), dry_run=True
+            **{"from": key}, into=into, usage_count=count, repointed=repoint.count(entry.repoint(source, target, dry_run=True)), dry_run=True
         )
     proposal, _created = proposals.create(
         kind=ProposalKind.VOCABULARY_MERGE.value,

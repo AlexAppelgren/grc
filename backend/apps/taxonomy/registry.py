@@ -35,7 +35,7 @@ from apps.library.models import (
     Provision,
 )
 from apps.taxonomy import repoint
-from apps.taxonomy.repoint import Link
+from apps.taxonomy.repoint import Link, Moves
 from apps.watch.models import ChangeTerm, RegulatoryChange, Source
 from apps.taxonomy.models import (
     CaseStatusCategory,
@@ -133,7 +133,7 @@ class VocabularyList:
     extra_fields: tuple[str, ...] = ()  # model columns exposed as extra{} (snake_case here)
     proposable: bool = True  # tier 2 only: False means the list is seeded and never proposed
     usage: Callable[[QuerySet[Any]], QuerySet[Any]] = _no_usage
-    repoint: Callable[..., int] = repoint.nothing_to_repoint  # (source, target, *, dry_run) -> records moved
+    repoint: Callable[..., Moves] = repoint.nothing_to_repoint  # (source, target, *, dry_run) -> ids moved and dropped per table
     references: dict[str, str] = field(default_factory=dict)  # extra field -> related list
     links: tuple[Link, ...] = ()  # library lists: every library and watch column holding a value
 

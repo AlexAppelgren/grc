@@ -57,6 +57,7 @@ from apps.taxonomy.seeds import (
     taxonomy_term_specs,
 )
 from apps.taxonomy.registry import REGISTRY
+from apps.taxonomy import repoint
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS, SystemRow, ensure_tenant_vocabularies
 from apps.watch import testing as watch_build
 from apps.watch import write as watch_door
@@ -718,7 +719,7 @@ class LibraryListUsage(ScenarioTestCase):
         # nothing either way.
         conduct, disclosure = DutyType.objects.get(key="conduct"), DutyType.objects.get(key="disclosure")
         preview = REGISTRY["duty_type"].repoint
-        self.assertEqual(preview(conduct, disclosure, dry_run=True), Obligation.objects.filter(duty_type=conduct).count())
+        self.assertEqual(repoint.count(preview(conduct, disclosure, dry_run=True)), Obligation.objects.filter(duty_type=conduct).count())
         with self.assertRaises(RuntimeError):
             preview(conduct, disclosure)
-        self.assertEqual(REGISTRY["rejection_reason"].repoint(conduct, disclosure), 0)
+        self.assertEqual(REGISTRY["rejection_reason"].repoint(conduct, disclosure), {})

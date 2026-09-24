@@ -328,7 +328,8 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         first_tagging = Tagging.objects.filter(tag=custody).order_by("id").first()  # ordering: any one of the tagged subjects will do
         assert first_tagging is not None
         shared_subject = first_tagging.subject_id
-        Tagging.objects.create(tenant=self.tenant, tag=svcs, subject_type="obligation", subject_id=shared_subject)
+        twin = Tagging.objects.create(tenant=self.tenant, tag=svcs, subject_type="obligation", subject_id=shared_subject)
+        moving = sorted(str(pk) for pk in Tagging.objects.filter(tag=svcs).exclude(pk=twin.pk).values_list("pk", flat=True))
         before = AuditEvent.objects.count()
         preview = self._preview("/vocab/tenant_tag/custody_svcs/merge?dryRun=true", {"into": "custody"}, admin)
         self.assertEqual(preview.status_code, 200, preview.content)
@@ -353,6 +354,12 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(event.after["into"], "custody")
         self.assertEqual(event.after["repointed"], 3)
         self.assertEqual(event.before["from"], "custody_svcs")
+        # The audit row names every tagging that moved and the twin that went (H23), so
+        # which records carried the merged-away tag can be rebuilt from the log alone.
+        rows = event.after["rows"]["tagging"]
+        self.assertEqual((sorted(rows["moved"]), rows["dropped"]), (moving, [str(twin.id)]))
+        self.assertEqual(set(map(str, Tagging.objects.filter(pk__in=moving, tag=custody).values_list("pk", flat=True))), set(moving))
+        self.assertFalse(Tagging.objects.filter(pk=twin.pk).exists())
 
     def test_voc_s6(self) -> None:
         """VOC-S6
