@@ -111,7 +111,8 @@ test.describe('identity journeys', () => {
 
       await signOut(page);
 
-      // The passkey just created is the only way back in.
+      // The passkey just created is the only way back in, from the public page's Sign in.
+      await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).click();
       await page.getByRole('button', { name: 'Sign in with a passkey' }).click();
       await expect(page.locator('[data-who-panel]')).toBeVisible();
       await expect(page.getByRole('heading', { level: 1, name: 'What is coming, and where we stand' })).toBeVisible();
