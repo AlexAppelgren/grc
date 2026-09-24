@@ -52,6 +52,8 @@ export const LOGINS = {
   auditor: 'auditor@example-bank.test',
   anna: 'anna@example-bank.test',
   secondBankAdmin: 'admin@second-bank.test',
+  /** Tenant B's second person: approves the scope change its admin requests (FP-S8). */
+  secondBankApprover: 'approver@second-bank.test',
   /** Platform staff, no tenant: the console signs in as these. */
   editor: 'editor@bleqq.test',
   /** The second library editor, so the console can keep four eyes on a proposal. */
@@ -63,6 +65,8 @@ export const LOGINS = {
   agentKeys: 'agent-keys@bleqq.test',
   /** The one login whose own `locale` is Swedish (WAT-S2); read-only, so not reserved. */
   readerSv: 'reader-sv@example-bank.test',
+  /** Reserved for I18N-S3: it switches this member's own interface language, which every session of theirs follows. */
+  language: 'language@example-bank.test',
 } as const;
 
 export const ANNA_INVITE_TOKEN = 'e2e-invite-anna';
@@ -130,6 +134,10 @@ export function restrictedScreen(page: Page) {
 }
 
 export async function signOut(page: Page): Promise<void> {
+  // Settle first: a screen still loading its data (Today reads the briefing once
+  // GET /home is in) would send its next request after the session had ended,
+  // and that request answers 401.
+  await expect(page.locator('[data-loading-state]')).toHaveCount(0);
   // The width decides, as COMPACT_QUERY does: below 1024 px the account lives
   // in the More sheet; from 1024 px in the rail's account menu (open the
   // account row first, then choose the menu item). [data-who-panel] marks the

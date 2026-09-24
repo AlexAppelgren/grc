@@ -1,0 +1,23 @@
+{
+  "calendarFeeds.title": "Calendar feeds",
+  "calendarFeeds.lede": "The roadmap in your own calendar, updated as dates move.",
+  "calendarFeeds.newFeed": "New feed",
+  "calendarFeeds.addressTitle": "Copy this address into your calendar",
+  "calendarFeeds.addressBody": "It is shown once and never again. Anyone who has it can see which regulatory changes your bank has open work on, so revoke it here if it leaks.",
+  "calendarFeeds.copy": "Copy address",
+  "calendarFeeds.copied": "Copied.",
+  "calendarFeeds.limitReached": "You already have as many feeds as one person can hold. Revoke one you no longer use first.",
+  "calendarFeeds.created": "Created {date}",
+  "calendarFeeds.lastFetched": "Last fetched {date}",
+  "calendarFeeds.neverFetched": "Never fetched",
+  "calendarFeeds.revokedOn": "Revoked {date}",
+  "calendarFeeds.active": "Active",
+  "calendarFeeds.revoked": "Revoked",
+  "calendarFeeds.revoke": "Revoke",
+  "calendarFeeds.revokeFeed": "Revoke the feed created {date}",
+  "calendarFeeds.revokeTitle": "Revoke the feed created {date}?",
+  "calendarFeeds.revokeBody": "The address stops working at once, and your calendar stops updating at its next fetch. You can create a new feed at any time.",
+  "calendarFeeds.emptyTitle": "No calendar feeds",
+  "calendarFeeds.emptyBody": "Create one to see the roadmap in your calendar.",
+  "calendarFeeds.errorTitle": "Could not load your feeds"
+}

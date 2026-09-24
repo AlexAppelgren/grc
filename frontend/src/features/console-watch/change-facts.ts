@@ -4,6 +4,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 import { byOrder, type PresentedPill } from '@/features/shared/presentation-types';
 import { slotTone } from '@/features/shared/tone-by-kind';
+import { machineConfirmedBy, type FactProvenance } from '@/features/watch/change-presentation';
 import type { Translate } from '@/shared/i18n';
 import { api } from '@/shared/utils/api-client';
 import { formatDateTime, formatPartialDate, type DatePrecision, type FormatContext } from '@/shared/utils/format';
@@ -82,10 +83,15 @@ export function presentConsoleChange(row: ConsoleChangeRow, t: Translate): Prese
   if (hasSuggestedFact(row)) {
     pills.push({ key: 'suggested', label: t('console.changeFacts.suggestedMarker'), tone: slotTone.suggested, order: CONSOLE_CHANGE_SLOT_ORDER.suggested });
   }
+  // Once nothing is left to confirm, a machine's confirmation of any fact keeps
+  // a label of its own: only a person's reads plainly confirmed (D-74).
+  const facts = [row.changeType, ...row.flags, ...row.terms, ...row.obligations];
   pills.push(
     row.unconfirmedCount > 0
       ? { key: 'unconfirmed', label: t('console.changeFacts.factsToConfirm', { count: row.unconfirmedCount }), tone: slotTone.factsToConfirm, order: CONSOLE_CHANGE_SLOT_ORDER.unconfirmed }
-      : { key: 'confirmed', label: t('console.changeFacts.confirmed'), tone: slotTone.confirmed, order: CONSOLE_CHANGE_SLOT_ORDER.unconfirmed },
+      : facts.some((fact) => fact.confirmedOrigin === 'agent')
+        ? { key: 'machine-confirmed', label: t('watch.row.machineConfirmed'), tone: slotTone.machineConfirmed, order: CONSOLE_CHANGE_SLOT_ORDER.unconfirmed }
+        : { key: 'confirmed', label: t('console.changeFacts.confirmed'), tone: slotTone.confirmed, order: CONSOLE_CHANGE_SLOT_ORDER.unconfirmed },
   );
   return pills.sort(byOrder);
 }
@@ -105,18 +111,25 @@ export function firstSeen(row: ConsoleChangeRow, t: Translate, ctx: FormatContex
 }
 
 /**
- * "Suggested by the agent, confidence 0.86", or the marker alone when nobody
- * recorded a confidence. The number is the model's own and orders a list; it
+ * "Suggested by watch-sweeper, confidence 0.86", naming the agent when the
+ * read says which one. The number is the model's own and orders a list; it
  * says nothing about whether the fact is right, which is why a confirmed fact
- * reads as confirmed instead.
+ * says who confirmed it instead: both agents when a machine did, and a
+ * person only when the server says a person did, so a confirmation that does
+ * not say who gave it never reads as a person's (D-74).
  */
-export function factProvenance(fact: { confidence: number | null; suggested: boolean }, t: Translate): string {
-  if (!fact.suggested) return t('console.changeFacts.factConfirmed');
-  if (fact.confidence === null) return t('console.changeFacts.suggestedMarker');
-  return t('console.changeFacts.suggestedWithConfidence', { confidence: fact.confidence.toFixed(2) });
+export function factProvenance(fact: FactProvenance & { confidence: number | null; suggested: boolean }, t: Translate): string {
+  if (!fact.suggested) {
+    if (fact.confirmedOrigin === 'user') return t('console.changeFacts.confirmedByPerson');
+    return machineConfirmedBy([fact], t) ?? t('watch.row.machineConfirmed');
+  }
+  const agent = fact.suggestedByAgent?.key;
+  if (fact.confidence === null) return agent ? t('console.changeFacts.suggestedByAgent', { agent }) : t('console.changeFacts.suggestedMarker');
+  const confidence = fact.confidence.toFixed(2);
+  return agent ? t('console.changeFacts.suggestedBy', { agent, confidence }) : t('console.changeFacts.suggestedWithConfidence', { confidence });
 }
 
 /** The same sentence for an obligation link, whose confirmation is a flag rather than a marker. */
 export function linkProvenance(link: ObligationLink, t: Translate): string {
-  return factProvenance({ confidence: link.confidence, suggested: !link.confirmed }, t);
+  return factProvenance({ ...link, suggested: !link.confirmed }, t);
 }

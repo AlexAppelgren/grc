@@ -5,9 +5,9 @@ import { tokenStore } from '@/shared/utils/api-client';
 
 import * as watch from './api';
 
-// The watch reads: the routes they call, the query they send and the page
-// they hand back. Nothing here reshapes the server's answer, because the
-// generated types are the screens' types.
+// The watch reads and this bank's own writes on its case: the routes they
+// call, what they send and what they hand back. Nothing here reshapes the
+// server's answer, because the generated types are the screens' types.
 
 describe('watch api', () => {
   beforeEach(() => {
@@ -44,6 +44,27 @@ describe('watch api', () => {
     const sent = installAdapter(() => ({ status: 200, data: [] }));
     expect(await watch.getSourceCoverage()).toEqual([]);
     expect(sent[0]?.path).toBe('/api/v1/sources/coverage');
+  });
+
+  it('saves this bank’s own wording and confirms the draft, both on the change’s case', async () => {
+    const saved = { caseId: 'case-1', changeId: 'c-1', text: 'Ours.', confirmed: true };
+    const sent = installAdapter(() => ({ status: 200, data: saved }));
+    expect(await watch.saveSoWhat('c-1', 'Ours.')).toEqual(saved);
+    await watch.confirmSoWhat('c-1');
+    expect(sent.map((s) => [s.method, s.path, s.body])).toEqual([
+      ['put', '/api/v1/changes/c-1/so-what', { text: 'Ours.' }],
+      ['post', '/api/v1/changes/c-1/so-what/confirm', null],
+    ]);
+  });
+
+  it('accepts and removes a suggested link on this bank’s case, never on the library’s link', async () => {
+    const sent = installAdapter((request) => ({ status: request.method === 'post' ? 201 : 200, data: { obligationId: 'ob-1' } }));
+    expect((await watch.acceptCaseObligationLink('c-1', 'ob-1')).obligationId).toBe('ob-1');
+    await watch.removeCaseObligationLink('c-1', 'ob-1');
+    expect(sent.map((s) => [s.method, s.path, s.body])).toEqual([
+      ['post', '/api/v1/changes/c-1/case/obligation-links', { obligationId: 'ob-1' }],
+      ['delete', '/api/v1/changes/c-1/case/obligation-links/ob-1', null],
+    ]);
   });
 
   it('reads the scope terms of one dimension with the ids the feed filters on', async () => {

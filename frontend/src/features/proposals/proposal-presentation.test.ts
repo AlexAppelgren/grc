@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { createT, type Locale } from '@/shared/i18n';
 
 import {
+  agentCorrectionLine,
+  decisionLine,
+  decisionNoteLine,
   fieldSourceLabel,
   fieldSourceRows,
-  isMineOf,
   isObligationVersion,
   isVocabularyKind,
   kindLabel,
@@ -16,14 +18,15 @@ import {
   sourceLine,
   statusLabel,
   statusTone,
+  targetLine,
   vocabularyPayloadOf,
 } from './proposal-presentation';
-import type { ProposalRow } from './types';
+import type { ProposalQueueRow } from './types';
 
 const t = createT('en');
 const langName = (code: string) => new Intl.DisplayNames(['en' satisfies Locale], { type: 'language' }).of(code) ?? code;
 
-function row(overrides: Partial<ProposalRow> = {}): ProposalRow {
+function row(overrides: Partial<ProposalQueueRow> = {}): ProposalQueueRow {
   return {
     id: 'p-1',
     kind: 'new_obligation_version',
@@ -37,19 +40,27 @@ function row(overrides: Partial<ProposalRow> = {}): ProposalRow {
     scopeSuggestion: [],
     sourceLabel: 'Finansinspektionen, board decision',
     sourceUrl: 'https://example.test/',
+    riskFlags: [],
     effectiveFrom: '2026-10-01',
     origin: 'agent',
     agentRunId: 'run-1',
     model: 'agent pipeline 0.4',
     proposedBy: null,
+    proposedByAgent: { key: 'watch-sweeper', version: 1 },
+    fromOrganisation: false,
     reviewedBy: null,
+    reviewedByAgent: null,
+    correctedBy: null,
+    correctedByAgent: null,
+    target: null,
+    isMine: false,
     reviewedAt: null,
     rejectionCode: '',
     reviewNote: '',
     appliedAt: null,
     createdAt: '2026-09-16T07:12:00Z',
     ...overrides,
-  } as ProposalRow;
+  } as ProposalQueueRow;
 }
 
 describe('kind and status', () => {
@@ -58,6 +69,13 @@ describe('kind and status', () => {
     for (const kind of ['vocabulary_create', 'vocabulary_relabel', 'vocabulary_retire', 'vocabulary_restore', 'vocabulary_merge', 'term_create', 'term_update']) {
       expect(kindLabel(kind, t)).toBe('Vocabulary');
     }
+  });
+
+  it('names each kind of new record by its own label', () => {
+    expect(kindLabel('new_instrument', t)).toBe('New instrument');
+    expect(kindLabel('new_obligation', t)).toBe('New obligation');
+    expect(kindLabel('new_provision', t)).toBe('New provision');
+    expect(kindLabel('new_provision_version', t)).toBe('New provision version');
   });
 
   it('falls back for a kind the catalog does not know, rather than throwing', () => {
@@ -76,24 +94,22 @@ describe('kind and status', () => {
 
 describe('presentProposal', () => {
   it('always carries a kind and a status pill, in that order', () => {
-    const pills = presentProposal(row(), false, t);
+    const pills = presentProposal(row(), t);
     expect(pills.map((p) => p.key)).toEqual(['kind', 'status']);
     expect(pills[0]?.tone).toBe('notice');
   });
 
-  it('adds a positive "Yours" pill last, only when the reader made the proposal', () => {
-    const mine = presentProposal(row(), true, t);
-    expect(mine.at(-1)).toMatchObject({ key: 'yours', label: 'Yours', tone: 'positive' });
-    expect(presentProposal(row(), false, t).some((p) => p.key === 'yours')).toBe(false);
+  it('adds a warning "Flagged" pill after the status when the screen flagged a text, and none otherwise', () => {
+    const flagged = presentProposal(row({ riskFlags: ['embedded_instructions'], isMine: true }), t);
+    expect(flagged.map((p) => p.key)).toEqual(['kind', 'status', 'flagged', 'yours']);
+    expect(flagged[2]).toMatchObject({ label: 'Flagged', tone: 'warning' });
+    expect(presentProposal(row({ riskFlags: [] }), t).some((p) => p.key === 'flagged')).toBe(false);
   });
-});
 
-describe('isMineOf', () => {
-  it('is true only when the signed-in reader is the named proposer', () => {
-    expect(isMineOf(row({ proposedBy: { id: 'u-1', name: 'Kari Nygaard' } }), 'u-1')).toBe(true);
-    expect(isMineOf(row({ proposedBy: { id: 'u-1', name: 'Kari Nygaard' } }), 'u-2')).toBe(false);
-    expect(isMineOf(row({ proposedBy: null }), 'u-1')).toBe(false);
-    expect(isMineOf(row({ proposedBy: { id: 'u-1', name: 'Kari Nygaard' } }), null)).toBe(false);
+  it('adds a positive "Yours" pill last, only when the server says the reader filed it', () => {
+    const mine = presentProposal(row({ isMine: true }), t);
+    expect(mine.at(-1)).toMatchObject({ key: 'yours', label: 'Yours', tone: 'positive' });
+    expect(presentProposal(row({ isMine: false, proposedBy: { id: 'u-1', name: 'Kari Nygaard' } }), t).some((p) => p.key === 'yours')).toBe(false);
   });
 });
 
@@ -102,16 +118,67 @@ describe('proposerLine', () => {
     expect(proposerLine(row({ proposedBy: { id: 'u-1', name: 'Kari Nygaard' } }), t)).toBe('Kari Nygaard');
   });
 
-  it('names the agent run by its model when nobody is named but an agent run is', () => {
-    expect(proposerLine(row({ proposedBy: null, agentRunId: 'run-1', model: 'agent pipeline 0.4' }), t)).toBe('agent pipeline 0.4');
+  it('names an agent by the model that drafted it', () => {
+    expect(proposerLine(row({ model: 'agent pipeline 0.4' }), t)).toBe('agent pipeline 0.4');
   });
 
-  it('falls back to the organisation phrase when neither a person nor an agent run is named', () => {
-    expect(proposerLine(row({ proposedBy: null, agentRunId: null, model: '' }), t)).toBe('A member of an organisation');
+  it('uses the organisation phrase whenever the server says a bank made it, agent run or not', () => {
+    expect(proposerLine(row({ fromOrganisation: true, agentRunId: 'run-1', model: 'agent pipeline 0.4' }), t)).toBe('A member of an organisation');
+    expect(proposerLine(row({ fromOrganisation: true, agentRunId: null, model: '' }), t)).toBe('A member of an organisation');
   });
 
   it('names the agent run generically when it named no model', () => {
-    expect(proposerLine(row({ proposedBy: null, agentRunId: 'run-1', model: '' }), t)).toBe('An agent run');
+    expect(proposerLine(row({ model: '' }), t)).toBe('An agent run');
+  });
+});
+
+describe('targetLine', () => {
+  it('names the record by its own title and instrument, and nothing for a vocabulary change', () => {
+    const target = { id: 'obl-1', title: 'Pay for research only under the permitted models', referenceLabel: 'Third-party payments', instrumentShortName: 'FFFS 2017:2' };
+    expect(targetLine(row({ target }), t)).toBe('Pay for research only under the permitted models · FFFS 2017:2');
+    expect(targetLine(row({ target: { ...target, title: '', instrumentShortName: '' } }), t)).toBe('Third-party payments');
+    expect(targetLine(row({ target: null }), t)).toBeNull();
+  });
+});
+
+describe('the decision', () => {
+  const date = (iso: string) => iso.slice(0, 10);
+  const agent = { key: 'library-confirmer', version: 1 };
+  const person = { id: 'u-2', name: 'Kari Nygaard' };
+
+  it('reads an agent\'s approval as machine-confirmed, naming the agent, and its note as the agent\'s', () => {
+    const decided = row({ status: 'approved', appliedAt: '2026-09-17T10:14:00Z', reviewedAt: '2026-09-17T10:14:00Z', reviewedByAgent: agent, reviewNote: 'Matches the source.' });
+    expect(decisionLine(decided, date, t)).toBe('Applied 2026-09-17 by the agent library-confirmer, machine-confirmed.');
+    expect(decisionNoteLine(decided, t)).toBe("The agent's note: Matches the source.");
+  });
+
+  it('names the agent that corrected the payload as an agent, and nobody when none did', () => {
+    expect(agentCorrectionLine(row({ status: 'approved', correctedByAgent: agent }), t)).toBe('The agent library-confirmer corrected the proposal before applying it.');
+    expect(agentCorrectionLine(row({ status: 'approved', correctedBy: person }), t)).toBeNull();
+  });
+
+  it('names the agent that rejected it', () => {
+    const decided = row({ status: 'rejected', reviewedAt: '2026-09-17T10:14:00Z', reviewedByAgent: agent, reviewNote: 'The source is a draft.' });
+    expect(decisionLine(decided, date, t)).toBe('Rejected 2026-09-17 by the agent library-confirmer.');
+    expect(decisionNoteLine(decided, t)).toBe("The agent's note: The source is a draft.");
+  });
+
+  it('names a person who decided it, and labels their note to the proposer', () => {
+    const approved = row({ status: 'approved', appliedAt: '2026-09-17T10:14:00Z', reviewedBy: person, reviewNote: 'Checked.' });
+    expect(decisionLine(approved, date, t)).toBe('Applied 2026-09-17 by Kari Nygaard.');
+    expect(decisionNoteLine(approved, t)).toBe('Note to the proposer: Checked.');
+    expect(decisionLine(row({ status: 'rejected', reviewedAt: '2026-09-17T10:14:00Z', reviewedBy: person }), date, t)).toBe('Rejected 2026-09-17 by Kari Nygaard.');
+  });
+
+  it('never interpolates an empty name when a decided row names nobody', () => {
+    expect(decisionLine(row({ status: 'approved', appliedAt: '2026-09-17T10:14:00Z' }), date, t)).toBe('Applied 2026-09-17.');
+    expect(decisionLine(row({ status: 'approved', appliedAt: '2026-09-17T10:14:00Z', reviewedBy: { id: 'u-2', name: '' } }), date, t)).toBe('Applied 2026-09-17.');
+    expect(decisionLine(row({ status: 'rejected', reviewedAt: '2026-09-17T10:14:00Z' }), date, t)).toBe('Rejected 2026-09-17.');
+  });
+
+  it('says nothing while the proposal is open, and no note when there is none', () => {
+    expect(decisionLine(row({ status: 'open' }), date, t)).toBeNull();
+    expect(decisionNoteLine(row({ status: 'approved', reviewNote: '' }), t)).toBeNull();
   });
 });
 
@@ -128,6 +195,8 @@ describe('payload readers', () => {
     expect(isObligationVersion('vocabulary_create')).toBe(false);
     expect(isVocabularyKind('vocabulary_relabel')).toBe(true);
     expect(isVocabularyKind('new_obligation_version')).toBe(false);
+    expect(isVocabularyKind('new_obligation')).toBe(false);
+    expect(isVocabularyKind('term_update')).toBe(true);
   });
 
   it('reads the obligation-version payload only when it carries summaries', () => {

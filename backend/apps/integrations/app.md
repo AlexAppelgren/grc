@@ -17,6 +17,16 @@ nothing is delivered twice as a new event.
 Deliberately simplified: the whole app is R3 (chunk 13). Ticket export is a
 Could.
 
+PRD 0.5 (ACC-05, ADR 0055) adds the MCP server, which is how a bank's own agents
+reach everything above. It is **one router over the endpoints that already
+exist**: the same authentication classes, the same `@requires_scope` gates, the
+same logic modules and the same pagination, with no read path of its own, so a
+bank that prefers the REST API directly gets identical guarantees. Its tool list
+follows the credential. Through R2 every agent access credential is read-only and
+a mutating route answers 403 `read_only_credential`. The calls are bounded like
+any other: pagination as everywhere, a rate limit per credential, and model calls
+counted against the tenant's monthly budget cap and stopped by its AI off switch.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -26,6 +36,8 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | INT-01 | Signed webhooks with a delivery log, from a transactional outbox | S | R3 | pending |
 | INT-02 | Ticket export for actions | C | R3 | pending |
 | INT-03 | Audit log stream to the customer's SIEM | S | R3 | pending |
+| ACC-05 | An MCP server over the same API: same authentication, same scope gates, same logic, same pagination, no read path of its own. Its tool list follows the credential, and every agent access credential is read-only through R2 | M | R2 | pending |
+| ACC-09 | Limits: pagination as everywhere, a rate limit per credential, and model calls counted against the tenant's monthly budget cap and stopped by its AI off switch | M | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -92,4 +104,29 @@ And the stream carries record ids and summaries, never evidence content
 Given a subscription filtered on the change type key "amendment"
 When the admin renames the label to "Amending act"
 Then the subscription still matches and its stored filter is unchanged
+```
+
+### ACC-S7 — The MCP server is one router over the same gates, and every credential is read-only `@integration` (ACC-05, AC-ACC4)
+```gherkin
+Given an agent access credential and the MCP server
+When it lists tools
+Then the list holds only the tools its scopes reach, and a credential without tenant:read is offered no register tool
+When it calls a tool
+Then the request passes the same authentication class and the same scope gate as the REST route behind it, and returns the same body
+When it calls any mutating route, by MCP or directly
+Then the request answers 403 "read_only_credential"
+And no scope an agent access credential may hold writes anything
+```
+
+### ACC-S8 — Pagination, the rate limit, the budget cap and the AI off switch bound every call `@integration` (ACC-09)
+```gherkin
+Given an entry whose scope holds 250 obligations
+When it lists them without a page size
+Then 20 are returned, and a page size of 500 is refused with the maximum named
+When it exceeds the per-credential rate limit
+Then the request answers 429 and the security log records it
+When the tenant's monthly budget cap is reached
+Then a what-applies call returns its list with no summary and the reason says the cap
+When the tenant's AI off switch is on
+Then no model call is made for that tenant and the list is still returned
 ```

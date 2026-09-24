@@ -9,7 +9,7 @@ import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing
 import { tokenStore } from '@/shared/utils/api-client';
 
 import { ObligationScreen, diffSentence, effectiveIn, languageChoices, originalLanguage, textIn } from './ObligationScreen';
-import type { LocalizedText, ObligationDetail, VersionDiff } from '@/features/library/types';
+import type { LocalizedText, ObligationDetail, ObligationVersionRow, VersionDiff } from '@/features/library/types';
 import { defaultFormatContext } from '@/shared/utils/format';
 
 // The obligation card (design/screens/tenant-obligation.html): the header
@@ -21,6 +21,34 @@ const t = createT('en');
 
 const sv: LocalizedText = { text: 'Investeringsanalys från tredje part får tas emot endast…', language: 'sv', isOriginal: true, isMachine: false };
 const en: LocalizedText = { text: 'Research from third parties may be received only if…', language: 'en', isOriginal: false, isMachine: true };
+
+// Version 1 was seeded, so nobody approved it; version 2 a person approved.
+// Every instant is fixed: nothing on this card reads today's date.
+const nobody = { verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null };
+const seeded: ObligationVersionRow = {
+  versionNumber: 1,
+  effectiveFrom: null,
+  effectiveTo: { date: '2026-09-30', precision: 'day' },
+  approvedAt: null,
+  ...nobody,
+};
+const byPerson: ObligationVersionRow = {
+  versionNumber: 2,
+  effectiveFrom: { date: '2026-10-01', precision: 'day' },
+  effectiveTo: null,
+  approvedAt: '2026-08-17T14:02:11Z',
+  verifiedOrigin: 'user',
+  confirmedByAgent: null,
+  proposedByAgent: null,
+};
+// The same version 2, proposed by one agent and confirmed by an independent one.
+const byAgents: ObligationVersionRow = {
+  ...byPerson,
+  verifiedOrigin: 'agent',
+  confirmedByAgent: { id: 'ag-2', key: 'library-confirmer' },
+  proposedByAgent: { id: 'ag-1', key: 'watch-sweeper' },
+};
+const MACHINE_CONFIRMED = 'Machine-confirmed 17 Aug 2026: proposed by watch-sweeper, confirmed by library-confirmer';
 
 const research: ObligationDetail = {
   id: 'ob-1',
@@ -51,11 +79,8 @@ const research: ObligationDetail = {
   outsideReason: [],
   summary: en,
   translations: [sv, en],
-  version: { versionNumber: 1, effectiveFrom: null, effectiveTo: { date: '2026-09-30', precision: 'day' }, approvedAt: null },
-  versions: [
-    { versionNumber: 1, effectiveFrom: null, effectiveTo: { date: '2026-09-30', precision: 'day' }, approvedAt: null },
-    { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' }, effectiveTo: null, approvedAt: '2026-09-17T14:02:11Z' },
-  ],
+  version: seeded,
+  versions: [seeded, byPerson],
   related: [
     {
       id: 'ob-2',
@@ -73,6 +98,7 @@ const research: ObligationDetail = {
     createdAt: '2026-03-12T08:45:03Z',
     createdOrigin: 'agent',
     createdModel: 'agent pipeline 0.3',
+    ...nobody,
   },
 };
 
@@ -115,6 +141,9 @@ function serve(answer: ObligationDetail | number) {
   return installAdapter((sent) => {
     if (sent.path === '/api/v1/me') return { status: 200, data: ME };
     if (sent.path.endsWith('/diff')) return { status: 200, data: versionDiff };
+    // The record's "Reported problems" (AUD-03): the bank has filed none on it.
+    if (sent.path === '/api/v1/problem-reports') return { status: 200, data: { items: [], total: 0 } };
+    if (sent.path === '/api/v1/obligations/ob-1/changes') return { status: 200, data: { items: [], total: 0, openCount: 0 } };
     if (sent.path.endsWith('/problem-reports')) return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
     if (typeof answer === 'number') return { status: answer, data: { detail: 'no', code: answer === 404 ? 'not_found' : 'server_error' } };
     // "As of" a date before version 2 is the same record read again; the
@@ -192,8 +221,12 @@ describe('ObligationScreen', () => {
     expect(document.querySelectorAll('[data-version-row]')).toHaveLength(2);
     expect(screen.getByRole('link', { name: 'Disclose all costs and charges' })).toHaveAttribute('href', '/inventory/obligations/ob-2');
 
+    // The reforms filed against this duty, read for this bank (WAT-04); none here.
+    expect(within(document.querySelector('[data-related-changes]') as HTMLElement).getByRole('heading', { level: 2, name: 'Related changes' })).toBeInTheDocument();
+
     // Nothing on the card claims the duty applies here, or that the bank complies.
-    expect(document.querySelectorAll('[data-pending-panel]')).toHaveLength(2);
+    expect(document.querySelectorAll('[data-pending-panel]')).toHaveLength(1);
+    expect(document.querySelector('[data-pending-panel="register"]')).not.toBeNull();
   });
 
   it('labels the machine translation and puts the original back behind a chip', async () => {
@@ -222,11 +255,22 @@ describe('ObligationScreen', () => {
     await waitFor(() => expect(document.querySelector('[data-legal-text] [lang="sv"]')?.textContent).toBe(sv.text));
   });
 
-  it('reads a record with no title, no regime, no lineage and nobody named as verifier', async () => {
+  it('reads "Standard" in the binding slot of a duty under a standard, never "Guidance, comply or explain"', async () => {
+    serve({ ...research, bindingLevel: { key: 'standard', kind: 'standard', label: 'Standard edition' }, binding: false });
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1 });
+    const header = document.querySelectorAll('[data-header-pills] [data-pill]');
+    expect([...header].map((pill) => [pill.textContent, pill.getAttribute('data-pill')])).toEqual([
+      ['FFFS 2017:2', 'brand'],
+      ['Securities', 'information'],
+      ['Standard', 'information'],
+    ]);
+  });
+
+  it('reads a record with no title, no lineage and nobody named as verifier', async () => {
     serve({
       ...research,
       title: null,
-      regime: null,
       productScope: '',
       triggerFrequency: '',
       retention: '',
@@ -239,10 +283,100 @@ describe('ObligationScreen', () => {
     });
     renderIn(<ObligationScreen obligationId="ob-1" />);
     await screen.findByRole('heading', { level: 1, name: 'Third-party payments' });
-    expect(screen.queryByText('Securities')).not.toBeInTheDocument();
     expect(screen.getByText('Not verified yet')).toBeInTheDocument();
     expect(screen.getByText('The library files no other duty beside this one.')).toBeInTheDocument();
     expect(screen.getByText(/^12 Mar 2026.*through proposal review$/)).toBeInTheDocument();
+  });
+
+  describe('a version independent agents confirmed', () => {
+    const sara = { id: 'u-9', name: 'Sara Lindqvist' };
+    const confirmedByAgents = { verifiedOrigin: 'agent', confirmedByAgent: byAgents.confirmedByAgent, proposedByAgent: byAgents.proposedByAgent };
+
+    async function open(record: ObligationDetail) {
+      serve(record);
+      renderIn(<ObligationScreen obligationId="ob-1" />);
+      await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    }
+
+    it('reads machine-confirmed where a person\'s verification would, when a person last verified the record before it', async () => {
+      // Sara verified the record on 30 June; the agents confirmed version 2 in August, and it is in force.
+      await open({
+        ...research,
+        version: byAgents,
+        versions: [seeded, byAgents],
+        provenance: { ...research.provenance, verifiedBy: sara, ...confirmedByAgents },
+      });
+      const verified = document.querySelector('[data-last-verified]');
+      expect(verified?.textContent).toBe(MACHINE_CONFIRMED);
+      expect(verified).toHaveAttribute('data-machine-confirmed');
+      expect(screen.queryByText(/Sara Lindqvist/)).not.toBeInTheDocument();
+      expect(document.querySelector('[data-version-row="2"] [data-machine-confirmed]')?.textContent).toBe(MACHINE_CONFIRMED);
+      expect(document.querySelector('[data-version-row="1"] [data-machine-confirmed]')).toBeNull();
+    });
+
+    it('says in the "Show what changed" banner that agents confirmed the newer wording', async () => {
+      await open({ ...research, version: byAgents, versions: [seeded, byAgents], provenance: { ...research.provenance, ...confirmedByAgents } });
+      fireEvent.click(screen.getByRole('button', { name: 'Show what changed' }));
+      await waitFor(() => expect(document.querySelector('[data-diff-banner]')).toBeInTheDocument());
+      expect(document.querySelector('[data-diff-banner] [data-machine-confirmed]')?.textContent).toBe(MACHINE_CONFIRMED);
+    });
+
+    it('labels the version before it takes effect, beside the person\'s verification of the one in force', async () => {
+      await open({ ...research, versions: [seeded, byAgents], provenance: { ...research.provenance, verifiedBy: sara } });
+      const verified = document.querySelector('[data-last-verified]');
+      expect(verified?.textContent).toBe('30 Jun 2026 by Sara Lindqvist');
+      expect(verified).not.toHaveAttribute('data-machine-confirmed');
+      expect(document.querySelector('[data-version-row="2"] [data-machine-confirmed]')?.textContent).toBe(MACHINE_CONFIRMED);
+    });
+
+    it('gives way in "Last verified" once a person re-verifies the record, while the version still says who approved it', async () => {
+      await open({
+        ...research,
+        version: byAgents,
+        versions: [seeded, byAgents],
+        provenance: { ...research.provenance, lastVerifiedAt: '2026-12-01T09:00:00Z', verifiedBy: sara, ...confirmedByAgents },
+      });
+      const verified = document.querySelector('[data-last-verified]');
+      expect(verified?.textContent).toBe('1 Dec 2026 by Sara Lindqvist');
+      expect(verified).not.toHaveAttribute('data-machine-confirmed');
+      expect(document.querySelector('[data-version-row="2"] [data-machine-confirmed]')?.textContent).toBe(MACHINE_CONFIRMED);
+      expect(screen.queryByText('Approved 17 Aug 2026')).not.toBeInTheDocument();
+    });
+
+    it('keeps labelling a version not yet in force after a person re-verifies the wording that is', async () => {
+      // Sara checked version 1 in December; version 2, which the agents confirmed in
+      // August, takes effect in March and no person has read it.
+      const march = { date: '2027-03-01', precision: 'day' as const };
+      const inForce = { ...seeded, effectiveTo: { date: '2027-02-28', precision: 'day' as const } };
+      await open({
+        ...research,
+        version: inForce,
+        versions: [inForce, { ...byAgents, effectiveFrom: march }],
+        provenance: { ...research.provenance, lastVerifiedAt: '2026-12-01T09:00:00Z', verifiedBy: sara },
+      });
+      expect(document.querySelector('[data-last-verified]')?.textContent).toBe('1 Dec 2026 by Sara Lindqvist');
+      expect(document.querySelector('[data-version-row="2"] [data-machine-confirmed]')?.textContent).toBe(MACHINE_CONFIRMED);
+      expect(screen.queryByText('Approved 17 Aug 2026')).not.toBeInTheDocument();
+    });
+
+    it('never gives way to a later date nobody signed', async () => {
+      // A seeded stamp carries a date and no name: it is nobody's verification.
+      await open({
+        ...research,
+        version: byAgents,
+        versions: [seeded, byAgents],
+        provenance: { ...research.provenance, lastVerifiedAt: '2026-12-01T09:00:00Z', verifiedBy: null, ...confirmedByAgents },
+      });
+      const verified = document.querySelector('[data-last-verified]');
+      expect(verified?.textContent).toBe(MACHINE_CONFIRMED);
+      expect(verified).toHaveAttribute('data-machine-confirmed');
+    });
+
+    it('reads a person\'s approval as it always has', async () => {
+      await open({ ...research, version: byPerson, versions: [seeded, byPerson] });
+      expect(document.querySelector('[data-machine-confirmed]')).toBeNull();
+      expect(document.querySelector('[data-version-row="2"]')).toHaveTextContent('Approved 17 Aug 2026');
+    });
   });
 
   it('renders Not found for an id this bank cannot read, and the error state otherwise', async () => {
@@ -298,6 +432,7 @@ describe('ObligationScreen', () => {
     expect(document.querySelector('[data-diff-banner]')).toHaveTextContent(
       'Comparing version 1 (in force since it began) with version 2 (in force from 1 Oct 2026).',
     );
+    expect(document.querySelector('[data-diff-banner] [data-machine-confirmed]')).toBeNull();
     expect(document.querySelector('[data-legal-text] ins')?.textContent).toContain('The institution sets criteria for an annual assessment.');
     // Either side machine translated labels the whole comparison (INV-05).
     expect(screen.getByText('Machine translation from Swedish. The original is authoritative.')).toBeInTheDocument();
@@ -323,9 +458,25 @@ describe('ObligationScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send report' }));
     expect(await screen.findByText('Report sent. Thank you.')).toBeInTheDocument();
     // What was on screen rides along: the version and the language being read.
-    expect(sent.filter((call) => call.path.endsWith('/problem-reports')).map((call) => call.body)).toEqual([
+    expect(sent.filter((call) => call.method === 'post' && call.path.endsWith('/problem-reports')).map((call) => call.body)).toEqual([
       { description: 'The English says annually.', language: 'en', versionNumber: 1 },
     ]);
+  });
+
+  it('shows the record\'s reported problems, and reads them again once a report is filed', async () => {
+    const sent = serve(research);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    const section = await screen.findByRole('heading', { name: 'Reported problems' });
+    expect(section.closest('[data-problem-reports]')).not.toBeNull();
+    expect(await screen.findByText('No problems reported on this record.')).toBeInTheDocument();
+    const reads = () => sent.filter((call) => call.path === '/api/v1/problem-reports');
+    expect(reads().map((call) => call.params)).toEqual([{ subjectType: 'obligation', subjectId: 'ob-1', limit: 20, offset: 0 }]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'This looks wrong' }));
+    fireEvent.change(await screen.findByLabelText('What you see'), { target: { value: 'The English says annually.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send report' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Done' }));
+    await waitFor(() => expect(reads()).toHaveLength(2));
   });
 });
 

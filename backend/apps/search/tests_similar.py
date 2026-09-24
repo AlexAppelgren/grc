@@ -48,9 +48,9 @@ from apps.search.tests_hybrid import (
     CorpusMixin,
 )
 from apps.shared import factories, permissions as perms, tenancy
-from apps.shared.adapters import embedder
+from apps.shared.adapters import embedder, reranker
 from apps.shared.errors import ProblemError
-from apps.shared.models import AuditEvent
+from apps.shared.models import AuditEvent, Tenant
 from apps.shared.testing import sign_in
 
 SEARCH = "/api/v1/search"
@@ -77,7 +77,7 @@ def similar(
     caller_id: uuid.UUID | None = None,
 ) -> Any:
     body = SimilarRequest(text=text, types=types or [], limit=limit)
-    return hybrid.find_similar(body, caller_id=caller_id or uuid.uuid4())
+    return hybrid.find_similar(body, caller_id=caller_id or uuid.uuid4(), tenant_id=None)
 
 
 def titles_of(response: Any) -> list[str]:
@@ -255,6 +255,24 @@ class SimilarRouteTests(CorpusMixin, TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()["requiredPermission"], perms.SCOPE_SEARCH_READ)
 
+    def test_a_banks_own_key_sends_no_text_to_a_model_once_the_bank_switched_its_ai_off(self) -> None:
+        """A bank's key may hold `search:read`, and the text it sends is the bank's own. The
+        bank's switch covers it as it covers a reader's search (D-07, owner item 14;
+        security-review-c7, M1): off, the text is compared by its words alone."""
+        bank_key = factories.api_key(self.tenant, scopes=(perms.SCOPE_SEARCH_READ,))
+        Tenant.objects.filter(pk=self.tenant.pk).update(ai_enabled=False)
+        with (
+            mock.patch.object(embedder.MockEmbedder, "embed") as embed,
+            mock.patch.object(reranker.MockReranker, "rerank") as judged,
+        ):
+            response = self.post({"text": FFFS}, plain_key=bank_key.plain_key)
+
+        self.assertEqual(response.status_code, 200, response.content)
+        embed.assert_not_called()
+        judged.assert_not_called()
+        kinds = {hit["matchKind"] for hit in response.json()["items"]}
+        self.assertEqual(kinds, {"keyword"})
+
     def test_a_person_is_refused_however_much_they_may_do(self) -> None:
         """No permission in the PRD's matrix gives a person a similarity read, so this is
         the agents' route and a session is not a caller here at all."""
@@ -367,19 +385,24 @@ class SearchRateLimitTests(CorpusMixin, TestCase):
 
     def test_both_search_operations_tell_a_caller_the_code_to_branch_on(self) -> None:
         """A limit a caller cannot see is a limit they will hit in production (Alex's API
-        rule, 2026-09-20). Both operations name `rate_limited` and the setting behind it,
-        and `POST /ask` does not, because nothing in `ask.py` spends a bucket yet: a code
-        documented on a route that cannot raise it is what `api_docs_gate.py` refuses."""
+        rule, 2026-09-20). Both search operations name `rate_limited` and the setting
+        behind it, and so does `POST /ask`, which spends a bucket of its own in `ask.py`
+        before anything else runs."""
         from config.api import api
 
         paths = api.get_openapi_schema()["paths"]
-        for path in ("/api/v1/search", "/api/v1/search/similar"):
+        search = ("SEARCH_RATE_PER_USER_PER_MINUTE", settings.SEARCH_RATE_PER_USER_PER_MINUTE)
+        ask = ("ASK_RATE_PER_USER_PER_MINUTE", settings.ASK_RATE_PER_USER_PER_MINUTE)
+        for path, (setting, limit) in (
+            ("/api/v1/search", search),
+            ("/api/v1/search/similar", search),
+            ("/api/v1/ask", ask),
+        ):
             with self.subTest(path=path):
                 description = " ".join(paths[path]["post"]["description"].split())
                 self.assertIn("`rate_limited`", description)
-                self.assertIn("SEARCH_RATE_PER_USER_PER_MINUTE", description)
-                self.assertIn(str(settings.SEARCH_RATE_PER_USER_PER_MINUTE), description)
-        self.assertNotIn("`rate_limited`", paths["/api/v1/ask"]["post"]["description"])
+                self.assertIn(setting, description)
+                self.assertIn(str(limit), description)
 
     def test_neither_limit_can_be_set_to_a_value_that_admits_everything(self) -> None:
         """Every limit is a setting with an env override (playbook 4.3), and neither of

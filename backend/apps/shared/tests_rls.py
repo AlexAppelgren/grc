@@ -33,11 +33,17 @@ watch test named the table and the missing policy, and the enumeration named it 
 was proven to fail the same day by leaving the hand-written policies of watch 0001 in place:
 the read policy's name was not the shared one, so the policy census and the mixed-table
 write proof both named it.
+
+The problem-report pin was proven to fail 2026-09-23 by adding, in a scratch copy of library
+0009, a SELECT policy reading a review setting (the set of policies was named) and, alone, a
+BEFORE UPDATE trigger (the trigger was named).
 """
 
 from __future__ import annotations
 
+import re
 import uuid
+from contextlib import AbstractContextManager, nullcontext
 from datetime import timedelta
 from typing import Any
 
@@ -101,6 +107,10 @@ MIXED_TABLES = {
     "invitation_role": "tenant_id",
     "login_event": "tenant_id",
     "outbox_event": "tenant_id",
+    # A bank's "this looks wrong" (AUD-03, D-50). Every row carries the bank that filed it;
+    # the column stays nullable and the table mixed until Alex decides otherwise
+    # (docs/TODO_FOR_alex.md, problem reports). Its shape is pinned below: the split and
+    # nothing else, so no read window for bleqq can be added without failing a test.
     "problem_report": "tenant_id",
     # The derived search index (SRC-01, H7). Its zone column is always NULL in R1, so
     # `library_rows_visible` is what every bank reads a chunk through; the FOR ALL policy
@@ -121,9 +131,9 @@ WATCH_LIBRARY_TABLES = frozenset(
 # instrument and obligation are mixed on `owner_tenant_id` ("shared or mine", INPUT_DELTAS
 # §5, INV-07) and still carry the old single policy, so their write rule accepts the
 # library's rows from a tenant session. What stands in the way there is the library fence
-# (PRO-01): `library_write()` and its AST guard. Splitting them needs the fence's own zone
-# switch, because the reference seed, the E2E seed and most tests write a library record
-# with a tenant activated; HARDENING.md H16 carries it.
+# (PRO-01): `library_write()` and its AST guard, and in the database the door trigger of
+# shared 0008, which refuses the app role's write to either table outside an approved
+# proposal, the re-verification stamp or a reference seed (H16, ADR 0058).
 LIBRARY_OWNED_TABLES = frozenset({"instrument", "obligation"})
 
 # Tables that hold one bank's rows and nothing else, named here so the enumeration cannot
@@ -157,6 +167,13 @@ OTHER_POLICIES = frozenset(
     [(table, LIBRARY_READ_POLICY) for table in MIXED_TABLES]
     + [(table, IDENTITY_LOOKUP_POLICY) for table in IDENTITY_LOOKUP_TABLES]
 )
+
+# Platform-only tables (SRC-05, search 0002): no tenant column, so the enumeration above
+# never sees them. Each carries forced row-level security and exactly one policy,
+# `platform_only`, FOR ALL, refusing any session with a tenant active: a bank never reads or
+# writes the evaluation set. Adding a table here is a review question.
+PLATFORM_ONLY_TABLES = frozenset({"eval_question", "eval_run"})
+PLATFORM_ONLY_POLICY = "platform_only"
 
 
 def own_zone_rule(column: str) -> str:
@@ -329,6 +346,50 @@ class RowLevelSecurityGuard(TestCase):
             "Write rules that accept more than the session's own zone:\n  " + "\n  ".join(problems),
         )
 
+    def test_every_platform_only_table_refuses_any_tenant_session(self) -> None:
+        """RLS enabled and forced, and one policy whose USING and WITH CHECK both demand
+        that the tenant setting is empty; the same policy name on any other table fails."""
+        problems: list[str] = []
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute(
+                "SELECT relname, relrowsecurity, relforcerowsecurity FROM pg_class WHERE relname = ANY(%s)",
+                [sorted(PLATFORM_ONLY_TABLES)],
+            )
+            flags = {name: (enabled, forced) for name, enabled, forced in cursor.fetchall()}
+            cursor.execute("SELECT DISTINCT tablename FROM pg_policies WHERE policyname = %s", [PLATFORM_ONLY_POLICY])
+            carriers = {row[0] for row in cursor.fetchall()}
+        for table in sorted(PLATFORM_ONLY_TABLES):
+            if flags.get(table) != (True, True):
+                problems.append(f"{table}: row-level security is not enabled and forced: {flags.get(table)}")
+            policies = self._policies(table)
+            if set(policies) != {PLATFORM_ONLY_POLICY}:
+                problems.append(f"{table}: policies {sorted(policies)}, not {PLATFORM_ONLY_POLICY} alone")
+                continue
+            cmd, qual, with_check = policies[PLATFORM_ONLY_POLICY]
+            for part, rule in (("USING", qual), ("WITH CHECK", with_check)):
+                if TENANT_SETTING not in rule or "IS NULL" not in rule:
+                    problems.append(f"{table}: {PLATFORM_ONLY_POLICY} {part} does not refuse a tenant session: {rule}")
+            if cmd != "ALL":
+                problems.append(f"{table}: {PLATFORM_ONLY_POLICY} is FOR {cmd}, not FOR ALL")
+        if carriers - PLATFORM_ONLY_TABLES:
+            problems.append(f"{sorted(carriers - PLATFORM_ONLY_TABLES)} carry {PLATFORM_ONLY_POLICY}; list them in PLATFORM_ONLY_TABLES")
+        self.assertEqual(problems, [], "Platform-only tables a tenant session could reach:\n  " + "\n  ".join(problems))
+
+
+    def test_problem_report_carries_the_mixed_shape_and_nothing_else(self) -> None:
+        """AUD-03, D-50: a report is read and closed inside its own bank, so nothing may sit
+        on `problem_report` beyond the split every mixed table gets. A policy of its own, a
+        policy reading any setting but the tenant's (a review window, a platform flag) or a
+        trigger of its own would each open a way out of the bank, and each fails here."""
+        policies = self._policies("problem_report")
+        self.assertEqual(set(policies), {POLICY_NAME, LIBRARY_READ_POLICY}, "problem_report carries the mixed split only")
+        for name, (_, qual, with_check) in sorted(policies.items()):
+            settings_read = set(re.findall(r"current_setting\('([^']+)'", qual + with_check))
+            self.assertLessEqual(settings_read, {TENANT_SETTING}, f"{name} reads a setting beside the tenant's")
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute("SELECT tgname FROM pg_trigger WHERE tgrelid = 'problem_report'::regclass AND NOT tgisinternal")
+            self.assertEqual(cursor.fetchall(), [], "problem_report carries no trigger of its own")
+
 
 class RowLevelSecurityEnforcement(TransactionTestCase):
     """Proves the policy bites for cw_app (the `app` alias), not just that it exists."""
@@ -404,7 +465,11 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
     here without reaching through that fence, and the same four refusals are proven as
     cw_app in apps/search/tests_index_model.py. `source` is: it is the one watch table with
     a zone column (WAT-06), and a bank must not be able to reach the shared source registry
-    the sweeps read.
+    the sweeps read. Every statement on it runs inside the watch door on the cw_app
+    connection (`_door`), as a bank's watch step would: `source` is a library table too, and
+    outside that door the trigger of shared 0008 refuses the statement before the policy is
+    asked, which would prove the trigger here instead of the policy (H16; the trigger's own
+    proof is apps/shared/tests_library_db_guard.py).
     """
 
     databases = {DEFAULT_DB_ALIAS, "app"}
@@ -427,6 +492,11 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
 
     def _tables(self) -> list[str]:
         return [table for table in sorted(MIXED_TABLES) if table not in {"agent_run", "search_chunk"}]
+
+    @staticmethod
+    def _door(table: str) -> AbstractContextManager[None]:
+        """The watch door on the cw_app connection for `source`, and nothing for the rest."""
+        return tenancy.library_door("watch", using="app") if table == "source" else nullcontext()
 
     def _rows(self, tenant_id: uuid.UUID | None) -> dict[str, Any]:
         """One committed row per table in the zone `tenant_id` names."""
@@ -483,7 +553,7 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
         if table == "source":
             # The one watch table with a zone column (WAT-06). It is a library record, so the
             # Python fence has to be open too; the door it belongs behind is watch_write().
-            with watch_write("a zone probe"):
+            with watch_write("a zone probe"), self._door(table):
                 return Source.objects.using("app").create(
                     owner_tenant_id=tenant_id, name=f"Probe {token}", kind=self.source_kind
                 )
@@ -526,7 +596,7 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
             column = MIXED_TABLES[table]
             with self.subTest(table=table), transaction.atomic(using="app"):
                 tenancy.activate(self.tenant_a.id, using="app")
-                with connections["app"].cursor() as cursor:
+                with connections["app"].cursor() as cursor, self._door(table):
                     for statement, parameters, why in (
                         (f'UPDATE "{table}" SET {column} = {column} WHERE id = %s', [self.platform[table]], "changed"),
                         (
@@ -547,7 +617,8 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
                 with self.assertRaisesMessage(DatabaseError, refusal):
                     with transaction.atomic(using="app"), connections["app"].cursor() as cursor:
                         tenancy.activate(self.tenant_a.id, using="app")
-                        cursor.execute(f'UPDATE "{table}" SET {column} = NULL WHERE id = %s', [self.own[table]])
+                        with self._door(table):
+                            cursor.execute(f'UPDATE "{table}" SET {column} = NULL WHERE id = %s', [self.own[table]])
 
     def test_the_reads_are_unchanged(self) -> None:
         """The whole point of a mixed table: the platform's rows are everybody's to read,

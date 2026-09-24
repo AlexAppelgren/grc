@@ -13,10 +13,18 @@ What the designed schema has differently (INPUT_DELTAS §1, recorded there):
   an admin adds one without a deploy. `check_status`, `change_status`, `source_check_kind`
   and `check_frequency` stay kinds in code: the rules branch on them.
 - `regulatory_change.flags` is not a `text[]`. A flag and a scope term are both rows of
-  `change_term`, each with the agent's `confidence` and a `suggested` marker until a
-  library editor confirms it (WAT-03). `change_document.risk_flags` stays the designed
-  array: its values are the screen's own findings (apps/agents/screen.py), not a list an
-  admin curates.
+  `change_term`, each with the agent's `confidence` and a `suggested` marker until it is
+  confirmed (WAT-03). `change_document.risk_flags` stays the designed array: its values
+  are the screen's own findings (apps/agents/screen.py), not a list an admin curates.
+- A curated fact — the change's type, a flag or scope term, an obligation link — says who
+  suggested it and who confirmed it (D-74, watch 0002). The suggester is copied from the
+  run, the key or the person that filed it; the confirmer is a person holding
+  `proposals.review`, or an agent-bound platform key holding `proposals:review`, never
+  both. A check constraint keeps the confirming person, key and agent from being the
+  suggesting ones, so nobody settles a fact they filed, two keys of one agent cannot
+  confirm each other and an unbound key cannot pass on a null.
+  That is scope separation, not four eyes: there is no proposal row here, and an agent's
+  confirmation reads machine-confirmed, never as a person's verification.
 - `source_check` gains `kind`, `subject_type` and `subject_id`, which the library
   re-check writes when it re-checks one record against its source (AGT-01, item 3).
 - `source.owner_tenant` is WAT-06's tenant-private source, unused in R1 and left NULL;
@@ -42,6 +50,58 @@ def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
 
 def _precision() -> models.CharField:
     return models.CharField(max_length=8, choices=_choices(DatePrecision), default=DatePrecision.DAY.value)
+
+
+def _agent() -> models.ForeignKey:
+    return models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+
+
+def _api_key() -> models.ForeignKey:
+    return models.ForeignKey("identity.ApiKey", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+
+
+def _person() -> models.ForeignKey:
+    return models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+
+
+def _curation_constraints(table: str, prefix: str = "", *, suggested: bool = True) -> list[models.CheckConstraint]:
+    """The two rules every curated fact carries (D-74), for a table whose columns are named
+    `<prefix>confirmed_by` and so on.
+
+    A confirmation names a person, or an agent-bound key and its agent, with the time; a
+    suggestion names neither. `suggested`, where the table has it, moves with them. And the
+    confirmer is never the suggester — not the same person, not the same key, not the same
+    agent: the key and the agent are compared both ways because a key that files a
+    suggestion may be bound to no agent, and then only the key tells the two apart."""
+
+    def isnull(column: str, value: bool) -> models.Q:
+        return models.Q(**{f"{prefix}{column}__isnull": value})
+
+    def marker(value: bool) -> models.Q:
+        return models.Q(**{f"{prefix}suggested": value}) if suggested else models.Q()
+
+    unconfirmed = isnull("confirmed_at", True) & isnull("confirmed_by", True) & isnull("confirmed_by_api_key", True) & isnull("confirmed_by_agent", True)
+    by_a_person = isnull("confirmed_at", False) & isnull("confirmed_by", False) & isnull("confirmed_by_api_key", True) & isnull("confirmed_by_agent", True)
+    by_an_agent = isnull("confirmed_at", False) & isnull("confirmed_by", True) & isnull("confirmed_by_api_key", False) & isnull("confirmed_by_agent", False)
+
+    def differs(column: str) -> models.Q:
+        confirmer, suggester = f"confirmed_by{column}", f"suggested_by{column}"
+        return (
+            isnull(confirmer, True)
+            | isnull(suggester, True)
+            | ~models.Q(**{f"{prefix}{confirmer}": models.F(f"{prefix}{suggester}")})
+        )
+
+    return [
+        models.CheckConstraint(
+            condition=(marker(True) & unconfirmed) | (marker(False) & (by_a_person | by_an_agent)),
+            name=f"{table}_confirmation_names_a_person_or_an_agent",
+        ),
+        models.CheckConstraint(
+            condition=differs("") & differs("_agent") & differs("_api_key"),
+            name=f"{table}_confirmer_is_not_the_suggester",
+        ),
+    ]
 
 
 # ---------------------------------------------------------------------------------------
@@ -156,6 +216,17 @@ class RegulatoryChange(LibraryModel):
     stable_key = models.SlugField(max_length=120, unique=True)
     title = models.CharField(max_length=500)
     change_type = models.ForeignKey("taxonomy.ChangeType", on_delete=models.PROTECT, related_name="+")
+    # The type is a curated fact like a flag (WAT-03, D-74): suggested until confirmed, with
+    # who suggested it and who confirmed it, under the same two constraints.
+    change_type_suggested = models.BooleanField(default=True)
+    change_type_confidence = models.DecimalField(max_digits=4, decimal_places=3, null=True, blank=True)
+    change_type_suggested_by = _person()
+    change_type_suggested_by_agent = _agent()
+    change_type_suggested_by_api_key = _api_key()
+    change_type_confirmed_by = _person()
+    change_type_confirmed_by_api_key = _api_key()
+    change_type_confirmed_by_agent = _agent()
+    change_type_confirmed_at = models.DateTimeField(null=True, blank=True)
     authority = models.ForeignKey("library.Authority", null=True, blank=True, on_delete=models.PROTECT, related_name="changes")
     authority_label = models.CharField(max_length=200)
     published_on = models.DateField(null=True, blank=True)
@@ -193,7 +264,13 @@ class RegulatoryChange(LibraryModel):
         constraints = [
             models.CheckConstraint(
                 condition=~models.Q(superseded_by=models.F("id")), name="regulatory_change_not_self_superseded"
-            )
+            ),
+            models.CheckConstraint(
+                condition=models.Q(change_type_confidence__isnull=True)
+                | models.Q(change_type_confidence__gte=0, change_type_confidence__lte=1),
+                name="regulatory_change_type_confidence_range",
+            ),
+            *_curation_constraints("regulatory_change_type", "change_type_"),
         ]
 
     def __str__(self) -> str:
@@ -246,20 +323,26 @@ class ChangeDocument(LibraryModel):
 
 
 # ---------------------------------------------------------------------------------------
-# WAT-03, WAT-04: what the change touches, suggested until a person confirms it
+# WAT-03, WAT-04: what the change touches, suggested until it is confirmed (D-74)
 # ---------------------------------------------------------------------------------------
 class ChangeTerm(LibraryModel):
     """A flag or a scope term on a change (WAT-03). Exactly one of the two: a flag is a
     row of the `flag` list and a scope term a row of a dimension, and neither is ever a
     `text[]` (INPUT_DELTAS §1). The agent's `confidence` and `suggested` travel with the
-    link, so the feed can mark it as a suggestion until a library editor confirms it."""
+    link, so the feed can mark it as a suggestion until a confirming agent or a person
+    confirms it."""
 
     change = models.ForeignKey(RegulatoryChange, on_delete=models.CASCADE, related_name="term_links")
     term = models.ForeignKey("taxonomy.TaxonomyTerm", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     flag = models.ForeignKey("taxonomy.Flag", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     confidence = models.DecimalField(max_digits=4, decimal_places=3, null=True, blank=True)
     suggested = models.BooleanField(default=True)
-    confirmed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    suggested_by = _person()
+    suggested_by_agent = _agent()
+    suggested_by_api_key = _api_key()
+    confirmed_by = _person()
+    confirmed_by_api_key = _api_key()
+    confirmed_by_agent = _agent()
     confirmed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -279,11 +362,7 @@ class ChangeTerm(LibraryModel):
                 condition=models.Q(confidence__isnull=True) | models.Q(confidence__gte=0, confidence__lte=1),
                 name="change_term_confidence_range",
             ),
-            models.CheckConstraint(
-                condition=models.Q(suggested=True, confirmed_by__isnull=True, confirmed_at__isnull=True)
-                | models.Q(suggested=False, confirmed_by__isnull=False, confirmed_at__isnull=False),
-                name="change_term_confirmation_names_a_person",
-            ),
+            *_curation_constraints("change_term"),
         ]
 
     def __str__(self) -> str:
@@ -292,14 +371,20 @@ class ChangeTerm(LibraryModel):
 
 class ChangeObligation(LibraryModel):
     """An obligation a change affects (WAT-04). An agent's link carries its confidence and
-    is a suggestion until a library editor confirms it; the tenant's own decision about
-    the link lives on its case, never here."""
+    is a suggestion until a confirming agent or a person confirms it; `confirmed_at` is set
+    exactly when it is confirmed. The tenant's own decision about the link lives on its
+    case, never here."""
 
     change = models.ForeignKey(RegulatoryChange, on_delete=models.CASCADE, related_name="obligation_links")
     obligation = models.ForeignKey("library.Obligation", on_delete=models.PROTECT, related_name="change_links")
     origin = models.CharField(max_length=16, choices=_choices(OriginType))
     confidence = models.DecimalField(max_digits=4, decimal_places=3, null=True, blank=True)
-    confirmed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    suggested_by = _person()
+    suggested_by_agent = _agent()
+    suggested_by_api_key = _api_key()
+    confirmed_by = _person()
+    confirmed_by_api_key = _api_key()
+    confirmed_by_agent = _agent()
     confirmed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -314,11 +399,7 @@ class ChangeObligation(LibraryModel):
                 condition=models.Q(confidence__isnull=True) | models.Q(confidence__gte=0, confidence__lte=1),
                 name="change_obligation_confidence_range",
             ),
-            models.CheckConstraint(
-                condition=models.Q(confirmed_by__isnull=True, confirmed_at__isnull=True)
-                | models.Q(confirmed_by__isnull=False, confirmed_at__isnull=False),
-                name="change_obligation_confirmation_names_a_person",
-            ),
+            *_curation_constraints("change_obligation", suggested=False),
         ]
 
     def __str__(self) -> str:

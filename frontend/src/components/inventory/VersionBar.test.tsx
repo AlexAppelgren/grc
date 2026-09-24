@@ -12,8 +12,16 @@ import { VersionBar, asOfFor } from './VersionBar';
 // choosing a version is choosing the date it was in force on, so the read
 // stays the one source of truth.
 
-const first: ObligationVersionRow = { versionNumber: 1, effectiveFrom: null, effectiveTo: { date: '2026-09-30', precision: 'day' }, approvedAt: null };
-const second: ObligationVersionRow = { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' }, effectiveTo: null, approvedAt: '2026-09-17T14:02:11Z' };
+const nobody = { verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null };
+const first: ObligationVersionRow = { versionNumber: 1, effectiveFrom: null, effectiveTo: { date: '2026-09-30', precision: 'day' }, approvedAt: null, ...nobody };
+const second: ObligationVersionRow = {
+  versionNumber: 2,
+  effectiveFrom: { date: '2026-10-01', precision: 'day' },
+  effectiveTo: null,
+  approvedAt: '2026-09-17T14:02:11Z',
+  ...nobody,
+  verifiedOrigin: 'user',
+};
 
 function renderIn(node: ReactNode) {
   const { wrapper } = queryWrapper();
@@ -33,7 +41,7 @@ describe('asOfFor', () => {
     expect(asOfFor(second)).toBe('2026-10-01');
     expect(asOfFor(first)).toBe('2026-09-30');
     // The only version there is: today shows it, so the date is cleared.
-    expect(asOfFor({ versionNumber: 1, effectiveFrom: null, effectiveTo: null, approvedAt: null })).toBe('');
+    expect(asOfFor({ versionNumber: 1, effectiveFrom: null, effectiveTo: null, approvedAt: null, ...nobody })).toBe('');
   });
 });
 

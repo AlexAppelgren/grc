@@ -142,8 +142,13 @@ def invitation(tenant: Tenant, *, email: str | None = None, roles: Iterable[str]
     return row
 
 
-def api_key(tenant: Tenant, *, name: str = "Agent key", scopes: Iterable[str] = ("changes:write",)) -> SimpleNamespace:
-    """A live key in `tenant`: `.id`, `.row` (the ApiKey) and `.plain_key` (shown once)."""
+def api_key(tenant: Tenant, *, name: str = "Agent key", scopes: Iterable[str] = ("library:read",)) -> SimpleNamespace:
+    """A live key in `tenant`: `.id`, `.row` (the ApiKey) and `.plain_key` (shown once).
+
+    `scopes` are written as given, so a test can stand up a key a bank could only hold from
+    before the watch writes became platform-only (PLATFORM_ONLY_SCOPES): such a key works
+    without them (apps/identity/api_keys_logic.py:resolve_api_key). The default is one a
+    bank's key may hold today."""
     plain, prefix, key_hash = tokens.new_api_key()
     with transaction.atomic():
         tenancy.activate(tenant.id)

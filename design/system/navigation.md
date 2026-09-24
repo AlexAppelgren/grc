@@ -8,7 +8,7 @@ This owner decision replaces two things in the rail amendment: the phone sheet, 
 
 Every rule below gives its reason and its source. Sources marked "own value" are our choices, not external rules.
 
-**Dark theme.** The app has no runtime dark theme yet. Dark tokens exist only under `.dark`, nothing in production sets that class, and there is no `prefers-color-scheme` rule. The dark values below are token-level only: `contrast.test.ts` pins them, and no screenshot is taken of them.
+**Dark theme.** The app follows the system's light or dark setting. There is no switch in the app: next-themes (`providers.tsx`, the `class` attribute, default theme `system`) puts `light` or `dark` on `<html>`, and the dark tokens live under `.dark`. `contrast.test.ts` pins the dark values below from the stylesheets, and the NFR-S9 journey measures them in a browser under a dark system theme. No screenshot is taken of the bar or the sheet in dark.
 
 ## The rule in one line
 
@@ -488,7 +488,7 @@ Source: `design/screens/console-shell.html` ("the dock is the first four plus Mo
 - Any count or badge before a screen feeds one.
 - A top tab bar on iPad.
 - The prototype's brand-green, edge-to-edge bar. ADR 0020 took brand green out of navigation, and Alex asked for a floating bar.
-- Dark-theme screenshots, until the app has a real theme switch.
+- Dark-theme screenshots of the bar and the sheet. The app follows the system theme, so they could be taken; the NFR-S9 journey measures the dark pairs instead (`docs/TODO_FOR_alex.md`).
 - vaul, Base UI, `tw-animate-css`, a motion library, or any registry component.
 
 ---
@@ -688,7 +688,7 @@ Name each pair for the bar or the sheet, even where a generic pair already cover
 | The other 27 screen cards | Their `.tabbar` is the old full-width brand bar. They are restyled when their chunk is built. Until then, this file wins |
 | `docs/adr/0020-design-direction.md` | New amendment, "2026-09-19: the tab bar below 1024 px". It:<br>- replaces the rail amendment's phone sheet and "an off-canvas sheet below 768 px"<br>- strikes `SidebarTrigger` from that amendment's parts list<br>- strikes "a second navigation model for phones" from its "Deliberately not done", as Alex's new decision<br>- keeps one navigation model per width<br>- records sections 1, 3 and 14 |
 | `docs/plans/Verification_Log.md` | One row per external claim relied on above (see Sources), dated 2026-09-19 |
-| `docs/TODO_FOR_alex.md` | - The open questions.<br>- The device checks in section 18.<br>- Overlay motion for `Modal` and the sheet together.<br>- Dark screenshots, once a real theme switch exists.<br>- `<html lang>` following the person's language |
+| `docs/TODO_FOR_alex.md` | - The open questions.<br>- The device checks in section 18.<br>- Overlay motion for `Modal` and the sheet together.<br>- Dark screenshots of the bar and the sheet (the app follows the system theme; say if you want them).<br>- `<html lang>` following the person's language |
 
 `docs/PLAYBOOK.md` 6.2 and `docs/CONVENTIONS.md` 3.2 already name "dock rank … Dock, sidebar, More menu". They are unchanged.
 

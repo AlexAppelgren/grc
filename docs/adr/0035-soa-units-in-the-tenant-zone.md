@@ -1,6 +1,6 @@
 # ADR 0035 — The Statement of Applicability's units live in the tenant zone
 
-**Date:** 2026-09-19 · **Status:** accepted by default (D-41, PRD 0.3 REG-08, AC-REG2; the owner confirms)
+**Date:** 2026-09-19 · **Status:** accepted by default (D-41, PRD 0.3 REG-08, AC-REG2; the owner confirms); amended by D-75: there is no applicability request, so a unit's applicability is set on the unit by one person after a confirmation dialog, with one audit event, and "a request" below reads as that decision
 
 ## Context
 

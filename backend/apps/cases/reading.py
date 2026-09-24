@@ -8,6 +8,12 @@ the reads live here — the same split `apps/library/reading.py` makes for the p
 
 `ChangeFacts` is also the honest statement of what crosses the boundary between the two
 zones: five facts, and nothing else of the library travels into a bank's case.
+
+A change's scope is its own terms plus the jurisdictions its authority reaches, derived at
+match time by the library's `reaching()` and never stored (FP-04, D-28, D-29), in all three
+readings here: the facts a new case is decided from, the subquery the recomputation hands
+the database, and the open cases the scope change preview counts. A change with no
+authority is not restricted by jurisdiction.
 """
 
 from __future__ import annotations
@@ -17,11 +23,12 @@ from dataclasses import dataclass
 
 from django.contrib.postgres.expressions import ArraySubquery
 from django.contrib.postgres.fields import ArrayField
-from django.db.models import OuterRef, UUIDField
+from django.db.models import Func, OuterRef, Subquery, UUIDField
 
+from apps.cases.models import ChangeCase
 from apps.library.models import Obligation, RecordStatus
-from apps.library.reading import localized
-from apps.taxonomy.models import Urgency
+from apps.library.reading import jurisdiction_scopes, localized, reaching
+from apps.taxonomy.models import CaseStatusCategory, TaxonomyTerm, Urgency
 from apps.watch.models import ChangeTerm, RegulatoryChange
 
 # Dimension key -> the term keys the change carries in it, as the scope rule reads it.
@@ -42,7 +49,7 @@ class ChangeFacts:
 def change_facts(change_id: uuid.UUID) -> ChangeFacts | None:
     """The facts of the change with this id, or None when there is no such change."""
     change = (
-        RegulatoryChange.objects.select_related("suggested_urgency")
+        RegulatoryChange.objects.select_related("suggested_urgency", "authority")
         .filter(pk=change_id)
         .first()  # ordering: pk lookup, at most one row
     )
@@ -58,14 +65,18 @@ def change_facts(change_id: uuid.UUID) -> ChangeFacts | None:
 
 
 def _scope_of(change: RegulatoryChange) -> Scope:
-    """The change's scope as the rule reads it: its taxonomy terms by dimension. A flag is a
-    `change_term` row too and is never a scope term — it describes the change, it does not
-    say who it reaches (WAT-03). A change with no terms has an empty scope and so falls
-    inside every bank's footprint."""
+    """The change's scope as the rule reads it: its taxonomy terms by dimension, and the
+    jurisdictions its authority reaches. A flag is a `change_term` row too and is never a
+    scope term — it describes the change, it does not say who it reaches (WAT-03). A change
+    with no terms and no authority has an empty scope and so falls inside every bank's
+    footprint."""
     scope: Scope = {}
     for link in change.term_links.filter(term__isnull=False).select_related("term__dimension"):
         term = link.term
         if term is not None:  # the filter said so; the column is nullable because a flag row carries no term
+            scope.setdefault(term.dimension.key, set()).add(term.key)
+    if change.authority is not None:
+        for term in jurisdiction_scopes([change.authority.jurisdiction_id]).get(change.authority.jurisdiction_id, []):
             scope.setdefault(term.dimension.key, set()).add(term.key)
     return scope
 
@@ -121,16 +132,62 @@ def obligation_details(obligation_id: uuid.UUID, order: list[str]) -> Obligation
     )
 
 
-def scope_term_ids_of_each_case() -> ArraySubquery:
+def scope_term_ids_of_each_case() -> Func:
     """The scope term ids of each case's change as one `uuid[]`, for the database's own
     footprint function, correlated on `change_id` so one statement decides a whole page of
     cases (`apps/cases/matching.py`).
 
-    A flag is a `change_term` row too and never scopes a change: it says what the reform is
-    about, not who it reaches (WAT-03). It lives here rather than beside the statement that
-    uses it because that module writes, and a module that writes names no library record.
+    The change's own terms and the jurisdiction terms its authority reaches. A flag is a
+    `change_term` row too and never scopes a change: it says what the reform is about, not
+    who it reaches (WAT-03). It lives here rather than beside the statement that uses it
+    because that module writes, and a module that writes names no library record. No join
+    leaves the case row, because the recomputation is an UPDATE, which takes none.
     """
-    return ArraySubquery(
+    own = ArraySubquery(
         ChangeTerm.objects.filter(change=OuterRef("change_id"), term__isnull=False).order_by().values("term_id"),
         output_field=ArrayField(UUIDField()),
     )
+    jurisdiction = Subquery(
+        RegulatoryChange.objects.filter(pk=OuterRef(OuterRef("change_id"))).values("authority__jurisdiction_id")[:1]
+    )
+    reached = ArraySubquery(
+        TaxonomyTerm.objects.filter(reaching(jurisdiction)).order_by().values("id"), output_field=ArrayField(UUIDField())
+    )
+    return Func(own, reached, function="array_cat", output_field=ArrayField(UUIDField()))
+
+
+def open_case_scopes(tenant_id: uuid.UUID) -> list[Scope]:
+    """The scope of each open case's change in this bank, one entry per case, for the scope
+    change preview (AC-FP1). The SQL function reads the stored footprint and the preview asks
+    about one that does not exist yet, so the preview decides in Python with the same rule.
+
+    Two queries for any number of cases: a row per case and change term, and one row with no
+    term for a change that carries none; then the jurisdictions the changes' authorities
+    reach. A closed or dismissed case is finished work and is not counted, as the
+    recomputation leaves it alone (`apps/cases/matching.py`). A flag is a `change_term` row
+    with no term and never scopes a change (WAT-03).
+    """
+    rows = (
+        ChangeCase.objects.filter(tenant_id=tenant_id)
+        .exclude(status__in=(CaseStatusCategory.CLOSED.value, CaseStatusCategory.DISMISSED.value))
+        .order_by()
+        .values_list(
+            "id",
+            "change__authority__jurisdiction_id",
+            "change__term_links__term__dimension__key",
+            "change__term_links__term__key",
+        )
+    )
+    scopes: dict[uuid.UUID, Scope] = {}
+    jurisdictions: dict[uuid.UUID, uuid.UUID] = {}
+    for case_id, jurisdiction_id, dimension, key in rows:
+        scope = scopes.setdefault(case_id, {})
+        if jurisdiction_id is not None:
+            jurisdictions[case_id] = jurisdiction_id
+        if key is not None:
+            scope.setdefault(dimension, set()).add(key)
+    reached = jurisdiction_scopes(set(jurisdictions.values()))
+    for case_id, jurisdiction_id in jurisdictions.items():
+        for term in reached.get(jurisdiction_id, []):
+            scopes[case_id].setdefault(term.dimension.key, set()).add(term.key)
+    return list(scopes.values())

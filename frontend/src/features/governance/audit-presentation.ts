@@ -42,6 +42,7 @@ export const AUDIT_SUBJECT_TYPES: readonly string[] = [
   'user_session',
   'vocabulary',
   'vocabulary_suggestion',
+  'watched_market',
   'webauthn_credential',
 ];
 

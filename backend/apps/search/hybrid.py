@@ -21,18 +21,28 @@ answer narrower, never wrong.
 **Narrower, never wider.** The read is confined to `owner_tenant_id IS NULL` in code as well
 as by the policy, so a row a bank owns cannot be reached by a query written before such a
 row existed (D-10, H7). The regulatory scope is chunk 3's one rule — `taxonomy_in_footprint`
-over the record's own terms plus its instrument's regime, exactly as the obligations list
-and the watch feed apply it — and never a second copy of it here. Every filter compares a
-key or an id, so renaming a vocabulary row changes nothing a caller sent.
+over the record's own terms plus its instrument's regime and the jurisdictions its rules
+reach, from the SQL twins the obligations list hands the same function — and never a second
+copy of it here. Every filter compares a key or an id, so renaming a vocabulary row changes
+nothing a caller sent.
+
+**Ties are broken on what a rebuild keeps.** Two chunks may score the same on a leg, and
+the rank each gets decides its fused score. Every ranking here therefore breaks a tie on
+`TIE_BREAK` — the record's stable key, the kind, the language and the start date — and never
+on a uuid, so the same library answers in the same order on every fresh database, which is
+what lets the evaluation set gate a release (SRC-05).
 
 **One hit per record.** A duty is indexed once per language it is summarised in, and the
 reader asked about the duty. The page therefore carries the chunk whose own language read
 the query best and not its translations beside it, which is also why a Swedish query lands
 on the Swedish text and a Finnish one on the Finnish text (SRC-S2).
 
-**The query text is the bank's own.** It reaches the text search, the embedder and nothing
-else: no log line, no audit row, no outbox payload and no URL (playbook 4.7). `POST /search`
-writes nothing at all, which is why its scenarios assert the audit count is unchanged.
+**The query text is the bank's own.** It reaches the text search, the embedder and the
+reranker and nothing else: no log line, no audit row, no outbox payload and no URL
+(playbook 4.7). The embedder and the reranker are models, so a bank that switched its AI
+features off sends them nothing: its search reads by the words alone, as a deployment with
+neither does (D-07, owner item 14). `POST /search` writes nothing at all, which is why its
+scenarios assert the audit count is unchanged.
 
 **`find_similar` is the same statement, read by an agent.** `POST /search/similar` is the
 agents' route (AGT-02): a watch agent sends a passage it fetched and asks which library
@@ -56,13 +66,13 @@ import uuid
 from typing import Any
 
 from django.conf import settings
-from django.contrib.postgres.expressions import ArraySubquery
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.search import SearchQuery, SearchRank
 from django.core.exceptions import ValidationError
 from django.db.models import (
     BooleanField,
     Case,
+    Exists,
     F,
     FloatField,
     Func,
@@ -81,8 +91,8 @@ from django.db.models.functions import Cast, Coalesce, NullIf, RowNumber
 from django.utils import timezone
 from pgvector.django import CosineDistance
 
-from apps.library.models import Instrument, ObligationTerm, ObligationTitle, ObligationVersion, Provision
-from apps.library.reading import today_for
+from apps.library.models import Instrument, Obligation, ObligationTitle, ObligationVersion, Provision
+from apps.library.reading import instrument_scope_term_ids, scope_term_ids, today_for
 from apps.search import limits
 from apps.search.models import TEXT_SEARCH_CONFIGS, SearchChunk, SearchSource
 from apps.search.schemas import (
@@ -98,6 +108,9 @@ from apps.shared.adapters import embedder, reranker
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy import matching
+from apps.taxonomy.models import InstrumentLevelKind
+from apps.watch.models import RegulatoryChange
+from apps.watch.reading import _scope_term_ids as change_scope_term_ids  # the feed's own rule, never a copy
 
 # Which chunk a caller means by a hit kind, and which kind a chunk answers as. One mapping,
 # read both ways, so a `types` filter and a hit can never disagree about what a chunk is.
@@ -126,6 +139,11 @@ COLUMNS = (
     "by_concept",
     "fused",
 )
+# What a tie is broken on wherever rows are ranked: the record's stable key, the kind of
+# chunk, its language and the day its text took effect. A rebuilt library reproduces all
+# four, where a chunk's or a record's uuid comes out different on every fresh database and
+# put two of the evaluation set's questions in another order from one run to the next.
+TIE_BREAK = ("record_key", "source_type", "language_id", "valid_from")
 WORDS = re.compile(r"\w+", re.UNICODE)
 ELLIPSIS = "…"
 
@@ -138,7 +156,7 @@ def run_search(body: SearchRequest, *, tenant_id: uuid.UUID | None, user_id: uui
     library's (D-10: only the library is indexed in R1). The reader's own bucket is spent
     before any of it runs, so a runaway client is refused at the door (NFR-02)."""
     limits.search_bucket(user_id)
-    tenant = _tenant(tenant_id)
+    tenant = tenant_of(tenant_id)
     as_of = body.as_of or today_for(tenant)
     found = _candidates(
         body.q,
@@ -148,21 +166,26 @@ def run_search(body: SearchRequest, *, tenant_id: uuid.UUID | None, user_id: uui
         tenant=tenant,
         as_of=as_of,
         limit=body.limit,
+        models=tenant.ai_enabled,
     )
-    ranked = _best_per_record(_reranked(body.q, found))
+    ranked = _best_per_record(_reranked(body.q, found, models=tenant.ai_enabled))
     return SearchResponse(items=[_hit(row, body.q) for row in ranked[: body.limit]], as_of=as_of)
 
 
-def find_similar(body: SimilarRequest, *, caller_id: uuid.UUID) -> SearchResponse:
+def find_similar(body: SimilarRequest, *, caller_id: uuid.UUID, tenant_id: uuid.UUID | None) -> SearchResponse:
     """`POST /search/similar`. The agents' nearest-neighbour read over library chunks
-    (AGT-02): no tenant row is read, and none is returned.
+    (AGT-02): no bank's record is read or returned; a bank's key reads its bank's switch.
 
     The passage carries no language and no `asOf`, because an agent has neither: it sends
     what it fetched and asks what the library holds near it today. So the words are read
     in every content language's configuration and the ranking is taken at today, UTC.
+
+    A bank's own key may hold `search:read` too, and then the text is the bank's own: it
+    reaches the embedder and the reranker only while that bank has its AI features on.
     """
     limits.search_bucket(caller_id)
     as_of = timezone.localdate()
+    models = tenant_id is None or Tenant.objects.filter(pk=tenant_id, ai_enabled=True).exists()
     found = _candidates(
         body.text,
         configurations=tuple(TEXT_SEARCH_CONFIGS.values()),
@@ -171,9 +194,45 @@ def find_similar(body: SimilarRequest, *, caller_id: uuid.UUID) -> SearchRespons
         tenant=None,
         as_of=as_of,
         limit=body.limit,
+        models=models,
     )
-    ranked = _best_per_record(_reranked(body.text, found))
+    ranked = _best_per_record(_reranked(body.text, found, models=models))
     return SearchResponse(items=[_hit(row, body.text) for row in ranked[: body.limit]], as_of=as_of)
+
+
+def passages(
+    question: str, *, tenant: Tenant, lang: str | None, as_of: datetime.date, depth: int
+) -> list[dict[str, Any]]:
+    """What Ask may ground an answer in (SRC-03): the obligations the reader's own search
+    would rank first for the question, one row per obligation, best first, at most `depth`.
+
+    The same statement, the same regulatory scope and the same "as of" as `POST /search`,
+    so an answer can never rest on a record the reader could not have found, and nothing
+    outside the bank's scope is read at all. Obligations only, because a citation points at
+    an obligation version. A row carries the chunk's whole `body` rather than a snippet,
+    since that is the text the model is given. It reaches the embedder and the reranker
+    without asking the bank's switch again, because `ask.answer_events` refused a bank
+    that switched off before calling this. It spends no search bucket: `POST /ask`
+    spends its own (`limits.ask_bucket`).
+
+    Never an obligation under a standard (INV-08, D-81). The library holds a standard's
+    conformance duty and never its clauses, so a model given that duty for a question about
+    a control would answer from what it remembers of licensed text and cite the duty for
+    it. Leaving those rows out before anything is ranked is what makes such a question "no
+    answer" with no model asked, while `POST /search` still finds the duty.
+    """
+    found = _candidates(
+        question,
+        configurations=(_configuration(lang, tenant),),
+        types=[SearchHitType.OBLIGATION],
+        filters=SearchFilters(),
+        tenant=tenant,
+        as_of=as_of,
+        limit=depth,
+        models=True,
+        standards=False,
+    )
+    return _best_per_record(_reranked(question, found, models=True))[:depth]
 
 
 # ---------------------------------------------------------------------------------------
@@ -188,17 +247,21 @@ def _candidates(
     tenant: Tenant | None,
     as_of: datetime.date,
     limit: int,
+    models: bool,
+    standards: bool = True,
 ) -> list[dict[str, Any]]:
-    """The rows either leg found, best fused first. One query, however many hits."""
+    """The rows either leg found, best fused first. One query, however many hits. With
+    `models` false the query reaches no embedder: the vector leg finds nothing."""
     asked = _asked(text, configurations)
-    rows = _filtered(types=types, filters=filters, tenant=tenant, as_of=as_of)
+    rows = _filtered(types=types, filters=filters, tenant=tenant, as_of=as_of, standards=standards)
     rows = rows.annotate(
         keyword_score=SearchRank(F("tsv"), asked),
-        similarity=_similarity(text),
+        similarity=_similarity(text) if models else Value(None, output_field=FloatField()),
+        record_key=_record_key(),
     )
     rows = rows.annotate(
-        keyword_rank=Window(RowNumber(), order_by=(F("keyword_score").desc(), F("id").asc())),
-        concept_rank=Window(RowNumber(), order_by=(F("similarity").desc(nulls_last=True), F("id").asc())),
+        keyword_rank=Window(RowNumber(), order_by=(F("keyword_score").desc(), *TIE_BREAK)),
+        concept_rank=Window(RowNumber(), order_by=(F("similarity").desc(nulls_last=True), *TIE_BREAK)),
     )
     depth = settings.SEARCH_RETRIEVAL_DEPTH
     # Whether the words matched is `@@` and not the rank: `ts_rank` answers 1e-20 rather
@@ -223,7 +286,7 @@ def _candidates(
     # four records and call it the end of the list. The widest columns are left behind
     # (COLUMNS), so the extra rows cost a few kilobytes and no round trip.
     wanted = max(reranker.get_reranker().top_k, limit) * len(TEXT_SEARCH_CONFIGS)
-    page = rows.order_by(F("fused").desc(), "id").values(*COLUMNS)[:wanted]
+    page = rows.order_by(F("fused").desc(), *TIE_BREAK).values(*COLUMNS)[:wanted]
     return [row for row in page if row["by_keyword"] or row["by_concept"]]
 
 
@@ -244,10 +307,17 @@ def _asked(text: str, configurations: tuple[str, ...]) -> SearchQuery:
 
 
 def _filtered(
-    *, types: list[SearchHitType], filters: SearchFilters, tenant: Tenant | None, as_of: datetime.date
+    *,
+    types: list[SearchHitType],
+    filters: SearchFilters,
+    tenant: Tenant | None,
+    as_of: datetime.date,
+    standards: bool = True,
 ) -> QuerySet[SearchChunk]:
     """Everything the caller may see and asked for, before a single row is ranked. A filter
-    applied after ranking would answer a short page of a long list and call it the answer."""
+    applied after ranking would answer a short page of a long list and call it the answer.
+    `standards=False` leaves out every chunk whose instrument sits at a level of the kind
+    `standard`: the kind decides, never the level's key (D-81)."""
     rows = SearchChunk.objects.filter(owner_tenant__isnull=True)
     rows = rows.filter(Q(valid_from__isnull=True) | Q(valid_from__lte=as_of))
     rows = rows.filter(Q(valid_to__isnull=True) | Q(valid_to__gte=as_of))
@@ -263,6 +333,14 @@ def _filtered(
         rows = rows.filter(metadata__binding=filters.binding)
     if filters.term_ids:
         rows = rows.filter(metadata__term_ids__contains=[str(term_id) for term_id in filters.term_ids])
+    if not standards:
+        rows = rows.exclude(
+            Exists(
+                Instrument.objects.filter(
+                    id=_outer_metadata_uuid("instrument_id"), level__kind=InstrumentLevelKind.STANDARD.value
+                )
+            )
+        )
     if tenant is None:
         # The agents' read. An API key belongs to no bank, so there is no regulatory scope
         # to apply — not a wider read, because `owner_tenant_id IS NULL` above has already
@@ -276,26 +354,25 @@ def _filtered(
 
 def _in_footprint(tenant: Tenant) -> Func:
     """FP-03's verdict, from the database function the obligations list and the watch feed
-    use. The scope is chunk 3's rule (`library.reading.obligation_scopes`): the record's own
-    terms plus its instrument's regime, read from the library for the chunk's own record."""
-    own = ArraySubquery(
-        ObligationTerm.objects.filter(obligation_id=_outer_metadata_uuid("obligation_id")).order_by().values("term_id"),
+    use, over the scope the inventory hands it: `library.reading`'s SQL twins, read for the
+    chunk's own record and never copied here. An obligation's chunk is judged by the
+    obligation's own terms plus its instrument's scope; a provision's, which has no terms of
+    its own, by its instrument's scope alone; a registered change's by the scope the watch
+    feed judges it by (`watch.reading`); a chunk that names none of them carries no scope
+    and matches every bank. So the regime and the jurisdictions an
+    instrument's rules reach (D-28, D-29) narrow a search exactly as they narrow the
+    inventory."""
+    obligation = Obligation.objects.filter(id=_outer_metadata_uuid("obligation_id")).values(scope=scope_term_ids())
+    instrument = Instrument.objects.filter(id=_outer_metadata_uuid("instrument_id")).values(scope=instrument_scope_term_ids())
+    change = RegulatoryChange.objects.filter(id=OuterRef("source_id")).values(scope=change_scope_term_ids())
+    scope = Coalesce(
+        Subquery(obligation[:1]),
+        Subquery(instrument[:1]),
+        Subquery(change[:1]),
+        Value([], output_field=ArrayField(UUIDField())),
         output_field=ArrayField(UUIDField()),
     )
-    regime = ArraySubquery(
-        Instrument.objects.filter(regime__isnull=False)
-        .filter(id=_outer_metadata_uuid("instrument_id"))
-        .order_by()
-        .values("regime_id"),
-        output_field=ArrayField(UUIDField()),
-    )
-    scope = Func(own, regime, function="array_cat", output_field=ArrayField(UUIDField()))
-    return Func(
-        Value(tenant.id, output_field=UUIDField()),
-        scope,
-        function=matching.SQL_FUNCTION,
-        output_field=BooleanField(),
-    )
+    return matching.in_footprint_expression(tenant.id, scope)
 
 
 def _similarity(query: str) -> Any:
@@ -350,6 +427,27 @@ def _record_id() -> Case:
     )
 
 
+def _record_key() -> Case:
+    """The stable key of the record the chunk was built from, the first thing a tie is
+    broken on (`TIE_BREAK`): one branch per kind of chunk, a change's included, so ties
+    stay broken the day changes are indexed."""
+    return Case(
+        When(
+            source_type=SearchSource.OBLIGATION_VERSION.value,
+            then=Subquery(Obligation.objects.filter(id=_outer_metadata_uuid("obligation_id")).values("stable_key")[:1]),
+        ),
+        When(
+            source_type=SearchSource.PROVISION_VERSION.value,
+            then=Subquery(Provision.objects.filter(versions__id=OuterRef("source_id")).values("stable_key")[:1]),
+        ),
+        When(
+            source_type=SearchSource.CHANGE.value,
+            then=Subquery(RegulatoryChange.objects.filter(id=OuterRef("source_id")).values("stable_key")[:1]),
+        ),
+        output_field=TextField(),
+    )
+
+
 def _heading() -> Coalesce:
     """The record's own heading in the language searched, which is what the screen puts in
     the hit's title: the chunk's own `title` is the citation line the keyword leg is built
@@ -370,15 +468,16 @@ def _heading() -> Coalesce:
 # ---------------------------------------------------------------------------------------
 # Ranking and the hit
 # ---------------------------------------------------------------------------------------
-def _reranked(query: str, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _reranked(query: str, rows: list[dict[str, Any]], *, models: bool) -> list[dict[str, Any]]:
     """The reranker's verdict on the fused window, added to the fused score.
 
     A row the reranker did not judge keeps its fused score alone, and since the window is
     the top of the fused order it can never overtake one that was judged. That is what
     makes `RERANKER_PROVIDER=none` a contracted state rather than a broken one: it scores
-    every candidate 0.0, and the fused order stands.
+    every candidate 0.0, and the fused order stands, which is also what `models` false asks
+    for: the query reaches no reranker.
     """
-    adapter = reranker.get_reranker()
+    adapter = reranker.get_reranker() if models else reranker.NoReranker(settings.RERANKER_TOP_K)
     window = rows[: adapter.top_k]
     judged = (
         {candidate.index: candidate.score for candidate in adapter.rerank(query=query, documents=_documents(window))}
@@ -387,7 +486,9 @@ def _reranked(query: str, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     )
     for index, row in enumerate(rows):
         row["score"] = row["fused"] + judged.get(index, 0.0)
-    return sorted(rows, key=lambda row: (-row["score"], str(row["id"])))
+    # sorted() is stable: rows the scores cannot separate keep the database's order, which
+    # broke every tie on `TIE_BREAK` and never on an id.
+    return sorted(rows, key=lambda row: -row["score"])
 
 
 def _documents(rows: list[dict[str, Any]]) -> list[str]:
@@ -424,9 +525,9 @@ def _hit(row: dict[str, Any], query: str) -> SearchHit:
         valid_from=row["valid_from"],
         valid_to=row["valid_to"],
         # The library's own view of how soon a record deserves attention lives on a
-        # registered change (`watch.RegulatoryChange.suggested_urgency`), and a change is
-        # not an indexed source until `c7-index-changes` lands. An obligation and a
-        # provision carry none, so saying so is the whole truth here.
+        # registered change (`watch.RegulatoryChange.suggested_urgency`). An obligation
+        # and a provision carry none; a change hit does not carry its label yet, which
+        # needs the reader's language here, so the change it opens is where it is shown.
         urgency=None,
     )
 
@@ -459,9 +560,9 @@ def _first_match(body: str, query: str) -> int:
 # ---------------------------------------------------------------------------------------
 # The caller
 # ---------------------------------------------------------------------------------------
-def _tenant(tenant_id: uuid.UUID | None) -> Tenant:
-    """The bank whose scope and time zone the search is read in. A session in no bank is a
-    404 and not a 403, exactly as every other tenant read answers it."""
+def tenant_of(tenant_id: uuid.UUID | None) -> Tenant:
+    """The bank whose scope and time zone a search or a question is read in. A session in no
+    bank is a 404 and not a 403, exactly as every other tenant read answers it."""
     tenant = (
         Tenant.objects.filter(pk=tenant_id).first()  # ordering: pk lookup, at most one row
         if tenant_id is not None

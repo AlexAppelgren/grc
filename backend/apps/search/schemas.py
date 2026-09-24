@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import enum
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from django.conf import settings
@@ -37,6 +37,7 @@ from pydantic import ConfigDict, Field
 
 from apps.shared.schemas import CamelSchema, WriteBody
 from apps.taxonomy.schemas import TermRef
+from apps.watch.schemas import DatePrecision
 
 __all__ = ["CamelSchema"]
 
@@ -78,7 +79,8 @@ class SearchChunkMetadata(CamelSchema):
     snake_case like every other column. `instrument_id` and `obligation_id` are the
     records the chunk belongs to, `regime` and `term_ids` its taxonomy scope, `binding`
     whether the instrument binds, and `jurisdiction` and `duty_type` the vocabulary keys
-    `SearchFilters` sends. Every one of them is a key or an id, never a label, so
+    `SearchFilters` sends; `authority` is the issuing authority's key on a registered
+    change's chunk. Every one of them is a key or an id, never a label, so
     relabelling a vocabulary row rewrites no chunk.
     """
 
@@ -89,6 +91,7 @@ class SearchChunkMetadata(CamelSchema):
     term_ids: list[UUID] = Field(default_factory=list)
     jurisdiction: str | None = None
     duty_type: str | None = None
+    authority: str | None = None
 
 
 class SearchHitType(enum.StrEnum):
@@ -133,6 +136,19 @@ class SearchMatchKind(enum.StrEnum):
     BOTH = "both"
 
 
+class EvalVia(enum.StrEnum):
+    """Tier-one kind: which read of the library a question of the evaluation set is scored
+    on (SRC-05, SRC-S12, D-81), as the release gate's file says in `via`.
+
+    - `search`: the hits the search page returns, the default.
+    - `ask`: the passages Ask would give a model; a question Ask must not answer expects
+      none, and is scored right only when nothing comes back.
+    """
+
+    SEARCH = "search"
+    ASK = "ask"
+
+
 # ---------------------------------------------------------------------------------------
 # POST /search, POST /search/similar
 # ---------------------------------------------------------------------------------------
@@ -153,10 +169,10 @@ class SearchFilters(WriteBody):
     instrument_id: UUID | None = Field(
         default=None,
         description=(
-            "Narrow the search to one instrument, such as the bank's copy of FFFS 2017:2, "
-            "by the instrument's id. Source: the shared library. Do not read a filtered "
-            "result as everything the instrument requires of the bank: it is what matched "
-            "the query inside that instrument, not the instrument's full obligation list."
+            "Narrow the search to one instrument, such as FFFS 2017:2, by the instrument's "
+            "id, a UUID. Source: the shared library. Do not read a filtered result as "
+            "everything the instrument requires of the bank: it is what matched the query "
+            "inside that instrument, not the instrument's full obligation list."
         ),
     )
     jurisdiction: str | None = Field(
@@ -188,7 +204,7 @@ class SearchFilters(WriteBody):
         max_length=settings.LIBRARY_TERM_FILTER_MAX,
         description=(
             "Narrow the search to records tagged with all of these taxonomy terms, such as "
-            "a regime or a legal entity kind, by term id. Terms are rows in the shared "
+            "a regime or a legal entity kind, each by its term id, a UUID. Terms are rows in the shared "
             "library's taxonomy, which an administrator may extend through an approved "
             "proposal; the dimensions seeded on day one are `regime`, `account_type`, "
             f"`legal_entity`, `service_type`, `client_category`, `channel` and "
@@ -378,9 +394,9 @@ class SearchHit(CamelSchema):
     )
     id: UUID = Field(
         description=(
-            "The id of the record the hit points at: the obligation, the provision or the "
-            "registered change. Source: the shared library. Do not read it as the id of "
-            "the indexed chunk, which is derived data the API never exposes."
+            "The id of the record the hit points at, a UUID: the obligation, the provision "
+            "or the registered change. Source: the shared library. Do not read it as the id "
+            "of the indexed chunk, which is derived data the API never exposes."
         )
     )
     title: str = Field(
@@ -442,18 +458,20 @@ class SearchHit(CamelSchema):
     valid_from: date | None = Field(
         default=None,
         description=(
-            "The first day this version of the record was in force, so a reader knows "
-            "whether it governed a transaction. Source: the shared library. Do not read it "
-            "as the day the bank had to comply from: a transitional rule may give longer, "
-            "and that is in the text."
+            "The first day this version of the record was in force, a plain date such as "
+            "`2026-01-01`, so a reader knows whether it governed a transaction. Empty when "
+            "the library holds no such day, as on a change not yet in force. Source: the "
+            "shared library. Do not read it as the day the bank had to comply from: a "
+            "transitional rule may give longer, and that is in the text."
         ),
     )
     valid_to: date | None = Field(
         default=None,
         description=(
-            "The last day this version was in force; empty means it still is. Source: the "
-            "shared library. Do not read an empty value as permanent: a change already "
-            "registered in the watch feed may be about to close it."
+            "The last day this version was in force, a plain date such as `2026-08-31`; "
+            "empty means it still is. Source: the shared library. Do not read an empty value "
+            "as permanent: a change already registered in the watch feed may be about to "
+            "close it."
         ),
     )
     urgency: TermRef | None = Field(
@@ -601,9 +619,10 @@ class AnswerCitation(CamelSchema):
     )
     obligation_id: UUID = Field(
         description=(
-            "The obligation the statement rests on, which the reader opens to check it. "
-            "Source: the shared library. Do not read a citation as a finding that the "
-            "obligation applies to this bank: applicability is a separate judgement."
+            "The obligation the statement rests on, by its id, a UUID, which the reader "
+            "opens to check it. Source: the shared library. Do not read a citation as a "
+            "finding that the obligation applies to this bank: applicability is a separate "
+            "judgement."
         )
     )
     version_no: int = Field(
@@ -630,10 +649,11 @@ class AnswerCitation(CamelSchema):
     provision_id: UUID | None = Field(
         default=None,
         description=(
-            "The exact provision behind the obligation, when the answer could pin one, so "
-            "the reader lands on the paragraph rather than the card. Source: the shared "
-            "library. Do not read its absence as a weaker citation: many obligations "
-            "summarise several provisions and pin none."
+            "The exact provision behind the obligation, by its id, a UUID, when the answer "
+            "could pin one, so the reader lands on the paragraph rather than the card. Empty "
+            "today: an answer cites the obligation, and the provision is one click further. "
+            "Source: the shared library. Do not read its absence as a weaker citation: many "
+            "obligations summarise several provisions and pin none."
         ),
     )
 
@@ -654,6 +674,8 @@ class AnswerStatement(CamelSchema):
                     "citationIndexes": [1],
                     "pendingChangeId": "a41d0f36-2c88-4e7b-b5a9-13d6c4f80e27",
                     "pendingChangeLabel": "FI adopts amended rules on paying for investment research",
+                    "pendingChangeInForceOn": "2026-10-01",
+                    "pendingChangeInForceOnPrecision": "day",
                 }
             ]
         }
@@ -678,10 +700,14 @@ class AnswerStatement(CamelSchema):
     pending_change_id: UUID | None = Field(
         default=None,
         description=(
-            "A registered change that would move the law this sentence rests on, so a "
-            "reader is warned before acting on it. Source: the shared library's watch feed. "
-            "Do not read it as law: a registered change may be a consultation that never "
-            "takes effect, and the sentence still describes the rule in force."
+            "The registered change that will move the law this sentence rests on, by its "
+            "id, a UUID, so a reader is warned before acting on it. Only a change the "
+            "library confirmed affects a cited obligation, still active, whose type's "
+            "lifecycle kind moves the law on its key date (`adopted`, or `in_force` from a "
+            "later day) and whose key date falls after the answer's `asOf`; of several, the "
+            "earliest. Empty when there is none. Source: the shared library's watch feed. "
+            "Do not read it as the law today: the sentence still describes the rule in "
+            "force on `asOf`, and the change is what comes next."
         ),
     )
     pending_change_label: str | None = Field(
@@ -690,6 +716,28 @@ class AnswerStatement(CamelSchema):
             "The title of that change, so the warning reads as something rather than an id. "
             "Source: the shared library's watch feed. Do not read it as a summary of the "
             "effect on the bank: what it means here is the bank's own assessment."
+        ),
+    )
+    pending_change_in_force_on: date | None = Field(
+        default=None,
+        description=(
+            "The day that change takes effect, as a plain date such as `2026-10-01`, so the "
+            "screen can warn \"Change pending: in force 1 Oct\" and the reader knows how long "
+            "the sentence stays true. Only an adopted change, or one already in force from a "
+            "later day, is flagged: a consultation or a supervisory statement moves no law on "
+            "a date. Empty exactly when `pendingChangeId` is. Source: the key date the shared "
+            "library's watch feed holds for the change. Do not read it as the bank's own "
+            "deadline, which lives on its case, nor as a promise: a date can still move."
+        ),
+    )
+    pending_change_in_force_on_precision: DatePrecision | None = Field(
+        default=None,
+        description=(
+            "How exact that date is, a fixed kind: `day` renders as 1 October 2026, "
+            "`month` as October 2026, `quarter` as Q4 2026 and `year` as 2026. Empty "
+            "exactly when `pendingChangeInForceOn` is. Source: the shared library's watch "
+            "feed, as the source stated the date. Do not print a day the source did not "
+            "state: render the date by this precision."
         ),
     )
 
@@ -716,6 +764,8 @@ class Answer(CamelSchema):
                             "citationIndexes": [1],
                             "pendingChangeId": None,
                             "pendingChangeLabel": None,
+                            "pendingChangeInForceOn": None,
+                            "pendingChangeInForceOnPrecision": None,
                         }
                     ],
                     "citations": [
@@ -739,10 +789,11 @@ class Answer(CamelSchema):
 
     id: UUID = Field(
         description=(
-            "This answer's id, which a reader's verdict points at (`rateAnswer`) and which "
-            "the AI log records. Source: the server, generated before the first event. Do "
-            "not read it as a record of the bank's position: an answer is a reading aid, "
-            "and nothing in the inventory changed because it was given."
+            "This answer's id, a UUID, which a reader's verdict points at (`rateAnswer`) and "
+            "which the AI log row of its model call carries as its own. Source: the server, "
+            "generated before the first event. Do not read it as a record of the bank's "
+            "position: an answer is a reading aid, and nothing in the inventory changed "
+            "because it was given."
         )
     )
     question: str = Field(
@@ -784,8 +835,10 @@ class Answer(CamelSchema):
     model: str = Field(
         description=(
             "Which model wrote the statements, so a bank's vendor review can trace an "
-            "answer to the system that produced it. Source: the server's model call, "
-            "recorded on the AI log row. Do not read a model name as a quality guarantee."
+            "answer to the system that produced it. Empty when no model was asked: a "
+            "question no library passage supported is answered `noAnswer` without one. "
+            "Source: the server's model call, recorded on the AI log row. Do not read a "
+            "model name as a quality guarantee."
         )
     )
     ai_generated: bool = Field(
@@ -828,9 +881,10 @@ class AskStartEvent(CamelSchema):
     )
     id: UUID = Field(
         description=(
-            "The answer's id, sent first so the screen can offer a verdict while the answer "
-            "is still arriving. Source: the server. Do not read it as a promise that an "
-            "answer follows: the stream may still close with a `problem` event."
+            "The answer's id, a UUID, sent first so the screen can offer a verdict while the "
+            "answer is still arriving; the closing `answer` event carries the same id. "
+            "Source: the server. Do not read it as a promise that an answer follows: the "
+            "stream may still close with a `problem` event."
         )
     )
 
@@ -851,6 +905,8 @@ class AskStatementEvent(CamelSchema):
                         "citationIndexes": [1],
                         "pendingChangeId": None,
                         "pendingChangeLabel": None,
+                        "pendingChangeInForceOn": None,
+                        "pendingChangeInForceOnPrecision": None,
                     },
                 }
             ]
@@ -896,6 +952,8 @@ class AskAnswerEvent(CamelSchema):
                                 "citationIndexes": [1],
                                 "pendingChangeId": None,
                                 "pendingChangeLabel": None,
+                                "pendingChangeInForceOn": None,
+                                "pendingChangeInForceOnPrecision": None,
                             }
                         ],
                         "citations": [
@@ -913,6 +971,7 @@ class AskAnswerEvent(CamelSchema):
                         "aiGenerated": True,
                         "createdAt": "2026-09-20T09:14:02Z",
                     },
+                    "stopReason": "end_turn",
                 }
             ]
         }
@@ -933,6 +992,20 @@ class AskAnswerEvent(CamelSchema):
             "otherwise."
         )
     )
+    stop_reason: str | None = Field(
+        default=None,
+        description=(
+            "How the model finished writing, in the provider's own word, exactly as the "
+            "answer's AI log row stores it (`stopReason` there, D-82): `end_turn` when the "
+            "model finished the answer, `max_tokens` when it was cut off at the length "
+            "limit (`ASK_MAX_TOKENS`, 1024 tokens), and any other word the provider gives "
+            "passed on unchanged. Empty when no model was asked, because no passage "
+            "supported an answer. Source: the model's provider. Do not read `max_tokens` "
+            "as a wrong answer: every statement sent is still cited, but the answer may "
+            "stop before its last point, so the screen says it was cut short and a "
+            "narrower question may get the rest."
+        ),
+    )
 
 
 class AskProblemEvent(CamelSchema):
@@ -943,7 +1016,11 @@ class AskProblemEvent(CamelSchema):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
-                {"event": "problem", "code": "not_built", "detail": "Ask is not switched on yet."}
+                {
+                    "event": "problem",
+                    "code": "model_unavailable",
+                    "detail": "The answer could not be finished. Ask again in a moment.",
+                }
             ]
         }
     )
@@ -959,11 +1036,16 @@ class AskProblemEvent(CamelSchema):
     code: str = Field(
         description=(
             "The machine-readable reason the answer stopped, the same `code` an RFC 9457 "
-            "problem body would carry; today the one code this stream ends on is "
-            "`not_built`, while the answering logic is being built. Branch on this, never "
-            "on `detail`. Source: the server. Do not read a code as a verdict on the "
-            "question: it says why this stream stopped, not that the library holds no "
-            "answer, which is `noAnswer` on a stream that finished."
+            "problem body would carry. The one code a stream ends on is "
+            "`model_unavailable`: the model could not be reached, declined, or did not "
+            "finish before its deadline. The call is still in the AI log, with whatever it "
+            "had written and `stopReason` `failed`, and asking again may succeed. "
+            "Everything that can refuse a question before it is answered (no session, no "
+            "permission, the rate limit, the bank's AI switch) is a status with a problem "
+            "body instead, and no stream opens. Branch on this, never on `detail`. Source: "
+            "the server. Do not read a code as a verdict on the question: it says why this "
+            "stream stopped, not that the library holds no answer, which is `noAnswer` on a "
+            "stream that finished."
         )
     )
     detail: str = Field(
@@ -1029,5 +1111,462 @@ class AnswerFeedbackBody(WriteBody):
             "Source: the reader, in the bank's own zone. Do not put client data or evidence "
             "in it: it is stored beside the answer for the bank's own review, and the audit "
             "row that records the verdict carries none of this text."
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# The evaluation set in the console (SRC-05, ADM-02): GET and POST /eval/questions and
+# GET /eval/runs, platform staff only. Keys, never ids: a question names the library records
+# it expects by stable key, because the corpus the gate builds has new ids every time.
+# ---------------------------------------------------------------------------------------
+EVAL_KEY_PATTERN = r"^[a-z0-9][a-z0-9-]*$"
+_EXAMPLE_EVAL_QUESTION: dict[str, Any] = {
+    "id": "0b6f3c1e-5d7a-4a54-9c2e-7f1d8e2a4b90",
+    "key": "r-en-01",
+    "lang": "en",
+    "question": "FFFS 2017:2",
+    "expected": ["obl-costs-charges", "obl-research-payments", "obl-product-governance", "obl-client-assets"],
+    "matchKind": "keyword",
+    "asOf": None,
+    "via": "search",
+    "notes": "An identifier is won by keyword. Every obligation under the instrument is relevant.",
+    "active": True,
+    "inGate": True,
+}
+_EXAMPLE_EVAL_SCORES: dict[str, Any] = {"recallAt10": 0.92, "mrr": 0.81}
+_EXAMPLE_EVAL_RUN: dict[str, Any] = {
+    "id": "5e2d9a47-1c3b-4f6e-8a0d-2b7c9e4f1a36",
+    "runAt": "2026-09-23T06:00:00Z",
+    "config": {"retriever": "apps.search.eval:Retriever (embedder none, reranker none)", "isMock": False, "questions": 53},
+    "metrics": {
+        "overall": _EXAMPLE_EVAL_SCORES,
+        "perLanguage": {"en": _EXAMPLE_EVAL_SCORES, "sv": {"recallAt10": 0.88, "mrr": 0.79}},
+        "perMatchKind": {"keyword": {"recallAt10": 1.0, "mrr": 0.97}, "concept": {"recallAt10": 0.8, "mrr": 0.66}},
+    },
+    "results": [
+        {
+            "questionKey": "r-en-01",
+            "returned": ["obl-costs-charges", "obl-client-assets", "obl-product-governance", "obl-research-payments"],
+            "recallAt10": 1.0,
+            "mrr": 1.0,
+        }
+    ],
+}
+_MATCH_KIND = (
+    "What the question expects to win it, which is what AC-SRC1 checks: `keyword` when an "
+    "identifier such as `FFFS 2017:2` must be found by its words, `concept` when a phrasing "
+    "such as `nudging in onboarding` must be found by meaning, `both` when one query needs "
+    "the two legs fused. The gate reports its scores per match kind, so a regression in one "
+    "leg shows on its own. Source: platform staff. Do not read it as how any hit was "
+    "actually found: that is the `matchKind` of a search hit."
+)
+_EXPECTED = (
+    "The library records a good answer contains, each by its stable key (an obligation's "
+    "`obl-costs-charges`, a provision's `sfs-2007-528/9`, a change's key), every one of them "
+    "relevant. Recall at 10 is the share of them found in the first ten hits and MRR the "
+    "reciprocal rank of the first. An empty list is a question the library has no answer "
+    "to: it scores right only when search returns nothing. At most "
+    f"{settings.API_PAGE_SIZE_MAX} keys, the widest page the gate's search asks for, each "
+    "1 to 200 characters; more answers 422. Source: platform staff; the keys are not "
+    "checked against the library, because the gate scores the sample corpus and not this "
+    "database's records. Do not read a key here as a record this deployment holds."
+)
+
+
+class EvalScores(CamelSchema):
+    """Two retrieval scores over a set of questions, each a mean between 0 and 1."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_EVAL_SCORES]})
+
+    recall_at_10: float = Field(
+        ge=0,
+        le=1,
+        description=(
+            "The mean share of the expected records found in the first ten hits, from 0 "
+            "(none found) to 1 (all found). Source: the server, computed by the release "
+            "gate's own scoring. Do not read it as precision: extra hits cost nothing here."
+        ),
+    )
+    mrr: float = Field(
+        ge=0,
+        le=1,
+        description=(
+            "The mean reciprocal rank of the first expected record, from 0 (never found) to "
+            "1 (always first). Source: the server, computed by the release gate's own "
+            "scoring. Do not read it as a share of questions answered."
+        ),
+    )
+
+
+class EvalRunConfig(CamelSchema):
+    """What a run scored: which retrieval chain, and over how many questions."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_EVAL_RUN["config"]]})
+
+    retriever: str = Field(
+        description=(
+            "The retrieval chain that answered, naming its embedder and reranker, for "
+            "example `apps.search.eval:Retriever (embedder none, reranker none)`. Source: "
+            "the server. Do not read it as the chain this deployment serves searches with: "
+            "the run scores the sample corpus in a database of its own."
+        )
+    )
+    is_mock: bool = Field(
+        description=(
+            "True when any adapter in the chain was a stand-in (a mock embedder or "
+            "reranker), so the scores say nothing about a real model; false when every "
+            "adapter was real or absent. Source: the server. Do not compare a mock run's "
+            "scores with a real one's."
+        )
+    )
+    questions: int = Field(
+        ge=0,
+        description=(
+            "How many active questions were asked in the run, 0 or more. Source: the server. "
+            "Do not read it as the size of the set: inactive questions are not asked."
+        ),
+    )
+
+
+class EvalRunMetrics(CamelSchema):
+    """A run's scores overall, per content language and per match kind."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_EVAL_RUN["metrics"]]})
+
+    overall: EvalScores = Field(
+        description=(
+            "The scores over every question asked. Source: the server. Do not read them as "
+            "the release gate's verdict: the gate compares them with a recorded baseline."
+        )
+    )
+    per_language: dict[str, EvalScores] = Field(
+        description=(
+            "The scores per content language of the questions, keyed by language key (`en`, "
+            "`sv`, `da`, `nb`, `fi`, the library's language rows). Source: the server. Do "
+            "not read a language that is absent as scoring zero: no question in it was asked."
+        )
+    )
+    per_match_kind: dict[str, EvalScores] = Field(
+        description=(
+            "The scores per expected match kind, keyed `keyword`, `concept` or `both`, so a "
+            "regression in the keyword or the vector leg shows on its own. Source: the "
+            "server. Do not read a kind that is absent as scoring zero: no question of it was asked."
+        )
+    )
+
+
+class EvalQuestionResult(CamelSchema):
+    """What one question got back in a run, and how it scored."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": _EXAMPLE_EVAL_RUN["results"]})
+
+    question_key: str = Field(
+        description=(
+            "The stable key of the question asked, for example `r-en-01`. Source: the "
+            "evaluation set. Do not read it as a library record's key."
+        )
+    )
+    returned: list[str] = Field(
+        description=(
+            "The stable keys of the first ten hits search returned, best first; empty when "
+            "it returned nothing. Source: the server. Do not read a key missing from here as "
+            "missing from the library: only the first ten are kept."
+        )
+    )
+    recall_at_10: float = Field(
+        ge=0,
+        le=1,
+        description=(
+            "This question's share of expected records found in the first ten hits, from 0 "
+            "to 1; a question with no answer scores 1 only when nothing came back. Source: "
+            "the server. Do not read 1 as every hit being relevant."
+        ),
+    )
+    mrr: float = Field(
+        ge=0,
+        le=1,
+        description=(
+            "The reciprocal rank of this question's first expected record, from 0 (not "
+            "found) to 1 (first): 0.5 means it came second. Source: the server. Do not read "
+            "it as how many expected records were found."
+        ),
+    )
+
+
+class EvalQuestionInput(WriteBody):
+    """`POST /eval/questions`: one labelled question. A field the schema does not name is
+    refused, never dropped."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "key": "r-sv-17",
+                    "lang": "sv",
+                    "question": "kostnader och avgifter före tjänsten",
+                    "expected": ["obl-costs-charges"],
+                    "matchKind": "concept",
+                    "notes": "Swedish phrasing of the cost disclosure, won by meaning.",
+                }
+            ]
+        }
+    )
+
+    key: str = Field(
+        min_length=1,
+        max_length=40,
+        pattern=EVAL_KEY_PATTERN,
+        description=(
+            "The question's stable key, which never changes: lower-case letters, digits and "
+            "hyphens, starting with a letter or digit, 1 to 40 characters, by convention "
+            "`r-<language>-<number>` as in `r-sv-17`. A key already in the set answers 409 "
+            "`duplicate_key`; one that breaks the pattern answers 422. Source: platform staff. "
+            "Do not reuse a retired question's key: a key names one question for good."
+        ),
+    )
+    lang: str = Field(
+        description=(
+            "The content language the question is asked in, as a language key: one of the "
+            "library's language rows (`en`, `sv`, `da`, `nb`, `fi` on day one), read from "
+            "`GET /reference/languages`. A key that names no row answers 422 `unknown_key`. "
+            "Source: platform staff. Do not send a label such as `Svenska`: only the key is "
+            "accepted."
+        )
+    )
+    question: str = Field(
+        min_length=1,
+        max_length=settings.SEARCH_QUERY_MAX_CHARS,
+        description=(
+            "What a reader would type into search, exactly as asked, 1 to "
+            f"{settings.SEARCH_QUERY_MAX_CHARS} characters, the most search itself accepts; "
+            "longer answers 422. Source: platform staff. Do not put a bank's own text in it: "
+            "the set is the platform's and is written to a file in the code repository."
+        ),
+    )
+    expected: list[Annotated[str, Field(min_length=1, max_length=200)]] = Field(
+        default_factory=list, max_length=settings.API_PAGE_SIZE_MAX, description=_EXPECTED
+    )
+    match_kind: SearchMatchKind = Field(description=_MATCH_KIND)
+    as_of: date | None = Field(
+        default=None,
+        description=(
+            "The legal date the question is asked on, as an ISO date: the version in force "
+            "that day is the one expected. Absent means the sample corpus's own anchor day. "
+            "Source: platform staff. Do not read it as the day the question was written."
+        ),
+    )
+    via: EvalVia = Field(
+        default=EvalVia.SEARCH,
+        description=(
+            "Which read of the library the question is scored on: `search`, the default, "
+            "scores the hits the search page returns; `ask` scores the passages Ask would give "
+            "a model, so a question Ask must not answer expects none. Source: platform staff. "
+            "Do not read `ask` as a question to a model: no model is called when scoring."
+        ),
+    )
+    notes: str = Field(
+        default="",
+        max_length=settings.SEARCH_FEEDBACK_NOTE_MAX_CHARS,
+        description=(
+            "Why the question is in the set and what it proves, for the next person who "
+            f"reads it. At most {settings.SEARCH_FEEDBACK_NOTE_MAX_CHARS} characters; longer "
+            "answers 422. Source: platform staff. Do not put a bank's own text or a client's "
+            "data in it: the set is written to a file in the code repository."
+        ),
+    )
+
+
+class EvalQuestionOut(CamelSchema):
+    """One question of the evaluation set as the console shows it."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_EVAL_QUESTION]})
+
+    id: UUID = Field(
+        description=(
+            "The question's identifier in this database, a UUID. Source: the server. Do not "
+            "use it to name the question elsewhere: the stable `key` is what the gate's file "
+            "and every run use, and the id differs in every database."
+        )
+    )
+    key: str = Field(
+        description=(
+            "The question's stable key, for example `r-en-01`, which never changes and is "
+            "the `id` of its line in the release gate's file. Source: platform staff. Do not "
+            "read it as a library record's stable key."
+        )
+    )
+    lang: str = Field(
+        description=(
+            "The content language the question is asked in, as a key of the library's "
+            "language rows (`en`, `sv`, `da`, `nb`, `fi` on day one). Source: platform staff. "
+            "Do not read it as the language of the records it expects: a Swedish question "
+            "may expect an EU obligation."
+        )
+    )
+    question: str = Field(
+        description=(
+            "What is typed into search, exactly as asked, for example `FFFS 2017:2`. Source: "
+            "platform staff. Do not read it as a bank's question: the set is the platform's own."
+        )
+    )
+    expected: list[str] = Field(description=_EXPECTED)
+    match_kind: SearchMatchKind = Field(description=_MATCH_KIND)
+    as_of: date | None = Field(
+        description=(
+            "The legal date the question is asked on, or null for the sample corpus's own "
+            "anchor day. Source: platform staff. Do not read it as the day the question was "
+            "written."
+        )
+    )
+    via: EvalVia = Field(
+        description=(
+            "Which read of the library the question is scored on: `search` scores the hits the "
+            "search page returns; `ask` scores the passages Ask would give a model. Source: "
+            "platform staff. Do not read `ask` as a question to a model: no model is called "
+            "when scoring."
+        )
+    )
+    notes: str = Field(
+        description=(
+            "Why the question is in the set and what it proves; empty when nobody wrote why. "
+            "Source: platform staff. Do not read an empty note as a question nobody checked."
+        )
+    )
+    active: bool = Field(
+        description=(
+            "True while the question belongs to the set; false once it has been retired, "
+            "which keeps it here for the record but leaves it out of every run and out of "
+            "the file the gate reads. Source: platform staff. Do not read false as the "
+            "question having failed."
+        )
+    )
+    in_gate: bool = Field(
+        description=(
+            "True when the release gate that built this deployment scores the question: its "
+            "key is a line of `backend/eval/retrieval.jsonl` in this build. False for a "
+            "question added in the console and not yet written to that file with the "
+            "dump_eval_questions command and shipped: it is kept, and scored by the "
+            "record_eval_run command, but a drop on it fails no build yet. Source: the "
+            "server. Do not read true as the question passing."
+        )
+    )
+
+
+class EvalQuestionPage(CamelSchema):
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_EVAL_QUESTION], "total": 53}]})
+
+    items: list[EvalQuestionOut] = Field(
+        description=(
+            "The questions on this page, ordered by key, retired ones included. An empty "
+            "list is a 200 and means the set holds no question yet. Source: platform staff "
+            "and the gate's file. Do not read a short page as the end unless `total` agrees."
+        )
+    )
+    total: int = Field(
+        description=(
+            "How many questions the set holds in total, retired ones included; use it to "
+            "size a pager. Source: the server. Do not read it as how many are on this page."
+        )
+    )
+
+
+class EvalRunOut(CamelSchema):
+    """One recorded run of the evaluation set: which chain, the scores, and each answer."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_EVAL_RUN]})
+
+    id: UUID = Field(
+        description=(
+            "The run's identifier, a UUID, which the audit row of the run names too. Source: "
+            "the server. Do not read its order as the order of the runs: use `runAt`."
+        )
+    )
+    run_at: datetime = Field(
+        description=(
+            "When the run was recorded, as an ISO 8601 date-time in UTC. Source: the server. "
+            "Do not read it as when the questions were last changed."
+        )
+    )
+    config: EvalRunConfig = Field(
+        description=(
+            "Which retrieval chain the run scored, and over how many questions. Source: the "
+            "server. Do not compare two runs whose chains differ as if only search changed."
+        )
+    )
+    metrics: EvalRunMetrics = Field(
+        description=(
+            "The run's scores overall, per language and per match kind. Source: the server. "
+            "Do not read them as the release gate's verdict, which is in CI against its baseline."
+        )
+    )
+    results: list[EvalQuestionResult] = Field(
+        description=(
+            "One entry per question asked, in the order asked: what came back and how it "
+            "scored. Source: the server. Do not read a question here as still active: one "
+            "retired since stays here, as it ran."
+        )
+    )
+
+
+class EvalRunPage(CamelSchema):
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_EVAL_RUN], "total": 1}]})
+
+    items: list[EvalRunOut] = Field(
+        description=(
+            "The runs on this page, newest first. An empty list is a 200 and means no run "
+            "has been recorded yet. Source: the server. Do not read an empty list as search "
+            "being unscored: the release gate scores it in CI either way."
+        )
+    )
+    total: int = Field(
+        description=(
+            "How many runs are recorded in total; use it to size a pager. Source: the server. "
+            "Do not read it as how many are on this page."
+        )
+    )
+
+
+class EvalBaselineOut(CamelSchema):
+    """The release gate's accepted retrieval scores in this build, each null until recorded."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"recorded": False, "recordedAt": None, "recallAt10": None, "mrr": None}]}
+    )
+
+    recorded: bool = Field(
+        description=(
+            "True once a real evaluator has scored the retrieval track and its scores were "
+            "recorded as the baseline the release gate compares every build with; false while "
+            "none has, and then each score is null. Source: `backend/eval/baseline.json` in this "
+            "build. Do not read false as search failing: an unrecorded track fails no build."
+        )
+    )
+    recorded_at: datetime | None = Field(
+        description=(
+            "When the baseline was recorded, as an ISO 8601 date-time in UTC, or null while "
+            "it is not. Source: the baseline file. Do not read it as when this build shipped."
+        )
+    )
+    recall_at_10: float | None = Field(
+        ge=0,
+        le=1,
+        description=(
+            "The accepted mean recall at 10, from 0 to 1, or null while nobody has recorded "
+            "it. Source: the baseline file. Do not read null as zero: a recorded 0 is a score, "
+            "null is the absence of one."
+        ),
+    )
+    mrr: float | None = Field(
+        ge=0,
+        le=1,
+        description=(
+            "The accepted mean reciprocal rank, from 0 to 1, or null while nobody has recorded "
+            "it. Source: the baseline file. Do not read null as zero: a recorded 0 is a score, "
+            "null is the absence of one."
         ),
     )

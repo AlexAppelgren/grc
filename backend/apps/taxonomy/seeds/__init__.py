@@ -14,9 +14,9 @@ leaves one audit row.
 
 Keys, labels and usage notes come from the prototype fixture
 (apps/taxonomy/seeds/fixture.py) so chunk 3 loads the fixture's records against the
-rows these seeds wrote. What the prototype has no rows for (provision kinds, the four
-dimensions beyond the prototype's seven, the rejection reasons, the licensed activities)
-is authored here."""
+rows these seeds wrote. What the prototype has no rows for (provision kinds, the five
+dimensions beyond the prototype's seven, the rejection reasons, the licensed activities,
+the standards a bank may follow) is authored here."""
 
 from __future__ import annotations
 
@@ -80,13 +80,27 @@ def _tag_rows() -> list[SystemRow]:
     return [SystemRow(tag["key"], {"en": tag["label_en"], "sv": tag["label_sv"]}) for tag in fixture.tags()]
 
 
-# The eleven dimensions of schema v0.3: the prototype's seven from the fixture (with its
-# restricts_footprint flags), the other four authored here. Only `theme` classifies.
+# The twelve dimensions: the prototype's seven from the fixture (with its
+# restricts_footprint flags) and five authored here. Only `theme` classifies. `standard`, the
+# standards a bank follows, is opt-in (D-36): a record carrying one of its terms shows only to
+# a bank whose regulatory scope names that term, whatever its restricts_footprint flag says
+# (apps/taxonomy/matching.py). No E2E tenant holds one of its terms, so a standard's records
+# start outside every seeded bank's scope.
 _EXTRA_DIMENSIONS: list[SystemRow] = [
     SystemRow("jurisdiction", {"en": "Jurisdiction", "sv": "Jurisdiktion"}, "Where the rule applies: the Union or a country. Terms mirror the jurisdiction table.", TermDimensionKind.SCOPE.value, {"restricts_footprint": True}),
-    SystemRow("theme", {"en": "Theme", "sv": "Tema"}, "What the rule is about, for browsing and briefings. Never narrows the footprint.", TermDimensionKind.CLASSIFICATION.value, {"restricts_footprint": False}),
+    SystemRow("theme", {"en": "Theme", "sv": "Tema"}, "What the rule is about, for browsing and briefings. Never narrows the regulatory scope.", TermDimensionKind.CLASSIFICATION.value, {"restricts_footprint": False}),
     SystemRow("licensed_activity", {"en": "Licensed activity", "sv": "Tillståndspliktig verksamhet"}, "The licence under which the firm acts: banking, securities, insurance, fund management.", TermDimensionKind.SCOPE.value, {"restricts_footprint": True}),
     SystemRow("product_type", {"en": "Product type", "sv": "Produkttyp"}, "The financial product the rule concerns.", TermDimensionKind.SCOPE.value, {"restricts_footprint": True}),
+    SystemRow(
+        "standard",
+        {"en": "Standards followed", "sv": "Standarder vi följer"},
+        "The standards within the sector scope that the bank follows by choice, by contract or because a "
+        "supervisor expects it. Opt-in: a record carrying a standard shows only to a bank whose regulatory "
+        "scope names that standard, also when the scope names no standard at all. Only a standard's own "
+        "records carry one of these terms; a law that cites a standard never does.",
+        TermDimensionKind.OPT_IN.value,
+        {"restricts_footprint": True},
+    ),
 ]
 
 # The payment services of PSD2 Annex I point 5, as the two businesses a firm is licensed
@@ -94,9 +108,31 @@ _EXTRA_DIMENSIONS: list[SystemRow] = [
 # "utgivning av betalningsinstrument eller inlösen av transaktionsbelopp"). They are terms
 # of `licensed_activity`, a dimension the prototype fixture has no rows for, so they are
 # authored here like the other lists the prototype does not cover.
+#
+# The standards a bank may follow: one term per standard and never per edition, so a bank's
+# scope survives a new edition (D-36), and ISO/IEC 27001 alone for now (D-47). A standard is
+# named by its reference in every language, never by its title, and the library holds none
+# of its text (INV-08). The watch door refuses a standard's term on a change whose authority
+# is not a standards body (WAT-S11, 422 `standard_term_only_on_standards`): an agent's key
+# registers a change with no second person (D-64), and a law tagged with a standard would
+# vanish from every bank that follows none. With that door in place the term is seeded
+# active; a database seeded while it was held keeps it inactive, because the seed creates
+# and never updates a term. apps/taxonomy/tests_matching.SeededStandard pins it.
 _EXTRA_TERMS: list[dict[str, Any]] = [
     {"dimension": "licensed_activity", "key": "card_issuing", "label_en": "Card issuing", "label_sv": "Kortutgivning", "sort_order": 1},
     {"dimension": "licensed_activity", "key": "card_acquiring", "label_en": "Card acquiring", "label_sv": "Kortinlösen", "sort_order": 2},
+    {
+        "dimension": "standard",
+        "key": "iso_iec_27001",
+        "label_en": "ISO/IEC 27001",
+        "label_sv": "ISO/IEC 27001",
+        "usage_note": (
+            "The standard ISO/IEC 27001, every edition of it. Its records sit under the regime ai_ict "
+            "(AI and ICT), so a bank sees them only when its regulatory scope holds both that regime and "
+            "this term."
+        ),
+        "sort_order": 1,
+    },
 ]
 
 _PROVISION_KINDS: list[SystemRow] = [
@@ -116,6 +152,18 @@ _REJECTION_REASONS: list[SystemRow] = [
     SystemRow("bad_source", {"en": "Bad source", "sv": "Bristfällig källa"}, "The source is missing, outdated or not the authoritative text."),
     SystemRow("duplicate", {"en": "Duplicate", "sv": "Dubblett"}, "The library already holds this, or another proposal makes the same change."),
     SystemRow("not_relevant", {"en": "Not relevant", "sv": "Inte relevant"}, "The change is outside what the library covers."),
+    # Not in the CHECK list: the PRD's sector scope as a reason of its own (PRO-01, AGT-08),
+    # so a reviewer can say why an off-sector record never enters the library.
+    SystemRow(
+        "outside_sector_scope",
+        {"en": "Outside the sector scope", "sv": "Utanför sektorsomfattningen"},
+        "The record falls outside the library's sector scope: regulated financial services only (banking, "
+        "payments, investment services, insurance and pension provision, and asset and wealth management), "
+        "with the AML, data protection and ICT-risk regimes that apply to them and the tax and AI rules as "
+        "they apply to financial firms and their products. Every record carries a regime from the regime "
+        "list, which is the boundary. Other sectors, and standards outside that scope such as ISO 9001, "
+        "ISO 14001 or ISO 45001, never enter the library.",
+    ),
     SystemRow("poor_wording", {"en": "Poor wording", "sv": "Otydlig formulering"}, "The facts hold, but the wording needs more than a correction in review."),
     SystemRow("other", {"en": "Other", "sv": "Annat"}, "None of the above; the note says why."),
 ]
@@ -209,7 +257,7 @@ def seed_library_vocabularies() -> int:
 
 
 def seed_term_dimensions() -> int:
-    """The eleven dimensions alone, for callers that need them before the rest."""
+    """The twelve dimensions alone, for callers that need them before the rest."""
     default_key, rows = LIBRARY_SYSTEM_ROWS["term_dimension"]
     with transaction.atomic(), library_write(SEED_REASON):
         return _ensure_rows("term_dimension", default_key, rows)
@@ -307,6 +355,31 @@ def _mirror_jurisdiction_terms(dimension: TermDimension) -> int:
     return len(terms)
 
 
+def switch_on_term(dimension: str, key: str) -> None:
+    """Switch one seeded term on, for a seed that needs it where the reference list keeps it
+    off: seed_e2e alone, for ISO/IEC 27001 (FP-S16, D-85), on a database seeded while the
+    reference list held it (a new one files it active). One version bump and one audit row
+    the first time; a term already on is left alone."""
+    with transaction.atomic(), library_write(SEED_REASON):
+        term = TaxonomyTerm.objects.select_for_update().get(dimension__key=dimension, key=key)
+        if term.active:
+            return
+        term.active = True
+        term.version += 1
+        term.save(update_fields=["active", "version"])
+        record(
+            action="taxonomy.term_updated",
+            actor=ACTOR,
+            subject_type="taxonomy_term",
+            subject_id=term.id,
+            subject_title=f"{dimension}:{key}",
+            summary=f"Switched the term {key} in {dimension} on.",
+            tenant_id=None,
+            before={"active": False},
+            after={"active": True},
+        )
+
+
 def seed_taxonomy_terms() -> int:
     """The taxonomy terms per dimension, and the jurisdiction dimension's mirror of the
     jurisdiction rows. Without them no footprint can be set, no obligation can be scoped and
@@ -319,7 +392,12 @@ def seed_taxonomy_terms() -> int:
             term, created = TaxonomyTerm.objects.get_or_create(
                 dimension=dimension,
                 key=spec["key"],
-                defaults={"sort_order": int(spec.get("sort_order", 0)), "is_system": True, "active": True},
+                defaults={
+                    "sort_order": int(spec.get("sort_order", 0)),
+                    "usage_note": spec.get("usage_note", ""),
+                    "is_system": True,
+                    "active": bool(spec.get("active", True)),
+                },
             )
             if created:
                 labels = {}

@@ -308,7 +308,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <p class="note">Inventory card. Filters come from vocabularies (instrument, regime, service, duty type) and store keys. Rows outside our scope render dashed with the reason in the meta, only when "Show outside our scope" is on. The instrument pill is brand, Guidance is information from the binding kind, applicability and compliance status take their tone from the ordinal, "Change waiting for approval" is a computed warning pill and "N open changes" a computed notice pill; the API sends facts, never a phrase. "As of" re-reads every row's version. Every role reads this screen; nothing on it writes.
     Scope is one filter with one value, not a pair of toggles, so no contradictory pair can be
     sent: "In our scope" (the default), "Markets we watch" and "Show outside our scope" are the
-    three values of the single footprint filter, and the chunk 3 route takes in, watched or all.
+    three values of the single regulatory scope filter, and the chunk 3 route takes in, watched or all.
     "Markets we watch" lists only what watching adds: a record that matches the scope plus the
     watched markets but not the scope alone, so EU rules never appear there, they already reach
     the markets we operate in, and a Danish obligation scoped to a service we do not provide stays

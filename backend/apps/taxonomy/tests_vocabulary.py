@@ -17,9 +17,13 @@ from unittest import mock
 
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
+from django.db import connection, transaction
+from django.test.utils import CaptureQueriesContext
 
+from apps.cases import testing as cases_build
 from apps.identity.models import User
-from apps.library.models import Jurisdiction, Language
+from apps.library import testing as library_build
+from apps.library.models import Jurisdiction, Language, Obligation
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories
 from apps.shared.audit import Actor
@@ -31,8 +35,12 @@ from apps.taxonomy.models import (
     CaseSubStatus,
     ChangeLifecycleKind,
     ChangeType,
+    DutyType,
     EffortSize,
+    FootprintChangeRequest,
+    FootprintTerm,
     RejectionReason,
+    RelationType,
     RiskRating,
     TaxonomyTerm,
     TaxonomyTermLabel,
@@ -48,17 +56,21 @@ from apps.taxonomy.seeds import (
     seed_term_dimensions,
     taxonomy_term_specs,
 )
+from apps.taxonomy.registry import REGISTRY
+from apps.taxonomy import repoint
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS, SystemRow, ensure_tenant_vocabularies
+from apps.watch import testing as watch_build
+from apps.watch import write as watch_door
 from config.api import api
 
 V1 = "/api/v1"
 SEED = Actor.system("seed_reference")
-# The kind f03-T30 seeds the International row under (D-38): no bank operates there, so it
-# must stay out of the mirror. Written here rather than imported because that row, and the
-# JurisdictionKind member it carries, land with that task.
+# The kind the International row is seeded under (D-38): no bank operates there, so it must
+# stay out of the mirror. Written as the literal the wire carries, so a renamed member fails here.
 UNOPERATED_JURISDICTION_KIND = "international"
-# schema v0.3's `proposal.rejection_code` CHECK, in its order: the only list the inputs define.
-REJECTION_REASONS = ["wrong_fact", "wrong_scope", "bad_source", "duplicate", "not_relevant", "poor_wording", "other"]
+# schema v0.3's `proposal.rejection_code` CHECK, in its order, with the PRD's sector scope
+# (PRO-S9) filed beside "not relevant".
+REJECTION_REASONS = ["wrong_fact", "wrong_scope", "bad_source", "duplicate", "not_relevant", "outside_sector_scope", "poor_wording", "other"]
 
 
 class VocabularyEdges(ScenarioTestCase):
@@ -258,6 +270,29 @@ class VocabularyEdges(ScenarioTestCase):
         regimes = {t["key"] for d in self._get("/tenant/footprint", officer).json()["dimensions"] if d["dimension"]["key"] == "regime" for t in d["terms"]}
         self.assertEqual(regimes, {"aml"})
 
+    def test_a_footprint_change_naming_a_term_twice_is_refused_before_anything_is_written(self) -> None:
+        officer = sign_in(factories.member(self.tenant, roles=("compliance_officer",)).user, tenant=self.tenant)
+        aml = {"dimension": "regime", "key": "aml"}
+        for body in ({"adds": [aml, aml]}, {"removes": [aml, aml]}):
+            for path in ("/tenant/footprint/requests?dryRun=true", "/tenant/footprint/requests"):
+                refused = self._post(path, body, officer)
+                self.assertEqual(refused.status_code, 422, refused.content)
+                self.assertEqual(self._code(refused), "validation_error")
+        self.assertFalse(FootprintChangeRequest.objects.exists())
+
+    def test_an_approval_never_switches_on_a_term_retired_while_the_request_waited(self) -> None:
+        officer = sign_in(factories.member(self.tenant, roles=("compliance_officer",)).user, tenant=self.tenant)
+        created = self._post("/tenant/footprint/requests", {"adds": [{"dimension": "regime", "key": "aml"}]}, officer)
+        self.assertEqual(created.status_code, 201, created.content)
+        with library_write("test"):
+            TaxonomyTerm.objects.filter(dimension__key="regime", key="aml").update(active=False)
+        approver = sign_in(self.admin_user, tenant=self.tenant, step_up=True)
+        refused = self._post(f"/tenant/footprint/requests/{created.json()['id']}/approve", {}, approver)
+        self.assertEqual(refused.status_code, 409, refused.content)
+        self.assertEqual(self._code(refused), "stale_write")
+        self.assertFalse(FootprintTerm.objects.filter(term__key="aml", term__dimension__key="regime").exists())
+        self.assertEqual(FootprintChangeRequest.objects.get().status, "pending")
+
 
 class RejectionReasons(ScenarioTestCase):
     """Rejection reasons are a library list (PRO-01, VOC-01, VOC-07, AC-VOC1): every deploy
@@ -287,12 +322,12 @@ class RejectionReasons(ScenarioTestCase):
     def _rows(self) -> dict[str, Any]:
         return {row["key"]: row for row in self._get("/vocab/rejection_reason").json()["items"]}
 
-    def test_every_deploy_files_the_seven_reasons_in_en_and_sv(self) -> None:
+    def test_every_deploy_files_the_eight_reasons_in_en_and_sv(self) -> None:
         listed = {item["list"]: item for item in self._get("/vocab").json()["items"]}
         summary = listed["rejection_reason"]
         self.assertEqual(
             (summary["tier"], summary["kind"], summary["kinds"], summary["count"], summary["proposable"]),
-            (2, None, [], 7, True),
+            (2, None, [], len(REJECTION_REASONS), True),
         )
         rows = self._rows()
         self.assertEqual(list(rows), REJECTION_REASONS)
@@ -537,18 +572,14 @@ class JurisdictionTermMirror(ScenarioTestCase):
         self.assertTrue(all(row["isSystem"] for row in rows))
 
     def test_a_jurisdiction_nobody_operates_in_is_not_mirrored(self) -> None:
-        """f03-T30 adds the International row that standards bodies issue under. It must get
-        no term: a tenant naming its markets would otherwise stop seeing standards (D-38,
-        ADR 0032)."""
-        Jurisdiction.objects.create(
-            key="intl",
-            kind=UNOPERATED_JURISDICTION_KIND,
-            default_language=Language.objects.get(key="en"),
-            sort_order=len(self._terms()),
-            is_system=True,
-        )
+        """The seeded International row standards bodies issue under gets no term: a tenant
+        naming its markets would otherwise stop seeing standards (D-38, ADR 0032)."""
+        international = Jurisdiction.objects.get(key="intl")
+        self.assertEqual(international.kind, UNOPERATED_JURISDICTION_KIND)
+        self.assertNotIn(international.kind, MIRRORED_JURISDICTION_KINDS)
         seed_taxonomy_terms()
         self.assertEqual(set(self._terms()), {"eu", "se", "dk", "no", "fi"})
+        self.assertFalse(TaxonomyTerm.objects.filter(jurisdiction=international).exists())
 
     def test_the_seed_records_every_mirrored_term_it_files(self) -> None:
         filed = self._term_events().filter(action="taxonomy.term_created")
@@ -610,3 +641,85 @@ class JurisdictionTermMirror(ScenarioTestCase):
         self.assertEqual(refused.exception.code, "system_key_taken")
         self.assertIsNone(self._terms()["se"].jurisdiction_id, "the stray term is left as its author wrote it")
         self.assertEqual(TaxonomyTerm.objects.filter(dimension__key=JURISDICTION_DIMENSION, key="se").count(), 1)
+
+
+class LibraryListUsage(ScenarioTestCase):
+    """VOC-02, AC-VOC2: a library list counts the library and watch records that really
+    carry each value, so the screen shows the count before a retire and a merge preview
+    names what would move. Before this, eight library lists read 0 for every row, and
+    "Amends" read 0 while FFFS 2026:11's relation to FFFS 2017:2 carried it."""
+
+    # The value each list's records below carry, one per list that something references.
+    USED = {
+        "instrument_level": "act",
+        "relation_type": "amends",
+        "provision_kind": "chapter",
+        "duty_type": "conduct",
+        "library_tag": "costs",
+        "change_type": "adopted",
+        "urgency": "act_now",
+        "source_kind": "authority_site",
+        "flag": "ai",
+    }
+
+    def setUp(self) -> None:
+        watch_build.seed_watch_reference()
+        seed_term_dimensions()
+        self.editor = sign_in(factories.platform_user(roles=("library_editor",), email="editor@bleqq.test"))
+        amended = library_build.instrument(key="fffs-2017-2", regime="regime:securities")
+        amending = library_build.instrument(key="fffs-2026-11", regime="regime:securities")
+        library_build.relate_instruments(amending, amended, relation="amends")
+        chapter = library_build.provision(amended, key="fffs-2017-2-9-kap", kind="chapter")
+        first = library_build.obligation(amended, key="obl-costs", tags=("costs",), cites=(chapter,))
+        second = library_build.obligation(amended, key="obl-disclose", duty_type="disclosure")
+        library_build.relate(first, second, relation="related")
+        self.change = watch_build.change(change_type="adopted", urgency="act_now")
+        watch_build.term_link(self.change, flag_key="ai")
+        watch_build.source(kind="authority_site")
+
+    def _counts(self, list_name: str) -> dict[str, int]:
+        response = self.client.get(f"{V1}/vocab/{list_name}", **self.editor)
+        self.assertEqual(response.status_code, 200, response.content)
+        return {row["key"]: row["usageCount"] for row in response.json()["items"]}
+
+    def test_every_library_list_something_references_counts_its_real_uses(self) -> None:
+        for list_name, key in self.USED.items():
+            with self.subTest(list=list_name):
+                self.assertGreater(self._counts(list_name)[key], 0)
+        # Both instruments sit at the act level; each relation counts on its own list row.
+        self.assertEqual(self._counts("instrument_level")["act"], 2)
+        relations = self._counts("relation_type")
+        self.assertEqual((relations["amends"], relations["related"], relations["implements"]), (1, 1, 0))
+        self.assertEqual(self._counts("duty_type")["governance"], 0)
+
+    def test_urgency_counts_the_librarys_suggestions_and_never_a_banks_case(self) -> None:
+        tenant = factories.tenant(slug="bank")
+        cases_build.case(tenant, self.change, urgency="monitor")
+        counts = self._counts("urgency")
+        self.assertEqual((counts["act_now"], counts["monitor"]), (1, 0))
+
+    def test_a_list_read_counts_every_linked_table_in_one_query(self) -> None:
+        entry = REGISTRY["relation_type"]
+        with CaptureQueriesContext(connection) as queries:
+            rows = {row.key: row.usage_count for row in entry.usage(RelationType.objects.all())}
+        self.assertEqual(len(queries), 1)
+        self.assertEqual(rows["amends"], 1)
+
+    def test_the_watch_doors_re_point_writes_watch_tables_and_no_inventory_table(self) -> None:
+        # A merge hands each table to the door that may write it; were an inventory table
+        # ever handed to the watch door, the door refuses it inside the approval's fence.
+        conduct = Obligation.objects.filter(duty_type__key="conduct")
+        with self.assertRaises(watch_door.WatchWriteRefused), transaction.atomic(), library_write("test"):
+            watch_door.repoint(conduct, conduct.none(), "duty_type", DutyType.objects.get(key="disclosure"))
+        self.assertTrue(conduct.exists())
+
+    def test_a_library_list_moves_nothing_outside_an_approved_merge(self) -> None:
+        # The preview a library list offers counts what would move and refuses to move it:
+        # its rows move only inside the approval (VOC-07). A list nothing references moves
+        # nothing either way.
+        conduct, disclosure = DutyType.objects.get(key="conduct"), DutyType.objects.get(key="disclosure")
+        preview = REGISTRY["duty_type"].repoint
+        self.assertEqual(repoint.count(preview(conduct, disclosure, dry_run=True)), Obligation.objects.filter(duty_type=conduct).count())
+        with self.assertRaises(RuntimeError):
+            preview(conduct, disclosure)
+        self.assertEqual(REGISTRY["rejection_reason"].repoint(conduct, disclosure), {})

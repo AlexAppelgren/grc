@@ -11,12 +11,14 @@ import { Panel } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, NotFoundScreen, ProblemAlert } from '@/components/ui/States';
 import { SwatchPair } from '@/components/ui/Swatch';
-import { useFormatContext, useSession } from '@/features/identity/hooks';
+import { useFormatContext } from '@/features/identity/hooks';
 import { useApproveProposal, useProposal, useScopeTermLabels } from '@/features/proposals/hooks';
 import {
+  agentCorrectionLine,
+  decisionLine,
+  decisionNoteLine,
   fieldSourceLabel,
   fieldSourceRows,
-  isMineOf,
   isObligationVersion,
   isVocabularyKind,
   obligationPayloadOf,
@@ -25,7 +27,7 @@ import {
   scopeTermPills,
   vocabularyPayloadOf,
 } from '@/features/proposals/proposal-presentation';
-import type { ProposalRow } from '@/features/proposals/types';
+import type { ProposalDetail, ProposalRow } from '@/features/proposals/types';
 import { languageName } from '@/features/library/version-presentation';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { listLabel, presentVocabularyValue } from '@/features/vocabularies/vocabulary-presentation';
@@ -40,12 +42,10 @@ import { hasProblemCode } from '@/shared/utils/problem';
 // approves their own proposal, and the screen replaces Approve with the
 // four-eyes notice rather than hiding why the control is unavailable — the
 // server still refuses it (409 four_eyes_violation) if it is ever called.
+// Whether the reader filed it is the server's own `isMine`. An agent that
+// decided or corrected it is named as an agent, never in a person's slot.
 //
-// GET /proposals/{id} answers the plain `ProposalRow`: no target title,
-// reference or instrument short name, and no sentence diff against the
-// obligation's current wording (chunk4-T10's enrichment and chunk 3's
-// obligation-diff read are not on `main`). "What changes" therefore shows the
-// proposed text plainly rather than as a diff; a console session has no
+// "What changes" shows the proposed text plainly; a console session has no
 // tenant, so there is no "Open the obligation" link to a tenant-scoped page.
 
 function SourcePanel({ proposal }: { proposal: ProposalRow }) {
@@ -157,30 +157,29 @@ function VocabularyChanges({ proposal }: { proposal: ProposalRow }) {
   );
 }
 
-function DecisionPanel({ proposal, mine }: { proposal: ProposalRow; mine: boolean }) {
+function DecisionPanel({ proposal }: { proposal: ProposalDetail }) {
   const t = useT();
   const ctx = useFormatContext();
 
-  if (proposal.status === 'approved') {
+  if (proposal.status === 'approved' || proposal.status === 'rejected') {
+    const decision = decisionLine(proposal, (iso) => formatDateTime(iso, ctx), t);
+    const correction = proposal.status === 'approved' ? agentCorrectionLine(proposal, t) : null;
+    const note = decisionNoteLine(proposal, t);
     return (
-      <Notice data-proposal-applied="">
-        {typeof proposal.appliedAt === 'string' ? t('console.queue.detail.appliedBy', { date: formatDateTime(proposal.appliedAt, ctx), reviewer: proposal.reviewedBy?.name ?? '' }) : null}
-        {proposal.reviewNote !== '' ? <span className="mt-1 block">{t('console.queue.detail.reviewNote', { note: proposal.reviewNote })}</span> : null}
-      </Notice>
-    );
-  }
-  if (proposal.status === 'rejected') {
-    return (
-      <Notice data-proposal-rejected="">
-        {typeof proposal.reviewedAt === 'string'
-          ? t('console.queue.detail.rejectedBy', { date: formatDateTime(proposal.reviewedAt, ctx), reviewer: proposal.reviewedBy?.name ?? '', note: proposal.reviewNote })
-          : null}
+      <Notice {...(proposal.status === 'approved' ? { 'data-proposal-applied': '' } : { 'data-proposal-rejected': '' })}>
+        {decision}
+        {correction !== null ? (
+          <span className="mt-1 block" data-proposal-corrected-by-agent="">
+            {correction}
+          </span>
+        ) : null}
+        {note !== null ? <span className="mt-1 block">{note}</span> : null}
       </Notice>
     );
   }
   if (proposal.status === 'superseded') return null;
 
-  if (mine) {
+  if (proposal.isMine === true) {
     return (
       <Notice tone="bad" data-proposal-four-eyes="">
         <b>{t('console.queue.detail.fourEyes.title')}</b> {t('console.queue.detail.fourEyes.body')}
@@ -223,7 +222,6 @@ function SimpleDecisionActions({ proposal }: { proposal: ProposalRow }) {
 export function ProposalDetailScreen({ proposalId }: { proposalId: string }) {
   const t = useT();
   const ctx = useFormatContext();
-  const { me } = useSession();
   const query = useProposal(proposalId);
   const forbidden = forbiddenFrom(query.error);
 
@@ -235,8 +233,7 @@ export function ProposalDetailScreen({ proposalId }: { proposalId: string }) {
   if (query.isError) return <ErrorState title={t('console.queue.detail.errorTitle')} onRetry={() => void query.refetch()} />;
 
   const proposal = query.data;
-  const mine = isMineOf(proposal, me?.user.id ?? null);
-  const pills = presentProposal(proposal, mine, t);
+  const pills = presentProposal(proposal, t);
 
   return (
     <div data-proposal={proposal.id}>
@@ -244,13 +241,18 @@ export function ProposalDetailScreen({ proposalId }: { proposalId: string }) {
       <PillRow pills={pills} />
       <h1 className="mt-1.5 mb-1.5">{proposal.title}</h1>
       <p className="mb-4 text-meta text-muted">{t('console.queue.detail.proposedBy', { proposer: proposerLine(proposal, t), date: formatDateTime(proposal.createdAt, ctx) })}</p>
+      {(proposal.riskFlags ?? []).length > 0 ? (
+        <Notice tone="warn" data-proposal-flagged="">
+          {t('console.queue.detail.flagged')}
+        </Notice>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
         <SourcePanel proposal={proposal} />
         {isObligationVersion(proposal.kind) ? <ObligationChanges proposal={proposal} /> : isVocabularyKind(proposal.kind) ? <VocabularyChanges proposal={proposal} /> : null}
       </div>
 
-      <DecisionPanel proposal={proposal} mine={mine} />
+      <DecisionPanel proposal={proposal} />
     </div>
   );
 }

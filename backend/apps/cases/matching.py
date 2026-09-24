@@ -6,9 +6,11 @@ only as good as what refreshes it, and two things move underneath it:
 
 - **The bank's own footprint.** A second person approves a footprint change and the bank
   now watches custody, or has stopped advising. Every open case of that bank is re-decided.
-- **A change's scope terms.** A run corrects the terms on a change, or a library editor
-  does. Every bank's case for that change is re-decided, and two banks with different
-  footprints land on different answers from the same edit.
+- **A change's scope terms or its authority.** A run corrects the terms on a change, or a
+  library editor does, or the change turns out to be another authority's, which moves the
+  jurisdictions it reaches (FP-04). Every bank's case for that change is re-decided from
+  the correction's event, and two banks with different footprints land on different
+  answers from the same edit.
 
 Both run on the one ordered cursor over `outbox_event`, from the audit row the write
 already had to leave, so nothing has to be remembered to call them and nothing can happen
@@ -40,14 +42,14 @@ from __future__ import annotations
 import uuid
 
 from django.db import transaction
-from django.db.models import BooleanField, Func, Q, UUIDField, Value
+from django.db.models import Q
 
 from apps.cases import reading
 from apps.cases.models import ChangeCase
 from apps.shared import outbox, tenancy
 from apps.shared.audit import Actor, record
 from apps.shared.models import OutboxEvent, Tenant, TenantStatus
-from apps.taxonomy.matching import SQL_FUNCTION
+from apps.taxonomy.matching import in_footprint_expression
 from apps.taxonomy.models import CaseStatusCategory
 
 # What the two writers already record. One handler per kind, and no second relay.
@@ -115,12 +117,7 @@ def _recompute(tenant_id: uuid.UUID, *, change_id: uuid.UUID | None) -> None:
     row; the `exclude` is the same expression, so only the rows whose answer actually
     changed are written and a re-delivered event costs one statement and no rows.
     """
-    verdict = Func(
-        Value(tenant_id, output_field=UUIDField()),
-        reading.scope_term_ids_of_each_case(),
-        function=SQL_FUNCTION,
-        output_field=BooleanField(),
-    )
+    verdict = in_footprint_expression(tenant_id, reading.scope_term_ids_of_each_case())
     cases = ChangeCase.objects.filter(OPEN_CATEGORIES, tenant_id=tenant_id)
     if change_id is not None:
         cases = cases.filter(change_id=change_id)

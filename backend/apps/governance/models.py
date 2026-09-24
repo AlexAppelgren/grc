@@ -7,10 +7,11 @@ stood behind it yet" has one place to be asked.
 
 A mixed table (playbook 14): a row with no tenant is the library's — the "So what?" drafted
 once per change and shared by every bank — and a row with a tenant is that bank's own, an
-Ask answer among them. Reading is mixed so every bank sees the library's rows; writing is
-the session's own zone alone, which is what keeps one bank from moving, rewriting or
-deleting the platform's row (ruling I, HARDENING H15). The write rule is the database's,
-not only the code's.
+Ask answer among them. Reading is mixed so every bank sees the library's rows, except a
+confirming agent's decisions (`agent_review`, D-80), which the platform alone reads; writing
+is the session's own zone alone, which is what keeps one bank from moving, rewriting or
+deleting the platform's row (ruling I, HARDENING H15). Both rules are the database's, not
+only the code's.
 
 The review state is the designed `ai_status` kind, so a row ships as `draft` and a person
 standing behind it is what moves it. Chunk 5 never moves it: a bank confirms its own copy
@@ -38,7 +39,16 @@ def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
 class AiPurpose(enum.StrEnum):
     """Tier-one kind (apps/shared/kinds.py): what a model call was for (AUD-02). The
     console and the log's own filter branch on it, and an admin never adds one, because a
-    new purpose is a new feature."""
+    new purpose is a new feature.
+
+    `agent_review` is a confirming agent's decision on another agent's work — approving,
+    correcting or rejecting a proposal, or confirming a watch item's curation — which the
+    agent reports with the decision (`AgentDecision`, D-80). Its row is always marked
+    `model_metadata_reported_by_agent` and names the run and the record decided, which a
+    check constraint holds, and no bank reads it: a decision on a proposal is about the
+    queue, where a bank sees only what it filed itself, and a curation confirmation follows
+    the same one rule, so the library read policy leaves it to the platform. A machine's approval is never logged as one of the drafting purposes above,
+    so the log can tell a draft from a decision."""
 
     SO_WHAT = "so_what"
     CHANGE_SUMMARY = "change_summary"
@@ -46,6 +56,7 @@ class AiPurpose(enum.StrEnum):
     LINK_SUGGESTION = "link_suggestion"
     TRANSLATION = "translation"
     ANSWER = "answer"
+    AGENT_REVIEW = "agent_review"
 
 
 class AiStatus(enum.StrEnum):
@@ -112,6 +123,12 @@ class AiGeneration(models.Model):
     reviewed_at = models.DateTimeField(null=True, blank=True)
     input_tokens = models.PositiveIntegerField(default=0)
     output_tokens = models.PositiveIntegerField(default=0)
+    # How a call bleqq made ended (AUD-02, D-82): the provider's own stop reason when the
+    # model finished (`end_turn`, or `max_tokens` when it stopped at the limit), `aborted`
+    # when the caller stopped reading first, `failed` when the model failed once asked. A
+    # record of what happened, which nothing branches on. Empty on a row an agent filed
+    # (D-66), whose call bleqq never saw end.
+    stop_reason = models.CharField(max_length=64, blank=True)
     # Integer minor units, the one money shape the playbook allows (billing reads it).
     cost_minor = models.PositiveIntegerField(default=0)
     # Filled by chunk 7's Ask feedback; built now so chunk 7 adds no migration.
@@ -137,6 +154,16 @@ class AiGeneration(models.Model):
                     | models.Q(reviewed_by__isnull=False, reviewed_at__isnull=False)
                 ),
                 name="ai_generation_review_names_a_person",
+            ),
+            models.CheckConstraint(
+                # A confirming agent's decision is its own report, made in a run and about a
+                # record, so no consumer can log one that nobody can trace (D-80).
+                condition=~models.Q(purpose=AiPurpose.AGENT_REVIEW.value)
+                | (
+                    models.Q(model_metadata_reported_by_agent=True, agent_run__isnull=False, subject_id__isnull=False)
+                    & ~models.Q(subject_type="")
+                ),
+                name="ai_generation_agent_review_names_its_run",
             ),
         ]
 

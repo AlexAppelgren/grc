@@ -6,6 +6,7 @@ import { REFRESH_PATH, tokenStore } from '@/shared/utils/api-client';
 
 import {
   sessionStatusOf,
+  signOutKey,
   useAddPasskey,
   useFormatContext,
   useOpenInvitation,
@@ -18,6 +19,7 @@ import {
   userLocaleOf,
   useSession,
   useSessions,
+  useSetLanguage,
   useSignIn,
   useSignOut,
   useStepUp,
@@ -187,16 +189,31 @@ describe('identity hooks', () => {
     expect(sent.map((s) => s.path)).toEqual(['/api/v1/auth/step-up/options', '/api/v1/auth/step-up/verify']);
   });
 
-  it('useSignOut posts sign-out, clears the token and the cache', async () => {
+  it('useSignOut posts sign-out under its key, clears the token and the cache, then hands on', async () => {
     tokenStore.set('tok');
     const sent = installAdapter(() => ({ status: 204 }));
     const { wrapper, queryClient } = queryWrapper();
     queryClient.setQueryData(['me'], me);
-    const { result } = renderHook(() => useSignOut(), { wrapper });
-    await result.current.mutateAsync();
+    const then = vi.fn(() => expect(queryClient.getQueryData(['me'])).toBeUndefined());
+    const { result } = renderHook(() => useSignOut(then), { wrapper });
+    const settled = result.current.mutateAsync();
+    expect(queryClient.isMutating({ mutationKey: signOutKey })).toBe(1);
+    await settled;
     expect(sent.map((s) => s.path)).toEqual(['/api/v1/auth/sign-out']);
     expect(tokenStore.get()).toBeNull();
     await waitFor(() => expect(queryClient.getQueryData(['me'])).toBeUndefined());
+    expect(then).toHaveBeenCalledOnce();
+  });
+
+  it('useSignOut hands on when the server refused the sign-out too', async () => {
+    tokenStore.set('tok');
+    installAdapter(() => ({ status: 500 }));
+    const { wrapper } = queryWrapper();
+    const then = vi.fn();
+    const { result } = renderHook(() => useSignOut(then), { wrapper });
+    await expect(result.current.mutateAsync()).rejects.toBeDefined();
+    expect(tokenStore.get()).toBeNull();
+    expect(then).toHaveBeenCalledOnce();
   });
 
   it('passkeys and sessions: list, rename, remove, revoke, with invalidation', async () => {
@@ -220,5 +237,29 @@ describe('identity hooks', () => {
     expect(disabled.result.current.fetchStatus).toBe('idle');
     const disabledSessions = renderHook(() => useSessions(false), { wrapper: queryWrapper().wrapper });
     expect(disabledSessions.result.current.fetchStatus).toBe('idle');
+  });
+
+  it('useSetLanguage saves the language on the person and refetches every answer, the session with it, in that language', async () => {
+    tokenStore.set('tok');
+    let locale = 'en';
+    const sent = installAdapter((s) => {
+      if (s.method === 'patch') locale = (s.body as { locale: string }).locale;
+      if (s.path === '/api/v1/me/passkeys') return { status: 200, data: [{ id: 'p1', nickname: locale === 'sv' ? 'Telefon' : 'Phone' }] };
+      return { status: 200, data: { ...me, user: { ...me.user, locale } } };
+    });
+    const { wrapper, queryClient } = queryWrapper();
+    const session = renderHook(() => useSession(), { wrapper });
+    const passkeys = renderHook(() => usePasskeys(), { wrapper });
+    await waitFor(() => expect(userLocaleOf(session.result.current.me)).toBe('en'));
+    await waitFor(() => expect(passkeys.result.current.data?.[0]?.nickname).toBe('Phone'));
+
+    const setLanguage = renderHook(() => useSetLanguage(), { wrapper });
+    await setLanguage.result.current.mutateAsync('sv');
+
+    expect(sent.filter((s) => s.method === 'patch')).toEqual([expect.objectContaining({ path: '/api/v1/me', body: { locale: 'sv' } })]);
+    // Settled only once every answer is back in the new language, so the switch never shows a mix.
+    expect(userLocaleOf(queryClient.getQueryData<Me>(['me']) ?? null)).toBe('sv');
+    expect(queryClient.getQueryData<{ nickname: string }[]>(['me', 'passkeys'])?.[0]?.nickname).toBe('Telefon');
+    await waitFor(() => expect(userLocaleOf(session.result.current.me)).toBe('sv'));
   });
 });

@@ -1,13 +1,18 @@
 #!/usr/bin/env python
-"""Search and classification evaluation gate (playbook 9, 16, SRC-05, AC-SRC1, AGT-07).
+"""Search and classification evaluation gate (playbook 9, 16, SRC-05, AC-SRC1, AGT-07,
+AGT-08, AC-AGT1).
 
 Loads the labelled sets under backend/eval/ and scores two pluggable evaluators:
 
     Retriever.search(query, lang, as_of) -> [stable keys, best first]
-    Classifier.classify(text) -> {"change_type", "flags", "scope", "risk_flags"}
+    Retriever.ask(query, lang, as_of) -> [stable keys of Ask's passages, best first]
+    Classifier.classify(text) -> {"in_scope", "change_type", "flags", "scope", "risk_flags",
+                                  "standard_terms"}
 
 Metrics: retrieval recall@10 and MRR; classification accuracy per field (change type,
-flags, scope, and the AGT-07 embedded-instruction screen), each reported per language.
+flags, scope, the AGT-07 embedded-instruction screen, and AGT-08's two: whether the text is
+inside the sector scope, and whether a standard's opt-in term sits on the standard's own
+records and nowhere else), each reported per language and per kind of text.
 `eval/baseline.json` holds the last accepted values and `eval/tolerance.json` how far
 each may fall before the gate fails.
 
@@ -20,9 +25,15 @@ Status rules:
 
 The mock evaluators read a `predictions` field from the rows when every row has one
 (unit tests and dry runs). A real evaluator is named as `module:Class` with
-`--retriever` and `--classifier`; chunk 5 supplies the classifier and chunk 7 the
-retriever. Exit 0 when the gate passes, 1 otherwise. `--self-test` runs
-eval/tests_scoring.py.
+`--retriever` and `--classifier`; chunk 5 supplies the classifier, and the retriever is
+`apps.search.eval:Retriever` (hybrid search over the fixture corpus, in a throwaway
+database). A retrieval row whose `expected` is empty is a question with no answer: it
+scores right only when the retriever returns nothing. A row with `via: "ask"` is scored
+on the passages Ask would give a model rather than on the search page (SRC-S12, D-81): a
+question about a standard's control is one Search answers with the conformance duty and
+Ask must not answer at all. Every run says which tracks have no
+recorded baseline, because a drop in those fails nothing yet. Exit 0 when the gate passes,
+1 otherwise. `--self-test` runs eval/tests_scoring.py.
 
 Proven to fail 2026-09-19 with a recorded baseline and no evaluator (exit 1, track
 named), and with a mock prediction set scoring under the floor (exit 1, metric named);
@@ -48,11 +59,19 @@ CLASSIFICATION_METRICS = (
     "classification_flags_accuracy",
     "classification_scope_accuracy",
     "classification_screen_accuracy",
+    "classification_in_scope_accuracy",
+    "classification_standard_term_accuracy",
 )
 METRICS = RETRIEVAL_METRICS + CLASSIFICATION_METRICS
 TRACKS = {"retrieval": RETRIEVAL_METRICS, "classification": CLASSIFICATION_METRICS}
 SCREEN_FLAG = "embedded_instructions"
+# The opt-in dimension a standard's term lives in (D-36). Its terms are seeded by the taxonomy
+# seeds, not carried by the prototype fixture that `check_prototype_data --eval` reads, so a
+# row names them in `standard_terms` rather than in `scope`.
+STANDARD_TERM = "standard:"
 K = 10
+# Where a retrieval row is scored: the search page, or the passages Ask would give a model.
+VIA = ("search", "ask")
 
 
 # ---------------------------------------------------------------- evaluator interfaces
@@ -61,6 +80,8 @@ class Retriever(Protocol):
     is_mock: bool
 
     def search(self, query: str, lang: str, as_of: date | None) -> list[str]: ...
+
+    def ask(self, query: str, lang: str, as_of: date | None) -> list[str]: ...
 
 
 class Classifier(Protocol):
@@ -83,6 +104,8 @@ class MockRetriever:
     def search(self, query: str, lang: str, as_of: date | None) -> list[str]:
         return self._by_query.get((query, lang, as_of.isoformat() if as_of else None), [])
 
+    ask = search
+
 
 class MockClassifier:
     name = "mock (predictions in the set)"
@@ -101,6 +124,10 @@ def load_evaluator(spec: str) -> object:
     module_name, _, class_name = spec.partition(":")
     if not module_name or not class_name:
         raise ValueError(f"evaluator {spec!r} must be module:Class")
+    # The real evaluators live in the Django project (`apps.search.eval:Retriever`), and a
+    # script's own directory is what Python puts on the path, not the backend's.
+    if str(BACKEND) not in sys.path:
+        sys.path.append(str(BACKEND))
     try:
         module = importlib.import_module(module_name)
     except ImportError as exc:
@@ -135,12 +162,16 @@ def validate_retrieval(rows: list[dict]) -> None:
         for key in ("id", "language", "query", "expected", "match_kind"):
             if key not in r:
                 raise ValueError(f"retrieval.jsonl {r.get('id', '?')}: {key} missing")
-        if not r["expected"]:
-            raise ValueError(f"retrieval.jsonl {r['id']}: expected is empty")
+        # An empty list is a question the library has no answer to (SRC-S12): the retriever
+        # must return nothing at all.
+        if not isinstance(r["expected"], list):
+            raise ValueError(f"retrieval.jsonl {r['id']}: expected must be a list of stable keys")
         if r["match_kind"] not in ("keyword", "concept", "both"):
             raise ValueError(f"retrieval.jsonl {r['id']}: match_kind {r['match_kind']!r}")
         if "as_of" in r:
             date.fromisoformat(r["as_of"])
+        if r.get("via", "search") not in VIA:
+            raise ValueError(f"retrieval.jsonl {r['id']}: via {r['via']!r} is not one of {', '.join(VIA)}")
 
 
 def validate_classification(rows: list[dict]) -> None:
@@ -148,11 +179,31 @@ def validate_classification(rows: list[dict]) -> None:
         for key in ("id", "language", "text", "expected", "injection"):
             if key not in r:
                 raise ValueError(f"classification.jsonl {r.get('id', '?')}: {key} missing")
-        for key in ("change_type", "flags", "scope", "risk_flags"):
-            if key not in r["expected"]:
+        expected = r["expected"]
+        for key in ("in_scope", "change_type", "flags", "scope", "risk_flags", "mirrored_dimensions"):
+            if key not in expected:
                 raise ValueError(f"classification.jsonl {r['id']}: expected.{key} missing")
-        if r["injection"] != (SCREEN_FLAG in r["expected"]["risk_flags"]):
+        if r["injection"] != (SCREEN_FLAG in expected["risk_flags"]):
             raise ValueError(f"classification.jsonl {r['id']}: injection and risk_flags disagree")
+        # AGT-08: every change carries a regime, so a text inside the scope names one and a
+        # text outside it, from which nothing is registered, names none.
+        if not isinstance(expected["in_scope"], bool):
+            raise ValueError(f"classification.jsonl {r['id']}: expected.in_scope must be true or false")
+        if expected["in_scope"] != bool(expected["scope"].get("regime")):
+            raise ValueError(f"classification.jsonl {r['id']}: in_scope and regime disagree")
+        # FP-S12: the dimensions whose terms mirror the jurisdiction list and are never sent,
+        # because a change's market comes from its authority. The scorer reads them here.
+        mirrored = expected["mirrored_dimensions"]
+        if not isinstance(mirrored, list) or not all(isinstance(d, str) and d for d in mirrored):
+            raise ValueError(f"classification.jsonl {r['id']}: expected.mirrored_dimensions must be a list of dimension keys")
+        for dimension in mirrored:
+            if expected["scope"].get(dimension):
+                raise ValueError(f"classification.jsonl {r['id']}: expects a term of the mirrored dimension {dimension}")
+        terms = expected.get("standard_terms", [])
+        if not isinstance(terms, list) or not all(isinstance(t, str) and t.startswith(STANDARD_TERM) for t in terms):
+            raise ValueError(f"classification.jsonl {r['id']}: standard_terms must be a list of {STANDARD_TERM}<key> terms")
+        if terms and (not expected["in_scope"] or r.get("cites_standard")):
+            raise ValueError(f"classification.jsonl {r['id']}: a standard term belongs on a standard's own record inside the scope")
 
 
 def load_json(path: Path) -> dict:
@@ -190,13 +241,15 @@ def validate_tolerance(data: dict) -> None:
 
 # ---------------------------------------------------------------- scoring
 def recall_at_k(expected: list[str], predicted: list[str], k: int = K) -> float:
-    if not expected:
-        return 0.0
+    if not expected:  # a no-answer question: right only when nothing at all came back
+        return 0.0 if predicted else 1.0
     top = set(predicted[:k])
     return sum(1 for key in expected if key in top) / len(expected)
 
 
 def reciprocal_rank(expected: list[str], predicted: list[str]) -> float:
+    if not expected:  # as recall: the first hit is already one too many
+        return 0.0 if predicted else 1.0
     wanted = set(expected)
     for rank, key in enumerate(predicted, start=1):
         if key in wanted:
@@ -213,7 +266,11 @@ def jaccard(a: list[str], b: list[str]) -> float:
 
 def score_classification(expected: dict, predicted: dict) -> dict[str, float]:
     """One row. change_type: exact. flags and screen: set equality. scope: mean Jaccard over
-    the dimensions the expectation names (an empty expected list matches an empty or absent one)."""
+    the dimensions the expectation names (an empty expected list matches an empty or absent one),
+    and a miss outright when the prediction sends any term of a dimension the row lists in
+    `mirrored_dimensions`, because such a term is refused however right the rest is (FP-S12).
+    in_scope: equal, so a classifier that does not say is wrong. standard_terms: set equality,
+    where a row that states none expects none."""
     scope_expected: dict = expected["scope"]
     scope_predicted: dict = predicted.get("scope") or {}
     scope = (
@@ -221,11 +278,17 @@ def score_classification(expected: dict, predicted: dict) -> dict[str, float]:
         if scope_expected
         else 1.0
     )
+    if any(scope_predicted.get(dim) for dim in expected.get("mirrored_dimensions") or []):
+        scope = 0.0
     return {
         "classification_change_type_accuracy": 1.0 if predicted.get("change_type") == expected["change_type"] else 0.0,
         "classification_flags_accuracy": 1.0 if set(predicted.get("flags") or []) == set(expected["flags"]) else 0.0,
         "classification_scope_accuracy": scope,
         "classification_screen_accuracy": 1.0 if set(predicted.get("risk_flags") or []) == set(expected["risk_flags"]) else 0.0,
+        "classification_in_scope_accuracy": 1.0 if predicted.get("in_scope") == expected["in_scope"] else 0.0,
+        "classification_standard_term_accuracy": (
+            1.0 if set(predicted.get("standard_terms") or []) == set(expected.get("standard_terms") or []) else 0.0
+        ),
     }
 
 
@@ -250,7 +313,8 @@ def evaluate_retrieval(rows: list[dict], retriever: Retriever | None) -> TrackRe
     per_row: list[tuple[dict, dict[str, float]]] = []
     for r in rows:
         as_of = date.fromisoformat(r["as_of"]) if r.get("as_of") else None
-        predicted = retriever.search(r["query"], r["language"], as_of)
+        read = retriever.ask if r.get("via") == "ask" else retriever.search
+        predicted = read(r["query"], r["language"], as_of)
         per_row.append((r, {"retrieval_recall_at_10": recall_at_k(r["expected"], predicted), "retrieval_mrr": reciprocal_rank(r["expected"], predicted)}))
     return TrackResult(
         "scored", retriever.name, retriever.is_mock,
@@ -269,9 +333,24 @@ def evaluate_classification(rows: list[dict], classifier: Classifier | None) -> 
         "scored", classifier.name, classifier.is_mock,
         metrics={m: mean([s[m] for _, s in per_row]) for m in CLASSIFICATION_METRICS},
         per_language=_breakdown(per_row, "language", CLASSIFICATION_METRICS),
-        per_group=_breakdown([(dict(r, group="injection" if r["injection"] else "clean"), s) for r, s in per_row], "group", CLASSIFICATION_METRICS),
+        per_group=_breakdown([(dict(r, group=classification_group(r)), s) for r, s in per_row], "group", CLASSIFICATION_METRICS),
         rows=len(rows),
     )
+
+
+def classification_group(r: dict) -> str:
+    """The kind of text a row is, so each rule is read on the rows written for it: the
+    AGT-07 injection cases, AGT-08's off-sector texts, laws that cite a standard and a
+    standard's own records, and the rest."""
+    if r["injection"]:
+        return "injection"
+    if not r["expected"]["in_scope"]:
+        return "off_sector"
+    if r.get("cites_standard"):
+        return "cites_standard"
+    if r["expected"].get("standard_terms"):
+        return "standard"
+    return "clean"
 
 
 def _breakdown(per_row: list[tuple[dict, dict[str, float]]], key: str, metrics: tuple[str, ...]) -> dict[str, dict[str, float]]:
@@ -387,6 +466,9 @@ def run(argv: list[str], paths: Paths | None = None, out=print) -> int:
         for line in report(track, result, baseline, tolerance):
             out(line)
         failures.extend(decide(track, result, baseline, tolerance))
+    unrecorded = [t for t in TRACKS if not baseline["tracks"][t]["recorded"]]
+    if unrecorded:
+        out("search_eval: no baseline is recorded for " + " or ".join(unrecorded) + ", so a drop there fails nothing yet")
     if args.record:
         try:
             updated = record(baseline, results)

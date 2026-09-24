@@ -6,6 +6,8 @@ import { BackLink } from '@/components/admin/AdminGate';
 import { DiffText } from '@/components/inventory/DiffText';
 import { LegalText } from '@/components/inventory/LegalText';
 import { DutyPanel, PendingPanels, ProvenancePanel, RelatedPanel, ScopePanel, VersionsPanel } from '@/components/inventory/ObligationPanels';
+import { RecordProblemReports } from '@/components/inventory/RecordProblemReports';
+import { ObligationRelatedChanges } from '@/components/library/ObligationRelatedChanges';
 import { ReportProblemModal, type ReportContext } from '@/components/inventory/ReportProblemModal';
 import { VersionBar } from '@/components/inventory/VersionBar';
 import { Button } from '@/components/ui/Button';
@@ -17,10 +19,11 @@ import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, NotFoundScreen } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useObligation, useObligationDiff, useReportObligationProblem } from '@/features/library/hooks';
-import { presentObligation } from '@/features/library/obligation-presentation';
+import { machineConfirmedLabel, presentObligation } from '@/features/library/obligation-presentation';
 import type { LocalizedText, ObligationDetail, VersionDiff } from '@/features/library/types';
 import type { PartialDate } from '@/features/shared/presentation-types';
 import { languageName } from '@/features/library/version-presentation';
+import { useRefreshProblemReports } from '@/features/problem-reports/hooks';
 import type { Locale, Translate } from '@/shared/i18n';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
@@ -29,7 +32,8 @@ import { problemStatus } from '@/shared/utils/problem';
 
 // The obligation card (design/screens/tenant-obligation.html; INV-03..INV-06,
 // AC-INV1). It reads and never writes the library: the one thing a reader can
-// send from here is a problem report, which stays inside their own bank.
+// send from here is a problem report, which stays inside their own bank,
+// and the close of one in its Reported problems section (AUD-03).
 // Nothing on it says the duty applies to this bank or that the bank complies
 // with it — those are the register's separate facts, and the panel that will
 // hold them says so until chunk 8 fills it.
@@ -115,6 +119,12 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
   const selected = chosen ?? record?.summary?.language ?? locale;
   const diff = useObligationDiff(obligationId, selected, showDiff);
   const report = useReportObligationProblem(obligationId);
+  const refreshReports = useRefreshProblemReports();
+  // A report just filed joins the record's "Reported problems" when the form closes.
+  const onReporting = (open: boolean) => {
+    setReporting(open);
+    if (!open) refreshReports();
+  };
 
   if (obligation.isError) {
     if (problemStatus(obligation.error) === 404) return <NotFoundScreen backHref="/inventory" backLabel={t('inventory.obligation.back')} />;
@@ -125,13 +135,17 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
   const header = presentObligation(
     {
       instrument: { key: record.instrument.key, label: record.instrument.shortName },
-      regime: record.regime === null ? undefined : { key: record.regime.key, label: record.regime.label },
+      regime: { key: record.regime.key, label: record.regime.label },
       binding: record.binding,
+      levelKind: record.bindingLevel.kind,
     },
     'header',
     t,
   );
   const shown = textIn(record.translations, selected);
+  // The newer side of the comparison, when an independent agent confirmed it, says so in the banner (INV-05).
+  const diffMachine =
+    diff.data === undefined ? null : machineConfirmedLabel(record.versions.find((version) => version.versionNumber === diff.data.toVersion) ?? null, null, t, ctx);
   const original = originalLanguage(record.translations);
   const context: ReportContext = { language: selected, ...(record.version === null ? {} : { versionNumber: record.version.versionNumber }) };
 
@@ -178,7 +192,14 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
       {showDiff && diff.isError ? <ErrorState title={t('inventory.obligation.diffErrorTitle')} onRetry={() => void diff.refetch()} /> : null}
       {showDiff && diff.data !== undefined ? (
         <>
-          <Notice data-diff-banner="">{diffSentence(diff.data, t, ctx)}</Notice>
+          <Notice data-diff-banner="">
+            {diffSentence(diff.data, t, ctx)}
+            {diffMachine === null ? null : (
+              <span className="mt-1 block" data-machine-confirmed="">
+                {diffMachine}
+              </span>
+            )}
+          </Notice>
           <LegalText lang={diff.data.language} translatedFrom={diff.data.isMachine && original !== null ? original : undefined} reference={<Reference obligation={record} />}>
             <DiffText segments={diff.data.segments} />
           </LegalText>
@@ -213,11 +234,13 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
               ) : undefined
             }
           />
+          <RecordProblemReports subjectType="obligation" subjectId={record.id} />
+          <ObligationRelatedChanges obligationId={obligationId} />
           <PendingPanels />
         </div>
       </div>
 
-      <ReportProblemModal open={reporting} onOpenChange={setReporting} context={context} report={report} />
+      <ReportProblemModal open={reporting} onOpenChange={onReporting} context={context} report={report} />
     </div>
   );
 }

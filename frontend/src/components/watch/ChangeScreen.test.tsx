@@ -1,16 +1,17 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { ChangeDetail } from '@/features/watch/api';
+import type { CaseObligationDecision, ChangeDetail } from '@/features/watch/api';
 import { createT } from '@/shared/i18n';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
+import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 import { defaultFormatContext } from '@/shared/utils/format';
 
 import { ChangeDocuments, fetchedLine, presentDocument } from './ChangeDocuments';
-import { ChangeObligations, presentObligationLink } from './ChangeObligations';
+import { ChangeObligations, decisionsOf, presentObligationLink, type ObligationLink } from './ChangeObligations';
 import { ChangeScreen, detailFacts, headMeta, presentChangeDetail, presentScopeTerms } from './ChangeScreen';
 import { ChangeTimeline, eventMeta, nextEventId } from './ChangeTimeline';
 
@@ -98,6 +99,7 @@ const change: ChangeDetail = {
       confidence: null,
       confirmed: true,
       origin: 'user',
+      confirmedOrigin: 'user',
     },
   ],
   case: {
@@ -109,6 +111,7 @@ const change: ChangeDetail = {
     ownerId: null,
     soWhatConfirmed: false,
     soWhatConfirmedAt: null,
+    soWhatConfirmedByName: null,
     soWhatText: 'Teams that pay for external research should confirm the criteria exist.',
     urgency: null,
     urgencyConfirmed: false,
@@ -157,6 +160,21 @@ describe('the change header', () => {
     expect(presentChangeDetail({ ...change, origin: 'user', case: null }, t).map((pill) => pill.label)).toEqual(['Adopted rule', 'Act now', 'Inducements']);
   });
 
+  it('a type an independent agent confirmed reads machine-confirmed, and only a person’s confirmation takes the label off', () => {
+    const typeFact = (confirmedOrigin: 'agent' | 'user') => ({
+      ...change,
+      case: null,
+      changeTypeFact: { ref: change.changeType, confidence: 0.91, suggested: false, confirmedOrigin, suggestedByAgent: null, confirmedByAgent: null },
+    });
+    expect(presentChangeDetail(typeFact('agent'), t).map((pill) => [pill.label, pill.tone])).toEqual([
+      ['Adopted rule', 'notice'],
+      ['Act now', 'negative'],
+      ['Inducements', 'brand'],
+      ['Machine-confirmed', 'information'],
+    ]);
+    expect(presentChangeDetail(typeFact('user'), t).map((pill) => pill.label)).toEqual(['Adopted rule', 'Act now', 'Inducements']);
+  });
+
   it('reads the authority, the published date, the merged duplicates and who found it', () => {
     expect(headMeta(change, t, ctx)).toEqual([
       'Finansinspektionen',
@@ -187,7 +205,7 @@ describe('the timeline', () => {
 
   it('renders the same dates in Swedish', () => {
     expect(eventMeta(change.events[1]!, sv, svCtx, TODAY)).toEqual(['1 okt. 2026', 'om 12 dagar']);
-    expect(eventMeta(change.events[2]!, sv, svCtx, TODAY)).toEqual(['Kv4 2027']);
+    expect(eventMeta(change.events[2]!, sv, svCtx, TODAY)).toEqual(['kv. 4 2027']);
     expect(eventMeta(change.events[3]!, sv, svCtx, TODAY)).toEqual(['Datum inte satt']);
     expect(eventMeta({ ...change.events[0]!, eventDate: '2026-06', datePrecision: 'month' }, sv, svCtx, TODAY)).toEqual(['juni 2026']);
   });
@@ -238,30 +256,135 @@ describe('the documents panel', () => {
 });
 
 describe('the obligations affected', () => {
-  it('shows a suggestion with the agent’s confidence and a confirmed link as settled', () => {
-    expect(presentObligationLink(change.obligations[0]!, t).map((pill) => [pill.label, pill.tone])).toEqual([
+  const [suggested, libraryConfirmed] = change.obligations as [ObligationLink, ObligationLink];
+  const accepted: CaseObligationDecision = { obligationId: 'o-1', decision: 'accepted', decidedAt: '2026-09-17T09:12:00Z', decidedByName: 'Sara Lind' };
+  const removed: CaseObligationDecision = { obligationId: 'o-1', decision: 'removed', decidedAt: '2026-09-17T09:12:00Z', decidedByName: 'Sara Lind' };
+  const decided = (decision: CaseObligationDecision): ChangeDetail => ({ ...change, case: { ...change.case!, obligationDecisions: [decision] } });
+
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+  });
+
+  /** The session read answers a signed-in reader, every write answers `answer`; what is returned is the writes alone. */
+  function serveWrite(answer: Answer): () => Sent[] {
+    const sent = installAdapter((request) => (request.method === 'get' ? { status: 200, data: SESSION } : answer));
+    return () => sent.filter((request) => request.method !== 'get');
+  }
+
+  function renderLinks(of: ChangeDetail, permissions: string[] = []): void {
+    render(shell(<PermissionsProvider permissions={permissions}><ChangeObligations change={of} /></PermissionsProvider>));
+  }
+
+  it('shows a suggestion with the agent’s confidence and a library editor’s confirmation as settled', () => {
+    expect(presentObligationLink(suggested, undefined, t, ctx).map((pill) => [pill.label, pill.tone])).toEqual([
       ['FFFS 2017:2', 'brand'],
       ['Suggested, 86% match', 'information'],
     ]);
-    expect(presentObligationLink(change.obligations[1]!, t).map((pill) => [pill.label, pill.tone])).toEqual([
+    expect(presentObligationLink(libraryConfirmed, undefined, t, ctx).map((pill) => [pill.label, pill.tone])).toEqual([
       ['LVM', 'brand'],
       ['Confirmed by a library editor', 'positive'],
     ]);
   });
 
-  it('a suggestion nobody scored still says who put it forward', () => {
-    expect(presentObligationLink({ ...change.obligations[0]!, confidence: null }, t)[1]!.label).toBe('Suggested by the agent');
+  it('this bank’s own confirmation takes the slot, whatever the library says, and says when', () => {
+    expect(presentObligationLink(suggested, accepted, t, ctx).map((pill) => [pill.label, pill.tone])).toEqual([
+      ['FFFS 2017:2', 'brand'],
+      ['Confirmed for us, 17 Sept 2026', 'positive'],
+    ]);
+    expect(presentObligationLink(libraryConfirmed, { ...accepted, obligationId: 'o-2' }, t, ctx)[1]!.label).toBe('Confirmed for us, 17 Sept 2026');
+    expect(decisionsOf({ ...change, case: null }).size).toBe(0);
   });
 
-  it('links into the obligation and offers no control that would settle a library fact', () => {
-    render(shell(<ChangeObligations obligations={change.obligations} />));
+  it('a link an independent agent confirmed reads machine-confirmed, never as a library editor’s verification', () => {
+    const byAnAgent = { ...libraryConfirmed, confirmedOrigin: 'agent' as const };
+    expect(presentObligationLink(byAnAgent, undefined, t, ctx).map((pill) => [pill.label, pill.tone])).toEqual([
+      ['LVM', 'brand'],
+      ['Machine-confirmed', 'information'],
+    ]);
+    expect(presentObligationLink(byAnAgent, undefined, sv, svCtx)[1]!.label).toBe('Maskinbekräftad');
+    // A confirmation that does not say who gave it is never read as a person's.
+    expect(presentObligationLink({ ...libraryConfirmed, confirmedOrigin: undefined }, undefined, t, ctx)[1]!.label).toBe('Machine-confirmed');
+  });
+
+  it('a link a machine confirmed names the agent that suggested it and the one that confirmed it', () => {
+    const byAnAgent = { ...libraryConfirmed, confirmedOrigin: 'agent' as const, suggestedByAgent: { id: 'a1', key: 'watch-sweeper' }, confirmedByAgent: { id: 'a2', key: 'library-confirmer' } };
+    renderLinks({ ...change, obligations: [byAnAgent] });
+    const row = document.querySelector('[data-obligation="o-2"]') as HTMLElement;
+    expect(within(row).getByText('Machine-confirmed')).toHaveAttribute('data-pill', 'information');
+    expect(within(row).getByText('Machine-confirmed: suggested by watch-sweeper, confirmed by library-confirmer')).toBeInTheDocument();
+  });
+
+  it('a suggestion nobody scored still says who put it forward', () => {
+    expect(presentObligationLink({ ...suggested, confidence: null }, undefined, t, ctx)[1]!.label).toBe('Suggested by the agent');
+  });
+
+  it('links into the obligation, and a reader without cases.work gets no control', () => {
+    renderLinks(change, ['watch.read']);
     expect(screen.getByRole('link', { name: 'Pay for third-party research only under the permitted models' })).toHaveAttribute('href', '/inventory/obligations/o-1');
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
+  it('a change this bank has no case for offers no control, because there is nothing to write to', () => {
+    renderLinks({ ...change, case: null }, ['cases.work']);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('a person with cases.work confirms a link on this bank’s case, never on the library’s link', async () => {
+    const writes = serveWrite({ status: 201, data: { obligationId: 'o-1', decision: 'accepted' } });
+    renderLinks(change, ['cases.work']);
+    // One pair per undecided link: the library's own confirmation of o-2 is not this bank's decision.
+    expect(screen.getAllByRole('button', { name: 'Confirm link' })).toHaveLength(2);
+    const row = screen.getByText('Pay for third-party research only under the permitted models').closest('[data-obligation]') as HTMLElement;
+    fireEvent.click(within(row).getByRole('button', { name: 'Confirm link' }));
+    await waitFor(() => expect(writes()).toHaveLength(1));
+    expect([writes()[0]?.method, writes()[0]?.path, writes()[0]?.body]).toEqual(['post', '/api/v1/changes/c-1/case/obligation-links', { obligationId: 'o-1' }]);
+  });
+
+  it('"Not related" stores the bank’s decision rather than deleting a library link', async () => {
+    const writes = serveWrite({ status: 200, data: { obligationId: 'o-1', decision: 'removed' } });
+    renderLinks(change, ['cases.work']);
+    const row = screen.getByText('Pay for third-party research only under the permitted models').closest('[data-obligation]') as HTMLElement;
+    fireEvent.click(within(row).getByRole('button', { name: 'Not related' }));
+    await waitFor(() => expect(writes()).toHaveLength(1));
+    expect([writes()[0]?.method, writes()[0]?.path]).toEqual(['delete', '/api/v1/changes/c-1/case/obligation-links/o-1']);
+  });
+
+  it('a link this bank removed is hidden from its page, and the others stay', () => {
+    renderLinks(decided(removed), ['cases.work']);
+    expect(screen.queryByText('Pay for third-party research only under the permitted models')).not.toBeInTheDocument();
+    expect(screen.getByText('Assess suitability when giving investment advice')).toBeInTheDocument();
+  });
+
+  it('an accepted link reads confirmed for us and asks nothing more', () => {
+    renderLinks(decided(accepted), ['cases.work']);
+    const row = screen.getByText('Pay for third-party research only under the permitted models').closest('[data-obligation]') as HTMLElement;
+    expect(row).toHaveAttribute('data-case-decision', 'accepted');
+    expect(within(row).getByText('Confirmed for us, 17 Sept 2026')).toHaveAttribute('data-pill', 'positive');
+    expect(within(row).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('a decision the server refuses says why, in the row it was made from', async () => {
+    serveWrite({ status: 404, data: { code: 'not_found', detail: 'Not found.' } });
+    renderLinks(change, ['cases.work']);
+    const row = screen.getByText('Pay for third-party research only under the permitted models').closest('[data-obligation]') as HTMLElement;
+    fireEvent.click(within(row).getByRole('button', { name: 'Confirm link' }));
+    expect(await within(row).findByRole('alert')).toHaveTextContent('Not found.');
+  });
+
   it('an obligation nothing is linked to says so', () => {
-    render(shell(<ChangeObligations obligations={[]} />));
+    renderLinks({ ...change, obligations: [] });
     expect(screen.getByText('No obligation is linked yet')).toBeInTheDocument();
+  });
+
+  it('when this bank removed every link, the page says so rather than that nothing is linked', () => {
+    const allRemoved: ChangeDetail = {
+      ...change,
+      case: { ...change.case!, obligationDecisions: change.obligations.map((link) => ({ ...removed, obligationId: link.obligationId })) },
+    };
+    renderLinks(allRemoved, ['cases.work']);
+    expect(screen.getByText('Every suggested obligation is marked not related for us')).toBeInTheDocument();
+    expect(screen.queryByText('No obligation is linked yet')).not.toBeInTheDocument();
   });
 });
 
@@ -291,6 +414,23 @@ describe('the change screen', () => {
     expect(within(classification).getAllByText('suggested')).toHaveLength(2);
     expect(within(classification).queryByRole('button')).not.toBeInTheDocument();
     expect(within(classification).getByText('Securities')).toHaveAttribute('data-pill', 'brand');
+  });
+
+  it('names both agents once a machine confirmed a classification, and says nothing of a person’s confirmation', async () => {
+    const sweeper = { id: 'a1', key: 'watch-sweeper' };
+    const confirmer = { id: 'a2', key: 'library-confirmer' };
+    const byAgent = { ...change.terms[0]!, suggested: false, confirmedOrigin: 'agent' as const, suggestedByAgent: sweeper, confirmedByAgent: confirmer };
+    serve({ status: 200, data: { ...change, terms: [byAgent] } });
+    renderScreen();
+
+    const classification = (await screen.findByRole('heading', { level: 2, name: 'Classification' })).closest('section')!;
+    expect(within(classification).getByText('Machine-confirmed: suggested by watch-sweeper, confirmed by library-confirmer')).toBeInTheDocument();
+    cleanup();
+
+    serve({ status: 200, data: { ...change, terms: [{ ...byAgent, confirmedOrigin: 'user', confirmedByAgent: null }] } });
+    renderScreen();
+    const again = (await screen.findByRole('heading', { level: 2, name: 'Classification' })).closest('section')!;
+    expect(within(again).queryByText(/Machine-confirmed/)).not.toBeInTheDocument();
   });
 
   it('a change with no scope term says the scope does not restrict it', async () => {

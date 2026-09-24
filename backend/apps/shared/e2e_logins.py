@@ -105,6 +105,27 @@ SEED_LOGINS: tuple[SeedLogin, ...] = (
         title="Legal counsel",
         locale="sv",
     ),
+    # I18N-S3's own login: the journey switches this member's interface language to sv
+    # and back through the account menu. The language is saved on the person, so any
+    # other journey signed in as the same login while it runs (the suite is fully
+    # parallel) would render in Swedish mid-run. The teardown restores English, but only
+    # a login of its own keeps the others out of the window; it holds contributor, the
+    # role no shared login stands for.
+    SeedLogin(
+        _id(16),
+        "language@example-bank.test",
+        "Nils Åberg",
+        TENANT_A_SLUG,
+        ("contributor",),
+        title="Product specialist, cards",
+        reserved_for=("I18N-S3",),
+    ),
+    # --- tax-market-journeys (FP-S8) --------------------------------------------------------
+    # Tenant B's second person: FP-S8 turns on Denmark in tenant B, which its admin requests
+    # and someone else must approve with a passkey (four eyes). Approver holds
+    # footprint.approve and not footprint.request, so it never files the request it decides.
+    SeedLogin(_id(17), "approver@second-bank.test", "Freja Madsen", TENANT_B_SLUG, ("approver",), title="Approver, head of compliance"),
+    # --- end tax-market-journeys -------------------------------------------------------------
 )
 
 # The login ADM-S2 spends (above). Named here so the guard and the journey read one value.

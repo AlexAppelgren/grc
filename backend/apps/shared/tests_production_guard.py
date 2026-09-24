@@ -57,6 +57,7 @@ SETTING_NAMES = (
     "LIBRARY_DIFF_MAX_SENTENCES",
     "API_PAGE_OFFSET_MAX",
     "API_PAGE_SIZE_MAX",
+    "RATE_LIMITING_ENABLED",
 )
 
 
@@ -323,6 +324,20 @@ class ProductionGuard(TestCase):
             Case(
                 "the offset bound boots at its floor",
                 self._local("local", API_PAGE_OFFSET_MAX="100", API_PAGE_SIZE_MAX="100"),
+                True,
+            ),
+            # Rule 9 (security-review-c7, M2): one variable must not switch off every rate
+            # limit at once, the sign-in ceremonies' and the model spend's alike.
+            Case(
+                "rate limiting switched off refuses to boot when deployed",
+                self._good_deployed("prod", RATE_LIMITING_ENABLED="false"),
+                False,
+                "RATE_LIMITING_ENABLED",
+                "rule 9",
+            ),
+            Case(
+                "rate limiting switched off still boots on a laptop",
+                self._local("local", RATE_LIMITING_ENABLED="false"),
                 True,
             ),
             Case(

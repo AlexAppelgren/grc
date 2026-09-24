@@ -2,14 +2,12 @@
 lists the action, no business logic (playbook 4.1).
 
 Nine operations, all nine declared here at once, each calling a named function in the module
-that owns it and answering 501 `not_built` from that function until the task which builds it
-lands (chunk 6 plan rule 3). Declaring the whole contract first is deliberate: the four
-screens and the newsletter agent are built against it, and a screen that calls a stub is
-better than a screen built against a shape nobody committed to.
+that owns it. Declaring the whole contract first was deliberate: the four screens and the
+newsletter agent were built against it while the logic was still arriving, and a screen that
+calls a stub is better than a screen built against a shape nobody committed to. All nine are
+built now, so nothing here answers 501 any more.
 
-Five are built: Today, the roadmap, the public list of upcoming dates and the two briefing
-reads. The four calendar-feed operations answer 501 while `c6-upcoming-calendar-backend`
-builds them, against the contract D-52 and ADR 0045 decided: the address is
+The four calendar-feed operations serve the shape D-52 and ADR 0045 decided: the address is
 `/api/v1/calendar/feed.ics?token=<prefix>.<secret>`, a person keeps at most
 `CALENDAR_FEEDS_PER_USER` subscriptions, creating one takes a recent sign-in or a step-up,
 and the server revokes one when the person leaves, loses `roadmap.read`, is enrolled again
@@ -28,8 +26,13 @@ gates listed in `UNGATED_BY_DESIGN` and still answer the structured 403 with
   the address is the whole credential — the `public-token` shape the invitation links
   already use. It rides in the query string and not in the path, because our own access log
   prints the route without the query while a hosting edge writes whole request lines
-  (D-52, ADR 0045; the one named exception to CONVENTIONS 3.6). While the route answers 501
-  it reads no token at all, so nothing about it can be probed.
+  (D-52, ADR 0045; the one named exception to CONVENTIONS 3.6). Unknown, malformed, revoked
+  and expired tokens leave it by one refusal, so nothing about a token can be probed.
+
+`GET /upcoming` is served by `apps/home/calendar.py` and the four subscription
+operations by `apps/home/feed.py`: one reads library records and writes nothing, the other
+writes a bank's own rows and reads no library record, and the library fence wants those in
+different files (`apps/shared/tests_library_fence.py`).
 
 Everything else carries a single permission. `GET /home` takes `roadmap.read`, which every
 system role holds, rather than being left ungated: a panel a reader may not see is answered
@@ -51,6 +54,7 @@ from ninja import Path, Query, Router
 
 from apps.home import briefing as briefing_reads
 from apps.home import calendar as calendar_reads
+from apps.home import feed as feed_logic
 from apps.home import logic, roadmap
 from apps.home.schemas import (
     FEED_TOKEN_MAX,
@@ -69,7 +73,15 @@ from apps.home.schemas import (
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, PrincipalKind, SessionAuth
 from apps.shared.permissions import requires_permission
-from apps.taxonomy.http import answers_problems, caller_tenant, deny, principal, require_any
+from apps.taxonomy.http import (
+    actor_for,
+    answers_problems,
+    caller_tenant,
+    caller_user,
+    deny,
+    principal,
+    require_any,
+)
 from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Home"])
@@ -117,7 +129,7 @@ _ICS_EXAMPLE = {
                     "schema": {"type": "string"},
                     "example": (
                         "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//bleqq//Compliance Watch//EN\r\n"
-                        "BEGIN:VEVENT\r\nUID:change_date-9d0b5a3c@bleqq.com\r\nDTSTART;VALUE=DATE:20261001\r\n"
+                        "BEGIN:VEVENT\r\nUID:chg-fi-2026-research-payments@bleqq.com\r\nDTSTART;VALUE=DATE:20261001\r\n"
                         "SUMMARY:In force: FI adopts amended rules on paying for investment research\r\n"
                         "END:VEVENT\r\nEND:VCALENDAR\r\n"
                     ),
@@ -382,24 +394,28 @@ def list_calendar_feeds(request: HttpRequest) -> Any:
     last fetched and whether it still works. Call it for the account page where a person
     manages their own subscriptions.
 
-    A read: it changes nothing and writes no audit row. A person's session holding
-    `roadmap.read`. The caller's own rows only — never another member's and never another
-    bank's — and the address is **not** in this answer: it is shown once when the subscription
-    is created and stored afterwards only as a lookup prefix and a hash, so a reader must not
-    expect to recover a lost address here. Revoking and creating a new one is the way back.
+    A read that changes nothing a person asked for. The one write it can make is the server's
+    own: a subscription nobody has fetched for `CALENDAR_FEED_IDLE_DAYS` days, or one made
+    before the caller was enrolled again, is stopped here, before it is listed, and recorded
+    as an audit event with a system actor, once however many reads find it at the same moment
+    — exactly what the next fetch of it would have done — so the list never shows as working
+    an address that answers 404. A person's session holding `roadmap.read`. The caller's own
+    rows only — never another member's and never another bank's — and the address is
+    **not** in this answer: it is shown once when the subscription is created and stored
+    afterwards only as a lookup prefix and a hash, so a reader must not expect to recover a
+    lost address here. Revoking and creating a new one is the way back.
 
-    Revoked subscriptions stay in the list with the date they stopped, so a person can see
-    that an address they pasted somewhere no longer works, and the ones the server revoked
-    for them — after they lost `roadmap.read`, were enrolled again or let a subscription go
-    idle — read the same way as one they revoked themselves.
+    Every subscription that still works is listed, and beside them the most recently stopped
+    `CALENDAR_FEED_REVOKED_SHOWN` (five by default) with the date each stopped, so a person
+    can see that an address they pasted somewhere no longer works. The ones the server
+    revoked for them — after they lost `roadmap.read`, were enrolled again or let a
+    subscription go idle — read the same way as one they revoked themselves. Both halves are
+    bounded, so the list is never paged.
 
     A person with no subscriptions gets a 200 with an empty array, never a 404. Errors:
     `permission_denied` without `roadmap.read`, `unauthenticated` without a session.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return calendar_reads.list_feeds()
+    return feed_logic.list_feeds(caller_tenant(request), caller_user(request))
 
 
 @router.post(
@@ -430,26 +446,32 @@ def create_calendar_feed(request: HttpRequest, body: HomeCalendarFeedInput) -> A
 
     A person keeps at most `CALENDAR_FEEDS_PER_USER` subscriptions at once, which is what a
     phone, a laptop and a work calendar need; asking for one past the cap is refused, and
-    revoking one makes room.
+    revoking one makes room. One nobody has fetched for `CALENDAR_FEED_IDLE_DAYS` days, or
+    one made before the caller was enrolled again, is stopped by the server first, with an
+    audit event of its own, and never counted, so a person enrolled again after losing their
+    devices can subscribe at once. Two calls at once take turns, so they cannot both take
+    the last place.
 
     The address is returned **once**, in `url`, and never again: the server keeps only the
     lookup prefix and a SHA-256 of the secret, exactly as it does for an API key. Treat the
     whole address as a secret. Losing it means revoking the subscription and creating another.
 
     Errors: `permission_denied` without `roadmap.read`, `unauthenticated` without a session,
-    `step_up_required` when the session is neither recent nor freshly confirmed, and
-    `validation_error` for a field the body does not know — including the `filter` the
-    designed contract once offered, which is gone.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships. The session check above is already in force, so a stale session is refused before
-    the stub is reached.
+    `step_up_required` when the session is neither recent nor freshly confirmed,
+    `feed_limit_reached` when the caller already holds `CALENDAR_FEEDS_PER_USER`
+    subscriptions that still work — revoke one and ask again — and `validation_error` for a
+    field the body does not know, including the `filter` the designed contract once offered,
+    which is gone.
     """
     # Not `@requires_step_up`: D-52 asks for a recent sign-in *or* a fresh assertion, which is
     # the same rule the passkey routes use (security review F9). It is a gate and not logic,
     # so it belongs here beside the permission rather than in the module below.
     perms.enforce_recent_sign_in_or_step_up(request)
-    return calendar_reads.create_feed()
+    user = caller_user(request)
+    created = feed_logic.create_feed(
+        tenant=caller_tenant(request), user=user, actor=actor_for(request, user), request=request
+    )
+    return 201, created
 
 
 @router.delete(
@@ -484,11 +506,12 @@ def revoke_calendar_feed(request: HttpRequest, feed_id: uuid.UUID = Path(..., de
     Errors: `not_found` when no subscription of the caller's has that id — including one
     belonging to another person or another bank, answered the same way so no id can be probed;
     `permission_denied` without `roadmap.read`; `unauthenticated` without a session.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return calendar_reads.revoke_feed()
+    user = caller_user(request)
+    feed_logic.revoke_feed(
+        tenant=caller_tenant(request), user=user, actor=actor_for(request, user), feed_id=feed_id
+    )
+    return 204, None
 
 
 @router.get(
@@ -514,9 +537,13 @@ def get_calendar_ics(request: HttpRequest, token: str = Query(..., max_length=FE
     rather than the path because our own logs print the route and drop the query, while a
     hosting edge writes whole request lines (D-52).
 
-    Each event carries the date, what the date is and the record's title, and nothing else. No
-    "So what?", no case note, no owner, no bank name: a calendar entry travels to devices and
-    mail clients outside the bank's control, so no judgement of the bank's ever goes into one.
+    The events are the roadmap's regulatory dates — the ones the outside world set, never the
+    bank's own deadlines — and only those the source stated to the day, because an all-day
+    event on a date published as a month or a quarter would state a day nobody published.
+    Each event carries the date, what the date is and the record's title, with the change's
+    stable key as its UID, and nothing else. No "So what?", no case note, no owner, no bank
+    name: a calendar entry travels to devices and mail clients outside the bank's control, so
+    no judgement of the bank's ever goes into one.
     Anyone holding the address can still see which regulatory changes the bank has open work
     on, which is what makes it worth revoking rather than passing on.
 
@@ -530,8 +557,5 @@ def get_calendar_ics(request: HttpRequest, token: str = Query(..., max_length=FE
     all of them answered identically, so the address never says whether it ever existed;
     `validation_error` when `token` is missing or longer than the limit above; `rate_limited`
     when one address is fetched far more often than a calendar client would.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships. It reads no token while it does, so nothing about a token can be learned from it.
     """
-    return calendar_reads.calendar_ics()
+    return feed_logic.calendar_ics(request, token)

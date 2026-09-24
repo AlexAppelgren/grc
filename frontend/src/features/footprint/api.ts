@@ -9,6 +9,8 @@ import type {
   FootprintRejectBody,
   FootprintRequestCreate,
   FootprintRequestStatus,
+  JurisdictionRef,
+  Market,
   Page,
   PageQuery,
   PersonRef,
@@ -21,10 +23,13 @@ import type {
 // footprint and taxonomy routes under /api/v1 (CHUNK2_BRIEF.md, "API").
 // There is no PUT /tenant/footprint: a change is a request with a preview,
 // approved by a second person behind step-up (INPUT_DELTAS section 5).
-// Step-up is the api client's business.
+// Step-up is the api client's business. Watching a market is a direct write
+// whose key rides in the body, never the path, so no access log line names a
+// market (D-30).
 
 const FOOTPRINT = '/api/v1/tenant/footprint';
 const REQUESTS = `${FOOTPRINT}/requests`;
+const WATCHING = `${FOOTPRINT}/watching`;
 const TAXONOMY = '/api/v1/taxonomy';
 
 const id = (value: string) => encodeURIComponent(value);
@@ -77,6 +82,10 @@ export function requestOf(raw: Schemas['FootprintRequestRow']): FootprintChangeR
   };
 }
 
+export function marketOf(raw: Schemas['MarketRow']): Market {
+  return { jurisdiction: { key: raw.jurisdiction.key, kind: raw.jurisdiction.kind ?? null, label: raw.jurisdiction.label }, level: raw.level };
+}
+
 export function footprintOf(raw: Schemas['FootprintView']): Footprint {
   return {
     dimensions: raw.dimensions.map((d) => ({
@@ -86,12 +95,13 @@ export function footprintOf(raw: Schemas['FootprintView']): Footprint {
       allSelected: d.allSelected,
     })),
     pendingRequest: raw.pendingRequest === null || raw.pendingRequest === undefined ? null : requestOf(raw.pendingRequest),
+    markets: (raw.markets ?? []).map(marketOf),
   };
 }
 
 /** A term names its dimension by reference on the wire; the screen matches on the key. */
 export function taxonomyTermOf(raw: Schemas['TaxonomyTermRow']): TaxonomyTerm {
-  return { dimension: raw.dimension.key, key: raw.key, kind: raw.kind ?? null, label: raw.label, usageNote: raw.usageNote, sortOrder: raw.sortOrder, active: raw.active };
+  return { dimension: raw.dimension.key, key: raw.key, kind: raw.kind ?? null, label: raw.label, usageNote: raw.usageNote, sortOrder: raw.sortOrder, active: raw.active, mirrored: raw.mirrored };
 }
 
 export async function getFootprint(): Promise<Footprint> {
@@ -106,7 +116,7 @@ export async function listFootprintRequests(query: PageQuery = {}): Promise<Page
 /**
  * The same call with `dryRun`: the server answers with the preview it would
  * store and persists nothing, so the counted Hides and Reveals can be shown
- * before Send for approval (design/screens/admin-footprint.html).
+ * before Request approval (design/screens/admin-footprint.html).
  */
 export async function previewFootprintRequest(body: FootprintRequestCreate): Promise<FootprintPreview> {
   return previewOf((await api.post<Schemas['FootprintDryRun']>(REQUESTS, body, { params: { dryRun: true } })).data.preview);
@@ -126,6 +136,20 @@ export async function rejectFootprintRequest(requestId: string, body: FootprintR
 
 export async function withdrawFootprintRequest(requestId: string, version?: number): Promise<FootprintChangeRequest> {
   return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${id(requestId)}/withdraw`, {}, version === undefined ? {} : { version })).data);
+}
+
+export async function watchMarket(key: string): Promise<Market> {
+  return marketOf((await api.post<Schemas['MarketRow']>(WATCHING, { jurisdiction: key })).data);
+}
+
+export async function unwatchMarket(key: string): Promise<Market> {
+  return marketOf((await api.post<Schemas['MarketRow']>(`${WATCHING}/remove`, { jurisdiction: key })).data);
+}
+
+/** The reference list, for the jurisdiction whose rules reach each market ("Also included"). */
+export async function listJurisdictions(): Promise<JurisdictionRef[]> {
+  const rows = (await api.get<Schemas['JurisdictionRow'][]>('/api/v1/reference/jurisdictions')).data;
+  return rows.map((row) => ({ key: row.key, kind: row.kind ?? null, label: row.label, parentKey: row.parentKey ?? null }));
 }
 
 export async function listTerms(dimension?: string): Promise<TaxonomyTerm[]> {

@@ -1,9 +1,20 @@
 'use client';
 
-import { useInfiniteQuery, useQuery, type UseInfiniteQueryResult, type UseQueryResult } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseInfiniteQueryResult,
+  type UseMutationResult,
+  type UseQueryResult,
+} from '@tanstack/react-query';
+
+import { homeKeys } from '@/features/home/hooks';
+import { usePermissions } from '@/shared/navigation/require-permission';
 
 import * as watch from './api';
-import type { ChangeDetail, ChangePage, ChangeQuery, ObligationChangePage, ScopeTerm, SourceCoverage } from './api';
+import type { CaseObligationLink, CaseSoWhat, ChangeDetail, ChangePage, ChangeQuery, ObligationChangePage, ScopeTerm, SourceCoverage } from './api';
 
 // Query keys, paging and cache keys for the watch screens (playbook 6.1).
 // The filters are part of the key, so narrowing the feed re-reads rather than
@@ -92,4 +103,66 @@ export function useSourceCoverage(enabled: boolean): UseQueryResult<SourceCovera
 /** The scope terms of one dimension, for the feed's filter. They change rarely, so they are held longer. */
 export function useScopeTerms(dimension: string): UseQueryResult<ScopeTerm[]> {
   return useQuery({ queryKey: ['watch', 'terms', dimension], queryFn: () => watch.listScopeTerms(dimension), staleTime: 5 * 60_000 });
+}
+
+/** The grant behind every write on a bank's own case in R1 (design/screens/tenant-change.html). */
+export const CASES_WORK = 'cases.work';
+
+/**
+ * Whether this reader may decide for this bank on this change: they hold
+ * `cases.work`, and the bank has a case to write to, because every case
+ * route answers 404 for a change with none. A hint for the controls only;
+ * the server's 403 is the enforcer.
+ */
+export function useCanWorkCase(change: ChangeDetail): boolean {
+  const permissions = usePermissions() ?? [];
+  return change.case !== null && permissions.includes(CASES_WORK);
+}
+
+/**
+ * Every write here is this bank's own decision about one change. It moves
+ * the change page, the feed's So what and filter, and an obligation's open
+ * count, so everything the watch screens read is read again rather than
+ * patched by hand.
+ */
+function useInvalidateWatch(): () => Promise<void> {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: watchKeys.all });
+}
+
+/**
+ * A So what write also moves Today and the briefing, which show the same
+ * wording with the same AI label from their own reads (`homeKeys.home` is
+ * the prefix of every home read). Without this, the label would stay on a
+ * wording a person just confirmed until those reads went stale.
+ */
+function useInvalidateSoWhat(): () => Promise<void> {
+  const queryClient = useQueryClient();
+  return async () => {
+    await Promise.all([queryClient.invalidateQueries({ queryKey: watchKeys.all }), queryClient.invalidateQueries({ queryKey: homeKeys.home })]);
+  };
+}
+
+/** WAT-05: "Save and confirm" on the rewrite form. */
+export function useSaveSoWhat(changeId: string): UseMutationResult<CaseSoWhat, unknown, string> {
+  const invalidate = useInvalidateSoWhat();
+  return useMutation({ mutationFn: (text) => watch.saveSoWhat(changeId, text), onSuccess: () => invalidate() });
+}
+
+/** WAT-05: "Confirm wording" on the drafted So what. */
+export function useConfirmSoWhat(changeId: string): UseMutationResult<CaseSoWhat, unknown, void> {
+  const invalidate = useInvalidateSoWhat();
+  return useMutation({ mutationFn: () => watch.confirmSoWhat(changeId), onSuccess: () => invalidate() });
+}
+
+/** WAT-04: "Confirm link" on one suggested obligation, for this bank's case. */
+export function useAcceptCaseObligationLink(changeId: string): UseMutationResult<CaseObligationLink, unknown, string> {
+  const invalidate = useInvalidateWatch();
+  return useMutation({ mutationFn: (obligationId) => watch.acceptCaseObligationLink(changeId, obligationId), onSuccess: () => invalidate() });
+}
+
+/** WAT-04: "Not related" on one suggested obligation, for this bank's case. */
+export function useRemoveCaseObligationLink(changeId: string): UseMutationResult<CaseObligationLink, unknown, string> {
+  const invalidate = useInvalidateWatch();
+  return useMutation({ mutationFn: (obligationId) => watch.removeCaseObligationLink(changeId, obligationId), onSuccess: () => invalidate() });
 }

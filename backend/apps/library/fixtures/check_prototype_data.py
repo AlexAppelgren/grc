@@ -1,16 +1,26 @@
 #!/usr/bin/env python
-"""Referential integrity check for prototype_data.json (chunk 3 seeds load this file).
+"""Referential integrity check for prototype_data.json (chunk 3 seeds load this file) and
+e2e_standard.json, the E2E-only standard that seed_e2e loads beside it.
 
-Every reference in the fixture must resolve: instruments to authorities, regimes and
-jurisdictions; obligations to instruments; terms to taxonomy terms; changes to
-authorities and obligations; proposals to targets, changes and runs; sources to
-authorities; audit rows to their subjects; tenant rows to users and obligations; every
-vocabulary key used to the `vocabularies` section; every date to ISO 8601. Every
-obligation carries a verified date and every version a summary in its original language,
-and `_meta.anchor_date` (an instrument's verified date when nothing else gives one) is a
-date. With `--eval` it also checks that backend/eval/retrieval.jsonl and
-classification.jsonl only name keys that exist here, so the evaluation sets cannot drift
-from the corpus.
+Every reference in the fixture must resolve: instruments to authorities, regimes (a term
+of the `regime` dimension, required on every instrument, D-39) and jurisdictions;
+obligations to instruments; terms to taxonomy terms; changes to authorities and
+obligations; proposals to targets, changes and runs; sources to authorities; audit rows to
+their subjects; tenant rows to users and obligations; every vocabulary key used to the
+`vocabularies` section; every date to ISO 8601. Every obligation carries a verified date
+and every version a summary in its original language, no provision sits under an
+instrument whose level's kind is `standard` (D-35: a standard's text is licensed), and
+`_meta.anchor_date` (an instrument's verified date when nothing else gives one) is a
+date. A standard holds exactly one obligation, its conformance duty, carrying a term of the
+`standard` dimension (INV-08, D-35).
+
+prototype_data.json holds no standard at all: seed_demo loads it, and until Alex answers
+docs/TODO_FOR_alex.md "Legal, before any standard is seeded" a standard lives only in
+e2e_standard.json. That file is checked merged into the prototype's rows, whose
+vocabularies and terms it references, plus the held terms its `_meta.held_terms` names
+(authored in apps/taxonomy/seeds, never listed in the prototype). With `--eval` it
+also checks that backend/eval/retrieval.jsonl and classification.jsonl only name keys that
+exist here, so the evaluation sets cannot drift from the corpus.
 
 Exit 0 when clean, 1 with every problem listed. No Django, no database: plain Python.
 
@@ -27,6 +37,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 FIXTURE = HERE / "prototype_data.json"
+E2E_STANDARD = HERE / "e2e_standard.json"
 EVAL_DIR = HERE.parents[2] / "eval"
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 DATETIME_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$")
@@ -39,6 +50,8 @@ class Checker:
         v = data["vocabularies"]
         self.vocab: dict[str, set[str]] = {name: set(rows) for name, rows in v.items()}
         self.terms = {f"{t['dimension']}:{t['key']}" for t in data["taxonomy_terms"]}
+        self.regimes = {f"{t['dimension']}:{t['key']}" for t in data["taxonomy_terms"] if t["dimension"] == "regime"}
+        self.standard_levels = {key for key, row in v["instrument_level"].items() if row.get("kind") == "standard"}
         self.tags = {t["key"] for t in data["tags"]}
         self.jurisdictions = {j["code"] for j in data["jurisdictions"]}
         self.authorities = {a["key"] for a in data["authorities"]}
@@ -137,13 +150,20 @@ class Checker:
         self.unique(d["instruments"], "stable_key", "instruments")
         for i in d["instruments"]:
             where = f"instruments.{i['stable_key']}"
-            self.ref(where, i["regime"], self.terms, "regime term")
+            if i["regime"] is None:
+                self.problem(where, "regime is required")
+            elif i["regime"] not in self.regimes:
+                self.problem(where, f"regime {i['regime']!r} is not a term of the regime dimension")
             self.vocab_key(where, "instrument_level", i["level"])
             self.ref(where, i["authority"], self.authorities, "authority", optional=True)
             self.ref(where, i["jurisdiction"], self.jurisdictions, "jurisdiction")
             self.ref(where, i["verified_by"], self.users, "verified_by", optional=True)
             self.kind(where, "record_status", i["status"])
             self.date(where + ".in_force_from", i["in_force_from"])
+            # A precision is optional (the loader defaults to a day) and goes with its date.
+            self.kind(where, "date_precision", i.get("in_force_from_precision"), optional=True)
+            if i.get("in_force_from_precision") and i["in_force_from"] is None:
+                self.problem(where, "in_force_from_precision needs in_force_from")
             self.date(where + ".in_force_to", i["in_force_to"])
             self.date(where + ".last_verified_at", i["last_verified_at"])
             if not i["source_url"]:
@@ -156,14 +176,29 @@ class Checker:
             if r["from_instrument"] == r["to_instrument"]:
                 self.problem(where, "relates an instrument to itself")
         self.unique(d["provisions"], "stable_key", "provisions")
+        standards = {i["stable_key"] for i in d["instruments"] if i["level"] in self.standard_levels}
         for p in d["provisions"]:
             where = f"provisions.{p['stable_key']}"
             self.ref(where, p["instrument"], self.instruments, "instrument")
+            if p["instrument"] in standards:
+                self.problem(where, "a standard's text is licensed, so no provision sits under one")
             self.ref(where, p["parent"], self.provisions, "parent", optional=True)
         for op in d["obligation_provisions"]:
             where = f"obligation_provisions.{op['obligation']}"
             self.ref(where, op["obligation"], self.obligations, "obligation")
             self.ref(where, op["provision"], self.provisions, "provision")
+        provision_versions_per: dict[str, set[int]] = {}
+        for v in d.get("provision_versions", []):
+            where = f"provision_versions.{v['provision']}#{v['version_no']}"
+            self.ref(where, v["provision"], self.provisions, "provision")
+            self.date(where + ".effective_from", v["effective_from"])
+            if not v["text_en"] or not v["text_sv"]:
+                self.problem(where, "text_en and text_sv are required")
+            if not v.get(f"text_{v['original_language']}"):
+                self.problem(where, f"no text in its original language {v['original_language']!r}")
+            if v["version_no"] in provision_versions_per.setdefault(v["provision"], set()):
+                self.problem(where, "duplicate version_no")
+            provision_versions_per[v["provision"]].add(v["version_no"])
 
         self.unique(d["obligations"], "stable_key", "obligations")
         for o in d["obligations"]:
@@ -195,6 +230,16 @@ class Checker:
             versions_per[v["obligation"]].add(v["version_no"])
         for key in self.obligations - set(versions_per):
             self.problem(f"obligations.{key}", "has no version")
+        under: dict[str, list[str]] = {key: [] for key in standards}
+        for o in d["obligations"]:
+            if o["instrument"] in standards:
+                under[o["instrument"]].append(o["stable_key"])
+        carries_standard = {t["obligation"] for t in d["obligation_terms"] if t["term"].startswith("standard:")}
+        for key, keys in under.items():
+            if len(keys) != 1:
+                self.problem(f"instruments.{key}", f"a standard holds exactly one obligation, its conformance duty, not {len(keys)}")
+            for obligation in sorted(set(keys) - carries_standard):
+                self.problem(f"obligations.{obligation}", "a standard's conformance duty carries a term of the standard dimension")
         seen_terms: set[tuple[str, str]] = set()
         for t in d["obligation_terms"]:
             where = f"obligation_terms.{t['obligation']}"
@@ -406,12 +451,32 @@ def read_jsonl(path: Path) -> list[dict]:
     return rows
 
 
+def no_standard_in_prototype(prototype: dict) -> list[str]:
+    """seed_demo loads the prototype, so it holds no standard until the legal question is answered."""
+    levels = {key for key, row in prototype["vocabularies"]["instrument_level"].items() if row.get("kind") == "standard"}
+    return [
+        f"instruments.{i['stable_key']}: a standard lives in e2e_standard.json until the legal question is answered, never here"
+        for i in prototype["instruments"]
+        if i["level"] in levels
+    ]
+
+
+def check_e2e_standard(prototype: dict, standard: dict) -> list[str]:
+    """e2e_standard.json merged into the prototype's rows, so its references resolve."""
+    merged = {**prototype, **{k: prototype[k] + v for k, v in standard.items() if isinstance(v, list)}}
+    checker = Checker(merged)
+    checker.terms |= set(standard["_meta"]["held_terms"])
+    return ["e2e_standard: " + p for p in checker.run()]
+
+
 def main(argv: list[str]) -> int:
     data = json.loads(FIXTURE.read_text(encoding="utf-8"))
     checker = Checker(data)
     problems = checker.run()
     if "--eval" in argv:
         checker.check_eval_sets()
+    problems += no_standard_in_prototype(data)
+    problems += check_e2e_standard(data, json.loads(E2E_STANDARD.read_text(encoding="utf-8")))
     counts = {k: len(v) for k, v in data.items() if isinstance(v, list)}
     print("prototype_data: " + ", ".join(f"{k} {v}" for k, v in counts.items()))
     if problems:

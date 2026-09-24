@@ -56,6 +56,7 @@ CHANGE = "11111111-1111-4111-8111-111111111111"
 EVENT = "22222222-2222-4222-8222-222222222222"
 SOURCE = "33333333-3333-4333-8333-333333333333"
 OBLIGATION = "44444444-4444-4444-8444-444444444444"
+REGIME_TERM = "55555555-5555-4555-8555-555555555555"
 
 AS_KEY: dict[str, Any] = {"HTTP_X_API_KEY": API_KEY_FOR_TESTS}
 AS_SESSION: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {SESSION_TOKEN_FOR_TESTS}"}
@@ -70,6 +71,8 @@ CHANGE_BODY = {
     "summary": "Reporting moves to a quarterly cycle.",
     "sourceLabel": "FI news",
     "sourceUrl": "https://www.fi.se/en/published/news/2026/",
+    # Every change carries a regime (D-39, AC-AGT1); the gates below answer before any term is read.
+    "termIds": [REGIME_TERM],
 }
 CHANGE_PATCH = {"keyDateLabel": "Transition ends"}
 EVENT_BODY = {"label": "Consultation closes", "eventDate": "2026-11-01", "datePrecision": "day"}
@@ -190,6 +193,12 @@ class WatchRouteGates(TestCase):
             ("createChange", "post", "/api/v1/changes", {k: v for k, v in CHANGE_BODY.items() if k != "title"}),
             ("createChange", "post", "/api/v1/changes", {**CHANGE_BODY, "sourceUrl": "not a url"}),
             ("createChange", "post", "/api/v1/changes", {**CHANGE_BODY, "tone": "negative"}),
+            # A stable key is a slug the column can hold: an agent reading untrusted pages
+            # must not carry a line break into every calendar that lists the change.
+            ("createChange", "post", "/api/v1/changes", {**CHANGE_BODY, "stableKey": "fi-2026-14\r\nATTACH:https://evil.example/"}),
+            ("createChange", "post", "/api/v1/changes", {**CHANGE_BODY, "stableKey": "fi-2026-14\n"}),
+            ("createChange", "post", "/api/v1/changes", {**CHANGE_BODY, "stableKey": "fi-2026-14,a;b"}),
+            ("createChange", "post", "/api/v1/changes", {**CHANGE_BODY, "stableKey": "k" * 121}),
             ("updateChange", "patch", f"/api/v1/changes/{CHANGE}", {"status": "retired"}),
             ("addChangeEvent", "post", f"/api/v1/changes/{CHANGE}/events", {"eventDate": "2026-11-01"}),
             ("addChangeEvent", "post", f"/api/v1/changes/{CHANGE}/events", {**EVENT_BODY, "datePrecision": "decade"}),
@@ -231,9 +240,11 @@ class WatchRouteStubs(TestCase):
 
     # What each built write answers once its gate has passed and these constants have
     # reached its logic: 404 for an id nothing holds, 422 `unknown_key` for a body naming a
-    # vocabulary row this bare TestCase never seeded. Either way the gate ran first.
+    # vocabulary row this bare TestCase never seeded, and 422 `run_not_open` for a key's
+    # registration that names no run, the first thing that logic asks (AGT-01). Either way
+    # the gate ran first.
     REACHED_THE_LOGIC = {
-        "createChange": (422, "unknown_key"),
+        "createChange": (422, "run_not_open"),
         "addChangeDocument": (404, "not_found"),
         "updateChange": (404, "not_found"),
         "addChangeEvent": (404, "not_found"),

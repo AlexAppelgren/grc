@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from collections.abc import Iterable
 
 EMBEDDED_INSTRUCTIONS = "embedded_instructions"
 
@@ -213,3 +214,9 @@ def matched_rules(text: str) -> list[str]:
 def screen(text: str) -> list[str]:
     """The risk-flag keys the text earns. Fetched content only; the text itself is stored as is."""
     return [EMBEDDED_INSTRUCTIONS] if matched_rules(text) else []
+
+
+def screen_all(texts: Iterable[str]) -> list[str]:
+    """The risk-flag keys any of `texts` earns, sorted: the screen over every text a caller
+    copied from what it fetched, for a record that keeps one set of flags."""
+    return sorted({flag for text in texts for flag in screen(text)})

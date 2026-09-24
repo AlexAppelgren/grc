@@ -1,7 +1,7 @@
 import type { PillTone } from '@/components/ui/pill-tones';
 import { pillToneNames } from '@/components/ui/pill-tones';
 import { byOrder, type PresentedPill } from '@/features/shared/presentation-types';
-import { complianceTone, severityTone, slotTone } from '@/features/shared/tone-by-kind';
+import { complianceTone, proposalStatusTone, severityTone, slotTone } from '@/features/shared/tone-by-kind';
 import type { MessageKey, Translate } from '@/shared/i18n';
 import { problemFrom } from '@/shared/utils/problem';
 
@@ -262,4 +262,9 @@ export function keyFromLabel(label: string): string {
 
 export function changeSummary(proposal: Pick<ProposalRef, 'title'>, t: Translate): string {
   return t('admin.vocabularies.proposed', { title: proposal.title });
+}
+
+/** A proposal this bank made on a library list and is still waiting on: the open status's tone. */
+export function presentPendingProposal(t: Translate): PresentedPill[] {
+  return [{ key: 'proposal:open', label: t('admin.vocabulary.waitingForReview'), tone: proposalStatusTone.open, order: 0 }];
 }

@@ -29,12 +29,12 @@ not "the last look at this source".
 from __future__ import annotations
 
 import datetime
-import uuid
 from collections.abc import Sequence
 
 from django.utils import timezone
 
 from apps.agents.models import AgentRun
+from apps.identity.models import ApiKey
 from apps.library.models import Authority, DatePrecision, Obligation, SubjectType
 from apps.proposals.models import OriginType
 from apps.taxonomy.models import ChangeType, Flag, SourceKind, TaxonomyTerm, Urgency
@@ -136,9 +136,17 @@ def seed_change(
     published_precision: DatePrecision = DatePrecision.DAY,
     key_date_precision: DatePrecision = DatePrecision.DAY,
     source_url: str = "https://www.fi.se/",
+    summary: str = "FI's board decided to amend rules in the securities area.",
+    suggester: ApiKey | None = None,
+    type_confidence: float | None = None,
+    type_confirmer: ApiKey | None = None,
+    confirmed_at: datetime.datetime | None = None,
 ) -> RegulatoryChange:
     """One reform, merged on `stableKey` exactly as a sweep's retry would merge it
-    (AC-WAT1): a second run updates the seed's own row rather than writing a duplicate."""
+    (AC-WAT1): a second run updates the seed's own row rather than writing a duplicate. Its
+    type is `suggester`'s suggestion until `type_confirmer` confirms it (`curation()`), and
+    a reseed puts it back exactly so."""
+    type_curation = curation(suggester, type_confirmer, confirmed_at, "change_type_")
     return write.upsert(
         RegulatoryChange,
         "seed_e2e",
@@ -150,7 +158,7 @@ def seed_change(
             "authority_label": authority_label,
             "published_on": published_on or key_date,
             "published_precision": published_precision.value,
-            "summary": "FI's board decided to amend rules in the securities area.",
+            "summary": summary,
             "so_what_draft": so_what_draft,
             "suggested_urgency": Urgency.objects.get(key=urgency),
             "key_date": key_date,
@@ -162,6 +170,9 @@ def seed_change(
             "origin": OriginType.AGENT.value,
             "model": "agent pipeline 0.4",
             "first_seen_at": first_seen_at,
+            "change_type_suggested": type_confirmer is None,
+            "change_type_confidence": type_confidence,
+            **type_curation,
         },
     )
 
@@ -218,26 +229,45 @@ def seed_document(
     )
 
 
+def curation(
+    suggester: ApiKey | None, confirmer: ApiKey | None, confirmed_at: datetime.datetime | None, prefix: str = ""
+) -> dict[str, object]:
+    """Who suggested a curated fact and who confirmed it (D-74), as the columns the two
+    curation constraints read (`watch/models.py`): the agent-bound platform key that filed
+    it and its agent, and, once confirmed, the confirming agent's own key and agent. The
+    seed's confirmations are an independent agent's, never a person's, so a machine's
+    confirmation renders exactly as it will when the confirmer runs; no person is named on
+    either side, which leaves every suggestion free for a person to confirm in a journey."""
+    return {
+        f"{prefix}suggested_by": None,
+        f"{prefix}suggested_by_api_key": suggester,
+        f"{prefix}suggested_by_agent": None if suggester is None else suggester.agent,
+        f"{prefix}confirmed_by": None,
+        f"{prefix}confirmed_by_api_key": confirmer,
+        f"{prefix}confirmed_by_agent": None if confirmer is None else confirmer.agent,
+        f"{prefix}confirmed_at": None if confirmer is None else (confirmed_at or timezone.now()),
+    }
+
+
 def seed_flag_link(
     change: RegulatoryChange,
     *,
     flag_key: str,
     confidence: float | None = 0.8,
-    confirmed_by_id: uuid.UUID | None = None,
+    suggester: ApiKey | None = None,
+    confirmer: ApiKey | None = None,
     confirmed_at: datetime.datetime | None = None,
 ) -> ChangeTerm:
-    """A flag on a change, a suggestion until `confirmed_by_id` names a library editor
-    (WAT-03). Kept one per `(change, flag)`."""
-    suggested = confirmed_by_id is None
+    """A flag on a change, `suggester`'s suggestion until `confirmer` confirms it (WAT-03,
+    D-74). Kept one per `(change, flag)`."""
     return write.upsert(
         ChangeTerm,
         "seed_e2e",
         lookup={"change": change, "flag": Flag.objects.get(key=flag_key)},
         defaults={
             "confidence": confidence,
-            "suggested": suggested,
-            "confirmed_by_id": confirmed_by_id,
-            "confirmed_at": None if suggested else (confirmed_at or timezone.now()),
+            "suggested": confirmer is None,
+            **curation(suggester, confirmer, confirmed_at),
         },
     )
 
@@ -247,23 +277,22 @@ def seed_scope_term_link(
     *,
     term_ref: str,
     confidence: float | None = 0.8,
-    confirmed_by_id: uuid.UUID | None = None,
+    suggester: ApiKey | None = None,
+    confirmer: ApiKey | None = None,
     confirmed_at: datetime.datetime | None = None,
 ) -> ChangeTerm:
-    """A scope term on a change (`dimension:key`), a suggestion until `confirmed_by_id`
-    names a library editor (WAT-03). Kept one per `(change, term)`."""
+    """A scope term on a change (`dimension:key`), `suggester`'s suggestion until
+    `confirmer` confirms it (WAT-03, D-74). Kept one per `(change, term)`."""
     dimension, _, key = term_ref.partition(":")
     term = TaxonomyTerm.objects.select_related("dimension").get(dimension__key=dimension, key=key)
-    suggested = confirmed_by_id is None
     return write.upsert(
         ChangeTerm,
         "seed_e2e",
         lookup={"change": change, "term": term},
         defaults={
             "confidence": confidence,
-            "suggested": suggested,
-            "confirmed_by_id": confirmed_by_id,
-            "confirmed_at": None if suggested else (confirmed_at or timezone.now()),
+            "suggested": confirmer is None,
+            **curation(suggester, confirmer, confirmed_at),
         },
     )
 
@@ -273,11 +302,12 @@ def seed_obligation_link(
     obligation: Obligation,
     *,
     confidence: float | None = 0.8,
-    confirmed_by_id: uuid.UUID | None = None,
+    suggester: ApiKey | None = None,
+    confirmer: ApiKey | None = None,
     confirmed_at: datetime.datetime | None = None,
 ) -> ChangeObligation:
-    """An obligation the change affects, a suggestion until `confirmed_by_id` names a
-    library editor (WAT-04). A bank's own decision about the link lives on its case and
+    """An obligation the change affects, `suggester`'s suggestion until `confirmer`
+    confirms it (WAT-04, D-74). A bank's own decision about the link lives on its case and
     never here. Kept one per `(change, obligation)`."""
     return write.upsert(
         ChangeObligation,
@@ -286,7 +316,6 @@ def seed_obligation_link(
         defaults={
             "origin": OriginType.AGENT.value,
             "confidence": confidence,
-            "confirmed_by_id": confirmed_by_id,
-            "confirmed_at": confirmed_at if confirmed_by_id is not None else None,
+            **curation(suggester, confirmer, confirmed_at),
         },
     )

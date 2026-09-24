@@ -1915,6 +1915,7 @@ Draft the So what once per change, from library facts only (q-so-what-scope Opti
   reporting boundary rather than a trust boundary — but it stops being true the moment a
   bank runs its own agent against this route, which is exactly the ACC work in R2. Say so in
   the route's description rather than leaving a reader to assume the platform measured it.
+  (ACC is PRD 0.5's agent access, chunk 11: `docs/plans/briefs/AGENT_ACCESS.md`.)
 - The result is stored in `regulatory_change.so_what_draft` through `watch_write()`, and an `AiGeneration` row is written by the wrapper with the purpose, model, model version, prompt hash, input reference, output, citations and review state `pending`.
 - `c5-cases-creation` copies the draft into each tenant's case with `so_what_confirmed = false`. If the draft arrives after the cases exist, the handler backfills only cases whose So what is still unconfirmed and untouched; it never overwrites a tenant's own wording.
 - A model failure or timeout leaves `so_what_draft` empty, records the failure on the run and in the log without any prompt or output text, and does not block registration or case creation.

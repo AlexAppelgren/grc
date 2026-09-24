@@ -162,25 +162,26 @@ cmd_list() {
 }
 
 drop_databases() {
-  # Drop every database the slot created. As cw_migrator, which created and owns them.
+  # Drop every database the slot created, and only those. As cw_migrator, which created and
+  # owns them. Found by exact pattern, never by a bare prefix: a prefix match on
+  # compliance_watch_wt1 would also drop compliance_watch_wt10's databases.
+  #   <base>                          the slot's database (init)
+  #   <base>_scratch                  migrate_from_zero's scratch database
+  #   <base>_e2e, <base>_e2e_cold     the E2E stack's databases (playwright.config.ts)
+  #   test_<base>                     manage.py test
+  #   test_<base>_<n>                 its --parallel clones, left behind by a killed run
+  #   test_<base>_search_eval_<pid>   scripts/search_eval.py (apps/search/eval.py)
   local base="$1" py="$2"
   "$py" - "$base" <<'PY'
 import re, sys, psycopg
-base = sys.argv[1]
+base = re.escape(sys.argv[1])
 url = "postgres://cw_migrator:cw-migrator-dev-only@localhost:5432/postgres"
-names = [base, f"{base}_scratch", f"{base}_e2e", f"test_{base}"]
+slot = re.compile(rf"{base}(?:_scratch|_e2e|_e2e_cold)?|test_{base}(?:_\d+|_search_eval_\d+)?")
 with psycopg.connect(url, autocommit=True) as conn:
-    # `manage.py test --parallel N` clones the test database once per worker as
-    # test_<base>_1, _2, ... and drops them when it finishes. A run that was killed leaves
-    # them behind, and nothing else would ever remove them, so they are found rather than
-    # guessed: the worker count is not recorded anywhere.
-    clone = re.compile(rf"^test_{re.escape(base)}_\d+$")
-    names += sorted(
-        row[0] for row in conn.execute("SELECT datname FROM pg_database") if clone.match(row[0])
-    )
+    names = sorted(row[0] for row in conn.execute("SELECT datname FROM pg_database") if slot.fullmatch(row[0]))
     for name in names:
         conn.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
-        print(f"worktree: dropped {name} (if it existed)")
+        print(f"worktree: dropped {name}")
 PY
 }
 

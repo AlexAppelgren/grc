@@ -53,14 +53,34 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| INV-01 | Instruments with level (a standard's level says so), binding force, official reference, ELI where available, jurisdiction (International for standards bodies), authority, a regime, in-force dates and lineage | M | R1 | in_progress |
-| INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes; never for a standard, whose text is licensed | S | R1 | in_progress |
-| INV-03 | Obligations: plain-language duty, duty type, scope facets, trigger, retention, sanction exposure, provenance, related obligations | M | R1 | in_progress |
-| INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 | in_progress |
-| INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 | in_progress |
-| INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 | in_progress |
+| INV-01 | Instruments with level (a standard's level says so), binding force, official reference, ELI where available, jurisdiction (International for standards bodies), authority, a regime, in-force dates and lineage | M | R1 | built |
+| INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes; never for a standard, whose text is licensed | S | R1 | built |
+| INV-03 | Obligations: plain-language duty, duty type, scope facets, trigger, retention, sanction exposure, provenance, related obligations | M | R1 | built |
+| INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 | built |
+| INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 | built |
+| INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 | built |
 | INV-07 | Tenant-private instruments and obligations from the tenant's own sources, proposed and approved inside that bank by a second person; never seen by platform staff, a model, the search index or another tenant (D-57) | C | R3 | pending |
-| INV-08 | Standards as instruments, one per edition: publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link and exactly one conformance duty in our own words carrying the standard's term; no standard text, clause or control title, or paraphrase, anywhere | M | R1 | pending |
+| INV-08 | Standards as instruments, one per edition: publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link and exactly one conformance duty in our own words carrying the standard's term; no standard text, clause or control title, or paraphrase, anywhere. Built for tests and E2E: the first standard is seeded by `seed_e2e` only until the publishers' terms are cleared (TODO_FOR_alex, legal) | M | R1 | built |
+
+> **Note — what the standard clauses still lack (2026-09-23).** Built: the `standard`
+> instrument level with its tier-one kind (D-37), the seeded International jurisdiction of
+> kind `international`, left out of the footprint mirror (D-38), `instrument.regime` NOT
+> NULL with every seeded regime a term of the `regime` dimension (D-39), and the database
+> refusing a provision under a standard on every path a row takes there (D-35, library
+> 0008): a provision inserted under, or moved to, a standard or an instrument the writer
+> cannot see; an instrument holding provisions moved onto a standard level; and an existing
+> level given the kind `standard` while provisions sit under it, and the screens that read
+> "Standard" in the binding slot and "licensed" in the tree, walked by INV-S11's journey
+> (std-journeys). The `new_instrument` proposal refuses a regime from another dimension with
+> 422 `not_a_regime` at creation, over a reviewer's correction and at apply (INV-S12,
+> green). Missing, so INV-01, INV-02 and INV-08 stay in progress: the
+> ISO/IEC 27001:2022 edition with its one conformance duty is seeded for tests and E2E only
+> (`fixtures/e2e_standard.json`, loaded by `seed_e2e` and never by `seed_demo`), linked to
+> the standard's term, which a new database files active (watch-standards) and `seed_e2e`
+> switches on where it was held (D-85), until Alex
+> answers the legal question in `docs/TODO_FOR_alex.md`; and the proposal checks
+> of D-35 at creation, at a reviewer's correction and at apply (422 `licensed_text`,
+> `one_conformance_obligation`, `standard_term_required`, AC-INV2).
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -148,6 +168,13 @@ Then a problem report is created inside the reader's own bank and the reader see
 And nobody outside that bank reads it, bleqq included (Alex, 2026-09-19, OWNER_RECOMMENDATIONS item 3)
 ```
 
+> **Note — the provision's own report.** A provision has no source link or
+> "this looks wrong" of its own; both are shown and filed through its
+> instrument's card (chunk3-rest T17, T18), because the source, the
+> last-verified date and the re-verification stamp all sit on the instrument
+> row, never on a provision. A reader who spots a wrong sentence in the tree
+> reports it against the instrument that carries it.
+
 ### INV-S8 — The re-verification stamp is the only write outside a proposal `@integration` (INV-06)
 ```gherkin
 Given a library editor
@@ -190,7 +217,7 @@ And the instrument has exactly one obligation and no provision
 Given an instrument row written without a regime
 Then the database refuses it
 And every seeded instrument's regime is a term of the regime dimension
-When an instrument proposal names a term of the dimension "Service" as its regime and a library editor approves it
+When an instrument proposal names a term of the dimension "Service" as its regime and a reviewer approves it
 Then the apply answers 422 with code "not_a_regime" and nothing is written
 ```
 

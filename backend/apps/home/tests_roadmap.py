@@ -31,13 +31,14 @@ from unittest import mock
 from django.conf import settings
 from django.test import TestCase
 
+from apps.agents import testing as agent_build
 from apps.cases import testing as cases_build
 from apps.cases.models import ChangeCase
 from apps.home import roadmap
 from apps.home.schemas import HomeRoadmapQuery
 from apps.identity.models import User
 from apps.library import testing as library_build
-from apps.library.models import Obligation
+from apps.library.models import DatePrecision, Obligation
 from apps.shared import factories, tenancy
 from apps.shared.models import Tenant
 from apps.shared.testing import sign_in
@@ -152,6 +153,17 @@ class RoadmapContents(TestCase):
         self.assertIsNone(item.urgency.kind)
         self.assertEqual((item.label, item.source_label), ("In force", "Finansinspektionen"))
 
+    def test_a_row_carries_its_dates_precision_so_a_quarter_never_reads_as_a_day(self) -> None:
+        """HOM-03, INV-S10: a legal date is a plain date with a precision. A date the source
+        stated as a quarter is stored on a day, and without its precision beside it the
+        roadmap printed that day and counted the days left to it (calendar-feed-hardening
+        ND1). The precision is the change's own library column, served as it stands."""
+        self.assertEqual(self.read().items[0].date_precision, "day")
+        with watch_write("test: a key date stated as a quarter"):
+            RegulatoryChange.objects.filter(pk=self.soon.change_id).update(key_date_precision=DatePrecision.QUARTER.value)
+        item = self.read().items[0]
+        self.assertEqual((item.title, item.date, item.date_precision), ("Research payments", THIS_QUARTER, "quarter"))
+
     def test_the_quarter_roster_holds_each_quarter_once_in_date_order(self) -> None:
         answer = self.read()
         self.assertEqual(answer.quarters, ["2026-Q4", "2027-Q1"])
@@ -196,7 +208,7 @@ class RoadmapObligations(TestCase):
         watch_build.seed_watch_reference()
         cls.tenant = factories.tenant(slug="roadmap-links", timezone="Europe/Stockholm")
         editor = factories.platform_user()
-        instrument = library_build.instrument(key="fffs-2017-2", short_name="FFFS 2017:2")
+        instrument = library_build.instrument(key="fffs-2017-2", short_name="FFFS 2017:2", regime="regime:securities")
         cls.confirmed = library_build.obligation(
             instrument, key="obl-research", titles={"en": "Assess the research paid for"}, ref_label="11 kap. 4 §"
         )
@@ -222,6 +234,22 @@ class RoadmapObligations(TestCase):
             ("Assess the research paid for", "FFFS 2017:2", "11 kap. 4 §"),
         )
         self.assertEqual((link.origin, link.confidence, link.confirmed), ("agent", 0.82, True))
+        self.assertEqual((link.confirmed_origin, link.confirmed_by_agent), ("user", None))
+
+    def test_a_link_an_agent_confirmed_reads_machine_confirmed_naming_the_agent(self) -> None:
+        """D-74: the roadmap says who confirmed a link as the change page does, so a
+        machine's confirmation never reaches a bank's plan as a person's verification."""
+        tenancy.clear_tenant()
+        confirmer = agent_build.agent_key(agent_row=agent_build.agent(key="library-confirmer"))
+        with watch_write("test setup"):
+            ChangeObligation.objects.filter(obligation=self.confirmed).update(
+                confirmed_by=None, confirmed_by_api_key_id=confirmer.id, confirmed_by_agent_id=confirmer.agent.id
+            )
+        with mock.patch("django.utils.timezone.now", return_value=INSTANT):
+            tenancy.activate(self.tenant.id)
+            link = roadmap.roadmap_items(self.tenant, ["en"], HomeRoadmapQuery()).items[0].obligations[0]
+        self.assertEqual((link.confirmed, link.confirmed_origin), (True, "agent"))
+        self.assertEqual(link.confirmed_by_agent.key if link.confirmed_by_agent else None, "library-confirmer")
 
 
 class RoadmapQuartersAreTheBanksOwn(TestCase):
@@ -293,7 +321,7 @@ class RoadmapCost(TestCase):
         watch_build.seed_watch_reference()
         cls.tenant = factories.tenant(slug="roadmap-cost", timezone="Europe/Stockholm")
         cls.reader = factories.member_user(cls.tenant, roles=("reader",))
-        instrument = library_build.instrument(key="fffs-cost", short_name="FFFS 2026:1")
+        instrument = library_build.instrument(key="fffs-cost", short_name="FFFS 2026:1", regime="regime:securities")
         editor = factories.platform_user()
         for number in range(30):
             change = a_change(key_date=THIS_QUARTER + datetime.timedelta(days=number), title=f"Reform {number}")
@@ -368,6 +396,7 @@ class RoadmapRoute(TestCase):
         self.assertEqual(item["sourceLabel"], "Finansinspektionen")
         self.assertEqual(item["changeId"], str(self.case.change_id))
         self.assertEqual(item["urgency"]["key"], "act_now")
+        self.assertEqual(item["datePrecision"], "day")
 
     def test_an_empty_roadmap_is_a_200_and_never_a_404(self) -> None:
         self.assertEqual(self.get("?kind=internal").json(), {"items": [], "quarters": []})

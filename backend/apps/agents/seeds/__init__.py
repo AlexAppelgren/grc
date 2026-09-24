@@ -18,8 +18,10 @@ from apps.shared.tenancy import library_write
 SEED_REASON = "seed_reference"
 ACTOR = Actor.system(SEED_REASON)
 # The definitions this build ships, newest version folder each. Frozen here rather than
-# globbed: a folder half-added to the tree never becomes an agent by accident.
-SHIPPED: tuple[tuple[str, int], ...] = (("watch-sweeper", 1),)
+# globbed: a folder half-added to the tree never becomes an agent by accident. The sweeper
+# proposes and the confirmer decides (kind `review`, D-62, D-80): two definitions, so the
+# second pair of eyes on a proposal is never the definition that filed it.
+SHIPPED: tuple[tuple[str, int], ...] = (("watch-sweeper", 1), ("library-confirmer", 2))
 
 
 def definitions() -> list[Definition]:

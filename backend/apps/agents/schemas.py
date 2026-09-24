@@ -26,6 +26,8 @@ from pydantic import ConfigDict, JsonValue
 from apps.shared.schemas import CamelSchema, WriteBody
 
 __all__ = [
+    "AgentDefinitionOut",
+    "AgentDefinitionPage",
     "AgentRunFinish",
     "AgentRunInput",
     "AgentRunOut",
@@ -45,6 +47,9 @@ _EXAMPLE_STATS: dict[str, JsonValue] = {
     "sourcesChecked": 31,
     "changesRegistered": 2,
     "proposalsSubmitted": 5,
+    "outOfScope": 3,
+    "recordsRechecked": 12,
+    "correctionsProposed": 1,
 }
 _EXAMPLE_FINISHED_RUN: dict[str, JsonValue] = {
     "id": _EXAMPLE_RUN_ID,
@@ -62,7 +67,10 @@ _EXAMPLE_FINISHED_RUN: dict[str, JsonValue] = {
 
 class AgentRunStats(CamelSchema):
     """The `stats` column of agent_run: what one run did, counted against the budget
-    defaults of its definition (`backend/agents/<agent>/v<n>/definition.yaml`)."""
+    defaults of its definition (`backend/agents/<agent>/v<n>/definition.yaml`). What the
+    server can see it counts itself as the run closes (H41): sources checked, changes
+    registered, proposals submitted and records re-checked. The rest is the run's own
+    account."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_STATS]})
 
@@ -90,7 +98,8 @@ class AgentRunStats(CamelSchema):
             "How many registered sources the run visited, one per source per run, counting the "
             "sources where nothing had changed. A quiet source is still a check, and that is "
             "what lets a bank show that a source was watched on a given night rather than only "
-            "that something was found. Defaults to 0."
+            "that something was found. Counted by the server as the run closes, from the sweep "
+            "lines the run logged in the coverage log; a number sent here is not kept. Defaults to 0."
         ),
     )
     changes_registered: int = Field(
@@ -99,8 +108,9 @@ class AgentRunStats(CamelSchema):
             "How many regulatory changes the run put on the watch feed, counted against the "
             "change budget in the agent's definition. A change is a sighting the bank has yet "
             "to judge: it is not an obligation, it is not applicability and it is not a "
-            "decision, and nothing in the inventory moves until a person acts on it. Defaults "
-            "to 0."
+            "decision, and nothing in the inventory moves until a person acts on it. Counted "
+            "by the server as the run closes, from the new changes it registered (a second "
+            "sighting is not a new change); a number sent here is not kept. Defaults to 0."
         ),
     )
     proposals_submitted: int = Field(
@@ -109,7 +119,48 @@ class AgentRunStats(CamelSchema):
             "How many proposals the run put in the queue for the shared library, counted "
             "against the proposal budget in the agent's definition. A proposal is the only "
             "door an agent has into the library and it changes nothing until it is approved, "
-            "so read this as a count of requests and never of library edits. Defaults to 0."
+            "so read this as a count of requests and never of library edits. Counted by the "
+            "server as the run closes, from the proposals filed under it; a number sent here "
+            "is not kept. Defaults to 0."
+        ),
+    )
+    out_of_scope: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "How many documents the run read and set aside because they fall outside the "
+            "sector scope, a whole number with a minimum of 0 and no maximum. bleqq watches "
+            "regulated financial services only, so a medical-device rule or an environmental "
+            "permit that a source also publishes is counted on that source's check and here, "
+            "and nothing is registered or proposed from it: it never reaches the watch feed or "
+            "the proposal queue. Read it beside `sourcesChecked`, because a source that offered "
+            "only such documents was still watched that night. Defaults to 0; a negative "
+            "number is refused with `validation_error`."
+        ),
+    )
+    records_rechecked: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "How many library records the run re-checked against the pages they cite, a whole "
+            "number with a minimum of 0 and no maximum: one per record, each also logged as a "
+            "`recheck` source check naming it, so the coverage log shows which records were "
+            "compared beside the documents fetched. A record found unchanged still counts, "
+            "because a quiet re-check is still a check. Counted by the server as the run "
+            "closes, from the records its re-check lines name; a number sent here is not kept. "
+            "Defaults to 0; a negative number is refused with `validation_error`."
+        ),
+    )
+    corrections_proposed: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "How many of those re-checked records had drifted from their source and became a "
+            "`new_obligation_version` proposal, a whole number with a minimum of 0 and no "
+            "maximum. A correction is a request and never an edit: the record says what it "
+            "said before until a second and independent principal approves it. These "
+            "proposals are also counted in `proposalsSubmitted`. Defaults to 0; a negative "
+            "number is refused with `validation_error`."
         ),
     )
 
@@ -319,4 +370,76 @@ class AgentRunPage(CamelSchema):
             "it to size a pager. It counts only what this caller is allowed to read, so two "
             "banks asking the same question will get different totals for the same platform."
         )
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# The platform's agent definitions, read-only (ID-10, AGT-01): what a platform
+# administrator binds an agent key to. Publishing a definition is AGT-03, R2.
+# ---------------------------------------------------------------------------------------
+_EXAMPLE_DEFINITION: dict[str, JsonValue] = {
+    "id": "3c9e1f27-58b4-4d6a-a0e2-6f41b7c8d953",
+    "key": "watch-sweeper",
+    "description": (
+        "Checks registered sources for new or changed regulatory documents, registers one "
+        "change per reform with a stable key, and proposes obligation links."
+    ),
+    "currentVersion": 1,
+    "active": False,
+}
+
+
+class AgentDefinitionOut(CamelSchema):
+    """One agent definition as the platform ships it, loaded from its versioned folder."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_DEFINITION]})
+
+    id: uuid.UUID = Field(
+        description=(
+            "The definition's permanent identifier, a UUID. It is what `POST /agent-keys` takes "
+            "as `agentId` to bind a key to this agent."
+        )
+    )
+    key: str = Field(
+        description=(
+            "The definition's stable key, such as `watch-sweeper`: what a run names in "
+            "`POST /agent-runs` and what the audit trail records as the actor. It is issued once "
+            "and never changes; a new version keeps the key and raises `currentVersion`."
+        )
+    )
+    description: str = Field(
+        description=(
+            "What the agent does, in the words of its definition file. It says what the agent is "
+            "for and grants nothing: what a key bound to it may do is the key's scopes."
+        )
+    )
+    current_version: int = Field(
+        description=(
+            "The version of the definition this build loaded — its prompt, tools and budgets — "
+            "counting from 1. Runs started from now on run it."
+        )
+    )
+    active: bool = Field(
+        description=(
+            "Whether the definition is released for scheduled runs. True for an active "
+            "definition; false while it is a draft or after it is retired. A key can be bound to "
+            "a draft so that its runner can be tried before release."
+        )
+    )
+
+
+class AgentDefinitionPage(CamelSchema):
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_DEFINITION], "total": 1}]})
+
+    items: list[AgentDefinitionOut] = Field(
+        description=(
+            "The definitions on this page, ordered by key. They are the platform's own agents, "
+            "the same for every bank; a bank's own agents are not listed here. An empty list is a "
+            "200 and means no definition has been loaded yet."
+        )
+    )
+    total: int = Field(
+        description="How many definitions exist in total, not how many are on this page; use it to size a pager."
     )

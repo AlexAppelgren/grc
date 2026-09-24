@@ -58,20 +58,23 @@ EARLIER = D(2026, 8, 1)
 # its classification links and one label query each for flags and terms (3); its suggested
 # obligation links with their obligations, and those obligations' titles (2); the urgency
 # rows the change and the case name, with their labels (2); the change type's labels (1);
-# its timeline (1); its pages (1); the bank's own decisions about the links (1).
-CHANGE_QUERIES = 2 + 6 + 2 + 2 + 1 + 3 + 2 + 2 + 1 + 1 + 1 + 1
+# its timeline (1); its pages (1); the bank's own decisions about the links (1); the
+# jurisdiction terms its authority reaches (1, FP-04).
+CHANGE_QUERIES = 2 + 6 + 2 + 2 + 1 + 3 + 2 + 2 + 1 + 1 + 1 + 1 + 1
 
 # Queries per related-changes read, measured the same way: the savepoint pair (2); the
 # session (6); the caller's tenant and locale (2); the footprint and its restricting
 # dimensions (2); the obligation itself (1); the count and the page (2); the open-change
 # count (1); the classification links and two label queries (3); the urgency rows and
-# their labels (2); the change type's labels (1); the bank's own link decisions (1).
-RELATED_QUERIES = 2 + 6 + 2 + 2 + 1 + 2 + 1 + 3 + 2 + 1 + 1
+# their labels (2); the change type's labels (1); the bank's own link decisions (1); the
+# jurisdiction terms the page's authorities reach (1, FP-04).
+RELATED_QUERIES = 2 + 6 + 2 + 2 + 1 + 2 + 1 + 3 + 2 + 1 + 1 + 1
 
 
 def confirm_link(change: RegulatoryChange, obligation: Obligation, editor: User) -> None:
-    """A library editor confirms the link for the shared library. Through the watch door,
-    because `change_obligation` is a library row."""
+    """A person confirms the link for the shared library, as a library editor still may
+    with a passkey (D-74). Through the watch door, because `change_obligation` is a library
+    row."""
     with watch_write("test fixture"):
         ChangeObligation.objects.filter(change=change, obligation=obligation).update(
             confirmed_by=editor, confirmed_at=build.ANCHOR
@@ -79,9 +82,9 @@ def confirm_link(change: RegulatoryChange, obligation: Obligation, editor: User)
 
 
 def confirm_flag(change: RegulatoryChange, flag_key: str, editor: User) -> None:
-    """A library editor confirms one flag of a change for the shared library. `suggested`
-    and the two confirmation columns move together because `change_term`'s check constraint
-    refuses any other combination (WAT-03)."""
+    """A person confirms one flag of a change for the shared library, as a library editor
+    still may with a passkey (D-74). `suggested` and the confirmation columns move together
+    because `change_term`'s check constraint refuses any other combination (WAT-03)."""
     with watch_write("test fixture"):
         ChangeTerm.objects.filter(
             change=change,
@@ -194,11 +197,26 @@ class ChangeDetailTests(ChangeReadFixture):
         self.assertEqual(facts, {fact["ref"]["key"]: fact for fact in row["flags"] + row["terms"]})
         self.assertEqual(
             facts["advice_perimeter"],
-            {"ref": {"key": "advice_perimeter", "kind": None, "label": "Advice perimeter"}, "confidence": 0.74, "suggested": False},
+            {
+                "ref": {"key": "advice_perimeter", "kind": None, "label": "Advice perimeter"},
+                "confidence": 0.74,
+                "suggested": False,
+                # A person confirmed it, so it reads as a person's and names no agent (D-74).
+                "confirmedOrigin": "user",
+                "suggestedByAgent": None,
+                "confirmedByAgent": None,
+            },
         )
         self.assertEqual(
             facts["securities"],
-            {"ref": {"key": "securities", "kind": None, "label": "Securities"}, "confidence": 0.74, "suggested": True},
+            {
+                "ref": {"key": "securities", "kind": None, "label": "Securities"},
+                "confidence": 0.74,
+                "suggested": True,
+                "confirmedOrigin": None,
+                "suggestedByAgent": None,
+                "confirmedByAgent": None,
+            },
         )
 
     def test_the_timeline_is_in_sort_order_with_each_date_precision(self) -> None:
@@ -315,7 +333,7 @@ class RelatedChangesTests(ChangeReadFixture):
 
     def test_an_obligation_no_change_touches_is_an_empty_answer_and_not_a_404(self) -> None:
         quiet = library_build.obligation(
-            library_build.instrument(key="quiet", short_name="QUIET"), key="obl-quiet", titles={"en": "Nothing yet"}
+            library_build.instrument(key="quiet", short_name="QUIET", regime="regime:securities"), key="obl-quiet", titles={"en": "Nothing yet"}
         )
         self.assertEqual(self.related(quiet).json(), {"items": [], "total": 0, "openCount": 0})
 
@@ -327,7 +345,7 @@ class RelatedChangesTests(ChangeReadFixture):
         """A record row-level security does not show the caller is not there, so it answers
         exactly as an id that never existed (INV-07)."""
         private = library_build.obligation(
-            library_build.instrument(key="theirs", short_name="THEIRS", owner_tenant=self.outside),
+            library_build.instrument(key="theirs", short_name="THEIRS", regime="regime:securities", owner_tenant=self.outside),
             key="obl-theirs",
             titles={"en": "Their own duty"},
             owner_tenant=self.outside,

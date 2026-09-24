@@ -35,8 +35,8 @@ describe('navigation registry (playbook 6.2)', () => {
       'admin',
     ]);
     // A console destination registers with its page: vocabularies and tenants
-    // from chunk 4, Change facts, Sources and Agent keys from chunk 5. The
-    // queue joins with its own.
+    // from chunk 4, Change facts, Sources and Agent keys from chunk 5,
+    // Evaluation from chunk 7. The queue joins with its own.
     expect(visibleDestinations('console', PLATFORM).map((d) => d.id)).toEqual([
       'console-queue',
       'console-vocabularies',
@@ -44,6 +44,7 @@ describe('navigation registry (playbook 6.2)', () => {
       'console-sources',
       'console-tenants',
       'console-agent-keys',
+      'console-evaluation',
     ]);
     // Each console destination answers to the one platform role that holds
     // its permission, so neither platform role sees the other's (ADM-S4).
@@ -55,6 +56,7 @@ describe('navigation registry (playbook 6.2)', () => {
     expect(visibleDestinations('console', ['proposals.review']).map((d) => d.id)).toEqual(['console-queue', 'console-change-facts']);
     expect(visibleDestinations('console', ['sources.manage']).map((d) => d.id)).toEqual(['console-sources']);
     expect(visibleDestinations('console', ['agent_definitions.manage']).map((d) => d.id)).toEqual(['console-agent-keys']);
+    expect(visibleDestinations('console', ['eval.manage']).map((d) => d.id)).toEqual(['console-evaluation']);
   });
 
   it('registers a console destination only once its page exists, so none renders "coming soon"', () => {
@@ -103,7 +105,7 @@ describe('navigation registry (playbook 6.2)', () => {
   it('puts every visible destination that is not a tab in More, and never promotes an unranked one', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(moreDestinations('tenant', all).map((d) => d.id)).toEqual(['roadmap', 'admin']);
-    expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys']);
+    expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys', 'console-evaluation']);
 
     expect(dockDestinations('tenant', []).map((d) => d.id)).toEqual(['today']);
     expect(moreDestinations('tenant', []).map((d) => d.id)).toEqual([]);
@@ -117,7 +119,7 @@ describe('navigation registry (playbook 6.2)', () => {
 
   it('knows when the current page lives in More, account pages included', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
-    for (const path of ['/roadmap', '/admin/members', '/me/sessions']) {
+    for (const path of ['/roadmap', '/admin/members', '/me/sessions', '/me/calendar-feeds']) {
       expect(isInMore('tenant', all, path)).toBe(true);
     }
     for (const path of ['/', '/watch', '/watch/42']) {
@@ -153,6 +155,10 @@ describe('navigation registry (playbook 6.2)', () => {
     // An approver who holds nothing else still reaches /admin to find it.
     expect(visibleDestinations('tenant', ['footprint.approve']).map((d) => d.id)).toEqual(['today', 'admin']);
     expect(childDestinations(ACCOUNT_PARENT, []).map((d) => d.href)).toEqual(['/me/passkeys', '/me/sessions']);
+    // Calendar feeds needs the grant the roadmap needs (HOM-04), so it joins the
+    // account links only for a reader who holds it, and never unlocks anything else.
+    expect(childDestinations(ACCOUNT_PARENT, ['roadmap.read']).map((d) => d.href)).toEqual(['/me/passkeys', '/me/sessions', '/me/calendar-feeds']);
+    expect(visibleDestinations('tenant', ['roadmap.read']).map((d) => d.id)).toEqual(['today', 'roadmap']);
     // Children never reach the rail or the dock.
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(visibleDestinations('tenant', all).every((d) => d.parent === undefined)).toBe(true);

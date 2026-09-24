@@ -34,10 +34,11 @@ from django.test import TestCase
 
 from apps.agents import runs, testing as agent_build
 from apps.agents.models import AgentRun, RunStatus
+from apps.agents.schemas import AgentRunInput
 from apps.identity.api_keys_logic import resolve_api_key
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, permissions as perms, tenancy
-from apps.shared.authentication import Principal
+from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.testing import ScenarioTestCase, stub_session, user_principal
@@ -46,7 +47,7 @@ from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, 
 RUNS = "/api/v1/agent-runs"
 JSON = "application/json"
 
-STATS = {"modelCalls": 42, "fetches": 118, "sourcesChecked": 31, "changesRegistered": 2, "proposalsSubmitted": 5}
+STATS = {"modelCalls": 42, "fetches": 118, "sourcesChecked": 31, "changesRegistered": 2, "proposalsSubmitted": 5, "outOfScope": 3, "recordsRechecked": 12, "correctionsProposed": 1}
 # Two fixed nights rather than "now", so a fixture cannot drift as the clock moves.
 FIRST_SWEEP = datetime.datetime(2026, 9, 19, 2, 0, tzinfo=datetime.UTC)
 SECOND_SWEEP = datetime.datetime(2026, 9, 20, 2, 0, tzinfo=datetime.UTC)
@@ -132,13 +133,23 @@ class OpeningARun(AgentRunCase):
         self.assertEqual(AgentRun.objects.count(), 1)
 
     def test_a_tenant_bound_key_is_refused_with_the_reason_named(self) -> None:
-        """Item 14: bleqq's agents are platform-owned, so a bank's key opens no run in R1."""
+        """Item 14: bleqq's agents are platform-owned, so a bank's key opens no run in R1.
+        A bank's key never holds `agent-runs:write` (D-61, PLATFORM_ONLY_SCOPES): one that
+        was given it before that rule has it withheld, and the route names the reason before
+        it reads the scopes. The logic refuses on its own too, for a principal that somehow
+        carries the scope."""
         tenant = factories.tenant(slug="opens-nothing")
         tenancy.clear_tenant()
         bank = agent_build.tenant_key(tenant, scopes=(perms.SCOPE_AGENT_RUNS_WRITE,))
         response = self.post(open_body(self.agent.key), plain=bank.plain_key)
         self.assertEqual(response.status_code, 403, response.content)
         self.assertEqual(response.json()["code"], "tenant_agents_not_available")
+        carrying = Principal(
+            kind=PrincipalKind.AGENT, subject_id=bank.id, tenant_id=tenant.id, scopes=frozenset({perms.SCOPE_AGENT_RUNS_WRITE})
+        )
+        with self.assertRaises(ProblemError) as refused:
+            runs.open_run(who=carrying, body=AgentRunInput.model_validate(open_body(self.agent.key)), idempotency_key=None)
+        self.assertEqual(refused.exception.code, "tenant_agents_not_available")
         self.assertEqual(AgentRun.objects.count(), 0, "a refusal writes nothing")
 
     def test_a_tenant_session_never_reaches_the_logic(self) -> None:
@@ -184,7 +195,10 @@ class ClosingARun(AgentRunCase):
         closed = response.json()
         self.assertEqual(closed["status"], "succeeded")
         self.assertIsNotNone(closed["finishedAt"])
-        self.assertEqual(closed["stats"], STATS)
+        # What the server can count it counts (H41): this run filed nothing, whatever it
+        # says; the rest is the run's own account (`tests_budgets.py`).
+        counted = {"sourcesChecked": 0, "changesRegistered": 0, "proposalsSubmitted": 0, "recordsRechecked": 0}
+        self.assertEqual(closed["stats"], {**STATS, **counted})
         self.assertEqual(closed["outputRef"], "runs/2026-09-20/watch-sweeper/5f1c2a80.jsonl")
         self.assertIsNone(closed["error"])
 

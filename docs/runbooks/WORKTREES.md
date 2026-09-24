@@ -24,7 +24,8 @@ The main checkout is slot 0 and keeps the defaults.
 | Database | `compliance_watch_wtN` (test runner uses `test_compliance_watch_wtN`) |
 | Worker clones | `test_compliance_watch_wtN_1` … one per `--parallel` worker |
 | Scratch database | `compliance_watch_wtN_scratch` (`migrate_from_zero` derives it) |
-| E2E database | `compliance_watch_wtN_e2e` |
+| E2E databases | `compliance_watch_wtN_e2e`, and `compliance_watch_wtN_e2e_cold` for a cold-start run |
+| Search evaluation | `test_compliance_watch_wtN_search_eval_<pid>`, one per `scripts/search_eval.py` run |
 | Redis | index N+1 |
 | API and web ports | `8000 + 10N` and `3000 + 10N` |
 
@@ -32,8 +33,13 @@ The backend suite runs in parallel worker processes, four by default, each with 
 the slot's own test database (`scripts/prepush.sh`; `BACKEND_TEST_PARALLEL` overrides the
 count). Four workers on an eight-core laptop is a deliberate under-commit, because several
 worktrees run their suites at the same time: raising it makes one agent finish sooner and
-every other agent wait. `remove` drops the clones along with the rest of the slot; a run
-that was killed leaves them behind until then.
+every other agent wait. A run that was killed leaves its clones behind until `remove`.
+
+`remove` drops every database in the table above, and only those: `compliance_watch_wtN`,
+its `_scratch`, `_e2e` and `_e2e_cold`, `test_compliance_watch_wtN`, its worker clones
+`_<n>` and its search evaluation databases `_search_eval_<pid>`. It finds them by exact
+pattern, never by prefix, so removing slot 1 never touches slot 10's
+`compliance_watch_wt10…` databases.
 
 Dependencies are shared with the main checkout through a junction (Windows) or a symlink:
 `backend/.venv` and `frontend/node_modules`. **Never change dependencies through a shared

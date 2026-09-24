@@ -220,6 +220,26 @@ class SessionLimits(TestCase):
         with self.assertRaises(ValidationError):
             session_logic.revoke_own_session(user_principal(subject_id=uuid.uuid4()), bundle.session.id, None)
 
+    def test_a_cookie_naming_a_session_without_its_secret_signs_nobody_out(self) -> None:
+        """Sign-out takes no bearer token, so the cookie is the only proof. Session ids are
+        not secret (every `session.created` audit row names one), so a cookie of
+        `<someone's session id>.<anything>` must not end their session or write
+        `session.revoked` in their name."""
+        bundle = self._session()
+        session_logic.sign_out(f"{bundle.session.id.hex}.forged", None)
+        self.assertIsNone(UserSession.objects.get(pk=bundle.session.pk).revoked_at)
+        self.assertFalse(AuditEvent.objects.filter(action="session.revoked", subject_id=bundle.session.id).exists())
+        self.assertTrue(AuditEvent.objects.filter(action="session.sign_out_without_session").exists())
+        session_logic.refresh(bundle.refresh_value, None)  # the owner's cookie still works
+
+    def test_the_cookie_just_rotated_away_still_signs_out_inside_the_grace_window(self) -> None:
+        """A tab signing out while another tab refreshes presents the previous secret; inside
+        the replay grace window that is still the owner's cookie."""
+        bundle = self._session()
+        session_logic.refresh(bundle.refresh_value, None)
+        session_logic.sign_out(bundle.refresh_value, None)
+        self.assertEqual(UserSession.objects.get(pk=bundle.session.pk).revoked_reason, "sign_out")
+
     def test_a_platform_user_gets_a_platform_session(self) -> None:
         staff = factories.platform_user()
         self.assertIsNone(session_logic.choose_tenant(staff))
@@ -296,7 +316,7 @@ class ApiKeyAuthClass(TestCase):
     def setUp(self) -> None:
         self.factory = RequestFactory()
         self.tenant = factories.tenant()
-        issued = factories.api_key(self.tenant, scopes=(perms.SCOPE_CHANGES_WRITE,))
+        issued = factories.api_key(self.tenant, scopes=(perms.SCOPE_LIBRARY_READ,))
         self.key = issued.row
         self.plain = issued.plain_key
 
@@ -307,7 +327,7 @@ class ApiKeyAuthClass(TestCase):
             assert principal is not None
             self.assertEqual(principal.kind, PrincipalKind.AGENT)
             self.assertEqual(principal.tenant_id, self.tenant.id)
-            self.assertTrue(principal.has_scope(perms.SCOPE_CHANGES_WRITE))
+            self.assertTrue(principal.has_scope(perms.SCOPE_LIBRARY_READ))
         self.assertIsNone(ApiKeyAuth()(self.factory.get("/", HTTP_AUTHORIZATION="Bearer v1.not.a.key.x")))
 
     def test_last_used_is_throttled_and_expiry_and_revocation_bite(self) -> None:
@@ -322,11 +342,11 @@ class ApiKeyAuthClass(TestCase):
         self.assertIsNone(api_keys_logic.resolve_api_key(self.plain))
         with self.assertRaises(ValidationError):
             api_keys_logic.create_api_key(
-                tenant=self.tenant, actor=factories.user_actor(), created_by=factories.user(), name=" ", scopes=[perms.SCOPE_CHANGES_WRITE], expires_at=None, step_up_assertion_id=None
+                tenant=self.tenant, actor=factories.user_actor(), created_by=factories.user(), name=" ", scopes=[perms.SCOPE_LIBRARY_READ], expires_at=None, step_up_assertion_id=None
             )
         with self.assertRaises(ValidationError):
             api_keys_logic.create_api_key(
-                tenant=self.tenant, actor=factories.user_actor(), created_by=factories.user(), name="x", scopes=[perms.SCOPE_CHANGES_WRITE], expires_at=timezone.now() - timedelta(days=1), step_up_assertion_id=None
+                tenant=self.tenant, actor=factories.user_actor(), created_by=factories.user(), name="x", scopes=[perms.SCOPE_LIBRARY_READ], expires_at=timezone.now() - timedelta(days=1), step_up_assertion_id=None
             )
         with self.assertRaises(ValidationError):
             api_keys_logic.revoke_api_key(tenant=self.tenant, actor=factories.user_actor(), key_id=uuid.uuid4())
@@ -810,6 +830,12 @@ class MailLeavesThroughTheWorker(TestCase):
     Celery task after commit; the mock outbox lives in the cache so another process can
     read it."""
 
+    # Celery's import hook runs Django's model checks, which read the server version of
+    # every connection, the row-level-security alias `app` included. Whether that read hit
+    # the database depended on whether an earlier test had already opened `app`, so the
+    # first test here passed or failed by suite order.
+    databases = {"default", "app"}
+
     def setUp(self) -> None:
         MockMailer.reset()
 
@@ -824,6 +850,15 @@ class MailLeavesThroughTheWorker(TestCase):
         self.assertEqual(cache.get(MOCK_OUTBOX_CACHE_KEY)[0][0], "anna@bank.example")
         MockMailer.reset()
         self.assertEqual(MockMailer.sent, [])
+
+    def test_the_code_mail_names_enrolment_and_never_sign_in(self) -> None:
+        """The emailed code works once, for enrolment only, and stops working once the
+        first passkey exists (CLAUDE.md section 5), so the subject never calls it a sign-in
+        code: a person who read that would expect it to let them sign in again."""
+        mail.send_code("anna@bank.example", "123456")
+        subject = MockMailer.sent[0].subject
+        self.assertIn("enrolment code", subject)
+        self.assertNotIn("sign-in", subject.lower())
 
     @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
     def test_outside_tests_the_mail_waits_for_the_commit(self) -> None:

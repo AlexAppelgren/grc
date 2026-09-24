@@ -56,6 +56,20 @@ class ProblemShape(SimpleTestCase):
         self.assertEqual(json.loads(response.content)["code"], "not_found")
 
 
+class UnknownPaths(TestCase):
+    """A path the server does not have answers in the one problem shape, not Django's HTML
+    page: `handler404` in config/urls.py is `config.api.not_found`. Calling the function
+    directly (above) proves its output, not that Django ever calls it."""
+
+    def test_an_unknown_path_answers_problem_details_not_found(self) -> None:
+        for path in ("/api/v1/no-such-route", "/no-such-page"):
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response["Content-Type"], PROBLEM_CONTENT_TYPE)
+                self.assertEqual(json.loads(response.content)["code"], "not_found")
+
+
 class ValidationThroughTheApi(TestCase):
     def test_a_malformed_query_answers_422_with_errors(self) -> None:
         from ninja import Router

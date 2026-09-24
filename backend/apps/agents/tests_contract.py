@@ -1,20 +1,17 @@
-"""Contract guard for the agent-facing run routes and the platform agent-key routes
-(AGT-01, AGT-02, ID-10, NFR-01, chunk 5 `c5-contract-api-agent`).
+"""Contract guard for the agent-facing run routes, the platform agent-key routes and the
+agent-definitions read (AGT-01, AGT-02, ID-10, NFR-01, chunk 5 `c5-contract-api-agent`).
 
-The routes are declared before the logic that serves them: each one answers 501
-`not_built` from the named function in the module that will build it, and every refusal
-in front of that stub is proved here, per route. Written before the routes existed
-(2026-09-20): every case below failed with 404 until `agents/api.py` and the three
-`identity/api.py` routes landed.
+The routes were declared before the logic that served them, each answering 501
+`not_built` behind its real gate, and every refusal in front of that stub was proved here,
+per route. Written before the routes existed (2026-09-20): every case below failed with
+404 until `agents/api.py` and the three `identity/api.py` routes landed.
 
-The three run routes are no longer stubs — `c5-agent-runs` built them, and what they do
-behind these gates is proved in `tests_runs.py` — so they left the stub list below on
-2026-09-21 while keeping every gate assertion they had. `recordSourceCheck` followed them
-the same day (`c5-watch-sources-coverage`, proved in `apps/watch/tests_sources.py`). The
-three agent-key routes are still declared ahead of their logic.
-
-The agent-key routes live in `identity/api.py` but are proved here, beside the runs they
-create keys for: `identity/tests_api_keys.py` belongs to the task that builds their logic.
+No route is a stub any more. The three run routes left the stub list on 2026-09-21
+(`c5-agent-runs`, proved in `tests_runs.py`), `recordSourceCheck` the same day
+(`c5-watch-sources-coverage`, `apps/watch/tests_sources.py`), and the three agent-key
+routes on 2026-09-23 with the definitions read beside them (`identity-agent-keys-backend`,
+`apps/identity/tests_api_keys.py`). Every gate assertion each of them had is kept, and
+`AgentRoutesAnswerFromTheirLogic` pins that each answers from its logic behind the gate.
 """
 
 from __future__ import annotations
@@ -25,7 +22,7 @@ from typing import Any
 from django.test import TestCase
 from django.utils import timezone
 
-from apps.shared import permissions as perms
+from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.testing import (
     API_KEY_FOR_TESTS,
     SESSION_TOKEN_FOR_TESTS,
@@ -39,6 +36,7 @@ RUN = "11111111-1111-4111-8111-111111111111"
 KEY = "22222222-2222-4222-8222-222222222222"
 RUNS = "/api/v1/agent-runs"
 KEYS = "/api/v1/agent-keys"
+DEFINITIONS = "/api/v1/agent-definitions"
 
 AS_KEY: dict[str, Any] = {"HTTP_X_API_KEY": API_KEY_FOR_TESTS}
 AS_SESSION: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {SESSION_TOKEN_FOR_TESTS}"}
@@ -57,15 +55,11 @@ KEY_ROUTES = [
 # (name, method, url, body, the permission the session must hold)
 SESSION_ROUTES = [
     ("listAgentRuns", "get", RUNS, None, perms.AGENTS_MANAGE),
+    ("listAgentDefinitions", "get", DEFINITIONS, None, perms.AGENT_DEFINITIONS_MANAGE),
     ("listAgentKeys", "get", KEYS, None, perms.AGENT_DEFINITIONS_MANAGE),
     ("createAgentKey", "post", KEYS, KEY_BODY, perms.AGENT_DEFINITIONS_MANAGE),
     ("revokeAgentKey", "post", f"{KEYS}/{KEY}/revoke", {}, perms.AGENT_DEFINITIONS_MANAGE),
 ]
-# What is still declared ahead of its logic. The three run routes left this list when
-# `c5-agent-runs` built them and `recordSourceCheck` when `c5-watch-sources-coverage` did;
-# the gates above still cover all of them, so nothing is left unproved by their leaving.
-STUBBED_KEY_ROUTES: list[tuple[str, str, str, Any, str]] = []
-STUBBED_SESSION_ROUTES = [route for route in SESSION_ROUTES if route[0] != "listAgentRuns"]
 
 
 def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
@@ -118,13 +112,13 @@ class AgentRouteGates(TestCase):
                     response = _call(self.client, method, url, body, AS_KEY)
                     self.assertEqual(response.status_code, 401)
 
-    def test_creating_a_key_needs_a_fresh_assertion_before_the_stub(self) -> None:
+    def test_creating_a_key_needs_a_fresh_assertion_before_the_logic(self) -> None:
         with stub_session(user_principal(permissions={perms.AGENT_DEFINITIONS_MANAGE})):
             response = _call(self.client, "post", KEYS, KEY_BODY, AS_SESSION)
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()["code"], "step_up_required")
 
-    def test_bad_input_is_422_before_the_stub(self) -> None:
+    def test_bad_input_is_422_before_the_logic(self) -> None:
         cases = [
             ("startAgentRun", "post", RUNS, {"agent": "watch-sweeper"}),  # model and pipelineVersion missing
             ("finishAgentRun", "patch", f"{RUNS}/{RUN}", {"status": "running"}),  # not a closing status
@@ -144,22 +138,8 @@ class AgentRouteGates(TestCase):
         self.assertIn(response.status_code, (404, 422))
 
 
-class AgentRouteStubs(TestCase):
-    """Behind the gate, every route answers the same 501 until its logic task lands."""
-
-    def assert_not_built(self, response: Any) -> None:
-        self.assertEqual(response.status_code, 501)
-        problem = response.json()
-        self.assertEqual(problem["code"], "not_built")
-        self.assertEqual(response.headers["Content-Type"], "application/problem+json")
-        self.assertNotIn("traceback", response.content.decode().lower())
-
-    def test_a_key_with_the_scope_reaches_the_stub(self) -> None:
-        self.assertEqual(STUBBED_KEY_ROUTES, [], "every key route of this chunk is built; nothing is left to stub")
-        with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
-            for name, method, url, body, _ in STUBBED_KEY_ROUTES:
-                with self.subTest(operation=name):
-                    self.assert_not_built(_call(self.client, method, url, body, AS_KEY))
+class AgentRoutesAnswerFromTheirLogic(TestCase):
+    """Behind the gate, every route of this contract answers from its logic: none is a stub."""
 
     def test_the_built_source_check_route_answers_from_its_logic(self) -> None:
         """`recordSourceCheck` no longer answers `not_built`. The run these constants name
@@ -170,16 +150,31 @@ class AgentRouteStubs(TestCase):
         self.assertEqual(response.status_code, 404, response.content)
         self.assertEqual(response.json()["code"], "not_found")
 
-    def test_a_session_with_the_permission_reaches_the_stub(self) -> None:
+    def test_a_platform_admin_reaches_each_key_route_and_its_logic_answers(self) -> None:
+        """The key routes reached with the permission and a fresh assertion: the list reads,
+        a key bound to no definition is refused by the logic, and a key that does not exist
+        is not found. What each does beyond that is `apps/identity/tests_api_keys.py`."""
+        admin = factories.platform_user(roles=("platform_admin",))
+        tenancy.clear_tenant()
         principal = user_principal(
-            permissions={perms.AGENTS_MANAGE, perms.AGENT_DEFINITIONS_MANAGE},
-            tenant_id=uuid.uuid4(),
-            step_up_at=timezone.now(),
+            permissions={perms.AGENT_DEFINITIONS_MANAGE}, subject_id=admin.id, step_up_at=timezone.now()
         )
+        expected = {
+            "listAgentDefinitions": (200, None),
+            "listAgentKeys": (200, None),
+            "createAgentKey": (422, "unknown_key"),
+            "revokeAgentKey": (404, "not_found"),
+        }
         with stub_session(principal):
-            for name, method, url, body, _ in STUBBED_SESSION_ROUTES:
+            for name, method, url, body, _ in SESSION_ROUTES:
+                if name not in expected:
+                    continue
                 with self.subTest(operation=name):
-                    self.assert_not_built(_call(self.client, method, url, body, AS_SESSION))
+                    response = _call(self.client, method, url, body, AS_SESSION)
+                    status, code = expected[name]
+                    self.assertEqual(response.status_code, status, response.content)
+                    if code is not None:
+                        self.assertEqual(response.json()["code"], code)
 
     def test_system_health_also_reads_the_run_list(self) -> None:
         """The run log is served now, so the proof is that `system.health` passes its gate;

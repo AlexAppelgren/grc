@@ -219,6 +219,7 @@ message that says what to do.
 | Database role | The app's role | Not superuser, not owner, no `BYPASSRLS` |
 | Tenant isolation | Every tenant-scoped GET, PATCH, DELETE with another tenant's record | 404, never 403, never data |
 | Library fence | The AST of every module writing a `LibraryModel` | Only inside `library_write()` in `proposals/apply.py`, `watch/write.py` (the watch door: the seven watch tables, no inventory table), reference seeds |
+| Library door (ADR 0058) | Every `LibraryModel` table, `search_chunk` and the reference tables, from the app registry against `pg_trigger`; every proposal kind and watch step as cw_app | The `cw_library_door_guard()` trigger of shared 0008 with exactly the doors its table accepts; as cw_app a write outside a door refused and every real writer passing; each door named by one function and `seed` by the reference seeds only; the setting's name only where the `library-door` lint allows it |
 | Four eyes | Every table in the four-eyes list | The requester-is-not-approver check constraint exists |
 | Audit on write | Every non-GET operation through its scenario test | At least one `audit_event` written; a mutating route with no scenario fails |
 | Kinds only | Every `TextChoices`, Postgres enum, generated TS union | In the tier-one allowlist with a reason |
@@ -306,6 +307,20 @@ Placeholders are dim italic and "e.g." prefixed.
 or plain date plus precision in, user language and tenant timezone out).
 `logger` from `shared/utils/logger`, never `console.log`. No tokens, PII or
 tenant content in URLs, storage or logs.
+
+**One named exception, and it stays one.** `GET /api/v1/calendar/feed.ics`
+carries its token in the query string, because a calendar client sends no
+header, follows no sign-in and subscribes by web address alone (D-52, ADR
+0045). A token in the path would land in a hosting edge's request line, which
+is the finding that moved invitation tokens out of paths; our own access log
+prints the route and drops the query, proved by
+`apps/shared/tests_no_query_in_logs.py` and, for this route, by
+`test_no_token_prefix_or_secret_reaches_a_log_line` in `apps/home/tests_feed.py`,
+which captures every configured logger at its handler. The address is
+shown once, kept as a lookup prefix beside the secret's hash, revocable with
+immediate effect, and it is never put in a screen's URL, in browser storage or
+in a log line. `apps/home/tests_contract.py` reads the published contract and
+fails if any second operation takes a credential in a query string.
 
 ### 3.7 Pills and labels
 

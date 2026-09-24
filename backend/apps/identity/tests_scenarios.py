@@ -14,7 +14,7 @@ revokeApiKey, markVisit.
 The ceremonies run for real against py_webauthn through the software authenticator in
 tests_webauthn_support.py; the emailed link and code are read from the mock mailer.
 
-Prefixes hosted: ID.
+Prefixes hosted: ACC, ID.
 """
 
 from __future__ import annotations
@@ -54,7 +54,7 @@ from apps.identity.models import (
 )
 from apps.identity.tests_webauthn_support import SoftwareAuthenticator
 from apps.library.seeds import seed_languages
-from apps.shared import factories, permissions as perms
+from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.authentication import ApiKeyAuth
 from apps.shared.models import AuditEvent
@@ -603,14 +603,14 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(failed.status_code, 400)
         self.assertEqual(failed.json()["code"], "step_up_failed")
 
-    @skip("pending: ID-S16 (ID-07, R2)")
+    @skip("pending: ID-S16 (ID-07, chunk 11)")
     def test_id_s16(self) -> None:
         """ID-S16
 
         A tenant can require attested device-bound authenticators (ID-07).
         """
 
-    @skip("pending: ID-S17 (ID-08, R2)")
+    @skip("pending: ID-S17 (ID-08, chunk 11)")
     def test_id_s17(self) -> None:
         """ID-S17
 
@@ -709,8 +709,9 @@ class IdentityScenarioTests(ScenarioTestCase):
         An API key is shown once, stored hashed and revocable (ID-10).
         Operations: `createApiKey`, `revokeApiKey`, `createAgentKey`, `revokeAgentKey`.
         """
+        wanted = [perms.SCOPE_LIBRARY_READ, perms.SCOPE_PROPOSALS_WRITE]
         headers = sign_in(self.admin, tenant=self.tenant, step_up=True)
-        created = self._post("/tenant/api-keys", {"name": "Research agent", "scopes": [perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_WRITE]}, **headers)
+        created = self._post("/tenant/api-keys", {"name": "Research agent", "scopes": wanted}, **headers)
         self.assertEqual(created.status_code, 201, created.content)
         body = created.json()
         plain = body["plainKey"]
@@ -719,19 +720,19 @@ class IdentityScenarioTests(ScenarioTestCase):
         row = ApiKey.objects.get(pk=body["id"])
         self.assertEqual(row.key_hash, tokens.hash_token(plain.split("_", 2)[2]))
         self.assertNotIn(plain, str(ApiKey.objects.filter(pk=row.pk).values()))
-        self.assertEqual(sorted(row.scopes), sorted([perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_WRITE]))
+        self.assertEqual(sorted(row.scopes), sorted(wanted))
         self.assertIsNotNone(row.created_at)
         self.assertIsNone(row.last_used_at)
         listed = self.client.get("/api/v1/tenant/api-keys", **headers).json()
-        self.assertEqual(listed["total"], 1)
-        self.assertNotIn("plainKey", listed["items"][0])
+        mine = next(item for item in listed["items"] if item["id"] == str(row.id))
+        self.assertNotIn("plainKey", mine)
         self.assertNotIn(plain, created.content.decode().replace(plain, "", 1), "the plain key appears once")
         # Used: the principal carries the scopes, last used updates, the log records it.
         self.assertIsNone(ApiKeyAuth()(RequestFactory().get("/")), "no header, no principal")
         principal = api_keys_logic.resolve_api_key(plain)
         assert principal is not None
         self.assertEqual(principal.tenant_id, self.tenant.id)
-        self.assertEqual(principal.scopes, frozenset({perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_WRITE}))
+        self.assertEqual(principal.scopes, frozenset(wanted))
         row.refresh_from_db()
         self.assertIsNotNone(row.last_used_at)
         self.assertTrue(LoginEvent.objects.filter(api_key=row, event=LoginEventKind.KEY_USED.value).exists())
@@ -741,16 +742,96 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(revoked.status_code, 204)
         self.assertIsNone(api_keys_logic.resolve_api_key(plain))
         self.assertTrue(LoginEvent.objects.filter(api_key=row, event=LoginEventKind.KEY_REVOKED.value).exists())
-        # Creating a key without step-up is refused; an unknown scope is a 422.
-        self.assertEqual(self._post("/tenant/api-keys", {"name": "x", "scopes": [perms.SCOPE_CHANGES_WRITE]}, **sign_in(self.admin, tenant=self.tenant)).json()["code"], "step_up_required")
-        self.assertEqual(self._post("/tenant/api-keys", {"name": "x", "scopes": ["library:write"]}, **headers).json()["code"], "unknown_key")
+        # Creating a key without step-up is refused; an unknown scope is a 422, and so is
+        # each of the watch writes, which belong to the platform's own agents (D-61).
+        self.assertEqual(self._post("/tenant/api-keys", {"name": "x", "scopes": wanted}, **sign_in(self.admin, tenant=self.tenant)).json()["code"], "step_up_required")
+        for scope in ("library:write", perms.SCOPE_AGENT_RUNS_WRITE, perms.SCOPE_SOURCES_WRITE, perms.SCOPE_CHANGES_WRITE):
+            with self.subTest(scope=scope):
+                refused = self._post("/tenant/api-keys", {"name": "x", "scopes": [scope]}, **headers)
+                self.assertEqual(refused.status_code, 422, refused.content)
+                self.assertEqual(refused.json()["code"], "unknown_key")
+                for allowed in perms.TENANT_KEY_SCOPES:
+                    self.assertIn(allowed, refused.json()["detail"], "the refusal names what a bank's key may hold")
+        # A bank's key that already held a watch write works without it, and the log says so.
+        legacy = factories.api_key(self.tenant, scopes=(perms.SCOPE_LIBRARY_READ, perms.SCOPE_CHANGES_WRITE))
+        stripped = api_keys_logic.resolve_api_key(legacy.plain_key)
+        assert stripped is not None
+        self.assertEqual(stripped.scopes, frozenset({perms.SCOPE_LIBRARY_READ}))
+        self.activate(self.tenant)
+        withheld = LoginEvent.objects.get(api_key=legacy.row, event=LoginEventKind.KEY_SCOPES_WITHHELD.value)
+        self.assertEqual((withheld.tenant_id, withheld.success, withheld.failure_reason), (self.tenant.id, False, perms.SCOPE_CHANGES_WRITE))
+
+        # The platform half: a key bound to an agent, minted in the console behind a passkey.
+        from apps.agents import testing as agents_testing
+        from apps.identity.models import StepUpAssertion
+
+        tenancy.clear_tenant()
+        sweeper = agents_testing.agent()
+        platform_admin = factories.platform_user(roles=("platform_admin",))
+        console = sign_in(platform_admin, step_up=True)
+        # The admin picks the agent from the platform's definitions, listed by key.
+        definitions = self.client.get("/api/v1/agent-definitions?limit=100", **console)
+        self.assertEqual(definitions.status_code, 200, definitions.content)
+        listed_keys = [item["key"] for item in definitions.json()["items"]]
+        self.assertEqual(listed_keys, sorted(listed_keys))
+        picked = next(item for item in definitions.json()["items"] if item["key"] == sweeper.key)
+        self.assertEqual((picked["id"], picked["currentVersion"], picked["active"]), (str(sweeper.id), sweeper.current_version, sweeper.active))
+        agent_scopes = [perms.SCOPE_AGENT_RUNS_WRITE, perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_REVIEW]
+        minted = self._post("/agent-keys", {"name": "Watch sweeper, nightly", "agentId": picked["id"], "scopes": agent_scopes}, **console)
+        self.assertEqual(minted.status_code, 201, minted.content)
+        agent_plain = minted.json()["plainKey"]
+        self.assertTrue(agent_plain.startswith(f"cw_{minted.json()['keyPrefix']}_"))
+        self.assertNotIn(agent_plain, minted.content.decode().replace(agent_plain, "", 1), "the plain key appears once")
+        tenancy.clear_tenant()
+        agent_row = ApiKey.objects.get(pk=minted.json()["id"])
+        self.assertEqual((agent_row.tenant_id, agent_row.agent_id, agent_row.created_by_id), (None, sweeper.id, platform_admin.id))
+        self.assertEqual(agent_row.key_hash, tokens.hash_token(agent_plain.split("_", 2)[2]))
+        self.assertEqual(sorted(agent_row.scopes), sorted(agent_scopes))
+        audit = AuditEvent.objects.get(action="agent_key.created", subject_id=agent_row.id)
+        self.assertIsNone(audit.tenant_id)
+        self.assertEqual(audit.step_up_assertion_id, StepUpAssertion.objects.get(session__user=platform_admin).id)
+        self.assertNotIn(agent_plain.split("_", 2)[2], str(audit.after) + audit.summary, "the secret is never audited")
+        self.assertTrue(LoginEvent.objects.filter(api_key=agent_row, event=LoginEventKind.KEY_CREATED.value, user=platform_admin, tenant__isnull=True).exists())
+        on_list = self.client.get("/api/v1/agent-keys", **console).json()["items"]
+        listed_key = next(item for item in on_list if item["id"] == str(agent_row.id))
+        self.assertNotIn("plainKey", listed_key)
+        self.assertEqual(listed_key["agent"]["key"], sweeper.key)
+        # Used: it keeps every scope it was given, the review scope included (D-62).
+        used = api_keys_logic.resolve_api_key(agent_plain)
+        assert used is not None
+        self.assertEqual((used.tenant_id, used.agent_id, used.scopes), (None, sweeper.id, frozenset(agent_scopes)))
+        self.assertTrue(LoginEvent.objects.filter(api_key=agent_row, event=LoginEventKind.KEY_USED.value, tenant__isnull=True).exists())
+        # Revoked: the next call answers 401.
+        stopped = self._post(f"/agent-keys/{agent_row.id}/revoke", **console)
+        self.assertEqual(stopped.status_code, 200, stopped.content)
+        self.assertIsNotNone(stopped.json()["revokedAt"])
+        self.assertEqual(self.client.get("/api/v1/proposals", HTTP_X_API_KEY=agent_plain).status_code, 401)
+        tenancy.clear_tenant()
+        self.assertTrue(LoginEvent.objects.filter(api_key=agent_row, event=LoginEventKind.KEY_REVOKED.value, user=platform_admin).exists())
+        self.assertTrue(AuditEvent.objects.filter(action="agent_key.revoked", subject_id=agent_row.id, tenant__isnull=True).exists())
+        # Minting one needs the passkey too.
+        self.assertEqual(
+            self._post("/agent-keys", {"name": "x", "agentId": str(sweeper.id), "scopes": agent_scopes}, **sign_in(platform_admin)).json()["code"],
+            "step_up_required",
+        )
 
     def test_id_s21(self) -> None:
         """ID-S21
 
         No API key scope allows a library edit (ID-10, AC-PRO1).
         """
-        key = factories.api_key(self.tenant, scopes=tuple(sorted(perms.ALL_SCOPES)))
+        from apps.agents import testing as agents_testing
+
+        # Only a platform key bound to an agent can hold every scope that exists; a bank's key
+        # holds at most the bank's share of them (D-61, D-62). Both are probed, and the Given
+        # is proved rather than assumed: the principal each resolves to holds what it claims.
+        tenancy.clear_tenant()
+        platform = agents_testing.agent_key(scopes=tuple(sorted(perms.ALL_SCOPES)))
+        bank = factories.api_key(self.tenant, scopes=tuple(sorted(perms.TENANT_KEY_SCOPES)))
+        for probe, holds in ((platform, perms.ALL_SCOPES), (bank, perms.TENANT_KEY_SCOPES)):
+            resolved = api_keys_logic.resolve_api_key(probe.plain_key)
+            assert resolved is not None
+            self.assertEqual(resolved.scopes, holds)
         self.assertFalse(any("write" in scope and scope.startswith("library") for scope in perms.ALL_SCOPES))
         self.assertFalse(any(scope.split(":")[0] in {"instruments", "provisions", "obligations"} for scope in perms.ALL_SCOPES))
         library_paths = ("/instruments", "/provisions", "/obligations")
@@ -778,9 +859,10 @@ class IdentityScenarioTests(ScenarioTestCase):
                 continue  # a public bootstrap step (code request, sign-in) is no grant to anything
             with self.subTest(route=f"{operation.method} {operation.path}"):
                 url = "/api/v1" + re.sub(r"\{[^}]+\}", "00000000-0000-4000-8000-000000000001", operation.path)
-                for headers in ({"HTTP_AUTHORIZATION": f"Bearer {key.plain_key}"}, {"HTTP_X_API_KEY": key.plain_key}):
-                    response = self.client.generic(operation.method, url, data="{}", content_type="application/json", **headers)
-                    self.assertIn(response.status_code, (401, 403), "a key reached a route it must not")
+                for key in (platform, bank):
+                    for headers in ({"HTTP_AUTHORIZATION": f"Bearer {key.plain_key}"}, {"HTTP_X_API_KEY": key.plain_key}):
+                        response = self.client.generic(operation.method, url, data="{}", content_type="application/json", **headers)
+                        self.assertIn(response.status_code, (401, 403), "a key reached a route it must not")
                 probed += 1
         self.assertGreater(probed, 10)
         # The routes a key may write are named one by one, never waved through by their
@@ -829,14 +911,14 @@ class IdentityScenarioTests(ScenarioTestCase):
                 with transaction.atomic():
                     cursor.execute("DELETE FROM login_event WHERE id = %s", [row.id])
 
-    @skip("pending: ID-S23 (ID-12, R3)")
+    @skip("pending: ID-S23 (ID-12, chunk 13)")
     def test_id_s23(self) -> None:
         """ID-S23
 
         SSO and SCIM never introduce a password (ID-12).
         """
 
-    @skip("pending: ID-S24 (ID-13, R3)")
+    @skip("pending: ID-S24 (ID-13, chunk 13)")
     def test_id_s24(self) -> None:
         """ID-S24
 
@@ -861,21 +943,21 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertTrue(body["detail"])
         self.assertTrue(body["title"])
 
-    @skip("pending: ID-S27 (ID-12, R3)")
+    @skip("pending: ID-S27 (ID-12, chunk 13)")
     def test_id_s27(self) -> None:
         """ID-S27
 
         SSO proves who a person is and never opens a session on its own (ID-12).
         """
 
-    @skip("pending: ID-S28 (ID-12, R3)")
+    @skip("pending: ID-S28 (ID-12, chunk 13)")
     def test_id_s28(self) -> None:
         """ID-S28
 
         A SCIM key carries one scope and its default role holds no admin permission (ID-12).
         """
 
-    @skip("pending: ID-S29 (ID-07, R2)")
+    @skip("pending: ID-S29 (ID-07, chunk 11)")
     def test_id_s29(self) -> None:
         """ID-S29
 
@@ -922,12 +1004,128 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.activate(self.tenant)
         self.assertFalse(Membership.objects.filter(tenant=self.tenant, user=late).exists())
 
-    @skip("pending: ID-S31 (D-62, chunk 4 c4-agent-approver)")
     def test_id_s31(self) -> None:
         """ID-S31
 
         The review scope reaches the queue and never a library row (ID-10, AC-PRO1, AC-ID3).
         """
+        import uuid
+
+        from apps.agents import testing as agents_testing
+        from apps.library import testing as build
+        from apps.library.seeds import seed_jurisdictions
+        from apps.proposals.models import Proposal, ProposalStatus
+        from apps.shared.audit import Actor
+        from apps.taxonomy.models import Flag
+        from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+        from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
+
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+        ensure_tenant_vocabularies(self.tenant, actor=Actor.system("test"))
+        tenancy.clear_tenant()  # a library record belongs to no tenant
+        obligation = build.obligation(build.instrument(key="id-s31-instrument", regime="regime:securities"), key="obl-id-s31")
+        self.activate(self.tenant)
+
+        proposer_key = factories.api_key(self.tenant, scopes=("proposals:write",))
+        agent_headers = {"HTTP_X_API_KEY": proposer_key.plain_key}
+        # An agent approves an obligation version and a vocabulary row, both records that
+        # name the agent that confirmed them (D-79), and rejects a second list proposal.
+        made = self._post(
+            "/proposals",
+            {
+                "kind": "new_obligation_version",
+                "title": "Refresh the wording against the source",
+                "targetType": "obligation",
+                "targetId": str(obligation.id),
+                "payload": {"summaries": {"en": "The duty as the source now reads it."}, "originalLanguage": "en", "isMachine": True},
+                "fieldSources": {"summaries.en": "https://www.fi.se/"},
+            },
+            **agent_headers,
+        )
+        self.assertEqual(made.status_code, 201, made.content)
+        second = self._post(
+            "/proposals",
+            {"kind": "vocabulary_create", "title": "Add the flag Sanctioned", "payload": {"list": "flag", "key": "sanctioned", "labels": {"en": "Sanctioned"}}},
+            **agent_headers,
+        )
+        self.assertEqual(second.status_code, 201, second.content)
+        listed_value = self._post(
+            "/proposals",
+            {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}},
+            **agent_headers,
+        )
+        self.assertEqual(listed_value.status_code, 201, listed_value.content)
+
+        # A bank's key holding proposals:review, written straight to the table as no route
+        # would write it, is refused on the list, approve and reject alike, and the proposals
+        # it tried to decide are untouched: the scope is platform-only at the gate too.
+        # It is refused whatever it sends: a bank's key opens no run (item 14), so the run it
+        # names is one it never opened, and the gate answers before the run is looked at.
+        rogue = {"HTTP_X_API_KEY": factories.api_key(self.tenant, scopes=(perms.SCOPE_PROPOSALS_REVIEW,)).plain_key}
+        claimed = {"decision": agents_testing.DECISION, "agentRunId": str(uuid.uuid4())}
+        for refused in (
+            self.client.get("/api/v1/proposals", **rogue),
+            self._post(f"/proposals/{made.json()['id']}/approve", {"note": "Agreed.", **claimed}, **rogue),
+            self._post(f"/proposals/{second.json()['id']}/reject", {"rejectionCode": "duplicate", "note": "Already exists.", **claimed}, **rogue),
+        ):
+            self.assertEqual(refused.status_code, 403, refused.content)
+            self.assertEqual(refused.json()["requiredPermission"], perms.SCOPE_PROPOSALS_REVIEW)
+        tenancy.clear_tenant()  # the rogue key's requests activated its tenant; proposals are the platform's
+        self.assertEqual(
+            sorted(Proposal.objects.filter(pk__in=[made.json()["id"], second.json()["id"]]).values_list("status", flat=True)),
+            [ProposalStatus.OPEN.value, ProposalStatus.OPEN.value],
+        )
+        self.assertEqual(list(obligation.versions.values_list("version_number", flat=True)), [1])
+
+        # A platform key bound to an agent definition, holding proposals:review, reads the
+        # queue and approves, corrects or rejects a proposal it did not file, each decision
+        # carrying the model call behind it in an open run of its own (D-80).
+        reviewer_key = agents_testing.reviewer_api_key()
+        reviewer = {"HTTP_X_API_KEY": reviewer_key.plain_key}
+        sent = agents_testing.decision(reviewer_key)
+        listed = self.client.get("/api/v1/proposals?status=open", **reviewer)
+        self.assertEqual(listed.status_code, 200, listed.content)
+        self.assertIn(made.json()["id"], [row["id"] for row in listed.json()["items"]])
+        approved = self._post(f"/proposals/{made.json()['id']}/approve", {"note": "Agreed.", **sent}, **reviewer)
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertEqual(
+            sorted(obligation.versions.values_list("version_number", flat=True)), [1, 2], "the change reached the library only through apply"
+        )
+        rejected = self._post(f"/proposals/{second.json()['id']}/reject", {"rejectionCode": "duplicate", "note": "Already exists.", **sent, "decision": agents_testing.REJECTION_DECISION}, **reviewer)
+        self.assertEqual(rejected.status_code, 200, rejected.content)
+        self.assertFalse(Flag.objects.filter(key="sanctioned").exists())
+        tenancy.clear_tenant()
+        value = self._post(f"/proposals/{listed_value.json()['id']}/approve", {"note": "Agreed.", **sent}, **reviewer)
+        self.assertEqual(value.status_code, 200, value.content)
+        tenancy.clear_tenant()
+        flag = Flag.objects.get(key="client_money")
+        self.assertEqual(
+            (flag.verified_origin, flag.verified_by_agent_id, str(flag.applied_by_proposal_id)),
+            ("agent", reviewer_key.agent.id, listed_value.json()["id"]),
+            "the change reached the library only through apply, stamped as the agent's",
+        )
+
+        # A key without proposals:review answers 403 naming the missing scope; every
+        # instrument, provision, obligation and vocabulary route it might try to write
+        # directly answers 403 or does not exist, exactly as ID-S21 already proves for
+        # every scope (AC-PRO1).
+        no_scope = factories.api_key(self.tenant, scopes=("changes:write",))
+        denied = self.client.get("/api/v1/proposals", **{"HTTP_X_API_KEY": no_scope.plain_key})
+        self.assertEqual(denied.status_code, 403, denied.content)
+        self.assertEqual(denied.json()["requiredPermission"], perms.SCOPE_PROPOSALS_REVIEW)
+        self.assertEqual(self._post("/vocab/flag", {"labels": {"en": "x"}}, **reviewer).status_code, 401)
+
+        # A key tries a step-up: there is no path for it. A key holds no assertion, and the
+        # review routes ask for none: the ceremony itself answers unauthenticated to a key.
+        self.assertEqual(self._post("/auth/step-up/options", **reviewer).status_code, 401)
+
+        # A tenant key carrying proposals:review is refused: the scope is platform-only.
+        headers = sign_in(self.admin, tenant=self.tenant, step_up=True)
+        refused = self._post("/tenant/api-keys", {"name": "Rogue reviewer", "scopes": [perms.SCOPE_PROPOSALS_REVIEW]}, **headers)
+        self.assertEqual(refused.status_code, 422, refused.content)
 
     def test_id_s32(self) -> None:
         """ID-S32
@@ -960,3 +1158,17 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(refused.json()["code"], "not_found")
         self.activate(self.tenant)
         self.assertEqual(AuditEvent.objects.filter(action="member.visited").count(), 1)
+
+    @skip("pending: ACC-S3 (ACC-03, chunk 11)")
+    def test_acc_s3(self) -> None:
+        """ACC-S3
+
+        A service key acts as the entry and a personal token acts as the person (ACC-03).
+        """
+
+    @skip("pending: ACC-S9 (ACC-03, AC-ACC3, chunk 11)")
+    def test_acc_s9(self) -> None:
+        """ACC-S9
+
+        A personal token can never step up and dies with the person (ACC-03, AC-ACC3).
+        """

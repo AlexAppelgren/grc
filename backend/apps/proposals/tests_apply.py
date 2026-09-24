@@ -18,10 +18,16 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.test import Client
 
+from apps.library import testing as library_build
 from apps.library.models import (
     Instrument,
+    InstrumentRelation,
     Jurisdiction,
     Obligation,
+    ObligationRelation,
+    ObligationTag,
+    ObligationTerm,
+    ObligationVersion,
     SubjectType,
     Verification,
     VerificationOutcome,
@@ -33,9 +39,11 @@ from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
 from apps.shared.tenancy import LibraryWriteRefused, library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
-from apps.taxonomy.models import DutyType, Flag, InstrumentLevel, ProvisionKind, TaxonomyTerm, Urgency
+from apps.taxonomy.models import DutyType, Flag, InstrumentLevel, LibraryTag, ProvisionKind, RelationType, TaxonomyTerm, Urgency
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
+from apps.watch import testing as watch_build
+from apps.watch.models import ChangeTerm
 
 V1 = "/api/v1"
 # The obligation was last verified here, months before any test runs: a stamp is proven by
@@ -266,9 +274,10 @@ class ProposalApply(ScenarioTestCase):
     # --- deciding -------------------------------------------------------------------------------
     def test_an_agent_proposal_is_decided_by_any_reviewer_and_nobody_rejects_their_own(self) -> None:
         key = factories.api_key(self.tenant, scopes=("proposals:write",))
-        agent = self._post("/proposals", {"kind": "vocabulary_create", "title": "Add Greenwashing", "payload": {"list": "flag", "key": "greenwashing", "labels": {"en": "Greenwashing"}}, "agentRunId": "00000000-0000-4000-8000-0000000000aa", "model": "mock-1"}, {"HTTP_X_API_KEY": key.plain_key})
+        agent = self._post("/proposals", {"kind": "vocabulary_create", "title": "Add Greenwashing", "payload": {"list": "flag", "key": "greenwashing", "labels": {"en": "Greenwashing"}}, "model": "mock-1"}, {"HTTP_X_API_KEY": key.plain_key})
         self.assertEqual(agent.status_code, 201, agent.content)
-        self.assertEqual((agent.json()["agentRunId"], agent.json()["model"], agent.json()["origin"]), ("00000000-0000-4000-8000-0000000000aa", "mock-1", "agent"))
+        # A bank's own key is bound to no agent and names no run; a run it named would have to be its own (AGT-01).
+        self.assertEqual((agent.json()["agentRunId"], agent.json()["model"], agent.json()["origin"]), (None, "mock-1", "agent"))
         self.assertEqual(self._post(f"/proposals/{agent.json()['id']}/approve", {}, sign_in(self.editor, step_up=True)).status_code, 200)
         own = self._proposed(self._post("/vocab/flag", {"labels": {"en": "Sanctions"}}, sign_in(self.editor)))
         refused = self._post(f"/proposals/{own['id']}/reject", {"rejectionCode": "duplicate", "note": "Mine."}, sign_in(self.editor))
@@ -308,6 +317,7 @@ class ApprovalCorrectionsAndTheAssertion(ScenarioTestCase):
                 level=InstrumentLevel.objects.get(key="act"),
                 binding=True,
                 jurisdiction=Jurisdiction.objects.get(key="se"),
+                regime=TaxonomyTerm.objects.get(dimension__key="regime", key="securities"),
                 created_origin="user",
             )
             self.obligation = Obligation.objects.create(
@@ -387,6 +397,108 @@ class ApprovalCorrectionsAndTheAssertion(ScenarioTestCase):
                 self.assertEqual([row.action for row in rows if row.step_up_assertion_id is None], [])
 
 
+class MirroredTermsAtApproval(ScenarioTestCase):
+    """FP-S12, FP-S9: the terms that mirror the jurisdiction rows are the reference seed's,
+    so no approval may add one, rename one or scope an obligation with one.
+
+    Creation refuses all three today, but a proposal filed before that rule existed may
+    still wait in the queue. Each proposal below is stored the way such a proposal was
+    stored, without today's creation checks, and approving it answers 422
+    `jurisdiction_term_mirrored`, leaves it open and writes nothing: no term, no label, no
+    version, no scope link, no audit row, not even the decision.
+    """
+
+    def setUp(self) -> None:
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+        self.editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
+        self.reviewer = factories.platform_user(roles=("library_editor",), email="reviewer@bleqq.test")
+        instrument = library_build.instrument(key="fffs-2017-2", regime="regime:securities")
+        self.obligation = library_build.obligation(instrument, key="fffs-2017-2-9-6", terms=("service_type:advice",))
+
+    def _post(self, path: str, body: dict[str, Any], headers: dict[str, Any]) -> Any:
+        return self.client.post(f"{V1}{path}", data=body, content_type="application/json", **headers)
+
+    def _filed_before_the_rule(self, kind: str, payload: dict[str, Any], *, versions: bool = False) -> Proposal:
+        return Proposal.objects.create(
+            kind=kind,
+            title="Filed before the mirror rule",
+            payload=payload,
+            origin="user",
+            proposed_by_user=self.editor,
+            target_type="obligation" if versions else "",
+            target_id=self.obligation.id if versions else None,
+        )
+
+    def _refused_at_approval(self, proposal: Proposal) -> None:
+        reviewer = sign_in(self.reviewer, step_up=True)  # signing in is its own audited act
+        written = AuditEvent.objects.count()
+        refused = self._post(f"/proposals/{proposal.id}/approve", {}, reviewer)
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "jurisdiction_term_mirrored")
+        self.assertEqual(Proposal.objects.get(pk=proposal.pk).status, ProposalStatus.OPEN.value)
+        self.assertEqual(AuditEvent.objects.count(), written, "nothing was written, not even the decision")
+
+    def _scope(self) -> list[str]:
+        links = ObligationTerm.objects.filter(obligation=self.obligation).select_related("term__dimension")
+        return sorted(f"{link.term.dimension.key}:{link.term.key}" for link in links)
+
+    def test_a_new_term_in_a_mirrored_dimension_is_refused_at_approval(self) -> None:
+        proposal = self._filed_before_the_rule("term_create", {"dimension": "jurisdiction", "key": "is", "labels": {"en": "Iceland"}})
+        self._refused_at_approval(proposal)
+        self.assertFalse(TaxonomyTerm.objects.filter(dimension__key="jurisdiction", key="is").exists())
+
+    def test_renaming_a_mirrored_term_is_refused_at_approval(self) -> None:
+        sweden = TaxonomyTerm.objects.get(dimension__key="jurisdiction", key="se")
+        proposal = self._filed_before_the_rule(
+            "term_update", {"dimension": "jurisdiction", "key": "se", "labels": {"en": "Kingdom of Sweden"}, "sortOrder": 99}
+        )
+        self._refused_at_approval(proposal)
+        kept = TaxonomyTerm.objects.get(pk=sweden.pk)
+        self.assertEqual((kept.version, kept.sort_order), (sweden.version, sweden.sort_order))
+        self.assertEqual(kept.labels.get(language="en").text, "Sweden")
+
+    def test_an_obligation_version_scoped_to_a_market_is_refused_at_approval(self) -> None:
+        proposal = self._filed_before_the_rule(
+            "new_obligation_version",
+            {
+                "summaries": {"en": "The firm assesses suitability before it advises."},
+                "originalLanguage": "en",
+                "effectiveFromPrecision": "day",
+                "terms": ["service_type:custody", "jurisdiction:no"],
+            },
+            versions=True,
+        )
+        self._refused_at_approval(proposal)
+        self.assertEqual(ObligationVersion.objects.filter(obligation=self.obligation).count(), 1)
+        self.assertEqual(self._scope(), ["service_type:advice"])
+
+    def test_an_empty_scope_clears_the_scope_and_links_no_term(self) -> None:
+        """The scope is resolved before the version is written, and an empty list is
+        never handed to the resolver, whose empty filter matches every term: an approved
+        empty scope reads "Not client-specific", never "every term there is"."""
+        created = self._post(
+            "/proposals",
+            {
+                "kind": "new_obligation_version",
+                "title": "Version 2, no longer client-specific",
+                "targetType": "obligation",
+                "targetId": str(self.obligation.id),
+                "payload": {"summaries": {"en": "Every firm keeps this record."}, "originalLanguage": "en", "terms": []},
+                "fieldSources": {"summaries.en": "https://www.fi.se/", "terms": "https://www.fi.se/"},
+            },
+            sign_in(self.editor),
+        )
+        self.assertEqual(created.status_code, 201, created.content)
+        approved = self._post(f"/proposals/{created.json()['id']}/approve", {}, sign_in(self.reviewer, step_up=True))
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertEqual(self._scope(), [])
+        self.assertEqual(ObligationVersion.objects.filter(obligation=self.obligation).count(), 2)
+
+
 class ReverificationStamp(ScenarioTestCase):
     """INV-06, INV-S8: re-verifying a record against its source is the one library write
     that is not a proposal, and it stays a stamp. Every outcome files a Verification row —
@@ -403,6 +515,7 @@ class ReverificationStamp(ScenarioTestCase):
         seed_languages()
         seed_jurisdictions()
         seed_library_vocabularies()
+        seed_taxonomy_terms()
         self.editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
         self.actor = Actor(kind=ActorType.USER, id=self.editor.id, label=self.editor.name)
         self.assertion_id = uuid.uuid4()
@@ -415,6 +528,7 @@ class ReverificationStamp(ScenarioTestCase):
                 level=InstrumentLevel.objects.get(key="act"),
                 binding=True,
                 jurisdiction=Jurisdiction.objects.get(key="se"),
+                regime=TaxonomyTerm.objects.get(dimension__key="regime", key="securities"),
                 created_origin="user",
             )
             self.obligation = Obligation.objects.create(
@@ -501,3 +615,192 @@ class ReverificationStamp(ScenarioTestCase):
         # Outside library_write() the same write is refused by the fence itself (PRO-01).
         with self.assertRaises(LibraryWriteRefused):
             self.obligation.save(update_fields=["last_verified_at"])
+
+
+class LibraryMergeRepoints(ScenarioTestCase):
+    """VOC-02, VOC-07, VOC-S5 for a library list: an approved merge moves every current
+    library and watch row that carries the merged-away value, in the approval's own
+    transaction, and drops a row whose twin already carries the target. The merged-away row
+    stays, retired, with its labels, so history still resolves; the number the preview
+    promised is the number that moved, and the audit row says so per table."""
+
+    def setUp(self) -> None:
+        watch_build.seed_watch_reference()
+        seed_term_dimensions()
+        self.editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
+        self.reviewer = factories.platform_user(roles=("library_editor",), email="reviewer@bleqq.test")
+
+    def _post(self, path: str, body: dict[str, Any], headers: dict[str, Any]) -> Any:
+        return self.client.post(f"{V1}{path}", data=body, content_type="application/json", **headers)
+
+    def _approved(self, response: Any) -> Any:
+        self.assertEqual(response.status_code, 202, response.content)
+        return self._post(f"/proposals/{response.json()['proposal']['id']}/approve", {}, sign_in(self.reviewer, step_up=True))
+
+    def _new(self, list_name: str, key: str, label: str, extra: dict[str, Any] | None = None) -> None:
+        body: dict[str, Any] = {"key": key, "labels": {"en": label}, **({"extra": extra} if extra else {})}
+        approved = self._approved(self._post(f"/vocab/{list_name}", body, sign_in(self.editor)))
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+    def _preview(self, list_name: str, key: str, into: str) -> dict[str, Any]:
+        response = Client().post(
+            f"{V1}/vocab/{list_name}/{key}/merge?dryRun=true", data={"into": into}, content_type="application/json", **sign_in(self.editor)
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        preview: dict[str, Any] = response.json()
+        return preview
+
+    def _merge(self, list_name: str, key: str, into: str) -> Any:
+        return self._approved(self._post(f"/vocab/{list_name}/{key}/merge", {"into": into}, sign_in(self.editor)))
+
+    def _merged_audit(self, row: Any) -> AuditEvent:
+        return AuditEvent.objects.get(action="vocabulary.merged", subject_id=row.id)
+
+    def test_a_used_flags_merge_moves_its_change_term_rows_and_counts_what_moved(self) -> None:
+        self._new("flag", "client_money", "Client money")
+        self._new("flag", "client_funds", "Client funds held")
+        funds = Flag.objects.get(key="client_funds")
+        both = watch_build.change()
+        watch_build.term_link(both, flag_key="client_funds")
+        watch_build.term_link(both, flag_key="client_money")
+        only = watch_build.change()
+        watch_build.term_link(only, flag_key="client_funds")
+        twin = ChangeTerm.objects.get(change=both, flag=funds)
+        moving = ChangeTerm.objects.get(change=only, flag=funds)
+
+        preview = self._preview("flag", "client_funds", "client_money")
+        # Two changes carry it; one already carries the target, so one link moves.
+        self.assertEqual((preview["usageCount"], preview["repointed"]), (2, 1))
+        self.assertEqual(self._merge("flag", "client_funds", "client_money").status_code, 200)
+
+        self.assertFalse(ChangeTerm.objects.filter(flag=funds).exists())
+        self.assertEqual(list(ChangeTerm.objects.filter(change=both).values_list("flag__key", flat=True)), ["client_money"])
+        self.assertEqual(list(ChangeTerm.objects.filter(change=only).values_list("flag__key", flat=True)), ["client_money"])
+        retired = Flag.objects.get(pk=funds.pk)
+        self.assertFalse(retired.active)
+        self.assertEqual(retired.labels.get(language="en").text, "Client funds held")
+        audit = self._merged_audit(funds)
+        self.assertEqual((audit.before["from"], audit.after["into"]), ("client_funds", "client_money"))
+        self.assertEqual(audit.after["repointed"], preview["repointed"])
+        self.assertEqual(audit.after["moved"], {ChangeTerm._meta.db_table: 1})
+        # The audit row names the link that moved and the twin that went (H23), so which
+        # change carried the merged-away flag can be rebuilt from the log alone.
+        self.assertEqual(audit.after["rows"], {ChangeTerm._meta.db_table: {"moved": [str(moving.id)], "dropped": [str(twin.id)]}})
+        self.assertEqual(ChangeTerm.objects.get(pk=moving.pk).flag_id, Flag.objects.get(key="client_money").id)
+        self.assertFalse(ChangeTerm.objects.filter(pk=twin.pk).exists())
+
+    def test_a_tag_merge_moves_obligation_tags_inside_the_approval(self) -> None:
+        self._new("library_tag", "retrocessions", "Retrocessions")
+        self._new("library_tag", "inducement_payments", "Inducement payments")
+        charges = LibraryTag.objects.get(key="inducement_payments")
+        on = library_build.instrument(key="lvfs-2026-1", regime="regime:securities")
+        both = library_build.obligation(on, key="obl-both", tags=("retrocessions", "inducement_payments"))
+        only = library_build.obligation(on, key="obl-only", tags=("inducement_payments",))
+        versions = list(ObligationVersion.objects.filter(obligation__in=(both, only)).values_list("id", "version_number"))
+
+        preview = self._preview("library_tag", "inducement_payments", "retrocessions")
+        self.assertEqual(self._merge("library_tag", "inducement_payments", "retrocessions").status_code, 200)
+
+        for obligation in (both, only):
+            with self.subTest(obligation=obligation.stable_key):
+                self.assertEqual(list(ObligationTag.objects.filter(obligation=obligation).values_list("tag__key", flat=True)), ["retrocessions"])
+        self.assertFalse(LibraryTag.objects.get(pk=charges.pk).active)
+        # A merge moves link rows and never writes a version.
+        self.assertEqual(list(ObligationVersion.objects.filter(obligation__in=(both, only)).values_list("id", "version_number")), versions)
+        audit = self._merged_audit(charges)
+        self.assertEqual((preview["repointed"], audit.after["repointed"]), (1, 1))
+        self.assertEqual(audit.after["moved"], {ObligationTag._meta.db_table: 1})
+
+    def test_a_relation_merge_drops_the_duplicate_of_an_instrument_relation_and_moves_the_rest(self) -> None:
+        self._new("relation_type", "amends_in_part", "Amends in part")
+        in_part = RelationType.objects.get(key="amends_in_part")
+        amended = library_build.instrument(key="fffs-2017-2", regime="regime:securities")
+        twice = library_build.instrument(key="fffs-2026-11", regime="regime:securities")
+        once = library_build.instrument(key="fffs-2026-12", regime="regime:securities")
+        library_build.relate_instruments(twice, amended, relation="amends")
+        twin = library_build.relate_instruments(twice, amended, relation="amends_in_part")
+        moving = library_build.relate_instruments(once, amended, relation="amends_in_part")
+        first = library_build.obligation(amended, key="obl-first")
+        second = library_build.obligation(amended, key="obl-second")
+        library_build.relate(first, second, relation="amends_in_part")
+        between = ObligationRelation.objects.get(relation_type=in_part)
+
+        preview = self._preview("relation_type", "amends_in_part", "amends")
+        self.assertEqual((preview["usageCount"], preview["repointed"]), (3, 2))
+        self.assertEqual(self._merge("relation_type", "amends_in_part", "amends").status_code, 200)
+
+        relations = InstrumentRelation.objects.filter(to_instrument=amended)
+        self.assertEqual(sorted(relations.values_list("from_instrument__stable_key", "relation_type__key")), [("fffs-2026-11", "amends"), ("fffs-2026-12", "amends")])
+        audit = self._merged_audit(in_part)
+        self.assertEqual(audit.after["moved"], {InstrumentRelation._meta.db_table: 1, ObligationRelation._meta.db_table: 1})
+        self.assertEqual(
+            audit.after["rows"],
+            {
+                InstrumentRelation._meta.db_table: {"moved": [str(moving.id)], "dropped": [str(twin.id)]},
+                ObligationRelation._meta.db_table: {"moved": [str(between.id)], "dropped": []},
+            },
+        )
+
+    def test_a_merge_across_kinds_of_level_is_refused_when_proposed_and_when_approved(self) -> None:
+        """A level's kind is what the standards rules read (INV-08, D-35, D-36), so merging a
+        law's level into `standard`, or a standard's level into a law's, would move records
+        from under one rule to another with no check of either. Refused when proposed, and
+        at approval for a proposal filed before the rule, with nothing moved."""
+        self._new("instrument_level", "national_act", "National act", {"bindingDefault": True, "rank": 41})
+        national = InstrumentLevel.objects.get(key="national_act")
+        bare = library_build.instrument(key="sfs-2026-1", regime="regime:securities", level="national_act")
+        with_text = library_build.instrument(key="sfs-2026-2", regime="regime:securities", level="national_act")
+        library_build.provision(with_text, key="sfs-2026-2-1-kap")
+        edition = self._approved(self._post("/vocab/instrument_level", {"key": "iso_edition", "labels": {"en": "ISO edition"}, "kind": "standard"}, sign_in(self.editor)))
+        self.assertEqual(edition.status_code, 200, edition.content)
+
+        for key, into in (("national_act", "standard"), ("iso_edition", "eu_guidance")):
+            with self.subTest(key=key, into=into):
+                proposed = self._post(f"/vocab/instrument_level/{key}/merge", {"into": into}, sign_in(self.editor))
+                self.assertEqual(proposed.status_code, 409, proposed.content)
+                self.assertEqual(proposed.json()["code"], "invalid_transition")
+        self.assertFalse(Proposal.objects.filter(kind="vocabulary_merge").exists())
+
+        stored = Proposal.objects.create(
+            kind="vocabulary_merge",
+            title="Filed before the rule",
+            payload={"list": "instrument_level", "key": "national_act", "into": "standard"},
+            origin="user",
+            proposed_by_user=self.editor,
+            target_type="instrument_level",
+            target_id=national.id,
+        )
+        refused = self._post(f"/proposals/{stored.id}/approve", {}, sign_in(self.reviewer, step_up=True))
+        self.assertEqual(refused.status_code, 409, refused.content)
+        self.assertEqual(refused.json()["code"], "invalid_transition")
+
+        self.assertEqual(sorted(Instrument.objects.filter(pk__in=(bare.pk, with_text.pk)).values_list("level__key", flat=True)), ["national_act", "national_act"])
+        self.assertTrue(InstrumentLevel.objects.get(pk=national.pk).active)
+        self.assertEqual(Proposal.objects.get(pk=stored.pk).status, ProposalStatus.OPEN.value)
+        self.assertFalse(AuditEvent.objects.filter(action="vocabulary.merged").exists())
+        self.assertFalse(AuditEvent.objects.filter(action="proposal.approved", subject_id=stored.id).exists())
+
+    def test_a_merge_into_itself_or_into_a_retired_value_is_refused_through_every_door(self) -> None:
+        """`POST /proposals` takes a merge payload without the vocabulary route, so the rows it
+        names are checked there too, and again at approval for the list as it is then."""
+        self._new("flag", "client_money", "Client money")
+        self._new("flag", "client_assets", "Client assets")
+        itself = self._post(
+            "/proposals",
+            {"kind": "vocabulary_merge", "title": "Merge into itself", "payload": {"list": "flag", "key": "client_money", "into": "client_money"}},
+            sign_in(self.editor),
+        )
+        self.assertEqual(itself.status_code, 422, itself.content)
+        self.assertEqual(itself.json()["code"], "validation_error")
+
+        proposed = self._post("/vocab/flag/client_money/merge", {"into": "client_assets"}, sign_in(self.editor))
+        self.assertEqual(proposed.status_code, 202, proposed.content)
+        with library_write("test"):
+            Flag.objects.filter(key="client_assets").update(active=False)
+        refused = self._post(f"/proposals/{proposed.json()['proposal']['id']}/approve", {}, sign_in(self.reviewer, step_up=True))
+        self.assertEqual(refused.status_code, 409, refused.content)
+        self.assertEqual(refused.json()["code"], "invalid_transition")
+        self.assertTrue(Flag.objects.get(key="client_money").active)
+        retired = self._post("/vocab/flag/client_money/merge", {"into": "client_assets"}, sign_in(self.editor))
+        self.assertEqual(retired.status_code, 409, retired.content)
+        self.assertEqual(retired.json()["code"], "invalid_transition")

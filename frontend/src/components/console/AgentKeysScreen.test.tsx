@@ -15,6 +15,15 @@ import { REFRESH_PATH } from '@/shared/utils/api-client';
 
 const ME_PATH = '/api/v1/me';
 const KEYS_PATH = '/api/v1/agent-keys';
+const DEFINITIONS_PATH = '/api/v1/agent-definitions';
+
+const definitions = {
+  items: [
+    { id: 'ag2', key: 'proposal-confirmer', description: 'Confirms a proposal another agent made.', currentVersion: 2, active: true },
+    { id: 'ag1', key: 'watch-sweeper', description: 'Sweeps the watched sources.', currentVersion: 1, active: true },
+  ],
+  total: 2,
+};
 
 const NOW = new Date('2026-09-19T08:00:00Z');
 const PLAIN = 'cw_live_zK9s2Qv7aL4pR1tN6yX3bM8dW5hJ0gC2';
@@ -52,6 +61,7 @@ function server(keys: Answer, extra: (sent: Sent) => Answer | undefined = () => 
     const answer = extra(sent);
     if (answer !== undefined) return answer;
     if (sent.path === KEYS_PATH && sent.method === 'get') return keys;
+    if (sent.path === DEFINITIONS_PATH && sent.method === 'get') return { status: 200, data: definitions };
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
   });
 }
@@ -68,6 +78,7 @@ async function fillAndSubmit(): Promise<void> {
   fireEvent.click(await screen.findByRole('button', { name: 'Create a key' }));
   const form = await screen.findByRole('dialog', { name: 'Create a key' });
   fireEvent.change(within(form).getByLabelText('Name'), { target: { value: 'Watch sweeper, nightly' } });
+  await within(form).findByRole('option', { name: 'watch-sweeper v1' });
   fireEvent.change(within(form).getByLabelText('Agent'), { target: { value: 'ag1' } });
   fireEvent.click(within(form).getByLabelText('agent runs write'));
   fireEvent.click(within(form).getByRole('button', { name: 'Create the key' }));
@@ -127,6 +138,38 @@ describe('console agent keys', () => {
     const again = renderIn(<AgentKeysScreen />);
     await waitFor(() => expect(again.container.textContent).not.toContain(PLAIN));
     expect(container.textContent).toBe('');
+  });
+
+  it('offers the agent from the platform definitions, and the confirming scope', async () => {
+    server({ status: 200, data: { items: [], total: 0 } });
+    renderIn(<AgentKeysScreen />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Create a key' }));
+    const form = await screen.findByRole('dialog', { name: 'Create a key' });
+
+    const agent = within(form).getByRole('combobox', { name: 'Agent' });
+    await within(agent).findByRole('option', { name: 'watch-sweeper v1' });
+    expect(within(agent).getAllByRole('option').map((o) => [o.getAttribute('value'), o.textContent])).toEqual([
+      ['', 'Choose an agent'],
+      ['ag2', 'proposal-confirmer v2'],
+      ['ag1', 'watch-sweeper v1'],
+    ]);
+
+    // The confirming agent's key (D-62): it approves through the proposal
+    // door, so the hint no longer says a library editor is the only approver.
+    expect(within(form).getByLabelText('proposals review')).toBeInTheDocument();
+    expect(form).not.toHaveTextContent(/library editor/i);
+  });
+
+  it('refuses to create a key without an agent', async () => {
+    const sent = server({ status: 200, data: { items: [], total: 0 } });
+    renderIn(<AgentKeysScreen />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Create a key' }));
+    const form = await screen.findByRole('dialog', { name: 'Create a key' });
+    fireEvent.change(within(form).getByLabelText('Name'), { target: { value: 'Watch sweeper, nightly' } });
+    fireEvent.click(within(form).getByLabelText('agent runs write'));
+    fireEvent.click(within(form).getByRole('button', { name: 'Create the key' }));
+    expect(await within(form).findByText('Name the agent this key runs as.')).toBeInTheDocument();
+    expect(writes(sent)).toHaveLength(0);
   });
 
   it('sends the agent, the scopes and the expiry the person chose', async () => {

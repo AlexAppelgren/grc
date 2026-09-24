@@ -1,7 +1,8 @@
 """Routes of the library app (playbook 4.1: routes only). Chunk 1 adds the language
 reference read for pickers (locale, tenant languages); chunk 3 adds the library reads: the
 obligations list, one obligation as of a date and what changed between two of its versions,
-and the two writes a record accepts.
+the instruments list and one instrument's own card, the provision tree of an instrument and
+what changed between two versions of one provision, and the two writes a record accepts.
 
 A library record read serves a person with `library.read` and an agent's key with
 `library:read`, so it is a logic gate (apps/taxonomy/http.py `require_library_read`) and
@@ -31,25 +32,31 @@ from apps.identity.schemas import RoleRef
 from apps.library import reading, reports
 from apps.library.models import Language, SubjectType
 from apps.library.schemas import (
+    InstrumentDetail,
+    InstrumentPage,
+    InstrumentProvisionsQuery,
+    InstrumentQuery,
     LibraryAuthority,
     LibraryRecordSources,
     ObligationAsOfQuery,
     ObligationDetail,
-    ObligationDiffQuery,
     ObligationPage,
     ObligationQuery,
     ProblemReportBody,
     ProblemReportCreated,
+    ProvisionNode,
     ReverificationBody,
+    SAMPLE_PROVISION_TREE,
     VerificationCreated,
     VersionDiff,
+    VersionDiffQuery,
 )
 from apps.proposals.apply import apply_reverification
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, require_library_read
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, principal, require_library_read
 from apps.taxonomy.reading import language_order
 from apps.taxonomy.schemas import PersonRef
 
@@ -142,6 +149,22 @@ DIFF_OBLIGATION_ID_DESCRIPTION = (
     "versions belong to this one record: a diff is never taken across obligations. A record "
     "this caller cannot see answers 404, never 403."
 )
+READ_INSTRUMENT_ID_DESCRIPTION = (
+    "The instrument to read, by its identifier (a UUID), which is the `id` a row of "
+    "`GET /instruments` carries. A record this caller cannot see answers 404 exactly as an "
+    "identifier that names nothing does, so no id can be probed for."
+)
+TREE_INSTRUMENT_ID_DESCRIPTION = (
+    "The instrument whose provision tree to read, by its identifier (a UUID). A record "
+    "this caller cannot see answers 404 exactly as an identifier that names nothing does, "
+    "so no id can be probed for."
+)
+DIFF_PROVISION_ID_DESCRIPTION = (
+    "The provision whose two versions are compared, by its identifier (a UUID), which is "
+    "the `id` a node of the provision tree carries. Both versions belong to this one "
+    "record: a diff is never taken across provisions. A record this caller cannot see "
+    "answers 404, never 403."
+)
 
 # The languages are a short fixed reference read answered as a plain array, so its example
 # lives on the route: the gate reads it from the 200 response, as it does the authorities'.
@@ -170,6 +193,10 @@ _OBLIGATION_ID = (
     "The library obligation whose citations to read, as a UUID. A record the caller cannot "
     "see answers 404, never 403, so no id can be probed for."
 )
+
+# The provision tree is a plain array of root nodes rather than a page, so its example
+# lives on the route too; the gate reads it from the 200 response.
+_PROVISIONS_EXAMPLE = {"responses": {200: {"content": {"application/json": {"example": SAMPLE_PROVISION_TREE}}}}}
 
 # The authority list is a short fixed reference read, so its example lives on the route
 # rather than on a page schema; the gate reads it from the 200 response.
@@ -261,12 +288,14 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
     quietly trimmed, and rows ordered by their stable key so paging is repeatable. Nothing
     matching the filters is a 200 with an empty items list and a total of 0, never a 404.
-    Setting outsideFootprint to true adds the duties the footprint hides and says in
-    outsideReason why each of them would have been hidden.
+    Setting footprint to all adds the duties the footprint hides and says in outsideReason
+    why each of them would have been hidden; setting it to watched lists only what the
+    markets the bank watches add, each row naming its jurisdiction.
 
     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
     (403) without library.read or the library:read scope; `validation_error` (422) when a
-    term filter is not written dimension:key, when the phrase is longer than 200 characters
+    term filter is not written dimension:key, when footprint is not in, all or watched,
+    when the retired outsideFootprint is sent, when the phrase is longer than 200 characters
     or when the page size or offset is out of range; `unknown_key` (422) when a term filter
     names no active term, listing every one that was not found.
     """
@@ -334,7 +363,7 @@ def get_obligation(
 def get_obligation_diff(
     request: HttpRequest,
     obligation_id: Annotated[uuid.UUID, Path(description=DIFF_OBLIGATION_ID_DESCRIPTION)],
-    query: Query[ObligationDiffQuery],
+    query: Query[VersionDiffQuery],
 ) -> VersionDiff:
     """What changed between two versions of one duty's summary, sentence by sentence: the
     sentences that stand unchanged, the ones the newer version dropped and the ones it adds.
@@ -366,6 +395,179 @@ def get_obligation_diff(
     require_library_read(request)
     tenant = caller_tenant(request)
     return reading.obligation_diff(language_order(request, tenant=tenant), obligation_id, query)
+
+
+@router.get(
+    "/instruments",
+    response=InstrumentPage,
+    auth=SESSION_OR_KEY,
+    operation_id="listInstruments",
+    by_alias=True,
+    summary="Browse the instruments behind the inventory",
+)
+@answers_problems
+def list_instruments(request: HttpRequest, query: Query[InstrumentQuery], page: Query[PageQuery]) -> InstrumentPage:
+    """The instruments inventory: every law, regulation or guideline of the shared library
+    whose own scope (its regime) overlaps this bank's footprint, narrowed by regime or a
+    phrase. Call it for the Instruments tab and its filter, or with a bank's own API key
+    to read the instruments behind that bank's inventory.
+
+    A read: it changes nothing and writes no audit row. It takes a person's session
+    holding `library.read` in their bank, or a bank's own API key carrying the
+    `library:read` scope. The list is read against that bank's footprint, so a platform
+    key, such as the one bleqq's own watch agents run with, belongs to no bank and answers
+    404 even when it carries `library:read`. The rows are shared library facts, the same
+    for every bank and changed only through an approved proposal.
+
+    Paginated: 20 rows by default and 100 at most, ordered by stable key so paging is
+    repeatable. `footprint` is one value: `in` by default, `all` for every instrument, or
+    `watched` for only what the markets the bank watches add. `obligationCount` counts the
+    obligations this bank would see under each instrument under the same value. Jurisdiction, level, authority and
+    `asOf` filters are deferred: "as of" applies to obligations only, and the Instruments
+    tab lists every visible instrument with its own in-force dates.
+
+    Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
+    (403) without library.read or the library:read scope, which is checked first, so a
+    platform key without the scope gets this; `not_found` (404) when the caller is a
+    platform key carrying the scope, since it belongs to no bank; `validation_error` (422)
+    when footprint is not in, all or watched, when the retired outsideFootprint is sent,
+    when the phrase is longer than 200 characters or the page size or offset is out of
+    range.
+    """
+    # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-01, AGT-02).
+    require_library_read(request)
+    tenant = caller_tenant(request)
+    order = language_order(request, tenant=tenant)
+    items, total = reading.instrument_page(tenant, order, query, limit=page.limit, offset=page.offset)
+    return InstrumentPage(items=items, total=total)
+
+
+@router.get(
+    "/instruments/{instrument_id}",
+    response=InstrumentDetail,
+    auth=SESSION_OR_KEY,
+    operation_id="getInstrument",
+    by_alias=True,
+    summary="Open one instrument and read its identity and lineage",
+)
+@answers_problems
+def get_instrument(
+    request: HttpRequest, instrument_id: Annotated[uuid.UUID, Path(description=READ_INSTRUMENT_ID_DESCRIPTION)]
+) -> InstrumentDetail:
+    """One instrument of the shared library: its identity, official reference and ELI, its
+    in-force dates with their precision, the authority behind it, when a person last
+    re-verified it and its lineage to other instruments (what it implements or
+    elaborates, and what implements, elaborates or amends it in turn). Call it for the
+    instrument card.
+
+    A read: it changes nothing and writes no audit row. It takes a person's session
+    holding `library.read` in their bank, or a bank's own API key carrying the
+    `library:read` scope; a platform key belongs to no bank and answers 404 even when it
+    carries `library:read`. The designed `GET /instruments/{instrumentId}/relations` is
+    served here as `lineage`, and the provision tree is its own read.
+
+    Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
+    (403) without library.read or the library:read scope, which is checked first;
+    `not_found` (404) when no instrument has that id or it is one this caller may not
+    see, the two answering alike so that no id can be probed for, and when the caller is
+    a platform key carrying the scope; `validation_error` (422) when the path segment is
+    not a UUID.
+    """
+    # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-01, AGT-02).
+    require_library_read(request)
+    tenant = caller_tenant(request)
+    return reading.instrument_detail(language_order(request, tenant=tenant), instrument_id)
+
+
+@router.get(
+    "/instruments/{instrument_id}/provisions",
+    response=list[ProvisionNode],
+    auth=SESSION_OR_KEY,
+    operation_id="listInstrumentProvisions",
+    by_alias=True,
+    summary="Read an instrument's provision tree",
+    openapi_extra=_PROVISIONS_EXAMPLE,
+)
+@answers_problems
+def list_instrument_provisions(
+    request: HttpRequest,
+    instrument_id: Annotated[uuid.UUID, Path(description=TREE_INSTRUMENT_ID_DESCRIPTION)],
+    query: Query[InstrumentProvisionsQuery],
+) -> list[ProvisionNode]:
+    """The verbatim provision tree of one instrument: chapters, sections, articles,
+    paragraphs or whatever each node's own kind names, each with every text version it
+    has ever carried, its children in the tree and the obligations that cite it. Call it
+    for the instrument card's provision tree, or with a bank's own API key when an
+    integration needs the law itself rather than a plain-language duty.
+
+    A read: it changes nothing and writes no audit row. It takes a person's session
+    holding `library.read` in their bank, or a bank's own API key carrying the
+    `library:read` scope; a platform key belongs to no bank and answers 404 even when it
+    carries `library:read`. `asOf` decides only which version each node's
+    `inForceVersion` names, and defaults to today in that bank's time zone; every version
+    stays in `versions` regardless, so a reader can choose an earlier or a future one by
+    its own chip rather than trusting today's date. The designed
+    `GET /provisions/{provisionId}/versions` is served here, embedded in each node.
+
+    Answered as a plain array of root nodes rather than a page, because a tree has no
+    natural page boundary; an instrument with no provisions yet is a 200 with an empty
+    array. The number of queries does not grow with the tree's size.
+
+    Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
+    (403) without library.read or the library:read scope, which is checked first;
+    `not_found` (404) when no instrument has that id or it is one this caller may not
+    see, and when the caller is a platform key carrying the scope; `validation_error`
+    (422) when the path segment is not a UUID or asOf is not a date.
+    """
+    # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-02, AGT-02).
+    require_library_read(request)
+    tenant = caller_tenant(request)
+    return reading.provision_tree(tenant, instrument_id, language_order(request, tenant=tenant), query)
+
+
+@router.get(
+    "/provisions/{provision_id}/diff",
+    response=VersionDiff,
+    auth=SESSION_OR_KEY,
+    operation_id="getProvisionDiff",
+    by_alias=True,
+    summary="See what changed between two versions of a provision",
+)
+@answers_problems
+def get_provision_diff(
+    request: HttpRequest,
+    provision_id: Annotated[uuid.UUID, Path(description=DIFF_PROVISION_ID_DESCRIPTION)],
+    query: Query[VersionDiffQuery],
+) -> VersionDiff:
+    """What changed between two versions of one provision's verbatim text, sentence by
+    sentence: the sentences that stand unchanged, the ones the newer version dropped and
+    the ones it adds. Call it behind "Show what changed" on the provision tree.
+
+    By default it compares the latest version against the one before it; from and to
+    name any two versions by their number. Both are versions of the same provision: this
+    call never compares one record with another. The comparison is made in a language
+    both versions hold, preferring the one lang asks for, and the answer says which
+    language it settled on and whether either side was machine translated and so still
+    unconfirmed by a person.
+
+    A read: it changes nothing, writes no audit row and logs none of the text, which is
+    the library's own content. It takes a person's session holding `library.read` in
+    their bank, or a bank's own API key carrying the `library:read` scope; a platform key
+    belongs to no bank and answers 404 even when it carries `library:read`.
+
+    Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
+    (403) without library.read or the library:read scope, which is checked first;
+    `not_found` (404) when no provision has that id or it is one this caller may not see,
+    and when the caller is a platform key carrying the scope; `unknown_key` (422) when
+    a version number is asked for that this provision has no version for;
+    `validation_error` (422) when the provision has fewer than two versions and neither
+    number was given, when the two versions share no language at all, when lang is
+    longer than 8 characters, or when the path segment is not a UUID.
+    """
+    # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-04, AGT-02).
+    require_library_read(request)
+    tenant = caller_tenant(request)
+    return reading.provision_diff(language_order(request, tenant=tenant), provision_id, query)
 
 
 @router.get(
@@ -433,13 +635,10 @@ def get_record_sources(
     from. Errors: `not_found` when no obligation has that id or the caller may not see it;
     `permission_denied` without `library.read` or `library:read`; `unauthenticated` without a
     credential.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-06, AGT-01).
     require_library_read(request)
-    return reading.get_record_sources()
+    return reading.get_record_sources(obligation_id, reading.today_of(principal(request).tenant_id))
 
 
 @router.post(

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Fragment, useState } from 'react';
 
+import { AskPanel } from '@/components/search/AskPanel';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -11,6 +12,7 @@ import { Select, TextInput } from '@/components/ui/Field';
 import { Notice } from '@/components/ui/Notice';
 import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
+import { TabPanel, Tabs } from '@/components/ui/Tabs';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { languageName } from '@/features/library/version-presentation';
@@ -40,6 +42,11 @@ import { formatDate, type FormatContext } from '@/shared/utils/format';
 // simplicity: "no screen calls a stub"). Likewise the card's per-hit
 // language tag and the "N obligations" instrument summary are not in
 // `SearchHit` and are left off rather than invented.
+//
+// Ask is the second mode, `?mode=ask` (design/screens/tenant-ask.html,
+// SRC-03). The mode and the "as of" date travel in the URL; the question,
+// like the query, never does. "Search instead" carries the question over as
+// the query, in component state.
 
 const HIT_TYPES: readonly SearchHitType[] = ['obligation', 'provision', 'change'];
 const BINDING_VALUES = ['', 'true', 'false'] as const;
@@ -48,7 +55,10 @@ type BindingFilter = (typeof BINDING_VALUES)[number];
 // seeding a row, not by changing this screen (I18N-01).
 const LANGUAGES = ['en', 'sv', 'da', 'nb', 'fi'] as const;
 
+export type SearchMode = 'search' | 'ask';
+
 export interface SearchFiltersState {
+  mode: SearchMode;
   type: '' | SearchHitType;
   jurisdiction: string;
   dutyType: string;
@@ -59,6 +69,7 @@ export interface SearchFiltersState {
 }
 
 export const EMPTY_SEARCH_FILTERS: SearchFiltersState = {
+  mode: 'search',
   type: '',
   jurisdiction: '',
   dutyType: '',
@@ -81,6 +92,7 @@ export function filtersFrom(params: { get(name: string): string | null }): Searc
   const type = params.get('type');
   const binding = params.get('binding');
   return {
+    mode: params.get('mode') === 'ask' ? 'ask' : 'search',
     type: isHitType(type) ? type : '',
     jurisdiction: params.get('jurisdiction') ?? '',
     dutyType: params.get('dutyType') ?? '',
@@ -92,9 +104,10 @@ export function filtersFrom(params: { get(name: string): string | null }): Searc
 }
 
 /** The filters back into a query string; nothing for a filter that is not set. The typed
- * query is deliberately absent (playbook 4.7). */
+ * query and the question are deliberately absent (playbook 4.7). */
 export function searchOf(filters: SearchFiltersState): string {
   const search = new URLSearchParams();
+  if (filters.mode === 'ask') search.set('mode', 'ask');
   if (filters.type !== '') search.set('type', filters.type);
   if (filters.jurisdiction !== '') search.set('jurisdiction', filters.jurisdiction);
   if (filters.dutyType !== '') search.set('dutyType', filters.dutyType);
@@ -153,105 +166,147 @@ export function SearchScreen() {
   const items = results.data?.items ?? [];
   const forbidden = forbiddenFrom(results.error);
 
+  const asOfFilter = (
+    <span className="ml-auto flex items-center gap-2 text-meta text-muted">
+      <span aria-hidden="true">{t('search.filter.asOf')}</span>
+      <TextInput type="date" className="w-auto" aria-label={t('search.filter.asOf')} value={filters.asOf} onChange={(event) => apply({ asOf: event.target.value })} />
+    </span>
+  );
+  const asOfBanner =
+    filters.asOf !== '' ? (
+      <Notice className="flex flex-wrap items-center gap-2">
+        <span>{t('search.asOfBanner', { date: formatDate(filters.asOf, ctx) })}</span>
+        <Link href={hrefFor({ ...filters, asOf: '' })} className="font-medium underline">
+          {t('search.asOfBanner.back')}
+        </Link>
+      </Notice>
+    ) : null;
+  // The card draws the two modes as chips; they are tabs here, because they
+  // switch what the panel below shows, and so the mode's name never collides
+  // with the "Search" button of the form.
+  const modes = (
+    <Tabs
+      tabs={[
+        { id: 'search', label: t('search.mode.search') },
+        { id: 'ask', label: t('search.mode.ask') },
+      ]}
+      current={filters.mode}
+      onSelect={(id) => apply({ mode: id === 'ask' ? 'ask' : 'search' })}
+    />
+  );
+
+  if (filters.mode === 'ask') {
+    return (
+      <>
+        <PageHead title={t('search.title')} lede={t('search.ask.lede')} />
+        {modes}
+        <TabPanel id="ask">
+          <div className="mb-3 flex">{asOfFilter}</div>
+          {asOfBanner}
+          <AskPanel
+            asOf={filters.asOf}
+            lang={filters.lang}
+            onSearchInstead={(question) => {
+              run(question);
+              apply({ mode: 'search' });
+            }}
+          />
+        </TabPanel>
+      </>
+    );
+  }
+
   return (
     <>
       <PageHead title={t('search.title')} lede={t('search.lede')} />
+      {modes}
+      <TabPanel id="search">
+        <form
+          role="search"
+          className="mb-3 flex gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            run(draft);
+          }}
+        >
+          <TextInput
+            type="search"
+            className="flex-1"
+            aria-label={t('search.searchLabel')}
+            placeholder={t('search.placeholder')}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+          />
+          <Button type="submit">{t('search.searchAction')}</Button>
+        </form>
 
-      <form
-        role="search"
-        className="mb-3 flex gap-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          run(draft);
-        }}
-      >
-        <TextInput
-          type="search"
-          className="flex-1"
-          aria-label={t('search.searchLabel')}
-          placeholder={t('search.placeholder')}
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-        />
-        <Button type="submit">{t('search.searchAction')}</Button>
-      </form>
-
-      <div className="mb-4 flex flex-wrap items-center gap-2" data-search-filters="">
-        <Select aria-label={t('search.filter.type')} value={filters.type} onChange={(event) => apply({ type: isHitType(event.target.value) ? event.target.value : '' })}>
-          <option value="">{t('search.filter.anyType')}</option>
-          <option value="obligation">{t('search.filter.type.obligation')}</option>
-          <option value="provision">{t('search.filter.type.provision')}</option>
-          <option value="change">{t('search.filter.type.change')}</option>
-        </Select>
-        <Select aria-label={t('search.filter.jurisdiction')} value={filters.jurisdiction} onChange={(event) => apply({ jurisdiction: event.target.value })}>
-          <option value="">{t('search.filter.anyJurisdiction')}</option>
-          {(jurisdictions.data ?? []).map((row) => (
-            <option key={row.key} value={row.key}>
-              {row.label}
-            </option>
-          ))}
-        </Select>
-        <Select aria-label={t('search.filter.dutyType')} value={filters.dutyType} onChange={(event) => apply({ dutyType: event.target.value })}>
-          <option value="">{t('search.filter.anyDutyType')}</option>
-          {(dutyTypes.data ?? []).map((row) => (
-            <option key={row.key} value={row.key}>
-              {row.label}
-            </option>
-          ))}
-        </Select>
-        <Select aria-label={t('search.filter.binding')} value={filters.binding} onChange={(event) => apply({ binding: isBinding(event.target.value) ? event.target.value : '' })}>
-          <option value="">{t('search.filter.anyBinding')}</option>
-          <option value="true">{t('search.filter.bindingOnly')}</option>
-          <option value="false">{t('search.filter.guidanceOnly')}</option>
-        </Select>
-        <Select aria-label={t('search.filter.language')} value={filters.lang} onChange={(event) => apply({ lang: event.target.value })}>
-          <option value="">{t('search.filter.anyLanguage')}</option>
-          {LANGUAGES.map((code) => (
-            <option key={code} value={code}>
-              {languageName(code, locale)}
-            </option>
-          ))}
-        </Select>
-        <span className="ml-auto flex items-center gap-2 text-meta text-muted">
-          <span aria-hidden="true">{t('search.filter.asOf')}</span>
-          <TextInput type="date" className="w-auto" aria-label={t('search.filter.asOf')} value={filters.asOf} onChange={(event) => apply({ asOf: event.target.value })} />
-        </span>
-        <Chip pressed={filters.outsideScope} onClick={() => apply({ outsideScope: !filters.outsideScope })}>
-          {t('search.filter.outsideScope')}
-        </Chip>
-      </div>
-
-      {filters.asOf !== '' ? (
-        <Notice className="flex flex-wrap items-center gap-2">
-          <span>{t('search.asOfBanner', { date: formatDate(filters.asOf, ctx) })}</span>
-          <Link href={hrefFor({ ...filters, asOf: '' })} className="font-medium underline">
-            {t('search.asOfBanner.back')}
-          </Link>
-        </Notice>
-      ) : null}
-
-      {query === '' ? (
-        <SearchStart onPick={run} t={t} />
-      ) : results.isPending ? (
-        <LoadingState rows={3} />
-      ) : forbidden !== null ? (
-        <RestrictedScreen {...forbidden} />
-      ) : results.isError ? (
-        <ErrorState title={t('search.errorTitle')} onRetry={() => void results.refetch()} />
-      ) : items.length === 0 ? (
-        <SearchNoMatch filters={filters} hrefFor={hrefFor} t={t} />
-      ) : (
-        <>
-          <p className="mb-2.5 text-meta text-muted" role="status">
-            {t('search.count', { count: items.length })}
-          </p>
-          <div className="grid gap-2.5" data-search-rows="">
-            {items.map((hit) => (
-              <SearchHitRow key={hit.id} hit={hit} query={query} t={t} ctx={ctx} />
+        <div className="mb-4 flex flex-wrap items-center gap-2" data-search-filters="">
+          <Select aria-label={t('search.filter.type')} value={filters.type} onChange={(event) => apply({ type: isHitType(event.target.value) ? event.target.value : '' })}>
+            <option value="">{t('search.filter.anyType')}</option>
+            <option value="obligation">{t('search.filter.type.obligation')}</option>
+            <option value="provision">{t('search.filter.type.provision')}</option>
+            <option value="change">{t('search.filter.type.change')}</option>
+          </Select>
+          <Select aria-label={t('search.filter.jurisdiction')} value={filters.jurisdiction} onChange={(event) => apply({ jurisdiction: event.target.value })}>
+            <option value="">{t('search.filter.anyJurisdiction')}</option>
+            {(jurisdictions.data ?? []).map((row) => (
+              <option key={row.key} value={row.key}>
+                {row.label}
+              </option>
             ))}
-          </div>
-        </>
-      )}
+          </Select>
+          <Select aria-label={t('search.filter.dutyType')} value={filters.dutyType} onChange={(event) => apply({ dutyType: event.target.value })}>
+            <option value="">{t('search.filter.anyDutyType')}</option>
+            {(dutyTypes.data ?? []).map((row) => (
+              <option key={row.key} value={row.key}>
+                {row.label}
+              </option>
+            ))}
+          </Select>
+          <Select aria-label={t('search.filter.binding')} value={filters.binding} onChange={(event) => apply({ binding: isBinding(event.target.value) ? event.target.value : '' })}>
+            <option value="">{t('search.filter.anyBinding')}</option>
+            <option value="true">{t('search.filter.bindingOnly')}</option>
+            <option value="false">{t('search.filter.guidanceOnly')}</option>
+          </Select>
+          <Select aria-label={t('search.filter.language')} value={filters.lang} onChange={(event) => apply({ lang: event.target.value })}>
+            <option value="">{t('search.filter.anyLanguage')}</option>
+            {LANGUAGES.map((code) => (
+              <option key={code} value={code}>
+                {languageName(code, locale)}
+              </option>
+            ))}
+          </Select>
+          {asOfFilter}
+          <Chip pressed={filters.outsideScope} onClick={() => apply({ outsideScope: !filters.outsideScope })}>
+            {t('search.filter.outsideScope')}
+          </Chip>
+        </div>
+
+        {asOfBanner}
+
+        {query === '' ? (
+          <SearchStart onPick={run} t={t} />
+        ) : results.isPending ? (
+          <LoadingState rows={3} />
+        ) : forbidden !== null ? (
+          <RestrictedScreen {...forbidden} />
+        ) : results.isError ? (
+          <ErrorState title={t('search.errorTitle')} onRetry={() => void results.refetch()} />
+        ) : items.length === 0 ? (
+          <SearchNoMatch filters={filters} hrefFor={hrefFor} t={t} />
+        ) : (
+          <>
+            <p className="mb-2.5 text-meta text-muted" role="status">
+              {t('search.count', { count: items.length })}
+            </p>
+            <div className="grid gap-2.5" data-search-rows="">
+              {items.map((hit) => (
+                <SearchHitRow key={hit.id} hit={hit} query={query} t={t} ctx={ctx} />
+              ))}
+            </div>
+          </>
+        )}
+      </TabPanel>
     </>
   );
 }

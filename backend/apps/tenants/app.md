@@ -50,6 +50,18 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
 | ADM-03 | Admin duties are separate permissions | M | R1 | built |
 
+**ADM-01 is built in part, which is why it stays `in_progress`.** The R1 slice on `main`:
+the organisation profile with its onboarding checklist (TEN-S1); members and invitations,
+roles, and each admin screen gated by its own permission (ADM-S1 to ADM-S3); an admin's
+passkey re-enrolment of a member and the sessions a person sees and revokes (ID-S12,
+ID-S11); the bank's own API keys; the security log; the audit log; the regulatory scope with
+its change requests and its markets panel (FP-S10); and the vocabularies. What remains, each
+with the Build_Plan.md chunk that delivers it: departments with a head, teams, and team membership on the member row (TEN-02, TEN-03, chunk 8); the
+workflow policy's reminders and escalation (COL-02, chunk 10); the agents a bank adds for
+itself (AGT-04, chunk 11); data, meaning exports, import, retention and tenant exit (REP-02
+to REP-04, AUD-04, chunk 12); and integrations beyond the API keys, with the security
+policy's SSO and IP allow-list (INT-01 to INT-03, ID-12, ID-13, chunk 13).
+
 ## 3. Acceptance criteria (from PRD, condensed)
 
 The PRD states no lettered criterion for this module. The criteria below are
@@ -154,6 +166,13 @@ Then B sees only its own participants
 And B's regulatory scope screen shows no market that A watches
 And B's lists show only B's records
 ```
+
+> **Note — what R1 walks (tax-market-journeys).** The `@e2e` journey proves B cannot reach
+> A's member by URL and lists only its own members; that B's regulatory scope shows no
+> market A watches as watched, none of A's terms as held and neither A's pending request nor
+> its requester; and that B's roles and tenant tags hold none of A's own (the seed gives A a
+> custom role and a tag for this, `EXPECTED_TENANT_A_ONLY`). The case, evidence, comment and
+> participant steps join the journey with chunks 9 and 10, when those screens exist.
 
 ### ADM-S1 — Tenant admin surfaces are gated by their own permissions `@integration` `@e2e` (ADM-01, ADM-03)
 ```gherkin

@@ -42,6 +42,7 @@ vi.mock('next/link', () => ({
 }));
 
 const ME_PATH = '/api/v1/me';
+const LANGUAGES_PATH = '/api/v1/reference/languages';
 const VOCAB_PATH = '/api/v1/vocab';
 const HOME_PATH = '/api/v1/home';
 const EMPTY_HOME = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
@@ -158,7 +159,7 @@ describe('the console landing', () => {
     expect(within(railNav()).queryAllByRole('link')).toHaveLength(0);
   });
 
-  it('fires no tenant query: the console shell asks for the session and nothing else', async () => {
+  it('fires no tenant query: the console shell asks for the session, the interface languages and nothing else', async () => {
     const sent = server(editor);
     renderIn(
       <ConsoleLayout>
@@ -167,7 +168,9 @@ describe('the console landing', () => {
     );
     await waitFor(() => expect(nav.replace).toHaveBeenCalled());
     expect(within(railNav()).getByRole('link', { name: 'Vocabularies' })).toHaveAttribute('href', '/console/vocabularies');
-    expect(new Set(sent.map((s) => `${s.method} ${s.path}`))).toEqual(new Set([`post ${REFRESH_PATH}`, `get ${ME_PATH}`]));
+    // The account menu's language choice reads the platform's own list of languages,
+    // which every session may read; nothing of a tenant's.
+    expect(new Set(sent.map((s) => `${s.method} ${s.path}`))).toEqual(new Set([`post ${REFRESH_PATH}`, `get ${ME_PATH}`, `get ${LANGUAGES_PATH}`]));
   });
 
   it('carries the console kicker, the person’s platform role, and a logo that leads back to the console', async () => {
@@ -200,7 +203,7 @@ describe('the surface follows the principal', () => {
       </TenantLayout>,
     );
     expect(await screen.findByRole('heading', { name: 'My passkeys' })).toBeInTheDocument();
-    expect(within(railNav()).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/console/queue', '/console/vocabularies', '/console/change-facts', '/console/sources']);
+    expect(within(railNav()).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/console/queue', '/console/vocabularies', '/console/change-facts', '/console/sources', '/console/evaluation']);
     expect(within(rail()).getByText('Platform console')).toBeInTheDocument();
   });
 
@@ -274,7 +277,7 @@ describe('console vocabularies', () => {
     expect(rows.map((row) => row.getAttribute('href'))).toEqual(['/console/vocabularies/flag', '/console/vocabularies/library_tag']);
     expect(screen.queryByRole('tablist')).toBeNull();
     expect(screen.queryByRole('link', { name: /Admin/ })).toBeNull();
-    expect(screen.getByText('Every organisation shares these lists. A change you send waits for a second library editor.')).toBeInTheDocument();
+    expect(screen.getByText('Every organisation shares these lists. A change you send waits for someone else to approve it.')).toBeInTheDocument();
   });
 
   it('keeps the tenant screen as it was: both tabs and links under Admin', async () => {
@@ -291,7 +294,7 @@ describe('console vocabularies', () => {
     expect(await screen.findByRole('button', { name: 'Suggest a change' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '← Vocabularies' })).toHaveAttribute('href', '/console/vocabularies');
     expect(screen.getByText('Shared library list · 1 active')).toBeInTheDocument();
-    expect(screen.getByText('Every organisation shares these lists. A change you send waits for a second library editor.')).toBeInTheDocument();
+    expect(screen.getByText('Every organisation shares these lists. A change you send waits for someone else to approve it.')).toBeInTheDocument();
   });
 
   it('holds no tenant list: one opened by its address is not there', async () => {

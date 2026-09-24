@@ -41,7 +41,19 @@ CHUNK_STATUS_BY_CODE: dict[str, int] = {
     "request_pending": 409,
     "invalid_transition": 409,
     "idempotency_conflict": 409,
+    "already_watching": 409,
     "forbidden": 403,
+    # An agent approved a kind whose record cannot name its confirming agent, so it waits
+    # for a person (D-79; a new provision or a provision version): the proposal is fine,
+    # the reviewer is the wrong kind of principal for it.
+    "person_review_required": 409,
+    # An agent approved or confirmed what the injection screen flagged (AGT-07, H40): the
+    # record is fine to decide, but only a person who has read the flag decides it.
+    "risk_flagged": 409,
+    # An agent confirmed a watch fact that it, or another key of its own agent, suggested
+    # (D-74): the fact is fine, the confirmer is not independent of it.
+    "own_suggestion": 409,
+    "same_agent": 409,
 }
 
 F = TypeVar("F", bound=Callable[..., Any])

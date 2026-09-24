@@ -70,8 +70,9 @@ class LlmError(RuntimeError):
 @dataclass(frozen=True)
 class Completion:
     """A whole answer. `stop_reason` is the provider's: `end_turn` when the model finished,
-    `max_tokens` or `model_context_window_exceeded` when the answer was cut off, which Ask
-    shows as incomplete. A refusal never becomes a Completion: it raises."""
+    `max_tokens` or `model_context_window_exceeded` when the answer was cut off, which the
+    call's AI log row records (`stop_reason`). A refusal never becomes a Completion: it
+    raises."""
 
     text: str
     model: str
@@ -89,13 +90,20 @@ class LlmAdapter(ABC):
         """Yield each text delta as it arrives, then one `Completion` carrying the whole
         answer, its usage and its stop reason. The `Completion` is always the last event;
         a stream that cannot end in one raises `LlmError` instead, and the deltas already
-        yielded are then not an answer: the caller discards them."""
+        yielded are then not a whole answer: the caller never treats them as one."""
 
     def complete(self, *, system: str, prompt: str, max_tokens: int) -> Completion:
         for event in self.stream(system=system, prompt=prompt, max_tokens=max_tokens):
             if isinstance(event, Completion):
                 return event
         raise LlmError("the model stream ended before the answer was complete")
+
+    def asked_model(self) -> tuple[str, str]:
+        """The model and version a call is addressed to. A finished call is logged with
+        what its `Completion` reports instead; this names the model on the log row of a
+        call that never reached one: a stream the reader left early, or one that failed
+        (AUD-02)."""
+        raise NotImplementedError(f"the {self.name} provider does not name the model it asks")
 
 
 # ---------------------------------------------------------------------------------------
@@ -124,6 +132,9 @@ class MockLlm(LlmAdapter):
     model call, and a deployed environment refuses this provider at boot."""
 
     name = "mock"
+
+    def asked_model(self) -> tuple[str, str]:
+        return "mock", "0"
 
     def stream(self, *, system: str, prompt: str, max_tokens: int) -> Iterator[str | Completion]:
         statements = [f"{_first_sentence(text)} [{number}]" for number, text in CONTEXT_LINE.findall(prompt)]
@@ -288,6 +299,9 @@ class AnthropicLlm(LlmAdapter):
         if not api_key:
             raise ImproperlyConfigured("ANTHROPIC_API_KEY is not set; it is read from the environment only")
         self._api_key = api_key
+
+    def asked_model(self) -> tuple[str, str]:
+        return settings.LLM_MODEL, ANTHROPIC_API_VERSION
 
     def stream(self, *, system: str, prompt: str, max_tokens: int) -> Iterator[str | Completion]:
         deadline = time.monotonic() + settings.LLM_DEADLINE_S

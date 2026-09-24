@@ -19,6 +19,7 @@ from __future__ import annotations
 import uuid
 from types import SimpleNamespace
 from collections.abc import Iterable
+from typing import Any
 
 from apps.agents.models import Agent, AgentKind, AgentRun
 from apps.identity import tokens
@@ -66,6 +67,13 @@ def agent_key(*, agent_row: Agent | None = None, scopes: Iterable[str] = WATCH_S
     return SimpleNamespace(id=row.id, row=row, agent=row_agent, plain_key=plain)
 
 
+def reviewer_api_key(*, scopes: Iterable[str] = ("proposals:review",)) -> SimpleNamespace:
+    """A platform key bound to its own agent definition, holding `scopes` (PRO-S13, ID-S31,
+    D-62, ADR 0054): a second, independent agent that can work the review queue. A thin
+    wrapper over `agent_key()` so every review-queue test asks for the same shape by name."""
+    return agent_key(scopes=scopes)
+
+
 def platform_run(
     *, key: SimpleNamespace | None = None, model: str = SWEEPER_MODEL, pipeline_version: str = SWEEPER_PIPELINE
 ) -> AgentRun:
@@ -80,6 +88,37 @@ def platform_run(
     return AgentRun.objects.create(
         agent=opened_with.agent, api_key=opened_with.row, model=model, pipeline_version=pipeline_version
     )
+
+
+# The model call behind a confirming agent's decision, as the agent reports it (D-80): the
+# `AgentDecision` shape, camelCase as a request body carries it, with one public citation.
+DECISION: dict[str, Any] = {
+    "model": "claude-opus-5",
+    "modelVersion": "2026-05-01",
+    "promptTemplate": "library-confirmer/decide/v2",
+    "promptHash": "9f2a1c7d4b8e05f3",
+    "output": "Approve. The proposed wording matches the amended regulation as the decision memorandum publishes it.",
+    "citations": [
+        {
+            "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+            "url": "https://www.fi.se/en/published/news/2026/reporting/",
+        }
+    ],
+}
+# The same call when its verdict is a rejection, so a logged rejection never reads as an
+# approval: every rejection a test expects to land carries this one.
+REJECTION_DECISION: dict[str, Any] = {
+    **DECISION,
+    "output": "Reject. The version in force already says this, in the words the decision memorandum uses.",
+}
+
+
+def decision(key: SimpleNamespace) -> dict[str, Any]:
+    """What a confirming agent's approve or reject body carries beside its verdict (D-80,
+    AUD-02, AGT-01): the model call behind the decision, and a run of its own key, opened
+    here, to count the decision in. Written with no tenant activated, as a platform run is.
+    The call is an approval's; a rejection sends `"decision": REJECTION_DECISION` over it."""
+    return {"decision": DECISION, "agentRunId": str(platform_run(key=key).id)}
 
 
 def tenant_key(tenant: Tenant, *, scopes: Iterable[str] = ("library:read",)) -> SimpleNamespace:

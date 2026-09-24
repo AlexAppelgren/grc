@@ -9,8 +9,10 @@ import {
   caseStatusLabel,
   daysUntil,
   factsOfChange,
+  isMachineConfirmed,
   isSuggested,
   keyDateMeta,
+  machineConfirmedBy,
   presentChange,
   presentChangeRow,
   rowUrgency,
@@ -111,6 +113,7 @@ const row: ChangeRow = {
   keyDatePrecision: 'day',
   firstSeenAt: '2026-09-16T06:02:00Z',
   inFootprint: true,
+  market: null,
   case: null,
 } as ChangeRow;
 
@@ -180,6 +183,49 @@ describe('isSuggested', () => {
 
   it('is false once a person has settled every one of them', () => {
     expect(isSuggested(row)).toBe(false);
+  });
+});
+
+describe('isMachineConfirmed', () => {
+  const byAnAgent = (key: string, label: string) => ({ ...fact(key, label, false), confirmedOrigin: 'agent' as const });
+
+  it('is true once an independent agent confirmed any classification, and never for a person’s confirmation', () => {
+    expect(isMachineConfirmed({ ...row, flags: [byAnAgent('ai', 'AI')] })).toBe(true);
+    expect(isMachineConfirmed({ ...row, changeType: byAnAgent('adopted', 'Adopted rule') })).toBe(true);
+    expect(isMachineConfirmed({ ...row, flags: [{ ...fact('ai', 'AI', false), confirmedOrigin: 'user' }] })).toBe(false);
+    expect(isMachineConfirmed(row)).toBe(false);
+  });
+
+  it('a row an agent confirmed keeps a machine label, and a suggestion still wins the slot', () => {
+    const confirmed = { ...row, changeType: byAnAgent('adopted', 'Adopted rule') };
+    expect(presentChangeRow(confirmed, 'row', t).map((p) => [p.label, p.tone])).toContainEqual(['Machine-confirmed', 'information']);
+    const mixed = { ...confirmed, flags: [fact('ai', 'AI', true)] };
+    expect(presentChangeRow(mixed, 'row', t).map((p) => p.label)).toContain('Suggested by the agent');
+    expect(presentChangeRow(mixed, 'row', t).map((p) => p.label)).not.toContain('Machine-confirmed');
+  });
+});
+
+describe('machineConfirmedBy', () => {
+  const sweeper = { id: 'a1', key: 'watch-sweeper' };
+  const confirmer = { id: 'a2', key: 'library-confirmer' };
+  const sv = createT('sv');
+
+  it('names the agent that suggested a fact and the one that confirmed it', () => {
+    const facts = [{ confirmedOrigin: 'agent' as const, suggestedByAgent: sweeper, confirmedByAgent: confirmer }];
+    expect(machineConfirmedBy(facts, t)).toBe('Machine-confirmed: suggested by watch-sweeper, confirmed by library-confirmer');
+    expect(machineConfirmedBy(facts, sv)).toBe('Maskinbekräftad: föreslagen av watch-sweeper, bekräftad av library-confirmer');
+  });
+
+  it('names the confirming agent alone when no agent suggested it', () => {
+    expect(machineConfirmedBy([{ confirmedOrigin: 'agent', suggestedByAgent: null, confirmedByAgent: confirmer }], t)).toBe('Machine-confirmed by library-confirmer');
+  });
+
+  it('says each pair once, and nothing for a suggestion or a person’s confirmation', () => {
+    const byAgent = { confirmedOrigin: 'agent' as const, suggestedByAgent: sweeper, confirmedByAgent: confirmer };
+    expect(machineConfirmedBy([byAgent, byAgent], t)).toBe('Machine-confirmed: suggested by watch-sweeper, confirmed by library-confirmer');
+    expect(machineConfirmedBy([{ confirmedOrigin: 'user', suggestedByAgent: sweeper, confirmedByAgent: null }], t)).toBeNull();
+    expect(machineConfirmedBy([{ confirmedOrigin: null, suggestedByAgent: sweeper, confirmedByAgent: null }], t)).toBeNull();
+    expect(machineConfirmedBy([], t)).toBeNull();
   });
 });
 

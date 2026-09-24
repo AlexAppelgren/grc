@@ -131,6 +131,12 @@ main{padding:32px 36px 96px;max-width:1100px;width:100%}
       </div>
     </div>
 
+    <div class="panel" style="margin-top:16px" aria-labelledby="ai"><h2 id="ai">Ask and AI drafts</h2>
+      <p>On for Example Bank AB. Members can ask questions and have a model draft text for them.</p>
+      <span class="hint" style="color:var(--muted);font-size:.82rem">Switching asks for your passkey.</span>
+      <div class="bar"><button class="btn ghost" type="button">Switch off</button></div>
+    </div>
+
     <div class="panel" style="margin-top:16px"><h2>Departments</h2>
       <p style="color:var(--muted);margin-bottom:12px">A department has a head, who sees the department's work on My work. Teams sit in a department.</p>
       <div class="rows">
@@ -157,6 +163,34 @@ main{padding:32px 36px 96px;max-width:1100px;width:100%}
     <h2 class="k">Retiring a team that still owns open work (the server's 409, rendered in place)</h2>
     <div class="panel"><p class="err" role="alert">Retail compliance owns 3 open items. Give them another owner before retiring the team.</p><div class="bar"><button class="btn ghost small">See the items</button></div></div>
 
+    <h2 class="k">Ask and AI drafts: switched off</h2>
+    <div class="panel"><h2>Ask and AI drafts</h2>
+      <p>Off for Example Bank AB. Ask and AI drafts are refused, and nothing of yours is sent to a model.</p>
+      <span class="hint" style="color:var(--muted);font-size:.82rem">Switching asks for your passkey.</span>
+      <div class="bar"><button class="btn" type="button">Switch on</button></div>
+    </div>
+
+    <h2 class="k">Ask and AI drafts: saving, while the passkey prompt is open (auth-step-up.html)</h2>
+    <div class="panel" aria-busy="true"><h2>Ask and AI drafts</h2>
+      <p>On for Example Bank AB. Members can ask questions and have a model draft text for them.</p>
+      <span class="hint" style="color:var(--muted);font-size:.82rem">Switching asks for your passkey.</span>
+      <div class="bar"><button class="btn ghost" type="button" disabled>Switching…</button></div>
+    </div>
+
+    <h2 class="k">Ask and AI drafts: the passkey prompt was cancelled</h2>
+    <div class="panel"><h2>Ask and AI drafts</h2>
+      <p>On for Example Bank AB. Members can ask questions and have a model draft text for them.</p>
+      <p class="err" role="alert">Nothing changed. Switching needs your passkey.</p>
+      <div class="bar"><button class="btn ghost" type="button">Switch off</button></div>
+    </div>
+
+    <h2 class="k">Ask and AI drafts: refused by the server (the 403 rendered as is, for a member without security manage)</h2>
+    <div class="panel"><h2>Ask and AI drafts</h2>
+      <p>On for Example Bank AB. Members can ask questions and have a model draft text for them.</p>
+      <p class="err" role="alert">You do not have permission to do this. Needs security manage.</p>
+      <div class="bar"><button class="btn ghost" type="button">Switch off</button></div>
+    </div>
+
     <h2 class="k">Refused by the server (the 403 rendered as is, for a member without security manage)</h2>
     <div class="panel"><p class="err" role="alert">Only a member who manages security can change the profile. Needs security manage.</p></div>
 
@@ -165,7 +199,7 @@ main{padding:32px 36px 96px;max-width:1100px;width:100%}
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the organisation</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     </div>
 
-    <p class="note">Organisation card (TEN-01; departments and teams TEN-02 and TEN-03, chunk 8). Any member may read the profile; saving needs security manage and the server's 403 renders in place with its detail and the missing grant. Languages come from the language rows as key and label; the timezone is a free IANA name with Nordic suggestions. The checklist is computed by the server; each undone step links to where it is done. Departments and teams need vocab.manage, as the legal entities do; they need no step-up and no second person, because neither grants access. A department is an org unit whose kind is business area, business unit or function, shown as plain meta text and not as a pill because this card adds no pill slot; it may sit under another, and its head is a member of this tenant. Naming a head is what puts the department on that person's scope switch on My work; the view itself is a filter any member may open. Who is in a team is set on the member row under Members, because that is members.manage. Retiring a team that still owns open work is refused, and merging two teams re-points the owner-team and participant rows.</p>
+    <p class="note">Organisation card (TEN-01; departments and teams TEN-02 and TEN-03, chunk 8). Ask and AI drafts is the bank's own switch over its AI features (D-07, SRC-03): one button whose words say what it will do, the current state in a sentence naming the organisation, no pill. Switching is a security change: it needs security manage and a passkey step-up, the prompt opens from the button, and a cancelled prompt or a refusal renders in place with nothing changed. It switches this organisation's Ask and drafts only; the profile's Save never touches it. Any member may read the profile; saving needs security manage and the server's 403 renders in place with its detail and the missing grant. Languages come from the language rows as key and label; the timezone is a free IANA name with Nordic suggestions. The checklist is computed by the server; each undone step links to where it is done. Departments and teams need vocab.manage, as the legal entities do; they need no step-up and no second person, because neither grants access. A department is an org unit whose kind is business area, business unit or function, shown as plain meta text and not as a pill because this card adds no pill slot; it may sit under another, and its head is a member of this tenant. Naming a head is what puts the department on that person's scope switch on My work; the view itself is a filter any member may open. Who is in a team is set on the member row under Members, because that is members.manage. Retiring a team that still owns open work is refused, and merging two teams re-points the owner-team and participant rows.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Search</button><button>More</button></nav>

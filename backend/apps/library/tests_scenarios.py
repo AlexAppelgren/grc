@@ -6,9 +6,9 @@ that builds the scenario, and never delete one without updating app.md.
 The requirements coverage gate (scripts/requirements_coverage.py) fails
 when a scenario here and a heading in app.md drift apart.
 
-Chunk 3 un-skips INV-S3 to INV-S6, the record reads, and INV-S7 and INV-S8, the two
-scenarios the write routes prove. INV-S1, INV-S2 and INV-S10 wait for the instrument and
-provision reads; INV-S9 is R3.
+Chunk 3 un-skips INV-S3 to INV-S6, the record reads, INV-S7 and INV-S8, the two scenarios
+the write routes prove, and, with the instrument read (chunk3-rest-T13), INV-S1 and
+INV-S10; INV-S11 with the first standard, built by `testing.standard()`. INV-S2 waits for the provision tree read (chunk3-rest-T16); INV-S9 is R3.
 
 Operations exercised (the audit-on-write guard reads these names):
 reportObligationProblem, reportInstrumentProblem, reverifyObligation.
@@ -24,7 +24,8 @@ Prefixes hosted: INV.
 
 The scenarios that read an obligation (INV-S3 to INV-S6) run against the sample library
 the prototype's data seeds, so what a reader sees is what the product ships with. INV-S4
-and INV-S5 add versions of their own, dated, so no test depends on the day it runs.
+and INV-S5 add versions of their own, dated, and INV-S2 and INV-S6 read the seeded records
+as of the data's own anchor date, so no test depends on the day it runs.
 """
 
 from __future__ import annotations
@@ -39,6 +40,7 @@ from collections.abc import Iterator
 from typing import Any
 from unittest import skip
 
+from django.conf import settings
 from django.db import DatabaseError, connection, transaction
 
 from apps.identity.models import User
@@ -64,6 +66,11 @@ FIRST_VERSION = D(2025, 1, 1)
 SECOND_VERSION = D(2026, 10, 1)
 FIRST_SUMMARY = "Research is paid from own resources. The institution keeps the records."
 SECOND_SUMMARY = "Research may be paid jointly with execution. The institution keeps the records."
+# The prototype data's own anchor date (`_meta.anchor_date`): the seeded research payment
+# obligation and 9 kap. 6 § are each on version 1, and each one's version 2 (2026-10-01)
+# is still to come. A read of a seeded record names it, so what it reads never moves with
+# the clock.
+SEEDED_DAY = D(2026, 9, 16)
 
 
 @contextlib.contextmanager
@@ -128,7 +135,7 @@ class LibraryScenarioTests(ScenarioTestCase):
         cls.other = factories.tenant(slug="other-bank")
         tenancy.activate(cls.other.id)
         cls.private = build.obligation(
-            build.instrument(key="other-bank-source", owner_tenant=cls.other),
+            build.instrument(key="other-bank-source", regime="regime:securities", owner_tenant=cls.other),
             key="other-bank-duty",
             owner_tenant=cls.other,
         )
@@ -150,19 +157,92 @@ class LibraryScenarioTests(ScenarioTestCase):
         body.update(fields)
         return body
 
-    @skip("pending: INV-S1")
     def test_inv_s1(self) -> None:
         """INV-S1
 
         An instrument carries its identity, dates and lineage (INV-01).
         """
+        card = self.read(f"/api/v1/instruments/{self.instrument.id}")
+        self.assertEqual((card["level"]["key"], card["binding"], card["officialRef"]), ("authority_regulation", True, "FFFS 2017:2"))
+        self.assertEqual(card["eliUri"], "", "the ELI where available; FFFS 2017:2 has none")
+        self.assertEqual((card["jurisdiction"]["key"], card["authority"]["key"]), ("se", "fi"))
+        self.assertEqual(card["inForceFrom"], {"date": "2018-01-03", "precision": "day"})
+        self.assertEqual(card["implementsNote"], "MiFID II delegated directive (EU) 2017/593")
+        amendments = [link for link in card["lineage"] if link["relation"]["key"] == "amends"]
+        self.assertEqual(
+            [(link["direction"], link["instrument"]["key"]) for link in amendments],
+            [("incoming", "fffs-2026-11")],
+            "amended by FFFS 2026:11",
+        )
 
-    @skip("pending: INV-S2")
+        # No tenant_id column: it is readable by every tenant, unchanged.
+        other_reader = sign_in(factories.member_user(self.other, roles=("reader",)), tenant=self.other)
+        response = self.client.get(f"/api/v1/instruments/{self.instrument.id}", **other_reader)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["stableKey"], "fffs-2017-2")
+
     def test_inv_s2(self) -> None:
         """INV-S2
 
         The provision tree holds verbatim text versions (INV-02).
         """
+        self.activate(self.tenant)
+        instrument = build.instrument(key="tree-instrument", regime="regime:securities", level="act")
+        chapter = build.provision(instrument, key="tree-instrument/1", ref_label="1 kap.", kind="chapter")
+        section = build.provision(instrument, key="tree-instrument/1-1", ref_label="1 §", kind="section", parent=chapter)
+        build.provision(instrument, key="tree-instrument/1-1-1", ref_label="första stycket", kind="paragraph", parent=section)
+        build.provision_version(section, version_no=1, effective_from=D(2018, 1, 1), texts={"en": "The original text."})
+        build.provision_version(
+            section,
+            version_no=2,
+            effective_from=D(2026, 11, 1),
+            transitional_note="The amendment applies from 1 November 2026.",
+            texts={"en": "The amended text."},
+        )
+        reader = sign_in(self.reader, tenant=self.tenant)
+
+        def tree(instrument_id: uuid.UUID, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+            response = self.client.get(f"{V1}/instruments/{instrument_id}/provisions", params or {}, **reader)
+            self.assertEqual(response.status_code, 200, response.content)
+            return list(response.json())
+
+        # Given a tree of chapter, section and paragraph, when a provision's text is
+        # replaced by an amendment in force on 2026-11-01, a new text version row exists
+        # with that effective date and a transitional note.
+        before = tree(instrument.id, {"asOf": "2026-10-31"})
+        found = next(node["children"][0] for node in before if node["stableKey"] == "tree-instrument/1")
+        self.assertEqual(found["kind"]["key"], "section")
+        self.assertEqual([v["versionNumber"] for v in found["versions"]], [1, 2])
+        self.assertEqual(found["versions"][1]["effectiveFrom"], {"date": "2026-11-01", "precision": "day"})
+        self.assertEqual(found["versions"][1]["transitionalNote"], "The amendment applies from 1 November 2026.")
+        self.assertEqual(found["inForceVersion"], 1, "as of the day before the amendment, the earlier version still applies")
+        unchanged_first_version = found["versions"][0]
+
+        # As of on or after the amendment, the new version is in force, and the earlier
+        # row has not been touched by the read.
+        after = tree(instrument.id, {"asOf": "2026-11-01"})
+        found_after = next(node["children"][0] for node in after if node["stableKey"] == "tree-instrument/1")
+        self.assertEqual(found_after["inForceVersion"], 2)
+        self.assertEqual(found_after["versions"][0], unchanged_first_version)
+
+        # The tree screen's "Show what changed" opens the diff between the two versions.
+        diff = self.client.get(f"{V1}/provisions/{section.id}/diff", **reader)
+        self.assertEqual(diff.status_code, 200, diff.content)
+        body = diff.json()
+        self.assertEqual((body["fromVersion"], body["toVersion"]), (1, 2))
+        self.assertEqual([segment["op"] for segment in body["segments"]], ["delete", "insert"])
+
+        # And the seeded FFFS 2017:2 tree: a chapter, its sections and one paragraph
+        # under a section (three levels), with 9 kap. 6 §'s own amendment still to come.
+        fffs_tree = tree(self.instrument.id, {"asOf": SEEDED_DAY.isoformat()})
+        fffs_chapter = next(node for node in fffs_tree if node["stableKey"] == "fffs-2017-2/9")
+        fffs_section = next(child for child in fffs_chapter["children"] if child["stableKey"] == "fffs-2017-2/9-6")
+        self.assertTrue(
+            any(grandchild["kind"]["key"] == "paragraph" for grandchild in fffs_section["children"]), "9 kap. 6 § has a paragraph under it"
+        )
+        self.assertEqual([v["versionNumber"] for v in fffs_section["versions"]], [1, 2])
+        self.assertTrue(fffs_section["versions"][1]["transitionalNote"])
+        self.assertEqual(fffs_section["inForceVersion"], 1, "the version in force on the seeded day, whatever today is")
 
     def test_inv_s3(self) -> None:
         """INV-S3
@@ -246,7 +326,8 @@ class LibraryScenarioTests(ScenarioTestCase):
         Text exists in the original language with labelled translations (INV-05).
         """
         # The reader's language order is en; the research payment summary was written in sv.
-        card = self.card("obl-research-payments")
+        card = self.card("obl-research-payments", {"asOf": SEEDED_DAY.isoformat()})
+        self.assertEqual(card["version"]["versionNumber"], 1, "the version in force on the seeded day, whatever today is")
         self.assertEqual(card["summary"]["language"], "en")
         self.assertTrue(card["summary"]["isMachine"], "a machine translation stays labelled until a person confirms it")
         self.assertFalse(card["summary"]["isOriginal"])
@@ -266,13 +347,21 @@ class LibraryScenarioTests(ScenarioTestCase):
 
         # Given any instrument or obligation, it carries the source link and the date it was
         # last checked, which is what "Verified <date>" reads from. Asserted on the record the
-        # subject lookup resolves; getObligation serialises the same two fields (chunk3-rest-T6).
+        # subject lookup resolves; getObligation and getInstrument serialise the same fields
+        # (chunk3-rest-T6, chunk3-rest-T13).
         self.activate(self.tenant)
         subject = reading.obligation_subject(self.obligation.id)
         self.assertTrue(subject.source_url)
         self.assertTrue(subject.source_label)
         self.assertIsNotNone(subject.last_verified_at)
-        self.assertTrue(reading.instrument_subject(self.instrument.id).source_url)
+        instrument_subject = reading.instrument_subject(self.instrument.id)
+        self.assertTrue(instrument_subject.source_url)
+        self.assertIsNotNone(instrument_subject.last_verified_at)
+
+        # The instrument card itself carries the same two facts.
+        instrument_card = self.read(f"/api/v1/instruments/{self.instrument.id}")
+        self.assertEqual(instrument_card["sourceUrl"], instrument_subject.source_url)
+        self.assertIsNotNone(instrument_card["lastVerifiedAt"])
 
         # When a reader chooses "This looks wrong" and describes the problem, the report is
         # created and they see it acknowledged.
@@ -414,12 +503,19 @@ class LibraryScenarioTests(ScenarioTestCase):
         self.assertEqual(self._post(f"/obligations/{self.obligation.id}/verifications", {"outcome": "no_change"}, everything).status_code, 403)
 
         # No API key scope reaches it either: the route takes a person's session only, so a
-        # key holding every scope is not even a principal here (AC-PRO1, ID-S21).
-        key = factories.api_key(self.tenant, scopes=tuple(sorted(perms.ALL_SCOPES)))
-        agent = self._post(
-            f"/obligations/{self.obligation.id}/verifications", {"outcome": "no_change"}, {"HTTP_X_API_KEY": key.plain_key}
-        )
-        self.assertIn(agent.status_code, (401, 403))
+        # key holding every scope is not even a principal here (AC-PRO1, ID-S21). Only a
+        # platform key bound to an agent can hold every scope; a bank's key holds at most the
+        # bank's share, so both are tried.
+        from apps.agents import testing as agents_testing
+
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        every_scope = agents_testing.agent_key(scopes=tuple(sorted(perms.ALL_SCOPES)))
+        bank_key = factories.api_key(self.tenant, scopes=tuple(sorted(perms.TENANT_KEY_SCOPES)))
+        for key in (every_scope, bank_key):
+            agent = self._post(
+                f"/obligations/{self.obligation.id}/verifications", {"outcome": "no_change"}, {"HTTP_X_API_KEY": key.plain_key}
+            )
+            self.assertIn(agent.status_code, (401, 403))
 
         self.assertEqual(Verification.objects.count(), 2)
 
@@ -430,26 +526,103 @@ class LibraryScenarioTests(ScenarioTestCase):
         Tenant-private records are visible to their owner only (INV-07).
         """
 
-    @skip("pending: INV-S10")
     def test_inv_s10(self) -> None:
         """INV-S10
 
         Legal dates are plain dates with a precision (INV-01, INV-02).
         """
+        self.activate(self.tenant)
+        quarter = build.instrument(
+            key="quarter-precision", regime="regime:securities", in_force_from=D(2026, 10, 1), in_force_from_precision="quarter"
+        )
+        card = self.read(f"/api/v1/instruments/{quarter.id}")
+        self.assertEqual(card["inForceFrom"], {"date": "2026-10-01", "precision": "quarter"})
 
-    @skip("pending: INV-S11 (INV-08, chunk 3)")
     def test_inv_s11(self) -> None:
         """INV-S11
 
         An edition of a standard is an instrument with public facts and no text (INV-01, INV-02, INV-08).
-        """
 
-    @skip("pending: INV-S12 (INV-08, chunk 3)")
+        The screens' half ("Standard" in the binding slot, "licensed" in the tree) is the
+        journey's. The standard's term stays as seeded, inactive: the reads show a record
+        whatever its term's state, and nothing here asks a door to resolve it.
+        """
+        self.activate(self.tenant)
+        duty = build.standard()
+        edition = duty.instrument
+
+        # Given the instrument at the level "Standard" under "International" and "ISO/IEC",
+        # it holds its official reference, publication date with precision, catalogue link
+        # and regime.
+        card = self.read(f"{V1}/instruments/{edition.id}")
+        self.assertEqual(
+            (card["officialRef"], card["inForceFrom"], card["sourceUrl"], card["regime"]["key"]),
+            ("ISO/IEC 27001:2022", {"date": "2022-10-25", "precision": "day"}, build.ISO_27001_CATALOGUE, "ai_ict"),
+        )
+        self.assertEqual((card["level"]["key"], card["level"]["kind"], card["binding"]), ("standard", "standard", False))
+        self.assertEqual((card["jurisdiction"]["key"], card["authority"]["key"]), ("intl", "iso-iec"))
+
+        # bindingLevel carries the kind "standard" on the standard's duty and a null kind on
+        # every other level, in the list and on the card.
+        rows = self.read(URL, {"footprint": "all", "limit": settings.API_PAGE_SIZE_MAX})
+        self.assertEqual(rows["total"], len(rows["items"]))
+        kinds = {row["stableKey"]: row["bindingLevel"]["kind"] for row in rows["items"]}
+        self.assertEqual(kinds.pop(duty.stable_key), "standard")
+        self.assertTrue(kinds)
+        self.assertEqual(set(kinds.values()), {None})
+        self.assertEqual(self.card(duty.stable_key)["bindingLevel"]["kind"], "standard")
+
+        # The instrument has exactly one obligation and no provision.
+        mine = self.read(URL, {"footprint": "all", "instrument": edition.stable_key})
+        self.assertEqual([row["stableKey"] for row in mine["items"]], [duty.stable_key])
+        response = self.client.get(f"{V1}/instruments/{edition.id}/provisions", **sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual((response.status_code, response.json()), (200, []))
+
     def test_inv_s12(self) -> None:
         """INV-S12
 
         Every instrument carries a regime from the regime dimension (INV-01, INV-08).
         """
+        from django.db import IntegrityError
+
+        from apps.proposals.models import Proposal, ProposalStatus
+        from apps.proposals.tests_kinds import instrument_body
+        from apps.taxonomy.models import InstrumentLevel
+
+        # An instrument row written without a regime: the database refuses it.
+        with self.assertRaises(IntegrityError), transaction.atomic(), tenancy.library_write("scenario"):
+            Instrument.objects.create(
+                stable_key="inv-s12-no-regime",
+                short_name="No regime",
+                official_ref="No regime",
+                source_url="https://www.fi.se/",
+                level=InstrumentLevel.objects.get(key="act"),
+                binding=True,
+                jurisdiction=self.instrument.jurisdiction,
+                created_origin="user",
+            )
+        # Every seeded instrument's regime is a term of the regime dimension.
+        seeded = Instrument.objects.select_related("regime__dimension")
+        self.assertTrue(seeded.exists())
+        self.assertEqual({instrument.regime.dimension.key for instrument in seeded}, {"regime"})
+        # A proposal naming a term of the Service dimension as its regime, stored as it
+        # arrived before the rule, is refused when a reviewer approves it: the apply
+        # answers 422 not_a_regime and nothing is written.
+        body = instrument_body(key="inv-s12-service-regime", regime="service_type:advice")
+        proposal = Proposal.objects.create(
+            kind=body["kind"],
+            title=body["title"],
+            payload=body["payload"],
+            field_sources=body["fieldSources"],
+            source_url=body["sourceUrl"],
+            origin="agent",
+        )
+        refused = self.client.post(f"{V1}/proposals/{proposal.id}/approve", data={}, content_type="application/json", **sign_in(self.editor, step_up=True))
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "not_a_regime")
+        self.assertFalse(Instrument.objects.filter(stable_key="inv-s12-service-regime").exists())
+        self.assertEqual(Proposal.objects.get(pk=proposal.pk).status, ProposalStatus.OPEN.value)
+        self.assertFalse(AuditEvent.objects.filter(action="instrument.created").exists())
 
     @skip("pending: INV-S13 (INV-07, chunk 13)")
     def test_inv_s13(self) -> None:
@@ -458,9 +631,74 @@ class LibraryScenarioTests(ScenarioTestCase):
         A private record's text never reaches a model, the index or another bank (INV-07).
         """
 
-    @skip("pending: INV-S14 (D-62, chunk 4 c4-agent-approver)")
     def test_inv_s14(self) -> None:
         """INV-S14
 
         A record an agent confirmed reads as machine-confirmed (INV-05, INV-06, PRO-02).
         """
+        from apps.agents import testing as agents_testing
+        from apps.shared import tenancy
+
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+
+        # A record of its own, with a single version dated "since always" (DEFAULT_VERSIONS),
+        # so the version the proposal adds is unambiguously the one now in force: same date
+        # (null), higher number.
+        obligation = build.obligation(
+            build.instrument(key="inv-s14-instrument", short_name="INV S14", regime="regime:securities"),
+            key="obl-inv-s14-agent-confirmed",
+            titles={"en": "A duty an agent confirms"},
+        )
+        proposer = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        confirmer = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_REVIEW,))
+        body = {
+            "kind": "new_obligation_version",
+            "title": "Refresh the wording against the source",
+            "targetType": "obligation",
+            "targetId": str(obligation.id),
+            "payload": {
+                "summaries": {"en": "Agents keep the wording current with the source."},
+                "originalLanguage": "en",
+                "isMachine": True,
+            },
+            "fieldSources": {"summaries.en": "https://www.fi.se/"},
+            # An agent files under an open run of its own (AGT-01).
+            "agentRunId": str(agents_testing.platform_run(key=proposer).id),
+        }
+        created = self._post("/proposals", body, {"HTTP_X_API_KEY": proposer.plain_key})
+        self.assertEqual(created.status_code, 201, created.content)
+        # The confirming agent sends the model call behind its decision, in a run of its own (D-80).
+        approved = self._post(
+            f"/proposals/{created.json()['id']}/approve", agents_testing.decision(confirmer), {"HTTP_X_API_KEY": confirmer.plain_key}
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+        # The record's provenance names the proposing agent and the confirming agent:
+        # verified_origin is "agent" and no person is named as its verifier. The version
+        # itself carries the same three facts, so its row in the version list says so too.
+        card = self.card(obligation.stable_key)
+        provenance, version = card["provenance"], card["version"]
+        for confirmation in (provenance, version):
+            self.assertEqual(confirmation["verifiedOrigin"], "agent")
+            self.assertEqual(confirmation["confirmedByAgent"]["key"], confirmer.agent.key)
+            self.assertEqual(confirmation["proposedByAgent"]["key"], proposer.agent.key)
+        self.assertIsNone(provenance["verifiedBy"])
+
+        # When a person later re-verifies the record against its source, the stamp names
+        # that person and is dated after the version's approval. That order is what the
+        # backend answers; letting the machine-confirmed label give way to it in the
+        # record's "Last verified" slot, and only there, is the screen's rule
+        # (obligation-presentation.ts), which the @e2e half proves.
+        editor = sign_in(self.editor, step_up=True)
+        reverified = self._post(f"/obligations/{obligation.id}/verifications", {"outcome": "no_change"}, editor)
+        self.assertEqual(reverified.status_code, 201, reverified.content)
+        after = self.card(obligation.stable_key)
+        self.assertEqual(after["provenance"]["verifiedBy"]["name"], self.editor.name)
+        self.assertGreater(
+            datetime.datetime.fromisoformat(after["provenance"]["lastVerifiedAt"]),
+            datetime.datetime.fromisoformat(after["version"]["approvedAt"]),
+        )
+        # The version's own machine-confirmed facts are untouched: nothing overwritten.
+        for confirmation in (after["provenance"], after["version"]):
+            self.assertEqual(confirmation["verifiedOrigin"], "agent")
+            self.assertEqual(confirmation["confirmedByAgent"]["key"], confirmer.agent.key)

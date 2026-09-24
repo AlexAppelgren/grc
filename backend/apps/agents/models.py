@@ -28,12 +28,17 @@ class AgentKind(enum.StrEnum):
 
     `watch` is ours: schema v0.3 stops at research, backfill and reverify, and the first
     shipped definition sweeps registered sources (INPUT_DELTAS §5).
+
+    `review` is ours too: a definition that proposes nothing and decides what another
+    definition proposed, as the independent second principal on the library's queue
+    (D-62, D-80). The first is `backend/agents/library-confirmer/v1/`.
     """
 
     RESEARCH = "research"
     BACKFILL = "backfill"
     REVERIFY = "reverify"
     WATCH = "watch"
+    REVIEW = "review"
 
 
 AGENT_KIND_CHOICES = [(kind.value, kind.value) for kind in AgentKind]
