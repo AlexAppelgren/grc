@@ -43,7 +43,7 @@ describe('PublicPage', () => {
 
   it('shows the sample record as the worked example of the six steps', async () => {
     await renderPage();
-    const method = screen.getByRole('region', { name: 'Every change takes the same six steps.' });
+    const method = screen.getByRole('region', { name: 'Every change takes the same six steps' });
     expect(within(method).getByRole('article', { name: 'FI adopts amended rules on paying for investment research' })).toBeInTheDocument();
   });
 

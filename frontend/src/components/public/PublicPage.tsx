@@ -13,8 +13,10 @@ import { cn } from '@/shared/utils/cn';
 // The public page (design/public/index.html, approved by Alex 2026-09-24): a
 // legal instrument on paper, with the brand green as a sticky ribbon and one
 // closing field. Every section carries a marginal section reference, the way
-// a statute carries marginal headings. Colours are token utilities only; the
-// serif faces are loaded by the (public) layout.
+// a statute carries marginal headings. Hierarchy comes from type and the two
+// greys, so colour is kept to the section references and the double rules, and
+// running prose is set at 16 px. Colours are token utilities only; the serif
+// faces are loaded by the (public) layout.
 
 const t = createT(defaultLocale);
 
@@ -113,18 +115,15 @@ function DoubleRule({ onBrand = false }: { onBrand?: boolean }) {
   );
 }
 
-/** A numbered section: the marginal reference and note on the left, the body on the right. Its break is the double rule alone. */
-function Section({ id, number, noteKey, headingKey, children }: { id: string; number: number; noteKey: MessageKey; headingKey: MessageKey; children: ReactNode }) {
+/** A numbered section: the marginal reference on the left, the body on the right. Its break is the double rule alone. */
+function Section({ id, number, headingKey, children }: { id: string; number: number; headingKey: MessageKey; children: ReactNode }) {
   return (
     <section
       id={id}
       aria-labelledby={`${id}-title`}
-      className={cn(ANCHOR, 'grid py-11 md:grid-cols-[150px_minmax(0,1fr)] md:gap-10 md:py-20 lg:gap-14')}
+      className={cn(ANCHOR, 'grid py-11 md:grid-cols-[120px_minmax(0,1fr)] md:gap-10 md:py-20 lg:gap-14')}
     >
-      <p className="mb-5 flex items-baseline gap-3 font-mono text-meta text-muted md:mb-0 md:block">
-        <span className="text-body font-medium text-brass md:mb-2 md:block">{t('public.sectionRef', { number: String(number) })}</span>
-        <span>{t(noteKey)}</span>
-      </p>
+      <p className="mb-5 font-mono text-body font-medium text-brass md:mb-0">{t('public.sectionRef', { number: String(number) })}</p>
       <div className="min-w-0">
         <DoubleRule />
         <h2 id={`${id}-title`} className="mb-5 font-serif text-display font-normal text-balance">
@@ -178,15 +177,15 @@ export function PublicPage() {
               the worked example of the six steps (Alex, 2026-09-24: the page was
               cluttered and nothing drew the eye). */}
           <section aria-labelledby="public-title" className="pt-14 pb-16 md:pt-24 md:pb-24">
-            <p className="microlabel mb-5 font-mono text-brass">{t('public.hero.eyebrow')}</p>
+            <p className="microlabel mb-5 font-mono text-muted">{t('public.hero.eyebrow')}</p>
             <h1 id="public-title" className="max-w-[20ch] font-serif-display text-hero text-balance">
               {t('public.hero.title')}
             </h1>
             <p className="mt-6 max-w-[52ch] text-title font-normal text-muted">{t('public.hero.deck')}</p>
           </section>
 
-          <Section id="case" number={1} noteKey="public.case.note" headingKey="public.case.title">
-            <div className="max-w-[62ch] leading-[1.375rem]">
+          <Section id="case" number={1} headingKey="public.case.title">
+            <div className="max-w-[62ch] text-title font-normal">
               <p className="mb-4 font-serif text-title font-normal italic">{t('public.case.lede')}</p>
               <p>{t('public.case.body')}</p>
             </div>
@@ -194,33 +193,33 @@ export function PublicPage() {
               {CASE.map(([title, body]) => (
                 <li key={title} className="border-b border-line py-4">
                   <h3 className="mb-1 text-title">{t(title)}</h3>
-                  <p className="text-muted">{t(body)}</p>
+                  <p className="text-title font-normal text-muted">{t(body)}</p>
                 </li>
               ))}
             </ul>
           </Section>
 
-          <Section id="what" number={2} noteKey="public.what.note" headingKey="public.what.title">
+          <Section id="what" number={2} headingKey="public.what.title">
             <div className="grid gap-x-12 md:grid-cols-2">
               {WHAT.map(([kicker, title, body]) => (
                 <div key={kicker} className="border-t border-line py-4.5">
-                  <p className="mb-2 font-mono text-meta text-brass">{t(kicker)}</p>
+                  <p className="mb-2 font-mono text-meta text-muted">{t(kicker)}</p>
                   <h3 className="mb-1.5 text-title">{t(title)}</h3>
-                  <p className="text-muted">{t(body)}</p>
+                  <p className="text-title font-normal text-muted">{t(body)}</p>
                 </div>
               ))}
             </div>
           </Section>
 
-          <Section id="method" number={3} noteKey="public.method.note" headingKey="public.method.title">
+          <Section id="method" number={3} headingKey="public.method.title">
             <ol className="border-t border-line">
               {STEPS.map(([name, body, actor], index) => (
                 <li
                   key={name}
                   className="grid grid-cols-[24px_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1 border-b border-line py-3.5 sm:grid-cols-[34px_minmax(0,1fr)_auto] sm:gap-x-4"
                 >
-                  <span className="font-mono text-meta text-brass tabular-nums">{index + 1}</span>
-                  <span>
+                  <span className="font-mono text-meta text-muted tabular-nums">{index + 1}</span>
+                  <span className="text-title font-normal">
                     <b className="font-semibold">{t(name)}</b> {t(body)}
                   </span>
                   <span className="col-start-2 font-mono text-meta text-muted sm:col-start-auto">{t(actor)}</span>
@@ -230,31 +229,31 @@ export function PublicPage() {
             <div className="mt-8 max-w-[560px]">
               <SampleRecord />
             </div>
-            <p className="mt-5 max-w-[62ch] text-meta text-muted">{t('public.method.footnote')}</p>
+            <p className="mt-5 max-w-[62ch] text-muted">{t('public.method.footnote')}</p>
           </Section>
 
-          <Section id="zones" number={4} noteKey="public.zones.note" headingKey="public.zones.title">
+          <Section id="zones" number={4} headingKey="public.zones.title">
             <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-7">
               <div className="rounded-card border border-line bg-surface p-4">
                 <h3 className="mb-1.5 text-title">{t('public.zones.library.title')}</h3>
-                <p className="text-muted">{t('public.zones.library.body')}</p>
+                <p className="text-title font-normal text-muted">{t('public.zones.library.body')}</p>
               </div>
               <div className="flex items-center justify-center gap-2.5 text-center md:min-w-[118px] md:flex-col">
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-5 rotate-90 text-brass md:rotate-0">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-5 rotate-90 text-muted md:rotate-0">
                   <path d="M4 12h16M14 6l6 6-6 6" />
                 </svg>
-                <span className="microlabel text-brass">{t('public.zones.door.label')}</span>
+                <span className="microlabel text-muted">{t('public.zones.door.label')}</span>
                 <span className="max-w-[16ch] text-meta text-muted">{t('public.zones.door.body')}</span>
               </div>
               <div className="rounded-card border border-line bg-subtle p-4">
                 <h3 className="mb-1.5 text-title">{t('public.zones.yours.title')}</h3>
-                <p className="text-muted">{t('public.zones.yours.body')}</p>
+                <p className="text-title font-normal text-muted">{t('public.zones.yours.body')}</p>
               </div>
             </div>
-            <p className="mt-6 max-w-[62ch] text-meta text-muted">{t('public.zones.footnote')}</p>
+            <p className="mt-6 max-w-[62ch] text-muted">{t('public.zones.footnote')}</p>
           </Section>
 
-          <Section id="coverage" number={5} noteKey="public.coverage.note" headingKey="public.coverage.title">
+          <Section id="coverage" number={5} headingKey="public.coverage.title">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
@@ -279,26 +278,25 @@ export function PublicPage() {
                 </tbody>
               </table>
             </div>
-            <p className="mt-6 max-w-[62ch]">{t('public.coverage.footnote')}</p>
           </Section>
 
-          <Section id="assurance" number={6} noteKey="public.assurance.note" headingKey="public.assurance.title">
+          <Section id="assurance" number={6} headingKey="public.assurance.title">
             <dl className="border-t border-line">
               {ASSURANCE.map(([term, body]) => (
                 <div key={term} className="grid gap-1 border-b border-line py-3.5 sm:grid-cols-[30%_minmax(0,1fr)] sm:gap-4">
-                  <dt className="font-semibold">{t(term)}</dt>
-                  <dd className="m-0 text-muted">{t(body)}</dd>
+                  <dt className="text-title">{t(term)}</dt>
+                  <dd className="m-0 text-title font-normal text-muted">{t(body)}</dd>
                 </div>
               ))}
             </dl>
           </Section>
 
-          <Section id="questions" number={7} noteKey="public.questions.note" headingKey="public.questions.title">
+          <Section id="questions" number={7} headingKey="public.questions.title">
             <div className="grid gap-x-12 md:grid-cols-2">
               {QUESTIONS.map(([question, answer]) => (
                 <div key={question} className="border-t border-line py-4.5">
                   <h3 className="mb-1.5 font-serif text-title font-normal">{t(question)}</h3>
-                  <p className="text-muted">{t(answer)}</p>
+                  <p className="text-title font-normal text-muted">{t(answer)}</p>
                 </div>
               ))}
             </div>
@@ -337,7 +335,7 @@ export function PublicPage() {
               <p className="mt-3.5 font-mono text-meta text-muted">{t('public.footer.pronounced')}</p>
             </div>
             <nav aria-labelledby="footer-sections">
-              <p id="footer-sections" className="microlabel mb-3 text-brass">
+              <p id="footer-sections" className="microlabel mb-3 text-muted">
                 {t('public.footer.onThisPage')}
               </p>
               <ul className="grid gap-2">
@@ -351,7 +349,7 @@ export function PublicPage() {
               </ul>
             </nav>
             <div>
-              <p className="microlabel mb-3 text-brass">{t('public.footer.account')}</p>
+              <p className="microlabel mb-3 text-muted">{t('public.footer.account')}</p>
               <ul className="grid gap-2">
                 <li>
                   <Link href={SIGN_IN} className={FOOT_LINK}>
