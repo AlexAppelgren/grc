@@ -231,6 +231,11 @@ export interface paths {
          *     the only trace of it and the way a reader tells a quiet night from a night of documents
          *     that were not ours to watch.
          *
+         *     What the server can see for itself it counts as the run closes, and those numbers are
+         *     the ones kept: `sourcesChecked`, `changesRegistered`, `proposalsSubmitted` and
+         *     `recordsRechecked` are read from what the run filed, whatever the close sends. The
+         *     other counters are the run's own account.
+         *
          *     Authenticated by the API key that opened the run, carrying the `agent-runs:write`
          *     scope; no session can close a run. A run closes once and into a terminal status. Sending
          *     the same close again answers the run it already closed, so a lost answer costs nothing;
@@ -284,7 +289,10 @@ export interface paths {
          *     `Idempotency-Key` and retry a call that timed out rather than leaving a gap.
          *
          *     Errors to branch on: `run_not_open` (422) when the run named is closed, so nothing can
-         *     be filed against it any more; `unknown_source` (422) when `sourceName` names no
+         *     be filed against it any more; `run_budget_exhausted` (422) when the line is a `recheck`
+         *     and the run has already logged as many re-checks as one run may
+         *     (`WATCH_RUN_MAX_RECHECKS`, 100 unless the platform sets another number), so close it
+         *     and open another, while a sweep line is never counted; `unknown_source` (422) when `sourceName` names no
          *     registered source — read `GET /sources` at run start and report against those names;
          *     `source_inactive` (422) when the source is registered with its automated checks off,
          *     as a standards publisher's is until its terms allow an automated check (WAT-07, D-45),
@@ -1347,7 +1355,10 @@ export interface paths {
          *     a refusal stores nothing at all.
          *
          *     Errors to branch on: `run_not_open` (422) when a key names no run in `agentRunId`, or
-         *     one that is closed;
+         *     one that is closed; `run_budget_exhausted` (422) when the run has already registered
+         *     as many new changes as one run may (`WATCH_RUN_MAX_CHANGES`, 50 unless the platform
+         *     sets another number), so close it and open another, while a second sighting of a
+         *     change the library holds is never counted;
          *     `unknown_key` (422) when `changeType`, `suggestedUrgency`, a flag key, a `termId`, an
          *     `obligationId` or `authorityCode` names a row the library does not hold or has retired,
          *     with the valid keys listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a
@@ -1594,7 +1605,9 @@ export interface paths {
          *     a person's, with a passkey, through `PATCH /changes/{changeId}` or
          *     `PUT /changes/{changeId}/obligations`.
          *
-         *     Errors to branch on: `own_suggestion` (409) when a named fact was suggested by this very
+         *     Errors to branch on: `risk_flagged` (409) when a key confirms a change any of whose
+         *     pages carries a flag from the injection screen, which waits for a person who reads the
+         *     flag; `own_suggestion` (409) when a named fact was suggested by this very
          *     key, or filed by this very person; `same_agent` (409) when it was suggested by another
          *     key of the same agent; `validation_error` (422) when the body names nothing, names a
          *     type, a flag, a term or an obligation the change does not carry now, when a key sends
@@ -3042,8 +3055,17 @@ export interface paths {
          *     answers `run_not_open` (422) like any other filing against that run. A new proposal
          *     answers **201**.
          *
+         *     Every text the proposal arrives with — its title, the texts of its payload, its field
+         *     sources, its source and its model — is read by the injection screen and stored exactly as it
+         *     arrived. What the screen finds is returned in `riskFlags` and shown in the queue, and
+         *     while a flag stands no agent may approve the proposal: a person decides it. A run files
+         *     at most `WATCH_RUN_MAX_PROPOSALS` proposals (50 unless the platform sets another
+         *     number); a retry of one it filed is not a new proposal and still answers.
+         *
          *     Errors to branch on: `run_not_open` (422) when a key bound to an agent names no run or
-         *     a closed one; `not_found` (404) when the run named is not one this key opened;
+         *     a closed one; `run_budget_exhausted` (422) when the run has already filed as many
+         *     proposals as one run may, so close it and open another; `not_found` (404) when the run
+         *     named is not one this key opened;
          *     `source_missing` (422) when a changed value carries no source, or a new record no
          *     `sourceUrl`; `unknown_key` (422) for a kind, a list, a language, a term, a target
          *     obligation or provision, an instrument, a parent provision, a provision kind, a level, a jurisdiction, an authority or a duty type the
@@ -3054,11 +3076,15 @@ export interface paths {
          *     `validation_error` (422) for a body the schema or the kind's payload refuses;
          *     `standard_term_only_on_standards` (422) when the scope puts a standard's term on an
          *     obligation whose instrument is not a standard; `licensed_text` (422) for a provision or
-         *     provision version under a standard, or a source on a standard's obligation that is not
-         *     an https link; `one_conformance_obligation` (422) for a new obligation under a standard
+         *     provision version under a standard, a source on a standard's obligation that is not
+         *     an https link, or a standard's new obligation whose `refLabel` is not the standard's
+         *     official reference; `one_conformance_obligation` (422) for a new obligation under a standard
          *     that already holds one; `standard_term_required` (422) when a standard's obligation
          *     would carry no standard term, or more than one; `idempotency_conflict` (409) when the
-         *     same `Idempotency-Key` arrives with a different body; `permission_denied` (403) without
+         *     same proposer's `Idempotency-Key` arrives with a different body or from another bank
+         *     (a key is its sender's own: another caller's value files a proposal of its own);
+         *     `validation_error` (422) also for an `Idempotency-Key` longer than 200 characters;
+         *     `permission_denied` (403) without
          *     the permission or the scope; `unauthenticated` (401) without a credential.
          */
         post: operations["createProposal"];
@@ -3165,17 +3191,19 @@ export interface paths {
          *     proposal; `four_eyes_violation` when the reviewer is the person, key or agent who made
          *     the proposal; `person_review_required` when an agent approves a kind whose record
          *     cannot name its confirming agent, a new provision or a provision's new text, which
-         *     waits for a person; `invalid_transition` when the proposal was already approved or
-         *     rejected, which is also what a repeated or simultaneous second call answers, since
-         *     nothing is ever applied twice; `source_missing` when a correction introduces a field the
-         *     proposal never sourced; `validation_error` when a key sends no `decision` or a person
-         *     sends one or names a run, and when a correction is offered on a kind that cannot be
-         *     corrected or does not fit its payload; `unknown_key` when the payload names a row the
-         *     library does not hold; `not_a_regime` when a new instrument's regime is not a term of
-         *     the regime dimension; `duplicate_key` when a new record's key was taken while the
-         *     proposal waited; `jurisdiction_term_mirrored` (422) when the payload adds or renames a
-         *     term of a dimension that mirrors the jurisdiction list, or scopes an obligation with
-         *     one, which a proposal filed before that rule may still ask for;
+         *     waits for a person; `risk_flagged` (409) when an agent approves a proposal whose
+         *     `riskFlags` is not empty, or corrects it with text the injection screen flags, which
+         *     waits for a person who reads the flag; `invalid_transition` when the proposal was
+         *     already approved or rejected, which is also what a repeated or simultaneous second call
+         *     answers, since nothing is ever applied twice; `source_missing` when a correction
+         *     introduces a field the proposal never sourced; `validation_error` when a key sends no
+         *     `decision` or a person sends one or names a run, and when a correction is offered on a
+         *     kind that cannot be corrected or does not fit its payload; `unknown_key` when the
+         *     payload names a row the library does not hold; `not_a_regime` when a new instrument's
+         *     regime is not a term of the regime dimension; `duplicate_key` when a new record's key
+         *     was taken while the proposal waited; `jurisdiction_term_mirrored` (422) when the payload
+         *     adds or renames a term of a dimension that mirrors the jurisdiction list, or scopes an
+         *     obligation with one, which a proposal filed before that rule may still ask for;
          *     `standard_term_only_on_standards` (422) when the payload, as proposed or as corrected,
          *     puts a standard's term on an obligation whose instrument is not a standard.
          */
@@ -3468,7 +3496,10 @@ export interface paths {
          *     What comes back: one ranked page, best first. `limit` defaults to 20 and may not
          *     exceed 100; a larger number answers 422 naming the field and is never clamped. The
          *     bank's regulatory scope and any filter are applied before ranking, so an empty list
-         *     means nothing inside the bank's view matched, not that nothing exists.
+         *     means nothing inside the bank's view matched, not that nothing exists. In a bank that
+         *     has switched its AI features off (`PUT /tenant/ai`), the query reaches no embedding
+         *     model and no reranker: records are found by their words alone and every hit's
+         *     `matchKind` is `keyword`.
          *
          *     Limits and budgets: the query is at most 500 characters (`SEARCH_QUERY_MAX_CHARS`),
          *     and a longer one answers 422 rather than being truncated. Each reader may search 60
@@ -3514,7 +3545,9 @@ export interface paths {
          *
          *     What comes back: the same ranked shape `POST /search` returns, over shared library
          *     records only. No record of any bank's own zone is read or returned, and no bank's
-         *     regulatory scope narrows it, because a key belongs to no bank. The text carries no
+         *     regulatory scope narrows it. A bank's own key may hold the scope too; the text it sends
+         *     is then the bank's own, and while that bank has switched its AI features off it reaches
+         *     no embedding model and no reranker, so every hit's `matchKind` is `keyword`. The text carries no
          *     language and no `asOf`: it is compared in every content language the library holds,
          *     against the records in force today. `matchKind` says which leg found each record, so
          *     an agent can tell a reference it recognised from a meaning it matched.
@@ -3878,7 +3911,9 @@ export interface paths {
          *     to a model, or that it may again.
          *
          *     Off means Ask and the drafts a model writes for the bank's members answer
-         *     `feature_off` (403) before any model is reached. It does not stop the research agents
+         *     `feature_off` (403) before any model is reached, and a search, by a member or by the
+         *     bank's own key, sends what was typed to no embedding model and no reranker and finds
+         *     records by their words alone. It does not stop the research agents
          *     that keep the shared library and the watch feed current: they run for every bank, read
          *     only public sources and never see this bank's own words. The profile edit,
          *     `PATCH /tenant`, never changes this switch.
@@ -4083,7 +4118,7 @@ export interface paths {
          *     Errors to branch on: `request_pending` (409) when a change already waits for a decision;
          *     `unknown_key` (422) for a dimension or term that is not an active one, with the valid
          *     keys in `detail`; `validation_error` (422) for a change with no term, a term both added
-         *     and removed, or a body the schema refuses; `permission_denied` (403) without
+         *     and removed, a term named twice, or a body the schema refuses; `permission_denied` (403) without
          *     `footprint.request`; `unauthenticated` (401) without a session; `not_found` (404) for a
          *     principal in no organisation.
          */
@@ -4121,8 +4156,10 @@ export interface paths {
          *
          *     Errors to branch on: `four_eyes_violation` (409) when the requester approves their own
          *     change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
-         *     `stale_write` (409) when `If-Match` names an old version; `step_up_required` (403)
-         *     without a fresh passkey step-up; `permission_denied` (403) without `footprint.approve`;
+         *     `stale_write` (409) when `If-Match` names an old version, or when a term the change
+         *     adds was retired while it waited, which the approver rejects so the requester can ask
+         *     again; `step_up_required` (403) without a fresh passkey step-up; `permission_denied`
+         *     (403) without `footprint.approve`;
          *     `not_found` (404) for a request that is not here; `validation_error` (422) for an
          *     `If-Match` that is not a version or a body the schema refuses; `unauthenticated` (401)
          *     without a session.
@@ -5768,7 +5805,10 @@ export interface components {
         /**
          * AgentRunStats
          * @description The `stats` column of agent_run: what one run did, counted against the budget
-         *     defaults of its definition (`backend/agents/<agent>/v<n>/definition.yaml`).
+         *     defaults of its definition (`backend/agents/<agent>/v<n>/definition.yaml`). What the
+         *     server can see it counts itself as the run closes (H41): sources checked, changes
+         *     registered, proposals submitted and records re-checked. The rest is the run's own
+         *     account.
          * @example {
          *       "changesRegistered": 2,
          *       "correctionsProposed": 1,
@@ -5783,7 +5823,7 @@ export interface components {
         AgentRunStats: {
             /**
              * Changesregistered
-             * @description How many regulatory changes the run put on the watch feed, counted against the change budget in the agent's definition. A change is a sighting the bank has yet to judge: it is not an obligation, it is not applicability and it is not a decision, and nothing in the inventory moves until a person acts on it. Defaults to 0.
+             * @description How many regulatory changes the run put on the watch feed, counted against the change budget in the agent's definition. A change is a sighting the bank has yet to judge: it is not an obligation, it is not applicability and it is not a decision, and nothing in the inventory moves until a person acts on it. Counted by the server as the run closes, from the new changes it registered (a second sighting is not a new change); a number sent here is not kept. Defaults to 0.
              * @default 0
              */
             changesRegistered: number;
@@ -5813,19 +5853,19 @@ export interface components {
             outOfScope: number;
             /**
              * Proposalssubmitted
-             * @description How many proposals the run put in the queue for the shared library, counted against the proposal budget in the agent's definition. A proposal is the only door an agent has into the library and it changes nothing until it is approved, so read this as a count of requests and never of library edits. Defaults to 0.
+             * @description How many proposals the run put in the queue for the shared library, counted against the proposal budget in the agent's definition. A proposal is the only door an agent has into the library and it changes nothing until it is approved, so read this as a count of requests and never of library edits. Counted by the server as the run closes, from the proposals filed under it; a number sent here is not kept. Defaults to 0.
              * @default 0
              */
             proposalsSubmitted: number;
             /**
              * Recordsrechecked
-             * @description How many library records the run re-checked against the pages they cite, a whole number with a minimum of 0 and no maximum: one per record, each also logged as a `recheck` source check naming it, so the coverage log shows which records were compared beside the documents fetched. A record found unchanged still counts, because a quiet re-check is still a check. Defaults to 0; a negative number is refused with `validation_error`.
+             * @description How many library records the run re-checked against the pages they cite, a whole number with a minimum of 0 and no maximum: one per record, each also logged as a `recheck` source check naming it, so the coverage log shows which records were compared beside the documents fetched. A record found unchanged still counts, because a quiet re-check is still a check. Counted by the server as the run closes, from the records its re-check lines name; a number sent here is not kept. Defaults to 0; a negative number is refused with `validation_error`.
              * @default 0
              */
             recordsRechecked: number;
             /**
              * Sourceschecked
-             * @description How many registered sources the run visited, one per source per run, counting the sources where nothing had changed. A quiet source is still a check, and that is what lets a bank show that a source was watched on a given night rather than only that something was found. Defaults to 0.
+             * @description How many registered sources the run visited, one per source per run, counting the sources where nothing had changed. A quiet source is still a check, and that is what lets a bank show that a source was watched on a given night rather than only that something was found. Counted by the server as the run closes, from the sweep lines the run logged in the coverage log; a number sent here is not kept. Defaults to 0.
              * @default 0
              */
             sourcesChecked: number;
@@ -12950,6 +12990,15 @@ export interface components {
             /** @description The independent agent that decided it, by definition key: never the proposing key and never another key of the proposing agent's definition, which the database enforces. Null while the proposal is open and when a person decided it. An agent's approval is machine-confirmed: the record it applied reads as confirmed by that agent and never as verified by a person. */
             reviewedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
+             * Riskflags
+             * @description What the injection screen found in the texts the proposal arrived with: its title, every text of its payload, its field sources, its source and its model. Empty when it found nothing; otherwise `embedded_instructions`, text that reads as an instruction to an AI rather than a fact from the authority. The texts are stored exactly as they arrived and are never followed. While the list is not empty no agent may approve the proposal, which answers 409 `risk_flagged`: a person reads the flag and decides, and may still approve.
+             * @example []
+             * @example [
+             *       "embedded_instructions"
+             *     ]
+             */
+            riskFlags?: string[];
+            /**
              * Scopeafter
              * @description The scope the proposal would leave, in the same spelling, which replaces the list above whole rather than adding to it. Null means the proposal leaves the scope alone, which is not the same as an empty list: an empty list would clear it.
              */
@@ -13290,6 +13339,15 @@ export interface components {
             /** @description The independent agent that decided it, by definition key: never the proposing key and never another key of the proposing agent's definition, which the database enforces. Null while the proposal is open and when a person decided it. An agent's approval is machine-confirmed: the record it applied reads as confirmed by that agent and never as verified by a person. */
             reviewedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
+             * Riskflags
+             * @description What the injection screen found in the texts the proposal arrived with: its title, every text of its payload, its field sources, its source and its model. Empty when it found nothing; otherwise `embedded_instructions`, text that reads as an instruction to an AI rather than a fact from the authority. The texts are stored exactly as they arrived and are never followed. While the list is not empty no agent may approve the proposal, which answers 409 `risk_flagged`: a person reads the flag and decides, and may still approve.
+             * @example []
+             * @example [
+             *       "embedded_instructions"
+             *     ]
+             */
+            riskFlags?: string[];
+            /**
              * Scopesuggestion
              * @description Scope terms an agent suggests for a record it is creating. Always empty today, since the kinds that would carry one are not built: an empty list is not a claim that a record has no scope.
              */
@@ -13549,6 +13607,15 @@ export interface components {
             reviewedBy?: components["schemas"]["ProposalActorRef"] | null;
             /** @description The independent agent that decided it, by definition key: never the proposing key and never another key of the proposing agent's definition, which the database enforces. Null while the proposal is open and when a person decided it. An agent's approval is machine-confirmed: the record it applied reads as confirmed by that agent and never as verified by a person. */
             reviewedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
+            /**
+             * Riskflags
+             * @description What the injection screen found in the texts the proposal arrived with: its title, every text of its payload, its field sources, its source and its model. Empty when it found nothing; otherwise `embedded_instructions`, text that reads as an instruction to an AI rather than a fact from the authority. The texts are stored exactly as they arrived and are never followed. While the list is not empty no agent may approve the proposal, which answers 409 `risk_flagged`: a person reads the flag and decides, and may still approve.
+             * @example []
+             * @example [
+             *       "embedded_instructions"
+             *     ]
+             */
+            riskFlags?: string[];
             /**
              * Scopesuggestion
              * @description Scope terms an agent suggests for a record it is creating. Always empty today, since the kinds that would carry one are not built: an empty list is not a claim that a record has no scope.
@@ -17007,13 +17074,13 @@ export interface components {
             isPrimary: boolean;
             /**
              * Publisher
-             * @description Who published the page, as the page says, at most 300 characters. A label for a reader, never matched against the authority list.
+             * @description Who published the page, as the page says, at most 200 characters. A label for a reader, never matched against the authority list.
              * @example Finansinspektionen
              */
             publisher?: string | null;
             /**
              * Riskflags
-             * @description What the injection screen found in the fetched text (`agents/screen.py`), at most 50 entries. Computed by the agent, not by a person and not by an admin: these are the screen's own findings, which is why they are strings and not a vocabulary. A flag here says the text is suspicious, never that the reform is.
+             * @description What the injection screen found in the fetched text (`agents/screen.py`), at most 50 entries of 1 to 40 characters each. Computed by the agent, not by a person and not by an admin: these are the screen's own findings, which is why they are strings and not a vocabulary. A flag here says the text is suspicious, never that the reform is.
              * @example [
              *       "instruction_like_text"
              *     ]
@@ -17028,7 +17095,7 @@ export interface components {
             /**
              * Url
              * Format: uri
-             * @description The page's public address, a URL of at most 2083 characters, unique per change: posting the same url again answers the page that is already there rather than adding a second row. Must be http or https.
+             * @description The page's public address, a URL of at most 2000 characters, unique per change: posting the same url again answers the page that is already there rather than adding a second row. Must be http or https.
              * @example https://www.fi.se/en/published/news/2026/reporting/
              */
             url: string;
@@ -17119,7 +17186,7 @@ export interface components {
             eventDate?: string | null;
             /**
              * Label
-             * @description What happened, in the words of the source, 1 to 300 characters — 'Consultation closed', 'Adopted by the board', 'Transition ends'. Free text on purpose: the milestones of a reform are not a list anyone can close. It is never a status the system branches on.
+             * @description What happened, in the words of the source, 1 to 200 characters — 'Consultation closed', 'Adopted by the board', 'Transition ends'. Free text on purpose: the milestones of a reform are not a list anyone can close. It is never a status the system branches on.
              * @example Consultation closed
              */
             label: string;
@@ -17139,7 +17206,7 @@ export interface components {
             sortOrder: number;
             /**
              * Sourceurl
-             * @description The public page that states this milestone, so a reviewer can open it, as a URL of at most 2083 characters. Null when it is the change's own source.
+             * @description The public page that states this milestone, so a reviewer can open it, as a URL of at most 2000 characters. Null when it is the change's own source.
              * @example https://www.fi.se/en/published/consultations/2026/
              */
             sourceUrl?: string | null;
@@ -17225,7 +17292,7 @@ export interface components {
             authorityCode?: string | null;
             /**
              * Authoritylabel
-             * @description Who issued the change, as the source writes it, 1 to 300 characters. Always present, even when the authority is not in the library's authority list yet, so a reader always sees who is behind a change.
+             * @description Who issued the change, as the source writes it, 1 to 200 characters. Always present, even when the authority is not in the library's authority list yet, so a reader always sees who is behind a change.
              * @example Finansinspektionen
              */
             authorityLabel: string;
@@ -17267,7 +17334,7 @@ export interface components {
             keyDate?: string | null;
             /**
              * Keydatelabel
-             * @description What that date is, in the source's words, at most 300 characters: 'In force', 'Applies', 'Transition ends'.
+             * @description What that date is, in the source's words, at most 200 characters: 'In force', 'Applies', 'Transition ends'.
              * @example In force
              */
             keyDateLabel?: string | null;
@@ -17317,7 +17384,7 @@ export interface components {
             /**
              * Sourceurl
              * Format: uri
-             * @description The public page the change was found on, so a reviewer can open it: a URL of at most 2083 characters. Required, because a change always says where it came from.
+             * @description The public page the change was found on, so a reviewer can open it: a URL of at most 2000 characters. Required, because a change always says where it came from.
              * @example https://www.fi.se/
              */
             sourceUrl: string;
@@ -17503,7 +17570,7 @@ export interface components {
             keyDate?: string | null;
             /**
              * Keydatelabel
-             * @description What that date is, in the source's words, at most 300 characters.
+             * @description What that date is, in the source's words, at most 200 characters.
              * @example In force
              */
             keyDateLabel?: string | null;
@@ -18109,6 +18176,13 @@ export interface components {
              * @example day
              */
             publishedPrecision: ("day" | "month" | "quarter" | "year") | null;
+            /**
+             * Riskflagged
+             * @description Whether any page the change was found on carries a flag from the injection screen: text that reads as an instruction to an AI. While it is true no agent may confirm the change's facts, which answers 409 `risk_flagged`; a person reads the pages and decides. False when no page carries a flag.
+             * @default false
+             * @example false
+             */
+            riskFlagged: boolean;
             /**
              * Stablekey
              * @description The reform's permanent key.
@@ -18725,13 +18799,13 @@ export interface components {
             kind: string;
             /**
              * Name
-             * @description What to call the source, 1 to 300 characters and unique across the library. A name already taken answers 409; the registry is shared, so the name one editor picks is the name every bank reads.
+             * @description What to call the source, 1 to 200 characters and unique across the library. A name already taken answers 409; the registry is shared, so the name one editor picks is the name every bank reads.
              * @example Finansinspektionen news
              */
             name: string;
             /**
              * Url
-             * @description The public page to fetch, http or https, at most 2083 characters, validated as a URL before anything is stored. Omit it for a source that is not one address, such as an open-web sweep.
+             * @description The public page to fetch, http or https, at most 2000 characters, validated as a URL before anything is stored. Omit it for a source that is not one address, such as an open-web sweep.
              * @example https://www.fi.se/en/published/news/
              */
             url?: string | null;
@@ -18792,7 +18866,7 @@ export interface components {
             name: string;
             /**
              * Url
-             * @description The page the agents fetch, as a URL of at most 2083 characters. Null for a source that is not one address — the open web sweep has none. Never a page behind a login: every source is public.
+             * @description The page the agents fetch, as a URL of at most 2000 characters. Null for a source that is not one address — the open web sweep has none. Never a page behind a login: every source is public.
              * @example https://www.fi.se/
              */
             url: string | null;
@@ -18822,7 +18896,7 @@ export interface components {
             checkFrequency?: ("daily" | "weekly" | "monthly") | null;
             /**
              * Url
-             * @description A new address for the same source, as a URL of at most 2083 characters, when the publisher moves the page. Omit to leave it alone.
+             * @description A new address for the same source, as a URL of at most 2000 characters, when the publisher moves the page. Omit to leave it alone.
              * @example https://www.fi.se/en/published/news/
              */
             url?: string | null;
