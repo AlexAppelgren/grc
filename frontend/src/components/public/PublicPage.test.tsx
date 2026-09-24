@@ -33,13 +33,29 @@ describe('PublicPage', () => {
     for (const link of screen.getAllByRole('link', { name: 'Request access' })) expect(link).toHaveAttribute('href', '#request');
   });
 
+  it('gives the first screen one thing to read: the headline, with no actions competing beside it', async () => {
+    await renderPage();
+    const hero = screen.getByRole('region', { name: 'A register of record for everything regulation asks of your bank.' });
+    expect(within(hero).queryAllByRole('link')).toHaveLength(0);
+    expect(within(hero).queryAllByRole('button')).toHaveLength(0);
+    expect(within(hero).queryByRole('article')).toBeNull();
+  });
+
+  it('shows the sample record as the worked example of the six steps', async () => {
+    await renderPage();
+    const method = screen.getByRole('region', { name: 'Every change takes the same six steps.' });
+    expect(within(method).getByRole('article', { name: 'FI adopts amended rules on paying for investment research' })).toBeInTheDocument();
+  });
+
   it('keeps Sign in as the primary of the two actions in the top bar, on the right', async () => {
     await renderPage();
     const bar = screen.getByRole('banner');
     const actions = within(bar).getAllByRole('link').filter((link) => link.textContent !== '');
     const names = actions.map((link) => link.textContent);
     expect(names.slice(-2)).toEqual(['Request access', 'Sign in']);
-    expect(actions.at(-1)).toHaveClass('bg-on-brand');
+    // The app's neutral primary, not the brand green: the bar sits on the page's own paper.
+    expect(actions.at(-1)).toHaveClass('bg-button');
+    expect(bar).toHaveClass('bg-page');
   });
 
   it('points every section link at a section that is on the page', async () => {

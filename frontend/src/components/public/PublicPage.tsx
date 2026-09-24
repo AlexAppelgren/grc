@@ -23,19 +23,23 @@ const t = createT(defaultLocale);
 const WRAP =
   'mx-auto w-full max-w-[1160px] pr-[max(1rem,env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))] md:pr-[max(2rem,env(safe-area-inset-right))] md:pl-[max(2rem,env(safe-area-inset-left))]';
 
-// A jump lands below the sticky ribbon (56 px on a phone, 60 px from lg).
+// A jump lands below the sticky bar (57 px on a phone, 61 px from lg).
 const ANCHOR = 'scroll-mt-[76px]';
 
-// On the green ribbon and the closing field. Sign in is the primary and always
-// on screen; Request access is the outline beside it, on its left.
+// The top bar sits on the page's own paper (Alex, 2026-09-24: too many colours
+// competing). Sign in is the app's neutral primary and always on screen;
+// Request access is the outline beside it, on its left. On a phone both drop to
+// the meta size so the row fits at 320 px. buttonVariants hovers on `enabled:`,
+// which a link never matches, so the hover is added here.
+const BAR_BUTTON = 'max-sm:px-2.5 max-sm:text-meta';
+const BAR_PRIMARY = cn(buttonVariants({ variant: 'primary', size: 'small' }), BAR_BUTTON, 'hover:bg-[color-mix(in_srgb,var(--color-button)_88%,var(--color-page))]');
+const BAR_SECONDARY = cn(buttonVariants({ variant: 'outline', size: 'small' }), BAR_BUTTON, 'hover:hover-fill');
+
+// On the closing field, the one green surface left on the page.
 const ON_BRAND_PRIMARY =
   'inline-flex h-8 items-center rounded-control border border-on-brand bg-on-brand px-2.5 text-meta font-medium whitespace-nowrap text-brand hover:opacity-90 sm:px-3 sm:text-body';
 const ON_BRAND_SECONDARY =
   'inline-flex h-8 items-center rounded-control border border-on-brand-line px-2.5 text-meta font-medium whitespace-nowrap text-on-brand hover:bg-on-brand-hover sm:px-3 sm:text-body';
-
-// buttonVariants hovers on `enabled:`, which a link never matches.
-const LINK_PRIMARY = cn(buttonVariants({ variant: 'primary' }), 'hover:bg-[color-mix(in_srgb,var(--color-button)_88%,var(--color-page))]');
-const LINK_OUTLINE = cn(buttonVariants({ variant: 'outline' }), 'hover:hover-fill');
 
 const FOOT_LINK = 'text-muted hover:text-fg hover:underline hover:underline-offset-4';
 
@@ -45,13 +49,6 @@ const SECTIONS: readonly (readonly [string, MessageKey])[] = [
   ['coverage', 'public.nav.coverage'],
   ['assurance', 'public.nav.assurance'],
   ['questions', 'public.nav.questions'],
-];
-
-const FACTS: readonly (readonly [MessageKey, MessageKey])[] = [
-  ['public.facts.jurisdictions.label', 'public.facts.jurisdictions.value'],
-  ['public.facts.languages.label', 'public.facts.languages.value'],
-  ['public.facts.zones.label', 'public.facts.zones.value'],
-  ['public.facts.changes.label', 'public.facts.changes.value'],
 ];
 
 const CASE: readonly (readonly [MessageKey, MessageKey])[] = [
@@ -116,13 +113,13 @@ function DoubleRule({ onBrand = false }: { onBrand?: boolean }) {
   );
 }
 
-/** A numbered section: the marginal reference and note on the left, the body on the right. */
+/** A numbered section: the marginal reference and note on the left, the body on the right. Its break is the double rule alone. */
 function Section({ id, number, noteKey, headingKey, children }: { id: string; number: number; noteKey: MessageKey; headingKey: MessageKey; children: ReactNode }) {
   return (
     <section
       id={id}
       aria-labelledby={`${id}-title`}
-      className={cn(ANCHOR, 'grid border-t border-line py-11 md:grid-cols-[150px_minmax(0,1fr)] md:gap-10 md:py-20 lg:gap-14')}
+      className={cn(ANCHOR, 'grid py-11 md:grid-cols-[150px_minmax(0,1fr)] md:gap-10 md:py-20 lg:gap-14')}
     >
       <p className="mb-5 flex items-baseline gap-3 font-mono text-meta text-muted md:mb-0 md:block">
         <span className="text-body font-medium text-brass md:mb-2 md:block">{t('public.sectionRef', { number: String(number) })}</span>
@@ -151,23 +148,23 @@ export function PublicPage() {
         {t('shell.skipToContent')}
       </a>
 
-      <header className="sticky top-[env(safe-area-inset-top,0px)] z-20 bg-brand text-on-brand">
+      <header className="sticky top-[env(safe-area-inset-top,0px)] z-20 border-b border-line bg-page text-fg">
         <div className={cn(WRAP, 'flex flex-wrap items-center gap-3 py-3 lg:gap-5 lg:py-3.5')}>
           <a href="#top" className="shrink-0 pr-1.5">
             <Logo className="block h-auto w-20 sm:w-24" />
           </a>
           <nav aria-label={t('public.nav.label')} className="ml-auto hidden gap-5 lg:flex">
             {SECTIONS.map(([id, label]) => (
-              <a key={id} href={`#${id}`} className="text-body text-on-brand-muted hover:text-on-brand">
+              <a key={id} href={`#${id}`} className="text-body text-muted hover:text-fg">
                 {t(label)}
               </a>
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-1.5 sm:gap-2 lg:ml-3">
-            <a href="#request" className={ON_BRAND_SECONDARY}>
+            <a href="#request" className={BAR_SECONDARY}>
               {t('public.action.requestAccess')}
             </a>
-            <Link href={SIGN_IN} className={ON_BRAND_PRIMARY}>
+            <Link href={SIGN_IN} className={BAR_PRIMARY}>
               {t('public.action.signIn')}
             </Link>
           </div>
@@ -176,33 +173,17 @@ export function PublicPage() {
 
       <main id="top" className={ANCHOR}>
         <div className={WRAP}>
-          <section aria-labelledby="public-title" className="grid items-start gap-8 pt-10 pb-9 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16 lg:pt-20 lg:pb-14">
-            <div>
-              <p className="microlabel mb-4 font-mono text-brass">{t('public.hero.eyebrow')}</p>
-              <h1 id="public-title" className="font-serif-display text-hero text-balance">
-                {t('public.hero.title')}
-              </h1>
-              <p className="mt-5 max-w-[56ch] text-title font-normal text-muted">{t('public.hero.deck')}</p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a href="#request" className={LINK_PRIMARY}>
-                  {t('public.action.requestAccess')}
-                </a>
-                <Link href={SIGN_IN} className={LINK_OUTLINE}>
-                  {t('public.action.signIn')}
-                </Link>
-              </div>
-            </div>
-            <SampleRecord />
+          {/* One thing on the first screen: the headline and one line under it. The
+              actions live in the sticky bar, and the sample record in § 3, where it is
+              the worked example of the six steps (Alex, 2026-09-24: the page was
+              cluttered and nothing drew the eye). */}
+          <section aria-labelledby="public-title" className="pt-14 pb-16 md:pt-24 md:pb-24">
+            <p className="microlabel mb-5 font-mono text-brass">{t('public.hero.eyebrow')}</p>
+            <h1 id="public-title" className="max-w-[20ch] font-serif-display text-hero text-balance">
+              {t('public.hero.title')}
+            </h1>
+            <p className="mt-6 max-w-[52ch] text-title font-normal text-muted">{t('public.hero.deck')}</p>
           </section>
-
-          <dl className="grid gap-px border-y border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
-            {FACTS.map(([label, value]) => (
-              <div key={label} className="bg-page px-4 pt-4 pb-4.5">
-                <dt className="microlabel mb-1.5 text-brass">{t(label)}</dt>
-                <dd className="m-0 text-fg">{t(value)}</dd>
-              </div>
-            ))}
-          </dl>
 
           <Section id="case" number={1} noteKey="public.case.note" headingKey="public.case.title">
             <div className="max-w-[62ch] leading-[1.375rem]">
@@ -246,6 +227,9 @@ export function PublicPage() {
                 </li>
               ))}
             </ol>
+            <div className="mt-8 max-w-[560px]">
+              <SampleRecord />
+            </div>
             <p className="mt-5 max-w-[62ch] text-meta text-muted">{t('public.method.footnote')}</p>
           </Section>
 

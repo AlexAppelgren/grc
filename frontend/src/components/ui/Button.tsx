@@ -9,7 +9,7 @@ import { cn } from '@/shared/utils/cn';
 // state-neutral-05 overlay (`hover-fill`, theme.css); danger hovers on
 // `negative-hover`, a fill that goes one step deeper in dark so the label
 // keeps AA on it (theme.css).
-// Exported for links that look like buttons (the public page's calls to action).
+// Exported for links that look like buttons (the public page's top bar).
 export const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 rounded-control border text-body font-medium whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:size-4',
   {

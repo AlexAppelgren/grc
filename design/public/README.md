@@ -32,13 +32,31 @@ structure, set in Caslon, on a bank's colours.
 
 | Decision | What it is |
 |---|---|
-| Green as a ribbon and one field | A slim green ribbon carries the masthead, the page itself is paper, and the green returns once at the end as the field behind "Access is by invitation". Two appearances, neither of them large, and never on a button, which keeps `foundations.md`'s rule that a primary action stays neutral |
+| Green as one field | Since 2026-09-24 the top bar is paper with a hairline, not green; the green is left for the closing field and the thin section rules. Never on a button, which keeps `foundations.md`'s rule that a primary action stays neutral |
 | Sand where the product uses sand | The marginal column, the legal text block and the AI-drafted callout. Nowhere else, so the page is not a cream page |
 | Brass as the only accent on paper | Section references, the paragraph sign, the kickers, the rules under headings. In dark it takes over from green, as `brand.css` says the product accent does |
 | A marginal column | Every section carries `§ n` and a one-line marginal note in Noto Sans Mono, in the left margin, the way a statute carries marginal headings. Below 880 px it folds to one line above the heading |
 | Thick-thin rules | Each section opens on a 3 px rule over a 1 px rule, the printed-document break. No cards around prose, no shadows anywhere |
 | One sentence where two would do | Every section was cut back after the first draft: a heading, a line, and the artefact or list that proves it. Nothing on the page explains twice |
 | Real records, not screenshots | The hero holds a change record built from the prototype's own sample data, with the real pill tones, a real diff and the audit chain under it, marked as a sample |
+
+## After the first live look (2026-09-24)
+
+Alex, on a phone: the start page was cluttered and nothing drew the eye. The
+first screen had four buttons (the bar's two and the hero's two), the sample
+record with its red and green diff directly under them, and on a wide screen a
+four-cell facts strip. Now the first screen holds the headline and the line
+under it; the bar keeps Sign in and Request access, sticky, so the hero repeats
+neither. The sample record moved into § 3, where it is the worked example of
+the six steps. The facts strip is gone: jurisdictions and languages are in § 5,
+the zones in § 4, and a change kept beside what it replaced in § 1. Each
+section break is the double rule alone, without a hairline above it.
+
+The same day, on colour: too many colours competing for attention. The top bar
+dropped its green and sits on the page's own paper with a hairline under it,
+the wordmark in the text colour, the links muted, Sign in as the app's neutral
+primary and Request access as the outline. Green is left in two places: the
+thin section rules, and the closing "Access is by invitation" field.
 
 ## Type
 
