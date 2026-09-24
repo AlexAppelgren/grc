@@ -15,7 +15,7 @@ from datetime import datetime
 from pydantic import ConfigDict, Field, JsonValue
 
 from apps.identity.schemas import RoleRef
-from apps.shared.schemas import CamelSchema
+from apps.shared.schemas import CamelSchema, WriteBody
 
 __all__ = ["CamelSchema"]
 
@@ -104,6 +104,7 @@ class TenantOut(CamelSchema):
                     "status": "active",
                     "defaultLanguage": _EXAMPLE_LANGUAGE_SV,
                     "contentLanguages": [_EXAMPLE_LANGUAGE_SV, _EXAMPLE_LANGUAGE_EN],
+                    "aiEnabled": True,
                     "onboarding": {
                         "stepsDone": 3,
                         "steps": [
@@ -123,7 +124,7 @@ class TenantOut(CamelSchema):
         description=(
             "The bank's permanent identifier, a UUID issued once when the organisation was "
             "created and never reissued. Key your own records on it: the short name in `slug` "
-            "reads better in a URL, but this is the value that cannot change."
+            "is for people to read, while this is the value every call that names a bank takes."
         )
     )
     name: str = Field(
@@ -136,10 +137,13 @@ class TenantOut(CamelSchema):
     )
     slug: str = Field(
         description=(
-            "The bank's short name — lower-case letters, digits and hyphens, such as "
-            "`example-bank` — unique across the platform and fixed when the organisation was "
-            "created. It appears in URLs and in support conversations. This call cannot "
-            "change it; only the platform console sets it, and only at creation."
+            "The bank's short name — lower-case letters, digits and hyphens, at most 80 "
+            "characters, such as `example-bank`. Nobody types it: it was derived from the "
+            "organisation's name when the organisation was created, with letters such as ø and "
+            "æ spelled out and a numeric suffix when another bank already had it. It is unique "
+            "across the platform and fixed from then on, even when the name is reworded. "
+            "Support staff use it to name the organisation in a conversation; it never appears "
+            "in a URL and no call takes it. This call cannot change it."
         )
     )
     timezone: str = Field(
@@ -178,6 +182,17 @@ class TenantOut(CamelSchema):
             "what the shared library holds, which stays whole whatever a bank picks here. "
             "Each entry points at a language row by key, and those rows are library reference "
             "data rather than a vocabulary an admin may extend."
+        )
+    )
+    ai_enabled: bool = Field(
+        description=(
+            "Whether this bank's own AI features are on: `true` means its members may use Ask "
+            "and have a model draft text for them, `false` means every such call is refused "
+            "with `feature_off` before any model is reached. It starts `true`. Only "
+            "`PUT /tenant/ai` changes it, with `security.manage` and a passkey step-up; the "
+            "profile edit ignores it. It covers this bank's own features only: the research "
+            "agents that keep the shared library current run for every bank and are not "
+            "switched here."
         )
     )
     onboarding: Onboarding = Field(
@@ -241,6 +256,23 @@ class TenantPatch(CamelSchema):
             "active language row is refused with `unknown_key` naming the key. Keys such as "
             "`sv` and `en`, never labels."
         ),
+    )
+
+
+class TenantAiBody(WriteBody):
+    """Switch this bank's own AI features on or off. The body holds the one field and
+    nothing else; any other field is refused."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"enabled": False}]})
+
+    enabled: bool = Field(
+        strict=True,
+        description=(
+            "`false` switches this bank's AI features off: Ask and the drafts a model writes "
+            "for the bank's members answer `feature_off` from then on. `true` switches them "
+            "back on. A JSON boolean, never a string. Sending the value the bank already has "
+            "changes nothing and is still recorded in the audit log."
+        )
     )
 
 
@@ -333,9 +365,11 @@ class ConsoleTenantRow(CamelSchema):
     )
     slug: str = Field(
         description=(
-            "The bank's short name — lower-case letters, digits and hyphens, `example-bank` — "
-            "unique across the platform and fixed at creation. It is how support and URLs name "
-            "the organisation, and it is the one field here that can never be changed."
+            "The bank's short name — lower-case letters, digits and hyphens, at most 80 "
+            "characters, `example-bank` — derived from the name when the organisation was "
+            "created, never typed by a person, unique across the platform and fixed from then "
+            "on. Support staff use it to name the organisation in a conversation; it never "
+            "appears in a URL and no call takes it. The list is ordered by it."
         )
     )
     status: str = Field(
@@ -350,9 +384,9 @@ class ConsoleTenantRow(CamelSchema):
         description=(
             "The language the bank reads and writes in first, as a reference to a language row "
             "by key — `sv`, `en`, `da`, `nb` or `fi` — with a label to show. Languages are "
-            "library reference rows and not a vocabulary a bank's admin may extend. Null only "
-            "for an organisation that has yet to choose one; every organisation created "
-            "through this console has one from its first moment."
+            "library reference rows and not a vocabulary a bank's admin may extend. Null until "
+            "the bank's own administrator chooses one on its Organisation profile: an "
+            "organisation created through this console starts without one."
         )
     )
     created_at: datetime = Field(
@@ -414,17 +448,16 @@ class ConsoleTenantPage(CamelSchema):
 
 class ConsoleTenantCreateBody(CamelSchema):
     """Create a bank and invite its first administrator in one action (ADM-02, ID-01).
-    The address must be the administrator's own: platform staff are separate accounts."""
+    The address must be the administrator's own: platform staff are separate accounts.
+    The timezone, default language and content languages are not asked here (D-68): the
+    bank sets them itself on its Organisation profile screen, which already carries this
+    write under `security.manage`; a short name is derived from the name, never typed."""
 
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
                 {
                     "name": "Second Bank A/S",
-                    "slug": "second-bank",
-                    "timezone": "Europe/Copenhagen",
-                    "defaultLanguage": "da",
-                    "contentLanguages": ["da", "en"],
                     "firstAdminEmail": "compliance.officer@second-bank.test",
                     "firstAdminTitle": "Head of Compliance",
                 }
@@ -437,46 +470,11 @@ class ConsoleTenantCreateBody(CamelSchema):
         description=(
             "The organisation's name as the bank itself will see it, at most 200 characters — "
             "'Example Bank AB'. It is the bank's own from the moment it exists and its "
-            "administrators reword it themselves afterwards. Blank is refused with a 422."
-        ),
-    )
-    slug: str = Field(
-        max_length=80,
-        description=(
-            "The short name the organisation will be known by in URLs and in support, at most "
-            "80 characters of lower-case letters, digits and hyphens — `second-bank`. Anything "
-            "else is refused with a 422. It must be free across the whole platform: a name "
-            "already taken is refused with `duplicate_key`. It is fixed for the life of the "
-            "organisation, so choose it as deliberately as a customer number."
-        ),
-    )
-    timezone: str = Field(
-        max_length=64,
-        description=(
-            "The IANA timezone the bank works in, at most 64 characters — `Europe/Stockholm` "
-            "for a Swedish bank, `Europe/Copenhagen` for a Danish one. It sets the local day "
-            "every deadline and every screen is counted in. A name the server's IANA database "
-            "does not hold is refused with `unknown_key`."
-        ),
-    )
-    default_language: str = Field(
-        max_length=8,
-        description=(
-            "The key of the language the bank will read and write in first, at most 8 "
-            "characters — `sv`, `da`, `nb`, `fi` or `en`. A language key, never a label. It "
-            "must be an active language row or the call is refused with `unknown_key`. The "
-            "languages on offer are library reference rows, not a vocabulary a bank's admin "
-            "may extend."
-        ),
-    )
-    content_languages: list[str] = Field(
-        min_length=1,
-        description=(
-            "Every language the bank will keep content in, as language keys in the order it "
-            "wants them shown — `[\"da\", \"en\"]` for a Danish bank. At least one is required "
-            "and an empty list is refused. Each key must be an active language row or the "
-            "whole call is refused with `unknown_key` naming the key. The bank's own "
-            "administrators change the list afterwards."
+            "administrators reword it themselves afterwards. Blank is refused with a 422. Its "
+            "short name is derived from this and never typed by a person: letters such as ø, æ "
+            "and å spelled out, lower-cased, hyphenated, cut to at most 80 characters, and "
+            "given a numeric suffix if another tenant already has the same one, even one "
+            "created at the same moment, so the call is never refused over it."
         ),
     )
     first_admin_email: str = Field(

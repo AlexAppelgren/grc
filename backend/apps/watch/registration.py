@@ -15,8 +15,11 @@ carries. A merge writes `change.updated` and never `change.registered`, so no se
 is attempted anywhere.
 
 **Nothing is registered against a run that is not open.** A change points at the run that
-found it, so a closed or unknown run is refused (422 `run_not_open`) and stores nothing: a
-finished account of a night's work is not something anything may be added to afterwards.
+found it, so a key's registration that names no run, or a closed one, is refused (422
+`run_not_open`), another key's run is not found (404), and either stores nothing: a finished
+account of a night's work is not something anything may be added to afterwards. A bank's
+key writes nothing here at all (403 `tenant_agents_not_available`, `runs.refuse_tenant_key`):
+in R1 every run and everything it files is the platform's.
 
 **Fetched content is untrusted** (AGT-07, playbook 11.2). Every string the run read off a
 page — the reform's title and summary, and each page's own headline — goes through
@@ -28,7 +31,8 @@ the reform is.
 
 **Everything a run files is a suggestion.** The type, the flags, the scope terms and the
 obligation links all arrive with `suggested` true and nobody named as having confirmed
-them, whoever sent them (WAT-03, WAT-04). No line of this module writes `suggested = false`.
+them, whoever sent them, each naming the run's agent and key, or the person who filed it,
+as its suggester (WAT-03, WAT-04, D-74). No line of this module writes `suggested = false`.
 
 Every write goes through `watch_write()` (apps/watch/write.py), which reaches the seven
 watch tables and no inventory table, and through `record()` in the same transaction. This
@@ -43,15 +47,20 @@ import uuid
 from collections.abc import Iterable
 from typing import Any
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from apps.agents import runs
+from apps.agents.models import AgentRun
 from apps.agents.screen import screen
+from apps.governance.ai_log import log_generation
+from apps.governance.models import AiPurpose
 from apps.library.models import DatePrecision
 from apps.proposals.models import OriginType
 from apps.shared.audit import Actor, record
 from apps.shared.authentication import Principal, PrincipalKind
+from apps.shared.schemas import AiCitation
 from apps.watch import keys, so_what_draft
 from apps.watch.schemas import (
     WatchChange,
@@ -84,9 +93,17 @@ def register_change(
     library already holds under this stable key.
 
     Every key is resolved and every refusal raised before the write opens, so a call naming
-    a vocabulary row the library does not hold stores nothing at all (AC-WAT2).
+    a vocabulary row the library does not hold stores nothing at all (AC-WAT2). A key must
+    name an open run of its own, and a bank's key is refused outright; a library editor
+    names none, and a run one names is not theirs. A new change past the run's budget
+    (`WATCH_RUN_MAX_CHANGES`) is refused with `run_budget_exhausted`; a second sighting
+    registers no new change, so it is not counted (H41).
     """
-    run = runs.require_open_run(who, body.agent_run_id) if body.agent_run_id is not None else None
+    run = (
+        runs.require_open_run(who, body.agent_run_id)
+        if who.kind is PrincipalKind.AGENT or body.agent_run_id is not None
+        else None
+    )
     change_type = keys.resolve_keys(keys.CHANGE_TYPE_LIST, [body.change_type])[0]
     flags = keys.resolve_keys(keys.FLAG_LIST, body.flags)
     terms = keys.resolve_terms(body.term_ids)
@@ -105,14 +122,28 @@ def register_change(
 
     existing = keys.change_with_stable_key(body.stable_key)
     if existing is not None:
-        return 200, _merge(existing, actor=actor, order=order, body=body, risk_flags=risk_flags)
+        return 200, _merge(existing, actor=actor, order=order, body=body, risk_flags=risk_flags, run=run)
+    # A merge touches no stored term, so only a new change must name its regime (D-39), and
+    # only a new change's standard term must come from a standards body (D-38).
+    keys.require_regime(terms)
+    keys.require_standards_body(terms, authority_id)
 
     origin = OriginType.AGENT.value if who.kind is PrincipalKind.AGENT else OriginType.USER.value
+    # Who suggested what this call files, copied by the one write path, because a check
+    # constraint cannot read a key to find its agent (D-74): the run's agent and key, or the
+    # library editor filing by hand, who names no run and then cannot confirm it alone.
+    suggester = {
+        "suggested_by_id": who.subject_id if who.kind is PrincipalKind.USER else None,
+        "suggested_by_agent_id": None if run is None else run.agent_id,
+        "suggested_by_api_key_id": None if run is None else run.api_key_id,
+    }
     change = keys.new_change(
         {
             "stable_key": body.stable_key,
             "title": body.title,
             "change_type": change_type,
+            "change_type_confidence": body.change_type_confidence,
+            **{f"change_type_{column}": value for column, value in suggester.items()},
             "authority_id": authority_id,
             "authority_label": body.authority_label,
             "published_on": body.published_on,
@@ -131,22 +162,38 @@ def register_change(
         }
     )
     with watch_write("a change a run sighted"), transaction.atomic():
+        if run is not None:
+            runs.spend(run, run.changes.all(), limit=settings.WATCH_RUN_MAX_CHANGES, what=("change", "changes"))
         change.save()
         for entry in body.events:
             _add_event(change, entry)
         for page in body.documents:
             _add_document(change, page, risk_flags=risk_flags, duplicate=page.is_duplicate)
         for flag in flags:
-            change.term_links.create(flag=flag, suggested=True)
+            change.term_links.create(flag=flag, suggested=True, **suggester)
         for term in terms:
-            change.term_links.create(term=term, suggested=True)
+            change.term_links.create(term=term, suggested=True, **suggester)
         for obligation_id, link in links.items():
-            change.obligation_links.create(obligation_id=obligation_id, origin=origin, confidence=link.confidence)
+            change.obligation_links.create(
+                obligation_id=obligation_id, origin=origin, confidence=link.confidence, **suggester
+            )
         if body.so_what is not None:
             # The one writer of the draft column, which also records the call that produced
             # it, in this transaction, as the agent reported it (D-66, AUD-02, WAT-05).
             so_what_draft.store(
                 change, body.so_what, actor=actor, agent_run_id=None if run is None else run.id
+            )
+        if run is not None:
+            _log_suggested_classification(
+                change,
+                body,
+                run=run,
+                parts=[
+                    f"change_type:{change_type.key}",
+                    *(f"flag:{flag.key}" for flag in flags),
+                    *(f"{term.dimension.key}:{term.key}" for term in terms),
+                    *([] if urgency is None else [f"urgency:{urgency.key}"]),
+                ],
             )
         record(
             action=REGISTERED,
@@ -161,8 +208,44 @@ def register_change(
     return 201, keys.change_out(change, order)
 
 
+def _log_suggested_classification(
+    change: keys.ChangeRow, body: WatchChangeInput, *, run: AgentRun, parts: list[str]
+) -> None:
+    """The run's classification of a new change — its type, flags, scope terms and urgency —
+    as the one `scope_suggestion` row AUD-02 asks for, in this transaction (D-66).
+
+    bleqq made no model call here, so the model metadata is the run's own account: the
+    model and version it filed a “So what?” under when the filing carries one, else the
+    model and pipeline version it opened the run with. The row says so
+    (`model_metadata_reported_by_agent`). A library editor's registration is a person's
+    classification and a merge stores no scope, so neither writes one.
+    """
+    model, version = (
+        (run.model, run.pipeline_version)
+        if body.so_what is None
+        else (body.so_what.model, body.so_what.model_version)
+    )
+    log_generation(
+        purpose=AiPurpose.SCOPE_SUGGESTION,
+        model=model,
+        model_version=version,
+        output="\n".join(parts),
+        citations=[AiCitation(label=body.source_label, url=str(body.source_url))],
+        agent_run_id=run.id,
+        subject_type=SUBJECT_TYPE,
+        subject_id=change.id,
+        metadata_reported_by_agent=True,
+    )
+
+
 def _merge(
-    change: keys.ChangeRow, *, actor: Actor, order: list[str], body: WatchChangeInput, risk_flags: list[str]
+    change: keys.ChangeRow,
+    *,
+    actor: Actor,
+    order: list[str],
+    body: WatchChangeInput,
+    risk_flags: list[str],
+    run: AgentRun | None,
 ) -> WatchChange:
     """A second sighting of a reform the library already holds (AC-WAT1).
 
@@ -188,7 +271,7 @@ def _merge(
             # The same rule as a page and a milestone: a reform the library already holds
             # takes what it is missing and keeps what it has, so a retry cannot rewrite a
             # draft and a run that has one to give is not silently ignored (D-66).
-            so_what_draft.store(change, body.so_what, actor=actor, agent_run_id=None)
+            so_what_draft.store(change, body.so_what, actor=actor, agent_run_id=None if run is None else run.id)
         record(
             action=UPDATED,
             actor=actor,
@@ -206,14 +289,16 @@ def _merge(
 # POST /changes/{changeId}/documents
 # ---------------------------------------------------------------------------------------
 def add_document(
-    *, actor: Actor, order: list[str], change_id: uuid.UUID, body: WatchChangeDocumentInput
+    *, who: Principal, actor: Actor, order: list[str], change_id: uuid.UUID, body: WatchChangeDocumentInput
 ) -> tuple[int, WatchChangeDocument]:
-    """Attach one fetched page to a change already registered.
+    """Attach one fetched page to a change already registered. A bank's key is refused
+    before anything is read.
 
     `(change, url)` is unique, so the same page posted twice answers the page that is
     already there rather than doubling it — which is what makes this safe for a run to
     retry.
     """
+    runs.refuse_tenant_key(who)
     change = keys.change_for_write(change_id)
     url = str(body.url)
     existing = keys.document_with_url(change, url)

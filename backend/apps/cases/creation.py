@@ -10,7 +10,10 @@ What crosses from the library into a bank's zone, and what deliberately does not
 
 - **The footprint verdict, from the one scope rule.** `apps/library/reading.py` owns it and
   this module applies it per bank; there is no second rule here, which is why a change to
-  the rule's own fixture moves what a case says. The verdict is cached because the change's
+  the rule's own fixture moves what a case says. The change's scope carries the
+  jurisdictions its authority reaches (`reading.change_facts()`, FP-04), so a Danish
+  authority's change opens a case outside a Sweden-only footprint, and a watched market
+  never sets its urgency or opens its triage (D-30). The verdict is cached because the change's
   scope and the bank's footprint both move afterwards, and `cases/matching.py` recomputes it
   when they do (`c5-cases-footprint-hooks`).
 - **The agent's suggestions, still labelled as suggestions.** The urgency is the change's

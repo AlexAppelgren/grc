@@ -47,9 +47,13 @@ Every vocabulary row: immutable `key`, optional `kind`, labels per language,
   dimension matches only when the regulatory scope names that term (FP-01,
   INV-08, D-36).
 - A new, optional `instrument_level_kind` whose only value is `standard`. The
-  five existing level rows keep a null kind (INV-01, INV-08, D-37).
+  five existing level rows keep a null kind (INV-01, INV-08, D-37). Built
+  2026-09-23 as `InstrumentLevelKind` (apps/taxonomy/models.py), the
+  `instrument_level` list's optional kind, with one seeded row `standard`
+  (`binding_default` false, rank 60) from the prototype fixture.
 - `jurisdiction_kind` gains `international`, for standards bodies (INV-08,
-  I18N-01, D-38).
+  I18N-01, D-38). Built 2026-09-23 with one seeded row, `intl`, no parent,
+  outside the footprint's jurisdiction mirror.
 - `WorkReason` (`owner`, `participant`), `WorkBucket` (`overdue`, `due_soon`,
   `aware`, `open`) and `WorkDateKind`, each value with its reason (HOM-05,
   D-23).
@@ -117,7 +121,13 @@ or has differently:
   Norway points at the EU under the EEA Agreement. No new column (FP-04, D-28).
 - `Instrument.regime` becomes NOT NULL, as `schema.sql` already has it; one
   trigger on `provision` refuses a row under a standard-level instrument
-  (INV-01, INV-08, D-35, D-39).
+  (INV-01, INV-08, D-35, D-39). Built 2026-09-23 in library 0008: the trigger
+  `provision_not_under_standard` fires on insert and on a change of
+  `instrument_id`, and raises `check_violation`; it also refuses a provision
+  under an instrument the writer cannot see, since it runs under row-level
+  security. Two smaller triggers close the other paths under a standard: an
+  instrument holding provisions moved onto a standard level, and an existing
+  level given the kind `standard` while provisions sit under it.
 - `source_check` gains `kind` (`sweep` or `recheck`, default `sweep`) and the
   nullable `subject_type` and `subject_id` a re-check names, which `schema.sql`
   lacks: every watch run re-checks the library records its sources cover and
@@ -221,6 +231,11 @@ writes, never an OpenAPI `enum`.
   `backend/agents/watch-sweeper/v1/definition.yaml`, declares `kind: watch`, which is
   what sweeping registered sources for new documents is. It stays a tier-one
   kind (§1): the scheduler branches on it and no admin adds one.
+- `agent_kind` gains `review` (D-62, D-80, 2026-09-23). A definition of this kind
+  proposes nothing and decides what another definition proposed, as the
+  independent second principal on the library's queue; the first is
+  `backend/agents/library-confirmer/v1/definition.yaml`. Version 0.3's kinds all
+  produce work, and none names the side of four eyes that decides it.
 - `agent.name` becomes `agent.key`, an immutable slug holding the definition's
   `id`, because a library record is addressed by a key that never changes
   (playbook 15). `agent` also gains `current_version`, the version folder the
@@ -687,6 +702,60 @@ in `docs/DECISIONS.md`; the researched detail is in
   fence already trusts, and a bank that thinks a record is wrong files a problem report
   instead. A report stays inside that bank (Alex, 2026-09-19): bleqq's watch agents find
   the deviation themselves by re-checking the source, and propose the correction.
+- `GET /instruments` (`listInstruments`) answers `{items, total}` with `limit` and
+  `offset`, like `GET /obligations`, instead of the designed bare array. Its filters are
+  `regime` (a regime term's key, not the designed `regimeTermId`) and `q` (matches the
+  name, short name or official reference, ignoring case); `outsideFootprint=true` lifts
+  the footprint filter, exactly as it does on `GET /obligations`. The designed `binding`
+  filter, and jurisdiction, level, authority and `asOf` filters nobody asked for, are
+  deferred (chunk3-rest defaults): "as of" applies to obligations only, and the
+  Instruments tab lists every visible instrument with its own in-force dates. A row is
+  `{id, stableKey, shortName, name{text,language,isOriginal,isMachine}, level, binding,
+  jurisdiction, authority{key,name,shortName,url}, regime, officialRef,
+  inForceFrom{date,precision}, inForceTo, implementsNote, obligationCount, inFootprint,
+  lastVerifiedAt, sourceUrl}`. `obligationCount` counts the obligations this bank would
+  see under the instrument: inside its footprint by default, or every one when
+  `outsideFootprint` lifts the filter, matching what `GET /obligations?instrument=` would
+  itself list. `inFootprint` is the instrument's own scope (its regime, the one dimension
+  an instrument carries) against the footprint, computed by the same `instrument_scopes()`
+  rule `GET /obligations` inherits through (one rule serves both, chunk3-rest-T13).
+- `GET /instruments/{instrumentId}` (`getInstrument`) answers the row's own facts plus
+  `eliUri` (an empty string, never null, when none is published), `authority` in full,
+  `verifiedBy` (a platform person or null, INV-06) and `lineage`, instead of the designed
+  `Instrument`. `lineage` is `[{relation, direction: outgoing|incoming, instrument{key,
+  shortName}, note, fromRef, toRef}]`, both directions of `InstrumentRelation` in one
+  list, so the designed `GET /instruments/{instrumentId}/relations` is served here instead
+  of as its own route. `direction` says whether this instrument is the one relating
+  (`outgoing`) or the one related to (`incoming`). `fromRef` and `toRef` keep the designed
+  relation's own meaning whichever card reads them: the place in the instrument relating
+  and the place in the one related to (`Article 25(3) and (4)`), each an empty string
+  rather than null when the relation names no specific place, which is most of them. The
+  card carries no footprint verdict of its own; the Instruments
+  tab and its filter read that from the row. The provision tree is its own read
+  (`GET /instruments/{instrumentId}/provisions`, chunk3-rest-T16). A record the caller
+  cannot see answers 404, never 403 (INV-07).
+- `GET /instruments/{instrumentId}/provisions` (`listInstrumentProvisions`) answers a
+  plain array of root nodes instead of the designed array of flat `Provision` rows,
+  because the tree has no natural page boundary and a node needs its children beside it.
+  Each node is `{id, stableKey, kind{key,kind,label}, refLabel, heading, path,
+  children[], versions[{versionNumber, effectiveFrom, effectiveTo, transitionalNote,
+  text}], inForceVersion, obligations[{id, title, refLabel}]}`. `kind` on the reference
+  carries the row's own fixed structural kind (`division`, `unit` or `annex`) rather than
+  being null, because a screen groups by it. `versions[]` always lists every version, in
+  and out of force, so a reader chooses one by its own chip rather than trusting today's
+  date; `asOf` (default today in the tenant's time zone) decides only `inForceVersion`.
+  The designed `GET /provisions/{provisionId}/versions` is served embedded here instead
+  of as its own route. `effectiveTo` is derived exactly as an obligation version's is:
+  nothing is stored, and a version row is never touched after it is written. The number
+  of queries does not grow with the tree's size; an instrument the caller cannot see
+  answers 404 (INV-07), and a citing obligation the caller cannot see is left out
+  silently, never returned with a null.
+- `GET /provisions/{provisionId}/diff` (`getProvisionDiff`) is not in the design, which
+  has no diff operation at all. It takes the same `{from, to, lang}` triple as
+  `GET /obligations/{obligationId}/diff` (one shared query schema, `VersionDiffQuery`)
+  and answers the same `VersionDiff` shape: a provision's verbatim text and an
+  obligation's plain-language summary are versioned and diffed the same way, so one
+  function and one response shape serve both (chunk3-rest-T1, chunk3-rest-T16).
 
 Chunk 5 (watch and the agent API), 2026-09-20:
 
@@ -971,3 +1040,202 @@ them. `POST /changes` also loses the bare `soWhatDraft` string the build had put
 body: words with no model, no model version and no citation cannot become the
 `ai_generation` row AUD-02 asks for, so the object is the shape and a bare string is a 422.
 `WatchChange.soWhatDraft`, the response field, is unchanged.
+
+### A confirming agent's decision is logged under a purpose of its own (D-80, 2026-09-23)
+
+`ai_purpose` gains `agent_review`, which the designed kind does not have: a confirming
+agent's decision on another agent's work — approving, correcting or rejecting a proposal,
+or confirming a watch item's curation — is a model call, and AUD-02 asks that it be logged
+with the model behind it. None of the designed purposes fits, because each names something
+a model drafts, and a reader of the log must be able to tell a machine's decision from a
+machine's draft. The decision arrives with one `AgentDecision` object (model, model
+version, the prompt's name and hash, the output and at least one citation), the shape of
+D-66's `soWhat` with `output` for `text`. A check constraint holds that its row is marked
+`model_metadata_reported_by_agent` and names the run and the record decided. The designed
+log is read by every bank for its library rows; an `agent_review` row is left out of that
+read, because it is about the proposal queue, where a bank sees only its own filings, and
+the platform alone reads it (governance 0002). `AiCitation` moves from `apps/governance/schemas.py` to
+`apps/shared/schemas.py` beside it, unchanged, because the shared shape cites with it and a
+governance import from there would be a cycle.
+
+### The log's read narrows to one record and carries the review and the feedback (2026-09-23, ai-log-read)
+
+`GET /ai-generations` (`listAiGenerations`) gains the designed `subjectId` filter, and
+`AiGenerationRow` gains `feedback`, `feedbackNote` and `reviewedBy` (`{id, name}`), beside the
+`status` and `reviewedAt` it already carried. The designed table has `feedback`, the
+reviewer and the review time; the read now returns them. Two departures, both about the
+shared "So what?":
+
+- A library "So what?" row's `status`, `reviewedBy` and `reviewedAt` are **computed for the
+  reading bank** from its own `change_case` (`so_what_confirmed_by`, `so_what_confirmed_at`),
+  and nothing shared is written (D-62; resolves chunk 5 ruling I). The designed column is one
+  review state per row, but that row is every bank's, and one bank's confirmation must not
+  read as another's. A case settles the newest draft of the change logged by the time it was
+  confirmed: `confirmed` when the bank's words are the draft's, `edited` when the bank
+  rewrote them, and `draft` for every other draft of that change. The `status` filter reads
+  the same computed state. The stored columns stay the platform's.
+- `feedbackNote` is added: the reader's own words with a verdict (`POST
+  /answers/{answerId}/feedback`, SRC-05) are stored beside the answer and returned only on
+  the bank's own row. The designed table has the verdict alone.
+
+`agent_review` rows stay out of a bank's read (D-80).
+
+## 12. Two reads that are on `main` in a shape of their own (review-fixes, 2026-09-23)
+
+`backend/scripts/contract_drift_pending.txt` still listed both as chunk 1 work to come.
+Both are built, and each departs from the design on purpose, so they are explained here
+instead and their pending lines are gone.
+
+- `GET /me/whats-new` (`getWhatsNew`) is not built and is not coming: `GET /library-updates`
+  (`listLibraryUpdates`, 622ce06) answers the same question, with the designed
+  `POST /me/visit` (`markVisit`) moving the reader's bookmark. The designed read was one
+  object, `{since, changes[], newObligationVersions[], decidedProposals}`, from a `since`
+  that defaulted to the last visit. The built read lists what an approved proposal applied
+  to the shared library since the reader's own bookmark, grouped by the day it arrived in
+  the bank's time zone, as `{since, days[{date, items[]}], total}` paged with `limit` and
+  `offset`, filtered by `kind`, and cut to the bank's footprint unless `outsideFootprint`
+  asks otherwise. It takes no `since`: the start is the bookmark, or the default window for
+  a reader who has never marked the library as seen. Each row is titled by the library
+  record it touched and names nobody, so a change another bank asked for reads like any
+  other. It sits beside the inventory under `library.read` rather than under `/me`, because
+  what it lists is library facts; only the bookmark is the person's, and it stays on
+  `POST /me/visit`. The designed `decidedProposals` count is not carried.
+- `GET /audit-events` (`listAuditEvents`, built 2026-09-19 in cfc3bf40) answers
+  `{items, total}` paged with `limit` and `offset`, like every other list (playbook 10),
+  instead of the designed cursor page `{items, nextCursor}`. Its filters are `subjectType`,
+  `subjectId`, `actorId`, `from` (inclusive) and `to` (exclusive): `actorId` matches any
+  actor, a person or an agent, where the designed `actorUserId` named a person only, and the
+  designed `action` filter is not built.
+
+## 13. What an Ask statement says about a pending change (2026-09-23, search-ask-backend)
+
+`AnswerStatement` gains two optional fields the designed contract does not have, both
+additive: `pendingChangeInForceOn`, the day the flagged change takes effect as a plain
+date, and `pendingChangeInForceOnPrecision`, how exact that day is (`day`, `month`,
+`quarter`, `year`). The design's statement names a pending change by id and label only,
+which leaves the screen's "Change pending: in force 1 Oct" (SRC-S4) with nothing to print
+but a phrase it would have to invent; a legal date is a plain date with its precision
+(playbook 4.3), so the two travel together. Both are empty exactly when `pendingChangeId`
+is.
+
+What is flagged is also narrower than "an open change": only a change the library
+confirmed affects a cited obligation (a confirmed `change_obligation` link, never an
+agent's suggestion), still active, whose type's lifecycle kind moves the law on its key
+date (`adopted`, or `in_force` from a later day) and whose key date falls after the
+answer's `asOf`; of several, the earliest. A proposal, a supervisory statement or a
+recurring date moves no law on its date, and flagging one would warn a reader about a rule
+that may never exist.
+
+`Answer.model` is empty when no model was asked: a question no library passage supports is
+answered `noAnswer` at once, with no model call and so no `ai_generation` row.
+
+`ai_generation` gains `stop_reason` (`governance/0003_ai_generation_stop_reason.py`) and
+`AiGenerationRow` gains `stopReason`, neither of which the designed table or contract has:
+how a call bleqq made ended, the provider's own stop reason when the model finished,
+`aborted` when the caller stopped reading first and `failed` when the model failed once
+asked (D-82). A streamed Ask answer is logged however it ends, and without the column a
+call cut short read in the log exactly as a finished one. Empty on a row an agent filed.
+
+## 14. A confirming agent's approval or rejection carries its decision and its run (2026-09-23, proposals-agent-decision-log)
+
+`ProposalApproveBody` and `ProposalRejectBody` (`approveProposal`, `rejectProposal`) each
+gain two optional fields the designed `{note}` and `{reason}` bodies do not have:
+`decision`, the `AgentDecision` section 11 describes (D-80), and `agentRunId`, the run the
+decision was made in. Both are required from a key bound to an agent and refused from a
+person: a key's decision without `decision` answers 422 `validation_error`, without
+`agentRunId`, or naming a closed run, 422 `run_not_open`, and naming a run another key
+opened, another agent's included, 404 `not_found`, as a proposal's `agentRunId` already
+does at `createProposal`; a person's body naming either answers 422 `validation_error`.
+The run is checked against the deciding key rather than its agent, the same rule every
+other agent write follows (`runs.require_open_run_of_key`), which is the stricter reading
+of D-80's "a run of the deciding key's own agent". In the decision's own transaction the
+write logs one `ai_generation` row under `agent_review` naming the proposal and the run,
+and the decision's audit row gains `agentRunId` beside `reviewingApiKeyPrefix`.
+`ProposalRejectBody` becomes a strict write body like the approve body: a field it does
+not name answers 422 rather than being dropped. The reject route keeps
+`{rejectionCode, note}` (section 7) and is documented to the API standard.
+
+## 15. A bank reads and closes its own problem reports (2026-09-23, problem-reports-backend)
+
+- `GET /problem-reports` (`listProblemReports`) serves a bank's own session only, under
+  `problems.report`, which every member holds and no platform role does. The designed
+  `x-roles` list `library_editor` and the designed read is the console's; since D-50 a
+  report stays inside the bank that filed it, so a platform session is refused 403 naming
+  `problems.report`. Reach inside the bank is `proposals.create`: its holder lists every
+  report of the bank, every other member lists the reports they filed (the
+  docs/TODO_FOR_alex.md default of item 3; no permission is added). Paging is `limit` and
+  `offset` with `total`, as on every list here, not the designed `cursor` and
+  `nextCursor`. Filters are `status`, `subjectType` and `subjectId`. A row carries
+  `description` (the reporter's words), `subjectTitle` and `subjectReference` (the record
+  named in the caller's language), `versionNumber` and `language` (what was on screen),
+  `reporter`, `closedBy` and `closedAt` as `{id, name}` and a timestamp, and
+  `resolutionNote`; the designed `reportedBy`, `reportedAt` and `resultingProposalId` are
+  `reporter`, `createdAt` and nothing, because no proposal ever links to a bank's report.
+- `PATCH /problem-reports/{}` is `closeProblemReport`, not the designed
+  `resolveProblemReport`, and its body is `{status, resolutionNote}` with no
+  `resultingProposalId`. The status is `answered`, `fixed` or `rejected`, the kinds chunk 3
+  wrote (`ReportStatus`); the designed `accepted` and a return to `open` do not exist. The
+  note is required. The reporter closes their own report and a `proposals.create` holder
+  any of the bank's; anyone else is 403 naming `proposals.create`, and a second close is
+  409 `already_closed`. It answers the closed report as a `listProblemReports` row. The
+  close records `problem_report.closed` with the states only, never the words, and no
+  step-up or second person is asked: it changes nothing outside the report.
+- An agent's key on either route answers 401 `unauthenticated`, as every session-only
+  route does, rather than the 403 AUD-S5's wording allows: a key is not a session, so it is
+  refused before any gate runs. Nothing about the key is revealed either way.
+- `problem_report` loses `resolved_by_proposal` and gains `resolution_note`, `closed_by`
+  and `closed_at` (library 0009), with a check constraint that a report is open with none
+  of the three or closed with all three and a note. `tenant_id` stays nullable and the
+  table stays mixed until Alex decides otherwise (docs/TODO_FOR_alex.md, item 3).
+
+## 16. A bank switches its own AI features off with a passkey (2026-09-23, ask-switch-route)
+
+`PUT /tenant/ai` (`setTenantAi`) and `TenantOut.aiEnabled` are not in the designed contract,
+which has no way to reach D-07's per-bank switch: `tenant.ai_enabled` (shared 0007) was read
+before every model call and nothing set it. The route takes `{enabled}`, a strict boolean
+and nothing else, and answers the profile as it now stands. It needs `security.manage` and a
+passkey step-up, because whether a bank's own words may leave it for a model is a security
+change (CLAUDE.md section 5), and it is recorded as `tenant.ai_switched` with the state
+before and after and the step-up assertion. It is a route of its own rather than a field on
+`PATCH /tenant` (`updateTenant`), which stays as designed, so a profile edit never needs a
+passkey and never moves the switch. The switch covers the bank's own Ask and drafts only; a
+platform run is in no bank's zone and never reads it (owner item 14).
+
+## 17. The evaluation set is the platform's, not the library's (2026-09-23, search-eval-sets)
+
+`docs/inputs/schema.sql` labels `eval_question` and `eval_run` LIBRARY. They are not: a
+library row is a sourced public fact every bank reads and that changes only through a
+proposal, and an evaluation question is the platform staff's own test of search, which no
+bank reads and no proposal carries. Search 0002 builds both as platform tables: no tenant
+column, row-level security enabled and forced, and one policy, `platform_only`, FOR ALL,
+refusing any session with a tenant active (`PLATFORM_ONLY_TABLES` in
+`apps/shared/tests_rls.py`). The console reads them under `eval.manage`, the library
+editor's permission.
+
+The shapes depart from the design on purpose:
+
+- A question names what it expects by stable key in one list, `expected`, where the design
+  had `expected_obligation_ids` and `expected_provision_ids` as uuid arrays. The gate's file,
+  `backend/eval/retrieval.jsonl`, names obligations, provisions and changes by stable key,
+  and the corpus the gate builds gets new ids in every database; a key never changes. The
+  question also carries its own stable `key` (the file's `id`), its `matchKind` (`keyword`,
+  `concept`, `both`, what AC-SRC1 expects to win it) and a server-computed `inGate`, and
+  `lang` is a key of the language rows rather than the design's two-value check (§3).
+- `GET /eval/questions` (`listEvalQuestions`) and `GET /eval/runs` (`listEvalRuns`) answer
+  `{items, total}` paged with `limit` and `offset`, like every other list (playbook 10),
+  rather than bare arrays. `POST /eval/questions` (`createEvalQuestion`) takes
+  `{key, lang, question, expected?, matchKind, asOf?, via?, notes?}` and answers 201 with the
+  question, `inGate` false: the release gate reads only the file, so a question added in the
+  console reaches it through `dump_eval_questions` and a reviewed commit.
+- A run's `config` is `{retriever, isMock, questions}`, its `metrics`
+  `{overall, perLanguage, perMatchKind}` of `{recallAt10, mrr}`, and its `results` a list,
+  one `{questionKey, returned, recallAt10, mrr}` per question asked, where the design left
+  all three as open objects. The design's `run_by` is not built: runs are recorded by the
+  `record_eval_run` command, which is no person, and its audit row names the actor.
+- A question also carries `via` (`search`, the default, or `ask`; search 0004), the field
+  ask-standard-no-answer gave the gate's file, so a question scored on the passages Ask would
+  give a model survives a seed and a dump. Both tables carry the library door trigger with a
+  door of their own, `eval` (search 0003, D-87), on top of the `platform_only` policy.
+- `POST /eval/runs` (`startEvalRun`) waits for chunk 14's job runner
+  (`backend/scripts/contract_drift_pending.txt`): a run builds the sample corpus in a
+  database of its own and takes minutes, which no request should hold open.

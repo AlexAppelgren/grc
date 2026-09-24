@@ -26,13 +26,14 @@ from apps.agents import testing as agent_build
 from apps.agents.models import RunStatus
 from apps.agents.screen import EMBEDDED_INSTRUCTIONS
 from apps.cases import creation, testing as case_build
+from apps.governance.models import AiGeneration, AiPurpose
 from apps.library import testing as library_build
 from apps.shared import factories, outbox, permissions as perms, tenancy
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, ScenarioTestCase, stub_session, user_principal
 from apps.watch import registration
 from apps.watch import testing as watch_build
-from apps.watch.models import ChangeDocument, RegulatoryChange
+from apps.watch.models import ChangeDocument, ChangeObligation, ChangeTerm, RegulatoryChange
 
 CHANGES = "/api/v1/changes"
 JSON = "application/json"
@@ -48,6 +49,10 @@ ADOPTED = {"label": "Adopted", "eventDate": "2026-06-15", "datePrecision": "day"
 IN_FORCE = {"label": "In force", "eventDate": "2027-01-01", "datePrecision": "quarter", "sortOrder": 3}
 FIRST_PAGE = "https://www.fi.se/en/published/news/2026/research-payments/"
 SECOND_PAGE = "https://www.regeringen.se/pressmeddelanden/2026/research-payments/"
+
+# The reform a library editor files by hand. Held apart from the field that carries it: a
+# stable key beside the word for it reads to gitleaks' generic-api-key rule as a credential.
+BY_HAND = "chg-fi-2026-by-hand"
 
 # A page whose text tells a reader to ignore what it was asked to do. It is registered from
 # the factual content around it and never followed (AGT-07, agents/screen.py).
@@ -75,6 +80,8 @@ def body(**overrides: Any) -> dict[str, Any]:  # compliance: allow-kwargs test h
         "events": [CONSULTATION, ADOPTED, IN_FORCE],
         "documents": [{"url": FIRST_PAGE, "title": "FI adopts amended rules", "isPrimary": True}],
         "model": "agent pipeline 0.4",
+        # Every change carries a regime (D-39, AC-AGT1), so every registration here names one.
+        "termIds": [str(watch_build.term(SECURITIES).id)],
     }
     payload.update(overrides)
     return payload
@@ -156,6 +163,49 @@ class RegisteringAReform(RegistrationCase):
                 self.assertTrue(watch_build.is_a_suggestion(link))
         confidence = change.obligation_links.get().confidence
         self.assertEqual(None if confidence is None else float(confidence), 0.82)
+
+    def test_every_suggestion_names_the_run_agent_and_key_that_filed_it(self) -> None:
+        """Copied from the run by the one write path, because a check constraint cannot read
+        a key to find its agent, and it is what keeps the agent that suggested a fact from
+        confirming it (D-74). A library editor filing by hand names no run, so no agent, and
+        is named as the suggester instead, so they cannot confirm it alone. The type carries
+        the agent's own confidence when it sends one."""
+        obligation = self.an_obligation()
+        self.register(
+            body(
+                agentRunId=str(self.open_run.id),
+                changeTypeConfidence=0.91,
+                termIds=[str(watch_build.term(SECURITIES).id)],
+                obligationLinks=[{"obligationId": str(obligation.id), "confidence": 0.82}],
+            )
+        )
+        change = self.stored()
+        suggester = (None, self.open_run.agent_id, self.open_run.api_key_id)
+        self.assertEqual(
+            (change.change_type_suggested_by_id, change.change_type_suggested_by_agent_id, change.change_type_suggested_by_api_key_id),
+            suggester,
+        )
+        self.assertTrue(change.change_type_suggested)
+        self.assertEqual(float(change.change_type_confidence or 0), 0.91)
+        links: list[ChangeTerm | ChangeObligation] = [*change.term_links.all(), *change.obligation_links.all()]
+        self.assertEqual(len(links), 3)
+        for link in links:
+            with self.subTest(link=str(link)):
+                self.assertEqual((link.suggested_by_id, link.suggested_by_agent_id, link.suggested_by_api_key_id), suggester)
+
+        editor = factories.platform_user(email="library.editor@bleqq.example")
+        with stub_session(user_principal(permissions={perms.PROPOSALS_REVIEW}, subject_id=editor.id)):
+            self.client.post(
+                CHANGES,
+                data=body(stableKey="chg-fi-2026-by-hand", termIds=[str(watch_build.term(SECURITIES).id)]),
+                content_type=JSON,
+                HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}",
+            )
+        by_hand = RegulatoryChange.objects.get(stable_key="chg-fi-2026-by-hand")
+        self.assertEqual((by_hand.change_type_suggested_by_id, by_hand.change_type_suggested_by_agent_id), (editor.id, None))
+        self.assertIsNone(by_hand.change_type_confidence, "a person records no confidence")
+        self.assertTrue(by_hand.change_type_suggested, "a person's filing is a suggestion too")
+        self.assertEqual({(link.suggested_by_id, link.suggested_by_agent_id) for link in by_hand.term_links.all()}, {(editor.id, None)})
 
     def test_the_change_and_its_audit_and_outbox_rows_land_together(self) -> None:
         self.register()
@@ -242,6 +292,139 @@ class RegisteringAReform(RegistrationCase):
             self.assertEqual(self.register().status_code, 201)
 
 
+class ABanksKeyWritesNothingToTheWatch(RegistrationCase):
+    """Item 14: in R1 every run is the platform's, so a bank's key writes nothing to the
+    watch, whatever scopes it holds. Each write names the reason, as opening a run does,
+    and stores nothing — the second guard beside the scopes a bank's key is refused at
+    creation, so neither alone is load-bearing."""
+
+    def test_every_watch_write_refuses_a_banks_key_with_the_reason_named(self) -> None:
+        change_id = self.register().json()["id"]
+        event_id = self.stored().events.get(label="Adopted").id
+        bank = factories.tenant(slug="writes-nothing")
+        tenancy.clear_tenant()
+        key = agent_build.tenant_key(
+            bank, scopes=(perms.SCOPE_CHANGES_WRITE, perms.SCOPE_SOURCES_WRITE, perms.SCOPE_AGENT_RUNS_WRITE)
+        )
+        tenancy.clear_tenant()
+        writes = [
+            ("createChange", "post", CHANGES, body(stableKey="chg-bank-own", agentRunId=str(self.open_run.id))),
+            ("createChange without a run", "post", CHANGES, body(stableKey="chg-bank-own")),
+            ("addChangeDocument", "post", f"{CHANGES}/{change_id}/documents", {"url": SECOND_PAGE}),
+            ("updateChange", "patch", f"{CHANGES}/{change_id}", {"title": "A title a bank must not impose"}),
+            ("addChangeEvent", "post", f"{CHANGES}/{change_id}/events", {"label": "Transition ends", "eventDate": "2027-06-30"}),
+            ("updateChangeEvent", "patch", f"{CHANGES}/{change_id}/events/{event_id}", ADOPTED),
+            ("replaceChangeObligations", "put", f"{CHANGES}/{change_id}/obligations", []),
+            (
+                "recordSourceCheck",
+                "post",
+                f"/api/v1/agent-runs/{self.open_run.id}/source-checks",
+                {"sourceName": watch_build.source().name, "status": "ok"},
+            ),
+        ]
+        before = AuditEvent.objects.count()
+        for name, method, path, payload in writes:
+            with self.subTest(operation=name):
+                response = getattr(self.client, method)(
+                    path, data=payload, content_type=JSON, HTTP_X_API_KEY=key.plain_key
+                )
+                self.assertEqual(response.status_code, 403, response.content)
+                self.assertEqual(response.json()["code"], "tenant_agents_not_available")
+        tenancy.clear_tenant()
+        self.assertEqual(RegulatoryChange.objects.count(), 1, "the bank registered nothing")
+        change = self.stored()
+        self.assertEqual(change.title, "FI adopts amended rules on paying for investment research")
+        self.assertEqual(change.documents.count(), 1)
+        self.assertEqual(change.events.count(), 3)
+        self.assertEqual(AuditEvent.objects.count(), before, "a refusal writes nothing, not even its audit row")
+
+
+class EveryChangeCarriesARegime(RegistrationCase):
+    """D-39, AC-AGT1: a change with no regime would reach every bank whatever its scope, so a
+    new one is refused before anything is written, and the refusal lists the regimes the
+    caller may choose from."""
+
+    def test_a_new_change_without_a_regime_is_refused_with_the_regimes_listed(self) -> None:
+        written = OutboxEvent.objects.count()
+        cases = {
+            "no term at all": [],
+            "a channel term but no regime": [str(watch_build.term("channel:digital").id)],
+        }
+        for case, term_ids in cases.items():
+            with self.subTest(case=case):
+                response = self.register(body(agentRunId=str(self.open_run.id), termIds=term_ids))
+                self.assertEqual(response.status_code, 422, response.content)
+                problem = response.json()
+                self.assertEqual(problem["code"], "regime_required")
+                self.assertEqual(problem["dimension"], "regime")
+                self.assertIn("securities", problem["validKeys"])
+                self.assertIn("aml", problem["validKeys"])
+                self.assertNotIn("digital", problem["validKeys"], "only the regime dimension's keys are listed")
+        self.assertEqual(RegulatoryChange.objects.count(), 0, "a refusal stores nothing")
+        self.assertEqual(OutboxEvent.objects.count(), written, "and opens no case anywhere")
+
+    def test_a_second_sighting_needs_no_regime_because_it_changes_no_scope(self) -> None:
+        """A merge adds pages and milestones and never touches the stored terms, so the rule
+        that guards a change's scope has nothing to guard there (AC-WAT1)."""
+        self.register()
+        again = self.register(body(agentRunId=str(self.open_run.id), termIds=[]))
+        self.assertEqual(again.status_code, 200, again.content)
+        self.assertEqual([link.term.key for link in self.stored().term_links.filter(term__isnull=False) if link.term], ["securities"])
+
+
+class TheSuggestedClassificationIsLogged(RegistrationCase):
+    """AUD-02, D-66: a run's classification of a new change is machine output, so it leaves
+    one `scope_suggestion` row in the AI log with the model metadata the run reported."""
+
+    def generations(self) -> list[AiGeneration]:
+        return list(AiGeneration.objects.filter(purpose=AiPurpose.SCOPE_SUGGESTION.value).order_by("created_at"))
+
+    def test_a_runs_registration_logs_one_scope_suggestion_with_its_reported_model(self) -> None:
+        response = self.register()
+        self.assertEqual(response.status_code, 201, response.content)
+        change = self.stored()
+        [row] = self.generations()
+        self.assertEqual((row.subject_type, row.subject_id), ("regulatory_change", change.id))
+        self.assertEqual(row.agent_run_id, self.open_run.id)
+        self.assertEqual((row.model, row.model_version), (self.open_run.model, self.open_run.pipeline_version))
+        self.assertTrue(row.model_metadata_reported_by_agent, "the run's own account, never observed by bleqq")
+        self.assertEqual(row.status, "draft")
+        self.assertIsNone(row.tenant_id, "a library fact is nobody's")
+        for part in ("change_type:adopted", "flag:advice_perimeter", "regime:securities", "urgency:act_now"):
+            self.assertIn(part, row.output)
+        self.assertEqual([citation["url"] for citation in row.citations], ["https://www.fi.se/"])
+
+    def test_the_so_what_reports_the_model_when_the_filing_carries_one(self) -> None:
+        so_what = {
+            "text": "Teams that pay for research should confirm their quality criteria.",
+            "model": "claude-opus-5",
+            "modelVersion": "2026-05-01",
+            "citations": [{"label": "Finansinspektionen", "url": FIRST_PAGE}],
+        }
+        self.register(body(agentRunId=str(self.open_run.id), soWhat=so_what))
+        [row] = self.generations()
+        self.assertEqual((row.model, row.model_version), ("claude-opus-5", "2026-05-01"))
+
+    def test_a_person_and_a_second_sighting_log_nothing(self) -> None:
+        """A library editor's classification is a person's, and a merge stores no scope."""
+        self.register()
+        self.register()
+        editor = factories.platform_user(email="library.editor@bleqq.example")
+        with stub_session(user_principal(permissions={perms.PROPOSALS_REVIEW}, subject_id=editor.id)):
+            self.client.post(
+                CHANGES,
+                data=body(stableKey=BY_HAND),
+                content_type=JSON,
+                HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}",
+            )
+        self.assertTrue(RegulatoryChange.objects.filter(stable_key=BY_HAND).exists())
+        self.assertEqual(len(self.generations()), 1)
+
+    def test_a_refused_registration_logs_nothing(self) -> None:
+        self.register(body(agentRunId=str(self.open_run.id), termIds=[]))
+        self.assertEqual(self.generations(), [])
+
+
 class SightingAReformAgain(RegistrationCase):
     """AC-WAT1: the same stable key is the same reform, whatever else the call carries."""
 
@@ -326,6 +509,30 @@ class AttachingAPage(RegistrationCase):
         response = self.attach(uuid.uuid4(), {"url": SECOND_PAGE})
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()["code"], "not_found")
+
+
+class WhatARunSendsFitsWhereItIsKept(RegistrationCase):
+    """security-review-c5: every text a run sends is refused at the boundary when it is
+    longer than the column that keeps it, so an over-long value is a 422 naming the field
+    and never a database error answered as a 500."""
+
+    def test_a_value_longer_than_its_column_is_refused_and_nothing_is_stored(self) -> None:
+        too_long_url = FIRST_PAGE + "x" * (2001 - len(FIRST_PAGE))
+        run = str(self.open_run.id)
+        for field, payload in (
+            ("authorityLabel", body(agentRunId=run, authorityLabel="F" * 201)),
+            ("keyDateLabel", body(agentRunId=run, keyDateLabel="I" * 201)),
+            ("events", body(agentRunId=run, events=[{**CONSULTATION, "label": "C" * 201}])),
+            ("documents", body(agentRunId=run, documents=[{"url": FIRST_PAGE, "publisher": "P" * 201}])),
+            ("documents", body(agentRunId=run, documents=[{"url": too_long_url}])),
+            ("documents", body(agentRunId=run, documents=[{"url": FIRST_PAGE, "riskFlags": ["f" * 41]}])),
+            ("sourceUrl", body(agentRunId=run, sourceUrl=too_long_url)),
+        ):
+            with self.subTest(field=field):
+                response = self.register(payload)
+                self.assertEqual(response.status_code, 422, response.content)
+                self.assertIn(field, response.content.decode())
+                self.assertFalse(RegulatoryChange.objects.filter(stable_key=STABLE_KEY).exists())
 
 
 class ScreeningWhatWasFetched(RegistrationCase):
@@ -416,3 +623,21 @@ class RegisteringOpensACaseInEveryBank(RegistrationCase):
             {self.banks.inside: 1, self.banks.outside: 1},
         )
         self.assertEqual(RegulatoryChange.objects.count(), 1)
+
+
+class AMarketIsNeverATag(RegistrationCase):
+    """FP-S12, FP-S15: a change's market comes from its authority, never from a tag. The terms
+    that mirror the jurisdiction rows are the reference seed's, so a run that tags a reform
+    with one is refused before anything is written, however right the rest of the call is."""
+
+    def test_a_term_that_mirrors_a_jurisdiction_is_refused_and_stores_nothing(self) -> None:
+        market = watch_build.term("jurisdiction:no")
+        payload = body(agentRunId=str(self.open_run.id), termIds=[str(watch_build.term(SECURITIES).id), str(market.id)])
+        written = OutboxEvent.objects.count()
+
+        response = self.register(payload)
+
+        self.assertEqual(response.status_code, 422, response.content)
+        self.assertEqual(response.json()["code"], "jurisdiction_term_mirrored")
+        self.assertEqual(RegulatoryChange.objects.count(), 0, "a refusal stores nothing")
+        self.assertEqual(OutboxEvent.objects.count(), written, "and opens no case anywhere")

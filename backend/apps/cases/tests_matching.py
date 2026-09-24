@@ -86,8 +86,8 @@ def footprint_approved(tenant: Any) -> None:
             actor=Actor.system("approver"),
             subject_type="footprint_change_request",
             subject_id=uuid.uuid4(),
-            subject_title="A footprint change",
-            summary="Footprint change approved.",
+            subject_title="A regulatory scope change",
+            summary="Regulatory scope change approved.",
             tenant_id=tenant.id,
         )
     drain()

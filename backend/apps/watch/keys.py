@@ -29,8 +29,8 @@ from typing import Any, cast
 from django.core.exceptions import ValidationError
 from django.db.models import OuterRef, Subquery
 
-from apps.library.models import Authority, Obligation, RecordStatus
-from apps.library.reading import localized, vocabulary_refs
+from apps.library.models import Authority, JurisdictionKind, Obligation, RecordStatus
+from apps.library.reading import agent_ref, localized, vocabulary_refs
 from apps.shared.errors import ProblemError
 from apps.taxonomy.models import (
     ChangeTypeLabel,
@@ -38,10 +38,12 @@ from apps.taxonomy.models import (
     SourceKindLabel,
     TaxonomyTerm,
     TaxonomyTermLabel,
+    TermDimensionKind,
     UrgencyLabel,
 )
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.tenant_lists_logic import VocabularyProblem
+from apps.taxonomy.terms_logic import refuse_mirrored
 from apps.watch.models import (
     ChangeDocument,
     ChangeEvent,
@@ -69,6 +71,12 @@ CHANGE_TYPE_LIST = "change_type"
 FLAG_LIST = "flag"
 SOURCE_KIND_LIST = "source_kind"
 URGENCY_LIST = "urgency"
+
+# The taxonomy dimension whose terms say which body of law a record belongs to. Every change
+# carries at least one of its terms (D-39, AC-AGT1): the regime is the sector boundary, and a
+# change with none would reach every bank whatever its scope. A dimension's key is stable
+# and never changes, which is what makes it safe to name here.
+REGIME_DIMENSION = "regime"
 
 # The names `apps/watch/curation.py`, `registration.py` and `sources.py` annotate their own
 # helpers with. Those modules write, so the fence's AST rule refuses them the model's own
@@ -127,6 +135,10 @@ def resolve_terms(term_ids: Sequence[uuid.UUID]) -> list[TaxonomyTerm]:
     The terms are not listed back the way a vocabulary's keys are: the taxonomy is the one
     list a bank may extend to hundreds of rows, so the refusal points at
     `GET /taxonomy/terms`, which an agent reads at run start anyway (AGT-02).
+
+    422 `jurisdiction_term_mirrored` when one is a term of a mirrored dimension (FP-S12): a
+    change's market comes from its authority (FP-S15), never from a tag. Registration and
+    curation both resolve their terms here, so neither can store one.
     """
     wanted = list(dict.fromkeys(term_ids))
     found = {
@@ -143,7 +155,51 @@ def resolve_terms(term_ids: Sequence[uuid.UUID]) -> list[TaxonomyTerm]:
             f"Not a taxonomy term: {', '.join(unknown)}. GET /taxonomy/terms lists the terms of every dimension.",
             code="unknown_key",
         )
+    refuse_mirrored(term.dimension_id for term in found.values())
     return [found[term_id] for term_id in term_ids]
+
+
+def require_regime(terms: Sequence[TaxonomyTerm]) -> None:
+    """422 `regime_required` when none of these resolved terms is a regime (D-39, AC-AGT1),
+    listing the regime dimension's active keys in `validKeys` so the caller learns what it
+    may choose from; their ids are on `GET /taxonomy/terms`. Called by registration for a
+    new change and by curation for a set that replaces a change's terms."""
+    if any(term.dimension.key == REGIME_DIMENSION for term in terms):
+        return
+    valid = list(
+        TaxonomyTerm.objects.filter(dimension__key=REGIME_DIMENSION, dimension__active=True, active=True)
+        .order_by("sort_order", "key")
+        .values_list("key", flat=True)
+    )
+    raise VocabularyProblem(
+        f"A change needs at least one regime term. Valid regimes: {', '.join(valid)}. "
+        "GET /taxonomy/terms gives their ids.",
+        code="regime_required",
+        extra={"dimension": REGIME_DIMENSION, "validKeys": valid},
+    )
+
+
+def require_standards_body(terms: Sequence[TaxonomyTerm], authority_id: uuid.UUID | None) -> None:
+    """422 `standard_term_only_on_standards` when an opt-in term — a standard a bank chooses
+    to follow — sits on a change whose authority is not a standards body, that is, names no
+    jurisdiction of the `international` kind (D-36, D-38, WAT-07). A law that cites a
+    standard is the supervisor's change and reaches every bank in its scope; tagged with the
+    standard, it would vanish from every bank that follows none. Kinds are read, never keys,
+    so a new standard or a new standards body needs no code. Called by registration for a
+    new change and by curation for a set that replaces a change's terms."""
+    if not any(term.dimension.kind == TermDimensionKind.OPT_IN.value for term in terms):
+        return
+    if (
+        authority_id is not None
+        and Authority.objects.filter(id=authority_id, jurisdiction__kind=JurisdictionKind.INTERNATIONAL.value).exists()
+    ):
+        return
+    raise ValidationError(
+        "A standard's term belongs only on a change a standards body issued, named in "
+        "`authorityCode` with an international jurisdiction. A law or a supervisor's rule "
+        "that cites a standard carries its regime, never the standard.",
+        code="standard_term_only_on_standards",
+    )
 
 
 def obligations_for(obligation_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, Obligation]:
@@ -238,6 +294,22 @@ def change_for_write(change_id: uuid.UUID) -> ChangeRow:
     if change is None:
         raise ProblemError(status=404, code="not_found", detail="Not found.")
     return change
+
+
+def change_for_update(change_id: uuid.UUID) -> ChangeRow:
+    """The change this call addresses, locked until its transaction ends, for a write that
+    reads what is confirmed and then acts on it (D-74). Correcting a fact, replacing the
+    links and confirming them all take this lock first, so a confirmation cannot land
+    between another call's check and its write, and two confirmations queue. 404 as
+    `change_for_write` answers it.
+
+    The lock is a query of its own on the change's row alone, and the row is read afresh
+    after it: a locking read that joins the type re-checks a row another call has just
+    re-typed against the type it joined before, and finds nothing (proven 2026-09-24,
+    tests_curation_races.py)."""
+    if not list(RegulatoryChange.objects.select_for_update().filter(pk=change_id).values_list("pk", flat=True)):
+        raise ProblemError(status=404, code="not_found", detail="Not found.")
+    return change_for_write(change_id)
 
 
 def event_for_write(change: ChangeRow, event_id: uuid.UUID) -> EventRow:
@@ -476,13 +548,39 @@ def event_out(event: EventRow) -> WatchChangeEvent:
     )
 
 
+def provenance(row: Any, prefix: str = "") -> dict[str, Any]:
+    """Who suggested a curated fact and who confirmed it, as every read answers it (D-74).
+
+    `row` is a change term or obligation link, or a change with `prefix` "change_type_" for
+    its type, loaded with its two agents (`CURATION_AGENTS`). Whether a confirmation is a
+    machine's is read off the confirming agent's column alone, which the check constraint
+    sets exactly when a key confirmed, so an agent's confirmation never reads as a person's.
+    """
+    confirmed = getattr(row, f"{prefix}confirmed_at") is not None
+    by_an_agent = getattr(row, f"{prefix}confirmed_by_agent_id") is not None
+    origin: Origin | None = None if not confirmed else ("agent" if by_an_agent else "user")
+    return {
+        "confirmed_origin": origin,
+        "suggested_by_agent": agent_ref(getattr(row, f"{prefix}suggested_by_agent")),
+        "confirmed_by_agent": agent_ref(getattr(row, f"{prefix}confirmed_by_agent")),
+    }
+
+
+# What `provenance()` reads, joined in the query that loads the rows so naming the agents
+# costs no query per fact (NFR-02).
+CURATION_AGENTS = ("suggested_by_agent", "confirmed_by_agent")
+CHANGE_TYPE_AGENTS = ("change_type_suggested_by_agent", "change_type_confirmed_by_agent")
+
+
 def links_out(change: ChangeRow, order: list[str]) -> list[WatchObligationLink]:
     """The obligations this change affects, most confident first (the model's own order).
-    `confirmed` is the library editor's decision and is false while the link is a
-    suggestion; a bank's own decision about a link lives on its case and never here
-    (WAT-04, ruling C)."""
+    `confirmed` is the shared library's confirmation, by an independent agent or a person,
+    and false while the link is a suggestion; a bank's own decision about a link lives on
+    its case and never here (WAT-04, ruling C, D-74)."""
     links = list(
-        change.obligation_links.select_related("obligation__instrument").prefetch_related("obligation__titles").all()
+        change.obligation_links.select_related("obligation__instrument", *CURATION_AGENTS)
+        .prefetch_related("obligation__titles")
+        .all()
     )
     return [
         WatchObligationLink(
@@ -492,7 +590,8 @@ def links_out(change: ChangeRow, order: list[str]) -> list[WatchObligationLink]:
             ref_label=link.obligation.ref_label,
             origin=cast(Origin, link.origin),
             confidence=None if link.confidence is None else float(link.confidence),
-            confirmed=link.confirmed_by_id is not None,
+            confirmed=link.confirmed_at is not None,
+            **provenance(link),
         )
         for link in links
     ]

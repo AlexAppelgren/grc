@@ -14,6 +14,7 @@
   "nav.console.sources": "Sources",
   "nav.console.changeFacts": "Change facts",
   "nav.console.agentKeys": "Agent keys",
+  "nav.console.evaluation": "Evaluation",
   "nav.console.tenants": "Tenants",
   "nav.admin.organisation": "Organisation",
   "nav.admin.members": "Members",
@@ -23,6 +24,7 @@
   "nav.admin.auditLog": "Audit log",
   "nav.me.passkeys": "My passkeys",
   "nav.me.sessions": "My sessions",
+  "nav.me.calendarFeeds": "My calendar feeds",
   "shell.skipToContent": "Skip to content",
   "shell.signedInAs": "Signed in as",
   "shell.signOut": "Sign out",
@@ -36,5 +38,5 @@
   "sidebar.collapse": "Minimise menu",
   "sidebar.expand": "Expand menu",
   "nav.admin.vocabularies": "Vocabularies",
-  "nav.admin.footprint": "Footprint"
+  "nav.admin.footprint": "Regulatory scope"
 }

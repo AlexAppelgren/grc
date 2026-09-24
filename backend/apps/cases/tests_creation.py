@@ -34,6 +34,7 @@ from django.test import TestCase, override_settings
 
 from apps.cases import creation, testing as case_build
 from apps.cases.models import ChangeCase
+from apps.search import tasks as search_tasks
 from apps.shared import factories, outbox, tenancy
 from apps.shared.audit import Actor, record
 from apps.shared.models import AuditEvent, OutboxEvent, TenantStatus
@@ -235,13 +236,14 @@ class WhatTheAgentSuggestedStaysASuggestion(CaseCreationCase):
 
 
 class TheHandlerOnTheCursor(CaseCreationCase):
-    def test_it_is_the_only_handler_for_the_change_registered_kind(self) -> None:
-        self.assertEqual(outbox.handlers_for(creation.CHANGE_REGISTERED), (creation.create_cases,))
+    def test_it_is_the_only_handler_that_opens_cases_for_the_change_registered_kind(self) -> None:
+        # The search index rebuilds the change's chunks from the same row and opens no case.
+        self.assertEqual(outbox.handlers_for(creation.CHANGE_REGISTERED), (creation.create_cases, search_tasks.index_change))
 
     def test_registering_twice_leaves_one_handler(self) -> None:
         creation.register()
         creation.register()
-        self.assertEqual(outbox.handlers_for(creation.CHANGE_REGISTERED), (creation.create_cases,))
+        self.assertEqual(outbox.handlers_for(creation.CHANGE_REGISTERED).count(creation.create_cases), 1)
 
     def test_an_event_naming_no_change_is_delivered_without_a_case(self) -> None:
         """The handler reads the change the event names. A row that is not there leaves

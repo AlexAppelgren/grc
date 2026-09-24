@@ -49,6 +49,19 @@ tenant exit (D-56).
 
 Deliberately simplified for R1: retention with a purge is R3.
 
+PRD 0.5 (D-72, ADR 0057) adds the switch that lets a bank's own register leave its
+zone at all. Tenant reach is off until two different people holding
+`security.manage` request and approve it, each with a passkey, never both by the
+same person: it is an egress decision about the bank's confidential judgement, so
+it carries the four eyes exports and tenant exit already carry. Turning it off
+stops every agent access entry at once, which is the single lever a security
+function reaches for at three in the morning. Under it a tenant admin enables
+reach per entry, and with the tenant switch off every entry is library-only
+whatever its own setting says. Every agent access call is logged here with the
+credential, the entry, the person where the credential is personal, the tool, the
+filters, the record count, the scope applied and the timing, and never the
+content or the question.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -56,10 +69,11 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | AUD-01 | Append-only audit log written with every change: actor (user, agent, system), action, subject with its title at the time, summary, before and after | M | R1 | built |
-| AUD-02 | AI output log with model, version, purpose, citations, review state and feedback | M | R1 | in_progress |
-| AUD-03 | A problem report stays inside the bank that filed it and nobody outside reads it; the loop to the library is closed by the watch agents' re-check, which proposes the correction (D-50) | S | R1 | pending |
+| AUD-02 | AI output log with model, version, purpose, citations, review state and feedback | M | R1 | built |
+| AUD-03 | A problem report stays inside the bank that filed it and nobody outside reads it; the loop to the library is closed by the watch agents' re-check, which proposes the correction (D-50) | S | R1 | built |
 | AUD-04 | Retention: a record is deleted ten years after its last use. The purge never updates an append-only row, deletes one only past that age, and runs through one database-guarded path (D-53) | S | R3 | pending |
-| ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, evaluation sets, tenants and plans, support access, system health (coverage, runs, outbox lag, failed jobs with retry, and each bank's usage figures through one audited read of numbers only). No problem-report surface (D-50, D-59) | M | R1 to R3 | in_progress |
+| ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, evaluation sets, tenants and plans, support access, system health (coverage, runs, outbox lag, failed jobs with retry, and each bank's usage figures through one audited read of numbers only). No problem-report surface (D-50, D-59). R1 built the proposal queue, library vocabularies, Change facts, sources, evaluation sets, tenants and agent keys; agent definitions come in chunk 11 and support access in chunk 8 (R2), languages and jurisdictions in R2 (jurisdictions read-only on the vocabularies screen until then), plans and system health in chunk 14 (R3) | M | R1 to R3 | in_progress |
+| ACC-08 | Tenant reach is requested and approved by two different people holding `security.manage`, each with a passkey; a tenant admin then enables it per entry. Off means off for every entry. Every call is logged with its credential, entry, tool, filters, record count, scope and timing, never content | M | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -124,12 +138,22 @@ And an event completed with step-up shows that a passkey was used
 ```gherkin
 Given a So what draft, an Ask answer and an agent classification
 Then each has an ai_generation row with purpose, model, version, input reference, output, citations and review state pending
-When a person confirms the So what
-Then its row's review state is confirmed with the person and time
+When a person in bank A confirms the So what on their case
+Then bank A reads the row's review state as confirmed with the person and time
+And bank B, which has not confirmed its own copy, reads the same row as a draft
+And nothing on the shared row is written
 When a person marks an answer as wrong
 Then feedback is stored on the row
-And a holder of ai_log.read can list the rows for their tenant
+And a holder of ai_log.read can list the rows for their tenant, narrowed to one record
 ```
+
+A library "So what?" is one row every bank reads and none may move (ruling I), so its
+review state is computed for the reading bank from that bank's own `change_case`
+(`so_what_confirmed_by`, `so_what_confirmed_at`), and nothing shared is written (D-62).
+
+`test_aud_s4` proves the integration half over the three producers as they ship: the
+"So what?" and the `scope_suggestion` a run files with `createChange`, and a bank's Ask
+answer. AUD-S4's journey on the AI log screen is green, so AUD-02 is `built` (R1 close, 2026-09-24).
 
 ### AUD-S5 — A problem report stays inside the bank that filed it `@integration` `@e2e` (AUD-03)
 ```gherkin
@@ -168,13 +192,15 @@ Given a library editor and a platform admin
 When each of them calls every console destination and endpoint that exists
 Then the proposal queue, its detail, approve and reject answer to the library editor and 403 the platform admin with requiredPermission "proposals.review"
 And the tenants list, creating a tenant and re-issuing an administrator's enrolment answer to the platform admin and 403 the library editor with the permission each wanted
+And the search evaluation set's questions, adding one, its runs and its baseline answer to the library editor and 403 the platform admin with requiredPermission "eval.manage"
+And the library editor filters the evaluation set by language, reads each baseline metric as "Unrecorded" until one is recorded, and adds a question the page marks as not yet in the release gate
 And creating a proposal, whose caller a logic gate decides, 403s the platform admin with requiredPermission named
 And each console destination the other role holds is absent from that role's navigation
 ```
 
 The console the two platform roles now divide between them: a library editor reaches
-the proposal queue, the library vocabularies, Change facts and Sources; a platform
-admin reaches tenants and Agent keys. Each of the five is walked by both roles, so a
+the proposal queue, the library vocabularies, Change facts, Sources and Evaluation; a
+platform admin reaches tenants and Agent keys. Each of the seven is walked by both roles, so a
 destination one role holds is proved absent from the other's navigation and its
 endpoints are proved to answer 403 with `requiredPermission` named.
 
@@ -187,10 +213,10 @@ against those sources and files a correction through the proposal door, which is
 AUD-03's chunk 5 answer. AUD-03's own status cell and AUD-S5 are chunk 4's replan and
 are untouched here.
 
-The surfaces this scenario does not yet reach, each with what builds it: evaluation
-sets (chunk 7), agent definitions and platform runs (chunk 11), system health
-(chunk 14), support access (TEN-S6), plans (NFR-S17 to S19), and languages and
-jurisdictions (R2; jurisdictions are read-only on the vocabularies screen).
+The surfaces this scenario does not yet reach, each with what builds it: agent
+definitions and platform runs (chunk 11), system health (chunk 14), support access
+(TEN-S6), plans (NFR-S17 to S19), and languages and jurisdictions (R2; jurisdictions
+are read-only on the vocabularies screen).
 
 ### ADM-S5 — System health names what is wrong `@integration` `@e2e` (ADM-02)
 ```gherkin
@@ -205,14 +231,28 @@ Then /health/ answers 200 with every component ok and the worker ping bounded
 ### ADM-S6 — A tenant is created from the console with its first administrator invited `@integration` `@e2e` (ADM-02, ID-01, TEN-01)
 ```gherkin
 Given a platform admin with tenants.manage
-When they create a tenant with a name, a short name, a timezone, a language order and the first administrator's address
-Then the tenant exists with its system roles, its own vocabularies and its content languages
+When they create a tenant with only a name and the first administrator's address
+Then the tenant exists with its system roles, its own vocabularies and a short name derived from that name
+And it carries no default language and no content language yet, so its onboarding "profile" step is open
 And the console's tenant list holds it
 And one pending administrator invitation is sent to that address
 And the creation is audited in the new tenant's own log
-When they create another tenant with the same short name
-Then the answer is 409
+When they create another tenant whose name derives the same short name
+Then the second tenant's short name carries a numeric suffix, and both are created
 ```
+
+### ADM-S17 — A bank sets its own timezone and languages, not the platform on its behalf `@integration` (ADM-02, TEN-01)
+```gherkin
+Given a tenant just created from the console, before anyone has touched its profile
+When its administrator opens Organisation
+Then the profile onboarding step reads as open, the timezone reads "Europe/Stockholm" and no language is set
+When they set the timezone, a default language and the content language order, and save
+Then the profile step closes and the values are theirs from then on, unreachable from the console
+```
+Proven at the API alone: TEN-S1 already journeys the same form, the same save and the
+same onboarding checklist end to end on a seeded tenant; what this scenario adds is that
+a console-created tenant starts with the step open, which a second journey through an
+identical screen would not show any differently.
 
 ### AUD-S8 — The ledger purge refuses a cutoff inside the floor and a paused tenant `@integration` (AUD-04)
 ```gherkin
@@ -252,13 +292,12 @@ When they create the first bank with its administrator's address
 And that administrator enrols from their own emailed link, sets the bank's profile and invites a second member
 And one of the two requests the first footprint and the other approves it with a passkey step-up
 Then the footprint holds the term, and no /api/ call has answered 400 or above undeclared and no page has thrown
-And the inventory and the timeline each render their own empty state on a library that has never held a row
+And the inventory, the timeline and the watch feed each render their own empty state on a library that has never held a row
 ```
 
 The journey is `frontend/tests/e2e/coldstart.journey.spec.ts`, tagged `@coldstart`; it
 runs on its own stack, booted with `seed_reference` alone (`E2E_COLD_START=1` in
-`tests/e2e/support/start-backend.sh`). The watch feed's empty state is the one step it
-cannot reach: `/watch` is in the navigation registry and has no route until chunk 5.
+`tests/e2e/support/start-backend.sh`).
 
 ### AUD-S9 — An agent's approval is in the audit trail with the agent named `@integration` (AUD-01, AUD-02)
 ```gherkin
@@ -268,4 +307,26 @@ And the event carries no step-up assertion, because a key cannot step up
 And a rejection or a correction by that agent is recorded the same way, with its reason
 And the model call behind the decision is in the AI output log with its citations and review state
 And the audit rows stay append-only: the decision cannot be edited afterwards
+```
+
+### ACC-S11 — Tenant reach needs two people, and off means off `@integration` `@e2e` (ACC-08, AC-ACC2)
+```gherkin
+Given two members holding security.manage and an agent access entry whose own toggle is on
+When one of them requests tenant reach and tries to approve it themselves
+Then the request answers 409 "four_eyes_violation"
+When the second approves it with a fresh passkey assertion
+Then reach is on, one audit row names each of them, and the assertion is referenced
+When the entry reads the register
+Then it succeeds
+When either of them switches tenant reach off
+Then every register route answers 403 "tenant_reach_off" for every entry, whatever each entry's own toggle says
+```
+
+### ACC-S12 — The access log records the call and holds no content `@integration` (ACC-08)
+```gherkin
+Given an entry that asked what applies to a described feature and listed its register entries
+When the tenant reads the entry's access log
+Then each row carries the credential, the entry, the tool, the filters, the record count, the scope applied and the timing
+And the person is named for a personal token and not for a service key
+And no row holds the description that was asked, an obligation's text, or any register content
 ```

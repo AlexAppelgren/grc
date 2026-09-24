@@ -17,6 +17,8 @@ Measured 2026-09-19, Phase 0 close: 128 tests (296 collected, 168 scenario stubs
 skipped), aggregate 97% over 1448 statements.
 Measured 2026-09-19, chunk 1 close: 190 tests (334 collected, 144 scenario stubs
 skipped), aggregate 96% over 3696 statements.
+Measured 2026-09-24, R1 close (chunks 3 to 7, over the merged wave-4 batch): 2081 tests
+(1959 run, 122 scenario stubs of R2 and R3 skipped), aggregate 97.5% over 15637 statements.
 """
 
 from __future__ import annotations
@@ -35,7 +37,7 @@ PARTIAL_RUN_MARGIN = 15.0
 # module path (as coverage reports it, forward slashes) -> (floor %, measured %, statements, date)
 # Only the modules where a bug costs money, mis-states a statutory figure or lets the wrong
 # person through: tenancy, authentication, permissions, audit, health, the role guard.
-# Proposals, cases, register, footprint, vocabulary and search join as their chunks land.
+# The later chunks' modules join below, each block measured at its chunk's close.
 FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/shared/tenancy.py": (96, 100, 85, "2026-09-19"),
     "apps/shared/authentication.py": (96, 100, 55, "2026-09-19"),
@@ -70,18 +72,10 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/identity/api.py": (95, 98, 215, "2026-09-19"),
     "apps/tenants/logic.py": (87, 91, 91, "2026-09-19"),
     "apps/tenants/api.py": (96, 100, 31, "2026-09-19"),
-    # Chunk 3 (library data layer): the "as of" rule and the loader that files the
-    # prototype's library, measured 2026-09-19 over 426 tests (301 run, 125 scenario stubs
-    # skipped), aggregate 97% over 6641 statements. seeds.py became the seeds/ package.
-    "apps/library/seeds/__init__.py": (96, 100, 22, "2026-09-19"),
-    "apps/library/seeds/library.py": (96, 100, 85, "2026-09-19"),
-    "apps/library/logic.py": (96, 100, 9, "2026-09-19"),
-    # Chunk 2 (vocabularies, taxonomy, footprint, proposals): footprint matching, vocabulary
-    # retire and merge, four eyes and proposal apply, measured 2026-09-19 over 409 tests
-    # (284 run, 125 scenario stubs skipped), aggregate 97% over 6221 statements.
-    "apps/proposals/apply.py": (90, 93, 148, "2026-09-19"),
-    "apps/proposals/logic.py": (97, 100, 123, "2026-09-19"),
-    "apps/proposals/api.py": (96, 100, 44, "2026-09-19"),
+    # Chunk 2 (vocabularies, taxonomy, footprint): footprint matching and vocabulary retire
+    # and merge, measured 2026-09-19 over 409 tests (284 run, 125 scenario stubs skipped),
+    # aggregate 97% over 6221 statements. Chunk 2's proposal modules are restated with
+    # chunk 4 below.
     "apps/taxonomy/api.py": (96, 99, 216, "2026-09-19"),
     "apps/taxonomy/footprint_logic.py": (97, 100, 109, "2026-09-19"),
     "apps/taxonomy/http.py": (93, 96, 103, "2026-09-19"),
@@ -93,6 +87,62 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/taxonomy/tenant_hooks.py": (96, 100, 37, "2026-09-19"),
     "apps/taxonomy/tenant_lists_logic.py": (94, 97, 304, "2026-09-19"),
     "apps/taxonomy/terms_logic.py": (94, 98, 72, "2026-09-19"),
+    # Chunk 3 (library and inventory): the FFFS provision tree, the instrument and
+    # provision reads and the "as of" and diff rules that back both, measured
+    # 2026-09-22 at the chunk's close, aggregate 98% over 1505 statements.
+    "apps/library/seeds/__init__.py": (96, 100, 22, "2026-09-22"),
+    "apps/library/seeds/library.py": (97, 100, 106, "2026-09-22"),
+    "apps/library/logic.py": (96, 100, 57, "2026-09-22"),
+    "apps/library/api.py": (97, 100, 121, "2026-09-22"),
+    "apps/library/reading.py": (95, 98, 322, "2026-09-22"),
+    "apps/library/reports.py": (96, 100, 18, "2026-09-22"),
+    # Chunk 4 (proposals and the console): four eyes, apply, the agent as second principal,
+    # a standard's proposal rules, library updates and the bank's problem reports; chunk 2's
+    # three proposal lines restated. Measured 2026-09-24 at the R1 close over 2081 tests.
+    # `logic.py` grew from 123 to 462 statements; its floor stays 97, never lowered.
+    "apps/proposals/apply.py": (92, 95, 281, "2026-09-24"),
+    "apps/proposals/logic.py": (97, 98, 462, "2026-09-24"),
+    "apps/proposals/api.py": (96, 100, 85, "2026-09-24"),
+    "apps/proposals/reading.py": (93, 97, 79, "2026-09-24"),
+    "apps/proposals/updates.py": (92, 96, 99, "2026-09-24"),
+    "apps/proposals/standards.py": (96, 100, 51, "2026-09-24"),
+    "apps/governance/problem_reports_logic.py": (90, 94, 73, "2026-09-24"),
+    # Chunk 5 (watch and the agent API): registration, curation, sources, the keys, the watch
+    # door, the "So what?", the case fan-out, runs and the screen, the AI log and the outbox.
+    "apps/watch/reading.py": (96, 99, 203, "2026-09-24"),
+    "apps/watch/registration.py": (97, 100, 121, "2026-09-24"),
+    "apps/watch/curation.py": (96, 99, 256, "2026-09-24"),
+    "apps/watch/sources.py": (96, 99, 103, "2026-09-24"),
+    "apps/watch/keys.py": (97, 100, 164, "2026-09-24"),
+    "apps/watch/write.py": (96, 100, 36, "2026-09-24"),
+    "apps/watch/so_what_draft.py": (96, 100, 17, "2026-09-24"),
+    "apps/cases/creation.py": (96, 100, 41, "2026-09-24"),
+    "apps/cases/so_what.py": (96, 100, 58, "2026-09-24"),
+    "apps/cases/links.py": (96, 100, 32, "2026-09-24"),
+    "apps/cases/matching.py": (96, 100, 39, "2026-09-24"),
+    "apps/agents/runs.py": (94, 97, 117, "2026-09-24"),
+    "apps/agents/screen.py": (96, 100, 31, "2026-09-24"),
+    "apps/governance/ai_log.py": (96, 100, 48, "2026-09-24"),
+    "apps/shared/outbox.py": (96, 100, 97, "2026-09-24"),
+    "apps/shared/ai.py": (93, 97, 66, "2026-09-24"),
+    # Chunk 6 (home, briefing, roadmap): every module of apps/home, the calendar feed first.
+    "apps/home/api.py": (96, 100, 84, "2026-09-24"),
+    "apps/home/briefing.py": (96, 100, 28, "2026-09-24"),
+    "apps/home/calendar.py": (96, 100, 15, "2026-09-24"),
+    "apps/home/feed.py": (97, 100, 166, "2026-09-24"),
+    "apps/home/logic.py": (96, 100, 37, "2026-09-24"),
+    "apps/home/mail.py": (96, 100, 21, "2026-09-24"),
+    "apps/home/models.py": (96, 100, 38, "2026-09-24"),
+    "apps/home/roadmap.py": (96, 100, 60, "2026-09-24"),
+    "apps/home/schemas.py": (96, 100, 98, "2026-09-24"),
+    "apps/home/tasks.py": (82, 86, 54, "2026-09-24"),
+    # Chunk 7 (search and ask): the hybrid ranking, the index, Ask and the evaluation set.
+    "apps/search/api.py": (96, 100, 55, "2026-09-24"),
+    "apps/search/ask.py": (96, 99, 147, "2026-09-24"),
+    "apps/search/eval_sets.py": (96, 99, 119, "2026-09-24"),
+    "apps/search/hybrid.py": (97, 100, 153, "2026-09-24"),
+    "apps/search/indexing.py": (94, 97, 148, "2026-09-24"),
+    "apps/search/sources.py": (95, 98, 110, "2026-09-24"),
 }
 
 

@@ -9,7 +9,7 @@ import { footprintKeys, usePreviewFootprintRequest } from './hooks';
 
 // The dry run: the same request with `dryRun`, answering the preview it would
 // store and persisting nothing, so the counted Hides and Reveals appear
-// before Send for approval.
+// before Request approval.
 
 // As the server sends it (per record kind), and as the screen reads it (per side).
 const serverPreview = { obligations: { hidden: 4, revealed: 0, available: true }, cases: { hidden: 0, revealed: 0, available: false } };

@@ -108,6 +108,8 @@ export const loginEventTone: Record<string, PillTone> = {
   reenrolment_issued: 'information',
   key_used: 'information',
   key_revoked: 'information',
+  key_created: 'information',
+  key_scopes_withheld: 'warning',
 };
 
 const loginEventLabel: Record<string, MessageKey> = {
@@ -125,6 +127,8 @@ const loginEventLabel: Record<string, MessageKey> = {
   reenrolment_issued: 'admin.securityLog.event.reenrolment_issued',
   key_used: 'admin.securityLog.event.key_used',
   key_revoked: 'admin.securityLog.event.key_revoked',
+  key_created: 'admin.securityLog.event.key_created',
+  key_scopes_withheld: 'admin.securityLog.event.key_scopes_withheld',
 };
 
 const loginMethodLabel: Record<string, MessageKey> = {

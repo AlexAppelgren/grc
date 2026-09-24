@@ -29,16 +29,19 @@ from django.db import connection
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 
+from apps.agents import testing as agent_build
+from apps.agents.models import RunStatus
 from apps.identity.models import ApiKey
 from apps.library.models import Instrument, Jurisdiction, Obligation, ObligationVersion, Provision, RecordStatus
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals import apply, logic
 from apps.proposals.models import Proposal, ProposalTenant
 from apps.proposals.schemas import ProposalObligationVersionPayload
-from apps.shared import factories
+from apps.shared import factories, tenancy
+from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent
 from apps.shared.tenancy import library_write
-from apps.taxonomy.models import DutyType, InstrumentLevel, ProvisionKind
+from apps.taxonomy.models import DutyType, InstrumentLevel, ProvisionKind, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 
 SUMMARIES = {
@@ -90,6 +93,7 @@ class ObligationProposalCreation(TestCase):
                     "level": InstrumentLevel.objects.get(key="act"),
                     "binding": True,
                     "jurisdiction": Jurisdiction.objects.get(key="se"),
+                    "regime": TaxonomyTerm.objects.get(dimension__key="regime", key="securities"),
                     "created_origin": "user",
                 },
             )
@@ -314,6 +318,62 @@ class ObligationProposalCreation(TestCase):
         self.assertEqual(caught.exception.code, "unknown_key")
 
 
+class AnAgentsProposalNamesItsRun(TestCase):
+    """AGT-01, PRO-01: a proposal from a key bound to an agent names an open run of that
+    key, so every proposal an agent filed traces to the night that produced it. The check
+    is `runs.require_open_run_of_key`, the one every agent write asks."""
+
+    FLAG = {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}
+
+    def setUp(self) -> None:
+        seed_languages()
+        seed_library_vocabularies()
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        self.key = agent_build.agent_key(scopes=("proposals:write",))
+        self.open_run = agent_build.platform_run(key=self.key)
+        self.proposer = logic.Proposer(actor=factories.agent_actor(), api_key_id=self.key.id, agent_id=self.key.agent.id)
+
+    def _create(self, proposer: logic.Proposer, agent_run_id: uuid.UUID | None) -> Proposal:
+        proposal, _ = logic.create(
+            kind="vocabulary_create",
+            title="Add the flag Client money",
+            payload=dict(self.FLAG),
+            proposer=proposer,
+            agent_run_id=agent_run_id,
+        )
+        return proposal
+
+    def test_an_open_run_of_the_key_is_stored_on_the_proposal(self) -> None:
+        self.assertEqual(self._create(self.proposer, self.open_run.id).agent_run_id, self.open_run.id)
+
+    def test_naming_no_run_or_a_closed_one_is_refused(self) -> None:
+        with self.assertRaises(ValidationError) as missing:
+            self._create(self.proposer, None)
+        self.assertEqual(missing.exception.code, "run_not_open")
+        self.open_run.status = RunStatus.SUCCEEDED.value
+        self.open_run.save(update_fields=["status"])
+        with self.assertRaises(ValidationError) as closed:
+            self._create(self.proposer, self.open_run.id)
+        self.assertEqual(closed.exception.code, "run_not_open")
+        self.assertFalse(Proposal.objects.exists())
+
+    def test_a_run_of_another_key_or_a_person_naming_one_is_not_found(self) -> None:
+        """404 and never 422: which run ids exist is not something a caller may probe for,
+        and a person opens no run at all."""
+        stranger = agent_build.agent_key(scopes=("proposals:write",))
+        editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
+        others = {
+            "another key": logic.Proposer(actor=factories.agent_actor(), api_key_id=stranger.id, agent_id=stranger.agent.id),
+            "a person": logic.Proposer(actor=factories.user_actor(user_id=editor.id), user=editor),
+        }
+        for name, proposer in others.items():
+            with self.subTest(caller=name):
+                with self.assertRaises(ProblemError) as caught:
+                    self._create(proposer, self.open_run.id)
+                self.assertEqual(caught.exception.status, 404)
+        self.assertFalse(Proposal.objects.exists())
+
+
 class ProposalTenantLink(TestCase):
     """Who a proposal was made by, without telling the console which bank (PRO-03)."""
 
@@ -375,3 +435,38 @@ class ProposalTenantLink(TestCase):
         self.assertEqual(ProposalTenant.objects.filter(proposal=first).count(), 1)
         replayed = AuditEvent.objects.get(action="proposal.replayed", subject_id=first.id)
         self.assertEqual(replayed.tenant_id, tenant.id)
+
+    def test_a_retry_key_answers_only_the_proposer_that_sent_it(self) -> None:
+        """An `Idempotency-Key` is the caller's own (playbook 4.3): another bank, or the
+        platform's agent, sending the same value files its own proposal and is never handed
+        the first one, its status or the note it was decided with."""
+        body: dict[str, Any] = {
+            "kind": "vocabulary_create",
+            "title": "Add the flag Client money",
+            "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}},
+            "idempotency_key": "flag-client-money",
+        }
+        bank_a = factories.tenant(slug="key-a")
+        officer_a = factories.member_user(bank_a, roles=("compliance_officer",))
+        first, _ = logic.create(**body, proposer=logic.Proposer(actor=factories.user_actor(user_id=officer_a.id), user=officer_a))
+        Proposal.objects.filter(pk=first.pk).update(status="rejected", review_note="Covered by Bank A's own flag")
+
+        bank_b = factories.tenant(slug="key-b")
+        officer_b = factories.member_user(bank_b, roles=("compliance_officer",))
+        theirs, created = logic.create(**body, proposer=logic.Proposer(actor=factories.user_actor(user_id=officer_b.id), user=officer_b))
+        self.assertTrue(created)
+        self.assertNotEqual(theirs.id, first.id)
+        self.assertEqual(theirs.review_note, "")
+        other_body = {**body, "title": "Add the flag Client assets"}
+        other, created = logic.create(**other_body, proposer=logic.Proposer(actor=factories.agent_actor(), api_key_id=factories.api_key(bank_b).id))
+        self.assertTrue(created, "the same value from another caller is never a conflict with someone else's")
+
+        tenancy.clear_tenant()
+        key = ApiKey.objects.create(name="Platform agent", key_prefix="plat5678", key_hash="y" * 64, scopes=["proposals:write"])
+        platform, created = logic.create(**body, proposer=logic.Proposer(actor=factories.agent_actor(), api_key_id=key.id))
+        self.assertTrue(created)
+        self.assertEqual(len({first.id, theirs.id, other.id, platform.id}), 4)
+
+        with self.assertRaises(ValidationError) as caught:
+            logic.create(**{**body, "idempotency_key": "k" * 201}, proposer=logic.Proposer(actor=factories.agent_actor(), api_key_id=key.id))
+        self.assertEqual(caught.exception.code, "validation_error")

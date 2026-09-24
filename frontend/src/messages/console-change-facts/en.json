@@ -1,6 +1,7 @@
 {
   "console.changeFacts.title": "Change facts",
   "console.changeFacts.lede": "What the agents suggested about a change, waiting for a library editor",
+  "console.changeFacts.flagged": "A page of this change reads like an instruction to an AI. Open its pages and check the facts against them before you confirm. An agent cannot confirm them.",
   "console.changeFacts.explain": "What you confirm here is the shared library. Every organisation reads it, and each one still decides in its own triage what to do about it.",
   "console.changeFacts.backToList": "Change facts",
   "console.changeFacts.filter.authority": "Authority",
@@ -25,7 +26,6 @@
   "console.changeFacts.notFoundBody": "There is nothing at this address in the console.",
   "console.changeFacts.suggestedMarker": "Suggested by the agent",
   "console.changeFacts.suggestedWithConfidence": "Suggested by the agent, confidence {confidence}",
-  "console.changeFacts.factConfirmed": "Confirmed for the library",
   "console.changeFacts.firstSeen": "First seen {date}",
   "console.changeFacts.stableKey": "Key {key}",
   "console.changeFacts.range": "{from} to {to} of {total}",
@@ -48,6 +48,12 @@
   "console.changeFacts.typeHint": "Only the terms on the Change type list. Missing one? Propose it on Vocabularies and the list changes for everyone once a second editor approves.",
   "console.changeFacts.flagsHint": "The whole set for this change. Clear them all and the change carries no flag.",
   "console.changeFacts.unknownKey": "That term is no longer on the list. Pick one of the terms offered here and save again.",
-  "console.changeFacts.confirmHeldTitle": "Confirming is not open yet",
-  "console.changeFacts.confirmHeldBody": "Correct anything on this page and it is saved straight away. Marking a fact as checked for the library is a separate decision that is still being settled, so nothing here says a person has stood behind it."
+  "console.changeFacts.suggestedByAgent": "Suggested by {agent}",
+  "console.changeFacts.confirmedByPerson": "Confirmed by a person for the library",
+  "console.changeFacts.confirm": "Confirm",
+  "console.changeFacts.confirmRest": "Confirm the rest",
+  "console.changeFacts.confirmLink": "Confirm for the library",
+  "console.changeFacts.confirmHint": "Confirming stands behind these facts, as they are shown, for every organisation. It asks for your passkey, and a fact you filed yourself is somebody else's to confirm.",
+  "console.changeFacts.ownSuggestion": "You filed this yourself, so somebody else confirms it.",
+  "console.changeFacts.changedMeanwhile": "This change moved while you were reading it. Check the facts again and confirm what you see."
 }

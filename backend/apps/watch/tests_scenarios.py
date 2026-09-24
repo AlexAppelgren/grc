@@ -13,13 +13,14 @@ import datetime
 from typing import Any
 from unittest import skip
 
+from django.conf import settings
 from django.db import transaction
 from django.test import TestCase
 from django.utils import timezone
 
 from apps.agents import testing as agent_build
 from apps.cases import creation, testing as case_build
-from apps.cases.models import CaseObligationLink
+from apps.cases.models import CaseObligationLink, ChangeCase
 from apps.governance.models import AiGeneration
 from apps.library import testing as library_build
 from apps.shared import factories, outbox, permissions as perms, tenancy
@@ -33,8 +34,9 @@ from apps.shared.testing import (
     stub_session,
     user_principal,
 )
-from apps.taxonomy.models import ChangeType
+from apps.taxonomy.models import ChangeType, FootprintTerm, TaxonomyTerm
 from apps.watch import testing as watch_build
+from apps.proposals.models import Proposal
 from apps.watch.models import ChangeDocument, ChangeObligation, RegulatoryChange, SourceCheck
 
 # The reform WAT-S3 names, held apart from the field that carries it. A stable key and the
@@ -43,24 +45,40 @@ from apps.watch.models import ChangeDocument, ChangeObligation, RegulatoryChange
 # would have taught the scanner to ignore the shape a real leak takes.
 _DORA_RTS = "eu-dora-rts-2026-01"
 
-# One reform as a sweep files it, for the scenarios that register one.
-_CHANGE: dict[str, Any] = {
-    "stableKey": "chg-fi-2026-research-payments",
-    "title": "FI adopts amended rules on paying for investment research",
-    "changeType": "adopted",
-    "authorityLabel": "Finansinspektionen",
-    "summary": "FI's board decided to amend three regulations in the securities area.",
-    "sourceLabel": "Finansinspektionen",
-    "sourceUrl": "https://www.fi.se/",
-    "documents": [{"url": "https://www.fi.se/en/published/news/2026/research-payments/", "isPrimary": True}],
-}
+# One reform as a sweep files it, for the scenarios that register one. A function rather
+# than a constant because every change carries a regime (D-39, AC-AGT1), and a term's id is
+# known only once the reference seed has run.
+def _change() -> dict[str, Any]:
+    return {
+        "stableKey": "chg-fi-2026-research-payments",
+        "title": "FI adopts amended rules on paying for investment research",
+        "changeType": "adopted",
+        "authorityLabel": "Finansinspektionen",
+        "summary": "FI's board decided to amend three regulations in the securities area.",
+        "sourceLabel": "Finansinspektionen",
+        "sourceUrl": "https://www.fi.se/",
+        "documents": [{"url": "https://www.fi.se/en/published/news/2026/research-payments/", "isPrimary": True}],
+        "termIds": [str(watch_build.term(_SECURITIES).id)],
+    }
 
 
 # WAT-S6 and WAT-S7 drive two banks over the real routes, so they need the case the
 # registration opens and the words a bank writes over the draft.
 _SECURITIES = "regime:securities"
 _AML = "regime:aml"
+_AI_ICT = "regime:ai_ict"
+_ISO_27001 = "standard:iso_iec_27001"
 _DRAFT = "Teams that pay for external research should confirm that documented criteria exist."
+
+# The model call a confirming agent reports with its decision (D-80), from the prototype's
+# own reform and its public source.
+_DECISION: dict[str, Any] = {
+    "model": "claude-opus-5",
+    "modelVersion": "2026-05-01",
+    "promptTemplate": "library-confirmer/curation/v1",
+    "output": "Confirm. The memorandum adopts the rule, in the securities area, on the advice perimeter.",
+    "citations": [{"label": "Finansinspektionen, decision memorandum", "url": "https://www.fi.se/en/published/news/2026/reporting/"}],
+}
 _OUR_WORDS = "Self-directed trading and Guided investing both pay for research; the desk documents the criteria."
 
 
@@ -171,7 +189,7 @@ class WatchScenarioTests(TestCase):
         registered = self._register(
             plain,
             {
-                **_CHANGE,
+                **_change(),
                 "agentRunId": str(run.id),
                 "events": [
                     {"label": "Consultation opened", "eventDate": "2026-03-01", "datePrecision": "month", "sortOrder": 1},
@@ -205,14 +223,14 @@ class WatchScenarioTests(TestCase):
         run, plain = self._run_with_a_key()
 
         # Given a change registered with stableKey "eu-dora-rts-2026-01"
-        first = self._register(plain, {**_CHANGE, "stableKey": _DORA_RTS, "agentRunId": str(run.id)})
+        first = self._register(plain, {**_change(), "stableKey": _DORA_RTS, "agentRunId": str(run.id)})
         self.assertEqual(first.status_code, 201, first.content)
 
         # When an agent posts the same stableKey with a new source page
         again = self._register(
             plain,
             {
-                **_CHANGE,
+                **_change(),
                 "stableKey": _DORA_RTS,
                 "agentRunId": str(run.id),
                 "documents": [{"url": "https://eur-lex.europa.eu/eli/reg_del/2026/1/oj", "isPrimary": True}],
@@ -230,12 +248,144 @@ class WatchScenarioTests(TestCase):
         # And no second change row exists
         self.assertEqual(RegulatoryChange.objects.count(), 1)
 
-    @skip("pending: WAT-S4")
+    def _confirmer(self) -> tuple[Any, Any]:
+        """The independent second agent (D-74): a definition of its own, a key holding the
+        review scope and never `changes:write`, and a run of its own open."""
+        tenancy.clear_tenant()
+        key = agent_build.agent_key(
+            agent_row=agent_build.agent(key="library-confirmer"),
+            scopes=("agent-runs:write", "library:read", perms.SCOPE_PROPOSALS_REVIEW),
+        )
+        return key, agent_build.platform_run(key=key)
+
+    def _confirm(self, change_id: str, body: dict[str, Any], headers: dict[str, Any]) -> Any:
+        tenancy.clear_tenant()
+        return self.client.post(
+            f"/api/v1/changes/{change_id}/confirmation", data=body, content_type="application/json", **headers
+        )
+
     def test_wat_s4(self) -> None:
         """WAT-S4
 
-        Types, flags and scope come from vocabularies and stay suggestions until confirmed (WAT-03).
+        Types, flags and scope come from vocabularies and stay suggestions until an agent of
+        another definition confirms them, and then read machine-confirmed; a person may
+        confirm one instead with a fresh passkey (WAT-03, D-74).
+        Operations: `createChange`, `confirmChangeCuration`.
         """
+        watch_build.seed_watch_reference()
+        tenancy.clear_tenant()
+        # The sweeper's key holds the review scope too, so its refusal below is its own
+        # suggestion and not a missing scope.
+        suggesting = agent_build.agent_key(scopes=(*agent_build.WATCH_SCOPES, perms.SCOPE_PROPOSALS_REVIEW))
+        run = agent_build.platform_run(key=suggesting)
+        sweeper = run.agent
+        banks = self._two_banks()
+        officer = factories.member(banks.inside, roles=("compliance_officer",)).user
+        reader = sign_in(officer, tenant=banks.inside)
+        editor = factories.platform_user(email="library.editor@bleqq.example")
+
+        # Given an agent classifies a change with a type, a flag and a scope term from the
+        # vocabularies (and a second flag, which a person confirms at the end)
+        tenancy.clear_tenant()
+        registered = self._register(
+            suggesting.plain_key,
+            {
+                **_change(),
+                "agentRunId": str(run.id),
+                "changeTypeConfidence": 0.91,
+                "flags": ["advice_perimeter", "ai"],
+                "termIds": [str(watch_build.term(_SECURITIES).id)],
+            },
+        )
+        self.assertEqual(registered.status_code, 201, registered.content)
+        change_id = registered.json()["id"]
+        _drain()
+
+        # Then each is stored as a key, marked suggested and naming the agent that suggested
+        # it, and the change row a bank reads marks each as a suggestion
+        def facts() -> dict[str, dict[str, Any]]:
+            feed = self.client.get("/api/v1/changes", {"footprint": "all"}, **reader)
+            row = next(item for item in feed.json()["items"] if item["id"] == change_id)
+            return {fact["ref"]["key"]: fact for fact in [row["changeType"], *row["flags"], *row["terms"]]}
+
+        suggested = facts()
+        self.assertEqual(sorted(suggested), ["adopted", "advice_perimeter", "ai", "securities"])
+        self.assertEqual(suggested["adopted"]["confidence"], 0.91)
+        for fact in suggested.values():
+            self.assertEqual(
+                (fact["suggested"], fact["confirmedOrigin"], fact["suggestedByAgent"]["key"], fact["confirmedByAgent"]),
+                (True, None, sweeper.key, None),
+            )
+
+        body = {"changeType": "adopted", "flags": ["advice_perimeter"], "termIds": [str(watch_build.term(_SECURITIES).id)]}
+        confirmer, review = self._confirmer()
+        decided = {**body, "decision": _DECISION, "agentRunId": str(review.id)}
+
+        # And the agent that suggested them cannot confirm them, through any key of its own:
+        # not the very key that filed them, and not another key of the same agent
+        own = self._confirm(change_id, decided | {"agentRunId": str(run.id)}, {"HTTP_X_API_KEY": suggesting.plain_key})
+        self.assertEqual((own.status_code, own.json()["code"]), (409, "own_suggestion"))
+        sibling = agent_build.agent_key(agent_row=sweeper, scopes=("agent-runs:write", perms.SCOPE_PROPOSALS_REVIEW))
+        same = self._confirm(
+            change_id,
+            {**decided, "agentRunId": str(agent_build.platform_run(key=sibling).id)},
+            {"HTTP_X_API_KEY": sibling.plain_key},
+        )
+        self.assertEqual((same.status_code, same.json()["code"]), (409, "same_agent"))
+
+        # And a bank's own compliance officer cannot confirm them: a change's type, flag and
+        # scope are library facts
+        banked = self._confirm(change_id, body, sign_in(officer, tenant=banks.inside))
+        self.assertEqual((banked.status_code, banked.json()["requiredPermission"]), (403, perms.PROPOSALS_REVIEW))
+
+        # When an agent of another definition confirms them, with the model call behind its
+        # decision, inside its own open run
+        confirmed = self._confirm(change_id, decided, {"HTTP_X_API_KEY": confirmer.plain_key})
+        self.assertEqual(confirmed.status_code, 200, confirmed.content)
+
+        # Then suggested becomes false, and each reads machine-confirmed naming the suggesting
+        # and the confirming agent, never a person's verification, for every bank
+        after = facts()
+        for key in ("adopted", "advice_perimeter", "securities"):
+            fact = after[key]
+            self.assertEqual(
+                (fact["suggested"], fact["confirmedOrigin"], fact["suggestedByAgent"]["key"], fact["confirmedByAgent"]["key"]),
+                (False, "agent", sweeper.key, "library-confirmer"),
+            )
+        self.assertEqual((after["ai"]["suggested"], after["ai"]["confirmedOrigin"]), (True, None), "only what was named")
+        page = self.client.get(f"/api/v1/changes/{change_id}", **reader).json()
+        self.assertEqual(page["changeTypeFact"]["confirmedOrigin"], "agent")
+        self.assertEqual(page["changeTypeFact"]["confirmedByAgent"]["key"], "library-confirmer")
+
+        # And the audit event records which agent confirmed, and its decision is in the AI
+        # output log under agent_review, against its run
+        tenancy.clear_tenant()
+        audit = AuditEvent.objects.get(action="regulatory_change.curation_confirmed")
+        self.assertEqual((audit.actor_type, audit.actor_label), ("agent", "library-confirmer"))
+        self.assertEqual(audit.after["confirmedOrigin"], "agent")
+        self.assertIsNone(audit.tenant_id)
+        logged = AiGeneration.objects.get(purpose="agent_review", subject_id=change_id)
+        self.assertEqual(logged.agent_run_id, review.id)
+        self.assertTrue(logged.model_metadata_reported_by_agent)
+
+        # And a person holding proposals.review may confirm one instead only with a fresh
+        # passkey, and it then reads confirmed by a person
+        session = {"HTTP_AUTHORIZATION": f"Bearer {SESSION_TOKEN_FOR_TESTS}"}
+        with stub_session(user_principal(permissions={perms.PROPOSALS_REVIEW}, subject_id=editor.id)):
+            stale = self._confirm(change_id, {"flags": ["ai"]}, session)
+        self.assertEqual((stale.status_code, stale.json()["code"]), (403, "step_up_required"))
+        with stub_session(user_principal(permissions={perms.PROPOSALS_REVIEW}, subject_id=editor.id, step_up_at=timezone.now())):
+            by_a_person = self._confirm(change_id, {"flags": ["ai"]}, session)
+        self.assertEqual(by_a_person.status_code, 200, by_a_person.content)
+        ai = facts()["ai"]
+        self.assertEqual(
+            (ai["suggested"], ai["confirmedOrigin"], ai["suggestedByAgent"]["key"], ai["confirmedByAgent"]),
+            (False, "user", sweeper.key, None),
+        )
+        tenancy.clear_tenant()
+        by_the_person = AuditEvent.objects.filter(action="regulatory_change.curation_confirmed").order_by("-created", "-id").first()
+        self.assertEqual((by_the_person.actor_type, by_the_person.after["confirmed"]), ("user", ["flag:ai"]))  # type: ignore[union-attr]
+        self.assertIsNotNone(by_the_person.step_up_assertion_id)  # type: ignore[union-attr]
 
     def test_wat_s5(self) -> None:
         """WAT-S5
@@ -272,14 +422,13 @@ class WatchScenarioTests(TestCase):
         """WAT-S6
 
         Links to affected obligations carry a confidence, and the library and the bank
-        decide separately (WAT-04).
-        Operations: `replaceChangeObligations`, `acceptCaseObligationLink`,
-        `removeCaseObligationLink`.
+        decide separately (WAT-04, D-74).
+        Operations: `replaceChangeObligations`, `confirmChangeCuration`,
+        `acceptCaseObligationLink`, `removeCaseObligationLink`.
 
-        The library editor's own confirmation is the held half of this feature and is
-        asserted in WAT-S4, whose `@integration` owner is `c5-watch-curation-confirm`:
-        until `q-editor-confirm` is answered no route moves
-        `change_obligation.confirmed_by`, and the note under WAT-S6 in app.md says so.
+        The library's half is D-74's: an agent of another definition confirms a link for
+        every bank, and it reads machine-confirmed. The bank's half is PRD WAT-04's person
+        per bank, on that bank's own case, which the library's confirmation never replaces.
         """
         run, plain = self._run_with_a_key()
         banks = self._two_banks()
@@ -302,7 +451,7 @@ class WatchScenarioTests(TestCase):
         registered = self._register(
             plain,
             {
-                **_CHANGE,
+                **_change(),
                 "agentRunId": str(run.id),
                 "termIds": [str(watch_build.term(_SECURITIES).id)],
                 "obligationLinks": [
@@ -323,6 +472,33 @@ class WatchScenarioTests(TestCase):
             {key: (value["confidence"], value["confirmed"]) for key, value in suggested.items()},
             {str(research.id): (0.9, False), str(reporting.id): (0.4, False)},
         )
+
+        # When an agent of another definition confirms the first for the shared library
+        confirmer, review = self._confirmer()
+        confirmed = self._confirm(
+            change_id,
+            {"obligationIds": [str(research.id)], "decision": _DECISION, "agentRunId": str(review.id)},
+            {"HTTP_X_API_KEY": confirmer.plain_key},
+        )
+        self.assertEqual(confirmed.status_code, 200, confirmed.content)
+
+        # Then that link reads machine-confirmed for every bank, naming both agents, and the
+        # audit event records which agent confirmed
+        for person, bank in ((officer, banks.inside), (other, banks.outside)):
+            links = {
+                link["obligationId"]: link
+                for link in self.client.get(f"/api/v1/changes/{change_id}", **sign_in(person, tenant=bank)).json()["obligations"]
+            }
+            first, second = links[str(research.id)], links[str(reporting.id)]
+            self.assertEqual(
+                (first["confirmed"], first["confirmedOrigin"], first["suggestedByAgent"]["key"], first["confirmedByAgent"]["key"]),
+                (True, "agent", run.agent.key, "library-confirmer"),
+            )
+            self.assertEqual((second["confirmed"], second["confirmedOrigin"]), (False, None))
+        tenancy.clear_tenant()
+        audit = AuditEvent.objects.get(action="regulatory_change.curation_confirmed")
+        self.assertEqual((audit.actor_type, audit.actor_label), ("agent", "library-confirmer"))
+        self.assertEqual(audit.after["confirmed"], [f"obligation:{research.id}"])
 
         # When a compliance officer accepts the first and removes the second on its own case
         accepted = self.client.post(
@@ -352,16 +528,17 @@ class WatchScenarioTests(TestCase):
         self.assertEqual(counted.status_code, 200, counted.content)
         self.assertEqual(counted.json()["openCount"], 1)
 
-        # And no library row changed: the second link is still a suggestion for everyone
+        # And no library row changed: the second link is still there and still a suggestion,
+        # and the first is as the library confirmed it, for everyone
         with transaction.atomic():
             tenancy.clear_tenant()
             links = {row.obligation_id: watch_build.is_a_suggestion(row) for row in ChangeObligation.objects.all()}
-            self.assertEqual(links, {research.id: True, reporting.id: True})
+            self.assertEqual(links, {research.id: False, reporting.id: True})
         theirs = self.client.get(f"/api/v1/changes/{change_id}", **sign_in(other, tenant=banks.outside))
         self.assertEqual(
             {link["obligationId"]: link["confirmed"] for link in theirs.json()["obligations"]},
-            {str(research.id): False, str(reporting.id): False},
-            "another bank still sees both, undecided",
+            {str(research.id): True, str(reporting.id): False},
+            "another bank still sees both, as the library holds them, and has decided neither",
         )
         self.assertEqual(theirs.json()["case"]["obligationDecisions"], [])
 
@@ -388,7 +565,7 @@ class WatchScenarioTests(TestCase):
         registered = self._register(
             plain,
             {
-                **_CHANGE,
+                **_change(),
                 "agentRunId": str(run.id),
                 "termIds": [str(watch_build.term(_SECURITIES).id)],
                 "soWhat": {
@@ -406,7 +583,8 @@ class WatchScenarioTests(TestCase):
         # Then an ai_generation row carries model, version and purpose
         with transaction.atomic():
             tenancy.clear_tenant()
-            logged = AiGeneration.objects.get(subject_id=change_id)
+            # The draft's own row; the filing's classification is a `scope_suggestion` row beside it.
+            logged = AiGeneration.objects.get(subject_id=change_id, purpose="so_what")
             self.assertEqual(
                 (logged.purpose, logged.model, logged.model_version, logged.status),
                 ("so_what", "claude-opus-5", "2026-05-01", "draft"),
@@ -456,30 +634,309 @@ class WatchScenarioTests(TestCase):
             tenancy.clear_tenant()
             self.assertEqual(list(AiGeneration.objects.values()), before, "the shared log row is nobody's to move")
 
-    @skip("pending: WAT-S8")
+    @skip("pending: WAT-S8 (WAT-06, chunk 13)")
     def test_wat_s8(self) -> None:
         """WAT-S8
 
         A tenant requests a source and private sources stay private (WAT-06).
         """
 
-    @skip("pending: WAT-S10 (WAT-07, chunk 5)")
+    def _standards_change(self, run: Any, **overrides: Any) -> dict[str, Any]:
+        """A new edition of ISO/IEC 27001 as a sweep files it: the standards body as its
+        authority, the AI and ICT regime and the standard's own term, named by its reference
+        alone (INV-08)."""
+        return {
+            "stableKey": "iso-iec-27001-amd-1",
+            "title": "ISO/IEC 27001 amendment",
+            "changeType": "consultation",
+            "authorityCode": "iso-iec",
+            "authorityLabel": "ISO/IEC",
+            "summary": "An amendment to ISO/IEC 27001 is out as a draft for comment.",
+            "sourceLabel": "ISO/IEC",
+            "sourceUrl": "https://www.iso.org/",
+            "termIds": [str(watch_build.term(_AI_ICT).id), str(watch_build.term(_ISO_27001).id)],
+            "agentRunId": str(run.id),
+            **overrides,
+        }
+
     def test_wat_s10(self) -> None:
         """WAT-S10
 
         A new edition of a standard is one change, and only tenants that follow it see it (WAT-02, WAT-07, CAS-01).
-        """
+        Operations: `createChange`, `listChanges`, `getRoadmap`.
 
-    @skip("pending: WAT-S11 (WAT-07, chunk 5)")
+        Case creation reads the same opt-in rule as the feed and the roadmap
+        (apps/taxonomy/matching.py), so tenant B's case exists and is marked outside its
+        scope rather than missing: CAS-01 opens one case per bank per change.
+        """
+        run, plain = self._run_with_a_key()
+        library_build.authority(key="iso-iec", short_name="ISO/IEC", jurisdiction="intl")
+        creation.register()
+        today = timezone.localdate()
+        transition_ends = today + datetime.timedelta(days=120)
+
+        # Given tenant A follows "ISO/IEC 27001" and tenant B follows no standard
+        follower = factories.tenant(slug="follows-iso", name="Example Bank AB")
+        other = factories.tenant(slug="follows-none", name="Second Bank A/S")
+        for tenant, refs in ((follower, (_AI_ICT, _ISO_27001)), (other, (_AI_ICT,))):
+            with transaction.atomic():
+                tenancy.activate(tenant.id)
+                for ref in refs:
+                    FootprintTerm.objects.create(tenant=tenant, term=watch_build.term(ref))
+        readers = {tenant: factories.member_user(tenant, roles=("reader",)) for tenant in (follower, other)}
+        tenancy.clear_tenant()
+
+        # When an agent registers the change "ISO/IEC 27001 amendment" with the authority
+        # "ISO/IEC", the term "ISO/IEC 27001", the regime "AI and ICT", a draft-for-comment
+        # timeline entry and a key date labelled "Transition ends"
+        draft = today - datetime.timedelta(days=30)
+        first = self._register(
+            plain,
+            self._standards_change(
+                run,
+                keyDate=transition_ends.isoformat(),
+                keyDateLabel="Transition ends",
+                events=[{"label": "Draft for comment", "eventDate": draft.isoformat(), "occurred": True, "sortOrder": 1}],
+            ),
+        )
+        self.assertEqual(first.status_code, 201, first.content)
+
+        # And later registers the same stable key with its publication date
+        again = self._register(
+            plain,
+            self._standards_change(
+                run,
+                changeType="adopted",
+                events=[{"label": "Published", "eventDate": today.isoformat(), "occurred": True, "sortOrder": 2}],
+            ),
+        )
+        self.assertEqual(again.status_code, 200, again.content)
+        _drain()
+
+        # Then one change exists with both timeline entries
+        change = RegulatoryChange.objects.get()
+        self.assertEqual(again.json()["id"], str(change.id))
+        self.assertEqual(
+            [(event.label, event.event_date) for event in change.events.order_by("sort_order")],
+            [("Draft for comment", draft), ("Published", today)],
+        )
+        self.assertEqual((change.key_date, change.key_date_label), (transition_ends, "Transition ends"))
+
+        # And each tenant has exactly one case for it, tenant A's matching its scope and tenant B's not
+        self.assertEqual(watch_build.cases_per_tenant(change, (follower, other)), {follower: 1, other: 1})
+        matches = {}
+        for tenant in (follower, other):
+            with transaction.atomic():
+                tenancy.activate(tenant.id)
+                matches[tenant] = ChangeCase.objects.get(change=change).footprint_match
+        self.assertEqual(matches, {follower: True, other: False})
+
+        # And the change and the transition date appear in tenant A's feed and roadmap and
+        # in neither of tenant B's
+        for tenant, expected in ((follower, True), (other, False)):
+            with self.subTest(tenant=tenant.slug):
+                headers = sign_in(readers[tenant], tenant=tenant)
+                feed = self.client.get("/api/v1/changes", **headers)
+                self.assertEqual(feed.status_code, 200, feed.content)
+                self.assertIs(str(change.id) in [row["id"] for row in feed.json()["items"]], expected)
+                roadmap = self.client.get("/api/v1/roadmap", **headers)
+                self.assertEqual(roadmap.status_code, 200, roadmap.content)
+                dated = [(item["title"], item["date"]) for item in roadmap.json()["items"]]
+                self.assertIs((change.title, transition_ends.isoformat()) in dated, expected, dated)
+
     def test_wat_s11(self) -> None:
         """WAT-S11
 
         Every change carries a regime, a standard term needs a standards body, and a publisher's page keeps no snapshot (WAT-01, WAT-03, WAT-07).
+        Operations: `createChange`, `createSource`, `recordSourceCheck`.
         """
+        # Given an agent key with changes:write
+        run, plain = self._run_with_a_key()
+        library_build.authority(key="iso-iec", short_name="ISO/IEC", jurisdiction="intl")
+        tenancy.clear_tenant()
 
-    @skip("pending: WAT-S12 (WAT-01, AUD-03, chunk 5)")
+        # When it registers a change with no regime term
+        refused = self._register(plain, {**_change(), "agentRunId": str(run.id), "termIds": []})
+
+        # Then the API answers 422 with code "regime_required" and the valid regime keys
+        self.assertEqual(refused.status_code, 422, refused.content)
+        problem = refused.json()
+        self.assertEqual(problem["code"], "regime_required")
+        regimes = sorted(term.key for term in TaxonomyTerm.objects.filter(dimension__key="regime", active=True))
+        self.assertEqual(sorted(problem["validKeys"]), regimes, "the refusal lists the regimes the agent may send")
+        self.assertEqual(RegulatoryChange.objects.count(), 0, "a refusal stores nothing")
+
+        # When it registers a change carrying a standard's term whose authority is a national supervisor
+        # (and, the same refusal, one that names no authority at all)
+        for authority in ("fi", None):
+            with self.subTest(authority=authority):
+                body = self._standards_change(run, authorityCode=authority)
+                if authority is None:
+                    del body["authorityCode"]
+                refused = self._register(plain, body)
+
+                # Then the API answers 422 with code "standard_term_only_on_standards"
+                self.assertEqual(refused.status_code, 422, refused.content)
+                self.assertEqual(refused.json()["code"], "standard_term_only_on_standards")
+                self.assertEqual(RegulatoryChange.objects.count(), 0, "a refusal stores nothing")
+
+        # Given the open web sweep fetches a page on a host listed in the standards publisher setting
+        page = "https://www.iso.org/standard/27001"
+        self.assertIn("iso.org", settings.STANDARDS_PUBLISHER_HOSTS)
+        fetched_at = timezone.now().replace(microsecond=0)
+        filed = self._register(
+            plain,
+            self._standards_change(
+                run,
+                documents=[{"url": page, "isPrimary": True, "fetchedAt": fetched_at.isoformat(), "contentHash": "sha256:" + "a" * 64}],
+            ),
+        )
+        self.assertEqual(filed.status_code, 201, filed.content)
+
+        # Then the stored source document holds the URL, the date and a content hash and no snapshot
+        stored = ChangeDocument.objects.get(url=page)
+        self.assertEqual((stored.fetched_at, stored.content_hash), (fetched_at, "sha256:" + "a" * 64))
+        columns = {field.name for field in ChangeDocument._meta.get_fields()}
+        self.assertFalse(
+            columns & {"snapshot", "content", "text", "body", "html"}, "no column could hold the page's text"
+        )
+
+        # When a change carrying an opt-in term sends a document with a snapshot
+        refused = self._register(
+            plain,
+            self._standards_change(
+                run,
+                stableKey="iso-iec-27001-amd-2",
+                documents=[{"url": "https://www.iso.org/standard/27001-amd-2", "snapshot": "Clause 5.1 ..."}],
+            ),
+        )
+
+        # Then the API answers 422 with code "validation_error", because no document has a snapshot field
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "validation_error")
+        self.assertFalse(RegulatoryChange.objects.filter(stable_key="iso-iec-27001-amd-2").exists())
+
+        # And a source of kind "Standards body" registered inactive gets no automated check
+        person = factories.platform_user(email="library.editor@bleqq.example")
+        with stub_session(user_principal(permissions={perms.SOURCES_MANAGE}, subject_id=person.id)):
+            registered = self.client.post(
+                "/api/v1/sources",
+                data={"name": "ISO news", "url": "https://www.iso.org/news.html", "kind": "standards_body"},
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}",
+            )
+        self.assertEqual(registered.status_code, 201, registered.content)
+        self.assertFalse(registered.json()["active"])
+        checked = self.client.post(
+            f"/api/v1/agent-runs/{run.id}/source-checks",
+            data={"sourceName": "ISO news", "status": "ok", "itemsFound": 1},
+            content_type="application/json",
+            HTTP_X_API_KEY=plain,
+        )
+        self.assertEqual(checked.status_code, 422, checked.content)
+        self.assertEqual(checked.json()["code"], "source_inactive")
+        self.assertFalse(SourceCheck.objects.exists())
+
     def test_wat_s12(self) -> None:
         """WAT-S12
 
         A run re-checks the library records of the sources it checked and proposes the correction (WAT-01, AUD-03).
+        Operations: `recordSourceCheck`, `getRecordSources`, `createProposal`, `approveProposal`, `finishAgentRun`.
         """
+        watch_build.seed_watch_reference()
+        tenancy.clear_tenant()
+        fi = watch_build.source(name="fi.se")
+        fffs = library_build.instrument(key="fffs-recheck", short_name="FFFS 2017:2", regime=_SECURITIES)
+        # Given a library obligation whose source page now states a different date, and one
+        # whose page still says what the record says
+        drifted = library_build.obligation(fffs, key="obl-recheck-drifted", versions=((datetime.date(2025, 1, 1), {"en": "Report within ten days."}),))
+        steady = library_build.obligation(fffs, key="obl-recheck-steady", versions=((datetime.date(2025, 1, 1), {"en": "Keep a register."}),))
+        key = agent_build.agent_key(scopes=(*agent_build.WATCH_SCOPES, perms.SCOPE_PROPOSALS_WRITE))
+        run = agent_build.platform_run(key=key)
+        as_agent: dict[str, Any] = {"HTTP_X_API_KEY": key.plain_key}
+
+        def check(body: dict[str, Any]) -> None:
+            logged = self.client.post(
+                f"/api/v1/agent-runs/{run.id}/source-checks",
+                data={"sourceName": "fi.se", "status": "ok", **body},
+                content_type="application/json",
+                **as_agent,
+            )
+            self.assertEqual(logged.status_code, 204, logged.content)
+
+        # When a watch run checks that source and re-checks the records citing it
+        check({"itemsFound": 4})
+        cited: dict[Any, list[dict[str, Any]]] = {}
+        for obligation in (drifted, steady):
+            sources = self.client.get(f"/api/v1/obligations/{obligation.id}/sources", **as_agent)
+            self.assertEqual(sources.status_code, 200, sources.content)
+            cited[obligation.id] = sources.json()["items"]
+            check({"kind": "recheck", "subjectType": "obligation", "subjectId": str(obligation.id)})
+        self.assertEqual([item["field"] for item in cited[drifted.id]], ["summary"])
+
+        # And the drift becomes a proposal carrying the source per changed field
+        page = cited[drifted.id][0]["url"]
+        proposed = self.client.post(
+            "/api/v1/proposals",
+            data={
+                "kind": "new_obligation_version",
+                "title": "The reporting deadline moved from ten days to five",
+                "targetType": "obligation",
+                "targetId": str(drifted.id),
+                "payload": {
+                    "summaries": {"en": "Report within five days."},
+                    "originalLanguage": "en",
+                    "isMachine": True,
+                    "effectiveFrom": "2026-01-01",
+                    "effectiveFromPrecision": "day",
+                },
+                "fieldSources": {"summaries.en": page, "effectiveFrom": page},
+                "sourceLabel": cited[drifted.id][0]["label"],
+                "sourceUrl": page,
+                "agentRunId": str(run.id),
+            },
+            content_type="application/json",
+            **as_agent,
+        )
+        self.assertEqual(proposed.status_code, 201, proposed.content)
+        closed = self.client.patch(
+            f"/api/v1/agent-runs/{run.id}",
+            data={
+                "status": "succeeded",
+                "stats": {"sourcesChecked": 1, "proposalsSubmitted": 1, "recordsRechecked": 2, "correctionsProposed": 1},
+            },
+            content_type="application/json",
+            **as_agent,
+        )
+        self.assertEqual(closed.status_code, 200, closed.content)
+        self.assertEqual((closed.json()["stats"]["recordsRechecked"], closed.json()["stats"]["correctionsProposed"]), (2, 1))
+
+        # Then the run's coverage log names the records it re-checked beside the sweep
+        lines = SourceCheck.objects.filter(agent_run_id=run.id)
+        self.assertEqual(sorted(lines.values_list("kind", flat=True)), ["recheck", "recheck", "sweep"])
+        self.assertEqual({line.subject_id for line in lines.filter(kind="recheck")}, {drifted.id, steady.id})
+        self.assertEqual({line.source_id for line in lines}, {fi.id})
+
+        # And exactly one proposal, for the drift, with a source per changed field, never an edit
+        filed = list(Proposal.objects.filter(agent_run_id=run.id))
+        self.assertEqual([(row.kind, row.target_id) for row in filed], [("new_obligation_version", drifted.id)])
+        self.assertEqual(filed[0].field_sources, {"summaries.en": page, "effectiveFrom": page})
+        self.assertEqual(drifted.versions.count(), 1, "the record says what it said until the proposal is approved")
+        # When nothing has drifted, the re-check writes no proposal
+        self.assertFalse(Proposal.objects.filter(target_id=steady.id).exists())
+
+        # When a second library editor, independent of the proposing agent, approves it
+        editor = factories.platform_user(roles=("library_editor",), email="editor2@bleqq.test")
+        approved = self.client.post(
+            f"/api/v1/proposals/{filed[0].id}/approve", data={}, content_type="application/json", **sign_in(editor, step_up=True)
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+        # Then the library holds the corrected version, written by that proposal and no other door
+        latest = drifted.versions.order_by("-version_number").first()
+        assert latest is not None
+        self.assertEqual((latest.version_number, latest.applied_by_proposal_id), (2, filed[0].id))
+        self.assertEqual(latest.effective_from, datetime.date(2026, 1, 1))
+        self.assertEqual(steady.versions.count(), 1)
+        after = self.client.get(f"/api/v1/obligations/{drifted.id}/sources", **as_agent)
+        self.assertEqual(sorted(item["field"] for item in after.json()["items"]), ["effectiveFrom", "summaries.en"])

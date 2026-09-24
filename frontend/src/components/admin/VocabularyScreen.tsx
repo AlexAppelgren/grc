@@ -10,10 +10,12 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Field, TextArea, TextInput } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { PageHead } from '@/components/ui/PageHead';
-import { Meta, Panel, Rows } from '@/components/ui/Panel';
+import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, NotFoundScreen, ProblemAlert, StatusLine } from '@/components/ui/States';
 import { SwatchPair } from '@/components/ui/Swatch';
+import { useFormatContext } from '@/features/identity/hooks';
+import { useTenantProposals } from '@/features/proposals/hooks';
 import {
   useCreateValue,
   useMergeValue,
@@ -31,6 +33,7 @@ import {
   exactDuplicateFrom,
   listLabel,
   nearDuplicateFrom,
+  presentPendingProposal,
   presentVocabularyRow,
   presentVocabularyValue,
   usageText,
@@ -38,6 +41,7 @@ import {
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { unlocks, type Surface } from '@/shared/navigation/registry';
 import { usePermissions } from '@/shared/navigation/require-permission';
+import { formatDate } from '@/shared/utils/format';
 
 // /admin/vocabularies/[list]: one vocabulary
 // (design/screens/admin-vocabulary.html; VOC-01, VOC-02, VOC-07, AC-VOC1,
@@ -497,6 +501,40 @@ function AddDialog({ list, isLibrary, onClose }: { list: string; isLibrary: bool
   );
 }
 
+// What this bank proposed on a library list and is still waiting on (VOC-07,
+// PRO-01). The tenant route already requires vocab.manage, as GET
+// /tenant/proposals does; the console never reads a bank's proposals.
+function PendingProposals({ list }: { list: string }) {
+  const t = useT();
+  const ctx = useFormatContext();
+  const pending = useTenantProposals({ status: 'open', targetList: list });
+  const items = pending.data?.items ?? [];
+
+  return (
+    <Panel title={t('admin.vocabulary.pendingTitle')} className="mt-4" data-pending-proposals={list}>
+      {pending.isPending ? (
+        <LoadingState rows={1} />
+      ) : pending.isError ? (
+        <ErrorState title={t('admin.vocabulary.pendingError')} onRetry={() => void pending.refetch()} />
+      ) : items.length === 0 ? (
+        <p className="text-muted">{t('admin.vocabulary.pendingEmpty')}</p>
+      ) : (
+        <Rows>
+          {items.map((row) => (
+            <Row key={row.id} data-pending-proposal={row.id}>
+              <span className="font-semibold">{row.title}</span>
+              <Meta className="mt-1.5">
+                <PillRow pills={presentPendingProposal(t)} />
+                <span>{t('admin.vocabulary.pendingSent', { date: formatDate(row.createdAt, ctx) })}</span>
+              </Meta>
+            </Row>
+          ))}
+        </Rows>
+      )}
+    </Panel>
+  );
+}
+
 // ——— the screen ———————————————————————————————————————————————————
 
 export function VocabularyScreen({ list, surface = 'tenant' }: { list: string; surface?: Surface }) {
@@ -631,13 +669,7 @@ export function VocabularyScreen({ list, surface = 'tenant' }: { list: string; s
         </Rows>
       )}
 
-      {/* chunk4-T20: what this tenant itself proposed on this list and is still waiting on
-          (GET /tenant/proposals, `useTenantProposals` in features/proposals/hooks.ts, built
-          and unit-tested). Not called here: the route is chunk4-T10's and is not on `main`
-          yet, and firing it unconditionally on every tenant library-list visit would 404 on
-          every one of them, tripping the api-guard on every other journey that opens this
-          screen. Render `<PendingProposals list={list} />` here (below, defined the same way
-          RenameForm and the other inline pieces of this screen are) once T10 lands. */}
+      {isLibrary && !inConsole ? <PendingProposals list={list} /> : null}
 
       {retiring !== null ? <RetireDialog list={list} row={retiring} onClose={() => setRetiring(null)} /> : null}
       {merging !== null ? (

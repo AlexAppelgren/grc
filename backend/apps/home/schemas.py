@@ -96,6 +96,7 @@ ROADMAP_ITEM_EXAMPLE: JsonDict = {
     "kind": "regulatory",
     "itemType": "change_date",
     "date": "2026-10-01",
+    "datePrecision": "day",
     "quarter": "2026-Q4",
     "label": "In force",
     "title": "FI adopts amended rules on paying for investment research",
@@ -239,11 +240,21 @@ class HomeRoadmapItem(CamelSchema):
     date: datetime.date = Field(
         description=(
             "The day the item falls on, as a plain calendar date (`2026-10-01`) and never a "
-            "timestamp, because a legal date is a date and not a moment. The roadmap shows "
-            "today and the future; a date that has passed leaves the roadmap and stays on the "
+            "timestamp, because a legal date is a date and not a moment, and only as exact as "
+            "`datePrecision` says. The roadmap shows today and the future; a date that has passed leaves the roadmap and stays on the "
             "change itself."
         ),
         examples=["2026-10-01"],
+    )
+    date_precision: DatePrecision = Field(
+        description=(
+            "How exactly the source stated `date`, a fixed kind: `day` renders as 1 October "
+            "2026, `month` as October 2026, `quarter` as Q4 2026 and `year` as 2026. A date "
+            "stated less exactly than a day is still stored on a day so it can be ordered, and "
+            "a reader must render it by this and never print a day, or count the days left to "
+            "one, that the source did not state (HOM-03, INV-S10)."
+        ),
+        examples=["day"],
     )
     quarter: str = Field(max_length=QUARTER_MAX, description=_QUARTER, examples=["2026-Q4"])
     label: str = Field(

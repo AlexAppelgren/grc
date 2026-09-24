@@ -42,7 +42,7 @@ WORDS = re.compile(r"\w+", re.UNICODE)
 CONCEPT_TERMS: dict[str, tuple[str, ...]] = {
     "appropriateness": ("appropriat", "passande", "hensigtsmæssig", "hensiktsmessig", "asianmukaisuus"),
     "complex_instrument": ("complex", "komplicer", "kompleks", "monimutkais"),
-    "suitability": ("suitab", "lämplig", "egnet", "egnethet", "soveltuvuus"),
+    "suitability": ("suitab", "suits", "lämplig", "egnet", "egnethet", "soveltuvuus"),
     "investment_advice": ("advice", "advising", "rådgiv", "recommend", "rekommend", "sijoitusneuvo", "neuvonta"),
     "sustainability": ("sustainab", "hållbarhet", "kestävyys"),
     "warning": ("warn", "varn", "advar", "varoit"),

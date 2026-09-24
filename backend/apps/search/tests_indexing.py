@@ -66,7 +66,7 @@ from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.tenancy import library_write
 from apps.shared.testing import sign_in
 from apps.shared.tests_library_fence import WRITE_METHODS
-from apps.taxonomy.models import DutyType, InstrumentLevel, ProvisionKind, TaxonomyTerm, TermDimension
+from apps.taxonomy.models import DutyType, InstrumentLevel, ProvisionKind, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from config.celery import app as celery_app
 
@@ -107,7 +107,7 @@ class LibraryFixtureMixin:
                 level=InstrumentLevel.objects.get(key="act"),
                 binding=True,
                 jurisdiction=Jurisdiction.objects.get(key="se"),
-                regime=TaxonomyTerm.objects.filter(dimension=TermDimension.objects.get(key="regime")).first(),
+                regime=TaxonomyTerm.objects.get(dimension__key="regime", key="securities"),
                 owner_tenant=instrument_owner,
                 created_origin="user",
             )

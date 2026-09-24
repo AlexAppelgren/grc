@@ -122,10 +122,11 @@ gate() { # gate <name> <dir> <command...>: run it, time it, stop on failure
   timings+=("$(printf '  %-52s %5ss' "$name" $((SECONDS - start)))")
 }
 
-# Secret scan (ci.yml `secrets`, gitleaks-action's flags). CI scans the pushed commits;
-# here the full history plus the uncommitted work, a superset.
+# Secret scan (ci.yml `secrets`, gitleaks-action's flags). CI's full-history checkout scans
+# every branch on origin, not only the pushed one (2026-09-23: a plan file on a side branch
+# failed a ship), so here the full history of the snapshot and of every origin branch, a superset.
 gitleaks="$(tool gitleaks-8.30.1 gitleaks$x "$gitleaks_url" "$gitleaks_sha")"
-gate "gitleaks" . "$gitleaks" git --config .gitleaks.toml --redact -v --exit-code=2 --log-opts="$snapshot"
+gate "gitleaks" . "$gitleaks" git --config .gitleaks.toml --redact -v --exit-code=2 --log-opts="$snapshot --remotes=origin"
 
 # A merge resolved by hand can leave a conflict marker behind, and no other gate reads for
 # one (2026-09-19: a verification log was committed with its markers). Checked in the snapshot.

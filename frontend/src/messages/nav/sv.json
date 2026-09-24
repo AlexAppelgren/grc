@@ -14,6 +14,7 @@
   "nav.console.sources": "Källor",
   "nav.console.changeFacts": "Fakta om ändringar",
   "nav.console.agentKeys": "Agentnycklar",
+  "nav.console.evaluation": "Utvärdering",
   "nav.console.tenants": "Organisationer",
   "nav.admin.organisation": "Organisation",
   "nav.admin.members": "Medlemmar",
@@ -23,6 +24,7 @@
   "nav.admin.auditLog": "Granskningslogg",
   "nav.me.passkeys": "Mina nycklar",
   "nav.me.sessions": "Mina sessioner",
+  "nav.me.calendarFeeds": "Mina kalenderflöden",
   "shell.skipToContent": "Hoppa till innehållet",
   "shell.signedInAs": "Inloggad som",
   "shell.signOut": "Logga ut",
@@ -36,5 +38,5 @@
   "sidebar.collapse": "Minimera menyn",
   "sidebar.expand": "Visa menyn",
   "nav.admin.vocabularies": "Vokabulärer",
-  "nav.admin.footprint": "Avtryck"
+  "nav.admin.footprint": "Regulatorisk omfattning"
 }

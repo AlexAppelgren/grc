@@ -61,12 +61,17 @@ class IndexWriteRefused(RuntimeError):
 def index_write(reason: str) -> Iterator[None]:
     """The only context in which a SearchChunk may be saved, updated or deleted. `reason`
     names the rebuild that is running: the approval that reindexed one obligation, the
-    change that arrived through the outbox, or the full rebuild a command asked for."""
+    change that arrived through the outbox, or the full rebuild a command asked for.
+
+    It also opens the index door in the database (H16, ADR 0058), which reaches
+    `search_chunk` and no library table, and puts back the door it found — the approval's
+    own, when a rebuild runs inside one."""
     if not reason.strip():
         raise ValueError("index_write() needs a reason naming the rebuild that is running")
     token = _index_write_reason.set(reason)
     try:
-        yield
+        with tenancy.library_door("index"):
+            yield
     finally:
         _index_write_reason.reset(token)
 
@@ -172,6 +177,14 @@ def reindex_provision(provision_id: uuid.UUID) -> IndexCounts:
     return _write(sources.provision_chunks(provision_id))
 
 
+def reindex_change(change_id: uuid.UUID) -> IndexCounts:
+    """The same for one registered change, from the outbox handler in `tasks.py` and the
+    full rebuild. A withdrawn or superseded change loses its chunks here."""
+    from apps.search import sources
+
+    return _write(sources.change_chunks(change_id))
+
+
 def reindex_all() -> IndexCounts:
     """Rebuild the whole corpus and ask for the embeddings it now owes (SRC-01).
 
@@ -186,6 +199,8 @@ def reindex_all() -> IndexCounts:
         counts += reindex(obligation_id)
     for provision_id in sources.provision_ids():
         counts += reindex_provision(provision_id)
+    for change_id in sources.change_ids():
+        counts += reindex_change(change_id)
     record(
         action=INDEX_REBUILT,
         actor=INDEX_ACTOR,

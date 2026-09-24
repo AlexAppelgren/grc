@@ -23,7 +23,10 @@ from django.test import TestCase
 from apps.library.models import Jurisdiction
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, tenancy
-from apps.taxonomy.models import WatchedMarket
+from apps.shared.tenancy import library_write
+from apps.taxonomy import markets_logic
+from apps.taxonomy.models import FootprintTerm, TaxonomyTerm, TermDimension, WatchedMarket
+from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 
 
 class WatchedMarketRow(TestCase):
@@ -54,3 +57,31 @@ class WatchedMarketRow(TestCase):
         with self.assertRaises(ProtectedError) as refused, transaction.atomic():
             Jurisdiction.objects.filter(pk=self.norway.pk).delete()
         self.assertEqual([row.pk for row in refused.exception.protected_objects], [watch.pk])
+
+
+class OperatingReadsTheMirrorLink(TestCase):
+    """A market is operating when a footprint term links to its jurisdiction (FP-S12, D-28),
+    whatever that term or its dimension is called. Proven to fail 2026-09-23 against the
+    read it replaced, which looked for the jurisdiction's key under the literal dimension key
+    `jurisdiction`: renaming the dimension's key left Sweden reading as not followed."""
+
+    def setUp(self) -> None:
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+        self.sweden = Jurisdiction.objects.get(key="se")
+        self.company = factories.tenant(slug="markets-mirror")
+
+    def _level(self, key: str) -> str:
+        return next(row.level for row in markets_logic.markets_of(self.company.id, ["en"]) if row.jurisdiction.key == key)
+
+    def test_a_renamed_mirror_still_reads_as_operating(self) -> None:
+        term = TaxonomyTerm.objects.get(jurisdiction=self.sweden)
+        with library_write("test: a mirror renamed by hand"):
+            TermDimension.objects.filter(pk=term.dimension_id).update(key="market")
+            TaxonomyTerm.objects.filter(pk=term.pk).update(key="sweden")
+        tenancy.activate(self.company.id)
+        FootprintTerm.objects.create(tenant=self.company, term=term)
+        self.assertEqual(self._level("se"), markets_logic.OPERATING)

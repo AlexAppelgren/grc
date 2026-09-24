@@ -199,3 +199,34 @@ description = "E2E passkey private key for the seeded user reader-sv@example-ban
 condition = "AND"
 regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgXjQWZqtyaBvdSauPw7EQXwcL7Pzux4BT7PXI5mTmUHyhRANCAAQRNjo2Sl8qxneaYYjbBpMLfsl01osVq0s7xkDho4fT-OAVRR32_m-8VtPUTBlJzD58ymyHr4oIOzOrB4JHDtSf$''']
 paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
+
+[[allowlists]]
+description = "E2E passkey private key for the seeded user language@example-bank.test: E2E virtual authenticator test keys, playbook 8.3. Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."
+condition = "AND"
+regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgfHckdrhZk-n7rS-Xsce_W7LQAMD6-KmHC3LZvo5aCOyhRANCAAS0YAk5zeOVgIE00-Bf19vA0NzPZ9ipMklLaQw4_hwSoVMIZkdlpH3tPJFLRHpy0hbLQdUlQyeMjRMGB4tBAaoq$''']
+paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
+
+[[allowlists]]
+description = "Stable keys the FP-S12 scenario gives the instrument and the obligation it builds (backend/apps/taxonomy/tests_scenarios.py, tax-mirror-refusal, 2026-09-23). Test record keys, not secrets: the generic-api-key rule reads a key= argument with a digit in it as a key. Exact literals, this one file only."
+condition = "AND"
+regexes = ['''^fp-s12-instrument$''', '''^fp-s12-obligation$''']
+paths = ['''^backend/apps/taxonomy/tests_scenarios\.py$''']
+
+[[allowlists]]
+description = "Stable key the watch registration test gives the change a person creates by hand (backend/apps/watch/tests_registration.py, watch-curation-confirm-backend, 2026-09-23). A test record key, not a secret: the generic-api-key rule reads a stableKey= argument with a year in it as a key. Exact literal, this one file only."
+condition = "AND"
+regexes = ['''^chg-fi-2026-by-hand$''']
+paths = ['''^backend/apps/watch/tests_registration\.py$''']
+
+[[allowlists]]
+description = "A package key in the R1 build plan's wave 3 briefs (docs/plans/r1-waves/wave3.json on the claude/r1-plan branch, 2026-09-23). CI scans every branch on origin, so this plan file is scanned too. A package name, not a secret: the generic-api-key rule reads a JSON \"key\" field with a digit in it as a key. Exact literal, this one file only."
+condition = "AND"
+regexes = ['''^aud-s4-integration$''']
+paths = ['''^docs/plans/r1-waves/wave3\.json$''']
+
+# --- tax-market-journeys: tenant B's second person (FP-S8) ---
+[[allowlists]]
+description = "E2E passkey private key for the seeded user approver@second-bank.test: E2E virtual authenticator test keys, playbook 8.3. Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."
+condition = "AND"
+regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgqp4keK1CVCmUqb6cuZmxD4PZsm4iHTiQkEIDgB8CBTmhRANCAAQItrG7COh7F-vyB9XMk6g-gn4Jp6BtV6O3663YP4y-LUtTEc-4zlyk0tFyDvnF9JlXLtLIOE8vHq82uz9Z-763$''']
+paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']

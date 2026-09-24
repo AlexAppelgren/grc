@@ -20,12 +20,12 @@ import { allowFreshContext, E2E_FIXED_CODE, installAuthenticator, inviteLink, in
 // 400 or above undeclared and no page throws on the way from nothing to a working bank,
 // and that the first screens render honest empty states rather than an error.
 
-/** A suffix no other run, attempt or parallel worker shares: every address and short name carries it. */
+/** A suffix no other run, attempt or parallel worker shares: every address and the bank's own name carries it. */
 const RUN = Date.now().toString(36);
 const PLATFORM_ADMIN = `platform-admin-${RUN}@bleqq.test`;
 const BANK_ADMIN = `administrator@coldstart-${RUN}.test`;
 const BANK_APPROVER = `approver@coldstart-${RUN}.test`;
-const BANK_SLUG = `coldstart-${RUN}`;
+const BANK_NAME = `Cold Start Bank ${RUN}`;
 
 /**
  * FIRST_RUN_SETUP step 4: `manage.py bootstrap_platform` on the api service, as a person
@@ -107,19 +107,19 @@ test.describe('cold start', () => {
 
     await page.getByRole('button', { name: 'Create a tenant', exact: true }).click();
     const form = page.getByRole('dialog', { name: 'Create a tenant' });
-    await form.getByLabel('Name', { exact: true }).fill('Cold Start Bank AB');
-    await form.getByLabel('Short name', { exact: true }).fill(BANK_SLUG);
+    await form.getByLabel('Name', { exact: true }).fill(BANK_NAME);
     await form.getByLabel("First administrator's email").fill(BANK_ADMIN);
     await form.getByLabel('Their title').fill('Head of compliance');
     const created = page.waitForResponse((r) => r.url().endsWith('/api/v1/console/tenants') && r.request().method() === 'POST' && r.ok());
     await form.getByRole('button', { name: 'Create tenant', exact: true }).click();
     const { id: tenantId } = (await (await created).json()) as { id: string };
-    await expect(page.locator(`[data-tenant-id="${tenantId}"]`)).toContainText(BANK_SLUG);
+    // Pinned by id, never by a short name: nobody types one any more, it is derived.
+    await expect(page.locator(`[data-tenant-id="${tenantId}"]`)).toHaveAttribute('data-tenant-slug', /.+/);
 
     // ——— step 8: the bank's administrator enrols from their own emailed link ————
     const admin = await otherPerson(browser, apiGuard);
     await enrol(admin, await invitationEmailedTo(page, BANK_ADMIN));
-    await expect(admin.locator('[data-who-panel]')).toContainText('Cold Start Bank AB');
+    await expect(admin.locator('[data-who-panel]')).toContainText(BANK_NAME);
 
     // ——— step 9: the bank's profile ————————————————————————————————————————
     await admin.goto('/admin/organisation');
@@ -143,16 +143,17 @@ test.describe('cold start', () => {
 
     // ——— step 11: the footprint, requested by one person and approved by the other ———
     await admin.goto('/admin/footprint');
-    await expect(admin.getByRole('heading', { level: 1, name: 'Footprint' })).toBeVisible();
-    // A bank that has just been created holds no terms, so every chip is off and the first
-    // footprint is a switch-on. Found by dimension key, never by a label: terms are rows.
-    const chip = admin.locator('[data-dimension="licensed_activity"]').getByRole('button').first();
-    await expect(chip).toHaveAttribute('aria-pressed', 'false');
-    await chip.click();
+    await expect(admin.getByRole('heading', { level: 1, name: 'Regulatory scope' })).toBeVisible();
+    // A bank that has just been created holds no terms, so every group reads as unrestricted
+    // and the first scope is an addition. Found by dimension key, never by a label: terms are rows.
+    const regime = admin.locator('[data-dimension="regime"]');
+    await expect(regime.getByText('Not restricted: every option applies.')).toBeVisible();
+    await admin.getByRole('button', { name: 'Propose a change' }).click();
+    await regime.getByRole('checkbox').first().check();
     const draft = admin.locator('[data-draft-preview]');
     await expect(draft).toBeVisible();
     await expect(draft.getByText('Loading…')).toHaveCount(0);
-    await draft.getByRole('button', { name: 'Send for approval' }).click();
+    await draft.getByRole('button', { name: 'Request approval' }).click();
     await expect(admin.getByText('Sent for approval.')).toBeVisible();
     // Four eyes on screen: the requester is offered Withdraw, never Approve.
     await expect(admin.locator('[data-pending-request]').getByRole('button', { name: 'Approve' })).toHaveCount(0);
@@ -161,13 +162,13 @@ test.describe('cold start', () => {
     await approver.locator('[data-pending-request]').getByRole('button', { name: 'Approve' }).click();
     await approver.getByRole('dialog', { name: /^Approve ".+"\?$/ }).getByRole('button', { name: 'Approve with passkey' }).click();
     const prompt = approver.getByRole('dialog', { name: 'Confirm with your passkey' });
-    const approved = approver.getByText('Approved. The footprint has changed.');
+    const approved = approver.getByText('Approved. The regulatory scope has changed.');
     await expect(prompt.or(approved).first()).toBeVisible();
     if (await prompt.isVisible()) await prompt.getByRole('button', { name: 'Use passkey' }).click();
     await expect(approved).toBeVisible();
 
     await admin.reload();
-    await expect(admin.locator('[data-dimension="licensed_activity"]').getByRole('button').first()).toHaveAttribute('aria-pressed', 'true');
+    await expect(regime.locator('[data-term]').first()).toHaveText(/ In our scope$/);
 
     // ——— the first screens, on a library that has never held a row ————————————
     // Each answers with its own empty state, and the api guard fails this journey if any
@@ -176,14 +177,13 @@ test.describe('cold start', () => {
     await expect(admin.locator('[data-empty-state]')).toBeVisible();
     await admin.goto('/');
     await expect(admin.locator('[data-empty-state]')).toBeVisible();
+    // The watch feed on a library no agent has ever written to: its triage tab says there
+    // is nothing to triage, rather than a feed that failed to load.
+    await admin.goto('/watch');
+    await expect(admin.getByRole('heading', { level: 1, name: 'Watch' })).toBeVisible();
+    await expect(admin.locator('[data-empty-state]')).toBeVisible();
 
     await approver.context().close();
     await admin.context().close();
-  });
-
-  test.fixme('ADM-S8 @coldstart: the watch feed is empty rather than broken on a new bank', async () => {
-    // /watch is in the navigation registry and has no route yet: chunk 5 (Watch and the
-    // agent API) builds the feed and its empty state. Until then a cold start cannot prove
-    // it, and the inventory and the timeline above carry the empty-state half of ADM-S8.
   });
 });

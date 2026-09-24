@@ -5,12 +5,14 @@ validated against the IANA database; languages are keys of Language rows."""
 
 from __future__ import annotations
 
+import re
 import uuid
 import zoneinfo
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, cast
 
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.http import HttpRequest
 from django.utils import timezone
 from django.utils.text import slugify
@@ -68,6 +70,7 @@ def tenant_out(tenant: Tenant) -> dict[str, Any]:
         "status": tenant.status,
         "default_language": language_ref(tenant.default_language),
         "content_languages": [language_ref(language) for language in content_languages(tenant)],
+        "ai_enabled": tenant.ai_enabled,
         "onboarding": onboarding(tenant),
     }
 
@@ -153,6 +156,29 @@ def update_tenant(
     return tenant
 
 
+def set_ai_enabled(*, tenant: Tenant, actor: Actor, enabled: bool, step_up_assertion_id: uuid.UUID | None) -> Tenant:
+    """The bank's own AI switch (D-07, SRC-03): a security change, stepped up and audited
+    with the assertion. `apps.shared.ai.ensure_enabled` reads it before any model call. The
+    row is locked so two switches at once each record the state the other left."""
+    tenant = Tenant.objects.select_for_update().get(pk=tenant.pk)
+    before = {"aiEnabled": tenant.ai_enabled}
+    tenant.ai_enabled = enabled
+    tenant.save(update_fields=["ai_enabled"])
+    record(
+        action="tenant.ai_switched",
+        actor=actor,
+        subject_type="tenant",
+        subject_id=tenant.id,
+        subject_title=tenant.name,
+        summary="AI features switched on." if enabled else "AI features switched off.",
+        tenant_id=tenant.id,
+        before=before,
+        after={"aiEnabled": enabled},
+        step_up_assertion_id=step_up_assertion_id,
+    )
+    return tenant
+
+
 # ---------------------------------------------------------------------------------------
 # Console: the last admin recovers through platform support (ID-05, ID-S13)
 # ---------------------------------------------------------------------------------------
@@ -232,35 +258,66 @@ def console_tenants(*, limit: int, offset: int) -> tuple[list[Tenant], int]:
     return list(tenants[offset : offset + limit]), tenants.count()
 
 
-def _validate_slug(slug: str) -> str:
-    cleaned = slug.strip().lower()
-    if not cleaned or slugify(cleaned) != cleaned:
-        raise ValidationError("A short name is lower-case letters, digits and hyphens.", code="invalid_slug")
-    return cleaned
+# Letters slugify would drop because Unicode decomposition has no ASCII for them ("Sør"
+# became "sr"): ø, æ, the German sharp s, Faroese and Icelandic ð and þ, the Sami đ, ŋ and
+# ŧ, and œ and ł; å is listed beside them for the reader. Names are lower-cased first, so
+# this covers the capitals too.
+_SPELLED_OUT = str.maketrans(
+    {"ø": "o", "æ": "ae", "å": "a", "ß": "ss", "ð": "d", "þ": "th"}
+    | {"đ": "d", "ŋ": "ng", "ŧ": "t", "œ": "oe", "ł": "l"}
+)
+# Slugify keeps underscores; a short name holds letters, digits and single hyphens only.
+_SEPARATORS = re.compile(r"[-_]+")
+_SLUG_MAX_LENGTH = cast(int, Tenant._meta.get_field("slug").max_length)
+
+
+def _derive_slug(name: str) -> str:
+    """A short name from the organisation's name, never typed by a person (D-68): letters
+    without a decomposition spelled out, lower-cased and hyphenated. `_create_with_derived_slug`
+    cuts it to fit the column and de-duplicates it."""
+    slug = _SEPARATORS.sub("-", slugify(name.lower().translate(_SPELLED_OUT))).strip("-")
+    return slug or "tenant"
+
+
+def _create_with_derived_slug(name: str) -> Tenant:
+    """Insert the tenant under the first free short name: the derived one, then with -2, -3
+    and so on, each cut so that it and its suffix fit the column without a trailing hyphen.
+    The insert runs in a savepoint, so a tenant of the same name committed by a concurrent
+    creation after the existence check costs a retry with the next suffix, not the request."""
+    base = _derive_slug(name)
+    n = 1
+    while True:
+        suffix = f"-{n}" if n > 1 else ""
+        slug = base[: _SLUG_MAX_LENGTH - len(suffix)].rstrip("-") + suffix
+        n += 1
+        if Tenant.objects.filter(slug=slug).exists():
+            continue
+        try:
+            with transaction.atomic():
+                return Tenant.objects.create(name=name, slug=slug)
+        except IntegrityError as exc:
+            # Only the short name's uniqueness means "taken, try the next"; any other refusal
+            # is a fault and surfaces as one.
+            if getattr(getattr(exc.__cause__, "diag", None), "constraint_name", None) != "tenant_slug_key":
+                raise
 
 
 def create_tenant(
     *,
     actor: Actor,
     name: str,
-    slug: str,
-    timezone_name: str,
-    default_language: str,
-    content_language_keys: list[str],
     first_admin_email: str,
     first_admin_title: str,
 ) -> Tenant:
-    """Write the bank, give it its roles, lists and languages, and invite its first
-    administrator, in the caller's transaction (FIRST_RUN_SETUP steps 6 and 7)."""
+    """Write the bank and invite its first administrator, in the caller's transaction
+    (FIRST_RUN_SETUP steps 6 and 7). The timezone, default language and content languages
+    are the bank's own to set, on the Organisation profile screen that already self-services
+    them under security.manage (D-68): platform staff no longer guess at them, the tenant
+    reads the model's default timezone and no language until its administrator chooses one,
+    and the onboarding "profile" step stays open until they do."""
     cleaned_name = name.strip()
     if not cleaned_name:
         raise ValidationError("Give the organisation a name.", code="name_required")
-    cleaned_slug = _validate_slug(slug)
-    if Tenant.objects.filter(slug=cleaned_slug).exists():
-        raise ValidationError("An organisation already uses that short name.", code="duplicate_key")
-    zone = _validate_timezone(timezone_name)
-    languages = _languages_by_keys(content_language_keys)
-    default = _languages_by_keys([default_language])[0]
     email = invitation_logic.normalise_email(first_admin_email)
     # Platform staff are separate accounts, the same rule bootstrap_platform enforces from
     # the other side: a platform role holder invited into a bank would carry the console's
@@ -270,11 +327,10 @@ def create_tenant(
             "That address belongs to platform staff. Invite the bank's administrator with an address of their own.",
             code="platform_account",
         )
-    tenant = Tenant.objects.create(name=cleaned_name, slug=cleaned_slug, timezone=zone, default_language=default)
+    tenant = _create_with_derived_slug(cleaned_name)
     # Platform staff have no bypass (playbook 14): the one tenant this call activates is
     # the one it has just written, so no other tenant's rows are readable or writable here.
     tenancy.activate(tenant.id)
-    set_content_languages(tenant, languages)
     roles_logic.ensure_system_roles(tenant)
     # The lists are this person's work too, not a deploy's: the same actor the creation
     # below is recorded under.
@@ -287,13 +343,7 @@ def create_tenant(
         subject_title=tenant.name,
         summary="Organisation created from the platform console.",
         tenant_id=tenant.id,
-        after={
-            "name": tenant.name,
-            "slug": tenant.slug,
-            "timezone": tenant.timezone,
-            "defaultLanguage": default.key,
-            "contentLanguages": [language.key for language in languages],
-        },
+        after={"name": tenant.name, "slug": tenant.slug, "timezone": tenant.timezone},
     )
     # The first administrator gets the system role that can invite the rest of the bank,
     # chosen by its permission and never by a role name (playbook 4.2). roles_by_keys

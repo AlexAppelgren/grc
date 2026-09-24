@@ -11,12 +11,19 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Iterator
-from typing import Any
+from datetime import datetime, timedelta
+from typing import Any, cast
+from unittest import mock
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import DEFAULT_DB_ALIAS, connections, transaction
+from django.db import DEFAULT_DB_ALIAS, connection, connections, transaction
+from django.test.utils import CaptureQueriesContext
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
+from apps.cases import so_what as cases_so_what, testing as case_build
+from apps.cases.models import ChangeCase
 from apps.governance import ai_log
 from apps.governance.models import AiGeneration, AiPurpose, AiStatus
 from apps.governance.schemas import AiCitation
@@ -25,8 +32,11 @@ from apps.shared import ai, factories, tenancy
 from apps.shared.adapters.llm import Completion, LlmAdapter, LlmError
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy.seeds import seed_library_vocabularies
+from apps.watch import testing as watch_build
 
 V1 = "/api/v1"
+
+DRAFT = "Teams that pay for external research should confirm that documented criteria exist."
 
 CITATION = AiCitation(
     label="Finansinspektionen, decision memorandum FI Dnr 25-12345",
@@ -321,3 +331,175 @@ class AiGenerationsReadTests(ScenarioTestCase):
         with transaction.atomic():
             tenancy.clear_tenant()
             self.assertEqual(AiGeneration.objects.get(pk=library.pk).status, AiStatus.DRAFT.value)
+
+
+def _to_the_millisecond(moment: datetime | None) -> datetime | None:
+    """A timestamp as the API writes it, which is to the millisecond."""
+    return None if moment is None else moment.replace(microsecond=moment.microsecond // 1000 * 1000)
+
+
+class AiGenerationsReviewAndFeedbackTests(ScenarioTestCase):
+    """`GET /ai-generations` narrowed to one record, with feedback, the reviewer and the
+    review state (AUD-02). A library "So what?" is one row every bank reads, so its review
+    state is each reading bank's own, computed from that bank's case and never written back
+    to the shared row (ruling I, D-62)."""
+
+    def setUp(self) -> None:
+        watch_build.seed_watch_reference()
+        self.tenant_a = factories.tenant(slug="ai-review-a")
+        self.tenant_b = factories.tenant(slug="ai-review-b")
+        self.officer_a = factories.member(
+            self.tenant_a, roles=("compliance_officer",), user_row=factories.user(name="Anna Reviewer")
+        ).user
+        self.officer_b = factories.member(self.tenant_b, roles=("compliance_officer",)).user
+        tenancy.clear_tenant()
+        self.change = watch_build.change(so_what_draft=DRAFT)
+        self.case_a = case_build.case(self.tenant_a, self.change, so_what_text=DRAFT)
+        self.case_b = case_build.case(self.tenant_b, self.change, so_what_text=DRAFT)
+
+    def _so_what(self, output: str = DRAFT, *, at: datetime | None = None) -> AiGeneration:
+        with transaction.atomic(), mock.patch("django.utils.timezone.now", return_value=at or timezone.now()):
+            tenancy.clear_tenant()
+            return ai_log.log_generation(
+                purpose=AiPurpose.SO_WHAT,
+                model="claude-opus-5",
+                model_version="2026-05-01",
+                output=output,
+                citations=[CITATION],
+                subject_type="regulatory_change",
+                subject_id=self.change.id,
+                metadata_reported_by_agent=True,
+            )
+
+    def _answer(self, tenant: Any) -> AiGeneration:
+        with transaction.atomic():
+            tenancy.activate(tenant.id)
+            return ai_log.log_generation(
+                purpose=AiPurpose.ANSWER,
+                model="claude-opus-5",
+                model_version="2026-05-01",
+                output="Confirm the documented criteria before 1 October.",
+                citations=[CITATION],
+                tenant_id=tenant.id,
+            )
+
+    def _settle(self, *, text: str | None = None, at: datetime | None = None) -> None:
+        """Tenant A stands behind its copy: confirmed as drafted, or rewritten when `text`."""
+        actor = factories.user_actor(label="Anna Reviewer", user_id=self.officer_a.id)
+        with transaction.atomic(), mock.patch("django.utils.timezone.now", return_value=at or timezone.now()):
+            tenancy.activate(self.tenant_a.id)
+            if text is None:
+                cases_so_what.confirm_so_what(tenant=self.tenant_a, actor=actor, user=self.officer_a, change_id=self.change.id)
+            else:
+                cases_so_what.save_so_what(
+                    tenant=self.tenant_a, actor=actor, user=self.officer_a, change_id=self.change.id, text=text
+                )
+
+    def _read(self, user: Any, tenant: Any, query: str = "") -> dict[str, Any]:
+        response = self.client.get(f"{V1}/ai-generations?{query}", **sign_in(user, tenant=tenant))
+        self.assertEqual(response.status_code, 200, response.content)
+        return cast(dict[str, Any], response.json())
+
+    def _by_id(self, page: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        return {row["id"]: row for row in page["items"]}
+
+    def test_the_subject_filter_lists_one_records_rows(self) -> None:
+        drafted = self._so_what()
+        self._answer(self.tenant_a)
+        page = self._read(self.officer_a, self.tenant_a, f"subjectId={self.change.id}")
+        self.assertEqual(([row["id"] for row in page["items"]], page["total"]), ([str(drafted.id)], 1))
+        self.assertEqual(page["items"][0]["subjectId"], str(self.change.id))
+        other = self._read(self.officer_a, self.tenant_a, f"subjectId={uuid.uuid4()}")
+        self.assertEqual(other, {"items": [], "total": 0})
+        malformed = self.client.get(f"{V1}/ai-generations?subjectId=not-a-uuid", **sign_in(self.officer_a, tenant=self.tenant_a))
+        self.assertEqual((malformed.status_code, malformed.json()["code"]), (422, "validation_error"))
+
+    def test_an_answer_carries_its_feedback_and_note(self) -> None:
+        rated = self._answer(self.tenant_a)
+        unrated = self._answer(self.tenant_a)
+        with transaction.atomic():
+            tenancy.activate(self.tenant_a.id)
+            ai_log.set_feedback(rated, feedback="wrong", note="The date is the consultation's, not the rule's.")
+        rows = self._by_id(self._read(self.officer_a, self.tenant_a, "purpose=answer"))
+        self.assertEqual(
+            (rows[str(rated.id)]["feedback"], rows[str(rated.id)]["feedbackNote"]),
+            ("wrong", "The date is the consultation's, not the rule's."),
+        )
+        self.assertEqual((rows[str(unrated.id)]["feedback"], rows[str(unrated.id)]["feedbackNote"]), ("", ""))
+
+    def test_a_banks_own_row_carries_its_reviewer_and_state(self) -> None:
+        answer = self._answer(self.tenant_a)
+        reviewed_at = timezone.now()
+        with transaction.atomic():
+            tenancy.activate(self.tenant_a.id)
+            AiGeneration.objects.filter(pk=answer.pk).update(
+                status=AiStatus.CONFIRMED.value, reviewed_by=self.officer_a, reviewed_at=reviewed_at
+            )
+        row = self._by_id(self._read(self.officer_a, self.tenant_a))[str(answer.id)]
+        self.assertEqual(row["status"], "confirmed")
+        self.assertEqual(row["reviewedBy"], {"id": str(self.officer_a.id), "name": "Anna Reviewer"})
+        self.assertEqual(parse_datetime(row["reviewedAt"]), _to_the_millisecond(reviewed_at))
+
+    def test_a_shared_so_what_reads_each_banks_own_review_state(self) -> None:
+        drafted = self._so_what()
+        self._settle()
+        mine = self._by_id(self._read(self.officer_a, self.tenant_a))[str(drafted.id)]
+        with transaction.atomic():
+            tenancy.activate(self.tenant_a.id)
+            confirmed_at = ChangeCase.objects.get(pk=self.case_a.pk).so_what_confirmed_at
+        self.assertEqual(mine["status"], "confirmed")
+        self.assertEqual(mine["reviewedBy"], {"id": str(self.officer_a.id), "name": "Anna Reviewer"})
+        self.assertEqual(parse_datetime(mine["reviewedAt"]), _to_the_millisecond(confirmed_at))
+        self.assertFalse(mine["tenantScoped"])
+        theirs = self._by_id(self._read(self.officer_b, self.tenant_b))[str(drafted.id)]
+        self.assertEqual((theirs["status"], theirs["reviewedBy"], theirs["reviewedAt"]), ("draft", None, None))
+
+    def test_nothing_shared_is_written_when_a_bank_confirms(self) -> None:
+        drafted = self._so_what()
+        self._settle()
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            stored = AiGeneration.objects.get(pk=drafted.pk)
+        self.assertEqual((stored.status, stored.reviewed_by_id, stored.reviewed_at), (AiStatus.DRAFT.value, None, None))
+
+    def test_a_rewritten_so_what_reads_as_edited(self) -> None:
+        drafted = self._so_what()
+        self._settle(text="Our research desk pays from its own budget, so this changes nothing for us.")
+        row = self._by_id(self._read(self.officer_a, self.tenant_a))[str(drafted.id)]
+        self.assertEqual((row["status"], row["reviewedBy"]["id"]), ("edited", str(self.officer_a.id)))
+
+    def test_only_the_draft_a_bank_settled_reads_as_reviewed(self) -> None:
+        """A later draft arrived after the bank had settled its copy, so nobody there stood
+        behind it; an earlier one the bank's copy had already moved past was never settled."""
+        start = timezone.now()
+        earlier = self._so_what("An earlier wording.", at=start)
+        settled = self._so_what(at=start + timedelta(minutes=1))
+        self._settle(at=start + timedelta(minutes=2))
+        later = self._so_what("A later wording.", at=start + timedelta(minutes=3))
+        rows = self._by_id(self._read(self.officer_a, self.tenant_a))
+        self.assertEqual(
+            [rows[str(row.id)]["status"] for row in (earlier, settled, later)], ["draft", "confirmed", "draft"]
+        )
+        self.assertIsNone(rows[str(later.id)]["reviewedBy"])
+
+    def test_the_status_filter_reads_the_banks_own_review_state(self) -> None:
+        drafted = self._so_what()
+        self._settle()
+        confirmed_a = self._read(self.officer_a, self.tenant_a, "status=confirmed")
+        self.assertEqual([row["id"] for row in confirmed_a["items"]], [str(drafted.id)])
+        self.assertEqual(self._read(self.officer_a, self.tenant_a, "status=draft")["total"], 0)
+        self.assertEqual(self._read(self.officer_b, self.tenant_b, "status=confirmed")["total"], 0)
+        self.assertEqual(self._read(self.officer_b, self.tenant_b, "status=draft")["total"], 1)
+
+    def test_the_query_count_does_not_grow_with_the_page(self) -> None:
+        self._so_what()
+        self._settle()
+        headers = sign_in(self.officer_a, tenant=self.tenant_a)
+        with CaptureQueriesContext(connection) as one:
+            self.client.get(f"{V1}/ai-generations", **headers)
+        for _ in range(3):
+            self._so_what()
+            self._answer(self.tenant_a)
+        with CaptureQueriesContext(connection) as many:
+            self.client.get(f"{V1}/ai-generations", **headers)
+        self.assertEqual(len(many), len(one))

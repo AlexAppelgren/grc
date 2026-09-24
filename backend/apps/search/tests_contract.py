@@ -1,17 +1,16 @@
 """The search and ask API contract (SRC-01 to SRC-03, chunk 7).
 
 This is the contract package's proof: the four operations exist at their designed
-paths, in their designed shape, behind their real gates, and say `not_built` until the
-logic packages land (`hybrid.py` for search and similar, `ask.py` for the answer and its
-feedback). The gate runs first, so an unauthenticated or unauthorised caller is refused
-before it learns whether anything is built.
+paths, in their designed shape, behind their real gates. All four answer for real
+(`hybrid.py`, `ask.py`). The gate runs first, so an unauthenticated or unauthorised
+caller is refused before it learns anything.
 
 `POST /ask` is the one that answers a stream (`text/event-stream`), so its proof is the
-content type and the events, not a JSON body; and the proof that the caps still run in
-front of the stream, because a question over the cap must never open one.
+content type and the events, not a JSON body; and the proof that every refusal still
+runs in front of the stream, because a stream that has begun cannot change its status.
 
-The scenarios of app.md stay skipped: nothing here proves a requirement, only the
-contract other packages and the frontend data layer are written against.
+What an answer says is proved in tests_ask.py and in SRC-S4 to SRC-S6; nothing here
+proves a requirement, only the contract the frontend data layer is written against.
 """
 
 from __future__ import annotations
@@ -21,9 +20,12 @@ import uuid
 from typing import Any, ClassVar
 
 from django.conf import settings
+from django.db import transaction
 from django.test import TestCase
 
+from apps.shared import factories, tenancy
 from apps.shared import permissions as perms
+from apps.shared.models import Tenant
 from apps.shared.testing import (
     API_KEY_FOR_TESTS,
     SESSION_TOKEN_FOR_TESTS,
@@ -61,7 +63,7 @@ class SearchApiTestCase(TestCase):
 
 
 class SearchContractTests(SearchApiTestCase):
-    """Every search operation says not_built behind its own gate (plan rule 3)."""
+    """Every search operation runs behind its own gate."""
 
     # -- the reader's three routes ------------------------------------------------------
     def test_search_is_built_and_runs_behind_the_readers_gate(self) -> None:
@@ -74,11 +76,15 @@ class SearchContractTests(SearchApiTestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()["code"], "not_found")
 
-    def test_answer_feedback_answers_not_built_for_a_reader(self) -> None:
+    def test_answer_feedback_is_built_and_runs_behind_the_readers_gate(self) -> None:
+        # `POST /answers/{answerId}/feedback` answers for real since
+        # `ask-feedback-and-limits`; what it writes is proved in tests_ask_limits.py. What
+        # belongs here is that the gate passed and the logic ran: this principal's company
+        # holds no answer by that id, which is a 404, never a 403.
         with stub_session(user_principal(permissions={perms.SEARCH_USE}, tenant_id=uuid.uuid4())):
             response = self.post(FEEDBACK, FEEDBACK_BODY, SESSION_HEADERS)
-        self.assertEqual(response.status_code, 501)
-        self.assertEqual(response.json()["code"], "not_built")
+        self.assertEqual(response.status_code, 404, response.content)
+        self.assertEqual(response.json()["code"], "not_found")
 
     # -- the agents' route ---------------------------------------------------------------
     def test_similar_is_built_and_runs_behind_the_agents_scope(self) -> None:
@@ -94,27 +100,58 @@ class SearchContractTests(SearchApiTestCase):
 
 class AskStreamContractTests(SearchApiTestCase):
     """Ask is a stream (SRC-03, SRC-S9): the answer's first token has 2 s, which one JSON
-    body cannot promise. The stub opens the stream and closes it with one problem event."""
+    body cannot promise. Every refusal is a status and a problem body before it opens."""
 
-    def test_ask_streams_one_not_built_problem_event_and_closes(self) -> None:
-        with stub_session(user_principal(permissions={perms.SEARCH_USE}, tenant_id=uuid.uuid4())):
-            response = self.post(ASK, ASK_BODY, SESSION_HEADERS)
-        self.assertEqual(response.status_code, 501)
+    tenant: ClassVar[Tenant]
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.tenant = factories.tenant(slug="ask-contract")
+
+    def ask(self, body: dict[str, Any], tenant_id: uuid.UUID | None = None) -> Any:
+        """One question from a reader of `tenant_id`, the contract's own bank by default."""
+        with stub_session(user_principal(permissions={perms.SEARCH_USE}, tenant_id=tenant_id or self.tenant.id)):
+            return self.post(ASK, body, SESSION_HEADERS)
+
+    def assert_refused_before_a_stream(self, response: Any, status: int, code: str) -> None:
+        self.assertEqual(response.status_code, status, response.content)
+        self.assertNotIn("event-stream", response["Content-Type"])
+        self.assertEqual(response.json()["code"], code)
+
+    def test_ask_streams_a_start_event_and_a_closing_answer(self) -> None:
+        # This library is empty, so nothing can ground an answer and no model is asked: the
+        # stream is the whole contract, `start` and then an `answer` that says so.
+        response = self.ask(ASK_BODY)
+        self.assertEqual(response.status_code, 200)
         self.assertTrue(response["Content-Type"].startswith("text/event-stream"), response["Content-Type"])
         # Nothing between the answer and the reader may hold the events back (playbook 10).
         self.assertEqual(response["X-Accel-Buffering"], "no")
         self.assertEqual(response["Cache-Control"], "no-cache")
         events = events_of(response)
-        self.assertEqual([event["event"] for event in events], ["problem"])
-        self.assertEqual(events[0]["code"], "not_built")
+        self.assertEqual([event["event"] for event in events], ["start", "answer"])
+        self.assertEqual(events[0]["id"], events[1]["answer"]["id"])
+        self.assertTrue(events[1]["answer"]["noAnswer"])
 
     def test_a_question_over_the_cap_never_opens_a_stream(self) -> None:
         # The cap is a trust boundary: the question is the one tenant text a model sees.
-        with stub_session(user_principal(permissions={perms.SEARCH_USE}, tenant_id=uuid.uuid4())):
-            response = self.post(ASK, {"question": "x" * (settings.ASK_QUESTION_MAX_CHARS + 1)}, SESSION_HEADERS)
-        self.assertEqual(response.status_code, 422)
-        self.assertNotIn("event-stream", response["Content-Type"])
-        self.assertEqual(response.json()["code"], "validation_error")
+        response = self.ask({"question": "x" * (settings.ASK_QUESTION_MAX_CHARS + 1)})
+        self.assert_refused_before_a_stream(response, 422, "validation_error")
+
+    def test_a_language_the_library_does_not_hold_never_opens_a_stream(self) -> None:
+        response = self.ask({**ASK_BODY, "lang": "xx"})
+        self.assert_refused_before_a_stream(response, 422, "unknown_key")
+
+    def test_a_bank_that_switched_its_ai_off_never_opens_a_stream(self) -> None:
+        with transaction.atomic():
+            tenancy.activate(self.tenant.id)
+            Tenant.objects.filter(pk=self.tenant.id).update(ai_enabled=False)
+        response = self.ask(ASK_BODY)
+        self.assert_refused_before_a_stream(response, 403, "feature_off")
+
+    def test_a_session_in_no_bank_never_opens_a_stream(self) -> None:
+        with stub_session(user_principal(permissions={perms.SEARCH_USE}, tenant_id=None)):
+            response = self.post(ASK, ASK_BODY, SESSION_HEADERS)
+        self.assert_refused_before_a_stream(response, 404, "not_found")
 
 
 class SearchGateTests(SearchApiTestCase):
@@ -273,6 +310,18 @@ class ContractDocumentationTests(TestCase):
                 "AskProblemEvent",
                 "AnswerFeedbackKind",
                 "AnswerFeedbackBody",
+                # The evaluation set in the console (SRC-05, ADM-02).
+                "EvalScores",
+                "EvalRunConfig",
+                "EvalRunMetrics",
+                "EvalQuestionResult",
+                "EvalVia",
+                "EvalQuestionInput",
+                "EvalQuestionOut",
+                "EvalQuestionPage",
+                "EvalRunOut",
+                "EvalRunPage",
+                "EvalBaselineOut",
             },
         )
 

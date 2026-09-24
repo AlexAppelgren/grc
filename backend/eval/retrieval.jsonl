@@ -2,8 +2,9 @@
 # Corpus: the obligations, provisions and changes of backend/apps/library/fixtures/prototype_data.json, as seed_demo loads them.
 # Fields: id, language (content language of the query), query, expected (stable keys, every one relevant), match_kind
 #   (keyword: an identifier wins by keyword; concept: phrasing wins by vector; both: one query with both), as_of (optional,
-#   the version effective on that date is the one expected), note. A row may carry predictions (list of keys) for the mock retriever.
-# 53 questions: en 16, sv 16, da 7, nb 7, fi 7. Danish, Norwegian and Finnish questions target the same
+#   the version effective on that date is the one expected), note, via (optional: "ask" scores the row on the passages Ask would give
+#   a model instead of the search page). A row may carry predictions (list of keys) for the mock retriever.
+# 54 questions: en 17, sv 16, da 7, nb 7, fi 7. Danish, Norwegian and Finnish questions target the same
 #   obligations as the English and Swedish ones so the embedding model is tested across all five languages (D-09).
 {"id": "r-en-01", "language": "en", "query": "FFFS 2017:2", "expected": ["obl-costs-charges", "obl-research-payments", "obl-product-governance", "obl-client-assets"], "match_kind": "keyword", "note": "AC-SRC1: an identifier is won by keyword. Every obligation under the instrument is relevant."}
 {"id": "r-en-02", "language": "en", "query": "nudging in onboarding", "expected": ["obl-esma-warnings"], "match_kind": "concept", "note": "AC-SRC1: phrasing is won by concept; no obligation contains the word nudging in its summary."}
@@ -44,7 +45,7 @@
 {"id": "r-da-05", "language": "da", "query": "register over it-leverandører efter DORA", "expected": ["obl-dora-ict-register"], "match_kind": "both"}
 {"id": "r-da-06", "language": "da", "query": "automatiske afgørelser med betydelig virkning, artikel 22", "expected": ["obl-gdpr-article-22", "celex-32016r0679/art-22"], "match_kind": "both"}
 {"id": "r-da-07", "language": "da", "query": "central investorinformation før kunden binder sig", "expected": ["obl-priips-kid"], "match_kind": "concept"}
-{"id": "r-nb-01", "language": "nb", "query": "egnethetsvurdering ved investeringsrådgivning", "expected": ["obl-suitability"], "match_kind": "concept"}
+{"id": "r-nb-01", "language": "nb", "query": "egnethetsvurdering ved investeringsrådgivning", "expected": ["obl-suitability", "obl-no-suitability"], "match_kind": "concept"}
 {"id": "r-nb-02", "language": "nb", "query": "hensiktsmessighetstest før handel i komplekse instrumenter", "expected": ["obl-appropriateness"], "match_kind": "concept"}
 {"id": "r-nb-03", "language": "nb", "query": "målgruppe og distribusjonsstrategi for hvert produkt", "expected": ["obl-product-governance"], "match_kind": "concept"}
 {"id": "r-nb-04", "language": "nb", "query": "flytting av pensjonsforsikring til et annet selskap", "expected": ["obl-pension-transfer-right"], "match_kind": "concept"}
@@ -58,3 +59,4 @@
 {"id": "r-fi-05", "language": "fi", "query": "avaintietoasiakirja ennen sopimuksen tekemistä", "expected": ["obl-priips-kid"], "match_kind": "concept"}
 {"id": "r-fi-06", "language": "fi", "query": "kolmannen osapuolen ICT-palveluntarjoajien rekisteri", "expected": ["obl-dora-ict-register"], "match_kind": "concept"}
 {"id": "r-fi-07", "language": "fi", "query": "vakuutusmuotoinen sijoitustuote, vaatimukset ja tarpeet", "expected": ["obl-idd-demands-needs"], "match_kind": "concept"}
+{"id": "r-en-17", "language": "en", "query": "What does control 9.9 of the Example Security Standard require us to do?", "expected": [], "match_kind": "concept", "via": "ask", "note": "SRC-S12, D-81: a question about a standard's control. The library holds a standard's conformance duty and never its clauses, so Ask gives a model nothing and answers no answer. The standard is invented."}

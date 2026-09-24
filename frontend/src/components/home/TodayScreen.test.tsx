@@ -52,6 +52,7 @@ const lead: Home['lead'] = {
   keyDatePrecision: 'day',
   firstSeenAt: '2026-09-16T06:02:00Z',
   inFootprint: true,
+  market: null,
   case: {
     id: 'case-1',
     category: 'new',
@@ -61,6 +62,7 @@ const lead: Home['lead'] = {
     ownerId: null,
     soWhatConfirmed: true,
     soWhatConfirmedAt: '2026-09-17T09:00:00Z',
+    soWhatConfirmedByName: 'Sara Lind',
     soWhatText: 'Confirm the annual assessment criteria before the rules take effect.',
     urgency: { key: 'act_now', kind: null, label: 'Act now' },
     urgencyConfirmed: true,
@@ -75,6 +77,7 @@ const home: Home = {
       kind: 'regulatory',
       itemType: 'change_date',
       date: '2026-10-01',
+      datePrecision: 'day',
       quarter: '2026-Q4',
       label: 'In force',
       title: 'FI adopts amended rules on paying for investment research',
@@ -156,6 +159,28 @@ describe('TodayScreen', () => {
     render(shell(<TodayScreen />));
 
     expect(await screen.findByText('Nothing to show yet')).toBeInTheDocument();
+  });
+
+  // The empty state's way to the regulatory scope shows only to a holder of a
+  // permission that opens it: anyone else would land on the restricted page.
+  it.each([['footprint.request'], ['footprint.approve']])('offers a holder of %s the way to the regulatory scope from the empty state', async (permission) => {
+    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
+    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0 } };
+    serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
+    render(shell(<TodayScreen />, ['watch.read', permission]));
+
+    expect(await screen.findByText('Nothing to show yet')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Set the regulatory scope under Admin' })).toHaveAttribute('href', '/admin/footprint');
+  });
+
+  it('leaves the link out of the empty state for a member who cannot open the regulatory scope', async () => {
+    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
+    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0 } };
+    serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
+    render(shell(<TodayScreen />, ['watch.read', 'roadmap.read', 'audit.read']));
+
+    expect(await screen.findByText('Nothing to show yet')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Set the regulatory scope under Admin' })).toBeNull();
   });
 
   it('open decisions keep the page off the empty state even when nothing is dated', async () => {

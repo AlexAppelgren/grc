@@ -13,6 +13,10 @@ Two gates here serve more than one principal, so they are logic gates listed in
 - **The change facts** are written by an agent's key with `changes:write` and corrected by
   a library editor's session with `proposals.review` (PRO-01: a change's type, flags and
   scope are library facts, and no tenant role holds that permission).
+- **Their confirmation** is given by an agent-bound platform key with `proposals:review`,
+  an agent of another definition than the one that suggested the fact, or by a person with
+  `proposals.review` and a fresh passkey assertion (D-74). No bank's session or key
+  reaches it.
 
 Registering a source is a library editor's alone, and attaching a fetched page is a key's
 alone: a page arrives from the agent that screened it (AGT-07), never from a screen.
@@ -33,9 +37,11 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Body, Header, Path, Query, Router
 
+from apps.agents import runs
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, PrincipalKind, SessionAuth
-from apps.shared.permissions import requires_permission, requires_scope
+from apps.shared.errors import ProblemError
+from apps.shared.permissions import enforce_step_up, requires_permission, requires_scope
 from apps.shared.schemas import PageQuery
 from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, deny, principal, require_any
 from apps.taxonomy.reading import language_order
@@ -57,6 +63,8 @@ from apps.watch.schemas import (
     WatchChangeQuery,
     WatchConsoleChangePage,
     WatchConsoleChangeQuery,
+    WatchConsoleChangeRow,
+    WatchCurationConfirmInput,
     WatchObligationChangePage,
     WatchObligationLink,
     WatchObligationLinkInput,
@@ -148,13 +156,55 @@ def require_watch_reader(request: HttpRequest) -> None:
 
 def require_change_writer(request: HttpRequest) -> None:
     """A change's library facts: an agent's key with `changes:write`, or a library editor
-    with `proposals.review` (WAT-02, WAT-03, PRO-01)."""
+    with `proposals.review` (WAT-02, WAT-03, PRO-01). A bank's key is refused even with the
+    scope (`tenant_agents_not_available`): in R1 every run and what it files is the
+    platform's (item 14)."""
     who = principal(request)
     if who.kind is PrincipalKind.AGENT:
+        # The reason first: a bank's key has its watch scopes withheld when it is resolved
+        # (D-78), so the scope test alone would never name it.
+        runs.refuse_tenant_key(who)
         if not who.has_scope(perms.SCOPE_CHANGES_WRITE):
             raise deny(perms.SCOPE_CHANGES_WRITE)
         return
     require_any(request, perms.PROPOSALS_REVIEW)
+
+
+def require_curation_confirmer(request: HttpRequest) -> uuid.UUID | None:
+    """Who may confirm a change's curated facts for the shared library (WAT-03, WAT-04,
+    D-74): a platform key bound to an agent definition and holding the scope
+    `proposals:review`, or a person holding `proposals.review` with a fresh passkey
+    assertion, whose id this returns for the audit row. A key never steps up.
+
+    A key carrying a tenant, or lacking the scope, is refused with the scope named: the
+    scope is platform-only, so no bank's key reaches here whatever its list says. A key
+    bound to no agent is refused with `agent_not_bound`, because the one write path compares
+    agents and a key with none would be compared on a null. A bank's session holds no
+    `proposals.review` and is refused with it named. Whether the confirming agent is the
+    suggesting one is the write's to refuse, fact by fact (`curation.confirm_curation`)."""
+    who = principal(request)
+    if who.kind is PrincipalKind.AGENT:
+        if who.tenant_id is not None or not who.has_scope(perms.SCOPE_PROPOSALS_REVIEW):
+            raise deny(perms.SCOPE_PROPOSALS_REVIEW)
+        if who.agent_id is None:
+            raise ProblemError(
+                status=403,
+                code="agent_not_bound",
+                detail="This key is bound to no agent definition, so its confirmation could not be told apart from the suggestion.",
+            )
+        return None
+    require_any(request, perms.PROPOSALS_REVIEW)
+    return enforce_step_up(request)
+
+
+def fresh_step_up(request: HttpRequest) -> uuid.UUID | None:
+    """A person's fresh passkey assertion, or None for a stale one or a key. Correcting a
+    change's facts needs none, so the two curation routes ask for it here and leave it to
+    the write to demand it when the call would overturn a confirmation (D-74)."""
+    try:
+        return enforce_step_up(request)
+    except ProblemError:
+        return None
 
 
 # ---------------------------------------------------------------------------------------
@@ -251,7 +301,11 @@ def create_source(request: HttpRequest, body: WatchSourceInput) -> Any:
     never edits it. There is no passkey step-up and no `If-Match`: a registry row carries no
     version, and adding a place to look at is not a decision about the law.
 
-    The source is registered with automated checks on. Nothing is checked in this call: the
+    The source is registered with automated checks on, except a standards publisher's: a
+    source whose `kind` is the standards body kind (key "standards_body"), or one whose `url` is on a host of the
+    `STANDARDS_PUBLISHER_HOSTS` setting or a subdomain of one, is registered with `active`
+    false, and no run may check it until a lawyer has read the publisher's terms (WAT-07,
+    D-45). Nothing is checked in this call: the
     first sweep is the next run's, and until one happens the coverage log says `never`. The
     row and its audit row, which names who registered it, are written in one transaction,
     and the keys are resolved first, so a refusal stores nothing.
@@ -303,7 +357,9 @@ def update_source(
     Errors to branch on: `not_found` (404) when no source has that id, answered the same way
     for a source that never existed so no id can be probed for; `validation_error` (422) for
     a body the schema refuses, including a `url` that is not http or https and a
-    `checkFrequency` outside `daily`, `weekly` and `monthly`; `permission_denied` (403)
+    `checkFrequency` outside `daily`, `weekly` and `monthly`, and when the source would be
+    checked automatically on a host of the `STANDARDS_PUBLISHER_HOSTS` setting, since no run
+    reads a standards publisher until its terms are cleared (WAT-07, D-45); `permission_denied` (403)
     without `sources.manage`; `unauthenticated` (401) without a session.
     """
     return sources.update_source(
@@ -319,6 +375,7 @@ def update_source(
     by_alias=True,
     summary="Log that a run checked a source, and how it went",
 )
+@runs.refuses_tenant_keys
 @requires_scope(perms.SCOPE_SOURCES_WRITE)
 @answers_problems
 def record_source_check(
@@ -336,7 +393,8 @@ def record_source_check(
 
     An agent's key holding the scope `sources:write`, on a run that key has open; no
     person's session reaches it, and no scope here registers a source or touches the
-    obligations inventory. The line and its audit row, with the agent behind the key as the
+    obligations inventory. A key that belongs to a bank is refused with
+    `tenant_agents_not_available` (403), because in this release every run is the platform's. The line and its audit row, with the agent behind the key as the
     actor, are written in one transaction, and every refusal comes before the write, so a
     rejected call logs nothing.
 
@@ -346,13 +404,19 @@ def record_source_check(
     `Idempotency-Key` and retry a call that timed out rather than leaving a gap.
 
     Errors to branch on: `run_not_open` (422) when the run named is closed, so nothing can
-    be filed against it any more; `unknown_source` (422) when `sourceName` names no
+    be filed against it any more; `run_budget_exhausted` (422) when the line is a `recheck`
+    and the run has already logged as many re-checks as one run may
+    (`WATCH_RUN_MAX_RECHECKS`, 100 unless the platform sets another number), so close it
+    and open another, while a sweep line is never counted; `unknown_source` (422) when `sourceName` names no
     registered source — read `GET /sources` at run start and report against those names;
-    `validation_error` (422) when a failed check carries no `error`, when a successful one
+    `source_inactive` (422) when the source is registered with its automated checks off,
+    as a standards publisher's is until its terms allow an automated check (WAT-07, D-45),
+    so no run reads it and nothing is logged; `validation_error` (422) when a failed check carries no `error`, when a successful one
     carries an error, when a `recheck` names no `subjectType` and `subjectId`, or when a
     `sweep` names one; `not_found` (404) when the run belongs to another key or to nobody,
-    answered alike so no run id can be probed for; `permission_denied` (403) without
-    `sources:write`; `unauthenticated` (401) without a key.
+    answered alike so no run id can be probed for; `tenant_agents_not_available` (403) from
+    a key that belongs to a bank; `permission_denied` (403) without `sources:write`;
+    `unauthenticated` (401) without a key.
     """
     sources.record_check(
         who=principal(request), actor=actor_for(request), run_id=run_id, body=body
@@ -382,8 +446,8 @@ def list_changes(request: HttpRequest, query: Query[WatchChangeQuery]) -> Any:
     A read: it changes nothing and writes no audit row. A person's session holding
     `watch.read` in their own bank; no API key reaches it, because every row joins that
     bank's own case. What the reader sees is filtered by the bank's footprint by default,
-    which `footprint=all` lifts and `footprint=watched` widens to the markets the bank
-    watches; the library half of every row is the same for every bank and the `case` half
+    which `footprint=all` lifts and `footprint=watched` turns to what the markets the bank
+    watches add, each such row naming its `market`; the library half of every row is the same for every bank and the `case` half
     never leaves this one.
 
     Pages with `limit` and `offset`, 20 rows by default and 100 at most. An empty feed is a
@@ -393,9 +457,9 @@ def list_changes(request: HttpRequest, query: Query[WatchChangeQuery]) -> Any:
     value the schema refuses — including the designed `inFootprint`, which this build
     replaced with the single `footprint` value.
 
-    `footprint=watched` is answered and empty for now: a change's jurisdiction is derived
-    from its authority, which the market view is still waiting for, and an empty answer is
-    the honest one until it lands.
+    A change's jurisdiction comes from its authority at match time and is never stored; a
+    change with no authority is not restricted by jurisdiction. Watching a market sets no
+    urgency and opens no triage: `footprint=watched` only reads.
     """
     tenant = caller_tenant(request)
     return reading.list_changes(tenant, language_order(request, tenant=tenant), query)
@@ -452,13 +516,17 @@ def get_change(request: HttpRequest, change_id: uuid.UUID = Path(..., descriptio
     `watch.read` in their own bank. Everything outside `case` is a library fact shared by
     every bank and changed only by a library editor or through a proposal; everything inside
     `case` is this bank's own and is invisible to bleqq, to every other bank and to every
-    model endpoint. An obligation link says on itself whether a library editor confirmed it;
+    model endpoint. An obligation link says on itself whether it was confirmed;
     `confirmed: false` is a suggestion an agent made and must not be read as checked, nor as
     a statement that the change does not touch that duty. Each flag and each scope term says
-    the same on itself, as `{ref, confidence, suggested}` exactly as a feed row answers it:
-    `suggested: true` is the agent's reading and not a checked fact, `confidence` is the
-    agent's own number and orders nothing here. A library editor confirms them in the console
-    queue rather than here, and a bank never confirms one at all.
+    the same on itself exactly as a feed row answers it, and so does the type, in
+    `changeTypeFact`: `suggested: true` is the agent's reading and not a checked fact,
+    `confidence` is the agent's own number and orders nothing here. Each also names the agent
+    that suggested it and, once confirmed, whether an independent agent confirmed it
+    (`confirmedOrigin` `agent`, which reads machine-confirmed and never as a person's
+    verification, naming that agent) or a person did (D-74). Confirming is
+    `POST /changes/{changeId}/confirmation`, never this read, and a bank never confirms a
+    library fact at all.
 
     Errors: `not_found` when no change has that id, when the caller may not see it, or when
     the session belongs to no bank — all answered the same way on purpose, so no id can be
@@ -529,7 +597,10 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     An agent's key needs the scope `changes:write` and a library editor's session the
     permission `proposals.review`, which no bank's role holds. `agentRunId` must name a run
     the calling key has open, so every library row an agent wrote can be traced to the night
-    that wrote it; a library editor filing one by hand names no run.
+    that wrote it: a key that names none answers `run_not_open` (422), exactly as a closed
+    run does. A library editor filing one by hand names no run. A key that belongs to a bank
+    is refused with `tenant_agents_not_available` (403) whatever scopes it holds, because in
+    this release every run, and everything a run files, is the platform's.
 
     One reform is one record, and `stableKey` is what makes that true. Sending a key the
     library already holds answers **200** with the change that exists: the pages the call
@@ -542,6 +613,19 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     Everything the call files about what the reform is — its type, its flags, its scope
     terms and its obligation links — is stored as a suggestion, with nobody named as having
     confirmed it, whoever sent it. A reader must not treat any of it as checked.
+
+    **A new change names at least one regime term** in `termIds` (D-39): the regime is the
+    sector boundary, and a change with none would reach every bank whatever its scope. A
+    call that names none answers `regime_required` with the valid regime keys; the terms'
+    ids are on `GET /taxonomy/terms`. A merge adds no scope, so it needs none.
+
+    **A run's classification is logged as AI output** (AUD-02, D-66). When a key registers a
+    new change, its type, flags, scope terms and urgency are recorded as one row in the AI
+    output log with the purpose "scope_suggestion", under the run that filed it. bleqq made no
+    model call, so the model and version on that row are the run's own report: the ones in
+    `soWhat` when the call carries one, else the model and pipeline version the run was
+    opened with, and the row says so (`modelMetadataReportedByAgent`). A library editor's
+    registration is a person's classification and logs no row.
 
     **The drafted “So what?” comes from the run that read the source** (D-66). Send
     it in `soWhat` with the model and the model version that wrote it and the public pages
@@ -566,12 +650,23 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     row that opens the cases all go in one transaction, and every key is resolved first, so
     a refusal stores nothing at all.
 
-    Errors to branch on: `run_not_open` (422) when `agentRunId` names a run that is closed;
+    Errors to branch on: `run_not_open` (422) when a key names no run in `agentRunId`, or
+    one that is closed; `run_budget_exhausted` (422) when the run has already registered
+    as many new changes as one run may (`WATCH_RUN_MAX_CHANGES`, 50 unless the platform
+    sets another number), so close it and open another, while a second sighting of a
+    change the library holds is never counted;
     `unknown_key` (422) when `changeType`, `suggestedUrgency`, a flag key, a `termId`, an
     `obligationId` or `authorityCode` names a row the library does not hold or has retired,
-    with the valid keys listed for a vocabulary; `validation_error` (422) for a body the
-    schema refuses, for the same obligation named twice, for two pages both marked primary,
+    with the valid keys listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a
+    `termId` is a term that mirrors the jurisdiction list, since a change's market comes
+    from its authority and never from a tag; `regime_required` (422) when a new change names
+    no regime term, with the regime keys listed in `validKeys`;
+    `standard_term_only_on_standards` (422) when a new change carries a standard's term (a
+    term of an opt-in dimension) and `authorityCode` names no standards body, that is no
+    authority whose jurisdiction is international, or none at all; `validation_error` (422) for
+    a body the schema refuses, for the same obligation named twice, for two pages both marked primary,
     and for a `soWhat` whose words carry no model, no model version or no citation; `not_found` (404) when `agentRunId` names a run belonging to another key;
+    `tenant_agents_not_available` (403) from a key that belongs to a bank;
     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
     without a credential.
     """
@@ -590,6 +685,7 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     by_alias=True,
     summary="Attach a page a reform was found on",
 )
+@runs.refuses_tenant_keys
 @requires_scope(perms.SCOPE_CHANGES_WRITE)
 @answers_problems
 def add_change_document(
@@ -605,7 +701,9 @@ def add_change_document(
 
     An agent's key holding the scope `changes:write`, and no person's session: a page
     arrives from the run that fetched and screened it (AGT-07), never from a screen. No
-    scope here reaches the obligations inventory.
+    scope here reaches the obligations inventory. A key that belongs to a bank is refused
+    with `tenant_agents_not_available` (403), because in this release every run is the
+    platform's.
 
     The text of the page is never stored. What is kept is the address, the headline, the
     publisher, the time and a hash — for a standards publisher that is all we may keep
@@ -619,10 +717,11 @@ def add_change_document(
     Errors to branch on: `validation_error` (422) when the change already has a primary page
     and this one is marked primary too, and for a body the schema refuses, including a `url`
     that is not http or https; `not_found` (404) when no change has that id;
+    `tenant_agents_not_available` (403) from a key that belongs to a bank;
     `permission_denied` (403) without `changes:write`; `unauthenticated` (401) without a key.
     """
     return registration.add_document(
-        actor=actor_for(request), order=language_order(request), change_id=change_id, body=body
+        who=principal(request), actor=actor_for(request), order=language_order(request), change_id=change_id, body=body
     )
 
 
@@ -657,17 +756,20 @@ def update_change(
 
     An agent's key needs the scope `changes:write` and a library editor's session the
     permission `proposals.review`, which no bank's role holds: a change's classification is
-    a library fact and a bank neither writes nor confirms one. Two things only the editor
+    a library fact and a bank neither writes nor confirms one, so a key that belongs to a
+    bank is refused with `tenant_agents_not_available` (403). Two things only the editor
     may set: `status` and `supersededBy`, because deciding that a reform has been replaced
     or withdrawn is a reading of the law and not a sighting of it.
 
-    Everything written here is a suggestion. A flag or a term arrives with `suggested` true
-    and nobody named as having confirmed it, whoever sent it, and a reader must not treat it
-    as checked. Confirming one is a library editor's act on a library row and is not built
-    yet, so a call that would drop or overwrite something already confirmed answers
-    `not_built` to that editor and is refused outright to a key. The whole call is one
-    transaction that writes an audit row naming who changed which facts, and the keys are
-    resolved before anything is stored, so a refusal stores nothing.
+    Everything written here is a suggestion. A new type, a flag or a term arrives with
+    `suggested` true, nobody named as having confirmed it and the calling key's agent named
+    as its suggester, whoever sent it, and a reader must not treat it as checked. Confirming
+    one is `POST /changes/{changeId}/confirmation`. A call that would drop a flag or a term,
+    or replace a type, that somebody has confirmed is refused outright to a key, and needs
+    a fresh passkey assertion from a person, because overturning a confirmation is the same
+    intervention as giving one; the assertion is recorded on the audit row. The whole call
+    is one transaction that writes an audit row naming who changed which facts, and the keys
+    are resolved before anything is stored, so a refusal stores nothing.
 
     **A drafted “So what?” may be filed here too** (D-66, WAT-05): send `soWhat`
     with the words, the model and the model version that wrote them and the public pages
@@ -686,13 +788,20 @@ def update_change(
 
     Errors to branch on: `unknown_key` (422) when `changeType`, a flag key, a term id or
     `supersededBy` names a row the library does not hold or has retired, with the valid keys
-    listed for a vocabulary; `editor_only_field` (422) when a key sends `status` or
-    `supersededBy`; `confirmed_fact` (422) when a key's new set would drop a flag or a term
-    a library editor confirmed; `not_built` (501) when an editor's call would do the same,
-    which is the confirmation half of this feature; `validation_error` (422) for a field the
+    listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a term id is a term
+    that mirrors the jurisdiction list, since a change's market comes from its authority and
+    never from a tag; `regime_required` (422) when `termIds` replaces the set with one that
+    names no regime term, because every change carries a regime (D-39), with the regime keys
+    in `validKeys`; `standard_term_only_on_standards` (422) when that set carries a
+    standard's term (a term of an opt-in dimension) and the change's authority is not a
+    standards body, whose jurisdiction is international; `editor_only_field` (422) when a key
+    sends `status` or `supersededBy`; `confirmed_fact` (422) when a key's call would drop a
+    flag or a term, or replace a type, that somebody confirmed; `step_up_required` (403) when
+    a person's call would do the same without a fresh passkey assertion; `validation_error` (422) for a field the
     schema refuses, for a change asked to supersede itself, and for a `soWhat` whose words
     carry no model, no model version or no citation; `not_found` (404) when no
-    change has that id; `permission_denied` (403) without the scope or the permission;
+    change has that id; `tenant_agents_not_available` (403) from a key that belongs to a
+    bank; `permission_denied` (403) without the scope or the permission;
     `unauthenticated` (401) without a credential.
     """
     # Ungated by design: logic-gate (a key with changes:write, or a library editor with proposals.review).
@@ -703,6 +812,7 @@ def update_change(
         order=language_order(request),
         change_id=change_id,
         body=body,
+        step_up_assertion_id=fresh_step_up(request),
     )
 
 
@@ -732,7 +842,9 @@ def add_change_event(
 
     An agent's key needs the scope `changes:write` and a library editor's session the
     permission `proposals.review`. The timeline is a library fact shared by every bank; no
-    bank's date is ever here. The entry and its audit row are written in one transaction.
+    bank's date is ever here, and a key that belongs to a bank is refused with
+    `tenant_agents_not_available` (403). The entry and its audit row are written in one
+    transaction.
 
     A retry is safe: the entry's label is its name on that change, so posting "Consultation
     closed" twice with the same dates answers the entry that is already there instead of
@@ -743,7 +855,8 @@ def add_change_event(
     Errors to branch on: `duplicate_key` (409) when this change already has a milestone with
     that label and other dates; `validation_error` (422) for a body the schema refuses,
     including a timestamp where a plain date belongs and a precision outside `day`, `month`,
-    `quarter` and `year`; `not_found` (404) when no change has that id; `permission_denied`
+    `quarter` and `year`; `not_found` (404) when no change has that id;
+    `tenant_agents_not_available` (403) from a key that belongs to a bank; `permission_denied`
     (403) without the scope or the permission; `unauthenticated` (401) without a credential.
     """
     # Ungated by design: logic-gate (a key with changes:write, or a library editor with proposals.review).
@@ -777,14 +890,16 @@ def update_change_event(
     `sortOrder` 0, no date and no source page. Send the whole entry.
 
     An agent's key needs the scope `changes:write` and a library editor's session the
-    permission `proposals.review`. A timeline is a library fact shared by every bank, and
-    nothing here is versioned, so no `If-Match` is taken. The entry and its audit row, which
+    permission `proposals.review`; a key that belongs to a bank is refused with
+    `tenant_agents_not_available` (403). A timeline is a library fact shared by every bank,
+    and nothing here is versioned, so no `If-Match` is taken. The entry and its audit row, which
     holds the entry as it was and as it now is, are written in one transaction.
 
     Errors to branch on: `validation_error` (422) for a body the schema refuses, including a
     timestamp where a plain date belongs and a precision outside `day`, `month`, `quarter`
     and `year`; `not_found` (404) when no change has that id, or the entry belongs to
     another change — the two are answered alike so no id can be probed;
+    `tenant_agents_not_available` (403) from a key that belongs to a bank;
     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
     without a credential.
     """
@@ -823,16 +938,19 @@ def replace_change_obligations(
     other.
 
     An agent's key needs the scope `changes:write` and a library editor's session the
-    permission `proposals.review`. `origin` records which of the two drew the link and never
+    permission `proposals.review`; a key that belongs to a bank is refused with
+    `tenant_agents_not_available` (403). `origin` records which of the two drew the link and never
     changes afterwards; `confidence` is the model's own number, is null when a person set
     the link, and orders the list and nothing else.
 
-    Two decisions that look alike and are not. `confirmed` here is a library editor's, and a
-    confirmed link reads the same for every bank; confirming one is not built yet, so a call
-    that would drop a link somebody has confirmed answers `not_built` to an editor and is
-    refused outright to a key. A bank accepting or removing a suggested link is a different
-    act entirely, lives on that bank's own case, is invisible to everyone else and changes
-    no row here — so `false` never means "not related", only "nobody has confirmed it".
+    Two decisions that look alike and are not. `confirmed` here is the shared library's,
+    given by an independent agent or a person through `POST /changes/{changeId}/confirmation`,
+    and a confirmed link reads the same for every bank. A call that would drop a link
+    somebody has confirmed is refused outright to a key and needs a fresh passkey assertion
+    from a person, which is recorded on the audit row. A bank accepting or removing a
+    suggested link is a different act entirely, lives on that bank's own case, is invisible
+    to everyone else and changes no row here — so `false` never means "not related", only
+    "nobody has confirmed it".
 
     The set and its audit row are written in one transaction, and sending the same set again
     leaves it exactly as it was, so a retry costs nothing.
@@ -840,9 +958,10 @@ def replace_change_obligations(
     Errors to branch on: `unknown_key` (422) when an `obligationId` names no active
     obligation of the library; `validation_error` (422) when the same obligation is named
     twice, or for a body the schema refuses, including more than 200 links;
-    `confirmed_fact` (422) when a key's new set would drop a link a library editor
-    confirmed; `not_built` (501) when an editor's call would do the same, which is the
-    confirmation half of this feature; `not_found` (404) when no change has that id;
+    `confirmed_fact` (422) when a key's new set would drop a link somebody confirmed;
+    `step_up_required` (403) when a person's set would do the same without a fresh passkey
+    assertion; `not_found` (404) when no change has that id;
+    `tenant_agents_not_available` (403) from a key that belongs to a bank;
     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
     without a credential.
     """
@@ -854,4 +973,85 @@ def replace_change_obligations(
         order=language_order(request),
         change_id=change_id,
         body=body,
+        step_up_assertion_id=fresh_step_up(request),
+    )
+
+
+@router.post(
+    "/changes/{change_id}/confirmation",
+    response=WatchConsoleChangeRow,
+    auth=SESSION_OR_KEY,
+    operation_id="confirmChangeCuration",
+    by_alias=True,
+    summary="Confirm a change's type, flags, scope terms and obligation links for every bank",
+)
+@answers_problems
+def confirm_change_curation(
+    request: HttpRequest,
+    body: WatchCurationConfirmInput,
+    change_id: uuid.UUID = Path(..., description=_CHANGE_ID_WRITE),
+    idempotency_key: str | None = IdempotencyKey,
+) -> Any:
+    """Stand behind the facts an agent suggested for a registered reform: its type, its
+    flags, its scope terms and the obligations it affects, each named in the body. Call it
+    from a confirming agent's run once it has checked the named facts against the pages the
+    change cites, and from the console's Change facts detail when a person intervenes. The
+    answer is the change as the console's queue shows it, with who suggested and who
+    confirmed each fact.
+
+    Two callers, never a bank. A platform key bound to an agent definition and holding the
+    scope `proposals:review`: it sends `decision`, the model call behind its decision, and
+    `agentRunId`, an open run of its own, and the decision is logged in the AI output log
+    under the purpose agent_review, which the platform alone reads (D-80). A key never steps up. Or a
+    person holding `proposals.review`, with a fresh passkey assertion, who sends neither:
+    confirming a library fact is an intervention in the agents' curation. No bank's role
+    holds that permission and no bank's key the scope.
+
+    A confirmation is not four eyes, because no proposal stands behind it, and it is
+    labelled for what it is (D-74): a fact an agent confirmed reads machine-confirmed,
+    naming the agent that suggested it and the agent that confirmed it, and never as a
+    person's verification. The confirmer is never the suggester: a key cannot confirm what
+    it suggested itself, nor what another key of its own agent suggested, a person cannot
+    confirm what they filed themselves, and the database refuses each of those rows on its
+    own if this check is ever bypassed. Every bank reads the confirmation; each bank still
+    decides on its own case what a link means to it.
+
+    Only facts the change carries now can be confirmed, as they stand, and the type is
+    named by the key you checked, so a type corrected after you read it is refused rather
+    than confirmed unread. This call changes no value, and a fact already confirmed is left
+    exactly as it is. A call that finds nothing left to confirm writes nothing — no log
+    row, no audit row — once its run has logged a decision on this change, so a retry,
+    with or without an `Idempotency-Key`, answers the change as it now stands; the first
+    `decision` a run sends on a change is always logged, because it is a model call. The
+    facts, the log row and an audit row naming who confirmed what are written in one
+    transaction, under a lock on the change that the curation routes take as well, and
+    every refusal comes first, so a refused call stores nothing. Undoing a confirmation is
+    a person's, with a passkey, through `PATCH /changes/{changeId}` or
+    `PUT /changes/{changeId}/obligations`.
+
+    Errors to branch on: `risk_flagged` (409) when a key confirms a change any of whose
+    pages carries a flag from the injection screen, which waits for a person who reads the
+    flag; `own_suggestion` (409) when a named fact was suggested by this very
+    key, or filed by this very person; `same_agent` (409) when it was suggested by another
+    key of the same agent; `validation_error` (422) when the body names nothing, names a
+    type, a flag, a term or an obligation the change does not carry now, when a key sends
+    no `decision` or a person sends one or an `agentRunId`, and for a body the schema
+    refuses, including a decision with no model, version or citation; `run_not_open` (422)
+    when a key names no run or a closed one; `not_found` (404) when no change has that id,
+    or the run belongs to another key; `agent_not_bound` (403) for a key holding the scope
+    but bound to no agent definition;
+    `step_up_required` (403) when a person calls without a fresh passkey assertion;
+    `permission_denied` (403) without `proposals.review` or `proposals:review`, which is
+    what every bank's session and key receives; `unauthenticated` (401) without a
+    credential.
+    """
+    # Ungated by design: logic-gate (an agent-bound platform key with proposals:review, or a person with proposals.review and a fresh passkey).
+    step_up_assertion_id = require_curation_confirmer(request)
+    return curation.confirm_curation(
+        who=principal(request),
+        actor=actor_for(request),
+        order=language_order(request),
+        change_id=change_id,
+        body=body,
+        step_up_assertion_id=step_up_assertion_id,
     )

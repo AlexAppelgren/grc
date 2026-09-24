@@ -27,6 +27,12 @@ because it is meant not to be checked, and a source nobody has ever checked, bec
 log holds nothing to measure — that one reads `never`, which the console shows in its own
 right.
 
+**A standards publisher is not read automatically** until a lawyer has read its terms
+(WAT-07, D-45). A source of the `standards_body` kind, or one whose address is on a host in
+`STANDARDS_PUBLISHER_HOSTS`, is registered with its checks off, and a run may log no check
+of a source whose checks are off (422 `source_inactive`): a 403 from a publisher is a
+failed check of an active source, never a reason to fetch an inactive one.
+
 **Only sweeps count.** A re-check looks again at one library record the source already
 gave us (AGT-01, item 3); it says nothing about whether the source has been read since, so
 a run full of re-checks must never make a source look fresh.
@@ -40,6 +46,7 @@ from __future__ import annotations
 
 import datetime
 import uuid
+from urllib.parse import urlsplit
 from typing import Any, cast
 
 from django.conf import settings
@@ -76,6 +83,10 @@ CADENCE: dict[str, datetime.timedelta] = {
     CheckFrequency.WEEKLY.value: datetime.timedelta(days=7),
     CheckFrequency.MONTHLY.value: datetime.timedelta(days=30),
 }
+
+# The source kind of a standards publisher's own pages (D-45). A kind's key is stable, so
+# this names the row the fixture seeds rather than a label anyone can edit.
+STANDARDS_BODY = "standards_body"
 
 # What `lastStatus` says when the coverage log holds no sweep of a source at all. It is not
 # a `check_status`: no check ended this way, because none was made.
@@ -155,7 +166,7 @@ def create_source(*, actor: Actor, order: list[str], body: WatchSourceInput) -> 
             "kind": kind,
             "authority_id": authority_id,
             "check_frequency": body.check_frequency,
-            "active": True,
+            "active": not (kind.key == STANDARDS_BODY or _on_a_publisher_host(_url(body.url))),
         }
     )
     with watch_write("a source registered for the sweep"), transaction.atomic():
@@ -195,6 +206,13 @@ def update_source(
     if "active" in sent:
         source.active = sent["active"]
         fields.append("active")
+    if source.active and _on_a_publisher_host(source.url):
+        raise ValidationError(
+            "This address is a standards publisher's, which no run reads until a lawyer has "
+            "cleared its terms. Its checks stay off; the host leaves STANDARDS_PUBLISHER_HOSTS "
+            "when they are cleared.",
+            code="validation_error",
+        )
     with watch_write("a source's registry row"), transaction.atomic():
         if fields:
             source.save(update_fields=fields)
@@ -210,6 +228,14 @@ def update_source(
             after=_values_of(source),
         )
     return keys.source_out(source, order)
+
+
+def _on_a_publisher_host(url: str) -> bool:
+    """Whether an address is on a host of `STANDARDS_PUBLISHER_HOSTS` or a subdomain of one:
+    a standards publisher no run reads until a lawyer has cleared its terms (D-45)."""
+    # A fully qualified name's root dot (`iso.org.`) names the same host (security-review-c5).
+    host = (urlsplit(url).hostname or "").rstrip(".")
+    return any(host == listed or host.endswith(f".{listed}") for listed in settings.STANDARDS_PUBLISHER_HOSTS)
 
 
 def _values_of(source: keys.SourceRow) -> dict[str, Any]:
@@ -237,7 +263,8 @@ def record_check(*, who: Principal, actor: Actor, run_id: uuid.UUID, body: Watch
 
     Every refusal comes before the write, so a check that names a closed run or a source
     the registry does not hold logs nothing: a coverage log that recorded attempts nobody
-    could place would be worse than one that recorded none.
+    could place would be worse than one that recorded none. A re-check past the run's
+    budget (`WATCH_RUN_MAX_RECHECKS`) is refused with `run_budget_exhausted` (H41).
     """
     run = runs.require_open_run(who, run_id)
     source = keys.source_with_name(body.source_name)
@@ -247,6 +274,12 @@ def record_check(*, who: Principal, actor: Actor, run_id: uuid.UUID, body: Watch
             "report on; an agent never registers one.",
             code="unknown_source",
         )
+    if not source.active:
+        raise ValidationError(
+            f"{source.name} is registered with its automated checks off, so no run reads it. "
+            "A standards publisher stays that way until its terms allow an automated check.",
+            code="source_inactive",
+        )
     failed = body.status == CheckStatus.FAILED.value
     subject_type, subject_id = _subject(body)
     if failed and not body.error:
@@ -254,6 +287,13 @@ def record_check(*, who: Principal, actor: Actor, run_id: uuid.UUID, body: Watch
     if not failed and body.error:
         raise ValidationError("A check that succeeded carries no error.", code="validation_error")
     with watch_write("a line of the coverage log"), transaction.atomic():
+        if body.kind == SourceCheckKind.RECHECK.value:
+            runs.spend(
+                run,
+                run.source_checks.filter(kind=SourceCheckKind.RECHECK.value),
+                limit=settings.WATCH_RUN_MAX_RECHECKS,
+                what=("re-check", "re-checks"),
+            )
         check = source.checks.create(
             agent_run=run,
             checked_at=body.checked_at or timezone.now(),

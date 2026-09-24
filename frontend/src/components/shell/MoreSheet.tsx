@@ -2,15 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 
-import { accountLine, useSignOutToSignIn } from '@/components/shell/AccountMenu';
+import { accountLine, useInterfaceLanguages, useSignOutToSignIn } from '@/components/shell/AccountMenu';
 import { groupDestinations } from '@/components/shell/AppSidebar';
 import { NavIcon } from '@/components/shell/NavIcon';
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { SidebarGroup, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 import { useSession } from '@/features/identity/hooks';
-import { useT } from '@/shared/i18n/LocaleProvider';
+import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
 import { ACCOUNT_PARENT, childDestinations, isCurrent, moreDestinations, type Destination, type Surface } from '@/shared/navigation/registry';
 import { usePermissions } from '@/shared/navigation/require-permission';
 
@@ -18,19 +18,23 @@ import { usePermissions } from '@/shared/navigation/require-permission';
 // titled "More" with a Close button (touch screen-reader users cannot press
 // Escape, and the scrim is hidden from them), every visible destination the
 // bar does not hold, in the rail's groups, then a hairline and the account
-// laid flat: name, organisation and roles, my passkeys, my sessions, sign
-// out. Inside a sheet a second menu layer would add a tap for nothing.
+// laid flat: name, organisation and roles, my passkeys, my sessions, the
+// interface language as a radio group, sign out. Inside a sheet a second menu
+// layer would add a tap for nothing.
 //
 // It carries no data-who-panel: that marker stays on the rail's row, which is
 // still mounted below 1024 px, so Playwright finds exactly one.
 
 export function MoreSheet({ surface, children }: { surface: Surface; children: ReactNode }) {
   const t = useT();
+  const locale = useLocale();
   const pathname = usePathname();
   const permissions = usePermissions() ?? [];
   const { isCompact } = useSidebar();
   const { me } = useSession();
   const { pending, signOut } = useSignOutToSignIn();
+  const languages = useInterfaceLanguages();
+  const languageName = useId();
 
   // Any route change closes the sheet (the Android back gesture, Safari's edge
   // swipe: Next keeps layout state across history navigation), and so does
@@ -92,8 +96,37 @@ export function MoreSheet({ surface, children }: { surface: Surface; children: R
                 <p className="font-medium">{me.user.name}</p>
                 {detail.length > 0 ? <p className="text-meta text-muted">{detail}</p> : null}
               </div>
+              <SidebarMenu>{childDestinations(ACCOUNT_PARENT, permissions).map((d) => row(d, false))}</SidebarMenu>
+              {languages.options.length > 1 ? (
+                // Stays open on a choice, so the sheet itself is seen to change language.
+                <fieldset className="m-0 min-w-0 border-0 p-0">
+                  <legend className="px-2 pt-1.5 pb-1 text-meta text-muted">{t('language.label')}</legend>
+                  {languages.options.map((row) => (
+                    <label
+                      key={row.key}
+                      lang={row.key}
+                      className="flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-2 text-body hover:hover-fill has-[:disabled]:cursor-default has-[:disabled]:opacity-45"
+                    >
+                      {row.label}
+                      <input
+                        type="radio"
+                        name={languageName}
+                        value={row.key}
+                        checked={row.key === locale}
+                        disabled={languages.pending}
+                        onChange={() => languages.choose(row.key)}
+                        className="size-4 accent-fg"
+                      />
+                    </label>
+                  ))}
+                  {languages.failed ? (
+                    <p role="alert" className="m-0 px-2 py-1.5 text-meta text-negative">
+                      {t('language.failed')}
+                    </p>
+                  ) : null}
+                </fieldset>
+              ) : null}
               <SidebarMenu>
-                {childDestinations(ACCOUNT_PARENT, permissions).map((d) => row(d, false))}
                 <SidebarMenuItem>
                   <SidebarMenuButton size="touch" tooltip={t('shell.signOut')} disabled={pending} onClick={signOut} className="disabled:opacity-45">
                     <span>{pending ? t('shell.signingOut') : t('shell.signOut')}</span>

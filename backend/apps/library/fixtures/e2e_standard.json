@@ -1,0 +1,76 @@
+{
+  "_meta": {
+    "what": "The first standard of the library, for tests and E2E only: seed_e2e loads it, seed_demo never does, until Alex answers docs/TODO_FOR_alex.md 'Legal, before any standard is seeded'. Public facts and one conformance duty in our own words; no title, clause or control of the standard (INV-08, D-35).",
+    "anchor_date": "2026-09-19",
+    "in_force_from_source": "Published 25 October 2022, edition 3.0: docs/plans/Verification_Log.md, 'PRD 0.3 standards facts', 'The standard itself', checked 2026-09-19 against webstore.iec.ch/en/publication/79694. Day precision.",
+    "held_terms": ["standard:iso_iec_27001"],
+    "held_terms_note": "Terms apps/taxonomy/seeds authors (_EXTRA_TERMS) and the prototype fixture does not list. The loader links to a term whatever its state; nothing here switches one on or off."
+  },
+  "authorities": [
+    {"key": "iso-iec", "code": "ISO/IEC", "name": "International Organization for Standardization and International Electrotechnical Commission", "jurisdiction": "INTL", "url": "https://webstore.iec.ch/"}
+  ],
+  "instruments": [
+    {
+      "stable_key": "iso-iec-27001-2022",
+      "short_name": "ISO/IEC 27001:2022",
+      "name": "ISO/IEC 27001:2022",
+      "regime": "regime:ai_ict",
+      "level": "standard",
+      "binding": false,
+      "official_ref": "ISO/IEC 27001:2022",
+      "eli_uri": null,
+      "source_url": "https://webstore.iec.ch/en/publication/79694",
+      "authority": "iso-iec",
+      "jurisdiction": "INTL",
+      "in_force_from": "2022-10-25",
+      "in_force_to": null,
+      "implements_note": "The Nordic national standards bodies adopt this edition under references of their own. Which adoption a bank certifies against is the bank's to record.",
+      "status": "active",
+      "last_verified_at": "2026-09-19",
+      "verified_by": null
+    }
+  ],
+  "instrument_relations": [],
+  "provisions": [],
+  "provision_versions": [],
+  "obligation_provisions": [],
+  "obligations": [
+    {
+      "stable_key": "iso-iec-27001-2022-conformance",
+      "instrument": "iso-iec-27001-2022",
+      "ref_label": "ISO/IEC 27001:2022",
+      "title": "ISO/IEC 27001:2022 conformance",
+      "duty_type": "governance",
+      "product_scope": null,
+      "trigger_frequency": null,
+      "retention": null,
+      "sanction_exposure": null,
+      "tags": [],
+      "status": "active",
+      "created_origin": "user",
+      "created_by_agent_run": null,
+      "created_model": null,
+      "verified_by": null,
+      "last_verified_at": "2026-09-19"
+    }
+  ],
+  "obligation_versions": [
+    {
+      "obligation": "iso-iec-27001-2022-conformance",
+      "version_no": 1,
+      "summary_en": "A bank that has chosen to follow this edition meets every requirement it sets and can show that it does. The text of the standard is licensed: it is read at the publisher's catalogue, not here.",
+      "summary_sv": "En bank som har valt att följa den här utgåvan uppfyller varje krav den ställer och kan visa att den gör det. Standardens text är licensierad: den läses i utgivarens katalog, inte här.",
+      "original_language": "en",
+      "effective_from": null,
+      "effective_to": null,
+      "change": null,
+      "proposal": null,
+      "approved_by": null
+    }
+  ],
+  "obligation_terms": [
+    {"obligation": "iso-iec-27001-2022-conformance", "term": "standard:iso_iec_27001"}
+  ],
+  "obligation_relations": [],
+  "proposals": []
+}

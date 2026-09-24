@@ -6,18 +6,24 @@ The API scenarios INV-S1..S10 live in tests_scenarios.py and land with the read 
 from __future__ import annotations
 
 import datetime
+import json
 from dataclasses import dataclass
 from io import StringIO
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from django.core.management import call_command
 from django.db import DEFAULT_DB_ALIAS, IntegrityError, ProgrammingError, transaction
 from django.test import SimpleTestCase, TestCase, TransactionTestCase, override_settings
 
+from apps.library import testing as build
+from apps.library.fixtures.check_prototype_data import E2E_STANDARD, FIXTURE, Checker, check_e2e_standard, no_standard_in_prototype
 from apps.library.logic import in_force
 from apps.library.models import (
     Instrument,
+    InstrumentRelation,
     Jurisdiction,
+    JurisdictionKind,
     Obligation,
     ObligationSummary,
     ObligationVersion,
@@ -32,8 +38,9 @@ from apps.shared import factories, tenancy
 from apps.shared.e2e_seed import SeedRefused
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.tenancy import LibraryWriteRefused, library_write
-from apps.taxonomy.models import InstrumentLevel
-from apps.taxonomy.seeds import fixture, seed_library_vocabularies, seed_taxonomy_terms
+from apps.taxonomy.models import InstrumentLevel, InstrumentLevelKind, ProvisionKind, TaxonomyTerm
+from apps.taxonomy.registry import REGISTRY
+from apps.taxonomy.seeds import MIRRORED_JURISDICTION_KINDS, fixture, seed_library_vocabularies, seed_taxonomy_terms
 
 
 @dataclass(frozen=True)
@@ -85,7 +92,7 @@ def seed_library() -> dict[str, int]:
 class LibraryLoaderTests(TestCase):
     def test_the_loader_files_the_prototype_library(self) -> None:
         counts = seed_library()
-        self.assertEqual(counts, {"instruments": 15, "provisions": 2, "obligations": 16, "obligation_versions": 17})
+        self.assertEqual(counts, {"instruments": 18, "provisions": 9, "obligations": 18, "obligation_versions": 19})
         lvm = Instrument.objects.get(stable_key="sfs-2007-528")
         self.assertIsNone(lvm.owner_tenant_id, "a seeded record is shared")
         self.assertEqual((lvm.level.key, lvm.jurisdiction.key, lvm.authority and lvm.authority.key), ("act", "se", "riksdagen"))
@@ -133,6 +140,19 @@ class LibraryLoaderTests(TestCase):
         self.assertFalse(Instrument.objects.exclude(verified_by=None).exists())
         self.assertFalse(Obligation.objects.exclude(verified_by=None).exists())
 
+    def test_fffs_2026_11_amends_fffs_2017_2_and_takes_the_anchor_date(self) -> None:
+        """T8, INV-01: the sample amending instrument carries no obligation of its own, so
+        its verified date falls to the fixture's anchor date (T2's rule)."""
+        seed_library()
+        stockholm = ZoneInfo("Europe/Stockholm")
+        amendment = Instrument.objects.get(stable_key="fffs-2026-11")
+        assert amendment.authority is not None
+        self.assertEqual((amendment.jurisdiction.key, amendment.authority.key, amendment.binding), ("se", "fi", True))
+        self.assertEqual((amendment.in_force_from, amendment.in_force_from_precision), (D(2026, 10, 1), "day"))
+        self.assertEqual(amendment.last_verified_at, datetime.datetime(2026, 9, 16, tzinfo=stockholm))
+        relation = InstrumentRelation.objects.get(from_instrument=amendment, to_instrument__stable_key="fffs-2017-2")
+        self.assertEqual(relation.relation_type.key, "amends")
+
     def test_the_advice_only_sample_obligation_is_filed_with_one_translated_version(self) -> None:
         """J-6: the one obligation whose only service is advice, added to the prototype's
         library (from_prototype false) so switching off Advice hides something."""
@@ -157,12 +177,53 @@ class LibraryLoaderTests(TestCase):
         seed_library()
         filed = AuditEvent.objects.filter(action="library.seeded", subject_type__in=("authority", "instrument", "obligation"))
         audited = filed.count()
-        self.assertEqual(audited, 8 + 15 + 16, "one audit row per authority, instrument and obligation")
+        self.assertEqual(audited, 11 + 18 + 18, "one audit row per authority, instrument and obligation")
         summaries = ObligationSummary.objects.count()
-        self.assertEqual(load_library(), {"instruments": 15, "provisions": 2, "obligations": 16, "obligation_versions": 17})
-        self.assertEqual(seed_authorities(), 8)
+        self.assertEqual(load_library(), {"instruments": 18, "provisions": 9, "obligations": 18, "obligation_versions": 19})
+        self.assertEqual(seed_authorities(), 11)
         self.assertEqual(filed.count(), audited)
         self.assertEqual(ObligationSummary.objects.count(), summaries)
+
+    def test_the_fffs_provision_tree_has_three_levels_and_is_audited_once_each(self) -> None:
+        """T8, INV-02, INV-S2: chapter, section and paragraph, 9 kap. 6 §'s amendment still
+        in the future on the fixture's anchor date, and one library.seeded audit row per
+        provision stable key, none of them written again on reload."""
+        seed_library()
+        chapter = Provision.objects.get(stable_key="fffs-2017-2/9")
+        section = Provision.objects.get(stable_key="fffs-2017-2/9-6")
+        paragraph = Provision.objects.get(stable_key="fffs-2017-2/9-6-1")
+        self.assertIsNone(chapter.parent_id)
+        self.assertEqual(section.parent_id, chapter.id)
+        self.assertEqual(paragraph.parent_id, section.id)
+        self.assertEqual((chapter.kind.key, section.kind.key, paragraph.kind.key), ("chapter", "section", "paragraph"))
+
+        versions = list(section.versions.order_by("version_number"))
+        self.assertEqual([v.version_number for v in versions], [1, 2])
+        self.assertEqual(versions[0].effective_from, D(2018, 1, 3))
+        self.assertEqual(versions[1].effective_from, D(2026, 10, 1))
+        assert versions[1].effective_from is not None
+        self.assertGreater(versions[1].effective_from, D(2026, 9, 16), "the amendment is still ahead of the anchor date")
+        self.assertEqual(versions[0].transitional_note, "")
+        self.assertTrue(versions[1].transitional_note)
+        self.assertIsNone(versions[0].effective_to, "nothing is stored; every read derives it")
+
+        stable_keys = {"fffs-2017-2/9", "fffs-2017-2/9-6", "fffs-2017-2/9-6-1", "fffs-2017-2/9-10", "fffs-2017-2/9-23", "fffs-2017-2/10", "fffs-2017-2/11"}
+        audited = AuditEvent.objects.filter(action="library.seeded", subject_type="provision", subject_title__in=stable_keys)
+        self.assertEqual(audited.count(), len(stable_keys), "one audit row per provision stable key")
+        load_library()
+        self.assertEqual(
+            AuditEvent.objects.filter(action="library.seeded", subject_type="provision", subject_title__in=stable_keys).count(),
+            len(stable_keys),
+            "a second load writes none",
+        )
+
+    def test_every_seeded_instrument_carries_a_regime_from_the_regime_dimension(self) -> None:
+        """INV-S12's seed half (D-39): the regime is the sector boundary, so every seeded
+        instrument has one and it is a term of `regime`, never of another dimension."""
+        seed_library()
+        dimensions = {row.stable_key: row.regime.dimension.key for row in Instrument.objects.select_related("regime__dimension")}
+        self.assertIn("fffs-2017-2", dimensions)
+        self.assertEqual(set(dimensions.values()), {"regime"})
 
     def test_library_rows_refuse_a_write_outside_the_fence(self) -> None:
         seed_library()
@@ -180,7 +241,7 @@ class LibraryLoaderTests(TestCase):
     def test_seed_demo_prints_counts_and_refuses_a_deployed_environment(self) -> None:
         out = StringIO()
         call_command("seed_demo", stdout=out)
-        self.assertIn("obligations: 16", out.getvalue())
+        self.assertIn("obligations: 18", out.getvalue())
         with override_settings(IS_DEPLOYED_ENVIRONMENT=True, ENVIRONMENT="prod"), self.assertRaises(SeedRefused):
             call_command("seed_demo", stdout=StringIO())
 
@@ -196,20 +257,24 @@ class SharedOrMineIsolation(TransactionTestCase):
             seed_languages()
             seed_jurisdictions()
             seed_library_vocabularies()
+            seed_taxonomy_terms()
         self.tenant_a = factories.tenant(slug="lib-a")
         self.tenant_b = factories.tenant(slug="lib-b")
         self.reporter = factories.user(email="reporter@lib-a.test")
 
-    def _instrument(self, key: str, owner: Tenant | None) -> Instrument:
-        with library_write("test"):
+    def _instrument(self, key: str, owner: Tenant | None, *, level: str = "act") -> Instrument:
+        # The door on the connection that writes, which is cw_app here: without it the
+        # trigger of shared 0008 refuses the row before the policy under test is asked (H16).
+        with library_write("test"), tenancy.library_door("seed", using="app"):
             return Instrument.objects.using("app").create(
                 stable_key=key,
                 short_name=key,
                 official_ref=key,
                 source_url="https://example.test/",
-                level=InstrumentLevel.objects.get(key="act"),
-                binding=True,
+                level=InstrumentLevel.objects.get(key=level),
+                binding=level != "standard",
                 jurisdiction=Jurisdiction.objects.get(key="se"),
+                regime=build.term("regime:securities"),
                 owner_tenant=owner,
                 created_origin="user",
             )
@@ -226,6 +291,48 @@ class SharedOrMineIsolation(TransactionTestCase):
         with self.assertRaises(ProgrammingError), transaction.atomic(using="app"):
             tenancy.activate(self.tenant_b.id, using="app")
             self._instrument("forged", self.tenant_a)
+
+    def _provision(self, under: Instrument, key: str) -> Provision:
+        with library_write("test"), tenancy.library_door("seed", using="app"):
+            return Provision.objects.using("app").create(
+                stable_key=key, instrument=under, kind=ProvisionKind.objects.using("app").get(key="chapter"), ref_label="1", path=f"{under.short_name} > 1"
+            )
+
+    def test_no_zone_writes_a_provision_under_an_instrument_it_cannot_see(self) -> None:
+        """D-35, INV-07: `provision_not_under_standard` runs as the writer, and row-level
+        security hides another zone's instrument from it, so it fails closed. Under a bank's
+        private standard no zone writes a provision, the bank's own included; under its
+        private law only the bank does, never another bank or the library."""
+        with transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_a.id, using="app")
+            policy = self._instrument("bank-a-policy", self.tenant_a)
+            standard = self._instrument("bank-a-standard", self.tenant_a, level="standard")
+            self._provision(policy, "bank-a-policy/1")
+        for zone, under in (
+            (self.tenant_a, standard),
+            (self.tenant_b, standard),
+            (None, standard),
+            (self.tenant_b, policy),
+            (None, policy),
+        ):
+            with (
+                self.subTest(zone=zone.slug if zone else "library", under=under.stable_key),
+                self.assertRaisesMessage(IntegrityError, "provision_not_under_standard"),
+                transaction.atomic(using="app"),
+            ):
+                if zone:
+                    tenancy.activate(zone.id, using="app")
+                self._provision(under, f"{under.stable_key}/{zone.slug if zone else 'library'}")
+        self.assertEqual(list(Provision.objects.using("app").values_list("stable_key", flat=True)), ["bank-a-policy/1"])
+        # Nor does the library turn a level into a standard while it cannot see where a
+        # provision sits: bank A's is at `act`, hidden from it, and `eu_guidance` is refused too.
+        with (
+            self.assertRaisesMessage(IntegrityError, "provision_not_under_standard"),
+            transaction.atomic(using="app"),
+            library_write("test"),
+            tenancy.library_door("seed", using="app"),
+        ):
+            InstrumentLevel.objects.using("app").filter(key="eu_guidance").update(kind=InstrumentLevelKind.STANDARD.value)
 
     def test_a_problem_report_stays_with_its_tenant(self) -> None:
         with transaction.atomic(using="app"):
@@ -244,6 +351,37 @@ class SharedOrMineIsolation(TransactionTestCase):
             tenancy.activate(self.tenant_a.id, using="app")
             self.assertEqual(ProblemReport.objects.using("app").get().status, ReportStatus.OPEN.value)
 
+    def test_a_report_is_open_or_closed_with_who_when_and_a_note(self) -> None:
+        """library 0009 (AUD-03): the database refuses a closed report missing who closed it,
+        when or why, and an open one carrying any of the three."""
+        now = datetime.datetime.now(tz=datetime.UTC)
+        closed: dict[str, Any] = {"status": ReportStatus.FIXED.value, "resolution_note": "Checked against the source.", "closed_by": self.reporter, "closed_at": now}
+        broken: list[dict[str, Any]] = [
+            {**closed, "resolution_note": ""},
+            {**closed, "closed_by": None},
+            {**closed, "closed_at": None},
+            {"resolution_note": "A note on an open report."},
+            {"closed_at": now},
+        ]
+        for fields in broken:
+            with self.subTest(fields=sorted(fields)):
+                with self.assertRaisesMessage(IntegrityError, "problem_report_closed_with_note"), transaction.atomic(using="app"):
+                    tenancy.activate(self.tenant_a.id, using="app")
+                    self._report(**fields)
+        with transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_a.id, using="app")
+            self.assertEqual(self._report(**closed).status, ReportStatus.FIXED.value)
+
+    def _report(self, **fields: Any) -> ProblemReport:
+        return ProblemReport.objects.using("app").create(
+            tenant=self.tenant_a,
+            reporter=self.reporter,
+            subject_type=SubjectType.OBLIGATION.value,
+            subject_id=self.tenant_a.id,
+            text="The retention period looks wrong.",
+            **fields,
+        )
+
 
 class JurisdictionReach(TestCase):
     """`Jurisdiction.parent` is the jurisdiction whose rules reach this one (D-28, ADR 0026),
@@ -256,7 +394,8 @@ class JurisdictionReach(TestCase):
 
     def test_every_seeded_country_is_reached_by_the_union(self) -> None:
         reach = {row.key: row.parent.key if row.parent else None for row in Jurisdiction.objects.select_related("parent")}
-        self.assertEqual(reach, {"eu": None, "se": "eu", "dk": "eu", "no": "eu", "fi": "eu"})
+        # International (D-38) is reached by nothing: a standards body is no market's rule-maker.
+        self.assertEqual(reach, {"eu": None, "se": "eu", "dk": "eu", "no": "eu", "fi": "eu", "intl": None})
 
     def test_the_fixture_and_the_seed_name_the_same_reach(self) -> None:
         """The two places T15 had to change. They are read by different code paths — the seed
@@ -267,3 +406,170 @@ class JurisdictionReach(TestCase):
         }
         seeded_reach = {key: parent for key, (_, parent, _, _) in JURISDICTIONS.items()}
         self.assertEqual(fixture_reach, seeded_reach)
+
+
+class StandardsAndRegimes(TestCase):
+    """INV-01, INV-02, INV-08, AC-INV2 (D-35, D-37, D-38, D-39): the standard level, the
+    International jurisdiction, the required regime and the provision trigger, pinned where
+    they live, in the seed and in the database. The proposal half of INV-S12 (`not_a_regime`
+    at apply) comes with the instrument proposal kind; INV-S11's screen and seeded standard
+    come after this."""
+
+    standard: Instrument
+    law: Instrument
+    chapter: Provision
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_taxonomy_terms()
+        cls.standard = build.instrument(key="iso-iec-27001-2022", short_name="ISO/IEC 27001:2022", regime="regime:ai_ict", level="standard", binding=False)
+        cls.law = build.instrument(key="fffs-2017-2", short_name="FFFS 2017:2", regime="regime:securities", level="authority_regulation")
+        cls.chapter = build.provision(cls.law, key="fffs-2017-2/9", ref_label="9 kap.")
+
+    def test_standard_is_the_one_level_with_a_kind_and_binds_nobody_by_default(self) -> None:
+        levels = {row.key: row for row in InstrumentLevel.objects.prefetch_related("labels")}
+        standard = levels.pop("standard")
+        self.assertEqual((standard.kind, standard.binding_default, standard.is_system, standard.active), (InstrumentLevelKind.STANDARD.value, False, True, True))
+        self.assertEqual({label.language: label.text for label in standard.labels.all()}, {"en": "Standard", "sv": "Standard"})
+        self.assertTrue(levels, "the law and guidance levels are seeded beside it")
+        self.assertEqual({row.kind for row in levels.values()}, {None}, "every other level stays kindless and is read by `binding`")
+        self.assertGreater(standard.rank, max(row.rank for row in levels.values()), "a standard ranks below every law")
+        entry = REGISTRY["instrument_level"]
+        self.assertEqual((entry.kind_name, entry.kinds, entry.kind_required), ("instrument_level_kind", ("standard",), False))
+
+    def test_international_is_seeded_for_standards_bodies_and_never_mirrored_as_a_market(self) -> None:
+        intl = Jurisdiction.objects.select_related("default_language").prefetch_related("labels").get(key="intl")
+        self.assertEqual(
+            (intl.kind, intl.parent_id, intl.default_language.key, intl.is_system, intl.is_default, intl.active),
+            (JurisdictionKind.INTERNATIONAL.value, None, "en", True, False, True),
+        )
+        self.assertEqual({label.language: label.text for label in intl.labels.all()}, {"en": "International", "sv": "Internationell"})
+        self.assertNotIn(intl.kind, MIRRORED_JURISDICTION_KINDS)
+        self.assertFalse(TaxonomyTerm.objects.filter(jurisdiction=intl).exists(), "no bank operates in International")
+
+    def test_the_database_refuses_an_instrument_without_a_regime(self) -> None:
+        with self.assertRaises(IntegrityError) as caught, transaction.atomic(), library_write("test"):
+            Instrument.objects.create(
+                stable_key="no-regime",
+                short_name="No regime",
+                official_ref="NO REGIME",
+                source_url=build.SOURCE_URL,
+                level=InstrumentLevel.objects.get(key="act"),
+                binding=True,
+                jurisdiction=Jurisdiction.objects.get(key="se"),
+                created_origin="user",
+            )
+        self.assertIn("regime_id", str(caught.exception))
+        self.assertFalse(Instrument.objects.filter(stable_key="no-regime").exists())
+
+    def test_the_database_refuses_a_provision_under_a_standard(self) -> None:
+        with self.assertRaises(IntegrityError) as caught, transaction.atomic():
+            build.provision(self.standard, key="iso-iec-27001-2022/1", ref_label="1")
+        self.assertIn("provision_not_under_standard", str(caught.exception))
+        self.assertFalse(Provision.objects.filter(instrument=self.standard).exists())
+
+    def test_the_database_refuses_moving_a_provision_under_a_standard(self) -> None:
+        with self.assertRaises(IntegrityError) as caught, transaction.atomic(), library_write("test"):
+            Provision.objects.filter(pk=self.chapter.pk).update(instrument=self.standard)
+        self.assertIn("provision_not_under_standard", str(caught.exception))
+        self.assertEqual(Provision.objects.get(pk=self.chapter.pk).instrument_id, self.law.id)
+
+    def test_the_database_refuses_moving_an_instrument_that_holds_provisions_onto_a_standard_level(self) -> None:
+        standard = InstrumentLevel.objects.get(key="standard")
+        with self.assertRaises(IntegrityError) as caught, transaction.atomic(), library_write("test"):
+            Instrument.objects.filter(pk=self.law.pk).update(level=standard)
+        self.assertIn("provision_not_under_standard", str(caught.exception))
+        self.assertEqual(Instrument.objects.get(pk=self.law.pk).level.key, "authority_regulation")
+        empty = build.instrument(key="sfs-2007-528", short_name="LVM", regime="regime:securities")
+        with library_write("test"):
+            Instrument.objects.filter(pk=empty.pk).update(level=standard)
+        self.assertEqual(Instrument.objects.get(pk=empty.pk).level.key, "standard", "an instrument holding no provision may be filed as a standard")
+
+    def test_the_database_refuses_turning_a_level_that_holds_provisions_into_a_standard(self) -> None:
+        with self.assertRaises(IntegrityError) as caught, transaction.atomic(), library_write("test"):
+            InstrumentLevel.objects.filter(key="authority_regulation").update(kind=InstrumentLevelKind.STANDARD.value)
+        self.assertIn("provision_not_under_standard", str(caught.exception))
+        self.assertIsNone(InstrumentLevel.objects.get(key="authority_regulation").kind)
+        # A deploy still puts the kind back on the standard level itself, which holds no provision.
+        with library_write("test"):
+            InstrumentLevel.objects.filter(key="standard").update(kind=None)
+        seed_library_vocabularies()
+        self.assertEqual(InstrumentLevel.objects.get(key="standard").kind, InstrumentLevelKind.STANDARD.value)
+
+    def test_a_provision_under_law_is_written_and_moved_as_before(self) -> None:
+        other = build.instrument(key="sfs-2007-528", short_name="LVM", regime="regime:securities")
+        with library_write("test"):
+            Provision.objects.filter(pk=self.chapter.pk).update(instrument=other, heading="Investment advice")
+        self.assertEqual(Provision.objects.get(pk=self.chapter.pk).instrument_id, other.id)
+        self.assertEqual(build.provision(self.law, key="fffs-2017-2/10", ref_label="10 kap.").instrument_id, self.law.id)
+
+
+class FixtureCheck(SimpleTestCase):
+    """check_prototype_data.py (INV-01, INV-08, D-35, D-39): the prototype fixture passes its
+    own check, and the check refuses the two things the database refuses too, before a seed
+    ever runs."""
+
+    def load(self) -> dict[str, Any]:
+        data: dict[str, Any] = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        return data
+
+    def test_the_fixture_passes_its_own_check(self) -> None:
+        self.assertEqual(Checker(self.load()).run(), [])
+
+    def test_a_regime_must_be_a_term_of_the_regime_dimension(self) -> None:
+        data = self.load()
+        instruments = {row["stable_key"]: row for row in data["instruments"]}
+        instruments["sfs-2007-528"]["regime"] = "service_type:advice"
+        instruments["fffs-2017-2"]["regime"] = None
+        problems = Checker(data).run()
+        self.assertIn("instruments.sfs-2007-528: regime 'service_type:advice' is not a term of the regime dimension", problems)
+        self.assertIn("instruments.fffs-2017-2: regime is required", problems)
+
+    def test_no_provision_may_sit_under_a_standard(self) -> None:
+        data = self.load()
+        instruments = {row["stable_key"]: row for row in data["instruments"]}
+        instruments["sfs-2007-528"]["level"] = "standard"
+        self.assertIn(
+            "provisions.sfs-2007-528/9: a standard's text is licensed, so no provision sits under one", Checker(data).run()
+        )
+
+    def standard(self) -> dict[str, Any]:
+        data: dict[str, Any] = json.loads(E2E_STANDARD.read_text(encoding="utf-8"))
+        return data
+
+    def test_the_e2e_standard_passes_and_the_prototype_holds_none(self) -> None:
+        """INV-08: seed_demo loads the prototype, so the one standard lives in the E2E file
+        until the legal question in TODO_FOR_alex.md is answered."""
+        self.assertEqual(check_e2e_standard(self.load(), self.standard()), [])
+        self.assertEqual(no_standard_in_prototype(self.load()), [])
+        data = self.load()
+        data["instruments"][0]["level"] = "standard"
+        self.assertEqual(
+            no_standard_in_prototype(data),
+            [f"instruments.{data['instruments'][0]['stable_key']}: a standard lives in e2e_standard.json until the legal question is answered, never here"],
+        )
+
+    def test_a_standard_holds_exactly_one_conformance_duty_in_either_file(self) -> None:
+        """INV-08, D-35: a second obligation under a standard is refused, whichever file holds it."""
+        standard = self.standard()
+        duty = standard["obligations"][0]
+        standard["obligations"].append({**duty, "stable_key": "iso-iec-27001-2022-second"})
+        standard["obligation_versions"].append({**standard["obligation_versions"][0], "obligation": "iso-iec-27001-2022-second"})
+        problems = check_e2e_standard(self.load(), standard)
+        self.assertIn("e2e_standard: instruments.iso-iec-27001-2022: a standard holds exactly one obligation, its conformance duty, not 2", problems)
+        self.assertIn(
+            "e2e_standard: obligations.iso-iec-27001-2022-second: a standard's conformance duty carries a term of the standard dimension", problems
+        )
+        # The same rule in the prototype's own rows: a standard there with two duties.
+        data = self.load()
+        instrument = data["instruments"][0]
+        instrument["level"] = "standard"
+        under = [o["stable_key"] for o in data["obligations"] if o["instrument"] == instrument["stable_key"]]
+        self.assertGreater(len(under), 1)
+        self.assertIn(
+            f"instruments.{instrument['stable_key']}: a standard holds exactly one obligation, its conformance duty, not {len(under)}",
+            Checker(data).run(),
+        )

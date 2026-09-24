@@ -23,13 +23,16 @@ from __future__ import annotations
 import uuid
 from typing import Any, ClassVar
 
+from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVector, SearchVectorField
 from django.db import models
 from django.db.models import Case, Value, When
+from django.utils import timezone
 from pgvector.django import HnswIndex, VectorField
 
 from apps.search.indexing import SearchChunkQuerySet, assert_index_write
+from apps.search.schemas import EvalVia, SearchMatchKind
 
 # The content language's own PostgreSQL text search configuration, so a Swedish chunk is
 # stemmed as Swedish and a Finnish one as Finnish (INPUT_DELTAS §3). This departs from
@@ -145,3 +148,58 @@ class SearchChunk(models.Model):
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:  # compliance: allow-kwargs Django Model.delete signature
         assert_index_write(type(self).__name__)
         return super().delete(*args, **kwargs)
+
+
+class EvalQuestion(models.Model):
+    """One labelled question of the retrieval evaluation set (SRC-05, ADM-02).
+
+    A platform record, kept by platform staff in the console: it has no tenant column and is
+    not a library record, so it extends neither `TenantModel` nor `LibraryModel`. Migration
+    0002 enables and forces row-level security with one policy that refuses any session with
+    a tenant active, so no bank can read or write the set. `backend/eval/retrieval.jsonl` is
+    what the release gate reads; `seed_eval_questions` files its rows here, create-only, and
+    `dump_eval_questions` writes the active rows back. `key` is the line's `id` and never
+    changes; `expected` names library records by stable key, never by id, because the ids of
+    the corpus differ in every database the gate builds.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    key = models.SlugField(max_length=40, unique=True)
+    language = models.ForeignKey(
+        "library.Language", to_field="key", db_column="lang", on_delete=models.PROTECT, related_name="+"
+    )
+    question = models.TextField()
+    expected = ArrayField(models.CharField(max_length=200), default=list, blank=True)
+    match_kind = models.CharField(max_length=10, choices=[(kind.value, kind.value) for kind in SearchMatchKind])
+    as_of = models.DateField(null=True, blank=True)
+    # Which read the gate scores the question on: the search page's hits or Ask's passages.
+    via = models.CharField(max_length=6, choices=[(via.value, via.value) for via in EvalVia], default=EvalVia.SEARCH.value)
+    notes = models.TextField(blank=True, default="")
+    active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "eval_question"
+        ordering = ["key"]
+
+    def __str__(self) -> str:
+        return self.key
+
+
+class EvalRun(models.Model):
+    """One scored run of the evaluation set against a retriever (SRC-05): which chain ran,
+    the metrics, and what each question got back. Written by `record_eval_run`, whose audit
+    row names who ran it; a platform record under the same policy as `EvalQuestion`, and
+    never changed once written."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    run_at = models.DateTimeField(default=timezone.now)
+    config = models.JSONField()  # schema: EvalRunConfig
+    metrics = models.JSONField()  # schema: EvalRunMetrics
+    results = models.JSONField()  # schema: EvalQuestionResult, one per question asked
+
+    class Meta:
+        db_table = "eval_run"
+        ordering = ["-run_at", "id"]
+
+    def __str__(self) -> str:
+        return f"eval run {self.id}"

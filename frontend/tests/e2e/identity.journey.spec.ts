@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 
+import { mintAgentKey, revokeAgentKey } from './support/agent-key';
 import { expect, test } from './support/api-guard';
 import {
   allowFreshContext,
@@ -105,6 +106,8 @@ test.describe('identity journeys', () => {
       await page.getByRole('button', { name: 'Skip for now' }).click();
       await expect(page.locator('[data-who-panel]')).toBeVisible();
       await expect(page.locator('[data-who-panel]')).toContainText('Example Bank AB');
+      // She lands on Today; it has read what it shows before she signs out.
+      await expect(page.getByRole('heading', { level: 1, name: 'What is coming, and where we stand' })).toBeVisible();
 
       await signOut(page);
 
@@ -368,6 +371,12 @@ test.describe('identity journeys', () => {
     await page.goto('/admin/api-keys');
     await page.getByRole('button', { name: 'Create a key' }).click();
     const form = page.locator('[data-key-form]');
+    // A bank's key is offered reads and proposals only: the watch writes belong
+    // to the platform's own agents and are not on the form at all.
+    await expect(form.locator('label', { hasText: /^proposals write/ })).toBeVisible();
+    for (const platformOnly of [/^agent runs write/, /^sources write/, /^changes write/]) {
+      await expect(form.locator('label', { hasText: platformOnly })).toHaveCount(0);
+    }
     await form.getByLabel('Name', { exact: true }).fill('GRC export sync');
     await form.locator('label', { hasText: /^tenant read/ }).getByRole('checkbox').check();
     await form.locator('label', { hasText: /^search read/ }).getByRole('checkbox').check();
@@ -413,16 +422,33 @@ test.describe('identity journeys', () => {
     }
   });
 
-  test.fixme("ID-S20: An agent key is shown once in the console and is bound to its agent", async () => {
-    // pending: the platform agent key routes answer 501 `not_built`.
-    // `c5-platform-agent-keys` (chunk 5) serves GET /agent-keys,
-    // POST /agent-keys and POST /agent-keys/{keyId}/revoke; until it lands
-    // nothing on /console/agent-keys can be driven against the real stack, so
-    // the screen's own half of ID-S20 is proved in
-    // src/components/console/AgentKeysScreen.test.tsx instead. The journey
-    // then reads: a platform admin creates a key bound to Watch sweeper v1,
-    // passes the passkey step-up, sees the plain key once, finds it gone after
-    // a reload, and revokes it.
+  test("ID-S20: An agent key is shown once in the console and is bound to its agent", async ({ page, apiGuard }) => {
+    // ID-10, AGT-01: a platform administrator mints a key bound to the watch
+    // sweeper through the console's own form, behind a passkey step-up.
+    const stepUp = page.waitForResponse((r) => r.url().endsWith('/api/v1/agent-keys') && r.request().method() === 'POST' && r.status() === 403);
+    const { id, plainKey } = await mintAgentKey(page, apiGuard, { name: `ID-S20 sweeper ${Date.now()}`, agent: 'watch-sweeper', scopes: ['agent-runs:write', 'sources:write'] });
+    const row = page.locator(`[data-agent-key-id="${id}"]`);
+
+    try {
+      expect(((await (await stepUp).json()) as { code: string }).code).toBe('step_up_required');
+      await expect(row).toContainText('watch-sweeper');
+      await expect(row).toContainText('agent runs write');
+      await expect(row).toContainText('sources write');
+      await expect(row).toContainText(`Key ${plainKey.split('_')[1]}`);
+      await expect(row).not.toContainText(plainKey);
+
+      // Never again: a reload shows the prefix only.
+      await page.reload();
+      await expect(row).toBeVisible();
+      await expect(page.locator('[data-new-key]')).toHaveCount(0);
+      await expect(page.getByText(plainKey)).toHaveCount(0);
+
+      await revokeAgentKey(page, id);
+      await expect(row.getByRole('button', { name: 'Revoke' })).toHaveCount(0);
+    } finally {
+      // Teardown that runs on failure too: a live key never outlives the attempt.
+      await revokeAgentKey(page, id);
+    }
   });
 
   test("ID-S26: A denied request answers a structured 403 the UI renders as is", async ({ page, apiGuard }) => {
@@ -440,5 +466,9 @@ test.describe('identity journeys', () => {
     const alert = page.locator('[data-problem-code="permission_denied"]');
     await expect(alert).toBeVisible();
     await expect(alert).toContainText('Needs security manage');
+  });
+
+  test.fixme("ACC-S3: A service key acts as the entry and a personal token acts as the person", async () => {
+    // pending: ACC-S3 (ACC-03, chunk 11)
   });
 });

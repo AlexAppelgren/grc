@@ -13,7 +13,7 @@ if behaviour changes. Numbering never reuses a number.
 | [0004](0004-ui-foundation.md) | UI foundation: Tailwind, Radix primitives and our own components on Green tokens | D-04 | accepted by default (spike outcome pending) |
 | [0005](0005-brand-layer.md) | Brand layer: Green tokens with our own brand pair | D-05 | accepted by default |
 | [0006](0006-sessions.md) | Sessions: in-memory access token, rotating refresh cookie, a row per session | D-06 | accepted by default |
-| [0007](0007-llm-provider-and-inference-region.md) | LLM provider adapter and the inference region | D-07 | accepted by default |
+| [0007](0007-llm-provider-and-inference-region.md) | LLM provider adapter and the inference region | D-07 | accepted by default; amended by ADR 0057 |
 | [0008](0008-agent-runtime.md) | Agent runtime behind an adapter, the app as scheduler of record | D-08 | accepted by default |
 | [0009](0009-embedding-model-and-reranker.md) | Embedding model and reranker chosen against the evaluation set | D-09 | accepted by default |
 | [0010](0010-search-scope.md) | Search indexes the library only in R1 | D-10 | accepted by default |
@@ -41,10 +41,10 @@ if behaviour changes. Numbering never reuses a number.
 | [0032](0032-international-jurisdiction.md) | International is a jurisdiction kind of its own | D-38 | accepted by default |
 | [0033](0033-regime-is-the-sector-boundary.md) | Every instrument and every change carries a regime, and the regime list is the boundary | D-39 | accepted by default |
 | [0034](0034-sector-vocabulary-edges.md) | The sector scope's edges: tax, AI and the licensed-activity dimension | D-40 | accepted by default |
-| [0035](0035-soa-units-in-the-tenant-zone.md) | The Statement of Applicability's units live in the tenant zone | D-41 | accepted by default |
-| [0036](0036-entity-follows-a-standard-by-applicability.md) | A legal entity follows a standard through approved applicability | D-42 | accepted by default |
+| [0035](0035-soa-units-in-the-tenant-zone.md) | The Statement of Applicability's units live in the tenant zone | D-41 | accepted by default; amended by D-75 |
+| [0036](0036-entity-follows-a-standard-by-applicability.md) | A legal entity follows a standard through approved applicability | D-42 | accepted by default; amended by D-75 |
 | [0037](0037-certificate-on-the-licence-row.md) | A certificate sits on the entity's licence row and reaches the roadmap, not the feed | D-43 | accepted by default |
-| [0038](0038-bulk-decision-of-applicability-requests.md) | Many pending applicability requests are decided in one call, with four eyes on every row | D-44 | accepted by default |
+| [0038](0038-bulk-decision-of-applicability-requests.md) | Many pending applicability requests are decided in one call, with four eyes on every row | D-44 | superseded by D-75 |
 | [0039](0039-standards-watched-from-public-metadata.md) | Standards are watched from public metadata, and only from cleared publishers | D-45 | accepted by default |
 | [0040](0040-soa-view-now-export-later.md) | The Statement of Applicability is a filtered register view in R2 and an export in R3 | D-46 | accepted by default |
 | [0041](0041-seed-one-standard-first.md) | One standard is seeded first, and the rest arrive by proposal | D-47 | accepted by default |
@@ -61,6 +61,10 @@ if behaviour changes. Numbering never reuses a number.
 | [0052](0052-platform-counters-window.md) | The console reads each bank's figures through one window on tables of numbers | D-59 | accepted |
 | [0053](0053-bleqq-agents-are-the-base-package.md) | bleqq's agents are the base package; a bank steers only its own | D-61 | accepted |
 | [0054](0054-agent-approves-from-the-same-queue.md) | The second pair of eyes on a library proposal may be an independent agent | D-62 | accepted |
+| [0055](0055-agent-access-reads-and-only-narrows.md) | An agent a bank runs reads through a registered entry that can only narrow | D-70, D-73, D-76 | accepted |
+| [0056](0056-two-credential-kinds-one-table.md) | A service key and a personal access token, on one table, and a token can never step up | D-77 | accepted |
+| [0057](0057-a-bank-pulls-its-own-register.md) | A bank may pull its own register into its own agent; we still send nothing | D-72, D-76 (amends D-07) | accepted |
+| [0058](0058-library-writes-refused-by-the-database.md) | The database refuses a library write that never entered a door | D-83 | accepted by default |
 
 Still to write, when the playbook's Appendix C says so:
 the switch from one branch to `staging` and `main` (supersedes 0015), the
@@ -83,3 +87,11 @@ stance this index owed.
 
 PRD 0.4 also added 0054 for D-62, Alex's own decision of 2026-09-20 (item 19)
 that bleqq staffs no editorial function.
+
+PRD 0.5 (decided 2026-09-20, landed 2026-09-23) added 0055 to 0057 for the agent
+access decisions D-70 to D-73, D-76 and D-77, answered by Alex in chat and
+consolidated in `docs/plans/briefs/AGENT_ACCESS.md`. D-71 has no ADR of its own: the
+labelling and logging of a drafted summary is the existing AI-output invariant, not a
+new design. 0057 amends 0007's D-07 and is the first ADR to state what that decision
+always meant, that **we** send no tenant-zone text to a model; it leaves D-10 and
+ADR 0050's private records untouched.

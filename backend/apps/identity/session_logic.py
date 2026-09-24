@@ -287,11 +287,33 @@ def refresh(value: str | None, request: HttpRequest | None) -> tuple[str, int, s
     return access_token, expires_in, new_value
 
 
+def _holds_secret(session: UserSession, presented_hash: str, now: datetime) -> bool:
+    """The cookie carries the session's current refresh secret, or the one it just rotated
+    away from inside the replay grace window (a tab signing out while another refreshes)."""
+    if tokens.constant_equal(presented_hash, session.refresh_token_hash):
+        return True
+    return (
+        session.previous_refresh_hash is not None
+        and session.rotated_at is not None
+        and now - session.rotated_at <= timedelta(seconds=settings.REFRESH_REPLAY_GRACE_SECONDS)
+        and tokens.constant_equal(presented_hash, session.previous_refresh_hash)
+    )
+
+
 def sign_out(value: str | None, request: HttpRequest | None) -> None:
     """Idempotent: a stale or missing cookie still answers 204, and the attempt is still a
-    write for the audit rule (AC-AUD1), recorded with no subject."""
+    write for the audit rule (AC-AUD1), recorded with no subject.
+
+    The cookie is the only credential here, and a session id is no secret (every
+    `session.created` audit row names one), so a cookie naming a session without holding
+    its refresh secret signs nobody out and writes nothing in that person's name."""
     session, presented_hash = _load_by_refresh(value)
-    if session is None or presented_hash is None or session.revoked_at is not None:
+    if (
+        session is None
+        or presented_hash is None
+        or session.revoked_at is not None
+        or not _holds_secret(session, presented_hash, timezone.now())
+    ):
         record(
             action="session.sign_out_without_session",
             actor=Actor.system("sign-out"),

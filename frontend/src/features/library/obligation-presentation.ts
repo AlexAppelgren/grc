@@ -7,11 +7,16 @@ import {
   type ComplianceKind,
 } from '@/features/shared/tone-by-kind';
 import type { MessageKey, Translate } from '@/shared/i18n';
+import { formatDate, type FormatContext } from '@/shared/utils/format';
+
+import type { ObligationProvenance, ObligationVersionRow, VersionConfirmation } from './types';
 
 // Obligation row and header (design/system/pills-and-labels.md, slot order).
-// Row: instrument, "Guidance" if not binding, applicability, compliance
+// Row: instrument, "Guidance" if not binding ("Standard" for a standard), applicability, compliance
 // status if it applies, "Change waiting for approval", "N open changes".
-// Header: instrument, regime, binding level, compliance status.
+// Header: instrument, regime, binding level, compliance status. The level's
+// kind decides the binding slots before `binding` does (D-37): a standard is
+// neither law nor guidance, so it reads "Standard" in both.
 // Computed labels come from the message catalog with plural forms; the API
 // sends `openChangeCount` and `changeWaitingForApproval`, never a phrase.
 
@@ -20,6 +25,8 @@ export interface ObligationFacts {
   instrument: VocabularyRef;
   regime?: VocabularyRef;
   binding: boolean;
+  /** The binding level's kind: `standard` or null (D-37). */
+  levelKind?: string | null;
   applicability?: KindRef<ApplicabilityKind>;
   /** Present only when the obligation applies and has been assessed. */
   complianceStatus?: KindRef<ComplianceKind>;
@@ -30,6 +37,9 @@ export interface ObligationFacts {
 }
 
 export type ObligationView = 'row' | 'header';
+
+/** The one instrument level kind (D-37): an edition of a published standard, whose text is licensed. */
+export const STANDARD_LEVEL_KIND = 'standard';
 
 export const OBLIGATION_SLOT_ORDER = {
   instrument: 10,
@@ -63,9 +73,11 @@ export function presentObligation(obligation: ObligationFacts, view: ObligationV
         order: OBLIGATION_SLOT_ORDER.regime,
       });
     }
-    pills.push(presentBindingLevel(obligation.binding, OBLIGATION_SLOT_ORDER.bindingLevel + 1, t));
+    pills.push(presentBindingLevel(obligation.binding, obligation.levelKind ?? null, OBLIGATION_SLOT_ORDER.bindingLevel + 1, t));
   } else {
-    if (!obligation.binding) {
+    if (obligation.levelKind === STANDARD_LEVEL_KIND) {
+      pills.push(presentStandard(OBLIGATION_SLOT_ORDER.guidance, t));
+    } else if (!obligation.binding) {
       pills.push({ key: 'guidance', label: t('pill.guidance'), tone: slotTone.guidance, order: OBLIGATION_SLOT_ORDER.guidance });
     }
     if (obligation.applicability !== undefined) {
@@ -122,9 +134,15 @@ export function presentObligation(obligation: ObligationFacts, view: ObligationV
   return pills.sort(byOrder);
 }
 
+function presentStandard(order: number, t: Translate): PresentedPill {
+  return { key: 'standard', label: t('pill.standard'), tone: slotTone.bindingLevel, order };
+}
+
 // A header's binding level (obligation and instrument cards): "Binding" is a
-// neutral fact, "Guidance, comply or explain" needs attention.
-export function presentBindingLevel(binding: boolean, order: number, t: Translate): PresentedPill {
+// neutral fact, "Guidance, comply or explain" needs attention, and a standard
+// reads "Standard" as a neutral fact whatever `binding` says.
+export function presentBindingLevel(binding: boolean, levelKind: string | null, order: number, t: Translate): PresentedPill {
+  if (levelKind === STANDARD_LEVEL_KIND) return presentStandard(order, t);
   return binding
     ? { key: 'binding', label: t('pill.binding'), tone: slotTone.bindingLevel, order }
     : { key: 'guidance', label: t('pill.guidanceComplyOrExplain'), tone: slotTone.guidanceComplyOrExplain, order };
@@ -175,14 +193,47 @@ export function presentScope(scope: ScopeFacts, t: Translate): PresentedScope {
   return { pills: scope.terms.map((term, i) => ({ key: `scope:${term.key}`, label: term.label, tone: slotTone.scopeTerm, order: i })) };
 }
 
-// "Outside your footprint: Advice" in the meta line of a row that only shows
-// with "Show outside footprint": the terms that put it outside.
+// "Outside our scope: Advice" in the meta line of a row that only shows
+// with "Show outside our scope": the terms that put it outside.
 export function outsideFootprintLabel(terms: readonly VocabularyRef[], t: Translate): string {
   return t('library.outsideFootprint', { terms: terms.map((term) => term.label).join(', ') });
+}
+
+// "Market we watch: Denmark" in the meta line of a row under "Markets we
+// watch" (FP-04): the row's own jurisdiction, as text and never a pill.
+export function watchedMarketLabel(jurisdiction: VocabularyRef, t: Translate): string {
+  return t('library.watchedMarket', { jurisdiction: jurisdiction.label });
 }
 
 // "Change pending: in force 1 Oct" on a scope facet whose applicability is
 // waiting for approval. The caller formats the date with formatDate().
 export function presentChangePending(formattedDate: string, t: Translate): PresentedPill {
   return { key: 'change-pending', label: t('pill.changePending', { date: formattedDate }), tone: slotTone.changePending, order: 0 };
+}
+
+// "Machine-confirmed 17 Aug 2026: proposed by watch-sweeper, confirmed by
+// library-confirmer", read where a person's approval or verification would be
+// (INV-05, INV-06, PRO-02, D-74); null means the person wording stands. It
+// follows who confirmed alone, never which agents are named, since a person
+// may propose what an agent confirms. `stamp` is the record's re-verification
+// for the "Last verified" slot: the label gives way only to one a named person
+// made after that approval, never to a seeded date nobody signed. A version
+// row passes null, because who approved a version does not change when
+// somebody later checks the record. An inventory row passes its own version
+// in force and stamp, so the list follows the same rule as the card.
+export function machineConfirmedLabel(
+  version: Pick<ObligationVersionRow, 'approvedAt' | keyof VersionConfirmation> | null,
+  stamp: Pick<ObligationProvenance, 'lastVerifiedAt' | 'verifiedBy'> | null,
+  t: Translate,
+  ctx: FormatContext,
+): string | null {
+  if (version === null || version.verifiedOrigin !== 'agent' || version.approvedAt === null) return null;
+  const personSawItLater =
+    stamp !== null && stamp.verifiedBy !== null && stamp.lastVerifiedAt !== null && Date.parse(stamp.lastVerifiedAt) > Date.parse(version.approvedAt);
+  if (personSawItLater) return null;
+  const date = formatDate(version.approvedAt, ctx);
+  const confirmer = version.confirmedByAgent?.key ?? '';
+  return version.proposedByAgent === null
+    ? t('inventory.obligation.machineConfirmedBy', { date, confirmer })
+    : t('inventory.obligation.machineConfirmed', { date, proposer: version.proposedByAgent.key, confirmer });
 }

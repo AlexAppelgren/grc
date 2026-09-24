@@ -115,6 +115,14 @@
     "rank": 50,
     "binding_default": true,
     "usage_note": "Binding rules issued by the supervisor under delegation (FFFS in Sweden)."
+   },
+   "standard": {
+    "label_en": "Standard",
+    "label_sv": "Standard",
+    "kind": "standard",
+    "rank": 60,
+    "binding_default": false,
+    "usage_note": "One edition of a published standard, such as ISO/IEC 27001:2022, filed under International and a regime. Not law: its pill reads Standard, never Guidance, comply or explain. Its text is licensed and never held here, so it has no provisions, only its public facts and one conformance duty in our own words."
    }
   },
   "change_type": {
@@ -313,7 +321,7 @@
     "label_sv": "Kanal",
     "kind": null,
     "restricts_footprint": false,
-    "usage_note": "Digital or branch. Describes the obligation, never narrows the footprint."
+    "usage_note": "Digital or branch. Describes the obligation, never narrows the regulatory scope."
    },
    "lifecycle_stage": {
     "label_en": "Lifecycle stage",
@@ -398,6 +406,12 @@
     "label_sv": "Relaterad",
     "kind": null,
     "usage_note": "Two obligations a reader should see together, with no hierarchy between them."
+   },
+   "amends": {
+    "label_en": "Amends",
+    "label_sv": "Ändrar",
+    "kind": null,
+    "usage_note": "A later instrument that corrects, supersedes or adds to part of an earlier one."
    }
   },
   "source_kind": {
@@ -424,6 +438,12 @@
     "label_sv": "Privat källa",
     "kind": null,
     "usage_note": "A source only one tenant follows. Findings never enter the shared library."
+   },
+   "standards_body": {
+    "label_en": "Standards body",
+    "label_sv": "Standardiseringsorgan",
+    "kind": null,
+    "usage_note": "A standards publisher's own pages. Registered with automated checks off until a lawyer has read the publisher's terms (D-45)."
    }
   },
   "link_kind": {
@@ -1074,6 +1094,12 @@
    "name": "Finland",
    "parent_code": "EU",
    "kind": "country"
+  },
+  {
+   "code": "INTL",
+   "name": "International",
+   "parent_code": null,
+   "kind": "international"
   }
  ],
  "authorities": [
@@ -1132,6 +1158,27 @@
    "name": "European Parliament and Council of the EU",
    "jurisdiction": "EU",
    "url": "https://www.consilium.europa.eu/"
+  },
+  {
+   "key": "finanstilsynet-dk",
+   "code": "Finanstilsynet (DK)",
+   "name": "Finanstilsynet",
+   "jurisdiction": "DK",
+   "url": "https://www.finanstilsynet.dk/"
+  },
+  {
+   "key": "finanstilsynet-no",
+   "code": "Finanstilsynet (NO)",
+   "name": "Finanstilsynet",
+   "jurisdiction": "NO",
+   "url": "https://www.finanstilsynet.no/"
+  },
+  {
+   "key": "stortinget",
+   "code": "STORTINGET",
+   "name": "Stortinget",
+   "jurisdiction": "NO",
+   "url": "https://www.stortinget.no/"
   }
  ],
  "instruments": [
@@ -1452,6 +1499,73 @@
    "prototype_id": null,
    "from_prototype": false,
    "note": "Anchor for the implements relations of LFD and FFFS 2018:10."
+  },
+  {
+   "stable_key": "fffs-2026-11",
+   "short_name": "FFFS 2026:11",
+   "name": "FFFS 2026:11 om ändring i Finansinspektionens föreskrifter (FFFS 2017:2) om värdepappersrörelse",
+   "regime": "regime:securities",
+   "level": "authority_regulation",
+   "binding": true,
+   "official_ref": "FFFS 2026:11",
+   "eli_uri": null,
+   "source_url": "https://www.fi.se/",
+   "authority": "fi",
+   "jurisdiction": "SE",
+   "in_force_from": "2026-10-01",
+   "in_force_to": null,
+   "implements_note": "",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": "FFFS202611",
+   "from_prototype": false
+  },
+  {
+   "stable_key": "dk-lov-2017-650",
+   "short_name": "Kapitalmarkedsloven",
+   "name": "Lov om kapitalmarkeder",
+   "regime": "regime:securities",
+   "level": "act",
+   "binding": true,
+   "official_ref": "LOV nr 650 af 08/06/2017",
+   "eli_uri": "https://www.retsinformation.dk/eli/lta/2017/650",
+   "source_url": "https://www.retsinformation.dk/eli/lta/2017/650",
+   "authority": null,
+   "jurisdiction": "DK",
+   "in_force_from": "2018-01-03",
+   "in_force_from_precision": "day",
+   "in_force_to": null,
+   "implements_note": "",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": null,
+   "from_prototype": false,
+   "note": "The watched-market example of design/screens/tenant-inventory.html. Title, number, date and in-force date (§ 258) from retsinformation.dk; no issuer until Folketinget is filed as an authority (docs/TODO_FOR_alex.md, tax-nordic-seed)."
+  },
+  {
+   "stable_key": "no-lov-2007-06-29-75",
+   "short_name": "Verdipapirhandelloven",
+   "name": "Lov om verdipapirhandel (verdipapirhandelloven)",
+   "regime": "regime:securities",
+   "level": "act",
+   "binding": true,
+   "official_ref": "LOV-2007-06-29-75",
+   "eli_uri": null,
+   "source_url": "https://lovdata.no/dokument/NL/lov/2007-06-29-75",
+   "authority": "stortinget",
+   "jurisdiction": "NO",
+   "in_force_from": "2007-11-01",
+   "in_force_from_precision": "day",
+   "in_force_to": null,
+   "implements_note": "MiFID II, Directive 2014/65/EU",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": null,
+   "from_prototype": false,
+   "note": "Norway's act of the same family. Title, reference and first in-force date from lovdata.no; the MiFID II amendment (lov 15. juni 2018 nr. 35, in force 1 January 2019) from stortinget.no."
   }
  ],
  "instrument_relations": [
@@ -1494,6 +1608,14 @@
    "from_ref": null,
    "to_ref": null,
    "note": "IDD, Directive (EU) 2016/97"
+  },
+  {
+   "from_instrument": "fffs-2026-11",
+   "to_instrument": "fffs-2017-2",
+   "relation": "amends",
+   "from_ref": null,
+   "to_ref": null,
+   "note": "Amends FFFS 2017:2, in force 1 October 2026."
   }
  ],
  "provisions": [
@@ -1516,6 +1638,150 @@
    "heading": "Automated individual decision-making, including profiling",
    "path": "GDPR > Article 22",
    "ordinal": 22
+  },
+  {
+   "stable_key": "fffs-2017-2/9",
+   "instrument": "fffs-2017-2",
+   "parent": null,
+   "kind": "chapter",
+   "ref": "9 kap.",
+   "heading": "Skydd för investerare",
+   "path": "FFFS 2017:2 > 9 kap.",
+   "ordinal": 9
+  },
+  {
+   "stable_key": "fffs-2017-2/9-6",
+   "instrument": "fffs-2017-2",
+   "parent": "fffs-2017-2/9",
+   "kind": "section",
+   "ref": "6 §",
+   "heading": "Betalning för analys",
+   "path": "FFFS 2017:2 > 9 kap. > 6 §",
+   "ordinal": 6
+  },
+  {
+   "stable_key": "fffs-2017-2/9-6-1",
+   "instrument": "fffs-2017-2",
+   "parent": "fffs-2017-2/9-6",
+   "kind": "paragraph",
+   "ref": "första stycket",
+   "heading": "",
+   "path": "FFFS 2017:2 > 9 kap. > 6 § > första stycket",
+   "ordinal": 1
+  },
+  {
+   "stable_key": "fffs-2017-2/9-10",
+   "instrument": "fffs-2017-2",
+   "parent": "fffs-2017-2/9",
+   "kind": "section",
+   "ref": "10 §",
+   "heading": "Kostnader och avgifter",
+   "path": "FFFS 2017:2 > 9 kap. > 10 §",
+   "ordinal": 10
+  },
+  {
+   "stable_key": "fffs-2017-2/9-23",
+   "instrument": "fffs-2017-2",
+   "parent": "fffs-2017-2/9",
+   "kind": "section",
+   "ref": "23 §",
+   "heading": "Passandebedömning",
+   "path": "FFFS 2017:2 > 9 kap. > 23 §",
+   "ordinal": 23
+  },
+  {
+   "stable_key": "fffs-2017-2/10",
+   "instrument": "fffs-2017-2",
+   "parent": null,
+   "kind": "chapter",
+   "ref": "10 kap.",
+   "heading": "Produktstyrning",
+   "path": "FFFS 2017:2 > 10 kap.",
+   "ordinal": 10
+  },
+  {
+   "stable_key": "fffs-2017-2/11",
+   "instrument": "fffs-2017-2",
+   "parent": null,
+   "kind": "chapter",
+   "ref": "11 kap.",
+   "heading": "Kundmedel och finansiella instrument",
+   "path": "FFFS 2017:2 > 11 kap.",
+   "ordinal": 11
+  }
+ ],
+ "provision_versions": [
+  {
+   "provision": "fffs-2017-2/9",
+   "version_no": 1,
+   "effective_from": "2018-01-03",
+   "transitional_note": "",
+   "original_language": "sv",
+   "text_sv": "Detta kapitel innehåller bestämmelser om skydd för investerare vid värdepappersrörelse.",
+   "text_en": "This chapter contains provisions on investor protection in securities business."
+  },
+  {
+   "provision": "fffs-2017-2/9-6",
+   "version_no": 1,
+   "effective_from": "2018-01-03",
+   "transitional_note": "",
+   "original_language": "sv",
+   "text_sv": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel, från ett analyskonto, eller gemensamt med orderutförande enligt de villkor som anges i reglerna.",
+   "text_en": "Investment research from a third party may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in these regulations."
+  },
+  {
+   "provision": "fffs-2017-2/9-6",
+   "version_no": 2,
+   "effective_from": "2026-10-01",
+   "transitional_note": "The annual assessment is first due for research received after 1 October 2026.",
+   "original_language": "sv",
+   "text_sv": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel, från ett analyskonto, eller gemensamt med orderutförande enligt de villkor som anges i reglerna. Institutet ska årligen bedöma kvaliteten och nyttan av den analys som tas emot.",
+   "text_en": "Investment research from a third party may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in these regulations. The institution shall assess annually the quality and value of the research it receives."
+  },
+  {
+   "provision": "fffs-2017-2/9-6-1",
+   "version_no": 1,
+   "effective_from": "2018-01-03",
+   "transitional_note": "",
+   "original_language": "sv",
+   "text_sv": "Med institutets egna medel avses medel som inte har fakturerats kunden särskilt för analysen.",
+   "text_en": "The institution's own resources means funds that have not been separately invoiced to the client for the research."
+  },
+  {
+   "provision": "fffs-2017-2/9-10",
+   "version_no": 1,
+   "effective_from": "2018-01-03",
+   "transitional_note": "",
+   "original_language": "sv",
+   "text_sv": "Institutet ska lämna information om samtliga kostnader och avgifter till kunden före och efter tillhandahållandet av tjänsten.",
+   "text_en": "The institution shall disclose all costs and charges to the client before and after providing the service."
+  },
+  {
+   "provision": "fffs-2017-2/9-23",
+   "version_no": 1,
+   "effective_from": "2018-01-03",
+   "transitional_note": "",
+   "original_language": "sv",
+   "text_sv": "Institutet ska bedöma om en tjänst eller ett finansiellt instrument är lämpligt för kunden innan tjänsten tillhandahålls.",
+   "text_en": "The institution shall assess whether a service or financial instrument is appropriate for the client before the service is provided."
+  },
+  {
+   "provision": "fffs-2017-2/10",
+   "version_no": 1,
+   "effective_from": "2018-01-03",
+   "transitional_note": "",
+   "original_language": "sv",
+   "text_sv": "Detta kapitel innehåller bestämmelser om produktstyrning.",
+   "text_en": "This chapter contains provisions on product governance."
+  },
+  {
+   "provision": "fffs-2017-2/11",
+   "version_no": 1,
+   "effective_from": "2018-01-03",
+   "transitional_note": "",
+   "original_language": "sv",
+   "text_sv": "Detta kapitel innehåller bestämmelser om hantering av kunders medel och finansiella instrument.",
+   "text_en": "This chapter contains provisions on the handling of clients' funds and financial instruments."
   }
  ],
  "obligation_provisions": [
@@ -1534,6 +1800,14 @@
   {
    "obligation": "obl-suitability-statement",
    "provision": "sfs-2007-528/9"
+  },
+  {
+   "obligation": "obl-research-payments",
+   "provision": "fffs-2017-2/9-6"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "provision": "fffs-2017-2/9-10"
   }
  ],
  "obligations": [
@@ -1944,6 +2218,56 @@
    "prototype_id": null,
    "from_prototype": false,
    "note": "Sample row for J-6, not verbatim law: the one obligation whose only service is advice, so switching Advice off hides it. No prototype obligation is advice-only."
+  },
+  {
+   "stable_key": "obl-dk-csd-registration",
+   "instrument": "dk-lov-2017-650",
+   "ref_label": "§§ 184-185",
+   "title": "Pass every notification for registration of a right over securities to the CSD at once",
+   "duty_type": "reporting",
+   "product_scope": null,
+   "trigger_frequency": "Per notification received for registration",
+   "retention": null,
+   "sanction_exposure": null,
+   "tags": [
+    "custody",
+    "register"
+   ],
+   "status": "active",
+   "created_origin": "user",
+   "created_by_agent_run": null,
+   "created_model": null,
+   "created_by_label": "Library editor",
+   "verified_by": null,
+   "last_verified_at": "2026-09-23",
+   "prototype_id": null,
+   "from_prototype": false,
+   "note": "Sample row in our own words, not verbatim law: the custody duty of an account-holding institution (kontoførende institut), Kapitalmarkedsloven § 184, stk. 5, and § 185."
+  },
+  {
+   "stable_key": "obl-no-suitability",
+   "instrument": "no-lov-2007-06-29-75",
+   "ref_label": "§ 10-15 første ledd",
+   "title": "Obtain the client's information and recommend only what suits them when advising or managing a portfolio",
+   "duty_type": "conduct",
+   "product_scope": null,
+   "trigger_frequency": "Per investment advice or portfolio management service",
+   "retention": null,
+   "sanction_exposure": null,
+   "tags": [
+    "suitability",
+    "advice"
+   ],
+   "status": "active",
+   "created_origin": "user",
+   "created_by_agent_run": null,
+   "created_model": null,
+   "created_by_label": "Library editor",
+   "verified_by": null,
+   "last_verified_at": "2026-09-23",
+   "prototype_id": null,
+   "from_prototype": false,
+   "note": "Sample row in our own words, not verbatim law: the suitability duty, verdipapirhandelloven § 10-15 (1). It names Advice and Portfolio management, so switching Advice off (J-6) does not hide it."
   }
  ],
  "obligation_versions": [
@@ -2133,6 +2457,30 @@
    "summary_en": "Before a transaction is carried out after investment advice, the institution gives a retail client a suitability statement. The statement sets out the advice given and how it meets the client's preferences, objectives and other characteristics. It is provided in a durable medium.",
    "summary_sv": "Innan en transaktion genomförs efter investeringsrådgivning ska institutet ge en icke-professionell kund en lämplighetsförklaring. Förklaringen anger vilka råd som lämnats och hur de motsvarar kundens preferenser, mål och andra egenskaper. Den lämnas på ett varaktigt medium.",
    "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-dk-csd-registration",
+   "version_no": 1,
+   "summary_en": "An account-holding institution passes every notification it receives for registration of a right over securities on to the central securities depository (CSD) at once. When it is in doubt about facts or law that matter to the registration, or someone claims the registration would infringe their rights, it reports the notification for provisional registration, and the CSD decides how final registration can be made.",
+   "summary_sv": "Ett kontoförande institut ska genast vidarebefordra varje anmälan om registrering av en rättighet över värdepapper som det tar emot till värdepapperscentralen (CSD). Är institutet osäkert om faktiska eller rättsliga förhållanden som har betydelse för registreringen, eller hävdar någon att registreringen skulle kränka dennes rättigheter, ska det anmäla för preliminär registrering, och värdepapperscentralen avgör hur den slutliga registreringen kan ske.",
+   "original_language": "en",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-no-suitability",
+   "version_no": 1,
+   "summary_en": "When giving investment advice or managing a portfolio, the firm obtains the information it needs about the client's knowledge and experience of the relevant investment area, financial situation including the ability to bear losses, and investment objectives including risk tolerance. It recommends only the services and financial instruments that are suitable for the client, in particular in light of that risk tolerance and ability to bear losses.",
+   "summary_sv": "Vid investeringsrådgivning eller portföljförvaltning ska företaget inhämta de uppgifter det behöver om kundens kunskap och erfarenhet på det aktuella investeringsområdet, ekonomiska situation inklusive förmåga att bära förluster och investeringsmål inklusive risktolerans. Det ska bara rekommendera tjänster och finansiella instrument som är lämpliga för kunden, särskilt med hänsyn till just den risktoleransen och förmågan att bära förluster.",
+   "original_language": "en",
    "effective_from": null,
    "effective_to": null,
    "change": null,
@@ -2783,6 +3131,42 @@
   },
   {
    "obligation": "obl-suitability-statement",
+   "term": "lifecycle_stage:pre_trade"
+  },
+  {
+   "obligation": "obl-dk-csd-registration",
+   "term": "legal_entity:bank"
+  },
+  {
+   "obligation": "obl-dk-csd-registration",
+   "term": "service_type:custody"
+  },
+  {
+   "obligation": "obl-dk-csd-registration",
+   "term": "lifecycle_stage:post_trade"
+  },
+  {
+   "obligation": "obl-no-suitability",
+   "term": "legal_entity:bank"
+  },
+  {
+   "obligation": "obl-no-suitability",
+   "term": "service_type:advice"
+  },
+  {
+   "obligation": "obl-no-suitability",
+   "term": "service_type:portfolio_management"
+  },
+  {
+   "obligation": "obl-no-suitability",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-no-suitability",
+   "term": "client_category:professional"
+  },
+  {
+   "obligation": "obl-no-suitability",
    "term": "lifecycle_stage:pre_trade"
   }
  ],

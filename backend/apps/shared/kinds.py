@@ -53,7 +53,12 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "and never the bank's own, so it has nothing left to choose between",
     ),
     "TicketProvider": ("ticket_provider", "INT-02: the integration branches per provider"),
-    "AgentKind": ("agent_kind", "AGT-03: what an agent definition does"),
+    "AgentKind": (
+        "agent_kind",
+        "AGT-03: what an agent definition does. `watch` sweeps sources and proposes; "
+        "`review` (D-62, D-80) proposes nothing and decides what another definition "
+        "proposed, so a definition's kind says which side of four eyes it works on",
+    ),
     "CaseLinkDecision": (
         "case_link_decision",
         "WAT-04: what a bank said about a suggested obligation link on its own case; the "
@@ -87,7 +92,8 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     # stay an admin's to change (playbook 15, INPUT_DELTAS §1).
     "TermDimensionKind": (
         "term_dimension_kind",
-        "FP-01: a scope dimension may restrict the footprint, a classification never does; matching branches on it",
+        "FP-01, D-36: a scope dimension may restrict the footprint, a classification never does, and an "
+        "opt-in dimension (standards) matches only the terms the footprint names; matching branches on it",
     ),
     "ChangeLifecycleKind": (
         "change_lifecycle_kind",
@@ -103,7 +109,16 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     ),
     "JurisdictionKind": (
         "jurisdiction_kind",
-        "I18N-01, INV-01: supranational or country; instrument relations (implements) branch on it",
+        "I18N-01, INV-01, INV-08, D-38: supranational, country or international (a standards "
+        "body); instrument relations (implements) branch on it, and only supranational and "
+        "country rows are mirrored into the footprint's jurisdiction dimension",
+    ),
+    "InstrumentLevelKind": (
+        "instrument_level_kind",
+        "INV-01, INV-08, D-37: the one optional value, standard, is what tells a pill to "
+        "read Standard rather than Binding or Guidance, comply or explain, and what the "
+        "provision triggers refuse a provision under; the five other levels stay kindless "
+        "and no admin may add a second value",
     ),
     "FootprintAction": (
         "footprint_action",
@@ -123,6 +138,11 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "SearchMatchKind": (
         "search_match_kind",
         "SRC-02: keyword, concept or both; every hit says how it was won and the pill's tone follows it",
+    ),
+    "EvalVia": (
+        "eval_via",
+        "SRC-05, SRC-S12: an evaluation question is scored on search's hits or on Ask's passages; "
+        "the gate's scorer branches on it, and the file names it in `via`",
     ),
     "AnswerFeedbackKind": (
         "answer_feedback",

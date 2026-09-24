@@ -46,11 +46,11 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | WAT-01 | Source registry and coverage log: what was checked, when, with what result. Every run also re-checks the library records of the sources it checked and proposes a correction where a record has drifted (D-50) | M | R1 | built |
 | WAT-02 | One record per reform with a timeline from consultation to in force, partial dates, duplicates merged | M | R1 | built |
-| WAT-03 | Change types, flags and scope from vocabularies, with at least one regime on every change and a standard term only on a change from a standards body; agent classifications shown as suggestions until confirmed | M | R1 | in_progress |
-| WAT-04 | Links to affected obligations with confidence, confirmed by a person | M | R1 | in_progress |
+| WAT-03 | Change types, flags and scope from vocabularies, with at least one regime on every change and a standard term only on a change from a standards body; agent classifications shown as suggestions until confirmed | M | R1 | built |
+| WAT-04 | Links to affected obligations with confidence, confirmed by a person | M | R1 | built |
 | WAT-05 | A drafted "So what?" per change, labelled AI-drafted until a person confirms or rewrites it per tenant | M | R1 | built |
 | WAT-06 | Tenants can request a source; private sources are visible to that tenant only, are public pages checked at the request and again at each run, and run only on an approved EU model endpoint (D-57) | S | R3 | pending |
-| WAT-07 | Standards watched from public metadata: one change per edition or amendment, a timeline from draft to publication, a key date for the end of the transition, no snapshot of a publisher's page, and automated checks only where the terms allow | S | R1 | in_progress |
+| WAT-07 | Standards watched from public metadata: one change per edition or amendment, a timeline from draft to publication, a key date for the end of the transition, no snapshot of a publisher's page, and automated checks only where the terms allow | S | R1 | built |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -105,15 +105,29 @@ And no second change row exists
 
 ### WAT-S4 — Types, flags and scope come from vocabularies and stay suggestions until confirmed `@integration` `@e2e` (WAT-03)
 ```gherkin
-Given an agent classifies a change as type "amendment" with the flag "client_money" and the scope "custody"
-Then each is stored as a key with confidence and suggested true
+Given an agent classifies a change as type "adopted" with confidence 0.91, with the flag "advice_perimeter" and the scope "securities"
+Then each is stored as a key, marked suggested and naming the agent that suggested it, the type with the agent's confidence
 And the change row shows the type as a notice pill, the flag as a brand pill, each marked as a suggestion
-When a library editor confirms them
-Then suggested becomes false and the audit event records who confirmed
-And a bank's own compliance officer cannot confirm them, because a change's type, flag and scope are library facts behind proposals.review
+When an agent of another definition confirms them, with the model call behind its decision, inside its own open run
+Then suggested becomes false and each reads machine-confirmed, naming the suggesting and the confirming agent, never as a person's verification
+And the audit event records which agent confirmed, and its decision is in the AI output log under agent_review
+And the agent that suggested them cannot confirm them through any key of its own, the very key that filed them included
+And a bank's own compliance officer cannot confirm them, because a change's type, flag and scope are library facts
+And a person holding proposals.review may confirm one instead only with a fresh passkey, and it then reads confirmed by a person
 ```
-`@e2e` stays `test.fixme()`, owned and named by `c5-e2e-watch-journeys-b`: the confirming
-half needs the held `c5-watch-curation-confirm` (`q-editor-confirm`, `docs/TODO_FOR_alex.md`).
+A curation confirmation is D-74's: an agent-bound key of another definition with
+`proposals:review`, or a person with `proposals.review` who steps up. It is not four eyes
+(no proposal stands behind it) and is labelled machine-confirmed when an agent gave it.
+Nobody confirms what they filed themselves, a person included, and the confirmer names the
+type it checked by its key, so a type corrected meanwhile is not confirmed unread
+(`tests_curation.py`, `tests_curation_races.py`). `@e2e` built: a bank's change page marks
+the seeded type as suggested and offers no confirm control; a library editor confirms the
+type on the console's Change facts detail with a passkey, then the rest in one call, each
+fact reading "Confirmed by a person for the library"; another bank's feed row and change
+page then carry no suggestion marker. The change is the seed's own (`chg-e2e-c5-curation`),
+every fact the sweeper's suggestion through its key. What an agent's confirmation reads —
+machine-confirmed, naming both agents — is walked in WAT-S6, whose seeded link the library
+confirmer's own key confirmed.
 
 ### WAT-S5 — An unknown key answers unknown_key with the valid keys `@integration` (WAT-03, AC-WAT2)
 ```gherkin
@@ -127,39 +141,56 @@ And nothing is stored
 ```gherkin
 Given an agent linked a change to two obligations with confidence 0.9 and 0.4
 Then the change screen's "Obligations affected" shows both with the confidence as a suggestion
-When a library editor confirms the first for the shared library
-Then that link reads confirmed for every bank and the audit event records who confirmed
+When an agent of another definition confirms the first for the shared library
+Then that link reads machine-confirmed for every bank, naming both agents, and the audit event records which agent confirmed
 When a compliance officer accepts the first and removes the second on their own bank's case
 Then both decisions are stored on that bank's case and audited, the second is hidden from that bank's change page, and the obligation shows "1 open change"
 And no library row changed: the second link is still there, still a suggestion, and another bank still sees both
 ```
-`@e2e` stays `test.fixme()`, owned and named by `c5-e2e-watch-journeys-b`: blocked on both
-`c5-watch-curation-confirm` (the library editor's half) and `c5-cases-so-what-and-links`
-(the compliance officer's own accept and remove, `POST`/`DELETE
-/changes/{changeId}/case/obligation-links`, still `not_built` — neither is on `main`).
+`@e2e` built: the console and the bank's change page read the first link as machine-confirmed,
+naming the sweeper and the library confirmer, never as a person's; the compliance officer
+confirms it and says the other is not related on their own bank's case ("Confirm link",
+"Not related"); the removed link is hidden from that bank's change page and still stored;
+the first obligation's card lists the change with "1 open change"; and another bank still
+sees both links, the first machine-confirmed, neither decided. No screen drives an agent's
+key, so the seed gives the library's confirmation through the library confirmer's own
+platform key (`c5-seed-watch`), and the `@integration` half proves the route that gives it.
+That both decisions are audited is asserted by the `@integration` half, because the audit
+log's record-kind filter offers no case kind yet. PRD WAT-04's "confirmed by a person"
+stays true per bank, on each bank's own case; the library's confirmation is D-74's and
+never reads as a person's.
 
-> **Note — the library editor's confirmation.** The step "a library editor confirms the
-> first for the shared library" is the held half of this feature and is asserted in WAT-S4,
-> not here: whether one person may settle a library fact with no proposal at all is
-> `q-editor-confirm`, which CLAUDE.md section 5 reserves to the owner, and
-> `c5-watch-curation-confirm` builds it the moment he answers. Until then no route moves
-> `change_obligation.confirmed_by` — `PUT /changes/{changeId}/obligations` answers 501
-> `not_built` to a library editor whose call would unmake a confirmation, and refuses a key
-> outright — so the scenario above covers what a bank does on its own case, which needs no
-> answer. The confirm control that would attach to the Change facts card
-> (`c5-fe-console-change-facts-detail`) is unbuilt for the same reason.
+Still pending in this scenario:
+- **A removed link on the obligation's side.** That route lists and counts every change
+  the library links to the obligation, so the obligation a bank marked "Not related" still
+  lists the change and counts it as open for that bank. Until the read leaves out a change
+  this bank removed for that obligation, the count cannot show a bank's decision.
+- **Reversal.** `POST /changes/{changeId}/case/obligation-links` accepts a link the bank
+  removed, but no screen offers it in R1: a removed link is hidden, and when every link is
+  removed the panel says so rather than that nothing is linked.
 
 ### WAT-S7 — The "So what?" is AI-drafted until a person confirms or rewrites it per tenant `@integration` `@e2e` (WAT-05)
 ```gherkin
 Given a change whose registering run filed a drafted "So what?" with it
 Then the tenant's copy shows "AI draft" beside it and an ai_generation row exists with model, version and purpose
-When the compliance officer chooses "Confirm wording" or rewrites and chooses "Save wording"
+When the compliance officer chooses "Confirm wording" or rewrites and chooses "Save and confirm"
 Then the tenant's copy is marked confirmed with the person and time
 And another tenant's copy is still the draft
 ```
-`@e2e` stays `test.fixme()`, owned and named by `c5-e2e-watch-journeys-b`: `c5-cases-so-what-and-links`
-is not on `main`, so `PUT`/`POST /changes/{changeId}/so-what` still answer `not_built` and
-the panel carries no confirm or rewrite control yet.
+`@e2e` built for the time: tenant A's compliance officer confirms the draft as it stands,
+then rewrites it and saves; the page reads back the bank's own words, confirmed, with the
+time and no AI label, and tenant B's administrator still reads the draft with its label and
+is offered no control.
+
+The person on screen: the change read and the feed now carry `case.soWhatConfirmedByName`
+and each decision's `decidedByName`, read from `change_case.so_what_confirmed_by` and
+`case_obligation_link.decided_by` in the same queries as the case (null while nobody has
+decided), pinned in `tests_case_reads.py`. The screen renders the design's "Confirmed by
+{name}, {date}" (`watch.soWhat.confirmedBy`, `watch.change.confirmedBy`) in place of
+"Confirmed {date}" and "Confirmed for us, {date}", and WAT-S6 and WAT-S7 assert the name,
+in wave 3 (`watch-curation-confirm-frontend`). A link this bank removed leaves the
+obligation's related-changes panel for this bank: that change is out of its items, its
+total and its open count.
 
 ### WAT-S8 — A tenant requests a source and private sources stay private `@integration` `@e2e` (WAT-06)
 ```gherkin
@@ -202,10 +233,16 @@ When it registers a change carrying a standard's term whose authority is a natio
 Then the API answers 422 with code "standard_term_only_on_standards"
 Given the open web sweep fetches a page on a host listed in the standards publisher setting
 Then the stored source document holds the URL, the date and a content hash and no snapshot
-When a change carrying an opt-in term links a document that has a snapshot
-Then the API answers 422 with code "licensed_text"
+When a change carrying an opt-in term sends a document with a snapshot
+Then the API answers 422 with code "validation_error", because no document has a snapshot field
 And a source of kind "Standards body" registered inactive gets no automated check
 ```
+
+No document stores a snapshot, so no document can carry one and D-45's `licensed_text`
+refusal has nothing to refuse: the schema refuses any field it does not name, a snapshot
+included, with `validation_error`. A source of the `standards_body` kind, or on a host in
+`STANDARDS_PUBLISHER_HOSTS`, is registered with its checks off, and a run's check of a
+source whose checks are off answers 422 `source_inactive`.
 
 ### WAT-S12 — A run re-checks the library records of the sources it checked and proposes the correction `@integration` (WAT-01, AUD-03)
 ```gherkin

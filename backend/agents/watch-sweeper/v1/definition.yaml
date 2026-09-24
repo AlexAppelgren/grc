@@ -26,11 +26,36 @@ tools:
     purpose: Open the run. First call of every execution; returns the run id every later call carries.
     input: AgentRunInput
     output: AgentRun
+  - name: listVocabularyRows
+    operation: GET /vocab/{list}
+    scopes: [library:read]
+    purpose: Read each registry list under vocabularies_read_at_run_start, its active rows as key, kind, label and usageNote, before anything else.
+    output: VocabularyRowPage
+  - name: listTerms
+    operation: GET /taxonomy/terms
+    scopes: [library:read]
+    purpose: Read the taxonomy terms of every dimension at run start, the only term ids a change or a proposal may name.
+    output: TaxonomyTermPage
+  - name: listAuthorities
+    operation: GET /authorities
+    scopes: [library:read]
+    purpose: Read the issuing authorities at run start, a plain array.
+    output: LibraryAuthority
+  - name: listSources
+    operation: GET /sources
+    scopes: [library:read]
+    purpose: Read the registered sources at run start, a plain array, the sources a run checks.
+    output: WatchSourceOut
   - name: recordSourceCheck
     operation: POST /agent-runs/{runId}/source-checks
     scopes: [sources:write]
-    purpose: Log that a source was checked, ok or failed, with items found. One per source per run, also when nothing was found.
+    purpose: Log that a source was checked, ok or failed, with items found. One sweep per source per run, also when nothing was found, and one recheck per library record re-checked, naming it.
     input: SourceCheckInput
+  - name: getRecordSources
+    operation: GET /obligations/{obligationId}/sources
+    scopes: [library:read]
+    purpose: The re-check. The pages a library obligation cites, per field, for the version in force; compare each with the page as fetched now. Drift becomes a new_obligation_version proposal, never an edit.
+    output: LibraryRecordSources
   - name: findSimilar
     operation: POST /search/similar
     scopes: [search:read]
@@ -53,11 +78,11 @@ tools:
   - name: finishAgentRun
     operation: PATCH /agent-runs/{runId}
     scopes: [agent-runs:write]
-    purpose: Close the run with status and stats. Last call, also after a failure.
+    purpose: Close the run with status and stats, outOfScope among them (documents outside the sector scope, counted on their source's check and never registered or proposed, AGT-08), and recordsRechecked and correctionsProposed for the re-check. Last call, also after a failure.
     input: AgentRunFinish
     output: AgentRun
 
-# Read at run start (key, label, usage note). The agent may submit these keys only; an
+# Read at run start (key, kind, label, usage note). The agent may submit these keys only; an
 # unknown key answers 422 unknown_key with the valid list (AC-WAT2) and is never retried
 # with an invented key. A missing value is a proposal.
 vocabularies_read_at_run_start:
@@ -68,12 +93,32 @@ vocabularies_read_at_run_start:
   - taxonomy_term        # every dimension, restricts_footprint and descriptive alike
   - authority
   - source
+  - instrument_level     # this and the four below: no payload names them yet; read so a vocabulary proposal never repeats a key that exists (AGT-S3)
+  - jurisdiction
+  - relation_type
+  - duty_type
+  - provision_kind
+
+# The re-check (WAT-01, AGT-01 item 3). For each source the run checked, the library
+# obligations citing a page of it are re-read with getRecordSources and compared with the
+# page as fetched now. Each one is logged as a recheck source check naming it. A drifted
+# field becomes one new_obligation_version proposal carrying fieldSources per changed field;
+# an unchanged record gets its recheck line and no proposal. Counted in the run's stats as
+# recordsRechecked and correctionsProposed; the corrections also count as proposals.
+recheck:
+  subject: obligation
+  drift_becomes: new_obligation_version
+  unchanged_becomes: nothing
 
 # What the run must emit for every classification (WAT-03, WAT-04).
 classification_contract:
-  fields: [change_type, suggested_urgency, flags, terms, obligation_links, risk_flags]
+  fields: [in_scope, change_type, suggested_urgency, flags, terms, standard_terms, obligation_links, risk_flags]
   confidence: 0.0 to 1.0 on change_type, on each flag and on each obligation link
   status: suggestion until a person confirms it in the app
+  # AGT-08. in_scope false sets the document aside: counted as outOfScope, nothing registered
+  # or proposed, though the text is still read whole and its change type still named.
+  # standard_terms holds the opt-in standard:<key> term, on a standard's own record only and
+  # never on a law that cites one.
 
 # Screen for embedded instructions (AGT-07). Applied to every fetched body before any
 # other reading of it. A hit marks the document risk_flags ["embedded_instructions"];
@@ -87,8 +132,9 @@ budget_defaults:
   max_fetches_per_run: 500
   max_changes_per_run: 50
   max_proposals_per_run: 50
+  max_rechecks_per_run: 100
 
 evals:
   cases: evals/cases.jsonl
-  scored_by: backend/scripts/search_eval.py   # classification track, eval/classification.jsonl
+  scored_by: backend/scripts/search_eval.py   # classification track, eval/classification.jsonl: change type, flags, scope, screen, in-scope and standard term
   gate: backend/eval/tolerance.json

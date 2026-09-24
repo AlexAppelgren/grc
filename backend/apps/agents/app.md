@@ -53,11 +53,53 @@ content screen ship (chunk 5). Definitions, tenant controls, research
 requests and the runner adapter are R2 (chunk 11). The first real runner is
 decided after that chunk (D-08).
 
-The records are in place ahead of the routes (AGT-01, `in_progress`): `agent`
+The records came ahead of the routes (AGT-01): `agent`
 rows loaded from `backend/agents/<agent>/v<n>/definition.yaml` by `seed_reference`,
 `agent_run` as the provenance anchor of everything an agent writes, and
 `api_key.agent` so the audit log names the agent behind a key rather than the
 key's id (ID-10).
+
+The flow of AGT-S1 is proven over the real routes (`tests_flow.py`): every
+change and proposal from a key bound to an agent names an open run of that key,
+a step naming another key's run is not found, and a bank's key writes nothing to
+the watch. AGT-S15 (the confirming agent) is green: `library-confirmer` decides
+the sweeper's proposals inside a run of its own, and a key of the proposing
+definition is refused by four eyes. AGT-S10 (the J-4 journey, `@smoke`) walks the
+same flow in the real stack on a key a platform administrator mints in the console
+behind a passkey, and a bank's officer reads what the approval produced. With both
+green, AGT-01 is built.
+
+Two definitions ship: `watch-sweeper` (kind `watch`), which proposes, and
+`library-confirmer` (kind `review`, D-62, D-80), which decides what another
+definition proposed and never proposes itself. Its v2 decides list values and
+taxonomy terms as well as obligation versions, since Alex lifted D-79's interim
+refusal on 2026-09-23; v1 left those to a person. Every other kind it leaves open
+for a person. Each definition names the
+vocabularies it reads at run start; a key with `library:read` reads each of them
+as key, kind, label and usage note on its active rows, submits those keys only,
+and brings a new term as a proposal (AGT-02). A confirming agent's decision
+carries the model call behind it (`AgentDecision`), logged in `ai_generation`
+under the purpose `agent_review` as that agent's own report, naming its run and the
+record decided, and read by the platform alone (D-80). The approve and reject
+routes of the proposal queue take it in `decision`, beside `agentRunId`: a key's
+decision without either is refused (422), and the run must be an open run of the
+deciding key itself, so another agent's run answers 404 as one that never existed
+does. The decision, its logged model call and its audit row, which names the run,
+commit in one transaction, and the run's `ai_generation` rows are what count the
+proposals it decided.
+
+PRD 0.5 (Alex, 2026-09-20; D-70 to D-73, D-76 and D-77, ADRs 0055 to 0057) adds a
+third thing called an agent, and it is not one of the two above. **Agent access** is
+an agent the *bank* runs, on its own infrastructure: a coding agent building a trading
+or payment service, a product agent shaping an account type, a procurement agent
+reading a contract, an assistant answering a staff question. We never see its prompt
+and we never run it. It registers here so it can read, it holds a credential, and
+through R2 it reads only. `agent_access` rows carry a name, a purpose, the owning
+team, the departments and products the agent serves, and the per-entry half of the
+tenant reach switch; `api_key.agent_access` binds a credential to one. The Agents
+screen gains a second tab for them, and each tab says in one line what that kind of
+agent does, because a reader who confuses the two will assume a bank's coding agent
+can change the register. The full design is `docs/plans/briefs/AGENT_ACCESS.md`.
 
 ## 2. Requirements
 
@@ -65,14 +107,18 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 | in_progress |
-| AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | pending |
+| AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 | built |
+| AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | built |
 | AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | pending |
 | AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. Such an agent writes only in its own tenant's zone (D-61) | M | R2 | pending |
 | AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console (D-61) | S | R2 | pending |
 | AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | pending |
 | AGT-07 | Fetched content screened for embedded instructions | M | R1 | built |
-| AGT-08 | Agents stay inside the sector scope: an out-of-scope document is a counted source check and nothing else; a standard's text is never fetched, quoted, summarised, translated or restated; a blocked page is a failed check; a law that cites a standard never carries its term | M | R1 | pending |
+| AGT-08 | Agents stay inside the sector scope: an out-of-scope document is a counted source check and nothing else; a standard's text is never fetched, quoted, summarised, translated or restated; a blocked page is a failed check; a law that cites a standard never carries its term | M | R1 | built |
+| ACC-01 | A tenant registers each agent it runs itself: name, purpose, owning team, and the departments and products it serves. `agent_access.manage` and a step-up; revoking stops every credential under it on the next request | M | R2 | pending |
+| ACC-06 | One call takes a description of what is being built and returns a labelled, logged summary above the deterministic full list of register entries and obligations in scope; the model never shortens the list and the list survives the model failing or AI being switched off | M | R2 | pending |
+| ACC-07 | A narrowed entry never narrows silently: every answer states the scope it was answered in, and an answer touching the footprint outside that scope names the dimensions and terms it could not see, from labels and never from records | M | R2 | pending |
+| ACC-10 | An entry records that a named application or system touches a register entry and how, as a linked internal item under REG-05 | C | R3 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -100,9 +146,12 @@ updating this file.
 ```gherkin
 Given an agent key with the watch and proposal scopes
 When it opens a run, logs a source check, calls POST /search/similar, registers a change, submits a proposal and closes the run
-Then each step answers 2xx and references the run
-And the run shows its findings and status closed
+Then each step answers 2xx and each write references the run
+And the run shows its findings and status succeeded (or failed, when it closes from its failure path)
 And a request without the key's scope answers 403
+And a step naming another key's run answers 404, as a run that never existed does
+And a change or a proposal from the key that names no run, or a closed one, answers 422 with code "run_not_open"
+And a bank's key is refused on every watch write with code "tenant_agents_not_available"
 ```
 
 ### AGT-S2 — Registering a change is idempotent across retries `@integration` (AGT-01)
@@ -180,12 +229,17 @@ And the text is stored as data, never executed and never rendered as HTML
 
 ### AGT-S10 — J-4: an agent registers a change and a proposal, an editor approves, the tenant sees what changed `@e2e` (AGT-01, WAT-02, PRO-02, INV-04, J-4)
 ```gherkin
-Given the seeded agent key and library editor
-When the key registers a change and submits a proposal for an obligation summary
-And the editor approves it in the console
-Then the obligation shows version 2 with "Show what changed"
-And the tenant's "Library updates" lists the change
+Given a watch-sweeper key a platform administrator minted in the console with a passkey step-up
+When the key opens a run, registers a change with its regime term, files a new version of an obligation's summary under that change and run with a source per field, and closes the run
+And a library editor approves it in the console queue with a passkey step-up
+Then the bank's officer finds the version the approval produced on the obligation, with "Show what changed"
+And the bank's "Library updates" lists it
+And the watch feed shows the change under "Needs triage"
 ```
+
+The journey versions its own obligation (`J4_OBLIGATION` in `apps/shared/e2e_seed.py`),
+which no other spec or seed names, and asserts the version its approval produced rather
+than a number, so a retry proves the same thing.
 
 ### AGT-S11 — A tenant agent's default scope is the operating markets first, then the watched ones `@integration` (AGT-04)
 ```gherkin
@@ -241,4 +295,46 @@ And its run records the proposals it decided, as a sweep records what it registe
 When a key of the proposing definition tries to confirm the same proposal
 Then the request answers 409 with code "four_eyes_violation"
 And no confirming-agent path writes a library row except through the approved proposal
+```
+
+### ACC-S1 — An entry is registered, narrowed to a department, and revoking it stops its credentials `@integration` `@e2e` (ACC-01, J-11)
+```gherkin
+Given a tenant admin with agent_access.manage and a Trading department with its products
+When they register "Trading platform coding agent", name that department, and issue a service key with a step-up
+Then the key is shown once, stored hashed, and the entry lists it with no last use
+And the same request without a fresh assertion answers 403 "step_up_required"
+When the key reads an obligation carrying only the card product type
+Then the request answers 404, the answer another tenant would get
+When the admin revokes the entry
+Then the next call on that key answers 401 and the security log shows the revocation
+```
+
+### ACC-S5 — What applies returns a labelled summary above a full list the model never shortens `@integration` (ACC-06)
+```gherkin
+Given an entry with tenant reach on and eleven register entries in its scope
+When it asks what applies to "a new order-routing service for professional clients"
+Then the response carries a summary labelled as AI-drafted, with a fixed sentence that the bank's confirmed applicability is the decision
+And the AI output log records the model, its version, the purpose and the citations
+And the full list holds all eleven, ranked, with none removed by the model
+When the model call fails or the tenant's AI off switch is on
+Then the eleven are still returned and the summary slot says why there is no summary
+```
+
+### ACC-S6 — A narrowed entry never narrows silently `@integration` `@e2e` (ACC-07, AC-ACC1)
+```gherkin
+Given a Trading entry, and a tenant footprint that also covers card issuing and card acquiring
+When the entry asks what applies to "a feature that issues virtual cards against a trading account"
+Then the answer states the entry's name, its departments and products and its "as of" date
+And it names "Licensed activity: Card issuing" and "Product type: Cards" among what it could not see
+And it says to ask compliance about them
+And no record carrying those terms appears anywhere in the response
+```
+
+### ACC-S10 — An entry records which application touches a register entry `@integration` (ACC-10)
+```gherkin
+Given an entry whose scope covers an obligation the bank has decided applies
+When it records that the application "order-router" reads customer classifications under that obligation
+Then a linked internal item of the system kind is written through record() with the entry named as its actor
+And the register entry lists the application with what it does
+And the same record sent twice writes one item
 ```

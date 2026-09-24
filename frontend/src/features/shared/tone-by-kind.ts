@@ -53,6 +53,19 @@ export const proposalStatusTone: Record<ProposalStatusKind, PillTone> = {
   superseded: 'information',
 };
 
+// AUD-03: a problem report's status, on the record's "Reported problems"
+// section. `open` waits for a colleague (warning); `fixed` says the record was
+// wrong and is being corrected (positive); `answered` and `rejected` are
+// decisions made on purpose, neutral facts (information), never negative.
+export type ProblemReportStatusKind = 'open' | 'answered' | 'fixed' | 'rejected';
+
+export const problemReportStatusTone: Record<ProblemReportStatusKind, PillTone> = {
+  open: 'warning',
+  answered: 'information',
+  fixed: 'positive',
+  rejected: 'information',
+};
+
 // WAT-01: how a source check ended, as `CheckStatus` names it in the API.
 // The coverage log and the feed's Coverage tab read the check, never the
 // sentence it carries. `never` is the third member the coverage read answers:
@@ -75,6 +88,28 @@ export const apiKeyStateTone: Record<ApiKeyStateKind, PillTone> = {
   never_used: 'information',
   revoked: 'warning',
   expired: 'warning',
+};
+
+// AUD-02: an AI log row's review state and a reader's verdict on an Ask
+// answer, as the API names them. A draft nobody has reviewed is a neutral
+// fact, as an agent's suggestion is; a person standing behind the words, as
+// drafted or rewritten, is positive; a rejection is a decision made on
+// purpose, so it stays neutral. A reader saying "wrong" needs a look, it is
+// not itself bad. The purpose sits in `slotTone.aiPurpose`.
+export type AiReviewKind = 'draft' | 'confirmed' | 'edited' | 'rejected';
+
+export const aiReviewTone: Record<AiReviewKind, PillTone> = {
+  draft: 'information',
+  confirmed: 'positive',
+  edited: 'positive',
+  rejected: 'information',
+};
+
+export type AiFeedbackKind = 'helpful' | 'wrong';
+
+export const aiFeedbackTone: Record<AiFeedbackKind, PillTone> = {
+  helpful: 'positive',
+  wrong: 'warning',
 };
 
 // "Applies" is positive on the system card's obligation row; the other two
@@ -123,6 +158,9 @@ export const slotTone = {
   // about the source, not a failure.
   suggested: 'information',
   confirmed: 'positive',
+  // D-74: a fact an independent agent confirmed. No person has settled it,
+  // so it keeps the suggestion's neutral tone and never a confirmation's.
+  machineConfirmed: 'information',
   factsToConfirm: 'warning',
   duplicate: 'information',
   agentVersion: 'brand',
@@ -132,4 +170,9 @@ export const slotTone = {
   // A source that has gone past its cadence, or failed more times in a row
   // than the stale rule allows: it needs attention, it is not itself bad.
   stale: 'warning',
+  // AUD-02: what a model call was for, a kind of call, as a change type is a kind of change.
+  aiPurpose: 'notice',
+  // AGT-07: a proposal carrying text the injection screen flagged waits for a person,
+  // so it needs attention; it is not itself bad.
+  riskFlagged: 'warning',
 } as const satisfies Record<string, PillTone>;

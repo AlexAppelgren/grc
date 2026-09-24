@@ -22,7 +22,7 @@
   "console.agentKeys.nameRequired": "Ge nyckeln ett namn.",
   "console.agentKeys.expiresLabel": "Går ut",
   "console.agentKeys.expiresHint": "Valfritt. Lämna tomt så fungerar nyckeln tills någon återkallar den.",
-  "console.agentKeys.scopesHint": "Ge nyckeln det minsta den behöver. Ingen av dem skriver till biblioteket: en agent föreslår, och en biblioteksredaktör godkänner.",
+  "console.agentKeys.scopesHint": "Ge nyckeln det minsta den behöver. Ingen av dem skriver till biblioteket: en agent föreslår, och en annan person eller agent godkänner.",
   "console.agentKeys.scopesRequired": "Välj minst en behörighet.",
   "console.agentKeys.createAction": "Skapa nyckeln",
   "console.agentKeys.stepUpNote": "Att skapa en agentnyckel kräver din nyckel.",
@@ -40,9 +40,10 @@
   "console.agentKeys.emptyTitle": "Inga agentnycklar",
   "console.agentKeys.emptyBody": "Skapa en när en agent behöver nå API:et.",
   "console.agentKeys.errorTitle": "Kunde inte hämta agentnycklarna",
-  "console.agentKeys.agentIdPlaceholder": "Agentens id",
   "console.agentKeys.agentRequired": "Ange vilken agent nyckeln körs som.",
   "console.agentKeys.namePlaceholder": "t.ex. Bevakningssvepet, nattligt",
   "console.agentKeys.secretOnce": "Visas en gång. Vi sparar bara ett hashvärde, så vi kan inte visa den igen.",
-  "console.agentKeys.revokeConfirm": "Återkalla nyckeln? Agenten slutar fungera direkt."
+  "console.agentKeys.revokeConfirm": "Återkalla nyckeln? Agenten slutar fungera direkt.",
+  "console.agentKeys.agentChoose": "Välj en agent",
+  "console.agentKeys.agentOption": "{key} v{version}"
 }

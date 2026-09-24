@@ -348,13 +348,23 @@ class TheRaisableCodesComeFromTheSource(SimpleTestCase):
     The hand-written list that came before held 26 codes while the API answered far more,
     so the first sweep could not document `invalid_slug`, `in_use` or `idempotency_conflict`
     — codes a caller really has to branch on — and the honest way past the gate was to
-    leave them out (2026-09-20)."""
+    leave them out (2026-09-20). `invalid_slug` left the pin on 2026-09-22 (D-68): a short
+    name is derived from the tenant's own name and never typed by a person, so no route
+    raises it any more, and pinning it here would assert a code the product no longer has."""
 
     def test_a_code_a_route_raises_is_accepted(self) -> None:
         codes = load_gate().RAISABLE_CODES
-        for code in ("invalid_slug", "in_use", "system_row", "idempotency_conflict"):
+        for code in ("in_use", "system_row", "idempotency_conflict"):
             with self.subTest(code=code):
                 self.assertIn(code, codes)
+
+    def test_a_code_the_exception_handlers_answer_is_accepted(self) -> None:
+        """`config/api.py` answers for requests no route sees: an enrolment session that
+        calls any route but passkey registration and `GET /me` gets 403 `enrolment_only`
+        (AC-ID2). Reading only `backend/apps/` refused that code, so the sweep documenting
+        the routes that answer it could not tell the integrator what to branch on
+        (api-docs-identity-auth, 2026-09-23)."""
+        self.assertIn("enrolment_only", load_gate().RAISABLE_CODES)
 
     def test_a_code_nothing_raises_is_not(self) -> None:
         self.assertNotIn("obligation_frozen", load_gate().RAISABLE_CODES)

@@ -232,6 +232,10 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "The same seed putting the link, the parent and `active` back on a mirrored term: a "
         "system actor, and the title is the dimension and jurisdiction keys."
     ),
+    "apps/taxonomy/seeds/__init__.py record('taxonomy_term') tenant_id=None actor=Actor.system(SEED_REASON) title=f'{dimension}:{key}'": (
+        "The same seed switching one seeded term on for seed_e2e (std-journeys, FP-S16): a "
+        "system actor, and the title is the dimension and term keys the caller names in code."
+    ),
     "apps/taxonomy/tenant_hooks.py record('vocabulary') tenant_id=tenant.id actor=actor title=f'{list_name}:{spec.key}'": (
         "A bank's own list row, written under its tenant id and the actor that asked for the "
         "bank (the deploy seed, the E2E seed, or the platform person creating it from the "
@@ -256,8 +260,18 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "The same door, for a taxonomy term: an approved key is public library vocabulary."
     ),
     "apps/proposals/apply.py record(SubjectType.OBLIGATION.value) tenant_id=None actor=actor title=obligation.stable_key": (
-        "The re-verification stamp, the one write to the library that is not a proposal: "
-        "a library editor is platform staff, and the title is the obligation's stable key."
+        "The re-verification stamp, the one write to the library that is not a proposal, and "
+        "a new obligation applied from an approved proposal: the actor is platform staff or "
+        "a platform agent, and the title is the obligation's stable key, a library fact."
+    ),
+    "apps/proposals/apply.py record(SubjectType.INSTRUMENT.value) tenant_id=None actor=actor title=instrument.stable_key": (
+        "A new instrument applied from an approved proposal: the actor is platform staff or a "
+        "platform agent, and the title is the instrument's stable key, a library fact."
+    ),
+    "apps/proposals/apply.py record(SubjectType.PROVISION.value) tenant_id=None actor=actor title=provision.stable_key": (
+        "A new provision or a new text of one applied from an approved proposal: the actor is "
+        "platform staff, the title is the provision's stable key, a library fact, and the row "
+        "holds keys, version numbers and languages, never the text or the proposer."
     ),
     "apps/library/reports.py record(subject_type.value) tenant_id=tenant_id actor=actor title=subject_title": (
         "A problem report. Its tenant id is the reporter's zone, None only for platform "

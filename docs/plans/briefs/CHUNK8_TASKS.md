@@ -4,6 +4,18 @@ Written 2026-09-19 by the planning workflow (read, plan, parallelism and coverag
 
 The task ids are the `c8-` package ids of `docs/plans/PARALLEL_PLAN.md` section 3.3; all 44 of them are here. Seven of them were split on 2026-09-20 under rule 11, which gives 51 ids: a split keeps the parent's id for its first half and derives the second (`c8-register-models-core` and `c8-register-models-gaps-history`, `c8-recurring-duty-model` and `c8-recurring-duty-proposal`, `c8-support-access-console-list` beside `c8-ten-support-grants` and `c8-support-access-mechanism`, `c8-card-support-access` beside `c8-card-people-access`, and a `-journey` package after each of `c8-ui-organisation`, `c8-ui-where-we-stand` and `c8-ui-gaps`). The parallel plan's rows for the parents carry both halves; nothing else about their dependencies changes. `c8-reference-members` is not one of them: it is a name the chunk 8 map used, and plan ruling 11 resolves it to `c9-case-contract`. The chunk 8 tasks that carry the PRD 0.3 requirements keep their `f03-` ids and stay specified in `docs/plans/briefs/FEATURES_0_3_TASKS.md`; this file does not restate them, but it places them in the waves and names the files they share with a `c8-` package, because that is where the collisions are.
 
+## Amended by D-75: applicability has no request
+
+D-75 replaced REG-01's request-and-approve flow. One holder of
+`applicability.approve` sets applicability after a confirmation dialog, with one
+audit event and no second approver or step-up. There is no `applicability_request`
+table, and it does not join `FOUR_EYES_TABLES`. Every task below that files,
+approves, rejects, withdraws or decides a request is re-planned before chunk 8
+starts, against PRD REG-01, AC-REG1 and J-10 and the register spec: at least
+`c8-register-models-core`, `c8-reg-applicability`, `c8-ui-applicability`, the route
+list under `/applicability-requests`, and `FEATURES_0_3_TASKS.md` f03-T48, f03-T67
+and f03-T69 to f03-T71. Where this file and the spec differ, the spec wins.
+
 ## Revised 2026-09-20
 
 `docs/reviews/2026-09-20-cloud-branch-reviews/plan-8.md` blocked the first version, and

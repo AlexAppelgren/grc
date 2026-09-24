@@ -24,7 +24,7 @@ describe('versionLabel', () => {
 
   it('renders the date with its precision', () => {
     expect(versionLabel(3, { date: '2026-10-01', precision: 'quarter' }, t, en)).toBe('Version 3, from Q4 2026');
-    expect(versionLabel(3, { date: '2026-10-01', precision: 'quarter' }, sv, swedish)).toBe('Version 3, från Kv4 2026');
+    expect(versionLabel(3, { date: '2026-10-01', precision: 'quarter' }, sv, swedish)).toBe('Version 3, från kv. 4 2026');
     expect(versionLabel(4, { date: '2028-01-01', precision: 'month' }, t, en)).toBe('Version 4, from January 2028');
     expect(versionLabel(5, { date: '2028-01-01', precision: 'year' }, t, en)).toBe('Version 5, from 2028');
   });

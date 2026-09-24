@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createT } from '@/shared/i18n';
 
-import { presentInstrument, type InstrumentFacts } from './instrument-presentation';
+import { INSTRUMENT_SLOT_ORDER, presentInstrument, type InstrumentFacts } from './instrument-presentation';
 
 const t = createT('en');
 const sv = createT('sv');
@@ -51,5 +51,28 @@ describe('presentInstrument', () => {
   it('computed labels come from the catalog in the user language', () => {
     expect(presentInstrument(fffs, sv).find((p) => p.key === 'binding')?.label).toBe('Bindande');
     expect(presentInstrument(esma, sv).find((p) => p.key === 'guidance')?.label).toBe('Vägledning, följ eller förklara');
+  });
+
+  it('a standard reads "Standard" as information in the binding slot, never "Guidance, comply or explain"', () => {
+    const iso: InstrumentFacts = {
+      instrument: { key: 'iso-27001-2022', label: 'ISO/IEC 27001:2022' },
+      level: { key: 'standard', label: 'Standard' },
+      levelKind: 'standard',
+      binding: false,
+      jurisdiction: { key: 'INT', label: 'International' },
+      regime: { key: 'ai_ict', label: 'AI and ICT' },
+    };
+    const binding = presentInstrument(iso, t).find((p) => p.order === INSTRUMENT_SLOT_ORDER.binding);
+    expect(binding).toMatchObject({ key: 'standard', label: 'Standard', tone: 'information' });
+    expect(presentInstrument(iso, t).some((p) => p.key === 'guidance')).toBe(false);
+  });
+
+  it('a null kind leaves binding to decide, both ways', () => {
+    expect(presentInstrument({ ...fffs, levelKind: null }, t).find((p) => p.order === INSTRUMENT_SLOT_ORDER.binding)).toMatchObject({ key: 'binding', label: 'Binding', tone: 'information' });
+    expect(presentInstrument({ ...esma, levelKind: null }, t).find((p) => p.order === INSTRUMENT_SLOT_ORDER.binding)).toMatchObject({
+      key: 'guidance',
+      label: 'Guidance, comply or explain',
+      tone: 'warning',
+    });
   });
 });

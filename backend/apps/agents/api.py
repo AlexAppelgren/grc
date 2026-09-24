@@ -20,11 +20,18 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Header, Path, Query, Router
 
-from apps.agents import runs
-from apps.agents.schemas import AgentRunFinish, AgentRunInput, AgentRunOut, AgentRunPage
+from apps.agents import logic, runs
+from apps.agents.schemas import (
+    AgentDefinitionOut,
+    AgentDefinitionPage,
+    AgentRunFinish,
+    AgentRunInput,
+    AgentRunOut,
+    AgentRunPage,
+)
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
-from apps.shared.permissions import requires_scope
+from apps.shared.permissions import requires_permission, requires_scope
 from apps.shared.schemas import PageQuery
 from apps.taxonomy.http import answers_problems, principal, require_any
 
@@ -56,6 +63,7 @@ IdempotencyKey = Header(
     by_alias=True,
     summary="Open a run so everything the agent files can be traced to it",
 )
+@runs.refuses_tenant_keys
 @requires_scope(perms.SCOPE_AGENT_RUNS_WRITE)
 @answers_problems
 def start_agent_run(
@@ -68,12 +76,12 @@ def start_agent_run(
     even when the run failed.
 
     Authenticated by an API key alone — no session, tenant or platform, can open a run —
-    and the key must carry the `agent-runs:write` scope. The run belongs to whatever the
-    key belongs to and never to anything else: the platform's own key opens the library
-    runs that feed the shared inventory, a bank's key opens runs in that bank's zone, and
-    any other pairing is refused. No key scope of any kind reaches the shared library:
-    what an agent finds becomes a proposal or a private record, never a library edit, so
-    opening a run grants nothing beyond the right to file work for review.
+    and the key must carry the `agent-runs:write` scope, which only a platform key bound to
+    an agent definition can hold: in this release the agents that feed the shared library
+    are part of the base package, so a bank opens no run of its own and its key is never
+    given the scope. The run belongs to the platform. No key scope of any kind reaches the
+    shared library: what an agent finds becomes a proposal or a private record, never a
+    library edit, so opening a run grants nothing beyond the right to file work for review.
 
     Send `Idempotency-Key`. A retry with the same key returns the run that key already
     opened; without one a lost answer becomes a duplicate run and a duplicated night's
@@ -82,10 +90,9 @@ def start_agent_run(
 
     Answers 201 with the open run, its status `running` and its counters at zero. A replay
     answers 201 with the run that key already opened. Errors: `tenant_agents_not_available`
-    when the key belongs to a bank rather than to the platform, because in this release the
-    agents that feed the shared library are part of the base package and a bank opens no run
-    of its own; `permission_denied` when the key lacks `agent-runs:write`, or when `agent`
-    is not the definition this key is bound to — a key runs exactly one definition, so a
+    when the key belongs to a bank, whatever scopes it was once given, since a bank opens no
+    run in this release; `permission_denied` when the key lacks `agent-runs:write`, or when
+    `agent` is not the definition this key is bound to — a key runs exactly one definition, so a
     name this build does not ship and a name that belongs to another key are the same
     refusal, and trying names tells a caller nothing about which definitions exist;
     `unauthenticated` when the key is missing, revoked or expired; `idempotency_conflict`
@@ -103,6 +110,7 @@ def start_agent_run(
     by_alias=True,
     summary="Close a run and file what it did",
 )
+@runs.refuses_tenant_keys
 @requires_scope(perms.SCOPE_AGENT_RUNS_WRITE)
 @answers_problems
 def finish_agent_run(
@@ -123,6 +131,17 @@ def finish_agent_run(
     definition, and records where the working output was kept. A run that is never closed
     stays open for ever and reads as stuck, so close it from the failure path too.
 
+    Among the counters is `outOfScope`: the documents the run read and set aside because
+    they fall outside regulated financial services. Such a document is counted on its
+    source's check and here, and nothing else — no change, no proposal — so this count is
+    the only trace of it and the way a reader tells a quiet night from a night of documents
+    that were not ours to watch.
+
+    What the server can see for itself it counts as the run closes, and those numbers are
+    the ones kept: `sourcesChecked`, `changesRegistered`, `proposalsSubmitted` and
+    `recordsRechecked` are read from what the run filed, whatever the close sends. The
+    other counters are the run's own account.
+
     Authenticated by the API key that opened the run, carrying the `agent-runs:write`
     scope; no session can close a run. A run closes once and into a terminal status. Sending
     the same close again answers the run it already closed, so a lost answer costs nothing;
@@ -133,8 +152,9 @@ def finish_agent_run(
     person, or for a second and independent agent, to approve it. The close is recorded in
     the audit log against the agent behind the key.
 
-    Answers 200 with the closed run. Errors: `not_found` when no such run exists or it
-    belongs to another key, which are deliberately the same answer so that a run id cannot
+    Answers 200 with the closed run. Errors: `tenant_agents_not_available` when the key
+    belongs to a bank rather than to the platform, since a bank opens no run in this
+    release; `not_found` when no such run exists or it belongs to another key, which are deliberately the same answer so that a run id cannot
     be probed for; `invalid_transition` when the run is already closed and the values sent
     differ from the ones it closed with; `permission_denied` when the key lacks
     `agent-runs:write`; `unauthenticated` when the key is missing, revoked or expired; and
@@ -179,3 +199,36 @@ def list_agent_runs(request: HttpRequest, page: Query[PageQuery]) -> Any:
     # Ungated by design: logic-gate (agents.manage in a tenant, or system.health in the console).
     require_any(request, perms.AGENTS_MANAGE, perms.SYSTEM_HEALTH)
     return runs.list_runs(limit=page.limit, offset=page.offset)
+
+
+# ---------------------------------------------------------------------------------------
+# The platform's agent definitions, read-only (ID-10, AGT-01): what a platform
+# administrator binds an agent key to. Publishing a version is AGT-03 (R2).
+# ---------------------------------------------------------------------------------------
+@router.get(
+    "/agent-definitions",
+    response=AgentDefinitionPage,
+    auth=SESSION,
+    operation_id="listAgentDefinitions",
+    by_alias=True,
+    summary="See which agents the platform ships, to bind a key to one",
+)
+@requires_permission(perms.AGENT_DEFINITIONS_MANAGE)
+def list_agent_definitions(request: HttpRequest, page: Query[PageQuery]) -> AgentDefinitionPage:
+    """Returns the platform's agent definitions, ordered by key, one page at a time: each
+    one's identifier, stable key, what it does, the version this build loaded and whether
+    it is released. Call it from the platform console before creating an agent key, to
+    pick the agent the key will act as; `POST /agent-keys` takes the `id` as `agentId`.
+
+    A person's session only, holding the platform permission `agent_definitions.manage`,
+    which only a platform administrator holds; no session inside a bank and no API key can
+    read it. The definitions are the platform's own versioned files, loaded on deploy, and
+    this call only reads them: it changes nothing and writes nothing to the audit log. An
+    empty list is a 200 with `total` 0.
+
+    Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
+    depth; `permission_denied` without `agent_definitions.manage`; `unauthenticated`
+    without a session.
+    """
+    definitions, total = logic.definitions(limit=page.limit, offset=page.offset)
+    return AgentDefinitionPage(items=[AgentDefinitionOut.model_validate(row) for row in definitions], total=total)

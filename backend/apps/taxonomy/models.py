@@ -35,6 +35,7 @@ from django.db import models
 from apps.shared.audit import AppendOnlyModel
 from apps.shared.tenancy import LibraryModel, TenantModel
 from apps.shared.vocabulary import (
+    ORIGIN_CHOICES,
     LibraryVocabulary,
     LibraryVocabularyLabel,
     TenantListVocabulary,
@@ -62,8 +63,15 @@ class PillTone(enum.StrEnum):
 
 
 class TermDimensionKind(enum.StrEnum):
+    """What a dimension does to the footprint (FP-01, D-36). A scope dimension whose flag says
+    it restricts narrows the footprint once the footprint names a term in it; a
+    classification dimension never narrows it; an opt-in dimension (the standards a bank
+    follows) shows a record carrying one of its terms only when the footprint names that
+    term, even when it names none in the dimension, whatever the flag says."""
+
     SCOPE = "scope"
     CLASSIFICATION = "classification"
+    OPT_IN = "opt_in"
 
 
 class ChangeLifecycleKind(enum.StrEnum):
@@ -78,6 +86,17 @@ class ProvisionStructuralKind(enum.StrEnum):
     DIVISION = "division"
     UNIT = "unit"
     ANNEX = "annex"
+
+
+class InstrumentLevelKind(enum.StrEnum):
+    """Tier-one kind (INV-01, INV-08, D-37): the one optional sub-kind an instrument level
+    may carry. The five seeded levels (`eu_regulation`, `eu_directive`, `eu_guidance`,
+    `act`, `authority_regulation`) keep a null kind and are read by `binding`; `standard`
+    is the only value, and it is what tells a pill to read "Standard" instead of "Binding"
+    or "Guidance, comply or explain", and what the `provision` trigger (library 0008)
+    refuses a provision under."""
+
+    STANDARD = "standard"
 
 
 class ComplianceCategory(enum.StrEnum):
@@ -135,7 +154,8 @@ class SuggestionStatus(enum.StrEnum):
 class TermDimension(LibraryVocabulary):
     """A taxonomy dimension (schema v0.3 `term_dimension`): `restricts_footprint` says
     whether a record's terms in it narrow the footprint (FP-01); `kind` says whether it
-    describes scope or classifies."""
+    describes scope, classifies or is opted into (an opt-in dimension restricts whatever the
+    flag says, D-36)."""
 
     KIND_CHOICES = _choices(TermDimensionKind)
 
@@ -157,7 +177,10 @@ class TermDimensionLabel(LibraryVocabularyLabel):
 
 
 class InstrumentLevel(LibraryVocabulary):
-    """Jurisdiction-neutral instrument levels with a binding default and a rank."""
+    """Jurisdiction-neutral instrument levels with a binding default and a rank. The kind
+    is optional: null on every level but `standard` (D-37)."""
+
+    KIND_CHOICES = _choices(InstrumentLevelKind)
 
     binding_default = models.BooleanField(default=True)
     rank = models.PositiveIntegerField(default=0)
@@ -356,7 +379,11 @@ class TaxonomyTerm(LibraryModel):
 
     `jurisdiction` is set on the terms that mirror a jurisdiction row (FP-04, D-28,
     ADR 0026): the reference seed keeps them in step, and the rules that refuse a proposal
-    or a tagging in a mirrored dimension read this column rather than a dimension key."""
+    or a tagging in a mirrored dimension read this column rather than a dimension key.
+
+    `verified_origin`, `verified_by_agent` and `applied_by_proposal` are the term's
+    machine-confirmed provenance, kept exactly as on every library list
+    (`LibraryVocabulary`, INV-05, D-62, D-79); blank and null on a seeded term."""
 
     dimension = models.ForeignKey(TermDimension, on_delete=models.PROTECT, related_name="terms")
     key = models.SlugField(max_length=80)
@@ -367,6 +394,9 @@ class TaxonomyTerm(LibraryModel):
     active = models.BooleanField(default=True)
     is_system = models.BooleanField(default=False)
     version = models.PositiveIntegerField(default=1)
+    verified_origin = models.CharField(max_length=16, choices=ORIGIN_CHOICES, blank=True, default="")
+    verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    applied_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -3,55 +3,40 @@
 // src/types/api.generated.ts (from the backend's OpenAPI export;
 // `bash generate-types.sh` regenerates them). A local definition remains
 // only where the generator cannot express the shape, each with a reason.
-//
-// GET /proposals and GET /proposals/{id} answer exactly `ProposalRow`: no
-// target title, reference or instrument short name, no `isMine` and no
-// `fromOrganisation` (chunk4-T10's enrichment is not on `main`; see the
-// screens' own notes for how each is worked around without it).
 
 import type { components } from '@/types/api.generated';
 
 type Schemas = components['schemas'];
 
+/** The proposal as every answer carrying one returns it (approve and reject answer this). */
 export type ProposalRow = Schemas['ProposalRow'];
+/** A row of GET /proposals: the proposal plus the server's own `target` and `isMine`. */
+export type ProposalQueueRow = Schemas['ProposalQueueRow'];
+/** GET /proposals/{id}: the row plus the diff, the sources and the version an approval wrote. */
+export type ProposalDetail = Schemas['ProposalDetail'];
 export type ProposalPage = Schemas['ProposalPage'];
 export type ProposalApproveBody = Schemas['ProposalApproveBody'];
 export type ProposalRejectBody = Schemas['ProposalRejectBody'];
+export type TenantProposalRow = Schemas['TenantProposalRow'];
+export type TenantProposalPage = Schemas['TenantProposalPage'];
 
-// Local: the generator renders every query parameter as optional strings;
-// this is the same shape, named for the feature.
-export interface ProposalQuery {
-  status?: string;
-  kind?: string;
-  targetList?: string;
-}
+/** Which end of the queue comes first (`ProposalQuery.order`): the route's two values. */
+export type ProposalOrder = 'oldest' | 'newest';
 
-// GET /tenant/proposals is chunk4-T10's route ("Queue reads, rejection
-// reasons and the tenant's own proposals", docs/plans/briefs/CHUNK4_TASKS.md)
-// and is not on `main` yet: no `components['schemas']` shape exists for it,
-// so this is hand-typed from that task's own description — what this
-// tenant's own member or agent proposed on a library list, filtered to
-// status, kind and targetList, open to `vocab.manage`. Reconcile against the
-// generated shape and delete this note once T10 lands.
-export interface TenantProposalRow {
-  id: string;
-  kind: string;
-  status: string;
-  title: string;
-  createdAt: string;
-}
-
-export interface TenantProposalPage {
-  items: TenantProposalRow[];
-  total: number;
-}
-
-export type TenantProposalQuery = ProposalQuery;
+// The route's filters and its page, as the generated query schemas name them,
+// minus the nulls a caller never sends and with `order` narrowed to its two values.
+type Unnulled<T> = { [K in keyof T]?: Exclude<T[K], null> };
+export type ProposalQuery = Unnulled<Omit<Schemas['ProposalQuery'], 'order'> & Schemas['PageQuery']> & { order?: ProposalOrder };
+export type TenantProposalQuery = Unnulled<Schemas['TenantProposalQuery']>;
 
 // Local: the fixed kinds `Proposal.kind` and `.status` carry (apps/proposals/models.py).
 // Kept narrow rather than `string` so a screen that switches over them is checked by `tsc`.
 export type ProposalKind =
+  | 'new_instrument'
+  | 'new_obligation'
   | 'new_obligation_version'
+  | 'new_provision'
+  | 'new_provision_version'
   | 'vocabulary_create'
   | 'vocabulary_relabel'
   | 'vocabulary_retire'

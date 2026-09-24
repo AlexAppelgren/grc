@@ -30,8 +30,8 @@ follows the sections in the file:
 1. `jurisdictions`, `authorities`, `vocabularies` (one `Vocabulary` model per section
    name; `kind`, `rank`, `ordinal`, `tone`, `sla_days`, `restricts_footprint` become the
    fixed columns the vocabulary carries), `taxonomy_terms`, `tags`.
-2. `instruments`, `instrument_relations`, `provisions`, `obligations`,
-   `obligation_provisions`, `obligation_versions`, `obligation_terms`,
+2. `instruments`, `instrument_relations`, `provisions`, `provision_versions`,
+   `obligations`, `obligation_provisions`, `obligation_versions`, `obligation_terms`,
    `obligation_relations`.
 3. `sources`, `source_checks`, `regulatory_changes`, `change_events`, `change_documents`,
    `change_terms`, `change_obligations`, `proposals` (open, never applied by the seed;
@@ -61,8 +61,9 @@ Stable keys: instruments by official reference (`sfs-2007-528`, `fffs-2017-2`,
 `esma-35-43-3006`, `celex-32022r2554`); obligations `obl-<topic>`
 (`obl-research-payments`, `obl-esma-warnings`); changes `chg-<authority>-<year>-<topic>`;
 proposals `prop-<topic>`; provisions `<instrument>/<unit>` (`sfs-2007-528/9`,
-`celex-32016r0679/art-22`); sources slugified names; agent runs `run-<agent>-<id>`.
-Every row keeps its `prototype_id`.
+`celex-32016r0679/art-22`), a nested unit hyphenating each level down the tree
+(`fffs-2017-2/9-6` for 9 kap. 6 §, `fffs-2017-2/9-6-1` for its first paragraph); sources
+slugified names; agent runs `run-<agent>-<id>`. Every row keeps its `prototype_id`.
 
 Vocabulary keys (all with English and Swedish labels and a usage note in the file):
 
@@ -83,7 +84,7 @@ Vocabulary keys (all with English and Swedish labels and a usage note in the fil
   `lifecycle_stage` describe only.
 - `compliance_status` (tenant scale with ordinal and tone): `compliant`,
   `partly_compliant`, `gap`, `not_assessed`. `risk_rating`: `low`, `medium`, `high`.
-- `relation_type`: `implements`, `elaborates`, `related` (the last for `obligation_relations`, whose schema v0.3 default it is). `source_kind`: `authority_site`,
+- `relation_type`: `implements`, `elaborates`, `related` (the last for `obligation_relations`, whose schema v0.3 default it is), `amends` (T8, for FFFS 2026:11's `instrument_relations` row). `source_kind`: `authority_site`,
   `legal_database`, `open_web_sweep`, `tenant_private`. `link_kind`: `policy`,
   `procedure`, `control`.
 
@@ -107,9 +108,20 @@ to `proposal`, "Supervision", "Enforcement" and "Recurring date" to their keys.
   the prototype never lists are added as instruments with `from_prototype: false`:
   MiFID II, the MiFID II delegated directive and the IDD. "Directly applicable" and
   "National rule" produce no relation.
-- **Provisions.** Only "9 kap." (LVM) and "Article 22" (GDPR) are structural units, so
-  only those become `provision` rows; the other `ref` values ("Costs and charges",
-  "Guideline on warnings") are section headings and stay `ref_label`.
+- **Provisions.** Only "9 kap." (LVM) and "Article 22" (GDPR) are structural units in the
+  prototype's own sample data, so only those become `provision` rows; the other `ref`
+  values ("Costs and charges", "Guideline on warnings") are section headings and stay
+  `ref_label`. **FFFS 2017:2's own tree** (T8, INV-02, INV-S2) is added on top, with
+  `from_prototype: false`: chapters 9, 10 and 11 kap., three sections under 9 kap. (6 §,
+  10 § and 23 §) and one paragraph under 6 §, so the tree has three levels, each with a
+  `provision_versions` text row from 2018-01-03 (sv original, en machine translation); 6 §
+  also carries a version 2 from 2026-10-01 with a transitional note. The sample amending
+  instrument **FFFS 2026:11** is added the same way, related to FFFS 2017:2 by the new
+  `amends` relation type (sv "Ändrar"); it carries no obligation, so its verified date
+  falls to `_meta.anchor_date`. `obl-research-payments` and `obl-costs-charges` are linked
+  to their sections (6 § and 10 §) through `obligation_provisions`. All of this is sample
+  text taken from the instrument card (`design/screens/tenant-instrument.html`), never
+  presented as verbatim law.
 - **Authorities.** "EU Council and Parliament" and "EU" have no single authority in the
   prototype; one row `eu-legislator` is added and used for the EU regulations as issuer
   and for those changes, with `authority_label` kept verbatim. Data-model section 5 notes
@@ -156,3 +168,16 @@ to `proposal`, "Supervision", "Enforcement" and "Recurring date" to their keys.
 - **The prototype has the tenant's compliance officer approving agent proposals.**
   INPUT_DELTAS section 5 says that review belongs to `library_editor` in the platform
   console; the audit rows here are unchanged, the journey is not.
+- **Danish and Norwegian rules (tax-nordic-seed, FP-04).** The markets journeys need rules
+  from a market a bank watches, and the prototype has none. Added with `from_prototype:
+  false`, every fact fetched from the legislator's or the authority's own site and logged in
+  `docs/plans/Verification_Log.md`: the two supervisory authorities (`finanstilsynet-dk`,
+  `finanstilsynet-no`) and Stortinget; Kapitalmarkedsloven (`dk-lov-2017-650`, the
+  tenant-inventory card's watched-market example) with the custody duty of an
+  account-holding institution (`obl-dk-csd-registration`, §§ 184-185); and
+  verdipapirhandelloven (`no-lov-2007-06-29-75`) with the suitability duty
+  (`obl-no-suitability`, § 10-15 (1)), which names Advice and Portfolio management so J-6's
+  switch-off does not hide it. Instruments may carry `in_force_from_precision` (a
+  `date_precision` kind; the loader defaults to `day`). The summaries are our own words in
+  English with a Swedish rendering, never verbatim law. The Danish act has no issuer until
+  Folketinget can be filed (`docs/TODO_FOR_alex.md`).

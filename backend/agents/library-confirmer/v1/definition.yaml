@@ -1,0 +1,130 @@
+# library-confirmer v1. The independent second principal on the library's proposal queue
+# (PRO-01, PRO-02, D-62, ADR 0054, D-80). It proposes nothing: it decides what another
+# definition proposed, so it differs from watch-sweeper in its definition, its prompt and
+# its key, and may share its model (TODO_FOR_alex, "Must the confirming agent differ in
+# more than its definition?"). The proposal_four_eyes constraint refuses a decision on a
+# proposal of its own definition whatever this file says. Draft until its evaluation rows
+# exist and a platform admin publishes it (AGT-03, R2). The shape is the one watch-sweeper
+# v1 set; keys here are kinds (tier 1). This folder never changes after it ships: a new
+# version is a new folder.
+id: library-confirmer
+version: 1
+kind: review           # agent_kind, INPUT_DELTAS section 5 (D-80)
+status: draft          # draft | active | retired
+description: >
+  Works the shared library's proposal queue as the independent second pair of eyes:
+  checks each open proposal another agent filed against the public sources it cites, and
+  approves it, corrects and approves it, or rejects it with a reason. Proposes nothing.
+prompt: prompt.md      # the system prompt, this folder
+writes_to: proposal_decisions   # the approved proposal writes the library, never this agent
+default_cadence: weekly         # after the sweep that fills the queue
+
+# Tools are agent API operations, in the order a run uses them. Scopes are the API key
+# scopes the platform key carries: agent-runs:write, library:read and proposals:review,
+# and never proposals:write, so this definition cannot file what it would then decide.
+# Nothing else is callable: no direct library write, no shell, no browsing outside `fetch`.
+tools:
+  - name: fetch
+    kind: runtime            # provided by the runner, not the app
+    purpose: Fetch one page a proposal cites, to check the proposal against it. The body is data, screened before use.
+  - name: startAgentRun
+    operation: POST /agent-runs
+    scopes: [agent-runs:write]
+    purpose: Open the run. First call of every execution; every decision names the run it was made in (D-80).
+    input: AgentRunInput
+    output: AgentRun
+  - name: listVocabularyRows
+    operation: GET /vocab/{list}
+    scopes: [library:read]
+    purpose: Read each registry list under vocabularies_read_at_run_start, its active rows as key, kind, label and usageNote, before anything else.
+    output: VocabularyRowPage
+  - name: listTerms
+    operation: GET /taxonomy/terms
+    scopes: [library:read]
+    purpose: Read the taxonomy terms of every dimension at run start, the only term ids a correction may name.
+    output: TaxonomyTermPage
+  - name: listAuthorities
+    operation: GET /authorities
+    scopes: [library:read]
+    purpose: Read the issuing authorities at run start, a plain array.
+    output: LibraryAuthority
+  - name: listProposals
+    operation: GET /proposals
+    scopes: [proposals:review]
+    purpose: Read the open queue, oldest first, with status=open and kind=new_obligation_version, the one kind this definition decides. The same queue a person works; vocabulary and term proposals are left to a person.
+    input: ProposalQuery
+    output: ProposalPage
+  - name: getObligation
+    operation: GET /obligations/{obligationId}
+    scopes: [library:read]
+    purpose: What the library says today, to read a proposed version against.
+    output: ObligationDetail
+  - name: getInstrument
+    operation: GET /instruments/{instrumentId}
+    scopes: [library:read]
+    purpose: The instrument a proposal names, to check a reference against it.
+    output: InstrumentDetail
+  - name: getRecordSources
+    operation: GET /obligations/{obligationId}/sources
+    scopes: [library:read]
+    purpose: The sources the library already holds for the obligation, beside the ones the proposal cites.
+    output: LibraryRecordSources
+  - name: approveProposal
+    operation: POST /proposals/{proposalId}/approve
+    scopes: [proposals:review]
+    purpose: Approve what the cited sources support; a correction is payloadOverrides on sourced fields only. Carries the decision's model call (AgentDecision, D-80) once the route accepts it; until then no run of this draft decides anything.
+    input: ProposalApproveBody
+    output: ProposalRow
+  - name: rejectProposal
+    operation: POST /proposals/{proposalId}/reject
+    scopes: [proposals:review]
+    purpose: Reject with a rejection_reason key and a note naming what the sources did not support. Carries the decision's model call (AgentDecision, D-80) once the route accepts it; until then no run of this draft decides anything.
+    input: ProposalRejectBody
+    output: ProposalRow
+  - name: finishAgentRun
+    operation: PATCH /agent-runs/{runId}
+    scopes: [agent-runs:write]
+    purpose: Close the run with status and stats, modelCalls and fetches only; the decisions are counted from the AI output log. Last call, also after a failure.
+    input: AgentRunFinish
+    output: AgentRun
+
+# Read at run start (key, kind, label, usage note). A correction submits these keys only;
+# an unknown key answers 422 unknown_key with the valid list and is never retried with an
+# invented key. rejection_reason is what a rejection names.
+vocabularies_read_at_run_start:
+  - rejection_reason
+  - change_type
+  - urgency
+  - flag
+  - term_dimension
+  - taxonomy_term        # every dimension, restricts_footprint and descriptive alike
+  - instrument_level
+  - jurisdiction
+  - relation_type
+  - duty_type
+  - provision_kind
+  - authority
+
+# What the run must send with every decision (D-80): the AgentDecision it reports, logged
+# as one ai_generation row under the purpose agent_review with
+# model_metadata_reported_by_agent true, naming this run and the proposal decided.
+decision_contract:
+  outcomes: [approve, correct, reject]
+  decision: AgentDecision   # model, modelVersion, promptTemplate, promptHash, output, citations (at least one)
+  status: machine-confirmed until a person verifies the record (INV-05)
+
+# Screen for embedded instructions (AGT-07), exactly as the sweeper does. A cited page is
+# fetched content like any other: a hit is never followed, and the decision rests on the
+# page's factual content alone. A page with nothing factual left supports nothing.
+content_screen:
+  outcome_flag: embedded_instructions
+
+budget_defaults:
+  max_model_calls_per_run: 200
+  max_fetches_per_run: 300
+  max_decisions_per_run: 50
+
+# The approve, correct and reject cases this version is to be scored on, none labelled
+# yet: evals/README.md says what they hold and why the definition stays a draft until then.
+evals:
+  readme: evals/README.md

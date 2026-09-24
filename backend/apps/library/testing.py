@@ -15,7 +15,9 @@ import datetime
 from collections.abc import Iterable, Mapping
 
 from apps.library.models import (
+    Authority,
     Instrument,
+    InstrumentRelation,
     InstrumentTitle,
     Jurisdiction,
     Obligation,
@@ -27,7 +29,10 @@ from apps.library.models import (
     ObligationTitle,
     ObligationVersion,
     Provision,
+    ProvisionText,
+    ProvisionVersion,
 )
+from apps.identity.models import User
 from apps.proposals.models import OriginType
 from apps.shared.models import Tenant
 from apps.shared.tenancy import library_write
@@ -44,44 +49,113 @@ def term(ref: str) -> TaxonomyTerm:
     return TaxonomyTerm.objects.select_related("dimension").get(dimension__key=dimension, key=key)
 
 
+def authority(*, key: str, short_name: str, jurisdiction: str = "se") -> Authority:
+    """An issuing authority, named by its short name."""
+    with library_write(REASON):
+        return Authority.objects.create(
+            key=key, short_name=short_name, name=short_name, jurisdiction=Jurisdiction.objects.get(key=jurisdiction), url=SOURCE_URL
+        )
+
+
 def instrument(
     *,
     key: str,
     short_name: str | None = None,
-    regime: str | None = None,
+    official_ref: str | None = None,
+    source_url: str = SOURCE_URL,
+    jurisdiction: str = "se",
+    regime: str,
     level: str = "act",
     binding: bool = True,
     owner_tenant: Tenant | None = None,
+    authority: str | None = None,
+    eli_uri: str = "",
+    in_force_from: datetime.date | None = None,
+    in_force_from_precision: str = "day",
+    in_force_to: datetime.date | None = None,
+    implements_note: str = "",
+    last_verified_at: datetime.datetime | None = None,
+    verified_by: User | None = None,
 ) -> Instrument:
-    """A Swedish instrument titled by its short name in English, the original."""
+    """An instrument titled by its short name in English, the original: Swedish unless
+    `jurisdiction` names another jurisdiction by key, such as a Danish, a Norwegian or a
+    Union one. `regime` is a `regime:<key>` term and required, as the database requires it
+    (D-39)."""
     with library_write(REASON):
         row = Instrument.objects.create(
             stable_key=key,
             short_name=short_name or key.upper(),
-            official_ref=key.upper(),
-            source_url=SOURCE_URL,
+            official_ref=official_ref or key.upper(),
+            eli_uri=eli_uri,
+            source_url=source_url,
             level=InstrumentLevel.objects.get(key=level),
             binding=binding,
-            jurisdiction=Jurisdiction.objects.get(key="se"),
-            regime=term(regime) if regime else None,
+            jurisdiction=Jurisdiction.objects.get(key=jurisdiction),
+            authority=Authority.objects.get(key=authority) if authority else None,
+            regime=term(regime),
+            in_force_from=in_force_from,
+            in_force_from_precision=in_force_from_precision,
+            in_force_to=in_force_to,
+            implements_note=implements_note,
             owner_tenant=owner_tenant,
             created_origin=OriginType.USER.value,
+            last_verified_at=last_verified_at,
+            verified_by=verified_by,
         )
         InstrumentTitle.objects.create(instrument=row, language_id="en", text=row.short_name, is_original=True)
     return row
 
 
-def provision(on: Instrument, *, key: str, ref_label: str = "9 kap.", kind: str = "chapter") -> Provision:
-    """A node of an instrument's tree, which an obligation cites. Its verbatim text versions
-    belong to the provision tree read, never to an obligation."""
+def relate_instruments(
+    source: Instrument, target: Instrument, *, relation: str, note: str = "", from_ref: str = "", to_ref: str = ""
+) -> InstrumentRelation:
+    """Files `target` beside `source` (INV-01): `source` "implements", "elaborates" or
+    "amends" `target`, the direction the fixture and the lineage read both use. `from_ref`
+    is the place in `source` that does it and `to_ref` the place in `target` it reaches."""
+    with library_write(REASON):
+        return InstrumentRelation.objects.create(
+            from_instrument=source,
+            to_instrument=target,
+            relation_type=RelationType.objects.get(key=relation),
+            note=note,
+            from_ref=from_ref,
+            to_ref=to_ref,
+        )
+
+
+def provision(on: Instrument, *, key: str, ref_label: str = "9 kap.", kind: str = "chapter", parent: Provision | None = None, heading: str = "", sort_order: int = 0) -> Provision:
+    """A node of an instrument's tree, which an obligation cites and which carries its own
+    verbatim text versions (`provision_version()` below), never an obligation's."""
     with library_write(REASON):
         return Provision.objects.create(
             stable_key=key,
             instrument=on,
+            parent=parent,
             kind=ProvisionKind.objects.get(key=kind),
             ref_label=ref_label,
-            path=f"{on.short_name} > {ref_label}",
+            heading=heading,
+            path=f"{parent.path} > {ref_label}" if parent else f"{on.short_name} > {ref_label}",
+            sort_order=sort_order,
         )
+
+
+def provision_version(
+    on: Provision,
+    *,
+    version_no: int = 1,
+    effective_from: datetime.date | None = None,
+    transitional_note: str = "",
+    texts: Mapping[str, str] | None = None,
+) -> ProvisionVersion:
+    """A verbatim text version of `on` (INV-02): write-once, like an obligation's version.
+    The first language given is the original; every other one is a machine translation."""
+    with library_write(REASON):
+        version = ProvisionVersion.objects.create(
+            provision=on, version_number=version_no, effective_from=effective_from, transitional_note=transitional_note
+        )
+        for index, (language, text) in enumerate((texts or {"en": "The provision as it reads."}).items()):
+            ProvisionText.objects.create(version=version, language_id=language, text=text, is_original=index == 0, is_machine=index > 0)
+    return version
 
 
 def relate(source: Obligation, target: Obligation, *, relation: str = "related") -> None:
@@ -185,3 +259,34 @@ def library_of(count: int) -> list[Obligation]:
         )
         for n in range(count)
     ]
+
+
+# The IEC webstore's catalogue page of the edition (docs/plans/Verification_Log.md).
+ISO_27001_CATALOGUE = "https://webstore.iec.ch/en/publication/79694"
+
+
+def standard() -> Obligation:
+    """ISO/IEC 27001:2022 as INV-S11 and FP-S16 read it (INV-08, D-35): issued by ISO/IEC
+    under International, regime AI and ICT, no provision, and its one conformance duty on
+    the standard's term, whose state this leaves as it is. Returns the duty."""
+    authority(key="iso-iec", short_name="ISO/IEC", jurisdiction="intl")
+    edition = instrument(
+        key="iso-iec-27001-2022",
+        short_name="ISO/IEC 27001:2022",
+        official_ref="ISO/IEC 27001:2022",
+        source_url=ISO_27001_CATALOGUE,
+        jurisdiction="intl",
+        authority="iso-iec",
+        regime="regime:ai_ict",
+        level="standard",
+        binding=False,
+        in_force_from=datetime.date(2022, 10, 25),
+    )
+    return obligation(
+        edition,
+        key="iso-iec-27001-2022-conformance",
+        titles={"en": "ISO/IEC 27001:2022 conformance"},
+        ref_label=edition.official_ref,
+        duty_type="governance",
+        terms=("standard:iso_iec_27001",),
+    )

@@ -33,7 +33,9 @@ from django.utils.text import slugify
 
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
-from apps.taxonomy.reading import Labels, extra_of, label_of
+from apps.shared.vocabulary import LibraryVocabulary
+from apps.taxonomy import repoint
+from apps.taxonomy.reading import CONFIRMATION_JOINS, Labels, confirmation_of, extra_of, label_of
 from apps.taxonomy.registry import REGISTRY, VocabularyList
 from apps.taxonomy.schemas import (
     PersonRef,
@@ -97,9 +99,14 @@ def _queryset(entry: VocabularyList, tenant_id: uuid.UUID | None) -> Any:
     """The list's rows with their usage count, in the list's own order. The order is
     explicit because Django drops `Meta.ordering` from a GROUP BY query, and the usage
     count is one: without it a reordered list came back in whatever order Postgres chose
-    (found by VOC-S3, 2026-09-19)."""
+    (found by VOC-S3, 2026-09-19). A library list whose rows carry who confirmed them (every
+    LibraryVocabulary) joins those facts in; the seeded jurisdiction list has no such
+    columns and reads as a seeded row does, empty (D-38)."""
     queryset = entry.usage(entry.model._default_manager.all()).order_by(*(entry.model._meta.ordering or ()))
-    if not entry.is_library:
+    if entry.is_library:
+        if issubclass(entry.model, LibraryVocabulary):
+            queryset = queryset.select_related(*CONFIRMATION_JOINS)
+    else:
         if tenant_id is None:
             raise ValidationError("This list belongs to a tenant; sign in to one.", code="not_found")
         queryset = queryset.filter(tenant_id=tenant_id)
@@ -162,6 +169,7 @@ def _row(entry: VocabularyList, row: Any, labels: Labels, order: list[str]) -> V
         usage_count=getattr(row, "usage_count", 0),
         version=getattr(row, "version", 1),
         extra=extra_of(row, entry.extra_fields),
+        **confirmation_of(row),
     )
 
 
@@ -171,6 +179,18 @@ def row_by_key(list_name: str, key: str, tenant_id: uuid.UUID | None) -> Any:
     if row is None:
         raise ValidationError(f"{key!r} is not a row of {list_name!r}.", code="not_found")
     return row
+
+
+def row_for_write(list_name: str, keys: list[str], tenant_id: uuid.UUID) -> list[Any]:
+    """The rows a write changes, locked before they are read, so two writers queue: the
+    second reads the version and state the first committed, and `If-Match` or the state
+    check refuses it rather than letting it overwrite. The usage count groups rows, which
+    `FOR UPDATE` cannot, so the lock is taken on the bare rows first, in key order so two
+    merges never deadlock."""
+    entry = entry_for(list_name)
+    lock = entry.model._default_manager.select_for_update().filter(tenant_id=tenant_id, key__in=keys)
+    list(lock.order_by("key").values_list("pk", flat=True))
+    return [row_by_key(list_name, key, tenant_id) for key in keys]
 
 
 def row_detail(list_name: str, key: str, tenant_id: uuid.UUID | None, order: list[str]) -> VocabularyRowDetail:
@@ -459,7 +479,7 @@ def patch_row(
     """Relabel, re-note, reorder. The key never changes (playbook 4.3); `If-Match` carries
     the version and a stale write answers 409 `stale_write`."""
     entry = entry_for(list_name)
-    row = row_by_key(list_name, key, tenant.id)
+    [row] = row_for_write(list_name, [key], tenant.id)
     if expected_version is not None and expected_version != getattr(row, "version", 1):
         raise ValidationError("Someone changed this first. Reload and try again.", code="stale_write")
     before = {"labels": Labels.for_rows(entry.label_model, [row]).texts(row.id), "usageNote": row.usage_note}
@@ -539,7 +559,7 @@ def retire(
 ) -> VocabularyRetired:
     """Retire, never delete (playbook 15, AC-VOC2). The records that carry the value keep
     it and still render its label; the picker stops offering it."""
-    row = row_by_key(list_name, key, tenant.id)
+    [row] = row_for_write(list_name, [key], tenant.id)
     _refuse_system_row(row, "retired")
     count = int(getattr(row, "usage_count", 0))
     if count and not confirm:
@@ -570,7 +590,7 @@ def retire(
 def restore(*, list_name: str, tenant: Tenant, actor: Actor, key: str) -> VocabularyRestored:
     """The inverse of retire (playbook 15: retire, never delete, so there is always
     something to bring back). Audited like every other write."""
-    row = row_by_key(list_name, key, tenant.id)
+    [row] = row_for_write(list_name, [key], tenant.id)
     if row.active:
         raise ValidationError(f"{key} is not retired.", code="invalid_transition")
     row.active = True
@@ -597,8 +617,7 @@ def merge(
     `repointed` is what will actually move: a record that already carries the target keeps
     one link, so the count is never inflated by duplicates the unique constraint drops."""
     entry = entry_for(list_name)
-    source = row_by_key(list_name, key, tenant.id)
-    target = row_by_key(list_name, into, tenant.id)
+    source, target = row_for_write(list_name, [key, into], tenant.id)
     if source.pk == target.pk:
         raise ValidationError("Choose a different value to merge into.", code="validation_error")
     _refuse_system_row(source, "merged away")
@@ -607,9 +626,10 @@ def merge(
         # A preview changes nothing and is not a write, so it leaves no audit row: the
         # audit log answers "what changed", and nothing did (AUD-01).
         return VocabularyMerged(
-            **{"from": key}, into=into, usage_count=count, repointed=entry.repoint(source, target, dry_run=True), dry_run=True
+            **{"from": key}, into=into, usage_count=count, repointed=repoint.count(entry.repoint(source, target, dry_run=True)), dry_run=True
         )
-    repointed = entry.repoint(source, target, dry_run=False)
+    moves = entry.repoint(source, target, dry_run=False)
+    repointed = repoint.count(moves)
     source.active = False
     source.version = getattr(source, "version", 1) + 1
     source.save(update_fields=["active", "version"])
@@ -622,7 +642,7 @@ def merge(
         summary=f"Merged {key} into {into} on {list_name}.",
         tenant_id=tenant.id,
         before={"from": key, "usageCount": count, "active": True},
-        after={"into": into, "repointed": repointed, "active": False},
+        after={"into": into, "repointed": repointed, "rows": repoint.audit_rows(moves), "active": False},
     )
     return VocabularyMerged(**{"from": key}, into=into, usage_count=count, repointed=repointed, dry_run=False)
 
@@ -674,17 +694,18 @@ def suggestion_row(suggestion: Any, status: str | None = None) -> VocabularySugg
     )
 
 
-def suggestions_of(list_name: str, tenant_id: uuid.UUID) -> list[Any]:
+def suggestions_of(
+    list_name: str, tenant_id: uuid.UUID, *, limit: int, offset: int
+) -> tuple[list[VocabularySuggestionRow], int]:
+    """One page of the list's waiting suggestions (VOC-03, NFR-02), oldest first because
+    the inbox is worked in the order it filled, and how many wait in all. The id settles two
+    sent in the same instant, so two reads always agree on the order."""
     from apps.taxonomy.models import SuggestionStatus, VocabularySuggestion
 
     entry_for(list_name)
-    return list(
-        VocabularySuggestion.objects.filter(
-            tenant_id=tenant_id, list_name=list_name, status=SuggestionStatus.PENDING.value
-        )
-        .select_related("suggested_by")
-        .order_by("created_at", "id")
-    )
+    found = VocabularySuggestion.objects.filter(tenant_id=tenant_id, list_name=list_name, status=SuggestionStatus.PENDING.value)
+    page = found.select_related("suggested_by").order_by("created_at", "id")[offset : offset + limit]
+    return [suggestion_row(suggestion) for suggestion in page], found.count()
 
 
 def _resolve_suggestions(list_name: str, tenant: Tenant, key: str) -> int:

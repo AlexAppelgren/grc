@@ -207,6 +207,8 @@ test.describe('navigation on a phone, 375 × 812', () => {
   test('signing out works from More', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.reader);
+    // Today has read what it shows before the session ends.
+    await expect(page.getByRole('heading', { level: 1, name: 'What is coming, and where we stand' })).toBeVisible();
     await signOut(page);
   });
 

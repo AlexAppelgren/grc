@@ -28,6 +28,7 @@ from apps.tenants.schemas import (
     ConsoleTenantCreateBody,
     ConsoleTenantPage,
     ConsoleTenantRow,
+    TenantAiBody,
     TenantOut,
     TenantPatch,
 )
@@ -101,6 +102,51 @@ def update_tenant(request: HttpRequest, body: TenantPatch) -> TenantOut:
         timezone_name=body.timezone,
         default_language=body.default_language,
         content_language_keys=body.content_languages,
+    )
+    return TenantOut.model_validate(logic.tenant_out(tenant))
+
+
+@router.put(
+    "/tenant/ai",
+    response=TenantOut,
+    auth=SessionAuth(),
+    operation_id="setTenantAi",
+    by_alias=True,
+    summary="Switch your bank's AI features on or off",
+)
+@requires_permission(perms.SECURITY_MANAGE)
+@requires_step_up
+def set_tenant_ai(request: HttpRequest, body: TenantAiBody) -> TenantOut:
+    """Switches the bank's own AI features off or back on and returns the profile as it now
+    stands, with `aiEnabled` showing the new state. Call it from the bank's Organisation
+    screen when an administrator decides that no question or text of the bank's should go
+    to a model, or that it may again.
+
+    Off means Ask and the drafts a model writes for the bank's members answer
+    `feature_off` (403) before any model is reached, and a search, by a member or by the
+    bank's own key, sends what was typed to no embedding model and no reranker and finds
+    records by their words alone. It does not stop the research agents
+    that keep the shared library and the watch feed current: they run for every bank, read
+    only public sources and never see this bank's own words. The profile edit,
+    `PATCH /tenant`, never changes this switch.
+
+    Needs the `security.manage` permission and a fresh passkey step-up, because deciding
+    whether the bank's words may leave it for a model is a security change. The change is
+    recorded in the audit log as `tenant.ai_switched` with the state before and after and
+    the step-up assertion, in the same transaction as the switch. Sending the state the
+    bank already has leaves it as it is and is still recorded.
+
+    Errors: `validation_error` (422) for a body without a boolean `enabled` or with any
+    other field; `step_up_required` (403) without a fresh passkey assertion;
+    `permission_denied` (403) without `security.manage`, naming it in
+    `requiredPermission`; `unauthenticated` (401) without a session.
+    """
+    principal = _principal(request)
+    tenant = logic.set_ai_enabled(
+        tenant=logic.get_tenant(principal.tenant_id),
+        actor=actor_of(User.objects.get(pk=principal.subject_id)),
+        enabled=body.enabled,
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
     )
     return TenantOut.model_validate(logic.tenant_out(tenant))
 
@@ -240,23 +286,23 @@ def create_console_tenant(request: HttpRequest, body: ConsoleTenantCreateBody) -
     second step that turns the bank on.
 
     Needs the platform permission `tenants.manage`. One call writes the organisation with
-    its name, short name, timezone and languages; gives it the system roles and the
-    starting set of its own lists, which its administrator may extend afterwards; and
-    sends the first administrator an enrolment invitation carrying the system role that
-    can invite everyone else. That person receives a one-time code by email, which stops
-    working the moment their first passkey exists; no password is ever created. The
-    creation is recorded in the audit log as `tenant.created` with the whole profile, and
-    the invitation is recorded against the new bank. If anything in the call is refused,
-    nothing at all is written.
+    its name and a short name derived from it; gives it the system roles and the starting
+    set of its own lists, which its administrator may extend afterwards; and sends the
+    first administrator an enrolment invitation carrying the system role that can invite
+    everyone else. That person receives a one-time code by email, which stops working the
+    moment their first passkey exists; no password is ever created. The timezone, default
+    language and content languages are the bank's own to set afterwards, on its
+    Organisation profile screen (D-68): platform staff are never asked to guess at them,
+    and the onboarding "profile" step stays open until the bank's administrator sets them.
+    The creation is recorded in the audit log as `tenant.created` with the whole profile,
+    and the invitation is recorded against the new bank. If anything in the call is
+    refused, nothing at all is written.
 
     The address must belong to the bank. Platform staff are separate accounts, and an
     address that already carries a platform role is refused, because a console account
     invited into a bank would carry the console's permissions into a bank session.
 
-    Answers 201 with the new bank's console row. Errors: `duplicate_key` when the short
-    name is already taken; `unknown_key` for a timezone the IANA database does not hold or
-    a language key that is not an active language row; a 422 for a blank name, an empty
-    language list, a short name that is not lower-case letters, digits and hyphens, or an
+    Answers 201 with the new bank's console row. Errors: a 422 for a blank name or an
     address that belongs to platform staff, each with its own `code` and a message to
     show; `permission_denied` without `tenants.manage`.
     """
@@ -264,10 +310,6 @@ def create_console_tenant(request: HttpRequest, body: ConsoleTenantCreateBody) -
     tenant = logic.create_tenant(
         actor=actor_of(platform_user),
         name=body.name,
-        slug=body.slug,
-        timezone_name=body.timezone,
-        default_language=body.default_language,
-        content_language_keys=body.content_languages,
         first_admin_email=body.first_admin_email,
         first_admin_title=body.first_admin_title,
     )

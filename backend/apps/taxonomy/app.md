@@ -27,6 +27,17 @@ bulk tagging and configuration export come in R2 and R3. In R1 the three tiers,
 the vocabulary screen, retire and merge, library changes through proposals,
 and the footprint land.
 
+PRD 0.5 adds one more reader of the same rule. An agent access entry (ACC-01,
+`apps/agents`) carries departments and products, and its effective scope is their
+taxonomy terms **intersected with the tenant footprint**, computed per request
+from the footprint table and never from anything the caller sends. That is what
+makes "an entry can only narrow" a property of the code rather than a promise.
+The matcher is unchanged: `in_footprint` runs a second time with the entry's term
+map, and the SQL list queries take a second term array beside the one they
+already pass to `taxonomy_in_footprint`. FP-01's rules hold inside it, so an
+empty dimension does not restrict and naming no department and no product narrows
+nothing (D-70).
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -42,11 +53,12 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | VOC-07 | Library vocabulary changes go through the proposal queue | M | R1 | built |
 | VOC-08 | Bulk tagging from list views with preview and one audit entry | S | R2 | pending |
 | VOC-09 | Tenant configuration is versioned, exportable and importable | S | R3 | pending |
-| FP-01 | Footprint across all dimensions; a record matches when every dimension it carries has a term in the footprint; an empty dimension does not restrict, except an opt-in dimension (standards), which matches only what the scope names; an obligation also needs its instrument's regime | M | R1 | in_progress |
+| FP-01 | Footprint across all dimensions; a record matches when every dimension it carries has a term in the footprint; an empty dimension does not restrict, except an opt-in dimension (standards), which matches only what the scope names; an obligation also needs its instrument's regime | M | R1 | built |
 | FP-02 | A footprint change previews what it hides and reveals, needs a second person and step-up, one audit event per term | M | R1 | built |
-| FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it | M | R1 | in_progress |
-| FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | pending |
+| FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it. R1 covers the feed, inventory, roadmap, briefing and search; reports apply it in chunk 12 | M | R1 | built |
+| FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | built |
 | I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data | M | R1 | built |
+| ACC-02 | An agent access entry's scope is the terms of its departments and products intersected with the tenant footprint, computed per request. It can only narrow; an empty dimension does not restrict; a record outside it answers 404, never a filtered result | M | R2 | pending |
 ## 3. Acceptance criteria (from PRD, condensed)
 
 - **AC-VOC1** An admin adds a change type, a tag and a sub-status with no deploy:
@@ -107,6 +119,22 @@ Then every record that carried the key shows the new label and no record changed
 When they drag "Custody services" above "Advice"
 Then sort_order is stored and the picker follows it
 ```
+
+> **Note — what a library list counts and what its merge moves.** Every library list that
+> a library or watch record references names those columns as `links` in
+> `registry.py`: `instrument_level` (instruments), `provision_kind` (provisions),
+> `duty_type` (obligations), `library_tag` (obligation tags), `relation_type` (instrument
+> and obligation relations, so "Amends" on FFFS 2026:11's relation to FFFS 2017:2
+> counts), `change_type` and `urgency` (changes; a bank's own case urgency is a tenant
+> row and neither counts nor moves), `source_kind` (sources) and `flag` (change terms).
+> The usage count, the merge preview and the approved merge read the same links, so the
+> preview's `repointed` is the number that moves. An approved merge moves the current
+> link rows inside the approval's transaction (library rows in `proposals/apply.py`,
+> watch rows through `watch/write.py`'s door), drops a row whose twin already carries the
+> target, records the moved count per table on the `vocabulary.merged` audit row, and
+> leaves the merged-away row retired with its labels, so history still resolves. A
+> record the database refuses to move undoes the whole merge and leaves the proposal
+> open. Version rows and append-only ledgers are never touched.
 
 ### VOC-S4 — Retiring a used value keeps history readable and leaves pickers `@integration` `@e2e` (VOC-02, AC-VOC2)
 ```gherkin
@@ -240,7 +268,7 @@ Then it matches only a footprint that names that term
 ```gherkin
 Given a compliance officer with footprint.request
 When they choose "Propose a change" and remove "Advice"
-Then the preview counts the obligations that would be hidden and any that would appear, and cases are not counted yet
+Then the preview counts the obligations that would be hidden and any that would appear, and the same for this bank's open cases
 And a change request is stored and shown as "Waiting for approval"
 When the library changes while it waits
 Then the waiting request's preview is counted again against today's library
@@ -249,6 +277,15 @@ Then advice-only obligations and changes are hidden everywhere
 And one audit event per term records the change with the assertion reference
 And every decided request — approved, rejected or withdrawn — carries the counts it was decided against, the same ones its decision event holds
 ```
+
+> **Note — the preview shows counts only.** `footprint_logic.preview_of()` counts
+> obligations, never instruments, because a footprint change never hides or reveals an
+> instrument row by itself; it only changes which obligations under it a bank can see. Chunk
+> 3's rest (T13) taught `reading.obligation_scopes()` to inherit an obligation's scope through
+> its instrument's own regime (`reading.instrument_scopes()`, the one footprint rule), so an
+> obligation whose instrument's regime narrowed is counted correctly, but the preview's shape
+> is unchanged: one `FootprintPreviewCount` for obligations, one for cases, and nothing that
+> counts instruments on their own.
 
 ### FP-S3 — The requester cannot approve their own footprint change `@integration` (FP-02)
 ```gherkin
@@ -260,11 +297,11 @@ And the database check constraint refuses the row on its own
 
 ### FP-S4 — Every surface respects the regulatory scope and offers a way to look outside it `@integration` `@e2e` (FP-03)
 ```gherkin
-Given a regulatory scope without "Advice"
+Given a regulatory scope that leaves a term out
 When a user opens the feed, the inventory, the roadmap and the briefing
-Then advice-only records are absent from each
-When they choose "Show outside our scope" on the inventory
-Then the advice-only records appear marked as outside our scope
+Then the records whose only term in that dimension is the one left out are absent from each
+When they choose "Show outside our scope" in the inventory's Scope filter
+Then those records appear marked as outside our scope
 ```
 Reports are the note below.
 
@@ -283,6 +320,26 @@ Reports are the note below.
 > outside the scope is the inventory's, which chunk 3 built: the feed, the roadmap and the
 > briefing carry no such switch on purpose, because a person planning work should see the
 > work that is theirs (chunk 6 defaults).
+
+> **Note — the journey.** The `@e2e` half walks tenant A's scope as seeded and never
+> changes it, because FP-S5 changes that scope and the home and watch journeys read it in
+> parallel; dropping Advice and watching records hide is FP-S5's (J-6) and the integration
+> half's. The E2E seed leaves pension accounts out of tenant A's scope
+> (`EXPECTED_OUTSIDE_SCOPE` in `apps/shared/e2e_seed.py`), so one obligation, the pension
+> transfer right, and one change, `chg-e2e-outside-scope`, fall outside it through that term
+> alone. The journey finds the change absent from the feed and then marked under "Show
+> outside our scope", the obligation absent from the inventory and then marked under the
+> same switch, and the change absent from the roadmap and the briefing. The seed-integrity
+> guard checks every seeded case's cached verdict against the rule, so a case can no longer
+> read as outside on the roadmap while the feed shows its change inside, and it fails when
+> a seeded proposal or a named seed record comes to use the outside obligation.
+
+> **Note — the Instruments tab.** Chunk3-rest (T17) split the inventory into an
+> Obligations tab and an Instruments tab. Both filter through the same footprint rule
+> (`reading.obligation_scopes()` and `reading.instrument_scopes()`, one rule for both kinds,
+> INV-01) and both carry their own Scope filter with the same three values (FP-S13), so the scenario above
+> holds unchanged for the new tab: an instrument outside the regulatory scope is absent by
+> default and appears marked as outside it when a reader asks to see past the scope.
 
 ### FP-S5 — J-6: regulatory scope change with preview and second-person approval `@e2e` (FP-01, FP-02, FP-03, AC-FP1, J-6)
 ```gherkin
@@ -358,6 +415,19 @@ Then they see which markets are operating and which are watched
 And watching one answers 403 with requiredPermission "footprint.request"
 ```
 
+> **Note — the journeys (tax-market-journeys).** FP-S8's `@e2e` half runs in tenant B,
+> whose scope names no jurisdiction: its admin turns Denmark on, the preview counts what it
+> hides, B's approver approves with a passkey, and the inventory keeps the EU and Danish
+> obligations and drops the Swedish one; it runs serially and restores B's scope on failure
+> too. The preview shows counts only, so "hides no EU obligation" and the one audit event
+> and history row per term stay with the `@integration` half. FP-S10's `@e2e` half watches
+> Norway in tenant A, finds the `markets.watch_added` row holding the key only in the audit
+> log, and unwatches. Its read-only view is the approver's, who holds `footprint.approve`
+> and not `footprint.request`: a Reader holds neither, so the screen is closed to them
+> (FP-S7), and the Reader's 403 on a watch stays with the `@integration` half, as does the
+> 409 `already_watching`. With FP-S13 (tax-watched-inventory) and FP-S15 (tax-watched-feed)
+> green as well, every FP-04 scenario runs, and FP-04 is built.
+
 ### FP-S11 — A market's level is computed, and operating comes first `@integration` (FP-04)
 ```gherkin
 Given a tenant operating in Sweden and watching Norway
@@ -377,8 +447,12 @@ Then the jurisdiction dimension holds exactly one term per active jurisdiction, 
 And each country's term has the EU's term as parent, Norway's included
 And the international jurisdiction gets no mirrored term
 And GET /tenant/footprint lists five jurisdiction terms
+And GET /taxonomy/terms marks exactly those five terms as mirrored
 When a proposal adds or renames a term in the jurisdiction dimension
-Then it answers 422
+Then it answers 422 jurisdiction_term_mirrored and nothing reaches the queue
+When an obligation proposal's scope or a change's terms name a jurisdiction term
+Then it answers 422 jurisdiction_term_mirrored and nothing is stored
+And the refusal names no dimension and no country
 When seed_reference runs a second time
 Then nothing changes
 ```
@@ -394,6 +468,15 @@ And no EU or Swedish obligation is listed, because they are already in the footp
 And the list takes one footprint filter value, so no contradictory pair can be sent
 ```
 
+> **Note — one value on both lists (tax-watched-inventory).** `GET /obligations` and
+> `GET /instruments` take `footprint=in|all|watched` in place of the retired
+> `outsideFootprint`, which now answers 422 as the watch feed's `inFootprint` does.
+> `watched` asks `taxonomy_in_footprint`, unchanged, twice: the record is outside the scope,
+> and inside it once the jurisdiction terms it reaches are set aside; a derived jurisdiction
+> must be one the bank watches. Each obligation row carries its instrument's `jurisdiction`,
+> which the screen's "Market we watch: Denmark" reads. `GET /library-updates` keeps its
+> boolean `outsideFootprint` (D-84).
+
 ### FP-S14 — Markets stay inside the tenant and out of logs and error reports `@integration` (FP-04, NFR-01, AC-NFR1)
 ```gherkin
 Given tenant A watches Norway and tenant B watches nothing
@@ -402,7 +485,7 @@ Then Norway is not watched and no id of tenant A's rows is returned
 When tenant B asks to stop watching Norway
 Then the answer is 404 and tenant A's row is unchanged
 When tenant A watches and stops watching a market
-Then the request line that the access log prints, the application log and the captured error-reporting transaction hold no jurisdiction key
+Then the request line that the access log prints, the application log and the captured error-reporting transactions and error events hold no jurisdiction key
 ```
 
 ### FP-S15 — A change's jurisdiction comes from its authority, and the watch feed has the watched-market view `@integration` `@e2e` (FP-04)
@@ -440,8 +523,8 @@ And a record carrying an opt-in term matches only when the scope names that term
 And an empty scope dimension still does not restrict
 And a record carrying no opt-in term is unaffected by the opt-in dimension
 When the opt-in dimension's restricts_footprint is false
-Then both still treat it as restricting
-And calling in_footprint without the opt_in argument raises a TypeError
+Then both still treat it as restricting, and the regulatory scope read says it restricts
+And calling in_footprint without restricting_dimensions()'s answer, which names the opt-in dimensions, raises a TypeError
 ```
 
 ### I18N-S1 — Languages and jurisdictions are rows, never columns or branches `@integration` (I18N-01)
@@ -460,4 +543,18 @@ When a machine translation to en is stored
 Then a translation row exists per language with the original marked
 And the en row carries machine_translated true and a review state
 And the API returns the requested language, falling back along the user's language order
+```
+
+### ACC-S2 — An entry's scope narrows the footprint and can never widen it `@integration` (ACC-02, AC-ACC1)
+```gherkin
+Given a tenant footprint covering trading, cards and payments
+And an entry naming the Trading department, whose products carry the derivatives and securities product types
+When the effective scope is computed
+Then it holds the trading terms and no card term
+And an obligation carrying no product type at all is in scope, because an empty dimension does not restrict
+And an obligation carrying only the card product type is not
+When the entry names a product whose term is outside the tenant footprint
+Then that term is not in the effective scope: the intersection is taken from the footprint table
+When the entry names no department and no product
+Then its effective scope is the tenant footprint exactly, through the same code path
 ```

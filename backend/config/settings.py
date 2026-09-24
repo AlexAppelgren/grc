@@ -362,6 +362,20 @@ if API_PAGE_OFFSET_MAX < API_PAGE_SIZE_MAX:
     )
 
 # ---------------------------------------------------------------------------------------
+# ===== NFR-02 the performance harness (backend/perf/, scripts/perf_report.py) ============
+# Ask's budget is the time to its first streamed chunk, not to the whole answer (playbook
+# 10): the harness adds the wait for that chunk to the stream's Server-Timing. The other two
+# are the harness's own. Twenty timed requests per route make the 95th percentile the
+# second-slowest of them rather than a single outlier. A route fails the report when its
+# median is more than PERF_REGRESSION_PCT per cent above its recorded baseline: tighter and
+# the noise of a busy laptop fails routes nobody changed, looser and a real slowdown hides.
+# The harness refuses a deployed environment, so the last two are never set on one.
+# ---------------------------------------------------------------------------------------
+ASK_FIRST_TOKEN_BUDGET_MS = env_int("ASK_FIRST_TOKEN_BUDGET_MS", 2000)
+PERF_SAMPLES = env_int("PERF_SAMPLES", 20)
+PERF_REGRESSION_PCT = env_int("PERF_REGRESSION_PCT", 20)
+
+# ---------------------------------------------------------------------------------------
 # ===== SRC-01..03 search and ask input caps (apps/search/schemas.py) =====================
 # What a caller may send to search, to the similarity read and to Ask. Each is a cap at a
 # trust boundary: the text reaches a text-search query, the embedder and, for Ask, a model
@@ -444,6 +458,26 @@ if min(SEARCH_RATE_PER_USER_PER_MINUTE, ASK_RATE_PER_USER_PER_MINUTE) < 1:
     )
 
 # ---------------------------------------------------------------------------------------
+# ===== SRC-03 Ask: what reaches the model and how much it may write (apps/search/ask.py) =
+# How many passages of the hybrid ranking the model is given, and the most it may write
+# back. The passages are the whole of what an answer may rest on, so a deeper retrieval is
+# a wider answer and a longer prompt; each is also a numbered citation on the answer and
+# on its AI log row, so the depth may not exceed the log's citation cap. The token cap is
+# the answer's own ceiling beneath LLM_MAX_TOKENS: an answer is a few cited sentences, and
+# a model that runs on is spending the bank's money on text nobody asked for.
+# ---------------------------------------------------------------------------------------
+ASK_RETRIEVAL_DEPTH = env_int("ASK_RETRIEVAL_DEPTH", 6)
+ASK_MAX_TOKENS = env_int("ASK_MAX_TOKENS", 1024)
+# At zero every question would be "no answer" without anyone having decided so, and above
+# the citation cap an answer could cite a passage its log row cannot record.
+if not 1 <= ASK_RETRIEVAL_DEPTH <= AI_GENERATION_CITATIONS_MAX or ASK_MAX_TOKENS < 1:
+    raise ImproperlyConfigured(
+        f"Refusing to boot: ASK_RETRIEVAL_DEPTH is {ASK_RETRIEVAL_DEPTH} (1 to "
+        f"AI_GENERATION_CITATIONS_MAX, {AI_GENERATION_CITATIONS_MAX}) and ASK_MAX_TOKENS is "
+        f"{ASK_MAX_TOKENS} (at least 1)."
+    )
+
+# ---------------------------------------------------------------------------------------
 # ===== INV-04 "show what changed" (apps/library/logic.py sentence_diff) ==================
 # Aligning two versions costs up to the cube of their sentence count when sentences repeat,
 # and the texts come from fetched sources. Above this many sentences on either side the
@@ -489,6 +523,15 @@ LIBRARY_TERM_FILTER_MAX = env_int("LIBRARY_TERM_FILTER_MAX", 20)
 # ---------------------------------------------------------------------------------------
 PROPOSAL_SOURCE_MAX_CHARS = env_int("PROPOSAL_SOURCE_MAX_CHARS", 2000)
 PROPOSAL_SCOPE_MAX_TERMS = env_int("PROPOSAL_SCOPE_MAX_TERMS", 20)
+
+# ---------------------------------------------------------------------------------------
+# ===== PRO-03 how far back "what changed in the library" looks ===========================
+# A reader who has never marked the library as seen has no bookmark to read from, so the
+# list falls back to this many days. Long enough that a first visit is not empty and a
+# fortnight away still shows the fortnight; short enough that the first read is a page and
+# not the whole history, which is what the inventory itself is for.
+# ---------------------------------------------------------------------------------------
+LIBRARY_UPDATES_DEFAULT_DAYS = env_int("LIBRARY_UPDATES_DEFAULT_DAYS", 30)
 
 # ---------------------------------------------------------------------------------------
 # ===== INV-06 what a person types on a library record ====================================
@@ -543,6 +586,37 @@ SOURCE_STALE_AFTER_CHECKS = env_int("SOURCE_STALE_AFTER_CHECKS", 1)
 SOURCE_STALE_GRACE_HOURS = env_int("SOURCE_STALE_GRACE_HOURS", 24)
 
 # ---------------------------------------------------------------------------------------
+# ===== WAT-07 standards publishers nobody reads automatically (apps/watch/sources.py) ====
+# A source whose address is on one of these hosts, or a subdomain of one, is registered
+# with its automated checks off, like every source of the `standards_body` kind, and a run
+# may log no check of it. Comma-separated host names. The default names every standards
+# publisher whose terms docs/plans/Verification_Log.md ("PRD 0.3 standards facts") read, so
+# out of the box bleqq reads no publisher automatically; a host leaves the list only when a
+# lawyer has cleared its terms (D-45, docs/TODO_FOR_alex.md "Legal, before any standard is
+# seeded"). IAF is not on it: it publishes no standard's text.
+# ---------------------------------------------------------------------------------------
+STANDARDS_PUBLISHER_HOSTS = [host.lower() for host in env_list(
+        "STANDARDS_PUBLISHER_HOSTS", "iso.org,iec.ch,sis.se,ds.dk,standard.no,sfs.fi,pcisecuritystandards.org"
+    )]
+
+# ---------------------------------------------------------------------------------------
+# ===== AGT-01, WAT-01 what one agent run may file (HARDENING H41, agent-write-guards) ====
+# The server holds every run to the write budgets its definition names
+# (`budget_defaults` in backend/agents/watch-sweeper/v1/definition.yaml): new proposals,
+# new changes on the watch feed and re-check lines of the coverage log. A write past its
+# budget answers 422 `run_budget_exhausted` and stores nothing, so a runaway or injected
+# run cannot flood the review queue under one open run. A budget below 1 would refuse
+# every run's first write, so it refuses to boot instead.
+# ---------------------------------------------------------------------------------------
+WATCH_RUN_MAX_PROPOSALS = env_int("WATCH_RUN_MAX_PROPOSALS", 50)
+WATCH_RUN_MAX_CHANGES = env_int("WATCH_RUN_MAX_CHANGES", 50)
+WATCH_RUN_MAX_RECHECKS = env_int("WATCH_RUN_MAX_RECHECKS", 100)
+if min(WATCH_RUN_MAX_PROPOSALS, WATCH_RUN_MAX_CHANGES, WATCH_RUN_MAX_RECHECKS) < 1:
+    raise ImproperlyConfigured(
+        "Refusing to boot: WATCH_RUN_MAX_PROPOSALS, WATCH_RUN_MAX_CHANGES and WATCH_RUN_MAX_RECHECKS are each at least 1."
+    )
+
+# ---------------------------------------------------------------------------------------
 # ===== HOM-01 how long Today's "Coming up" list is (apps/home/logic.py, c6-home-backend) =
 # Today shows the same short list on a 375 px phone and on a desktop, so its length is one
 # number rather than a breakpoint: the screen never decides how much of the roadmap it is
@@ -580,10 +654,23 @@ CELERY_BEAT_SCHEDULE["briefing-weekly"] = {
 # anyone noticing; and a subscription nobody has fetched for a month is a calendar that was
 # removed or a device that was replaced, so it expires rather than working forever. Both
 # are settings because a bank's own guidance may be stricter and neither number is a rule.
-# `apps/home/calendar.py` reads them when the feed itself is built.
+# `apps/home/feed.py` reads them when a subscription is made, listed and fetched.
 # ---------------------------------------------------------------------------------------
 CALENDAR_FEEDS_PER_USER = env_int("CALENDAR_FEEDS_PER_USER", 5)
 CALENDAR_FEED_IDLE_DAYS = env_int("CALENDAR_FEED_IDLE_DAYS", 30)
+# How many stopped subscriptions a person's list shows beside the ones that work, most
+# recently stopped first. Enough to show a whole set of addresses just replaced; the list
+# stays short however many a person has replaced over the years, which is what lets it go
+# unpaged (the live ones are capped above).
+CALENDAR_FEED_REVOKED_SHOWN = env_int("CALENDAR_FEED_REVOKED_SHOWN", 5)
+# How often one address may be fetched. A calendar client polls every few hours, so this
+# is generous for every real client and still bounds what someone who found an address
+# can pull from it. It is per token, so a flood on one address leaves the others answering.
+CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
+# How often a fetch moves `last_used_at` and writes its `feed_used` security-log row, as
+# an API key's stamp is throttled (ID-10). Without it a polling client would turn a read
+# into a write every time and fill the security log with one bank's polling.
+CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
 
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
@@ -669,6 +756,12 @@ LOGGING = {
         "apps": {"handlers": ["console"], "level": LOG_LEVEL, "propagate": False},
     },
 }
+# ===== SRC-03 Ask: no tenant text through django.template's DEBUG lines ================
+# Ninja reads a response attribute it cannot find through Django's template `Variable`,
+# which logs the miss at DEBUG with the object's repr, and an Ask event's repr holds the
+# question the reader typed. So this one logger stays at INFO whatever LOG_LEVEL says
+# (apps/search/tests_ask.py, AskPrivacyTests).
+LOGGING["loggers"]["django.template"] = {"level": "INFO"}  # type: ignore[index]
 
 # ---------------------------------------------------------------------------------------
 # Sentry (playbook 11.2), only when SENTRY_DSN is set, on the EU region. No PII, no
@@ -727,6 +820,11 @@ if SENTRY_DSN:
 #  8. The WebAuthn RP ID is the exact app host (ADR 0002). A deployed environment that
 #     still says `localhost` would enrol passkeys nobody can use from the real host, so
 #     it refuses to boot until WEBAUTHN_RP_ID and WEBAUTHN_ORIGINS name the host.
+#  9. RATE_LIMITING_ENABLED=false switches every bucket off at once: the sign-in
+#     ceremonies' (ID-02) and search's and Ask's, which cap what one caller spends of the
+#     model budget (NFR-02). Each bucket's own size already refuses to boot below 1, so the
+#     switch is the one way left to turn them off, and it stays for laptops and tests only
+#     (security-review-c7, M2).
 # ---------------------------------------------------------------------------------------
 def _refuse(reason: str) -> None:
     raise ImproperlyConfigured(f"Refusing to boot: {reason}")
@@ -761,6 +859,8 @@ if IS_DEPLOYED_ENVIRONMENT and (
         f"WEBAUTHN_RP_ID={WEBAUTHN_RP_ID!r} / WEBAUTHN_ORIGINS={WEBAUTHN_ORIGINS!r} on deployed "
         f"environment {ENVIRONMENT!r}. Rule 8: set both to the app host (ADR 0002)."
     )
+if IS_DEPLOYED_ENVIRONMENT and not RATE_LIMITING_ENABLED:
+    _refuse(f"RATE_LIMITING_ENABLED=false on deployed environment {ENVIRONMENT!r}. Rule 9.")
 if STORAGE_BACKEND not in {"local", "s3"}:
     _refuse(f"STORAGE_BACKEND={STORAGE_BACKEND!r} is not one of local, s3.")
 

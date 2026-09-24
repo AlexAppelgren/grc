@@ -1,0 +1,697 @@
+{
+  "acceptCaseObligationLink": {
+    "medianMs": 18.1,
+    "p95Ms": 19.7,
+    "queries": 28
+  },
+  "addChangeDocument": {
+    "medianMs": 12.4,
+    "p95Ms": 15.4,
+    "queries": 26
+  },
+  "addChangeEvent": {
+    "medianMs": 11.6,
+    "p95Ms": 12.9,
+    "queries": 26
+  },
+  "approveFootprintRequest": {
+    "medianMs": 36.7,
+    "p95Ms": 38.6,
+    "queries": 38
+  },
+  "approveProposal": {
+    "medianMs": 51.2,
+    "p95Ms": 58.6,
+    "queries": 66
+  },
+  "ask": {
+    "medianMs": 43.8,
+    "p95Ms": 47.5,
+    "queries": 20
+  },
+  "closeProblemReport": {
+    "medianMs": 14.6,
+    "p95Ms": 15.6,
+    "queries": 19
+  },
+  "confirmChangeCuration": {
+    "medianMs": 35.0,
+    "p95Ms": 39.3,
+    "queries": 33
+  },
+  "confirmSoWhat": {
+    "medianMs": 12.2,
+    "p95Ms": 12.7,
+    "queries": 19
+  },
+  "consoleReissueEnrolment": {
+    "medianMs": 25.1,
+    "p95Ms": 31.5,
+    "queries": 39
+  },
+  "createAgentKey": {
+    "medianMs": 10.2,
+    "p95Ms": 12.0,
+    "queries": 20
+  },
+  "createApiKey": {
+    "medianMs": 8.4,
+    "p95Ms": 9.2,
+    "queries": 15
+  },
+  "createCalendarFeed": {
+    "medianMs": 11.8,
+    "p95Ms": 13.6,
+    "queries": 18
+  },
+  "createChange": {
+    "medianMs": 36.7,
+    "p95Ms": 40.6,
+    "queries": 40
+  },
+  "createConsoleTenant": {
+    "medianMs": 171.3,
+    "p95Ms": 198.7,
+    "queries": 371
+  },
+  "createEvalQuestion": {
+    "medianMs": 10.0,
+    "p95Ms": 12.9,
+    "queries": 21
+  },
+  "createFootprintRequest": {
+    "medianMs": 48.8,
+    "p95Ms": 52.2,
+    "queries": 43
+  },
+  "createProposal": {
+    "medianMs": 22.1,
+    "p95Ms": 24.6,
+    "queries": 29
+  },
+  "createRole": {
+    "medianMs": 16.8,
+    "p95Ms": 17.8,
+    "queries": 28
+  },
+  "createSource": {
+    "medianMs": 13.2,
+    "p95Ms": 16.2,
+    "queries": 25
+  },
+  "createTerm": {
+    "medianMs": 18.1,
+    "p95Ms": 22.1,
+    "queries": 24
+  },
+  "createVocabularyRow": {
+    "medianMs": 22.1,
+    "p95Ms": 25.0,
+    "queries": 28
+  },
+  "deactivateMember": {
+    "medianMs": 15.4,
+    "p95Ms": 17.4,
+    "queries": 20
+  },
+  "declineVocabularySuggestion": {
+    "medianMs": 10.9,
+    "p95Ms": 13.1,
+    "queries": 16
+  },
+  "findSimilar": {
+    "medianMs": 30.8,
+    "p95Ms": 35.8,
+    "queries": 12
+  },
+  "finishAgentRun": {
+    "medianMs": 16.9,
+    "p95Ms": 19.6,
+    "queries": 25
+  },
+  "getBriefing": {
+    "medianMs": 39.9,
+    "p95Ms": 42.2,
+    "queries": 28
+  },
+  "getCalendarIcs": {
+    "medianMs": 19.1,
+    "p95Ms": 22.9,
+    "queries": 18
+  },
+  "getChange": {
+    "medianMs": 33.4,
+    "p95Ms": 36.9,
+    "queries": 25
+  },
+  "getCurrentBriefing": {
+    "medianMs": 42.6,
+    "p95Ms": 59.3,
+    "queries": 28
+  },
+  "getEvalBaseline": {
+    "medianMs": 4.8,
+    "p95Ms": 6.9,
+    "queries": 7
+  },
+  "getFootprint": {
+    "medianMs": 39.5,
+    "p95Ms": 42.9,
+    "queries": 32
+  },
+  "getHome": {
+    "medianMs": 47.2,
+    "p95Ms": 58.0,
+    "queries": 29
+  },
+  "getInstrument": {
+    "medianMs": 20.5,
+    "p95Ms": 23.5,
+    "queries": 18
+  },
+  "getMe": {
+    "medianMs": 15.6,
+    "p95Ms": 21.4,
+    "queries": 17
+  },
+  "getObligation": {
+    "medianMs": 37.9,
+    "p95Ms": 55.2,
+    "queries": 31
+  },
+  "getObligationDiff": {
+    "medianMs": 11.5,
+    "p95Ms": 12.5,
+    "queries": 13
+  },
+  "getProduct": {
+    "medianMs": 0.5,
+    "p95Ms": 0.6,
+    "queries": 2
+  },
+  "getProposal": {
+    "medianMs": 17.8,
+    "p95Ms": 19.9,
+    "queries": 16
+  },
+  "getProvisionDiff": {
+    "medianMs": 10.8,
+    "p95Ms": 12.6,
+    "queries": 13
+  },
+  "getRecordSources": {
+    "medianMs": 9.4,
+    "p95Ms": 14.4,
+    "queries": 11
+  },
+  "getRoadmap": {
+    "medianMs": 17.4,
+    "p95Ms": 18.5,
+    "queries": 15
+  },
+  "getSourceCoverage": {
+    "medianMs": 12.2,
+    "p95Ms": 15.4,
+    "queries": 10
+  },
+  "getTenant": {
+    "medianMs": 11.6,
+    "p95Ms": 12.3,
+    "queries": 16
+  },
+  "getVocabularyRow": {
+    "medianMs": 9.6,
+    "p95Ms": 13.0,
+    "queries": 12
+  },
+  "inviteMember": {
+    "medianMs": 20.1,
+    "p95Ms": 23.2,
+    "queries": 29
+  },
+  "listAgentDefinitions": {
+    "medianMs": 5.5,
+    "p95Ms": 5.7,
+    "queries": 9
+  },
+  "listAgentKeys": {
+    "medianMs": 6.5,
+    "p95Ms": 7.2,
+    "queries": 9
+  },
+  "listAgentRuns": {
+    "medianMs": 14.0,
+    "p95Ms": 14.7,
+    "queries": 9
+  },
+  "listAiGenerations": {
+    "medianMs": 18.4,
+    "p95Ms": 23.6,
+    "queries": 10
+  },
+  "listApiKeys": {
+    "medianMs": 6.0,
+    "p95Ms": 7.4,
+    "queries": 10
+  },
+  "listAuditEvents": {
+    "medianMs": 14.6,
+    "p95Ms": 21.7,
+    "queries": 10
+  },
+  "listAuthorities": {
+    "medianMs": 9.8,
+    "p95Ms": 10.7,
+    "queries": 12
+  },
+  "listCalendarFeeds": {
+    "medianMs": 9.9,
+    "p95Ms": 14.7,
+    "queries": 13
+  },
+  "listChanges": {
+    "medianMs": 39.2,
+    "p95Ms": 59.8,
+    "queries": 22
+  },
+  "listConsoleChanges": {
+    "medianMs": 25.9,
+    "p95Ms": 34.0,
+    "queries": 17
+  },
+  "listConsoleTenants": {
+    "medianMs": 6.7,
+    "p95Ms": 7.1,
+    "queries": 9
+  },
+  "listEvalQuestions": {
+    "medianMs": 8.6,
+    "p95Ms": 9.5,
+    "queries": 9
+  },
+  "listEvalRuns": {
+    "medianMs": 5.4,
+    "p95Ms": 5.9,
+    "queries": 9
+  },
+  "listFootprintRequests": {
+    "medianMs": 27.9,
+    "p95Ms": 31.2,
+    "queries": 24
+  },
+  "listInstrumentProvisions": {
+    "medianMs": 15.4,
+    "p95Ms": 16.4,
+    "queries": 17
+  },
+  "listInstruments": {
+    "medianMs": 38.4,
+    "p95Ms": 55.0,
+    "queries": 23
+  },
+  "listInvitations": {
+    "medianMs": 11.1,
+    "p95Ms": 12.4,
+    "queries": 15
+  },
+  "listJurisdictions": {
+    "medianMs": 10.6,
+    "p95Ms": 12.7,
+    "queries": 12
+  },
+  "listLanguages": {
+    "medianMs": 5.0,
+    "p95Ms": 5.3,
+    "queries": 9
+  },
+  "listLibraryUpdates": {
+    "medianMs": 51.7,
+    "p95Ms": 57.7,
+    "queries": 26
+  },
+  "listMemberSessions": {
+    "medianMs": 9.5,
+    "p95Ms": 11.8,
+    "queries": 12
+  },
+  "listMembers": {
+    "medianMs": 17.9,
+    "p95Ms": 19.7,
+    "queries": 14
+  },
+  "listMyPasskeys": {
+    "medianMs": 5.9,
+    "p95Ms": 7.5,
+    "queries": 9
+  },
+  "listMySessions": {
+    "medianMs": 6.7,
+    "p95Ms": 7.6,
+    "queries": 10
+  },
+  "listObligationChanges": {
+    "medianMs": 36.9,
+    "p95Ms": 38.8,
+    "queries": 23
+  },
+  "listObligations": {
+    "medianMs": 56.4,
+    "p95Ms": 67.3,
+    "queries": 30
+  },
+  "listPermissions": {
+    "medianMs": 4.8,
+    "p95Ms": 5.2,
+    "queries": 8
+  },
+  "listProblemReports": {
+    "medianMs": 14.1,
+    "p95Ms": 17.8,
+    "queries": 14
+  },
+  "listProposals": {
+    "medianMs": 24.2,
+    "p95Ms": 26.0,
+    "queries": 13
+  },
+  "listRoles": {
+    "medianMs": 9.8,
+    "p95Ms": 10.2,
+    "queries": 12
+  },
+  "listSecurityLog": {
+    "medianMs": 5.6,
+    "p95Ms": 5.8,
+    "queries": 10
+  },
+  "listSources": {
+    "medianMs": 8.4,
+    "p95Ms": 9.8,
+    "queries": 13
+  },
+  "listTaxonomyDimensions": {
+    "medianMs": 14.9,
+    "p95Ms": 15.9,
+    "queries": 12
+  },
+  "listTenantProposals": {
+    "medianMs": 8.8,
+    "p95Ms": 10.7,
+    "queries": 10
+  },
+  "listTerms": {
+    "medianMs": 30.2,
+    "p95Ms": 32.2,
+    "queries": 14
+  },
+  "listUpcoming": {
+    "medianMs": 16.4,
+    "p95Ms": 18.7,
+    "queries": 14
+  },
+  "listVocabularies": {
+    "medianMs": 29.6,
+    "p95Ms": 31.9,
+    "queries": 48
+  },
+  "listVocabularyRows": {
+    "medianMs": 10.9,
+    "p95Ms": 12.5,
+    "queries": 12
+  },
+  "listVocabularySuggestions": {
+    "medianMs": 8.2,
+    "p95Ms": 11.0,
+    "queries": 11
+  },
+  "markVisit": {
+    "medianMs": 8.4,
+    "p95Ms": 9.5,
+    "queries": 14
+  },
+  "mergeVocabularyRow": {
+    "medianMs": 21.0,
+    "p95Ms": 23.2,
+    "queries": 21
+  },
+  "openInvitation": {
+    "medianMs": 8.3,
+    "p95Ms": 8.7,
+    "queries": 16
+  },
+  "passkeyAuthenticateOptions": {
+    "medianMs": 3.0,
+    "p95Ms": 3.3,
+    "queries": 8
+  },
+  "passkeyAuthenticateVerify": {
+    "medianMs": 11.4,
+    "p95Ms": 13.4,
+    "queries": 19
+  },
+  "passkeyRegisterOptions": {
+    "medianMs": 10.8,
+    "p95Ms": 15.3,
+    "queries": 16
+  },
+  "passkeyRegisterVerify": {
+    "medianMs": 13.8,
+    "p95Ms": 17.5,
+    "queries": 22
+  },
+  "rateAnswer": {
+    "medianMs": 9.1,
+    "p95Ms": 10.0,
+    "queries": 15
+  },
+  "recordSourceCheck": {
+    "medianMs": 14.6,
+    "p95Ms": 19.6,
+    "queries": 26
+  },
+  "refreshSession": {
+    "medianMs": 5.2,
+    "p95Ms": 5.7,
+    "queries": 11
+  },
+  "reissueEnrolment": {
+    "medianMs": 25.6,
+    "p95Ms": 29.2,
+    "queries": 36
+  },
+  "rejectFootprintRequest": {
+    "medianMs": 33.1,
+    "p95Ms": 36.9,
+    "queries": 31
+  },
+  "rejectProposal": {
+    "medianMs": 13.4,
+    "p95Ms": 17.2,
+    "queries": 20
+  },
+  "removeCaseObligationLink": {
+    "medianMs": 18.0,
+    "p95Ms": 20.3,
+    "queries": 28
+  },
+  "removeMyPasskey": {
+    "medianMs": 9.2,
+    "p95Ms": 13.1,
+    "queries": 16
+  },
+  "renameMyPasskey": {
+    "medianMs": 8.6,
+    "p95Ms": 10.4,
+    "queries": 15
+  },
+  "reorderVocabulary": {
+    "medianMs": 17.4,
+    "p95Ms": 20.2,
+    "queries": 22
+  },
+  "replaceChangeObligations": {
+    "medianMs": 22.0,
+    "p95Ms": 24.2,
+    "queries": 30
+  },
+  "reportInstrumentProblem": {
+    "medianMs": 10.8,
+    "p95Ms": 12.0,
+    "queries": 16
+  },
+  "reportObligationProblem": {
+    "medianMs": 12.0,
+    "p95Ms": 13.4,
+    "queries": 17
+  },
+  "requestCode": {
+    "medianMs": 11.3,
+    "p95Ms": 12.1,
+    "queries": 21
+  },
+  "resendInvitation": {
+    "medianMs": 16.8,
+    "p95Ms": 18.8,
+    "queries": 21
+  },
+  "restoreVocabularyRow": {
+    "medianMs": 15.2,
+    "p95Ms": 19.3,
+    "queries": 18
+  },
+  "retireRole": {
+    "medianMs": 13.8,
+    "p95Ms": 15.1,
+    "queries": 21
+  },
+  "retireVocabularyRow": {
+    "medianMs": 14.4,
+    "p95Ms": 24.3,
+    "queries": 18
+  },
+  "reverifyObligation": {
+    "medianMs": 11.6,
+    "p95Ms": 12.4,
+    "queries": 21
+  },
+  "revokeAgentKey": {
+    "medianMs": 10.9,
+    "p95Ms": 12.3,
+    "queries": 20
+  },
+  "revokeApiKey": {
+    "medianMs": 9.9,
+    "p95Ms": 10.6,
+    "queries": 19
+  },
+  "revokeCalendarFeed": {
+    "medianMs": 9.8,
+    "p95Ms": 10.6,
+    "queries": 16
+  },
+  "revokeInvitation": {
+    "medianMs": 13.2,
+    "p95Ms": 18.6,
+    "queries": 19
+  },
+  "revokeMemberSessions": {
+    "medianMs": 14.3,
+    "p95Ms": 16.2,
+    "queries": 18
+  },
+  "revokeMySession": {
+    "medianMs": 9.4,
+    "p95Ms": 14.3,
+    "queries": 17
+  },
+  "saveSoWhat": {
+    "medianMs": 12.2,
+    "p95Ms": 12.8,
+    "queries": 19
+  },
+  "search": {
+    "medianMs": 38.6,
+    "p95Ms": 56.1,
+    "queries": 10
+  },
+  "setTenantAi": {
+    "medianMs": 16.8,
+    "p95Ms": 17.8,
+    "queries": 24
+  },
+  "signOut": {
+    "medianMs": 5.9,
+    "p95Ms": 7.6,
+    "queries": 14
+  },
+  "startAgentRun": {
+    "medianMs": 10.0,
+    "p95Ms": 12.6,
+    "queries": 21
+  },
+  "stepUpOptions": {
+    "medianMs": 10.4,
+    "p95Ms": 12.9,
+    "queries": 16
+  },
+  "stepUpVerify": {
+    "medianMs": 13.9,
+    "p95Ms": 16.2,
+    "queries": 22
+  },
+  "suggestVocabularyRow": {
+    "medianMs": 15.1,
+    "p95Ms": 19.5,
+    "queries": 20
+  },
+  "unwatchMarket": {
+    "medianMs": 15.9,
+    "p95Ms": 21.8,
+    "queries": 22
+  },
+  "updateChange": {
+    "medianMs": 30.0,
+    "p95Ms": 31.6,
+    "queries": 35
+  },
+  "updateChangeEvent": {
+    "medianMs": 12.4,
+    "p95Ms": 14.9,
+    "queries": 23
+  },
+  "updateMe": {
+    "medianMs": 19.9,
+    "p95Ms": 23.9,
+    "queries": 23
+  },
+  "updateMember": {
+    "medianMs": 26.9,
+    "p95Ms": 33.9,
+    "queries": 32
+  },
+  "updateRole": {
+    "medianMs": 18.4,
+    "p95Ms": 24.8,
+    "queries": 29
+  },
+  "updateSource": {
+    "medianMs": 13.2,
+    "p95Ms": 19.7,
+    "queries": 24
+  },
+  "updateTenant": {
+    "medianMs": 18.3,
+    "p95Ms": 23.5,
+    "queries": 25
+  },
+  "updateTerm": {
+    "medianMs": 17.6,
+    "p95Ms": 19.9,
+    "queries": 21
+  },
+  "updateVocabularyRow": {
+    "medianMs": 21.1,
+    "p95Ms": 27.0,
+    "queries": 23
+  },
+  "verifyCode": {
+    "medianMs": 9.7,
+    "p95Ms": 13.5,
+    "queries": 16
+  },
+  "verifyInvitationCode": {
+    "medianMs": 10.4,
+    "p95Ms": 13.4,
+    "queries": 16
+  },
+  "watchMarket": {
+    "medianMs": 16.9,
+    "p95Ms": 17.7,
+    "queries": 23
+  },
+  "withdrawFootprintRequest": {
+    "medianMs": 34.1,
+    "p95Ms": 46.0,
+    "queries": 31
+  }
+}

@@ -14,6 +14,10 @@ directions rather than one:
 - **The gate.** A key without `upcoming:read` is refused; a key holding every scope there is
   reaches nothing else here (`tests_contract.py` owns that half).
 
+The subscription half of HOM-04 lives beside this one, in `tests_feed.py`, because the
+module it proves does (`apps/home/feed.py`: the library fence wants a module that writes a
+bank's rows apart from one that reads library records).
+
 Nothing here depends on the day the suite runs: the clock is frozen at a fixed instant and
 every date is written out (playbook 8.3).
 """

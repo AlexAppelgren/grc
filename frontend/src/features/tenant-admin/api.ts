@@ -37,6 +37,10 @@ export async function updateTenant(body: TenantUpdate): Promise<Tenant> {
   return (await api.patch<Tenant>(TENANT, body)).data;
 }
 
+export async function setTenantAi(enabled: boolean): Promise<Tenant> {
+  return (await api.put<Tenant>(`${TENANT}/ai`, { enabled })).data;
+}
+
 export async function listMembers(query: PageQuery): Promise<Page<Member>> {
   return (await api.get<Page<Member>>(`${TENANT}/members`, { params: query })).data;
 }

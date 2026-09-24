@@ -95,13 +95,15 @@ def watch_write(reason: str) -> Iterator[None]:
 
     The wrapper sits on the default connection, the one the application writes through;
     the `app` alias exists for the guards, which read. A refusal aborts the transaction it
-    happened in, which is what a fence breach should do.
+    happened in, which is what a fence breach should do. The database holds the same line
+    a second time: the door named below opens the seven watch tables and no other (H16,
+    shared 0008, ADR 0058).
 
     A shared source is written with no tenant active. `source` is the one watch table with
     a zone column (WAT-06), and its write rule is the session's own zone alone, so a
     session with a tenant activated writes that bank's private source and only a session
     with none writes the shared row a sweep reads (`c5-seed-watch`, `seed_e2e`)."""
-    with library_write(f"watch: {reason}"), connections[DEFAULT_DB_ALIAS].execute_wrapper(
+    with library_write(f"watch: {reason}", door="watch"), connections[DEFAULT_DB_ALIAS].execute_wrapper(
         _refuse_writes_outside_the_watch_zone
     ):
         yield
@@ -127,3 +129,20 @@ def upsert(model: type[Any], reason: str, *, lookup: dict[str, Any], defaults: d
     with tenancy.platform_zone(), watch_write(reason):
         row, _ = model.objects.update_or_create(**lookup, defaults=defaults)
         return row
+
+
+def repoint(moving: Any, twins: Any, field: str, target: Any) -> int:
+    """Re-point a watch table's rows from a merged-away library value to its target (VOC-02,
+    VOC-07), for an approved merge proposal. apps/proposals/apply.py already holds the
+    fence open for that approval, so this adds the watch door and nothing else: in Python
+    its own refusal, so the statements reach the watch tables and no inventory table, and in
+    the database the watch door itself, which the watch tables demand and which `library_door()`
+    swaps back to the approval's own on the way out (H16, ADR 0058), as the index door does
+    for a rebuild. It opens no second `library_write()` of its own, so the approval route
+    still reaches one writer, `apply()` (apps/shared/tests_library_fence.py).
+
+    `twins` already carry `target` beside the row they would duplicate (a unique
+    constraint), so they are dropped rather than moved, and only the moved rows count."""
+    with tenancy.library_door("watch"), connections[DEFAULT_DB_ALIAS].execute_wrapper(_refuse_writes_outside_the_watch_zone):
+        twins.delete()
+        return int(moving.update(**{field: target}))
