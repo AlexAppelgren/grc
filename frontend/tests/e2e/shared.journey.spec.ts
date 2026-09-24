@@ -170,6 +170,16 @@ const TENANT_SCREENS: readonly Screen[] = [
   },
 ];
 
+// NFR-S7's four parts (see the journey): the tenant screens three ways by their
+// position in the registry, measured by a bank's administrator, and every other
+// screen by the same three people the single journey used.
+const SCREEN_PARTS: readonly { name: string; logins: readonly string[]; picks: (destination: (typeof destinations)[number], index: number) => boolean }[] = [
+  { name: 'tenant screens, part 1 of 3', logins: [LOGINS.admin], picks: (d, index) => d.surface === 'tenant' && index % 3 === 0 },
+  { name: 'tenant screens, part 2 of 3', logins: [LOGINS.admin], picks: (d, index) => d.surface === 'tenant' && index % 3 === 1 },
+  { name: 'tenant screens, part 3 of 3', logins: [LOGINS.admin], picks: (d, index) => d.surface === 'tenant' && index % 3 === 2 },
+  { name: 'console and every other screen', logins: [LOGINS.admin, LOGINS.editor, LOGINS.platform], picks: (d) => d.surface !== 'tenant' },
+];
+
 test.describe('shared journeys', () => {
   test('NFR-S7: Every registered destination has a screen budget', () => {
     // A destination joins the registry with a row in support/screen-budgets.ts,
@@ -177,39 +187,51 @@ test.describe('shared journeys', () => {
     expect(budgetGaps()).toEqual([]);
   });
 
-  test('NFR-S7: Every screen reaches real data within its budget', async ({ page, apiGuard }, testInfo) => {
-    // Every sample loads a start screen from cold before it navigates, so the
-    // time limit grows with the samples and the screens.
-    test.setTimeout(60_000 + SCREEN_SAMPLES * destinations.length * 6_000);
-    allowFreshContext(apiGuard);
+  // The screens are measured in four parts so CI's shards run them side by side
+  // (D-90). The parts are a partition by construction: the tenant screens by
+  // their position in the registry, three ways, and every other screen in the
+  // fourth, so no destination can fall between them.
+  for (const part of SCREEN_PARTS) {
+    test(`NFR-S7: Every screen reaches real data within its budget (${part.name})`, async ({ page, apiGuard }, testInfo) => {
+      const mine = destinations.filter((destination, index) => part.picks(destination, index));
+      // Every sample loads a start screen from cold before it navigates, so the
+      // time limit grows with the samples and the screens.
+      test.setTimeout(60_000 + SCREEN_SAMPLES * mine.length * 6_000);
+      allowFreshContext(apiGuard);
 
-    // A bank's administrator unlocks every tenant destination; the console's
-    // destinations are split between a library editor and a platform admin.
-    // Each person measures what their own permissions open, read from GET /me
-    // exactly as the client gate reads them, never from a role name.
-    const times = new Map<string, number>();
-    for (const login of [LOGINS.admin, LOGINS.editor, LOGINS.platform]) {
-      const me = page.waitForResponse((response) => response.request().method() === 'GET' && new URL(response.url()).pathname === '/api/v1/me' && response.ok());
-      await signInAs(page, login);
-      const principal = (await (await me).json()) as MeRead;
-      const surface = surfaceOf(principal);
-      for (const destination of destinations) {
-        if (destination.surface !== surface || times.has(destination.id) || !unlocks(destination.anyOfPermissions, principal.permissions)) continue;
-        times.set(destination.id, await measureScreen(page, destination));
+      // A bank's administrator unlocks every tenant destination; the console's
+      // destinations are split between a library editor and a platform admin.
+      // Each person measures what their own permissions open, read from GET /me
+      // exactly as the client gate reads them, never from a role name.
+      const times = new Map<string, number>();
+      for (const login of part.logins) {
+        const me = page.waitForResponse((response) => response.request().method() === 'GET' && new URL(response.url()).pathname === '/api/v1/me' && response.ok());
+        await signInAs(page, login);
+        const principal = (await (await me).json()) as MeRead;
+        const surface = surfaceOf(principal);
+        for (const destination of mine) {
+          if (destination.surface !== surface || times.has(destination.id) || !unlocks(destination.anyOfPermissions, principal.permissions)) continue;
+          times.set(destination.id, await measureScreen(page, destination));
+        }
+        await signOut(page);
       }
-      await signOut(page);
-    }
 
-    const report = destinations.map((d) => ({ id: d.id, href: d.href, budgetMs: budgetOf(d).budgetMs, medianMs: times.get(d.id) ?? null }));
-    await testInfo.attach('screen-times.json', { body: JSON.stringify({ samples: SCREEN_SAMPLES, screens: report }, null, 2), contentType: 'application/json' });
-    expect(
-      report.filter((r) => r.medianMs === null).map((r) => r.id),
-      'destinations no seeded login could open',
-    ).toEqual([]);
-    expect(
-      report.filter((r) => r.medianMs !== null && r.medianMs > r.budgetMs).map((r) => `${r.href}: ${Math.round(r.medianMs ?? 0)} ms, over ${r.budgetMs} ms`),
-      'screens over their budget',
-    ).toEqual([]);
+      const report = mine.map((d) => ({ id: d.id, href: d.href, budgetMs: budgetOf(d).budgetMs, medianMs: times.get(d.id) ?? null }));
+      await testInfo.attach('screen-times.json', { body: JSON.stringify({ samples: SCREEN_SAMPLES, screens: report }, null, 2), contentType: 'application/json' });
+      expect(
+        report.filter((r) => r.medianMs === null).map((r) => r.id),
+        'destinations no seeded login could open',
+      ).toEqual([]);
+      expect(
+        report.filter((r) => r.medianMs !== null && r.medianMs > r.budgetMs).map((r) => `${r.href}: ${Math.round(r.medianMs ?? 0)} ms, over ${r.budgetMs} ms`),
+        'screens over their budget',
+      ).toEqual([]);
+    });
+  }
+
+  test('NFR-S7: The four parts measure every registered destination exactly once', () => {
+    const counts = destinations.map((destination, index) => SCREEN_PARTS.filter((part) => part.picks(destination, index)).length);
+    expect(counts.filter((count) => count !== 1)).toEqual([]);
   });
 
   test("NFR-S9: Every text-on-surface pair passes WCAG AA in both themes", async ({ page }) => {
