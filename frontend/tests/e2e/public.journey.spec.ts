@@ -1,5 +1,7 @@
 import { expect, test } from './support/api-guard';
-import { allowFreshContext } from './support/passkeys';
+import { allowFreshContext, BACKEND_URL, LOGINS, signInAs, signOut } from './support/passkeys';
+
+const PLATE = 'A register of record for everything regulation asks of your bank.';
 
 // The public page (design/public/): what a visitor who is not signed in sees at
 // the front door, and the way from it into the passkey sign-in flow. The page
@@ -11,8 +13,37 @@ test.describe('public page', () => {
     allowFreshContext(apiGuard);
     await page.goto('/');
     await expect(page).toHaveURL(/\/welcome$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'A register of record for everything regulation asks of your bank.' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
     await expect(page.getByRole('img', { name: 'bleqq, pronounced blek' }).first()).toBeVisible();
+  });
+
+  test('the sign-in page has a way back to the public page', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await page.goto('/sign-in');
+    await page.getByRole('link', { name: '← Back' }).click();
+    await expect(page).toHaveURL(/\/welcome$/);
+    await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
+  });
+
+  test('signing out lands on the public page and kills the session on the server', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.reader);
+    const refresh = (await page.context().cookies(BACKEND_URL)).find((cookie) => cookie.name === 'cw_refresh');
+    expect(refresh, 'the refresh cookie a signed-in browser holds').toBeDefined();
+
+    await signOut(page);
+    await expect(page).toHaveURL(/\/welcome$/);
+
+    // The browser no longer holds the cookie, and a copy taken before sign-out
+    // is dead too: the session row is revoked, and every access token checks it.
+    expect((await page.context().cookies(BACKEND_URL)).some((cookie) => cookie.name === 'cw_refresh')).toBe(false);
+    const replay = await page.request.post(`${BACKEND_URL}/api/v1/auth/refresh`, { headers: { Cookie: `cw_refresh=${refresh?.value ?? ''}` } });
+    expect(replay.status()).toBe(401);
+
+    // Back at the front door nothing signs the person in again.
+    await page.goto('/');
+    await expect(page).toHaveURL(/\/welcome$/);
+    await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0);
   });
 
   test('Sign in in the top bar opens the passkey sign-in flow', async ({ page, apiGuard }) => {

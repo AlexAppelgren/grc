@@ -1,7 +1,7 @@
 'use client';
 
 import { useIsMutating } from '@tanstack/react-query';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 
 import { ErrorState } from '@/components/ui/States';
@@ -11,25 +11,25 @@ import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PUBLIC_HOME } from '@/shared/navigation/registry';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 
-// Every tenant screen sits behind this gate: an anonymous visitor goes to
-// /sign-in, or to the public page when they came to / (the site's front door,
-// not a deep link), an enrolment session to /enrol (it can reach nothing else,
-// AC-ID2), and a signed-in person gets the permission list for the client
-// gate and the catalog in their own language. While a sign-out is pending
+// Every tenant screen sits behind this gate: a visitor with no session goes to
+// the public page, whether they never signed in, signed out, or their session
+// ended by itself (idle, revoked, past its limit; the next request finds out),
+// and signs in from there. An enrolment session goes to /enrol (it can reach
+// nothing else, AC-ID2), and a signed-in person gets the permission list for
+// the client gate and the catalog in their own language. While a sign-out is pending
 // the screens are taken down first, so none of them asks the server for
 // anything once the session has ended.
 
 export function SessionGate({ children }: { children: ReactNode }) {
   const t = useT();
   const router = useRouter();
-  const pathname = usePathname();
   const session = useSession();
   const signingOut = useIsMutating({ mutationKey: signOutKey }) > 0;
 
   useEffect(() => {
-    if (session.status === 'anonymous') router.replace(pathname === '/' ? PUBLIC_HOME : '/sign-in');
+    if (session.status === 'anonymous') router.replace(PUBLIC_HOME);
     if (session.status === 'enrolment') router.replace('/enrol');
-  }, [session.status, router, pathname]);
+  }, [session.status, router]);
 
   if (session.status === 'error') {
     return (

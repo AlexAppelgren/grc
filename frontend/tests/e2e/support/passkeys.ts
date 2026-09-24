@@ -149,7 +149,8 @@ export async function signOut(page: Page): Promise<void> {
     await page.locator('[data-who-panel]').getByRole('button', { name: /, account menu$/ }).click();
     await page.getByRole('menuitem', { name: 'Sign out' }).click();
   }
-  await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
+  // Sign-out ends on the public page (public.journey.spec.ts).
+  await expect(page.getByRole('heading', { level: 1, name: 'A register of record for everything regulation asks of your bank.' })).toBeVisible();
 }
 
 // One-off helper to mint a fixed credential for a new seeded login: run it

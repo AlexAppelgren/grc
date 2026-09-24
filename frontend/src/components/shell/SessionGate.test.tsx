@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useSignOutToSignIn } from '@/components/shell/AccountMenu';
+import { useSignOutToPublicPage } from '@/components/shell/AccountMenu';
 import { SessionGate } from '@/components/shell/SessionGate';
 import type { Me } from '@/features/identity/types';
 import { createT } from '@/shared/i18n';
@@ -38,7 +38,7 @@ const me: Me = {
 
 /** A screen with the account's sign out on it, as the rail's menu and the More sheet have. */
 function Screen() {
-  const { signOut } = useSignOutToSignIn();
+  const { signOut } = useSignOutToPublicPage();
   return (
     <button type="button" onClick={signOut}>
       {t('shell.signOut')}
@@ -95,7 +95,7 @@ describe('SessionGate', () => {
 
     // Settled: the redirect runs although the component that asked for it has unmounted.
     server.answer();
-    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/sign-in'));
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/welcome'));
     expect(server.paths).toEqual(['/api/v1/auth/sign-out']);
     expect(tokenStore.get()).toBeNull();
     expect(screen.queryByRole('button', { name: t('shell.signOut') })).not.toBeInTheDocument();

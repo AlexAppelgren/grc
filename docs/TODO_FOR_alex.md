@@ -1274,9 +1274,11 @@ design could be finished; say the word and the file changes in one block.
 
 ## The public page is built; three things before it faces the world (2026-09-24)
 
-The page is live in the app at `/welcome`, and an anonymous visitor at `/`
-lands there instead of on sign-in (default taken: the front door of the site
-should explain it; every deep link still goes straight to sign-in).
+The page is in the app at `/welcome`. As you asked on 2026-09-24, it is where
+a person without a session ends up: signing out, a session that timed out or
+was revoked, or a first visit to any address. The sign-in page has a way back
+to it, and sign-out revokes the session on the server so neither token works
+again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 
 - [ ] **Set `NEXT_PUBLIC_SUPPORT_CONTACT`** on the web service, an email
       address. Until then "Write to us" is hidden and the invitation section
@@ -1289,6 +1291,21 @@ should explain it; every deep link still goes straight to sign-in).
       exit and the assurance pack, which are R3 (chunks 12 and 14, pending).
       The copy is as you approved it; say which to soften and the catalog
       changes in one file.
+- [ ] **An idle session is found out at the next action, not on its own.**
+      The server ends a session after `SESSION_IDLE_MINUTES_DEFAULT` (30)
+      minutes without a refresh; the app learns it at the person's next click
+      and goes to the public page then. A tab left open keeps showing what it
+      showed until someone touches it. Default if you say nothing: it stays so.
+      The alternative is a timer in the app that signs out on its own after the
+      same number of idle minutes, which needs `GET /me` to carry the limit so
+      it is not configured twice.
+- [ ] **Sign-out on a dead connection.** If the sign-out request cannot reach
+      the server, the app still forgets its token and leaves for the public
+      page, but the server session lives until it idles out, and the refresh
+      cookie (which only the server can clear) could sign the browser back in
+      before then. That is how it was built in chunk 1 ("whatever the server
+      answered"). Say if you would rather the app stay put and say the
+      sign-out did not go through.
 - [ ] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. It
       follows the app's existing terms (skyldighet, förslag, godkännande), but
       a native read of the headline and the questions is worth five minutes.

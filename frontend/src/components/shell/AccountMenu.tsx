@@ -13,7 +13,7 @@ import { useLanguages } from '@/features/tenant-admin/hooks';
 import type { LanguageRef } from '@/features/tenant-admin/types';
 import { isLocale } from '@/shared/i18n';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
-import { ACCOUNT_PARENT, childDestinations } from '@/shared/navigation/registry';
+import { ACCOUNT_PARENT, childDestinations, PUBLIC_HOME } from '@/shared/navigation/registry';
 
 // The signed-in person as one quiet row in the rail's footer: name, then
 // organisation and roles, and a menu for my passkeys, my sessions, the
@@ -60,10 +60,10 @@ export function useInterfaceLanguages(): { options: LanguageRef[]; choose: (key:
   };
 }
 
-/** Signs out, then leaves for sign in whatever the server answered. The rail's menu and the More sheet share it. */
-export function useSignOutToSignIn(): { pending: boolean; signOut: () => void } {
+/** Signs out, then leaves for the public page whatever the server answered. The rail's menu and the More sheet share it. */
+export function useSignOutToPublicPage(): { pending: boolean; signOut: () => void } {
   const router = useRouter();
-  const signOut = useSignOut(() => router.replace('/sign-in'));
+  const signOut = useSignOut(() => router.replace(PUBLIC_HOME));
   return { pending: signOut.isPending, signOut: () => signOut.mutate() };
 }
 
@@ -72,7 +72,7 @@ export function AccountMenu() {
   const locale = useLocale();
   const { me } = useSession();
   const { isCompact } = useSidebar();
-  const { pending, signOut } = useSignOutToSignIn();
+  const { pending, signOut } = useSignOutToPublicPage();
   const languages = useInterfaceLanguages();
   const languageLabel = useId();
   const languageError = useId();

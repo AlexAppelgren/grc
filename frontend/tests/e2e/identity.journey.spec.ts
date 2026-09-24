@@ -266,9 +266,10 @@ test.describe('identity journeys', () => {
       await theirs.getByRole('button', { name: 'Sign out this device' }).click();
       await expect(page.locator('[data-session-id]')).toHaveCount(1);
 
-      // The other device's next request answers 401 and it lands on sign-in.
+      // The other device's next request answers 401 and it lands on the public page.
       await otherPage.goto('/me/sessions');
-      await expect(otherPage.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
+      await expect(otherPage).toHaveURL(/\/welcome$/);
+      await expect(otherPage.getByRole('heading', { level: 1, name: 'A register of record for everything regulation asks of your bank.' })).toBeVisible();
     } finally {
       await other.close();
     }

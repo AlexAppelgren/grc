@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   description: t('public.meta.description'),
 };
 
-// The public page (design/public/index.html). An anonymous visitor at / lands
-// here (SessionGate); every other gated address still sends them to sign in.
+// The public page (design/public/index.html). A person without a session ends
+// up here from any gated address (SessionGate), and after signing out.
 export default function WelcomePage() {
   return <PublicPage />;
 }
