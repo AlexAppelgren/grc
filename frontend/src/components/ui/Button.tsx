@@ -9,7 +9,8 @@ import { cn } from '@/shared/utils/cn';
 // state-neutral-05 overlay (`hover-fill`, theme.css); danger hovers on
 // `negative-hover`, a fill that goes one step deeper in dark so the label
 // keeps AA on it (theme.css).
-const button = cva(
+// Exported for links that look like buttons (the public page's calls to action).
+export const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 rounded-control border text-body font-medium whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:size-4',
   {
     variants: {
@@ -28,13 +29,13 @@ const button = cva(
   },
 );
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof button> {
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   children: ReactNode;
 }
 
 export function Button({ variant, size, className, type = 'button', children, ...rest }: ButtonProps) {
   return (
-    <button type={type} className={cn(button({ variant, size }), className)} {...rest}>
+    <button type={type} className={cn(buttonVariants({ variant, size }), className)} {...rest}>
       {children}
     </button>
   );

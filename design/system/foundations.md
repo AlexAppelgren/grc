@@ -21,7 +21,7 @@ weights: 400, 500, 600 (700 is gone).
 
 | Role | Size / line height | Weight | Tracking | Was |
 |---|---|---|---|---|
-| `hero` | 36 / 40 | 600 | -0.025em | public pages only, unchanged in use |
+| `hero` | 36 to 60 (`clamp`) / 1.04 | 400 | -0.012em | public pages only, in Libre Caslon Display (Alex approved the public page 2026-09-24; was 36 / 40 at 600 for a grotesque) |
 | `display` | 24 / 32 (phone 20 / 28) | 600 | -0.02em | 32 px at 400, lead headlines up to 30 px |
 | `title` | 16 / 24 | 600 | -0.01em | 20 px at 500, stat values 36 px |
 | `body` | 14 / 20 (long prose 14 / 22) | 400 | 0 | 16 / 24 |

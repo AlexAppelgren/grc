@@ -98,6 +98,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | Variable | Services | Local | CI | Railway test | Notes |
 |---|---|---|---|---|---|
 | `NEXT_PUBLIC_API_URL` | web | `http://localhost:8000` | `http://localhost:8000` | the api's public URL | Baked at build time by Next; a change needs a rebuild |
+| `NEXT_PUBLIC_SUPPORT_CONTACT` | web | empty | empty | the address that answers access requests | An email address. The public page's "Write to us" opens a mail to it; empty hides the link. Baked at build time |
 
 ## Rules
 
