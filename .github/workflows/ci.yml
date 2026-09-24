@@ -325,7 +325,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     services:
       db:
         image: pgvector/pgvector:pg16
@@ -531,7 +531,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6]
     services:
       db:
         image: pgvector/pgvector:pg16
@@ -567,17 +567,6 @@ jobs:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Create database roles and extensions
-        uses: ./.github/actions/init-db
-        with:
-          container-id: ${{ job.services.db.id }}
-
-      - name: Set up backend toolchain
-        uses: ./.github/actions/setup-backend
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          poetry-version: ${{ env.POETRY_VERSION }}
-
       - name: Set up frontend toolchain
         uses: ./.github/actions/setup-frontend
         with:
@@ -589,11 +578,33 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
 
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      # Chromium and its system packages install while the database and the backend
+      # toolchain are set up (D-90): the apt step alone takes from 15 s to well over a
+      # minute depending on the mirror. "Chromium is installed" waits for it and fails
+      # the job with its log if it failed.
+      - name: Install Chromium (in the background)
+        run: |
+          (npx playwright install --with-deps chromium > "$RUNNER_TEMP/chromium.log" 2>&1; echo $? > "$RUNNER_TEMP/chromium.exit") &
+
+      - name: Create database roles and extensions
+        uses: ./.github/actions/init-db
+        with:
+          container-id: ${{ job.services.db.id }}
+
+      - name: Set up backend toolchain
+        uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Build design tokens
         run: npm run build:tokens
+
+      - name: Chromium is installed
+        run: |
+          until [ -f "$RUNNER_TEMP/chromium.exit" ]; do sleep 1; done
+          cat "$RUNNER_TEMP/chromium.log"
+          exit "$(cat "$RUNNER_TEMP/chromium.exit")"
 
       - name: Run journeys
         env:
@@ -666,17 +677,6 @@ jobs:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Create database roles and extensions
-        uses: ./.github/actions/init-db
-        with:
-          container-id: ${{ job.services.db.id }}
-
-      - name: Set up backend toolchain
-        uses: ./.github/actions/setup-backend
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          poetry-version: ${{ env.POETRY_VERSION }}
-
       - name: Set up frontend toolchain
         uses: ./.github/actions/setup-frontend
         with:
@@ -688,11 +688,33 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
 
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      # Chromium and its system packages install while the database and the backend
+      # toolchain are set up (D-90): the apt step alone takes from 15 s to well over a
+      # minute depending on the mirror. "Chromium is installed" waits for it and fails
+      # the job with its log if it failed.
+      - name: Install Chromium (in the background)
+        run: |
+          (npx playwright install --with-deps chromium > "$RUNNER_TEMP/chromium.log" 2>&1; echo $? > "$RUNNER_TEMP/chromium.exit") &
+
+      - name: Create database roles and extensions
+        uses: ./.github/actions/init-db
+        with:
+          container-id: ${{ job.services.db.id }}
+
+      - name: Set up backend toolchain
+        uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Build design tokens
         run: npm run build:tokens
+
+      - name: Chromium is installed
+        run: |
+          until [ -f "$RUNNER_TEMP/chromium.exit" ]; do sleep 1; done
+          cat "$RUNNER_TEMP/chromium.log"
+          exit "$(cat "$RUNNER_TEMP/chromium.exit")"
 
       # NEXT_PUBLIC_API_URL is deliberately unset: the config points the build at
       # the cold stack's own port, which is not the seeded suite's.
