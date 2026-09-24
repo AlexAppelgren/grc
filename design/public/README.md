@@ -3,7 +3,9 @@
 `index.html` is the whole public page as one standalone file. Open it in a
 browser. Alex approved it on 2026-09-24, and it is built at `/welcome`
 (`frontend/src/app/(public)/`, `src/components/public/`, copy in
-`src/messages/public/`), where an anonymous visitor at `/` lands. What the
+`src/messages/public/`). Every person without a session ends up there: after
+signing out, when a session times out or is revoked, and on a first visit to
+any address. The sign-in page links back to it. What the
 build left out of the design: the request form, which sent nothing, became a
 mail link to `NEXT_PUBLIC_SUPPORT_CONTACT`; the footer's placeholder links and
 organisation number are gone; section headings use the `display` size, since

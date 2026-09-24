@@ -3,12 +3,13 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 
+import { BackLink } from '@/components/admin/AdminGate';
 import { AuthPanel } from '@/components/auth/AuthFrame';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { ProblemAlert, StatusLine } from '@/components/ui/States';
 import { useSession, useSignIn } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { homeOf } from '@/shared/navigation/registry';
+import { homeOf, PUBLIC_HOME } from '@/shared/navigation/registry';
 import { problemStatus } from '@/shared/utils/problem';
 import { isWebAuthnAvailable, WebAuthnFailure } from '@/shared/webauthn';
 
@@ -65,37 +66,41 @@ export function SignInScreen() {
     failureText = t('auth.signIn.refused');
   }
 
+  // The way back to the public page, where every Sign in starts.
   return (
-    <AuthPanel aria-labelledby="sign-in-title" aria-busy={signIn.isPending}>
-      <h1 id="sign-in-title" className="mb-2">
-        {t('auth.signIn.title')}
-      </h1>
-      <p className="mb-5 text-muted">{t('auth.signIn.lede')}</p>
-      {supported ? (
-        <Button className="w-full" disabled={signIn.isPending} onClick={() => signIn.mutate()}>
-          {signIn.isPending ? t('auth.signIn.waiting') : t('auth.signIn.button')}
-        </Button>
-      ) : (
-        <p role="alert" className="text-meta text-negative">
-          {t('auth.signIn.unsupported')}
-        </p>
-      )}
-      {signIn.isPending ? <StatusLine>{t('auth.signIn.waitingHint')}</StatusLine> : null}
-      {failureText !== null ? (
-        <p role="alert" className="mt-2.5 text-meta text-negative">
-          {failureText}
-        </p>
-      ) : failure !== null && failure !== undefined ? (
-        <ProblemAlert error={failure} />
-      ) : null}
-      <div className="mt-5 grid gap-2 border-t border-line pt-4 text-meta">
-        <button type="button" className="text-left font-semibold underline" onClick={() => router.push('/enrol')}>
-          {t('auth.signIn.firstTime')}
-        </button>
-        <button type="button" className="text-left font-semibold underline" onClick={() => setRecovery(true)}>
-          {t('auth.signIn.lostPasskeys')}
-        </button>
-      </div>
-    </AuthPanel>
+    <>
+      <BackLink href={PUBLIC_HOME} label={t('common.back')} />
+      <AuthPanel aria-labelledby="sign-in-title" aria-busy={signIn.isPending}>
+        <h1 id="sign-in-title" className="mb-2">
+          {t('auth.signIn.title')}
+        </h1>
+        <p className="mb-5 text-muted">{t('auth.signIn.lede')}</p>
+        {supported ? (
+          <Button className="w-full" disabled={signIn.isPending} onClick={() => signIn.mutate()}>
+            {signIn.isPending ? t('auth.signIn.waiting') : t('auth.signIn.button')}
+          </Button>
+        ) : (
+          <p role="alert" className="text-meta text-negative">
+            {t('auth.signIn.unsupported')}
+          </p>
+        )}
+        {signIn.isPending ? <StatusLine>{t('auth.signIn.waitingHint')}</StatusLine> : null}
+        {failureText !== null ? (
+          <p role="alert" className="mt-2.5 text-meta text-negative">
+            {failureText}
+          </p>
+        ) : failure !== null && failure !== undefined ? (
+          <ProblemAlert error={failure} />
+        ) : null}
+        <div className="mt-5 grid gap-2 border-t border-line pt-4 text-meta">
+          <button type="button" className="text-left font-semibold underline" onClick={() => router.push('/enrol')}>
+            {t('auth.signIn.firstTime')}
+          </button>
+          <button type="button" className="text-left font-semibold underline" onClick={() => setRecovery(true)}>
+            {t('auth.signIn.lostPasskeys')}
+          </button>
+        </div>
+      </AuthPanel>
+    </>
   );
 }

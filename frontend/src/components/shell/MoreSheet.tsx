@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useId, useState, type ReactNode } from 'react';
 
-import { accountLine, useInterfaceLanguages, useSignOutToSignIn } from '@/components/shell/AccountMenu';
+import { accountLine, useInterfaceLanguages, useSignOutToPublicPage } from '@/components/shell/AccountMenu';
 import { groupDestinations } from '@/components/shell/AppSidebar';
 import { NavIcon } from '@/components/shell/NavIcon';
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -32,7 +32,7 @@ export function MoreSheet({ surface, children }: { surface: Surface; children: R
   const permissions = usePermissions() ?? [];
   const { isCompact } = useSidebar();
   const { me } = useSession();
-  const { pending, signOut } = useSignOutToSignIn();
+  const { pending, signOut } = useSignOutToPublicPage();
   const languages = useInterfaceLanguages();
   const languageName = useId();
 
