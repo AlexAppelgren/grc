@@ -285,7 +285,9 @@ rule fails any legacy or one-off size, including in template literals and
 | `.microlabel` | Uppercase with tracking: eyebrows, column heads, button labels |
 
 Three weights, two families (Hanken Grotesk, Noto Sans Mono), `text-primary`
-only on things you can press. `body` and `meta` stay separate names.
+only on things you can press. `body` and `meta` stay separate names. Public
+pages add Libre Caslon (`font-serif-display` for `text-hero`, `font-serif` for
+section headings and ledes), loaded only by the `(public)` layout.
 
 ### 3.5 Screen copy
 

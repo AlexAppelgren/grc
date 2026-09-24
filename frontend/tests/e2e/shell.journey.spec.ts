@@ -22,9 +22,12 @@ test.describe('app shell', () => {
     await expect(page.getByRole('navigation', { name: 'Main' }).first()).toBeVisible();
   });
 
-  test('an anonymous visitor is sent to sign in', async ({ page, apiGuard }) => {
+  // At / an anonymous visitor lands on the public page instead
+  // (public.journey.spec.ts); every other gated address still sends them here.
+  test('an anonymous visitor on a gated address is sent to sign in', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
-    await page.goto('/');
+    await page.goto('/watch');
+    await expect(page).toHaveURL(/\/sign-in$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Sign in with a passkey' })).toBeVisible();
   });

@@ -405,7 +405,9 @@ a browser, `README.md` is the design note). Two of its choices are yours,
 because they add to the brand rather than apply it. Defaults taken so the
 design could be finished; say the word and the file changes in one block.
 
-- [ ] **A display serif.** `design/brand/README.md` names Hanken Grotesk and
+- [x] **A display serif.** Answered 2026-09-24: you approved the design as it
+      stands ("I like this design, create this as a public page"), so Libre
+      Caslon is in, on public pages only. `design/brand/README.md` names Hanken Grotesk and
       Noto Sans Mono and nothing else. The page sets its headlines in Libre
       Caslon Display, with Libre Caslon Text for the lede and record titles,
       because the brief asked for a page that feels like an old legal
@@ -414,11 +416,35 @@ design could be finished; say the word and the file changes in one block.
       they self-host on the same terms as the other two. Default if you say
       nothing: Libre Caslon stays, on public pages only, and never behind
       auth. Decline and the page runs on Hanken Grotesk at the same scale.
-- [ ] **The plate headline size.** `design/system/foundations.md` sets `hero`
+- [x] **The plate headline size.** Answered 2026-09-24 with the design: the
+      clamp stays, and `foundations.md` now records it. `design/system/foundations.md` sets `hero`
       at 36 / 40 and marks it "public pages only". That size was set for a
       grotesque; the same optical size in a serif reads a step smaller, so the
       page's headline runs from 36 px to 60 px with the viewport. Default if
       you say nothing: the clamp stays. Say so and it caps at 36 px, which
       makes the top of the page much quieter.
-- [ ] The footer carries `org. no. [to be set]`, and Terms, Privacy and
+- [x] The footer carries `org. no. [to be set]`, and Terms, Privacy and
       Sub-processors link to the assurance section until those pages exist.
+      Resolved in the build: the live page carries neither the number nor the
+      placeholder links.
+
+## The public page is built; three things before it faces the world (2026-09-24)
+
+The page is live in the app at `/welcome`, and an anonymous visitor at `/`
+lands there instead of on sign-in (default taken: the front door of the site
+should explain it; every deep link still goes straight to sign-in).
+
+- [ ] **Set `NEXT_PUBLIC_SUPPORT_CONTACT`** on the web service, an email
+      address. Until then "Write to us" is hidden and the invitation section
+      says only that a bank's administrator sends the invitation.
+- [ ] **Confirm two claims before the page is public.** § 5 names authorities
+      per jurisdiction (Finanstilsynet, Lovdata, Finanssivalvonta, Finlex,
+      EIOPA, the ECB and others) that neither the PRD nor the configured
+      sources name yet; the PRD commits only to Swedish, Danish, Norwegian,
+      Finnish and EU sources. § 6's "Leaving" and "The pack" describe tenant
+      exit and the assurance pack, which are R3 (chunks 12 and 14, pending).
+      The copy is as you approved it; say which to soften and the catalog
+      changes in one file.
+- [ ] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. It
+      follows the app's existing terms (skyldighet, förslag, godkännande), but
+      a native read of the headline and the questions is worth five minutes.

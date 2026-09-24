@@ -1,9 +1,13 @@
 # The public page
 
 `index.html` is the whole public page as one standalone file. Open it in a
-browser. It is a design, not an implementation: no framework, no tokens
-import, no message catalog. When it is built, it becomes a route in the
-`(public)` group and every string moves into `src/messages/`.
+browser. Alex approved it on 2026-09-24, and it is built at `/welcome`
+(`frontend/src/app/(public)/`, `src/components/public/`, copy in
+`src/messages/public/`), where an anonymous visitor at `/` lands. What the
+build left out of the design: the request form, which sent nothing, became a
+mail link to `NEXT_PUBLIC_SUPPORT_CONTACT`; the footer's placeholder links and
+organisation number are gone; section headings use the `display` size, since
+the type scale has no role between it and `hero`.
 
 ## What decides the look
 

@@ -19,6 +19,7 @@ overwritten.
 | 2026-09-19 | Paths for the INPUT_DELTAS additions that the contract does not yet spell out (vocabulary writes, footprint change requests, suggestions) are proposed in this table and marked "path proposed". The chunk that builds them fixes the path and adds a ledger row | design agent |
 | 2026-09-19 | PRD 0.3: `GET /me/work` no longer feeds Today's "Decide now" — Today reads the queue counts on `GET /me`, and `/me/work` becomes the My work page in chunk 8 (D-23). New rows for the participant routes, the people reference, member teams, the watching routes and the unit and bulk-decision routes. `admin-footprint.html` gains the markets panel, and on screen the section is called Regulatory scope (PRD glossary) | docs agent |
 | 2026-09-19 | f03-T60: `tenant-my-work.html` drawn; the participants panel added to `tenant-obligation.html` and `tenant-change.html`; departments with heads and teams added to `admin-organisation.html`; team membership added to `admin-members.html`. My work is not a fifth dock destination: it has no `dockRank` and is reached from the rail and the More sheet | design agent |
+| 2026-09-24 | The public page (`design/public/index.html`, approved by Alex) built at `/welcome` in a `(public)` route group outside the session gate. An anonymous visitor at `/` now lands there; every other gated address still sends them to `/sign-in`. Sign in goes to the passkey flow, Request access to the page's invitation section, whose mail link shows only when `NEXT_PUBLIC_SUPPORT_CONTACT` is set. The design's inert form, its placeholder footer links and its organisation number are not built | public page |
 | 2026-09-21 | c7-search-screen: `POST /search` built at `/search` (`tenant-search.html`). Type, jurisdiction, duty type, binding and language filters plus "As of" and "Outside our scope" in the URL; the typed query stays out of it, in component state only. The card's instrument filter, per-hit language tag and "N obligations" instrument summary are cut: no route lists instruments to choose from and `SearchHit` carries none of the other two, so nothing here invents them. A provision hit renders as a fact rather than a link: no screen opens one yet | search agent |
 
 ## Honesty rules (playbook 7.5, kept in spirit)
@@ -53,6 +54,7 @@ overwritten.
 
 | Card | Route | Surface | Chunk | Status |
 |---|---|---|---|---|
+| `design/public/index.html` | `/welcome` | public | none | shipped: `public.journey.spec.ts` green |
 | `tenant-shell.html`, `tenant-today.html` | `/` | tenant | 0, 6 | shell built in chunk 0; Today's panels chunk 6 |
 | `auth-invitation`, `auth-code`, `auth-enrol`, `auth-sign-in`, `auth-step-up`, `auth-recovery` | `/auth/*` | both | 1 | in build |
 | `me-passkeys`, `me-sessions` | `/me/passkeys`, `/me/sessions` | both | 1 | in build |
