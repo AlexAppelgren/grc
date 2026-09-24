@@ -53,14 +53,14 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| INV-01 | Instruments with level (a standard's level says so), binding force, official reference, ELI where available, jurisdiction (International for standards bodies), authority, a regime, in-force dates and lineage | M | R1 | in_progress |
-| INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes; never for a standard, whose text is licensed | S | R1 | in_progress |
+| INV-01 | Instruments with level (a standard's level says so), binding force, official reference, ELI where available, jurisdiction (International for standards bodies), authority, a regime, in-force dates and lineage | M | R1 | built |
+| INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes; never for a standard, whose text is licensed | S | R1 | built |
 | INV-03 | Obligations: plain-language duty, duty type, scope facets, trigger, retention, sanction exposure, provenance, related obligations | M | R1 | built |
 | INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 | built |
 | INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 | built |
 | INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 | built |
 | INV-07 | Tenant-private instruments and obligations from the tenant's own sources, proposed and approved inside that bank by a second person; never seen by platform staff, a model, the search index or another tenant (D-57) | C | R3 | pending |
-| INV-08 | Standards as instruments, one per edition: publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link and exactly one conformance duty in our own words carrying the standard's term; no standard text, clause or control title, or paraphrase, anywhere | M | R1 | in_progress |
+| INV-08 | Standards as instruments, one per edition: publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link and exactly one conformance duty in our own words carrying the standard's term; no standard text, clause or control title, or paraphrase, anywhere. Built for tests and E2E: the first standard is seeded by `seed_e2e` only until the publishers' terms are cleared (TODO_FOR_alex, legal) | M | R1 | built |
 
 > **Note — what the standard clauses still lack (2026-09-23).** Built: the `standard`
 > instrument level with its tier-one kind (D-37), the seeded International jurisdiction of

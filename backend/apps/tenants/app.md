@@ -55,9 +55,8 @@ the organisation profile with its onboarding checklist (TEN-S1); members and inv
 roles, and each admin screen gated by its own permission (ADM-S1 to ADM-S3); an admin's
 passkey re-enrolment of a member and the sessions a person sees and revokes (ID-S12,
 ID-S11); the bank's own API keys; the security log; the audit log; the regulatory scope with
-its change requests; and the vocabularies. What remains, each with the Build_Plan.md chunk
-that delivers it: the markets panel of the regulatory scope (FP-04, chunk 3); departments
-with a head, teams, and team membership on the member row (TEN-02, TEN-03, chunk 8); the
+its change requests and its markets panel (FP-S10); and the vocabularies. What remains, each
+with the Build_Plan.md chunk that delivers it: departments with a head, teams, and team membership on the member row (TEN-02, TEN-03, chunk 8); the
 workflow policy's reminders and escalation (COL-02, chunk 10); the agents a bank adds for
 itself (AGT-04, chunk 11); data, meaning exports, import, retention and tenant exit (REP-02
 to REP-04, AUD-04, chunk 12); and integrations beyond the API keys, with the security

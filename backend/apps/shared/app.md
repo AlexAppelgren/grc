@@ -28,10 +28,10 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | NFR-01 | Tenant isolation by row-level security, proven per route | M | R1 | built |
-| NFR-02 | Performance budgets of playbook 10 | M | R1 | pending |
-| NFR-03 | The design is reproduced: flow, labels, six-tone pill system, light and dark, WCAG AA | M | R1 | pending |
+| NFR-02 | Performance budgets of playbook 10. R1's baseline is recorded (`backend/perf/baseline.json`, NFR-S7); real-model and real-embedder timings wait for the D-07 and D-09 keys, the load profile for chunk 14 | M | R1 | built |
+| NFR-03 | The design is reproduced: flow, labels, six-tone pill system, light and dark, WCAG AA | M | R1 | built |
 | NFR-04 | EU-only hosting and the assurance pack of playbook 18 | M | R3 | pending |
-| I18N-02 | UI in `en` and `sv` at R1, the others by R3, from message catalogs | M | R1 | pending |
+| I18N-02 | UI in `en` and `sv` at R1, the others by R3, from message catalogs. `en` and `sv` are built for R1; `da`, `nb` and `fi` come by R3 | M | R1 | built |
 
 > **Note — I18N-02 at R1.** `en` and `sv` are built. Every UI string is in both catalogs
 > (`check:messages`); a person switches their own interface language from the account menu

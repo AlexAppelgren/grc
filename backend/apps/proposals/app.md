@@ -113,17 +113,17 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| PRO-01 | The review queue is the only way into the library, for agents and people, with a source per changed field | M | R1 | in_progress |
-| PRO-02 | Approval applies the payload, writes the version, the audit row and the re-index in one transaction; the reviewer can correct scope and wording first; never the proposer | M | R1 | in_progress |
-| PRO-03 | The queue lives in the platform console; tenants see library updates and can report a problem, which stays inside their bank. A bank's private records are proposed and approved inside the bank and never reach the console (D-50, D-57) | M | R1 | in_progress |
+| PRO-01 | The review queue is the only way into the library, for agents and people, with a source per changed field | M | R1 | built |
+| PRO-02 | Approval applies the payload, writes the version, the audit row and the re-index in one transaction; the reviewer can correct scope and wording first; never the proposer | M | R1 | built |
+| PRO-03 | The queue lives in the platform console; tenants see library updates and can report a problem, which stays inside their bank. A bank's private records are proposed and approved inside the bank and never reach the console (D-50, D-57). R1 builds the platform queue, library updates and the bank's own problem reports; a bank's private records (INV-07, PRO-S12) are chunk 13, R3 | M | R1 | built |
 | PRO-04 | Batch proposals (re-tag, backfill) with a preview, approved whole or row by row | S | R2 | pending |
 
-PRO-03 stays `in_progress` for its last clause only. The console queue, the bank's "Library
+PRO-03 is `built` for R1 (R1 close, 2026-09-24). The console queue, the bank's "Library
 updates" screen (`/inventory/updates` over `GET /library-updates`) and "This looks wrong" on
 each of its rows, filed through the same report form the obligation card uses and kept
-inside the bank, are built and proven by PRO-S7 at the integration level; the PRO-S7
-journey is written in full and runs with the merged wave (D-67). A bank's private records
-(PRO-S12, INV-07) wait for chunk 13.
+inside the bank, are proven by PRO-S7 at the integration level and by its journey in the
+merged batch run. Its last clause, a bank's private records (PRO-S12, INV-07), is R3 and
+waits for chunk 13; it is named as the cut, not built.
 
 PRO-S13's journey (pro-s13-journey) runs end to end: the console mints a `library-confirmer`
 key with `agent-runs:write` and `proposals:review`, which opens a run, reads the queue and

@@ -34,9 +34,9 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| HOM-01 | Timeline home: next dates as a short list on every screen size, the lead item, what needs a decision, compliance standing, source health | M | R1 | in_progress |
+| HOM-01 | Timeline home: next dates as a short list on every screen size, the lead item, what needs a decision, compliance standing, source health. R1 builds every part but compliance standing, which needs the register and is cut to chunk 8 | M | R1 | built |
 | HOM-02 | Weekly briefing, reachable from home with part of it shown there, snapshotted when emailed | M | R1 | built |
-| HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place; from R2 a certificate's expiry and next audit are our deadlines and never reach the calendar feed | M | R1 | in_progress |
+| HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place; from R2 a certificate's expiry and next audit are our deadlines and never reach the calendar feed. R1 builds the regulatory branch; our own deadlines join with the register and the cases (chunks 8 and 9), and certificates with TEN-02 (chunk 8, HOM-S15) | M | R1 | in_progress |
 | HOM-04 | Upcoming changes as public facts for agents and newsletters, and a revocable calendar feed | S | R1 | built |
 | HOM-05 | My work: what a person or their teams are responsible for or take part in, as overdue, due soon, changes on those items and the rest, with next reviews and a department head's view; permission-filtered rows and counts; the footprint never hides a person's own items | M | R2 | pending |
 
@@ -147,7 +147,8 @@ that pill's tone, so the rule is proved before a branch produces a row for it.
 > `c8-home-register-feeds` for next reviews and gap targets, chunk 9 for assessment
 > deadlines and actions, and `f03-T74` for a certificate's expiry and next audit (D-43,
 > AC-TEN1, proved by HOM-S15). Until then `kind=internal` is a real filter that answers an
-> empty list, and HOM-03 stays `in_progress` for that reason.
+> empty list, and HOM-03 stays `in_progress` for that reason (confirmed at the R1 close,
+> 2026-09-24).
 
 ### HOM-S7 — My work lists what I'm responsible for or take part in, most urgent first `@integration` `@e2e` (HOM-05, AC-HOM1)
 ```gherkin

@@ -53,9 +53,9 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | VOC-07 | Library vocabulary changes go through the proposal queue | M | R1 | built |
 | VOC-08 | Bulk tagging from list views with preview and one audit entry | S | R2 | pending |
 | VOC-09 | Tenant configuration is versioned, exportable and importable | S | R3 | pending |
-| FP-01 | Footprint across all dimensions; a record matches when every dimension it carries has a term in the footprint; an empty dimension does not restrict, except an opt-in dimension (standards), which matches only what the scope names; an obligation also needs its instrument's regime | M | R1 | in_progress |
+| FP-01 | Footprint across all dimensions; a record matches when every dimension it carries has a term in the footprint; an empty dimension does not restrict, except an opt-in dimension (standards), which matches only what the scope names; an obligation also needs its instrument's regime | M | R1 | built |
 | FP-02 | A footprint change previews what it hides and reveals, needs a second person and step-up, one audit event per term | M | R1 | built |
-| FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it | M | R1 | in_progress |
+| FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it. R1 covers the feed, inventory, roadmap, briefing and search; reports apply it in chunk 12 | M | R1 | built |
 | FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | built |
 | I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data | M | R1 | built |
 | ACC-02 | An agent access entry's scope is the terms of its departments and products intersected with the tenant footprint, computed per request. It can only narrow; an empty dimension does not restrict; a record outside it answers 404, never a filtered result | M | R2 | pending |

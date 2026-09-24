@@ -70,7 +70,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | AUD-01 | Append-only audit log written with every change: actor (user, agent, system), action, subject with its title at the time, summary, before and after | M | R1 | built |
 | AUD-02 | AI output log with model, version, purpose, citations, review state and feedback | M | R1 | built |
-| AUD-03 | A problem report stays inside the bank that filed it and nobody outside reads it; the loop to the library is closed by the watch agents' re-check, which proposes the correction (D-50) | S | R1 | in_progress |
+| AUD-03 | A problem report stays inside the bank that filed it and nobody outside reads it; the loop to the library is closed by the watch agents' re-check, which proposes the correction (D-50) | S | R1 | built |
 | AUD-04 | Retention: a record is deleted ten years after its last use. The purge never updates an append-only row, deletes one only past that age, and runs through one database-guarded path (D-53) | S | R3 | pending |
 | ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, evaluation sets, tenants and plans, support access, system health (coverage, runs, outbox lag, failed jobs with retry, and each bank's usage figures through one audited read of numbers only). No problem-report surface (D-50, D-59). R1 built the proposal queue, library vocabularies, Change facts, sources, evaluation sets, tenants and agent keys; agent definitions come in chunk 11 and support access in chunk 8 (R2), languages and jurisdictions in R2 (jurisdictions read-only on the vocabularies screen until then), plans and system health in chunk 14 (R3) | M | R1 to R3 | in_progress |
 | ACC-08 | Tenant reach is requested and approved by two different people holding `security.manage`, each with a passkey; a tenant admin then enables it per entry. Off means off for every entry. Every call is logged with its credential, entry, tool, filters, record count, scope and timing, never content | M | R2 | pending |
@@ -153,7 +153,7 @@ review state is computed for the reading bank from that bank's own `change_case`
 
 `test_aud_s4` proves the integration half over the three producers as they ship: the
 "So what?" and the `scope_suggestion` a run files with `createChange`, and a bank's Ask
-answer. AUD-02 stays `in_progress` until the AI log screen's AUD-S4 journey is green.
+answer. AUD-S4's journey on the AI log screen is green, so AUD-02 is `built` (R1 close, 2026-09-24).
 
 ### AUD-S5 — A problem report stays inside the bank that filed it `@integration` `@e2e` (AUD-03)
 ```gherkin
