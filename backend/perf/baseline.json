@@ -35,9 +35,9 @@
     "queries": 19
   },
   "confirmChangeCuration": {
-    "medianMs": 27.3,
-    "p95Ms": 28.6,
-    "queries": 32
+    "medianMs": 35.0,
+    "p95Ms": 39.3,
+    "queries": 33
   },
   "confirmSoWhat": {
     "medianMs": 12.2,
@@ -65,9 +65,9 @@
     "queries": 18
   },
   "createChange": {
-    "medianMs": 28.4,
-    "p95Ms": 36.5,
-    "queries": 38
+    "medianMs": 36.7,
+    "p95Ms": 40.6,
+    "queries": 40
   },
   "createConsoleTenant": {
     "medianMs": 171.3,
@@ -85,9 +85,9 @@
     "queries": 43
   },
   "createProposal": {
-    "medianMs": 17.6,
-    "p95Ms": 20.6,
-    "queries": 25
+    "medianMs": 22.1,
+    "p95Ms": 24.6,
+    "queries": 29
   },
   "createRole": {
     "medianMs": 16.8,
@@ -100,9 +100,9 @@
     "queries": 25
   },
   "createTerm": {
-    "medianMs": 16.4,
-    "p95Ms": 22.2,
-    "queries": 22
+    "medianMs": 18.1,
+    "p95Ms": 22.1,
+    "queries": 24
   },
   "createVocabularyRow": {
     "medianMs": 22.1,
@@ -125,9 +125,9 @@
     "queries": 12
   },
   "finishAgentRun": {
-    "medianMs": 11.1,
-    "p95Ms": 12.9,
-    "queries": 21
+    "medianMs": 16.9,
+    "p95Ms": 19.6,
+    "queries": 25
   },
   "getBriefing": {
     "medianMs": 39.9,
@@ -275,9 +275,9 @@
     "queries": 22
   },
   "listConsoleChanges": {
-    "medianMs": 22.9,
-    "p95Ms": 30.1,
-    "queries": 16
+    "medianMs": 25.9,
+    "p95Ms": 34.0,
+    "queries": 17
   },
   "listConsoleTenants": {
     "medianMs": 6.7,
@@ -430,9 +430,9 @@
     "queries": 14
   },
   "mergeVocabularyRow": {
-    "medianMs": 14.2,
-    "p95Ms": 18.7,
-    "queries": 20
+    "medianMs": 21.0,
+    "p95Ms": 23.2,
+    "queries": 21
   },
   "openInvitation": {
     "medianMs": 8.3,
@@ -535,9 +535,9 @@
     "queries": 21
   },
   "restoreVocabularyRow": {
-    "medianMs": 11.8,
-    "p95Ms": 13.2,
-    "queries": 17
+    "medianMs": 15.2,
+    "p95Ms": 19.3,
+    "queries": 18
   },
   "retireRole": {
     "medianMs": 13.8,
@@ -545,9 +545,9 @@
     "queries": 21
   },
   "retireVocabularyRow": {
-    "medianMs": 11.6,
-    "p95Ms": 13.9,
-    "queries": 17
+    "medianMs": 14.4,
+    "p95Ms": 24.3,
+    "queries": 18
   },
   "reverifyObligation": {
     "medianMs": 11.6,
@@ -665,14 +665,14 @@
     "queries": 25
   },
   "updateTerm": {
-    "medianMs": 14.1,
-    "p95Ms": 17.9,
-    "queries": 19
+    "medianMs": 17.6,
+    "p95Ms": 19.9,
+    "queries": 21
   },
   "updateVocabularyRow": {
-    "medianMs": 17.1,
-    "p95Ms": 22.0,
-    "queries": 22
+    "medianMs": 21.1,
+    "p95Ms": 27.0,
+    "queries": 23
   },
   "verifyCode": {
     "medianMs": 9.7,
