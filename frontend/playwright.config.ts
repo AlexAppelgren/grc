@@ -101,7 +101,9 @@ export default defineConfig({
           },
         ]),
     {
-      command: `npm run build && npm run start -- --port ${FRONTEND_PORT}`,
+      // CI's E2E job builds the app earlier in the job, beside its other setup, and sets
+      // E2E_PREBUILT (D-90): the same production build with the same NEXT_PUBLIC_API_URL.
+      command: `${process.env.E2E_PREBUILT === '1' ? '' : 'npm run build && '}npm run start -- --port ${FRONTEND_PORT}`,
       url: `${WEB_URL}/`,
       timeout: 300_000,
       reuseExistingServer: !isCI,

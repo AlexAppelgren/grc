@@ -590,6 +590,20 @@ jobs:
         run: |
           (npx playwright install --with-deps chromium > "$RUNNER_TEMP/chromium.log" 2>&1; echo $? > "$RUNNER_TEMP/chromium.exit") &
 
+      - name: Build design tokens
+        run: npm run build:tokens
+
+      # The production build, the one Playwright would otherwise run first, starts here
+      # so it overlaps the database and backend setup (D-90). It bakes in the job's
+      # NEXT_PUBLIC_API_URL, the address the seeded stack serves on;
+      # "Run journeys" sets E2E_PREBUILT so Playwright starts this build instead of
+      # making its own.
+      - name: Build the web app (in the background)
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: |
+          (npm run build > "$RUNNER_TEMP/next-build.log" 2>&1; echo $? > "$RUNNER_TEMP/next-build.exit") &
+
       - name: Create database roles and extensions
         uses: ./.github/actions/init-db
         with:
@@ -601,17 +615,21 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           poetry-version: ${{ env.POETRY_VERSION }}
 
-      - name: Build design tokens
-        run: npm run build:tokens
-
       - name: Chromium is installed
         run: |
           until [ -f "$RUNNER_TEMP/chromium.exit" ]; do sleep 1; done
           cat "$RUNNER_TEMP/chromium.log"
           exit "$(cat "$RUNNER_TEMP/chromium.exit")"
 
+      - name: The web app is built
+        run: |
+          until [ -f "$RUNNER_TEMP/next-build.exit" ]; do sleep 1; done
+          cat "$RUNNER_TEMP/next-build.log"
+          exit "$(cat "$RUNNER_TEMP/next-build.exit")"
+
       - name: Run journeys
         env:
+          E2E_PREBUILT: "1"
           FULL_SUITE: ${{ needs.changes.outputs.full }}
           PART: ${{ matrix.part }}
           SCREENS: "NFR-S7: Every screen reaches real data within its budget"
