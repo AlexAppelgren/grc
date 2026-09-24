@@ -38,6 +38,7 @@ from typing import Any, Literal, TypeVar, cast
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.utils import timezone
 
@@ -253,14 +254,14 @@ def finish_run(*, who: Principal, run_id: uuid.UUID, body: AgentRunFinish) -> Ag
     """
     refuse_tenant_key(who)
     run = _own_run(who.subject_id, run_id)
-    stats = _stats(body.stats, run.stats)
+    stats = _counted(run, _stats(body.stats, run.stats))
     output_ref = body.output_ref or ""
     error = body.error or ""
     if run.status != RunStatus.RUNNING.value:
         # Both sides as a reader reads them, so a close stored before a counter existed is
         # still the same close when it is sent again: the missing counter reads 0 on both.
-        stored = _stats(AgentRunStats.model_validate(run.stats), run.stats)
-        sent = _stats(body.stats, stored)
+        stored = _counted(run, _stats(AgentRunStats.model_validate(run.stats), run.stats))
+        sent = _counted(run, _stats(body.stats, stored))
         if (run.status, stored, run.output_ref, run.error) != (body.status, sent, output_ref, error):
             raise ValidationError(
                 "This run is already closed, so it cannot be closed again with different values.",
@@ -320,6 +321,49 @@ def require_open_run_of_key(api_key_id: uuid.UUID | None, run_id: uuid.UUID | No
             code="run_not_open",
         )
     return run
+
+
+def spend(run: AgentRun, filed: QuerySet[Any], *, limit: int, what: tuple[str, str]) -> None:
+    """Refuse one more write under `run` once `filed`, what the run has already filed of this
+    kind, reaches `limit` (H24): 422 `run_budget_exhausted`. The budget is the definition's
+    (`budget_defaults`), held by the server from a setting, so a runaway or injected run
+    cannot flood the queue whatever it believes its budget is.
+
+    Called inside the write's own transaction. It locks the run's row first, so two writes
+    under one run count one after the other and never both squeeze past the last slot, and
+    a close that landed meanwhile answers `run_not_open`. `what` names the kind, singular
+    and plural, for the sentence."""
+    status = AgentRun.objects.select_for_update().filter(pk=run.pk).values_list("status", flat=True).first()  # ordering: pk lookup
+    if status != RunStatus.RUNNING.value:
+        raise ValidationError(
+            "That run is closed. Open a run before filing anything against it.",
+            code="run_not_open",
+        )
+    if filed.count() >= limit:
+        raise ValidationError(
+            f"This run has filed its {limit} {what[0] if limit == 1 else what[1]}, the most one run may file. "
+            "Close it, and a new run files the rest.",
+            code="run_budget_exhausted",
+        )
+
+
+def _counted(run: AgentRun, stats: dict[str, Any]) -> dict[str, Any]:
+    """The counters as the server counts them from what the run filed, over what the run
+    reported of itself (H24): the sources it swept, the records it re-checked, the changes
+    it registered and the proposals it filed. What the server cannot see — its model calls,
+    its fetches, the documents it set aside and which proposals were corrections — stays
+    the run's own account."""
+    from apps.proposals.models import Proposal
+    from apps.watch.models import SourceCheckKind
+
+    checks = run.source_checks.all()
+    return {
+        **stats,
+        "sourcesChecked": checks.filter(kind=SourceCheckKind.SWEEP.value).values("source_id").distinct().count(),
+        "recordsRechecked": checks.filter(kind=SourceCheckKind.RECHECK.value).values("subject_type", "subject_id").distinct().count(),
+        "changesRegistered": run.changes.count(),
+        "proposalsSubmitted": Proposal.objects.filter(agent_run_id=run.id).count(),
+    }
 
 
 # ---------------------------------------------------------------------------------------

@@ -45,6 +45,7 @@ from django.utils import timezone
 
 from apps.agents import runs
 from apps.agents.models import AgentRun
+from apps.agents.screen import screen_all
 from apps.governance import ai_log
 from apps.governance.models import AiPurpose
 from apps.library.models import DatePrecision, SubjectType
@@ -578,6 +579,17 @@ def _agreed_effective_from(payload: pydantic.BaseModel, effective_from: Any) -> 
     return payload.effective_from
 
 
+def _texts(value: Any) -> list[str]:
+    """Every string in a stored payload, however deep, for the injection screen."""
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [text for item in value.values() for text in _texts(item)]
+    if isinstance(value, list):
+        return [text for item in value for text in _texts(item)]
+    return []
+
+
 def payload_dict(payload: pydantic.BaseModel) -> dict[str, Any]:
     """The payload as the JSON column stores it and the API returns it: camelCase keys and
     JSON values, so a legal date is the string the reviewer's screen shows, not a Python
@@ -612,9 +624,16 @@ def create(
     traces to the night that produced it (AGT-01); a run anyone else names is checked the
     same way, and so is never one they did not open. That is asked first, before anything
     else is read, so a retry must arrive while its run is still open: once the run is
-    closed, a retry answers `run_not_open` as any new filing against that run would."""
+    closed, a retry answers `run_not_open` as any new filing against that run would. A new
+    proposal past the run's budget (`WATCH_RUN_MAX_PROPOSALS`) is refused with
+    `run_budget_exhausted`; a retry files nothing new, so it still answers (H24).
+
+    Every text the proposer sent, from a fetched page as often as not, is read by the
+    injection screen (AGT-07, H23) and stored exactly as it arrived; what the screen finds
+    is kept on the proposal, which the queue shows, and keeps the approval for a person."""
+    run = None
     if proposer.agent_id is not None or agent_run_id is not None:
-        runs.require_open_run_of_key(proposer.api_key_id, agent_run_id)
+        run = runs.require_open_run_of_key(proposer.api_key_id, agent_run_id)
     validated_kind(kind)
     parsed = validated_payload(kind, payload)
     _validate_obligation_target(kind, target_type, target_id)
@@ -672,39 +691,50 @@ def create(
                 after={"idempotencyKey": idempotency_key},
             )
             return existing, False
-    proposal = Proposal.objects.create(
-        kind=kind,
-        title=title,
-        payload=stored_payload,
-        field_sources=sources,
-        target_type=target_type,
-        target_id=target_id,
-        change_id=change_id,
-        model=model,
-        source_label=source_label,
-        source_url=source_url,
-        effective_from=effective_from,
-        origin=proposer.origin.value,
-        agent_run_id=agent_run_id,
-        proposed_by_user=proposer.user,
-        proposed_by_api_key_id=proposer.api_key_id,
-        proposed_by_agent_id=proposer.agent_id,
-        idempotency_key=idempotency_key or None,
-        status=ProposalStatus.OPEN.value,
-        proposed_in_tenant=tenant_id is not None,
-    )
-    if tenant_id is not None:
-        ProposalTenant.objects.create(tenant_id=tenant_id, proposal=proposal)
-    record(
-        action="proposal.created",
-        actor=proposer.actor,
-        subject_type=SUBJECT_TYPE,
-        subject_id=proposal.id,
-        subject_title=proposal.title,
-        summary=f"Proposed: {proposal.title}",
-        tenant_id=tenant_id,
-        after={"kind": kind, "payload": stored_payload, "origin": proposal.origin},
-    )
+    # The model's name too: the queue shows it as the proposer.
+    risk_flags = screen_all([title, model, source_label, source_url, *_texts(stored_payload), *sources.values()])
+    with transaction.atomic():
+        if run is not None:
+            runs.spend(run, Proposal.objects.filter(agent_run_id=run.id), limit=settings.WATCH_RUN_MAX_PROPOSALS, what=("proposal", "proposals"))
+        proposal = Proposal.objects.create(
+            kind=kind,
+            title=title,
+            payload=stored_payload,
+            field_sources=sources,
+            target_type=target_type,
+            target_id=target_id,
+            change_id=change_id,
+            model=model,
+            source_label=source_label,
+            source_url=source_url,
+            risk_flags=risk_flags,
+            effective_from=effective_from,
+            origin=proposer.origin.value,
+            agent_run_id=agent_run_id,
+            proposed_by_user=proposer.user,
+            proposed_by_api_key_id=proposer.api_key_id,
+            proposed_by_agent_id=proposer.agent_id,
+            idempotency_key=idempotency_key or None,
+            status=ProposalStatus.OPEN.value,
+            proposed_in_tenant=tenant_id is not None,
+        )
+        if tenant_id is not None:
+            ProposalTenant.objects.create(tenant_id=tenant_id, proposal=proposal)
+        record(
+            action="proposal.created",
+            actor=proposer.actor,
+            subject_type=SUBJECT_TYPE,
+            subject_id=proposal.id,
+            subject_title=proposal.title,
+            summary=f"Proposed: {proposal.title}",
+            tenant_id=tenant_id,
+            after={
+                "kind": kind,
+                "payload": stored_payload,
+                "origin": proposal.origin,
+                **({"riskFlags": risk_flags} if risk_flags else {}),
+            },
+        )
     return proposal, True
 
 
@@ -836,6 +866,7 @@ def row(proposal: Proposal) -> ProposalRow:
         field_sources=proposal.field_sources,
         source_label=proposal.source_label,
         source_url=proposal.source_url,
+        risk_flags=proposal.risk_flags,
         effective_from=proposal.effective_from,
         origin=proposal.origin,
         agent_run_id=proposal.agent_run_id,
@@ -1063,6 +1094,12 @@ def approve(
             raise ValidationError(
                 "An agent cannot approve this kind of change: a person has to approve it.",
                 code="person_review_required",
+            )
+        if reviewer.user is None and (proposal.risk_flags or screen_all(_texts(payload_overrides))):
+            raise ValidationError(
+                "This proposal carries text the injection screen flagged, so an agent cannot "
+                "approve it: a person reads the flag and decides.",
+                code="risk_flagged",
             )
         decided = ["status", "reviewed_by", "reviewed_by_api_key", "reviewed_by_agent", "reviewed_at", "applied_at", "review_note"]
         if payload_overrides:

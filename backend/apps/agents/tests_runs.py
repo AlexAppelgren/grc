@@ -195,7 +195,10 @@ class ClosingARun(AgentRunCase):
         closed = response.json()
         self.assertEqual(closed["status"], "succeeded")
         self.assertIsNotNone(closed["finishedAt"])
-        self.assertEqual(closed["stats"], STATS)
+        # What the server can count it counts (H24): this run filed nothing, whatever it
+        # says; the rest is the run's own account (`tests_budgets.py`).
+        counted = {"sourcesChecked": 0, "changesRegistered": 0, "proposalsSubmitted": 0, "recordsRechecked": 0}
+        self.assertEqual(closed["stats"], {**STATS, **counted})
         self.assertEqual(closed["outputRef"], "runs/2026-09-20/watch-sweeper/5f1c2a80.jsonl")
         self.assertIsNone(closed["error"])
 

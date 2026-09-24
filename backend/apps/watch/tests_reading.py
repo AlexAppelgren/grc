@@ -73,9 +73,10 @@ FEED_QUERIES = 2 + 6 + 2 + 2 + 2 + 1 + 1 + 4 + 1 + 1
 # the latest step-up: 5, one fewer than a bank's session, which also activates its tenant);
 # the caller's locale (1); the count and the page (2); the page's classification links and
 # one label query each for flags and terms (3); the suggested obligation links with their
-# obligations, and those obligations' titles (2); the change types' labels (1). No
-# footprint and no case: a console session belongs to no bank and has neither.
-CONSOLE_QUERIES = 2 + 5 + 1 + 2 + 3 + 2 + 1
+# obligations, and those obligations' titles (2); the change types' labels (1); which of
+# the page's changes has a flagged page (1, H23). No footprint and no case: a console
+# session belongs to no bank and has neither.
+CONSOLE_QUERIES = 2 + 5 + 1 + 2 + 3 + 2 + 1 + 1
 
 
 # A fact nobody has confirmed, filed by a builder that names no run, so no agent (D-74).

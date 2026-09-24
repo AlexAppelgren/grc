@@ -47,6 +47,7 @@ import uuid
 from collections.abc import Iterable
 from typing import Any
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
@@ -94,7 +95,9 @@ def register_change(
     Every key is resolved and every refusal raised before the write opens, so a call naming
     a vocabulary row the library does not hold stores nothing at all (AC-WAT2). A key must
     name an open run of its own, and a bank's key is refused outright; a library editor
-    names none, and a run one names is not theirs.
+    names none, and a run one names is not theirs. A new change past the run's budget
+    (`WATCH_RUN_MAX_CHANGES`) is refused with `run_budget_exhausted`; a second sighting
+    registers no new change, so it is not counted (H24).
     """
     run = (
         runs.require_open_run(who, body.agent_run_id)
@@ -159,6 +162,8 @@ def register_change(
         }
     )
     with watch_write("a change a run sighted"), transaction.atomic():
+        if run is not None:
+            runs.spend(run, run.changes.all(), limit=settings.WATCH_RUN_MAX_CHANGES, what=("change", "changes"))
         change.save()
         for entry in body.events:
             _add_event(change, entry)

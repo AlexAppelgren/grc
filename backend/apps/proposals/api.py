@@ -353,8 +353,17 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     answers `run_not_open` (422) like any other filing against that run. A new proposal
     answers **201**.
 
+    Every text the proposal arrives with — its title, the texts of its payload, its field
+    sources, its source and its model — is read by the injection screen and stored exactly as it
+    arrived. What the screen finds is returned in `riskFlags` and shown in the queue, and
+    while a flag stands no agent may approve the proposal: a person decides it. A run files
+    at most `WATCH_RUN_MAX_PROPOSALS` proposals (50 unless the platform sets another
+    number); a retry of one it filed is not a new proposal and still answers.
+
     Errors to branch on: `run_not_open` (422) when a key bound to an agent names no run or
-    a closed one; `not_found` (404) when the run named is not one this key opened;
+    a closed one; `run_budget_exhausted` (422) when the run has already filed as many
+    proposals as one run may, so close it and open another; `not_found` (404) when the run
+    named is not one this key opened;
     `source_missing` (422) when a changed value carries no source, or a new record no
     `sourceUrl`; `unknown_key` (422) for a kind, a list, a language, a term, a target
     obligation or provision, an instrument, a parent provision, a provision kind, a level, a jurisdiction, an authority or a duty type the
@@ -514,17 +523,19 @@ def approve_proposal(
     proposal; `four_eyes_violation` when the reviewer is the person, key or agent who made
     the proposal; `person_review_required` when an agent approves a kind whose record
     cannot name its confirming agent, a new provision or a provision's new text, which
-    waits for a person; `invalid_transition` when the proposal was already approved or
-    rejected, which is also what a repeated or simultaneous second call answers, since
-    nothing is ever applied twice; `source_missing` when a correction introduces a field the
-    proposal never sourced; `validation_error` when a key sends no `decision` or a person
-    sends one or names a run, and when a correction is offered on a kind that cannot be
-    corrected or does not fit its payload; `unknown_key` when the payload names a row the
-    library does not hold; `not_a_regime` when a new instrument's regime is not a term of
-    the regime dimension; `duplicate_key` when a new record's key was taken while the
-    proposal waited; `jurisdiction_term_mirrored` (422) when the payload adds or renames a
-    term of a dimension that mirrors the jurisdiction list, or scopes an obligation with
-    one, which a proposal filed before that rule may still ask for;
+    waits for a person; `risk_flagged` (409) when an agent approves a proposal whose
+    `riskFlags` is not empty, or corrects it with text the injection screen flags, which
+    waits for a person who reads the flag; `invalid_transition` when the proposal was
+    already approved or rejected, which is also what a repeated or simultaneous second call
+    answers, since nothing is ever applied twice; `source_missing` when a correction
+    introduces a field the proposal never sourced; `validation_error` when a key sends no
+    `decision` or a person sends one or names a run, and when a correction is offered on a
+    kind that cannot be corrected or does not fit its payload; `unknown_key` when the
+    payload names a row the library does not hold; `not_a_regime` when a new instrument's
+    regime is not a term of the regime dimension; `duplicate_key` when a new record's key
+    was taken while the proposal waited; `jurisdiction_term_mirrored` (422) when the payload
+    adds or renames a term of a dimension that mirrors the jurisdiction list, or scopes an
+    obligation with one, which a proposal filed before that rule may still ask for;
     `standard_term_only_on_standards` (422) when the payload, as proposed or as corrected,
     puts a standard's term on an obligation whose instrument is not a standard.
     """

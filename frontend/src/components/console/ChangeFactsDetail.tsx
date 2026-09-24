@@ -223,6 +223,11 @@ function Detail({ change }: { change: ConsoleChangeRow }) {
         <span className="font-mono">{t('console.changeFacts.stableKey', { key: change.stableKey })}</span>
       </Meta>
       <Notice>{t('console.changeFacts.explain')}</Notice>
+      {change.riskFlagged ? (
+        <Notice tone="warn" data-change-flagged="">
+          {t('console.changeFacts.flagged')}
+        </Notice>
+      ) : null}
 
       <Panel title={t('console.changeFacts.factsTitle')}>
         <Fact

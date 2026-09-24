@@ -47,6 +47,9 @@ CHUNK_STATUS_BY_CODE: dict[str, int] = {
     # a provision version), so it waits for a person: the proposal is fine, the reviewer
     # is the wrong kind of principal for it.
     "person_review_required": 409,
+    # An agent approved or confirmed what the injection screen flagged (AGT-07, H23): the
+    # record is fine to decide, but only a person who has read the flag decides it.
+    "risk_flagged": 409,
     # An agent confirmed a watch fact that it, or another key of its own agent, suggested
     # (D-74): the fact is fine, the confirmer is not independent of it.
     "own_suggestion": 409,

@@ -1,6 +1,7 @@
 {
   "console.changeFacts.title": "Change facts",
   "console.changeFacts.lede": "What the agents suggested about a change, waiting for a library editor",
+  "console.changeFacts.flagged": "A page of this change reads like an instruction to an AI. Open its pages and check the facts against them before you confirm. An agent cannot confirm them.",
   "console.changeFacts.explain": "What you confirm here is the shared library. Every organisation reads it, and each one still decides in its own triage what to do about it.",
   "console.changeFacts.backToList": "Change facts",
   "console.changeFacts.filter.authority": "Authority",

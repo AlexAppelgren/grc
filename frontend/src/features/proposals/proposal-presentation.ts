@@ -12,7 +12,7 @@ import { TERM_KINDS, VOCABULARY_KINDS, type ObligationVersionPayload, type Propo
 // (positive). An agent that decided or corrected a proposal is named as an agent,
 // never in a person's slot, and its decision reads as machine-confirmed.
 
-const SLOT_ORDER = { kind: 10, status: 20, yours: 30 } as const;
+const SLOT_ORDER = { kind: 10, status: 20, flagged: 25, yours: 30 } as const;
 
 const KIND_LABEL: Readonly<Record<ProposalKind, MessageKey>> = {
   new_instrument: 'console.queue.kind.newInstrument',
@@ -56,11 +56,13 @@ export function statusTone(status: string): PillTone {
   return isProposalStatus(status) ? proposalStatusTone[status] : 'information';
 }
 
-export function presentProposal(row: Pick<ProposalQueueRow, 'kind' | 'status' | 'isMine'>, t: Translate): PresentedPill[] {
+export function presentProposal(row: Pick<ProposalQueueRow, 'kind' | 'status' | 'isMine' | 'riskFlags'>, t: Translate): PresentedPill[] {
   const pills: PresentedPill[] = [
     { key: 'kind', label: kindLabel(row.kind, t), tone: slotTone.proposalKind, order: SLOT_ORDER.kind },
     { key: 'status', label: statusLabel(row.status, t), tone: statusTone(row.status), order: SLOT_ORDER.status },
   ];
+  // AGT-07: the injection screen flagged a text the proposal arrived with; only a person decides it.
+  if ((row.riskFlags ?? []).length > 0) pills.push({ key: 'flagged', label: t('console.queue.flagged'), tone: slotTone.riskFlagged, order: SLOT_ORDER.flagged });
   if (row.isMine === true) pills.push({ key: 'yours', label: t('console.queue.yours'), tone: slotTone.you, order: SLOT_ORDER.yours });
   return pills.sort(byOrder);
 }

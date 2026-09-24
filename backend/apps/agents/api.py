@@ -137,6 +137,11 @@ def finish_agent_run(
     the only trace of it and the way a reader tells a quiet night from a night of documents
     that were not ours to watch.
 
+    What the server can see for itself it counts as the run closes, and those numbers are
+    the ones kept: `sourcesChecked`, `changesRegistered`, `proposalsSubmitted` and
+    `recordsRechecked` are read from what the run filed, whatever the close sends. The
+    other counters are the run's own account.
+
     Authenticated by the API key that opened the run, carrying the `agent-runs:write`
     scope; no session can close a run. A run closes once and into a terminal status. Sending
     the same close again answers the run it already closed, so a lost answer costs nothing;

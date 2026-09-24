@@ -351,6 +351,19 @@ class ProposalRow(CamelSchema):
     )
     source_label: str = Field(default="", description="How the proposal names its source in a sentence a reviewer can read, for example \"Finansinspektionen, board decision 15 September 2026\". Written by the proposer, so it is a claim to check against `sourceUrl`, not a verified fact.")
     source_url: str = Field(default="", description="The page the proposal was drawn from, for a reviewer to open. An agent wrote it; that the link resolves says nothing about whether it supports the change.")
+    risk_flags: list[str] = Field(
+        default_factory=list,
+        description=(
+            "What the injection screen found in the texts the proposal arrived with: its title, "
+            "every text of its payload, its field sources, its source and its model. Empty when it found "
+            "nothing; otherwise `embedded_instructions`, text that reads as an instruction to "
+            "an AI rather than a fact from the authority. The texts are stored exactly as they "
+            "arrived and are never followed. While the list is not empty no agent may approve "
+            "the proposal, which answers 409 `risk_flagged`: a person reads the flag and "
+            "decides, and may still approve."
+        ),
+        examples=[[], ["embedded_instructions"]],
+    )
     effective_from: date | None = Field(default=None, description="The legal date the proposed change comes into force, as the proposal states it. A plain date, never a timestamp, and null when the proposal names none. Read the library record for the dates actually in force.")
     origin: str = Field(
         description=(

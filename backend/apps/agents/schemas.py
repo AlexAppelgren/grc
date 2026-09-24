@@ -67,7 +67,10 @@ _EXAMPLE_FINISHED_RUN: dict[str, JsonValue] = {
 
 class AgentRunStats(CamelSchema):
     """The `stats` column of agent_run: what one run did, counted against the budget
-    defaults of its definition (`backend/agents/<agent>/v<n>/definition.yaml`)."""
+    defaults of its definition (`backend/agents/<agent>/v<n>/definition.yaml`). What the
+    server can see it counts itself as the run closes (H24): sources checked, changes
+    registered, proposals submitted and records re-checked. The rest is the run's own
+    account."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_STATS]})
 
@@ -95,7 +98,8 @@ class AgentRunStats(CamelSchema):
             "How many registered sources the run visited, one per source per run, counting the "
             "sources where nothing had changed. A quiet source is still a check, and that is "
             "what lets a bank show that a source was watched on a given night rather than only "
-            "that something was found. Defaults to 0."
+            "that something was found. Counted by the server as the run closes, from the sweep "
+            "lines the run logged in the coverage log; a number sent here is not kept. Defaults to 0."
         ),
     )
     changes_registered: int = Field(
@@ -104,8 +108,9 @@ class AgentRunStats(CamelSchema):
             "How many regulatory changes the run put on the watch feed, counted against the "
             "change budget in the agent's definition. A change is a sighting the bank has yet "
             "to judge: it is not an obligation, it is not applicability and it is not a "
-            "decision, and nothing in the inventory moves until a person acts on it. Defaults "
-            "to 0."
+            "decision, and nothing in the inventory moves until a person acts on it. Counted "
+            "by the server as the run closes, from the new changes it registered (a second "
+            "sighting is not a new change); a number sent here is not kept. Defaults to 0."
         ),
     )
     proposals_submitted: int = Field(
@@ -114,7 +119,9 @@ class AgentRunStats(CamelSchema):
             "How many proposals the run put in the queue for the shared library, counted "
             "against the proposal budget in the agent's definition. A proposal is the only "
             "door an agent has into the library and it changes nothing until it is approved, "
-            "so read this as a count of requests and never of library edits. Defaults to 0."
+            "so read this as a count of requests and never of library edits. Counted by the "
+            "server as the run closes, from the proposals filed under it; a number sent here "
+            "is not kept. Defaults to 0."
         ),
     )
     out_of_scope: int = Field(
@@ -139,8 +146,9 @@ class AgentRunStats(CamelSchema):
             "number with a minimum of 0 and no maximum: one per record, each also logged as a "
             "`recheck` source check naming it, so the coverage log shows which records were "
             "compared beside the documents fetched. A record found unchanged still counts, "
-            "because a quiet re-check is still a check. Defaults to 0; a negative number is "
-            "refused with `validation_error`."
+            "because a quiet re-check is still a check. Counted by the server as the run "
+            "closes, from the records its re-check lines name; a number sent here is not kept. "
+            "Defaults to 0; a negative number is refused with `validation_error`."
         ),
     )
     corrections_proposed: int = Field(

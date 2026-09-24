@@ -894,6 +894,26 @@ class ConfirmingCuration(CurationCase):
         self.assertTrue(self.nothing_confirmed())
         self.assertFalse(AiGeneration.objects.filter(purpose="agent_review").exists(), "a refusal logs nothing")
 
+    def test_no_agent_confirms_a_change_whose_page_is_flagged_and_a_person_still_may(self) -> None:
+        """H23 (security-review-c5 M2, F9): a page the screen flagged keeps the change's
+        confirmation for a person, who sees the flag on the change and may still decide."""
+        page = watch_build.document(self.reform, url=FIRST_PAGE_OF_A_CORRECTION, is_primary=False)
+        with watch_write("test"):
+            page.risk_flags = [EMBEDDED_INSTRUCTIONS]
+            page.save(update_fields=["risk_flags"])
+        refused = self.as_key(self.confirmer, {"flags": ["advice_perimeter"]})
+        self.assertEqual((refused.status_code, refused.json()["code"]), (409, "risk_flagged"), refused.content)
+        self.assertTrue(self.nothing_confirmed())
+        self.assertFalse(AiGeneration.objects.filter(purpose="agent_review").exists(), "a refusal logs nothing")
+        self.assertFalse(AuditEvent.objects.filter(action="regulatory_change.curation_confirmed").exists())
+        with as_editor(self.editor, stepped_up=True):
+            confirmed = self.post({"flags": ["advice_perimeter"]}, AS_SESSION)
+        self.assertEqual(confirmed.status_code, 200, confirmed.content)
+        self.assertEqual(confirmed.json()["flags"][0]["confirmedOrigin"], "user")
+        self.assertTrue(confirmed.json()["riskFlagged"], "the person deciding is shown the flag")
+        clean = self.as_key(self.confirmer, {"flags": ["advice_perimeter"]}, run=agent_build.platform_run(key=self.confirmer))
+        self.assertEqual(clean.status_code, 409, "a flag stands after a person's confirmation too")
+
     def test_a_key_decides_inside_an_open_run_of_its_own_with_its_model_call(self) -> None:
         body = {"flags": ["advice_perimeter"]}
         key = {"HTTP_X_API_KEY": self.confirmer.plain_key}

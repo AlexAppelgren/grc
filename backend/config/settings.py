@@ -600,6 +600,23 @@ STANDARDS_PUBLISHER_HOSTS = [host.lower() for host in env_list(
     )]
 
 # ---------------------------------------------------------------------------------------
+# ===== AGT-01, WAT-01 what one agent run may file (HARDENING H24, agent-write-guards) ====
+# The server holds every run to the write budgets its definition names
+# (`budget_defaults` in backend/agents/watch-sweeper/v1/definition.yaml): new proposals,
+# new changes on the watch feed and re-check lines of the coverage log. A write past its
+# budget answers 422 `run_budget_exhausted` and stores nothing, so a runaway or injected
+# run cannot flood the review queue under one open run. A budget below 1 would refuse
+# every run's first write, so it refuses to boot instead.
+# ---------------------------------------------------------------------------------------
+WATCH_RUN_MAX_PROPOSALS = env_int("WATCH_RUN_MAX_PROPOSALS", 50)
+WATCH_RUN_MAX_CHANGES = env_int("WATCH_RUN_MAX_CHANGES", 50)
+WATCH_RUN_MAX_RECHECKS = env_int("WATCH_RUN_MAX_RECHECKS", 100)
+if min(WATCH_RUN_MAX_PROPOSALS, WATCH_RUN_MAX_CHANGES, WATCH_RUN_MAX_RECHECKS) < 1:
+    raise ImproperlyConfigured(
+        "Refusing to boot: WATCH_RUN_MAX_PROPOSALS, WATCH_RUN_MAX_CHANGES and WATCH_RUN_MAX_RECHECKS are each at least 1."
+    )
+
+# ---------------------------------------------------------------------------------------
 # ===== HOM-01 how long Today's "Coming up" list is (apps/home/logic.py, c6-home-backend) =
 # Today shows the same short list on a 375 px phone and on a desktop, so its length is one
 # number rather than a breakpoint: the screen never decides how much of the roadmap it is

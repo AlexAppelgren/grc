@@ -26,6 +26,7 @@ from __future__ import annotations
 import enum
 import uuid
 
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 from apps.shared.tenancy import TenantModel
@@ -83,6 +84,9 @@ class Proposal(models.Model):
     field_sources = models.JSONField(default=dict, blank=True)  # schema: ProposalFieldSources
     source_label = models.CharField(max_length=500, blank=True)
     source_url = models.URLField(max_length=2000, blank=True)
+    # What the injection screen found in the texts the proposer sent (AGT-07, H23): the
+    # queue shows it, and no agent approves while it stands.
+    risk_flags = ArrayField(models.CharField(max_length=40), default=list, blank=True)
     effective_from = models.DateField(null=True, blank=True)
     origin = models.CharField(max_length=16, choices=_choices(OriginType))
     agent_run_id = models.UUIDField(null=True, blank=True)
