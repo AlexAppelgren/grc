@@ -119,7 +119,7 @@ def register_change(
 
     existing = keys.change_with_stable_key(body.stable_key)
     if existing is not None:
-        return 200, _merge(existing, actor=actor, order=order, body=body, risk_flags=risk_flags)
+        return 200, _merge(existing, actor=actor, order=order, body=body, risk_flags=risk_flags, run=run)
     # A merge touches no stored term, so only a new change must name its regime (D-39), and
     # only a new change's standard term must come from a standards body (D-38).
     keys.require_regime(terms)
@@ -234,7 +234,13 @@ def _log_suggested_classification(
 
 
 def _merge(
-    change: keys.ChangeRow, *, actor: Actor, order: list[str], body: WatchChangeInput, risk_flags: list[str]
+    change: keys.ChangeRow,
+    *,
+    actor: Actor,
+    order: list[str],
+    body: WatchChangeInput,
+    risk_flags: list[str],
+    run: AgentRun | None,
 ) -> WatchChange:
     """A second sighting of a reform the library already holds (AC-WAT1).
 
@@ -260,7 +266,7 @@ def _merge(
             # The same rule as a page and a milestone: a reform the library already holds
             # takes what it is missing and keeps what it has, so a retry cannot rewrite a
             # draft and a run that has one to give is not silently ignored (D-66).
-            so_what_draft.store(change, body.so_what, actor=actor, agent_run_id=None)
+            so_what_draft.store(change, body.so_what, actor=actor, agent_run_id=None if run is None else run.id)
         record(
             action=UPDATED,
             actor=actor,

@@ -44,11 +44,11 @@ from __future__ import annotations
 
 import datetime
 import uuid
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
 from django.conf import settings
 from ninja import Field
-from pydantic import ConfigDict, HttpUrl, model_validator
+from pydantic import ConfigDict, HttpUrl, UrlConstraints, model_validator
 from pydantic.json_schema import JsonDict
 
 from apps.governance.schemas import AiCitation
@@ -73,6 +73,13 @@ CaseLinkDecision = Literal["accepted", "removed"]
 # may be linked to in a single call. Lengths, not thresholds: they bound a column or a
 # request body, not a decision.
 LABEL_MAX = 300
+# The labels kept in a 200-character column (a source's name, an authority, a date's label,
+# a milestone, a publisher), and the longest address and risk flag a column keeps: a longer
+# value is refused here with its field named, never truncated or answered as a 500.
+COLUMN_LABEL_MAX = 200
+URL_MAX = 2000
+RISK_FLAG_MAX = 40
+PageUrl = Annotated[HttpUrl, UrlConstraints(max_length=URL_MAX)]
 TEXT_MAX = 4000
 KEY_MAX = 80
 LINKS_MAX = 200
@@ -481,7 +488,7 @@ class WatchSourceOut(CamelSchema):
     )
     url: str | None = Field(
         description=(
-            "The page the agents fetch, as a URL of at most 2083 characters. Null for a "
+            "The page the agents fetch, as a URL of at most 2000 characters. Null for a "
             "source that is not one address — the open web sweep has none. Never a page behind "
             "a login: every source is public."
         ),
@@ -548,18 +555,18 @@ class WatchSourceInput(WriteBody):
 
     name: str = Field(
         min_length=1,
-        max_length=LABEL_MAX,
+        max_length=COLUMN_LABEL_MAX,
         description=(
-            f"What to call the source, 1 to {LABEL_MAX} characters and unique across the "
+            f"What to call the source, 1 to {COLUMN_LABEL_MAX} characters and unique across the "
             "library. A name already taken answers 409; the registry is shared, so the name "
             "one editor picks is the name every bank reads."
         ),
         examples=["Finansinspektionen news"],
     )
-    url: HttpUrl | None = Field(
+    url: PageUrl | None = Field(
         default=None,
         description=(
-            "The public page to fetch, http or https, at most 2083 characters, validated as a "
+            "The public page to fetch, http or https, at most 2000 characters, validated as a "
             "URL before anything is stored. Omit it for a source that is not one address, such "
             "as an open-web sweep."
         ),
@@ -603,10 +610,10 @@ class WatchSourcePatch(WriteBody):
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"checkFrequency": "weekly", "active": False}]})
 
-    url: HttpUrl | None = Field(
+    url: PageUrl | None = Field(
         default=None,
         description=(
-            "A new address for the same source, as a URL of at most 2083 characters, when the "
+            "A new address for the same source, as a URL of at most 2000 characters, when the "
             "publisher moves the page. Omit to leave it alone."
         ),
         examples=["https://www.fi.se/en/published/news/"],
@@ -819,9 +826,9 @@ class WatchChangeEventInput(WriteBody):
 
     label: str = Field(
         min_length=1,
-        max_length=LABEL_MAX,
+        max_length=COLUMN_LABEL_MAX,
         description=(
-            f"What happened, in the words of the source, 1 to {LABEL_MAX} characters — "
+            f"What happened, in the words of the source, 1 to {COLUMN_LABEL_MAX} characters — "
             "'Consultation closed', 'Adopted by the board', 'Transition ends'. Free text on "
             "purpose: the milestones of a reform are not a list anyone can close. It is never "
             "a status the system branches on."
@@ -855,11 +862,11 @@ class WatchChangeEventInput(WriteBody):
         ),
         examples=[1],
     )
-    source_url: HttpUrl | None = Field(
+    source_url: PageUrl | None = Field(
         default=None,
         description=(
             "The public page that states this milestone, so a reviewer can open it, as a URL "
-            "of at most 2083 characters. Null when it is the change's own source."
+            "of at most 2000 characters. Null when it is the change's own source."
         ),
         examples=["https://www.fi.se/en/published/consultations/2026/"],
     )
@@ -908,9 +915,9 @@ class WatchChangeDocumentInput(WriteBody):
         }
     )
 
-    url: HttpUrl = Field(
+    url: PageUrl = Field(
         description=(
-            "The page's public address, a URL of at most 2083 characters, unique per change: "
+            "The page's public address, a URL of at most 2000 characters, unique per change: "
             "posting the same url again answers the page that is already there rather than "
             "adding a second row. Must be http or https."
         ),
@@ -924,9 +931,9 @@ class WatchChangeDocumentInput(WriteBody):
     )
     publisher: str | None = Field(
         default=None,
-        max_length=LABEL_MAX,
+        max_length=COLUMN_LABEL_MAX,
         description=(
-            f"Who published the page, as the page says, at most {LABEL_MAX} characters. A "
+            f"Who published the page, as the page says, at most {COLUMN_LABEL_MAX} characters. A "
             "label for a reader, never matched against the authority list."
         ),
         examples=["Finansinspektionen"],
@@ -964,12 +971,12 @@ class WatchChangeDocumentInput(WriteBody):
         ),
         examples=[False],
     )
-    risk_flags: list[str] = Field(
+    risk_flags: list[Annotated[str, Field(min_length=1, max_length=RISK_FLAG_MAX)]] = Field(
         default_factory=list,
         max_length=50,
         description=(
             "What the injection screen found in the fetched text (`agents/screen.py`), at most "
-            "50 entries. Computed by the agent, not by a person and not by an admin: these are "
+            f"50 entries of 1 to {RISK_FLAG_MAX} characters each. Computed by the agent, not by a person and not by an admin: these are "
             "the screen's own findings, which is why they are strings and not a vocabulary. A "
             "flag here says the text is suspicious, never that the reform is."
         ),
@@ -1190,9 +1197,9 @@ class WatchChangeInput(WriteBody):
     )
     authority_label: str = Field(
         min_length=1,
-        max_length=LABEL_MAX,
+        max_length=COLUMN_LABEL_MAX,
         description=(
-            f"Who issued the change, as the source writes it, 1 to {LABEL_MAX} characters. "
+            f"Who issued the change, as the source writes it, 1 to {COLUMN_LABEL_MAX} characters. "
             "Always present, even when the authority is not in the library's authority list "
             "yet, so a reader always sees who is behind a change."
         ),
@@ -1267,9 +1274,9 @@ class WatchChangeInput(WriteBody):
     key_date_precision: DatePrecision | None = Field(default=None, description=_PRECISION, examples=["day"])
     key_date_label: str | None = Field(
         default=None,
-        max_length=LABEL_MAX,
+        max_length=COLUMN_LABEL_MAX,
         description=(
-            f"What that date is, in the source's words, at most {LABEL_MAX} characters: "
+            f"What that date is, in the source's words, at most {COLUMN_LABEL_MAX} characters: "
             "'In force', 'Applies', 'Transition ends'."
         ),
         examples=["In force"],
@@ -1303,10 +1310,10 @@ class WatchChangeInput(WriteBody):
         description=f"Where the change was found, in words a reader recognises, 1 to {LABEL_MAX} characters.",
         examples=["Finansinspektionen"],
     )
-    source_url: HttpUrl = Field(
+    source_url: PageUrl = Field(
         description=(
             "The public page the change was found on, so a reviewer can open it: a URL of at "
-            "most 2083 characters. Required, because a change always says where it came from."
+            "most 2000 characters. Required, because a change always says where it came from."
         ),
         examples=["https://www.fi.se/"],
     )
@@ -1397,8 +1404,8 @@ class WatchChangePatch(WriteBody):
     key_date_precision: DatePrecision | None = Field(default=None, description=_PRECISION, examples=["day"])
     key_date_label: str | None = Field(
         default=None,
-        max_length=LABEL_MAX,
-        description=f"What that date is, in the source's words, at most {LABEL_MAX} characters.",
+        max_length=COLUMN_LABEL_MAX,
+        description=f"What that date is, in the source's words, at most {COLUMN_LABEL_MAX} characters.",
         examples=["In force"],
     )
     flags: list[str] | None = Field(

@@ -469,6 +469,16 @@ class StandardsPublishers(WatchSourceCase):
         self.assertTrue(response.json()["active"])
 
     @override_settings(STANDARDS_PUBLISHER_HOSTS=["iso.org"])
+    def test_a_publishers_host_written_with_its_root_dot_is_still_the_publisher(self) -> None:
+        """security-review-c5: `iso.org.` is the same host as `iso.org`, so the trailing dot
+        of a fully qualified name must not register a publisher's page with checks on."""
+        for url in ("https://iso.org./news", "https://www.iso.org./news"):
+            with self.subTest(url=url):
+                response = self.register({**NEW_SOURCE, "name": f"ISO {url}", "url": url})
+                self.assertEqual(response.status_code, 201, response.content)
+                self.assertFalse(response.json()["active"])
+
+    @override_settings(STANDARDS_PUBLISHER_HOSTS=["iso.org"])
     def test_an_editor_cannot_switch_a_publishers_checks_on_or_move_a_source_onto_one(self) -> None:
         publisher = watch_build.source(name="ISO news", url="https://www.iso.org/news.html", active=False)
         ordinary = watch_build.source(name="fi.se news")

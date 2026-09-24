@@ -53,6 +53,7 @@ from django.utils import timezone
 from pydantic.alias_generators import to_camel
 
 from apps.agents import runs
+from apps.agents.screen import screen
 from apps.governance import ai_log
 from apps.governance.ai_log import log_generation
 from apps.governance.models import AiPurpose
@@ -136,6 +137,7 @@ def update_change_facts(
         if terms is not None:
             _refuse_dropping_confirmed(who, change, "term", {row.id for row in terms}, "a scope term", step_up_assertion_id)
         before = _facts_of(change)
+        risk_flags = _screen_corrected_text(change, sent)
         _apply_columns(change, sent, change_type=change_type, superseded_by=superseded_by, suggester=suggester)
         if flags is not None:
             _replace_term_links(change, "flag", flags, suggester, may_overturn=may_overturn)
@@ -155,7 +157,7 @@ def update_change_facts(
             summary=f"{actor.label} corrected the facts of a registered change.",
             tenant_id=None,
             before=before,
-            after=_facts_of(change),
+            after={**_facts_of(change), **({"riskFlags": risk_flags} if risk_flags else {})},
             step_up_assertion_id=step_up_assertion_id,
         )
     return keys.change_out(change, order)
@@ -181,6 +183,21 @@ def _superseding(change: keys.ChangeRow, sent: dict[str, Any]) -> uuid.UUID:
     if named == change.id:
         raise ValidationError("A change cannot supersede itself.", code="validation_error")
     return keys.change_named(named)
+
+
+def _screen_corrected_text(change: keys.ChangeRow, sent: dict[str, Any]) -> list[str]:
+    """What the injection screen finds in a corrected title or summary (AGT-07), added to
+    every page of the change as registration records it, so a correction that re-reads a
+    page is screened as the first sighting was. The text is stored exactly as it arrived; a
+    flag already on a page stays."""
+    found = sorted({flag for field in ("title", "summary") if field in sent for flag in screen(sent[field])})
+    if found:
+        for document in change.documents.all():
+            merged = sorted({*document.risk_flags, *found})
+            if merged != document.risk_flags:
+                document.risk_flags = merged
+                document.save(update_fields=["risk_flags"])
+    return found
 
 
 def _suggester(who: Principal) -> dict[str, uuid.UUID | None]:

@@ -247,3 +247,39 @@ class IdentityLookupMode(TestCase):
             f"allowed: {sorted(allowed)}. An audit row goes through record() and a security-log "
             "row through log_event(), which both do it there.",
         )
+
+    def test_only_the_tenancy_module_and_the_outbox_cursor_set_a_session_setting_by_hand(self) -> None:
+        """The guard above reads callers of `clear_tenant()` and `platform_zone()`, so a
+        module issuing its own `set_config` or `SET` statement would leave the zone without
+        ever being named there (security-review-c5). Every statement string in production
+        code that sets a session setting is listed here by module and function: the tenancy
+        module, which owns the three settings, and the outbox worker's `_enter_zone`, which
+        puts each batch in the zone of the tenant its events belong to, inside the batch's
+        transaction, under the `@tenant_task` that sets the Python side."""
+        import ast
+        import re
+        from pathlib import Path
+
+        setting = re.compile(r"set_config|\bSET\s+(LOCAL\s+|SESSION\s+)?[a-z_]+\.[a-z_]+", re.IGNORECASE)
+        apps_dir = Path(__file__).resolve().parent.parent
+        found: list[tuple[str, str, int]] = []
+        for path in sorted(apps_dir.rglob("*.py")):
+            rel = path.relative_to(apps_dir).as_posix()
+            if "/migrations/" in rel or rel.split("/")[-1].startswith("tests_") or rel.endswith("/testing.py"):
+                continue
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for top in tree.body:
+                scope = top.name if isinstance(top, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) else "<module>"
+                for node in ast.walk(top):
+                    if not isinstance(node, ast.Call):
+                        continue
+                    for arg in ast.walk(node):
+                        if isinstance(arg, ast.Constant) and isinstance(arg.value, str) and setting.search(arg.value):
+                            found.append((f"apps/{rel}", scope, arg.lineno))
+        allowed = {"apps/shared/tenancy.py", "apps/shared/outbox.py::_enter_zone"}
+        self.assertEqual(
+            self._outside(found, allowed),
+            [],
+            f"a session setting is set by hand outside {sorted(allowed)}; leave a zone through "
+            "tenancy.clear_tenant() or platform_zone(), which the guard above reviews.",
+        )

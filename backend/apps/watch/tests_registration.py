@@ -511,6 +511,30 @@ class AttachingAPage(RegistrationCase):
         self.assertEqual(response.json()["code"], "not_found")
 
 
+class WhatARunSendsFitsWhereItIsKept(RegistrationCase):
+    """security-review-c5: every text a run sends is refused at the boundary when it is
+    longer than the column that keeps it, so an over-long value is a 422 naming the field
+    and never a database error answered as a 500."""
+
+    def test_a_value_longer_than_its_column_is_refused_and_nothing_is_stored(self) -> None:
+        too_long_url = FIRST_PAGE + "x" * (2001 - len(FIRST_PAGE))
+        run = str(self.open_run.id)
+        for field, payload in (
+            ("authorityLabel", body(agentRunId=run, authorityLabel="F" * 201)),
+            ("keyDateLabel", body(agentRunId=run, keyDateLabel="I" * 201)),
+            ("events", body(agentRunId=run, events=[{**CONSULTATION, "label": "C" * 201}])),
+            ("documents", body(agentRunId=run, documents=[{"url": FIRST_PAGE, "publisher": "P" * 201}])),
+            ("documents", body(agentRunId=run, documents=[{"url": too_long_url}])),
+            ("documents", body(agentRunId=run, documents=[{"url": FIRST_PAGE, "riskFlags": ["f" * 41]}])),
+            ("sourceUrl", body(agentRunId=run, sourceUrl=too_long_url)),
+        ):
+            with self.subTest(field=field):
+                response = self.register(payload)
+                self.assertEqual(response.status_code, 422, response.content)
+                self.assertIn(field, response.content.decode())
+                self.assertFalse(RegulatoryChange.objects.filter(stable_key=STABLE_KEY).exists())
+
+
 class ScreeningWhatWasFetched(RegistrationCase):
     """AGT-07: fetched text is data. It is screened, flagged and stored exactly as it came."""
 
