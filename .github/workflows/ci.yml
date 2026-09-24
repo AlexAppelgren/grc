@@ -325,7 +325,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
     services:
       db:
         image: pgvector/pgvector:pg16
@@ -521,17 +521,21 @@ jobs:
   # spec file, so the `specs` tier deliberately never starts a browser here.
   # ---------------------------------------------------------------------------
   e2e:
-    name: E2E (Playwright ${{ matrix.shard }})
+    name: E2E (Playwright ${{ matrix.part }})
     needs: changes
     if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
-    # Playwright's own sharding (D-90): each shard boots its own real stack on its own
-    # fresh database and runs its share of the journeys; together they are all of them.
+    # Playwright's own sharding (D-90): each part boots its own real stack on its own
+    # fresh database. Six shards run the journeys; the screen budget journey (NFR-S7,
+    # four parts) runs as a seventh part of its own, because Playwright deals a shard a
+    # contiguous run of tests and would put all four parts in one shard. The shards
+    # leave out exactly what the seventh part runs, by the same title, so together they
+    # are every journey.
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        part: ["1/6", "2/6", "3/6", "4/6", "5/6", "6/6", "screens"]
     services:
       db:
         image: pgvector/pgvector:pg16
@@ -609,20 +613,27 @@ jobs:
       - name: Run journeys
         env:
           FULL_SUITE: ${{ needs.changes.outputs.full }}
-          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+          PART: ${{ matrix.part }}
+          SCREENS: "NFR-S7: Every screen reaches real data within its budget"
         run: |
           set -euo pipefail
-          if [ "$FULL_SUITE" = "true" ]; then
-            npm run test:e2e -- --shard="$SHARD"
+          if [ "$PART" = "screens" ]; then
+            if [ "$FULL_SUITE" = "true" ]; then
+              npm run test:e2e -- --grep "$SCREENS"
+            else
+              echo "The screen budget journey is not @smoke: nothing to run on a smoke push."
+            fi
+          elif [ "$FULL_SUITE" = "true" ]; then
+            npm run test:e2e -- --grep-invert "$SCREENS" --shard="$PART"
           else
-            npm run test:e2e -- --grep @smoke --shard="$SHARD"
+            npm run test:e2e -- --grep @smoke --grep-invert "$SCREENS" --shard="$PART"
           fi
 
       - name: Upload screenshots and traces
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: playwright-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
+          name: playwright-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
           path: |
             frontend/test-results
             frontend/playwright-report
