@@ -50,7 +50,7 @@ done
 
 failed=0
 for wf in ci.yml codeql.yml; do
-  if gh run watch "${ids[$wf]}" --interval 30 --exit-status >/dev/null 2>&1; then
+  if gh run watch "${ids[$wf]}" --interval 5 --exit-status >/dev/null 2>&1; then
     say "$wf green"
   else
     failed=1

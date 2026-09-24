@@ -108,6 +108,7 @@ Dependabot's github-actions group keeps them moving.
 | `actions/setup-node` | v7.0.0 | `820762786026740c76f36085b0efc47a31fe5020` |
 | `actions/cache` | v6.1.0 | `55cc8345863c7cc4c66a329aec7e433d2d1c52a9` |
 | `actions/upload-artifact` | v7.0.1 | `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a` |
+| `actions/download-artifact` | v8.0.1 | `3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c` |
 | `gitleaks/gitleaks-action` | v3.0.0 | `e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e` |
 | `google/osv-scanner-action` | v2.6.0 | `a345acffa64b0eaede81a3d9aae6141214d9c8fc` |
 | `aquasecurity/trivy-action` | v0.36.0 | `ed142fd0673e97e23eac54620cfb913e5ce36c25` |
