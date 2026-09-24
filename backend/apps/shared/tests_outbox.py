@@ -64,22 +64,27 @@ SECRET = "the bank's own assessment text"
 HALF_FINISHED = "probe-half-finished"
 
 
+# The registry as the app configs' `ready()` left it, taken when this module is imported:
+# Django is set up by then and no test has run, and no module registers at import time
+# (RegistrationHappensWhenTheAppIsReady pins that).
+STARTUP_HANDLERS = {topic: list(handlers) for topic, handlers in outbox._HANDLERS.items()}
+
+
 def only_the_consumers_are_registered() -> None:
-    """Put the handler registry back the way a process starts: the two consumers their app
+    """Put the handler registry back the way a process starts: every consumer the app
     configs' `ready()` registered, and the probes of whichever test just ran gone.
 
     `outbox._HANDLERS` is module state that outlives a test's transaction, so a test that
     only emptied it handed every test after it a process where nothing is delivered. On
     2026-09-21 that made `apps/search/tests_indexing.py` count no embeddings whenever this
     module happened to run before it — green in the canonical app order, red in any order
-    that puts `shared` first. Registration is idempotent, so calling it again is free.
+    that puts `shared` first. On 2026-09-24 the split suite (D-90) showed the same trap one
+    level up: this helper re-registered a hand-kept list of two consumers, so the
+    case-matching and "So what?" consumers added later were missing from every test that
+    ran after a cleanup. It restores the snapshot now, so a new consumer is restored too.
     """
-    from apps.cases import creation
-    from apps.search import tasks as search
-
     outbox._HANDLERS.clear()
-    creation.register()
-    search.register()
+    outbox._HANDLERS.update({topic: list(handlers) for topic, handlers in STARTUP_HANDLERS.items()})
 
 
 def enter_zone(tenant_id: uuid.UUID | None, *, using: str = DEFAULT_DB_ALIAS) -> None:
@@ -502,29 +507,49 @@ class TheBeatEntryRunsTheCursor(OutboxCursorCase):
 
 class TheRegistryHoldsOnlyItsConsumers(TestCase):
     """The cursor registers nothing of its own: a consumer registers its handler from its
-    app's `ready()`. Two consumers exist — chunk 5's case creation (rulings 9 and 32) and
-    chunk 7's search index, which fills the embeddings a library change left owing and
-    rebuilds a registered change's chunks from the watch events — so a
-    second relay, or a handler registered anywhere but in an app's `ready()`, shows up
-    here."""
+    app's `ready()`. Four consumers exist, in the order their apps are ready — chunk 5's
+    case creation (rulings 9 and 32), the "So what?" backfill (WAT-05, D-66), the
+    footprint re-decision of open cases (FP-03), and chunk 7's search index, which fills
+    the embeddings a library change left owing and rebuilds a registered change's chunks
+    from the watch events — so a second relay, or a handler registered anywhere but in an
+    app's `ready()`, shows up here. The registry is rebuilt from the app configs first, so
+    the proof holds whichever test ran before it in the process."""
 
-    def test_only_its_two_consumers_are_registered_by_production_code(self) -> None:
-        from apps.cases import creation
+    def test_only_its_consumers_are_registered_by_production_code(self) -> None:
+        from django.apps import apps as installed
+
+        from apps.cases import creation, matching, so_what
         from apps.search import tasks as search
 
-        self.assertEqual(
-            sorted(outbox._HANDLERS),
-            sorted({creation.CHANGE_REGISTERED, *search.INDEX_TOPICS, *search.CHANGE_TOPICS}),
-        )
-        self.assertEqual(
-            outbox.handlers_for(creation.CHANGE_REGISTERED), (creation.create_cases, search.index_change)
-        )
-        for topic in search.INDEX_TOPICS:
+        self.addCleanup(only_the_consumers_are_registered)
+        outbox._HANDLERS.clear()
+        installed.get_app_config("cases").ready()
+        installed.get_app_config("search").ready()
+
+        expected: dict[str, list[object]] = {}
+        for topics, handler in (
+            ((creation.CHANGE_REGISTERED,), creation.create_cases),
+            ((so_what.SO_WHAT_DRAFTED,), so_what.apply_draft),
+            ((matching.FOOTPRINT_APPROVED,), matching.after_footprint_change),
+            ((matching.CHANGE_FACTS_UPDATED,), matching.after_change_scope_change),
+            (search.INDEX_TOPICS, search.embed_rebuilt_chunks),
+            (search.CHANGE_TOPICS, search.index_change),
+        ):
+            for topic in topics:
+                expected.setdefault(topic, []).append(handler)
+        self.assertEqual(sorted(outbox._HANDLERS), sorted(expected))
+        for topic, handlers in expected.items():
             with self.subTest(topic=topic):
-                self.assertEqual(outbox.handlers_for(topic), (search.embed_rebuilt_chunks,))
-        for topic in set(search.CHANGE_TOPICS) - {creation.CHANGE_REGISTERED}:
-            with self.subTest(topic=topic):
-                self.assertEqual(outbox.handlers_for(topic), (search.index_change,))
+                self.assertEqual(outbox.handlers_for(topic), tuple(handlers))
+
+    def test_a_cleanup_puts_back_every_consumer_the_process_started_with(self) -> None:
+        outbox._HANDLERS.clear()
+        only_the_consumers_are_registered()
+        self.assertEqual(
+            {topic: tuple(handlers) for topic, handlers in outbox._HANDLERS.items()},
+            {topic: tuple(handlers) for topic, handlers in STARTUP_HANDLERS.items()},
+        )
+        self.assertTrue(STARTUP_HANDLERS, "the snapshot holds what the app configs registered")
 
 
 class RegistrationHappensWhenTheAppIsReady(TestCase):
@@ -560,13 +585,16 @@ class RegistrationHappensWhenTheAppIsReady(TestCase):
         tests that follow."""
         from django.apps import apps as installed
 
-        from apps.cases import creation
+        from apps.cases import creation, matching, so_what
         from apps.search import tasks as search
 
         self.addCleanup(only_the_consumers_are_registered)
         outbox._HANDLERS.clear()
         for label, topics, handler in (
             ("cases", (creation.CHANGE_REGISTERED,), creation.create_cases),
+            ("cases", (so_what.SO_WHAT_DRAFTED,), so_what.apply_draft),
+            ("cases", (matching.FOOTPRINT_APPROVED,), matching.after_footprint_change),
+            ("cases", (matching.CHANGE_FACTS_UPDATED,), matching.after_change_scope_change),
             ("search", search.INDEX_TOPICS, search.embed_rebuilt_chunks),
             ("search", search.CHANGE_TOPICS, search.index_change),
         ):
