@@ -94,7 +94,7 @@
  "apps.shared.tests_route_permissions": 0.01,
  "apps.shared.tests_scenarios": 18.04,
  "apps.shared.tests_schema_names": 0.01,
- "apps.shared.tests_seed_integrity": 543.11,
+ "apps.shared.tests_seed_integrity": 119.0,
  "apps.shared.tests_tenancy": 8.48,
  "apps.shared.tests_tenant_isolation": 1.44,
  "apps.shared.tests_vocabulary_integrity": 4.5,
