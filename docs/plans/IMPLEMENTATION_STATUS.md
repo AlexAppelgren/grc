@@ -124,3 +124,36 @@ and screen has a recorded baseline inside its budget.
   Measured column of `UI_Implementation_Plan.md`, the slowest the inventory at about 250 ms.
 - **Not yet:** real-model and real-embedder timings wait for the D-07 and D-09 keys; the
   load profile and the deployed measurement are chunk 14's.
+
+## R1 close (`r1-close-and-readiness`, 2026-09-24)
+
+R1 (chunks 0 to 7) is implemented and tested on `claude/r1w5-r1-close-and-readiness-6gi2py`,
+which starts from `main` at f3b9085 (every wave-2, wave-3 and wave-4 package, shipped green
+through CI) and adds only status, ledger and floor changes. Verified is left to Alex: no
+requirement reads `verified` until he exercises it on the test deployment.
+
+- **Gates, in one cloud session, not in parallel with any other suite:** `prepush.sh --all`
+  green through every gate that runs here: gitleaks over every origin branch, CI tiers,
+  osv-scanner, `npm audit`, licences, CodeQL for Python and JavaScript with the accepted
+  fingerprints, migration drift and the graph from zero, the backend suite under coverage
+  (2081 tests, 1959 run, 122 R2 and R3 stubs skipped; aggregate 97.5%) and every floor,
+  ruff, mypy, compliance lint, requirements coverage, contract drift, the API documentation
+  gate, search evaluation, OpenAPI and TypeScript drift, the frontend's lint, typecheck,
+  coverage, messages, copy drift and build, the full E2E suite (113 passed; the 64 skipped
+  are exactly the 64 `test.fixme` journeys, every one R2 or R3) and `@coldstart`. The two
+  container builds and their Trivy scans need Docker, which the session does not have; CI
+  runs them on `candidate`.
+- **No R1 route answers 501:** no production module produces `not_built` any more (a grep
+  over `backend/apps` and `backend/config` finds it only in tests that pin its absence), and
+  `backend/perf/routes.py` exercised 139 of 140 operations against a seeded stack.
+- **No R1 scenario skipped, no R1 journey fixme:** the 122 skipped integration scenarios and
+  the 64 fixme journeys all name a chunk from 8 to 14. Requirements coverage is green.
+- **API documentation:** `backend/scripts/api_docs_pending.txt` has no entry line.
+- **Status cells:** every R1 requirement reads `built`, except HOM-03 (our own deadlines,
+  chunks 8 and 9), ADM-01 and ADM-02 (their R2 and R3 parts), which read `in_progress` with
+  the cut named in their `app.md`.
+- **Hardening:** every medium or higher row reads fixed with its proof, except H33
+  (security-review-c4 M5), which waits for Alex's answer and is not built unattended.
+- **Owner-blocked:** the D-07 model key, the D-09 embedding key and the retrieval baseline
+  (the retrieval track of the release gate is **not recorded**), the test deployment, and
+  legal on standard titles; listed first in `docs/TODO_FOR_alex.md`.
