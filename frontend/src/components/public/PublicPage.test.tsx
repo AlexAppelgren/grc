@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 
@@ -17,7 +17,15 @@ async function renderPage(contact = '') {
   );
 }
 
+// The demo picks its form from the width; jsdom has no media queries of its own.
+function stubWidth(wide: boolean) {
+  vi.stubGlobal('matchMedia', (query: string) => ({ matches: wide, media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+}
+
+beforeEach(() => stubWidth(false));
+
 afterEach(() => {
+  vi.unstubAllGlobals();
   vi.doUnmock('@/shared/brand');
   setTheme.mockReset();
 });
@@ -41,10 +49,25 @@ describe('PublicPage', () => {
     expect(within(hero).queryByRole('article')).toBeNull();
   });
 
-  it('shows the sample record as the worked example of the six steps', async () => {
+  it('shows the demo right under the headline, and on a phone loads nothing until it is opened', async () => {
+    const { container } = await renderPage();
+    const demo = screen.getByRole('region', { name: 'Demo' });
+    expect(container.querySelector('iframe')).toBeNull();
+    fireEvent.click(within(demo).getByRole('button', { name: 'Open the demo' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Demo' });
+    const frame = dialog.querySelector('iframe');
+    expect(frame).toHaveAttribute('name', 'bleqq-demo');
+    expect(frame).toHaveAttribute('src', '/');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close the demo' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('frames the app in the page on a wide screen, loading as it scrolls near', async () => {
+    stubWidth(true);
     await renderPage();
-    const method = screen.getByRole('region', { name: 'Every change takes the same six steps' });
-    expect(within(method).getByRole('article', { name: 'FI adopts amended rules on paying for investment research' })).toBeInTheDocument();
+    const frame = await screen.findByTitle("Compliance Watch with a sample bank's data");
+    expect(frame).toHaveAttribute('name', 'bleqq-demo');
+    expect(frame).toHaveAttribute('loading', 'lazy');
   });
 
   it('keeps Sign in as the primary of the two actions in the top bar, on the right', async () => {
@@ -73,20 +96,6 @@ describe('PublicPage', () => {
   it('numbers the sections with a marginal section reference', async () => {
     await renderPage();
     for (const number of [1, 2, 3, 4, 5, 6, 7]) expect(screen.getByText(`§ ${number}`)).toBeInTheDocument();
-  });
-
-  it('draws the sample record with the product parts: pills in slot order, a diff and the AI label', async () => {
-    const { container } = await renderPage();
-    const record = screen.getByRole('article', { name: 'FI adopts amended rules on paying for investment research' });
-    expect([...record.querySelectorAll('[data-pill]')].map((pill) => [pill.textContent, pill.getAttribute('data-pill')])).toEqual([
-      ['Amended rule', 'notice'],
-      ['Within 3 months', 'warning'],
-    ]);
-    expect(record.querySelector('del')).toHaveTextContent('The account is funded by a specific research charge to the client.');
-    expect(record.querySelector('ins')).toHaveTextContent('from the firm\'s own resources');
-    expect(within(record).getByText('Drafted by AI, not yet confirmed by a person')).toBeInTheDocument();
-    expect(within(record).getByText('Sample record')).toBeInTheDocument();
-    expect(container.querySelector('[data-legal-text]')).not.toBeNull();
   });
 
   it('offers no mail link while no contact address is configured', async () => {

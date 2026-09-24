@@ -398,6 +398,12 @@ text, distinctive spine, copy-drift check, one pinned language), retries
 inheriting wreckage (teardown on failure). Push CI runs `@smoke`; nightly
 runs everything; every chunk runs against a freshly seeded backend.
 
+**The public page's demo follows the app.** It is the real app answered from
+recordings of this stack (`design/public/README.md` "The demo"). Its journey
+fails when a screen asks for something the recordings cannot answer or an
+answer has changed shape; run `npm run demo:record` in `frontend/` and commit
+`src/features/demo/recordings.json` and `recorded-at.json` with the change.
+
 ## 6. CI and quality gates (playbook 9)
 
 Every gate blocks: migration drift, migration graph from zero, backend tests

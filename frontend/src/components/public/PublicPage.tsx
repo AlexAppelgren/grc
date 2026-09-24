@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-import { SampleRecord } from '@/components/public/SampleRecord';
+import { DemoFrame } from '@/components/public/DemoFrame';
 import { ThemeSwitch } from '@/components/public/ThemeSwitch';
 import { Logo } from '@/components/shell/Logo';
 import { buttonVariants } from '@/components/ui/Button';
@@ -172,16 +172,19 @@ export function PublicPage() {
 
       <main id="top" className={ANCHOR}>
         <div className={WRAP}>
-          {/* One thing on the first screen: the headline and one line under it. The
-              actions live in the sticky bar, and the sample record in § 3, where it is
-              the worked example of the six steps (Alex, 2026-09-24: the page was
-              cluttered and nothing drew the eye). */}
-          <section aria-labelledby="public-title" className="pt-14 pb-16 md:pt-24 md:pb-24">
+          {/* One thing on the first screen: the headline and one line under it, with
+              the actions in the sticky bar (Alex, 2026-09-24: the page was cluttered and
+              nothing drew the eye). The demo follows it, the product itself. */}
+          <section aria-labelledby="public-title" className="pt-14 pb-10 md:pt-24 md:pb-14">
             <p className="microlabel mb-5 font-mono text-muted">{t('public.hero.eyebrow')}</p>
             <h1 id="public-title" className="max-w-[20ch] font-serif-display text-hero text-balance">
               {t('public.hero.title')}
             </h1>
             <p className="mt-6 max-w-[52ch] text-title font-normal text-muted">{t('public.hero.deck')}</p>
+          </section>
+
+          <section aria-label={t('public.demo.label')} className="pb-16 md:pb-24">
+            <DemoFrame />
           </section>
 
           <Section id="case" number={1} headingKey="public.case.title">
@@ -226,9 +229,6 @@ export function PublicPage() {
                 </li>
               ))}
             </ol>
-            <div className="mt-8 max-w-[560px]">
-              <SampleRecord />
-            </div>
             <p className="mt-5 max-w-[62ch] text-muted">{t('public.method.footnote')}</p>
           </Section>
 

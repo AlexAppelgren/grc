@@ -224,6 +224,18 @@ condition = "AND"
 regexes = ['''^aud-s4-integration$''']
 paths = ['''^docs/plans/r1-waves/wave3\.json$''']
 
+[[allowlists]]
+description = "Record keys in the public page demo's recordings (frontend/src/features/demo/recordings.json, written by `npm run demo:record` from seed_e2e, 2026-09-24): the seed's change keys and two CELEX numbers, the EU's public identifiers of Regulation (EU) No 1286/2014 (PRIIPs) and Regulation (EU) 2016/679 (GDPR). Identifiers, not secrets: the generic-api-key rule reads a JSON \"key\" or \"stableKey\" field with a digit in it as a key. Exact literals, this one file only; a re-recording that adds a key adds its literal here."
+condition = "AND"
+regexes = [
+  '''^chg-e2e-c5-curation$''',
+  '''^chg-e2e-c5-obligations$''',
+  '''^chg-e2e-dk-custody$''',
+  '''^celex-32014r1286$''',
+  '''^celex-32016r0679$''',
+]
+paths = ['''^frontend/src/features/demo/recordings\.json$''']
+
 # --- tax-market-journeys: tenant B's second person (FP-S8) ---
 [[allowlists]]
 description = "E2E passkey private key for the seeded user approver@second-bank.test: E2E virtual authenticator test keys, playbook 8.3. Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."

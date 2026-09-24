@@ -7,6 +7,7 @@ import { useId, useState } from 'react';
 
 import { NavIcon } from '@/components/shell/NavIcon';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
+import { isDemoFrame } from '@/features/demo/frame';
 import { useSession, useSetLanguage, useSignOut } from '@/features/identity/hooks';
 import type { Me } from '@/features/identity/types';
 import { useLanguages } from '@/features/tenant-admin/hooks';
@@ -60,10 +61,13 @@ export function useInterfaceLanguages(): { options: LanguageRef[]; choose: (key:
   };
 }
 
-/** Signs out, then leaves for the public page whatever the server answered. The rail's menu and the More sheet share it. */
+/**
+ * Signs out, then leaves for the public page whatever the server answered. The rail's menu and the More sheet share it.
+ * In the public page's demo there is no session to end, so it starts the demo over at Today instead of framing the page in itself.
+ */
 export function useSignOutToPublicPage(): { pending: boolean; signOut: () => void } {
   const router = useRouter();
-  const signOut = useSignOut(() => router.replace(PUBLIC_HOME));
+  const signOut = useSignOut(() => router.replace(isDemoFrame() ? '/' : PUBLIC_HOME));
   return { pending: signOut.isPending, signOut: () => signOut.mutate() };
 }
 

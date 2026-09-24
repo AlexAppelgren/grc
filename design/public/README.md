@@ -81,6 +81,7 @@ links Google Fonts as the prototype does; a build self-hosts all four.
 |---|---|---|
 | | Masthead | On the green ribbon: wordmark, five section links, theme toggle, Sign in, Request access |
 | | Plate | On paper: the headline, the deck, both actions, and the sample change record with its diff, its AI-drafted callout and its chain |
+| | Demo | Since 2026-09-24, under the headline: the product itself on a sample bank's data (below, "The demo") |
 | | Facts strip | Jurisdictions, content languages, the two zones, audit from the first write |
 | § 1 | The case | Why a spreadsheet and an inbox cannot answer what a review asks |
 | § 2 | What it does | Inventory, Watch, Ask, Evidence, one paragraph each |
@@ -132,6 +133,45 @@ property declared in the light block first. The form is inert and says so on
 submit. There is no motion beyond hover and smooth scrolling, and
 `prefers-reduced-motion` turns that off. No horizontal scroll at 390 px, no
 element wider than the viewport, a 20 px minimum side gutter.
+
+## The demo
+
+Alex, 2026-09-24: an interactive demo like Linear's, but the exact product UI,
+kept working whenever the UI or the API changes. Linear's is a hand-built copy
+of its app with static data (no frame, no calls to its data API, measured on
+linear.app the same day); ours is the app itself.
+
+- **What runs.** The public page frames the app (`src/components/public/DemoFrame.tsx`)
+  under the name `bleqq-demo`. Inside that frame, and only when its parent is
+  this same origin, the one axios instance answers every request from
+  recordings (`src/features/demo`): no request leaves the browser, so the demo
+  cannot read or change real data even beside a signed-in session. Writes are
+  refused with the screen's ordinary problem message, sign-out restarts the
+  demo at Today, and the demo's clock reads the day it was recorded.
+- **Where the data comes from.** The demo journey (`tests/e2e/demo.journey.spec.ts`)
+  signs in on the real stack as the seeded reader of Example Bank AB, who reads
+  everything and changes nothing, and walks every tenant screen in the
+  navigation except administration and the person's own settings: each screen,
+  its tabs, its toggles and the records it links to. What the backend answered
+  is the recording. So the data is `seed_e2e`'s, which every chunk already
+  extends, and the demo grows with it. Two things are changed on the way in and
+  nothing else: the seed's " (E2E)" name marks are dropped, and grants that only
+  open administration are left out of the person's `/me`, so the app's own
+  rules hide Admin.
+- **How it stays current.** Every run of the journeys (it is `@smoke`, so every
+  push) walks the app again and compares the answers with the committed
+  recordings by API path template and field shape, never by value. A screen
+  asking for something unrecorded, or an answer that gained, lost or retyped a
+  field, fails the journey with the command that fixes it:
+  `npm run demo:record` in `frontend/`, then commit the two files it writes.
+- **Phones and desktops.** On a desktop the frame sits in the page and loads
+  when it scrolls near. On a phone a button opens it full screen, because a
+  frame inside a scrolling page traps the thumb, and nothing of the app loads
+  before that. The recordings are their own chunk (about 30 KB compressed), so
+  the page itself never carries them.
+- **Not a mocked test.** The replay is what the public page ships, not a test
+  double: every journey, the demo's recording walk included, runs against the
+  real API.
 
 ## Open, for Alex
 

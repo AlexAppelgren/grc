@@ -5,6 +5,7 @@ import { ThemeProvider } from 'next-themes';
 import { useState, type ReactNode } from 'react';
 
 import { StepUpProvider } from '@/components/auth/StepUpProvider';
+import { installDemoModeWhenFramed } from '@/features/demo/boot';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import type { Locale } from '@/shared/i18n';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
@@ -14,6 +15,11 @@ import { PermissionsProvider } from '@/shared/navigation/require-permission';
 // Permissions are `null` here; the tenant layout's SessionGate provides the
 // signed-in person's list. The step-up prompt sits above everything so any
 // screen's 403 step_up_required can open it.
+
+// Before anything renders or asks the API: inside the public page's demo frame
+// the app answers from recordings (features/demo). Anywhere else, nothing.
+installDemoModeWhenFramed();
+
 export function Providers({ locale, children }: { locale: Locale; children: ReactNode }) {
   const [queryClient] = useState(
     () =>
