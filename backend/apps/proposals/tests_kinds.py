@@ -29,6 +29,7 @@ from unittest import mock
 from django.core.exceptions import ValidationError
 
 from apps.agents import testing as agents_testing
+from apps.governance.models import AiGeneration
 from apps.library import testing as library_build
 from apps.library.models import (
     Instrument,
@@ -596,6 +597,24 @@ class NewProvision(KindsTestCase):
             )
         self.assertEqual(caught.exception.code, "person_review_required")
         self.assertFalse(Provision.objects.filter(stable_key=PROVISION_KEY).exists())
+
+    def test_an_agent_cannot_approve_a_provisions_new_text_through_the_route(self) -> None:
+        """A provision's new text is the other kind with nowhere to name its confirming
+        agent, so an independent agent approving it through the real route answers 409
+        `person_review_required`, applies nothing and logs no model call, and a person
+        still approves it (INV-05, D-79; security-review-c4 L15, HARDENING H34)."""
+        provision = library_build.provision(self.parent, key=PROVISION_KEY, ref_label="9 kap. 6 §")
+        library_build.provision_version(provision, texts={"sv": "Den tidigare lydelsen."})
+        proposal = self._filed(provision_version_body(provision))
+
+        refused, _confirmer = self._approve_as_agent(proposal["id"])
+
+        self._refused(refused, 409, "person_review_required")
+        self.assertEqual(Proposal.objects.get(pk=proposal["id"]).status, ProposalStatus.OPEN.value)
+        self.assertEqual(ProvisionVersion.objects.filter(provision=provision).count(), 1)
+        self.assertFalse(AiGeneration.objects.filter(subject_id=proposal["id"]).exists(), "a refused decision logs no model call")
+        self.assertEqual(self._approve(proposal["id"]).status_code, 200)
+        self.assertEqual(ProvisionVersion.objects.filter(provision=provision).count(), 2)
 
 
 class StandardsCheck(KindsTestCase):

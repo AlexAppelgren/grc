@@ -84,7 +84,7 @@ class Proposal(models.Model):
     field_sources = models.JSONField(default=dict, blank=True)  # schema: ProposalFieldSources
     source_label = models.CharField(max_length=500, blank=True)
     source_url = models.URLField(max_length=2000, blank=True)
-    # What the injection screen found in the texts the proposer sent (AGT-07, H23): the
+    # What the injection screen found in the texts the proposer sent (AGT-07, H40): the
     # queue shows it, and no agent approves while it stands.
     risk_flags = ArrayField(models.CharField(max_length=40), default=list, blank=True)
     effective_from = models.DateField(null=True, blank=True)

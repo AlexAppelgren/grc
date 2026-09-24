@@ -325,7 +325,7 @@ def require_open_run_of_key(api_key_id: uuid.UUID | None, run_id: uuid.UUID | No
 
 def spend(run: AgentRun, filed: QuerySet[Any], *, limit: int, what: tuple[str, str]) -> None:
     """Refuse one more write under `run` once `filed`, what the run has already filed of this
-    kind, reaches `limit` (H24): 422 `run_budget_exhausted`. The budget is the definition's
+    kind, reaches `limit` (H41): 422 `run_budget_exhausted`. The budget is the definition's
     (`budget_defaults`), held by the server from a setting, so a runaway or injected run
     cannot flood the queue whatever it believes its budget is.
 
@@ -349,7 +349,7 @@ def spend(run: AgentRun, filed: QuerySet[Any], *, limit: int, what: tuple[str, s
 
 def _counted(run: AgentRun, stats: dict[str, Any]) -> dict[str, Any]:
     """The counters as the server counts them from what the run filed, over what the run
-    reported of itself (H24): the sources it swept, the records it re-checked, the changes
+    reported of itself (H41): the sources it swept, the records it re-checked, the changes
     it registered and the proposals it filed. What the server cannot see — its model calls,
     its fetches, the documents it set aside and which proposals were corrections — stays
     the run's own account."""

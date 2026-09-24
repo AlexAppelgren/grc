@@ -97,7 +97,7 @@ def register_change(
     name an open run of its own, and a bank's key is refused outright; a library editor
     names none, and a run one names is not theirs. A new change past the run's budget
     (`WATCH_RUN_MAX_CHANGES`) is refused with `run_budget_exhausted`; a second sighting
-    registers no new change, so it is not counted (H24).
+    registers no new change, so it is not counted (H41).
     """
     run = (
         runs.require_open_run(who, body.agent_run_id)

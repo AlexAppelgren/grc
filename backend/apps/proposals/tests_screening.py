@@ -1,5 +1,5 @@
 """A proposal's texts are screened, and a flag keeps the decision for a person
-(security-review-c5 M2, HARDENING H23, AGT-07, PRO-02, D-62).
+(security-review-c5 M2, HARDENING H40, AGT-07, PRO-02, D-62).
 
 Fetched text an agent copies into a proposal reaches the review queue and, through an
 approval, the library. So `create` reads the title, every text of the parsed payload and

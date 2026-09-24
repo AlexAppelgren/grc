@@ -1,4 +1,4 @@
-"""A run's write budgets, held by the server (security-review-c5 M3, HARDENING H24).
+"""A run's write budgets, held by the server (security-review-c5 M3, HARDENING H41).
 
 The definition names what one run may file (`budget_defaults` in
 `agents/watch-sweeper/v1/definition.yaml`), and the server holds every run to the same

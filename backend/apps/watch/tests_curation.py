@@ -895,7 +895,7 @@ class ConfirmingCuration(CurationCase):
         self.assertFalse(AiGeneration.objects.filter(purpose="agent_review").exists(), "a refusal logs nothing")
 
     def test_no_agent_confirms_a_change_whose_page_is_flagged_and_a_person_still_may(self) -> None:
-        """H23 (security-review-c5 M2, F9): a page the screen flagged keeps the change's
+        """H40 (security-review-c5 M2, F9): a page the screen flagged keeps the change's
         confirmation for a person, who sees the flag on the change and may still decide."""
         page = watch_build.document(self.reform, url=FIRST_PAGE_OF_A_CORRECTION, is_primary=False)
         with watch_write("test"):

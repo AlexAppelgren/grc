@@ -626,10 +626,10 @@ def create(
     else is read, so a retry must arrive while its run is still open: once the run is
     closed, a retry answers `run_not_open` as any new filing against that run would. A new
     proposal past the run's budget (`WATCH_RUN_MAX_PROPOSALS`) is refused with
-    `run_budget_exhausted`; a retry files nothing new, so it still answers (H24).
+    `run_budget_exhausted`; a retry files nothing new, so it still answers (H41).
 
     Every text the proposer sent, from a fetched page as often as not, is read by the
-    injection screen (AGT-07, H23) and stored exactly as it arrived; what the screen finds
+    injection screen (AGT-07, H40) and stored exactly as it arrived; what the screen finds
     is kept on the proposal, which the queue shows, and keeps the approval for a person."""
     run = None
     if proposer.agent_id is not None or agent_run_id is not None:

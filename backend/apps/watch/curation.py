@@ -579,7 +579,7 @@ def confirm_curation(
     they suggested themselves (409 `own_suggestion`, for a person as for a key), and an agent
     never confirms what another key of its own agent suggested (409 `same_agent`); the check
     constraints say the same if this is ever bypassed. An agent never confirms a change any
-    of whose pages carries a risk flag (409 `risk_flagged`, H23): a person decides that
+    of whose pages carries a risk flag (409 `risk_flagged`, H40): a person decides that
     one, seeing the flag.
 
     Everything runs under the lock on the change, so the facts are read as they stand when

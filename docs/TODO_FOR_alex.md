@@ -12,8 +12,8 @@ Ordered by what blocks testing first. Nothing here is blocked on code.
 - [ ] Set `TRUSTED_PROXY_HOPS=1` on the `api` service (security review F1, `docs/security/CHUNK1_AUTH_REVIEW_2026-09-19.md`). Railway's edge writes `X-Forwarded-For` (source: Railway's help station, not official docs); confirm on the test deploy that the security log shows your own address, not the proxy's, then mark the Verification_Log row verified.
 
 ## security-review-c4 (chunk 4 security review, 2026-09-23)
-- [ ] **Must two agents' keys come from two people?** Found as M5 (`docs/security/CHUNK4_REVIEW_2026-09-23.md`). Since D-14's answer an independent agent is the library's whole second pair of eyes, and today one platform admin can mint the proposing key and the reviewing key and so alone push a change into the library. Default proposed, not built (H23): a `proposals:review` key only for an active agent of kind `review`, never beside `proposals:write`, and a key decision refused when the same person minted both keys or proposed the change. Say yes, or say that one admin minting both keys is acceptable.
-- [ ] **May an independent agent approve a brand-new record?** D-79's lift opened vocabulary and term kinds to an agent; `new_instrument`, `new_obligation`, `new_provision` and `new_provision_version` stamp the same machine-confirmed provenance but still answer an agent 409 `person_review_required`, so with no editorial staff (D-14) a new instrument waits for a person holding `proposals.review`. Default kept: **no**, until you say otherwise.
+- [ ] **Must two agents' keys come from two people?** Found as M5 (`docs/security/CHUNK4_REVIEW_2026-09-23.md`). Since D-14's answer an independent agent is the library's whole second pair of eyes, and today one platform admin can mint the proposing key and the reviewing key and so alone push a change into the library. Default proposed, not built (H33): a `proposals:review` key only for an active agent of kind `review`, never beside `proposals:write`, and a key decision refused when the same person minted both keys or proposed the change. Say yes, or say that one admin minting both keys is acceptable.
+- [x] **May an independent agent approve a brand-new record?** Settled on main before this review merged (wave 4 integration, 2026-09-24): D-79 opens `new_instrument` and `new_obligation` to an agent, because both records carry `verified_origin` and `verified_by_agent`, and keeps `new_provision` and `new_provision_version` for a person, because a provision and its versions have no column to name a confirming agent. Both provision kinds are pinned refused to an agent by a test (`tests_kinds.NewProvision`). Still yours to overrule under D-79.
 - [ ] **Console tenant creation takes no step-up** (T7, playbook 4.2), while CLAUDE.md section 5 puts role changes behind one, and this call hands an administrator role to an outside address. Default kept: no step-up. Say if it should ask for one.
 
 ## Found by the cold-start journey (2026-09-20)
@@ -1156,7 +1156,7 @@ needs a decision.
       what a reader types to the embedder and the reranker too, and so does a bank's own
       key through `POST /search/similar`. The chunk 7 plan made that conditional on your
       approval of the embedder (D-09). Since this review both are under the bank's AI
-      switch (D-8x): off, the search reads by words alone. Default if you say nothing: with
+      switch (D-88): off, the search reads by words alone. Default if you say nothing: with
       the switch on, the query reaches the contracted EU embedder and reranker, and D-07's
       wording gains "and the search query, for retrieval only, under the same switch".
       The alternative is keyword-only search for every bank.

@@ -68,7 +68,7 @@ _EXAMPLE_FINISHED_RUN: dict[str, JsonValue] = {
 class AgentRunStats(CamelSchema):
     """The `stats` column of agent_run: what one run did, counted against the budget
     defaults of its definition (`backend/agents/<agent>/v<n>/definition.yaml`). What the
-    server can see it counts itself as the run closes (H24): sources checked, changes
+    server can see it counts itself as the run closes (H41): sources checked, changes
     registered, proposals submitted and records re-checked. The rest is the run's own
     account."""
 

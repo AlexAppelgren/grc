@@ -600,7 +600,7 @@ STANDARDS_PUBLISHER_HOSTS = [host.lower() for host in env_list(
     )]
 
 # ---------------------------------------------------------------------------------------
-# ===== AGT-01, WAT-01 what one agent run may file (HARDENING H24, agent-write-guards) ====
+# ===== AGT-01, WAT-01 what one agent run may file (HARDENING H41, agent-write-guards) ====
 # The server holds every run to the write budgets its definition names
 # (`budget_defaults` in backend/agents/watch-sweeper/v1/definition.yaml): new proposals,
 # new changes on the watch feed and re-check lines of the coverage log. A write past its

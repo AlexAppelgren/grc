@@ -1,7 +1,7 @@
 import django.contrib.postgres.fields
 from django.db import migrations, models
 
-"""proposals 0007 (AGT-07, HARDENING H23): what the injection screen found in the texts a
+"""proposals 0007 (AGT-07, HARDENING H40): what the injection screen found in the texts a
 proposal arrived with, shown in the queue and read by the approval gate. Existing rows
 start with none; they were filed before the screen read proposals."""
 

@@ -118,6 +118,13 @@ stamp, and its audit row held only labels.
 `new_provision` is proven refused (`tests_kinds.test_an_agent_cannot_approve_a_provision_yet`).
 That is L15, and Alex's question in `TODO_FOR_alex.md`.
 
+*Integration note (wave 4, 2026-09-24).* This review was written before main opened
+`new_instrument` and `new_obligation` to an agent under D-79: both records carry
+`verified_origin` and `verified_by_agent`, so their place in `AGENT_CONFIRMABLE_KINDS` is
+deliberate. The provision kinds, which have no such column, are the ones that must stay
+refused, and both are now pinned: `new_provision` in `tests_kinds`, and `new_provision_version`
+through the route in the same class.
+
 #### Source checks at creation and at approval
 
 **Verdict: holds, with gaps at the boundary (L2, L3, L5).**
@@ -560,7 +567,7 @@ Two fixtures now carry the standard's official reference, as `e2e_standard.json`
 
 ### M5 (medium, privileged insider): agent independence is checked by definition and key, never by the person behind them
 
-**Status: open.** Named fix task H23, plus Alex's question in `TODO_FOR_alex.md`.
+**Status: open.** Named fix task H33, plus Alex's question in `TODO_FOR_alex.md`.
 
 **Where.** `identity/api_keys_logic.create_agent_key`, `logic._decidable` and `require_reviewer`.
 
@@ -587,21 +594,21 @@ Each has a row in `docs/plans/briefs/HARDENING.md`.
 
 | # | Where | Finding | HARDENING |
 |---|---|---|---|
-| L1 | `apply._vocabulary_relabel`, `_vocabulary_active`, `_vocabulary_merge`, `_term_update` | These read the row without `select_for_update` and save the whole row. Two approvals of *different* proposals on one row at once can lose the other's stamp or version bump. For example, a person's relabel overwrites an agent's `agent` stamp while a machine label remains. | H24 |
-| L2 | `logic.create` | `sourceUrl` is checked as an https link only for the new-record kinds. On a version, vocabulary or term proposal an `http:` or other scheme is stored, and the console renders it as the proposal's source link. React refuses `javascript:`, but not `http:`. | H25 |
-| L3 | proposal payload schemas | Payload texts have no length cap (summaries, titles, labels, usage notes). A label longer than the 200-character column is accepted into the queue and fails at approval with a 500. | H25 |
-| L4 | `apply._new_obligation` | A proposal's free-text `sourceLabel` (up to 500 characters) lands on a standard's obligation unchecked. The D-35 links-only rule reads `fieldSources`, not the label. | H25 |
-| L5 | `logic.corrected` | A correction keeps the proposer's source even when it changes the sourced value. The precision fields and `originalLanguage` are unsourced. | H25 |
-| L6 | `agents/runs.require_open_run_of_key` | The run is read without a lock, so a decision can land in a run another request closes at that moment, and the run's counts miss it. | H26 |
-| L7 | `audit_event` read policy | The rule is `tenant_id IS NULL`, so under a bank's session the database returns the platform's `proposal.rejected` rows, which carry another bank's title and note. Only the Python `Q` hides them. | H27 |
-| L8 | `governance/logic.py` | Whether a library audit row is shown depends on the actor's platform role *now*. Revoking an editor's role hides every library change they made from every bank's log. | H27 |
-| L9 | `tests_hardening.LibraryAuditRowsCarryNoTenantWords` | The H3 guard fingerprints the title only, not `summary`, `before` or `after`. | H27 |
-| L10 | `POST /me/visit` | No throttle: every call appends an audit and an outbox row, and each is kept for ten years. | H28 |
-| L11 | console tenant creation | The name refuses no control or bidi characters. A newline makes the invitation mail's subject raise `BadHeaderError` in the worker, so the first admin is never invited. | H28 |
-| L12 | `library/reports.create_report` | A report with no tenant is refused only by the type hint. The table keeps `library_rows_visible`, so such a row would be read by every bank. No path writes one today. | H29 |
-| L13 | `ProblemReportBody` | `versionNumber` has no upper bound, so 2^31 is a 500. A NUL character in a description or a note is a 500 (no NUL guard exists anywhere in the backend). | H29 |
-| L14 | problem reports | Filing and closing have no rate limit. The damage stays inside the bank; per-credential limits are ACC-09 (R2). | H29 |
-| L15 | `tests_kinds` | Only `new_provision` is proven refused to an agent, and at the logic level. `new_instrument`, `new_obligation` and `new_provision_version` would pass CI if added to `AGENT_CONFIRMABLE_KINDS` by mistake. | H24 |
+| L1 | `apply._vocabulary_relabel`, `_vocabulary_active`, `_vocabulary_merge`, `_term_update` | These read the row without `select_for_update` and save the whole row. Two approvals of *different* proposals on one row at once can lose the other's stamp or version bump. For example, a person's relabel overwrites an agent's `agent` stamp while a machine label remains. | H34 |
+| L2 | `logic.create` | `sourceUrl` is checked as an https link only for the new-record kinds. On a version, vocabulary or term proposal an `http:` or other scheme is stored, and the console renders it as the proposal's source link. React refuses `javascript:`, but not `http:`. | H35 |
+| L3 | proposal payload schemas | Payload texts have no length cap (summaries, titles, labels, usage notes). A label longer than the 200-character column is accepted into the queue and fails at approval with a 500. | H35 |
+| L4 | `apply._new_obligation` | A proposal's free-text `sourceLabel` (up to 500 characters) lands on a standard's obligation unchecked. The D-35 links-only rule reads `fieldSources`, not the label. | H35 |
+| L5 | `logic.corrected` | A correction keeps the proposer's source even when it changes the sourced value. The precision fields and `originalLanguage` are unsourced. | H35 |
+| L6 | `agents/runs.require_open_run_of_key` | The run is read without a lock, so a decision can land in a run another request closes at that moment, and the run's counts miss it. | H36 |
+| L7 | `audit_event` read policy | The rule is `tenant_id IS NULL`, so under a bank's session the database returns the platform's `proposal.rejected` rows, which carry another bank's title and note. Only the Python `Q` hides them. | H37 |
+| L8 | `governance/logic.py` | Whether a library audit row is shown depends on the actor's platform role *now*. Revoking an editor's role hides every library change they made from every bank's log. | H37 |
+| L9 | `tests_hardening.LibraryAuditRowsCarryNoTenantWords` | The H3 guard fingerprints the title only, not `summary`, `before` or `after`. | H37 |
+| L10 | `POST /me/visit` | No throttle: every call appends an audit and an outbox row, and each is kept for ten years. | H38 |
+| L11 | console tenant creation | The name refuses no control or bidi characters. A newline makes the invitation mail's subject raise `BadHeaderError` in the worker, so the first admin is never invited. | H38 |
+| L12 | `library/reports.create_report` | A report with no tenant is refused only by the type hint. The table keeps `library_rows_visible`, so such a row would be read by every bank. No path writes one today. | H39 |
+| L13 | `ProblemReportBody` | `versionNumber` has no upper bound, so 2^31 is a 500. A NUL character in a description or a note is a 500 (no NUL guard exists anywhere in the backend). | H39 |
+| L14 | problem reports | Filing and closing have no rate limit. The damage stays inside the bank; per-credential limits are ACC-09 (R2). | H39 |
+| L15 | `tests_kinds` | Only `new_provision` is proven refused to an agent, and at the logic level. `new_instrument`, `new_obligation` and `new_provision_version` would pass CI if added to `AGENT_CONFIRMABLE_KINDS` by mistake. Since main opened the instrument and obligation kinds deliberately (D-79), the provision kinds are the ones to pin; `new_provision_version` is now pinned through the route. | H34, fixed |
 
 ### Info
 
