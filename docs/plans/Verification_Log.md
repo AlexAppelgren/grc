@@ -10,6 +10,7 @@ bump. Add a row whenever the build relies on something external.
 | `gds-badge` variants: information, notice, positive, warning, negative, disabled. `information` is grey and `notice` is blue. No brand variant | Verified | Package type definitions and token values | 2026-09-19 |
 | The prototype's colours equal Green token values (brand `#003824` = `l2-brand-01`, brass = `l3-brand-02` on `content-brand-02`) | Verified | Token files against the prototype | 2026-09-19 |
 | Green components under Next.js server rendering | **Not verified** | Spike in Phase 0 (D-04) | |
+| Libre Caslon Display and Libre Caslon Text are SIL OFL; `@fontsource/libre-caslon-display` and `@fontsource/libre-caslon-text` 5.3.0 are the latest releases, OFL-1.1, and name their faces `'Libre Caslon Display'` and `'Libre Caslon Text'` | Verified | `google/fonts` `ofl/*/METADATA.pb`, `npm view`, the packages' CSS | 2026-09-24 |
 | Playwright 1.61 (15 June 2026) adds `browserContext.credentials`, a virtual WebAuthn authenticator that can seed known keys, in all browsers | Verified | Playwright release notes | 2026-09-19 |
 | A passkey belongs to one RP ID. Related Origin Requests: Chrome and Edge 128, Safari 18, Firefox 152 (May 2026) | Verified | Chrome for Developers, web.dev, vendor write-ups | 2026-09-19 |
 | NIST SP 800-63-4 (July 2025): synced passkeys meet AAL2, device-bound needed for AAL3. AAL2 re-authentication guidance of 12 h and 30 min idle | Secondary sources only | Verify against NIST before quoting to a customer | 2026-09-19 |

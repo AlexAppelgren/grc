@@ -26,6 +26,8 @@ import enMe from '@/messages/me/en.json';
 import svMe from '@/messages/me/sv.json';
 import enNav from '@/messages/nav/en.json';
 import svNav from '@/messages/nav/sv.json';
+import enPublic from '@/messages/public/en.json';
+import svPublic from '@/messages/public/sv.json';
 import enRoadmap from '@/messages/roadmap/en.json';
 import svRoadmap from '@/messages/roadmap/sv.json';
 import enSearch from '@/messages/search/en.json';
@@ -60,6 +62,7 @@ const en = {
   ...enLibrary,
   ...enMe,
   ...enNav,
+  ...enPublic,
   ...enRoadmap,
   ...enSearch,
   ...enTenantAdmin,
@@ -83,6 +86,7 @@ const sv = {
   ...svLibrary,
   ...svMe,
   ...svNav,
+  ...svPublic,
   ...svRoadmap,
   ...svSearch,
   ...svTenantAdmin,

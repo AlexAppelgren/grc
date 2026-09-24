@@ -1241,3 +1241,71 @@ Defaults taken when the chunks were built; nothing waits on them. Say so if one 
 The chunk 7 cost-and-approval half of `k-anthropic` and the unrecorded retrieval track are the
 D-07 and D-09 items at the top of this file. q-feed-token's answer stands as taken (D-52: the
 token stays in the address, which is revocable, and the access log never writes it).
+
+## The public page needs two brand decisions (2026-09-21)
+
+The public page is designed and sits in `design/public/` (`index.html` opens in
+a browser, `README.md` is the design note). Two of its choices are yours,
+because they add to the brand rather than apply it. Defaults taken so the
+design could be finished; say the word and the file changes in one block.
+
+- [x] **A display serif.** Answered 2026-09-24: you approved the design as it
+      stands ("I like this design, create this as a public page"), so Libre
+      Caslon is in, on public pages only. `design/brand/README.md` names Hanken Grotesk and
+      Noto Sans Mono and nothing else. The page sets its headlines in Libre
+      Caslon Display, with Libre Caslon Text for the lede and record titles,
+      because the brief asked for a page that feels like an old legal
+      instrument and a grotesque cannot carry that. Both are SIL OFL, checked
+      in `google/fonts` (`ofl/librecaslondisplay`, `ofl/librecaslontext`), so
+      they self-host on the same terms as the other two. Default if you say
+      nothing: Libre Caslon stays, on public pages only, and never behind
+      auth. Decline and the page runs on Hanken Grotesk at the same scale.
+- [x] **The plate headline size.** Answered 2026-09-24 with the design: the
+      clamp stays, and `foundations.md` now records it. `design/system/foundations.md` sets `hero`
+      at 36 / 40 and marks it "public pages only". That size was set for a
+      grotesque; the same optical size in a serif reads a step smaller, so the
+      page's headline runs from 36 px to 60 px with the viewport. Default if
+      you say nothing: the clamp stays. Say so and it caps at 36 px, which
+      makes the top of the page much quieter.
+- [x] The footer carries `org. no. [to be set]`, and Terms, Privacy and
+      Sub-processors link to the assurance section until those pages exist.
+      Resolved in the build: the live page carries neither the number nor the
+      placeholder links.
+
+## The public page is built; three things before it faces the world (2026-09-24)
+
+The page is in the app at `/welcome`. As you asked on 2026-09-24, it is where
+a person without a session ends up: signing out, a session that timed out or
+was revoked, or a first visit to any address. The sign-in page has a way back
+to it, and sign-out revokes the session on the server so neither token works
+again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
+
+- [ ] **Set `NEXT_PUBLIC_SUPPORT_CONTACT`** on the web service, an email
+      address. Until then "Write to us" is hidden and the invitation section
+      says only that a bank's administrator sends the invitation.
+- [ ] **Confirm two claims before the page is public.** § 5 names authorities
+      per jurisdiction (Finanstilsynet, Lovdata, Finanssivalvonta, Finlex,
+      EIOPA, the ECB and others) that neither the PRD nor the configured
+      sources name yet; the PRD commits only to Swedish, Danish, Norwegian,
+      Finnish and EU sources. § 6's "Leaving" and "The pack" describe tenant
+      exit and the assurance pack, which are R3 (chunks 12 and 14, pending).
+      The copy is as you approved it; say which to soften and the catalog
+      changes in one file.
+- [ ] **An idle session is found out at the next action, not on its own.**
+      The server ends a session after `SESSION_IDLE_MINUTES_DEFAULT` (30)
+      minutes without a refresh; the app learns it at the person's next click
+      and goes to the public page then. A tab left open keeps showing what it
+      showed until someone touches it. Default if you say nothing: it stays so.
+      The alternative is a timer in the app that signs out on its own after the
+      same number of idle minutes, which needs `GET /me` to carry the limit so
+      it is not configured twice.
+- [ ] **Sign-out on a dead connection.** If the sign-out request cannot reach
+      the server, the app still forgets its token and leaves for the public
+      page, but the server session lives until it idles out, and the refresh
+      cookie (which only the server can clear) could sign the browser back in
+      before then. That is how it was built in chunk 1 ("whatever the server
+      answered"). Say if you would rather the app stay put and say the
+      sign-out did not go through.
+- [ ] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. It
+      follows the app's existing terms (skyldighet, förslag, godkännande), but
+      a native read of the headline and the questions is worth five minutes.

@@ -277,7 +277,7 @@ describe('the signed-in person', () => {
     // The redirect is the mutation's own, so it survives the gate unmounting the shell (SessionGate.test.tsx).
     expect(nav.replace).not.toHaveBeenCalled();
     session.then();
-    expect(nav.replace).toHaveBeenCalledWith('/sign-in');
+    expect(nav.replace).toHaveBeenCalledWith('/welcome');
 
     // Rotated to portrait with the menu open: the rail is hidden under it, so
     // the menu closes and focus goes to the page, never to the hidden trigger.
@@ -499,7 +499,7 @@ describe('at compact width: the tab bar', () => {
     // The redirect is the mutation's own, so it survives the gate unmounting the shell (SessionGate.test.tsx).
     expect(nav.replace).not.toHaveBeenCalled();
     session.then();
-    expect(nav.replace).toHaveBeenCalledWith('/sign-in');
+    expect(nav.replace).toHaveBeenCalledWith('/welcome');
   });
 
   it('closes when a destination is chosen, even the current page', () => {

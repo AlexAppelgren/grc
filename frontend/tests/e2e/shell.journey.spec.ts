@@ -22,10 +22,13 @@ test.describe('app shell', () => {
     await expect(page.getByRole('navigation', { name: 'Main' }).first()).toBeVisible();
   });
 
-  test('an anonymous visitor is sent to sign in', async ({ page, apiGuard }) => {
+  // A session that ended by itself (idle, revoked, past its limit) looks the
+  // same to the gate as none at all, so this covers a timed-out session too.
+  test('a visitor with no session on a gated address lands on the public page', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
-    await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Sign in with a passkey' })).toBeVisible();
+    await page.goto('/watch');
+    await expect(page).toHaveURL(/\/welcome$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'A register of record for everything regulation asks of your bank.' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0);
   });
 });

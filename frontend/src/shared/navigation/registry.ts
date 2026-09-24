@@ -112,6 +112,12 @@ export function surfaceOf(me: { tenant: object | null } | null): Surface {
   return me !== null && me.tenant === null ? 'console' : 'tenant';
 }
 
+/** The public page, outside the session gate: where a person without a session ends up. */
+export const PUBLIC_HOME = '/welcome';
+
+/** Where the public page's Sign in goes: the passkey sign-in flow. */
+export const SIGN_IN = '/sign-in';
+
 /** Where sign-in and the logo take a person: Today, or the console. */
 export function homeOf(me: { tenant: object | null } | null): string {
   return surfaceOf(me) === 'console' ? CONSOLE_HOME : '/';

@@ -111,7 +111,8 @@ test.describe('identity journeys', () => {
 
       await signOut(page);
 
-      // The passkey just created is the only way back in.
+      // The passkey just created is the only way back in, from the public page's Sign in.
+      await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).click();
       await page.getByRole('button', { name: 'Sign in with a passkey' }).click();
       await expect(page.locator('[data-who-panel]')).toBeVisible();
       await expect(page.getByRole('heading', { level: 1, name: 'What is coming, and where we stand' })).toBeVisible();
@@ -266,9 +267,10 @@ test.describe('identity journeys', () => {
       await theirs.getByRole('button', { name: 'Sign out this device' }).click();
       await expect(page.locator('[data-session-id]')).toHaveCount(1);
 
-      // The other device's next request answers 401 and it lands on sign-in.
+      // The other device's next request answers 401 and it lands on the public page.
       await otherPage.goto('/me/sessions');
-      await expect(otherPage.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
+      await expect(otherPage).toHaveURL(/\/welcome$/);
+      await expect(otherPage.getByRole('heading', { level: 1, name: 'A register of record for everything regulation asks of your bank.' })).toBeVisible();
     } finally {
       await other.close();
     }
