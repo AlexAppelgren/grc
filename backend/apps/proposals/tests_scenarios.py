@@ -734,7 +734,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         with library_write("scenario"):
             TaxonomyTerm.objects.filter(dimension__key="standard", key="iso_iec_27001").update(active=True)
             second_standard = TaxonomyTerm.objects.create(dimension=self._term("standard", "iso_iec_27001").dimension, key="iso_22301", sort_order=2)
-        standard = library_build.instrument(key=STANDARD_KEY, short_name="ISO/IEC 27001:2022", regime="regime:ai_ict", level="standard", binding=False)
+        standard = library_build.instrument(key=STANDARD_KEY, short_name="ISO/IEC 27001:2022", official_ref="ISO/IEC 27001:2022", regime="regime:ai_ict", level="standard", binding=False)
         self.assertEqual(standard.level.kind, "standard")
         conformance = library_build.obligation(standard, key="obl-iso-iec-27001-2022-conformance", ref_label="ISO/IEC 27001:2022", terms=[STANDARD_TERM])
         law = library_build.instrument(key=PARENT_KEY, regime="regime:securities")
@@ -788,7 +788,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
 
         # A second active obligation under the standard: refused where it is made, and where a
         # proposal stored before the rule is applied.
-        second = obligation_body(STANDARD_KEY, key="obl-iso-iec-27001-2022-second", terms=[STANDARD_TERM])
+        second = obligation_body(STANDARD_KEY, key="obl-iso-iec-27001-2022-second", refLabel="ISO/IEC 27001:2022", terms=[STANDARD_TERM])
         refused = self._post("/proposals", {**second, **run}, agent)
         self.assertEqual(refused.status_code, 422, refused.content)
         self.assertEqual(refused.json()["code"], "one_conformance_obligation")

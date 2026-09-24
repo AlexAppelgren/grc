@@ -435,3 +435,38 @@ class ProposalTenantLink(TestCase):
         self.assertEqual(ProposalTenant.objects.filter(proposal=first).count(), 1)
         replayed = AuditEvent.objects.get(action="proposal.replayed", subject_id=first.id)
         self.assertEqual(replayed.tenant_id, tenant.id)
+
+    def test_a_retry_key_answers_only_the_proposer_that_sent_it(self) -> None:
+        """An `Idempotency-Key` is the caller's own (playbook 4.3): another bank, or the
+        platform's agent, sending the same value files its own proposal and is never handed
+        the first one, its status or the note it was decided with."""
+        body: dict[str, Any] = {
+            "kind": "vocabulary_create",
+            "title": "Add the flag Client money",
+            "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}},
+            "idempotency_key": "flag-client-money",
+        }
+        bank_a = factories.tenant(slug="key-a")
+        officer_a = factories.member_user(bank_a, roles=("compliance_officer",))
+        first, _ = logic.create(**body, proposer=logic.Proposer(actor=factories.user_actor(user_id=officer_a.id), user=officer_a))
+        Proposal.objects.filter(pk=first.pk).update(status="rejected", review_note="Covered by Bank A's own flag")
+
+        bank_b = factories.tenant(slug="key-b")
+        officer_b = factories.member_user(bank_b, roles=("compliance_officer",))
+        theirs, created = logic.create(**body, proposer=logic.Proposer(actor=factories.user_actor(user_id=officer_b.id), user=officer_b))
+        self.assertTrue(created)
+        self.assertNotEqual(theirs.id, first.id)
+        self.assertEqual(theirs.review_note, "")
+        other_body = {**body, "title": "Add the flag Client assets"}
+        other, created = logic.create(**other_body, proposer=logic.Proposer(actor=factories.agent_actor(), api_key_id=factories.api_key(bank_b).id))
+        self.assertTrue(created, "the same value from another caller is never a conflict with someone else's")
+
+        tenancy.clear_tenant()
+        key = ApiKey.objects.create(name="Platform agent", key_prefix="plat5678", key_hash="y" * 64, scopes=["proposals:write"])
+        platform, created = logic.create(**body, proposer=logic.Proposer(actor=factories.agent_actor(), api_key_id=key.id))
+        self.assertTrue(created)
+        self.assertEqual(len({first.id, theirs.id, other.id, platform.id}), 4)
+
+        with self.assertRaises(ValidationError) as caught:
+            logic.create(**{**body, "idempotency_key": "k" * 201}, proposer=logic.Proposer(actor=factories.agent_actor(), api_key_id=key.id))
+        self.assertEqual(caught.exception.code, "validation_error")

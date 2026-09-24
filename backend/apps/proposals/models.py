@@ -90,7 +90,7 @@ class Proposal(models.Model):
     proposed_by_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     proposed_by_api_key = models.ForeignKey("identity.ApiKey", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     proposed_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    idempotency_key = models.CharField(max_length=200, null=True, blank=True, unique=True)
+    idempotency_key = models.CharField(max_length=200, null=True, blank=True)
     proposed_in_tenant = models.BooleanField(default=False)
     status = models.CharField(max_length=16, choices=_choices(ProposalStatus), default=ProposalStatus.OPEN.value)
     reviewed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
@@ -109,6 +109,20 @@ class Proposal(models.Model):
         db_table = "proposal"
         ordering = ["created_at", "id"]
         indexes = [models.Index(fields=["status", "created_at"], name="proposal_queue_idx")]
+        # A retry key is the proposer's own (playbook 4.3): one person's or one key's, never
+        # a value another bank or the platform's agent could claim first or replay into.
+        constraints = [
+            models.UniqueConstraint(
+                fields=["proposed_by_user", "idempotency_key"],
+                condition=models.Q(idempotency_key__isnull=False, proposed_by_user__isnull=False),
+                name="proposal_idempotency_per_user",
+            ),
+            models.UniqueConstraint(
+                fields=["proposed_by_api_key", "idempotency_key"],
+                condition=models.Q(idempotency_key__isnull=False, proposed_by_api_key__isnull=False),
+                name="proposal_idempotency_per_key",
+            ),
+        ]
         # The four-eyes check constraint `proposal_four_eyes` is created by RunSQL in
         # migration 0001 as `reviewed_by_id IS NULL OR proposed_by_user_id IS NULL OR
         # reviewed_by_id <> proposed_by_user_id`, and widened by RunSQL in migration 0003

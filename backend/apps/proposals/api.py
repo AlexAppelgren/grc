@@ -365,11 +365,15 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     `validation_error` (422) for a body the schema or the kind's payload refuses;
     `standard_term_only_on_standards` (422) when the scope puts a standard's term on an
     obligation whose instrument is not a standard; `licensed_text` (422) for a provision or
-    provision version under a standard, or a source on a standard's obligation that is not
-    an https link; `one_conformance_obligation` (422) for a new obligation under a standard
+    provision version under a standard, a source on a standard's obligation that is not
+    an https link, or a standard's new obligation whose `refLabel` is not the standard's
+    official reference; `one_conformance_obligation` (422) for a new obligation under a standard
     that already holds one; `standard_term_required` (422) when a standard's obligation
     would carry no standard term, or more than one; `idempotency_conflict` (409) when the
-    same `Idempotency-Key` arrives with a different body; `permission_denied` (403) without
+    same proposer's `Idempotency-Key` arrives with a different body or from another bank
+    (a key is its sender's own: another caller's value files a proposal of its own);
+    `validation_error` (422) also for an `Idempotency-Key` longer than 200 characters;
+    `permission_denied` (403) without
     the permission or the scope; `unauthenticated` (401) without a credential.
     """
     # Ungated by design: logic-gate (proposals.create, library_vocab.manage or the proposals:write scope; PRO-01).

@@ -30,6 +30,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import QuerySet
 from django.utils import timezone
+from pydantic.alias_generators import to_camel
 
 from apps.library.models import (
     Instrument,
@@ -51,6 +52,7 @@ from apps.proposals import standards
 from apps.proposals.logic import (
     Reviewer,
     as_reviewer,
+    merge_pair,
     parsed_payload,
     validated_instrument,
     validated_obligation,
@@ -278,7 +280,7 @@ def _new_obligation(
     """
     instrument, terms = validated_obligation(payload)
     Instrument.objects.select_for_update().filter(pk=instrument.pk).exists()
-    standards.check(proposal.kind, instrument, [term.id for term in terms], proposal.field_sources)
+    standards.check(proposal.kind, instrument, [term.id for term in terms], proposal.field_sources, payload.ref_label)
     verified_origin = _verified_origin(reviewer)
     obligation = Obligation.objects.create(
         stable_key=payload.key,
@@ -607,9 +609,9 @@ def _restamp(
     row: Any, proposal: Proposal, reviewer: Reviewer, labels: QuerySet[Any], *, usage_note_written: bool
 ) -> None:
     """Stamp an existing list row or term with the approval that just wrote some of its
-    wording (INV-05, D-62). Only a relabel or a term update that writes labels or a usage
-    note calls this: a sort order, a retire, a restore or a merge writes no wording, and the
-    row keeps the stamp it had.
+    wording (INV-05, D-62). Only a relabel or a term update that writes labels, a usage
+    note or one of the row's own columns calls this: a sort order, a retire, a restore or a
+    merge writes no wording, and the row keeps the stamp it had.
 
     A row is reworded in place, a piece at a time, so a person's approval stamps `user`
     only once nothing the agents confirmed is left on it. While a label is still
@@ -694,9 +696,13 @@ def _vocabulary_relabel(
         row.usage_note = payload.usage_note
     if payload.sort_order is not None:
         row.sort_order = payload.sort_order
-    for name, value in extra_columns(entry, payload.extra).items():
+    # A row's own columns are facts the rules read (a level's binding default, a dimension's
+    # footprint rule), so a change to one is stamped as wording is and audited both ways.
+    columns = extra_columns(entry, payload.extra)
+    was = {to_camel(name): getattr(getattr(row, name), "key", getattr(row, name)) for name in columns}
+    for name, value in columns.items():
         setattr(row, name, value)
-    if payload.labels or payload.usage_note is not None:
+    if payload.labels or payload.usage_note is not None or columns:
         _restamp(
             row,
             proposal,
@@ -714,8 +720,12 @@ def _vocabulary_relabel(
         subject_title=f"{payload.list}:{payload.key}",
         summary=f"Changed {payload.key} on {payload.list} (proposal {proposal.id}).",
         tenant_id=None,
-        before={"labels": before},
-        after={"labels": {**before, **payload.labels}, "proposal": str(proposal.id)},
+        before={"labels": before, **({"extra": was} if columns else {})},
+        after={
+            "labels": {**before, **payload.labels},
+            **({"extra": {to_camel(name): getattr(value, "key", value) for name, value in columns.items()}} if columns else {}),
+            "proposal": str(proposal.id),
+        },
         step_up_assertion_id=step_up,
     )
 
@@ -748,8 +758,7 @@ def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Propo
 
 def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
     entry = _entry(payload.list)
-    source = _row(entry, payload.key)
-    target = _row(entry, payload.into)
+    source, target = merge_pair(entry, payload.key, payload.into)
     if source.is_system:
         raise ValidationError(f"{payload.key} is a system value: it can be relabelled but not merged away.", code="system_row")
     # Every current row holding the source moves to the target in this transaction; the
