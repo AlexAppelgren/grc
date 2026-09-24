@@ -266,10 +266,9 @@ def active_obligation(obligation_id: uuid.UUID) -> Obligation:
     refused where it is made rather than left in the queue for a reviewer to discover that
     it can never be applied (PRO-01).
     """
-    # INV-07 (R3): once a bank can hold a private obligation of its own, this lookup also
-    # finds that bank's own rows, and a library proposal must only ever target a shared
-    # record. Add `owner_tenant__isnull=True` with the first row that can carry an owner.
-    obligation = Obligation.objects.filter(pk=obligation_id).first()  # ordering: pk lookup, at most one row
+    # INV-07: a bank's own private obligation is visible to that bank under row-level
+    # security, and a library proposal only ever targets a shared record.
+    obligation = Obligation.objects.filter(pk=obligation_id, owner_tenant__isnull=True).first()  # ordering: pk lookup, at most one row
     if obligation is None:
         raise ValidationError("That obligation is not here.", code="unknown_key")
     if obligation.status != RecordStatus.ACTIVE.value:

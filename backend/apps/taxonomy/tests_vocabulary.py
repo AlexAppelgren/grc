@@ -37,6 +37,8 @@ from apps.taxonomy.models import (
     ChangeType,
     DutyType,
     EffortSize,
+    FootprintChangeRequest,
+    FootprintTerm,
     RejectionReason,
     RelationType,
     RiskRating,
@@ -266,6 +268,29 @@ class VocabularyEdges(ScenarioTestCase):
         self.assertEqual(self._post(f"/tenant/footprint/requests/{again['id']}/approve", {}, approver).status_code, 200)
         regimes = {t["key"] for d in self._get("/tenant/footprint", officer).json()["dimensions"] if d["dimension"]["key"] == "regime" for t in d["terms"]}
         self.assertEqual(regimes, {"aml"})
+
+    def test_a_footprint_change_naming_a_term_twice_is_refused_before_anything_is_written(self) -> None:
+        officer = sign_in(factories.member(self.tenant, roles=("compliance_officer",)).user, tenant=self.tenant)
+        aml = {"dimension": "regime", "key": "aml"}
+        for body in ({"adds": [aml, aml]}, {"removes": [aml, aml]}):
+            for path in ("/tenant/footprint/requests?dryRun=true", "/tenant/footprint/requests"):
+                refused = self._post(path, body, officer)
+                self.assertEqual(refused.status_code, 422, refused.content)
+                self.assertEqual(self._code(refused), "validation_error")
+        self.assertFalse(FootprintChangeRequest.objects.exists())
+
+    def test_an_approval_never_switches_on_a_term_retired_while_the_request_waited(self) -> None:
+        officer = sign_in(factories.member(self.tenant, roles=("compliance_officer",)).user, tenant=self.tenant)
+        created = self._post("/tenant/footprint/requests", {"adds": [{"dimension": "regime", "key": "aml"}]}, officer)
+        self.assertEqual(created.status_code, 201, created.content)
+        with library_write("test"):
+            TaxonomyTerm.objects.filter(dimension__key="regime", key="aml").update(active=False)
+        approver = sign_in(self.admin_user, tenant=self.tenant, step_up=True)
+        refused = self._post(f"/tenant/footprint/requests/{created.json()['id']}/approve", {}, approver)
+        self.assertEqual(refused.status_code, 409, refused.content)
+        self.assertEqual(self._code(refused), "stale_write")
+        self.assertFalse(FootprintTerm.objects.filter(term__key="aml", term__dimension__key="regime").exists())
+        self.assertEqual(FootprintChangeRequest.objects.get().status, "pending")
 
 
 class RejectionReasons(ScenarioTestCase):
