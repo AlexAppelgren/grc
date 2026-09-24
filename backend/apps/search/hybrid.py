@@ -372,12 +372,7 @@ def _in_footprint(tenant: Tenant) -> Func:
         Value([], output_field=ArrayField(UUIDField())),
         output_field=ArrayField(UUIDField()),
     )
-    return Func(
-        Value(tenant.id, output_field=UUIDField()),
-        scope,
-        function=matching.SQL_FUNCTION,
-        output_field=BooleanField(),
-    )
+    return matching.in_footprint_expression(tenant.id, scope)
 
 
 def _similarity(query: str) -> Any:

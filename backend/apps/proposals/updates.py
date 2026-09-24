@@ -28,7 +28,7 @@ from typing import Any, cast
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
-from django.db.models import BooleanField, Exists, Func, OuterRef, Q, QuerySet, UUIDField, Value
+from django.db.models import Exists, OuterRef, Q, QuerySet
 from django.utils import timezone
 
 from apps.library.models import Obligation, ObligationVersion
@@ -71,7 +71,7 @@ def _applied(*, since: datetime.datetime, kind: str | None, outside_footprint: b
     queryset = logic.filtered(Proposal.objects.all(), status=ProposalStatus.APPROVED.value, kind=kind).filter(applied_at__gte=since)
     if not outside_footprint:
         inside = Obligation.objects.filter(
-            Func(Value(tenant_id, output_field=UUIDField()), scope_term_ids(), function=matching.SQL_FUNCTION, output_field=BooleanField())
+            matching.in_footprint_expression(tenant_id, scope_term_ids())
         )
         created_inside = Exists(ObligationVersion.objects.filter(applied_by_proposal=OuterRef("pk"), obligation__in=inside))
         new_obligation = Q(kind=ProposalKind.NEW_OBLIGATION.value)

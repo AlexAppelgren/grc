@@ -1,7 +1,9 @@
 """Footprint matching (FP-01, D-36, data-model.md §4): the one rule every surface applies
 from chunk 3 on, as a pure function and as the SQL function `taxonomy_in_footprint(tenant,
-term_ids[])` the taxonomy migrations create (0001, replaced by 0006 for opt-in dimensions).
-The two are tested against each other (apps/taxonomy/tests_matching.py).
+term_ids[])` the taxonomy migrations create (0001, replaced by 0006 for opt-in dimensions,
+split by 0008 into the bank's guard, read once, and a per-row check that reads no table).
+The two are tested against each other (apps/taxonomy/tests_matching.py). A list filters with
+`in_footprint_expression()`, the same two halves, so the footprint is read once per query.
 
 The rule: for every dimension the record carries terms in, at least one of them must be
 in the footprint. A dimension the footprint has no terms in does not restrict (an empty
@@ -20,12 +22,20 @@ from __future__ import annotations
 import uuid
 from collections.abc import Collection, Iterable, Mapping
 
+from django.contrib.postgres.fields import ArrayField
 from django.db import connection
-from django.db.models import Q
+from django.db.models import BooleanField, Func, Q, UUIDField, Value
+from django.db.models.expressions import BaseExpression
 
 from apps.taxonomy.models import FootprintTerm, TermDimension, TermDimensionKind
 
 SQL_FUNCTION = "taxonomy_in_footprint"
+# taxonomy_footprint_guard's three columns, each read by an uncorrelated subquery.
+GUARD_TEMPLATES = (
+    "(SELECT terms FROM taxonomy_footprint_guard(%(expressions)s))",
+    "(SELECT dimensions FROM taxonomy_footprint_guard(%(expressions)s))",
+    "(SELECT allowed FROM taxonomy_footprint_guard(%(expressions)s))",
+)
 
 
 class Restricting(frozenset[str]):
@@ -91,6 +101,15 @@ def restricting_dimensions() -> Restricting:
 def opt_in_dimensions() -> frozenset[str]:
     """The active opt-in dimensions alone: the standards a bank follows."""
     return restricting_dimensions().opt_in
+
+
+def in_footprint_expression(tenant_id: uuid.UUID, term_ids: BaseExpression) -> Func:
+    """`taxonomy_in_footprint(tenant, term_ids)` as a list's filter: the per-row check over
+    `term_ids`, handed the bank's guard as uncorrelated subqueries that PostgreSQL runs once
+    per query (taxonomy 0008), instead of re-reading the footprint for every row."""
+    tenant = Value(tenant_id, output_field=UUIDField())
+    guard = [Func(tenant, template=template, output_field=ArrayField(UUIDField())) for template in GUARD_TEMPLATES]
+    return Func(term_ids, *guard, function="taxonomy_scope_admits", output_field=BooleanField())
 
 
 def in_footprint_sql(tenant_id: uuid.UUID, term_ids: Iterable[uuid.UUID]) -> bool:

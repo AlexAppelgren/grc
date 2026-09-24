@@ -59,7 +59,7 @@ from django.contrib.postgres.expressions import ArraySubquery
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.lookups import DataContains
 from django.core.exceptions import ValidationError
-from django.db.models import BooleanField, Count, Exists, F, Func, Model, OuterRef, Prefetch, Q, QuerySet, UUIDField, Value
+from django.db.models import Count, Exists, F, Func, Model, OuterRef, Prefetch, Q, QuerySet, UUIDField, Value
 from django.utils import timezone
 
 from apps.library.logic import in_force, version_diff
@@ -506,8 +506,8 @@ def scope_term_ids(*, reach: bool = True) -> Func:
 
 
 def _matches(tenant: Tenant, term_ids: Func | ArraySubquery) -> Func:
-    """`taxonomy_in_footprint(tenant, term_ids)`, the database's rule, called unchanged."""
-    return Func(Value(tenant.id, output_field=UUIDField()), term_ids, function=matching.SQL_FUNCTION, output_field=BooleanField())
+    """`taxonomy_in_footprint(tenant, term_ids)`, the database's rule, with the footprint read once per query."""
+    return matching.in_footprint_expression(tenant.id, term_ids)
 
 
 _Listed = TypeVar("_Listed", bound=QuerySet[Any])

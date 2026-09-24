@@ -60,7 +60,6 @@ from django.db.models import (
     QuerySet,
     Subquery,
     UUIDField,
-    Value,
 )
 
 from apps.cases.models import CaseLinkDecision as CaseLinkDecisionKind
@@ -168,7 +167,7 @@ def _scope_term_ids() -> Func:
 
 def _in_footprint(tenant: Tenant, term_ids: Func | ArraySubquery) -> Func:
     """The database's footprint function over one row's term ids."""
-    return Func(Value(tenant.id, output_field=UUIDField()), term_ids, function=matching.SQL_FUNCTION, output_field=BooleanField())
+    return matching.in_footprint_expression(tenant.id, term_ids)
 
 
 def urgency_refs(ids: Collection[uuid.UUID], order: list[str]) -> dict[uuid.UUID, LibraryRef]:
