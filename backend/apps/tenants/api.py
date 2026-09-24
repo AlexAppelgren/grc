@@ -123,7 +123,9 @@ def set_tenant_ai(request: HttpRequest, body: TenantAiBody) -> TenantOut:
     to a model, or that it may again.
 
     Off means Ask and the drafts a model writes for the bank's members answer
-    `feature_off` (403) before any model is reached. It does not stop the research agents
+    `feature_off` (403) before any model is reached, and a search, by a member or by the
+    bank's own key, sends what was typed to no embedding model and no reranker and finds
+    records by their words alone. It does not stop the research agents
     that keep the shared library and the watch feed current: they run for every bank, read
     only public sources and never see this bank's own words. The profile edit,
     `PATCH /tenant`, never changes this switch.

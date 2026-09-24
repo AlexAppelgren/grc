@@ -80,7 +80,10 @@ def search(request: HttpRequest, body: SearchRequest) -> SearchResponse:
     What comes back: one ranked page, best first. `limit` defaults to 20 and may not
     exceed 100; a larger number answers 422 naming the field and is never clamped. The
     bank's regulatory scope and any filter are applied before ranking, so an empty list
-    means nothing inside the bank's view matched, not that nothing exists.
+    means nothing inside the bank's view matched, not that nothing exists. In a bank that
+    has switched its AI features off (`PUT /tenant/ai`), the query reaches no embedding
+    model and no reranker: records are found by their words alone and every hit's
+    `matchKind` is `keyword`.
 
     Limits and budgets: the query is at most 500 characters (`SEARCH_QUERY_MAX_CHARS`),
     and a longer one answers 422 rather than being truncated. Each reader may search 60
@@ -123,7 +126,9 @@ def find_similar(request: HttpRequest, body: SimilarRequest) -> SearchResponse:
 
     What comes back: the same ranked shape `POST /search` returns, over shared library
     records only. No record of any bank's own zone is read or returned, and no bank's
-    regulatory scope narrows it, because a key belongs to no bank. The text carries no
+    regulatory scope narrows it. A bank's own key may hold the scope too; the text it sends
+    is then the bank's own, and while that bank has switched its AI features off it reaches
+    no embedding model and no reranker, so every hit's `matchKind` is `keyword`. The text carries no
     language and no `asOf`: it is compared in every content language the library holds,
     against the records in force today. `matchKind` says which leg found each record, so
     an agent can tell a reference it recognised from a meaning it matched.
@@ -144,7 +149,8 @@ def find_similar(request: HttpRequest, body: SimilarRequest) -> SearchResponse:
     the `search:read` scope; `unauthenticated` without a key, which is also what a
     person's session gets here.
     """
-    return hybrid.find_similar(body, caller_id=principal(request).subject_id)
+    who = principal(request)
+    return hybrid.find_similar(body, caller_id=who.subject_id, tenant_id=who.tenant_id)
 
 
 @router.post(
