@@ -2,6 +2,60 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## R1 is closed: what waits for you (2026-09-24, `r1-close-and-readiness`)
+
+R1's code is on `main` and its gates are green; what is left is yours. The four that block
+the first real test, then every open box a package added on 2026-09-23 and 2026-09-24.
+
+**Owner-blocked, before a test deploy is worth running:**
+- [ ] **D-07, the model key.** An Anthropic API key for the test environment, plus the cost of
+      a run and your approval that a reader's typed Ask question may reach that endpoint there
+      (`k-anthropic`). Until then Ask, the "So what?" draft and the confirming agent run on the
+      mock, and the real-model timings of NFR-02 are not measured.
+- [ ] **D-09, the embedding key and the retrieval baseline.** An API key for the first
+      embedding model. The retrieval track of the release gate (SRC-05) is wired and
+      **unrecorded**: a retrieval regression does not fail CI until the baseline is recorded
+      with that key (`c7-embedder-selection-baseline`). Search runs by keyword and mock vectors
+      until then.
+- [ ] **The test deployment.** The Railway project, the test host and `WEBAUTHN_RP_ID`, the
+      EU mail sender and `TRUSTED_PROXY_HOPS` ("Before the first test deploy" below). Every R1
+      requirement reads `built`; none reads `verified` until you exercise it there.
+- [ ] **Legal on standard titles.** "Legal, before any standard is seeded" below: what the
+      publishers' terms allow. ISO/IEC 27001 exists for tests and E2E only until you answer.
+
+**Security, the one medium finding still open:**
+- [ ] **H33: must two agents' keys come from two people?** The first question under
+      "security-review-c4" below. It is the only medium `HARDENING.md` row that is neither fixed
+      nor a cut you accepted, and it is not built unattended because it changes who may mint
+      review keys.
+
+**Every open box added on 2026-09-23 and 2026-09-24**, each explained in its own section below:
+- security-review-c4: console tenant creation takes no step-up.
+- lib-instrument-card-fixes: the lineage headings' wording.
+- vocab-term-provenance: the risk that comes with D-79's lift.
+- proposals-reads-agent-visible: which version an open proposal is compared with.
+- agent-flow-run-guards: an agent's key must name an open run of its own; finding similar records names no run.
+- agents-confirmer-definition: the confirming agent's self-reported metadata; `library-confirmer` ships with no labelled evaluation case (v2 stays a draft until its evaluation rows exist); an open proposal's reason is kept nowhere; `AgentDecision` on the approve and reject bodies; whether a bank reads the confirming agent's reasoning.
+- agents-sector-scope-eval: the two AGT-08 tolerances.
+- search-eval-gate: the unrecorded retrieval track (the D-09 item above).
+- tax-jurisdiction-derivation: where a record's derived jurisdictions show.
+- search-ask-backend: Ask sends a reader's question to the model.
+- i18n-en-sv-switch: how a person picks their interface language.
+- api-docs-identity-auth: the passkey prompt's two-minute limit; re-enrolment signs out in one bank only.
+- watch-curation-confirm-backend: a person's confirmation needs a fresh passkey; both agent names on a machine-confirmed fact; a library editor's own filing is a suggestion; nobody confirms their own filing.
+- tax-nordic-seed: Folketinget as an authority.
+- lib-standard-e2e-seed: the default taken until the legal answer; the national-adoptions note.
+- ai-log-read: a library "So what?" shows the reading bank's own review.
+- proposals-kind-instrument-obligation: no citation table; approval does not stamp "last verified"; `update_obligation` and `retire_record` not built; an agent's approval of a new record; a new instrument in the bank's library updates.
+- watch-regime-required: a run's classification as AI output; every change names a regime and a merge is exempt.
+- ask-screen: an answer the model stopped at its length limit.
+- std-journeys: `seed_e2e` and the standard (D-85).
+- watch-standards: which publishers no run reads; ISO/IEC 27001 seeded active on a new database only; `licensed_text` has nothing to refuse.
+- ask-standard-no-answer: Ask answers nothing about a standard.
+- r1-int-w23: the evaluation set's own library door and the merge approval's watch door (D-87).
+- security-review-c7: may a bank's search text reach the embedder and the reranker.
+- r1-close-and-readiness (the end of this file): chunk 6's three confirmations and chunk 7's two.
+
 ## Before the first test deploy
 - [x] `docs/inputs/schema.sql` and `docs/inputs/data-model.md` (version 0.3) landed on 2026-09-19 at 09:38 together with the updated `INPUT_DELTAS.md`. Chunk 1 starts from them.
 - [ ] Create the Railway project in EU West: Postgres with pgvector, Redis, a private bucket, services `api`, `worker`, `beat`, `web`. See `docs/runbooks/RAILWAY_DEPLOY.md`.
@@ -1161,3 +1215,29 @@ needs a decision.
       wording gains "and the search query, for retrieval only, under the same switch".
       The alternative is keyword-only search for every bank.
 
+## r1-close-and-readiness: chunks 6 and 7, confirmed by default (2026-09-24)
+
+Defaults taken when the chunks were built; nothing waits on them. Say so if one should change.
+
+- [ ] **Chunk 6: who receives the weekly briefing mail.** Until COL-02's notification
+      preferences exist (chunk 10), every active member holding `watch.read` in the bank
+      (`home/tasks._recipients`). Confirm, or name a narrower group.
+- [ ] **Chunk 6: a confirmed "So what?" travels in that mail, a draft never does.** The lead
+      item's "So what?" is in the mail only once a person has confirmed it (WAT-05); an agent's
+      draft leaves the line out (`home/mail.py`). Confirm that the confirmed text may leave the
+      app by mail.
+- [ ] **Chunk 6: Today's standing and the roadmap's own deadlines arrive in chunk 8.** HOM-01
+      is `built` without the compliance standing panel, and HOM-03 stays `in_progress`: the
+      roadmap shows regulatory dates only, and a bank's own deadlines join with the register and
+      the cases (chunks 8 and 9). Confirm that is acceptable for the first test deploy.
+- [ ] **Chunk 7: the regulatory scope applies to search.** FP-03 lists the feed, inventory,
+      roadmap, briefing and reports, not search; search applies the scope by default with an
+      "Outside our scope" switch, as `design/screens/tenant-search.html` draws it, so J-6 is not
+      undone by a search. Confirm.
+- [ ] **Chunk 7: a standard's question is refused in Ask.** Ask answers "no answer" to a
+      question whose only support is a standard's record (D-81, "ask-standard-no-answer" above),
+      so no standard's text is restated by a model. Confirm.
+
+The chunk 7 cost-and-approval half of `k-anthropic` and the unrecorded retrieval track are the
+D-07 and D-09 items at the top of this file. q-feed-token's answer stands as taken (D-52: the
+token stays in the address, which is revocable, and the access log never writes it).
