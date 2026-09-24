@@ -152,8 +152,8 @@ requirement reads `verified` until he exercises it on the test deployment.
 - **Status cells:** every R1 requirement reads `built`, except HOM-03 (our own deadlines,
   chunks 8 and 9), ADM-01 and ADM-02 (their R2 and R3 parts), which read `in_progress` with
   the cut named in their `app.md`.
-- **Hardening:** every medium or higher row reads fixed with its proof, except H33
-  (security-review-c4 M5), which waits for Alex's answer and is not built unattended.
+- **Hardening:** every medium or higher row reads fixed with its proof, or is a cut Alex
+  accepted: H33 (security-review-c4 M5), accepted on 2026-09-24 (D-89).
 - **Owner-blocked:** the D-07 model key, the D-09 embedding key and the retrieval baseline
   (the retrieval track of the release gate is **not recorded**), the test deployment, and
   legal on standard titles; listed first in `docs/TODO_FOR_alex.md`.

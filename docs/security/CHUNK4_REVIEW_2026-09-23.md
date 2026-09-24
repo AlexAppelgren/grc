@@ -567,7 +567,7 @@ Two fixtures now carry the standard's official reference, as `e2e_standard.json`
 
 ### M5 (medium, privileged insider): agent independence is checked by definition and key, never by the person behind them
 
-**Status: open.** Named fix task H33, plus Alex's question in `TODO_FOR_alex.md`.
+**Status: accepted by Alex, 2026-09-24** (D-89, "Current state is fine"). H33 keeps the design below in case it is revisited.
 
 **Where.** `identity/api_keys_logic.create_agent_key`, `logic._decidable` and `require_reviewer`.
 

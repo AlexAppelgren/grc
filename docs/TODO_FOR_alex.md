@@ -24,10 +24,10 @@ the first real test, then every open box a package added on 2026-09-23 and 2026-
       publishers' terms allow. ISO/IEC 27001 exists for tests and E2E only until you answer.
 
 **Security, the one medium finding still open:**
-- [ ] **H33: must two agents' keys come from two people?** The first question under
-      "security-review-c4" below. It is the only medium `HARDENING.md` row that is neither fixed
-      nor a cut you accepted, and it is not built unattended because it changes who may mint
-      review keys.
+- [x] **H33: must two agents' keys come from two people?** Answered 2026-09-24 in chat:
+      "Current state is fine". H33 is a cut you accepted (D-89): independence is checked by
+      definition and key, platform admins are trusted, and the audit trail names who minted
+      each key.
 
 **Every open box added on 2026-09-23 and 2026-09-24**, each explained in its own section below:
 - security-review-c4: console tenant creation takes no step-up.
@@ -66,8 +66,8 @@ the first real test, then every open box a package added on 2026-09-23 and 2026-
 - [ ] Set `TRUSTED_PROXY_HOPS=1` on the `api` service (security review F1, `docs/security/CHUNK1_AUTH_REVIEW_2026-09-19.md`). Railway's edge writes `X-Forwarded-For` (source: Railway's help station, not official docs); confirm on the test deploy that the security log shows your own address, not the proxy's, then mark the Verification_Log row verified.
 
 ## security-review-c4 (chunk 4 security review, 2026-09-23)
-- [ ] **Must two agents' keys come from two people?** Found as M5 (`docs/security/CHUNK4_REVIEW_2026-09-23.md`). Since D-14's answer an independent agent is the library's whole second pair of eyes, and today one platform admin can mint the proposing key and the reviewing key and so alone push a change into the library. Default proposed, not built (H33): a `proposals:review` key only for an active agent of kind `review`, never beside `proposals:write`, and a key decision refused when the same person minted both keys or proposed the change. Say yes, or say that one admin minting both keys is acceptable.
-- [x] **May an independent agent approve a brand-new record?** Settled on main before this review merged (wave 4 integration, 2026-09-24): D-79 opens `new_instrument` and `new_obligation` to an agent, because both records carry `verified_origin` and `verified_by_agent`, and keeps `new_provision` and `new_provision_version` for a person, because a provision and its versions have no column to name a confirming agent. Both provision kinds are pinned refused to an agent by a test (`tests_kinds.NewProvision`). Still yours to overrule under D-79.
+- [x] **Must two agents' keys come from two people?** Answered by Alex in chat on 2026-09-24: "Current state is fine" (D-89); H33 is an accepted cut. Found as M5 (`docs/security/CHUNK4_REVIEW_2026-09-23.md`). Since D-14's answer an independent agent is the library's whole second pair of eyes, and today one platform admin can mint the proposing key and the reviewing key and so alone push a change into the library. Default proposed, not built (H33): a `proposals:review` key only for an active agent of kind `review`, never beside `proposals:write`, and a key decision refused when the same person minted both keys or proposed the change. Say yes, or say that one admin minting both keys is acceptable.
+- [x] **May an independent agent approve a brand-new record?** Settled on main before this review merged (wave 4 integration, 2026-09-24): D-79 opens `new_instrument` and `new_obligation` to an agent, because both records carry `verified_origin` and `verified_by_agent`, and keeps `new_provision` and `new_provision_version` for a person, because a provision and its versions have no column to name a confirming agent. Both provision kinds are pinned refused to an agent by a test (`tests_kinds.NewProvision`). Confirmed by Alex in chat on 2026-09-24 (D-89): "an agent can always add things to the library, and then another agent can verify it".
 - [ ] **Console tenant creation takes no step-up** (T7, playbook 4.2), while CLAUDE.md section 5 puts role changes behind one, and this call hands an administrator role to an outside address. Default kept: no step-up. Say if it should ask for one.
 
 ## Found by the cold-start journey (2026-09-20)
