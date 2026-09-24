@@ -28,7 +28,9 @@ test.describe('public page', () => {
   test('signing out lands on the public page and kills the session on the server', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.reader);
-    const refresh = (await page.context().cookies(BACKEND_URL)).find((cookie) => cookie.name === 'cw_refresh');
+    // The refresh cookie is scoped to the auth routes (REFRESH_COOKIE_PATH).
+    const authUrl = `${BACKEND_URL}/api/v1/auth/refresh`;
+    const refresh = (await page.context().cookies(authUrl)).find((cookie) => cookie.name === 'cw_refresh');
     expect(refresh, 'the refresh cookie a signed-in browser holds').toBeDefined();
 
     await signOut(page);
@@ -36,8 +38,8 @@ test.describe('public page', () => {
 
     // The browser no longer holds the cookie, and a copy taken before sign-out
     // is dead too: the session row is revoked, and every access token checks it.
-    expect((await page.context().cookies(BACKEND_URL)).some((cookie) => cookie.name === 'cw_refresh')).toBe(false);
-    const replay = await page.request.post(`${BACKEND_URL}/api/v1/auth/refresh`, { headers: { Cookie: `cw_refresh=${refresh?.value ?? ''}` } });
+    expect((await page.context().cookies(authUrl)).some((cookie) => cookie.name === 'cw_refresh')).toBe(false);
+    const replay = await page.request.post(authUrl, { headers: { Cookie: `cw_refresh=${refresh?.value ?? ''}` } });
     expect(replay.status()).toBe(401);
 
     // Back at the front door nothing signs the person in again.

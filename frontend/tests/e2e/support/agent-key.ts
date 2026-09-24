@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { expect, type ApiGuard } from './api-guard';
-import { allowFreshContext, LOGINS, signInAs } from './passkeys';
+import { allowFreshContext, BACKEND_URL, LOGINS, signInAs } from './passkeys';
 
 // Minting a platform agent key the way a platform administrator does it (ID-10,
 // AGT-01): signed in as agent-keys@bleqq.test, through /console/agent-keys, its
@@ -31,11 +31,15 @@ export interface AgentKeyRequest {
 
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/** Signs `page` in as the agent-keys login and mints one key; `page` should be a fresh context. */
+/** Signs `page` in as the agent-keys login, unless its context already is, and mints one key. */
 export async function mintAgentKey(page: Page, apiGuard: ApiGuard, request: AgentKeyRequest): Promise<MintedAgentKey> {
   allowFreshContext(apiGuard);
   apiGuard.allow(/\/api\/v1\/agent-keys$/, 403, 'creating a key answers step_up_required first and opens the prompt');
-  await signInAs(page, LOGINS.agentKeys);
+  // A second key on the same page (PRO-S13 mints two) must not sign in again:
+  // /sign-in sends a signed-in person home, and that redirect raced the click on
+  // "Sign in with a passkey" and hung the journey until its timeout.
+  const signedIn = (await page.context().cookies(`${BACKEND_URL}/api/v1/auth/refresh`)).some((cookie) => cookie.name === 'cw_refresh');
+  if (!signedIn) await signInAs(page, LOGINS.agentKeys);
   await page.goto('/console/agent-keys');
   await page.getByRole('button', { name: 'Create a key' }).click();
 
