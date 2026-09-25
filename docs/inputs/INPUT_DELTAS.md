@@ -1655,6 +1655,9 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
 - **`Assessment` has no `contributors`** (ruling 2, section 18) and gains `version`;
   `effort` is the bank's `effort_size` row, `{key, kind, label}` on a read and a key on a
   write, rather than the enum `S`, `M`, `L`.
+- **`startAssessment` and `saveAssessment` answer `CasesCase`**, as every move above does.
+  Saving with `applies` `no` closes a case being assessed with the bank's `not_applicable`
+  close reason, only for a holder of `cases.work` (D-92). Closed by `c9-assessment`.
 - **`Action`** has no `changeTitle` or ticket fields, a required `dueDate`, and gains
   `doneBy` and `version`; `updateAction` and `deleteAction` read the action's own
   `If-Match`, and every move of the case reads the case's. `deleteAction` and
