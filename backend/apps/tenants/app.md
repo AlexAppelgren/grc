@@ -44,7 +44,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | TEN-01 | Tenant profile, timezone, default languages, onboarding checklist | M | R1 | built |
 | TEN-02 | Legal entities with licences and certificates (issuer, reference, scope, validity, next audit, owner), departments with a head and the teams in them, and products described the way obligations are scoped | M | R2 | pending |
 | TEN-03 | Teams as owners and participants, so ownership survives a person leaving | M | R2 | in_progress |
-| TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | in_progress |
+| TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | built |
 | TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | pending |
 | TEN-06 | Support access grants: requested by the platform, approved by a tenant admin with a passkey, read-only, visible to the tenant, time-boxed, revocable and logged in the bank (D-49) | M | R2 | pending |
 | ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
@@ -139,7 +139,9 @@ the notices. The delegate gains no permission: they must hold every approve perm
 absent person holds (422 `delegate_cannot_approve`), a second open absence is 409
 `already_delegated`, and four eyes still refuses a delegate who asked for sign-off. A
 delegate who holds `cases.signoff` is told about a sign-off request once, on their own
-account. TEN-04 is `built` when the out-of-office screen lands with the journey.
+account. TEN-04 is `built`: the out-of-office screen (`/me/out-of-office`, `c10-fe-prefs-and-ooo`)
+landed with the journey, which walks the absent approver's own screen; where the notices go
+stays proved by the integration scenario, since no screen yet requests a sign-off on demand.
 
 ### TEN-S5 — Removing a member with open work offers bulk reassignment `@integration` `@e2e` (TEN-05)
 ```gherkin

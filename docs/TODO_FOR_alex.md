@@ -1485,3 +1485,19 @@ Built by default; nothing waits on you. Say if any should change.
       must hold the absent approver's approve permissions, a sign-off request already reaches
       them on their own account, and `c10-reminders-core`'s rule gives them one row without
       "on behalf of". Reminders for kinds the delegate is not a candidate for carry the stamp.
+
+## c10-fe-prefs-and-ooo: the notification switches and the out-of-office screen, defaults taken (2026-09-25, COL-02, TEN-04)
+
+Built by default; nothing waits on you. Say if any should change.
+
+- [ ] **A switch saves the whole set.** Each change sends all five switches with the one
+      flipped (the package's acceptance), where the card says "that one key"; the server
+      takes either. Default: the whole set.
+- [ ] **The delegate's "You are standing in for" view (card block 7) is not built.** No
+      route names whom a member stands in for, and a notification does not yet carry
+      `onBehalfOf` in its API shape, so the inbox cannot say "For Anna Nilsson, who is
+      away" either. Both need a backend field first. Default: left out until then.
+- [ ] **The delegate picker lists names only.** `GET /reference/people` answers ids and
+      names by design, so the card's role and team line under each name is not shown.
+      The caller is left out of the list; the server refuses a delegate who cannot approve
+      and the screen says so under the field. Default: so.
