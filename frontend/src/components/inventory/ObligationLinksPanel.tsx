@@ -92,11 +92,11 @@ function LinkDialog({ obligationId, onOpenChange }: { obligationId: string; onOp
                     className={cn('rounded-card border px-4 py-3 text-left', picked?.id === item.id ? 'border-fg' : 'border-line')}
                     data-pick-item={item.id}
                   >
-                    <Meta>
+                    <span className="flex flex-wrap gap-x-2 text-meta text-muted">
                       <span>{item.kind.label}</span>
                       {item.reference === null ? null : <span className="font-mono">{item.reference}</span>}
-                    </Meta>
-                    <h3>{item.name}</h3>
+                    </span>
+                    <span className="block font-medium">{item.name}</span>
                   </button>
                 ))}
               </Rows>

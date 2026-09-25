@@ -78,8 +78,8 @@ function AddDialog({ obligationId, onOpenChange }: { obligationId: string; onOpe
                   className={cn('rounded-card border px-4 py-3 text-left', selected ? 'border-fg' : 'border-line')}
                   data-pick-participant={option.value}
                 >
-                  <h3>{option.name}</h3>
-                  <Meta>{t(option.kind === 'team' ? 'obligationParticipants.team' : 'obligationParticipants.person')}</Meta>
+                  <span className="block font-medium">{option.name}</span>
+                  <span className="block text-meta text-muted">{t(option.kind === 'team' ? 'obligationParticipants.team' : 'obligationParticipants.person')}</span>
                 </button>
               );
             })}
