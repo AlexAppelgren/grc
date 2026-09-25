@@ -29,11 +29,12 @@ import uuid
 from datetime import timedelta
 from collections.abc import Iterable
 from types import SimpleNamespace
+from typing import Any
 
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, Team, TeamLabel, VocabularySuggestion
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -56,6 +57,8 @@ from apps.library.seeds import LANGUAGES
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
+from apps.tenants.models import Licence, OrgUnit, OrgUnitKind, SupportAccess, TeamMember, TenantProduct
+from apps.tenants.testing import licence_type_term
 
 _counter = itertools.count(1)
 
@@ -193,9 +196,164 @@ def vocabulary_suggestion(tenant: Tenant) -> SimpleNamespace:
     return SimpleNamespace(id=row.id, params={"list_name": "tenant_tag"})
 
 
+def obligation_participant(tenant: Tenant) -> SimpleNamespace:
+    """The tenant-isolation guard's record for the register-entry participant routes: a
+    person taking part in `tenant`'s register entry for an obligation private to `tenant`.
+    The obligation is built by `apps/collab/testing.py`, which the library fence exempts."""
+    from apps.collab import testing as collab_testing
+
+    return collab_testing.participant_on_private_obligation(tenant)
+
+
 def user_actor(*, label: str = "Test Person", user_id: uuid.UUID | None = None) -> Actor:
     return Actor(kind=ActorType.USER, id=user_id or uuid.uuid4(), label=label)
 
 
 def agent_actor(*, label: str = "Test Agent", agent_id: uuid.UUID | None = None) -> Actor:
     return Actor(kind=ActorType.AGENT, id=agent_id or uuid.uuid4(), label=label)
+
+
+# ---------------------------------------------------------------------------------------
+# c8-tenants-contract: the tenant-isolation guard's records for the chunk 8 tenants routes
+# (TEN-02, TEN-03, TEN-06). A licence's type is a library term this file may not write;
+# apps/tenants/testing.py, which the library fence exempts, writes it.
+# ---------------------------------------------------------------------------------------
+def org_unit(tenant: Tenant, *, name: str | None = None) -> OrgUnit:
+    """A department of `tenant` (a business area), which needs no legal-entity term."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return OrgUnit.objects.create(
+            tenant=tenant, kind=OrgUnitKind.BUSINESS_AREA.value, name=name or f"Business area {next(_counter)}"
+        )
+
+
+def licence(tenant: Tenant) -> Licence:
+    """A licence held by a department of `tenant`; its type is the one test term."""
+    unit = org_unit(tenant=tenant)
+    term = licence_type_term()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return Licence.objects.create(tenant=tenant, org_unit=unit, licence_type=term)
+
+
+def tenant_product(tenant: Tenant, *, name: str | None = None) -> TenantProduct:
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantProduct.objects.create(tenant=tenant, name=name or f"Product {next(_counter)}")
+
+
+def team_key(tenant: Tenant) -> SimpleNamespace:
+    """A team of `tenant`, addressed by key: `.id` is its key, which no other bank's team
+    shares, so the only thing between another bank and the team is tenancy."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        team = Team.objects.create(tenant=tenant, key=f"team-{next(_counter)}")
+    return SimpleNamespace(id=team.key, team=team)
+
+
+def support_access(tenant: Tenant) -> SupportAccess:
+    """A support-access row of `tenant`, as chunk 1's recovery writes one."""
+    requester = platform_user()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return SupportAccess.objects.create(
+            tenant=tenant, platform_user=requester, reason="The bank's watch feed stopped updating.", started_at=timezone.now()
+        )
+
+
+# c8-ten-teams-people (TEN-02, TEN-03): a named team with its English label and department,
+# the people in it, and a department with a head.
+def team(tenant: Tenant, *, key: str, label: str, org_unit: OrgUnit | None = None, members: Iterable[User] = ()) -> Team:
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        row = Team.objects.create(tenant=tenant, key=key, org_unit=org_unit)
+        TeamLabel.objects.create(tenant=tenant, vocabulary=row, language="en", text=label, is_original=True)
+        for person in members:
+            TeamMember.objects.create(tenant=tenant, team=row, user=person)
+    return row
+
+
+def department(tenant: Tenant, *, name: str, head: User | None, kind: OrgUnitKind = OrgUnitKind.BUSINESS_AREA) -> OrgUnit:
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return OrgUnit.objects.create(tenant=tenant, kind=kind.value, name=name, head_user=head)
+# c8-reg-status: the tenant-isolation guard's record for a legal entity's register row.
+def register_entity(tenant: Tenant) -> SimpleNamespace:
+    """A legal entity of `tenant`. The route reads the entity under row-level security before
+    it looks at the obligation, so another bank asking for it is refused as if it never
+    existed; apps/register/tests_status.py proves the same under a real shared obligation."""
+    from apps.tenants.models import OrgUnit, OrgUnitKind
+
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entity = OrgUnit.objects.create(tenant=tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name=f"Example Entity {next(_counter)} AB")
+    return SimpleNamespace(id=entity.id, params={"obligation_id": uuid.uuid4()})
+# --- c8-reg-gaps-risk (REG-03) ----------------------------------------------------------
+def gap(tenant: Tenant) -> Any:
+    """The tenant-isolation guard's record for gap routes: an open gap of `tenant`, with a
+    waiting risk acceptance so the approval has something to decide, on a library obligation
+    built for it by the library's own builders (this file writes no library model)."""
+    from apps.library import testing as library_testing
+    from apps.library.seeds import seed_jurisdictions, seed_languages
+    from apps.register.models import Gap
+    from apps.register.logic import ensure_register_entry
+    from apps.taxonomy.models import GapSource, GapStatus, RiskAcceptanceReason, RiskRating
+    from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+
+    n = next(_counter)
+    with transaction.atomic():
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_taxonomy_terms()
+        act = library_testing.instrument(key=f"gap-act-{n}", regime="regime:securities")
+        duty = library_testing.obligation(act, key=f"gap-duty-{n}")
+    person = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=duty.id, actor=user_actor(user_id=person.id))
+        return Gap.objects.create(
+            tenant=tenant,
+            tenant_obligation=entry,
+            title=f"Gap {n}",
+            severity=RiskRating.objects.get(key="high"),
+            source=GapSource.objects.get(key="audit"),
+            status=GapStatus.objects.get(key="open"),
+            identified_by=person,
+            acceptance_reason=RiskAcceptanceReason.objects.get(key="other"),
+            acceptance_requested_by=person,
+            acceptance_requested_at=timezone.now(),
+        )
+
+
+# c8-reg-links-history (REG-05): the tenant-isolation guard's record for DELETE /internal-links/{id}.
+def internal_link(tenant: Tenant) -> SimpleNamespace:
+    """A live link of `tenant` to a fresh library obligation, with the item it points at.
+    The obligation comes from apps/library/testing.py, the one place a test writes the
+    library; the reference rows it needs are seeded idempotently first."""
+    from apps.library import testing as library_testing
+    from apps.library.seeds import seed_jurisdictions, seed_languages
+    from apps.register.logic import ensure_register_entry
+    from apps.register.models import InternalLink
+    from apps.taxonomy.models import LinkKind
+    from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+    from apps.tenants.models import InternalItem
+
+    n = next(_counter)
+    with transaction.atomic():
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_taxonomy_terms()
+    act = library_testing.instrument(key=f"factory-act-{n}", regime="regime:securities")
+    duty = library_testing.obligation(act, key=f"factory-act-{n}/1")
+    person = member_user(tenant, roles=("compliance_officer",))
+    actor = Actor(kind=ActorType.USER, id=person.id, label=person.name)
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=duty.id, actor=actor)
+        item = InternalItem.objects.create(tenant=tenant, kind=LinkKind.objects.get(key="policy"), name=f"Policy {n}")
+        link = InternalLink.objects.create(
+            tenant=tenant, tenant_obligation=entry, internal_item=item, label=item.name, created_by=person
+        )
+    return SimpleNamespace(id=link.id, link=link)

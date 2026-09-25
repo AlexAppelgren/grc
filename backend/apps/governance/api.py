@@ -203,8 +203,10 @@ def list_problem_reports(
         "without `proposals.create`, with `requiredPermission` naming the one missing; "
         "`not_found` (404) for an id this bank has no report under; `already_closed` (409) "
         "for a report that is closed already; `validation_error` (422) for a status other "
-        "than the three or a note that is missing or too long, and `note_required` (422) for "
-        "a note that is only whitespace."
+        "than the three or a note that is missing, too long or holding a NUL character, and "
+        "`note_required` (422) for a note that is only whitespace; `rate_limited` (429) when "
+        "this person has closed 30 reports in the last hour "
+        "(`PROBLEM_REPORTS_PER_USER_PER_HOUR`), to wait out and retry."
     ),
 )
 @requires_permission(perms.PROBLEMS_REPORT)

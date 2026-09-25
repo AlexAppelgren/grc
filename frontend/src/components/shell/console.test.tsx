@@ -62,6 +62,8 @@ const editor: Me = {
   stepUpValidUntil: null,
   counts: null,
   lastVisitAt: null,
+  notificationPrefs: null,
+  headOf: [],
 };
 
 const member: Me = {

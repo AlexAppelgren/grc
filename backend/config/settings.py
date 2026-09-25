@@ -458,6 +458,34 @@ if min(SEARCH_RATE_PER_USER_PER_MINUTE, ASK_RATE_PER_USER_PER_MINUTE) < 1:
     )
 
 # ---------------------------------------------------------------------------------------
+# ===== x-hardening-inputs-ask: open Ask streams, problem reports, visits (H38, H39, H47) =
+# ASK_STREAMS_PER_USER is how many Ask answers one caller may have streaming at once
+# (apps/search/limits.py). The per-minute rate above bounds how often a caller asks, not how
+# long each answer holds a server thread (up to LLM_DEADLINE_S), so a few callers could
+# otherwise hold every thread for every bank (H47). A slot is taken before the first byte
+# and given back when the stream closes; a slot a lost worker never gave back expires
+# ASK_STREAM_SLOT_TTL_S after the caller's last take, which is past the longest a model
+# call can run.
+# PROBLEM_REPORTS_PER_USER_PER_HOUR is how many problem reports one person may file, and
+# separately close, in an hour (ACC-09, H39): each is a row and an audit row kept for ten
+# years, and a script behind a session could file thousands.
+# VISIT_MIN_INTERVAL_SECONDS: a `POST /me/visit` this soon after the person's last one
+# writes nothing, since each writes an audit and an outbox row kept for ten years (H38).
+# None of the three may be below 1: there is no value of them that means "no limit".
+# ---------------------------------------------------------------------------------------
+ASK_STREAMS_PER_USER = env_int("ASK_STREAMS_PER_USER", 2)
+ASK_STREAM_SLOT_TTL_S = int(LLM_DEADLINE_S + LLM_TIMEOUT_S) + 60
+PROBLEM_REPORTS_PER_USER_PER_HOUR = env_int("PROBLEM_REPORTS_PER_USER_PER_HOUR", 30)
+VISIT_MIN_INTERVAL_SECONDS = env_int("VISIT_MIN_INTERVAL_SECONDS", 60)
+for _name, _value in (
+    ("ASK_STREAMS_PER_USER", ASK_STREAMS_PER_USER),
+    ("PROBLEM_REPORTS_PER_USER_PER_HOUR", PROBLEM_REPORTS_PER_USER_PER_HOUR),
+    ("VISIT_MIN_INTERVAL_SECONDS", VISIT_MIN_INTERVAL_SECONDS),
+):
+    if _value < 1:
+        raise ImproperlyConfigured(f"Refusing to boot: {_name} is {_value}; it must be at least 1.")
+
+# ---------------------------------------------------------------------------------------
 # ===== SRC-03 Ask: what reaches the model and how much it may write (apps/search/ask.py) =
 # How many passages of the hybrid ranking the model is given, and the most it may write
 # back. The passages are the whole of what an answer may rest on, so a deeper retrieval is
@@ -646,6 +674,21 @@ CELERY_BEAT_SCHEDULE["briefing-weekly"] = {
 }
 
 # ---------------------------------------------------------------------------------------
+# ===== COL-02, TEN-01 the workflow policy's platform defaults (c10-workflow-policy) =====
+# What a bank's workflow policy starts at: a new tenant takes these, and the migration that
+# added the columns wrote them into every tenant that already existed. The bank changes its
+# own through PATCH /tenant/workflow; changing a value here moves no existing bank. The lead
+# days are comma-separated day counts, the weekday one of monday..sunday, the role a system
+# role key every tenant is seeded with.
+# ---------------------------------------------------------------------------------------
+WORKFLOW_REMINDER_DAYS_BEFORE = [int(value) for value in env_list("WORKFLOW_REMINDER_DAYS_BEFORE", "3")]
+WORKFLOW_REVIEW_REMINDER_DAYS_BEFORE = [int(value) for value in env_list("WORKFLOW_REVIEW_REMINDER_DAYS_BEFORE", "30")]
+WORKFLOW_ESCALATE_AFTER_DAYS = env_int("WORKFLOW_ESCALATE_AFTER_DAYS", 5)
+WORKFLOW_ESCALATE_TO_ROLE = env_str("WORKFLOW_ESCALATE_TO_ROLE", "compliance_officer")
+WORKFLOW_DIGEST_WEEKDAY = env_str("WORKFLOW_DIGEST_WEEKDAY", "monday")
+WORKFLOW_TRIAGE_TARGET_HOURS = env_int("WORKFLOW_TRIAGE_TARGET_HOURS", 48)
+
+# ---------------------------------------------------------------------------------------
 # ===== HOM-04 the calendar subscription's limits (D-52, ADR 0045) ========================
 # The token in a calendar address is a credential nobody can be asked to confirm: a
 # calendar client sends no header, follows no sign-in and polls unattended for years. Two
@@ -663,6 +706,15 @@ CALENDAR_FEED_IDLE_DAYS = env_int("CALENDAR_FEED_IDLE_DAYS", 30)
 # stays short however many a person has replaced over the years, which is what lets it go
 # unpaged (the live ones are capped above).
 CALENDAR_FEED_REVOKED_SHOWN = env_int("CALENDAR_FEED_REVOKED_SHOWN", 5)
+
+# ---------------------------------------------------------------------------------------
+# Participants (COL-04, D-18, c8-participants)
+# How many people and teams may take part in one register entry or case at once. A record
+# that everyone takes part in tells nobody anything, and every participant is a recipient of
+# every notification about it, so the list is capped; adding past the cap answers 422
+# `too_many_participants`. `apps/collab/participants.py` reads it on every add.
+# ---------------------------------------------------------------------------------------
+MAX_PARTICIPANTS_PER_RECORD = env_int("MAX_PARTICIPANTS_PER_RECORD", 50)
 # How often one address may be fetched. A calendar client polls every few hours, so this
 # is generous for every real client and still bounds what someone who found an address
 # can pull from it. It is per token, so a flood on one address leaves the others answering.
@@ -710,6 +762,10 @@ SESSION_IDLE_MINUTES_DEFAULT = env_int("SESSION_IDLE_MINUTES_DEFAULT", 30)
 SESSION_ABSOLUTE_HOURS_DEFAULT = env_int("SESSION_ABSOLUTE_HOURS_DEFAULT", 12)
 SESSION_IDLE_MINUTES_MAX = env_int("SESSION_IDLE_MINUTES_MAX", 8 * 60)
 SESSION_ABSOLUTE_HOURS_MAX = env_int("SESSION_ABSOLUTE_HOURS_MAX", 24)
+# ===== c8-org-models: ID-07 credential policy (ADR 0048) =====
+# How many days ahead a tightened credential policy takes effect by default, so members can
+# enrol a device-bound passkey before theirs stop working (tenants.SecurityPolicy).
+CREDENTIAL_POLICY_NOTICE_DAYS = env_int("CREDENTIAL_POLICY_NOTICE_DAYS", 14)
 ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 10)
 REFRESH_REPLAY_GRACE_SECONDS = env_int("REFRESH_REPLAY_GRACE_SECONDS", 30)
 STEP_UP_FRESHNESS_MINUTES = env_int("STEP_UP_FRESHNESS_MINUTES", 5)

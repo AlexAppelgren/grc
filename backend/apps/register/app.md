@@ -51,14 +51,14 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason, set by one person holding `applicability.approve` after a confirmation dialog, with an audit event and no second approver or step-up (D-75); many rows set in one call, one audit event per row | M | R2 | pending |
-| REG-02 | Compliance status, status note, risk, owners, process, system, evidence location, next review, per legal entity where the obligation spans several | M | R2 | pending |
-| REG-03 | Gaps with owner, severity, target date, remediation, and risk acceptance behind four eyes | M | R2 | pending |
-| REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 | pending |
-| REG-05 | Linked internal items (policy, procedure, control, process, system) with external references | M | R2 | pending |
+| REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason, set by one person holding `applicability.approve` after a confirmation dialog, with an audit event and no second approver or step-up (D-75); many rows set in one call, one audit event per row | M | R2 | in_progress |
+| REG-02 | Compliance status, status note, risk, owners, process, system, evidence location, next review, per legal entity where the obligation spans several | M | R2 | built |
+| REG-03 | Gaps with owner, severity, target date, remediation, and risk acceptance behind four eyes | M | R2 | built |
+| REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 | built |
+| REG-05 | Linked internal items (policy, procedure, control, process, system) with external references | M | R2 | built |
 | REG-06 | Yearly attestation by the owner, and waivers | C | R3 | pending |
-| REG-07 | Recurring duties on the roadmap from recurrence rules | S | R2 | pending |
-| REG-08 | Statement of Applicability: units per following legal entity, by reference and in the tenant's own words, entered one by one or pasted with a dry run, each with applicability, a reason, a status and gaps, fixed once it has history; nothing written under a standard is indexed, sent to a model or shown to another tenant | M | R2 | pending |
+| REG-07 | Recurring duties on the roadmap from recurrence rules | S | R2 | in_progress |
+| REG-08 | Statement of Applicability: units per following legal entity, by reference and in the tenant's own words, entered one by one or pasted with a dry run, each with applicability, a reason, a status and gaps, fixed once it has history; nothing written under a standard is indexed, sent to a model or shown to another tenant | M | R2 | in_progress |
 | ACC-04 | An agent access credential holding `tenant:read`, under an entry with tenant reach on, reads the register decisions on the obligations in its scope. Never gaps, cases, comments, evidence, the audit log or a private record | M | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
@@ -139,17 +139,26 @@ And the roadmap lists the target date as "Our deadline"
 When remediation starts
 Then the gap status reads "Remediating" as warning
 ```
+`@integration` covers every step but the roadmap line, which `c8-home-standing-roadmap` makes
+true. A gap is owned by a person or a team; a gap on an obligation, or a legal entity, whose
+answer is "does not apply" is refused with 409 `does_not_apply`, and a gap on a Statement of
+Applicability unit is `c8-units-paste-soa`'s (c8-reg-gaps-risk).
 
 ### REG-S6 — Risk acceptance is behind four eyes with step-up `@integration` `@e2e` (REG-03)
 ```gherkin
 Given an open gap
-When the owner chooses "Accept the risk" with a reason key
-Then the gap shows "Waiting for approval"
-When the owner tries to approve it
-Then the request answers 409 with code "four_eyes_violation"
-When a compliance officer with risk.accept.approve and a fresh step-up approves
-Then the gap reads "Risk accepted" as information and the audit event records both people
+When a compliance officer chooses "Accept the risk" with a reason key
+Then the gap shows "Waiting for approval" and its status does not move
+When the same officer tries to approve it
+Then the request answers 409 with code "four_eyes_violation" and nothing is written
+When a different holder of risk.accept.approve with a fresh step-up approves
+Then the gap reads "Risk accepted" as information and the audit event records both people and the step-up assertion
 ```
+Amended by c8-reg-gaps-risk: four eyes compare the approver with the person who asked for the
+acceptance, as `gap_four_eyes` does (INPUT_DELTAS, c8-register-models), so the requester is a
+compliance officer, who holds `risk.accept.approve` too, rather than the owner, who cannot
+approve at all. Reopening a closed or accepted gap clears the acceptance, audited; the
+acceptance stays in the audit log.
 
 ### REG-S7 — Assessment history and "How we read this rule" are kept per obligation `@integration` `@e2e` (REG-04)
 ```gherkin
@@ -159,6 +168,11 @@ Then "How we read this rule" shows the current interpretation with its author an
 And the history lists each earlier assessment unchanged, with who and when
 ```
 
+An interpretation is a version without an approval step (plan 7.2): every save writes the
+next version under `If-Match` and stamps the one before superseded, which stays readable;
+no second person and no four-eyes check apply. Its text never reaches an audit value, a log
+or the outbox; the audit row names the obligation and the version number.
+
 ### REG-S8 — Linked internal items carry external references `@integration` `@e2e` (REG-05)
 ```gherkin
 Given an obligation
@@ -166,6 +180,13 @@ When the owner links the policy "Client asset policy" with the reference "POL-01
 Then "Linked internal items" lists both with their kind label and external reference
 And the API exposes them so an external GRC system can read the links
 ```
+
+There is no separate internal-items screen in R2: a link either picks one of the bank's
+internal items or creates it from the same call, with its kind (a `link_kind` row), name,
+reference, url, owner person or team, org unit, external system and reference and review
+dates, one audit event each. Every link points at an item, which carries the kind; the link
+keeps its own label, url and external reference. Removing a link stamps `removed_at` and
+`removed_by`; the link row and the item stay, and the list shows live links only.
 
 ### REG-S9 — Yearly attestation and waivers `@integration` `@e2e` (REG-06)
 ```gherkin
