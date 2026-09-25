@@ -88,11 +88,6 @@ const VOCAB: Record<string, { key: string; kind: string | null; label: string }[
   ],
 };
 
-const entry = {
-  complianceStatus: { key: 'gap', kind: 'gap', label: 'Gap' },
-  entities: [{ orgUnitId: ENTITY, orgUnitName: 'Example Bank AB' }],
-};
-
 const ref = (key: string) => ({ key, kind: null, label: key });
 const obligation = {
   id: 'ob-1',
@@ -132,7 +127,6 @@ function serve(options: { who?: { id: string; name: string }; gaps?: RegisterGap
       return { status: 200, data: { items, total: items.length } };
     }
     if (sent.path === '/api/v1/obligations/ob-1') return { status: 200, data: obligation };
-    if (sent.path === '/api/v1/obligations/ob-1/register') return { status: 200, data: entry };
     const list = /^\/api\/v1\/vocab\/(\w+)$/.exec(sent.path)?.[1];
     if (list !== undefined && VOCAB[list] !== undefined) return { status: 200, data: { items: VOCAB[list], total: VOCAB[list].length } };
     return { status: 404, data: { code: 'not_found', detail: 'Not in this test.' } };
@@ -182,7 +176,6 @@ describe('the gaps list', () => {
     expect(within(row).getByText('High')).toHaveAttribute('data-pill', 'negative');
     expect(within(row).getByText('Self-assessment')).toHaveAttribute('data-pill', 'information');
     expect(await within(row).findByText('Disclose all costs and charges')).toBeInTheDocument();
-    expect(await within(row).findByText('Example Bank AB')).toBeInTheDocument();
     expect(within(row).getByText('Sara Lindqvist')).toBeInTheDocument();
     expect(within(row).getByText(/^Target 30 Nov 2099, in /)).toBeInTheDocument();
     expect(screen.getByText('1 gap')).toBeInTheDocument();
@@ -340,10 +333,18 @@ describe('the gaps panel on the obligation', () => {
     expect(sent.filter((s) => s.path.includes('/gaps'))).toHaveLength(0);
   });
 
-  it('asks for a gap where the status says something is missing', async () => {
+  it('says when no gap is recorded, and reads the record of one in a legal entity', async () => {
     serve({ gaps: [] });
-    renderIn(<ObligationGapsPanel obligationId="ob-1" />, EDITOR);
-    expect(await screen.findByText('The status says something is missing, but no gap is recorded. Record it so it gets an owner and a date.')).toBeInTheDocument();
+    const { unmount } = renderIn(<ObligationGapsPanel obligationId="ob-1" />, EDITOR);
+    expect(await screen.findByText('No gaps recorded.')).toBeInTheDocument();
+    unmount();
+
+    resetApiForTests();
+    serve();
+    renderIn(<ObligationGapsPanel obligationId="ob-1" />, ['register.read']);
+    const record = await openRecord();
+    expect(within(record).getByText('One legal entity')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Record a gap' })).toBeNull();
   });
 
   it('records a gap with keys from the bank lists, a team as owner, and refuses a past date', async () => {
@@ -351,15 +352,14 @@ describe('the gaps panel on the obligation', () => {
     renderIn(<ObligationGapsPanel obligationId="ob-1" />, EDITOR);
     fireEvent.click(await screen.findByRole('button', { name: 'Record a gap' }));
     const form = await waitFor(() => document.querySelector('[data-gap-form]') as HTMLElement);
+    await within(form).findByRole('option', { name: 'Retail compliance, a team' });
+    await within(form).findByRole('option', { name: 'Internal audit' });
+    await within(form).findByRole('option', { name: 'High' });
     fireEvent.click(within(form).getByRole('button', { name: 'Record gap' }));
     expect(within(form).getByText('Give the gap a title.')).toBeInTheDocument();
 
     fireEvent.change(within(form).getByLabelText('Title'), { target: { value: 'Exchange cost missing' } });
     fireEvent.change(within(form).getByLabelText('Target date'), { target: { value: '2001-01-01' } });
-    await within(form).findByRole('option', { name: 'Example Bank AB' });
-    await within(form).findByRole('option', { name: 'Retail compliance, a team' });
-    await within(form).findByRole('option', { name: 'Internal audit' });
-    fireEvent.change(within(form).getByLabelText('Legal entity'), { target: { value: ENTITY } });
     fireEvent.change(within(form).getByLabelText('Found through'), { target: { value: 'audit' } });
     fireEvent.change(within(form).getByLabelText('Owner'), { target: { value: 'team:retail' } });
     fireEvent.click(within(form).getByRole('button', { name: 'Record gap' }));
@@ -371,7 +371,7 @@ describe('the gaps panel on the obligation', () => {
     await waitFor(() =>
       expect(sent.find((s) => s.method === 'post' && s.path.includes('/gaps'))).toMatchObject({
         path: '/api/v1/obligations/ob-1/gaps',
-        body: { title: 'Exchange cost missing', severity: 'high', source: 'audit', orgUnitId: ENTITY, ownerTeam: 'retail', targetDate: '2099-12-31', description: null, remediation: null },
+        body: { title: 'Exchange cost missing', severity: 'high', source: 'audit', ownerTeam: 'retail', targetDate: '2099-12-31', description: null, remediation: null },
       }),
     );
   });

@@ -8,7 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ProblemAlert } from '@/components/ui/States';
 import { gapProblemCopy } from '@/features/gaps/gap-view';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
-import { useCreateGap, useRegisterEntry, useUpdateGap } from '@/features/register/hooks';
+import { useCreateGap, useUpdateGap } from '@/features/register/hooks';
 import type { RegisterGap } from '@/features/register/types';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -18,7 +18,9 @@ import { useT } from '@/shared/i18n/LocaleProvider';
 // form sends their keys. An owner is a person or a team, never both: the
 // people reference arrives with the organisation screens, so a new gap is
 // owned by the person recording it or by one of the bank's teams, and Edit
-// keeps whoever owns it now. The server checks every field again.
+// keeps whoever owns it now. A gap is recorded on the obligation as a whole
+// until the register entry can name its legal entities to pick from. The
+// server checks every field again.
 
 type Owner = `person:${string}` | `team:${string}` | '';
 
@@ -62,14 +64,12 @@ export function GapForm({
   const severities = useVocabularyValues('risk_rating');
   const sources = useVocabularyValues('gap_source', false, gap === null);
   const teams = useVocabularyValues('team');
-  const entry = useRegisterEntry(obligationId, gap === null);
   const create = useCreateGap(obligationId);
   const update = useUpdateGap();
   const write = gap === null ? create : update;
 
   const [title, setTitle] = useState(gap?.title ?? '');
   const [description, setDescription] = useState(gap?.description ?? '');
-  const [entity, setEntity] = useState('');
   const [severity, setSeverity] = useState(gap?.severity.key ?? '');
   const [source, setSource] = useState('');
   const [owner, setOwner] = useState<Owner>(ownerOf(gap, meId));
@@ -98,7 +98,7 @@ export function GapForm({
     };
     if (gap === null) {
       create.mutate(
-        { ...common, source: chosenSource, orgUnitId: entity === '' ? null : entity, ...ownerBody(owner) },
+        { ...common, source: chosenSource, ...ownerBody(owner) },
         { onSuccess: onDone },
       );
     } else {
@@ -118,18 +118,6 @@ export function GapForm({
           <TextArea id="gap-description" value={description} placeholder={t('gaps.form.descriptionPlaceholder')} onChange={(e) => setDescription(e.target.value)} />
         </Field>
         <div className="grid gap-x-3 md:grid-cols-2">
-          {gap === null ? (
-            <Field id="gap-entity" label={t('gaps.form.entity')}>
-              <Select id="gap-entity" value={entity} onChange={(e) => setEntity(e.target.value)}>
-                <option value="">{t('gaps.record.wholeObligation')}</option>
-                {(entry.data?.entities ?? []).map((row) => (
-                  <option key={row.orgUnitId} value={row.orgUnitId}>
-                    {row.orgUnitName}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          ) : null}
           <Field id="gap-severity" label={t('gaps.form.severity')}>
             <Select id="gap-severity" value={chosenSeverity} onChange={(e) => setSeverity(e.target.value)}>
               {severityRows.map((row) => (

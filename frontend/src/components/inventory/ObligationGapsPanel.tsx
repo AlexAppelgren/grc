@@ -9,7 +9,7 @@ import { Panel, Row, Rows } from '@/components/ui/Panel';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { GAPS_EDIT, REGISTER_READ } from '@/features/gaps/gap-view';
 import { useObligation } from '@/features/library/hooks';
-import { useObligationGaps, useRegisterEntry } from '@/features/register/hooks';
+import { useObligationGaps } from '@/features/register/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
 
@@ -20,20 +20,16 @@ import { usePermissions } from '@/shared/navigation/require-permission';
 // no panel, so the page asks nothing it would be refused.
 
 const ALL = { limit: 100 } as const;
-// The compliance categories that say something is missing.
-const SHORTFALL = ['gap', 'partly'];
 
 function GapsPanelBody({ obligationId }: { obligationId: string }) {
   const t = useT();
   const permissions = usePermissions() ?? [];
   const gaps = useObligationGaps(obligationId, ALL);
-  const entry = useRegisterEntry(obligationId);
   const obligation = useObligation(obligationId);
   const [open, setOpen] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
   const edits = permissions.includes(GAPS_EDIT);
   const items = gaps.data?.items ?? [];
-  const shortfall = items.length === 0 && SHORTFALL.includes(entry.data?.complianceStatus.kind ?? '');
   const title = obligation.data === undefined ? '' : (obligation.data.title?.text ?? obligation.data.instrument.shortName);
 
   return (
@@ -44,7 +40,7 @@ function GapsPanelBody({ obligationId }: { obligationId: string }) {
         <ErrorState title={t('obligationGaps.errorTitle')} onRetry={() => void gaps.refetch()} />
       ) : items.length === 0 ? (
         <p className="text-meta text-muted" data-gaps-empty="">
-          {t(shortfall ? 'obligationGaps.statusSaysGap' : 'obligationGaps.none')}
+          {t('obligationGaps.none')}
         </p>
       ) : (
         <Rows>
@@ -58,7 +54,7 @@ function GapsPanelBody({ obligationId }: { obligationId: string }) {
       )}
       {edits ? (
         <ButtonBar>
-          <Button variant={shortfall ? 'primary' : 'ghost'} size="small" onClick={() => setRecording(true)}>
+          <Button variant="ghost" size="small" onClick={() => setRecording(true)}>
             {t('obligationGaps.record')}
           </Button>
         </ButtonBar>

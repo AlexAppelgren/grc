@@ -14,7 +14,7 @@ import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
-import { useGapPlace } from '@/features/gaps/hooks';
+import { useObligationTitle } from '@/features/gaps/hooks';
 import { gapActions, gapPills, isWaiting, ownerName, targetLine } from '@/features/gaps/gap-view';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { useGaps } from '@/features/register/hooks';
@@ -37,7 +37,7 @@ const PAGE = 20;
 export function GapSummary({ gap, withObligation, expanded, onToggle }: { gap: RegisterGap; withObligation: boolean; expanded: boolean; onToggle: () => void }) {
   const t = useT();
   const ctx = useFormatContext();
-  const place = useGapPlace(gap);
+  const obligationTitle = useObligationTitle(gap);
   const target = targetLine(gap, new Date(), t, ctx);
   return (
     <>
@@ -49,9 +49,8 @@ export function GapSummary({ gap, withObligation, expanded, onToggle }: { gap: R
           {gap.title}
         </button>
       </h3>
-      {withObligation && place.obligationTitle !== null ? <p className="mt-0.5 mb-1 text-muted">{place.obligationTitle}</p> : null}
+      {withObligation && obligationTitle !== null ? <p className="mt-0.5 mb-1 text-muted">{obligationTitle}</p> : null}
       <Meta className="mt-1">
-        {place.entityName === null ? null : <span>{place.entityName}</span>}
         <span>{ownerName(gap, t)}</span>
         <span className={cn(target.overdue && 'font-medium text-negative')} data-target-line="">
           {target.text}
@@ -68,7 +67,7 @@ export function GapRecord({ gap, withObligation, wide }: { gap: RegisterGap; wit
   const ctx = useFormatContext();
   const meId = useSession().me?.user.id ?? null;
   const permissions = usePermissions() ?? [];
-  const place = useGapPlace(gap);
+  const obligationTitle = useObligationTitle(gap);
   const [message, setMessage] = useState<MessageKey | null>(null);
   const [editing, setEditing] = useState(false);
   const target = targetLine(gap, new Date(), t, ctx);
@@ -80,13 +79,13 @@ export function GapRecord({ gap, withObligation, wide }: { gap: RegisterGap; wit
       label: t('gaps.record.obligation'),
       value: (
         <Link href={`/inventory/obligations/${gap.obligationId}`} prefetch={false} className="underline">
-          {place.obligationTitle ?? t('gaps.record.obligation')}
+          {obligationTitle ?? t('gaps.record.obligation')}
         </Link>
       ),
     });
   }
   facts.push(
-    { key: 'entity', label: t('gaps.record.entity'), value: place.entityName ?? t('gaps.record.wholeObligation') },
+    { key: 'entity', label: t('gaps.record.entity'), value: t(gap.orgUnitId === null ? 'gaps.record.wholeObligation' : 'gaps.record.oneEntity') },
     { key: 'identified', label: t('gaps.record.identified'), value: t('gaps.record.identifiedBy', { date: formatDateTime(gap.identifiedAt, ctx), name: gap.identifiedBy.name }) },
     { key: 'owner', label: t('gaps.record.owner'), value: ownerName(gap, t) },
     { key: 'target', label: t('gaps.record.target'), value: <span className={cn(target.overdue && 'text-negative')}>{target.text}</span> },
@@ -123,7 +122,7 @@ export function GapRecord({ gap, withObligation, wide }: { gap: RegisterGap; wit
       {editing ? (
         <GapForm
           obligationId={gap.obligationId}
-          obligationTitle={place.obligationTitle ?? ''}
+          obligationTitle={obligationTitle ?? ''}
           gap={gap}
           onClose={() => setEditing(false)}
           onDone={() => {
