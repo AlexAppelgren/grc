@@ -5,7 +5,16 @@ import { useState } from 'react';
 import { BackLink } from '@/components/admin/AdminGate';
 import { DiffText } from '@/components/inventory/DiffText';
 import { LegalText } from '@/components/inventory/LegalText';
-import { DutyPanel, PendingPanels, ProvenancePanel, RelatedPanel, ScopePanel, VersionsPanel } from '@/components/inventory/ObligationPanels';
+import { ObligationApplicabilityPanel } from '@/components/inventory/ObligationApplicabilityPanel';
+import { ObligationCommentsPanel } from '@/components/inventory/ObligationCommentsPanel';
+import { ObligationGapsPanel } from '@/components/inventory/ObligationGapsPanel';
+import { ObligationHistoryPanel } from '@/components/inventory/ObligationHistoryPanel';
+import { ObligationLinksPanel } from '@/components/inventory/ObligationLinksPanel';
+import { DutyPanel, ProvenancePanel, RelatedPanel, ScopePanel, VersionsPanel } from '@/components/inventory/ObligationPanels';
+import { ObligationParticipantsPanel } from '@/components/inventory/ObligationParticipantsPanel';
+import { ObligationStatusPanel } from '@/components/inventory/ObligationStatusPanel';
+import { ObligationTagsPanel } from '@/components/inventory/ObligationTagsPanel';
+import { ObligationUnitsPanel } from '@/components/inventory/ObligationUnitsPanel';
 import { RecordProblemReports } from '@/components/inventory/RecordProblemReports';
 import { ObligationRelatedChanges } from '@/components/library/ObligationRelatedChanges';
 import { ReportProblemModal, type ReportContext } from '@/components/inventory/ReportProblemModal';
@@ -19,7 +28,7 @@ import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, NotFoundScreen } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useObligation, useObligationDiff, useReportObligationProblem } from '@/features/library/hooks';
-import { machineConfirmedLabel, presentObligation } from '@/features/library/obligation-presentation';
+import { machineConfirmedLabel, presentObligation, STANDARD_LEVEL_KIND } from '@/features/library/obligation-presentation';
 import type { LocalizedText, ObligationDetail, VersionDiff } from '@/features/library/types';
 import type { PartialDate } from '@/features/shared/presentation-types';
 import { languageName } from '@/features/library/version-presentation';
@@ -34,9 +43,12 @@ import { problemStatus } from '@/shared/utils/problem';
 // AC-INV1). It reads and never writes the library: the one thing a reader can
 // send from here is a problem report, which stays inside their own bank,
 // and the close of one in its Reported problems section (AUD-03).
-// Nothing on it says the duty applies to this bank or that the bank complies
-// with it — those are the register's separate facts, and the panel that will
-// hold them says so until chunk 8 fills it.
+// The library's panels say nothing about whether the duty applies to this bank
+// or whether the bank complies with it: those are the register's separate
+// facts (REG-01 to REG-05, REG-08), each in a panel of its own, mounted here
+// once in the card's order and filled by its own package, as are participants,
+// tags and comments. The units panel sits only on a standard's conformance
+// obligation, the one obligation a standard holds.
 
 /** Reporting a problem with a library record is everyone's, but it is still a permission. */
 const REPORT_PERMISSION = 'problems.report';
@@ -219,11 +231,18 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div>
           <ScopePanel obligation={record} />
+          <ObligationTagsPanel obligationId={record.id} />
           <DutyPanel obligation={record} />
           <VersionsPanel versions={record.versions} />
           <RelatedPanel related={record.related} />
+          <ObligationLinksPanel obligationId={record.id} />
+          {record.bindingLevel.kind === STANDARD_LEVEL_KIND ? <ObligationUnitsPanel obligationId={record.id} /> : null}
+          <ObligationHistoryPanel obligationId={record.id} />
         </div>
         <div>
+          <ObligationApplicabilityPanel obligationId={record.id} />
+          <ObligationStatusPanel obligationId={record.id} />
+          <ObligationGapsPanel obligationId={record.id} />
           <ProvenancePanel
             obligation={record}
             actions={
@@ -236,7 +255,8 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
           />
           <RecordProblemReports subjectType="obligation" subjectId={record.id} />
           <ObligationRelatedChanges obligationId={obligationId} />
-          <PendingPanels />
+          <ObligationParticipantsPanel obligationId={record.id} />
+          <ObligationCommentsPanel obligationId={record.id} />
         </div>
       </div>
 

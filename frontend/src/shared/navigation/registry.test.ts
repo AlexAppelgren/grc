@@ -104,7 +104,7 @@ describe('navigation registry (playbook 6.2)', () => {
 
   it('puts every visible destination that is not a tab in More, and never promotes an unranked one', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
-    expect(moreDestinations('tenant', all).map((d) => d.id)).toEqual(['roadmap', 'admin']);
+    expect(moreDestinations('tenant', all).map((d) => d.id)).toEqual(['roadmap', 'gaps', 'admin']);
     expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys', 'console-evaluation']);
 
     expect(dockDestinations('tenant', []).map((d) => d.id)).toEqual(['today']);
@@ -114,7 +114,7 @@ describe('navigation registry (playbook 6.2)', () => {
     // and the empty slot stays empty rather than taking Roadmap or Admin.
     const noWatch = all.filter((p) => p !== 'watch.read');
     expect(dockDestinations('tenant', noWatch).map((d) => d.id)).toEqual(['today', 'inventory', 'search']);
-    expect(moreDestinations('tenant', noWatch).map((d) => d.id)).toEqual(['roadmap', 'admin']);
+    expect(moreDestinations('tenant', noWatch).map((d) => d.id)).toEqual(['roadmap', 'gaps', 'admin']);
   });
 
   it('knows when the current page lives in More, account pages included', () => {

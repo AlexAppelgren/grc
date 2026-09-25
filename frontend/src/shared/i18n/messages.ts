@@ -18,6 +18,9 @@ import enDev from '@/messages/dev/en.json';
 import svDev from '@/messages/dev/sv.json';
 import enFootprint from '@/messages/footprint/en.json';
 import svFootprint from '@/messages/footprint/sv.json';
+// c8-ui-gaps-risk: the gaps screen and the gap record.
+import enGaps from '@/messages/gaps/en.json';
+import svGaps from '@/messages/gaps/sv.json';
 import enInventory from '@/messages/inventory/en.json';
 import svInventory from '@/messages/inventory/sv.json';
 import enLibrary from '@/messages/library/en.json';
@@ -26,6 +29,23 @@ import enMe from '@/messages/me/en.json';
 import svMe from '@/messages/me/sv.json';
 import enNav from '@/messages/nav/en.json';
 import svNav from '@/messages/nav/sv.json';
+// c8-fe-obligation-shell: the obligation page's register panels, one namespace each.
+import enObligationApplicability from '@/messages/obligation-applicability/en.json';
+import svObligationApplicability from '@/messages/obligation-applicability/sv.json';
+import enObligationStatus from '@/messages/obligation-status/en.json';
+import svObligationStatus from '@/messages/obligation-status/sv.json';
+import enObligationGaps from '@/messages/obligation-gaps/en.json';
+import svObligationGaps from '@/messages/obligation-gaps/sv.json';
+import enObligationLinks from '@/messages/obligation-links/en.json';
+import svObligationLinks from '@/messages/obligation-links/sv.json';
+import enObligationParticipants from '@/messages/obligation-participants/en.json';
+import svObligationParticipants from '@/messages/obligation-participants/sv.json';
+import enObligationUnits from '@/messages/obligation-units/en.json';
+import svObligationUnits from '@/messages/obligation-units/sv.json';
+import enObligationHistory from '@/messages/obligation-history/en.json';
+import svObligationHistory from '@/messages/obligation-history/sv.json';
+import enObligationTags from '@/messages/obligation-tags/en.json';
+import svObligationTags from '@/messages/obligation-tags/sv.json';
 import enPublic from '@/messages/public/en.json';
 import svPublic from '@/messages/public/sv.json';
 import enRoadmap from '@/messages/roadmap/en.json';
@@ -58,10 +78,21 @@ const en = {
   ...enConsoleSources,
   ...enDev,
   ...enFootprint,
+  // c8-ui-gaps-risk
+  ...enGaps,
   ...enInventory,
   ...enLibrary,
   ...enMe,
   ...enNav,
+  // c8-fe-obligation-shell
+  ...enObligationApplicability,
+  ...enObligationStatus,
+  ...enObligationGaps,
+  ...enObligationLinks,
+  ...enObligationParticipants,
+  ...enObligationUnits,
+  ...enObligationHistory,
+  ...enObligationTags,
   ...enPublic,
   ...enRoadmap,
   ...enSearch,
@@ -82,10 +113,21 @@ const sv = {
   ...svConsoleSources,
   ...svDev,
   ...svFootprint,
+  // c8-ui-gaps-risk
+  ...svGaps,
   ...svInventory,
   ...svLibrary,
   ...svMe,
   ...svNav,
+  // c8-fe-obligation-shell
+  ...svObligationApplicability,
+  ...svObligationStatus,
+  ...svObligationGaps,
+  ...svObligationLinks,
+  ...svObligationParticipants,
+  ...svObligationUnits,
+  ...svObligationHistory,
+  ...svObligationTags,
   ...svPublic,
   ...svRoadmap,
   ...svSearch,
