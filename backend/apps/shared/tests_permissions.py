@@ -7,14 +7,17 @@ hold exactly the PRD's grants), the structured 403, `@requires_scope` for agents
 
 from __future__ import annotations
 
+import importlib
 from datetime import timedelta
 from typing import Any
 
-from django.test import SimpleTestCase, override_settings
+from django.db import connection, transaction
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.test.client import RequestFactory
 from django.utils import timezone
 
-from apps.shared import permissions as p
+from apps.identity.models import TenantRole
+from apps.shared import factories, permissions as p, tenancy
 from apps.shared.errors import ProblemError
 from apps.shared.testing import agent_principal, enrolment_principal, user_principal
 
@@ -22,7 +25,7 @@ PRD_TENANT_PERMISSIONS = {
     "library.read", "watch.read", "roadmap.read", "search.use", "comments.write", "problems.report",
     "register.read", "cases.read", "reports.read", "audit.read", "footprint.request", "footprint.approve",
     "cases.triage", "cases.work", "cases.contribute", "cases.signoff", "register.edit", "gaps.edit",
-    "applicability.request", "applicability.approve", "risk.accept.approve", "proposals.create",
+    "applicability.approve", "risk.accept.approve", "proposals.create",
     "exports.create", "ai_log.read", "members.manage", "roles.manage", "security.manage", "vocab.manage",
     "workflow.manage", "agents.manage", "integrations.manage",
 }  # fmt: skip
@@ -57,6 +60,16 @@ class Matrix(SimpleTestCase):
         self.assertTrue({"members.manage", "roles.manage", "security.manage"} <= p.SYSTEM_ROLES["admin"])
         self.assertTrue(p.SYSTEM_ROLES["library_editor"] <= p.PLATFORM_PERMISSIONS)
         self.assertTrue(p.SYSTEM_ROLES["platform_admin"] <= p.PLATFORM_PERMISSIONS)
+        # One compliance person sets applicability (D-75): the officer holds it, the owner does not.
+        self.assertIn("applicability.approve", p.SYSTEM_ROLES["compliance_officer"])
+        self.assertNotIn("applicability.approve", p.SYSTEM_ROLES["owner"])
+
+    def test_applicability_request_is_retired(self) -> None:
+        """D-75 retired the request: no constant, no role and no description names it."""
+        self.assertNotIn("applicability.request", p.ALL_PERMISSIONS)
+        self.assertFalse(any("applicability.request" in grants for grants in p.SYSTEM_ROLES.values()))
+        self.assertNotIn("applicability.request", p.PERMISSION_DESCRIPTIONS)
+        self.assertFalse(hasattr(p, "APPLICABILITY_REQUEST"))
 
     def test_no_scope_allows_a_library_edit(self) -> None:
         for scope in p.ALL_SCOPES:
@@ -134,3 +147,33 @@ class Decorators(SimpleTestCase):
         self.assertEqual(
             {r.value for r in p.UngatedReason}, {"self", "bootstrap", "capability", "logic-gate", "public-token"}
         )
+
+
+class RetiredApplicabilityRequest(TestCase):
+    """identity 0006 strips the retired key from every stored role, system or the bank's
+    own, in every tenant, and leaves every other grant and the session's tenant alone."""
+
+    def test_the_migration_removes_the_key_from_every_tenant_role(self) -> None:
+        retire = importlib.import_module("apps.identity.migrations.0006_retire_applicability_request")
+        banks = [factories.tenant(slug="retire-a"), factories.tenant(slug="retire-b")]
+        for bank in banks:
+            with transaction.atomic():
+                tenancy.activate(bank.id)
+                TenantRole.objects.create(
+                    tenant=bank, key="scoping", permissions=["applicability.request", p.REGISTER_READ, p.REGISTER_EDIT]
+                )
+                TenantRole.objects.filter(tenant=bank, key="owner").update(
+                    permissions=sorted(p.SYSTEM_ROLES["owner"] | {"applicability.request"})
+                )
+        with transaction.atomic():
+            tenancy.activate(banks[0].id)
+            with connection.cursor() as cursor:
+                cursor.execute(retire.FORWARD)
+            self.assertEqual(tenancy.database_tenant_id(), banks[0].id)
+        for bank in banks:
+            with transaction.atomic():
+                tenancy.activate(bank.id)
+                roles = {role.key: set(role.permissions) for role in TenantRole.objects.filter(tenant=bank)}
+            self.assertFalse(any("applicability.request" in grants for grants in roles.values()), bank.slug)
+            self.assertEqual(roles["scoping"], {p.REGISTER_READ, p.REGISTER_EDIT})
+            self.assertEqual(roles["owner"], set(p.SYSTEM_ROLES["owner"]))
