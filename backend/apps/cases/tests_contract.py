@@ -221,6 +221,9 @@ BUILT = frozenset(
         "dismissChange",
         "restoreChange",
         "closeWithoutAction",
+        # c9-assessment: tests_assessment.py
+        "startAssessment",
+        "saveAssessment",
     }
 )
 

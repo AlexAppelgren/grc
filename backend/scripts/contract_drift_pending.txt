@@ -29,7 +29,6 @@ PATCH /comments/{} chunk 10
 PATCH /webhooks/{} chunk 13
 POST /changes/{}/actions chunk 9
 POST /changes/{}/actions/export-tickets chunk 13 INT-02, ticket export, is R3
-POST /changes/{}/assessment/start chunk 9
 POST /changes/{}/evidence chunk 9
 POST /changes/{}/signoff/approve chunk 9
 POST /changes/{}/signoff/request chunk 9
@@ -45,5 +44,4 @@ POST /obligations/{}/internal-links chunk 8
 POST /obligations/{}/waivers chunk 13 REG-06, attestations and waivers, is R3
 POST /saved-searches chunk 13
 POST /webhooks chunk 13
-PUT /changes/{}/assessment chunk 9
 PUT /integrations/tickets chunk 13
