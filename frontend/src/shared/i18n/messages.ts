@@ -1,3 +1,5 @@
+import enAdminAgents from '@/messages/admin-agents/en.json';
+import svAdminAgents from '@/messages/admin-agents/sv.json';
 import enAuth from '@/messages/auth/en.json';
 import svAuth from '@/messages/auth/sv.json';
 import enBriefing from '@/messages/briefing/en.json';
@@ -10,6 +12,8 @@ import enConsole from '@/messages/console/en.json';
 import svConsole from '@/messages/console/sv.json';
 import enConsoleAgentKeys from '@/messages/console-agent-keys/en.json';
 import svConsoleAgentKeys from '@/messages/console-agent-keys/sv.json';
+import enConsoleAgents from '@/messages/console-agents/en.json';
+import svConsoleAgents from '@/messages/console-agents/sv.json';
 import enConsoleChangeFacts from '@/messages/console-change-facts/en.json';
 import svConsoleChangeFacts from '@/messages/console-change-facts/sv.json';
 import enConsoleSources from '@/messages/console-sources/en.json';
@@ -48,12 +52,14 @@ import svWatch from '@/messages/watch/sv.json';
 // merge below never silently drops copy. `sv` is typed against `en`, so a key
 // missing in one language fails `tsc` as well as the check.
 const en = {
+  ...enAdminAgents,
   ...enAuth,
   ...enBriefing,
   ...enCalendarFeeds,
   ...enCommon,
   ...enConsole,
   ...enConsoleAgentKeys,
+  ...enConsoleAgents,
   ...enConsoleChangeFacts,
   ...enConsoleSources,
   ...enDev,
@@ -72,12 +78,14 @@ const en = {
 };
 
 const sv = {
+  ...svAdminAgents,
   ...svAuth,
   ...svBriefing,
   ...svCalendarFeeds,
   ...svCommon,
   ...svConsole,
   ...svConsoleAgentKeys,
+  ...svConsoleAgents,
   ...svConsoleChangeFacts,
   ...svConsoleSources,
   ...svDev,

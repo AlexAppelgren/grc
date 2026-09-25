@@ -137,3 +137,10 @@ API keys card's tones.
 
 `admin-security.html`'s tenant reach panel adds no pill: every state there is a sentence, and a
 request waiting for its second person is a warning banner naming who asked.
+
+
+### Chunk 11: research requests (c11-fe-console-agents)
+
+| Pill | Tone | Slot or kind, and why |
+|---|---|---|
+| Research request status: "Queued", "Running", "Done", "Failed", "Rejected", "Cancelled" | `information`, `notice`, `positive`, `negative`, `information`, `information` | Kind (`RequestState`). Queued is a neutral fact and running reads as a running agent; Done is good and Failed did not finish; Rejected and Cancelled are decisions made on purpose, never negative, like a rejected proposal (`frontend/src/features/agents/agents-presentation.ts`) |

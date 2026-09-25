@@ -200,24 +200,23 @@ def finish_agent_run(
 )
 @answers_problems
 def list_agent_runs(request: HttpRequest, query: Query[TenantRunQuery]) -> Any:
-    """Returns the agent runs the caller may see, oldest first, one page at a time: when
+    """Returns the agent runs the caller may see, newest first, one page at a time: when
     each ran, which agent, which version and which model, what started it and who asked,
-    how it ended, what it counted and what it cost. Call it to show a bank that its watch is
-    alive — that its sources were swept last night, and what came of it — to show the
-    history of one of the bank's own agents with `tenantAgentId`, the runs a person asked for
-    with `mine`, and to investigate a run whose findings are being questioned.
+    how it ended, what it counted and what it cost. Call it to show a bank what its own
+    agents have done and what that cost, the history of one of them with `tenantAgentId`,
+    the runs a person asked for with `mine`, and to investigate a run whose findings are
+    being questioned.
 
     A person's session only; an API key cannot read this, so an agent cannot read its own
     history. Inside a bank it needs `agents.manage`, in the platform console
-    `system.health`; a member with neither is refused. A bank sees the platform's own
-    library runs, because those are what feed the shared inventory it relies on, and its
-    own runs. It never sees another bank's runs, and no run of any bank is visible to
-    another; the two filters only narrow that, and naming another bank's agent matches no
-    run rather than answering an error.
-
-    bleqq's own agents are part of the base package: a bank reads their history here but
-    cannot switch one off, pause it, or change its cadence, scope or budget. A bank's own
-    agents, which it does control, appear in the same list. It changes nothing and writes
+    `system.health`; a member with neither is refused. A bank sees its own runs and nothing
+    else; the platform console sees the runs of bleqq's own agents. bleqq's runs reach a
+    bank as watch items and proposals rather than as run rows, so no platform cost, token
+    count or model is ever on a bank's page: `GET /agents/platform` shows what bleqq's
+    agents watch, when each next runs and how its last run ended. No bank sees another
+    bank's runs; the two filters only narrow that, and naming another bank's agent matches
+    no run rather than answering an error. Runs that started in the same instant keep one
+    stable order, so paging never skips or repeats one. It changes nothing and writes
     nothing to the audit log. An empty list is a 200 with `total` 0 and means nothing has
     run yet, not that something is wrong.
 
@@ -500,9 +499,12 @@ def list_platform_watch(request: HttpRequest, page: Query[PageQuery]) -> Any:
     A person's session in a bank holding `watch.read`, which every member has; no API key.
     It reads and writes nothing to the audit log.
 
+    Only active agents whose current version is not retired are listed, by key. `nextRunAt`
+    is a cadence after the last run started, or now when the agent has never run or is
+    overdue, and null for an agent that runs only when asked. An empty list is a 200.
+
     Errors: `unauthenticated` (401); `permission_denied` (403) without `watch.read`;
-    `validation_error` (422) when `limit` is above 100. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `validation_error` (422) when `limit` is above 100.
     """
     return platform_read.list_platform_watch(limit=page.limit, offset=page.offset)
 
@@ -525,8 +527,7 @@ def list_tenant_agents(request: HttpRequest, page: Query[PageQuery]) -> Any:
     nothing to the audit log. An empty list is a 200 and means the bank has added none.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `validation_error` (422) when `limit` is above 100. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `validation_error` (422) when `limit` is above 100.
     """
     tenant = caller_tenant(request)
     return tenant_agents.list_tenant_agents(tenant=tenant, limit=page.limit, offset=page.offset)
@@ -545,7 +546,8 @@ def list_tenant_agents(request: HttpRequest, page: Query[PageQuery]) -> Any:
 def create_tenant_agent(request: HttpRequest, body: TenantAgentInput) -> Any:
     """Adds an agent of the bank's own from a definition bleqq offers banks, with its
     cadence and scope; it starts switched off. What it finds stays in the bank's own zone:
-    it never writes the shared library.
+    it never writes the shared library. The plan limits are the most frequent cadence and
+    how many agents of its own a bank may add.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
     event naming the person and the definition.
@@ -553,11 +555,13 @@ def create_tenant_agent(request: HttpRequest, body: TenantAgentInput) -> Any:
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
     naming `agent_definitions.manage` when the definition is one of bleqq's own agents,
     which no bank adds or steers; `unknown_key` (422) for a definition key that does not
-    exist; `validation_error` (422). Published ahead of the logic that will fill it, and
-    answering 501 `not_built` until that ships.
+    exist, or a scope key the vocabulary does not hold, with the valid keys in `validKeys`;
+    `above_plan_limit` (422) for a cadence more frequent than the plan allows, or one agent
+    more than it allows; `duplicate_key` (409) when the bank has already added this
+    definition; `validation_error` (422).
     """
     tenant = caller_tenant(request)
-    return tenant_agents.create_tenant_agent(who=principal(request), tenant=tenant, body=body)
+    return 201, tenant_agents.create_tenant_agent(who=principal(request), tenant=tenant, body=body)
 
 
 @router.patch(
@@ -575,15 +579,16 @@ def update_tenant_agent(
 ) -> Any:
     """Changes what the body sends on one of the bank's own agents: its switch, cadence,
     run day and hour, or scope, and nothing else. Its instructions and tools are never the
-    bank's to change.
+    bank's to change. Switching an agent on needs the bank's monthly cap to be set first.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
     event with the fields before and after.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
     `not_found` (404) for an agent the bank does not have; `unknown_key` (422) for a scope
-    key the vocabulary does not hold; `validation_error` (422). Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    key the vocabulary does not hold, with the valid keys in `validKeys`; `above_plan_limit`
+    (422) for a cadence more frequent than the plan allows; `budget_cap_required` (422) when
+    switching on before the bank has set its monthly cap; `validation_error` (422).
     """
     tenant = caller_tenant(request)
     return tenant_agents.update_tenant_agent(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id, body=body)
@@ -717,8 +722,6 @@ def get_agent_budget(request: HttpRequest) -> Any:
     nothing to the audit log.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until
-    that ships.
     """
     return budget.get_budget(tenant=caller_tenant(request))
 
@@ -734,16 +737,16 @@ def get_agent_budget(request: HttpRequest) -> Any:
 @requires_permission(perms.AGENTS_MANAGE)
 @answers_problems
 def put_agent_budget(request: HttpRequest, body: AgentBudgetInput) -> Any:
-    """Sets the bank's monthly cap on its own agents. A run that would pass the cap does not
-    start, and a cap set below this month's spend pauses the bank's agents until the month
-    turns or the cap rises.
+    """Sets the bank's monthly cap on its own agents; the first time, it creates it. A run
+    that would pass the cap does not start, and a cap at or below this month's spend is
+    accepted and pauses every running agent of the bank's own at once, since a bank must
+    always be able to stop spending. A person resumes them.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
-    event with the cap before and after.
+    event with the cap before and after, and one more for each agent the cap pauses.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `validation_error` (422) for a negative or malformed amount. Published ahead of the
-    logic that will fill it, and answering 501 `not_built` until that ships.
+    `validation_error` (422) for a negative or malformed amount.
     """
     tenant = caller_tenant(request)
     return budget.put_budget(who=principal(request), tenant=tenant, body=body)

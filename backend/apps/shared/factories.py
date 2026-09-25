@@ -279,3 +279,26 @@ def tenant_reach_request(tenant: Tenant) -> TenantReachRequest:
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return TenantReachRequest.objects.create(tenant=tenant, requested_by=requester)
+
+
+
+# c11-tenant-agents-budget-scope (AGT-04)
+def tenant_agent(tenant: Tenant) -> object:
+    """The tenant-isolation guard's record for `PATCH /agents/{tenant_agent_id}`: one of the
+    bank's own agents, on a tenant-scoped definition shared by every bank that asks."""
+    from apps.agents.models import Agent, AgentKind, AgentScopeKind, AgentWritesTo, TenantAgent
+
+    with tenancy.library_write("test"):
+        definition, _ = Agent.objects.get_or_create(
+            key="isolation-bank-watch",
+            defaults={
+                "kind": AgentKind.RESEARCH.value,
+                "current_version": 1,
+                "scope": AgentScopeKind.TENANT.value,
+                "tenant_configurable": True,
+                "writes_to": AgentWritesTo.TENANT.value,
+            },
+        )
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantAgent.objects.create(tenant=tenant, agent=definition)

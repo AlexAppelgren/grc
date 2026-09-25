@@ -282,6 +282,19 @@ AGENT_RUNNER = env_str("AGENT_RUNNER", "mock")  # mock | managed_agents
 # The longest topic a research or re-tag request may carry, in characters: the text is a
 # bank's own (or the console's) and is validated at the boundary before anything reads it.
 AGENT_RESEARCH_TOPIC_MAX_CHARS = env_int("AGENT_RESEARCH_TOPIC_MAX_CHARS", 500)
+
+# --- c11-tenant-agents-budget-scope (AGT-04) ---------------------------------------------
+# Plan limits on a bank's own agents, until plans exist (R3): the most frequent cadence a
+# bank may set (`daily`, `weekly` or `monthly`; `manual` is always allowed), and how many
+# agents of its own a bank may add. The hour, in the bank's own time zone, a scheduled run
+# starts when the bank names none.
+AGENT_MIN_CADENCE = env_str("AGENT_MIN_CADENCE", "weekly")
+if AGENT_MIN_CADENCE not in ("daily", "weekly", "monthly"):
+    raise ImproperlyConfigured(f"AGENT_MIN_CADENCE must be daily, weekly or monthly, got {AGENT_MIN_CADENCE!r}")
+AGENTS_PER_TENANT_MAX = env_int("AGENTS_PER_TENANT_MAX", 3)
+AGENT_DEFAULT_RUN_HOUR = env_int("AGENT_DEFAULT_RUN_HOUR", 6)
+if not 0 <= AGENT_DEFAULT_RUN_HOUR <= 23:
+    raise ImproperlyConfigured(f"AGENT_DEFAULT_RUN_HOUR must be an hour from 0 to 23, got {AGENT_DEFAULT_RUN_HOUR}")
 MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp
 MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")
 MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")
