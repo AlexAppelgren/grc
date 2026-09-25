@@ -106,6 +106,21 @@ const change: ChangeDetail = {
     id: 'case-1',
     category: 'new',
     allowedTransitions: [],
+    canRequestSignoff: false,
+    closeReason: null,
+    closedAt: null,
+    dismissedAt: null,
+    dismissedBy: null,
+    dismissedReason: null,
+    openActionCount: 0,
+    owner: null,
+    signedOffBy: null,
+    signoffRequestedAt: null,
+    signoffRequestedBy: null,
+    subStatus: null,
+    triagedAt: null,
+    triagedBy: null,
+    version: 1,
     footprintMatch: true,
     obligationDecisions: [],
     ownerId: null,
@@ -247,6 +262,17 @@ describe('the documents panel', () => {
   it('a document with no title is reachable by its address', () => {
     render(shell(<ChangeDocuments documents={[{ ...change.documents[0]!, title: null }]} />));
     expect(screen.getByRole('link', { name: 'https://www.fi.se/press/' })).toBeInTheDocument();
+  });
+
+  it('a javascript: or data: address renders as plain text, never as a link (H26)', () => {
+    const documents = [
+      { ...change.documents[0]!, id: 'd-js', title: 'Scripted page', url: 'javascript:alert(1)' },
+      { ...change.documents[1]!, id: 'd-data', title: null, url: 'data:text/html,<b>hi</b>' },
+    ];
+    render(shell(<ChangeDocuments documents={documents} />));
+    expect(screen.getByText('Scripted page')).toBeInTheDocument();
+    expect(screen.getByText('data:text/html,<b>hi</b>')).toBeInTheDocument();
+    expect(screen.queryByRole('link')).toBeNull();
   });
 
   it('an empty panel says so', () => {

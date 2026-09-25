@@ -559,6 +559,12 @@ LIBRARY_TERM_FILTER_MAX = env_int("LIBRARY_TERM_FILTER_MAX", 20)
 # ---------------------------------------------------------------------------------------
 PROPOSAL_SOURCE_MAX_CHARS = env_int("PROPOSAL_SOURCE_MAX_CHARS", 2000)
 PROPOSAL_SCOPE_MAX_TERMS = env_int("PROPOSAL_SCOPE_MAX_TERMS", 20)
+# A payload text (a provision's verbatim text or an obligation's summary, per language)
+# arrives from an agent or a person and is stored in the queue before anyone reads it, so it
+# is bounded too (H35). The longest article a Nordic or Union source publishes runs to a few
+# tens of thousands of characters; anything beyond this is refused with 422 rather than
+# queued.
+PROPOSAL_TEXT_MAX_CHARS = env_int("PROPOSAL_TEXT_MAX_CHARS", 50000)
 
 # ---------------------------------------------------------------------------------------
 # ===== PRO-03 how far back "what changed in the library" looks ===========================
@@ -682,6 +688,32 @@ CELERY_BEAT_SCHEDULE["briefing-weekly"] = {
 }
 
 # ---------------------------------------------------------------------------------------
+# Reminders before and after a due date (COL-02, c10-reminders-core). The hour is each
+# bank's own local hour, so the entry runs every hour and hands on the banks whose clock
+# has just struck it; a daylight saving change moves the UTC hour, not the local one.
+# ---------------------------------------------------------------------------------------
+REMINDER_SEND_HOUR = env_int("REMINDER_SEND_HOUR", 7)
+CELERY_BEAT_SCHEDULE["collab-reminders"] = {
+    "task": "apps.collab.tasks.send_reminders",
+    "schedule": crontab(minute="0"),
+}
+
+# ---------------------------------------------------------------------------------------
+# ===== COL-02, TEN-01 the workflow policy's platform defaults (c10-workflow-policy) =====
+# What a bank's workflow policy starts at: a new tenant takes these, and the migration that
+# added the columns wrote them into every tenant that already existed. The bank changes its
+# own through PATCH /tenant/workflow; changing a value here moves no existing bank. The lead
+# days are comma-separated day counts, the weekday one of monday..sunday, the role a system
+# role key every tenant is seeded with.
+# ---------------------------------------------------------------------------------------
+WORKFLOW_REMINDER_DAYS_BEFORE = [int(value) for value in env_list("WORKFLOW_REMINDER_DAYS_BEFORE", "3")]
+WORKFLOW_REVIEW_REMINDER_DAYS_BEFORE = [int(value) for value in env_list("WORKFLOW_REVIEW_REMINDER_DAYS_BEFORE", "30")]
+WORKFLOW_ESCALATE_AFTER_DAYS = env_int("WORKFLOW_ESCALATE_AFTER_DAYS", 5)
+WORKFLOW_ESCALATE_TO_ROLE = env_str("WORKFLOW_ESCALATE_TO_ROLE", "compliance_officer")
+WORKFLOW_DIGEST_WEEKDAY = env_str("WORKFLOW_DIGEST_WEEKDAY", "monday")
+WORKFLOW_TRIAGE_TARGET_HOURS = env_int("WORKFLOW_TRIAGE_TARGET_HOURS", 48)
+
+# ---------------------------------------------------------------------------------------
 # ===== HOM-04 the calendar subscription's limits (D-52, ADR 0045) ========================
 # The token in a calendar address is a credential nobody can be asked to confirm: a
 # calendar client sends no header, follows no sign-in and polls unattended for years. Two
@@ -707,6 +739,25 @@ CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
 # an API key's stamp is throttled (ID-10). Without it a polling client would turn a read
 # into a write every time and fill the security log with one bank's polling.
 CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
+
+# ---------------------------------------------------------------------------------------
+# ===== VOC-08 bulk tagging's cap (c10-tagging-routes) ====================================
+# How many distinct records one tagging preview or batch may name. A list page holds at
+# most 100 rows, so two pages' worth covers every selection a screen makes, and the one
+# audit event a batch writes stays a size a reviewer can read. Above it the preview and
+# the batch answer 422 `too_many_records` and nothing is tagged.
+# `apps/taxonomy/tagging_logic.py` reads it.
+# ---------------------------------------------------------------------------------------
+BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200)
+
+# ---------------------------------------------------------------------------------------
+# ===== REP-02 export files (apps/reports, x-exports-contract) ===========================
+# How long an export's file is kept after the worker built it. A file carries a bank's
+# records outside the screens that permission-check them, so it lives only long enough to
+# be downloaded; after that its download answers 409 `export_expired` and the person asks
+# for a new one. The job row stays. A bank's policy may be stricter, so it is a setting.
+# ---------------------------------------------------------------------------------------
+EXPORT_RETENTION_DAYS = env_int("EXPORT_RETENTION_DAYS", 7)
 
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
@@ -746,6 +797,10 @@ SESSION_IDLE_MINUTES_DEFAULT = env_int("SESSION_IDLE_MINUTES_DEFAULT", 30)
 SESSION_ABSOLUTE_HOURS_DEFAULT = env_int("SESSION_ABSOLUTE_HOURS_DEFAULT", 12)
 SESSION_IDLE_MINUTES_MAX = env_int("SESSION_IDLE_MINUTES_MAX", 8 * 60)
 SESSION_ABSOLUTE_HOURS_MAX = env_int("SESSION_ABSOLUTE_HOURS_MAX", 24)
+# ===== c8-org-models: ID-07 credential policy (ADR 0048) =====
+# How many days ahead a tightened credential policy takes effect by default, so members can
+# enrol a device-bound passkey before theirs stop working (tenants.SecurityPolicy).
+CREDENTIAL_POLICY_NOTICE_DAYS = env_int("CREDENTIAL_POLICY_NOTICE_DAYS", 14)
 ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 10)
 REFRESH_REPLAY_GRACE_SECONDS = env_int("REFRESH_REPLAY_GRACE_SECONDS", 30)
 STEP_UP_FRESHNESS_MINUTES = env_int("STEP_UP_FRESHNESS_MINUTES", 5)

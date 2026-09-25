@@ -114,8 +114,7 @@ class TheRunningWeek(TestCase):
         finished = cases_build.case(
             cls.tenant, a_change(title="Settled", key_date=KEY_DATE + datetime.timedelta(days=4))
         )
-        tenancy.activate(cls.tenant.id)
-        ChangeCase.objects.filter(pk=finished.pk).update(status=CaseStatusCategory.DISMISSED.value)
+        cases_build.in_category(finished, CaseStatusCategory.DISMISSED)
 
     def read(self) -> Any:
         with mock.patch("django.utils.timezone.now", return_value=INSTANT):

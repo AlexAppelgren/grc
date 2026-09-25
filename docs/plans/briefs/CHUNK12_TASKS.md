@@ -24,6 +24,20 @@ only here:
 | LOW — no per-task minute estimates and no stopping points | Every task carries `**Minutes:**`, and new rule 14 names the stopping point and the follow-on package for the seven longest, as `CHUNK8_TASKS.md` rule 11 does |
 | Questions for Alex — three of the five were already decided | Only `TENANT_EXIT_RECORD_YEARS` with counsel's confirmation and the seven-day export life remain, beside q-retention-use and q-retention-period. Imported applicability as requests and the no-PDF committee pack are decided in `PARALLEL_PLAN.md` §7.2, the auditor's `exports.create` in `PRD.md` §6; the open-questions section says so |
 
+**Moved into R2, 2026-09-25 (x-exports-contract, R2 wave 1).** The case file must export
+(CAS-07), so the export half of `c12-exports-contract-a` and all of
+`c12-exports-contract-b` are built ahead of the chunk: `ExportJob` and its migration
+(`reports/0001_reports.py`), the four export operations, the runner in `reports/tasks.py`
+and the registry in `reports/exporters/__init__.py` (not `reports/exports/`), with the
+logic in `reports/jobs.py`. Three corrections: the storage seam is the existing
+`apps/shared/storage.py`, which gained a streaming `open()`, and no
+`apps/shared/adapters/storage.py` is added; `ImportJob`, `ImportKind` rows and the import
+routes stay here for `c12-imports-contract` (REP-03, R3), which writes `ImportJob` in a
+migration of its own; `export_job` is in the RLS guard's tenant-only list and `ExportKind`
+and `JobStatus` were already in `apps/shared/kinds.py`. REP-S3 is un-skipped; REP-02 stays
+pending and R3. What the chunk still does with these two tasks is nothing but the import
+half of `-a`.
+
 ## Scope, rules and defaults
 
 Chunk 12 plan: reports and exports, the spreadsheet register import, tenant

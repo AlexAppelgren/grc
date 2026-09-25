@@ -32,6 +32,7 @@ from django.test.utils import CaptureQueriesContext
 from apps.agents import testing as agent_build
 from apps.agents.models import RunStatus
 from apps.identity.models import ApiKey
+from apps.library import testing as library_build
 from apps.library.models import Instrument, Jurisdiction, Obligation, ObligationVersion, Provision, RecordStatus
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals import apply, logic
@@ -470,3 +471,85 @@ class ProposalTenantLink(TestCase):
         with self.assertRaises(ValidationError) as caught:
             logic.create(**{**body, "idempotency_key": "k" * 201}, proposer=logic.Proposer(actor=factories.agent_actor(), api_key_id=key.id))
         self.assertEqual(caught.exception.code, "validation_error")
+
+
+class ProposalInputAtTheBoundary(TestCase):
+    """What every proposal carries across the trust boundary, whatever its kind (PRO-01,
+    INV-08, H35, security-review-c4 L2 to L4): its `sourceUrl` is an https link or nothing,
+    because the console renders it as the proposal's source link; a text per language is at
+    most `PROPOSAL_TEXT_MAX_CHARS`, so nothing is queued that approval could not write; and
+    under a standard the free-text `sourceLabel` names the standard by its official
+    reference and nothing else, since it lands on the standard's obligation."""
+
+    def setUp(self) -> None:
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+        self.law = library_build.obligation(library_build.instrument(key="fffs-2017-2", regime="regime:securities"), key="obl-boundary")
+        self.conformance = library_build.standard()
+        self.proposer = logic.Proposer(actor=factories.user_actor(), user=None)
+
+    def _version(self, obligation: Obligation, **overrides: Any) -> Proposal:  # compliance: allow-kwargs test helper forwarding create() arguments
+        arguments: dict[str, Any] = {
+            "kind": "new_obligation_version",
+            "title": "A new version",
+            "payload": {"summaries": {"en": "The institution keeps a register."}, "originalLanguage": "en"},
+            "proposer": self.proposer,
+            "target_type": "obligation",
+            "target_id": obligation.id,
+            "field_sources": {"summaries.en": SOURCE},
+        }
+        arguments.update(overrides)
+        proposal, _ = logic.create(**arguments)
+        return proposal
+
+    def _refused(self, code: str, work: Any) -> None:
+        with self.assertRaises(ValidationError) as caught:
+            work()
+        self.assertEqual(caught.exception.code, code)
+        self.assertFalse(Proposal.objects.exists(), "a refused proposal is never queued")
+
+    def test_a_source_url_that_is_not_an_https_link_is_refused_on_every_kind(self) -> None:
+        flag = {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}
+        for url in ("http://www.fi.se/", "javascript:alert(1)", "ftp://www.fi.se/", "www.fi.se"):
+            with self.subTest(kind="new_obligation_version", url=url):
+                self._refused("validation_error", lambda url=url: self._version(self.law, source_url=url))
+            with self.subTest(kind="vocabulary_create", url=url):
+                self._refused(
+                    "validation_error",
+                    lambda url=url: logic.create(kind="vocabulary_create", title="Add a flag", payload=flag, proposer=self.proposer, source_url=url),
+                )
+        # An https link, or none at all, is what a version or a vocabulary row may carry.
+        self.assertEqual(self._version(self.law, source_url=f" {SOURCE} ").source_url, SOURCE)
+        self.assertEqual(logic.create(kind="vocabulary_create", title="Add a flag", payload=flag, proposer=self.proposer)[0].source_url, "")
+
+    def test_a_text_longer_than_the_cap_is_refused_before_it_is_queued(self) -> None:
+        provision = library_build.provision(self.law.instrument, key="fffs-2017-2-9-kap")
+        with self.settings(PROPOSAL_TEXT_MAX_CHARS=40):
+            long = "x" * 41
+            self._refused("validation_error", lambda: self._version(self.law, payload={"summaries": {"en": long}, "originalLanguage": "en"}))
+            self._refused(
+                "validation_error",
+                lambda: logic.create(
+                    kind="new_provision_version",
+                    title="New text",
+                    payload={"texts": {"sv": "Kort.", "en": long}, "originalLanguage": "sv"},
+                    proposer=self.proposer,
+                    target_type="provision",
+                    target_id=provision.id,
+                    field_sources={"texts.sv": SOURCE, "texts.en": SOURCE},
+                ),
+            )
+            # At the cap is not over it.
+            self.assertTrue(self._version(self.law, payload={"summaries": {"en": "x" * 40}, "originalLanguage": "en"}).id)
+
+    def test_a_source_label_under_a_standard_is_its_official_reference_alone(self) -> None:
+        reference = self.conformance.instrument.official_ref
+        pasted = "5.1 Leadership and commitment: top management shall demonstrate leadership"
+        self._refused("licensed_text", lambda: self._version(self.conformance, source_label=pasted, source_url=SOURCE))
+        self.assertEqual(self._version(self.conformance, source_label=reference).source_label, reference)
+        self.assertEqual(self._version(self.conformance).source_label, "")
+        # A law's label names its source in words, as before.
+        self.assertEqual(self._version(self.law, source_label=pasted).source_label, pasted)

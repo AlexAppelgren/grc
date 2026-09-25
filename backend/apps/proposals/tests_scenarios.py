@@ -452,6 +452,8 @@ class ProposalsScenarioTests(ScenarioTestCase):
             {
                 "note": "Retail only, and the wording follows the decision.",
                 "payloadOverrides": {"summaries": {"sv": corrected_sv, "en": "The institution assesses the client's knowledge and experience before advising."}, "terms": ["client_category:retail"]},
+                # Every corrected value names the source it was read in (H35).
+                "fieldSources": {field: "https://www.fi.se/" for field in ("summaries.sv", "summaries.en", "terms")},
             },
             reviewer,
         )
@@ -923,7 +925,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual(listed.status_code, 200, listed.content)
         self.assertIn(str(obligation.id), [item["id"] for item in listed.json()["items"]])
 
-    @skip("pending: PRO-S12 (INV-07, PRO-03, chunk 13)")
+    @skip("pending: PRO-S12 (INV-07, PRO-03, chunk 11)")
     def test_pro_s12(self) -> None:
         """PRO-S12
 
@@ -1003,6 +1005,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
                     "summaries": {"sv": corrected_sv, "en": "The institution assesses the client's knowledge and experience before advising."},
                     "isMachine": False,
                 },
+                "fieldSources": {"summaries.sv": "https://www.fi.se/", "summaries.en": "https://www.fi.se/"},
                 **sent,
             },
             reviewer_headers,
@@ -1238,3 +1241,10 @@ class ProposalsScenarioTests(ScenarioTestCase):
         )
         self.assertEqual(approved.status_code, 200, approved.content)
         self.assertEqual(approved.json()["status"], "approved")
+
+    @skip("pending: PRO-S15 (OWN-03, INV-07, PRO-03, AC-OWN1, chunk 11)")
+    def test_pro_s15(self) -> None:
+        """PRO-S15
+
+        The bank's own queue decides what its own agent filed (OWN-03, INV-07, PRO-03, AC-OWN1).
+        """

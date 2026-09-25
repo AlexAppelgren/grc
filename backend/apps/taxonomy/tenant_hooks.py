@@ -27,7 +27,7 @@ from django.core.exceptions import ValidationError
 
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
-from apps.taxonomy.models import CaseStatusCategory, CloseReason, ComplianceCategory
+from apps.taxonomy.models import CaseStatusCategory, CloseReason, ComplianceCategory, GapCategory, RiskLevel
 from apps.taxonomy.registry import REGISTRY, TENANT_LISTS
 from apps.taxonomy.seeds import fixture
 
@@ -68,6 +68,9 @@ _COMPLIANCE_KINDS = {
     "not_assessed": ComplianceCategory.NOT_ASSESSED.value,
 }
 
+# The fixture's risk ratings carry no kind; each maps to the level of its own key (VOC-05).
+_RISK_LEVELS = {level.value: level.value for level in RiskLevel}
+
 # list name -> (default key, system rows). Prototype lists come from the fixture; the
 # lists the prototype has no screen for are authored here with the pills card's phrases.
 TENANT_SYSTEM_ROWS: dict[str, tuple[str, list[SystemRow]]] = {
@@ -85,7 +88,7 @@ TENANT_SYSTEM_ROWS: dict[str, tuple[str, list[SystemRow]]] = {
         ],
     ),
     "compliance_status": ("not_assessed", _fixture_rows("compliance_status", kinds=_COMPLIANCE_KINDS, extra_fields=("ordinal",))),
-    "risk_rating": ("low", _fixture_rows("risk_rating", extra_fields=("ordinal",))),
+    "risk_rating": ("low", _fixture_rows("risk_rating", kinds=_RISK_LEVELS, extra_fields=("ordinal",))),
     "case_sub_status": (
         CaseStatusCategory.NEW.value,
         [
@@ -113,6 +116,39 @@ TENANT_SYSTEM_ROWS: dict[str, tuple[str, list[SystemRow]]] = {
             SystemRow("not_applicable", {"en": "Not applicable", "sv": "Ej tillämplig"}, "Assessed and found not to apply to us.", CloseReason.NOT_APPLICABLE.value),
             SystemRow("no_action", {"en": "No action needed", "sv": "Ingen åtgärd"}, "Applies, but nothing has to change.", CloseReason.NO_ACTION.value),
         ],
+    ),
+    "gap_status": (
+        GapCategory.OPEN.value,
+        [
+            SystemRow("open", {"en": "Open", "sv": "Öppen"}, "Found and not yet being fixed.", GapCategory.OPEN.value),
+            SystemRow("remediating", {"en": "Remediating", "sv": "Åtgärdas"}, "Someone is closing it to a plan and a date.", GapCategory.REMEDIATING.value),
+            SystemRow("risk_accepted", {"en": "Risk accepted", "sv": "Risk accepterad"}, "Left open on purpose, with a reason and a person who decided.", GapCategory.RISK_ACCEPTED.value),
+            SystemRow("closed", {"en": "Closed", "sv": "Stängd"}, "Fixed, and the fix is shown.", GapCategory.CLOSED.value),
+        ],
+    ),
+    "gap_source": (
+        "assessment",
+        [
+            SystemRow("assessment", {"en": "Assessment", "sv": "Bedömning"}, "Found when the obligation's compliance was assessed."),
+            SystemRow("change_case", {"en": "Change case", "sv": "Ändringsärende"}, "Found while working a regulatory change."),
+            SystemRow("audit", {"en": "Audit", "sv": "Revision"}, "Raised by an internal or external audit."),
+            SystemRow("incident", {"en": "Incident", "sv": "Incident"}, "Revealed by something that went wrong."),
+            SystemRow("regulator", {"en": "Regulator", "sv": "Tillsynsmyndighet"}, "Pointed out by a supervisory authority."),
+        ],
+    ),
+    "risk_acceptance_reason": (
+        "accepted_by_management",
+        [
+            SystemRow("accepted_by_management", {"en": "Accepted by management", "sv": "Accepterad av ledningen"}, "Management decided to carry the risk."),
+            SystemRow("cost_disproportionate", {"en": "Cost disproportionate", "sv": "Oproportionerlig kostnad"}, "Closing the gap would cost more than the risk it removes."),
+            SystemRow("compensating_control", {"en": "Compensating control", "sv": "Kompenserande kontroll"}, "Another control covers the risk."),
+            SystemRow("time_limited", {"en": "Time limited", "sv": "Tidsbegränsad"}, "Accepted until a set date, then looked at again."),
+            SystemRow("other", {"en": "Other", "sv": "Annat"}, "Say why in the note."),
+        ],
+    ),
+    "team": (
+        "compliance",
+        [SystemRow("compliance", {"en": "Compliance", "sv": "Compliance"}, "The compliance function. Relabel it and add the organisation's own teams beside it.")],
     ),
 }
 

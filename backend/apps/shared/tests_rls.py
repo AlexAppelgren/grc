@@ -52,6 +52,15 @@ from django.db.models import ForeignKey, Model
 from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 
+from apps.agents.models import (
+    Agent,
+    AgentKind,
+    AgentScopeKind,
+    AgentWritesTo,
+    ResearchRequest,
+    ResearchRequestKind,
+    TenantAgent,
+)
 from apps.governance.models import AiGeneration, AiPurpose
 from apps.identity.models import (
     ApiKey,
@@ -112,6 +121,10 @@ MIXED_TABLES = {
     # (docs/TODO_FOR_alex.md, problem reports). Its shape is pinned below: the split and
     # nothing else, so no read window for bleqq can be added without failing a test.
     "problem_report": "tenant_id",
+    # A request for agent work (AGT-05, agents 0005). A bank's request asks one of its own
+    # agents and is its own; the console's `retag` of library records has no tenant and is
+    # the library's, which every bank may read and none may write (ADR 0053).
+    "research_request": "tenant_id",
     # The derived search index (SRC-01, H7). Its zone column is always NULL in R1, so
     # `library_rows_visible` is what every bank reads a chunk through; the FOR ALL policy
     # keeps a bank session out of the shared zone it would otherwise be able to rewrite.
@@ -145,7 +158,8 @@ LIBRARY_OWNED_TABLES = frozenset({"instrument", "obligation"})
 # about a week, which cases that telling named, and the calendar addresses its people
 # subscribed with. None of the three ever holds a library row - a week that holds nothing
 # for one bank holds three reforms for another, because the footprint behind it is its own
-# (HOM-02, HOM-04).
+# (HOM-02, HOM-04). `export_job` is a bank's export and the file it produced (REP-02,
+# CAS-07); a job never holds a library row.
 TENANT_ONLY_TABLES = [
     "membership",
     "tenant_role",
@@ -156,6 +170,26 @@ TENANT_ONLY_TABLES = [
     "briefing",
     "briefing_item",
     "calendar_feed",
+    # c8-org-models (tenants 0002, TEN-02, REG-05, ID-07, ID-08): the bank's organisation and
+    # its security policy. Each reference to another tenant row is also a composite key
+    # (apps/tenants/tests_models.py proves the database refuses a cross-tenant one).
+    "org_unit",
+    "licence",
+    "licence_service_term",
+    "tenant_product",
+    "tenant_product_term",
+    "internal_item",
+    "security_policy",
+    # Chunk 8's team list (TEN-03, c8-vocab-lists-rules): a bank's teams and their labels.
+    "team",
+    "team_label",
+    # Chunk 9's case workflow (c9-case-models): one bank's impact assessment, actions,
+    # transition ledger and evidence on its own case. None ever holds a library row, and
+    # each child's case and people are composite (tenant_id, …) keys as well (D-18).
+    "impact_assessment",
+    "action",
+    "case_transition",
+    "evidence",
     # Chunk 10's (c10-collab-models): a comment, the people it mentions, the text an edit
     # replaced, a person's notifications and the proof a mail went out. All one bank's own;
     # comments and revisions hold tenant text (COL-01, COL-02).
@@ -164,7 +198,17 @@ TENANT_ONLY_TABLES = [
     "comment_revision",
     "notification",
     "email_message",
+    # Chunk 11 (agents 0005): the agents a bank added for itself and its one monthly cap on
+    # them. bleqq's own agents are library rows with no tenant column (ADR 0053).
+    "tenant_agent",
+    "tenant_agent_budget",
+    "export_job",
 ]
+
+# The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the
+# queue is the platform's and a bank's link to its own filing is `proposal_tenant` above.
+# A batch's rows (proposals 0008) are library records' previews and never a bank's.
+PROPOSAL_LIBRARY_TABLES = frozenset({"proposal", "proposal_batch_row"})
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also
 # demands a key of the same zone; agents 0002 renamed its read policy to the shared name.
@@ -181,6 +225,12 @@ OTHER_POLICIES = frozenset(
 # `platform_only`, FOR ALL, refusing any session with a tenant active: a bank never reads or
 # writes the evaluation set. Adding a table here is a review question.
 PLATFORM_ONLY_TABLES = frozenset({"eval_question", "eval_run"})
+
+# The one `IS NULL` a write rule may carry, pinned as PostgreSQL renders it: a run the worker
+# opens has no key (agents 0004), and only a run with a key must name a key of its own
+# zone. The own-zone rule beside it is unchanged, so the row still lands only in the
+# session's zone. Adding one here is a review question.
+KEYLESS_WRITE_CLAUSES = {"agent_run": "(api_key_id IS NULL) OR "}
 PLATFORM_ONLY_POLICY = "platform_only"
 
 
@@ -229,6 +279,14 @@ class RowLevelSecurityGuard(TestCase):
             cursor.execute("SELECT relname FROM pg_class WHERE relname = ANY(%s)", [sorted(WATCH_LIBRARY_TABLES)])
             found = {row[0] for row in cursor.fetchall()}
         self.assertEqual(found, set(WATCH_LIBRARY_TABLES), "the watch migration did not create every table it guards")
+
+    def test_the_proposal_tables_carry_no_tenant_column(self) -> None:
+        tables = {model._meta.db_table for model in tenant_scoped_models()}
+        self.assertEqual(PROPOSAL_LIBRARY_TABLES & tables, set(), "a proposal table grew a tenant column (PRO-01)")
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute("SELECT relname FROM pg_class WHERE relname = ANY(%s)", [sorted(PROPOSAL_LIBRARY_TABLES)])
+            found = {row[0] for row in cursor.fetchall()}
+        self.assertEqual(found, set(PROPOSAL_LIBRARY_TABLES), "a proposal migration did not create every table it guards")
 
     def test_only_the_named_tables_carry_the_identity_lookup_clause(self) -> None:
         with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
@@ -344,6 +402,8 @@ class RowLevelSecurityGuard(TestCase):
             if policy is None:
                 continue  # the test above names it
             with_check = policy[2]
+            if table in KEYLESS_WRITE_CLAUSES:
+                with_check = with_check.replace(KEYLESS_WRITE_CLAUSES[table], "", 1)
             if "IS NULL" in with_check:
                 problems.append(f"{table}: WITH CHECK accepts a row of the other zone: {with_check}")
             if IDENTITY_LOOKUP_SETTING in with_check:
@@ -495,6 +555,15 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
             self.role_id = TenantRole.objects.filter(tenant=self.tenant_a).order_by("key").values_list("id", flat=True)[0]
         with library_write("a zone probe"):
             self.source_kind = SourceKind.objects.create(key="zone-probe")
+            # A definition a bank may add for itself, which a bank's research request names.
+            self.bank_agent = Agent.objects.create(
+                key="zone-probe",
+                kind=AgentKind.RESEARCH.value,
+                current_version=1,
+                scope=AgentScopeKind.TENANT.value,
+                tenant_configurable=True,
+                writes_to=AgentWritesTo.TENANT.value,
+            )
         self.platform = self._rows(None)
         self.own = self._rows(self.tenant_a.id)
 
@@ -580,6 +649,20 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
                 subject_id=uuid.uuid4(),
                 text="A probe, not a report.",
             )
+        if table == "research_request":
+            # The console's retag in the library's zone, a bank's request to its own agent in
+            # the bank's (AGT-05, agents 0005).
+            if tenant_id is None:
+                return ResearchRequest.objects.using("app").create(
+                    requested_by_id=self.user.id, kind=ResearchRequestKind.RETAG.value, topic="A probe"
+                )
+            tenant_agent, _ = TenantAgent.objects.using("app").get_or_create(tenant_id=tenant_id, agent_id=self.bank_agent.id)
+            return ResearchRequest.objects.using("app").create(
+                tenant_id=tenant_id,
+                tenant_agent_id=tenant_agent.id,
+                requested_by_id=self.user.id,
+                kind=ResearchRequestKind.RUN_NOW.value,
+            )
         raise AssertionError(f"{table} is mixed and has no row builder here")
 
     def _audit_event(self, tenant_id: uuid.UUID | None) -> AuditEvent:
@@ -644,3 +727,52 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
                 tenancy.activate(tenant_id, using="app")
             cursor.execute(f'SELECT id FROM "{table}" WHERE id = ANY(%s)', [probes])
             return {row[0] for row in cursor.fetchall()}
+
+
+class TeamRowsAreTenantOnly(TransactionTestCase):
+    """The team list as cw_app (TEN-03, c8-vocab-lists-rules): each bank reads only its own
+    teams and their labels, a session with no tenant reads none, and a bank cannot file a
+    team under another. Every tenant gets the system team from the tenant hook, so both
+    banks already hold one."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def test_a_bank_reads_and_writes_only_its_own_teams(self) -> None:
+        from apps.taxonomy.models import Team, TeamLabel
+
+        tenant_a = factories.tenant(slug="team-a")
+        tenant_b = factories.tenant(slug="team-b")
+        with transaction.atomic(using="app"):
+            tenancy.activate(tenant_a.id, using="app")
+            self.assertEqual(set(Team.objects.using("app").values_list("tenant_id", flat=True)), {tenant_a.id})
+            self.assertEqual(set(TeamLabel.objects.using("app").values_list("tenant_id", flat=True)), {tenant_a.id})
+        with transaction.atomic(using="app"):
+            self.assertFalse(Team.objects.using("app").exists(), "an unset tenant must match no team (fail closed)")
+            self.assertFalse(TeamLabel.objects.using("app").exists())
+        with self.assertRaises(ProgrammingError):
+            with transaction.atomic(using="app"):
+                tenancy.activate(tenant_a.id, using="app")
+                Team.objects.using("app").create(tenant_id=tenant_b.id, key="legal")
+
+
+class RecurringDutyIsLibraryOnly(TestCase):
+    """REG-07 (c8-recurring-duty-library): a recurring duty is a public fact about an
+    obligation, shared by every bank. It carries no tenant column, so no bank's judgement
+    can hide in it (that lives on the bank's own occurrences), and no policy: what holds it
+    is the library fence and the door trigger (tests_library_db_guard.py). Adding a tenant
+    column or a policy here is a review question."""
+
+    def test_the_table_has_no_tenant_column_and_no_policy(self) -> None:
+        from apps.library.models import RecurringDuty
+
+        self.assertNotIn(RecurringDuty, tenant_scoped_models())
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute("SELECT to_regclass('recurring_duty') IS NOT NULL")
+            self.assertEqual(cursor.fetchone(), (True,), "the migration did not create the table")
+            cursor.execute(
+                "SELECT count(*) FROM information_schema.columns WHERE table_name = 'recurring_duty' AND column_name LIKE %s",
+                ["%tenant%"],
+            )
+            self.assertEqual(cursor.fetchone(), (0,))
+            cursor.execute("SELECT count(*) FROM pg_policies WHERE tablename = 'recurring_duty'")
+            self.assertEqual(cursor.fetchone(), (0,))

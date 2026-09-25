@@ -11,12 +11,15 @@ with the proposal left open and nothing written.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
-from django.test import Client
+from django.db import DEFAULT_DB_ALIAS, IntegrityError, transaction
+from django.test import Client, TransactionTestCase
+
+from apps.agents import testing as agents_testing
 
 from apps.library import testing as library_build
 from apps.library.models import (
@@ -28,18 +31,24 @@ from apps.library.models import (
     ObligationTag,
     ObligationTerm,
     ObligationVersion,
+    Provision,
     SubjectType,
     Verification,
     VerificationOutcome,
 )
 from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.proposals import apply, logic
 from apps.proposals.models import Proposal, ProposalStatus
-from apps.shared import factories
+from apps.proposals.tests_decide import _actor, _agent_actor, _approval, _race, _seed
+from apps.shared import factories, tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
+from apps.shared.schemas import AgentDecision
 from apps.shared.tenancy import LibraryWriteRefused, library_write
-from apps.shared.testing import ScenarioTestCase, sign_in
+from apps.shared.testing import LANDED, ScenarioTestCase, sign_in
+from apps.taxonomy import repoint
 from apps.taxonomy.models import DutyType, Flag, InstrumentLevel, LibraryTag, ProvisionKind, RelationType, TaxonomyTerm, Urgency
+from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.watch import testing as watch_build
@@ -395,6 +404,72 @@ class ApprovalCorrectionsAndTheAssertion(ScenarioTestCase):
                 # The decision and the library change it made, and nothing without an assertion.
                 self.assertGreaterEqual(len(rows), 2)
                 self.assertEqual([row.action for row in rows if row.step_up_assertion_id is None], [])
+
+
+    def test_a_decisions_note_stays_on_the_proposal_and_never_in_its_audit_value(self) -> None:
+        """From R2 a proposal can be a bank's own (D-89), and a reviewer's note is their own
+        words about it, so it is tenant content an audit value may not carry (CHUNK10 rule
+        13): the note is kept on the proposal row, which the proposer reads, and the audit
+        row says only what was decided."""
+        approved_note = "Checked against the board decision; the wording is the authority's."
+        rejected_note = "The flag list already has Client assets for this."
+        approving = self._version_proposal()
+        rejecting = self._flag_proposal()
+
+        approved = self._post(f"/proposals/{approving['id']}/approve", {"note": approved_note}, sign_in(self.reviewer, step_up=True))
+        rejected = self._post(
+            f"/proposals/{rejecting['id']}/reject", {"rejectionCode": "duplicate", "note": rejected_note}, sign_in(self.reviewer, step_up=True)
+        )
+
+        self.assertEqual((approved.status_code, rejected.status_code), (200, 200), (approved.content, rejected.content))
+        for proposal, action, note in ((approving, "proposal.approved", approved_note), (rejecting, "proposal.rejected", rejected_note)):
+            with self.subTest(action=action):
+                self.assertEqual(Proposal.objects.get(pk=proposal["id"]).review_note, note)
+                audit = AuditEvent.objects.get(action=action, subject_id=proposal["id"])
+                self.assertNotIn("note", audit.after)
+                self.assertNotIn(note, str(audit.before) + str(audit.after) + audit.summary)
+        self.assertEqual(AuditEvent.objects.get(action="proposal.rejected", subject_id=rejecting["id"]).after["rejectionCode"], "duplicate")
+
+    def test_a_correction_that_changes_a_sourced_value_names_a_fresh_source(self) -> None:
+        """A reviewer who changes what a sourced field says read the new value somewhere, and
+        the proposer's source vouches only for the value it was given for (H35, security-review
+        c4 L5): the changed field names its fresh source in `fieldSources`, checked as a
+        proposal's are, and the proposal then keeps that source for the field."""
+        proposal = self._version_proposal()
+        reviewer = sign_in(self.reviewer, step_up=True)
+        reworded = {"summaries": {"sv": "Institutet bedömer kunden noggrant innan rådgivning."}}
+        fresh = "https://www.fi.se/sv/publicerat/nyheter/2026/beslut/"
+
+        for body, code in (
+            ({"payloadOverrides": reworded}, "source_missing"),
+            ({"payloadOverrides": reworded, "fieldSources": {"summaries.sv": "see above"}}, "validation_error"),
+            # A source for a value the correction leaves as proposed is a source for nothing.
+            ({"payloadOverrides": reworded, "fieldSources": {"summaries.sv": fresh, "effectiveFrom": fresh}}, "validation_error"),
+            ({"fieldSources": {"summaries.sv": fresh}}, "validation_error"),
+        ):
+            with self.subTest(body=body):
+                refused = self._post(f"/proposals/{proposal['id']}/approve", body, reviewer)
+                self.assertEqual(refused.status_code, 422, refused.content)
+                self.assertEqual(refused.json()["code"], code)
+                row = Proposal.objects.get(pk=proposal["id"])
+                self.assertEqual((row.status, row.corrected_payload), (ProposalStatus.OPEN.value, None))
+
+        # Correcting a value to what was proposed changes nothing, so it needs no source.
+        unchanged = {"summaries": {"sv": "Institutet bedömer kunden innan rådgivning."}, "effectiveFrom": "2026-10-01"}
+        as_proposed = self._post(f"/proposals/{proposal['id']}/approve", {"payloadOverrides": unchanged}, reviewer)
+        self.assertEqual(as_proposed.status_code, 200, as_proposed.content)
+        self.assertEqual(Proposal.objects.get(pk=proposal["id"]).field_sources, {"summaries.sv": "https://www.fi.se/", "effectiveFrom": "https://www.fi.se/"})
+        self.assertNotIn("fieldSources", AuditEvent.objects.get(action="proposal.approved", subject_id=proposal["id"]).after)
+
+        second = self._version_proposal()
+        approved = self._post(f"/proposals/{second['id']}/approve", {"payloadOverrides": reworded, "fieldSources": {"summaries.sv": f" {fresh} "}}, reviewer)
+        self.assertEqual(approved.status_code, 200, approved.content)
+        row = Proposal.objects.get(pk=second["id"])
+        self.assertEqual((row.corrected_payload or {})["summaries"], reworded["summaries"])
+        self.assertEqual(row.field_sources, {"summaries.sv": fresh, "effectiveFrom": "https://www.fi.se/"})
+        # The proposer's source for the value it no longer vouches for stays in the log.
+        audit = AuditEvent.objects.get(action="proposal.approved", subject_id=second["id"])
+        self.assertEqual((audit.before["fieldSources"], audit.after["fieldSources"]), ({"summaries.sv": "https://www.fi.se/"}, {"summaries.sv": fresh}))
 
 
 class MirroredTermsAtApproval(ScenarioTestCase):
@@ -804,3 +879,144 @@ class LibraryMergeRepoints(ScenarioTestCase):
         retired = self._post("/vocab/flag/client_money/merge", {"into": "client_assets"}, sign_in(self.editor))
         self.assertEqual(retired.status_code, 409, retired.content)
         self.assertEqual(retired.json()["code"], "invalid_transition")
+
+
+class ApprovalsOnOneRowRace(TransactionTestCase):
+    """Two approvals of different proposals on one library row at once (PRO-02, INV-05, H34,
+    H25), each session on its own cw_app connection as two requests reach production (the
+    helpers in apps/proposals/tests_decide.py). The first applies and holds its transaction
+    open until PostgreSQL reports the second waiting on it.
+
+    A relabel reads the row and saves it whole, so without the row lock in `apply._row` a
+    person's relabel read the row before an agent's committed and wrote it back over it: one
+    version bump lost and the agent's stamp replaced by the person's while the agent's
+    machine label stayed. Proven to fail 2026-09-25 without that lock (version 2, not 3, and
+    `verified_origin` read `user`).
+
+    A provision's insert reads its instrument's level in `provision_not_under_standard`, and
+    a level merge re-points the instrument under a lock the insert's foreign-key check waits
+    on only after that trigger has passed, so a provision could land under an instrument the
+    merge had just moved onto a standard. `apply._new_provision` locks the instrument and
+    reads it again first. Proven to fail 2026-09-25 without that lock: the provision was
+    written under the standard."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def setUp(self) -> None:
+        with transaction.atomic():
+            _seed()
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.proposer = factories.platform_user(roles=("library_editor",), email="proposer@bleqq.test")
+            self.person = factories.platform_user(roles=("library_editor",), email="person@bleqq.test")
+            confirmer = agents_testing.reviewer_api_key()
+            self.review_run = agents_testing.platform_run(key=confirmer)
+            self.agent = logic.Reviewer(
+                actor=_agent_actor(confirmer), api_key_id=confirmer.id, agent_id=confirmer.agent.id, api_key_prefix=confirmer.row.key_prefix
+            )
+
+    def _proposed(self, kind: str, payload: dict[str, Any], **sourced: Any) -> uuid.UUID:  # compliance: allow-kwargs test helper forwarding create() arguments
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            proposal, _ = logic.create(
+                kind=kind, title=f"{kind} {uuid.uuid4().hex[:6]}", payload=payload, proposer=logic.Proposer(actor=_actor(self.proposer), user=self.proposer), **sourced
+            )
+            return proposal.id
+
+    def _by_agent(self, proposal_id: uuid.UUID) -> Callable[[], object]:
+        return lambda: logic.approve(
+            proposal=logic.by_id(proposal_id),
+            reviewer=self.agent,
+            actor=self.agent.actor,
+            note="",
+            step_up_assertion_id=None,
+            decision=AgentDecision.model_validate(agents_testing.DECISION),
+            agent_run_id=self.review_run.id,
+        )
+
+    def test_an_agents_and_a_persons_relabel_of_one_row_at_once_both_land_in_turn(self) -> None:
+        created = self._proposed("vocabulary_create", {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}})
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            _approval(created, self.person)()
+        by_agent = self._proposed("vocabulary_relabel", {"list": "flag", "key": "client_money", "labels": {"en": "Client funds"}})
+        by_person = self._proposed("vocabulary_relabel", {"list": "flag", "key": "client_money", "labels": {"sv": "Kundmedel"}})
+
+        self.assertEqual(_race(self._by_agent(by_agent), _approval(by_person, self.person)), (LANDED, LANDED))
+
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            flag = Flag.objects.get(key="client_money")
+            # Both bumps count, and the agent's machine label keeps the row naming the agent.
+            self.assertEqual(flag.version, 3)
+            self.assertEqual((flag.verified_origin, flag.verified_by_agent_id, flag.applied_by_proposal_id), ("agent", self.agent.agent_id, by_agent))
+            labels = {label.language: (label.text, label.is_machine) for label in flag.labels.all()}
+            self.assertEqual(labels, {"en": ("Client funds", True), "sv": ("Kundmedel", False)})
+
+    def _instrument_on_a_new_level(self) -> tuple[Instrument, InstrumentLevel]:
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            with library_write("test fixture"):
+                level = InstrumentLevel.objects.create(key="national_act", binding_default=True, rank=41, active=True)
+            return library_build.instrument(key="sfs-2026-1", regime="regime:securities", level="national_act"), level
+
+    def _merge_onto_the_standard(self, level: InstrumentLevel) -> Callable[[], object]:
+        """What a level merge writes (`apply._vocabulary_merge`): every instrument at `level`
+        re-pointed onto the standard level through `repoint.move`, and the database's refusal
+        answered by the code the trigger names. The merge route checks the two kinds match
+        first; this is the write beneath it, which the trigger has to hold on its own."""
+
+        def merge() -> None:
+            try:
+                with transaction.atomic(), library_write("test: a level merge"):
+                    repoint.move(REGISTRY["instrument_level"].links, level, InstrumentLevel.objects.get(key="standard"), library=apply._repoint_rows)
+            except IntegrityError as refused:
+                if "provision_not_under_standard" not in str(refused):
+                    raise
+                raise ValidationError("Refused by the database.", code="provision_not_under_standard") from refused
+
+        return merge
+
+    def _provision_proposal(self, instrument: Instrument) -> uuid.UUID:
+        return self._proposed(
+            "new_provision",
+            {
+                "key": "sfs-2026-1-1-kap",
+                "instrument": instrument.stable_key,
+                "provisionKind": "chapter",
+                "refLabel": "1 kap.",
+                "texts": {"sv": "Lagen gäller för banker."},
+                "originalLanguage": "sv",
+            },
+            field_sources={field: "https://www.riksdagen.se/" for field in ("instrument", "provisionKind", "refLabel", "texts.sv")},
+            source_url="https://www.riksdagen.se/",
+        )
+
+    def _no_provision_under_a_standard(self) -> None:
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.assertFalse(Provision.objects.filter(instrument__level__kind="standard").exists())
+
+    def test_a_level_merge_waiting_on_a_provision_insert_ends_in_provision_not_under_standard(self) -> None:
+        instrument, level = self._instrument_on_a_new_level()
+        provision = self._provision_proposal(instrument)
+
+        outcomes = _race(_approval(provision, self.person), self._merge_onto_the_standard(level))
+
+        self.assertEqual(outcomes, (LANDED, "provision_not_under_standard"))
+        self._no_provision_under_a_standard()
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.assertEqual(Instrument.objects.get(pk=instrument.pk).level_id, level.id)
+
+    def test_a_provision_insert_waiting_on_a_level_merge_is_refused_as_licensed_text(self) -> None:
+        instrument, level = self._instrument_on_a_new_level()
+        provision = self._provision_proposal(instrument)
+
+        outcomes = _race(self._merge_onto_the_standard(level), _approval(provision, self.person))
+
+        self.assertEqual(outcomes, (LANDED, "licensed_text"))
+        self._no_provision_under_a_standard()
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.assertEqual(Proposal.objects.get(pk=provision).status, ProposalStatus.OPEN.value)

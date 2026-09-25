@@ -13,7 +13,10 @@ recorded in docs/plans/Verification_Log.md (fetched 2026-09-19, never recalled):
   credential_device_type, credential_backed_up, user_verified, ...)`.
 - `verify_authentication_response(credential=<dict>, expected_challenge, expected_rp_id,
   expected_origin, credential_public_key, credential_current_sign_count,
-  require_user_verification=True)` returns `VerifiedAuthentication(new_sign_count, ...)`.
+  require_user_verification=True)` returns `VerifiedAuthentication(new_sign_count,
+  credential_device_type, credential_backed_up, ...)`, the device type read from the
+  assertion's backup-eligible (BE) flag; a backed-up (BS) flag without BE raises
+  `InvalidBackupFlags` (verified in the installed source, 2026-09-25).
 - `parse_client_data_json(bytes)` gives the challenge the browser signed, which is how a
   stored challenge row is found for a discoverable sign-in (no user is known yet).
 
@@ -46,11 +49,13 @@ from webauthn.helpers import (
 )
 from webauthn.helpers.exceptions import (
     InvalidAuthenticationResponse,
+    InvalidBackupFlags,
     InvalidJSONStructure,
     InvalidRegistrationResponse,
 )
 from webauthn.helpers.structs import (
     AuthenticatorSelectionCriteria,
+    CredentialDeviceType,
     PublicKeyCredentialDescriptor,
     ResidentKeyRequirement,
     UserVerificationRequirement,
@@ -348,23 +353,44 @@ def _e2e_sign_count_leniency() -> bool:
     return True
 
 
-def _verify_assertion(row: WebAuthnCredential, credential: dict[str, Any], challenge: AuthChallenge) -> tuple[int, bool]:
-    """Returns (new sign count, regression ignored). Outside E2E a non-increasing counter
-    is refused by py_webauthn (verified in the installed source: it raises when either
-    count is above zero and the new one is not greater)."""
+@dataclass(frozen=True)
+class _Assertion:
+    sign_count: int
+    regressed: bool  # a non-increasing counter accepted under E2E_MODE only
+    backed_up: bool
+
+
+def _verify_assertion(row: WebAuthnCredential, credential: dict[str, Any], challenge: AuthChallenge) -> _Assertion:
+    """Outside E2E a non-increasing counter is refused by py_webauthn (verified in the
+    installed source: it raises when either count is above zero and the new one is not
+    greater). Backup eligibility is fixed when a passkey is created, so an assertion whose
+    BE flag differs from the stored one is refused, for every bank (WebAuthn Level 3
+    section 6.1.3, ADR 0048); backup state may change and is returned to be stored."""
     lenient = _e2e_sign_count_leniency()
-    verified = verify_authentication_response(
-        credential=credential,
-        expected_challenge=base64url_to_bytes(challenge.challenge),
-        expected_rp_id=settings.WEBAUTHN_RP_ID,
-        expected_origin=list(settings.WEBAUTHN_ORIGINS),
-        credential_public_key=base64url_to_bytes(row.public_key),
-        credential_current_sign_count=0 if lenient else row.sign_count,
-        require_user_verification=True,
-    )
+    try:
+        verified = verify_authentication_response(
+            credential=credential,
+            expected_challenge=base64url_to_bytes(challenge.challenge),
+            expected_rp_id=settings.WEBAUTHN_RP_ID,
+            expected_origin=list(settings.WEBAUTHN_ORIGINS),
+            credential_public_key=base64url_to_bytes(row.public_key),
+            credential_current_sign_count=0 if lenient else row.sign_count,
+            require_user_verification=True,
+        )
+    except InvalidBackupFlags as exc:
+        raise ValidationError("The passkey reported impossible backup flags.", code="invalid_backup_flags") from exc
+    if (verified.credential_device_type == CredentialDeviceType.MULTI_DEVICE) != row.backup_eligible:
+        raise ValidationError("The passkey's backup eligibility changed.", code="backup_eligibility_changed")
     new_count = verified.new_sign_count
     regressed = (new_count > 0 or row.sign_count > 0) and new_count <= row.sign_count
-    return new_count, regressed
+    return _Assertion(sign_count=new_count, regressed=regressed, backed_up=verified.credential_backed_up)
+
+
+def _store_use(row: WebAuthnCredential, assertion: _Assertion, now: datetime) -> None:
+    row.sign_count = max(row.sign_count, assertion.sign_count)
+    row.backed_up = assertion.backed_up
+    row.last_used_at = now
+    row.save(update_fields=["sign_count", "backed_up", "last_used_at"])
 
 
 def verify_authentication(credential: dict[str, Any], request: HttpRequest | None) -> session_logic.SessionBundle:
@@ -378,13 +404,11 @@ def verify_authentication(credential: dict[str, Any], request: HttpRequest | Non
         challenge = _consume_challenge(ChallengeKind.AUTHENTICATION, _challenge_from_credential(credential))
         if not _user_handle_matches(credential, row.user, required=True):
             raise ValidationError("The passkey does not belong to this account.", code="user_handle_mismatch")
-        new_sign_count, regressed = _verify_assertion(row, credential, challenge)
+        assertion = _verify_assertion(row, credential, challenge)
     except (ValidationError, InvalidAuthenticationResponse, InvalidJSONStructure) as exc:
         log_event(event=LoginEventKind.SIGNIN_FAILED, method=LoginMethod.PASSKEY, success=False, request=request, user=row.user, failure_reason=getattr(exc, "code", "") or "assertion_failed")
         raise SignInFailed("Sign-in failed.", code="signin_failed") from exc
-    row.sign_count = max(row.sign_count, new_sign_count)
-    row.last_used_at = now
-    row.save(update_fields=["sign_count", "last_used_at"])
+    _store_use(row, assertion, now)
     user = row.user
     user.last_seen_at = now
     user.save(update_fields=["last_seen_at"])
@@ -394,7 +418,7 @@ def verify_authentication(credential: dict[str, Any], request: HttpRequest | Non
     # A sign-in is not a step-up (F9, narrowed; ID-S14): no assertion on the new session.
     bundle = session_logic.create_session(user=user, kind=SessionKind.FULL, tenant_id=tenant_id, request=request, now=now)
     log_event(event=LoginEventKind.SIGNIN, method=LoginMethod.PASSKEY, success=True, request=request, user=user, tenant_id=tenant_id)
-    if regressed:
+    if assertion.regressed:
         log_event(event=LoginEventKind.SIGNIN, method=LoginMethod.PASSKEY, success=True, request=request, user=user, tenant_id=tenant_id, failure_reason=SIGN_COUNT_REGRESSION_IGNORED_E2E)
     return bundle
 
@@ -428,16 +452,14 @@ def verify_step_up(principal: Principal, credential: dict[str, Any], request: Ht
         challenge = _consume_challenge(ChallengeKind.STEP_UP, _challenge_from_credential(credential), user=user, session=session)
         if not _user_handle_matches(credential, user, required=False):
             raise ValidationError("The passkey does not belong to this account.", code="user_handle_mismatch")
-        new_sign_count, regressed = _verify_assertion(row, credential, challenge)
+        verified = _verify_assertion(row, credential, challenge)
     except (ValidationError, InvalidAuthenticationResponse, InvalidJSONStructure) as exc:
         log_event(event=LoginEventKind.STEP_UP_FAILED, method=LoginMethod.PASSKEY, success=False, request=request, user=user, tenant_id=principal.tenant_id, failure_reason=getattr(exc, "code", "") or "assertion_failed")
         raise StepUpFailed("The passkey could not be verified.", code="step_up_failed") from exc
-    row.sign_count = max(row.sign_count, new_sign_count)
-    row.last_used_at = now
-    row.save(update_fields=["sign_count", "last_used_at"])
+    _store_use(row, verified, now)
     assertion = StepUpAssertion.objects.create(session=session, credential=row, challenge=challenge)
     log_event(event=LoginEventKind.STEP_UP, method=LoginMethod.PASSKEY, success=True, request=request, user=user, tenant_id=principal.tenant_id)
-    if regressed:
+    if verified.regressed:
         log_event(event=LoginEventKind.STEP_UP, method=LoginMethod.PASSKEY, success=True, request=request, user=user, tenant_id=principal.tenant_id, failure_reason=SIGN_COUNT_REGRESSION_IGNORED_E2E)
     record(
         action="step_up.asserted",

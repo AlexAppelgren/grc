@@ -64,9 +64,10 @@ from apps.proposals.logic import create as create_proposal
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
 from apps.search import eval_sets
 from apps.shared import outbox, tenancy
+from apps.shared import permissions as perms
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.audit import Actor, ActorType, record
-from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG, SeedLogin
+from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, NO_RECORD_READ_ROLE, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG, SeedLogin
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
 from apps.shared.schemas import AgentDecision
 from apps.taxonomy.models import CaseStatusCategory
@@ -323,9 +324,11 @@ def _seed_passkey(user: User, login: SeedLogin) -> None:
             "sign_count": 0,
             "transports": ["internal"],
             "aaguid": fixed.aaguid,
-            "backup_eligible": True,
-            "backed_up": True,
-            "device_type": PasskeyDeviceType.MULTI_DEVICE.value,
+            # What Playwright's virtual authenticator reports for a credential it was
+            # handed: not backup eligible. Sign-in holds each assertion's flag to this one.
+            "backup_eligible": False,
+            "backed_up": False,
+            "device_type": PasskeyDeviceType.SINGLE_DEVICE.value,
             "nickname": "E2E virtual authenticator",
             "retired_at": None,
         },
@@ -1463,6 +1466,46 @@ def seed_tenant_only_rows(tenants: list[Tenant]) -> None:
 # --- end tax-market-journeys ---------------------------------------------------------------
 
 
+# --- r2-e2e-login-roster ------------------------------------------------------------------
+@dataclass(frozen=True)
+class SeedTenantRole:
+    tenant_slug: str
+    key: str
+    labels: dict[str, str]
+    usage_note: str
+    permissions: frozenset[str]
+
+
+# HOM-S10, COL-S12 and COL-S8: a member of tenant A whose only role reads neither the
+# register nor cases. A tenant role, because every system role reads both.
+EXPECTED_NO_RECORD_READ_ROLE = SeedTenantRole(
+    tenant_slug=TENANT_A_SLUG,
+    key=NO_RECORD_READ_ROLE,
+    labels={"en": "Library only", "sv": "Endast biblioteket"},
+    usage_note="Reads the library and the watch, and takes no part in the register or cases.",
+    permissions=frozenset(perms.SYSTEM_ROLES["reader"] - {perms.REGISTER_READ, perms.CASES_READ}),
+)
+
+
+def seed_no_record_read_role(tenants: list[Tenant]) -> None:
+    """Through the logic the roles screen calls, so the row leaves its audit event; a reseed
+    finds it and writes nothing."""
+    spec = EXPECTED_NO_RECORD_READ_ROLE
+    tenant = next(t for t in tenants if t.slug == spec.tenant_slug)
+    tenancy.activate(tenant.id)
+    if not TenantRole.objects.filter(tenant=tenant, key=spec.key).exists():
+        roles_logic.create_role(
+            tenant=tenant,
+            actor=SEED_ACTOR,
+            key=spec.key,
+            labels=spec.labels,
+            usage_note=spec.usage_note,
+            permissions=sorted(spec.permissions),
+            step_up_assertion_id=None,
+        )
+# --- end r2-e2e-login-roster --------------------------------------------------------------
+
+
 # The journey cannot narrow the scope itself: FP-S5 (J-6) changes tenant A's scope, and
 # every home and watch journey reads it in parallel. So tenant A holds the prototype's scope
 # less pension accounts, which leaves exactly one library obligation outside it (the
@@ -1741,6 +1784,8 @@ def seed_e2e() -> dict[str, int]:
             eval_questions = eval_sets.seed_questions(actor=SEED_ACTOR)
         roles_logic.ensure_platform_roles()
         tenants = seed_tenants()
+        # r2-e2e-login-roster: the tenant role one login holds, before the logins.
+        seed_no_record_read_role(tenants)
         logins = seed_logins(tenants)
         footprint_terms = seed_footprints(tenants)
         seed_pending_footprint_request(tenants)

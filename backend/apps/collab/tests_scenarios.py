@@ -9,15 +9,22 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: COL.
 """
 
-from unittest import skip
+import datetime
+from unittest import mock, skip
+from zoneinfo import ZoneInfo
 
+from django.conf import settings
 from django.test import TestCase
 
 from apps.cases import testing as cases_build
 from apps.cases.models import ChangeCase
+from apps.collab import tasks
 from apps.collab.logic import notify
 from apps.collab.models import Comment, CommentMention, EmailMessage, Notification, NotificationKind
 from apps.identity.models import User
+from apps.library.reading import today_for
+from apps.shared.adapters.mailer import MockMailer
+from apps.shared.models import Tenant
 from apps.shared import factories, tenancy
 from apps.shared.testing import sign_in
 from apps.watch import testing as watch_build
@@ -41,12 +48,66 @@ class CollabScenarioTests(TestCase):
         Reminders, escalation and the digest reach people in their language (COL-02).
         """
 
-    @skip("pending: COL-S3")
+    # COL-S3 (c10-reminders-core)
     def test_col_s3(self) -> None:
         """COL-S3
 
         Schedules run in the tenant's timezone (COL-02).
+
+        Reworded from the digest to the triage reminder, the first schedule built on the
+        hourly beat (CHUNK10_TASKS `c10-reminders-escalation-a`). The daylight saving days
+        are found by walking forward from the tenant-local date, never written as literals.
         """
+        watch_build.seed_watch_reference()
+        zone = ZoneInfo("Europe/Helsinki")
+        # Given a tenant in Europe/Helsinki, reminders sent at 07:00 and a lead of three days
+        tenant = factories.tenant(slug="col-s3", timezone="Europe/Helsinki")
+        Tenant.objects.filter(pk=tenant.pk).update(reminder_days_before=[3])
+        officer = factories.member_user(tenant, roles=("compliance_officer",))
+        anchor = today_for(tenant)
+
+        def offset(day: datetime.date) -> datetime.timedelta | None:
+            return datetime.datetime.combine(day, datetime.time(12), tzinfo=zone).utcoffset()
+
+        days = [anchor + datetime.timedelta(days=n) for n in range(1, 400)]
+        spring = next(day for day in days if offset(day) > offset(day - datetime.timedelta(days=1)))  # type: ignore[operator]
+        autumn = next(day for day in days if offset(day) < offset(day - datetime.timedelta(days=1)))  # type: ignore[operator]
+
+        def served_at(day: datetime.date) -> list[datetime.datetime]:
+            """Fire the beat at every UTC hour of `day` in Helsinki; return when it reminded."""
+            # And a case awaiting triage, due three days after the tenant-local date
+            case = cases_build.case(tenant, watch_build.change(title=f"FI amends the rules of {day.isoformat()}"))
+            tenancy.activate(tenant.id)
+            due = datetime.datetime.combine(day + datetime.timedelta(days=3), datetime.time(12), tzinfo=zone)
+            ChangeCase.objects.filter(pk=case.pk).update(triage_due_at=due)
+            start = datetime.datetime.combine(day, datetime.time(0), tzinfo=zone).astimezone(datetime.UTC)
+            end = datetime.datetime.combine(day + datetime.timedelta(days=1), datetime.time(0), tzinfo=zone).astimezone(datetime.UTC)
+            hits: list[datetime.datetime] = []
+            moment = start
+            while moment < end:
+                # When the worker's beat fires every hour of that local day in UTC
+                with mock.patch("django.utils.timezone.now", return_value=moment):
+                    tasks.send_reminders()
+                tenancy.activate(tenant.id)
+                if Notification.objects.filter(subject_id=case.id).count() > len(hits):
+                    hits.append(moment)
+                moment += datetime.timedelta(hours=1)
+            # Then the triage reminder is sent once, and its mail once
+            tenancy.activate(tenant.id)
+            self.assertEqual(Notification.objects.filter(subject_id=case.id, user=officer, kind="due_soon").count(), 1)
+            self.assertEqual(EmailMessage.objects.filter(subject_id=case.id, sent_on=day).count(), 1)
+            return hits
+
+        MockMailer.reset()
+        self.addCleanup(MockMailer.reset)
+        for change in (spring, autumn):
+            before = served_at(change - datetime.timedelta(days=1))
+            on = served_at(change)
+            # at 07:00 Helsinki time, and at no other hour
+            self.assertEqual([hit.astimezone(zone).hour for hit in before + on], [settings.REMINDER_SEND_HOUR] * 2)
+            # And across the change it still arrives at 07:00 local, one UTC hour apart
+            shift = datetime.timedelta(hours=-1 if change == spring else 1)
+            self.assertEqual(on[0] - before[0], datetime.timedelta(days=1) + shift)
 
     @skip("pending: COL-S4")
     def test_col_s4(self) -> None:

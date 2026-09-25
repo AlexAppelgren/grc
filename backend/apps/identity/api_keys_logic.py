@@ -11,6 +11,7 @@ it alone may hold the watch writes and the review scope.
 
 from __future__ import annotations
 
+import functools
 import uuid
 from collections.abc import Iterable
 from datetime import datetime, timedelta
@@ -20,6 +21,8 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from apps.agents import logic as agents_logic
+from apps.agents.models import AgentKind
+from apps.agents.seeds.definition import DEFINITIONS, read_definition
 from apps.identity import tokens
 from apps.identity.models import ApiKey, LoginEventKind, LoginMethod, User
 from apps.identity.security_log import log_event
@@ -28,6 +31,35 @@ from apps.shared import tenancy
 from apps.shared.audit import Actor, record
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.models import Tenant
+
+# What an agent's kind may hold beyond the reads and `agent-runs:write` every agent needs
+# (H43, D-62). A review agent decides what another definition filed, so it holds
+# `proposals:review` and none of the filing scopes; every other kind files and never
+# decides, so no key of one can approve its own definition's work.
+FILING_SCOPES: frozenset[str] = frozenset({perms.SCOPE_SOURCES_WRITE, perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_WRITE})
+
+
+def _refused_for_kind(kind: str, scopes: Iterable[str]) -> list[str]:
+    barred = FILING_SCOPES if kind == AgentKind.REVIEW.value else frozenset({perms.SCOPE_PROPOSALS_REVIEW})
+    return sorted(set(scopes) & barred)
+
+
+@functools.cache
+def _declared_status(key: str, version: int) -> str:
+    """The `status` the definition file of this version declares (`draft`, `active` or
+    `retired`), or "" when the build ships no such file. The files are part of the image,
+    so one read per process is the truth for its life."""
+    path = DEFINITIONS / key / f"v{version}" / "definition.yaml"
+    return read_definition(path).status if path.is_file() else ""
+
+
+def _carries_keys(*, active: bool, key: str, version: int) -> bool:
+    """Whether a key bound to the definition `key` may be minted and may work (H43, D-93):
+    an active definition, or one whose file still declares it a draft, so its runner can be
+    evaluated and the journeys run before release. A retired definition, and one switched
+    off, carry none. Primitives rather than the row, because this module writes keys and the
+    library fence refuses a module naming a library model beside a write."""
+    return active or _declared_status(key, version) == "draft"
 
 
 def resolve_api_key(plain: str) -> Principal | None:
@@ -41,6 +73,8 @@ def resolve_api_key(plain: str) -> Principal | None:
     if key is None or not tokens.constant_equal(presented_hash, key.key_hash):
         return None
     if key.revoked_at is not None or (key.expires_at is not None and key.expires_at <= now):
+        return None
+    if key.agent is not None and not _carries_keys(active=key.agent.active, key=key.agent.key, version=key.agent.current_version):
         return None
     if key.tenant_id is not None:
         tenancy.activate(key.tenant_id)
@@ -163,8 +197,8 @@ def revoke_api_key(*, tenant: Tenant, actor: Actor, key_id: uuid.UUID) -> ApiKey
 # which no bank session can hold (session_logic.build_principal), so every caller is a
 # platform session. The two writes still assert the platform zone rather than inherit one:
 # the row belongs to no tenant, and the mixed table accepts it only from that zone (H15,
-# D-78). A key may hold any scope, `proposals:review` included (D-62); none reaches a
-# library row (AC-PRO1, ID-S21).
+# D-78). A key holds the scopes its agent's kind takes, `proposals:review` for a review
+# agent (D-62, H43); none reaches a library row (AC-PRO1, ID-S21).
 # ---------------------------------------------------------------------------------------
 def list_agent_keys(*, limit: int, offset: int) -> tuple[list[ApiKey], int]:
     """Every platform key, newest first, bound or not: an unbound one is listed so that it
@@ -191,6 +225,18 @@ def create_agent_key(
     agent = agents_logic.definition(agent_id)
     if agent is None:
         raise ValidationError("No agent definition has that id.", code="unknown_key")
+    if not _carries_keys(active=agent.active, key=agent.key, version=agent.current_version):
+        raise ValidationError(
+            f"{agent.key} is retired or switched off, so no key can be bound to it.",
+            code="agent_inactive",
+        )
+    barred = _refused_for_kind(agent.kind, granted)
+    if barred:
+        raise ValidationError(
+            f"A {agent.kind} agent may not hold {', '.join(barred)}. A review agent decides and never files; "
+            "every other agent files and never decides.",
+            code="scope_not_for_kind",
+        )
     plain, prefix, key_hash = tokens.new_api_key()
     key = ApiKey.objects.create(
         tenant=None, agent=agent, name=cleaned_name, key_prefix=prefix, key_hash=key_hash, scopes=granted, created_by=created_by, expires_at=expires_at

@@ -45,21 +45,39 @@ is a read of settled decisions: a gap or an open case is the bank arguing with
 itself, and it is not what an agent building a service needs in order to build it
 right.
 
+PRD 0.7 (D-89, Alex 2026-09-24; details answered by default in D-91, ADR 0059,
+`docs/plans/briefs/SCOPE_ITEMS.md`) adds group OWN, the bank's own regulations. Alex's
+words:
+"an agent can always add things to the library, and then another agent can verify it, its then up to the tenant to decide if they want to use it or not",
+and
+"The previously called 'footprint' can not be agent managed, only a tenant admin can add things that the agents should look out for or regulations that apply to them".
+D-89 decides that a bank's people may add to its regulatory scope
+a regulation or area the shared library does not yet cover, that the bank's own agents
+research it and fill the bank's own library zone with regulation and control inventories
+as proposals, and that the bank's people approve or reject them the way the shared queue
+works. Here that means the register decides the bank's own obligations as it decides
+shared ones (OWN-04): applicability by one person holding `applicability.approve`
+(D-75), compliance status per entity as a separate fact. OWN-05 lets the bank's own
+agent propose an obligation's controls as linked internal items of the control kind
+(REG-05), approved in the bank's own queue; what a control inventory holds waits for
+Alex's answer (D-91), so REG-S17's control half is written to the default.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason, set by one person holding `applicability.approve` after a confirmation dialog, with an audit event and no second approver or step-up (D-75); many rows set in one call, one audit event per row | M | R2 | pending |
-| REG-02 | Compliance status, status note, risk, owners, process, system, evidence location, next review, per legal entity where the obligation spans several | M | R2 | pending |
-| REG-03 | Gaps with owner, severity, target date, remediation, and risk acceptance behind four eyes | M | R2 | pending |
-| REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 | pending |
-| REG-05 | Linked internal items (policy, procedure, control, process, system) with external references | M | R2 | pending |
+| REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason, set by one person holding `applicability.approve` after a confirmation dialog, with an audit event and no second approver or step-up (D-75); many rows set in one call, one audit event per row | M | R2 | in_progress |
+| REG-02 | Compliance status, status note, risk, owners, process, system, evidence location, next review, per legal entity where the obligation spans several | M | R2 | in_progress |
+| REG-03 | Gaps with owner, severity, target date, remediation, and risk acceptance behind four eyes | M | R2 | in_progress |
+| REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 | in_progress |
+| REG-05 | Linked internal items (policy, procedure, control, process, system) with external references | M | R2 | in_progress |
 | REG-06 | Yearly attestation by the owner, and waivers | C | R3 | pending |
-| REG-07 | Recurring duties on the roadmap from recurrence rules | S | R2 | pending |
-| REG-08 | Statement of Applicability: units per following legal entity, by reference and in the tenant's own words, entered one by one or pasted with a dry run, each with applicability, a reason, a status and gaps, fixed once it has history; nothing written under a standard is indexed, sent to a model or shown to another tenant | M | R2 | pending |
+| REG-07 | Recurring duties on the roadmap from recurrence rules | S | R2 | in_progress |
+| REG-08 | Statement of Applicability: units per following legal entity, by reference and in the tenant's own words, entered one by one or pasted with a dry run, each with applicability, a reason, a status and gaps, fixed once it has history; nothing written under a standard is indexed, sent to a model or shown to another tenant | M | R2 | in_progress |
 | ACC-04 | An agent access credential holding `tenant:read`, under an entry with tenant reach on, reads the register decisions on the obligations in its scope. Never gaps, cases, comments, evidence, the audit log or a private record | M | R2 | pending |
+| OWN-05 | The bank's own agent may propose a private obligation's controls as linked internal items of the control kind (REG-05), approved in the bank's own queue; waits for Alex's answer on what a control inventory is (D-91) | S | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -252,6 +270,22 @@ And confirms all three in one call
 Then the register filtered by that standard and Example Bank AB shows the three decisions
 And the roadmap shows the next audit as "Our deadline"
 ```
+
+### REG-S17 — The register decides the bank's own obligations as it decides shared ones, and links their controls `@integration` (OWN-04, OWN-05, REG-01, REG-02, REG-05)
+```gherkin
+Given an obligation tenant A's own agent proposed and a second person in tenant A approved
+When an officer with applicability.approve sets "Applies" for a legal entity with a reason, after confirming it
+Then it is stored and audited as for a shared obligation, with no second approver and no step-up
+And its compliance status is set per legal entity as a separate fact
+When the bank's own agent files the obligation's controls as proposals of linked internal items of the control kind
+Then each waits in tenant A's own queue, and an approver with private_records.approve approves it with a passkey
+And the control is a linked internal item on the obligation's register entry
+And nothing written on it reaches the search index or a model, and tenant B's fetch answers 404
+```
+
+> **Note — the control half is written to D-91's default.** What a control inventory holds
+> (a control's own fields beyond a linked internal item of the control kind) waits for
+> Alex's answer in `docs/TODO_FOR_alex.md`; the build takes the default and nothing waits.
 
 ### ACC-S4 — With tenant reach on, an entry reads the register decisions in its scope and nothing else `@integration` (ACC-04)
 ```gherkin

@@ -307,7 +307,9 @@ class SessionTokens(CamelSchema):
             "before it runs out. The session itself lasts longer: it ends after "
             f"{settings.SESSION_IDLE_MINUTES_DEFAULT} minutes without a refresh or "
             f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after sign-in, whichever comes "
-            "first."
+            "first. Those are the defaults; a bank's security policy may set its own limits, "
+            f"never above {settings.SESSION_IDLE_MINUTES_MAX} minutes and "
+            f"{settings.SESSION_ABSOLUTE_HOURS_MAX} hours."
         )
     )
 
@@ -332,7 +334,8 @@ class RefreshResult(CamelSchema):
             f"{settings.ACCESS_TOKEN_TTL_MINUTES * 60} by default (a setting). It never "
             "outlives the session, which still ends after "
             f"{settings.SESSION_IDLE_MINUTES_DEFAULT} idle minutes or "
-            f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after sign-in."
+            f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after sign-in by default, or "
+            "at the limits of the bank's security policy, which apply at the next refresh."
         )
     )
 
@@ -1384,8 +1387,9 @@ class SessionOut(CamelSchema):
     created_at: datetime = Field(
         description=(
             "When the person signed in on this device, as a UTC timestamp. The session ends "
-            f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after it at the latest (a "
-            "setting)."
+            f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after it at the latest by default "
+            "(a setting), or at the bank's own limit, never later than "
+            f"{settings.SESSION_ABSOLUTE_HOURS_MAX} hours."
         )
     )
     last_seen_at: datetime = Field(
@@ -1394,7 +1398,8 @@ class SessionOut(CamelSchema):
             "recent use that lags real activity by up to the access token's "
             f"{settings.ACCESS_TOKEN_TTL_MINUTES}-minute lifetime. After "
             f"{settings.SESSION_IDLE_MINUTES_DEFAULT} minutes without a refresh the session "
-            "ends."
+            "ends, or after the bank's own idle limit, never longer than "
+            f"{settings.SESSION_IDLE_MINUTES_MAX} minutes."
         )
     )
     ip: str | None = Field(
@@ -2217,7 +2222,8 @@ class AgentKeyCreate(WriteBody):
             "The identifier of the agent definition the key will act as, a UUID taken from "
             "`GET /agent-definitions`. Everything the key writes is recorded as that agent, and a "
             "key runs that one agent and no other. An identifier that names no definition is "
-            "refused with `unknown_key`."
+            "refused with `unknown_key`, and a definition that is retired or switched off, rather "
+            "than active or a draft being evaluated, with `agent_inactive`."
         )
     )
     scopes: list[str] = Field(
@@ -2227,6 +2233,9 @@ class AgentKeyCreate(WriteBody):
             f"What the key may do: at least one and at most {len(perms.ALL_SCOPES)} scope keys, "
             "each counted once. Give the key the least its agent needs. "
             + _AGENT_KEY_SCOPES_TEXT
+            + " A review agent's key may not hold `sources:write`, `changes:write` or `proposals:write`, "
+            "and no other agent's key may hold `proposals:review`; either is refused with "
+            "`scope_not_for_kind`, naming the scope."
             + " Any other value is refused with `unknown_key`, and the message lists the valid scopes."
         ),
     )

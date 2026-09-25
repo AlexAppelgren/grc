@@ -280,7 +280,10 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     AI_LOG_READ: "Read the AI generation log.",
     MEMBERS_MANAGE: "Invite, change and deactivate members; re-issue enrolment; revoke sessions.",
     ROLES_MANAGE: "Create and change the tenant's roles.",
-    SECURITY_MANAGE: "Change the security policy and read the security log.",
+    SECURITY_MANAGE: (
+        "Change the security policy and read the security log; includes approving, declining and "
+        "revoking support access, and requesting or approving tenant exit, never both by the same person."
+    ),
     VOCAB_MANAGE: "Manage the tenant's vocabularies.",
     WORKFLOW_MANAGE: "Manage workflow policy.",
     AGENTS_MANAGE: "Switch agents on and off and set their cadence and budget.",
@@ -291,7 +294,7 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     EVAL_MANAGE: "Manage evaluation sets.",
     TENANTS_MANAGE: "Manage tenants and plans.",
     AGENT_DEFINITIONS_MANAGE: "Manage agent definitions.",
-    SUPPORT_ACCESS_GRANT: "Enter a tenant under a logged support access grant.",
+    SUPPORT_ACCESS_GRANT: "Request support access to a bank and enter it read-only once a tenant admin approves.",
     SYSTEM_HEALTH: "Read system health.",
     SCOPE_PROPOSALS_REVIEW: "Read the proposal queue and approve, correct or reject a proposal, as an independent agent (platform-only).",
 }
@@ -495,6 +498,28 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/me/comments"): Ungated(UngatedReason.SELF, _SELF_MY_COMMENTS),
     ("GET", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
     ("POST", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
+    # c8-tenants-contract (TEN-02, TEN-03, TEN-06, COL-04). The bank's organisation, its teams
+    # and who from the platform may look in are read by every member: the pickers, the
+    # department view and the Support access panel need them. Writes keep their permission.
+    ("GET", "/tenant/org-units"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/org-units/{org_unit_id}/licences"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/products"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/teams"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/teams/{key}/members"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/support-access"): Ungated(
+        UngatedReason.CAPABILITY,
+        "Every member may see who from the platform asked to look in, and who was let in (TEN-06, D-49).",
+    ),
+    ("GET", "/reference/people"): Ungated(
+        UngatedReason.CAPABILITY,
+        "A member's session is the grant, never an enrolment session: the owner and participant "
+        "pickers need the bank's active members, as ids and names only; `GET /tenant/members` "
+        "stays under members.manage (COL-04, TEN-03).",
+    ),
+    # c10-out-of-office (TEN-04): the caller's own absence on their own membership. The
+    # delegate check inside is the gate on what it may name (delegate_cannot_approve).
+    ("GET", "/me/out-of-office"): Ungated(UngatedReason.SELF, _SELF_ME),
+    ("PUT", "/me/out-of-office"): Ungated(UngatedReason.SELF, _SELF_ME),
 }
 
 

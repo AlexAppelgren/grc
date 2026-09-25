@@ -54,10 +54,16 @@ REFUSED = {
 # belongs here, which is the review question: does its guard ignore the hatch for the app
 # role? Both functions do; nothing else may be attached.
 APPEND_ONLY_TRIGGERS = {
+    # A published agent version (AGT-03, agents 0004): append-only but for retiring it once,
+    # so a guard of its own, with the same schema owner's hatch (apps/agents/tests_models.py).
+    "agent_version": "cw_agent_version_guard",
     "audit_event": "cw_append_only_guard",
     # What a week's briefing told a bank, which nothing may rewrite afterwards: a later
     # change to the feed leaves a sent briefing exactly as it was sent (HOM-02, HOM-S3).
     "briefing_item": "cw_append_only_guard",
+    # Every move of a case between categories, so the time it spent in each stage cannot
+    # be rewritten afterwards (CAS-08, c9-case-models).
+    "case_transition": "cw_append_only_guard",
     # The text an edit of a comment replaced: an edit keeps it and nobody rewrites it
     # away (COL-01, CHUNK10_TASKS ruling 10).
     "comment_revision": "cw_append_only_guard",

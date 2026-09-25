@@ -10,12 +10,20 @@ console has a row schema of its own rather than reusing `TenantOut`.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
+from typing import Annotated, Literal
 
-from pydantic import ConfigDict, Field, JsonValue
+from pydantic import ConfigDict, Field, JsonValue, model_validator
 
 from apps.identity.schemas import RoleRef
-from apps.shared.schemas import CamelSchema, WriteBody
+from apps.shared.models import (
+    ESCALATE_AFTER_DAYS_MAX,
+    LEAD_DAYS_MAX,
+    LEAD_DAYS_MAX_ENTRIES,
+    TRIAGE_TARGET_HOURS_MAX,
+)
+from apps.shared.schemas import CamelSchema, SingleLineName, WriteBody
+from apps.taxonomy.schemas import PersonRef, TermRef
 
 __all__ = ["CamelSchema"]
 
@@ -24,6 +32,19 @@ __all__ = ["CamelSchema"]
 _EXAMPLE_LANGUAGE_SV: dict[str, JsonValue] = {"key": "sv", "kind": None, "label": "Svenska"}
 _EXAMPLE_LANGUAGE_EN: dict[str, JsonValue] = {"key": "en", "kind": None, "label": "English"}
 _EXAMPLE_LANGUAGE_DA: dict[str, JsonValue] = {"key": "da", "kind": None, "label": "Dansk"}
+_EXAMPLE_WORKFLOW: dict[str, JsonValue] = {
+    "reminderDaysBefore": [7, 3],
+    "reviewReminderDaysBefore": [30],
+    "escalateAfterDays": 5,
+    "escalateToRole": {"key": "compliance_officer", "kind": None, "label": "Compliance officer"},
+    "digestWeekday": "monday",
+    "triageTargetHours": 48,
+}
+
+_WEEKDAYS_IN_WORDS = (
+    "one of the seven days in lower case: `monday`, `tuesday`, `wednesday`, `thursday`, "
+    "`friday`, `saturday` or `sunday`"
+)
 
 
 class OnboardingStep(CamelSchema):
@@ -90,6 +111,64 @@ class Onboarding(CamelSchema):
     )
 
 
+class TenantWorkflow(CamelSchema):
+    """The bank's workflow policy: when its members are reminded, when overdue work
+    escalates and to whom, the day the digest goes out and how quickly a new change should
+    be triaged. Every bank starts at the platform defaults and changes its own through
+    `PATCH /tenant/workflow`."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_WORKFLOW]})
+
+    reminder_days_before: list[int] = Field(
+        description=(
+            f"How many days before a due date the owner of an open action or case is reminded, "
+            f"one reminder per entry, largest first — `[7, 3]` reminds a week ahead and again "
+            f"three days ahead. One to {LEAD_DAYS_MAX_ENTRIES} entries, each a whole number of "
+            f"days from 1 to {LEAD_DAYS_MAX}, counted in the bank's own timezone. The platform "
+            "default is `[3]`."
+        )
+    )
+    review_reminder_days_before: list[int] = Field(
+        description=(
+            f"How many days before a scheduled review the owner of the record under review is "
+            f"reminded, largest first. One to {LEAD_DAYS_MAX_ENTRIES} entries, each a whole "
+            f"number of days from 1 to {LEAD_DAYS_MAX}. The platform default is `[30]`."
+        )
+    )
+    escalate_after_days: int = Field(
+        description=(
+            f"How many whole days a piece of work may be overdue before it escalates, from 1 to "
+            f"{ESCALATE_AFTER_DAYS_MAX}. It escalates once, to the members holding "
+            "`escalateToRole`. The platform default is 5."
+        )
+    )
+    escalate_to_role: RoleRef = Field(
+        description=(
+            "The role of this bank whose members are told when overdue work escalates, as key, "
+            "kind and label; the key is what `PATCH /tenant/workflow` takes. Roles are rows of "
+            "the bank's role vocabulary: the seeded `admin`, `compliance_officer` (the platform "
+            "default), `owner`, `approver`, `contributor`, `reader` and `auditor`, plus any role "
+            "an admin may extend it with in the role editor (`GET /tenant/roles` lists the live "
+            "set), so an unfamiliar key is new data and not an error. It names a role and never "
+            "a person, so the escalation survives a member leaving."
+        )
+    )
+    digest_weekday: str = Field(
+        description=(
+            f"The day of the week the bank's digest goes out, in the bank's own timezone: "
+            f"{_WEEKDAYS_IN_WORDS}. A fixed set in code rather than a list a bank extends. The "
+            "platform default is `monday`."
+        )
+    )
+    triage_target_hours: int = Field(
+        description=(
+            f"How many hours a new change may wait before somebody at the bank has triaged it, "
+            f"from 1 to {TRIAGE_TARGET_HOURS_MAX} (thirty days). A case's triage due time is "
+            "counted from it. The platform default is 48."
+        )
+    )
+
+
 class TenantOut(CamelSchema):
     """The bank's own profile, as a member of that bank reads it."""
 
@@ -105,6 +184,7 @@ class TenantOut(CamelSchema):
                     "defaultLanguage": _EXAMPLE_LANGUAGE_SV,
                     "contentLanguages": [_EXAMPLE_LANGUAGE_SV, _EXAMPLE_LANGUAGE_EN],
                     "aiEnabled": True,
+                    "workflow": _EXAMPLE_WORKFLOW,
                     "onboarding": {
                         "stepsDone": 3,
                         "steps": [
@@ -195,6 +275,14 @@ class TenantOut(CamelSchema):
             "switched here."
         )
     )
+    workflow: TenantWorkflow = Field(
+        description=(
+            "The bank's workflow policy: reminder lead days, when overdue work escalates and "
+            "to which role, the digest's weekday and the triage target. Every member may read "
+            "it; only `PATCH /tenant/workflow`, with `workflow.manage`, changes it, and the "
+            "profile edit ignores it."
+        )
+    )
     onboarding: Onboarding = Field(
         description=(
             "How far the bank has got through first-run setup, computed by the server on "
@@ -215,13 +303,15 @@ class TenantPatch(CamelSchema):
         }
     )
 
-    name: str | None = Field(
+    name: SingleLineName | None = Field(
         default=None,
         max_length=200,
         description=(
-            "A new name for the organisation, at most 200 characters. Omit the field to leave "
-            "the name alone; sending it blank does not clear it, it is refused with a 422, "
-            "because an organisation without a name cannot be told apart in an audit trail."
+            "A new name for the organisation, at most 200 characters of one line of visible "
+            "text: a line break, a tab or an invisible character is refused with a 422. Omit "
+            "the field to leave the name alone; sending it blank does not clear it, it is "
+            "refused with a 422, because an organisation without a name cannot be told apart "
+            "in an audit trail."
         ),
     )
     timezone: str | None = Field(
@@ -255,6 +345,83 @@ class TenantPatch(CamelSchema):
             "the list alone; an empty list is refused with a 422, and a key that is not an "
             "active language row is refused with `unknown_key` naming the key. Keys such as "
             "`sv` and `en`, never labels."
+        ),
+    )
+
+
+class TenantWorkflowPatch(WriteBody):
+    """What a holder of `workflow.manage` may change about the bank's workflow policy. Send
+    only the fields you are changing; an omitted field, or one sent as null, is left as it
+    was, and a field this schema does not name is refused."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"reminderDaysBefore": [7, 3], "escalateAfterDays": 5, "digestWeekday": "monday"}]}
+    )
+
+    reminder_days_before: list[Annotated[int, Field(ge=1, le=LEAD_DAYS_MAX)]] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=LEAD_DAYS_MAX_ENTRIES,
+        description=(
+            f"The complete new list of days before a due date on which the owner is reminded: "
+            f"one to {LEAD_DAYS_MAX_ENTRIES} whole numbers, each from 1 to {LEAD_DAYS_MAX}. It "
+            "replaces the current list; a repeated day counts once and the list is stored "
+            "largest first. Omit the field to leave it alone; an empty list, a longer one or a "
+            "day out of range is refused with `validation_error` naming the field."
+        ),
+    )
+    review_reminder_days_before: list[Annotated[int, Field(ge=1, le=LEAD_DAYS_MAX)]] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=LEAD_DAYS_MAX_ENTRIES,
+        description=(
+            f"The complete new list of days before a scheduled review on which the owner is "
+            f"reminded: one to {LEAD_DAYS_MAX_ENTRIES} whole numbers, each from 1 to "
+            f"{LEAD_DAYS_MAX}, stored largest first with repeats counted once. Omit the field "
+            "to leave it alone; an empty list, a longer one or a day out of range is refused "
+            "with `validation_error` naming the field."
+        ),
+    )
+    escalate_after_days: int | None = Field(
+        default=None,
+        ge=1,
+        le=ESCALATE_AFTER_DAYS_MAX,
+        description=(
+            f"How many whole days work may be overdue before it escalates, from 1 to "
+            f"{ESCALATE_AFTER_DAYS_MAX}. Omit the field to leave it alone; a value out of range "
+            "is refused with `validation_error` naming the field."
+        ),
+    )
+    escalate_to_role: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=80,
+        description=(
+            "The key of the role whose members are told when work escalates, such as "
+            "`compliance_officer`, at most 80 characters. A key, never a label. It must be an "
+            "active role of this bank — read `GET /tenant/roles` for the set; a key that is "
+            "not, including a role of another bank or a retired one, is refused with "
+            "`unknown_key` naming the field. Omit the field to leave it alone."
+        ),
+    )
+    digest_weekday: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=16,
+        description=(
+            f"The day the digest goes out: {_WEEKDAYS_IN_WORDS}, at most 16 characters. Any "
+            "other value is refused with `unknown_key` naming the field. Omit the field to "
+            "leave it alone."
+        ),
+    )
+    triage_target_hours: int | None = Field(
+        default=None,
+        ge=1,
+        le=TRIAGE_TARGET_HOURS_MAX,
+        description=(
+            f"How many hours a new change may wait before it is triaged, from 1 to "
+            f"{TRIAGE_TARGET_HOURS_MAX}. Omit the field to leave it alone; a value out of range "
+            "is refused with `validation_error` naming the field."
         ),
     )
 
@@ -465,11 +632,12 @@ class ConsoleTenantCreateBody(CamelSchema):
         }
     )
 
-    name: str = Field(
+    name: SingleLineName = Field(
         max_length=200,
         description=(
-            "The organisation's name as the bank itself will see it, at most 200 characters — "
-            "'Example Bank AB'. It is the bank's own from the moment it exists and its "
+            "The organisation's name as the bank itself will see it, at most 200 characters of "
+            "one line of visible text — 'Example Bank AB'; a line break, a tab or an invisible "
+            "character is refused with a 422. It is the bank's own from the moment it exists and its "
             "administrators reword it themselves afterwards. Blank is refused with a 422. Its "
             "short name is derived from this and never typed by a person: letters such as ø, æ "
             "and å spelled out, lower-cased, hyphenated, cut to at most 80 characters, and "
@@ -498,4 +666,732 @@ class ConsoleTenantCreateBody(CamelSchema):
             "name in member lists and grants nothing at all: what someone may do comes from "
             "their roles and never from a title."
         ),
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# c8-tenants-contract: the bank's organisation, its teams and people, member removal and
+# support access (TEN-02, TEN-03, TEN-05, TEN-06, COL-04, HOM-05). Declared ahead of the
+# logic that fills them; the examples are the prototype's bank, never a real one.
+# ---------------------------------------------------------------------------------------
+_EXAMPLE_PERSON: dict[str, JsonValue] = {"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Karin Holm"}
+_EXAMPLE_ENTITY_ID = "3f6a2c1d-8b4e-4d7a-9c5f-0e1d2c3b4a59"
+_EXAMPLE_TERM: dict[str, JsonValue] = {"key": "bank", "kind": None, "label": "Bank"}
+
+_EXAMPLE_ORG_UNIT: dict[str, JsonValue] = {
+                    "id": _EXAMPLE_ENTITY_ID,
+                    "kind": "legal_entity",
+                    "name": "Example Bank AB",
+                    "parentId": None,
+                    "orgNumber": "556000-0000",
+                    "lei": "5493000EXAMPLE000000",
+                    "countryCode": "SE",
+                    "entityTerm": _EXAMPLE_TERM,
+                    "head": _EXAMPLE_PERSON,
+                    "active": True,
+                    "version": 3,
+                }
+
+_EXAMPLE_LICENCE: dict[str, JsonValue] = {
+                    "id": "5b7d9e1f-3a2c-4e6b-8d0f-2a4c6e8b0d13",
+                    "orgUnitId": _EXAMPLE_ENTITY_ID,
+                    "licenceType": _EXAMPLE_TERM,
+                    "reference": "FI 12-3456",
+                    "grantedOn": "2014-03-01",
+                    "withdrawnOn": None,
+                    "scopeNote": "",
+                    "issuer": "",
+                    "number": "",
+                    "scopeStatement": "",
+                    "issuedOn": None,
+                    "validUntil": None,
+                    "nextAuditOn": None,
+                    "owner": _EXAMPLE_PERSON,
+                    "serviceTerms": [],
+                    "version": 1,
+                }
+
+_EXAMPLE_PRODUCT: dict[str, JsonValue] = {
+                    "id": "7c9e1a3b-5d2f-4a8c-9e0b-4d6f8a0c2e57",
+                    "name": "Custody",
+                    "description": "Safekeeping of securities for retail and institutional clients.",
+                    "status": "live",
+                    "launchDate": "2019-05-01",
+                    "orgUnitId": _EXAMPLE_ENTITY_ID,
+                    "owner": _EXAMPLE_PERSON,
+                    "terms": [{"key": "custody", "kind": None, "label": "Custody"}],
+                    "version": 2,
+                }
+
+_EXAMPLE_TEAM: dict[str, JsonValue] = {"key": "compliance", "label": "Compliance", "orgUnitId": None, "email": "compliance@example-bank.test", "memberCount": 4, "active": True}
+
+_EXAMPLE_GRANT: dict[str, JsonValue] = {
+                    "id": "2e4a6c8e-0b1d-4f3a-8c5e-7a9b1c3d5e71",
+                    "state": "active",
+                    "purpose": "The bank reports that its watch feed stopped updating on Monday.",
+                    "ticketRef": "SUP-2511",
+                    "hours": 2,
+                    "platformPerson": {"id": "9b1d3f5a-7c2e-4a6b-8d0f-1e3a5c7e9b24", "name": "Jonas Berg"},
+                    "requestedAt": "2026-09-24T08:05:00Z",
+                    "decidedBy": _EXAMPLE_PERSON,
+                    "decidedAt": "2026-09-24T08:20:00Z",
+                    "endsAt": "2026-09-24T10:20:00Z",
+                }
+
+_EXAMPLE_CONSOLE_GRANT: dict[str, JsonValue] = {
+                    "id": "2e4a6c8e-0b1d-4f3a-8c5e-7a9b1c3d5e71",
+                    "tenantId": "0c2e4a6c-8e0b-4d1f-9a3c-5e7a9b1c3d52",
+                    "tenantName": "Example Bank AB",
+                    "state": "active",
+                    "purpose": "The bank reports that its watch feed stopped updating on Monday.",
+                    "ticketRef": "SUP-2511",
+                    "hours": 2,
+                    "requestedAt": "2026-09-24T08:05:00Z",
+                    "decidedAt": "2026-09-24T08:20:00Z",
+                    "endsAt": "2026-09-24T10:20:00Z",
+                }
+
+OrgUnitKindValue = Literal["group", "legal_entity", "business_area", "business_unit", "function"]
+ProductStatusValue = Literal["planned", "live", "retired"]
+# Open work a removal moves to a new owner, and the two kinds it ends instead (TEN-05, TEN-S9).
+ReassignableKind = Literal["register_entry", "register_entity", "gap", "duty_occurrence", "internal_item", "case", "action"]
+OpenWorkKind = Literal[
+    "register_entry",
+    "register_entity",
+    "gap",
+    "duty_occurrence",
+    "internal_item",
+    "case",
+    "action",
+    "participation",
+    "team_membership",
+]
+SupportAccessState = Literal["pending", "active", "declined", "revoked", "ended", "lapsed", "recovery"]
+
+_UNIT_KINDS = (
+    "`group` (the banking group at the top of the tree), `legal_entity` (a company that holds "
+    "licences and carries the legal-entity scope term, so an obligation can be assessed per "
+    "entity), `business_area`, `business_unit` and `function` (the last three, with a head, are "
+    "what screens call a department). A kind is fixed in code and never added by an administrator"
+)
+_PRODUCT_STATUSES = (
+    "`planned` (not yet offered, already scoped so the work can start), `live` (offered to "
+    "customers today) or `retired` (withdrawn; a product is retired and never deleted, and a "
+    "retired product scopes nothing)"
+)
+_OWNER_KINDS = (
+    "`register_entry` (an obligation's register entry the person owns), `register_entity` (a "
+    "legal entity's row on an entry), `gap`, `duty_occurrence` (a dated recurring duty), "
+    "`internal_item` (a policy, procedure, control, process or system), `case` or `action`"
+)
+_ENDING_KINDS = (
+    "`participation` (items the person takes part in without owning them) and "
+    "`team_membership` (the teams the person is in); both end with the removal and move to nobody"
+)
+_SUPPORT_STATES = (
+    "`pending` (asked for by platform support and granting nothing yet), `active` (approved by "
+    "the bank; the window is open and support may read, never write), `declined` (refused by the "
+    "bank), `revoked` (ended by the bank before its window closed), `ended` (its window passed), "
+    "`lapsed` (never decided before the request expired) or `recovery` (a one-off last-administrator "
+    "recovery platform support carried out, recorded here and granting no reading at all)"
+)
+
+
+class TenantOrgUnit(CamelSchema):
+    """One unit of the bank's organisation: a group, a legal entity or a department (TEN-02,
+    D-21). The bank's own record, never shared with another bank."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_ORG_UNIT]})
+
+    id: uuid.UUID = Field(description="The unit's identifier, a UUID that never changes; licences and register rows point at it.")
+    kind: OrgUnitKindValue = Field(description=f"What the unit is: {_UNIT_KINDS}.")
+    name: str = Field(description="The unit's name as the bank wrote it, for display; a person may rename it, so match on the id.")
+    parent_id: uuid.UUID | None = Field(
+        description="The identifier of the unit this one sits under, a UUID of the same bank, or null at the top of the tree."
+    )
+    org_number: str = Field(description="The company registration number a legal entity carries, such as `556000-0000`; empty for any other unit.")
+    lei: str = Field(description="The legal entity identifier (ISO 17442, 20 characters) a legal entity carries; empty when it has none or for any other unit.")
+    country_code: str = Field(description="The two-letter ISO 3166 country a legal entity is registered in, such as `SE`; empty for any other unit.")
+    entity_term: TermRef | None = Field(
+        description=(
+            "The term of the shared library's `legal_entity` dimension a legal entity is scoped "
+            "with, the same term obligations are scoped with, so an obligation can be assessed per "
+            "entity. The terms are a vocabulary of the shared library, which an administrator may "
+            "extend only through an approved proposal; read `GET /taxonomy/terms` for the live set. "
+            "Null for every unit that is not a legal entity."
+        )
+    )
+    head: PersonRef | None = Field(
+        description="The member who heads the unit, an active member of the same bank, or null when nobody does; a department's head is told about its work."
+    )
+    active: bool = Field(description="False once the unit is deactivated; a unit is deactivated and never deleted, so its history stays readable.")
+    version: int = Field(description="The unit's version; send it back in `If-Match` on a change, and a stale one is refused with `stale_write`.")
+
+
+class TenantOrgUnitPage(CamelSchema):
+    """One page of the bank's organisation, ordered by name."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_ORG_UNIT], "total": 1}]})
+
+    items: list[TenantOrgUnit] = Field(description="The units on this page, by name; an empty list is a 200 and means the bank has recorded none.")
+    total: int = Field(description="How many units the bank has in total, active and deactivated, not how many are on this page.")
+
+
+class TenantOrgUnitBody(WriteBody):
+    """A new unit of the bank's organisation. A field the schema does not name is refused."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"kind": "business_area", "name": "Retail Banking", "parentId": _EXAMPLE_ENTITY_ID, "headUserId": _EXAMPLE_PERSON["id"]}]})
+
+    kind: OrgUnitKindValue = Field(description=f"What the unit is, fixed once it exists: {_UNIT_KINDS}. Any other value is refused with a 422.")
+    name: SingleLineName = Field(
+        min_length=1,
+        max_length=200,
+        description="The unit's name, at most 200 characters of one line of visible text; blank, a line break, a tab or an invisible character is refused with a 422.",
+    )
+    parent_id: uuid.UUID | None = Field(
+        default=None, description="The identifier of the unit this one sits under, a UUID of the same bank; null by default, at the top of the tree."
+    )
+    org_number: str = Field(default="", max_length=40, description="A legal entity's company registration number, at most 40 characters; empty by default.")
+    lei: str = Field(default="", max_length=20, description="A legal entity's legal entity identifier, at most 20 characters; empty by default.")
+    country_code: str = Field(default="", max_length=2, description="A legal entity's two-letter ISO 3166 country, at most 2 characters, such as `SE`; empty by default.")
+    entity_term: str | None = Field(
+        default=None,
+        max_length=80,
+        description=(
+            "The key of the `legal_entity` dimension term a legal entity is scoped with, at most 80 "
+            "characters, such as `bank`; null by default. The terms are a vocabulary of the shared "
+            "library, which an administrator may extend only through an approved proposal; read "
+            "`GET /taxonomy/terms` for the live set. Only a legal entity may carry one; an unknown "
+            "key answers `unknown_key`."
+        ),
+    )
+    head_user_id: uuid.UUID | None = Field(
+        default=None, description="The identifier of the member who heads the unit, a UUID of an active member of the same bank; null by default."
+    )
+
+
+class TenantOrgUnitPatch(WriteBody):
+    """A change to a unit. Send only the fields you are changing; its kind never changes."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"name": "Retail and Private Banking", "headUserId": _EXAMPLE_PERSON["id"]}]})
+
+    name: SingleLineName | None = Field(
+        default=None,
+        min_length=1,
+        max_length=200,
+        description="A new name, at most 200 characters of one line of visible text; null by default, which leaves it alone. Blank is refused with a 422.",
+    )
+    parent_id: uuid.UUID | None = Field(default=None, description="A new parent unit, a UUID of the same bank; null by default, which leaves it alone.")
+    org_number: str | None = Field(default=None, max_length=40, description="A new registration number, at most 40 characters; null by default, which leaves it alone.")
+    lei: str | None = Field(default=None, max_length=20, description="A new legal entity identifier, at most 20 characters; null by default, which leaves it alone.")
+    country_code: str | None = Field(default=None, max_length=2, description="A new two-letter country, at most 2 characters; null by default, which leaves it alone.")
+    entity_term: str | None = Field(
+        default=None,
+        max_length=80,
+        description=(
+            "A new `legal_entity` term key, at most 80 characters; null by default, which leaves it "
+            "alone. A vocabulary of the shared library an administrator may extend only through an "
+            "approved proposal; read `GET /taxonomy/terms` for the live set."
+        ),
+    )
+    head_user_id: uuid.UUID | None = Field(default=None, description="A new head, a UUID of an active member of the same bank; null by default, which leaves it alone.")
+    active: bool | None = Field(default=None, description="False deactivates the unit and true restores it; null by default, which leaves it alone.")
+
+
+class TenantLicence(CamelSchema):
+    """A licence or certificate a legal entity holds (TEN-02, D-43). A certificate's validity
+    and next audit are the bank's own deadlines; they carry no term and decide no span."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_LICENCE]})
+
+    id: uuid.UUID = Field(description="The licence's identifier, a UUID that never changes.")
+    org_unit_id: uuid.UUID = Field(description="The identifier of the legal entity that holds it, a UUID of the same bank.")
+    licence_type: TermRef = Field(
+        description=(
+            "What the licence or certificate is, as a term of the shared library, the same terms "
+            "obligations are scoped with; a vocabulary an administrator may extend only through an "
+            "approved proposal (`GET /taxonomy/terms`). A type is a key, never a phrase."
+        )
+    )
+    reference: str = Field(description="The authority's own reference for the licence, such as `FI 12-3456`; empty when there is none.")
+    granted_on: date | None = Field(description="The date the licence was granted, a plain date, or null when unknown.")
+    withdrawn_on: date | None = Field(
+        description="The date it was withdrawn, a plain date, or null while it stands; a withdrawn row reads as withdrawn and stays in the history."
+    )
+    scope_note: str = Field(description="The bank's own note on what the licence covers, as the bank wrote it; empty when there is none.")
+    issuer: str = Field(description="Who issued a certificate, such as `Example Certification AB`; empty for a licence an authority granted.")
+    number: str = Field(description="A certificate's number as its issuer prints it; empty when there is none.")
+    scope_statement: str = Field(description="A certificate's scope statement as its issuer wrote it; empty when there is none.")
+    issued_on: date | None = Field(description="The date a certificate was issued, a plain date, or null.")
+    valid_until: date | None = Field(
+        description="The last date a certificate is valid, a plain date, or null; it shows on the roadmap as the bank's own deadline and never in the calendar feed."
+    )
+    next_audit_on: date | None = Field(description="The date of a certificate's next audit, a plain date, or null; the bank's own deadline, like the validity.")
+    owner: PersonRef | None = Field(description="The member who owns the licence or certificate and its deadlines, or null.")
+    service_terms: list[TermRef] = Field(
+        description=(
+            "The services the licence covers, as terms of the shared library, a vocabulary an "
+            "administrator may extend only through an approved proposal; an empty list when none are recorded."
+        )
+    )
+    version: int = Field(description="The licence's version; send it back in `If-Match` on a change, and a stale one is refused with `stale_write`.")
+
+
+class TenantLicencePage(CamelSchema):
+    """One page of a legal entity's licences and certificates."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_LICENCE], "total": 1}]})
+
+    items: list[TenantLicence] = Field(description="The licences and certificates on this page, withdrawn ones included; an empty list is a 200.")
+    total: int = Field(description="How many the legal entity holds in total, not how many are on this page.")
+
+
+_TERM_KEY = (
+    "a term of the shared library, the same terms obligations are scoped with; a vocabulary an "
+    "administrator may extend only through an approved proposal, read `GET /taxonomy/terms` for "
+    "the live set. An unknown key answers `unknown_key`"
+)
+
+
+class TenantLicenceBody(WriteBody):
+    """A licence or certificate a legal entity holds. A field the schema does not name is refused."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"licenceType": "bank", "reference": "FI 12-3456", "grantedOn": "2014-03-01"}]})
+
+    licence_type: str = Field(max_length=80, description=f"What the licence or certificate is, at most 80 characters: the key of {_TERM_KEY}.")
+    reference: str = Field(default="", max_length=200, description="The authority's reference, at most 200 characters; empty by default.")
+    granted_on: date | None = Field(default=None, description="The date the licence was granted, a plain date; null by default.")
+    withdrawn_on: date | None = Field(default=None, description="The date it was withdrawn, a plain date; null by default.")
+    scope_note: str = Field(default="", max_length=4000, description="The bank's note on what it covers, at most 4000 characters; empty by default.")
+    issuer: SingleLineName = Field(
+        default="", max_length=200, description="Who issued a certificate, at most 200 characters of one line of visible text; empty by default."
+    )
+    number: str = Field(default="", max_length=100, description="A certificate's number, at most 100 characters; empty by default.")
+    scope_statement: str = Field(default="", max_length=4000, description="A certificate's scope statement, at most 4000 characters; empty by default.")
+    issued_on: date | None = Field(default=None, description="The date a certificate was issued, a plain date; null by default.")
+    valid_until: date | None = Field(default=None, description="The last date a certificate is valid, a plain date; null by default.")
+    next_audit_on: date | None = Field(default=None, description="The date of a certificate's next audit, a plain date; null by default.")
+    owner_user_id: uuid.UUID | None = Field(default=None, description="The identifier of the owning member, a UUID of an active member of the same bank; null by default.")
+    service_terms: list[str] = Field(
+        default_factory=list, max_length=50, description=f"The services it covers, at most 50 keys, each {_TERM_KEY}; empty by default."
+    )
+
+
+class TenantLicencePatch(WriteBody):
+    """A change to a licence or certificate. Send only the fields you are changing."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"withdrawnOn": "2026-12-31"}]})
+
+    licence_type: str | None = Field(default=None, max_length=80, description=f"A new type, at most 80 characters, the key of {_TERM_KEY}; null by default, which leaves it alone.")
+    reference: str | None = Field(default=None, max_length=200, description="A new reference, at most 200 characters; null by default, which leaves it alone.")
+    granted_on: date | None = Field(default=None, description="A new grant date, a plain date; null by default, which leaves it alone.")
+    withdrawn_on: date | None = Field(default=None, description="The date it was withdrawn, a plain date; null by default, which leaves it alone.")
+    scope_note: str | None = Field(default=None, max_length=4000, description="A new note, at most 4000 characters; null by default, which leaves it alone.")
+    issuer: SingleLineName | None = Field(
+        default=None, max_length=200, description="A new issuer, at most 200 characters of one line of visible text; null by default, which leaves it alone."
+    )
+    number: str | None = Field(default=None, max_length=100, description="A new certificate number, at most 100 characters; null by default, which leaves it alone.")
+    scope_statement: str | None = Field(default=None, max_length=4000, description="A new scope statement, at most 4000 characters; null by default, which leaves it alone.")
+    issued_on: date | None = Field(default=None, description="A new issue date, a plain date; null by default, which leaves it alone.")
+    valid_until: date | None = Field(default=None, description="A new validity end, a plain date; null by default, which leaves it alone.")
+    next_audit_on: date | None = Field(default=None, description="A new next audit date, a plain date; null by default, which leaves it alone.")
+    owner_user_id: uuid.UUID | None = Field(default=None, description="A new owner, a UUID of an active member of the same bank; null by default, which leaves it alone.")
+    service_terms: list[str] | None = Field(
+        default=None, max_length=50, description=f"The complete new list of services, at most 50 keys, each {_TERM_KEY}; null by default, which leaves it alone."
+    )
+
+
+class TenantProductOut(CamelSchema):
+    """A product the bank offers, described the way obligations are scoped (TEN-02)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_PRODUCT]})
+
+    id: uuid.UUID = Field(description="The product's identifier, a UUID that never changes.")
+    name: str = Field(description="The product's name as the bank wrote it, unique within the bank; match on the id.")
+    description: str = Field(description="The bank's own description of the product; empty when there is none.")
+    status: ProductStatusValue = Field(description=f"Where the product stands: {_PRODUCT_STATUSES}.")
+    launch_date: date | None = Field(description="The date the product went or goes live, a plain date, or null.")
+    org_unit_id: uuid.UUID | None = Field(description="The identifier of the unit that offers it, a UUID of the same bank, or null.")
+    owner: PersonRef | None = Field(description="The member who owns the product, or null.")
+    terms: list[TermRef] = Field(
+        description=(
+            "The product's scope as terms of the shared library, the same terms obligations are "
+            "scoped with; a vocabulary an administrator may extend only through an approved "
+            "proposal. An empty list when it is not scoped yet."
+        )
+    )
+    version: int = Field(description="The product's version; send it back in `If-Match` on a change, and a stale one is refused with `stale_write`.")
+
+
+class TenantProductPage(CamelSchema):
+    """One page of the bank's products, ordered by name."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_PRODUCT], "total": 1}]})
+
+    items: list[TenantProductOut] = Field(description="The products on this page, retired ones included; an empty list is a 200.")
+    total: int = Field(description="How many products the bank has in total, not how many are on this page.")
+
+
+class TenantProductBody(WriteBody):
+    """A new product. A field the schema does not name is refused."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"name": "Custody", "status": "live", "terms": ["custody"]}]})
+
+    name: SingleLineName = Field(
+        min_length=1,
+        max_length=200,
+        description="The product's name, unique within the bank, at most 200 characters of one line of visible text; blank or a line break is refused with a 422.",
+    )
+    description: str = Field(default="", max_length=4000, description="The bank's description, at most 4000 characters; empty by default.")
+    status: ProductStatusValue = Field(default="live", description=f"Where the product stands, `live` by default: {_PRODUCT_STATUSES}.")
+    launch_date: date | None = Field(default=None, description="The launch date, a plain date; null by default.")
+    org_unit_id: uuid.UUID | None = Field(default=None, description="The unit that offers it, a UUID of the same bank; null by default.")
+    owner_user_id: uuid.UUID | None = Field(default=None, description="The owning member, a UUID of an active member of the same bank; null by default.")
+    terms: list[str] = Field(default_factory=list, max_length=50, description=f"The product's scope, at most 50 keys, each {_TERM_KEY}; empty by default.")
+
+
+class TenantProductPatch(WriteBody):
+    """A change to a product. Send only the fields you are changing; retiring is a status."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"status": "retired"}]})
+
+    name: SingleLineName | None = Field(
+        default=None, min_length=1, max_length=200, description="A new name, at most 200 characters of one line of visible text; null by default, which leaves it alone."
+    )
+    description: str | None = Field(default=None, max_length=4000, description="A new description, at most 4000 characters; null by default, which leaves it alone.")
+    status: ProductStatusValue | None = Field(default=None, description=f"A new status, null by default, which leaves it alone: {_PRODUCT_STATUSES}.")
+    launch_date: date | None = Field(default=None, description="A new launch date, a plain date; null by default, which leaves it alone.")
+    org_unit_id: uuid.UUID | None = Field(default=None, description="A new offering unit, a UUID of the same bank; null by default, which leaves it alone.")
+    owner_user_id: uuid.UUID | None = Field(default=None, description="A new owner, a UUID of an active member of the same bank; null by default, which leaves it alone.")
+    terms: list[str] | None = Field(
+        default=None, max_length=50, description=f"The complete new scope, at most 50 keys, each {_TERM_KEY}; null by default, which leaves it alone."
+    )
+
+
+class TenantTeam(CamelSchema):
+    """A team of the bank, which can own work and take part in it (TEN-03). A team is a row
+    of the bank's `team` list, so creating, renaming and retiring one is `/vocab/team`."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_TEAM]})
+
+    key: str = Field(
+        description=(
+            "The team's immutable key, such as `compliance`, the only part to store or send back. "
+            "A row of the bank's own `team` vocabulary, which an administrator with `vocab.manage` "
+            "may extend at `GET /vocab/team`; `compliance` is seeded for every bank."
+        )
+    )
+    label: str = Field(description="The team's name in the reader's language, for display only; it may be reworded at any time.")
+    org_unit_id: uuid.UUID | None = Field(description="The identifier of the department the team sits in, a UUID of the same bank, or null.")
+    email: str = Field(description="The team's shared mailbox, where the bank gave one; empty otherwise.")
+    member_count: int = Field(description="How many active members are in the team at the moment of the call.")
+    active: bool = Field(description="False once the team is retired; a retired team keeps what it owns until someone moves it.")
+
+
+class TenantTeamPage(CamelSchema):
+    """One page of the bank's teams."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_TEAM], "total": 1}]})
+
+    items: list[TenantTeam] = Field(description="The teams on this page, in the list's order; an empty list is a 200.")
+    total: int = Field(description="How many teams the bank has in total, not how many are on this page.")
+
+
+class TenantPeoplePage(CamelSchema):
+    """One page of people: ids and names, nothing else about them."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_PERSON], "total": 1}]})
+
+    items: list[PersonRef] = Field(description="The people on this page, by name; an empty list is a 200 and means nobody is in it.")
+    total: int = Field(description="How many people there are in total, not how many are on this page.")
+
+
+class TenantOpenWork(CamelSchema):
+    """One kind of open work a member holds, counted, before their removal (TEN-05)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"kind": "register_entry", "count": 3}]})
+
+    kind: OpenWorkKind = Field(description=f"What the member holds. Moved to a new owner on removal: {_OWNER_KINDS}. Ended on removal: {_ENDING_KINDS}.")
+    count: int = Field(description="How many of that kind the member holds at the moment of the call, at least one; a kind they hold none of is not listed.")
+
+
+class TenantMemberOpenWork(CamelSchema):
+    """Everything a member owns or takes part in, by kind, so a removal can ask for a new
+    owner per kind before anything changes."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"member": _EXAMPLE_PERSON, "items": [{"kind": "register_entry", "count": 3}, {"kind": "case", "count": 2}]}]}
+    )
+
+    member: PersonRef = Field(description="The member whose open work this is.")
+    items: list[TenantOpenWork] = Field(description="One row per kind the member holds; an empty list is a 200 and means the removal moves nothing.")
+
+
+class TenantRemovalOwner(WriteBody):
+    """Who takes over one kind of the removed member's work: a person or a team, exactly one."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"kind": "register_entry", "teamKey": "compliance"}]})
+
+    kind: ReassignableKind = Field(description=f"The kind of work being moved: {_OWNER_KINDS}. Participations and team memberships end and are never moved.")
+    user_id: uuid.UUID | None = Field(default=None, description="The new owner, a UUID of another active member of the same bank; null by default. Send this or `teamKey`, never both.")
+    team_key: str | None = Field(
+        default=None,
+        max_length=80,
+        description=(
+            "The new owning team, at most 80 characters, the key of a row of the bank's `team` "
+            "vocabulary, which an administrator may extend at `GET /vocab/team`; null by default. "
+            "Send this or `userId`, never both."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _one_owner(self) -> TenantRemovalOwner:
+        if (self.user_id is None) == (self.team_key is None):
+            raise ValueError("Name exactly one new owner: a person or a team.")
+        return self
+
+
+class TenantMemberRemoveBody(WriteBody):
+    """The removal of a member, with a new owner for each kind of work they own."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"owners": [{"kind": "register_entry", "teamKey": "compliance"}, {"kind": "case", "userId": _EXAMPLE_PERSON["id"]}]}]})
+
+    owners: list[TenantRemovalOwner] = Field(
+        default_factory=list,
+        max_length=10,
+        description=(
+            "One new owner per kind of work the member owns, at most 10, empty by default for a "
+            "member who owns nothing. A kind the member owns with no owner named here answers "
+            "`validation_error` and nothing changes."
+        ),
+    )
+
+
+class SupportAccessGrant(CamelSchema):
+    """A request by platform support to read the bank's data, and what became of it (TEN-06,
+    D-49). The bank reads every one; support never writes under a grant."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_GRANT]})
+
+    id: uuid.UUID = Field(description="The request's identifier, a UUID that never changes.")
+    state: SupportAccessState = Field(description=f"Where the request stands: {_SUPPORT_STATES}.")
+    purpose: str = Field(description="Why platform support asked, in their own words, written for the bank.")
+    ticket_ref: str = Field(description="The support ticket it was asked under, such as `SUP-2511`; empty when there is none.")
+    hours: int = Field(description="How long the window asked for is, in hours; the window starts when the bank approves.")
+    platform_person: PersonRef = Field(description="The platform support person who asked; their name and id, nothing else.")
+    requested_at: datetime = Field(description="When the request was made, a UTC timestamp.")
+    decided_by: PersonRef | None = Field(description="The member who approved, declined or revoked it, or null while it is pending or once it lapsed.")
+    decided_at: datetime | None = Field(description="When the bank last decided on it, a UTC timestamp, or null.")
+    ends_at: datetime | None = Field(description="When an approved window closes or closed, a UTC timestamp, or null until it is approved.")
+
+
+class SupportAccessPage(CamelSchema):
+    """One page of the bank's support access requests, newest first."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_GRANT], "total": 1}]})
+
+    items: list[SupportAccessGrant] = Field(description="The requests on this page, newest first; an empty list is a 200 and means support never asked.")
+    total: int = Field(description="How many requests the bank has had in total, not how many are on this page.")
+
+
+class ConsoleSupportAccessBody(WriteBody):
+    """Platform support asks one bank to let it read, for a purpose and a limited time. The
+    request grants nothing until a tenant admin approves it."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"purpose": "The bank reports that its watch feed stopped updating on Monday.", "ticketRef": "SUP-2511", "hours": 2}]})
+
+    purpose: str = Field(
+        min_length=1,
+        max_length=1000,
+        description="Why support needs to look, at most 1000 characters, written for the bank, which reads it before it decides; blank is refused with a 422.",
+    )
+    ticket_ref: SingleLineName = Field(default="", max_length=100, description="The support ticket, at most 100 characters of one line; empty by default.")
+    hours: int = Field(
+        ge=1,
+        description=(
+            "How long the window should be, in whole hours, at least 1 and at most the platform's "
+            "`SUPPORT_ACCESS_MAX_HOURS` (4 by default); a longer one answers `validation_error`. The "
+            "window starts when the bank approves, not when support asks."
+        ),
+    )
+
+
+class ConsoleSupportAccessGrant(CamelSchema):
+    """One of the caller's own requests, as the console lists it: the bank by its name and
+    never a member's name; the approval is a time, not a person."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_CONSOLE_GRANT]})
+
+    id: uuid.UUID = Field(description="The request's identifier, a UUID; the one to enter with.")
+    tenant_id: uuid.UUID = Field(description="The identifier of the bank asked, a UUID.")
+    tenant_name: str = Field(description="The bank's organisation name, for display; no member of the bank is ever named here.")
+    state: SupportAccessState = Field(description=f"Where the request stands: {_SUPPORT_STATES}.")
+    purpose: str = Field(description="The purpose the caller gave.")
+    ticket_ref: str = Field(description="The ticket the caller gave; empty when there is none.")
+    hours: int = Field(description="The window asked for, in hours.")
+    requested_at: datetime = Field(description="When the caller asked, a UTC timestamp.")
+    decided_at: datetime | None = Field(description="When the bank decided, a UTC timestamp, or null; who decided is the bank's to know.")
+    ends_at: datetime | None = Field(description="When an approved window closes or closed, a UTC timestamp, or null.")
+
+
+class ConsoleSupportAccessPage(CamelSchema):
+    """One page of the caller's own support access requests, newest first."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_CONSOLE_GRANT], "total": 1}]})
+
+    items: list[ConsoleSupportAccessGrant] = Field(description="The caller's requests on this page, newest first; an empty list is a 200.")
+    total: int = Field(description="How many requests the caller has made in total, not how many are on this page.")
+
+
+# ---------------------------------------------------------------------------------------
+# c11-security-policy-routes: the bank's session policy (ID-08, ADM-01)
+# ---------------------------------------------------------------------------------------
+_EXAMPLE_SECURITY_POLICY: dict[str, JsonValue] = {
+    "sessionIdleMinutes": 15,
+    "sessionAbsoluteHours": 8,
+    "sessionIdleMinutesDefault": 30,
+    "sessionIdleMinutesMax": 480,
+    "sessionAbsoluteHoursDefault": 12,
+    "sessionAbsoluteHoursMax": 24,
+    "updatedAt": "2026-09-25T08:30:00Z",
+    "updatedBy": {"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Anna Lindqvist"},
+}
+
+
+class SecurityPolicyOut(CamelSchema):
+    """The bank's session limits beside the platform's own: how long a session may sit idle
+    and how long it may last at most before its holder signs in again with a passkey. A
+    limit the bank has not set reads null and the platform default applies. No limit is
+    ever above the platform maximum, which the platform sets and no bank can change."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_SECURITY_POLICY]})
+
+    session_idle_minutes: int | None = Field(
+        description=(
+            "How many whole minutes a session of the bank may go without being refreshed "
+            "before it ends, as the bank set it, or null when the bank has set none and "
+            "`sessionIdleMinutesDefault` applies. Never above `sessionIdleMinutesMax`."
+        )
+    )
+    session_absolute_hours: int | None = Field(
+        description=(
+            "How many whole hours a session of the bank may last from sign-in, however "
+            "active, as the bank set it, or null when the bank has set none and "
+            "`sessionAbsoluteHoursDefault` applies. Never above `sessionAbsoluteHoursMax`."
+        )
+    )
+    session_idle_minutes_default: int = Field(
+        description="The platform's idle limit in whole minutes, which applies while the bank sets none."
+    )
+    session_idle_minutes_max: int = Field(
+        description="The highest idle limit in whole minutes a bank may set; the platform sets it and a bank cannot change it."
+    )
+    session_absolute_hours_default: int = Field(
+        description="The platform's absolute limit in whole hours, which applies while the bank sets none."
+    )
+    session_absolute_hours_max: int = Field(
+        description="The highest absolute limit in whole hours a bank may set; the platform sets it and a bank cannot change it."
+    )
+    updated_at: datetime | None = Field(
+        description="When the bank last changed its limits, a UTC timestamp, or null when it never has."
+    )
+    updated_by: PersonRef | None = Field(
+        description="Who last changed the limits, by id and name, or null when the bank never has."
+    )
+
+
+class SecurityPolicyBody(WriteBody):
+    """The bank's complete new session limits. Both fields are required and together
+    replace the current limits; null returns a limit to the platform default. Any other
+    field is refused, a passkey policy included: this release sets session limits only."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"sessionIdleMinutes": 15, "sessionAbsoluteHours": 8}]})
+
+    session_idle_minutes: int | None = Field(
+        strict=True,
+        ge=1,
+        description=(
+            "How many whole minutes a session may go without being refreshed before it ends, "
+            "at least 1 and at most the platform maximum that `GET /tenant/security-policy` "
+            "returns as `sessionIdleMinutesMax`, or null for the platform default. A JSON "
+            "number, never a string. Above the maximum is refused with "
+            "`above_platform_maximum`; below 1 with `validation_error`."
+        ),
+    )
+    session_absolute_hours: int | None = Field(
+        strict=True,
+        ge=1,
+        description=(
+            "How many whole hours a session may last from sign-in, however active, at least 1 "
+            "and at most the platform maximum that `GET /tenant/security-policy` returns as "
+            "`sessionAbsoluteHoursMax`, or null for the platform default. A JSON number, never "
+            "a string. Above the maximum is refused with `above_platform_maximum`; below 1 "
+            "with `validation_error`."
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# c10-out-of-office: a member's own absence with a delegate (TEN-04)
+# ---------------------------------------------------------------------------------------
+_EXAMPLE_DELEGATE: dict[str, JsonValue] = {"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Maria Svensson"}
+
+
+class MeOutOfOffice(CamelSchema):
+    """The caller's own absence in their current bank: the last day they are away and the
+    member who receives their reminders, escalations, assignments and sign-off requests
+    meanwhile. Nulls when they are not away. The delegate acts under their own roles and
+    gains no permission."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"untilDate": "2026-10-09", "delegate": _EXAMPLE_DELEGATE, "away": True}]}
+    )
+
+    until_date: date | None = Field(
+        description=(
+            "The last day the caller is away, inclusive, a plain date on the bank's own calendar "
+            "(its timezone), or null when they have set no absence."
+        )
+    )
+    delegate: PersonRef | None = Field(
+        description="The member who receives the caller's work while they are away, by id and name, or null."
+    )
+    away: bool = Field(
+        description=(
+            "True while the absence is open, that is the bank's today is on or before `untilDate`; "
+            "false before one is set and from the day after the last day, when notices reach the "
+            "caller again."
+        )
+    )
+
+
+class MeOutOfOfficeBody(WriteBody):
+    """The caller's new absence: both fields to start one, or both null to end the current
+    one early. Both are required; any other field is refused."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"untilDate": "2026-10-09", "delegateId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60"},
+                {"untilDate": None, "delegateId": None},
+            ]
+        }
+    )
+
+    until_date: date | None = Field(
+        description=(
+            "The last day away, inclusive, as an ISO 8601 date (`YYYY-MM-DD`) on the bank's own "
+            "calendar: today or later, or null to end the absence. A past day is refused with "
+            "`validation_error`."
+        ),
+        examples=["2026-10-09"],
+    )
+    delegate_id: uuid.UUID | None = Field(
+        description=(
+            "The user id (a UUID) of the delegate: another active member of the caller's bank whose roles "
+            "hold every approve permission the caller's roles hold (`footprint.approve`, "
+            "`cases.signoff`, `risk.accept.approve`), or null to end the absence. Anyone else is "
+            "refused, with `validation_error` or `delegate_cannot_approve`."
+        ),
+        examples=["8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60"],
     )

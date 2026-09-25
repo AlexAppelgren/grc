@@ -158,6 +158,39 @@ or has differently:
 In the API every such field is `{key, kind, label}` on reads and `key` on
 writes, never an OpenAPI `enum`.
 
+**Chunk 8 organisation (c8-org-models, tenants 0002, 2026-09-25).** Three tier-one kinds:
+
+- `org_unit_kind` (`group`, `legal_entity`, `business_area`, `business_unit`, `function`),
+  the designed Postgres enum as `OrgUnitKind`: only a legal entity carries the
+  `legal_entity` term and holds licences, and a department is a unit of the last three kinds
+  (TEN-02, D-21).
+- `product_status` (`planned`, `live`, `retired`) stays a kind, `ProductStatusKind`, not a
+  tenant list: `schema.sql` has it as a `CHECK` on a text column, and code branches on it,
+  because retired is how a product is withdrawn rather than deleted and a retired product
+  scopes nothing (TEN-02, D-70).
+- `credential_policy` (`any_passkey`, `device_bound`), `CredentialPolicyKind`: sign-in and
+  enrolment branch on it (ID-07, ADR 0048).
+
+**Chunk 8's register lists (2026-09-25, c8-vocab-lists-rules).** Tier-three lists
+`schema.sql` has as `CHECK` constraints or not at all, each with an immutable key, labels in
+`en` and `sv`, system rows the tenant hook files create-only, and forced row-level security:
+
+- `gap_status` with the tier-one kind `gap_category` (`open`, `remediating`,
+  `risk_accepted`, `closed`), a system row per kind. `risk_accepted` is the frontend's
+  spelling (`tone-by-kind.ts`), so one state has one name (REG-03, VOC-04).
+- `gap_source` (`assessment`, `change_case`, `audit`, `incident`, `regulator`), no kind:
+  its pill takes the `source` slot's tone (REG-03, pills-and-labels "Slot order").
+- `risk_acceptance_reason` (`accepted_by_management`, `cost_disproportionate`,
+  `compensating_control`, `time_limited`, `other`), no kind (VOC-06).
+- `team`, with the column `email` and `UNIQUE (tenant_id, id)` for composite keys, no
+  `is_lead`, served by `GET /vocab/team`; one system row, `compliance`, because every list
+  has a default. Its `org_unit_id` comes with the teams model (TEN-03).
+- `risk_rating` gains the tier-one kind `risk_level` (`low`, `medium`, `high`): each row
+  maps to one, and the tone reads it, never the editable ordinal (VOC-05). No schema
+  change; `seed_reference` puts the level on every tenant's system rows.
+
+Retiring the last active row under a fixed kind answers 409 `category_empty` (VOC-04).
+
 **Chunk 10 (2026-09-25, c10-collab-models).** The comment, notification and mail tables
 (`schema.sql` §8, §10, §21), built in collab 0001:
 
@@ -341,8 +374,9 @@ here names it with its backticked `METHOD /path`.
   the designed `settings` blob and `region`. The response is `{id, name, slug, timezone,
   status, defaultLanguage{key,kind,label}, contentLanguages[...], onboarding{stepsDone,
   steps[{key,done}]}}`; the patch takes `{name?, timezone?, defaultLanguage?,
-  contentLanguages?}` as keys. Reminder, escalation and retention settings land with
-  the workflow policy (chunk 9) as columns of their own.
+  contentLanguages?}` as keys. Reminder, escalation, digest-day and triage settings land
+  with the workflow policy (chunk 10, `c10-workflow-policy`, section 19) as columns of their
+  own, not chunk 9's (CHUNK9_TASKS ruling 6); retention is chunk 12's.
 - `GET /tenant/members` answers a page `{items, total}` (playbook 10: every list
   paginates) of `{userId, email, name, status, roles[{key,kind,label}], title,
   lastSeenAt, passkeyCount, activeSessions}` rather than a bare array of the designed
@@ -904,6 +938,28 @@ behind their real gates and answer 501 `not_built` until `collab/inbox.py`,
   `comments.write` checked by the route on the write; `PATCH` and `DELETE` carry
   `@requires_permission("comments.write")` and leave the author check to the logic. A
   platform session belongs to no bank and gets 404.
+Chunk 8 (the register contract, `c8-register-contract`), 2026-09-25:
+
+- Applicability has no request (D-75, which supersedes D-44 and ADR 0038). The designed
+  `GET /applicability-requests` (`listApplicabilityRequests`),
+  `POST /obligations/{obligationId}/applicability-requests` (`requestApplicability`),
+  `POST /applicability-requests/{requestId}/approve` (`approveApplicability`) and
+  `POST /applicability-requests/{requestId}/reject` (`rejectApplicability`) are not built,
+  and neither is the withdraw route the chunk 8 plan once added. They are replaced by
+  `setApplicability`, `PUT /obligations/{obligationId}/applicability`, which stores one
+  confirmed answer for the obligation, one legal entity or one unit, and
+  `setApplicabilityMany`, `POST /applicability`, which stores many confirmed rows in one
+  call capped by `REGISTER_BULK_MAX`. Both take `applicability.approve`, no step-up and
+  no second approver, and write one audit event per row naming the person, the value
+  before and after, and the reason. There is no `applicability_request` table and no
+  "Waiting for approval" state for applicability; the designed `Note` body and
+  `ApplicabilityRequest` shapes go with them.
+- `PATCH /obligations/{obligationId}/register` (`updateRegister`) keeps its designed fields
+  and adds `rationale`, stored on the assessment row a status change writes (REG-04), and
+  takes the status, risk and people as keys and ids. It answers `RegisterEntry`, which
+  adds `applicabilityDecidedBy`, `entities` (one row per legal entity, D-42) and `version`
+  for `If-Match` (section 4) to the designed `Register`, and returns the status and risk
+  as `{key, kind, label}` rows of the bank's own lists (section 1).
 
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
@@ -1307,3 +1363,298 @@ The shapes depart from the design on purpose:
 - `POST /eval/runs` (`startEvalRun`) waits for chunk 14's job runner
   (`backend/scripts/contract_drift_pending.txt`): a run builds the sample corpus in a
   database of its own and takes minutes, which no request should hold open.
+
+## c8-org-models. The bank's organisation as tables (2026-09-25, tenants 0002)
+
+Section 17 of `schema.sql` (`org_unit`, `licence`, `tenant_product`, `tenant_product_term`,
+`internal_item`) and the ID-07/ID-08 security policy are built with these departures:
+
+- Every reference to another tenant row is also a composite `(tenant_id, …)` foreign key,
+  written as SQL in the migration, because PostgreSQL checks a foreign key without
+  row-level security. `org_unit`, `licence`, `tenant_product` and `internal_item` carry
+  `UNIQUE (tenant_id, id)`, and so does `link_kind`, which `internal_item.kind` points at. A
+  head or owner (`head_user_id`, `owner_user_id`, `updated_by_id`) is a key into
+  `membership (tenant_id, user_id)`, so it is always a member of the same bank; the
+  designed `owner_id` is `owner_user_id`, beside the `owner_team_id` tenants 0003 adds.
+- `org_unit.entity_term_id` must be a term of the `legal_entity` dimension (a trigger, since
+  a CHECK cannot read another table) and only a legal entity may carry one (a CHECK).
+  `org_unit` gains `version` for `If-Match`.
+- `licence.licence_type` is a taxonomy term (`licence_type_id`), not the designed free
+  text: a type is a key, never a phrase. `service_term_ids uuid[]` is the
+  `licence_service_term` table, so each term is a real foreign key. D-43's certificate
+  columns are `issuer`, `number`, `scope_statement`, `issued_on`, `valid_until`,
+  `next_audit_on` and `owner_user_id`; none of them is a term.
+- `tenant_product_term` has its own `id` rather than the designed composite primary key,
+  like every other `TenantModel`, with `UNIQUE (product_id, term_id)`.
+- Units, licences, products and items are deactivated, withdrawn or retired, never
+  deleted: each model's `delete()` refuses, and every reference is `PROTECT`.
+- `security_policy` is one row per tenant: `credential_policy`, `allowed_authenticators`
+  (a list of AAGUIDs, schema `AllowedAuthenticators`), `device_bound_from` (a date),
+  `session_idle_minutes` and `session_absolute_hours` (null means the platform default,
+  both above zero and capped by `SESSION_IDLE_MINUTES_MAX` and `SESSION_ABSOLUTE_HOURS_MAX`
+  in the write), `updated_by_id`, `updated_at`. No row means the platform defaults.
+  `CREDENTIAL_POLICY_NOTICE_DAYS` (14) is the default notice a tightening gives.
+
+## 18. Chunk 9's case workflow tables (2026-09-25, c9-case-models)
+
+`change_case` gains the designed workflow columns §8 left out — `triaged_by`, `triaged_at`,
+`dismissed_by`, `dismissed_at`, `signoff_requested_by`, `signoff_requested_at`,
+`signed_off_by`, `closed_note`, `closed_at` — with these departures:
+
+- `dismissed_reason` and `close_reason` are foreign keys to the bank's own
+  `dismissal_reason` and `close_reason` rows (§1, VOC-06), not free text and not the
+  `close_reason` enum; the close category is the row's fixed kind. `sub_status` is a
+  nullable key to the bank's `case_sub_status` row inside the fixed category (D-13), and
+  `version` is what every case write's `If-Match` compares (§4, CAS-08).
+- The designed CHECKs are kept, with the four-eyes one tightened: a sign-off needs a
+  request, so `signed_off_by` is empty or both set and different
+  (`change_case_four_eyes`, enumerated by `apps/shared/tests_four_eyes.py`). The owner
+  CHECK covers `assigned` to `signoff`, so one person may close a case from triage
+  (q-case-close, Option B, audited).
+- No `closed_by`: whoever closed the case is `by_user` on its last `case_transition` row.
+- `UNIQUE (tenant_id, id)`, and every person on the case — the R1 owner and the So what's
+  confirmer included — is also a composite key `(tenant_id, user)` into `membership`, so
+  the database refuses a person who is not the bank's member. `case_obligation_link`
+  gains the same keys on its case and its decider.
+- Not built: `triage_due_at` (`c10-workflow-policy`, ruling 6) and `owner_team`
+  (`c9-owner-team-and-reassign`).
+
+`impact_assessment`, `action`, `case_transition` and `evidence` are tenant tables under
+forced row-level security, each child's case a composite key `(tenant_id, case_id)` into
+`change_case` and each person a composite key into `membership`:
+
+- `impact_assessment` has **no `contributors` column** (ruling 2, D-20): the contributor
+  teams are the case's team participants (`f03-T76`). `effort` is a nullable key to the
+  bank's `effort_size` row rather than a NOT NULL enum defaulting to `M`, and `why` is
+  text that a saved assessment may not leave empty. It gains `version` (§4).
+- `action` has **no ticket columns** (`ticket_provider`, `ticket_key`, `ticket_url`;
+  ruling 3): `c13-tickets-export` adds them with the export. `due_date` is required
+  (CAS-04). It gains `version`, and `removed_at` and `removed_by` instead of a hard
+  delete: nothing is overwritten, and the case file shows what was planned. The partial
+  index covers open actions that are not removed.
+- `case_transition` is append-only by the shared trigger, so the time a case spent in
+  each stage cannot be rewritten (CAS-08). Its id is a uuid like every other table's.
+- `evidence` belongs to a case: `case_id` is NOT NULL and `tenant_obligation_id` is not
+  built, because no R2 route writes evidence on a register entry; the chunk that does adds
+  the column and the designed either-or CHECK. It gains `scan_state` (`pending`, `clean`,
+  `infected`, `error`, the `scan_state` kind; a new row is `pending`) and `scanned_at`,
+  because a file must be invisible until the malware scan passes (CAS-05) and the design
+  has nowhere to record it. A CHECK per kind: only a file carries a storage key, and it
+  carries its hash, size and type with it; a link carries a url.
+
+## 19. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
+
+The designed `tenant.settings` blob is six columns on `tenant` (shared 0009):
+`reminder_days_before` and `review_reminder_days_before` (one to five day counts, each 1 to
+90, stored largest first; defaults `[3]` and `[30]`), `escalate_after_days` (1 to 90,
+default 5), `escalate_to_role` (the key of an active `TenantRole` of that bank, default
+`compliance_officer`), `digest_weekday` (a kind, `monday` to `sunday`, default `monday`) and
+`triage_target_hours` (1 to 720, default 48). Each platform default is a setting with an env
+override (`WORKFLOW_*`); the migration wrote them into every existing tenant, and check
+constraints hold the bounds for every writer. `GET /tenant` gains `workflow`, with the role
+as `{key, kind, label}`.
+
+Writes go through a route of their own, `PATCH /tenant/workflow` (`updateTenantWorkflow`),
+under `workflow.manage` and with no step-up, rather than through `PATCH /tenant`, which stays
+under `security.manage`. It is simpler than splitting one patch between two permissions: no
+body is ever half-allowed, and each permission reaches exactly one route. A number or list out
+of range answers 422 `validation_error` and an unknown role or weekday 422 `unknown_key`, each
+naming the field in `errors`. The change is recorded as `tenant.workflow_updated` with every
+value before and after. `review_reminder_days_before` is not in the chunk 10 brief's five
+columns; the wave plan added it for the review reminder COL-02 names.
+
+## 18. Chunk 11's agent tables (2026-09-25, c11-agent-models)
+
+Agents migrations 0004 and 0005 build schema v0.3 PART 3's agent tables with three rulings
+of `docs/plans/briefs/CHUNK11_TASKS.md` and the fence of ADR 0053 in the database:
+
+- **Ruling 1: a definition is always bleqq's.** Every `agent` row is a library row and no
+  bank ever creates one. `agent.scope` (`platform` or `tenant`) and `tenant_configurable`
+  say whether a bank may add it for itself. A CHECK refuses a platform row that is
+  tenant-configurable, and a tenant row carrying `platform_scope` or
+  `platform_monthly_budget` (the two platform settings v0.3 does not have) or a `writes_to`
+  other than `tenant`. A trigger on `tenant_agent` refuses a row, inserted or moved, whose
+  definition is not a configurable tenant one, and agents 0001's key guard now refuses a
+  changed `scope` too. `tenant_agent` is paused, never deleted: its trigger refuses a
+  DELETE outside the schema owner's maintenance hatch. Closed by c11-agent-models (tables)
+  and c11-tenant-agent-controls-a (the route's own refusal).
+- **Ruling 3: one cap per bank.** `tenant_agent.monthly_budget` is not built; the bank's
+  one cap is `tenant_agent_budget` (one row per tenant, `monthly_cap`, `currency`), and
+  spend is the month's `agent_run.cost` of the bank's own runs. Closed by
+  c11-run-scheduler-b.
+- **Ruling 4: the runner seam only.** `agent.runtime` keeps v0.3's three values as a kind,
+  and defaults to `agent_sdk`, not v0.3's `managed_agents`: D-54 refuses `managed_agents`
+  on every deployed environment but test and runs production agents in our own worker.
+  `agent_version.external_agent_id`, `tenant_agent.pinned_version_id`, `environment` and
+  `external_environment_id` are not built. Closed by c11-runner-adapter.
+
+Also departing from v0.3:
+
+- `agent_version.prompt_template_id` is `prompt_path`, the prompt's file inside the version
+  folder (`backend/agents/<agent>/v<n>/`), because the definitions are files in the image.
+  The version is append-only in the database, retiring it once being the one change.
+- `agent_version.version_no` is `version_number`, as on the library's own version tables,
+  because a column ending in a language code (`_no`, Norwegian) reads as a per-language
+  column and I18N-S1 refuses one.
+- `agent_run.api_key_id` (§5) becomes nullable: a run the worker opens has no key. A CHECK
+  demands a key when `trigger = 'api'`, the default, which every R1 run is. The write
+  policy asks for a key of the run's zone only when there is a key; the own-zone rule is
+  unchanged. A keyless run's zone is its tenant agent's, or the library's without one, and a
+  CHECK refuses a library run naming a tenant agent. `agent_version_id` is written once, at
+  open. `changes_found`, `proposals_made` and `search_count` are not columns: counts stay in
+  `stats` (`AgentRunStats`). `prompt_template_id` is not built. `scope` is the copy of the
+  scope the run started with (D-32).
+- `research_request.tenant_id` is nullable and the table mixed, with agent_run's split
+  policy: the console's `retag` (§5) has no tenant and no tenant agent, and a CHECK demands
+  both of every other kind. `reverify` is not a kind: re-verification is a person's stamp
+  (INV-06) or the platform's own agent, never a bank's request. `changes_found` is not
+  built; `batch_proposal_id` names the batch a retag produced, a plain uuid until the batch
+  table (c11-proposal-batches-model) gives it a foreign key.
+- `tenant_agent` gains `pause_reason`, what the person or the scheduler said when it paused
+  the agent.
+- New tier-one kinds (§1): `agent_scope`, `agent_cadence`, `agent_runtime`,
+  `agent_writes_to` (v0.3's `both` dropped: no definition writes both zones, and a bank's
+  never writes the library), `run_trigger`, `research_request_kind` and
+  `research_request_status`. Like `agent_kind` they are kinds in code with no database
+  constraint on their values.
+
+## 18. A batch proposal and its rows (2026-09-25, c11-proposal-batches-model)
+
+Version 0.3 of the schema has no batch: PRD PRO-04 and AGT-05 ask for one proposal that
+changes many library records, previewed and approved whole or row by row. Proposals 0008
+builds it on the existing table rather than beside it:
+
+- `proposal` gains `is_batch` (default false) and `row_count` (default 0), held together by
+  the check `proposal_batch_row_count`: a batch counts at least one row, a single proposal
+  none. Four eyes, the rejection reason, the audit row and the apply path are the parent's,
+  unchanged; `proposal_four_eyes` refuses a batch's proposer as its reviewer as for any
+  proposal.
+- `proposal_batch_row` is new, in the library zone with no tenant column (like `proposal`):
+  `proposal_id`, `subject_type` and `subject_id` (the record, named as `target_type` and
+  `target_id` name one), `before` and `after` (the preview, `ProposalBatchRowPayload`),
+  `decision`, `rejection_reason_id` (a row of the `rejection_reason` list), `decided_by`,
+  `decided_at`, `created_at`; unique per `(proposal, subject_type, subject_id)`. It is a
+  plain model like `proposal`, not a `LibraryModel`: rows are filed and decided by the
+  proposal logic, and the library fence belongs to `apply.py`.
+- A row is written once and decided once. The trigger `proposal_batch_row_decision_guard`
+  lets only the four decision columns change, only from `pending` to `approved` or
+  `rejected`, never to the batch's own proposer, and refuses DELETE; the schema owner's
+  stated fix (`cw.maintenance`) passes as on every ledger. The check
+  `proposal_batch_row_decided` demands a date on a decision and a reason on a rejection and
+  only there. `decided_by` names a person; an agent's row decision is named by its audit row.
+- Two tier-one kinds (§1): `proposal_kind` gains `obligation_scope`, the re-tag, which chunk 4
+  cut (parallel-plan ruling 14); a backfill is a batch of an existing kind, not a kind. And
+  `proposal_batch_decision` (`pending`, `approved`, `rejected`) is new: the trigger and apply
+  branch on it and no admin adds one.
+
+## 18. Export jobs move into R2 and carry their file's checksum (2026-09-25, x-exports-contract)
+
+The case file must export (CAS-07, R2), so the export mechanism of chunk 12 moves ahead of
+the rest of REP-02, which stays R3. `export_job` is built as designed, a tenant table under
+enabled and forced row-level security, with these departures on purpose:
+
+- `export_kind` gains `cases`, `configuration` and `tenant_export` beside the designed five
+  (CHUNK12_TASKS ruling 6): the list of cases, the configuration snapshot and the exit's
+  final export are exports like the others, so they are kinds of the one job and not routes
+  of their own. `job_status` is as designed.
+- `POST /exports` (`createExport`) takes an optional typed `filters` object
+  (`ExportFilters`: `instrumentKey`, `entityId`, `standardEdition`, `from`, `to`,
+  `statusKeys`) that every exporter shares, so a later exporter never changes the contract
+  (ruling 7). It answers 501 `not_built` for a kind whose exporter is not registered yet,
+  and 422 `format_not_offered` for a format the kind does not come in, both before a job is
+  written.
+- `ExportJob`, as answered by `createExport` and `getExport`, adds `expiresAt`,
+  `contentHash` (the file's SHA-256) and `downloadedAt` (the first download): the screen
+  shows the checksum, the file lives `EXPORT_RETENTION_DAYS` and its download answers 409
+  `export_expired` after that, and the tenant exit refuses an export nobody downloaded.
+- `GET /exports` (`listExports`) is added: the bank's jobs as the shared page, newest
+  first, under `exports.create`.
+- `GET /exports/{exportId}/download` streams the file itself (section 4, section 7), with
+  `Content-Disposition: attachment` and `Cache-Control: no-store`, and records every
+  download in the audit log. There is no `DownloadLink`.
+
+## 20. A case knows when triage is due (2026-09-25, c10-case-triage-due)
+
+`change_case.triage_due_at` (`schema.sql` §13, "from the tenant's triage target") is a
+nullable timestamp, set when the case opens to its opening time plus the bank's
+`triage_target_hours` (section 19). Cases 0004 backfills it for every open `new` case, one
+bank's zone at a time because forced row-level security binds the schema owner too; a case
+that already left `new` keeps a null, since reminders read the column only while a case is
+`new` (`c10-reminders-core`). The backfill writes no audit row: the column is derived from
+two facts already on record, not a decision.
+
+## 19. Chunk 9's case contract (2026-09-25, c9-case-contract)
+
+The eighteen workflow operations of `openapi.yaml`'s "Case workflow" tag, less the ticket
+export, are declared in `apps/cases/api.py` behind their final gates and answer 501
+`not_built` until each logic task builds them. What they answer differs from the design:
+
+- **Ruling 3, no ticket export.** `POST /changes/{changeId}/actions/export-tickets`
+  (`exportActionsAsTickets`) is not declared: `c13-tickets-export` adds the route with the
+  export itself, so no 501 route waits two releases. Its pending line stays, chunk 13.
+- **Ruling 4, evidence arrives in the request.** `addEvidence` takes
+  `multipart/form-data` — the fields `kind`, `name`, `url` and, for a file, the `file`
+  part — rather than a JSON `EvidenceInput` with a client-sent `mimeType`, `sizeBytes` and
+  `contentHash`: the server identifies, sizes and hashes the bytes it received. A presigned
+  PUT would put the object in the bucket before any check, so `EvidenceCreated` has no
+  `uploadUrl` and answers `{evidence}`. Closed by `c9-evidence`.
+- **Ruling 5, downloads stream.** `GET /evidence/{evidenceId}/download` answers the bytes
+  (`application/octet-stream` in the contract, the stored type on the wire, as an
+  attachment, `no-store`) behind `cases.read`, one audit row per download; `DownloadLink`
+  is not declared. Closed by `c9-evidence`.
+- **Ruling 8, sub-statuses have no route.** `triageChange` and `saveAssessment` take an
+  optional `subStatus` key of the bank's `case_sub_status` list; every case read answers
+  it as `{key, kind, label}`. Closed by `c9-triage` and `c9-assessment`.
+- **The case the moves answer is `CasesCase`**, not the designed `Case`: it adds
+  `changeId`, `subStatus`, `urgencyConfirmed`, `dismissedAt` and `version`; `urgency` is
+  the `{key, kind, label}` reference and the reasons are the bank's own list rows,
+  `dismissedReason` and `closeReason` as `{key, kind, label}` and never a phrase (the
+  close reason's kind is the designed `signed_off`, `not_applicable`, `no_action`). It
+  carries no `actions`, `evidence` or `soWhat`: the actions and the evidence are read from
+  their own lists, and the "So what?" from `GET /changes/{changeId}`, so a move answers the
+  case without re-reading every child. `saveSoWhat` and `confirmSoWhat` keep `CasesSoWhat`
+  (section 8) and now raise the case's `version` without taking `If-Match`.
+- **Reasons are keys.** `dismissChange` and `closeWithoutAction` send `reasonKey` from the
+  bank's `dismissal_reason` and `close_reason` lists where the design sent free text; only
+  a close reason of kind `no_action` or `not_applicable` closes on one person's word
+  (D-92). The approval and the send-back send an optional `note`.
+- **`Assessment` has no `contributors`** (ruling 2, section 18) and gains `version`;
+  `effort` is the bank's `effort_size` row, `{key, kind, label}` on a read and a key on a
+  write, rather than the enum `S`, `M`, `L`.
+- **`Action`** has no `changeTitle` or ticket fields, a required `dueDate`, and gains
+  `doneBy` and `version`; `updateAction` and `deleteAction` read the action's own
+  `If-Match`, and every move of the case reads the case's. `deleteAction` and
+  `removeEvidence` set `removed_at` and answer 204; nothing is deleted.
+- **`Evidence`** gains `contentHash` and `scanState`; a link and a reference have no bytes
+  and are recorded `clean`.
+- **The two lists page.** `listActions` and `listEvidence` answer `{items, total}` with
+  the shared `limit` and `offset` rather than a bare array (playbook 10).
+- **The change page carries the workflow block.** `GET /changes/{changeId}`'s `case` is
+  `WatchCaseWorkflow`: the feed's case plus the owner, triage, dismissal and sign-off
+  people and dates, the close reason, `openActionCount`, `canRequestSignoff`,
+  `allowedTransitions` for the reader and `version`, all from `apps/cases/state.py`
+  through `logic.case_facts()`. A feed row's case gains only `subStatus` and no longer
+  carries `allowedTransitions`, which was always empty there.
+- **`getCaseFile`** answers `text/plain` as designed, `deleteAction` and `removeEvidence`
+  answer 204 as designed; all three are published ahead of `c9-case-file`, `c9-actions`
+  and `c9-evidence` and answer 501 `not_built` until those land, so their pending lines
+  are gone while the logic is still to come.
+
+## Sign-off answers the case, and its refusals carry counts (2026-09-25, c9-signoff)
+
+- **`requestSignoff`, `approveSignoff` and `sendBackSignoff`** answer `CasesCase` (section
+  19), not the designed `Case`: no `actions`, `evidence` or `soWhat`, plus `changeId`,
+  `subStatus`, `urgencyConfirmed`, `dismissedAt` and `version`.
+- **The request's two refusals carry counts.** `open_actions` and `evidence_missing` answer
+  409 with `openActionCount` and `cleanEvidenceCount` beside the code (playbook 4.4), so
+  the screen says what is missing without a second read. Evidence the scanner has not
+  passed, or that was removed, does not count.
+- **The approver is told, not the requester.** The request notifies the bank's active
+  members holding `cases.signoff` through `notify()`, leaving the requester out: they can
+  never sign off what they asked for.
+- **The approval is the sign-off edge only.** From any category but `signoff` it answers
+  409 `invalid_transition`, although `assigned` and `assessing` reach `closed` by the
+  one-person close (D-92), which is its own route with its own reasons.
+- **Send-back clears the request.** `signoffRequestedBy` and `signoffRequestedAt` go back
+  to null, so the next request is a fresh one; the note is kept on the case's transition
+  ledger and never in the audit values.
