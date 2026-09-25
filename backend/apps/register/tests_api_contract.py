@@ -94,6 +94,11 @@ BUILT: set[str] = {
     "listInternalLinks",
     "addInternalLink",
     "removeInternalLink",
+    # c8-reg-status (apps/register/tests_status.py)
+    "getRegisterEntry",
+    "updateRegister",
+    "updateRegisterEntity",
+    "setApplicability", "setApplicabilityMany",  # c8-reg-applicability, tests_applicability.py
 }
 
 
@@ -200,15 +205,6 @@ IF_MATCH_ROUTES = {
     "removeUnit",
 }
 
-
-# The routes whose logic has landed, each proved in its own module's tests.
-BUILT = {
-    # c8-reg-status (apps/register/tests_status.py)
-    "getRegisterEntry",
-    "updateRegister",
-    "updateRegisterEntity",
-    "setApplicability", "setApplicabilityMany",  # c8-reg-applicability, tests_applicability.py
-}
 
 
 class RegisterRouteStubs(TestCase):

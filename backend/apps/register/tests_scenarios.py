@@ -16,14 +16,18 @@ from django.db import transaction
 from django.test import TestCase
 from django.utils import timezone
 
+from apps.library import testing as library_build
 from apps.library import testing as library_testing
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, tenancy
 from apps.shared import permissions as perms
+from apps.register.applicability import APPLICABILITY_SET, entities_spanned
 from apps.register.logic import ensure_register_entry
 from apps.register.models import Applicability, TenantObligation, TenantObligationScope
-from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, stub_session, user_principal
-from apps.taxonomy.models import ComplianceStatus
+from apps.register.tests_applicability import Bank, banks_duty, seed_library
+from apps.shared.models import AuditEvent
+from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, sign_in, stub_session, user_principal
+from apps.taxonomy.models import ComplianceStatus, FootprintTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.tenants.models import OrgUnit, OrgUnitKind
 
@@ -93,17 +97,6 @@ class StatusWorld:
             )
         self.case.assertEqual(response.status_code, 200, response.content)
         return response.json()
-
-from apps.library import testing as library_build
-from apps.register.applicability import APPLICABILITY_SET, entities_spanned
-from apps.register.models import TenantObligation, TenantObligationScope
-from apps.register.tests_applicability import Bank, banks_duty, seed_library
-from apps.shared import tenancy
-from apps.shared.models import AuditEvent
-from apps.shared.testing import sign_in
-from apps.taxonomy.models import ComplianceStatus, FootprintTerm
-
-from apps.shared.testing import sign_in
 
 
 class RegisterScenarioTests(TestCase):
