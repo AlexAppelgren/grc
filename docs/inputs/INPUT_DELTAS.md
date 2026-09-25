@@ -1407,6 +1407,7 @@ forced row-level security, each child's case a composite key `(tenant_id, case_i
   carries its hash, size and type with it; a link carries a url.
 
 ## 19. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
+## 18. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
 
 The designed `tenant.settings` blob is six columns on `tenant` (shared 0009):
 `reminder_days_before` and `review_reminder_days_before` (one to five day counts, each 1 to
