@@ -81,6 +81,9 @@ export const destinations: readonly Destination[] = [
   { id: 'admin-ai-log', href: '/admin/ai-log', labelKey: 'nav.admin.aiLog', surface: 'tenant', anyOfPermissions: ['ai_log.read'], group: 'admin', parent: 'admin' },
   // c11-fe-admin-security
   { id: 'admin-security', href: '/admin/security', labelKey: 'nav.admin.security', surface: 'tenant', anyOfPermissions: ['security.manage'], group: 'admin', parent: 'admin' },
+  // acc-fe-admin (ACC-01, ACC-03, ACC-08): the Access tab of Agents, reached from that page's tabs,
+  // never listed on the Admin index. An entry exposes its credentials and log, so reading needs the grant too.
+  { id: 'admin-agents-access', href: '/admin/agents/access', labelKey: 'nav.admin.agentsAccess', surface: 'tenant', anyOfPermissions: ['agent_access.manage'], group: 'admin', parent: 'admin-agents' },
   // Account: any signed-in person, from the who panel.
   { id: 'me-passkeys', href: '/me/passkeys', labelKey: 'nav.me.passkeys', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-sessions', href: '/me/sessions', labelKey: 'nav.me.sessions', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
