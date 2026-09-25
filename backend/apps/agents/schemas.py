@@ -294,8 +294,8 @@ class AgentRunFinish(WriteBody):
 
 
 class AgentRunOut(CamelSchema):
-    """One run as every reader sees it. A tenant reads the library's runs and its own; no
-    reader sees another tenant's (AGT-01, item 14)."""
+    """One run as every reader sees it. A tenant reads its own runs, the console the
+    library's; no reader sees another tenant's (AGT-01, item 14, ruling 9)."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_FINISHED_RUN]})
 
@@ -317,8 +317,8 @@ class AgentRunOut(CamelSchema):
     started_at: datetime = Field(
         description=(
             "When the run was opened, as a UTC timestamp in ISO 8601. The server sets it, not "
-            "the agent, so it cannot be backdated. Runs are listed oldest first by this value, "
-            "which is the order a sweep actually happened in."
+            "the agent, so it cannot be backdated. Runs are listed newest first by this value, "
+            "with the run's identifier breaking a tie so paging stays stable."
         )
     )
     finished_at: datetime | None = Field(
@@ -875,8 +875,8 @@ class AgentRunListPage(CamelSchema):
 
     items: list[AgentRunListItem] = Field(
         description=(
-            "The runs on this page, oldest first. A bank's session sees bleqq's library runs and "
-            "its own; the console sees the library's. An empty list is a 200, never an error."
+            "The runs on this page, newest first. A bank's session sees its own runs and never "
+            "one of bleqq's; the console sees the library's. An empty list is a 200, never an error."
         )
     )
     total: int = Field(description="How many runs this caller may see in total, not how many are on this page.")

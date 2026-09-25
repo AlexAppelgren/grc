@@ -420,8 +420,8 @@ class TenantAgentRouteGates(TestCase):
     def test_inside_its_own_bank_each_answers_not_built(self) -> None:
         with stub_session(self.bank_a.principal(frozenset({perms.AGENTS_MANAGE, perms.WATCH_READ}))):
             for name, method, url, body, _ in TENANT_ROUTES:
-                if name in SERVED:
-                    continue
+                if name in SERVED or name == "listPlatformWatch":
+                    continue  # listPlatformWatch: built by c11-run-history; tests_platform_read.py proves it
                 if name == "createResearchRequest":
                     body = {**body, "tenantAgentId": str(self.bank_a.agent.id)}
                 with self.subTest(operation=name):
@@ -433,7 +433,7 @@ class TenantAgentRouteGates(TestCase):
         """Ruling 6: what bleqq watches is a member's read, gated by `watch.read` alone."""
         with stub_session(self.bank_a.principal(frozenset({perms.WATCH_READ}))):
             response = _call(self.client, "get", f"{TENANT_AGENTS}/platform", None, AS_SESSION)
-        self.assertEqual(response.status_code, 501, response.content)
+        self.assertEqual(response.status_code, 200, response.content)
 
     def test_another_banks_record_is_404_before_the_501(self) -> None:
         """AC-NFR1: the 501 is reached only inside the caller's own bank. Bank B asking for
@@ -580,9 +580,9 @@ class RunListGainsChunk11(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         return [row["id"] for row in response.json()["items"]]
 
-    def test_without_a_filter_the_bank_reads_the_librarys_runs_and_its_own(self) -> None:
+    def test_without_a_filter_the_bank_reads_its_own_runs_and_never_the_librarys(self) -> None:
         ids = self._ids("")
-        self.assertIn(str(self.library.id), ids)
+        self.assertNotIn(str(self.library.id), ids)
         self.assertIn(str(self.bank.run.id), ids)
         self.assertNotIn(str(self.other.run.id), ids)
 
