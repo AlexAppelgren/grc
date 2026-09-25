@@ -195,9 +195,192 @@ def vocabulary_suggestion(tenant: Tenant) -> SimpleNamespace:
     return SimpleNamespace(id=row.id, params={"list_name": "tenant_tag"})
 
 
+def obligation_participant(tenant: Tenant) -> SimpleNamespace:
+    """The tenant-isolation guard's record for the register-entry participant routes: a
+    person taking part in `tenant`'s register entry for an obligation private to `tenant`.
+    The obligation is built by `apps/collab/testing.py`, which the library fence exempts."""
+    from apps.collab import testing as collab_testing
+
+    return collab_testing.participant_on_private_obligation(tenant)
+
+
 def user_actor(*, label: str = "Test Person", user_id: uuid.UUID | None = None) -> Actor:
     return Actor(kind=ActorType.USER, id=user_id or uuid.uuid4(), label=label)
 
 
 def agent_actor(*, label: str = "Test Agent", agent_id: uuid.UUID | None = None) -> Actor:
     return Actor(kind=ActorType.AGENT, id=agent_id or uuid.uuid4(), label=label)
+
+
+# ---------------------------------------------------------------------------------------
+# c9-case-contract: the tenant-isolation guard's records for the case workflow routes.
+# A case names a library change, so the case itself is built by `apps/cases/testing.py`
+# (the fence exempts it); the children are this bank's own rows and are built here.
+# ---------------------------------------------------------------------------------------
+def case_change(tenant: Tenant) -> SimpleNamespace:
+    """A change with a case of `tenant`, addressed by the change's id as every workflow
+    route addresses it. Another bank has no case for it, so tenancy alone answers 404."""
+    from apps.cases import testing as case_build
+
+    row = case_build.case_on_a_new_change(tenant)
+    return SimpleNamespace(id=row.change_id, case=row)
+
+
+def case_action(tenant: Tenant) -> SimpleNamespace:
+    """A live action on a case of `tenant`, addressed by its own id."""
+    from apps.cases.models import Action
+
+    row = case_change(tenant).case
+    owner = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        action = Action.objects.create(
+            tenant=tenant,
+            case=row,
+            title="Document the research criteria",
+            owner=owner,
+            due_date=timezone.localdate(),
+            created_by=owner,
+        )
+    return SimpleNamespace(id=action.id, case=row)
+
+
+def case_evidence(tenant: Tenant) -> SimpleNamespace:
+    """A live piece of evidence (a link, so no bytes) on a case of `tenant`, by its own id."""
+    from apps.cases.models import Evidence, EvidenceKind
+
+    row = case_change(tenant).case
+    uploader = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        evidence = Evidence.objects.create(
+            tenant=tenant,
+            case=row,
+            kind=EvidenceKind.LINK.value,
+            name="FI decision memo",
+            url="https://intranet.example.com/memo/42",
+            uploaded_by=uploader,
+            # A link has no bytes to scan, so it is recorded clean (CasesEvidence.scanState).
+            scan_state="clean",
+            scanned_at=timezone.now(),
+        )
+    return SimpleNamespace(id=evidence.id, case=row)
+
+
+def case_participant(tenant: Tenant) -> SimpleNamespace:
+    """c9-case-participants: a member of `tenant` taking part in a case of `tenant`, for a
+    change no other bank has a case for. `.id` is the participation, `.params` names the
+    change, as the case participant routes address it."""
+    from apps.collab.models import Participant
+
+    row = case_change(tenant).case
+    officer = member_user(tenant, roles=("compliance_officer",))
+    person = member_user(tenant)
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        participation = Participant.objects.create(tenant=tenant, case=row, user=person, added_by=officer)
+    return SimpleNamespace(id=participation.id, params={"change_id": row.change_id})
+
+
+# ---------------------------------------------------------------------------------------
+# c9-case-file-export: a case worked from triage to sign-off, for the case file (CAS-07).
+# ---------------------------------------------------------------------------------------
+def closed_case(tenant: Tenant, *, actions: int = 2, evidence: int = 3, so_what_confirmed: bool = True) -> SimpleNamespace:
+    """A case of `tenant` signed off by a second person, with everything its file prints: a
+    "So what?", a saved assessment, `actions` actions (the first done, the second removed,
+    the rest open) and `evidence` pieces (a scanned file, a link, then removed files), the
+    whole transition ledger and the sign-off's audit row carrying its step-up. An
+    unconfirmed "So what?" stays the AI's draft."""
+    from apps.cases.models import Action, CaseTransition, ChangeCase, Evidence, EvidenceKind, ImpactAssessment
+    from apps.shared.audit import record
+    from apps.taxonomy.models import CaseStatusCategory, ClosureReason, EffortSize
+
+    row = case_change(tenant).case
+    owner = member_user(tenant, roles=("compliance_officer",))
+    approver = member_user(tenant, roles=("approver",))
+    now = timezone.now()
+    step_up = uuid.uuid4()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        confirmation = {"so_what_confirmed_by": owner, "so_what_confirmed_at": now} if so_what_confirmed else {}
+        ChangeCase.objects.filter(pk=row.pk).update(
+            status=CaseStatusCategory.CLOSED.value,
+            owner=owner,
+            urgency_confirmed=True,
+            so_what_text="Our research payment model must be documented before the rules apply.",
+            so_what_confirmed=so_what_confirmed,
+            triaged_by=owner,
+            triaged_at=now,
+            signoff_requested_by=owner,
+            signoff_requested_at=now,
+            signed_off_by=approver,
+            close_reason=ClosureReason.objects.get(key="signed_off"),
+            closed_at=now,
+            closed_note="Signed off after the board meeting.",
+            **confirmation,
+        )
+        ImpactAssessment.objects.create(
+            tenant=tenant,
+            case=row,
+            applies="partly",
+            why="The equity desk buys research from three brokers.",
+            what_must_change="Written criteria for research budgets.",
+            internal_deadline=timezone.localdate() + timedelta(days=30),
+            effort=EffortSize.objects.get(key="m"),
+            saved=True,
+            saved_by=owner,
+            saved_at=now,
+        )
+        for index in range(actions):
+            Action.objects.create(
+                tenant=tenant,
+                case=row,
+                title=f"Action {index + 1}: document the research criteria",
+                owner=owner,
+                due_date=timezone.localdate() + timedelta(days=index),
+                created_by=owner,
+                done_at=now if index == 0 else None,
+                done_by=owner if index == 0 else None,
+                removed_at=now if index == 1 else None,
+                removed_by=owner if index == 1 else None,
+            )
+        for index in range(evidence):
+            is_link = index == 1
+            Evidence.objects.create(
+                tenant=tenant,
+                case=row,
+                kind=EvidenceKind.LINK.value if is_link else EvidenceKind.FILE.value,
+                name=f"Evidence {index + 1}: board minutes",
+                url="https://intranet.example.com/minutes/7" if is_link else "",
+                storage_key="" if is_link else f"tenants/{tenant.id}/evidence/{uuid.uuid4()}",
+                content_hash="" if is_link else f"{index:064x}",
+                size_bytes=None if is_link else 1024,
+                mime_type="" if is_link else "application/pdf",
+                uploaded_by=owner,
+                removed_at=now if index >= 2 else None,
+                scan_state="clean",
+                scanned_at=now,
+            )
+        path = ["", "new", "assigned", "assessing", "implementing", "signoff", "closed"]
+        for before, after in itertools.pairwise(path):
+            CaseTransition.objects.create(
+                tenant=tenant,
+                case=row,
+                from_status=before,
+                to_status=after,
+                by_user=approver if after == "closed" else owner,
+                note="Checked against the minutes." if after == "closed" else "",
+            )
+        record(
+            action="case.moved",
+            actor=Actor(kind=ActorType.USER, id=approver.id, label=approver.name),
+            subject_type="change_case",
+            subject_id=row.id,
+            subject_title=row.change.title,
+            summary=f"{approver.name} signed off a case.",
+            tenant_id=tenant.id,
+            after={"status": "closed"},
+            step_up_assertion_id=step_up,
+        )
+    row.refresh_from_db()
+    return SimpleNamespace(case=row, change_id=row.change_id, owner=owner, approver=approver, step_up=step_up)
