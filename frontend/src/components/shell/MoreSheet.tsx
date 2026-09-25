@@ -9,6 +9,7 @@ import { groupDestinations } from '@/components/shell/AppSidebar';
 import { NavIcon } from '@/components/shell/NavIcon';
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { SidebarGroup, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
+import { UnreadCount, useUnreadCount, withUnread } from '@/features/collab/NotificationBell';
 import { useSession } from '@/features/identity/hooks';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
 import { ACCOUNT_PARENT, childDestinations, isCurrent, moreDestinations, type Destination, type Surface } from '@/shared/navigation/registry';
@@ -18,7 +19,8 @@ import { usePermissions } from '@/shared/navigation/require-permission';
 // titled "More" with a Close button (touch screen-reader users cannot press
 // Escape, and the scrim is hidden from them), every visible destination the
 // bar does not hold, in the rail's groups, then a hairline and the account
-// laid flat: name, organisation and roles, my passkeys, my sessions, the
+// laid flat: name, organisation and roles, notifications with the unread
+// count (NotificationBell.tsx), my passkeys, my sessions, the
 // interface language as a radio group, sign out. Inside a sheet a second menu
 // layer would add a tap for nothing.
 //
@@ -35,6 +37,7 @@ export function MoreSheet({ surface, children }: { surface: Surface; children: R
   const { pending, signOut } = useSignOutToPublicPage();
   const languages = useInterfaceLanguages();
   const languageName = useId();
+  const unread = useUnreadCount();
 
   // Any route change closes the sheet (the Android back gesture, Safari's edge
   // swipe: Next keeps layout state across history navigation), and so does
@@ -51,13 +54,20 @@ export function MoreSheet({ surface, children }: { surface: Surface; children: R
   const row = (d: Destination, icon: boolean) => {
     const current = isCurrent(d, pathname);
     const label = t(d.labelKey);
+    const bell = d.id === 'notifications';
     return (
       <SidebarMenuItem key={d.id}>
         <SidebarMenuButton asChild size="touch" isActive={current} tooltip={label}>
           {/* Closes even when the link is the current page, which navigates nowhere. */}
-          <Link href={d.href} aria-current={current ? 'page' : undefined} onClick={() => setOpen(false)}>
+          <Link
+            href={d.href}
+            aria-current={current ? 'page' : undefined}
+            aria-label={bell ? withUnread(label, unread, t) : undefined}
+            onClick={() => setOpen(false)}
+          >
             {icon ? <NavIcon id={d.id} /> : null}
             <span>{label}</span>
+            {bell ? <UnreadCount count={unread} /> : null}
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>

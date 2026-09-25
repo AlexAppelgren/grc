@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 
 import { MoreSheet } from '@/components/shell/MoreSheet';
 import { NavIcon } from '@/components/shell/NavIcon';
+import { BellIcon, useUnreadCount, withUnread } from '@/features/collab/NotificationBell';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
 import { dockDestinations, isCurrent, isInMore, type Surface } from '@/shared/navigation/registry';
 import { usePermissions } from '@/shared/navigation/require-permission';
@@ -39,6 +40,7 @@ export function TabBar({ surface }: { surface: Surface }) {
   const pathname = usePathname();
   const permissions = usePermissions() ?? [];
   const inMore = isInMore(surface, permissions, pathname);
+  const unread = useUnreadCount();
   const bar = useRef<HTMLElement>(null);
 
   // The page and scroll padding clear the bar by its real height: a wrapped
@@ -84,8 +86,14 @@ export function TabBar({ surface }: { surface: Surface }) {
         <li className="grid">
           <MoreSheet surface={surface}>
             {/* "true", not "page": More is not a link to the page, it holds it (navigation.md 11). */}
-            <button type="button" data-active={inMore} aria-current={inMore ? 'true' : undefined} className={CELL}>
-              <NavIcon id="more" size="tab" />
+            <button
+              type="button"
+              data-active={inMore}
+              aria-current={inMore ? 'true' : undefined}
+              aria-label={unread > 0 ? withUnread(t('nav.more'), unread, t) : undefined}
+              className={CELL}
+            >
+              <BellIcon id="more" size="tab" count={unread} ring="surface" />
               <span className={LABEL}>{t('nav.more')}</span>
             </button>
           </MoreSheet>

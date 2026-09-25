@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useId, useState } from 'react';
 
-import { NavIcon } from '@/components/shell/NavIcon';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
+import { BellIcon, UnreadCount, useUnreadCount, withUnread } from '@/features/collab/NotificationBell';
 import { isDemoFrame } from '@/features/demo/frame';
 import { useSession, useSetLanguage, useSignOut } from '@/features/identity/hooks';
 import type { Me } from '@/features/identity/types';
@@ -18,7 +18,8 @@ import { ACCOUNT_PARENT, childDestinations, PUBLIC_HOME } from '@/shared/navigat
 
 // The signed-in person as one quiet row in the rail's footer: name, then
 // organisation and roles, and a menu for my passkeys, my sessions, the
-// interface language and sign out. No avatar, no bordered card (the "who"
+// interface language and sign out, with Notifications first and the unread
+// dot on the row's icon (NotificationBell.tsx). No avatar, no bordered card (the "who"
 // panel it replaces). The prototype's "Switch user" never ships
 // (design/README.md). Below 1024 px the More sheet lays the same account out
 // flat (MoreSheet.tsx).
@@ -80,6 +81,7 @@ export function AccountMenu() {
   const languages = useInterfaceLanguages();
   const languageLabel = useId();
   const languageError = useId();
+  const unread = useUnreadCount();
   // Crossing 1024 px hides the rail under an open menu, which would leave its
   // aria-hidden on the page and pointer-events off on body. Close it, during
   // render as React advises for state that follows a value (an effect would
@@ -102,8 +104,8 @@ export function AccountMenu() {
       <SidebarMenuItem>
         <DropdownMenu.Root open={open} onOpenChange={setOpen}>
           <DropdownMenu.Trigger asChild>
-            <SidebarMenuButton size="lg" tooltip={me.user.name} aria-label={t('shell.accountFor', { name: me.user.name })}>
-              <NavIcon id="account" />
+            <SidebarMenuButton size="lg" tooltip={me.user.name} aria-label={t('shell.accountFor', { name: withUnread(me.user.name, unread, t) })}>
+              <BellIcon id="account" count={unread} ring="sidebar" />
               <span className="grid min-w-0 flex-1 leading-tight">
                 <span className="truncate">{me.user.name}</span>
                 {detail.length > 0 ? <span className="truncate text-meta text-sidebar-muted-foreground">{detail}</span> : null}
@@ -131,7 +133,14 @@ export function AccountMenu() {
             <DropdownMenu.Separator className="mx-1 my-1 h-px bg-sidebar-border" />
             {links.map((d) => (
               <DropdownMenu.Item key={d.id} asChild className={MENU_ITEM}>
-                <Link href={d.href}>{t(d.labelKey)}</Link>
+                {d.id === 'notifications' ? (
+                  <Link href={d.href} aria-label={withUnread(t(d.labelKey), unread, t)}>
+                    {t(d.labelKey)}
+                    <UnreadCount count={unread} />
+                  </Link>
+                ) : (
+                  <Link href={d.href}>{t(d.labelKey)}</Link>
+                )}
               </DropdownMenu.Item>
             ))}
             <DropdownMenu.Separator className="mx-1 my-1 h-px bg-sidebar-border" />
