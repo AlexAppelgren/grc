@@ -6,7 +6,6 @@
 # docs/inputs/INPUT_DELTAS.md when the build departs from the design on purpose.
 
 DELETE /actions/{} chunk 9
-DELETE /comments/{} chunk 10
 DELETE /evidence/{} chunk 9
 DELETE /saved-searches/{} chunk 13
 DELETE /webhooks/{} chunk 13
@@ -14,10 +13,10 @@ GET /changes/{}/actions chunk 9
 GET /changes/{}/case-file chunk 9
 GET /changes/{}/evidence chunk 9
 GET /comments chunk 10
+GET /exports/{} chunk 12
 GET /imports/{} chunk 12
 GET /integrations/tickets chunk 13
 GET /me/work chunk 8
-GET /notifications chunk 10
 GET /obligations/{}/attestations chunk 13 REG-06, attestations and waivers, is R3
 GET /obligations/{}/internal-links chunk 8
 GET /obligations/{}/waivers chunk 13 REG-06, attestations and waivers, is R3
@@ -29,6 +28,7 @@ GET /webhooks chunk 13
 GET /webhooks/{}/deliveries chunk 13
 PATCH /actions/{} chunk 9
 PATCH /comments/{} chunk 10
+PATCH /obligations/{}/register chunk 8
 PATCH /webhooks/{} chunk 13
 POST /changes/{}/actions chunk 9
 POST /changes/{}/actions/export-tickets chunk 13 INT-02, ticket export, is R3
@@ -41,12 +41,12 @@ POST /changes/{}/signoff/approve chunk 9
 POST /changes/{}/signoff/request chunk 9
 POST /changes/{}/signoff/send-back chunk 9
 POST /changes/{}/triage chunk 9
-POST /comments chunk 10
 POST /eval/runs chunk 14 a run builds the sample corpus in a database of its own and takes minutes, so it waits for chunk 14's job runner; record_eval_run records runs until then
 POST /imports chunk 12
 POST /imports/{}/commit chunk 12
 POST /notifications/read-all chunk 10
 POST /notifications/{}/read chunk 10
+POST /obligations/{}/applicability-requests chunk 8
 POST /obligations/{}/attestations chunk 13 REG-06, attestations and waivers, is R3
 POST /obligations/{}/internal-links chunk 8
 POST /obligations/{}/waivers chunk 13 REG-06, attestations and waivers, is R3
