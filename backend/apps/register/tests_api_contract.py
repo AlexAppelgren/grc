@@ -86,6 +86,7 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("listSpannedEntities", "get", f"/api/v1/obligations/{OBLIGATION}/register/entities", None, perms.REGISTER_READ, False),
 ]
 
+
 def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
     if body is None:
         return getattr(client, method)(url, **headers)
