@@ -1661,7 +1661,9 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
 - **`Action`** has no `changeTitle` or ticket fields, a required `dueDate`, and gains
   `doneBy` and `version`; `updateAction` and `deleteAction` read the action's own
   `If-Match`, and every move of the case reads the case's. `deleteAction` and
-  `removeEvidence` set `removed_at` and answer 204; nothing is deleted.
+  `removeEvidence` set `removed_at` and answer 204; nothing is deleted. `addAction`
+  answers the same `Action`, and its `ownerId` stays optional as designed: left out, the
+  case's owner owns the action (c9-actions).
 - **`Evidence`** gains `contentHash` and `scanState`; a link and a reference have no bytes
   and are recorded `clean`.
 - **The two lists page.** `listActions` and `listEvidence` answer `{items, total}` with

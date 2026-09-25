@@ -222,6 +222,10 @@ BUILT = {
     "startAssessment",  # c9-assessment: apps/cases/tests_assessment.py
     "saveAssessment",  # c9-assessment: apps/cases/tests_assessment.py
     "getCaseFile",  # c9-case-file-export: apps/cases/tests_case_file.py
+    "listActions",  # c9-actions: apps/cases/tests_actions.py
+    "addAction",  # c9-actions
+    "updateAction",  # c9-actions
+    "deleteAction",  # c9-actions
 }
 
 
