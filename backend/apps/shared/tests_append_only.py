@@ -64,6 +64,9 @@ APPEND_ONLY_TRIGGERS = {
     # Every move of a case between categories, so the time it spent in each stage cannot
     # be rewritten afterwards (CAS-08, c9-case-models).
     "case_transition": "cw_append_only_guard",
+    # Every status assessment a bank made, which a later one supersedes and never rewrites
+    # (REG-04, c8-register-models, register 0001).
+    "compliance_assessment": "cw_append_only_guard",
     "footprint_history": "cw_append_only_guard",
     "login_event": "cw_append_only_guard",
     "obligation_summary": "cw_append_only_guard",

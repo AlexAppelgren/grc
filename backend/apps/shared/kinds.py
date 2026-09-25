@@ -227,4 +227,11 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "risk_level",
         "VOC-05: low, medium or high; the pill tone reads the level a risk rating maps to, never its editable ordinal or its label",
     ),
+    # Chunk 8's register (c8-register-models, register 0001). `Applicability` is listed above.
+    "AssessmentMethod": (
+        "assessment_method",
+        "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
+        "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
+        "reporting branches on",
+    ),
 }

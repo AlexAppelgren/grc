@@ -187,6 +187,15 @@ TENANT_ONLY_TABLES = [
     # c8-teams-model (tenants 0003, TEN-03): a person in a team. Both keys are composite
     # (apps/tenants/tests_team_models.py proves the database refuses a cross-tenant one).
     "team_member",
+    # c8-register-models (register 0001, 0002; REG-01 to REG-05): the bank's register. Each
+    # reference to another tenant row is also a composite key (apps/register/tests_models.py
+    # proves the database refuses every cross-tenant one).
+    "tenant_obligation",
+    "tenant_obligation_scope",
+    "compliance_assessment",
+    "gap",
+    "interpretation",
+    "internal_link",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also

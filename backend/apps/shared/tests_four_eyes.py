@@ -36,6 +36,9 @@ FOUR_EYES_TABLES: list[tuple[str, str]] = [
     # Chunk 9 (c9-case-models): the case sign-off (CAS-06, AC-CAS1). The approver is
     # `signed_off_by`, the requester `signoff_requested_by`.
     ("change_case", "change_case_four_eyes"),
+    # c8-register-models (register 0002, REG-03): risk acceptance. The person who accepts a
+    # gap's risk is never the person who asked for it.
+    ("gap", "gap_four_eyes"),
 ]
 
 
