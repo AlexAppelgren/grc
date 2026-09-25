@@ -346,14 +346,7 @@ class ConsoleAgentRouteGates(TestCase):
 
     def test_behind_the_gate_each_answers_not_built(self) -> None:
         # Served since `c11-definitions-platform`: tests_definitions.py and tests_platform.py.
-        built = {
-            "getAgentDefinition",
-            "publishAgentVersion",
-            "retireAgentVersion",
-            "getPlatformAgentSettings",
-            "updatePlatformAgentSettings",
-            "listPlatformRuns",
-        }
+        built = {"getAgentDefinition", "getPlatformAgentSettings", "listPlatformRuns"}
         for name, method, url, body, permission, _ in CONSOLE_ROUTES:
             if name in built:
                 continue

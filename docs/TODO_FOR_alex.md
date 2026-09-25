@@ -1371,25 +1371,39 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 
 ## c11-definitions-platform: publishing bleqq's agent versions, their settings and runs (2026-09-25, AGT-03, ADM-02, AGT-06)
 
+**Needs your decision (an invariant; the package stopped here).** The brief has the console
+publish and retire an agent version and change a platform agent's settings behind
+`agent_definitions.manage` and a step-up. `agent` and `agent_version` are library rows, and
+CLAUDE.md section 5 plus the library fence (`apps/shared/tests_library_fence.py`,
+`ProposalDoorGuard`) allow a route to reach a library write only as a proposal's approval,
+gated by `proposals.review`, a step-up and a person. Ruling 2 of CHUNK11_TASKS forbids a
+chunk 11 task to edit the fence. So `publishAgentVersion`, `retireAgentVersion` and
+`updatePlatformAgentSettings` still answer 501 on `claude/r2w3-c11-definitions-platform`,
+and AGT-S4 stays skipped.
+
+- [ ] **How may the console write an agent definition?** Recommended: a named exception in
+      the fence, like the re-verification stamp: these three routes, gated by
+      `agent_definitions.manage`, a fresh passkey and a person's session, writing only
+      `agent` and `agent_version` through one module (`agents/seeds/console.py`, the
+      database's `seed` door), each with one audit row and no tenant. Four eyes is not
+      asked, since nothing enters the inventory (the brief says so). The alternative is a
+      proposal kind for a definition version, with four eyes, which is a larger change in
+      the proposals app. The full recommended implementation, with its tests and AGT-S4
+      green, is on `claude/r2w3-c11-definitions-platform-writes`; with your yes, the fence
+      gains that entry and the branch merges as is. Its only red is the fence guard.
+      On that branch: versions publish in order (422 `version_not_next`), a folder that
+      changes the agent's id, kind, scope or zone is 422 `definition_unreadable`, and the
+      jurisdictions are checked against the live list.
+
 Defaults taken; nothing waits on them.
 
-- [ ] **The console writes agent definitions through the seed's door.** `agent` and
-      `agent_version` are library rows, and the library fence lets only `agents/seeds/`
-      write them (no chunk 11 task edits its allowlists, ruling 2). So publishing a
-      version, retiring one and a platform agent's settings are written by
-      `backend/apps/agents/seeds/console.py`, beside the seed, with the database's `seed`
-      door; permissions, step-up, validation and the audit row stay in `definitions.py` and
-      `platform.py`. Default: keep it so. The alternative is a named `agents/console.py`
-      entry in the fence's allowlist, which is a fence change for you to approve.
 - [ ] **A bank's run log no longer lists bleqq's runs.** `GET /agent-runs` from a bank's
       session returns its own runs only; the console reads bleqq's with
       `GET /console/agent-runs` (the default "no prompts, tools, budgets, run rows or costs"
       under "What may a bank see of bleqq's watch?"). What a bank sees of bleqq's watch is
       `GET /agents/platform`. Row-level security still lets a bank read a library run; the
-      narrowing is the read's.
-- [ ] **Versions publish in order.** The next number is one above the highest published
-      (422 `version_not_next` otherwise), and a folder that changes the agent's id, kind,
-      scope, `tenant_configurable` or zone is refused as `definition_unreadable`.
-- [ ] **A run opens on the newest version still published.** Retiring the current version
-      sends new runs to the one before it; when every version is retired a run is refused
-      with 409 `no_published_version`.
+      narrowing is the read's. `c11-run-history` (same wave) owns that read and may have
+      taken the other reading ("platform runs never carry cost to a bank"); the integrator
+      keeps this one.
+- [ ] **A run opens on the newest version still published.** When every version is
+      retired a run is refused with 409 `no_published_version`.

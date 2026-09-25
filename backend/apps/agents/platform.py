@@ -5,20 +5,20 @@ A platform agent's cadence, the jurisdictions it sweeps and its budget live on i
 row and are the same for every bank; no tenant column sits beside them and no tenant path
 writes them. `refuse_platform_agent` is the fence every tenant control calls first.
 
-The console changes a platform agent's settings through `seeds/console.py`, the one door
-the library fence opens to an agent row, and reads bleqq's runs: a platform surface that
-carries platform facts, so no bank's run, name or figure is on it.
+The console reads a platform agent's settings and bleqq's runs: a platform surface that
+carries platform facts, so no bank's run, name or figure is on it. Changing the settings
+answers 501 until Alex decides how the console may write the `agent` row, a library row the
+fence lets only a proposal's approval reach (docs/TODO_FOR_alex.md, c11-definitions-platform).
 """
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, NoReturn, cast
 
-from django.db import transaction
 from django.db.models import Count, OuterRef, QuerySet, Subquery
 from django.db.models.functions import Coalesce
 
-from apps.agents import definitions, runs
+from apps.agents import runs
 from apps.agents.models import Agent, AgentRun, AgentScopeKind
 from apps.agents.schemas import (
     AgentRunListItem,
@@ -27,13 +27,10 @@ from apps.agents.schemas import (
     PlatformAgentSettings,
     PlatformAgentSettingsInput,
 )
-from apps.agents.seeds import console
 from apps.shared import permissions as perms
-from apps.shared.audit import record
 from apps.shared.authentication import Principal
 from apps.shared.errors import ProblemError
 from apps.taxonomy.schemas import PersonRef
-from apps.watch.keys import resolve_keys
 
 
 def _refused() -> ProblemError:
@@ -61,11 +58,10 @@ def refuse_platform_run(run: AgentRun) -> None:
         raise _refused()
 
 
-def _platform_agent(agent_key: str, *, lock: bool = False) -> Agent:
+def _platform_agent(agent_key: str) -> Agent:
     """One of bleqq's own agents by key. A definition a bank adds for itself has no platform
     settings, so it is not found here, as a key no definition has is not."""
-    queryset = Agent.objects.select_for_update() if lock else Agent.objects.all()
-    agent = queryset.filter(key=agent_key, scope=AgentScopeKind.PLATFORM.value).first()  # ordering: key is unique
+    agent = Agent.objects.filter(key=agent_key, scope=AgentScopeKind.PLATFORM.value).first()  # ordering: key is unique
     if agent is None:
         raise ProblemError(status=404, code="not_found", detail="Not found.")
     return agent
@@ -86,34 +82,11 @@ def get_settings(*, agent_key: str) -> PlatformAgentSettings:
     return _settings(_platform_agent(agent_key))
 
 
-def update_settings(*, who: Principal, agent_key: str, body: PlatformAgentSettingsInput) -> PlatformAgentSettings:
-    """`PUT /agent-definitions/{agentKey}/settings`: the whole setting, for every bank at once.
-
-    The jurisdictions are checked against the live list (422 `unknown_key` with the valid
-    keys; a retired one is not valid) before anything is written. Nothing here reads a
-    bank's row: the setting is the platform's alone."""
-    actor, _ = definitions.platform_person(who)
-    jurisdictions = list(dict.fromkeys(row.key for row in resolve_keys("jurisdiction", body.jurisdictions)))
-    with transaction.atomic():
-        agent = _platform_agent(agent_key, lock=True)
-        before = _settings(agent).model_dump(mode="json", by_alias=True, exclude={"agent_key"})
-        console.set_platform_settings(
-            agent, cadence=body.cadence, jurisdictions=jurisdictions, monthly_budget=body.monthly_budget
-        )
-        after = _settings(agent)
-        record(
-            action="agent.settings_changed",
-            actor=actor,
-            subject_type="agent",
-            subject_id=agent.id,
-            subject_title=agent.key,
-            summary=f"Settings of agent {agent.key} changed for every bank.",
-            tenant_id=None,
-            before=before,
-            after=after.model_dump(mode="json", by_alias=True, exclude={"agent_key"}),
-            step_up_assertion_id=who.step_up_assertion_id,
-        )
-    return after
+def update_settings(*, who: Principal, agent_key: str, body: PlatformAgentSettingsInput) -> NoReturn:
+    """`PUT /agent-definitions/{agentKey}/settings`. Waits on the decision `publish_version`
+    waits on: the setting lives on the `agent` row, a library row only a proposal's
+    approval may write (docs/TODO_FOR_alex.md, c11-definitions-platform)."""
+    raise ProblemError(status=501, code="not_built", detail="Changing a platform agent's settings is not built yet.")
 
 
 def _counted(queryset: QuerySet[Any], column: str, run: str = "agent_run_id") -> Coalesce:
