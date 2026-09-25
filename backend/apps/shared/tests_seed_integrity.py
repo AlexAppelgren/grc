@@ -1418,9 +1418,9 @@ class SeededChunk11(SeededOnce):
         tenancy.clear_tenant()
         # agent_version: the sweeper's two versions, each named by a scheduled platform run.
         versions = AgentVersion.objects.filter(agent__key=spec.platform_agent)
-        self.assertEqual(sorted(versions.values_list("version_no", flat=True)), list(spec.platform_versions))
+        self.assertEqual(sorted(versions.values_list("version_number", flat=True)), list(spec.platform_versions))
         platform_runs = AgentRun.objects.filter(tenant__isnull=True, agent_version__in=versions)
-        self.assertEqual(set(platform_runs.values_list("agent_version__version_no", flat=True)), set(spec.platform_versions))
+        self.assertEqual(set(platform_runs.values_list("agent_version__version_number", flat=True)), set(spec.platform_versions))
         # proposal and proposal_batch_row: one open batch, a row per obligation.
         batch = Proposal.objects.get(is_batch=True, status="open", title=spec.batch_title)
         self.assertEqual(

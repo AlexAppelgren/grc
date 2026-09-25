@@ -26,14 +26,14 @@ def publish_e2e_version(*, key: str, version_no: int, change_note: str) -> Agent
     if settings.IS_DEPLOYED_ENVIRONMENT:
         raise ImproperlyConfigured(f"{SEED_REASON} never publishes an agent version on environment {settings.ENVIRONMENT!r}.")
     agent = Agent.objects.get(key=key)
-    existing = agent.versions.filter(version_no=version_no).first()  # ordering: unique (agent, version_no)
+    existing = agent.versions.filter(version_number=version_no).first()  # ordering: unique (agent, version_number)
     if existing is not None:
         return existing
-    previous = agent.versions.get(version_no=version_no - 1)
+    previous = agent.versions.get(version_number=version_no - 1)
     with library_write(SEED_REASON):
         version = AgentVersion.objects.create(
             agent=agent,
-            version_no=version_no,
+            version_number=version_no,
             model=previous.model,
             prompt_path=previous.prompt_path,
             tools=previous.tools,
