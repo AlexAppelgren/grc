@@ -120,6 +120,20 @@ export const applicabilityTone: Record<ApplicabilityKind, PillTone> = {
   not_assessed: 'information',
 };
 
+// c8-fe-obligation-shell, REG-02: a risk rating, a row of the bank's own
+// `risk_rating` list. Risk reads as a neutral fact on every card
+// (design/system/pills-and-labels.md, `information`), whatever its place on
+// the scale: it says how much is at stake, not how the bank is doing. A row
+// whose list carries no kind reads as the lowest does.
+export type RiskKind = 'low' | 'medium' | 'high' | 'critical';
+
+export const riskTone: Record<RiskKind, PillTone> = {
+  low: 'information',
+  medium: 'information',
+  high: 'information',
+  critical: 'information',
+};
+
 // Slot tones: fixed by where the pill sits. A header's "Guidance, comply or
 // explain" needs attention (warning); a row's short "Guidance" stays a
 // neutral fact (information), as the obligation and instrument cards show.

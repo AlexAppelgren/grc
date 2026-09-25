@@ -17,6 +17,20 @@ finding each change closes:
 | Rule 14 names the green stopping point of the five tasks at the cap — `c9-case-design`, `c9-case-contract`, `c9-e2e-seed`, `c9-evidence` and `c9-fe-cases-feature` — and `c9-review-fixes` gains an **Owned paths** heading like every other task | LOW (cap, format) |
 | The open questions say q-case-close was put to Alex on 2026-09-20 and stays open with Option A recommended; four of the five non-blocking items become defaults taken with the source that settles each, and only the multipart-versus-presigned choice reaches `docs/TODO_FOR_alex.md` | MEDIUM (questions that were not questions) |
 
+## Revised 2026-09-25: q-case-close answered, and R2's corrections
+
+Written by `r2-plan-docs` as R2 starts. `docs/plans/briefs/R2_CROSS_CUTTING.md` holds the
+rules every R2 package shares and wins where this file disagrees with it.
+
+| Change | Why |
+|---|---|
+| q-case-close is answered **Option B, one person, audited** (Alex, 2026-09-20: "One person, audited"; `OWNER_RECOMMENDATIONS.md` item 15). Options A and C are dropped from this file. Rule 9, the wave note, `c9-assessment`, `c9-close-paths` and the open questions say so | The one open invariant question of the chunk has an owner's answer |
+| `closeWithoutAction` lives in `apps/cases/triage.py`; `c9-close-paths` builds it there and builds `applies = no` in `assessment.py` | `R2_CROSS_CUTTING.md` (j) |
+| `addAction` owns the move from `assessing` to `implementing`; saving an assessment moves no state | `R2_CROSS_CUTTING.md` (j): one owner per move |
+| Export jobs (`ExportJob`, `/exports`) are R2's `x-exports-contract`, not chunk 12's `c12-exports-contract`; `c9-case-file-export` builds on that | `R2_CROSS_CUTTING.md` (j), `Build_Plan.md` |
+| The environment example is `.env.example` at the repository root; there is no `backend/.env.example` | `R2_CROSS_CUTTING.md` (a) |
+| The decision row for the close is D-92 with ADR 0060 | `R2_CROSS_CUTTING.md` (c) |
+
 ## Scope, rules and defaults
 
 Chunk 9 plan: the case workflow from triage to sign-off, with evidence, the case file and participants on cases. `Build_Plan.md` gives the chunk CAS-02 to CAS-08, COL-04 (cases), J-2 and J-3. CAS-01 (case creation) is chunk 5's and is a precondition, not work here. The plan has 33 tasks in 15 waves, about 19 agent-hours of package work plus review.
@@ -26,7 +40,7 @@ PRECONDITIONS: WHAT MUST BE ON MAIN BEFORE WAVE 2
 - Chunk 8: `c8-tenants-contract` (`Team`, `OrgUnit`), `c8-ten-teams`, `c8-ten-reassignment` (the open-work list TEN-S5 asserts), `f03-T51` (departments, heads, team membership) and `f03-T53` (the `participant` model), because `change_case.owner_team` and every case participant are composite foreign keys into those tables.
 - Chunk 10: `c10-collab-models`, which builds `notify()` on `c5-outbox-cursor`. Triage notifies the owner (CAS-S2) and a sign-off request notifies the approvers; neither invents a second notification path.
 - Chunk 6: `c6-today-screen` and `f03-T48`, because J-2 starts on Today and Today's "Decide now" counts the triage queue this chunk fills.
-- Chunk 12: `c12-exports-contract` (`ExportJob` and `/exports`), for `c9-case-file-export` only. Parallel-plan ruling 7 puts the job framework there and starts it early.
+- R2's `x-exports-contract` (`ExportJob` and `/exports`), for `c9-case-file-export` only. Parallel-plan ruling 7 put the job framework in chunk 12 and started it early; R2 moves it into R2 (`R2_CROSS_CUTTING.md` (j)).
 - PRD 0.3: `f03-T55` (the obligation participant routes and the participant logic `f03-T76` reuses), `f03-T59` and `f03-T62` (the My work service and screen `f03-T77` extends).
 - Why none of it can wait: every scenario here starts from a case that chunk 5 created on a change chunk 5 registered, and a screen built against a stub is what parallel-plan rule 3 forbids.
 
@@ -36,7 +50,7 @@ WHAT IT DELIVERS
 - CAS-04, actions: add, edit, complete, reopen and delete, with an owner and a due date, locked once the case waits for sign-off.
 - CAS-05, evidence: file, link or reference, hashed, type- and size-checked, invisible until the malware scan passes, downloaded through a streaming, permission-checked, audited endpoint (D-11), soft-deleted only.
 - CAS-06, sign-off: requested only with no open action and at least one piece of evidence, approved only by a second person with a passkey step-up, or sent back.
-- CAS-07, the case file: `GET /changes/{id}/case-file` as text that stands alone, and the same content as an export job on chunk 12's framework.
+- CAS-07, the case file: `GET /changes/{id}/case-file` as text that stands alone, and the same content as an export job on the export framework `x-exports-contract` brings into R2.
 - CAS-08: `allowedTransitions` on every case response, `invalid_transition` on anything else, `stale_write` on a concurrent edit, and a `case_transition` ledger row per move.
 - COL-04 on cases (`f03-T76`), the case half of My work (`f03-T77`), J-2 and J-3 as `@smoke`.
 - The chunk's own security review, its fix package and its close.
@@ -50,14 +64,14 @@ RULINGS WHERE THE SOURCES DISAGREE
 6. **The workflow policy is chunk 10's.** INPUT_DELTAS §7 parks "reminder, escalation and retention settings" for "the workflow policy (chunk 9)", but section 3.1 renames `c9-workflow-policy-contract` to `c10-workflow-policy`. The later plan wins: chunk 9 builds no policy columns, and `change_case.triage_due_at` (`schema.sql` §13, "from the tenant's triage target, drives escalation") waits for `c10-workflow-policy`. `c9-case-models` corrects the INPUT_DELTAS §7 line.
 7. **`GET /reference/members?permission=` becomes a filter, not a route.** Section 3.2 ruling 11 gives `c9-case-contract` a new reference read for the owner and approver pickers. PRD 0.3 already declares `GET /reference/people` (INPUT_DELTAS §1), and two reference reads over the same member rows, one of them unfiltered, is the duplication rule 5 and the simplicity rule forbid. `c9-reference-members` adds the `permission` query parameter to the route that exists. The app is resolved here rather than at run time: **`identity`**, because the filter reads members and their roles the way `build_principal` does, and `GET /reference/permissions` is already served from `identity/api.py`. The task takes the `idapi` key and joins the end of chunk 8's `idapi` chain.
 8. **Sub-statuses have no route of their own.** D-13 and CAS-S13 give a tenant sub-statuses inside the fixed categories; `case_sub_status` is already a registered tier-three list with the kind `case_status` (`taxonomy/registry.py`), so chunk 9 adds no vocabulary. `change_case` gains a nullable `sub_status` foreign key, `TriageInput` and `AssessmentInput` gain an optional `subStatus` key, and the guards read only the category.
-9. **The close-without-action and "applies = no" paths wait for q-case-close.** They are the one place where a single person can take a regulatory change out of the workflow, which touches four eyes. See "Open questions".
+9. **The close-without-action and "applies = no" paths close on one person's word, audited.** They are the one place where a single person can take a regulatory change out of the workflow, which touches four eyes, so the question went to Alex; he answered Option B ("One person, audited", `OWNER_RECOMMENDATIONS.md` item 15). See "Open questions".
 10. **The watch feed's workflow tabs are not chunk 9 work.** `UI_Implementation_Plan.md` says the tabs "fill in 9", which they do: the categories are fixed in `kinds.py` from chunk 5, `c5-watch-feed-read` serves the filter and `c5-fe-watch-feed` draws the tabs. Chunk 9 puts cases into the later categories and edits no feed file.
 
 DEFAULTS TAKEN (each stated in its commit body with the source that settles it; only the one open choice under "Open questions" reaches `docs/TODO_FOR_alex.md`)
 - Evidence is limited to PDF, DOCX, XLSX, PPTX, PNG, JPEG, TXT and CSV, up to `EVIDENCE_MAX_BYTES` (25 MB), both settings with env overrides (parallel plan §7.2). A file outside either answers 422 before a byte is stored.
 - A deployed environment with `SCANNER_PROVIDER=mock` refuses to scan: the adapter factory raises at first use, `addEvidence` answers 503 `scanner_unavailable` and nothing is stored. The production **boot** guard is not changed, because parallel-plan rule 8 reserves `bootguard` to `E4` and `c14-eu-data-location`; a `HARDENING.md` row asks `c14-eu-data-location` to add the boot refusal beside the storage one.
 - Evidence is invisible until the scan passes: `evidence.scan_state` (`pending`, `clean`, `infected`, `error`) with `scanned_at`. `listEvidence` returns the state, a download of anything but `clean` answers 409 `scan_pending` or 422 `scan_failed`, and an infected file's bytes are deleted from storage while the row and its audit trail stay.
-- The case file exports as text; no PDF library is added (parallel plan §7.2). `c9-case-file-export` adds one `export_kind`, `case_file`, on chunk 12's framework.
+- The case file exports as text; no PDF library is added (parallel plan §7.2). `c9-case-file-export` adds one `export_kind`, `case_file`, on the export framework of `x-exports-contract`.
 - `GET /changes/{id}/case-file` and `GET /evidence/{id}/download` are gated by `cases.read`, which every system role holds (PRD §6), matching `UI_Implementation_Plan.md`'s rows ("All 7; audited per download"). Reader and Auditor download evidence like everyone else; every download is audited, which is the control D-11 relies on. No new permission is added and nothing joins `UNGATED_BY_DESIGN`.
 - A sub-status is set on triage and on saving the assessment, never through a route of its own: D-13 gives a tenant sub-statuses inside the fixed categories and no workflow engine, so a separate write would be the engine D-13 refused (ruling 8).
 - Every case write takes `If-Match` carrying `change_case.version` and answers 409 `stale_write` without it or with a stale value (INPUT_DELTAS §4). `impact_assessment` and `action` carry their own `version` for their own writes.
@@ -121,7 +135,7 @@ PLAN-WIDE RULES
 | TEN-S5 (the case and action half) | `c9-actions` | chunk 8's `c8-ui-member-removal` |
 | HOM-S14 | `f03-T77` | — |
 
-CAS-S4 has one owner, `c9-assessment`, which un-skips it; `c9-close-paths` adds the close clause back to that same test once q-case-close is answered and re-runs it, and un-skips nothing of its own. No other scenario is written by two tasks. TEN-S7 (J-8) stays chunk 8's and is extended by `c10-j8-extension`; chunk 9 makes its case and evidence rows real and touches the journey in no task.
+CAS-S4 has one owner, `c9-assessment`, which un-skips it; `c9-close-paths` adds the close clause back to that same test with Option B's one-person close and re-runs it, and un-skips nothing of its own. No other scenario is written by two tasks. TEN-S7 (J-8) stays chunk 8's and is extended by `c10-j8-extension`; chunk 9 makes its case and evidence rows real and touches the journey in no task.
 
 CAS-S1 is chunk 5's (`c5-cases-creation`) and is not touched here. `c9-case-design`, `c9-state-machine`, `c9-scanner-adapter`, `c9-case-models`, `c9-evidence-model`, `c9-case-contract`, `c9-reference-members`, `c9-e2e-seed`, `c9-fe-cases-feature`, every `c9-fe-*-panel`, `c9-close-paths`, `c9-security-review`, `c9-review-fixes` and `c9-close` un-skip nothing; each proves itself with its own unit tests. TEN-S5's integration may already be un-skipped by `c8-ten-reassignment` for obligations; `c9-actions` then extends it with the case and action rows rather than un-skipping it, and no other chunk 9 task touches it.
 
@@ -141,7 +155,7 @@ CHANGES FROM `PARALLEL_PLAN.md`, WITH REASONS
   | `c9-signoff` (45 min, four scenarios) | `c9-signoff-request` (CAS-S8) + `c9-signoff` (CAS-S9, CAS-S10, CAS-S12) |
   | `c9-e2e-signoff-journeys` (55 min) | `c9-e2e-signoff-journeys` (CAS-S8 to CAS-S10) + `c9-e2e-j3` (J-3 `@smoke` and CAS-S11) |
   | `c9-case-contract` (60 min) | `c9-case-contract` + `c9-reference-members` (ruling 7, `identity`'s `idapi` key, not the cases API's) |
-  | *(new, gated)* | `c9-close-paths`, which builds whichever option Alex picks for q-case-close |
+  | *(new, gated)* | `c9-close-paths`, which builds Alex's answer to q-case-close (Option B, one person, audited) |
 
   Each split has an independent done-condition and its own review surface; the plan 5, 7 and 8 reviews all found oversized packages, and the case models and the sign-off routes were this chunk's two worst.
 - **`c9-case-contract` gains `c9-evidence-model` in its depends-on.** Its route-permission and tenant-isolation gates need a `factories.py` entry building each route's subject on a tenant-private record, and the evidence routes have no subject until the table exists. This is the shape the chunk 8 review rejected in `c8-register-api-contract`.
@@ -171,7 +185,7 @@ Tasks in one wave have disjoint owned paths and can run side by side, except whe
 5. `c9-triage`, `c9-assessment`, `c9-actions`, `c9-evidence`, `c9-reference-members`, `c9-fe-cases-feature` — `casesmsg` starts here, with `c9-fe-cases-feature`
 6. `c9-case-file`, `c9-signoff-request`, `c9-fe-triage-panel`, `c9-fe-assessment-panel`, `c9-fe-actions-panel`, `c9-fe-evidence-panel` — `casesmsg`: triage, then assessment, then actions, then evidence
 7. `c9-signoff`, `c9-case-file-export`, `f03-T76`
-8. `c9-fe-signoff-panel`, `c9-fe-case-file`, `f03-T77`, `c9-close-paths` (held by q-case-close) — `casesmsg`: signoff-panel, then case-file
+8. `c9-fe-signoff-panel`, `c9-fe-case-file`, `f03-T77`, `c9-close-paths` — `casesmsg`: signoff-panel, then case-file
 9. `c9-e2e-triage-journeys`
 10. `c9-e2e-work-journeys`
 11. `c9-e2e-signoff-journeys`
@@ -180,21 +194,13 @@ Tasks in one wave have disjoint owned paths and can run side by side, except whe
 14. `c9-review-fixes`
 15. `c9-close`
 
-If q-case-close is unanswered when wave 5 starts, `c9-assessment` builds the assessment and stops at a green point (parallel-plan rule 9): `closeWithoutAction` and the `applies = no` branch stay at 501 `not_built`, CAS-S4 is un-skipped without its close clause, and `c9-close-paths` waits. Everything else proceeds. `c9-close-paths` runs in wave 8 if the answer is in by then and in the first wave after the answer otherwise; either way it merges, with its own security review, **before** the wave 13 sweep, which depends on it, and `c9-close` cannot run until both have merged.
+q-case-close is answered (Option B), so nothing waits on it. `c9-assessment` still leaves `closeWithoutAction` and the `applies = no` branch at 501 `not_built` and CAS-S4 without its close clause, because `c9-close-paths` owns both; `c9-close-paths` runs in wave 8 and merges, with its own security review, **before** the wave 13 sweep, which depends on it, and `c9-close` cannot run until both have merged.
 
 ## Open questions
 
-- **q-case-close (a product invariant is at stake, so stop and ask Alex).** Two designed paths let one person take a regulatory change out of the workflow and into the `closed` category: `POST /changes/{id}/close` ("Close without action", `closeReason` `no_action`) and `PUT /changes/{id}/assessment` with `applies = no`, which `openapi.yaml` says "closes the case with closeReason not_applicable". Both are gated by `cases.work` alone, with no second person and no step-up.
+- **q-case-close: answered, Option B.** Two designed paths let one person take a regulatory change out of the workflow and into the `closed` category: `POST /changes/{id}/close` ("Close without action", `closeReason` `no_action`) and `PUT /changes/{id}/assessment` with `applies = no`, which `openapi.yaml` says "closes the case with closeReason not_applicable". Both are gated by `cases.work` alone. CLAUDE.md §5 lists four eyes with a passkey step-up on "sign-off" and does not say whether such a close is one, so the main agent put it to Alex on 2026-09-20.
 
-  That is the cheapest way to end a case, and it is the one a rushed team will reach for, so it decides how much CAS-06's sign-off is worth. CLAUDE.md §5 lists four eyes with a passkey step-up on "sign-off"; it does not say whether a close that claims no work was needed is a sign-off. The PRD does not say either, and neither `docs/DECISIONS.md` nor `OWNER_RECOMMENDATIONS.md` answers it. CAS-02's dismissal is a different thing and is settled: it happens before triage, is explicitly one person with a reason, and is restorable.
-
-  Option A (recommended): both paths go through the same second person. The case moves to `signoff` carrying its intended close reason, and a holder of `cases.signoff` who is not the requester closes it with a step-up. The open-action and evidence guards are lifted for these two reasons, because there is nothing to evidence. It adds no state to the machine, no new route and no new permission, and it makes one rule — a case leaves the workflow only with two people — with no second door for an auditor to find.
-
-  Option B: keep the designed one-person close, audited, with the reason recorded and the case restorable to triage. It is what `openapi.yaml` draws and the least work, and it keeps four eyes only where work is claimed to be done.
-
-  Option C: four eyes on `applies = no` (a judgement about what the law requires of the bank) but not on `no_action` (a judgement about the bank's own work). It draws the line where the risk is, but it puts two close paths with different rules in front of the same person, which is how the wrong one gets used.
-
-  This gates `c9-close-paths`, the close clauses of `c9-assessment` and CAS-S4, and `c9-close`. Nothing else in the chunk waits. **Status: the main agent put it to Alex on 2026-09-20, with Option A recommended. It is open until he answers**, and the wave note says what runs meanwhile.
+  **Alex's answer (2026-09-20): "One person, audited"** (`OWNER_RECOMMENDATIONS.md` item 15). Both paths close the case on one person's word under `cases.work`, with the reason key required, the audit row naming the actor, a `case_transition` row, and the case restorable to triage. Four eyes and the step-up stay where work is claimed to be done: sign-off, CAS-06. The chunk 9 security review checks that no third door reaches `closed`. The decision row is D-92 with ADR 0060. CAS-02's dismissal is a different thing and was already settled: it happens before triage, is one person with a reason, and is restorable.
 
 - **Not questions: four defaults with the source that settles each.** The earlier plan carried these as things to confirm; each already has an answer in a source this plan must follow, so each is a default taken (above), stated in its task's commit body, and none reaches `docs/TODO_FOR_alex.md`:
   - The evidence allow-list and the 25 MB cap: `PARALLEL_PLAN.md` §7.2 sets both, as settings with env overrides (`c9-evidence`).
@@ -679,13 +685,13 @@ Write each test first, in `apps/cases/tests_scenarios.py` (un-skipping only its 
 **Scenarios:** CAS-S4 (reworded), CAS-S5, CAS-S13 — all `@integration`
 **Depends on:** `c9-case-contract`
 
-Build `backend/apps/cases/assessment.py` and serve `startAssessment`, `saveAssessment` and — once q-case-close is answered — `closeWithoutAction`:
+Build `backend/apps/cases/assessment.py` and serve `startAssessment` and `saveAssessment` (`closeWithoutAction` lives in `triage.py` and is `c9-close-paths`' to build):
 
 - `startAssessment`: `assigned → assessing`, creating the `impact_assessment` row at version 1. `cases.work`.
-- `saveAssessment`: stores `applies`, `why`, `what_must_change`, `internal_deadline`, `effort` (a key from the tenant's `effort_size` list) and the optional `subStatus`. A save without a `why` answers 422 (the `CHECK (NOT saved OR why IS NOT NULL)` is the database's half). `applies = yes` or `partly` moves `assessing → implementing`. `cases.contribute`, so a contributor may save input (PRD §6).
+- `saveAssessment`: stores `applies`, `why`, `what_must_change`, `internal_deadline`, `effort` (a key from the tenant's `effort_size` list) and the optional `subStatus`. A save without a `why` answers 422 (the `CHECK (NOT saved OR why IS NOT NULL)` is the database's half). `cases.contribute`, so a contributor may save input (PRD §6). Saving moves no state: `addAction` owns `assessing → implementing` (`R2_CROSS_CUTTING.md` (j)).
 - `If-Match` carries the assessment's `version`. The owner saving at version 2 succeeds and the version becomes 3; a contributor saving at version 2 afterwards answers 409 `stale_write` and nothing is merged (CAS-S5, AC-CAS2). The refusal carries the current version so the screen can offer a reload.
 - CAS-S13: a case set to the tenant's sub-status "Waiting for legal" under `assessing` is treated as `assessing` by every guard; `allowed_transitions` is identical with and without the sub-status, and the sign-off rules are unchanged. A sub-status from another category answers 422 `unknown_key`.
-- CAS-S4 is reworded here: the contributor-teams clause moves out (ruling 2) and the scenario names CAS-S17 for it. The `applies = no` clause is left out of the Gherkin until q-case-close is answered, and `c9-close-paths` adds it back with whichever option Alex picks.
+- CAS-S4 is reworded here: the contributor-teams clause moves out (ruling 2) and the scenario names CAS-S17 for it. The `applies = no` clause is left out of the Gherkin here, and `c9-close-paths` adds it back with Option B's one-person close.
 - `closeWithoutAction` and the `applies = no` branch answer 501 `not_built` until `c9-close-paths`; the task states that in its commit body and leaves its two `contract_drift_pending.txt` lines.
 
 **Owned paths:**
@@ -705,7 +711,7 @@ Build `backend/apps/cases/assessment.py` and serve `startAssessment`, `saveAsses
 - With a sub-status set, `allowed_transitions` and every guard return exactly what they return without it, proved by a parametrised test over all seven categories.
 - `AssessmentInput` carries no `contributors`, proved by a schema test.
 - A second tenant's case answers 404; the tenant-isolation guard is green.
-- `apps/cases/assessment.py` holds 95% statement coverage on the lines it built, and the two close lines remain in `contract_drift_pending.txt` with q-case-close named.
+- `apps/cases/assessment.py` holds 95% statement coverage on the lines it built, and the two close lines remain in `contract_drift_pending.txt` naming `c9-close-paths`.
 
 **Gates:**
 
@@ -719,7 +725,7 @@ Build `backend/apps/cases/assessment.py` and serve `startAssessment`, `saveAsses
 - Concurrent edits are refused, never merged: `If-Match` and 409 `stale_write`.
 - Every write goes through `record()` in the same transaction.
 - Store and compare keys, never labels.
-- A question touching an invariant is not decided by the task: the close paths wait for Alex.
+- A question touching an invariant is not decided by the task: the close paths are `c9-close-paths`', built as Alex answered.
 
 ### c9-actions: actions with an owner, a due date and a lock
 
@@ -743,7 +749,7 @@ Build `backend/apps/cases/actions.py` and serve the four action routes:
 - `backend/apps/cases/tests_scenarios.py` (the CAS-S6 skip line only)
 - `backend/apps/tenants/tests_scenarios.py` (the TEN-S5 skip line only)
 - `backend/apps/cases/app.md` (the CAS-04 status cell and the CAS-S6 rewording only)
-- `backend/config/settings.py` (the `CASE_ACTIONS_MAX` banner), `backend/.env.example`, `docs/runbooks/RAILWAY_VARIABLES.md`
+- `backend/config/settings.py` (the `CASE_ACTIONS_MAX` banner), `.env.example` at the repository root, `docs/runbooks/RAILWAY_VARIABLES.md`
 - `backend/scripts/contract_drift_pending.txt` (its own four lines)
 
 **Done when:**
@@ -968,25 +974,21 @@ Build the approve and send-back halves of `backend/apps/cases/signoff.py`:
 - The assertion reference is stored on the audit event.
 - Every refusal is RFC 9457 with a `code`.
 
-### c9-close-paths: closing without action, once Alex has answered
+### c9-close-paths: closing without action, one person, audited
 
 **Requirements:** CAS-02, CAS-06
 **Scenarios:** none of its own; it adds the close clause back to CAS-S4, which `c9-assessment` owns and already un-skipped
-**Depends on:** `c9-assessment`, `c9-signoff`, **q-case-close**
+**Depends on:** `c9-assessment`, `c9-triage`, `c9-signoff`
 **Security review:** yes (the four-eyes close decision: one route can take a regulatory change out of the workflow)
 **Stop and report** on any invariant question.
 
-Build whichever option Alex picks for q-case-close, and only that one:
+Build Option B, Alex's answer to q-case-close ("One person, audited", 2026-09-20): `closeWithoutAction` (in `triage.py`) and `saveAssessment` with `applies = no` (in `assessment.py`) close the case directly under `cases.work`, with the reason key (`no_action` or `not_applicable`) required, the audit row naming the actor, a `case_transition` row, and the case restorable to triage. No second person and no step-up: four eyes stays on sign-off (CAS-06).
 
-- **Option A:** `closeWithoutAction` and `saveAssessment` with `applies = no` move the case to `signoff` carrying its intended close reason (`no_action` or `not_applicable`), with the open-action and evidence guards lifted for those two reasons. `approveSignoff` then closes it with that reason instead of `signed_off`, keeping the four-eyes check and the step-up. No new state, no new route, no new permission.
-- **Option B:** both paths close the case directly under `cases.work`, with the reason key required, the audit row naming the actor, and the case restorable to triage.
-- **Option C:** `applies = no` takes Option A's path and `closeWithoutAction` takes Option B's.
-
-Whichever it is: add the close clause back to CAS-S4's Gherkin, delete the two `contract_drift_pending.txt` lines `c9-assessment` left, record the answer in `docs/DECISIONS.md` with an ADR, and write the INPUT_DELTAS row where the behaviour departs from `openapi.yaml`.
+Add the close clause back to CAS-S4's Gherkin, delete the two `contract_drift_pending.txt` lines `c9-assessment` left, record the answer in `docs/DECISIONS.md` as D-92 with ADR 0060 (`R2_CROSS_CUTTING.md` (c)), and write the INPUT_DELTAS row where the behaviour departs from `openapi.yaml`.
 
 **Owned paths:**
 
-- `backend/apps/cases/assessment.py` (the close branch only), `backend/apps/cases/signoff.py` (Option A's close reason only)
+- `backend/apps/cases/triage.py` (`closeWithoutAction` only), `backend/apps/cases/assessment.py` (the `applies = no` branch only)
 - `backend/apps/cases/tests_close_paths.py`
 - `backend/apps/cases/tests_scenarios.py` (the CAS-S4 line only), `backend/apps/cases/app.md` (the CAS-S4 close clause only)
 - `docs/DECISIONS.md`, `docs/adr/` (one ADR), `docs/inputs/INPUT_DELTAS.md`
@@ -995,16 +997,15 @@ Whichever it is: add the close clause back to CAS-S4's Gherkin, delete the two `
 **Done when:**
 
 - Neither close route answers 501, and `contract_drift.py` is clean for both.
-- The chosen option's rule is proved end to end, and the two options not chosen have no code in the tree.
-- Under Option A or C, a close as `not_applicable` is refused for the requester with 409 `four_eyes_violation` and needs a step-up.
-- Under Option B or C, the one-person close writes its reason key, its audit row and its `case_transition` row, and the case is restorable.
+- The one-person close is proved end to end on both paths: it writes its reason key, its audit row naming the actor and its `case_transition` row, a close without a reason key answers 422, and the case is restorable to triage.
+- No other route reaches `closed` except sign-off, proved by a test over the state machine's transitions.
 - CAS-S4's Gherkin and `test_cas_s4` carry the close clause, and `requirements_coverage.py` is green.
-- The ADR and the `DECISIONS.md` row state what Alex chose and when.
+- ADR 0060 and the D-92 row state what Alex chose and when.
 
 **Gates:**
 
 - `set -a; . ./.env.worktree; set +a`
-- `cd backend && ./run.sh run coverage run manage.py test apps.cases apps.shared --settings=config.test_settings --noinput && ./run.sh run coverage report --include='apps/cases/assessment.py,apps/cases/signoff.py'`
+- `cd backend && ./run.sh run coverage run manage.py test apps.cases apps.shared --settings=config.test_settings --noinput && ./run.sh run coverage report --include='apps/cases/assessment.py,apps/cases/triage.py'`
 - `./run.sh run ruff check . && ./run.sh run mypy`
 - `python backend/scripts/compliance_check.py --all && python backend/scripts/requirements_coverage.py`
 - `bash generate-types.sh && (cd backend && ./run.sh run python scripts/contract_drift.py)` as a check only
@@ -1243,12 +1244,12 @@ Build `frontend/src/components/cases/SignoffPanel.tsx` from the design card's Si
 
 **Requirements:** CAS-07
 **Scenarios:** CAS-S11 (`@integration`)
-**Depends on:** `c9-case-file`, `c12-exports-contract`
+**Depends on:** `c9-case-file`, `x-exports-contract`
 **Security review:** yes (a job that writes a tenant's whole case to a file)
 
-Add the case-file exporter on chunk 12's framework (parallel-plan ruling 7):
+Add the case-file exporter on the export framework `x-exports-contract` brings into R2 (parallel-plan ruling 7, `R2_CROSS_CUTTING.md` (j)):
 
-- One new `export_kind`, `case_file`, in `kinds.py`, and one exporter registered with `c12-exports-contract`'s registry. It calls `cases/case_file.py`'s builder, so the text on screen and the text in the file come from one place and cannot drift.
+- One new `export_kind`, `case_file`, in `kinds.py`, and one exporter registered with `x-exports-contract`'s registry. It calls `cases/case_file.py`'s builder, so the text on screen and the text in the file come from one place and cannot drift.
 - `POST /exports` with `{kind: "case_file", changeId}` under `exports.create` and a step-up (playbook 4.2 lists exports), answering the job; `GET /exports/{id}` reports its status; `GET /exports/{id}/download` streams it, permission-checked and audited, under both `exports.create` and `cases.read` for that case.
 - The export is text; no PDF library is added (parallel plan §7.2).
 - A case in another tenant answers 404 at creation, and the job refuses to run for a tenant that is not its own.
@@ -1256,7 +1257,7 @@ Add the case-file exporter on chunk 12's framework (parallel-plan ruling 7):
 
 **Owned paths:**
 
-- `backend/apps/reports/exporters/case_file.py` (or the module `c12-exports-contract` names)
+- `backend/apps/reports/exporters/case_file.py` (or the module `x-exports-contract` names)
 - `backend/apps/reports/tests_export_case_file.py`
 - `backend/apps/shared/kinds.py` (the `case_file` export kind only)
 - `backend/apps/cases/tests_scenarios.py` (the CAS-S11 skip line only)
@@ -1660,7 +1661,7 @@ Close the chunk on `main` (playbook Section 3):
 - Update `backend/apps/cases/app.md`: CAS-02, CAS-03 and CAS-05 to CAS-08 `built`; **CAS-04 `in_progress`**, its status cell naming the half that is not here — "exportable as tickets" is `c13-tickets-export`'s (ruling 3) — so the row says what is on `main` and not what the requirement reads. The §1 note that the workflow is R2 is replaced by what is on `main`. Update `backend/apps/collab/app.md`'s COL-04 note with the case half now covered, and `backend/apps/home/app.md`'s HOM-05 note with the case sources.
 - Update `docs/plans/IMPLEMENTATION_STATUS.md`: chunk 9 implemented and tested with today's date, `in progress` until a person verifies it, and a notes cell that starts with **CAS-04 `in_progress`: actions are built, "exportable as tickets" is `c13-tickets-export`'s (chunk 13)** and then names what else was cut and why (the presigned links, `impact_assessment.contributors`, `triage_due_at` and the case reminders to chunk 10, evidence on a register entry to chunk 8, comments to chunk 10, retention to chunk 12).
 - Update `docs/plans/UI_Implementation_Plan.md`'s chunk 9 rows: each status from `later chunk 9, card pending` to `built`, the evidence download row naming the streaming endpoint, the `export-tickets` row renamed to chunk 13, and the "case panels on `tenant-change.html`" screen-card row to `built`.
-- Write the open points into `docs/TODO_FOR_alex.md`: the one open confirmation (multipart upload rather than a presigned PUT, ruling 4), q-case-close's answer as it was taken, and the `clamd` service need (parallel plan §7.3) for the R2 deploy. The four defaults that a source settles stay out of that file; they live in their tasks' commit bodies.
+- Write the open points into `docs/TODO_FOR_alex.md`: the one open confirmation (multipart upload rather than a presigned PUT, ruling 4), q-case-close's answer as Alex gave it (Option B, D-92), and the `clamd` service need (parallel plan §7.3) for the R2 deploy. The four defaults that a source settles stay out of that file; they live in their tasks' commit bodies.
 - Add the `Verification_Log.md` rows for any provider fact the chunk relied on (the clamd `INSTREAM` protocol and the MIME types the allow-list names), fetched, not recalled.
 
 **Owned paths:**

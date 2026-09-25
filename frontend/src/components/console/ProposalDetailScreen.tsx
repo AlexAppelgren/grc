@@ -33,6 +33,7 @@ import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { listLabel, presentVocabularyValue } from '@/features/vocabularies/vocabulary-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { RestrictedScreen, forbiddenFrom } from '@/shared/navigation/require-permission';
+import { externalHref } from '@/shared/utils/external-href';
 import { formatDate, formatDateTime } from '@/shared/utils/format';
 import { hasProblemCode } from '@/shared/utils/problem';
 
@@ -57,11 +58,13 @@ function SourcePanel({ proposal }: { proposal: ProposalRow }) {
       {proposal.sourceLabel !== '' ? (
         <p className="mb-2 flex flex-wrap items-center gap-x-1.5">
           <span>{proposal.sourceLabel}</span>
-          {proposal.sourceUrl !== '' ? (
+          {proposal.sourceUrl === '' ? null : externalHref(proposal.sourceUrl) === null ? (
+            <span className="break-all">{proposal.sourceUrl}</span>
+          ) : (
             <a href={proposal.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline">
               {t('console.queue.detail.openSource')}
             </a>
-          ) : null}
+          )}
         </p>
       ) : null}
       {rows.length > 0 ? (
@@ -70,9 +73,13 @@ function SourcePanel({ proposal }: { proposal: ProposalRow }) {
             <div key={field} className="contents">
               <dt className="text-muted">{fieldSourceLabel(field, (code) => languageName(code, ctx.locale), t)}</dt>
               <dd className="m-0">
-                <a href={url} target="_blank" rel="noopener noreferrer" className="underline">
-                  {url}
-                </a>
+                {externalHref(url) === null ? (
+                  <span className="break-all">{url}</span>
+                ) : (
+                  <a href={url} target="_blank" rel="noopener noreferrer" className="underline">
+                    {url}
+                  </a>
+                )}
               </dd>
             </div>
           ))}

@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Screen card: units of a standard and the Statement of Applicability (/inventory/obligations/[obligationId]/units)</title>
+<script>
+/* Card only: ?theme=light|dark fixes the theme, ?frame=1 hides the card bar
+   (the 375 px frames load this same file with both). Not part of the screen. */
+(function(){var q=new URLSearchParams(location.search),t=q.get('theme');
+if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);
+if(q.has('frame'))document.documentElement.classList.add('framed');})();
+</script>
+<style>
+/* Serves REG-01 (per unit), REG-08, AC-REG1, REG-S12 to REG-S15 and J-10 (chunk 8,
+   f03-T69 to f03-T72). New card: the prototype has no units. Written from PRD
+   REG-08, D-41, D-42 and D-75 and backend/apps/register/app.md.
+
+   The page belongs to a standard's one conformance obligation and is reached
+   from its Units panel on tenant-obligation.html (route proposed). The entity
+   picker lists only the legal entities whose conformance row applies, because a
+   unit may exist nowhere else (422 scope_not_applicable). A unit is the bank's
+   own reference and its own words; there is no field for the standard's text,
+   and nothing here is ever indexed, sent to a model or shown to another bank.
+   Reference and title are fixed once a unit has history (409 unit_has_history).
+
+   Applicability is set by one person holding applicability.approve after a
+   confirmation dialog (D-75): no "Waiting for approval", no second person, no
+   passkey. A paste of many decisions is one dialog listing every decision and
+   one call, one audit event per row, capped by REGISTER_BULK_MAX (100 here).
+
+   The Statement of Applicability is the register filtered by the standard and
+   one entity. The conformance row keeps its own assessed status; no status is
+   computed from the units.
+
+   Pills: the applicability pill by kind (applies positive, does_not_apply and
+   not_assessed information), the compliance pill by category (compliant
+   positive, partly warning, gap negative, not assessed information), the
+   instrument and the legal entity in brand as scope facets. No new pill slot
+   and no new tone. Values follow design/system/foundations.md; references are
+   invented and names, dates and counts are sample data. */
+:root,.t-light{
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --negative:#b92f13;--negative-soft:#fdebe8;
+  --warning:#8f530a;--warning-soft:#fce8cf;
+  --positive:#026436;--positive-soft:#dcefdc;
+  --notice:#005fb3;--notice-soft:#e6f3ff;
+  --bronze:#6a5730;--brass-bg:#ece5d6;--sand:#f8f6f1;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --negative:#f08975;--negative-soft:#5c170a;
+  --warning:#f5b970;--warning-soft:#5f3707;
+  --positive:#8ae58d;--positive-soft:#003d26;
+  --notice:#66b8ff;--notice-soft:#003666;
+  --bronze:#d9cba9;--brass-bg:#33291a;--sand:#231d10;
+}}
+:root[data-theme="dark"]{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --negative:#f08975;--negative-soft:#5c170a;
+  --warning:#f5b970;--warning-soft:#5f3707;
+  --positive:#8ae58d;--positive-soft:#003d26;
+  --notice:#66b8ff;--notice-soft:#003666;
+  --bronze:#d9cba9;--brass-bg:#33291a;--sand:#231d10;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+a{color:var(--text);text-underline-offset:3px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px}
+p{margin:0 0 8px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+main{padding:24px max(32px,env(safe-area-inset-right)) 64px max(32px,env(safe-area-inset-left));max-width:1200px;width:100%;margin:0 auto}
+
+/* Card only: the bar that switches theme and opens the 375 px frames, and the
+   state labels. Neither belongs to the screen. */
+.cardbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:8px 12px;border:1px dashed var(--line-control);border-radius:8px;color:var(--muted);font-size:13px;line-height:18px;margin-bottom:24px}
+.cardbar a{color:var(--text)}
+.framed .cardbar,.framed .note{display:none}
+.frames{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 24px}
+.frames iframe{width:377px;height:760px;border:1px solid var(--line-strong);border-radius:12px;background:var(--page)}
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-of-type{margin-top:0}
+
+.back{display:inline-block;margin-bottom:12px;font-weight:500}
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 16px;margin-bottom:16px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+.head .acts{margin-left:auto}
+.facets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.meta{color:var(--muted);font-size:13px;line-height:18px;display:flex;gap:4px 8px;flex-wrap:wrap;align-items:baseline}
+.meta b{color:var(--text);font-weight:500;font-variant-numeric:tabular-nums}
+.meta .late{color:var(--negative);font-weight:500}
+.count{color:var(--muted);font-size:13px;line-height:18px;font-variant-numeric:tabular-nums}
+.status{margin:0 0 12px;font-weight:500}
+
+/* Filters: native selects and a date, 36px at a 6px radius; a phone shows two
+   per row. Each keeps its key in the address so a filtered list can be shared. */
+.filters{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:16px;align-items:end}
+.filters label{display:grid;gap:4px;font-size:13px;line-height:18px;color:var(--muted);min-width:0}
+.filters select,.filters input,.field input,.field select,.field textarea{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;min-width:0;width:100%;color:var(--text)}
+.filters .clear{align-self:end}
+
+.items{display:grid;gap:8px}
+.item{display:block;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;text-decoration:none}
+a.item:hover{border-color:var(--line-strong)}
+.item h3{margin:0 0 2px}
+.item .of{color:var(--muted);margin:0 0 4px}
+
+.grid{display:grid;gap:16px;grid-template-columns:3fr 2fr;align-items:start}
+.col{display:grid;gap:16px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
+.panel>h2{margin-bottom:12px}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:8px 16px;margin:0}
+.kv dt{color:var(--muted)}.kv dd{margin:0;min-width:0}
+.prose{white-space:pre-line;margin:0 0 12px}
+.reason{background:var(--sand);border-radius:6px;padding:10px 12px;margin:8px 0 0}
+.reason b{display:block;font-weight:500;color:var(--muted);font-size:13px;line-height:18px}
+
+/* Pill: fully rounded, 20px, 13px at 500, no border. Existing tones only. */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+.pill.notice{background:var(--notice-soft);color:var(--notice)}
+.pill.positive{background:var(--positive-soft);color:var(--positive)}
+.pill.warning{background:var(--warning-soft);color:var(--warning)}
+.pill.negative{background:var(--negative-soft);color:var(--negative)}
+.pill.brand{background:var(--brass-bg);color:var(--bronze)}
+
+/* Button: 36px, 6px radius, 14px at 500. Actions right, the primary last. */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap;text-decoration:none}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.ghost{background:transparent;color:var(--text);border-color:transparent}
+.btn.small{height:32px;padding:0 12px}
+.btn.outline:hover,.btn.ghost:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+.bar .btn{min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+.notice{background:var(--subtle);color:var(--text);border-radius:6px;padding:10px 12px;margin:0 0 12px}
+.notice.warn{background:var(--warning-soft)}
+.notice.bad{background:var(--negative-soft)}
+.notice p:last-child{margin-bottom:0}
+
+.field{display:grid;gap:4px;margin-bottom:12px}
+.field label{font-weight:500}
+.field textarea{height:auto;min-height:76px;padding:8px 10px;resize:vertical}
+.field .hint,.field .err{font-size:13px;line-height:18px}
+.field .hint{color:var(--muted)}
+.field .err{color:var(--negative)}
+.field [aria-invalid="true"]{border-color:var(--negative)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+
+.modal{display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,11,11,.6);border-radius:8px}
+.modal .box{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.modal .box>h2{margin-bottom:12px}
+
+.skeleton{height:72px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.skeletons{display:grid;gap:8px}
+.emptystate,.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.emptystate h2,.errorstate h2{color:var(--text)}
+.emptystate p,.errorstate p{margin:8px auto 16px;max-width:60ch}
+.restricted{max-width:60ch;margin:0 auto;padding:48px 0;text-align:center}
+.restricted p{margin:12px 0 0;color:var(--muted)}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+@media (max-width:1023px){.filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
+  .grid{grid-template-columns:1fr}
+  .filters{grid-template-columns:1fr 1fr}
+  .kv{grid-template-columns:1fr;gap:0}.kv dd{margin-bottom:8px}
+  .pair{grid-template-columns:1fr}
+}
+.mono{font-family:var(--mono);font-size:13px}
+.entity{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:end;margin-bottom:16px}
+.entity label{display:grid;gap:4px;font-weight:500;min-width:240px}
+.entity select{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;color:var(--text)}
+.entity .hint{color:var(--muted);font-size:13px;line-height:18px;flex-basis:100%}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 10px;color:var(--muted);font-weight:500}
+.tabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--text)}
+.unit{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.unit .top{display:flex;gap:8px 12px;align-items:baseline;flex-wrap:wrap;margin-bottom:4px}
+.unit .top h3{flex:1 1 240px;min-width:0}
+.unit .why{margin:4px 0 0}
+.unit details{margin-top:8px}
+.unit summary{cursor:pointer;color:var(--muted);font-size:13px;line-height:18px}
+.unit .bar{margin-top:8px}
+.hist{list-style:none;margin:8px 0 0;padding:0 0 0 12px;border-left:1px solid var(--line)}
+.hist li{padding:4px 0}
+.locked{color:var(--muted);font-size:13px;line-height:18px;margin-top:8px}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-weight:500;color:var(--muted);font-size:13px;line-height:18px;padding:8px;border-bottom:1px solid var(--line)}
+.tbl td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.scroll{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:6px}
+.scroll .tbl th{position:sticky;top:0;background:var(--surface)}
+.dry h3{margin:16px 0 6px}
+.dry h3:first-child{margin-top:0}
+.conf{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}
+@media (max-width:767px){
+  .entity label{min-width:0;flex:1 1 100%}
+  .tbl.stack thead{display:none}
+  .tbl.stack tr{display:block;padding:10px 0;border-bottom:1px solid var(--line)}
+  .tbl.stack tr:last-child{border-bottom:0}
+  .tbl.stack td{display:block;border:0;padding:2px 0}
+  .tbl.stack td[data-l]:before{content:attr(data-l);display:block;color:var(--muted);font-size:13px;line-height:18px}
+}
+</style>
+</head>
+<body>
+<main>
+<div class="cardbar"><span>Card view:</span><a href="?theme=light">Light</a><a href="?theme=dark">Dark</a><a href="?">Follow the system</a><button class="btn outline small" type="button" id="phones" aria-expanded="false">Show both themes at 375 px</button></div>
+<div class="frames" id="frames" hidden></div>
+
+<h2 class="k">1 · Units for one legal entity, seen by a compliance officer (register edit and applicability approve)</h2>
+<a class="back" href="#">← Conform to ISO/IEC 27001:2022</a>
+<div class="facets"><span class="pill brand">ISO/IEC 27001:2022</span><span class="pill">Standard</span></div>
+<div class="head">
+  <div><h1>Units</h1><p class="lede">The clauses and controls you work with, by your own reference and in your own words. Each has its own applicability, reason and status.</p></div>
+  <div class="acts bar" style="margin-top:0"><button class="btn outline" type="button">Paste units</button><button class="btn" type="button">Add a unit</button></div>
+</div>
+<div class="entity">
+  <label for="ent">Legal entity<select id="ent"><option>Example Bank AB</option><option>Example Fonder AB</option></select></label>
+  <span class="hint">Only legal entities where this standard applies are listed. Example Liv Försäkring AB: does not apply.</span>
+</div>
+<div class="tabs" role="tablist"><button role="tab" aria-selected="true">Units</button><button role="tab" aria-selected="false">Statement of Applicability</button></div>
+<p class="status" role="status" tabindex="-1">12 units created.</p>
+<p class="count">48 units</p>
+<div class="items">
+  <div class="unit">
+    <div class="top"><span class="mono">SEC-012</span><h3>Access to the payments system is reviewed every quarter</h3></div>
+    <div class="facets"><span class="pill positive">Applies</span><span class="pill warning">Partly compliant</span></div>
+    <p class="why">Payments staff change often; a quarterly review is our own rule.</p>
+    <div class="meta"><span>Set by Sara Lindqvist</span><span>18 Sep 2026</span></div>
+    <details><summary>History, 2 decisions</summary><ul class="hist">
+      <li><div class="meta"><span class="pill positive">Applies</span><span>18 Sep 2026, 14:02</span><span>Sara Lindqvist</span></div>Payments staff change often; a quarterly review is our own rule.</li>
+      <li><div class="meta"><span class="pill">Does not apply</span><span>2 Jun 2026, 09:40</span><span>Johan Berg</span></div>The payments system was outsourced.</li>
+    </ul></details>
+    <p class="locked">Reference and title are fixed: this unit has decisions.</p>
+    <div class="bar"><button class="btn outline small" type="button">Set applicability</button></div>
+  </div>
+  <div class="unit">
+    <div class="top"><span class="mono">SEC-031</span><h3>Suppliers sign our security annex before they get access</h3></div>
+    <div class="facets"><span class="pill">Does not apply</span></div>
+    <p class="why">No supplier has access to production at Example Bank AB.</p>
+    <div class="meta"><span>Set by Sara Lindqvist</span><span>18 Sep 2026</span></div>
+    <details><summary>History, 1 decision</summary><ul class="hist"><li><div class="meta"><span class="pill">Does not apply</span><span>18 Sep 2026, 14:02</span><span>Sara Lindqvist</span></div>No supplier has access to production at Example Bank AB.</li></ul></details>
+    <p class="locked">Reference and title are fixed: this unit has decisions.</p>
+    <div class="bar"><button class="btn outline small" type="button">Set applicability</button></div>
+  </div>
+  <div class="unit">
+    <div class="top"><span class="mono">SEC-044</span><h3>Backups are restored in a test once a year</h3></div>
+    <div class="facets"><span class="pill">Not assessed</span></div>
+    <div class="meta"><span>Added 24 Sep 2026 by Johan Berg</span><span>No decision yet</span></div>
+    <div class="bar"><button class="btn ghost small" type="button">Remove</button><button class="btn outline small" type="button">Rename</button><button class="btn outline small" type="button">Set applicability</button></div>
+  </div>
+</div>
+
+<h2 class="k">2 · The same list for a member who reads the register</h2>
+<div class="unit" style="max-width:720px">
+  <div class="top"><span class="mono">SEC-012</span><h3>Access to the payments system is reviewed every quarter</h3></div>
+  <div class="facets"><span class="pill positive">Applies</span><span class="pill warning">Partly compliant</span></div>
+  <p class="why">Payments staff change often; a quarterly review is our own rule.</p>
+  <div class="meta"><span>Set by Sara Lindqvist</span><span>18 Sep 2026</span></div>
+</div>
+
+<h2 class="k">3 · No units yet, and no legal entity follows the standard</h2>
+<div class="emptystate"><h2>No units for Example Bank AB</h2><p>Add the clauses and controls you work with, one by one or pasted from your own list.</p><div class="bar" style="justify-content:center"><button class="btn outline small" type="button">Paste units</button><button class="btn small" type="button">Add a unit</button></div></div>
+<div class="emptystate" style="margin-top:12px"><h2>No legal entity follows this standard</h2><p>Set "Applies" for a legal entity under Does it apply to us on the obligation. Its units can be listed here after that.</p><a href="#">Back to the obligation</a></div>
+
+<h2 class="k">4 · Loading and error</h2>
+<div class="skeletons" aria-busy="true" aria-label="Loading units"><div class="skeleton"></div><div class="skeleton"></div></div>
+<div class="errorstate" role="alert" style="margin-top:12px"><h2>Units could not be loaded</h2><p>Check your connection and try again.</p><button class="btn outline small" type="button">Try again</button></div>
+
+<h2 class="k">5 · Add a unit (and Rename, prefilled, while it has no history)</h2>
+<div class="modal"><form class="box" aria-labelledby="au"><h2 id="au">Add a unit for Example Bank AB</h2>
+  <div class="field"><label for="aur">Your reference</label><input id="aur" class="mono" value="SEC-012" aria-invalid="true" aria-describedby="aure"><span class="err" id="aure" role="alert">Example Bank AB already has a unit SEC-012.</span></div>
+  <div class="field"><label for="aut">Your title</label><input id="aut" aria-describedby="auth"><span class="hint" id="auth">In your own words, as your own list has it. Do not copy the standard's text.</span></div>
+  <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Add unit</button></div>
+</form></div>
+
+<h2 class="k">6 · Remove a unit with no history</h2>
+<div class="modal"><div class="box" role="dialog" aria-labelledby="rm"><h2 id="rm">Remove SEC-044?</h2><p>"Backups are restored in a test once a year" leaves the list. It has no decisions, so nothing else changes.</p>
+  <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="button">Remove</button></div></div></div>
+
+<h2 class="k">7 · Paste units: the text</h2>
+<div class="modal"><form class="box" aria-labelledby="pu"><h2 id="pu">Paste units for Example Bank AB</h2>
+  <div class="field"><label for="put">One unit per line</label><textarea id="put" class="mono" style="min-height:160px" aria-describedby="puth">SEC-001	Information security policy is approved by the board	applies	Board owns it
+SEC-002	Security roles are named in the job descriptions	applies	Needed for the audit
+SEC-003	Clean desk rule in the branches	does not apply	We have no branches</textarea>
+    <span class="hint" id="puth">Your reference, a tab, your title. Add a tab, "applies" or "does not apply" and a tab and a reason to decide at once. At most 100 lines.</span></div>
+  <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Check the lines</button></div>
+</form></div>
+
+<h2 class="k">8 · Paste units: the dry run, before anything is stored</h2>
+<div class="modal"><form class="box dry" aria-labelledby="dr" style="max-width:720px"><h2 id="dr">Check before you create</h2>
+  <p>Nothing is stored yet. 12 lines are ready; 4 are refused and left out.</p>
+  <h3>12 units to create</h3>
+  <div class="scroll"><table class="tbl stack"><thead><tr><th>Line</th><th>Reference</th><th>Your title</th><th>Decision</th></tr></thead><tbody>
+    <tr><td data-l="Line">1</td><td data-l="Reference" class="mono">SEC-001</td><td data-l="Your title">Information security policy is approved by the board</td><td data-l="Decision"><span class="pill positive">Applies</span></td></tr>
+    <tr><td data-l="Line">2</td><td data-l="Reference" class="mono">SEC-002</td><td data-l="Your title">Security roles are named in the job descriptions</td><td data-l="Decision"><span class="pill positive">Applies</span></td></tr>
+    <tr><td data-l="Line">3</td><td data-l="Reference" class="mono">SEC-003</td><td data-l="Your title">Clean desk rule in the branches</td><td data-l="Decision"><span class="pill">Does not apply</span></td></tr>
+    <tr><td data-l="Line">5</td><td data-l="Reference" class="mono">SEC-005</td><td data-l="Your title">Laptops are encrypted before they are handed out</td><td data-l="Decision">None</td></tr>
+  </tbody></table></div>
+  <h3>4 lines refused</h3>
+  <table class="tbl stack"><thead><tr><th>Line</th><th>Reference</th><th>Why</th></tr></thead><tbody>
+    <tr><td data-l="Line">4</td><td data-l="Reference" class="mono">SEC-012</td><td data-l="Why">Example Bank AB already has a unit with this reference.</td></tr>
+    <tr><td data-l="Line">9</td><td data-l="Reference" class="mono">SEC-002</td><td data-l="Why">Line 2 already uses this reference.</td></tr>
+    <tr><td data-l="Line">11</td><td data-l="Reference" class="mono">SEC-020</td><td data-l="Why">The title is longer than 200 characters.</td></tr>
+    <tr><td data-l="Line">14</td><td data-l="Reference" class="mono">SEC-023</td><td data-l="Why">"maybe" is not a decision. Use "applies" or "does not apply", or leave it out.</td></tr>
+  </tbody></table>
+  <div class="bar"><button class="btn outline" type="button">Back to the text</button><button class="btn" type="submit">Create 12 units</button></div>
+</form></div>
+
+<h2 class="k">9 · The confirmation of every decision, one call (a holder of applicability approve)</h2>
+<div class="modal"><div class="box" role="dialog" aria-labelledby="cd" aria-describedby="cdd" style="max-width:720px"><h2 id="cd">Set 93 decisions for Example Bank AB?</h2>
+  <p id="cdd">Each is stored in your name with its reason, and each is kept in the audit log. 81 apply and 12 do not apply.</p>
+  <div class="scroll"><table class="tbl stack"><thead><tr><th>Reference</th><th>Your title</th><th>Decision</th><th>Reason</th></tr></thead><tbody>
+    <tr><td data-l="Reference" class="mono">SEC-001</td><td data-l="Your title">Information security policy is approved by the board</td><td data-l="Decision"><span class="pill positive">Applies</span></td><td data-l="Reason">Board owns it</td></tr>
+    <tr><td data-l="Reference" class="mono">SEC-002</td><td data-l="Your title">Security roles are named in the job descriptions</td><td data-l="Decision"><span class="pill positive">Applies</span></td><td data-l="Reason">Needed for the audit</td></tr>
+    <tr><td data-l="Reference" class="mono">SEC-003</td><td data-l="Your title">Clean desk rule in the branches</td><td data-l="Decision"><span class="pill">Does not apply</span></td><td data-l="Reason">We have no branches</td></tr>
+    <tr><td data-l="Reference" class="mono">SEC-004</td><td data-l="Your title">Visitors are escorted in the data centre</td><td data-l="Decision"><span class="pill positive">Applies</span></td><td data-l="Reason">Own data centre in Solna</td></tr>
+  </tbody></table></div>
+  <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="button">Set 93 decisions</button></div></div></div>
+<p class="meta" style="display:block;margin-top:8px;max-width:72ch">Cancel stores nothing. A member who may edit the register but not decide applicability gets the units without their decisions, and the dialog says so: "The decisions are left out: setting applicability needs applicability approve."</p>
+
+<h2 class="k">10 · Set applicability on one unit</h2>
+<div class="modal"><form class="box" aria-labelledby="sa"><h2 id="sa">Does SEC-044 apply to Example Bank AB?</h2>
+  <p class="meta" style="display:block;margin-bottom:12px">Backups are restored in a test once a year</p>
+  <fieldset style="border:0;margin:0 0 12px;padding:0"><legend style="font-weight:500;padding:0;margin-bottom:4px">Decision</legend>
+    <label style="display:flex;gap:8px;padding:4px 0"><input type="radio" name="sad" checked> Applies</label>
+    <label style="display:flex;gap:8px;padding:4px 0"><input type="radio" name="sad"> Does not apply</label></fieldset>
+  <div class="field"><label for="sar">Reason</label><textarea id="sar">Restores were never tested; the audit asks for it.</textarea><span class="hint">A reasoned "does not apply" is worth as much to an auditor as an "applies".</span></div>
+  <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Continue</button></div>
+</form></div>
+<div class="modal" style="margin-top:12px"><div class="box" role="dialog" aria-labelledby="sac"><h2 id="sac">Set SEC-044 to "Applies"?</h2><p>It is stored at once in your name, with your reason, and kept in the audit log.</p>
+  <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="button">Set applicability</button></div></div></div>
+
+<h2 class="k">11 · The answers the server can give, rendered above the buttons</h2>
+<div class="panel">
+  <div class="notice bad" role="alert">Example Liv Försäkring AB does not follow this standard, so it cannot have units. Set "Applies" for it on the obligation first.</div>
+  <div class="notice bad" role="alert">Units exist only under a standard.</div>
+  <div class="notice bad" role="alert">This unit has decisions, so its reference and title are fixed.</div>
+  <div class="notice bad" role="alert">Someone changed this unit while you were editing. Reload to see their version, then make your change again.</div>
+  <div class="notice bad" role="alert" style="margin-bottom:0">A paste can carry at most 100 lines. This one has 140: split it in two. Nothing was stored.</div>
+</div>
+
+<h2 class="k">12 · Statement of Applicability: the register filtered by the standard and Example Bank AB</h2>
+<div class="facets"><span class="pill brand">ISO/IEC 27001:2022</span><span class="pill brand">Example Bank AB</span></div>
+<div class="head"><div><h1>Statement of Applicability</h1><p class="lede">Every unit Example Bank AB lists under this standard, with its decision, reason and status.</p></div></div>
+<div class="tabs" role="tablist"><button role="tab" aria-selected="false">Units</button><button role="tab" aria-selected="true">Statement of Applicability</button></div>
+<div class="panel" style="margin-bottom:16px"><h2>Conformance for Example Bank AB</h2>
+  <div class="conf"><span class="pill positive">Applies</span><span class="pill warning">Partly compliant</span><span class="meta">Certified. Set by Sara Lindqvist, 4 Sep 2026. Assessed 1 Sep 2026.</span></div>
+  <p class="meta" style="display:block;margin:8px 0 0">This is the status assessed on the obligation for the entity. The units below do not change it.</p>
+</div>
+<form class="filters" role="search" aria-label="Filter units" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+  <label>Applicability<select><option>All</option><option>Applies</option><option>Does not apply</option><option>Not decided</option></select></label>
+  <label>Status<select><option>Any status</option><option>Compliant</option><option>Partly compliant</option><option>Gap</option><option>Not assessed</option></select></label>
+</form>
+<p class="count">48 units, 41 apply, 7 do not apply</p>
+<div class="panel" style="padding:8px 16px"><table class="tbl stack"><thead><tr><th>Reference</th><th>Your title</th><th>Applicability</th><th>Reason</th><th>Status</th><th>Set by</th><th>Decided</th></tr></thead><tbody>
+  <tr><td data-l="Reference" class="mono">SEC-001</td><td data-l="Your title">Information security policy is approved by the board</td><td data-l="Applicability"><span class="pill positive">Applies</span></td><td data-l="Reason">Board owns it</td><td data-l="Status"><span class="pill positive">Compliant</span></td><td data-l="Set by">Sara Lindqvist</td><td data-l="Decided">18 Sep 2026</td></tr>
+  <tr><td data-l="Reference" class="mono">SEC-003</td><td data-l="Your title">Clean desk rule in the branches</td><td data-l="Applicability"><span class="pill">Does not apply</span></td><td data-l="Reason">We have no branches</td><td data-l="Status"><span class="pill">Not assessed</span></td><td data-l="Set by">Sara Lindqvist</td><td data-l="Decided">18 Sep 2026</td></tr>
+  <tr><td data-l="Reference" class="mono">SEC-012</td><td data-l="Your title">Access to the payments system is reviewed every quarter</td><td data-l="Applicability"><span class="pill positive">Applies</span></td><td data-l="Reason">Payments staff change often</td><td data-l="Status"><span class="pill warning">Partly compliant</span></td><td data-l="Set by">Sara Lindqvist</td><td data-l="Decided">18 Sep 2026</td></tr>
+  <tr><td data-l="Reference" class="mono">SEC-044</td><td data-l="Your title">Backups are restored in a test once a year</td><td data-l="Applicability"><span class="pill">Not assessed</span></td><td data-l="Reason">None yet</td><td data-l="Status"><span class="pill">Not assessed</span></td><td data-l="Set by">None yet</td><td data-l="Decided">None yet</td></tr>
+</tbody></table></div>
+<p class="meta" style="display:block;margin-top:8px">A unit's history opens from its row on the Units tab.</p>
+
+<p class="note">Units card. Reached from the Units panel of a standard's conformance obligation, and from the inventory filtered by a standard and a legal entity (the Statement of Applicability tab). The entity picker offers only entities whose conformance row applies; an entity that does not follow the standard is named in the hint, never offered. Add, Rename, Remove and Paste need register edit; Rename and Remove send If-Match and vanish once the unit has history, replaced by the fixed line. Setting applicability needs applicability approve and a confirmation dialog, never a second person or a passkey; a paste that carries decisions is one dialog listing them all and one call, capped by REGISTER_BULK_MAX, above which nothing is stored. The dry run stores nothing and names each refused line and why: a duplicate reference, an over-long title, an unknown decision. The form has no field for the standard's text. The Statement of Applicability shows each unit's reference, title, applicability, reason, status, who set it and when, under the conformance row's own assessed status, which no unit changes. Today counts the standard once. Every string goes to the register catalogs in en and sv.</p>
+</main>
+<script>
+/* Card only: two frames of this file at 375 px, light and dark. */
+(function(){var b=document.getElementById('phones');if(!b)return;b.addEventListener('click',function(){var f=document.getElementById('frames');
+if(!f.childElementCount){['light','dark'].forEach(function(t){var i=document.createElement('iframe');i.src=location.pathname+'?frame=1&theme='+t;i.title='This card at 375 px, '+t;f.appendChild(i);});}
+f.hidden=!f.hidden;b.setAttribute('aria-expanded',String(!f.hidden));});})();
+</script>
+</body>
+</html>
