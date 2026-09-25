@@ -46,7 +46,9 @@ CASE_JOINS = (
     "change",
     "urgency",
     "sub_status",
-    "owner",
+    # The owner column's name, read off the model: ID-S18 keeps role names out of logic, and
+    # this is a person, not the "owner" role.
+    ChangeCase.owner.field.name,
     "triaged_by",
     "dismissed_reason",
     "dismissed_by",

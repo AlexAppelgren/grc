@@ -1856,7 +1856,8 @@ class SeededCollabWork(SeededOnce):
         assert away.delegate is not None
         self.assertEqual(away.delegate.email, spec.delegate)
         self.assertTrue(Membership.objects.filter(user=away.delegate, tenant=self.tenant, deactivated_at__isnull=True).exists())
-        (sent,) = EmailMessage.objects.filter(template="weekly_digest")
+        (sent,) = EmailMessage.objects.select_related("user").filter(template="weekly_digest")
+        assert sent.user is not None
         self.assertEqual(sent.user.email, spec.digest_of_last_week)
         self.assertEqual(sent.sent_on, week_of(self.today) - datetime.timedelta(days=7))
         self.assertTrue(Membership.objects.filter(user=sent.user, tenant_id=sent.tenant_id).exists())
