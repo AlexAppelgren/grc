@@ -26,6 +26,7 @@ from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 from apps.shared.tenancy import TenantModel
 
@@ -37,7 +38,25 @@ class SupportAccessLevel(enum.StrEnum):
     WRITE = "write"
 
 
+class SupportAccessStatus(enum.StrEnum):
+    """Tier-one kind (apps/shared/kinds.py): where a support access request stands (TEN-06,
+    D-49). A pending request and an open window lapse on read, with no job: a `requested` row
+    past `request_expires_at` reads as lapsed and an `approved` one past `expires_at` as ended.
+    `expired` is what a row born with no decision is, which is chunk 1's one-shot recovery."""
+
+    REQUESTED = "requested"
+    APPROVED = "approved"
+    DECLINED = "declined"
+    REVOKED = "revoked"
+    EXPIRED = "expired"
+
+
 class SupportAccess(TenantModel):
+    """Platform support's access to one bank (ID-05, TEN-06, ADR 0042). A request grants
+    nothing; the bank approves it with a passkey, declines or revokes it. The database keeps
+    the approver from being the person who asked, and a guard trigger refuses a delete and
+    any change to who asked, for what, at which level and for how long (tenants 0004)."""
+
     platform_user = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="support_accesses")
     reason = models.TextField()
     ticket_ref = models.CharField(max_length=100, blank=True)
@@ -46,15 +65,44 @@ class SupportAccess(TenantModel):
         choices=[(kind.value, kind.value) for kind in SupportAccessLevel],
         default=SupportAccessLevel.READ.value,
     )
+    status = models.CharField(
+        max_length=16,
+        choices=[(kind.value, kind.value) for kind in SupportAccessStatus],
+        default=SupportAccessStatus.EXPIRED.value,
+    )
+    # The window asked for, in whole hours; 0 on a recovery row, which opens no window.
+    hours = models.PositiveSmallIntegerField(default=0)
+    requested_at = models.DateTimeField(default=timezone.now)
+    request_expires_at = models.DateTimeField(null=True, blank=True)
     approved_by = models.ForeignKey(
         "identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
-    started_at = models.DateTimeField()
+    approved_step_up_assertion_id = models.UUIDField(null=True, blank=True)
+    # The window: it starts when the bank approves and closes `hours` later.
+    started_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    # A decline or a revoke: when, and by whom.
     ended_at = models.DateTimeField(null=True, blank=True)
+    ended_by = models.ForeignKey(
+        "identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
 
     class Meta:
         db_table = "support_access"
-        ordering = ["started_at", "id"]
+        ordering = ["requested_at", "id"]
+        constraints = [
+            # Four eyes (D-49): the bank's approver is never the platform person who asked.
+            models.CheckConstraint(
+                condition=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F("platform_user")),
+                name="support_access_approver_is_not_the_requester",
+            ),
+            # Read-only grants: a write-level row is never approved, which leaves chunk 1's
+            # one-shot recovery as the only write-level row there is.
+            models.CheckConstraint(
+                condition=models.Q(access_level=SupportAccessLevel.READ.value) | models.Q(approved_by__isnull=True),
+                name="support_access_only_a_read_is_approved",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.platform_user_id}@{self.tenant_id}"
