@@ -32,6 +32,7 @@ const me: Me = {
   stepUpValidUntil: null,
   counts: null,
   lastVisitAt: null,
+  notificationPrefs: null,
 };
 
 const live = { id: 'f1', createdAt: '2026-09-10T08:00:00Z', lastUsedAt: '2026-09-22T06:02:00Z', revokedAt: null };

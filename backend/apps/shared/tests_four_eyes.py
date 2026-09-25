@@ -61,5 +61,7 @@ class FourEyesGuard(TestCase):
     def test_the_approve_permissions_are_exactly_the_prd_list(self) -> None:
         self.assertEqual(
             APPROVE_PERMISSIONS,
-            {FOOTPRINT_APPROVE, CASES_SIGNOFF, APPLICABILITY_APPROVE, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW},
+            {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW},
         )
+        # One person sets applicability after a confirmation dialog, no second approver (D-75).
+        self.assertNotIn(APPLICABILITY_APPROVE, APPROVE_PERMISSIONS)
