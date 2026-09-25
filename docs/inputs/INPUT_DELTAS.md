@@ -912,6 +912,20 @@ Chunk 10 (the obligation row's R2 fields, c10-tag-filters-and-limits), 2026-09-2
   (`instrument`, `dutyType`, `regime`, each `term`, `tag` and `tenantTag` item), as the key
   columns are; a longer one answers 422 `validation_error` (hardening H27).
 
+Chunk 8 (the register overlay on the inventory, c8-inventory-overlay), 2026-09-25:
+
+- The obligation row and `GET /obligations/{id}` gain the caller's bank's register overlay:
+  `applicability` in the register's words (`applies`, `not_applicable`,
+  `under_assessment`), `firstLineOwner` and `ownerTeam`. `complianceStatus` is now the
+  bank's own `{key, kind, label}` row (the register's `RegisterVocabRef`, the same three
+  fields as before), null unless the duty applies, and the worst applying legal entity's
+  status where the bank records one per entity. "Applies" means the entry or any entity
+  row says so. There is no pending-approval marker (D-75).
+- `GET /obligations` gains the filters `applicability`, `complianceStatus`, `owner` (a
+  member's id) and `ownerTeam` (a team key), each string at most 80 characters. A key the
+  bank has no row for matches nothing, as `dutyType` does; a caller that belongs to no bank
+  sending one answers 422 `unknown_filter`, as `tenantTag` does.
+
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
 **`change_case` (`c5-contract-models-cases`).** Built with R1 columns only:
