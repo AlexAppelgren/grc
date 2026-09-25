@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Screen card: support access (/admin/support-access)</title>
+<style>
+/* Serves TEN-06 and ADM-01 (chunk 8; D-49, ADR 0042). The prototype has no
+   support access. This card is the bank's side: a platform person asks from the
+   console (console-support-access.html), the request grants nothing, and a
+   holder of security manage approves it with a passkey, declines it, or revokes
+   a live grant at any time. Every request made under a grant is a
+   support_access.read row in this bank's own audit log.
+
+   Also drawn here, once, as a component sample: the read-only banner a support
+   session carries on every tenant screen, and the copy for the two refusals a
+   support session meets, 403 support_read_only and 401 support_access_ended.
+
+   Any member may read the panel (GET /tenant/support-access); Approve, Decline
+   and Revoke need security manage. Names, tickets and times are sample data. */
+/* Values: design/system/foundations.md (14px base, 36px buttons at a 6px radius,
+   hairline cards at 8px, dialogs at 12px) and design/system/pills-and-labels.md.
+   Every colour is a Green token from green-tokens 3.1.8, with the brand pair as
+   frontend/src/styles/brand.css overrides it, never SEB's values. */
+:root{
+  --page:#ffffff;            /* l1-neutral-01 */
+  --surface:#ffffff;         /* l2-neutral-02 */
+  --subtle:#f4f5f5;          /* l1-neutral-02 */
+  --accent:#eaebeb;          /* l3-neutral-02 */
+  --hover:rgba(0,0,0,.06);   /* state-neutral-05 */
+  --line:#dfe1e1;            /* border-neutral-02 */
+  --line-control:#dfe1e1;    /* border-neutral-02 */
+  --line-strong:#777e7c;     /* border-neutral-01 */
+  --text:#0a0b0b;            /* content-neutral-01 */
+  --muted:#636967;           /* content-neutral-02 */
+  --primary:#0a0b0b;         /* l3-neutral-03 */
+  --on-primary:#ffffff;      /* content-neutral-03 */
+  --focus:#005fb3;           /* content-notice-01 */
+  --notice:#005fb3;--notice-pill:#e6f3ff;          /* content-notice-01 on l3-notice-02 */
+  --positive:#026436;--positive-pill:#dcefdc;      /* content-positive-03 on l3-positive-02 */
+  --warning:#8f530a;--warning-pill:#fce8cf;--warning-soft:#fce8cf;  /* l3-warning-02 */
+  --negative:#b92f13;--negative-pill:#fdebe8;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --brand:#6a5730;--brand-pill:#ece5d6;            /* brand.css content-brand-02 on l3-brand-02 */
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+}
+/* Dark: the four status tones take Green's -03 step on pills; a warn or bad
+   banner keeps the -02 step and puts every word in the text colour. */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --notice:#66b8ff;--notice-pill:#003666;
+  --positive:#8ae58d;--positive-pill:#003d26;
+  --warning:#f5b970;--warning-pill:#5f3707;--warning-soft:#774508;
+  --negative:#f08975;--negative-pill:#5c170a;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --brand:#d9cba9;--brand-pill:#33291a;
+}}
+/* Fixed-theme frames, so one card shows a state in light AND dark whatever the
+   viewer's system is set to. They carry the same aliases, so nothing inside
+   needs to know which theme it is in. */
+.theme{border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--page);color:var(--text)}
+.theme.light{
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --notice:#005fb3;--notice-pill:#e6f3ff;--positive:#026436;--positive-pill:#dcefdc;
+  --warning:#8f530a;--warning-pill:#fce8cf;--warning-soft:#fce8cf;
+  --negative:#b92f13;--negative-pill:#fdebe8;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --brand:#6a5730;--brand-pill:#ece5d6;
+}
+.theme.dark{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --notice:#66b8ff;--notice-pill:#003666;--positive:#8ae58d;--positive-pill:#003d26;
+  --warning:#f5b970;--warning-pill:#5f3707;--warning-soft:#774508;
+  --negative:#f08975;--negative-pill:#5c170a;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --brand:#d9cba9;--brand-pill:#33291a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px;font-weight:500}
+p{margin:0 0 8px}
+b{font-weight:600}
+a{color:inherit;text-underline-offset:3px}
+main{padding:24px max(32px,env(safe-area-inset-right)) 64px max(32px,env(safe-area-inset-left));max-width:1200px;width:100%;margin:0 auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.meta{color:var(--muted);font-size:13px;line-height:18px}
+.mono{font-family:var(--mono);font-size:13px}
+.microlabel{font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+/* State labels. They belong to the card, not to the screen. */
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-of-type{margin-top:24px}
+.cap{color:var(--muted);font-size:13px;line-height:18px;margin:0 0 10px}
+
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 16px;margin-bottom:20px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+.head .acts{margin-left:auto}
+.back{background:none;border:0;padding:0;margin:0 0 8px;color:var(--muted);font-size:13px;line-height:18px;text-decoration:underline;text-underline-offset:3px}
+.status{margin:0 0 12px;font-weight:500}
+.status:empty{display:none}
+
+/* Notice (banner): a tone fill, no coloured edge, 6px radius. Every word inside
+   a warn or bad notice is the text colour (foundations.md). */
+.notice{background:var(--subtle);color:var(--text);border-radius:6px;padding:10px 12px;margin:0 0 16px}
+.notice.warn{background:var(--warning-soft)}
+.notice.bad{background:var(--negative-soft)}
+.notice p:last-child{margin-bottom:0}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+.panel>h2{margin-bottom:12px}
+.panel>.cap{margin-top:-6px}
+.cols{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.cols>*{min-width:0}
+@media (min-width:768px){.cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Pill: fully rounded, 20px, 13px at 500, no border. Tone comes from the slot
+   or the kind, never from a person (pills-and-labels.md). */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+.pill.notice{background:var(--notice-pill);color:var(--notice)}
+.pill.positive{background:var(--positive-pill);color:var(--positive)}
+.pill.warning{background:var(--warning-pill);color:var(--warning)}
+.pill.negative{background:var(--negative-pill);color:var(--negative)}
+.pill.brand{background:var(--brand-pill);color:var(--brand)}
+.pill .x{margin-left:6px;font-weight:400}
+.pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pills.line{gap:6px 10px}
+
+/* Button: 36px, 6px radius, body at 500. Primary is neutral; danger is an
+   outline button with negative text. */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.ghost{background:transparent;color:var(--text);border-color:transparent}
+.btn.danger{background:var(--surface);color:var(--negative);border-color:var(--line-control)}
+.btn.small{height:32px;padding:0 12px}
+.btn.outline:hover,.btn.ghost:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.btn.danger:hover{background:var(--negative-hover)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* Actions right, two per row on a phone, the primary last and so on the right. */
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+.bar.left{justify-content:flex-start}
+.bar .btn{min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* List rows: 12 by 16px, a hairline card at 8px. */
+.rows{display:grid;gap:8px}
+.row{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;text-decoration:none;color:inherit}
+a.row:hover,button.row:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.row h3{margin:6px 0 4px;font-weight:600}
+.row .meta{display:flex;flex-wrap:wrap;gap:4px 12px}
+
+.field{display:grid;gap:4px;margin-bottom:12px}
+.field label{font-weight:500}
+.field input,.field select,.field textarea{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;color:var(--text)}
+.field textarea{height:auto;min-height:76px;padding:8px 10px;resize:vertical}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted);font-style:italic}
+.field input[aria-invalid="true"],.field select[aria-invalid="true"]{border-color:var(--negative)}
+.field .hint,.field .err{font-size:13px;line-height:18px}
+.field .hint{color:var(--muted)}
+.field .err{color:var(--negative)}
+.pair{display:grid;gap:0 16px;grid-template-columns:minmax(0,1fr)}
+.pair>*{min-width:0}
+@media (min-width:768px){.pair{grid-template-columns:repeat(2,minmax(0,1fr))}}
+fieldset{border:0;margin:0;padding:0}
+legend{padding:0;font-weight:500}
+.check{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{width:16px;height:16px;height:16px;margin:2px 0 0;accent-color:var(--primary);flex:none}
+.check small{display:block;color:var(--muted);font-size:13px;line-height:18px}
+
+/* Dialog: 12px radius, at most 560px, over the scrim. */
+.modal{display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,11,11,.6);border-radius:8px;margin-bottom:16px}
+.modal .box{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.modal .box>h2{margin-bottom:12px}
+
+.skeleton{height:72px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.empty,.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.empty h2,.errorstate h2{color:var(--text)}
+.empty p,.errorstate p{margin:8px auto 16px;max-width:60ch}
+.restricted{max-width:60ch;margin:0 auto;padding:48px 0;text-align:center}
+.restricted p{margin:12px 0 0;color:var(--muted)}
+/* Grid items must be allowed to shrink, or the 375px phone frame inside one
+   widens its track and the page scrolls sideways. */
+.statebox{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.statebox>*{min-width:0}
+@media (min-width:768px){.statebox{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* A 375px frame, so the narrow layout can be read on a wide screen. */
+.phone{width:375px;max-width:100%;padding:12px;background:var(--page);border:1px solid var(--line);border-radius:8px}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
+}
+
+/* Key facts under a row title: label, then value. */
+.kv{display:grid;grid-template-columns:1fr;gap:2px 16px;margin:8px 0 0}
+@media (min-width:768px){.kv{grid-template-columns:132px minmax(0,1fr)}}
+.kv dt{color:var(--muted);font-size:13px;line-height:18px}
+.kv dd{margin:0 0 6px}
+@media (min-width:768px){.kv dd{margin-bottom:2px}}
+/* The read-only banner of a support session: the neutral notice fill, full width, above the page title. */
+.banner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;background:var(--accent);border-radius:6px;padding:8px 12px;margin:0 0 16px}
+.banner p{margin:0}
+</style>
+</head>
+<body>
+<main>
+
+<h2 class="k">1 · The panel, with a request waiting and a grant live (a member with security manage)</h2>
+<button class="back">← Admin</button>
+<div class="head">
+  <div>
+    <h1>Support access</h1>
+    <p class="lede">bleqq support can read your organisation only when one of you lets them in, only for the time you allow, and never change anything. Every page they open is in your audit log.</p>
+  </div>
+</div>
+<p class="status" role="status" tabindex="-1"></p>
+
+<section class="panel" aria-labelledby="pending">
+  <h2 id="pending">Waiting for your decision</h2>
+  <div class="rows">
+    <div class="row">
+      <div class="pills"><span class="pill warning">Waiting for approval</span></div>
+      <h3>Kari Nygaard, platform admin at bleqq</h3>
+      <dl class="kv">
+        <dt>Purpose</dt><dd>Your weekly briefing stopped arriving on 22 Sep. We need to see the watch feed and the briefing settings to find where it stops.</dd>
+        <dt>Ticket</dt><dd class="mono">SUP-2291</dd>
+        <dt>Asked for</dt><dd>2 hours, starting when you approve</dd>
+        <dt>Requested</dt><dd>25 Sep 2026 09:12</dd>
+        <dt>Lapses</dt><dd>26 Sep 2026 09:12 if nobody decides</dd>
+      </dl>
+      <p class="meta" style="margin:8px 0 0">Approving asks for your passkey. They can read, never change, and cannot search, ask or download files.</p>
+      <div class="bar"><button class="btn outline small">Decline</button><button class="btn small">Approve</button></div>
+    </div>
+  </div>
+</section>
+
+<section class="panel" aria-labelledby="live">
+  <h2 id="live">Access now</h2>
+  <div class="rows">
+    <div class="row">
+      <div class="pills"><span class="pill notice">Active</span></div>
+      <h3>Lars Mikkelsen, platform admin at bleqq</h3>
+      <dl class="kv">
+        <dt>Purpose</dt><dd>Two changes from Finansinspektionen show twice on Watch. Checking the duplicates before we fix the source.</dd>
+        <dt>Ticket</dt><dd class="mono">SUP-2287</dd>
+        <dt>Window</dt><dd>25 Sep 2026 08:30 to 10:30</dd>
+        <dt>Approved</dt><dd>25 Sep 2026 08:30 by Erik Holm</dd>
+        <dt>Pages read</dt><dd>14 so far · <a href="#">See them in the audit log</a></dd>
+      </dl>
+      <p class="meta" style="margin:8px 0 0">Revoking ends it at once. Their next page opens nothing.</p>
+      <div class="bar"><button class="btn danger small">Revoke</button></div>
+    </div>
+  </div>
+</section>
+
+<section class="panel" aria-labelledby="hist">
+  <h2 id="hist">History</h2>
+  <p class="cap">Every grant stays here. Each page a support session opened is a support access read in the audit log, with the address it opened and who opened it.</p>
+  <div class="rows">
+    <div class="row">
+      <div class="pills"><span class="pill">Ended</span></div>
+      <h3>Lars Mikkelsen, platform admin at bleqq</h3>
+      <dl class="kv">
+        <dt>Purpose</dt><dd>A roadmap item showed the wrong deadline after the timezone change.</dd>
+        <dt>Ticket</dt><dd class="mono">SUP-2240</dd>
+        <dt>Window</dt><dd>18 Sep 2026 13:05 to 14:05</dd>
+        <dt>Approved</dt><dd>18 Sep 2026 13:05 by Sara Lindqvist</dd>
+      </dl>
+      <dl class="kv" aria-label="Pages read under this grant">
+        <dt>13:07</dt><dd class="mono">GET /roadmap</dd>
+        <dt>13:09</dt><dd class="mono">GET /obligations/{id} · 8c1f…a42e</dd>
+        <dt>13:12</dt><dd class="mono">GET /tenant</dd>
+      </dl>
+      <div class="bar left"><a href="#">All 11 in the audit log</a></div>
+    </div>
+    <div class="row">
+      <div class="pills"><span class="pill">Revoked</span></div>
+      <h3>Kari Nygaard, platform admin at bleqq</h3>
+      <dl class="kv"><dt>Purpose</dt><dd>Checking why an import stopped half way.</dd><dt>Window</dt><dd>11 Sep 2026 10:00, revoked 10:24 by Erik Holm</dd><dt>Approved</dt><dd>11 Sep 2026 10:00 by Erik Holm</dd></dl>
+    </div>
+    <div class="row">
+      <div class="pills"><span class="pill">Declined</span></div>
+      <h3>Kari Nygaard, platform admin at bleqq</h3>
+      <dl class="kv"><dt>Purpose</dt><dd>Routine check of the search index.</dd><dt>Asked for</dt><dd>4 hours</dd><dt>Declined</dt><dd>3 Sep 2026 16:40 by Sara Lindqvist</dd></dl>
+    </div>
+    <div class="row">
+      <div class="pills"><span class="pill">Lapsed</span></div>
+      <h3>Lars Mikkelsen, platform admin at bleqq</h3>
+      <dl class="kv"><dt>Purpose</dt><dd>Confirming a fix to the Danish source.</dd><dt>Asked for</dt><dd>1 hour</dd><dt>Lapsed</dt><dd>30 Aug 2026 11:15, nobody decided within 24 hours</dd></dl>
+    </div>
+  </div>
+</section>
+
+<h2 class="k">2 · Approve: the passkey prompt is open (auth-step-up.html)</h2>
+<div class="row" aria-busy="true">
+  <div class="pills"><span class="pill warning">Waiting for approval</span></div>
+  <h3>Kari Nygaard, platform admin at bleqq</h3>
+  <p class="meta" style="margin:8px 0 0">Approving asks for your passkey. They can read, never change, and cannot search, ask or download files.</p>
+  <div class="bar"><button class="btn outline small" disabled>Decline</button><button class="btn small" disabled>Approving…</button></div>
+</div>
+
+<h2 class="k">3 · After each decision (the status line, then the row moves)</h2>
+<p class="status" role="status">Approved. Kari Nygaard can read until 11:14 today.</p>
+<p class="status" role="status">Declined. Nothing was opened.</p>
+<p class="status" role="status">Revoked. Lars Mikkelsen's access ended at 09:47.</p>
+
+<h2 class="k">4 · Refusals rendered in place</h2>
+<p class="cap">The passkey prompt was cancelled; the request lapsed or another admin decided it while the page was open (the server's 409, then the list reloads); a member without security manage, who sees the panel with no buttons and meets the 403 if they call the route.</p>
+<div class="row"><p class="err" role="alert" style="color:var(--negative);margin:0">Nothing changed. Approving needs your passkey.</p><div class="bar"><button class="btn outline small">Decline</button><button class="btn small">Approve</button></div></div>
+<div class="row" style="margin-top:8px"><p class="err" role="alert" style="color:var(--negative);margin:0">This request was already decided or has lapsed. The list now shows where it stands.</p></div>
+<div class="row" style="margin-top:8px"><p class="err" role="alert" style="color:var(--negative);margin:0">You do not have permission to do this. Needs security manage.</p></div>
+
+<h2 class="k">5 · The read-only banner, on every tenant screen of a support session (a component sample)</h2>
+<p class="cap">What Kari Nygaard sees once she enters. It sits above the page title on every screen, names the bank, says it is read-only and when it ends, and carries Leave. The rail shows only what the session can read.</p>
+<div class="banner" role="status"><p><b>Support access to Example Bank AB.</b> Read only, until 11:14.</p><button class="btn outline small">Leave</button></div>
+<div class="head"><div><h1>Obligations</h1></div></div>
+
+<h2 class="k">6 · The two refusals a support session meets</h2>
+<p class="cap">403 support_read_only: any write, an evidence or export download, search or Ask. Rendered in place where the action was, with nothing changed. 401 support_access_ended: the grant was revoked or its window closed; the next page is this, and the one after that is Not found.</p>
+<div class="row"><p class="err" role="alert" style="color:var(--negative);margin:0">A support session can only read. Nothing was changed.</p></div>
+<div class="restricted" role="alert"><h1>Support access has ended</h1><p>Example Bank AB revoked the access, or its window closed. Nothing more can be read.</p><p><a href="#">Back to the console</a></p></div>
+
+<h2 class="k">7 · Empty, loading, error and denied, in both themes</h2>
+<p class="cap">Empty is the ordinary state. There is no denied page: any member may read the panel, and only the buttons need security manage.</p>
+<div class="statebox">
+  <div class="theme light">
+    <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Light</p>
+    <div class="empty"><h2>Nobody from bleqq has asked for access</h2><p>When someone does, the members who manage security are emailed and the request waits here.</p></div>
+    <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:16px 0"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+    <div class="errorstate" role="alert"><h2>Could not load support access</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+    <div class="row" style="margin-top:16px"><div class="pills"><span class="pill warning">Waiting for approval</span></div><h3>Kari Nygaard, platform admin at bleqq</h3><p class="meta" style="margin:0">Only a member who manages security can approve or decline.</p></div>
+  </div>
+  <div class="theme dark">
+    <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Dark</p>
+    <div class="empty"><h2>Nobody from bleqq has asked for access</h2><p>When someone does, the members who manage security are emailed and the request waits here.</p></div>
+    <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:16px 0"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+    <div class="errorstate" role="alert"><h2>Could not load support access</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+    <div class="row" style="margin-top:16px"><div class="pills"><span class="pill warning">Waiting for approval</span></div><h3>Kari Nygaard, platform admin at bleqq</h3><p class="meta" style="margin:0">Only a member who manages security can approve or decline.</p></div>
+  </div>
+</div>
+
+<h2 class="k">8 · At 375 px, light and dark</h2>
+<div class="statebox">
+  <div class="theme light" style="padding:0;border:0">
+    <div class="phone">
+      <div class="banner" role="status"><p><b>Support access to Example Bank AB.</b> Read only, until 11:14.</p><button class="btn outline small">Leave</button></div>
+      <div class="row">
+        <div class="pills"><span class="pill warning">Waiting for approval</span></div>
+        <h3>Kari Nygaard, platform admin at bleqq</h3>
+        <dl class="kv"><dt>Purpose</dt><dd>Your weekly briefing stopped arriving on 22 Sep.</dd><dt>Ticket</dt><dd class="mono">SUP-2291</dd><dt>Asked for</dt><dd>2 hours, starting when you approve</dd></dl>
+        <p class="meta" style="margin:8px 0 0">Approving asks for your passkey.</p>
+        <div class="bar"><button class="btn outline small">Decline</button><button class="btn small">Approve</button></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="pills"><span class="pill notice">Active</span></div>
+        <h3>Lars Mikkelsen, platform admin at bleqq</h3>
+        <dl class="kv"><dt>Window</dt><dd>08:30 to 10:30</dd><dt>Approved</dt><dd>08:30 by Erik Holm</dd></dl>
+        <div class="bar"><button class="btn danger small">Revoke</button></div>
+      </div>
+      <div class="row" style="margin-top:8px"><div class="pills"><span class="pill">Ended</span><span class="pill">Revoked</span><span class="pill">Declined</span><span class="pill">Lapsed</span></div></div>
+    </div>
+  </div>
+  <div class="theme dark" style="padding:0;border:0">
+    <div class="phone">
+      <div class="banner" role="status"><p><b>Support access to Example Bank AB.</b> Read only, until 11:14.</p><button class="btn outline small">Leave</button></div>
+      <div class="row">
+        <div class="pills"><span class="pill warning">Waiting for approval</span></div>
+        <h3>Kari Nygaard, platform admin at bleqq</h3>
+        <dl class="kv"><dt>Purpose</dt><dd>Your weekly briefing stopped arriving on 22 Sep.</dd><dt>Ticket</dt><dd class="mono">SUP-2291</dd><dt>Asked for</dt><dd>2 hours, starting when you approve</dd></dl>
+        <p class="meta" style="margin:8px 0 0">Approving asks for your passkey.</p>
+        <div class="bar"><button class="btn outline small">Decline</button><button class="btn small">Approve</button></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="pills"><span class="pill notice">Active</span></div>
+        <h3>Lars Mikkelsen, platform admin at bleqq</h3>
+        <dl class="kv"><dt>Window</dt><dd>08:30 to 10:30</dd><dt>Approved</dt><dd>08:30 by Erik Holm</dd></dl>
+        <div class="bar"><button class="btn danger small">Revoke</button></div>
+      </div>
+      <div class="row" style="margin-top:8px"><div class="pills"><span class="pill">Ended</span><span class="pill">Revoked</span><span class="pill">Declined</span><span class="pill">Lapsed</span></div></div>
+    </div>
+  </div>
+</div>
+
+<p class="note">Support access card (/admin/support-access), under Admin beside Security.
+It follows D-49 and ADR 0042. A platform person asks from the console with a purpose, an
+optional ticket and up to SUPPORT_ACCESS_MAX_HOURS (4); the request grants nothing, emails
+the members who hold security manage, and lapses after SUPPORT_ACCESS_REQUEST_TTL_HOURS (24)
+if nobody decides. Approve needs security manage and a passkey, and the window starts at
+approval; Decline and Revoke need security manage and no passkey, because they only take
+access away. The approver is never the person asking, which the database enforces. The
+state is a pill from the grant's own kind: "Waiting for approval" is warning, as everywhere
+it appears; Active is notice, like a running agent; Ended, Revoked, Declined and Lapsed are
+information. The platform person is named here, with their role, because the bank must know
+who reads its data; the console never names a member of the bank. The history lists each
+support access read row under its grant, with the route template and the path ids and
+never a query or a body, and links to the audit log filtered to that grant. The banner and
+the two refusals are drawn once here and used on every tenant screen a support session
+opens. Names, tickets and times are sample data.</p>
+
+</main>
+</body>
+</html>

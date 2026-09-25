@@ -23,7 +23,8 @@ from apps.library.models import Language
 from apps.shared import permissions as perms
 from apps.shared import tenancy
 from apps.shared.audit import Actor, record
-from apps.shared.models import Tenant, TenantContentLanguage
+from apps.shared.errors import ProblemError
+from apps.shared.models import Tenant, TenantContentLanguage, Weekday
 from apps.taxonomy.models import FootprintTerm
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.tenants.models import SupportAccess, SupportAccessLevel
@@ -71,6 +72,7 @@ def tenant_out(tenant: Tenant) -> dict[str, Any]:
         "default_language": language_ref(tenant.default_language),
         "content_languages": [language_ref(language) for language in content_languages(tenant)],
         "ai_enabled": tenant.ai_enabled,
+        "workflow": workflow_out(tenant),
         "onboarding": onboarding(tenant),
     }
 
@@ -177,6 +179,101 @@ def set_ai_enabled(*, tenant: Tenant, actor: Actor, enabled: bool, step_up_asser
         step_up_assertion_id=step_up_assertion_id,
     )
     return tenant
+
+
+# ---------------------------------------------------------------------------------------
+# The workflow policy (COL-02): six columns on the tenant, changed under workflow.manage
+# ---------------------------------------------------------------------------------------
+def _workflow_values(tenant: Tenant) -> dict[str, Any]:
+    """The policy as the audit event records it: keys and numbers, never a label."""
+    return {
+        "reminderDaysBefore": list(tenant.reminder_days_before),
+        "reviewReminderDaysBefore": list(tenant.review_reminder_days_before),
+        "escalateAfterDays": tenant.escalate_after_days,
+        "escalateToRole": tenant.escalate_to_role,
+        "digestWeekday": tenant.digest_weekday,
+        "triageTargetHours": tenant.triage_target_hours,
+    }
+
+
+def workflow_out(tenant: Tenant) -> dict[str, Any]:
+    # A retired role still reads with its label: retiring the target is refused nowhere yet,
+    # and the policy should say what it points at rather than fail the whole profile.
+    role = roles_logic.tenant_roles(tenant.id, include_retired=True).filter(key=tenant.escalate_to_role).first()  # ordering: unique (tenant, key), at most one row
+    order = roles_logic.language_order(None, tenant)
+    return {
+        "reminder_days_before": list(tenant.reminder_days_before),
+        "review_reminder_days_before": list(tenant.review_reminder_days_before),
+        "escalate_after_days": tenant.escalate_after_days,
+        "escalate_to_role": roles_logic.role_ref(role, order) if role else {"key": tenant.escalate_to_role, "kind": None, "label": tenant.escalate_to_role},
+        "digest_weekday": tenant.digest_weekday,
+        "triage_target_hours": tenant.triage_target_hours,
+    }
+
+
+def _unknown_key(field: str, detail: str) -> ProblemError:
+    return ProblemError(status=422, code="unknown_key", detail=detail, errors=[{"field": field, "message": detail}])
+
+
+def _lead_days(values: list[int]) -> list[int]:
+    return sorted(set(values), reverse=True)
+
+
+def update_workflow(
+    *,
+    tenant: Tenant,
+    actor: Actor,
+    reminder_days_before: list[int] | None,
+    review_reminder_days_before: list[int] | None,
+    escalate_after_days: int | None,
+    escalate_to_role: str | None,
+    digest_weekday: str | None,
+    triage_target_hours: int | None,
+) -> Tenant:
+    """The schema has already bounded every number and list; this checks the two keys against
+    what they name and writes the policy with one audit event. The row is locked so two edits
+    at once each record the state the other left."""
+    tenant = Tenant.objects.select_for_update().get(pk=tenant.pk)
+    before = _workflow_values(tenant)
+    if escalate_to_role is not None:
+        key = escalate_to_role.strip().lower()
+        if not roles_logic.tenant_roles(tenant.id).filter(key=key).exists():
+            raise _unknown_key("escalateToRole", "Pick one of your organisation's roles.")
+        tenant.escalate_to_role = key
+    if digest_weekday is not None:
+        if digest_weekday not in {kind.value for kind in Weekday}:
+            raise _unknown_key("digestWeekday", "Pick a day of the week.")
+        tenant.digest_weekday = digest_weekday
+    if reminder_days_before is not None:
+        tenant.reminder_days_before = _lead_days(reminder_days_before)
+    if review_reminder_days_before is not None:
+        tenant.review_reminder_days_before = _lead_days(review_reminder_days_before)
+    if escalate_after_days is not None:
+        tenant.escalate_after_days = escalate_after_days
+    if triage_target_hours is not None:
+        tenant.triage_target_hours = triage_target_hours
+    tenant.save(
+        update_fields=[
+            "reminder_days_before",
+            "review_reminder_days_before",
+            "escalate_after_days",
+            "escalate_to_role",
+            "digest_weekday",
+            "triage_target_hours",
+        ]
+    )
+    record(
+        action="tenant.workflow_updated",
+        actor=actor,
+        subject_type="tenant",
+        subject_id=tenant.id,
+        subject_title=tenant.name,
+        summary="Workflow policy updated.",
+        tenant_id=tenant.id,
+        before=before,
+        after=_workflow_values(tenant),
+    )
+    return Tenant.objects.select_related("default_language").get(pk=tenant.pk)
 
 
 # ---------------------------------------------------------------------------------------

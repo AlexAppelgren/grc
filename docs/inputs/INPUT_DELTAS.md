@@ -343,8 +343,9 @@ here names it with its backticked `METHOD /path`.
   the designed `settings` blob and `region`. The response is `{id, name, slug, timezone,
   status, defaultLanguage{key,kind,label}, contentLanguages[...], onboarding{stepsDone,
   steps[{key,done}]}}`; the patch takes `{name?, timezone?, defaultLanguage?,
-  contentLanguages?}` as keys. Reminder, escalation and retention settings land with
-  the workflow policy (chunk 9) as columns of their own.
+  contentLanguages?}` as keys. Reminder, escalation, digest-day and triage settings land
+  with the workflow policy (chunk 10, `c10-workflow-policy`, section 18) as columns of their
+  own; retention is chunk 12's.
 - `GET /tenant/members` answers a page `{items, total}` (playbook 10: every list
   paginates) of `{userId, email, name, status, roles[{key,kind,label}], title,
   lastSeenAt, passkeyCount, activeSessions}` rather than a bare array of the designed
@@ -1326,6 +1327,27 @@ Section 17 of `schema.sql` (`org_unit`, `licence`, `tenant_product`, `tenant_pro
   both above zero and capped by `SESSION_IDLE_MINUTES_MAX` and `SESSION_ABSOLUTE_HOURS_MAX`
   in the write), `updated_by_id`, `updated_at`. No row means the platform defaults.
   `CREDENTIAL_POLICY_NOTICE_DAYS` (14) is the default notice a tightening gives.
+
+## 18. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
+
+The designed `tenant.settings` blob is six columns on `tenant` (shared 0009):
+`reminder_days_before` and `review_reminder_days_before` (one to five day counts, each 1 to
+90, stored largest first; defaults `[3]` and `[30]`), `escalate_after_days` (1 to 90,
+default 5), `escalate_to_role` (the key of an active `TenantRole` of that bank, default
+`compliance_officer`), `digest_weekday` (a kind, `monday` to `sunday`, default `monday`) and
+`triage_target_hours` (1 to 720, default 48). Each platform default is a setting with an env
+override (`WORKFLOW_*`); the migration wrote them into every existing tenant, and check
+constraints hold the bounds for every writer. `GET /tenant` gains `workflow`, with the role
+as `{key, kind, label}`.
+
+Writes go through a route of their own, `PATCH /tenant/workflow` (`updateTenantWorkflow`),
+under `workflow.manage` and with no step-up, rather than through `PATCH /tenant`, which stays
+under `security.manage`. It is simpler than splitting one patch between two permissions: no
+body is ever half-allowed, and each permission reaches exactly one route. A number or list out
+of range answers 422 `validation_error` and an unknown role or weekday 422 `unknown_key`, each
+naming the field in `errors`. The change is recorded as `tenant.workflow_updated` with every
+value before and after. `review_reminder_days_before` is not in the chunk 10 brief's five
+columns; the wave plan added it for the review reminder COL-02 names.
 
 ## c8-register-models. The register as tables (2026-09-25, register 0001 and 0002)
 

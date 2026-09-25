@@ -5,8 +5,9 @@ depend on (`EXPECTED_TENANTS`: fixed ids, slugs, names, timezones), that every f
 in `SEED_LOGINS` has exactly its roles, its passkey (the fixed credential id) or none, and
 that the one user awaiting enrolment holds an open invitation whose token is the E2E
 literal under E2E_MODE; that every login a journey spends (`reserved_for`, playbook 8.3
-rule 4) is reserved for one journey, starts active with its fixed passkey and never holds
-a role another journey needs it for; that two library editors hold the console, so a
+rule 4) is no shared journey's login, names only scenarios that exist, and starts active
+with its fixed passkey, and that a login spent beyond repair is its journey's alone; that
+the R2 roster holds each login its journeys need with the permissions they rely on; that two library editors hold the console, so a
 proposal can be decided by someone other than its author; that one proposal waits in the
 console queue for every journey that decides one, each on a target of its own and each with
 a source for every field it changes, and that one open problem report waits inside tenant A
@@ -21,8 +22,10 @@ the test named the tenant and the property.
 from __future__ import annotations
 
 import datetime
+import re
 from collections import Counter
 from io import StringIO
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
@@ -35,16 +38,20 @@ from apps.governance.models import AiGeneration
 from apps.home.models import Briefing, BriefingItem
 from apps.home.roadmap import quarter_of
 from apps.identity import tokens
-from apps.identity.models import ApiKey, Invitation, Membership, PlatformRoleAssignment, User, UserStatus, WebAuthnCredential
+from apps.identity.models import ApiKey, Invitation, Membership, PlatformRoleAssignment, TenantRole, User, UserStatus, WebAuthnCredential
 from apps.shared import tenancy
 from apps.shared.adapters.mailer import MockMailer, OutgoingMail
 from apps.shared.e2e_logins import (
     E2E_INVITATION_TOKEN_ANNA,
     LIBRARY_EDITOR_ROLE,
     REISSUE_LOGIN_EMAIL,
+    NO_RECORD_READ_ROLE,
+    R2_ROSTER_IDS,
     SEED_LOGINS,
     TENANT_A_SLUG,
     TENANT_B_SLUG,
+    SeedLogin,
+    _id,
 )
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
 from apps.library.models import Authority, DatePrecision, Instrument, Obligation, ObligationVersion, ProblemReport, ReportStatus, Verification
@@ -68,6 +75,7 @@ from apps.shared.e2e_seed import (
     EXPECTED_PROBLEM_REPORT,
     EXPECTED_PROPOSALS,
     EXPECTED_STANDARD_CHANGE,
+    EXPECTED_NO_RECORD_READ_ROLE,
     EXPECTED_TENANT_A_ONLY,
     EXPECTED_TENANTS,
     EXPECTED_WATCHED_MARKETS,
@@ -90,9 +98,35 @@ from apps.taxonomy.matching import footprint_of, in_footprint, in_footprint_sql,
 from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm, TaxonomyTerm, WatchedMarket
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
+# c8-seed-org-register
+from apps.register.models import ComplianceAssessment, Gap, InternalLink, Interpretation, TenantObligation, TenantObligationScope
+from apps.shared.e2e_seed import (
+    EXPECTED_ORG_REGISTER,
+    HISTORY_OBLIGATION,
+    J9_CHANGED_OBLIGATION,
+    J9_OVERDUE_OBLIGATION,
+    J9_OWNER,
+    LEAVER,
+    NOT_APPLYING_OBLIGATION,
+    RETAIL_DEPARTMENT,
+    RETAIL_TEAM,
+    SPANNING_OBLIGATION,
+)
+from apps.taxonomy.models import Team
+from apps.tenants.models import InternalItem, Licence, LicenceServiceTerm, OrgUnit, TeamMember, TenantProduct, TenantProductTerm
 
 # The login search.journey.spec.ts asks as (LOGINS.reader), tenant A's reader.
 READER_EMAIL = "reader@example-bank.test"
+
+
+def _scenario_ids() -> set[str]:
+    """Every scenario ID an app.md heads (`### <PREFIX>-S<n> — ...`)."""
+    apps_dir = Path(settings.BASE_DIR) / "apps"
+    return {
+        match.group(1)
+        for spec in apps_dir.glob("*/app.md")
+        for match in re.finditer(r"^### ([A-Z0-9]+-S\d+) ", spec.read_text(encoding="utf-8"), re.MULTILINE)
+    }
 
 
 def _scope(obligation: Obligation) -> dict[str, set[str]]:
@@ -206,28 +240,40 @@ class SeededTenantsAndLogins(SeededOnce):
     def test_logins_spent_by_a_journey_are_dedicated_to_it(self) -> None:
         """ADM-S2 re-issues an enrolment, which retires the member's passkeys and sets them
         back to invited, and the UI cannot undo it. It spends a login of its own, so the
-        approver the footprint journeys sign in as survives a full run."""
+        approver the footprint journeys sign in as survives a full run. Every reserved login
+        is one no shared journey signs in as, and names only scenarios that exist."""
         reserved = [login for login in SEED_LOGINS if login.reserved_for]
         by_email = {login.email: login for login in SEED_LOGINS}
         self.assertIn(REISSUE_LOGIN_EMAIL, by_email, "ADM-S2 needs its dedicated login in the roster")
         self.assertEqual(by_email[REISSUE_LOGIN_EMAIL].reserved_for, ("ADM-S2",))
-        scenarios = [scenario for login in reserved for scenario in login.reserved_for]
-        self.assertEqual(len(scenarios), len(set(scenarios)), "a journey spends one dedicated login, and no two journeys share one")
+        # The logins a journey spends beyond repair are that journey's alone.
+        for spent, scenario in ((REISSUE_LOGIN_EMAIL, "ADM-S2"), ("language@example-bank.test", "I18N-S3")):
+            holders = [login.email for login in reserved if scenario in login.reserved_for]
+            self.assertEqual(holders, [spent], f"{scenario} spends one login of its own")
         # The system-role logins other journeys sign in as are never the ones spent.
-        shared_roles = {"admin", "compliance_officer", "owner", "approver", "reader", "auditor"}
-        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
-        tenancy.activate(tenant_a.id)
+        shared_logins = {f"{role}@example-bank.test" for role in ("admin", "compliance_officer", "owner", "approver", "reader", "auditor")}
+        known = _scenario_ids()
+        tenants = {t.slug: t for t in Tenant.objects.all()}
         for login in reserved:
             with self.subTest(login=login.email):
+                self.assertNotIn(login.email, shared_logins)
+                self.assertEqual(len(login.reserved_for), len(set(login.reserved_for)))
+                self.assertFalse(set(login.reserved_for) - known, "reserved for a scenario no app.md names")
                 self.assertTrue(login.has_passkey, "it must hold a passkey for re-issue to retire")
                 self.assertFalse(login.awaiting_enrolment)
-                self.assertFalse(set(login.tenant_roles) & shared_roles, "a spent login never holds a role a shared login stands for")
+                assert login.tenant_slug is not None, "a reserved login is a bank's member"
+                tenancy.activate(tenants[login.tenant_slug].id)
                 user = User.objects.get(email=login.email)
                 self.assertEqual(user.status, UserStatus.ACTIVE.value)
                 self.assertEqual(WebAuthnCredential.objects.filter(user=user, retired_at__isnull=True).get().credential_id, E2E_PASSKEYS[login.email].credential_id)
-                membership = Membership.objects.get(user=user, tenant=tenant_a)
-                # ADM-S2 grants Reader and then proves the row shows it, so the seed must not.
-                self.assertNotIn("reader", set(membership.roles.values_list("key", flat=True)))
+                self.assertTrue(Membership.objects.filter(user=user, tenant=tenants[login.tenant_slug]).exists())
+        # ADM-S2 grants Reader and then proves the row shows it, so the seed must not, and its
+        # login holds no role a shared login stands for.
+        reissue = by_email[REISSUE_LOGIN_EMAIL]
+        self.assertFalse(set(reissue.tenant_roles) & {"admin", "compliance_officer", "owner", "approver", "reader", "auditor"})
+        tenancy.activate(tenants[TENANT_A_SLUG].id)
+        reissue_membership = Membership.objects.get(user__email=REISSUE_LOGIN_EMAIL, tenant=tenants[TENANT_A_SLUG])
+        self.assertNotIn("reader", set(reissue_membership.roles.values_list("key", flat=True)))
         # The approver stays shared: the footprint journeys (FP-S2, FP-S5) sign in as them.
         self.assertEqual(by_email["approver@example-bank.test"].reserved_for, ())
 
@@ -996,6 +1042,8 @@ class ReseedTenantsAndScope(SeededOnce):
             created = AuditEvent.objects.filter(tenant=tenant, action="vocabulary.created")
             # TEN-S7's one tenant-A tag is the seed's work too, but not a system row.
             system = created.exclude(subject_title=f"{EXPECTED_TENANT_A_ONLY.tag_list}:{EXPECTED_TENANT_A_ONLY.tag_key}")
+            # c8-seed-org-register: each bank's own teams are the seed's work too, not system rows.
+            system = system.exclude(subject_title__in=[f"team:{team.key}" for spec in EXPECTED_ORG_REGISTER for team in spec.teams])
             self.assertEqual(system.count(), sum(len(rows) for _, rows in TENANT_SYSTEM_ROWS.values()))
             self.assertEqual(set(created.values_list("actor_label", flat=True)), {"seed_e2e"})
 
@@ -1285,3 +1333,271 @@ class SeedRunsInsideTheTest(TestCase):
     def test_the_standard_toggle_refuses_a_deployed_environment(self) -> None:
         with self.assertRaises(SeedRefused):
             call_command("e2e_follow_standard", "on", stdout=StringIO())
+
+
+# --- r2-e2e-login-roster ------------------------------------------------------------------------
+class SeededR2Roster(SeededOnce):
+    """Every login the R2 journeys need sits in one numbered block from `_id(18)`, reserved for
+    its journeys, mirrored in passkeys.ts, and holding the permissions its journeys rely on."""
+
+    def _login(self, email: str) -> SeedLogin:
+        return next(login for login in SEED_LOGINS if login.email == email)
+
+    def _permissions(self, email: str) -> set[str]:
+        login = self._login(email)
+        assert login.tenant_slug is not None
+        tenant = Tenant.objects.get(slug=login.tenant_slug)
+        tenancy.activate(tenant.id)
+        membership = Membership.objects.get(user__email=email, tenant=tenant)
+        return {permission for role in membership.roles.all() for permission in role.permissions}
+
+    def test_the_roster_is_one_numbered_block_each_login_reserved_and_mirrored(self) -> None:
+        ids = [login.id for login in SEED_LOGINS]
+        emails = [login.email for login in SEED_LOGINS]
+        self.assertEqual(len(ids), len(set(ids)), "no two logins share an _id(n)")
+        self.assertEqual(len(emails), len(set(emails)))
+        roster = [login for login in SEED_LOGINS if login.id in {_id(n) for n in R2_ROSTER_IDS}]
+        self.assertEqual([login.id for login in roster], [_id(n) for n in R2_ROSTER_IDS], "the roster runs in order from _id(18)")
+        passkeys_ts = (Path(settings.BASE_DIR).parent / "frontend" / "tests" / "e2e" / "support" / "passkeys.ts").read_text(encoding="utf-8")
+        for login in roster:
+            with self.subTest(login=login.email):
+                self.assertTrue(login.reserved_for)
+                self.assertTrue(f"'{login.email}'" in passkeys_ts, "every roster login has a LOGINS entry in passkeys.ts")
+                self.assertIn(login.email, E2E_PASSKEYS)
+
+    def test_each_journey_finds_the_people_it_needs(self) -> None:
+        # CAS-S9 and J-3: the owner who can also sign off, refused on their own case.
+        self.assertTrue({"cases.work", "cases.signoff"} <= self._permissions("owner-approver@example-bank.test"))
+        # TEN-S4: the absent approver and a delegate who can approve in their place.
+        self.assertIn("cases.signoff", self._permissions("away@example-bank.test"))
+        self.assertIn("cases.signoff", self._permissions("approver@example-bank.test"))
+        # ACC-S11: two people in tenant A hold security.manage.
+        self.assertIn("security.manage", self._permissions("security@example-bank.test"))
+        self.assertIn("security.manage", self._permissions("admin@example-bank.test"))
+        # ACC-S3: a compliance officer of tenant A.
+        self.assertIn("compliance_officer", self._login("tokens@example-bank.test").tenant_roles)
+        # COL-S2: a Swedish-speaking member, as the person row says.
+        user = User.objects.get(email="sv-member@example-bank.test")
+        assert user.locale is not None
+        self.assertEqual(user.locale.key, "sv")
+        # CAS-S14 and TEN-S7: tenant B's own compliance officer.
+        officer = self._login("compliance_officer@second-bank.test")
+        self.assertEqual(officer.tenant_slug, TENANT_B_SLUG)
+        self.assertIn("cases.triage", self._permissions(officer.email))
+        # HOM-S13, TEN-S5, TEN-S8: members of tenant A who can read the register.
+        for email in ("head@example-bank.test", "participant@example-bank.test", "leaver@example-bank.test", "teams@example-bank.test"):
+            with self.subTest(login=email):
+                self.assertEqual(self._login(email).tenant_slug, TENANT_A_SLUG)
+                self.assertIn("register.read", self._permissions(email))
+        # TEN-S5: the member to be removed can own work.
+        self.assertIn("register.edit", self._permissions("leaver@example-bank.test"))
+
+    def test_one_login_holds_a_tenant_role_that_reads_neither_register_nor_cases(self) -> None:
+        """HOM-S10, COL-S12 and COL-S8 need a member who cannot read the register or cases."""
+        spec = EXPECTED_NO_RECORD_READ_ROLE
+        self.assertEqual(spec.key, NO_RECORD_READ_ROLE)
+        tenant = Tenant.objects.get(slug=spec.tenant_slug)
+        tenancy.activate(tenant.id)
+        role = TenantRole.objects.get(tenant=tenant, key=spec.key)
+        self.assertFalse(role.is_system)
+        self.assertEqual(set(role.permissions), set(spec.permissions))
+        granted = self._permissions("library-only@example-bank.test")
+        self.assertEqual(granted, set(spec.permissions))
+        self.assertFalse({"register.read", "cases.read"} & granted)
+        self.assertIn("library.read", granted)
+        tenancy.activate(Tenant.objects.get(slug=TENANT_B_SLUG).id)
+        self.assertFalse(TenantRole.objects.filter(key=spec.key).exists(), "the role is tenant A's alone")
+
+    def test_a_reseed_keeps_one_role_one_audit_row_and_the_same_logins(self) -> None:
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        users, memberships = User.objects.count(), Membership.objects.count()
+        again = seed_e2e()
+        self.assertEqual(again["logins"], len(SEED_LOGINS))
+        self.assertEqual((User.objects.count(), Membership.objects.count()), (users, memberships))
+        tenancy.activate(tenant_a.id)
+        role = TenantRole.objects.get(key=NO_RECORD_READ_ROLE)
+        created = AuditEvent.objects.filter(tenant=tenant_a, action="role.created", subject_id=role.id)
+        self.assertEqual(created.count(), 1, "the role is written once, through record()")
+        self.assertEqual(created.get().actor_label, "seed_e2e")
+# --- end r2-e2e-login-roster --------------------------------------------------------------------
+
+
+# --- c8-seed-org-register -----------------------------------------------------------------------
+class SeededOrgAndRegister(SeededOnce):
+    """Each bank's organisation and register (TEN-02, TEN-03, TEN-05, HOM-05, REG-01 to
+    REG-05), named row by row as `EXPECTED_ORG_REGISTER` has it, so a seed change cannot
+    hollow out a chunk 8 journey without failing here."""
+
+    def _activate(self, slug: str) -> Tenant:
+        tenant = Tenant.objects.get(slug=slug)
+        tenancy.activate(tenant.id)
+        return tenant
+
+    def _today(self, tenant: Tenant) -> datetime.date:
+        return datetime.datetime.now(ZoneInfo(tenant.timezone)).date()
+
+    def _entry(self, stable_key: str) -> TenantObligation:
+        return TenantObligation.objects.select_related("compliance_status", "risk_rating", "owner_team").get(
+            obligation__stable_key=stable_key
+        )
+
+    def test_each_bank_holds_its_units_licences_products_and_teams(self) -> None:
+        for spec in EXPECTED_ORG_REGISTER:
+            with self.subTest(tenant=spec.tenant_slug):
+                self._activate(spec.tenant_slug)
+                units = {unit.name: unit for unit in OrgUnit.objects.select_related("parent", "entity_term__dimension", "head_user")}
+                self.assertEqual(set(units), {unit.name for unit in spec.units})
+                for unit in spec.units:
+                    row = units[unit.name]
+                    self.assertEqual(row.kind, unit.kind)
+                    self.assertEqual(row.parent.name if row.parent else None, unit.parent)
+                    self.assertEqual(row.org_number, unit.org_number)
+                    term = row.entity_term
+                    self.assertEqual(f"{term.dimension.key}:{term.key}" if term else None, unit.entity_term)
+                    self.assertEqual(row.head_user.email if row.head_user else None, unit.head)
+                licences = {
+                    (licence.org_unit.name, licence.scope_note): licence
+                    for licence in Licence.objects.select_related("org_unit", "licence_type__dimension", "authority")
+                }
+                self.assertEqual(set(licences), {(licence.org_unit, licence.scope_note) for licence in spec.licences})
+                for licence in spec.licences:
+                    licence_row = licences[(licence.org_unit, licence.scope_note)]
+                    self.assertEqual(f"{licence_row.licence_type.dimension.key}:{licence_row.licence_type.key}", licence.licence_type)
+                    services = {f"{s.term.dimension.key}:{s.term.key}" for s in LicenceServiceTerm.objects.filter(licence=licence_row)}
+                    self.assertEqual(services, set(licence.services))
+                products = {product.name: product for product in TenantProduct.objects.select_related("org_unit", "owner_user")}
+                self.assertEqual(set(products), {product.name for product in spec.products})
+                for product in spec.products:
+                    product_row = products[product.name]
+                    assert product_row.org_unit is not None and product_row.owner_user is not None
+                    self.assertEqual(
+                        (product_row.org_unit.name, product_row.status, product_row.owner_user.email), (product.org_unit, product.status, product.owner)
+                    )
+                    terms = {f"{t.term.dimension.key}:{t.term.key}" for t in TenantProductTerm.objects.filter(product=product_row)}
+                    self.assertEqual(terms, set(product.terms))
+                for team in spec.teams:
+                    team_row = Team.objects.select_related("org_unit").get(key=team.key)
+                    self.assertEqual(team_row.org_unit.name if team_row.org_unit else None, team.org_unit)
+                    self.assertEqual({label.language: label.text for label in team_row.labels.all()}, team.labels)
+                    members = set(TeamMember.objects.filter(team=team_row).values_list("user__email", flat=True))
+                    self.assertEqual(members, set(team.members))
+
+    def test_the_department_head_sees_a_team_owned_and_a_person_owned_obligation(self) -> None:
+        """HOM-S9 and J-9: Karin heads Retail Banking, Cards and payments sits under it, and
+        Retail compliance, in the department, owns one entry while its member Johan owns others."""
+        self._activate(TENANT_A_SLUG)
+        department = OrgUnit.objects.get(name=RETAIL_DEPARTMENT)
+        assert department.head_user is not None
+        self.assertEqual(department.head_user.email, "head@example-bank.test")
+        self.assertTrue(OrgUnit.objects.filter(parent=department, kind="business_unit").exists())
+        team = Team.objects.get(key=RETAIL_TEAM)
+        self.assertEqual(team.org_unit_id, department.id)
+        self.assertTrue(TenantObligation.objects.filter(owner_team=team, first_line_owner__isnull=True).exists())
+        self.assertTrue(TeamMember.objects.filter(team=team, user__email=J9_OWNER).exists())
+        self.assertTrue(TenantObligation.objects.filter(first_line_owner__email=J9_OWNER).exists())
+
+    def test_j9_finds_the_owners_overdue_review_and_a_confirmed_change_on_their_obligation(self) -> None:
+        tenant = self._activate(TENANT_A_SLUG)
+        overdue = self._entry(J9_OVERDUE_OBLIGATION)
+        self.assertEqual(overdue.first_line_owner.email, J9_OWNER)
+        assert overdue.next_review_date is not None
+        self.assertLess(overdue.next_review_date, self._today(tenant))
+        changed = self._entry(J9_CHANGED_OBLIGATION)
+        self.assertEqual(changed.first_line_owner.email, J9_OWNER)
+        link = ChangeObligation.objects.get(obligation__stable_key=J9_CHANGED_OBLIGATION, confirmed_at__isnull=False)
+        self.assertTrue(ChangeCase.objects.filter(change=link.change).exists(), "tenant A has the change as a case")
+        self.assertFalse(
+            TenantObligation.objects.filter(first_line_owner__email="participant@example-bank.test").exists(),
+            "J-9's contributor owns nothing, so the obligation reaches their My work only as a participant",
+        )
+
+    def test_applies_and_complies_are_kept_apart(self) -> None:
+        """REG-01, REG-02: applying and compliant; applying with a gap; not applying with the
+        status it had before; one entry kept per legal entity with a different status each."""
+        self._activate(TENANT_A_SLUG)
+        compliant = self._entry(HISTORY_OBLIGATION)
+        self.assertEqual((compliant.applicability, compliant.compliance_status.kind), ("applies", "compliant"))
+        with_gap = self._entry("obl-esma-warnings")
+        self.assertEqual((with_gap.applicability, with_gap.compliance_status.kind), ("applies", "gap"))
+        self.assertTrue(with_gap.gaps.exists())
+        not_applying = self._entry(NOT_APPLYING_OBLIGATION)
+        self.assertEqual(not_applying.applicability, "does_not_apply")
+        self.assertTrue(not_applying.applicability_reason)
+        self.assertIsNotNone(not_applying.applicability_decided_by)
+        earlier = ComplianceAssessment.objects.filter(tenant_obligation=not_applying).order_by("-assessed_at").first()
+        assert earlier is not None
+        self.assertEqual(not_applying.compliance_status_id, earlier.status_id, "the status from before stays")
+        self.assertNotEqual(not_applying.compliance_status.kind, "not_assessed")
+        spanning = self._entry(SPANNING_OBLIGATION)
+        scopes = {scope.org_unit.name: scope for scope in spanning.scopes.select_related("org_unit", "compliance_status")}
+        self.assertEqual(set(scopes), {"Example Bank AB", "Example Fonder AB"})
+        self.assertEqual(scopes["Example Bank AB"].compliance_status.key, "compliant")
+        self.assertEqual(scopes["Example Fonder AB"].compliance_status.key, "partly_compliant")
+        self.assertTrue(scopes["Example Fonder AB"].status_note)
+        for scope in scopes.values():
+            self.assertEqual(scope.applicability, "applies")
+            self.assertIsNotNone(scope.applicability_decided_at)
+
+    def test_gaps_of_every_severity_history_readings_and_links(self) -> None:
+        """REG-03 to REG-05: a gap per severity with an owner and a date, two assessments and
+        two readings a year apart, and internal items with their references and links."""
+        tenant = self._activate(TENANT_A_SLUG)
+        gaps = Gap.objects.select_related("severity", "status")
+        self.assertEqual({gap.severity.kind for gap in gaps}, {"low", "medium", "high"})
+        self.assertEqual({gap.status.kind for gap in gaps}, {"open", "remediating"})
+        for gap in gaps:
+            self.assertTrue(gap.owner_id and gap.target_date and gap.target_date > self._today(tenant))
+        entry = self._entry(HISTORY_OBLIGATION)
+        assessments = list(ComplianceAssessment.objects.filter(tenant_obligation=entry).order_by("assessed_at"))
+        self.assertEqual(len(assessments), 2)
+        self.assertGreater((assessments[1].assessed_at - assessments[0].assessed_at).days, 270)
+        self.assertEqual(assessments[-1].status_id, entry.compliance_status_id)
+        readings = list(Interpretation.objects.filter(tenant_obligation=entry).order_by("version_number"))
+        self.assertEqual([reading.version_number for reading in readings], [1, 2])
+        self.assertIsNotNone(readings[0].superseded_at)
+        self.assertIsNone(readings[1].superseded_at)
+        for item in EXPECTED_ORG_REGISTER[0].items:
+            row = InternalItem.objects.get(kind__key=item.kind, name=item.name)
+            self.assertEqual(row.reference, item.reference)
+            linked = set(
+                InternalLink.objects.filter(internal_item=row, removed_at__isnull=True).values_list(
+                    "tenant_obligation__obligation__stable_key", flat=True
+                )
+            )
+            self.assertEqual(linked, set(item.linked_to))
+
+    def test_the_member_to_be_removed_owns_work(self) -> None:
+        """TEN-S5: three obligations and a gap to reassign."""
+        self._activate(TENANT_A_SLUG)
+        self.assertEqual(TenantObligation.objects.filter(first_line_owner__email=LEAVER).count(), 3)
+        self.assertTrue(Gap.objects.filter(owner__email=LEAVER).exists())
+
+    def test_tenant_b_has_its_own_small_register_and_sees_none_of_tenant_a(self) -> None:
+        self._activate(TENANT_B_SLUG)
+        spec = EXPECTED_ORG_REGISTER[1]
+        self.assertEqual(set(OrgUnit.objects.values_list("name", flat=True)), {unit.name for unit in spec.units})
+        self.assertEqual(
+            set(TenantObligation.objects.values_list("obligation__stable_key", flat=True)), {entry.obligation for entry in spec.entries}
+        )
+        self.assertEqual(Gap.objects.count(), len(spec.gaps))
+        self.assertFalse(Team.objects.filter(key=RETAIL_TEAM).exists())
+
+    def test_a_reseed_changes_nothing_and_every_row_was_recorded(self) -> None:
+        tenant_a = self._activate(TENANT_A_SLUG)
+        models = (OrgUnit, Licence, LicenceServiceTerm, TenantProduct, TenantProductTerm, Team, TeamMember, TenantObligation,
+                  TenantObligationScope, ComplianceAssessment, Interpretation, Gap, InternalItem, InternalLink)
+        before = {model.__name__: model.objects.count() for model in models}
+        audited = AuditEvent.objects.filter(tenant=tenant_a).count()
+        seed_e2e()
+        tenancy.activate(tenant_a.id)
+        self.assertEqual({model.__name__: model.objects.count() for model in models}, before)
+        self.assertEqual(AuditEvent.objects.filter(tenant=tenant_a).count(), audited)
+        seeded = AuditEvent.objects.filter(tenant=tenant_a, action__endswith=".seeded")
+        self.assertEqual(set(seeded.values_list("actor_label", flat=True)), {"seed_e2e"})
+        for model, subject in ((OrgUnit, "org_unit"), (Gap, "gap"), (InternalLink, "internal_link"), (TeamMember, "team_member")):
+            with self.subTest(subject=subject):
+                ids = set(model.objects.values_list("id", flat=True))
+                self.assertEqual(set(seeded.filter(subject_type=subject).values_list("subject_id", flat=True)), ids)
+        for entry in TenantObligation.objects.all():
+            self.assertTrue(AuditEvent.objects.filter(action="register.entry_created", subject_id=entry.id).exists())
+# --- end c8-seed-org-register -------------------------------------------------------------------
