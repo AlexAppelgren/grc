@@ -1340,3 +1340,7 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
   `allowedTransitions` for the reader and `version`, all from `apps/cases/state.py`
   through `logic.case_facts()`. A feed row's case gains only `subStatus` and no longer
   carries `allowedTransitions`, which was always empty there.
+- **`getCaseFile`** answers `text/plain` as designed, `deleteAction` and `removeEvidence`
+  answer 204 as designed; all three are published ahead of `c9-case-file`, `c9-actions`
+  and `c9-evidence` and answer 501 `not_built` until those land, so their pending lines
+  are gone while the logic is still to come.
