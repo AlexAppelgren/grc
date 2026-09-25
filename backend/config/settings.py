@@ -792,6 +792,20 @@ if not 1 <= DIGEST_MAX_ITEMS <= 100:
     raise ImproperlyConfigured("Refusing to boot: DIGEST_MAX_ITEMS is 1 to 100.")
 
 # ---------------------------------------------------------------------------------------
+# ===== COL-02 the weekly digest's beat (apps/collab/tasks.py, c10-digest-beat-and-journeys)
+# The digest goes out at DIGEST_SEND_HOUR on each bank's own `digest_weekday`, both read on
+# the bank's clock, so the entry runs every hour beside the reminders and hands on the banks
+# whose clock has just struck it. 0 to 23, or the app refuses to boot.
+# ---------------------------------------------------------------------------------------
+DIGEST_SEND_HOUR = env_int("DIGEST_SEND_HOUR", 7)
+if not 0 <= DIGEST_SEND_HOUR <= 23:
+    raise ImproperlyConfigured("Refusing to boot: DIGEST_SEND_HOUR is 0 to 23.")
+CELERY_BEAT_SCHEDULE["collab-digests"] = {
+    "task": "apps.collab.tasks.send_digests",
+    "schedule": crontab(minute="0"),
+}
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------

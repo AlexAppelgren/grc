@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, cast
 from unittest import skip
 import datetime
-from unittest import mock, skip
+from unittest import mock
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
@@ -39,8 +39,6 @@ from apps.shared.testing import AuditAssertingClient, sign_in
 from apps.library.reading import today_for
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.models import Tenant
-from apps.shared import factories, tenancy
-from apps.shared.testing import sign_in
 from apps.watch import testing as watch_build
 
 
@@ -123,12 +121,115 @@ class CollabScenarioTests(TestCase):
         tenancy.activate(other.id)
         self.assertFalse(Comment.objects.filter(pk=comment.pk).exists())
 
-    @skip("pending: COL-S2")
+    # COL-S2 (c10-digest-beat-and-journeys)
     def test_col_s2(self) -> None:
         """COL-S2
 
         Reminders, escalation and the digest reach people in their language (COL-02).
+
+        The worker's two hourly beat entries fire at the bank's send hours on days that are
+        the tenant-local date plus an offset; the digest day is the weekday eight days on.
         """
+        from apps.home import my_work
+        from apps.home.schemas import HomeWorkQuery
+        from apps.identity import roles_logic
+        from apps.identity.models import Membership
+        from apps.library import testing as library_build
+        from apps.shared.authentication import Principal, PrincipalKind
+        from apps.shared.models import Weekday
+        from apps.shared.permissions import TENANT_PERMISSIONS
+
+        watch_build.seed_watch_reference()
+        zone = ZoneInfo("Europe/Stockholm")
+        tenant = factories.tenant(slug="col-s2", timezone="Europe/Stockholm")
+        anchor = today_for(tenant)
+        due, overdue, digest_day = (anchor + datetime.timedelta(days=n) for n in (3, 8, 10))
+        # Given an action due in three days owned by a Swedish-speaking owner and a tenant
+        # reminder lead of three days
+        Tenant.objects.filter(pk=tenant.pk).update(
+            reminder_days_before=[3],
+            escalate_after_days=5,
+            escalate_to_role="compliance_officer",
+            digest_weekday=list(Weekday)[digest_day.weekday()].value,
+        )
+        astrid = factories.member_user(tenant, roles=("contributor",))
+        User.objects.filter(pk=astrid.pk).update(locale=factories.language("sv"))
+        helena = factories.member_user(tenant, roles=("reader",))
+        olof = factories.member_user(tenant, roles=("compliance_officer",))
+        department = factories.department(tenant, name="Legal and Compliance", head=helena)
+        factories.team(tenant, key="legal", label="Legal", org_unit=department, members=[astrid])
+        case = cases_build.case(tenant, watch_build.change(title="FI amends the custody rules for client assets"))
+        action = factories.action(case, astrid, due_date=due, title="Rewrite the custody memo")
+        # And a register entry of hers under review, so her digest has a row of My work
+        on = library_build.instrument(key="inst-col-s2", regime="regime:securities")
+        titles = {"en": "Keep client assets apart", "sv": "Håll kundmedel åtskilda"}
+        factories.register_entry(
+            tenant, library_build.obligation(on, key="obl-col-s2", titles=titles).id,
+            first_line_owner=astrid, next_review_date=anchor + datetime.timedelta(days=20),
+        )
+        MockMailer.reset()
+        self.addCleanup(MockMailer.reset)
+
+        def beat(day: datetime.date, hour: int) -> None:
+            moment = datetime.datetime.combine(day, datetime.time(hour), tzinfo=zone).astimezone(datetime.UTC)
+            with mock.patch("django.utils.timezone.now", return_value=moment):
+                tasks.send_reminders()
+                tasks.send_digests()
+            tenancy.activate(tenant.id)
+
+        def mails(person: User, template: str) -> list[str]:
+            tenancy.activate(tenant.id)
+            sent = EmailMessage.objects.filter(user=person, template=template).values_list("subject", flat=True)
+            return list(sent)
+
+        # When the reminder job runs
+        beat(anchor, settings.REMINDER_SEND_HOUR)
+        beat(anchor, settings.REMINDER_SEND_HOUR)
+        # Then the owner receives one reminder in sv
+        self.assertEqual(Notification.objects.filter(subject_id=action.id, user=astrid, kind="due_soon").count(), 1)
+        self.assertEqual(mails(astrid, "due_soon"), [f"Förfaller {due.isoformat()}: FI amends the custody rules for client assets"])
+        self.assertEqual([mailed.to for mailed in MockMailer.sent], [astrid.email])
+
+        # When the action is five days overdue and the escalation threshold is five days
+        beat(overdue, settings.REMINDER_SEND_HOUR)
+        # Then the head of the department of the owner's team and the compliance officer are notified
+        escalated = set(Notification.objects.filter(subject_id=action.id, kind="escalation").values_list("user_id", flat=True))
+        self.assertTrue({helena.id, olof.id} <= escalated, escalated)
+        self.assertEqual(len(mails(helena, "escalation")), 1)
+        self.assertEqual(len(mails(olof, "escalation")), 1)
+
+        # When the weekly digest job runs, on the bank's digest day at the send hour, twice
+        self.assertEqual(mails(astrid, "weekly_digest"), [], "no digest before the bank's day")
+        beat(digest_day, settings.DIGEST_SEND_HOUR)
+        beat(digest_day, settings.DIGEST_SEND_HOUR)
+        # Then each user receives one digest in their language listing their open items as
+        # My work counts them
+        opening = {"sv": "Dina öppna uppgifter", "en": "Your open items"}
+        moment = datetime.datetime.combine(digest_day, datetime.time(settings.DIGEST_SEND_HOUR), tzinfo=zone)
+        for person, language in ((astrid, "sv"), (helena, "en"), (olof, "en")):
+            with self.subTest(person=person.email):
+                tenancy.activate(tenant.id)
+                membership = Membership.objects.select_related("user").get(user=person)
+                principal = Principal(
+                    kind=PrincipalKind.USER,
+                    subject_id=person.id,
+                    tenant_id=tenant.id,
+                    permissions=roles_logic.permissions_of(membership.roles.all()) & TENANT_PERMISSIONS,
+                )
+                with mock.patch("django.utils.timezone.now", return_value=moment.astimezone(datetime.UTC)):
+                    work = my_work.page(tenant, principal, roles_logic.language_order(membership.user, tenant), HomeWorkQuery(limit=100))
+                digests = [m for m in MockMailer.sent if m.to == person.email and m.subject.startswith(opening[language])]
+                if not work.total:
+                    self.assertEqual(digests, [], "nothing open, no digest")
+                    continue
+                (mailed,) = digests
+                self.assertTrue(mailed.subject.endswith(f": {work.total}"), mailed.subject)
+                for item in work.items:
+                    self.assertIn(item.subject.title, mailed.body)
+                self.assertEqual(len(mails(person, "weekly_digest")), 1)
+        # Astrid's own digest is the Swedish one, titled in Swedish
+        (swedish,) = [m for m in MockMailer.sent if m.to == astrid.email and m.subject.startswith(opening["sv"])]
+        self.assertIn("Håll kundmedel åtskilda", swedish.body)
 
     # COL-S3 (c10-reminders-core)
     def test_col_s3(self) -> None:
