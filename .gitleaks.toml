@@ -38,6 +38,10 @@ regexes = [
   '''^django-insecure-dev-only-change-me$''',
 ]
 
+[[allowlists]]
+description = "CELEX numbers: the EU Publications Office's public identifier of a legal act (sector 3, year, type letter, number, e.g. celex-32017r0565), used as library stable keys in fixtures and seeds. A public citation, never a credential; the pattern is anchored to that exact shape."
+regexes = ['''^celex-3[0-9]{4}[a-z][0-9]{4}$''']
+
 # Connection strings carry the dev-only passwords above. Some rules extract the
 # whole URL rather than the password, so the same literals are also accepted
 # when they appear as the password segment of a local/CI Postgres URL.
