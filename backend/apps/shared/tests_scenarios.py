@@ -53,7 +53,7 @@ from apps.shared.migration_helpers import POLICY_NAME, TENANT_SETTING
 from apps.shared.permissions import UNGATED_BY_DESIGN, Ungated, UngatedReason, gate_of
 from apps.shared.routes import TENANT_SCOPED_ROUTES, RegisteredOperation, iter_operations
 from apps.shared.tenancy import is_tenant_task, tenant_task
-from apps.shared.testing import ScenarioTestCase, sign_in, stub_session, user_principal
+from apps.shared.testing import ScenarioTestCase, agent_principal, sign_in, stub_api_key, stub_session, user_principal
 from apps.shared.tests_production_guard import BOOT, SETTING_NAMES, _with_database
 from apps.shared.tests_rls import tenant_scoped_models
 from apps.shared.tests_tenant_isolation import EXPECTED_MINIMUM_TENANT_ROUTES, PATH_PARAMETER, fill_path
@@ -415,6 +415,7 @@ class SharedScenarioTests(ScenarioTestCase):
             subject_id=factories.member_user(tenant, roles=("admin",)).id, tenant_id=tenant.id, permissions=perms.TENANT_PERMISSIONS
         )
         platform = user_principal(permissions=perms.PLATFORM_PERMISSIONS)
+        key = agent_principal(tenant_id=tenant.id, scopes=perms.ALL_SCOPES)
 
         # Every response carries Server-Timing: app with the server time, and a request id.
         def timed(path: str, headers: dict[str, Any] | None = None) -> Any:
@@ -459,10 +460,15 @@ class SharedScenarioTests(ScenarioTestCase):
                 # is refused a page above the maximum on every list, whatever it may read.
                 url = PATH_PARAMETER.sub(lambda m: "tenant_tag" if m.group(0) == "{list_name}" else str(uuid.uuid4()), path)
                 url = f"{url.removeprefix(V1)}?limit={settings.API_PAGE_SIZE_MAX + 1}"
-                for principal in (member, platform):
-                    with stub_session(principal):
-                        response = timed(url, self.as_user(principal))
-                    if response.status_code != 403:
+                # A key-only list (the register read of a bank's own agent) is tried with a key.
+                for principal, stub, headers in (
+                    (member, stub_session, self.as_user(member)),
+                    (platform, stub_session, self.as_user(platform)),
+                    (key, stub_api_key, self.as_agent(key)),
+                ):
+                    with stub(principal):
+                        response = timed(url, headers)
+                    if response.status_code not in (401, 403):
                         break
                 self.assertEqual(response.status_code, 422, response.content)
                 self.assertEqual(response.json()["errors"][0]["field"], "query.limit")
