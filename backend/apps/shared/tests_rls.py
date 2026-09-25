@@ -178,6 +178,8 @@ TENANT_ONLY_TABLES = [
     "gap",
     "interpretation",
     "internal_link",
+    # c8-reg-units (register 0003; REG-08, D-41): the Statement of Applicability's units.
+    "soa_unit",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also

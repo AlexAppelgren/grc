@@ -57,4 +57,7 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/footprint/requests/{request_id}/reject", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/tenant/footprint/requests/{request_id}/withdraw", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/vocab/{list_name}/suggestions/{suggestion_id}/decline", "taxonomy.VocabularySuggestion", "vocabulary_suggestion"),
+    # c8-reg-units (REG-08): a Statement of Applicability unit, addressed by its id.
+    ("PATCH", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
+    ("DELETE", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
 ]
