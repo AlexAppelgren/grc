@@ -28,6 +28,9 @@ Five rules hold it to that:
 - **Ids only in the audit.** Each add, removal and leave records one event holding ids, and
   the title is the library's.
 
+An add also tells the person added, or the team's members, in the same transaction
+(`producers.participant_added`, COL-02); the adder is never told.
+
 A case's contributor teams are its team participants (D-20): the assessment stores no list,
 and each change to them is one add or one remove here, never a replacement of the whole.
 """
@@ -45,6 +48,7 @@ from django.utils import timezone
 
 from apps.cases import logic as case_logic
 from apps.cases import state
+from apps.collab import producers
 from apps.collab.models import Participant
 from apps.collab.schemas import CollabParticipant, CollabParticipantPage, CollabTeamRef
 from apps.identity.models import Membership, UserStatus
@@ -182,6 +186,14 @@ def _add(
             "userId": str(person) if person is not None else None,
             "teamId": str(team.id) if team is not None else None,
         },
+    )
+    producers.participant_added(
+        tenant_id=tenant_id,
+        subject_type=subject.audit_type,
+        subject_id=subject.id,
+        user_id=person,
+        team_id=team.id if team is not None else None,
+        added_by_id=caller_id,
     )
     row = Participant.objects.select_related("user", "team", "added_by").prefetch_related("team__labels").get(id=row.id)
     return _out(row, order)

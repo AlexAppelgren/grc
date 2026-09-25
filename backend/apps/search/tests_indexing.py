@@ -536,10 +536,12 @@ class TheEmbeddingRelay(LibraryFixtureMixin, TestCase):
     def test_the_handler_is_registered_for_the_events_a_rebuild_emits(self) -> None:
         # That `SearchConfig.ready()` is what registers, and that nothing registers at
         # import time, is pinned in `apps/shared/tests_outbox.py`. This is the search
-        # app's own read of the result: both topics, this handler, once each.
+        # app's own read of the result: both topics, this handler, once each and first. The
+        # collab app also hears of an applied version (c10-producers, COL-02).
         for topic in tasks.INDEX_TOPICS:
             with self.subTest(topic=topic):
-                self.assertEqual(outbox.handlers_for(topic), (tasks.embed_rebuilt_chunks,))
+                self.assertEqual(outbox.handlers_for(topic)[0], tasks.embed_rebuilt_chunks)
+                self.assertEqual(outbox.handlers_for(topic).count(tasks.embed_rebuilt_chunks), 1)
 
     def test_the_sweep_is_a_beat_entry_that_takes_no_tenant(self) -> None:
         # Importing this module registered the task, which is what the worker's own

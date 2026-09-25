@@ -17,7 +17,6 @@ from apps.collab.tests_case_participants import run_col_s9
 from apps.collab.tests_participants import run_col_s6, run_col_s7, run_col_s8
 from apps.shared.testing import ScenarioTestCase
 from django.conf import settings
-from django.test import TestCase
 
 from apps.cases import testing as cases_build
 from apps.cases.models import ChangeCase
@@ -159,12 +158,15 @@ class CollabScenarioTests(ScenarioTestCase):
         """
         run_col_s9(self)
 
-    @skip("pending: COL-S10 (COL-02, COL-04, chunk 10)")
+    # COL-S10 (c10-producers)
     def test_col_s10(self) -> None:
         """COL-S10
 
         Participation, confirmed links and new versions notify the people involved, once, if they can read (COL-02, COL-04).
         """
+        from apps.collab.tests_producers import run_col_s10
+
+        run_col_s10(self)
 
     # COL-S11 (c10-reminders-escalation-reviews)
     def test_col_s11(self) -> None:
