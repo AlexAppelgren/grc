@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Screen card: out of office (/me/out-of-office)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Serves TEN-04 and TEN-S4 (chunk 10 since D-95; the delegation of reminders is
+   COL-02's c10-delegation). New card: the prototype has no out-of-office page.
+   Written from docs/plans/briefs/CHUNK8_TASKS.md (c8-ten-out-of-office,
+   c8-ui-out-of-office), CHUNK10_TASKS.md (c10-delegation and the delegation
+   default) and backend/apps/tenants/app.md.
+
+   Values follow design/system/foundations.md (14px base, 24px title, hairline
+   cards at 8px, 36px inputs and buttons at 6px); the build maps them to Green
+   tokens through tokens.generated.css, and the colours below are those tokens'
+   values in light and dark, never literals in the markup. */
+:root{
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --negative:#b92f13;--negative-soft:#fdebe8;
+  --warning:#8f530a;--warning-soft:#fce8cf;
+  --positive:#026436;--positive-soft:#dcefdc;
+  --notice:#005fb3;--notice-soft:#e6f3ff;
+  --bronze:#6a5730;--brass-bg:#ece5d6;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --negative:#f08975;--negative-soft:#5c170a;
+  --warning:#f5b970;--warning-soft:#5f3707;
+  --positive:#8ae58d;--positive-soft:#003d26;
+  --notice:#66b8ff;--notice-soft:#003666;
+  --bronze:#d9cba9;--brass-bg:#33291a;
+}}
+:root[data-theme="dark"]{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --negative:#f08975;--negative-soft:#5c170a;
+  --warning:#f5b970;--warning-soft:#5f3707;
+  --positive:#8ae58d;--positive-soft:#003d26;
+  --notice:#66b8ff;--notice-soft:#003666;
+  --bronze:#d9cba9;--brass-bg:#33291a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+a{color:var(--text);text-underline-offset:3px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px}
+p{margin:0 0 8px}
+ul{margin:0;padding:0;list-style:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+main{padding:24px 32px 64px;max-width:1200px;width:100%;margin:0 auto}
+/* The state label above each rendering. Not part of the screen. */
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-child{margin-top:0}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:8px 16px;flex-wrap:wrap;margin-bottom:16px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+.meta{color:var(--muted);font-size:13px;line-height:18px;display:flex;gap:4px 8px;flex-wrap:wrap;align-items:baseline}
+.meta b{color:var(--text);font-weight:500}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+.panel>h2{margin-bottom:4px}
+.panel+.panel{margin-top:16px}
+/* Pill: fully rounded, 20px, 13px at 500, no border. The six tones only. */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+.pill.notice{background:var(--notice-soft);color:var(--notice)}
+.pill.positive{background:var(--positive-soft);color:var(--positive)}
+.pill.warning{background:var(--warning-soft);color:var(--warning)}
+.pill.negative{background:var(--negative-soft);color:var(--negative)}
+.pill.brand{background:var(--brass-bg);color:var(--bronze)}
+/* Button: 36px, 6px radius, 14px at 500. */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap;text-decoration:none}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.ghost{background:transparent;color:var(--text);border-color:transparent}
+.btn.danger{background:var(--surface);color:var(--negative);border-color:var(--negative)}
+.btn.small{height:32px;padding:0 12px}
+.btn[disabled]{opacity:.45;cursor:default}
+@media (hover:hover){.btn.outline:hover,.btn.ghost:hover{background-image:linear-gradient(var(--hover),var(--hover))}}
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+/* Input and select: 36px, 10px side padding, 6px radius, the input border. */
+.field{display:grid;gap:4px;margin-top:16px}
+.field:first-child{margin-top:0}
+.field label,.field .label{font-weight:500}
+.field input,.field select,.field textarea{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px}
+.field textarea{height:auto;min-height:76px;padding:8px 10px;resize:vertical}
+.field .hint{color:var(--muted);font-size:13px;line-height:18px}
+.field .error{color:var(--negative);font-size:13px;line-height:18px}
+.field [aria-invalid="true"]{border-color:var(--negative)}
+.ok{color:var(--positive);font-size:13px;line-height:18px;margin:0}
+.err{color:var(--negative);font-size:13px;line-height:18px;margin:0}
+.skeleton{height:64px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.skeletons{display:grid;gap:8px}
+.emptystate,.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.emptystate h2,.errorstate h2{color:var(--text)}
+.emptystate p,.errorstate p{margin:8px auto 16px;max-width:60ch}
+.restricted{text-align:center;padding:48px 16px;max-width:60ch;margin:0 auto}
+.restricted p{color:var(--muted)}
+/* A 375px frame, to draw the phone width beside the desktop rendering. */
+.phone{width:375px;max-width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 16px 16px;background:var(--page)}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+.note p{margin:0 0 8px}
+table.tones{width:100%;table-layout:fixed;border-collapse:collapse;margin-top:8px;font-size:13px;line-height:18px}
+table.tones th,table.tones td{overflow-wrap:anywhere;text-align:left;padding:4px 12px 4px 0;border-bottom:1px solid var(--line);vertical-align:top}
+table.tones th{font-weight:500;color:var(--text)}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
+}
+.form{max-width:560px}
+.field input[type="date"]{max-width:220px;font-variant-numeric:tabular-nums}
+/* The delegate picker: a combobox over GET /reference/people, its list below
+   it in the popover surface. */
+.combo{position:relative;max-width:360px}
+.combo input{width:100%}
+.list{margin-top:4px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px;max-width:360px}
+.opt{display:block;padding:6px 8px;border-radius:6px}
+.opt[aria-selected="true"]{background:var(--accent)}
+.opt b{display:block;font-weight:500}
+.opt small{display:block;color:var(--muted);font-size:13px;line-height:18px}
+.callout{background:var(--subtle);border-radius:6px;padding:10px 12px;margin-top:16px}
+.callout p{margin:0}
+.callout p+p{margin-top:4px}
+.away h2{margin-bottom:4px}
+.away .when{font-weight:500}
+.standin li{padding:10px 0;border-bottom:1px solid var(--line)}
+.standin li:last-child{border-bottom:0}
+</style>
+</head>
+<body>
+<main>
+
+<h2 class="k">1 · Not away: set a date and a delegate</h2>
+<div class="head"><div><h1>Out of office</h1><p class="lede">Choose who looks after your approvals and reminders while you are away.</p></div></div>
+<form class="panel form" onsubmit="return false">
+  <div class="field">
+    <label for="until">Away until</label>
+    <input id="until" type="date" value="2026-10-02" aria-describedby="h-until">
+    <span class="hint" id="h-until">Your last day away, in your organisation's timezone (Europe/Stockholm). Everything comes back to you the day after.</span>
+  </div>
+  <div class="field">
+    <label for="who">Delegate</label>
+    <div class="combo"><input id="who" role="combobox" aria-expanded="false" aria-autocomplete="list" value="Erik Holm" aria-describedby="h-who"></div>
+    <span class="hint" id="h-who">Someone in your organisation.</span>
+  </div>
+  <div class="callout">
+    <p>While you are away, your approval requests and reminders go to your delegate. They can approve only what their own role allows.</p>
+    <p>Mentions and your weekly digest still come to you.</p>
+  </div>
+  <div class="bar"><button class="btn" type="submit">Set out of office</button></div>
+</form>
+
+<h2 class="k">2 · The delegate picker, open: people by name, with role and team</h2>
+<div class="form">
+  <div class="field">
+    <label for="who2">Delegate</label>
+    <div class="combo"><input id="who2" role="combobox" aria-expanded="true" aria-controls="people" aria-autocomplete="list" value="er"></div>
+    <div class="list" id="people" role="listbox" aria-label="People">
+      <span class="opt" role="option" aria-selected="true"><b>Erik Holm</b><small>Approver · Legal</small></span>
+      <span class="opt" role="option" aria-selected="false"><b>Erika Ström</b><small>Contributor · Retail compliance</small></span>
+      <span class="opt" role="option" aria-selected="false"><b>Peter Berg</b><small>Owner · Retail compliance</small></span>
+    </div>
+  </div>
+  <div class="field" style="margin-top:12px">
+    <div class="list" role="status"><span class="opt"><small>No one in your organisation matches "zz".</small></span></div>
+  </div>
+</div>
+
+<h2 class="k">3 · Away: the window and the delegate, and End now</h2>
+<div class="head"><div><h1>Out of office</h1><p class="lede">Choose who looks after your approvals and reminders while you are away.</p></div></div>
+<section class="panel form away" aria-labelledby="away">
+  <h2 id="away">You are away</h2>
+  <p><span class="when">Until Friday 2 October 2026</span>. Erik Holm receives your approval requests and reminders.</p>
+  <p class="meta">Mentions and your weekly digest still come to you.</p>
+  <div class="bar"><button class="btn outline" type="button">End now</button></div>
+</section>
+
+<h2 class="k">4 · Ended early</h2>
+<section class="panel form">
+  <p class="ok" role="status">You are back. Approval requests and reminders come to you again.</p>
+</section>
+
+<h2 class="k">5 · Refused: already away (409 already_delegated), for example set from another device meanwhile</h2>
+<section class="panel form">
+  <p class="err" role="alert">You are already away until 2 October 2026, with Erik Holm as your delegate. End that first to set a new one.</p>
+  <div class="bar"><button class="btn outline small" type="button">Show it</button></div>
+</section>
+
+<h2 class="k">6 · Refused, under the field: a delegate who cannot approve, yourself, someone who left, a date before today</h2>
+<form class="panel form" onsubmit="return false">
+  <div class="field">
+    <label for="who3">Delegate</label>
+    <div class="combo"><input id="who3" role="combobox" aria-expanded="false" value="Erika Ström" aria-invalid="true" aria-describedby="e-who3"></div>
+    <span class="error" id="e-who3">Erika Ström cannot approve, so they cannot stand in for you. Choose someone whose role can approve.</span>
+  </div>
+  <div class="field">
+    <label for="who4">Delegate</label>
+    <div class="combo"><input id="who4" role="combobox" aria-expanded="false" value="Sara Lindqvist" aria-invalid="true" aria-describedby="e-who4"></div>
+    <span class="error" id="e-who4">Choose someone other than yourself.</span>
+  </div>
+  <div class="field">
+    <label for="who5">Delegate</label>
+    <div class="combo"><input id="who5" role="combobox" aria-expanded="false" value="Johan Ek" aria-invalid="true" aria-describedby="e-who5"></div>
+    <span class="error" id="e-who5">Johan Ek is no longer a member. Choose someone else.</span>
+  </div>
+  <div class="field">
+    <label for="until2">Away until</label>
+    <input id="until2" type="date" value="2026-09-20" aria-invalid="true" aria-describedby="e-until2">
+    <span class="error" id="e-until2">Choose today or a later date.</span>
+  </div>
+</form>
+
+<h2 class="k">7 · The delegate's view: who you are standing in for</h2>
+<section class="panel form" aria-labelledby="standin">
+  <h2 id="standin">You are standing in for</h2>
+  <ul class="standin">
+    <li><b>Anna Nilsson</b><p class="meta" style="margin:2px 0 0"><span>Until Friday 2 October 2026</span></p></li>
+  </ul>
+  <p class="meta" style="margin-top:8px">Their approval requests and reminders come to you, marked with their name in <a href="#">Notifications</a>.</p>
+</section>
+
+<h2 class="k">8 · Loading, and the error with Try again</h2>
+<div class="skeletons form" aria-busy="true" role="status"><span class="sr">Loading</span><div class="skeleton" style="height:180px"></div></div>
+<div class="errorstate form" role="alert" style="margin-top:12px">
+  <h2>Could not load your out of office</h2>
+  <p>Check your connection and try again.</p>
+  <button class="btn outline small" type="button">Try again</button>
+</div>
+
+<h2 class="k">9 · At 375px</h2>
+<div class="phone">
+  <div class="head"><h1>Out of office</h1></div>
+  <section class="panel away">
+    <h2>You are away</h2>
+    <p><span class="when">Until Friday 2 October 2026</span>. Erik Holm receives your approval requests and reminders.</p>
+    <p class="meta">Mentions and your weekly digest still come to you.</p>
+    <div class="bar"><button class="btn outline" type="button">End now</button></div>
+  </section>
+</div>
+
+<div class="note">
+<p>Out of office card (TEN-04, TEN-S4; moved to chunk 10 beside delegation, D-95). Route <b>/me/out-of-office</b>, an account destination beside Notifications, My passkeys and My sessions. Any member, for their own window; no step-up. It reads and writes GET and PUT /me/out-of-office (membership.out_of_office_until and delegate); End now sends an empty window. The delegate picker searches GET /reference/people, which lists active members of the organisation by name with their role and team, never another organisation's.</p>
+<p>The date is a plain date, the last day away, shown and chosen in the organisation's timezone from GET /tenant; the window closes at the end of that day there. One window at a time: a second answers 409 already_delegated and the page says what is already set. The delegate must hold the approve permission themself (422 delegate_cannot_approve); delegation routes work and grants nothing, so the line under the form says the delegate approves only what their own role allows, and the requester of an approval can never approve it, delegate or not. Mentions, the digest and read state stay with the absent person; only approval requests and reminders move, and each arrives marked "For Anna Nilsson, who is away" in the delegate's Notifications.</p>
+<p>Refusals render under the field they belong to, from the problem's code: delegate_cannot_approve, unknown_member, a delegate who is the person themself, a date before today. The delegate's own view lists who they stand in for, and until when, under the same page. No pills on this page. Names and dates are sample data.</p>
+</div>
+
+</main>
+</body>
+</html>
