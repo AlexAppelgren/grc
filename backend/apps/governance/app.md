@@ -342,3 +342,21 @@ When either of them switches it off with a fresh passkey assertion
 Then reach is off from the next read, with no second person
 And a new request rejected by the second person leaves it off
 ```
+
+### ADM-S18 — A jurisdiction is relabelled, retired and restored by proposal, and the market that mirrors it follows `@integration` `@e2e` (ADM-02, VOC-07, FP-04, I18N-01)
+```gherkin
+Given the seeded jurisdictions and the footprint's jurisdiction terms that mirror them
+When a library editor proposes the Swedish label "Konungariket Sverige" for Sweden
+Then nothing changes until a second editor approves it with a passkey
+And then the jurisdiction and its mirrored term both read "Konungariket Sverige", stamped as a person's confirmation, in one approval
+When an agent proposes a relabel and an agent of another definition and key approves it
+Then the jurisdiction and its term name both agents, their wording is labelled machine-made, and neither reads as a person's check
+When a retirement of Denmark is approved
+Then Denmark and its term are retired, the next deploy's seeds leave both retired, and an approved restore brings both back
+When anyone proposes a new jurisdiction, or a merge of two
+Then it is refused with "validation_error": a jurisdiction's key never changes and the seed alone files one
+When anyone proposes a change to the dimension row whose terms mirror the jurisdictions
+Then it is refused with "jurisdiction_term_mirrored" when proposed and again when approved
+```
+Languages stay a read-only list the reference seed files (D-94). The console screen that
+makes these proposals is `x-console-jurisdictions-fe`'s, which un-fixmes the journey.
