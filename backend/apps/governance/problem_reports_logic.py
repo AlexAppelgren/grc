@@ -21,6 +21,7 @@ from __future__ import annotations
 import uuid
 from typing import Any, cast
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
@@ -33,6 +34,7 @@ from apps.governance.schemas import (
     ProblemReportSubjectKind,
 )
 from apps.identity.models import User
+from apps.identity.rate_limit import enforce
 from apps.library.models import ProblemReport, ReportStatus, SubjectType
 from apps.library.reading import instrument_headings, obligation_headings
 from apps.shared import permissions as perms
@@ -41,6 +43,8 @@ from apps.shared.authentication import Principal
 from apps.shared.errors import ProblemError
 
 ACTION = "problem_report.closed"
+BUCKET = "problem-report-close"
+HOUR = 3600
 
 
 def _visible(principal: Principal) -> Any:
@@ -87,6 +91,9 @@ def close(
     note = body.resolution_note.strip()
     if not note:
         raise ValidationError("Say why you are closing it, so the reporter knows.", code="note_required")
+    # A close is a row change and an audit row kept for ten years: one person's closes
+    # are bounded per hour, apart from their filing (ACC-09, hardening H39).
+    enforce(BUCKET, str(closer.id), settings.PROBLEM_REPORTS_PER_USER_PER_HOUR, HOUR)
     report.status = body.status
     report.resolution_note = note
     report.closed_by = closer
