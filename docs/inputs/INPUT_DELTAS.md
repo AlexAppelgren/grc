@@ -158,6 +158,26 @@ or has differently:
 In the API every such field is `{key, kind, label}` on reads and `key` on
 writes, never an OpenAPI `enum`.
 
+**Chunk 8's register lists (2026-09-25, c8-vocab-lists-rules).** Tier-three lists
+`schema.sql` has as `CHECK` constraints or not at all, each with an immutable key, labels in
+`en` and `sv`, system rows the tenant hook files create-only, and forced row-level security:
+
+- `gap_status` with the tier-one kind `gap_category` (`open`, `remediating`,
+  `risk_accepted`, `closed`), a system row per kind. `risk_accepted` is the frontend's
+  spelling (`tone-by-kind.ts`), so one state has one name (REG-03, VOC-04).
+- `gap_source` (`assessment`, `change_case`, `audit`, `incident`, `regulator`), no kind:
+  its pill takes the `source` slot's tone (REG-03, pills-and-labels "Slot order").
+- `risk_acceptance_reason` (`accepted_by_management`, `cost_disproportionate`,
+  `compensating_control`, `time_limited`, `other`), no kind (VOC-06).
+- `team`, with the column `email` and `UNIQUE (tenant_id, id)` for composite keys, no
+  `is_lead`, served by `GET /vocab/team`; one system row, `compliance`, because every list
+  has a default. Its `org_unit_id` comes with the teams model (TEN-03).
+- `risk_rating` gains the tier-one kind `risk_level` (`low`, `medium`, `high`): each row
+  maps to one, and the tone reads it, never the editable ordinal (VOC-05). No schema
+  change; `seed_reference` puts the level on every tenant's system rows.
+
+Retiring the last active row under a fixed kind answers 409 `category_empty` (VOC-04).
+
 ## 2. Identity (PRD ID, playbook 4.2)
 
 - Drop `app_user.external_subject` as the primary identity, `mfa_enrolled`,
@@ -310,8 +330,9 @@ here names it with its backticked `METHOD /path`.
   the designed `settings` blob and `region`. The response is `{id, name, slug, timezone,
   status, defaultLanguage{key,kind,label}, contentLanguages[...], onboarding{stepsDone,
   steps[{key,done}]}}`; the patch takes `{name?, timezone?, defaultLanguage?,
-  contentLanguages?}` as keys. Reminder, escalation and retention settings land with
-  the workflow policy (chunk 9) as columns of their own.
+  contentLanguages?}` as keys. Reminder, escalation, digest-day and triage settings land
+  with the workflow policy (chunk 10, `c10-workflow-policy`, section 18) as columns of their
+  own; retention is chunk 12's.
 - `GET /tenant/members` answers a page `{items, total}` (playbook 10: every list
   paginates) of `{userId, email, name, status, roles[{key,kind,label}], title,
   lastSeenAt, passkeyCount, activeSessions}` rather than a bare array of the designed
@@ -1239,3 +1260,76 @@ The shapes depart from the design on purpose:
 - `POST /eval/runs` (`startEvalRun`) waits for chunk 14's job runner
   (`backend/scripts/contract_drift_pending.txt`): a run builds the sample corpus in a
   database of its own and takes minutes, which no request should hold open.
+
+## 18. A batch proposal and its rows (2026-09-25, c11-proposal-batches-model)
+
+Version 0.3 of the schema has no batch: PRD PRO-04 and AGT-05 ask for one proposal that
+changes many library records, previewed and approved whole or row by row. Proposals 0008
+builds it on the existing table rather than beside it:
+
+- `proposal` gains `is_batch` (default false) and `row_count` (default 0), held together by
+  the check `proposal_batch_row_count`: a batch counts at least one row, a single proposal
+  none. Four eyes, the rejection reason, the audit row and the apply path are the parent's,
+  unchanged; `proposal_four_eyes` refuses a batch's proposer as its reviewer as for any
+  proposal.
+- `proposal_batch_row` is new, in the library zone with no tenant column (like `proposal`):
+  `proposal_id`, `subject_type` and `subject_id` (the record, named as `target_type` and
+  `target_id` name one), `before` and `after` (the preview, `ProposalBatchRowPayload`),
+  `decision`, `rejection_reason_id` (a row of the `rejection_reason` list), `decided_by`,
+  `decided_at`, `created_at`; unique per `(proposal, subject_type, subject_id)`. It is a
+  plain model like `proposal`, not a `LibraryModel`: rows are filed and decided by the
+  proposal logic, and the library fence belongs to `apply.py`.
+- A row is written once and decided once. The trigger `proposal_batch_row_decision_guard`
+  lets only the four decision columns change, only from `pending` to `approved` or
+  `rejected`, never to the batch's own proposer, and refuses DELETE; the schema owner's
+  stated fix (`cw.maintenance`) passes as on every ledger. The check
+  `proposal_batch_row_decided` demands a date on a decision and a reason on a rejection and
+  only there. `decided_by` names a person; an agent's row decision is named by its audit row.
+- Two tier-one kinds (§1): `proposal_kind` gains `obligation_scope`, the re-tag, which chunk 4
+  cut (parallel-plan ruling 14); a backfill is a batch of an existing kind, not a kind. And
+  `proposal_batch_decision` (`pending`, `approved`, `rejected`) is new: the trigger and apply
+  branch on it and no admin adds one.
+## 18. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
+
+The designed `tenant.settings` blob is six columns on `tenant` (shared 0009):
+`reminder_days_before` and `review_reminder_days_before` (one to five day counts, each 1 to
+90, stored largest first; defaults `[3]` and `[30]`), `escalate_after_days` (1 to 90,
+default 5), `escalate_to_role` (the key of an active `TenantRole` of that bank, default
+`compliance_officer`), `digest_weekday` (a kind, `monday` to `sunday`, default `monday`) and
+`triage_target_hours` (1 to 720, default 48). Each platform default is a setting with an env
+override (`WORKFLOW_*`); the migration wrote them into every existing tenant, and check
+constraints hold the bounds for every writer. `GET /tenant` gains `workflow`, with the role
+as `{key, kind, label}`.
+
+Writes go through a route of their own, `PATCH /tenant/workflow` (`updateTenantWorkflow`),
+under `workflow.manage` and with no step-up, rather than through `PATCH /tenant`, which stays
+under `security.manage`. It is simpler than splitting one patch between two permissions: no
+body is ever half-allowed, and each permission reaches exactly one route. A number or list out
+of range answers 422 `validation_error` and an unknown role or weekday 422 `unknown_key`, each
+naming the field in `errors`. The change is recorded as `tenant.workflow_updated` with every
+value before and after. `review_reminder_days_before` is not in the chunk 10 brief's five
+columns; the wave plan added it for the review reminder COL-02 names.
+
+## 18. A proposal owned by a bank, and the bank's own queue declared (2026-09-25, d89-proposal-owner)
+
+§5's private-records row, built for INV-07 and OWN-03 (D-57, D-89, ADR 0050, ADR 0059):
+
+- `proposal` gains `owner_tenant_id` (proposals 0009), null for the shared library and every
+  existing row. `apps/proposals/logic.create` sets it and nothing else does: a version takes
+  its target's owner, and a new instrument or obligation the server files as the bank's own
+  (`private=True`) takes the bank the database is scoped to, the filing session's or, in the
+  worker, the run's. A request body naming it is refused (422 `validation_error`).
+- `proposal` is a mixed table under forced row-level security in the split shape (H15):
+  `tenant_isolation` FOR ALL on the session's own zone and `library_rows_visible` FOR SELECT
+  on the shared rows, so the console, with no tenant, reads no owned row. "Insert shared or
+  own" is one extra policy, FOR INSERT only: `shared_proposal_filed` lets a bank's session
+  insert a shared row filed inside a bank, single, open and undecided, and nothing else of
+  the shared zone. The RLS guard pins its text.
+- `private_records.approve` is a tenant permission of Compliance officer and Approver, in the
+  approve set, never a platform grant or an API key scope. `GET /private-proposals`
+  (`listPrivateProposals`), `POST /private-proposals/{proposalId}/approve`
+  (`approvePrivateProposal`, step-up) and `/reject` (`rejectPrivateProposal`) are declared
+  and answer 501 until d89-private-records; approve and reject load the proposal under
+  row-level security first, so another bank's answers 404. The library fence names
+  `approvePrivateProposal` as the third route that may reach `apply`. `proposal_four_eyes`
+  is unchanged.

@@ -23,6 +23,14 @@ creation is audited under that tenant. The `proposal` row itself carries only th
 `proposed_in_tenant`, so the console can withhold the proposer's identity (PRO-03) without
 learning which bank they work for.
 
+A proposal of a bank's own record (INV-07, OWN-02, OWN-03; D-57, ADR 0050, ADR 0059) is the
+same row with `owner_tenant_id` set, which `create()` alone decides and never from a request
+body: from the target for a version, which follows the record it versions, and otherwise the
+bank the database is scoped to when the server files a new instrument or obligation as
+`private`: the filing session's bank, or in the worker the bank whose run it is, which
+`@tenant_task` activated. Row-level security on `proposal` then keeps the row out of the
+console and out of every other bank.
+
 Idempotency (playbook 4.3): an agent retries with the same `Idempotency-Key`. The same body
 answers the proposal it already made (200, and an audit row saying the retry happened, so
 a flapping agent shows in the log); a different body under the same key is 409
@@ -39,7 +47,7 @@ import pydantic
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -132,6 +140,11 @@ NEW_RECORD_KINDS = frozenset(
     {ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value, ProposalKind.NEW_PROVISION.value}
 )
 NEW_RECORD_PAYLOADS = (ProposalInstrumentPayload, ProposalObligationPayload, ProposalProvisionPayload)
+# The kinds a bank may file as a record of its own (INV-07, OWN-02): what does not exist in
+# the library yet. A version of a record follows its target's owner instead.
+PRIVATE_RECORD_KINDS = frozenset({ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value})
+# The two uniqueness constraints on a proposer's retry key (models.py).
+IDEMPOTENCY_CONSTRAINTS = frozenset({"proposal_idempotency_per_user", "proposal_idempotency_per_key"})
 # The kinds a reviewer may correct: each carries sourced facts from an authority, which a
 # reviewer checks against the same source (PRO-02).
 CORRECTABLE_KINDS = frozenset(VERSION_TARGETS) | NEW_RECORD_KINDS
@@ -204,7 +217,9 @@ class Reviewer:
 # Validation
 # ---------------------------------------------------------------------------------------
 def validated_kind(kind: str) -> str:
-    valid = [member.value for member in ProposalKind]
+    # A kind is filed only once its payload has a named schema, so a member added ahead of
+    # its schema (`obligation_scope`, PRO-04) is refused here rather than failing below.
+    valid = [member.value for member in ProposalKind if member.value in PAYLOAD_SCHEMAS]
     if kind not in valid:
         raise ValidationError(
             f"{kind!r} is not a proposal kind. Valid kinds: {', '.join(valid)}.", code="unknown_key"
@@ -254,6 +269,7 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
                 f"{name!r} is not a library list a proposal can change. Valid lists: {', '.join(valid)}.",
                 code="unknown_key",
             )
+        refuse_vocabulary_change(entry, kind, [getattr(payload, "key", ""), getattr(payload, "into", "")])
         if isinstance(payload, ProposalVocabularyCreatePayload):
             lists.validated_kind(entry, payload.kind)
         if isinstance(payload, ProposalVocabularyMergePayload):
@@ -291,19 +307,44 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
         )
 
 
-def merge_pair(entry: Any, key: str, into: str) -> tuple[Any, Any]:
+def refuse_vocabulary_change(entry: Any, kind: str, keys: list[str]) -> None:
+    """The two rules a change to a library list's rows obeys beyond its payload's shape,
+    checked when it is proposed and again when it is applied, for the list as it is then.
+
+    A list of fixed keys (the jurisdictions, D-94) is filed by the reference seed with the
+    facts only the seed knows, a kind, a parent and a legal language, so no proposal adds a
+    value to it or merges one away: 422 `validation_error`. A proposal on a dimension row
+    whose terms mirror the jurisdiction list (FP-04, hardening H28) would change what the
+    mirror is, its footprint rule or its existence, which no deploy puts back: 422
+    `jurisdiction_term_mirrored`, as a proposal on one of its terms is."""
+    from apps.taxonomy.terms_logic import refuse_mirrored_row
+
+    if entry.fixed_keys and kind in (ProposalKind.VOCABULARY_CREATE.value, ProposalKind.VOCABULARY_MERGE.value):
+        raise ValidationError(
+            f"The keys of {entry.name!r} are fixed: a proposal relabels, retires or restores a value, and never adds "
+            "one or merges one away.",
+            code="validation_error",
+        )
+    refuse_mirrored_row(entry.model, keys)
+
+
+def merge_pair(entry: Any, key: str, into: str, *, lock: bool = False) -> tuple[Any, Any]:
     """The two rows a merge joins, checked against the list as it is now, when the merge is
     proposed and again when it is applied (VOC-02, INV-08, D-36). A value merges only into
     another active value of the same kind: a row's kind is what the rules read (a level of
     the kind `standard` holds licensed text and one conformance obligation, D-35), so a
     merge across kinds would move records from under one rule to another with no check of
-    either. Returns the source and the target."""
+    either. Returns the source and the target.
+
+    `lock` is the apply's: both rows are locked, in id order so two merges over the same pair
+    never wait on each other crosswise, and read as they are once the lock is held (H34)."""
+    rows = entry.model._default_manager.filter(key__in=[key, into]).order_by("id")
+    found = {row.key: row for row in (rows.select_for_update() if lock else rows)}
 
     def row(value: str) -> Any:
-        found = entry.model._default_manager.filter(key=value).order_by("sort_order", "key").first()
-        if found is None:
+        if value not in found:
             raise ValidationError(f"{value!r} is not a row of {entry.name!r}.", code="not_found")
-        return found
+        return found[value]
 
     source, target = row(key), row(into)
     if source.pk == target.pk:
@@ -313,6 +354,14 @@ def merge_pair(entry: Any, key: str, into: str) -> tuple[Any, Any]:
     if (getattr(source, "kind", None) or "") != (getattr(target, "kind", None) or ""):
         raise ValidationError(
             f"{key} and {into} are values of different kinds, so the records carrying {key} cannot take {into}.",
+            code="invalid_transition",
+        )
+    # A merge moves only what the list's links name. A list that counts its uses some other
+    # way (a dimension's terms) would retire a value still in use and move none of it (H28).
+    in_use = entry.usage(entry.model._default_manager.filter(pk=source.pk)).values_list("usage_count", flat=True).first()  # ordering: pk lookup, at most one row
+    if in_use and not entry.links:
+        raise ValidationError(
+            f"{key} is in use and a merge on {entry.name!r} moves none of what uses it: move or retire those first.",
             code="invalid_transition",
         )
     return source, target
@@ -327,7 +376,7 @@ def _validate_obligation_payload(payload: ProposalObligationVersionPayload | Pro
     from apps.taxonomy import tenant_lists_logic as lists
     from apps.taxonomy.terms_logic import refuse_mirrored
 
-    payload.summaries = lists.validated_labels(payload.summaries)
+    payload.summaries = _capped(lists.validated_labels(payload.summaries, max_chars=None), "summary")
     _written_in(payload.original_language, payload.summaries, "summary")
     _validated_precision(payload.effective_from_precision)
     if not payload.terms:
@@ -338,6 +387,17 @@ def _validate_obligation_payload(payload: ProposalObligationVersionPayload | Pro
     terms = terms_of(payload.terms)
     refuse_mirrored(term.dimension_id for term in terms)
     return terms
+
+
+def _capped(texts: dict[str, str], what: str) -> dict[str, str]:
+    """`texts` as given, or 422 naming the languages whose text is longer than
+    `PROPOSAL_TEXT_MAX_CHARS`: a text is queued before anyone reads it, and nothing is queued
+    that approval could not write (H35)."""
+    cap = settings.PROPOSAL_TEXT_MAX_CHARS
+    long = sorted(language for language, text in texts.items() if len(text) > cap)
+    if long:
+        raise ValidationError(f"A {what} is at most {cap} characters. Too long: {', '.join(long)}.", code="validation_error")
+    return texts
 
 
 def _written_in(language: str, texts: dict[str, str], what: str) -> None:
@@ -380,7 +440,7 @@ def validated_instrument(payload: ProposalInstrumentPayload) -> tuple[Instrument
     the apply."""
     from apps.taxonomy import tenant_lists_logic as lists
 
-    payload.titles = lists.validated_labels(payload.titles)
+    payload.titles = lists.validated_labels(payload.titles, max_chars=None)
     _written_in(payload.original_language, payload.titles, "title")
     _validated_precision(payload.in_force_from_precision)
     _validated_precision(payload.in_force_to_precision)
@@ -402,7 +462,7 @@ def validated_obligation(payload: ProposalObligationPayload) -> tuple[Any, list[
     rows the creation check did."""
     from apps.taxonomy import tenant_lists_logic as lists
 
-    payload.titles = lists.validated_labels(payload.titles)
+    payload.titles = lists.validated_labels(payload.titles, max_chars=None)
     _written_in(payload.original_language, payload.titles, "title")
     terms = _validate_obligation_payload(payload)
     if stable_key_taken(SubjectType.OBLIGATION.value, payload.key):
@@ -414,10 +474,11 @@ def validated_obligation(payload: ProposalObligationPayload) -> tuple[Any, list[
 
 def _validate_text_payload(payload: ProposalProvisionPayload | ProposalProvisionVersionPayload) -> None:
     """A provision's verbatim text in real content languages, one of them the original the
-    authority published (INV-05), and a legal date with a precision (INV-S10)."""
+    authority published (INV-05), each at most `PROPOSAL_TEXT_MAX_CHARS`, and a legal date
+    with a precision (INV-S10)."""
     from apps.taxonomy import tenant_lists_logic as lists
 
-    payload.texts = lists.validated_labels(payload.texts)
+    payload.texts = _capped(lists.validated_labels(payload.texts, max_chars=None), "text")
     _written_in(payload.original_language, payload.texts, "text")
     _validated_precision(payload.effective_from_precision)
 
@@ -435,26 +496,47 @@ def validated_provision(payload: ProposalProvisionPayload) -> tuple[Any, Any, An
     return instrument, parent, live_provision_kind(payload.provision_kind)
 
 
-def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUID | None) -> None:
+def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUID | None) -> uuid.UUID | None:
     """A version proposal says which obligation or provision it versions, and that record
     is here and in force. A proposal nobody could ever apply never enters the queue. A new
-    record names no target: it does not exist until the proposal is approved."""
+    record names no target: it does not exist until the proposal is approved.
+
+    Returns the bank that owns the target, or None for a shared record and for no target:
+    a version of a bank's own record is that bank's own proposal (D-57)."""
     if kind in NEW_RECORD_KINDS and (target_type or target_id is not None):
         raise ValidationError(
             "A new record names no target: leave targetType and targetId out.", code="validation_error"
         )
     expected = VERSION_TARGETS.get(kind)
     if expected is None:
-        return
+        return None
     if target_type != expected or target_id is None:
         raise ValidationError(
             f"Say which {expected} this version belongs to: targetType {expected!r} and its id.",
             code="validation_error",
         )
     if expected == OBLIGATION_TARGET:
-        active_obligation(target_id)
-    else:
-        active_provision(target_id)
+        return active_obligation(target_id).owner_tenant_id
+    return active_provision(target_id).instrument.owner_tenant_id
+
+
+def owner_of(kind: str, *, private: bool, target_owner: uuid.UUID | None, tenant_id: uuid.UUID | None) -> uuid.UUID | None:
+    """The bank a new proposal belongs to, or None for the shared library (INV-07, D-57).
+
+    Decided by the server alone. A proposal the server files as `private` is a new record of
+    the bank the database is scoped to, which is the filing session's bank or, in the
+    worker, the bank of the run (`@tenant_task`); anything else follows its target, so a
+    shared record's proposal stays shared whoever filed it and still reaches the console.
+    A private filing with no bank, or of a kind that is not a new record, is refused rather
+    than quietly filed as shared."""
+    if not private:
+        return target_owner
+    if tenant_id is None or kind not in PRIVATE_RECORD_KINDS:
+        raise ValidationError(
+            "Only a new instrument or a new obligation filed inside an organisation can be its own record.",
+            code="validation_error",
+        )
+    return tenant_id
 
 
 def sourced_fields(payload: pydantic.BaseModel) -> list[str]:
@@ -616,9 +698,13 @@ def create(
     source_label: str = "",
     source_url: str = "",
     effective_from: Any = None,
+    private: bool = False,
 ) -> tuple[Proposal, bool]:
     """Create a proposal, or answer the one an earlier identical submission made. Returns
     `(proposal, created)`.
+
+    `private` is the server's word, never a request's, that this is the bank's own new
+    record (`owner_of`); a route that files to the shared library never passes it.
 
     A key bound to an agent names an open run of its own, so every proposal an agent filed
     traces to the night that produced it (AGT-01); a run anyone else names is checked the
@@ -636,11 +722,11 @@ def create(
         run = runs.require_open_run_of_key(proposer.api_key_id, agent_run_id)
     validated_kind(kind)
     parsed = validated_payload(kind, payload)
-    _validate_obligation_target(kind, target_type, target_id)
+    target_owner = _validate_obligation_target(kind, target_type, target_id)
     sources = {field: value.strip() for field, value in (field_sources or {}).items()}
     # Before the source check, so a standard's clause pasted as a source answers
     # `licensed_text`, the rule it breaks, rather than a generic refusal (D-35).
-    standards.check_payload(kind, target_id, parsed, sources)
+    standards.check_payload(kind, target_id, parsed, sources, source_label)
     check_field_sources(parsed, sources)
     source_url = source_url.strip()
     if kind in NEW_RECORD_KINDS and not is_link(source_url):
@@ -650,6 +736,10 @@ def create(
             "Give sourceUrl, the https link to the authority's page the new record is read from.",
             code="source_missing",
         )
+    if source_url and not is_link(source_url):
+        # Every kind's link is rendered as the proposal's source, so it is an https link or
+        # nothing (H35): never `http:` or another scheme a reader's browser would follow.
+        raise ValidationError("sourceUrl is an https link to the authority's page, or left out.", code="validation_error")
     effective_from = _agreed_effective_from(parsed, effective_from)
     stored_payload = payload_dict(parsed)
     title = title.strip()
@@ -658,6 +748,7 @@ def create(
     # What the database itself is scoped to, not a process-local mirror: this is the tenant
     # whose rows this transaction may write, so it is the tenant the link row can carry.
     tenant_id = tenancy.database_tenant_id()
+    owner_tenant_id = owner_of(kind, private=private, target_owner=target_owner, tenant_id=tenant_id)
     if idempotency_key:
         if len(idempotency_key) > IDEMPOTENCY_KEY_MAX_CHARS:
             raise ValidationError(
@@ -674,8 +765,9 @@ def create(
                 if tenant_id is not None
                 else not existing.proposed_in_tenant
             )
-            submitted = (kind, title, stored_payload, target_type, target_id, sources)
-            if not same_zone or (existing.kind, existing.title, existing.payload, existing.target_type, existing.target_id, existing.field_sources) != submitted:
+            submitted = (kind, title, stored_payload, target_type, target_id, sources, owner_tenant_id)
+            stored = (existing.kind, existing.title, existing.payload, existing.target_type, existing.target_id, existing.field_sources, existing.owner_tenant_id)
+            if not same_zone or stored != submitted:
                 raise ValidationError(
                     "This Idempotency-Key was already used for a different proposal.",
                     code="idempotency_conflict",
@@ -693,48 +785,58 @@ def create(
             return existing, False
     # The model's name too: the queue shows it as the proposer.
     risk_flags = screen_all([title, model, source_label, source_url, *_texts(stored_payload), *sources.values()])
-    with transaction.atomic():
-        if run is not None:
-            runs.spend(run, Proposal.objects.filter(agent_run_id=run.id), limit=settings.WATCH_RUN_MAX_PROPOSALS, what=("proposal", "proposals"))
-        proposal = Proposal.objects.create(
-            kind=kind,
-            title=title,
-            payload=stored_payload,
-            field_sources=sources,
-            target_type=target_type,
-            target_id=target_id,
-            change_id=change_id,
-            model=model,
-            source_label=source_label,
-            source_url=source_url,
-            risk_flags=risk_flags,
-            effective_from=effective_from,
-            origin=proposer.origin.value,
-            agent_run_id=agent_run_id,
-            proposed_by_user=proposer.user,
-            proposed_by_api_key_id=proposer.api_key_id,
-            proposed_by_agent_id=proposer.agent_id,
-            idempotency_key=idempotency_key or None,
-            status=ProposalStatus.OPEN.value,
-            proposed_in_tenant=tenant_id is not None,
-        )
-        if tenant_id is not None:
-            ProposalTenant.objects.create(tenant_id=tenant_id, proposal=proposal)
-        record(
-            action="proposal.created",
-            actor=proposer.actor,
-            subject_type=SUBJECT_TYPE,
-            subject_id=proposal.id,
-            subject_title=proposal.title,
-            summary=f"Proposed: {proposal.title}",
-            tenant_id=tenant_id,
-            after={
-                "kind": kind,
-                "payload": stored_payload,
-                "origin": proposal.origin,
-                **({"riskFlags": risk_flags} if risk_flags else {}),
-            },
-        )
+    try:
+        with transaction.atomic():
+            if run is not None:
+                runs.spend(run, Proposal.objects.filter(agent_run_id=run.id), limit=settings.WATCH_RUN_MAX_PROPOSALS, what=("proposal", "proposals"))
+            proposal = Proposal.objects.create(
+                kind=kind,
+                title=title,
+                payload=stored_payload,
+                field_sources=sources,
+                target_type=target_type,
+                target_id=target_id,
+                change_id=change_id,
+                model=model,
+                source_label=source_label,
+                source_url=source_url,
+                risk_flags=risk_flags,
+                effective_from=effective_from,
+                origin=proposer.origin.value,
+                agent_run_id=agent_run_id,
+                proposed_by_user=proposer.user,
+                proposed_by_api_key_id=proposer.api_key_id,
+                proposed_by_agent_id=proposer.agent_id,
+                idempotency_key=idempotency_key or None,
+                status=ProposalStatus.OPEN.value,
+                proposed_in_tenant=tenant_id is not None,
+                owner_tenant_id=owner_tenant_id,
+            )
+            if tenant_id is not None:
+                ProposalTenant.objects.create(tenant_id=tenant_id, proposal=proposal)
+            record(
+                action="proposal.created",
+                actor=proposer.actor,
+                subject_type=SUBJECT_TYPE,
+                subject_id=proposal.id,
+                subject_title=proposal.title,
+                summary=f"Proposed: {proposal.title}",
+                tenant_id=tenant_id,
+                after={
+                    "kind": kind,
+                    "payload": stored_payload,
+                    "origin": proposal.origin,
+                    **({"riskFlags": risk_flags} if risk_flags else {}),
+                },
+            )
+    except IntegrityError as error:
+        # The same proposer's retry key already filed a proposal this session cannot read: a
+        # bank's own proposal, seen from another bank or from the console (D-57). It is a
+        # conflict, as it is when the proposal is in sight, and never a replay of a row the
+        # caller may not read.
+        if getattr(getattr(error.__cause__, "diag", None), "constraint_name", None) not in IDEMPOTENCY_CONSTRAINTS:
+            raise
+        raise ValidationError("This Idempotency-Key was already used for a different proposal.", code="idempotency_conflict") from error
     return proposal, True
 
 
@@ -882,6 +984,8 @@ def row(proposal: Proposal) -> ProposalRow:
         rejection_code=proposal.rejection_code,
         review_note=proposal.review_note,
         applied_at=proposal.applied_at,
+        is_batch=proposal.is_batch,
+        row_count=proposal.row_count,
         created_at=proposal.created_at,
     )
 
@@ -927,6 +1031,17 @@ def _decidable(proposal: Proposal, reviewer: Reviewer) -> None:
         raise ValidationError(
             "A proposal is decided by someone other than the person, key or agent who made it.",
             code="four_eyes_violation",
+        )
+
+
+def _not_a_batch(proposal: Proposal) -> None:
+    """A batch (PRO-04) is decided row by row through apps/proposals/batch.py, never as one
+    proposal here: approving it whole would apply no row, and rejecting it would leave its
+    rows pending under a closed proposal. 409 `invalid_transition`."""
+    if proposal.is_batch:
+        raise ValidationError(
+            "This proposal is a batch: decide its rows through POST /proposal-batches/{batchId}/decide.",
+            code="invalid_transition",
         )
 
 
@@ -1000,7 +1115,17 @@ def _log_decision(proposal: Proposal, decision: AgentDecision | None, run: Agent
     )
 
 
-def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any]) -> dict[str, Any]:
+def _field_value(payload: dict[str, Any], field: str) -> Any:
+    """The value a stored payload holds for a field as `sourced_fields()` names it:
+    `summaries.sv` is the Swedish summary, `effectiveFrom` the date."""
+    name, _, language = field.partition(".")
+    value = payload.get(name)
+    return value.get(language) if language and isinstance(value, dict) else value
+
+
+def corrected(
+    proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any], field_sources: dict[str, str] | None = None
+) -> dict[str, str]:
     """The payload as the reviewer corrected it, checked as firmly as the one that arrived
     (PRO-02, AC-PRO1).
 
@@ -1016,6 +1141,12 @@ def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any])
     a fact from an authority, so there is nothing to correct against a source, and a
     reviewer who disagrees rejects with a reason instead.
 
+    A correction that changes what a sourced field says names the fresh source it read the
+    new value from, in `field_sources`, and only such a field takes one (H35): the
+    proposer's source vouches for the value it was given for, not for the reviewer's. The
+    proposal keeps the fresh source for that field from then on. Returns the proposer's
+    sources the fresh ones replaced, for the approval's audit row.
+
     An agent's correction may reword a summary but not move `originalLanguage`: the
     original is the one text stored without the machine label, so moving it would store a
     machine translation as unlabelled and label the source-language text machine-made
@@ -1028,22 +1159,40 @@ def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any])
         )
     merged = {**proposal.payload, **overrides}
     parsed = validated_payload(proposal.kind, merged)
-    standards.check_payload(proposal.kind, proposal.target_id, parsed, proposal.field_sources)
-    check_field_sources(parsed, proposal.field_sources)
     stored = payload_dict(parsed)
+    fresh = {field: source.strip() for field, source in (field_sources or {}).items()}
+    sources = {**proposal.field_sources, **fresh}
+    # Before the source checks, so a correction that breaks a standards rule answers the rule
+    # it breaks, as at creation (D-35).
+    standards.check_payload(proposal.kind, proposal.target_id, parsed, sources, proposal.source_label)
+    changed = [field for field in sourced_fields(parsed) if _field_value(stored, field) != _field_value(proposal.payload, field)]
+    missing = [field for field in changed if not fresh.get(field)]
+    if missing:
+        raise ValidationError(
+            f"Give the source you read each corrected value in. Missing: {', '.join(missing)}.", code="source_missing"
+        )
+    stray = sorted(set(fresh) - set(changed))
+    if stray:
+        raise ValidationError(
+            f"{', '.join(stray)}: this correction does not change that field, so it takes no new source.",
+            code="validation_error",
+        )
+    check_field_sources(parsed, sources)
     if reviewer.user is None and stored.get("originalLanguage") != proposal.payload.get("originalLanguage"):
         raise ValidationError(
             "An agent cannot change which language a summary was written in. Reject it with a reason instead.",
             code="validation_error",
         )
+    replaced = {field: proposal.field_sources[field] for field in fresh if field in proposal.field_sources}
     proposal.corrected_payload = stored
     proposal.corrected_by = reviewer.user
     proposal.corrected_at = timezone.now()
+    proposal.field_sources = sources
     # The row's own date follows the correction, because a queue row that showed one date
     # while the version carried another would be a proposal nobody could read straight
     # (the same rule `_agreed_effective_from()` holds the proposer to).
     proposal.effective_from = getattr(parsed, "effective_from", proposal.effective_from)
-    return proposal.corrected_payload
+    return replaced
 
 
 def approve(
@@ -1053,6 +1202,7 @@ def approve(
     actor: Actor,
     note: str,
     payload_overrides: dict[str, Any] | None = None,
+    field_sources: dict[str, str] | None = None,
     step_up_assertion_id: uuid.UUID | None,
     decision: AgentDecision | None = None,
     agent_run_id: uuid.UUID | None = None,
@@ -1063,9 +1213,12 @@ def approve(
     worker or a shell caller that fails part way writes nothing, so its retry writes the
     version once (apps/proposals/tests_decide.py, DecidingOutsideARequest).
 
-    A reviewer may correct the payload on the way through (`payload_overrides`). What they
+    A reviewer may correct the payload on the way through (`payload_overrides`), naming in
+    `field_sources` the fresh source of every value the correction changes. What they
     approved is stored beside what was proposed, as their own correction, so the queue and
-    the audit trail keep both. `step_up_assertion_id` is null for an agent's decision: a key
+    the audit trail keep both. The review note stays on the proposal row and never in the
+    audit value: from R2 a proposal can be a bank's own (D-89), and a note is its reviewer's
+    words (CHUNK10 rule 13). `step_up_assertion_id` is null for an agent's decision: a key
     holds no passkey assertion (PRO-S13, D-62, ADR 0054).
 
     An agent's approval carries the model call behind it (`decision`) and the open run of
@@ -1086,6 +1239,7 @@ def approve(
     """
     from apps.proposals import apply
 
+    _not_a_batch(proposal)
     reviewer = as_reviewer(reviewer, actor)
     with transaction.atomic():
         run = _decision_run(reviewer, decision, agent_run_id)
@@ -1102,9 +1256,10 @@ def approve(
                 code="risk_flagged",
             )
         decided = ["status", "reviewed_by", "reviewed_by_api_key", "reviewed_by_agent", "reviewed_at", "applied_at", "review_note"]
-        if payload_overrides:
-            corrected(proposal, reviewer, payload_overrides)
-            decided += ["corrected_payload", "corrected_by", "corrected_at", "effective_from"]
+        replaced: dict[str, str] = {}
+        if payload_overrides or field_sources:
+            replaced = corrected(proposal, reviewer, payload_overrides or {}, field_sources)
+            decided += ["corrected_payload", "corrected_by", "corrected_at", "effective_from", "field_sources"]
         apply.apply(proposal, actor=actor, reviewer=reviewer, step_up=step_up_assertion_id)
         now = timezone.now()
         proposal.status = ProposalStatus.APPROVED.value
@@ -1124,11 +1279,11 @@ def approve(
             subject_title=proposal.title,
             summary=f"Approved: {proposal.title}",
             tenant_id=None,
-            before={"status": ProposalStatus.OPEN.value},
+            before={"status": ProposalStatus.OPEN.value, **({"fieldSources": replaced} if field_sources else {})},
             after={
                 "status": proposal.status,
-                "note": proposal.review_note,
                 "corrected": proposal.corrected_payload is not None,
+                **({"fieldSources": {field: proposal.field_sources[field] for field in field_sources}} if field_sources else {}),
                 **_reviewer_facts(reviewer, run),
             },
             step_up_assertion_id=step_up_assertion_id,
@@ -1159,6 +1314,7 @@ def reject(
     older caller; `as_reviewer` normalizes either into the same shape below."""
     from apps.taxonomy.registry import REGISTRY
 
+    _not_a_batch(proposal)
     reviewer = as_reviewer(reviewer, actor)
     with transaction.atomic():
         run = _decision_run(reviewer, decision, agent_run_id)
@@ -1204,7 +1360,8 @@ def reject(
             summary=f"Rejected: {proposal.title}",
             tenant_id=None,
             before={"status": ProposalStatus.OPEN.value},
-            after={"status": proposal.status, "rejectionCode": code, "note": text, **_reviewer_facts(reviewer, run)},
+            # The note stays on the proposal row, as an approval's does.
+            after={"status": proposal.status, "rejectionCode": code, **_reviewer_facts(reviewer, run)},
             topic="proposal.rejected",
         )
     return proposal
