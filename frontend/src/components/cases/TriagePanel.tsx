@@ -40,8 +40,8 @@ import { hasProblemCode } from '@/shared/utils/problem';
 // A control shows only when the case's `allowedTransitions` holds its move
 // and the reader holds the move's permission, so nobody is offered a button
 // that could answer 403, and a reader without it sends no request at all:
-// not even the lists a form would need. Urgency, owner and reasons go as
-// keys; every label is the bank's own row. A refusal renders where it was
+// not even the lists a form would need. Urgency, the optional owning team
+// and reasons go as keys, the owner as an id; every label is the bank's own row. A refusal renders where it was
 // made, from the server's answer: a 422 under the field its `errors` names,
 // `stale_write` as a reload offer that leaves the person's choice alone.
 
@@ -85,19 +85,22 @@ function TriageForm({ changeId, workflow, agent }: { changeId: string; workflow:
   const t = useT();
   const people = useCaseWorkers();
   const urgencies = useVocabularyValues('urgency');
+  const teams = useVocabularyValues('team');
   const triage = useTriageChange(changeId, workflow.version);
   const [urgency, setUrgency] = useState(workflow.urgency?.key ?? '');
   const [ownerId, setOwnerId] = useState(workflow.ownerId ?? '');
+  const [ownerTeam, setOwnerTeam] = useState('');
   const [dismissing, setDismissing] = useState(false);
   const canAssign = workflow.allowedTransitions.includes('assigned');
   const canDismiss = workflow.allowedTransitions.includes('dismissed');
   const refused = refusedFieldsOf(triage.error);
   const ownerRefused = refused.includes('ownerId') || hasProblemCode(triage.error, 'owner_required');
+  const teamRefused = refused.includes('ownerTeam');
   const suggested = workflow.urgency !== null && !workflow.urgencyConfirmed;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    triage.mutate({ urgency, ownerId });
+    triage.mutate({ urgency, ownerId, ...(ownerTeam === '' ? {} : { ownerTeam }) });
   };
 
   return (
@@ -136,8 +139,24 @@ function TriageForm({ changeId, workflow, agent }: { changeId: string; workflow:
               ))}
             </Select>
           </Field>
+          <Field id="triage-team" label={t('caseTriage.team')} error={teamRefused ? t('caseTriage.fieldInvalid') : undefined}>
+            <Select
+              id="triage-team"
+              value={ownerTeam}
+              aria-invalid={teamRefused || undefined}
+              aria-describedby={teamRefused ? 'triage-team-error' : undefined}
+              onChange={(event) => setOwnerTeam(event.target.value)}
+            >
+              <option value="">{t('caseTriage.teamNone')}</option>
+              {(teams.data ?? []).filter(isOffered).map((row) => (
+                <option key={row.key} value={row.key}>
+                  {row.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
         </div>
-        <Refusal error={triage.error} changeId={changeId} handled={hasProblemCode(triage.error, 'owner_required') || shownAll(refused, ['urgency', 'ownerId'])} />
+        <Refusal error={triage.error} changeId={changeId} handled={hasProblemCode(triage.error, 'owner_required') || shownAll(refused, ['urgency', 'ownerId', 'ownerTeam'])} />
         <ButtonBar>
           {canDismiss ? (
             <Button variant="danger" disabled={triage.isPending} onClick={() => setDismissing(true)}>
@@ -215,6 +234,7 @@ function NextStep({ changeId, workflow }: { changeId: string; workflow: CaseWork
             ? t('caseTriage.assignedBy', { owner, by: workflow.triagedBy.name, date })
             : t('caseTriage.assigned', { owner, date })}
         </span>
+        {workflow.ownerTeam ? <span>{t('caseTriage.withTeam', { team: workflow.ownerTeam.label })}</span> : null}
         {workflow.category === 'assigned' ? <span>{canWork ? t('caseTriage.nextStepIntro') : t('caseTriage.nextStepReader')}</span> : null}
       </p>
       <Refusal error={start.error} changeId={changeId} handled={false} />

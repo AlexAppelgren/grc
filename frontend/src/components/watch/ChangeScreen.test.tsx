@@ -116,6 +116,7 @@ const change: ChangeDetail = {
     dismissedReason: null,
     openActionCount: 0,
     owner: null,
+    ownerTeam: null,
     signedOffBy: null,
     signoffRequestedAt: null,
     signoffRequestedBy: null,
