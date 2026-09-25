@@ -216,6 +216,11 @@ TENANT_ONLY_TABLES = [
     # one row of reach state. Each person and the approving request are composite keys.
     "tenant_reach_request",
     "tenant_reach",
+    # d89-scope-items-model (taxonomy 0012, OWN-01): a bank's scope items and their rows on
+    # its regulatory scope requests. Item and request are composite keys
+    # (apps/taxonomy/tests_scope_item_models.py proves the database refuses another bank's).
+    "scope_item",
+    "footprint_change_scope_item",
 ]
 
 # The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the

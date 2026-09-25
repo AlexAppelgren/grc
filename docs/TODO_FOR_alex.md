@@ -1432,3 +1432,14 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       and a reach request is never withdrawn (the requester's colleague rejects it).
       Switching reach off needs one person and a step-up; on again takes a new request and
       a second person. `GET /tenant/reach` is readable with `security.manage` alone.
+
+## d89-scope-items-model: what a scope item row holds (2026-09-25, OWN-01, D-91)
+
+- [ ] Default taken: a scope item names one jurisdiction, one regime term and one public
+      https address, as the package's acceptance says; PRD OWN-01 speaks of terms and
+      addresses in the plural. A bank that needs more asks for a second item. Say if one item
+      should carry several of each (a join table per list, no other change).
+- [ ] Default taken: the item row is written with the request that asks for it, as
+      `requested`, so the approver sees exactly what they approve; it is `in_scope` only after
+      the second person's passkey approval, and `declined` if the request is rejected or
+      withdrawn. No key and no agent writes one either way.

@@ -806,6 +806,12 @@ if min(AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS, AGENT_ACCESS_RATE_PER
         "AGENT_ACCESS_RATE_PER_MINUTE must each be at least 1."
     )
 
+# ===== d89-scope-items-model: the bank's own scope items (OWN-01, D-91) =====
+# The longest description a scope item may carry; the boundary refuses a longer one.
+SCOPE_ITEM_DESCRIPTION_MAX_CHARS = env_int("SCOPE_ITEM_DESCRIPTION_MAX_CHARS", 2000)
+if SCOPE_ITEM_DESCRIPTION_MAX_CHARS < 1:
+    raise ImproperlyConfigured("Refusing to boot: SCOPE_ITEM_DESCRIPTION_MAX_CHARS must be at least 1.")
+
 # ---------------------------------------------------------------------------------------
 # ===== Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ===========
 # ---------------------------------------------------------------------------------------

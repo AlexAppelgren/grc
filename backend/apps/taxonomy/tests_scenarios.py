@@ -810,7 +810,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(len(assertion_ids), 1)
         self.assertIsNotNone(assertion_ids.pop())
         history = FootprintHistory.objects.filter(tenant=self.tenant, request_id=request["id"]).order_by("action")
-        self.assertEqual([(h.action, h.term.key) for h in history], [("added", "retail"), ("removed", "advice")])
+        self.assertEqual(list(history.values_list("action", "term__key")), [("added", "retail"), ("removed", "advice")])
         # The decision keeps the counts it was taken against, not the ones from when the
         # request was sent: the request shows what its audit row says.
         decision = AuditEvent.objects.get(action="footprint.change_approved", tenant=self.tenant)
@@ -1164,8 +1164,8 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.activate(self.tenant)
         events = AuditEvent.objects.filter(tenant=self.tenant, action__in=("footprint.term_added", "footprint.term_removed"))
         self.assertEqual([(event.action, event.after["request"]) for event in events], [("footprint.term_added", request["id"])])
-        history = FootprintHistory.objects.filter(tenant=self.tenant, request_id=request["id"]).select_related("term")
-        self.assertEqual([(row.action, row.term.key) for row in history], [("added", "dk")])
+        history = FootprintHistory.objects.filter(tenant=self.tenant, request_id=request["id"])
+        self.assertEqual(list(history.values_list("action", "term__key")), [("added", "dk")])
 
     def test_fp_s9(self) -> None:
         """FP-S9
