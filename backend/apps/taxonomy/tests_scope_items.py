@@ -287,7 +287,7 @@ class NoKeyReachesAScopeItem(ScopeItemBank):
         bank_key = factories.api_key(self.tenant, scopes=("library:read", "search:read"))
         with tenancy.platform_zone():
             platform_key = agent_build.agent_key(scopes=("proposals:write", "proposals:review", "library:read"))
-        routes = (
+        routes: tuple[tuple[str, str, dict[str, Any] | None], ...] = (
             ("GET", "/tenant/footprint", None),
             ("GET", REQUESTS, None),
             ("GET", f"/tenant/footprint/scope-items/{item.id}", None),
