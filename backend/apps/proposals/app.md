@@ -116,7 +116,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | PRO-01 | The review queue is the only way into the library, for agents and people, with a source per changed field | M | R1 | built |
 | PRO-02 | Approval applies the payload, writes the version, the audit row and the re-index in one transaction; the reviewer can correct scope and wording first; never the proposer | M | R1 | built |
 | PRO-03 | The queue lives in the platform console; tenants see library updates and can report a problem, which stays inside their bank. A bank's private records are proposed and approved inside the bank and never reach the console (D-50, D-57). R1 builds the platform queue, library updates and the bank's own problem reports; a bank's private records (INV-07, PRO-S12) are chunk 13, R3 | M | R1 | built |
-| PRO-04 | Batch proposals (re-tag, backfill) with a preview, approved whole or row by row | S | R2 | pending |
+| PRO-04 | Batch proposals (re-tag, backfill) with a preview, approved whole or row by row | S | R2 | built |
 
 PRO-03 is `built` for R1 (R1 close, 2026-09-24). The console queue, the bank's "Library
 updates" screen (`/inventory/updates` over `GET /library-updates`) and "This looks wrong" on
@@ -124,6 +124,16 @@ each of its rows, filed through the same report form the obligation card uses an
 inside the bank, are proven by PRO-S7 at the integration level and by its journey in the
 merged batch run. Its last clause, a bank's private records (PRO-S12, INV-07), is R3 and
 waits for chunk 13; it is named as the cut, not built.
+
+PRO-04 is `built` (c11-proposal-batches-decide, 2026-09-25): a re-tag batch is filed with its
+preview and decided row by row, with a rest decision, by a second person holding
+`proposals.review` with a fresh passkey. Approved rows rewrite their obligations' scope terms
+through `apply()`'s `obligation_scope` branch, inside the proposal door, with an audit row per
+row (terms before and after), one naming every row's outcome and the re-index, in one
+transaction; PRO-S8 proves it at the integration level. The proposer, who is the person who
+asked for the re-tag, is refused with 409 `four_eyes_violation`, and an agent with 409
+`person_review_required`; no API key reaches the route. The console screen and PRO-S8's
+journey are `c11-fe-console-batch-retag`'s and the console journey package's.
 
 PRO-S13's journey (pro-s13-journey) runs end to end: the console mints a `library-confirmer`
 key with `agent-runs:write` and `proposals:review`, which opens a run, reads the queue and

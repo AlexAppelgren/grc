@@ -1389,3 +1389,15 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       changed value in", an agent's correction without one answers 422 `source_missing`
       and applies nothing (fails safe; it can still approve as proposed or reject).
       Default if you say nothing: v3 carries that line when the confirmer next changes.
+
+## c11-proposal-batches-decide: deciding a batch row by row (2026-09-25, PRO-04, D-1xx)
+
+- [ ] **Who decides a re-tag batch an agent files.** Built: a second person holding
+      `proposals.review`, with a passkey, and never the proposer. An agent reviewer is
+      refused (409 `person_review_required`) and no API key reaches the route. Default if you
+      say nothing: it stays person-only.
+- [ ] **A large batch is slow to approve.** Each approved row re-indexes its obligation in the
+      same transaction, about 25 ms a row, so approving a full batch of 100 takes a couple of
+      seconds, over the 250 ms budget (a logged warning, not an error). Default if you say
+      nothing: it stays in one transaction, as PRO-02 asks; a background job is the change if
+      it is felt.
