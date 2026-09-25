@@ -204,7 +204,9 @@ class Reviewer:
 # Validation
 # ---------------------------------------------------------------------------------------
 def validated_kind(kind: str) -> str:
-    valid = [member.value for member in ProposalKind]
+    # A kind is filed only once its payload has a named schema, so a member added ahead of
+    # its schema (`obligation_scope`, PRO-04) is refused here rather than failing below.
+    valid = [member.value for member in ProposalKind if member.value in PAYLOAD_SCHEMAS]
     if kind not in valid:
         raise ValidationError(
             f"{kind!r} is not a proposal kind. Valid kinds: {', '.join(valid)}.", code="unknown_key"

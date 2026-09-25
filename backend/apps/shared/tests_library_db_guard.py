@@ -74,6 +74,7 @@ from contextlib import contextmanager
 from typing import Any
 from unittest import mock
 
+from django.core.exceptions import ValidationError
 from django.db import DEFAULT_DB_ALIAS, DatabaseError, connections, models, transaction
 from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
@@ -595,12 +596,19 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
                 tenancy.clear_tenant()
                 provision = Provision.objects.get(stable_key=PROVISION_KEY)
             decided.append(self._approved_body(provision_version_body(provision)))
-        # The census: a kind added to ProposalKind fails here until it is approved above.
+        # The census: a kind added to ProposalKind fails here until it is approved above. A
+        # member added ahead of its payload schema (`obligation_scope`, PRO-04) cannot be
+        # filed, which is proven below; it joins the census the moment its schema lands.
+        fileable = {kind.value for kind in ProposalKind if kind.value in proposals.PAYLOAD_SCHEMAS}
         self.assertEqual(
             {proposal.kind for proposal in decided},
-            {kind.value for kind in ProposalKind},
+            fileable,
             "a proposal kind not approved here as the app role: file and approve one above",
         )
+        for kind in sorted({kind.value for kind in ProposalKind} - fileable):
+            with self.subTest(unfileable=kind), self.assertRaises(ValidationError) as refused:
+                self._approved(kind, {})
+            self.assertEqual(refused.exception.code, "unknown_key")
         self.assertEqual({proposal.status for proposal in decided}, {ProposalStatus.APPROVED.value})
         money = Flag.objects.get(key="door_money")
         self.assertTrue(money.active)
