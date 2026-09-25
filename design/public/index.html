@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>bleqq · Compliance Watch for banks in the Nordics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Hanken+Grotesk:wght@400;500;600&family=Noto+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ---------------------------------------------------------------------------
+   bleqq public page. Colours are the brand layer in frontend/src/styles/brand.css
+   (green #0a3a2a, sand #f6f3ec, brass #6a5730 / #d9cba9) over Green's neutral
+   and status scales, read from frontend/src/styles/tokens.generated.css.
+   The green is a ribbon and one closing field, never a large ground.
+   Type: Libre Caslon Display (plate headlines, proposed, see README),
+   Hanken Grotesk (text), Noto Sans Mono (legal references and the wordmark).
+   Component proportions follow design/system/foundations.md.
+--------------------------------------------------------------------------- */
+
+:root{
+  color-scheme: light;
+
+  --paper:#ffffff;
+  --paper-sub:#f7f8f7;
+  --text:#0a0b0b;
+  --muted:#636967;
+  --line:#dfe1e1;
+  --rule:#777e7c;
+
+  --ink:#0a3a2a;
+  --on-ink:#f6f3ec;
+  --on-ink-muted:rgba(246,243,236,.74);
+  --on-ink-line:rgba(246,243,236,.24);
+  --on-ink-wash:rgba(246,243,236,.08);
+
+  --sand:#f6f3ec;
+  --brass:#6a5730;
+  --brass-bg:#ece5d6;
+  --accent:#0a3a2a;
+
+  --pill-information-bg:#eaebeb; --pill-information-fg:#0a0b0b;
+  --pill-notice-bg:#e6f3ff;     --pill-notice-fg:#005fb3;
+  --pill-positive-bg:#dcefdc;   --pill-positive-fg:#026436;
+  --pill-warning-bg:#fce8cf;    --pill-warning-fg:#8f530a;
+  --pill-negative-bg:#fdebe8;   --pill-negative-fg:#b92f13;
+  --pill-brand-bg:#ece5d6;      --pill-brand-fg:#6a5730;
+
+  --ins-bg:#dcefdc; --ins-fg:#026436;
+  --del-bg:#fdebe8; --del-fg:#b92f13;
+  --focus:#005fb3;
+
+  --serif:"Libre Caslon Display","Libre Caslon Text",Georgia,"Times New Roman",serif;
+  --serif-text:"Libre Caslon Text",Georgia,"Times New Roman",serif;
+  --sans:"Hanken Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"Noto Sans Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+
+  --t-plate:clamp(2.25rem,1.15rem + 4.4vw,3.75rem);
+  --t-h2:clamp(1.625rem,1.12rem + 1.7vw,2.25rem);
+  --t-h3:1.125rem;
+  --t-deck:clamp(1rem,.94rem + .4vw,1.1875rem);
+  --t-prose:1rem;
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --paper:#0a0b0b;
+    --paper-sub:#141614;
+    --text:#f7f8f7;
+    --muted:#abb0ae;
+    --line:#2b302e;
+    --rule:#a0a6a4;
+    --sand:#251e13;
+    --brass:#d9cba9;
+    --brass-bg:#33291a;
+    --accent:#d9cba9;
+    --pill-information-bg:#313533; --pill-information-fg:#f7f8f7;
+    --pill-notice-bg:#003666;      --pill-notice-fg:#66b8ff;
+    --pill-positive-bg:#003d26;    --pill-positive-fg:#8ae58d;
+    --pill-warning-bg:#5f3707;     --pill-warning-fg:#f5b970;
+    --pill-negative-bg:#5c170a;    --pill-negative-fg:#f08975;
+    --pill-brand-bg:#33291a;       --pill-brand-fg:#d9cba9;
+    --ins-bg:#003d26; --ins-fg:#8ae58d;
+    --del-bg:#5c170a; --del-fg:#f08975;
+    --focus:#66b8ff;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#0a0b0b;
+  --paper-sub:#141614;
+  --text:#f7f8f7;
+  --muted:#abb0ae;
+  --line:#2b302e;
+  --rule:#a0a6a4;
+  --sand:#251e13;
+  --brass:#d9cba9;
+  --brass-bg:#33291a;
+  --accent:#d9cba9;
+  --pill-information-bg:#313533; --pill-information-fg:#f7f8f7;
+  --pill-notice-bg:#003666;      --pill-notice-fg:#66b8ff;
+  --pill-positive-bg:#003d26;    --pill-positive-fg:#8ae58d;
+  --pill-warning-bg:#5f3707;     --pill-warning-fg:#f5b970;
+  --pill-negative-bg:#5c170a;    --pill-negative-fg:#f08975;
+  --pill-brand-bg:#33291a;       --pill-brand-fg:#d9cba9;
+  --ins-bg:#003d26; --ins-fg:#8ae58d;
+  --del-bg:#5c170a; --del-fg:#f08975;
+  --focus:#66b8ff;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *{animation-duration:.001ms!important;transition-duration:.001ms!important}
+}
+body{
+  margin:0;background:var(--paper);color:var(--text);
+  font-family:var(--sans);font-size:var(--t-prose);line-height:1.6;
+  font-weight:400;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+img,svg{max-width:100%}
+[hidden]{display:none!important}
+/* artifact-skeleton-provides */ :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
+
+/* ---- shell ------------------------------------------------------------- */
+.wrap{
+  max-width:1160px;margin-inline:auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.band--ink{background:var(--ink);color:var(--on-ink)}
+.band--sub{background:var(--paper-sub)}
+main{display:block}
+@media (min-width: 768px){
+  .wrap{
+    padding-left:max(32px,env(safe-area-inset-left,0px));
+    padding-right:max(32px,env(safe-area-inset-right,0px));
+  }
+}
+
+.section{
+  display:grid;grid-template-columns:150px minmax(0,1fr);
+  gap:clamp(20px,4vw,56px);
+  padding-block:clamp(44px,6.5vw,84px);
+  border-top:1px solid var(--line);
+  scroll-margin-top:76px;
+}
+#top{scroll-margin-top:76px}
+.margin{font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--muted)}
+.margin .sec{display:block;font-size:15px;font-weight:500;color:var(--brass);letter-spacing:.02em;margin-bottom:8px}
+.col{min-width:0}
+.prose{max-width:62ch}
+.prose p{margin:0 0 1.05em}
+.prose p:last-child{margin-bottom:0}
+
+/* ---- type roles -------------------------------------------------------- */
+.plate{
+  font-family:var(--serif);font-weight:400;
+  font-size:var(--t-plate);line-height:1.04;letter-spacing:-.012em;
+  text-wrap:balance;margin:0;color:var(--text);
+}
+h2.head{
+  font-family:var(--serif);font-weight:400;
+  font-size:var(--t-h2);line-height:1.12;letter-spacing:-.01em;
+  text-wrap:balance;margin:0 0 20px;
+}
+h3.sub{font-family:var(--sans);font-size:var(--t-h3);font-weight:600;line-height:1.4;letter-spacing:-.01em;margin:0 0 6px}
+.deck{font-size:var(--t-deck);line-height:1.55;margin:20px 0 0;max-width:56ch;color:var(--muted)}
+.lede{font-family:var(--serif-text);font-style:italic;font-size:1.125rem;line-height:1.6}
+.microlabel{font-family:var(--sans);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+.meta{font-size:.875rem;line-height:1.45;color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.ref{font-family:var(--mono);font-size:.8125rem;letter-spacing:.01em;font-variant-numeric:tabular-nums}
+
+/* thick-thin rule, the printed-document break */
+.rule2{border-top:3px solid var(--accent);border-bottom:1px solid var(--accent);height:3px;margin:0 0 28px}
+.rule2--ink{border-top-color:var(--on-ink);border-bottom-color:var(--on-ink-line)}
+
+/* ---- wordmark ---------------------------------------------------------- */
+.mark{display:block;height:auto;color:currentColor}
+.mark--nav{width:96px;padding:2px 6px 2px 0}
+.mark--foot{width:120px}
+
+/* ---- masthead ribbon --------------------------------------------------- */
+/* Sticky at every width: the two actions are the one thing on the page that
+   must stay in reach, and Sign in is the primary of the pair. */
+.ribbon{position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+.masthead{display:flex;align-items:center;gap:12px;padding-block:12px;flex-wrap:wrap}
+.navlinks{display:flex;gap:22px;flex-wrap:wrap;margin-left:auto}
+.navlink{font-size:.875rem;color:var(--on-ink-muted);text-decoration:none;padding-block:4px;border-bottom:1px solid transparent}
+.navlink:hover{color:var(--on-ink);border-bottom-color:var(--on-ink-line)}
+.mast-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+
+/* ---- buttons and controls ---------------------------------------------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:40px;padding:0 18px;border-radius:6px;border:1px solid transparent;
+  font-family:var(--sans);font-size:.9375rem;font-weight:500;line-height:1;
+  text-decoration:none;cursor:pointer;white-space:nowrap;
+  transition:background-color .15s ease,color .15s ease,border-color .15s ease;
+}
+.btn--sm{height:32px;padding:0 12px;font-size:.875rem}
+.btn--plate{background:var(--on-ink);color:var(--ink);border-color:var(--on-ink)}
+.btn--plate:hover{background:#fff;border-color:#fff}
+.btn--quiet{background:transparent;color:var(--on-ink);border-color:var(--on-ink-line)}
+.btn--quiet:hover{background:var(--on-ink-wash)}
+.btn--solid{background:var(--text);color:var(--paper);border-color:var(--text)}
+.btn--solid:hover{opacity:.88}
+.btn--outline{background:var(--paper);color:var(--text);border-color:var(--rule)}
+.btn--outline:hover{background:var(--paper-sub)}
+.theme-toggle{
+  font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  background:transparent;color:var(--muted);border:1px solid var(--line);
+  border-radius:6px;height:32px;padding:0 10px;cursor:pointer;
+}
+.theme-toggle:hover{color:var(--text);background:var(--paper-sub)}
+
+/* ---- hero -------------------------------------------------------------- */
+.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(32px,5vw,64px);align-items:start;padding-block:clamp(40px,6vw,76px) clamp(36px,5vw,60px)}
+.hero .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);margin:0 0 18px}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px}
+
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border-block:1px solid var(--line)}
+.fact{background:var(--paper);padding:16px 18px 18px}
+.fact dt{font-family:var(--sans);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--brass);margin-bottom:6px}
+.fact dd{margin:0;font-size:.9375rem;line-height:1.35;color:var(--text)}
+
+/* ---- record card (product artefact) ------------------------------------ */
+.record{background:var(--paper);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:16px}
+.record-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.record-top .microlabel{color:var(--muted)}
+.record-top .ref{color:var(--muted)}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pill{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:.8125rem;line-height:18px;font-weight:500;white-space:nowrap}
+.pill--information{background:var(--pill-information-bg);color:var(--pill-information-fg)}
+.pill--notice{background:var(--pill-notice-bg);color:var(--pill-notice-fg)}
+.pill--positive{background:var(--pill-positive-bg);color:var(--pill-positive-fg)}
+.pill--warning{background:var(--pill-warning-bg);color:var(--pill-warning-fg)}
+.pill--negative{background:var(--pill-negative-bg);color:var(--pill-negative-fg)}
+.pill--brand{background:var(--pill-brand-bg);color:var(--pill-brand-fg)}
+.record h3{font-family:var(--serif-text);font-weight:400;font-size:1.25rem;line-height:1.3;margin:0 0 6px;letter-spacing:-.005em}
+.record .meta{margin:0 0 14px}
+
+.lagrum{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;background:var(--sand);border:1px solid var(--brass-bg);border-radius:6px;padding:12px}
+.lagrum .para{font-family:var(--mono);font-size:24px;line-height:32px;color:var(--brass);text-align:center}
+.lagrum .body{font-size:.875rem;line-height:1.57}
+.lagrum .cite{font-family:var(--mono);font-size:.75rem;color:var(--brass);margin-top:8px;display:block}
+ins{background:var(--ins-bg);color:var(--ins-fg);text-decoration:none;border-radius:3px;padding:0 2px}
+del{background:var(--del-bg);color:var(--del-fg);border-radius:3px;padding:0 2px}
+
+.callout{background:var(--sand);border:1px solid var(--brass-bg);border-radius:6px;padding:10px 12px;margin-top:12px}
+.callout .microlabel{color:var(--brass);display:block;margin-bottom:4px}
+.callout p{margin:0;font-size:.875rem;line-height:1.57}
+.chain{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+.sample-note{font-family:var(--mono);font-size:.75rem;color:var(--muted);margin:10px 0 0;text-align:right}
+
+/* ---- ruled lists and schedules ----------------------------------------- */
+.ruled{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.ruled > li{padding-block:16px;border-bottom:1px solid var(--line)}
+.ruled p{margin:0;color:var(--muted);font-size:.9375rem}
+
+.defs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 clamp(24px,4vw,48px)}
+.defs > div{padding-block:18px;border-top:1px solid var(--line)}
+.defs .kicker{font-family:var(--mono);font-size:.75rem;color:var(--brass);letter-spacing:.04em;display:block;margin-bottom:8px}
+.defs p{margin:0;color:var(--muted);font-size:.9375rem}
+
+.steps{list-style:none;margin:0;padding:0;counter-reset:step;border-top:1px solid var(--line)}
+.steps > li{
+  display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:16px;align-items:baseline;
+  padding-block:14px;border-bottom:1px solid var(--line);
+}
+.steps > li::before{
+  counter-increment:step;content:counter(step);
+  font-family:var(--mono);font-size:.8125rem;color:var(--brass);font-variant-numeric:tabular-nums;
+}
+.steps .what{font-size:.9375rem}
+.steps .what b{font-weight:600}
+.steps .who{font-family:var(--mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+
+.zones{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:clamp(16px,2.5vw,28px);align-items:stretch}
+.zone{border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--paper)}
+.zone--yours{background:var(--paper-sub)}
+.zone h3{margin-top:0}
+.zone p{margin:0;color:var(--muted);font-size:.9375rem}
+.door{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-width:118px;text-align:center}
+.door .arrow{font-family:var(--mono);font-size:20px;color:var(--brass);line-height:1}
+.door .microlabel{color:var(--brass)}
+.door .meta{font-size:.75rem;max-width:16ch}
+
+.schedule{width:100%;border-collapse:collapse;font-size:.9375rem}
+.schedule th,.schedule td{text-align:left;vertical-align:top;padding:14px 16px 14px 0;border-bottom:1px solid var(--line)}
+.schedule thead th{font-family:var(--sans);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:0}
+.schedule tbody th{width:30%;font-weight:600;font-size:.9375rem}
+.schedule td{color:var(--muted)}
+.table-scroll{overflow-x:auto}
+
+.qa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 clamp(24px,4vw,48px)}
+.qa > div{padding-block:18px;border-top:1px solid var(--line)}
+.qa h3{font-family:var(--serif-text);font-weight:400;font-size:1.0625rem;line-height:1.4;margin:0 0 6px}
+.qa p{margin:0;color:var(--muted);font-size:.9375rem}
+
+/* ---- request field ----------------------------------------------------- */
+.request{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,5vw,64px);padding-block:clamp(48px,7vw,80px);align-items:start}
+.request .plate{color:var(--on-ink);font-size:clamp(1.875rem,1.2rem + 2.4vw,2.75rem)}
+.request .deck{color:var(--on-ink-muted)}
+.form{display:grid;gap:14px}
+.field{display:grid;gap:6px}
+.field label{font-size:.875rem;font-weight:500;color:var(--on-ink)}
+.field input{
+  height:40px;padding:0 12px;border-radius:6px;
+  border:1px solid var(--on-ink-line);background:rgba(246,243,236,.06);color:var(--on-ink);
+  font-family:var(--sans);font-size:.9375rem;
+}
+.field input::placeholder{color:rgba(246,243,236,.5);font-style:italic}
+.field input:focus-visible{outline:2px solid var(--on-ink);outline-offset:1px}
+.form-note{font-family:var(--mono);font-size:.75rem;color:var(--on-ink-muted);margin:0}
+.form-status{font-size:.875rem;color:var(--on-ink);margin:0;min-height:20px}
+
+/* ---- footer ------------------------------------------------------------ */
+.foot{padding-block:clamp(40px,5vw,60px) 28px}
+.foot-top{display:grid;grid-template-columns:minmax(0,1.1fr) repeat(3,minmax(0,1fr));gap:clamp(24px,4vw,48px);padding-bottom:28px}
+.foot h4{font-family:var(--sans);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--brass);margin:0 0 12px}
+.foot ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.foot a{font-size:.9375rem;color:var(--muted);text-decoration:none}
+.foot a:hover{color:var(--text);text-decoration:underline;text-underline-offset:3px}
+.pronounce{font-family:var(--mono);font-size:.8125rem;color:var(--muted);margin:14px 0 0}
+.foot-bottom{display:flex;flex-wrap:wrap;align-items:center;gap:12px 28px;justify-content:space-between;padding-top:22px;border-top:1px solid var(--line);font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+
+/* ---- responsive -------------------------------------------------------- */
+@media (min-width: 881px){
+  .masthead{gap:20px;padding-block:14px}
+  .navlinks{margin-right:12px}
+  .mast-actions{margin-left:0}
+}
+@media (max-width: 880px){
+  .navlinks{display:none}
+}
+@media (max-width: 420px){
+  .mark--nav{width:80px}
+  .mast-actions{gap:6px}
+  .mast-actions .btn{padding:0 10px;font-size:.8125rem}
+}
+@media (max-width: 1000px){
+  .hero{grid-template-columns:minmax(0,1fr)}
+  .facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .foot-top{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width: 880px){
+  .section{grid-template-columns:minmax(0,1fr);gap:0}
+  .margin{margin-bottom:20px;display:flex;align-items:baseline;gap:12px}
+  .margin .sec{margin-bottom:0}
+  .zones{grid-template-columns:minmax(0,1fr)}
+  .door{flex-direction:row;min-width:0;padding-block:4px}
+  .door .arrow{transform:rotate(90deg)}
+  .door .meta{max-width:none}
+  .defs,.qa{grid-template-columns:minmax(0,1fr)}
+  .request{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width: 560px){
+  .facts{grid-template-columns:minmax(0,1fr)}
+  .foot-top{grid-template-columns:minmax(0,1fr)}
+  .steps > li{grid-template-columns:24px minmax(0,1fr);gap:12px}
+  .steps .who{grid-column:2;white-space:normal}
+  .schedule tbody th,.schedule td{display:block;width:auto;padding-right:0}
+  .schedule tbody th{border-bottom:0;padding-bottom:4px}
+  .lagrum{grid-template-columns:minmax(0,1fr)}
+  .lagrum .para{text-align:left}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <symbol id="wordmark" viewBox="0 0 4520 999"><g transform="translate(40 800)"><path fill="currentColor" d="M237.04922953772262 159.18030818491096V-716.0655393235942H466.47538523113866V-635.2132279367621H334.2621572943766V78.03291975185111H466.47538523113866V159.18030818491096Z M976.3769261556934 10.0Q921.2129277566539 10.0 880.4178507104263 -11.87707624574745Q839.6227736641986 -33.7541524914949 815.1473884330599 -65.6393836301781H807.9670802481489L795.8360016009606 0.0H712.6230738443066V-760.0H815.8523113868321V-578.0655393235942Q815.8523113868321 -553.606463878327 815.0572343406043 -526.4589253552131Q814.2621572943766 -499.3113868320993 811.2621572943766 -468.65569341604964H815.8523113868321Q838.3276966179708 -503.3113868320993 879.0653892335401 -526.1310786471884Q919.8030818491095 -548.9507704622773 977.2621572943766 -548.9507704622773Q1026.7375425255154 -548.9507704622773 1066.2949269561736 -530.2704622773664Q1105.852311386832 -511.59015409245546 1133.1720032019211 -475.40984590754454Q1160.4916950170102 -439.2295377226336 1174.958925355213 -387.6721532919752Q1189.4261556934161 -336.1147688613168 1189.4261556934161 -270.7704622773664Q1189.4261556934161 -204.42615569341604 1174.8113868320993 -152.42615569341604Q1160.1966179707824 -100.42615569341605 1132.3769261556934 -64.04092455473284Q1104.5572343406043 -27.65569341604963 1065.204772863718 -8.827846708024815Q1025.852311386832 10.0 976.3769261556934 10.0ZM949.9344606764058 -76.86862117270363Q1017.0329197518511 -76.86862117270363 1049.1149189513708 -126.62277366419852Q1081.1969181508905 -176.3769261556934 1081.1969181508905 -271.0655393235942Q1081.1969181508905 -364.6393836301781 1048.967380428257 -413.3607664598759Q1016.7378427056234 -462.08214928957375 948.9344606764058 -462.08214928957375Q886.1310786471884 -462.08214928957375 850.9916950170102 -414.59845907544525Q815.8523113868321 -367.1147688613168 815.8523113868321 -272.47538523113866Q815.8523113868321 -176.19661797078248 849.286772063238 -126.53261957174306Q882.7212327396438 -76.86862117270363 949.9344606764058 -76.86862117270363Z M1354.0984590754454 0.0V-68.8523113868321L1545.3772263358014 -88.27846708024815V-671.7215329197519L1368.6556934160496 -689.7378427056234V-760.0H1651.606463878327V-88.27846708024815L1822.9507704622774 -68.8523113868321V0.0Z M2251.131078647188 10.0Q2129.34430658395 10.0 2072.131228737242 -34.352461476886134Q2014.9181508905344 -78.70492295377227 2014.9181508905344 -147.4753852311387Q2014.9181508905344 -187.4753852311387 2031.5656894136482 -213.12292375425255Q2048.213227936762 -238.77046227736642 2075.9509205523314 -254.2704622773664Q2103.6886131679007 -269.7704622773664 2137.754152491495 -278.47538523113866V-283.47538523113866Q2106.573844306584 -292.1803081849109 2083.92630578347 -308.47538523113866Q2061.2787672603563 -324.7704622773664 2049.073844306584 -349.5655393235942Q2036.8689213528116 -374.3606163698219 2036.8689213528116 -406.3606163698219Q2036.8689213528116 -453.42615569341604 2064.84430658395 -485.1310786471883Q2092.819691815089 -516.8360016009606 2141.2376926155694 -532.7458475085051Q2189.65569341605 -548.6556934160496 2251.131078647188 -548.6556934160496Q2308.8360016009606 -548.6556934160496 2354.614618771263 -538.3606163698219Q2400.393235941565 -528.0655393235942 2440.6883129877924 -509.7704622773664L2404.14738843306 -429.7378427056234Q2370.5572343406043 -444.7378427056234 2335.024464678807 -455.32799679807886Q2299.49169501701 -465.9181508905343 2251.606463878327 -465.9181508905343Q2193.0818491094656 -465.9181508905343 2163.4670802481487 -448.6886131679007Q2133.8523113868323 -431.45907544526716 2133.8523113868323 -396.40984590754454Q2133.8523113868323 -355.65569341604964 2172.8441564938967 -338.13107864718836Q2211.8360016009606 -320.606463878327 2281.8360016009606 -320.606463878327H2343.14738843306V-240.34430658395036H2267.49169501701Q2191.49169501701 -240.34430658395036 2155.172003201921 -218.9672303382029Q2118.8523113868323 -197.59015409245546 2118.8523113868323 -155.1310786471883Q2118.8523113868323 -126.26215729437662 2136.2293876325793 -108.23754252551531Q2153.606463878327 -90.212927756654 2184.7212327396437 -81.86046627976786Q2215.8360016009606 -73.50800480288173 2257.901540924555 -73.50800480288173Q2315.0818491094656 -73.50800480288173 2360.385081048629 -86.50800480288173Q2405.688312987793 -99.50800480288173 2438.9833900340204 -115.50800480288173V-27.295077046227735Q2406.212927756654 -11.0 2360.4096958174905 -0.5Q2314.606463878327 10.0 2251.131078647188 10.0Z M2651.721532919752 0.0V-760.0H2757.9507704622774V-398.42615569341604Q2757.9507704622774 -377.72123273964377 2756.9507704622774 -353.9343105863518Q2755.9507704622774 -330.14738843305986 2754.4507704622774 -305.8030818491095Q2752.9507704622774 -281.4587752651591 2750.65569341605 -258.3440064038423H2752.65569341605Q2770.180308184911 -282.16369821893136 2787.532769661797 -303.1063137882729Q2804.885231138683 -324.04892935761455 2823.5901540924556 -346.04892935761455L2995.0166099659796 -538.9507704622773H3120.7212327396437L2911.5572343406043 -309.1310786471883L3134.426155693416 0.0H3015.082149289574L2842.7049229537724 -244.6230738443066L2757.9507704622774 -167.29507704622773V0.0Z M3500.0 -397 3411.0 -536H3589.0ZM3411.0 0 3500.0 -139 3589.0 0Z M4202.950770462277 -716.0655393235942V159.18030818491096H3973.5246147688613V78.32799679807884H4105.737842705624V-634.9181508905343H3973.5246147688613V-716.0655393235942Z"/></g></symbol>
+</svg>
+
+<!-- ============================ RIBBON ============================ -->
+<div class="band--ink ribbon">
+  <div class="wrap">
+    <div class="masthead">
+      <a href="#top" aria-label="bleqq, pronounced blek, home">
+        <svg class="mark mark--nav" viewBox="0 0 4520 999" role="img" aria-label="bleqq"><use href="#wordmark"/></svg>
+      </a>
+      <nav class="navlinks" aria-label="Sections">
+        <a class="navlink" href="#method">Method</a>
+        <a class="navlink" href="#zones">Zones</a>
+        <a class="navlink" href="#coverage">Coverage</a>
+        <a class="navlink" href="#assurance">Assurance</a>
+        <a class="navlink" href="#questions">Questions</a>
+      </nav>
+      <div class="mast-actions">
+        <a class="btn btn--sm btn--quiet" href="#request">Request access</a>
+        <a class="btn btn--sm btn--plate" href="#request">Sign in</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ PLATE ============================ -->
+<header class="wrap" id="top">
+  <div class="hero">
+    <div>
+      <p class="eyebrow">Compliance Watch &middot; for banks in the Nordics</p>
+      <h1 class="plate">A register of record for everything regulation asks of your bank.</h1>
+      <p class="deck">One inventory of what regulation asks of your bank, and a record of every change to it, from the day it was published to the day you signed it off.</p>
+      <div class="hero-actions">
+        <a class="btn btn--solid" href="#request">Request access</a>
+        <a class="btn btn--outline" href="#request">Sign in</a>
+      </div>
+    </div>
+
+    <div>
+      <article class="record" aria-label="Sample change record">
+        <div class="record-top">
+          <span class="microlabel">Change record</span>
+          <span class="ref">CHG-2026-0412</span>
+        </div>
+        <div class="pills">
+          <span class="pill pill--notice">Amended rule</span>
+          <span class="pill pill--warning">Within 3 months</span>
+          <span class="pill pill--brand">FFFS 2017:2</span>
+        </div>
+        <h3>FI adopts amended rules on paying for investment research</h3>
+        <p class="meta">Finansinspektionen &middot; decided <span class="mono">14 September 2026</span> &middot; in force <span class="mono">1 October 2026</span></p>
+
+        <div class="lagrum">
+          <div class="para" aria-hidden="true">&para;</div>
+          <div>
+            <div class="body">A firm that provides portfolio management may pay for research from a research payment account <del>funded by a specific research charge to the client</del> <ins>funded from its own resources or from a charge agreed with the client in advance</ins>, provided the budget per investment strategy is set and reviewed at least annually.</div>
+            <span class="cite">Chapter 11, section 12 &middot; version 2 of 2 &middot; diff against version 1</span>
+          </div>
+        </div>
+
+        <div class="callout">
+          <span class="microlabel">Drafted by AI, not yet confirmed</span>
+          <p>So what: three obligations on research payment change on 1 October, and the budget per strategy has no named owner in two of your entities.</p>
+        </div>
+
+        <div class="chain">
+          <span>Sighted 14 Sep</span>
+          <span>Proposed by the Nordic watch agent</span>
+          <span>Confirmed by a second agent 16 Sep</span>
+          <span>Applied to 3 obligations</span>
+        </div>
+      </article>
+      <p class="sample-note">Sample record from the design prototype.</p>
+    </div>
+  </div>
+
+  <dl class="facts">
+    <div class="fact"><dt>Jurisdictions</dt><dd>Sweden, Denmark, Norway, Finland, the EU</dd></div>
+    <div class="fact"><dt>Content languages</dt><dd>Swedish, Danish, Norwegian, Finnish, English</dd></div>
+    <div class="fact"><dt>Zones</dt><dd>One shared library, one that is only yours</dd></div>
+    <div class="fact"><dt>Every change</dt><dd>Kept beside what it replaced</dd></div>
+  </dl>
+</header>
+
+<main>
+<div class="wrap">
+
+  <!-- ============================ 1 ============================ -->
+  <section class="section" id="case">
+    <aside class="margin"><span class="sec">&sect; 1</span><span class="note">Why the spreadsheet fails</span></aside>
+    <div class="col">
+      <div class="rule2"></div>
+      <h2 class="head">A spreadsheet cannot testify.</h2>
+      <div class="prose">
+        <p class="lede">Most banks keep their obligations in a spreadsheet and their regulatory watch in an inbox.</p>
+        <p>That works until a reviewer asks what the obligation said two years ago, who decided it reached the Norwegian entity, and what they had read before deciding. Here, nothing is overwritten, so the answers are still there.</p>
+      </div>
+      <ul class="ruled" style="margin-top:28px">
+        <li><h3 class="sub">No version, no difference</h3><p>The earlier wording is gone, and so is the date it stopped being true.</p></li>
+        <li><h3 class="sub">A colour, not a decision</h3><p>Green says compliant. It does not say who decided that, or on what.</p></li>
+        <li><h3 class="sub">Arrivals, not coverage</h3><p>An inbox is evidence of what reached you, and of nothing else.</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================ 2 ============================ -->
+  <section class="section" id="what">
+    <aside class="margin"><span class="sec">&sect; 2</span><span class="note">Four things, no more</span></aside>
+    <div class="col">
+      <div class="rule2"></div>
+      <h2 class="head">One inventory, one feed, one record.</h2>
+      <div class="defs">
+        <div>
+          <span class="kicker">Inventory</span>
+          <h3 class="sub">Every obligation, with its history</h3>
+          <p>Each version, the date it took effect, and a readable difference between any two. A reference made three years ago still resolves to the wording it meant then.</p>
+        </div>
+        <div>
+          <span class="kicker">Watch</span>
+          <h3 class="sub">Agents find it, your bank decides it</h3>
+          <p>Agents read the sources every day and file what they find as proposals. Nothing else reaches the library.</p>
+        </div>
+        <div>
+          <span class="kicker">Ask</span>
+          <h3 class="sub">A question, answered from the provision</h3>
+          <p>The answer quotes the provision it rests on, in the language it was published in, and names its version.</p>
+        </div>
+        <div>
+          <span class="kicker">Evidence</span>
+          <h3 class="sub">What applies, and where you stand</h3>
+          <p>Status for each legal entity, gaps with an owner and a date, and a sign-off by a second person in your bank.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 3 ============================ -->
+  <section class="section" id="method">
+    <aside class="margin"><span class="sec">&sect; 3</span><span class="note">From sighting to sign-off</span></aside>
+    <div class="col">
+      <div class="rule2"></div>
+      <h2 class="head">Every change takes the same six steps.</h2>
+      <ol class="steps">
+        <li><span class="what"><b>Sighted.</b> A regulator publishes, and an agent reads it that day.</span><span class="who">agent</span></li>
+        <li><span class="what"><b>Proposed.</b> The agent drafts the change against the wording in force.</span><span class="who">agent</span></li>
+        <li><span class="what"><b>Confirmed.</b> A second agent, built differently, checks the draft against the source. Nothing confirms its own work.</span><span class="who">second agent</span></li>
+        <li><span class="what"><b>Applied.</b> A new version, with the date it takes effect. The old one stays readable.</span><span class="who">library</span></li>
+        <li><span class="what"><b>Assessed.</b> Your bank decides whether it reaches you, and where you stand.</span><span class="who">your bank</span></li>
+        <li><span class="what"><b>Signed off.</b> A second person in your bank signs, and the evidence closes.</span><span class="who">your bank</span></li>
+      </ol>
+      <p class="prose meta" style="margin-top:20px">A confirmed fact names both agents and never reads as verified by a person. The reading of it is yours, and a person signs that.</p>
+    </div>
+  </section>
+
+  <!-- ============================ 4 ============================ -->
+  <section class="section" id="zones">
+    <aside class="margin"><span class="sec">&sect; 4</span><span class="note">What is shared, what is yours</span></aside>
+    <div class="col">
+      <div class="rule2"></div>
+      <h2 class="head">The library is shared. The judgement is yours.</h2>
+      <div class="zones">
+        <div class="zone">
+          <h3 class="sub">The shared library</h3>
+          <p>Instruments, provisions, obligations and effective dates, each with its citation. The same for every bank, so one correction reaches all of them.</p>
+        </div>
+        <div class="door">
+          <span class="arrow">&rarr;</span>
+          <span class="microlabel">Proposals only</span>
+          <span class="meta">One way in, checked twice</span>
+        </div>
+        <div class="zone zone--yours">
+          <h3 class="sub">Your zone</h3>
+          <p>What applies to you, where you stand, your gaps, your evidence and your sign-off. None of it is visible outside your bank.</p>
+        </div>
+      </div>
+      <p class="prose meta" style="margin-top:24px">Your reading of a rule reaches no other bank, no log and no unapproved model.</p>
+    </div>
+  </section>
+
+  <!-- ============================ 5 ============================ -->
+  <section class="section" id="coverage">
+    <aside class="margin"><span class="sec">&sect; 5</span><span class="note">Sources and languages</span></aside>
+    <div class="col">
+      <div class="rule2"></div>
+      <h2 class="head">Five jurisdictions, five languages, one question.</h2>
+      <div class="table-scroll">
+        <table class="schedule">
+          <thead>
+            <tr><th scope="col">Jurisdiction</th><th scope="col">Authorities and sources</th><th scope="col">Published in</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Sweden</th><td>Finansinspektionen, FFFS and general guidelines, Riksg&auml;lden, Svensk f&ouml;rfattningssamling</td><td>Swedish, English</td></tr>
+            <tr><th scope="row">Denmark</th><td>Finanstilsynet, Retsinformation</td><td>Danish, English</td></tr>
+            <tr><th scope="row">Norway</th><td>Finanstilsynet, Lovdata</td><td>Norwegian, English</td></tr>
+            <tr><th scope="row">Finland</th><td>Finanssivalvonta, Finlex</td><td>Finnish, Swedish, English</td></tr>
+            <tr><th scope="row">European Union</th><td>EUR-Lex and the Official Journal, EBA, ESMA, EIOPA, the ECB</td><td>English, and the language of the national transposition</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="prose" style="margin-top:24px">Ask in Swedish about a Finnish rule, and the answer quotes the Finnish provision.</p>
+    </div>
+  </section>
+
+  <!-- ============================ 6 ============================ -->
+  <section class="section" id="assurance">
+    <aside class="margin"><span class="sec">&sect; 6</span><span class="note">What a vendor review asks</span></aside>
+    <div class="col">
+      <div class="rule2"></div>
+      <h2 class="head">Built to be examined.</h2>
+      <div class="table-scroll">
+        <table class="schedule">
+          <tbody>
+            <tr><th scope="row">Access</th><td>Passkeys, never passwords. Nothing to phish, and no reset link to intercept.</td></tr>
+            <tr><th scope="row">Four eyes</th><td>Approvals, sign-off, footprint changes and exports take a second person. The same one twice is refused, not flagged afterwards.</td></tr>
+            <tr><th scope="row">Isolation</th><td>One bank's rows cannot be read from another bank's session, whatever the query.</td></tr>
+            <tr><th scope="row">Model use</th><td>Approved endpoints in the EU, every call logged, and a fetched page read as material, never as instruction.</td></tr>
+            <tr><th scope="row">The ledger</th><td>Every change is kept beside what it replaced, written in the same breath as the change.</td></tr>
+            <tr><th scope="row">Retention</th><td>Ten years after a record was last used, it is deleted whole.</td></tr>
+            <tr><th scope="row">Leaving</th><td>Two approvals, your final export, then every row of yours is deleted, the audit trail included.</td></tr>
+            <tr><th scope="row">The pack</th><td>The architecture, the controls, the audit model and the sub-processors, written for the review.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 7 ============================ -->
+  <section class="section" id="questions">
+    <aside class="margin"><span class="sec">&sect; 7</span><span class="note">Before you ask</span></aside>
+    <div class="col">
+      <div class="rule2"></div>
+      <h2 class="head">Questions we are asked.</h2>
+      <div class="qa">
+        <div>
+          <h3>Does the AI decide anything?</h3>
+          <p>It finds, drafts and proposes. What a second agent confirms is marked as confirmed by machine; what it means for your bank is yours to decide.</p>
+        </div>
+        <div>
+          <h3>Can we start with one legal entity?</h3>
+          <p>Yes. Widening the footprint later is a decision with a record behind it, not a setting somebody changed on a Friday.</p>
+        </div>
+        <div>
+          <h3>Who else sees our assessments?</h3>
+          <p>Nobody. What is shared is the public fact. What you make of it stays in your zone.</p>
+        </div>
+        <div>
+          <h3>What if the library is wrong?</h3>
+          <p>Say so on the record; your note stays inside your bank. The correction arrives the other way, from the agents' re-check against the source, through the same proposal door as everything else.</p>
+        </div>
+        <div>
+          <h3>How do people get in?</h3>
+          <p>Your administrator invites them, and they enrol on their own device. There is no password to set.</p>
+        </div>
+        <div>
+          <h3>What does it cost?</h3>
+          <p>On application, against the footprint in scope. Reading costs nothing per head: a record nobody can open is worth little.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<!-- ============================ REQUEST ============================ -->
+<section class="band--ink" id="request">
+  <div class="wrap">
+    <div class="request">
+      <div>
+        <div class="rule2 rule2--ink"></div>
+        <h2 class="plate">Access is by invitation.</h2>
+        <p class="deck">Tell us where you work and we will arrange an introduction.</p>
+      </div>
+      <form class="form" id="request-form" novalidate>
+        <div class="field">
+          <label for="req-name">Name</label>
+          <input id="req-name" name="name" type="text" autocomplete="name" placeholder="Anna Lindqvist">
+        </div>
+        <div class="field">
+          <label for="req-email">Work email</label>
+          <input id="req-email" name="email" type="email" autocomplete="email" placeholder="anna.lindqvist@bank.se">
+        </div>
+        <div class="field">
+          <label for="req-org">Bank</label>
+          <input id="req-org" name="org" type="text" autocomplete="organization" placeholder="Name of the bank">
+        </div>
+        <button class="btn btn--plate" type="submit">Request access</button>
+        <p class="form-status" id="request-status" role="status"></p>
+        <p class="form-note">Design prototype. Nothing is sent and nothing is stored.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ FOOTER ============================ -->
+<footer>
+  <div class="wrap foot">
+    <div class="foot-top">
+      <div>
+        <svg class="mark mark--foot" viewBox="0 0 4520 999" role="img" aria-label="bleqq"><use href="#wordmark"/></svg>
+        <p class="pronounce">[bl&#x25B;k&#x02D0;] &middot; pronounced blek</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#what">Inventory</a></li>
+          <li><a href="#what">Watch</a></li>
+          <li><a href="#what">Search and ask</a></li>
+          <li><a href="#method">Evidence and sign-off</a></li>
+          <li><a href="#coverage">Coverage</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#case">Why we built it</a></li>
+          <li><a href="#request">Contact</a></li>
+          <li><a href="#request">Careers</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Trust</h4>
+        <ul>
+          <li><a href="#assurance">Assurance pack</a></li>
+          <li><a href="#assurance">Security</a></li>
+          <li><a href="#assurance">Sub-processors</a></li>
+          <li><a href="#assurance">Terms</a></li>
+          <li><a href="#assurance">Privacy</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>bleqq, Stockholm &middot; org. no. [to be set] &middot; &copy; 2026</span>
+      <span>Set in Libre Caslon Display and Hanken Grotesk, with Noto Sans Mono for legal references.</span>
+      <button type="button" class="theme-toggle" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var toggles = document.querySelectorAll('.theme-toggle');
+
+  function stored() {
+    try { return window.localStorage.getItem('bleqq-theme'); } catch (e) { return null; }
+  }
+  function remember(value) {
+    try { window.localStorage.setItem('bleqq-theme', value); } catch (e) { /* private window */ }
+  }
+  function systemDark() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function isDark() {
+    var attr = root.getAttribute('data-theme');
+    if (attr === 'dark') { return true; }
+    if (attr === 'light') { return false; }
+    return systemDark();
+  }
+  function paint() {
+    var dark = isDark();
+    Array.prototype.forEach.call(toggles, function (button) {
+      button.textContent = dark ? 'Light' : 'Dark';
+      button.setAttribute('aria-pressed', dark ? 'true' : 'false');
+      button.setAttribute('aria-label', dark ? 'Switch to the light theme' : 'Switch to the dark theme');
+    });
+  }
+
+  var saved = stored();
+  if (saved === 'dark' || saved === 'light') { root.setAttribute('data-theme', saved); }
+  paint();
+
+  Array.prototype.forEach.call(toggles, function (button) {
+    button.addEventListener('click', function () {
+      var next = isDark() ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      remember(next);
+      paint();
+    });
+  });
+
+  var form = document.getElementById('request-form');
+  var status = document.getElementById('request-status');
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    status.textContent = 'This page is a design prototype, so the request was not sent.';
+  });
+})();
+</script>
+</body>
+</html>

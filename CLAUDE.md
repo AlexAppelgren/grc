@@ -46,7 +46,7 @@ Chunks are in `docs/plans/Build_Plan.md`; their state is in
 | Backend dev | ruff 0.16.8, mypy 2.3.1, django-stubs and django-stubs-ext 6.1.1, coverage 7.16.1, pyyaml 6.0.3 |
 | Database | PostgreSQL 16 with pgvector (`pgvector/pgvector:pg16`), extensions `vector`, `citext`, `pg_trgm`. Redis 7 |
 | Frontend | next 16.3.5, react 19.3.0, react-dom 19.3.0, TypeScript 7.0.2 as the compiler with @typescript/typescript6 6.0.3 under the `typescript` name for tools (ADR 0025), tailwindcss 4.3.3, @tailwindcss/postcss 4.3.3, postcss 8.5.28, @tanstack/react-query 5.103.1, axios 1.20.0, next-themes 0.4.6 |
-| Design | @sebgroup/green-tokens 3.1.8, @sebgroup/green-core 3.23.0, Radix primitives (dialog 1.1.23, dropdown-menu 2.1.24, tooltip 1.2.16, select 2.3.7, popover 1.1.23, tabs 1.1.21, checkbox 1.3.11, switch 1.3.7, slot 1.3.3), input-otp 1.5.0, class-variance-authority 0.7.1, clsx 2.1.1, tailwind-merge 3.7.0, @fontsource-variable/hanken-grotesk 5.3.0, @fontsource-variable/noto-sans-mono 5.3.0 |
+| Design | @sebgroup/green-tokens 3.1.8, @sebgroup/green-core 3.23.0, Radix primitives (dialog 1.1.23, dropdown-menu 2.1.24, tooltip 1.2.16, select 2.3.7, popover 1.1.23, tabs 1.1.21, checkbox 1.3.11, switch 1.3.7, slot 1.3.3), input-otp 1.5.0, class-variance-authority 0.7.1, clsx 2.1.1, tailwind-merge 3.7.0, @fontsource-variable/hanken-grotesk 5.3.0, @fontsource-variable/noto-sans-mono 5.3.0, @fontsource/libre-caslon-display 5.3.0 and @fontsource/libre-caslon-text 5.3.0 (public pages only) |
 | Frontend test and lint | vitest 5.0.1, @vitest/coverage-v8 5.0.1, @playwright/test 1.63.0, @testing-library/react 16.3.3, @testing-library/jest-dom 7.0.1, jsdom 30.1.0, eslint 10.11.0, eslint-plugin-react 7.37.5, typescript-eslint 8.70.0, @next/eslint-plugin-next 16.3.5, eslint-plugin-react-hooks 7.1.1, openapi-typescript 7.13.0 |
 
 Frontend pins are exact (no `^`). A pin that fails to install is replaced by
@@ -60,10 +60,22 @@ Weakening any of these is a stop: ask the owner (Alex) first.
   row-level security; the app role `cw_app` cannot bypass it and the app
   refuses to boot on a role that can.
 - Proposals are the only door into the library. Agents never edit it; no API
-  key scope reaches it. The re-verification stamp is the single exception.
+  key scope reaches it. The re-verification stamp is the single exception. The
+  approver is a second, independent principal and never the proposer: a person
+  stepping up with a passkey, or an agent of a different definition and key,
+  working the same queue with a review scope that still reaches no library row.
 - Nothing overwritten: versions with effective dates, soft-deleted evidence,
   append-only ledgers with a trigger. Audit and outbox rows in the same
   transaction as every write, through `record()`, the only way to write them.
+  Two exceptions, each a whole-row deletion and never an update, each named
+  here because nothing else may bend this rule (D-53, D-56; ADRs 0046 and 0049).
+  Retention: ten years after a record was last used, a closed case, a removed
+  piece of evidence or a tenant ledger row is deleted whole by the daily purge,
+  through one database function owned by the schema owner whose cutoff can never
+  be younger than a year. Tenant exit: when a bank leaves, the platform operator
+  deletes every one of its rows, the audit trail included, as the schema owner,
+  after two people approved the exit with a passkey and the final export was
+  taken.
 - Four eyes, enforced by a check constraint, with a passkey step-up on
   approvals, sign-off, footprint changes, exports, key creation, role and
   security changes, re-enrolment.
@@ -71,7 +83,9 @@ Weakening any of these is a stop: ask the owner (Alex) first.
   working the moment the first passkey exists. No self-service fallback.
 - "Applies" and "we comply" are separate facts. Stable keys never change.
 - AI output is labelled until a person confirms it; every model call is
-  logged; fetched content is untrusted.
+  logged; fetched content is untrusted. A library record whose proposal an
+  agent confirmed carries machine-confirmed provenance, naming the proposing
+  and the confirming agent, and never reads as verified by a person.
 - Enums in code are for kinds only. Types, statuses, tags and reasons are rows
   an admin manages; the API returns `key` and `kind`, never a phrase. The case
   state machine's categories and guards are fixed; sub-statuses sit inside.
@@ -109,7 +123,8 @@ Paginate (default 20, max 100). Measure against `next start`, never `next dev`.
 
 ## 7. Git workflow and the pre-push checklist
 
-One pushed branch, `main`, during the build (D-15); small commits per whole
+One deployed branch, `main`, during the build (D-15), reached only through `bash scripts/ship.sh`,
+which runs the real CI and CodeQL on the `candidate` branch first (ADR 0015, 2026-09-19); small commits per whole
 slice, each passing the checklist below. Parallel sub-agents work in local worktrees on
 short-lived `wt/*` branches that are never pushed; the main agent reviews each and merges
 it into `main` (`docs/runbooks/WORKTREES.md`, `scripts/worktree.sh`). Inside a worktree,
@@ -118,8 +133,8 @@ from the user's or the system's point of view; a body with the why, the
 requirement IDs, what now happens, what was deliberately not done; no model
 or tool names. The owner deploys; never deploy yourself.
 
-**Pre-push checklist: run `bash scripts/prepush.sh`** before every commit to
-`main` (`--all` for every gate). It mirrors CI and CodeQL with the same tools,
+**Pre-push checklist: run `bash scripts/prepush.sh --quick`** before every commit to
+`main`, and push only with `bash scripts/ship.sh` (`prepush.sh --all` runs every gate locally). It mirrors CI and CodeQL with the same tools,
 versions, flags and thresholds, so a green run predicts a green CI run: CodeQL
 (`security-extended`, then `.github/scripts/codeql_gate.py` with the accepted
 fingerprints), gitleaks, osv-scanner and `npm audit`, licences, the backend and
@@ -128,7 +143,14 @@ by what changed since `origin/main` like CI, downloads its scanners once into
 `<main checkout>/.tools/`, and stops at the first red gate with the command
 that reproduces it. The items it runs (playbook Appendix D, verbatim):
 
-Every item is enforced by CI and blocks. Run what the diff touched. All
+Every item is enforced by CI and blocks. Run what the diff touched. **Tests are
+grouped per batch, not per task (D-67):** an agent building one task runs the
+static gates and the suites of the apps it touched and stops there; the whole
+suite, the coverage floors and the E2E journeys run once over a merged batch
+before the ship that carries it, and again in CI on `candidate`, which stays
+the authority. Nothing is skipped and no threshold moves — the same gates run,
+once per batch instead of once per task, because fourteen worktrees sharing one
+database were re-running tests no change of theirs could affect. All
 commands assume Postgres with pgvector is running (`docker compose up -d db
 redis`, or a local PostgreSQL 16 with the `vector` extension installed).
 
@@ -142,10 +164,15 @@ redis`, or a local PostgreSQL 16 with the `vector` extension installed).
 2. **Backend tests + coverage floors** (any backend change):
    ```bash
    cd backend
-   ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput
+   ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput --parallel 4
+   ./run.sh run coverage combine
    ./run.sh run coverage report
    ./run.sh run python scripts/coverage_gate.py
    ```
+   `--parallel` splits the suite by TestCase across worker processes, each with its
+   own clone of the test database; each writes coverage data of its own, which
+   `coverage combine` merges before the report reads it. Leaving the combine out
+   fails with "No data to report".
 3. **Backend lint + types**: `./run.sh run ruff check . && ./run.sh run mypy`
 4. **Compliance lint**, full tree: `python backend/scripts/compliance_check.py --all`
 5. **Requirements coverage**: `python backend/scripts/requirements_coverage.py`
@@ -190,10 +217,10 @@ adapters, and starts a production Next build.
 
 ```
 PRD.md  CLAUDE.md  README.md  .mcp.json  docker-compose.yml  generate-types.sh
-design/    prototype/, system/ (cards), screens/, brand/      agents/  versioned definitions
+design/    prototype/, system/ (cards), screens/, brand/
 docs/      PLAYBOOK, CONVENTIONS, DECISIONS, adr/, plans/, inputs/, runbooks/, reviews/, security/, assurance/, TODO_FOR_alex.md
 infra/db/  init.sql (local roles and extensions)
-backend/   apps/<app>/, apps/shared/, config/, scripts/, run.sh, run.ps1   (Django + Ninja, Poetry)
+backend/   apps/<app>/, apps/shared/, agents/ (versioned definitions), config/, scripts/, run.sh, run.ps1   (Django + Ninja, Poetry)
 frontend/  src/app/ ((tenant) and (console) route groups), src/components/ (+ ui/Pill), src/features/<domain>/
            (api.ts, hooks.ts, *-presentation.ts), src/shared/ (api-client, format, logger, navigation, i18n),
            src/messages/, src/styles/ (tokens.generated.css, brand.css), src/types/api.generated.ts,
@@ -266,6 +293,12 @@ Full text with the bugs behind each rule: `docs/CONVENTIONS.md`.
   `schemas.py`, never `Dict[str, Any]`. No bare `except Exception:`. No `admin.py`.
 - Never expose a trace: RFC 9457 problem details with `code`; the client
   branches on `code`, never on `detail`. An empty answer is 200.
+- The published API explains itself: every attribute a description, every value
+  set spelled out in words, every limit stated in the sentence and not only in
+  the keyword, every operation a summary, a description and an example
+  (`docs/plans/briefs/API_DOCUMENTATION.md`, gated by
+  `backend/scripts/api_docs_gate.py`). Document what you write in the same
+  commit and delete its line from `backend/scripts/api_docs_pending.txt`.
 - Logging: a person's name and id at most, tenant content never. `logger`
   only, never `console.log`.
 - Kinds-only enums; vocabularies are rows; store and compare keys, never labels.

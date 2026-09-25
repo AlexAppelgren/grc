@@ -288,10 +288,39 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
         <li><b>FI follow-up</b><br>Date not set</li></ul></div>
       <div class="panel"><h2>Documents</h2>
         <div class="log"><div><time>Press release, fi.se, fetched 16 Sep 2026 06:58</time><a href="#" rel="noopener">FI ändrar regler om betalning för analys</a></div><div><time>Board decision FI-dnr 26-1234, fi.se, fetched 16 Sep 2026 06:58</time><a href="#" rel="noopener">Beslutspromemoria</a> · 14 pages</div><div><time>Merged as duplicate, Dagens Industri, fetched 16 Sep 2026 07:00</time><a href="#" rel="noopener">FI skärper analysreglerna</a> <span class="pill">Duplicate</span></div></div></div>
+      <div class="panel"><h2>Participants</h2>
+        <dl class="kv" style="grid-template-columns:120px 1fr;margin-bottom:12px"><dt>Owner</dt><dd>Sara Lindqvist</dd><dt>Owner team</dt><dd>Retail compliance</dd></dl>
+        <div class="rows">
+          <div class="row"><h3>Erik Holm</h3><div class="meta"><span>Added 18 Sep 2026 by Sara Lindqvist</span></div><div class="bar"><button class="btn ghost small">Remove</button></div></div>
+          <div class="row"><h3>Legal</h3><div class="meta"><span>Team</span><span>Added 17 Sep 2026 by Sara Lindqvist</span></div><div class="bar"><button class="btn ghost small">Remove</button></div></div>
+        </div>
+        <p class="meta" style="display:block;margin-top:10px">Taking part lists the change on a person's My work and notifies them. It grants no access. The teams here are the assessment's contributors.</p>
+        <div class="bar"><button class="btn small">Add a participant</button></div></div>
       <div class="panel"><h2>Record</h2><dl class="kv" style="grid-template-columns:120px 1fr"><dt>Stable key</dt><dd class="mono">fi:2026:analys-betalning</dd><dt>Registered</dt><dd>16 Sep 2026 07:01 by Research agent 0.4, run 14 Sep</dd><dt>So what draft</dt><dd>Model output logged, review state: draft</dd></dl><div class="bar"><button class="btn ghost small">This looks wrong</button></div></div>
     </div></div>
 
     <div class="states">
+    <h2 class="k">Participants, seen by Erik, who takes part and cannot contribute to cases</h2>
+    <div class="panel"><h2>Participants</h2>
+      <dl class="kv" style="grid-template-columns:120px 1fr;margin-bottom:12px"><dt>Owner</dt><dd>Sara Lindqvist</dd><dt>Owner team</dt><dd>Retail compliance</dd></dl>
+      <div class="rows">
+        <div class="row"><h3>Erik Holm</h3><div class="meta"><span class="pill positive">You</span><span>Added 18 Sep 2026 by Sara Lindqvist</span></div><div class="bar"><button class="btn ghost small">Leave</button></div></div>
+        <div class="row"><h3>Legal</h3><div class="meta"><span>Team</span><span>Added 17 Sep 2026 by Sara Lindqvist</span></div></div>
+      </div>
+      <p class="meta" style="display:block;margin-top:10px">Taking part lists the change on a person's My work and notifies them. It grants no access. The teams here are the assessment's contributors.</p></div>
+
+    <h2 class="k">Add a participant (people and teams in one picker), and a closed case, which takes none</h2>
+    <div class="modal"><form class="box" aria-labelledby="ap"><h2 id="ap">Add a participant</h2>
+      <div class="field"><label for="who">Person or team</label><input id="who" placeholder="Search people and teams" value="le">
+        <div class="rows" style="margin-top:8px">
+          <div class="row sel"><h3>Legal</h3><div class="meta"><span>Team</span></div></div>
+          <div class="row"><h3>Lena Falk</h3><div class="meta"><span>Person</span></div></div>
+        </div>
+        <span class="hint">Teams reach their active members. Everyone keeps the access they already had.</span></div>
+      <p class="err" role="alert">This case is closed, so its participants no longer change.</p>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Add</button></div>
+    </form></div>
+
     <h2 class="k">Rewrite the So what (per organisation)</h2>
     <div class="panel"><div class="field"><label for="sw">So what?</label><textarea id="sw">Research paid from the firm's own account must be shown separately on the client statement. Confirm the annual assessment criteria with the research desk before 1 October.</textarea><span class="hint">Your wording replaces the draft for your organisation only. The draft stays in the AI log.</span></div><div class="bar"><button class="btn ghost">Cancel</button><button class="btn">Save and confirm</button></div></div>
 
@@ -304,7 +333,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load this change</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     <div class="restricted"><h1>Not found</h1><p>There is nothing at this address in your organisation.</p><a href="#">Back to Watch</a></div>
     </div>
-    <p class="note">Change card. Header slots: change type (notice), urgency (kind tone), flags (brand), workflow status (information). Timeline dates are plain dates with a precision, so "Q4 2027" and "Date not set" are real states. Documents list every source page, with merged duplicates marked. Suggested obligation links carry the agent's confidence as a computed information pill and become "Confirmed by" once a person confirms; Not related removes the link. The So what stays labelled until confirmed or rewritten for this organisation; both are cases.work. Confirming a suggested obligation link writes to our case, not to the library; the library's link keeps its confidence until a library editor confirms it in the console. Change type and flags are library facts: triage accepts them for us, a library editor corrects them, and a member reports. Every role reads; Confirm and Rewrite need cases.work.</p>
+    <p class="note">Change card. Header slots: change type (notice), urgency (kind tone), flags (brand), workflow status (information). Timeline dates are plain dates with a precision, so "Q4 2027" and "Date not set" are real states. Documents list every source page, with merged duplicates marked. Suggested obligation links carry the agent's confidence as a computed information pill and become "Confirmed by" once a person confirms; Not related removes the link. The So what stays labelled until confirmed or rewritten for this organisation; both are cases.work. Confirming a suggested obligation link writes to our case, not to the library; the library's link keeps its confidence until a library editor confirms it in the console. Change type and flags are library facts: triage accepts them for us, a library editor corrects them, and a member reports. Every role reads; Confirm and Rewrite need cases.work. Participants (COL-04, chunk 9) hang on our case, never on the library change: the owner and owner team sit read-only above the list, each participant names who added them, adding or removing needs cases.contribute and anyone may leave their own row. The assessment's Contributors field is this list filtered to teams, and each change to it is one add or one remove. Participation lists and notifies and grants nothing, so it needs no step-up and no second person; a closed or dismissed case takes no more participants and the server's refusal renders in place.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Today</button><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>Watch<span class="dot">3</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8"/></svg>Inventory</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>Search</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>

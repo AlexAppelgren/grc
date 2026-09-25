@@ -16,18 +16,16 @@ from apps.shared.adapters import agent_runner, embedder, llm, mailer
 
 class LlmAdapter(SimpleTestCase):
     def test_mock_is_deterministic(self) -> None:
-        a = llm.get_llm().complete(system="s", prompt="p", max_tokens=10)
-        b = llm.MockLlm().complete(system="s", prompt="p", max_tokens=10)
+        prompt = llm.format_context(["A rule applies."])
+        a = llm.get_llm().complete(system="s", prompt=prompt, max_tokens=10)
+        b = llm.MockLlm().complete(system="s", prompt=prompt, max_tokens=10)
         self.assertEqual(a, b)
         self.assertEqual(a.model, "mock")
-        self.assertNotEqual(a.text, llm.MockLlm().complete(system="s", prompt="q", max_tokens=10).text)
 
     @override_settings(LLM_PROVIDER="anthropic", ANTHROPIC_API_KEY="k")
-    def test_anthropic_is_named_but_not_yet_implemented(self) -> None:
-        adapter = llm.get_llm()
-        self.assertIsInstance(adapter, llm.AnthropicLlm)
-        with self.assertRaises(NotImplementedError):
-            adapter.complete(system="s", prompt="p", max_tokens=1)
+    def test_anthropic_is_the_provider_the_setting_names(self) -> None:
+        # What it then does is tests_llm.py's subject, against a stubbed transport.
+        self.assertIsInstance(llm.get_llm(), llm.AnthropicLlm)
 
     @override_settings(LLM_PROVIDER="bedrock")
     def test_bedrock_is_named_but_not_yet_implemented(self) -> None:

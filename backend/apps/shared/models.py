@@ -1,4 +1,5 @@
-"""The shared tables: `tenant`, `audit_event`, `outbox_event` (playbook 14, AUD-01).
+"""The shared tables: `tenant`, `audit_event`, `outbox_event`, `outbox_cursor`
+(playbook 14, AUD-01).
 
 Every model declares `Meta.ordering` on a meaningful column because `.first()` on an
 unordered queryset with uuid keys is a coin flip on Postgres (playbook 4.5). JSON columns
@@ -6,6 +7,7 @@ name their Pydantic schema inline; the compliance lint checks the comment is the
 
 `audit_event` and `outbox_event` are mixed tables: a library row has `tenant_id` NULL and
 is visible to everyone, a tenant row only to its tenant. The migration writes that policy.
+`outbox_cursor` belongs to neither zone: it is the worker's own bookkeeping.
 """
 
 from __future__ import annotations
@@ -44,6 +46,12 @@ class Tenant(models.Model):
     content_languages = models.ManyToManyField(
         "library.Language", through="shared.TenantContentLanguage", related_name="+", blank=True
     )
+    # The one switch over this bank's own AI features: Ask, the drafts a model writes for
+    # it, and from chunk 11 its own agents (D-07, owner item 14). bleqq's platform agents
+    # never read it. `apps/shared/ai.py` checks it before every model call made in this
+    # bank's zone. No route writes it yet: the switch's own route, behind a passkey
+    # step-up, is still to come.
+    ai_enabled = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -132,7 +140,47 @@ class OutboxEvent(models.Model):
         ordering = ["created", "id"]
         indexes = [
             models.Index(fields=["published_at", "created"], name="outbox_event_pending"),
+            # The cursor scans one zone at a time, oldest first, and only ever wants rows
+            # that are still pending (apps/shared/outbox.py). Partial, so it holds the
+            # backlog and not the whole delivered history, and leading on tenant_id so one
+            # zone's scan reads its own rows and steps over everybody else's.
+            models.Index(
+                fields=["tenant", "created", "id"],
+                name="outbox_event_zone_pending",
+                condition=models.Q(published_at__isnull=True),
+            ),
         ]
 
     def __str__(self) -> str:
         return f"{self.topic} ({'sent' if self.published_at else 'pending'})"
+
+
+class OutboxCursor(models.Model):
+    """The one ordered cursor over `outbox_event` (chunk 5 ruling 9). One row: the moment
+    the row at the front of the queue may be tried again, the lock two workers take turns
+    on, and where the last delivered event was (`apps/shared/outbox.py`). No tenant column
+    and no row-level security: it holds a position and a clock, never tenant content, and
+    the events it points at carry their own zone.
+
+    `last_created` and `last_id` are a debugging aid and nothing else: they say where the
+    last batch got to, and no query reads them to decide what to deliver. What is pending
+    is `published_at IS NULL` with attempts left, because two writers commit in an order of
+    their own and a positional scan would step over a row that committed late. Moving them
+    or clearing them changes no delivery.
+
+    `retry_not_before` is one clock for every zone, not one per zone: a library row waiting
+    out its backoff holds back the tenants' rows behind it too."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=50, unique=True)
+    last_created = models.DateTimeField(null=True, blank=True)
+    last_id = models.UUIDField(null=True, blank=True)
+    retry_not_before = models.DateTimeField(null=True, blank=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "outbox_cursor"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return f"{self.name} at {self.last_created or 'the beginning'}"

@@ -28,10 +28,22 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | NFR-01 | Tenant isolation by row-level security, proven per route | M | R1 | built |
-| NFR-02 | Performance budgets of playbook 10 | M | R1 | pending |
-| NFR-03 | The design is reproduced: flow, labels, six-tone pill system, light and dark, WCAG AA | M | R1 | pending |
+| NFR-02 | Performance budgets of playbook 10. R1's baseline is recorded (`backend/perf/baseline.json`, NFR-S7); real-model and real-embedder timings wait for the D-07 and D-09 keys, the load profile for chunk 14 | M | R1 | built |
+| NFR-03 | The design is reproduced: flow, labels, six-tone pill system, light and dark, WCAG AA | M | R1 | built |
 | NFR-04 | EU-only hosting and the assurance pack of playbook 18 | M | R3 | pending |
-| I18N-02 | UI in `en` and `sv` at R1, the others by R3, from message catalogs | M | R1 | pending |
+| I18N-02 | UI in `en` and `sv` at R1, the others by R3, from message catalogs. `en` and `sv` are built for R1; `da`, `nb` and `fi` come by R3 | M | R1 | built |
+
+> **Note — I18N-02 at R1.** `en` and `sv` are built. Every UI string is in both catalogs
+> (`check:messages`); a person switches their own interface language from the account menu
+> in the rail, or from the More sheet below 1024 px, which saves it on them through
+> `PATCH /me` and refetches every cached answer, so vocabulary labels arrive from their rows
+> in the new language; dates, partial dates and times format per language in the tenant's
+> timezone, a Swedish quarter reading "kv. 4 2026". I18N-S3 and I18N-S4 are the journeys.
+> `da`, `nb` and `fi` come in chunk 13: their catalogs in `c13-i18n-da`, `-nb` and `-fi`,
+> then `c13-i18n-wiring` turns them on and extends both journeys. Until then those language
+> rows are content languages only, and the picker does not offer them. `<html lang>` stays the
+> build default (an open question in `docs/TODO_FOR_alex.md`). The status cell above is set
+> by `r1-close-and-readiness` after the batch E2E run.
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -57,8 +69,21 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 Integration scenarios for `shared` live in the backend's `apps/shared/tests_*.py`
 (the structural guards) and its `tests_scenarios.py`, which the backend agent
-owns. E2E scenarios in `frontend/tests/e2e/shared.journey.spec.ts`. Each test
-carries its scenario ID.
+owns. E2E scenarios in `frontend/tests/e2e/shared.journey.spec.ts`, except NFR-S8, which
+sits beside its screenshot baselines in `pills.gallery.spec.ts`. Each test carries its
+scenario ID.
+
+> **Note — NFR-01 and NFR-02 scenarios (`nfr-integration-scenarios`).** NFR-S1 to S6, S13
+> and S16 assert their own Gherkin in `tests_scenarios.py`, through the entry points the
+> guards use (`TENANT_SCOPED_ROUTES`, `check_role`, `pg_class` and `pg_policies`,
+> `tenancy.activate` on cw_app, `@tenant_task` and the beat schedule, the middleware,
+> `gate_of` and `UNGATED_BY_DESIGN`, the problem shape). Where the Gherkin says a new route,
+> table, task or entry fails, the scenario plants one and reads the failure. NFR-S1 also
+> demands that every GET, PATCH and DELETE under `/tenant/` addressing one record is in the
+> registry. NFR-S6 walks every list GET in the exported contract: each takes `PageQuery` (limit
+> 20 by default, 100 at most, 422 above, proven per route) or has a reason in
+> `BOUNDED_BY_DESIGN`. NFR-S11, S12, S14 and S15 are NFR-04 and wait for chunk 14. The
+> requirement status cells are set by `r1-close-and-readiness`.
 
 ### NFR-S1 — A record of tenant A requested by tenant B answers 404 on every tenant route `@integration` (NFR-01, AC-NFR1)
 ```gherkin
@@ -120,11 +145,32 @@ Then real data, not a skeleton, is visible within 500 ms of navigation
 And the measurement is recorded beside the screen in the UI plan
 ```
 
+The journey (`shared.journey.spec.ts`) measures every tenant and console destination of the
+navigation registry: the median of `E2E_SCREEN_SAMPLES` client-side navigations (5 by default)
+to the destination's own real-data locator in `frontend/tests/e2e/support/screen-budgets.ts`,
+500 ms unless its row says otherwise. A destination with no row, a locator that never shows, a
+skeleton that lingers or a `next dev` build fails it. The medians go in the Measured column of
+`docs/plans/UI_Implementation_Plan.md`.
+
+> **Note — NFR-02's R1 part (`r1-perf`, 2026-09-23).** `backend/perf/routes.py` measures 139
+> of the 140 API operations as the principal that calls each in R1 (a member, with a step-up
+> where the route demands one; platform staff; the watch sweeper's real agent key; no one
+> before a session); only `e2eMailOutbox`, which exists under `E2E_MODE` alone, is left out.
+> `backend/perf/baseline.json` is recorded on a fresh `seed_e2e` slot: every p95 is inside
+> its budget, the highest `createConsoleTenant` at about 200 ms, search about 56 ms against
+> 1.5 s and Ask's first event about 51 ms against 2 s. At 3000 obligations the footprint rule
+> had put `GET /obligations` and search over budget; taxonomy 0008 reads a bank's footprint
+> once per query, not once per row (`apps/taxonomy/tests_matching.py` pins the plan). NFR-S7's
+> medians are in the UI plan. Real-model and real-embedder timings wait for the D-07 and D-09
+> keys. Chunk 14 adds the load profile, the deployed measurement against `next start` on
+> Railway and the R2 and R3 routes as they land, each as a new block of rows in `routes.py`.
+
 ### NFR-S8 — The pill gallery matches the design card in both themes `@e2e` (NFR-03, AC-NFR3)
 ```gherkin
 Given the /dev/pills gallery route rendering every tone, slot and record type
 When the screenshot spec runs in light and dark
 Then both match the committed baselines from design/system/pills-and-labels.html
+And each section's pills, tone and label in order, match the text pinned beside the screenshot
 And a changed tone, label or slot order fails the spec
 ```
 
@@ -133,6 +179,9 @@ And a changed tone, label or slot order fails the spec
 Given the token pipeline output and brand.css
 When the contrast test runs over every text and surface pair the design uses, including the six pill tones
 Then each pair reaches the AA ratio in light and in dark
+Given the pill gallery and the seeded Today, Watch, Inventory, an instrument, Roadmap, Search and the console queue in a browser under a light and a dark system theme
+When every named pair is measured once per theme, and every pill on each screen, once it has loaded, against what is behind it, from the colours the browser computes
+Then text and pills reach 4.5:1 and non-text 3:1 in both themes
 ```
 
 ### NFR-S10 — Tone is never chosen by a person and the API never sends a phrase `@integration` (NFR-03)
@@ -186,6 +235,11 @@ Then it fails on a log call that passes a note, comment, assessment, evidence or
 And on a log call that passes contact details or a token
 Given the Sentry configuration
 Then send_default_pii is false, request bodies are never sent, local variables are off, and before_send and before_send_transaction scrub
+Given a request whose query string holds what someone searched for
+Then no access log line or application log line holds the query, the client address, the referrer or the user agent
+And gunicorn's access logger never reaches Sentry, and a breadcrumb message loses any query string and address
+Given an exception whose message, or a cause's, carries row values
+Then Sentry receives its type, module and frames, never its message, and a log event keeps its template but not what was interpolated into it
 ```
 
 ### NFR-S16 — Every error uses one shape and an empty answer is 200 `@integration` (NFR-01)
@@ -199,8 +253,8 @@ And a filtered list that matches nothing answers 200 with an empty collection
 ### I18N-S3 — Every UI string is in the catalog for every shipped language `@e2e` (I18N-02)
 ```gherkin
 Given the message catalogs for en and sv
-When messages-check.mjs runs
-Then it fails on any key missing in either language and on any string literal in JSX text
+When messages-check.mjs and ESLint run
+Then messages-check.mjs fails on any key missing in either language and ESLint on any string literal in JSX text
 When a user switches the UI language to sv
 Then every screen renders in sv with vocabulary labels from their sv rows
 ```

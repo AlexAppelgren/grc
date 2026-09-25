@@ -3,16 +3,19 @@
 import { useMemo, useState, type FormEvent, type KeyboardEvent } from 'react';
 
 import { BackLink } from '@/components/admin/AdminGate';
+import { vocabulariesHref } from '@/components/admin/VocabulariesScreen';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Chip, ChipRow } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Field, TextArea, TextInput } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { PageHead } from '@/components/ui/PageHead';
-import { Meta, Panel, Rows } from '@/components/ui/Panel';
+import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ErrorState, LoadingState, NotFoundScreen, ProblemAlert, StatusLine } from '@/components/ui/States';
 import { SwatchPair } from '@/components/ui/Swatch';
+import { useFormatContext } from '@/features/identity/hooks';
+import { useTenantProposals } from '@/features/proposals/hooks';
 import {
   useCreateValue,
   useMergeValue,
@@ -30,12 +33,15 @@ import {
   exactDuplicateFrom,
   listLabel,
   nearDuplicateFrom,
+  presentPendingProposal,
   presentVocabularyRow,
   presentVocabularyValue,
   usageText,
 } from '@/features/vocabularies/vocabulary-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { unlocks, type Surface } from '@/shared/navigation/registry';
 import { usePermissions } from '@/shared/navigation/require-permission';
+import { formatDate } from '@/shared/utils/format';
 
 // /admin/vocabularies/[list]: one vocabulary
 // (design/screens/admin-vocabulary.html; VOC-01, VOC-02, VOC-07, AC-VOC1,
@@ -48,11 +54,17 @@ import { usePermissions } from '@/shared/navigation/require-permission';
 // platform console reviews it. Tone is
 // never chosen on this screen: it comes from the list's slot or the row's
 // fixed kind.
+//
+// On the console surface (ADM-02) the screen holds library lists only: a
+// library editor with library_vocab.manage proposes every change, and a
+// second editor approves it in the queue. A tenant list opened there by its
+// address is not found.
 
 const ACTIVE = 'active';
 const RETIRED = 'retired';
-// A library-list write is a proposal, and proposing needs this grant (VOC-07).
-const PROPOSALS_CREATE = 'proposals.create';
+// A library-list write is a proposal: a tenant member proposes with the first
+// grant, platform staff in the console with the second (VOC-07).
+const LIBRARY_PROPOSERS = ['proposals.create', 'library_vocab.manage'];
 
 /** The drag handle's glyph: an icon, not copy, so it is not in the catalog. */
 const GRIP_GLYPH = '⋮⋮';
@@ -489,21 +501,58 @@ function AddDialog({ list, isLibrary, onClose }: { list: string; isLibrary: bool
   );
 }
 
+// What this bank proposed on a library list and is still waiting on (VOC-07,
+// PRO-01). The tenant route already requires vocab.manage, as GET
+// /tenant/proposals does; the console never reads a bank's proposals.
+function PendingProposals({ list }: { list: string }) {
+  const t = useT();
+  const ctx = useFormatContext();
+  const pending = useTenantProposals({ status: 'open', targetList: list });
+  const items = pending.data?.items ?? [];
+
+  return (
+    <Panel title={t('admin.vocabulary.pendingTitle')} className="mt-4" data-pending-proposals={list}>
+      {pending.isPending ? (
+        <LoadingState rows={1} />
+      ) : pending.isError ? (
+        <ErrorState title={t('admin.vocabulary.pendingError')} onRetry={() => void pending.refetch()} />
+      ) : items.length === 0 ? (
+        <p className="text-muted">{t('admin.vocabulary.pendingEmpty')}</p>
+      ) : (
+        <Rows>
+          {items.map((row) => (
+            <Row key={row.id} data-pending-proposal={row.id}>
+              <span className="font-semibold">{row.title}</span>
+              <Meta className="mt-1.5">
+                <PillRow pills={presentPendingProposal(t)} />
+                <span>{t('admin.vocabulary.pendingSent', { date: formatDate(row.createdAt, ctx) })}</span>
+              </Meta>
+            </Row>
+          ))}
+        </Rows>
+      )}
+    </Panel>
+  );
+}
+
 // ——— the screen ———————————————————————————————————————————————————
 
-export function VocabularyScreen({ list }: { list: string }) {
+export function VocabularyScreen({ list, surface = 'tenant' }: { list: string; surface?: Surface }) {
   const t = useT();
   const lists = useVocabularies();
   const [filter, setFilter] = useState(ACTIVE);
   const values = useVocabularyValues(list, true);
   const reorder = useReorderValues(list);
 
+  const inConsole = surface === 'console';
+  const back = vocabulariesHref(surface);
   const summary = lists.data?.find((entry) => entry.list === list);
-  const isLibrary = summary?.tier === 'library';
+  const isLibrary = inConsole || summary?.tier === 'library';
   // A tenant list is written with vocab.manage, which the route's gate already
   // holds; a library list only by someone who may propose.
   const permissions = usePermissions() ?? [];
-  const canWrite = !isLibrary || permissions.includes(PROPOSALS_CREATE);
+  const canWrite = !isLibrary || unlocks(LIBRARY_PROPOSERS, permissions);
+  const libraryLede = inConsole ? t('console.vocabularies.lede') : t('admin.vocabularies.libraryLede');
 
   const [editing, setEditing] = useState<string | null>(null);
   const [retiring, setRetiring] = useState<VocabularyRow | null>(null);
@@ -542,16 +591,19 @@ export function VocabularyScreen({ list }: { list: string }) {
   if (values.isPending || lists.isPending) {
     return (
       <>
-        <BackLink href="/admin/vocabularies" label={t('admin.vocabularies.title')} />
+        <BackLink href={back} label={t('admin.vocabularies.title')} />
         <PageHead title={title} />
         <LoadingState rows={3} />
       </>
     );
   }
+  if (inConsole && lists.isSuccess && summary?.tier !== 'library') {
+    return <NotFoundScreen body={t('console.notFound.body')} backHref={back} backLabel={t('admin.vocabularies.title')} />;
+  }
   if (values.isError) {
     return (
       <>
-        <BackLink href="/admin/vocabularies" label={t('admin.vocabularies.title')} />
+        <BackLink href={back} label={t('admin.vocabularies.title')} />
         <PageHead title={title} />
         <ErrorState title={t('admin.vocabularies.errorTitleOne')} onRetry={() => void values.refetch()} />
       </>
@@ -567,14 +619,14 @@ export function VocabularyScreen({ list }: { list: string }) {
 
   return (
     <>
-      <BackLink href="/admin/vocabularies" label={t('admin.vocabularies.title')} />
+      <BackLink href={back} label={t('admin.vocabularies.title')} />
       <PageHead
         kicker={kicker}
         title={title}
         actions={canWrite ? <Button onClick={() => setAdding(true)}>{isLibrary ? t('admin.vocabularies.proposeValue') : t('admin.vocabularies.addValue')}</Button> : undefined}
       />
 
-      {isLibrary ? <p className="mb-4 max-w-[70ch] text-muted">{t('admin.vocabularies.libraryLede')}</p> : null}
+      {isLibrary ? <p className="mb-4 max-w-[70ch] text-muted">{libraryLede}</p> : null}
 
       <ChipRow className="mb-4">
         <Chip pressed={filter === ACTIVE} onClick={() => setFilter(ACTIVE)}>
@@ -617,7 +669,7 @@ export function VocabularyScreen({ list }: { list: string }) {
         </Rows>
       )}
 
-      {/* What this tenant has proposed on a library list returns with chunk 4, which adds a read scoped to the proposer's tenant. */}
+      {isLibrary && !inConsole ? <PendingProposals list={list} /> : null}
 
       {retiring !== null ? <RetireDialog list={list} row={retiring} onClose={() => setRetiring(null)} /> : null}
       {merging !== null ? (

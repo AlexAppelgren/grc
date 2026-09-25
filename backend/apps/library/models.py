@@ -9,8 +9,8 @@ that labels, files or searches. They are therefore plain models rather than
 `LibraryModel`s, so the tenant profile and role logic can name them beside their own
 writes without tripping the library fence's AST heuristic
 (apps/shared/tests_library_fence.py). `Jurisdiction` is a `Vocabulary` so it carries
-labels per language and the immutable-key rule; its `kind` (supranational or country)
-is the tier-one `JurisdictionKind`."""
+labels per language and the immutable-key rule; its `kind` (supranational, country or
+international) is the tier-one `JurisdictionKind`."""
 
 from __future__ import annotations
 
@@ -47,16 +47,26 @@ class Language(models.Model):
 
 
 class JurisdictionKind(enum.StrEnum):
-    """Tier-one kind (apps/shared/kinds.py): supranational (EU) or country."""
+    """Tier-one kind (apps/shared/kinds.py): supranational (EU), country, or international
+    (INV-01, INV-08, D-38) for a standards body such as ISO/IEC, which issues from no
+    market a bank operates in. `international` is deliberately left out of
+    `MIRRORED_JURISDICTION_KINDS` (apps/taxonomy/seeds/__init__.py): mirroring it into the
+    footprint's jurisdiction dimension would offer "International" as an operating market,
+    which a standards body is not."""
 
     SUPRANATIONAL = "supranational"
     COUNTRY = "country"
+    INTERNATIONAL = "international"
 
 
 class Jurisdiction(Vocabulary):
     """A jurisdiction (I18N-01, schema v0.3 `jurisdiction`): `eu`, `se`, `dk`, `no`,
-    `fi`, seeded with a parent (a country inside the Union) and the language its legal
-    texts are written in. Instruments and authorities reference it from chunk 3."""
+    `fi` and `intl` (D-38), seeded with a parent and the language its legal texts are
+    written in. Instruments and authorities reference it from chunk 3.
+
+    `parent` is the jurisdiction whose rules reach this one (D-28, ADR 0026), not
+    membership: Norway is outside the Union and still reached by EU financial rules
+    through the EEA Agreement."""
 
     KIND_CHOICES = [(kind.value, kind.value) for kind in JurisdictionKind]
 
@@ -115,7 +125,9 @@ class SubjectType(enum.StrEnum):
 
 
 class ReportStatus(enum.StrEnum):
-    """AUD-03: a "this looks wrong" report's lifecycle; the console resolves it (chunk 4)."""
+    """AUD-03: a "this looks wrong" report's lifecycle. A report is filed `open` and closed
+    inside its own bank with one of the other three and a note; nobody outside the bank
+    closes it (D-50)."""
 
     OPEN = "open"
     ANSWERED = "answered"
@@ -180,9 +192,15 @@ class Authority(LibraryModel):
 
 
 class Instrument(LibraryModel):
-    """A law, regulation or guideline (INV-01). The name is translation rows
-    (`InstrumentTitle`); `binding` starts from the level's default, false meaning
-    guidance, comply or explain."""
+    """A law, regulation, guideline or edition of a standard (INV-01, INV-08). The name is
+    translation rows (`InstrumentTitle`); `binding` starts from the level's default, false
+    meaning guidance, comply or explain unless the level's kind is `standard`.
+
+    `regime` is required (D-39, library 0008): it is the sector boundary, and an instrument
+    without one would match every bank's footprint. It must be a term of the `regime`
+    dimension: the seed-integrity test and the fixture check hold the seeded rows to that,
+    and the instrument proposal kind, when it lands, answers 422 `not_a_regime` at apply
+    otherwise (INV-S12)."""
 
     stable_key = models.SlugField(max_length=120, unique=True)
     short_name = models.CharField(max_length=120)
@@ -193,7 +211,7 @@ class Instrument(LibraryModel):
     binding = models.BooleanField()
     jurisdiction = models.ForeignKey(Jurisdiction, on_delete=models.PROTECT, related_name="+")
     authority = models.ForeignKey(Authority, null=True, blank=True, on_delete=models.PROTECT, related_name="instruments")
-    regime = models.ForeignKey("taxonomy.TaxonomyTerm", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    regime = models.ForeignKey("taxonomy.TaxonomyTerm", on_delete=models.PROTECT, related_name="+")
     in_force_from = models.DateField(null=True, blank=True)
     in_force_from_precision = _precision()
     in_force_to = models.DateField(null=True, blank=True)
@@ -205,6 +223,13 @@ class Instrument(LibraryModel):
     created_by_agent_run = models.UUIDField(null=True, blank=True)
     last_verified_at = models.DateTimeField(null=True, blank=True)
     verified_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    # Machine-confirmed provenance (INV-05, INV-06, PRO-02, chunk4-T26): who confirmed the
+    # change that produced the record's current state, an agent or a person, beside
+    # `verified_by`'s own re-verification stamp. Blank/null until a proposal that changes
+    # this table is applied; no kind creates or versions an instrument yet, so these two
+    # columns exist for the shape schema v0.3 names and are set once that apply path exists.
+    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -258,7 +283,15 @@ class InstrumentRelation(LibraryModel):
 
 class Provision(LibraryModel):
     """A node of an instrument's structure (INV-02): chapter, section, article. The legal
-    text lives in `ProvisionVersion` rows, never on the node."""
+    text lives in `ProvisionVersion` rows, never on the node.
+
+    Never under a standard (INV-08, AC-INV2, D-35): a standard's text is licensed. The
+    trigger `provision_not_under_standard` (library 0008) refuses an insert, or a move of
+    `instrument_id`, onto an instrument whose level's kind is `standard` or which the writer
+    cannot see, whatever the write path: a proposal, a seed, the watch pipeline or a
+    tenant's own record. Two more triggers there refuse the level paths: an instrument
+    holding provisions moved onto a standard level, and a level given the kind `standard`
+    while provisions sit under it."""
 
     stable_key = models.CharField(max_length=200, unique=True)
     instrument = models.ForeignKey(Instrument, on_delete=models.PROTECT, related_name="provisions")
@@ -342,6 +375,14 @@ class Obligation(LibraryModel):
     source_label = models.CharField(max_length=500)
     last_verified_at = models.DateTimeField(null=True, blank=True)
     verified_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    # Machine-confirmed provenance (INV-05, INV-06, PRO-02, chunk4-T26), beside `verified_by`'s
+    # own re-verification stamp: blank/null until a proposal that changes the obligation row
+    # itself is applied. The confirmation of the obligation's current version lives on the
+    # version row (`ObligationVersion.verified_origin`/`verified_by_agent`), read there and
+    # never overwritten; these two columns are the same shape for the obligation row itself,
+    # for the kind chunk 5 or later adds.
+    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
     provisions = models.ManyToManyField(Provision, through="library.ObligationProvision", related_name="obligations")
     terms = models.ManyToManyField("taxonomy.TaxonomyTerm", through="library.ObligationTerm", related_name="+")
@@ -379,6 +420,13 @@ class ObligationVersion(LibraryModel):
     applied_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     approved_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     approved_at = models.DateTimeField(null=True, blank=True)
+    # Machine-confirmed provenance (INV-05, INV-06, PRO-02, chunk4-T26): set once, with the
+    # version, from the approving proposal's two sides, and never edited afterwards. `agent`
+    # means an independent agent confirmed it (`verified_by_agent` names it; the proposing
+    # agent is `applied_by_proposal.proposed_by_agent`, so both are named without a second
+    # column here); `user` means `approved_by` names the person who did, exactly as before.
+    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -479,9 +527,20 @@ class Verification(LibraryModel):
 
 
 class ProblemReport(models.Model):
-    """"This looks wrong" (INV-06, AUD-03). A mixed table under forced RLS: a member's
-    report carries their tenant, a platform reader's none. Any member writes one, so it is
-    not a LibraryModel; the console resolves it through a proposal (chunk 4)."""
+    """"This looks wrong" (INV-06, AUD-03). A mixed table under forced RLS whose rows all
+    carry the bank that filed them: the writer refuses a report without a tenant, and the
+    column stays nullable only until Alex decides to take the table out of the mixed shape
+    (docs/TODO_FOR_alex.md, problem reports). Any member writes one, so it is not a
+    LibraryModel. It is read and closed inside that bank and nowhere else (D-50): the
+    reporter or a colleague holding `proposals.create` sets `answered`, `fixed` or
+    `rejected` with a note, and the check constraint below keeps a closed report from
+    lacking who closed it, when, and why. No proposal ever links to a report; the library
+    is corrected by the watch agents' re-check instead.
+
+    `version_number` and `language` record what the reader had on screen, so a colleague
+    reads the same words the reader read. There is no problem-area column: nothing
+    branches on one, and an area would be a library vocabulary rather than a code enum
+    (the open question in docs/plans/briefs/CHUNK3_TASKS.md)."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
@@ -489,13 +548,30 @@ class ProblemReport(models.Model):
     subject_type = models.CharField(max_length=32, choices=_choices(SubjectType))
     subject_id = models.UUIDField()
     text = models.TextField()
+    version_number = models.PositiveIntegerField(null=True, blank=True)
+    language = models.ForeignKey(Language, to_field="key", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     status = models.CharField(max_length=16, choices=_choices(ReportStatus), default=ReportStatus.OPEN.value)
-    resolved_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    resolution_note = models.TextField(blank=True, default="")
+    closed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    closed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "problem_report"
         ordering = ["created_at", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(
+                    status=ReportStatus.OPEN.value, resolution_note="", closed_by__isnull=True, closed_at__isnull=True
+                )
+                | (
+                    ~models.Q(status=ReportStatus.OPEN.value)
+                    & ~models.Q(resolution_note="")
+                    & models.Q(closed_by__isnull=False, closed_at__isnull=False)
+                ),
+                name="problem_report_closed_with_note",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.subject_type}:{self.subject_id} {self.status}"

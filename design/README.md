@@ -4,9 +4,23 @@
 |---|---|
 | `prototype/index.html` | The interactive prototype ("bleqq: compliance inventory and watch"). Open it in a browser. It is the contract for flow, wording, labels and pills. Its sample data seeds `seed_e2e` and `seed_demo` |
 | `system/foundations.md` | Type roles, radius, spacing, the component specs and the Green token behind every colour |
+| `system/navigation.md` | The rail and the tab bar: which width gets what, the More sheet, and the reason and source for each rule |
 | `system/pills-and-labels.md` and `.html` | The pill and label contract, and a rendered card |
+| `system/comments-and-mentions.md` | The comments panel on the change page, the obligation page and My work (chunk 10) |
+| `public/` | The public page: `index.html` is the whole page as one standalone file, `README.md` is the design note |
 | `brand/` | The phonetic wordmark `[blɛkː]`, the favicon, and the brand layer placeholders |
-| `screens/` | Empty. Cut one card per screen from the prototype as each chunk starts (playbook Section 7) |
+| `screens/` | One card per screen, cut from the prototype as each chunk starts (playbook Section 7). Chunk 10's are indexed below |
+
+## Chunk 10 cards
+
+| Card | Route | What it fixes |
+|---|---|---|
+| `screens/tenant-notifications.html` | `/notifications`, and the bell in the shell | The unread dot on the account row and on More, Notifications in the account menu with its count, the inbox (kind pill, record title, time, read and unread), mark one and mark all read, empty, loading, error, and the per-person settings with escalations always on |
+| `system/comments-and-mentions.md` | the change page, the obligation page, My work | The panel: oldest first with author, time and "Edited", the composer and its visibility line, mentions over `GET /reference/people`, Edit and Delete on one's own comments, the deleted marker, a mention that reached nobody, every state |
+| `screens/admin-workflow.html` | `/admin/workflow` | Reminder and review reminder lead days, the escalation threshold and role, the digest weekday and the triage target, each with its unit and platform default; saved, refused and restricted |
+| `screens/me-out-of-office.html` | `/me/out-of-office` | The last day away in the tenant's timezone, the delegate picker, what a delegate may do, End now, `already_delegated`, and the delegate's own view |
+| `screens/tenant-inventory.html`, tagging blocks | `/inventory` | Selecting obligations, the Tag control with its preview and result, the cap, tenant tags on each row and the tenant-tag filter (numbered blocks appended by chunk 10's tagging cards) |
+| `screens/tenant-obligation.html`, tags facet | `/inventory/obligations/[id]` | Tenant tags on the obligation, added through `screens/picker-create-or-suggest.html` and removed by a holder of vocabulary manage, read-only for everyone else (numbered blocks appended by chunk 10's tagging cards) |
 
 ## Direction (already chosen)
 
@@ -48,9 +62,23 @@ signed-in person is one quiet row at the bottom (name, then organisation and
 role) opening a menu with My passkeys, My sessions and Sign out, followed by
 "Minimise menu". Minimised (or ctrl/cmd+b), the rail keeps only icons with a
 tooltip each and the open e alone as the mark, and remembers the choice on the
-device. On phones there is no dock: a menu button on the right of the header
-opens the same rail as a sheet, so every destination is reachable. A count,
-once a screen feeds one, is a quiet muted number at the end of its row.
+device. The rail shows from 1024 px.
+
+**The tab bar below 1024 px (Alex, 2026-09-19; ADR 0020 amendment "the tab
+bar below 1024 px").** Below 1024 px, which covers every phone and every
+iPad below 13 inches in portrait, the rail gives way to a floating tab bar
+with five items, the fifth being More, as many iPhone apps do. The first four are the registry's dock destinations (Today, Watch,
+Inventory and Search for every system role). More opens a sheet from the
+bottom holding every other destination and the account: the name,
+organisation and role, My passkeys, My sessions and Sign out. So every
+destination is reachable at every width. The bar floats on the surface colour
+with a hairline and a 12 px radius; the current tab is the rail's current row
+with a 1 px outline, never a full pill. The wordmark stays as a line at the
+top of the page and scrolls away. Every value and its reason is in
+`system/navigation.md`.
+
+A count, once a screen feeds one, is a quiet muted number at the end of its
+row.
 
 ## Where the prototype is wrong or silent
 
@@ -58,7 +86,7 @@ once a screen feeds one, is a quiet muted number at the end of its row.
 |---|---|
 | The tenant's compliance officer approves agent proposals into the inventory | Wrong for a shared library. The queue moves to the platform console (`library_editor`). Tenants see library updates and report problems |
 | "Switch user" | Prototype device only. Replace with real sign-in |
-| Footprint toggles apply at once | Becomes a request with a preview and a second person |
+| The scope toggles apply at once, on a Settings page every user can open | The section is Regulatory scope, under Admin, and only the two scope permissions open it. A change becomes a request with a preview and a second person. The prototype's scope view stops at a pending request with Withdraw; approval, rejection and history follow the app and `screens/admin-footprint.html` |
 | `UCLASS` maps the label "Act now" to a colour, and urgency and change type are stored as labels | Store keys. Tone comes from slot or kind |
 | Obligation `tags` feed search but never render | Render library tags as `brand` pills after the flags, tenant tags as outlined `information` pills |
 | Colours are hex values copied from Green | Import the tokens, override the brand pair |

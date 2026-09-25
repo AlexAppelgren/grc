@@ -31,4 +31,9 @@ E2E_PASSKEYS: dict[str, E2EPasskey] = {
     "editor@bleqq.test": E2EPasskey(credential_id="kJMr_cyOaavja6riiD2TYg", public_key_cose="pQECAyYgASFYIIMZWg5ykm-qMw9R2qDN_GRV54zk8858wq9k9T48rpNrIlggu3OyOVPVaa5lwhPjgo0-adSG2q4DPIqiwMXpdhsfxYE", aaguid=E2E_AAGUID),
     "platform@bleqq.test": E2EPasskey(credential_id="UgJgCKWhb2hDQVUoH3sU7Q", public_key_cose="pQECAyYgASFYIAYBpYLUE31r9lYJoIlM44qR1PQcYSkJ_vI0qeaq8q46Ilgg0Oc1dN0Qf-6mzsfE1erNSKVAtjYsO63L5792ZWHLn9o", aaguid=E2E_AAGUID),
     "reissue@example-bank.test": E2EPasskey(credential_id="PVfR3rFiqBKfLK3MSSSFFQ", public_key_cose="pQECAyYgASFYIP-C8EcCKVIOyt6O4OlQMHgHNrHeSDbW4ZUfXKS_ea8YIlggUHG2grAcGgIN7F5IrO_gm2PZnkePc3gIDmC-L2MoGio", aaguid=E2E_AAGUID),
+    "editor2@bleqq.test": E2EPasskey(credential_id="suqmTkUo_TtcyQzOTs0MFg", public_key_cose="pQECAyYgASFYIGnvriTFg5RjG-o-ngyFgjsrCYFqIllPLCnOkV-n7nciIlggp-_-35VGX7hrSDy6vs79WZVCvxyBf9IRekhfocljwtY", aaguid=E2E_AAGUID),
+    "agent-keys@bleqq.test": E2EPasskey(credential_id="RUlGV1nowK17BmGcPQ7zbQ", public_key_cose="pQECAyYgASFYIJb6zYxQJ3MD6TPpue_LRFO5VbnqBmxsKHjfwxc9iPO6IlggYr5FqbJyanDkQqIR5EUlpSCIqEkg9l_dE2OEfQXwmWo", aaguid=E2E_AAGUID),
+    "reader-sv@example-bank.test": E2EPasskey(credential_id="Z6-QX06Ma-mkrsHpz1QBQg", public_key_cose="pQECAyYgASFYIBE2OjZKXyrGd5phiNsGkwt-yXTWixWrSzvGQOGjh9P4Ilgg4BVFHfb-b7xW09RMGUnMPnzKbIevigg7M6sHgkcO1J8", aaguid=E2E_AAGUID),
+    "language@example-bank.test": E2EPasskey(credential_id="CsD6EpLYQKiDdv88Ld3F-g", public_key_cose="pQECAyYgASFYILRgCTnN45WAgTTT4F_X28DQ3M9n2KkySUtpDDj-HBKhIlggUwhmR2Wkfe08kUtEenLSFstB1SVDJ4yNEwYHi0EBqio", aaguid=E2E_AAGUID),
+    "approver@second-bank.test": E2EPasskey(credential_id="HoDpXeyObXArC7s8SrOWzA", public_key_cose="pQECAyYgASFYIAi2sbsI6HsX6_IH1cyTqD6CfgmnoG1Xo7frrdg_jL4tIlggS1MRz7jOXKTS0XIO-cX0mVcu0sg4Ty8erza7P1n7vrc", aaguid=E2E_AAGUID),
 }

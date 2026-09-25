@@ -5,11 +5,20 @@
 #
 #   bash scripts/prepush.sh          the gates for what changed since origin/main
 #   bash scripts/prepush.sh --all    every gate, full E2E suite (what the nightly run does)
+#   bash scripts/prepush.sh --quick  the fast static gates only (secrets, lockfiles, migration
+#                                    drift, lint, types, compliance, requirements and contract
+#                                    checks, OpenAPI drift). Test suites, coverage, the
+#                                    production build, E2E, CodeQL and image scans are left to
+#                                    the real CI, which scripts/ship.sh runs on `candidate`
+#                                    before main moves
 #
 # "Changed" is the committed, uncommitted and untracked work since origin/main. Tiers
-# mirror the `changes` job in ci.yml: backend, frontend, lockfiles, containers, and a
-# change under .github/ counts as everything. The secret scan always runs. CodeQL runs
-# per language whenever a Python or JavaScript/TypeScript file changed.
+# mirror the `changes` jobs in ci.yml and codeql.yml: backend, specs, frontend,
+# lockfiles, containers, python, javascript, and a change under .github/ counts as
+# everything. `specs` is spec text (an app.md, PRD.md, the designed contract): the
+# checkers that parse it run, and the migrations, suite, coverage, search evaluation
+# and E2E that cannot see it do not. The secret scan and the tier guard always run.
+# scripts/check_ci_tiers.py fails when this list and the two workflows drift apart.
 # Stops at the first failing gate, naming it and the command that reproduces it.
 #
 # Tools download once into <main checkout>/.tools/ (git-ignored), are verified against
@@ -29,7 +38,8 @@ cd "$root"
 main="$(git worktree list --porcelain | awk '/^worktree /{print substr($0,10); exit}')"
 TOOLS="$(cd "$main" && pwd)/.tools"
 [ -f .env.worktree ] && { set -a; . ./.env.worktree; set +a; }   # a worktree's own slot
-all=0; case "${1:-}" in --all) all=1 ;; "") ;; *) die "usage: bash scripts/prepush.sh [--all]" ;; esac
+all=0 quick=0
+case "${1:-}" in --all) all=1 ;; --quick) quick=1 ;; "") ;; *) die "usage: bash scripts/prepush.sh [--all|--quick]" ;; esac
 
 pinned() { grep -qF "$2" "$1" || die "$1 no longer pins '$2'; update the matching pin in scripts/prepush.sh"; }
 pinned .github/workflows/codeql.yml "github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd"
@@ -84,18 +94,20 @@ GIT_INDEX_FILE="$index.prepush" git add -A
 snapshot="$(git commit-tree "$(GIT_INDEX_FILE="$index.prepush" git write-tree)" -p HEAD -m "prepush snapshot")"
 rm -f "$index.prepush"
 
-be=0 fe=0 lock=0 cont=0 py=0 js=0 full=$all
+be=0 spec=0 fe=0 lock=0 cont=0 py=0 js=0 full=$all
 while IFS= read -r f; do
   case "$f" in .github/*) full=1 ;; esac
-  case "$f" in backend/apps/*/app.md|PRD.md|docs/inputs/openapi.yaml|docs/inputs/INPUT_DELTAS.md|generate-types.sh|openapi.json|infra/db/*|docker-compose.yml) be=1 ;;
+  case "$f" in backend/apps/*/app.md|PRD.md|docs/inputs/openapi.yaml|frontend/tests/e2e/*.spec.ts) spec=1 ;; esac
+  case "$f" in docs/inputs/INPUT_DELTAS.md|generate-types.sh|openapi.json|infra/db/*|docker-compose.yml) be=1 ;;
                backend/*.md) ;; backend/*) be=1 ;; esac
   case "$f" in openapi.json|generate-types.sh) fe=1 ;; frontend/*.md) ;; frontend/*) fe=1 ;; esac
   case "$f" in backend/poetry.lock|backend/pyproject.toml|frontend/package-lock.json|frontend/package.json|frontend/THIRD_PARTY_NOTICES.md|scripts/*) lock=1 ;; esac
   case "$f" in backend/Dockerfile|frontend/Dockerfile|.dockerignore|*/.dockerignore|backend/entrypoint.sh) cont=1 ;; esac
   case "$f" in *.py) py=1 ;; *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) js=1 ;; esac
 done <<< "$(git diff --name-only "origin/main...$snapshot")"
-[ "$full" = 1 ] && be=1 fe=1 lock=1 cont=1 py=1 js=1
-echo "prepush: full=$full backend=$be frontend=$fe lockfiles=$lock containers=$cont codeql-python=$py codeql-js=$js"
+[ "$full" = 1 ] && be=1 spec=1 fe=1 lock=1 cont=1 py=1 js=1
+[ "$quick" = 1 ] && echo "prepush: quick: static gates only; tests, build, E2E, CodeQL and image scans run in CI on candidate (scripts/ship.sh)"
+echo "prepush: full=$full backend=$be specs=$spec frontend=$fe lockfiles=$lock containers=$cont codeql-python=$py codeql-js=$js"
 
 timings=()
 gate() { # gate <name> <dir> <command...>: run it, time it, stop on failure
@@ -110,10 +122,19 @@ gate() { # gate <name> <dir> <command...>: run it, time it, stop on failure
   timings+=("$(printf '  %-52s %5ss' "$name" $((SECONDS - start)))")
 }
 
-# Secret scan (ci.yml `secrets`, gitleaks-action's flags). CI scans the pushed commits;
-# here the full history plus the uncommitted work, a superset.
+# Secret scan (ci.yml `secrets`, gitleaks-action's flags). CI's full-history checkout scans
+# every branch on origin, not only the pushed one (2026-09-23: a plan file on a side branch
+# failed a ship), so here the full history of the snapshot and of every origin branch, a superset.
 gitleaks="$(tool gitleaks-8.30.1 gitleaks$x "$gitleaks_url" "$gitleaks_sha")"
-gate "gitleaks" . "$gitleaks" git --config .gitleaks.toml --redact -v --exit-code=2 --log-opts="$snapshot"
+gate "gitleaks" . "$gitleaks" git --config .gitleaks.toml --redact -v --exit-code=2 --log-opts="$snapshot --remotes=origin"
+
+# A merge resolved by hand can leave a conflict marker behind, and no other gate reads for
+# one (2026-09-19: a verification log was committed with its markers). Checked in the snapshot.
+gate "No conflict markers" . bash -c '! git grep -nE "^(<<<<<<<|>>>>>>>)( |$)" "$0" -- . ":!*.png" ":!*.jpg"' "$snapshot"
+
+# The tiers above are a promise that this run predicts CI's. Nothing else notices when
+# a pattern is added to one of the three lists and forgotten in the other two.
+gate "CI tiers agree with ci.yml and codeql.yml" . python3 scripts/check_ci_tiers.py
 
 if [ "$lock" = 1 ]; then  # ci.yml `cve` and `licences`
   gate "CVE: lockfiles present and not empty" . test -s backend/poetry.lock -a -s frontend/package-lock.json
@@ -128,6 +149,7 @@ fi
 
 # CodeQL analyses CI's checkout, so here an export of the snapshot: no linked .venv or
 # node_modules, no ignored files, the same source root and relative paths.
+[ "$quick" = 1 ] && py=0 js=0
 if [ "$py" = 1 ] || [ "$js" = 1 ]; then
   rm -rf sarif-results/src && mkdir -p sarif-results/src && git archive "$snapshot" | tar -x -C sarif-results/src
 fi
@@ -156,17 +178,43 @@ PY
     --sarif-dir "sarif-results/$lang" --accepted .github/codeql-accepted.json --language "$lang"
 done
 
-if [ "$be" = 1 ]; then  # ci.yml `backend`
+if [ "$be" = 1 ]; then  # ci.yml `backend`, the steps gated on the backend tier
   gate "Backend: migration drift" backend bash ./run.sh run python manage.py makemigrations --check --dry-run --settings=config.test_settings
-  gate "Backend: migration graph from zero" backend bash ./run.sh run python manage.py migrate_from_zero --settings=config.test_settings
-  gate "Backend: tests under coverage" backend bash ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput
-  gate "Backend: coverage report" backend bash ./run.sh run coverage report
-  gate "Backend: coverage floors" backend bash ./run.sh run python scripts/coverage_gate.py
+  if [ "$quick" = 0 ]; then
+    # Test workers. Django's runner splits the suite by TestCase across processes, each with
+    # its own clone of the test database, so the wall time falls with the cores it is given.
+    # Four by default: this laptop has eight and often runs several worktrees at once
+    # (docs/runbooks/WORKTREES.md), and a worker fighting for a core costs more than it
+    # saves. BACKEND_TEST_PARALLEL overrides it; ci.yml sets its own for the runner it gets.
+    parallel="${BACKEND_TEST_PARALLEL:-4}"
+    # A worker sends a failing test's traceback to the parent by pickling it, which needs
+    # tblib (backend/pyproject.toml). Without it the first failure ends the run with "cannot
+    # pickle 'traceback' object" and names no test, so an environment whose virtualenv
+    # predates that dependency runs in one process and is told why, rather than being handed
+    # a fast gate nobody can read.
+    if ! (cd backend && bash ./run.sh run python -c "import tblib") >/dev/null 2>&1; then
+      echo "prepush: tblib is missing from the backend environment, so the suite runs in one"
+      echo "prepush: process. Run 'cd backend && ./run.sh install' to get the parallel runner."
+      parallel=1
+    fi
+    gate "Backend: migration graph from zero" backend bash ./run.sh run python manage.py migrate_from_zero --settings=config.test_settings
+    gate "Backend: tests under coverage ($parallel workers)" backend bash ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput --parallel "$parallel"
+    # Each worker writes coverage data of its own; the merge is what `coverage report` and
+    # the floors then read (backend/pyproject.toml, [tool.coverage.run]).
+    gate "Backend: combine the workers' coverage" backend bash ./run.sh run coverage combine
+    gate "Backend: coverage report" backend bash ./run.sh run coverage report
+    gate "Backend: coverage floors" backend bash ./run.sh run python scripts/coverage_gate.py
+  fi
+fi
+if [ "$be" = 1 ] || [ "$spec" = 1 ]; then  # ci.yml `backend`, the steps the specs tier also runs
   gate "Backend: ruff" backend bash ./run.sh run ruff check .
   gate "Backend: mypy" backend bash ./run.sh run mypy
   gate "Backend: compliance lint" backend bash ./run.sh run python scripts/compliance_check.py --all
   gate "Backend: requirements coverage" backend bash ./run.sh run python scripts/requirements_coverage.py
   gate "Backend: contract drift" backend bash ./run.sh run python scripts/contract_drift.py
+  gate "Backend: API documentation" backend bash ./run.sh run python scripts/api_docs_gate.py
+fi
+if [ "$be" = 1 ] && [ "$quick" = 0 ]; then
   gate "Backend: search evaluation" backend bash ./run.sh run python scripts/search_eval.py
 fi
 
@@ -178,18 +226,24 @@ fi
 
 export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:8000}"
 if [ "$fe" = 1 ]; then  # ci.yml `frontend`
-  for step in build:tokens lint typecheck test:coverage check:messages check:copy-drift build; do
+  steps="build:tokens lint typecheck test:coverage check:messages check:copy-drift build"
+  [ "$quick" = 1 ] && steps="build:tokens lint typecheck check:messages check:copy-drift"
+  for step in $steps; do
     gate "Frontend: $step" frontend npm run "$step"
   done
 fi
 
-if [ "$be" = 1 ] || [ "$fe" = 1 ]; then  # ci.yml `e2e`: @smoke, the full suite when everything runs
+if [ "$quick" = 0 ] && { [ "$be" = 1 ] || [ "$fe" = 1 ]; }; then  # ci.yml `e2e`: @smoke, the full suite when everything runs
   gate "E2E: design tokens" frontend npm run build:tokens
   if [ "$full" = 1 ]; then gate "E2E: full suite" frontend env CI=true E2E_MODE=true npm run test:e2e
   else gate "E2E: @smoke" frontend env CI=true E2E_MODE=true npm run test:e2e -- --grep @smoke; fi
+  # ci.yml `coldstart`: the same tier, because a deploy that cannot be set up is worth
+  # catching on a push and not only nightly. Its stack has its own database and ports, so
+  # it never touches the seeded one above (frontend/playwright.config.ts).
+  gate "E2E: @coldstart" frontend env CI=true E2E_MODE=true npm run test:e2e -- --grep @coldstart
 fi
 
-if [ "$cont" = 1 ] || [ "$lock" = 1 ]; then  # ci.yml `container-scan`
+if [ "$quick" = 0 ] && { [ "$cont" = 1 ] || [ "$lock" = 1 ]; }; then  # ci.yml `container-scan`
   trivy="$(tool trivy-0.70.0 trivy$x "$trivy_url" "$trivy_sha")"
   for image in backend frontend; do
     gate "Container $image: build" . docker build -t "compliance-watch/$image:ci" -f "$image/Dockerfile" "$image"

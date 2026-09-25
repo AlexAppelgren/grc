@@ -1,20 +1,27 @@
 """One error shape everywhere (playbook 4.4): problem details with `code`, `errors[]` for
-field validation, `requiredPermission` on a 403, and never a stack trace. Also the
-OpenAPI export's normalisation and the migrate_from_zero URL helper."""
+field validation, `requiredPermission` on a 403, and never a stack trace. A logged
+exception keeps its frames and types, never a message a row or a request put there. Also
+the OpenAPI export's normalisation and the migrate_from_zero URL helper."""
 
 from __future__ import annotations
 
 import json
+import logging
+import sys
 from typing import Any
 
+from django.core.exceptions import BadRequest, RequestDataTooBig, TooManyFieldsSent
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import HttpRequest
-from django.test import SimpleTestCase, TestCase
+from django.http.multipartparser import MultiPartParserError
+from django.test import SimpleTestCase, TestCase, override_settings
 from ninja.errors import HttpError
 
 from apps.shared.errors import PROBLEM_CONTENT_TYPE, ProblemError, problem_response
+from apps.shared.logging import JsonFormatter
 from apps.shared.management.commands.export_openapi import normalise
 from apps.shared.management.commands.migrate_from_zero import _with_database
+from apps.shared.middleware import RequestIdLogFilter
 from config import api as api_module
 
 
@@ -49,6 +56,20 @@ class ProblemShape(SimpleTestCase):
         self.assertEqual(json.loads(response.content)["code"], "not_found")
 
 
+class UnknownPaths(TestCase):
+    """A path the server does not have answers in the one problem shape, not Django's HTML
+    page: `handler404` in config/urls.py is `config.api.not_found`. Calling the function
+    directly (above) proves its output, not that Django ever calls it."""
+
+    def test_an_unknown_path_answers_problem_details_not_found(self) -> None:
+        for path in ("/api/v1/no-such-route", "/no-such-page"):
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response["Content-Type"], PROBLEM_CONTENT_TYPE)
+                self.assertEqual(json.loads(response.content)["code"], "not_found")
+
+
 class ValidationThroughTheApi(TestCase):
     def test_a_malformed_query_answers_422_with_errors(self) -> None:
         from ninja import Router
@@ -68,6 +89,119 @@ class ValidationThroughTheApi(TestCase):
 
         response = api_module.handle_authentication(HttpRequest(), AuthenticationError())
         self.assertEqual(response.status_code, 401)
+
+
+class UnhandledErrors(TestCase):
+    def test_an_unexpected_error_is_a_problem_without_a_trace_and_writes_nothing(self) -> None:
+        from unittest import mock
+
+        from django.test import Client
+
+        from apps.identity.models import User
+        from apps.shared import factories
+        from apps.shared.testing import sign_in
+
+        editor = sign_in(factories.platform_user(roles=("library_editor",), email="editor@bleqq.test"))
+
+        def write_then_fail(**_: Any) -> Any:
+            factories.user(name="Written before the failure")
+            raise RuntimeError("tenant secret in the message")
+
+        body = {"kind": "vocabulary_retire", "title": "Retire ai", "payload": {"list": "flag", "key": "ai"}}
+        with mock.patch("apps.proposals.logic.create", side_effect=write_then_fail), self.assertLogs("config.api", "ERROR"):
+            response = Client().post("/api/v1/proposals", body, content_type="application/json", **editor)
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response["Content-Type"], PROBLEM_CONTENT_TYPE)
+        problem = json.loads(response.content)
+        self.assertEqual((problem["status"], problem["code"]), (500, "internal_error"))
+        self.assertNotIn("secret", response.content.decode())
+        self.assertNotIn("Traceback", response.content.decode())
+        self.assertFalse(User.objects.filter(name="Written before the failure").exists(), "the request's writes roll back")
+
+    def test_an_unexpected_error_logs_the_route_pattern_and_the_type_never_the_path_or_message(self) -> None:
+        from unittest import mock
+
+        from django.test import Client
+
+        from apps.shared import factories
+        from apps.shared.testing import sign_in
+
+        tenant = factories.tenant(slug="bank")
+        admin = sign_in(factories.member(tenant, roles=("admin",)).user, tenant=tenant)
+        key = "project_" + "falcon"  # a tenant's own key, which the path carries
+        failure = RuntimeError(f"Failing row contains ({key}, confidential note)")
+        with (
+            mock.patch("apps.taxonomy.tenant_lists_logic.patch_row", side_effect=failure),
+            self.assertLogs("config.api", "ERROR") as logs,
+            self.assertLogs("django.request", "ERROR") as django_logs,
+        ):
+            response = Client().patch(f"/api/v1/vocab/tenant_tag/{key}", {"labels": {"en": "x"}}, content_type="application/json", **admin)
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("<key>", getattr(logs.records[0], "route"))  # noqa: B009
+        line = JsonFormatter().format(logs.records[0])
+        self.assertIn("RuntimeError", line)
+        # Django's own line for the 500 names the route too, never the path it was asked for,
+        # written as the console handler writes it: its filter, then the formatter.
+        django_record = django_logs.records[0]
+        RequestIdLogFilter().filter(django_record)
+        django_line = JsonFormatter().format(django_record)
+        self.assertIn("<key>", django_line)
+        for written in (line, django_line):
+            self.assertNotIn(key, written)
+            self.assertNotIn("confidential", written)
+
+
+class ExceptionsInLogLines(SimpleTestCase):
+    def test_a_logged_exception_keeps_its_frames_and_types_and_drops_every_message(self) -> None:
+        row = "Project " + "Falcon acquisition"  # what a database error's DETAIL line carries
+        try:
+            try:
+                try:
+                    raise KeyError(row)
+                except KeyError as missing:
+                    raise ValueError(f"Failing row contains (-1, {row})") from missing
+            except ValueError:
+                raise RuntimeError(f"Key (name)=({row}) already exists.")  # noqa: B904 the implicit context is what is under test
+        except RuntimeError:
+            record = logging.LogRecord("apps.test", logging.ERROR, __file__, 1, "failed", None, sys.exc_info())
+        line = JsonFormatter().format(record)
+        self.assertNotIn("Falcon", line)
+        for kind in ("KeyError", "ValueError", "RuntimeError"):
+            self.assertIn(kind, line)
+        self.assertIn("test_a_logged_exception_keeps_its_frames_and_types_and_drops_every_message", line)
+
+
+class DjangoRequestLines(TestCase):
+    def test_a_4xx_line_carries_neither_the_query_nor_the_request(self) -> None:
+        from django.test import Client
+
+        with self.assertLogs("django.request", "WARNING") as logs:
+            response = Client().get("/api/v1/no-such-route?q=secret-search-text")
+        self.assertEqual(response.status_code, 404)
+        line = JsonFormatter().format(logs.records[0])
+        self.assertNotIn("secret-search-text", line)
+        self.assertNotIn("WSGIRequest", line)
+        self.assertNotIn("request", json.loads(line))
+        self.assertEqual(json.loads(line)["message"], "404 GET /api/v1")
+
+
+class UnreadableRequests(TestCase):
+    @override_settings(DATA_UPLOAD_MAX_MEMORY_SIZE=64)
+    def test_an_oversized_body_is_a_400_problem(self) -> None:
+        from django.test import Client
+
+        body = {"email": "someone." * 20 + "@bank.example"}
+        response = Client().post("/api/v1/auth/code/request", body, content_type="application/json")
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertEqual(response["Content-Type"], PROBLEM_CONTENT_TYPE)
+        self.assertEqual(json.loads(response.content)["code"], "bad_request")
+
+    def test_a_request_django_cannot_read_is_a_400_problem(self) -> None:
+        for error in (RequestDataTooBig("big"), TooManyFieldsSent("many"), BadRequest("bad"), MultiPartParserError("parts")):
+            with self.subTest(error=type(error).__name__):
+                response = api_module.api.on_exception(HttpRequest(), error)
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(json.loads(response.content)["code"], "bad_request")
 
 
 class OpenApiNormalisation(SimpleTestCase):

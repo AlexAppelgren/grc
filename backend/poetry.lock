@@ -1724,6 +1724,18 @@ dev = ["build"]
 doc = ["furo", "sphinx"]
 
 [[package]]
+name = "tblib"
+version = "3.2.0"
+description = "Traceback serialization library."
+optional = false
+python-versions = ">=3.9"
+groups = ["dev"]
+files = [
+    {file = "tblib-3.2.0-py3-none-any.whl", hash = "sha256:32c4d3c36ac59c59e8c442d94e7b274b3ce80263ca3201686476ee7616f3579a"},
+    {file = "tblib-3.2.0.tar.gz", hash = "sha256:62ae1b8808cfd7c1c15b871d4022abb46188c49d21ace87a02a88707dc7aa1b1"},
+]
+
+[[package]]
 name = "types-pyyaml"
 version = "6.0.12.20260906"
 description = "Typing stubs for PyYAML"
@@ -1858,4 +1870,4 @@ pyOpenSSL = ">=26.3.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "9181e1a45319642f48418668ae928a53ad7cf43f0edfb8e94c119a80f9fafa34"
+content-hash = "5af2a0183fadebf2d516fda6f350275a548b1cd470f7ea0ae4d6ca1c67bc7def"

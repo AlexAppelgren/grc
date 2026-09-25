@@ -1,16 +1,24 @@
 """The security log (ID-11): one `login_event` row per sign-in, failure, enrolment,
-recovery and key use. Append-only in Python (AppendOnlyModel) and by trigger. A row with
-a tenant is written after that tenant is activated (the mixed policy's WITH CHECK
-demands it); platform rows carry no tenant."""
+recovery and key use. Append-only in Python (AppendOnlyModel) and by trigger.
+
+`log_event()` is to this ledger what `record()` is to the audit log: the one door, and it
+writes the row in the zone its `tenant_id` names. A row with a tenant needs that tenant
+activated and a row without one needs no tenant activated, because since H15 the mixed
+policy's WITH CHECK accepts only the session's own zone. A platform row therefore goes in
+with the tenant cleared, which is what a sign-in that failed before any tenant was known
+records, whatever the caller had activated."""
 
 from __future__ import annotations
 
 import uuid
+from contextlib import nullcontext
 
 from django.conf import settings
+from django.db import transaction
 from django.http import HttpRequest
 
 from apps.identity.models import ApiKey, LoginEvent, LoginEventKind, LoginMethod, User
+from apps.shared import tenancy
 
 USER_AGENT_MAX_LENGTH = 500
 
@@ -49,18 +57,24 @@ def log_event(
     email: str = "",
     failure_reason: str = "",
 ) -> LoginEvent:
-    return LoginEvent.objects.create(
-        tenant_id=tenant_id,
-        user=user,
-        api_key=api_key,
-        email=email or (user.email if user else ""),
-        method=method.value,
-        event=event.value,
-        success=success,
-        failure_reason=failure_reason,
-        ip=client_ip(request),
-        user_agent=user_agent(request),
-    )
+    crosses_zones = tenant_id is None and tenancy.database_tenant_id() is not None
+    # The zone block outside and an atomic block inside, exactly as record() nests them: a
+    # failed insert rolls back to its own savepoint before the tenant goes back on, so the
+    # caller is handed the error the insert raised and not the one that putting the tenant
+    # back on an aborted transaction would raise over the top of it.
+    with tenancy.platform_zone() if crosses_zones else nullcontext(), transaction.atomic():
+        return LoginEvent.objects.create(
+            tenant_id=tenant_id,
+            user=user,
+            api_key=api_key,
+            email=email or (user.email if user else ""),
+            method=method.value,
+            event=event.value,
+            success=success,
+            failure_reason=failure_reason,
+            ip=client_ip(request),
+            user_agent=user_agent(request),
+        )
 
 
 def list_events(tenant_id: uuid.UUID, *, limit: int, offset: int) -> tuple[list[LoginEvent], int]:

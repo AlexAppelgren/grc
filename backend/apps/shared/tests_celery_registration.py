@@ -49,6 +49,33 @@ class CeleryRegistrationGuard(TestCase):
         self.assertEqual(unwrapped, [], "Tenant tasks not wrapped in @tenant_task:\n  " + "\n  ".join(unwrapped))
 
 
+class WeeklyBriefingSchedule(TestCase):
+    """The first beat entry a tenant task hangs off (HOM-02, `c6-briefing-backend`).
+
+    A bank's Monday morning is not the server's, so beat runs the job every hour and the
+    dispatcher picks the banks whose own clock has just struck the configured moment. That
+    is why the entry below is hourly rather than weekly, and why the weekday and the hour
+    are settings the dispatcher reads rather than numbers inside the schedule.
+    """
+
+    def test_the_weekly_briefing_entry_runs_hourly_and_names_a_task_that_exists(self) -> None:
+        from django.conf import settings
+
+        entry = (celery_app.conf.beat_schedule or {})["briefing-weekly"]
+        self.assertEqual(entry["task"], "apps.home.tasks.send_weekly_briefings")
+        self.assertIn(entry["task"], celery_app.tasks)
+        self.assertEqual(entry["schedule"].minute, {0}, "every hour on the hour, not once a week")
+        self.assertEqual((settings.BRIEFING_SEND_WEEKDAY, settings.BRIEFING_SEND_HOUR), (0, 7))
+
+    def test_the_task_it_hands_on_to_is_a_wrapped_tenant_task(self) -> None:
+        """It writes one bank's rows, so it must activate that bank inside its own
+        transaction; the guard above enforces the rule and this pins the task by name."""
+        from apps.home import tasks
+
+        self.assertTrue(is_tenant_task(tasks.send_weekly_briefing.run))
+        self.assertEqual(list(inspect.signature(tasks.send_weekly_briefing.run).parameters)[0], "tenant_id")
+
+
 class TenantTaskDecorator(TestCase):
     def test_tenant_task_activates_inside_its_own_transaction(self) -> None:
         tenant = factories.tenant()

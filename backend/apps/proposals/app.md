@@ -8,16 +8,101 @@
 ## 1. Business / user context
 
 The library is shared by every bank, so no single agent or person edits it.
-Agents and people propose; a library editor in the platform console reviews,
-may correct scope and wording, and approves. Approval applies the payload,
-writes the new version, the audit row and the search re-index in one
+Agents and people propose; a second, independent principal reviews from the
+queue, may correct scope and wording, and approves. Approval applies the
+payload, writes the new version, the audit row and the search re-index in one
 transaction. The proposer never approves their own proposal, and the database
 enforces it.
 
+Since PRD 0.4 (Alex, 2026-09-20, D-62 and ADR 0054) that second principal is
+usually an agent: bleqq staffs no editorial function, so a platform API key
+bound to an agent definition, holding the scope `proposals:review`, reads the
+same queue a person reads and approves, corrects or rejects through the same
+logic. Independence is what four eyes means here — a different agent definition
+and a different key from the proposer — and the check constraint refuses a row
+whose user, key or agent matches on both sides. A person approving still steps
+up with a passkey; a key cannot step up, so for an agent the gate is the scope,
+the constraint and the model call behind its decision: an agent's approval or
+rejection names the model, the output and its citations and an open run of its
+own key, and is refused without them; the call is logged in the AI output log
+with the decision, and the audit row names the run (D-80). A person sends
+neither. A record applied from a proposal an agent
+confirmed carries machine-confirmed provenance (INV-05), never a person's
+verification. An obligation version carries it, and since taxonomy 0007 so do a
+library list row and a taxonomy term: the approval that writes their wording
+records `user` or `agent`, the confirming agent and the proposal. Every label an
+agent's approval writes is stored machine-made, and the row keeps naming the
+agents until a person has approved all the wording they left. A new instrument
+records it on its row, and a new obligation on its row and its first version. So
+an agent approves every kind whose record can name it: an obligation version, a
+new instrument, a new obligation and, since Alex lifted D-79's interim refusal on
+2026-09-23, every vocabulary and term kind. A provision and its versions have no
+such column, so `new_provision` and `new_provision_version` answer an agent 409
+`person_review_required` and wait for a person, as will any kind added later
+without that provenance (D-79). A key bound to no agent definition is
+refused at the queue's gate with 403 `agent_not_bound`.
+
 The prototype shows the tenant's compliance officer approving agent
 proposals. That is the one place the prototype is wrong: the queue lives in
-the console with the `library_editor` role. Tenants see library updates and
-can report problems.
+the console with the `library_editor` role, which bleqq keeps and staffs with
+nobody — it is how the platform watches what the agents decided, takes a
+proposal over, and switches a human approver back on without rework. Tenants
+see library updates and can report a problem, and that report stays inside the bank that filed it: no
+editor, other bank, agent or model reads it, and the library is corrected
+instead by the watch agents' re-check, which proposes the correction like any
+other (D-50, ADR 0043).
+
+A bank reads none of that queue. It reads the other end of it: `GET /library-updates`
+lists what was approved and applied since it last marked the library as seen, titled by
+the library record and never by the request that carried it, cut to its own footprint,
+naming no person, and naming by definition key the agents that proposed or confirmed a
+change (INV-05, D-62). Its own requests to a shared list it follows through
+`GET /tenant/proposals`, which answers its rows and no other bank's.
+
+A bank's own private records travel the same table but never the console: the
+server sets the proposal's owner from the target, and a second person in the
+same bank approves under `private_records.approve` with a passkey, through the
+same apply code and the same four-eyes constraint (D-57, ADR 0050).
+
+One check function guards the standards rules (INV-08, D-35, D-36) on every door into the
+library: at `POST /proposals`, at the agent's proposal creation, over a
+reviewer's corrections at approval and at apply. A payload is stored when a
+proposal is created, so a check only at apply would leave licensed text in the
+platform database. It reads the instrument level's kind and the term dimension's kind,
+never a key, and answers four codes: `licensed_text` for a provision or provision version
+under a standard, or a source on a standard's obligation that is not an https link;
+`one_conformance_obligation` for a new obligation under a standard that already holds an
+active one; `standard_term_required` for a standard's obligation whose scope would hold no
+standard term or two; and `standard_term_only_on_standards` for a standard's term on a law's
+obligation, a new one included. The trigger `provision_not_under_standard` (library 0008)
+refuses a standard's provision in the database whatever writes it, so PRO-S10 proves the
+provision version case on the check itself: there is no standard's provision to version.
+
+The kinds are chunk 2's vocabulary and term kinds plus `new_obligation_version`: a new
+summary in force from a date, with the scope terms that come with it. `new_instrument` and
+`new_obligation` bring a record the library does not hold yet: they name no target, every
+fact they set carries an https link as its source, and the proposal's `sourceUrl` becomes
+the record's own source. An instrument's regime is a term of the regime dimension, or 422
+`not_a_regime` at creation, over a correction and at apply (D-39). Approval writes the
+record, a new obligation's first version (naming the proposal, so the proposing side reads
+as for any version), the audit row and the re-index in one transaction, and stamps who
+confirmed it: `verified_origin` `agent` with the confirming agent, or `user`. An agent's
+approval of either still waits for a person (D-79) until the vocabulary and term
+provenance lands; the stamp is proven through the apply itself meanwhile. The proposal
+keeps its sources field by field; there is no citation table yet. `update_obligation` and
+`retire_record` wait for a scenario that needs them, and a watch link never travels as a
+proposal (D-64). PRO-S1, PRO-S3, PRO-S5 and PRO-S6 cover the two kinds beside the kinds
+they were written for: a source per fact, one transaction with the re-index, four eyes and
+the idempotent retry. `new_provision` brings a node of a law's text with its first verbatim
+text, sourced like a new record, and `new_provision_version` a later text of a provision
+that exists, sourced like an obligation version (proposals 0005). Each writes its version,
+naming the proposal, its audit row and the provision's re-index in one transaction. Both may
+be corrected; an agent's approval of either waits for a person (D-79), since a provision
+version has no column to say an agent confirmed it. A bank's library updates list them
+uncut, as a record of the library rather than a duty. A proposal a bank's
+own person or agent makes is linked to that bank in `proposal_tenant`, a tenant table, so
+the bank can follow its own proposals while the console sees only that one came from a
+bank, never who made it.
 
 Deliberately simplified for R1: batch proposals (re-tag, backfill) with a
 row-by-row review wait for R2.
@@ -28,16 +113,36 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| PRO-01 | The review queue is the only way into the library, for agents and people, with a source per changed field | M | R1 | in_progress |
-| PRO-02 | Approval applies the payload, writes the version, the audit row and the re-index in one transaction; the reviewer can correct scope and wording first; never the proposer | M | R1 | in_progress |
-| PRO-03 | The queue lives in the platform console; tenants see library updates and can report problems | M | R1 | pending |
+| PRO-01 | The review queue is the only way into the library, for agents and people, with a source per changed field | M | R1 | built |
+| PRO-02 | Approval applies the payload, writes the version, the audit row and the re-index in one transaction; the reviewer can correct scope and wording first; never the proposer | M | R1 | built |
+| PRO-03 | The queue lives in the platform console; tenants see library updates and can report a problem, which stays inside their bank. A bank's private records are proposed and approved inside the bank and never reach the console (D-50, D-57). R1 builds the platform queue, library updates and the bank's own problem reports; a bank's private records (INV-07, PRO-S12) are chunk 13, R3 | M | R1 | built |
 | PRO-04 | Batch proposals (re-tag, backfill) with a preview, approved whole or row by row | S | R2 | pending |
+
+PRO-03 is `built` for R1 (R1 close, 2026-09-24). The console queue, the bank's "Library
+updates" screen (`/inventory/updates` over `GET /library-updates`) and "This looks wrong" on
+each of its rows, filed through the same report form the obligation card uses and kept
+inside the bank, are proven by PRO-S7 at the integration level and by its journey in the
+merged batch run. Its last clause, a bank's private records (PRO-S12, INV-07), is R3 and
+waits for chunk 13; it is named as the cut, not built.
+
+PRO-S13's journey (pro-s13-journey) runs end to end: the console mints a `library-confirmer`
+key with `agent-runs:write` and `proposals:review`, which opens a run, reads the queue and
+the detail of the proposal `watch-sweeper` filed through its own key (seeded on
+`obl-product-governance`, no other journey's), approves it with the model call behind the
+decision and that run, and closes the run. A library editor then finds it under Approved,
+applied by the agent and machine-confirmed, and a bank's reader finds version 2 on the card
+labelled as proposed by one agent and confirmed by the other. A key of the same agent
+without `proposals:review` answers 403 at the queue. The 422 and 404 refusals, the logged
+call and the audit row stay proven at the integration level (`test_pro_s13`).
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
 - **AC-PRO1** No API key scope and no tenant role can change a library record
   except through an approved proposal.
-- **AC-PRO2** Approving your own proposal answers 409 `four_eyes_violation`.
+- **AC-PRO2** Approving your own proposal answers 409 `four_eyes_violation`,
+  for a person and for an agent alike: the same user, the same key or the same
+  agent definition on both sides is refused, and the check constraint refuses
+  the row on its own.
 - **Playbook rules:** `Idempotency-Key` on proposal submission because agents
   retry; a proposal carries the source for every changed field; `proposal_kind`
   and `proposal_status` are kinds in code; rejection needs a reason and is
@@ -53,9 +158,11 @@ updating this file.
 ### PRO-S1 — A proposal carries a source per changed field `@integration` (PRO-01)
 ```gherkin
 Given an agent key with proposals.write
-When it submits a proposal that changes an obligation's summary and duty type
+When it submits a proposal that changes an obligation's summary and scope terms
 Then each changed field carries a source reference
 And a proposal missing a source for any field answers 422 with code "source_missing"
+And a source that is neither an https link nor a provision of the library is refused
+And a source given for a field the proposal does not change is refused
 And the proposal is "Waiting for approval" in the queue
 ```
 
@@ -113,6 +220,7 @@ When the editor opens the console
 Then the queue lists waiting proposals with the source beside the diff
 When a proposal is applied
 Then the tenant's "Library updates" lists it and "This looks wrong" opens a problem report
+And that report is readable inside the bank only: the console has no problem-report surface and no platform session returns it
 ```
 
 ### PRO-S8 — A batch proposal previews and is approved whole or row by row `@integration` `@e2e` (PRO-04)
@@ -131,4 +239,80 @@ When the editor rejects it without a reason
 Then the request answers 422
 When they reject it with a reason
 Then the proposal is rejected, the proposer is notified with the reason and an audit event records it
+And the reason list holds the system row "Outside the sector scope", whose usage note names the PRD's sector scope
+```
+
+### PRO-S10 — Licensed text and extra obligations never enter a standard `@integration` (INV-08, PRO-01, PRO-02, AC-INV2)
+```gherkin
+Given the instrument "ISO/IEC 27001:2022" whose level kind is standard
+When a provision or provision_version proposal on it is submitted through POST /proposals or the agent API
+Then it is refused at creation with 422 "licensed_text" and no proposal row is stored
+When a proposal for its conformance obligation carries a field source that is not a URL
+Then it is refused at creation with 422 "licensed_text"
+When a reviewer's correction adds provision text to a pending proposal and approves it
+Then the approval answers 422 "licensed_text" and nothing is written
+When a new_obligation proposal adds a second active obligation under it
+Then the apply answers 422 "one_conformance_obligation"
+When an obligation under it carries no term of an opt-in dimension, or two
+Then the apply answers 422 "standard_term_required"
+And a provision row inserted under it directly, as a seed would, is refused by the database
+```
+
+### PRO-S11 — A standard term never sits on a law's obligation `@integration` (FP-01, INV-08, AC-FP3)
+```gherkin
+Given an obligation under a level whose kind is not standard
+When a new_obligation_version proposal adds a standard's term to it
+Then it is refused at creation with 422 "standard_term_only_on_standards"
+When a reviewer's correction adds that term to a pending proposal and approves it
+Then the approval answers 422 "standard_term_only_on_standards" and nothing is written
+When a proposal filed before this rule asks for that term and is approved as it stands
+Then the approval answers the same and nothing is written
+When a new_obligation proposal under that level carries a standard's term
+Then it is refused at creation, and at apply when stored before the rule, with the same code
+And a tenant whose regulatory scope names no standard still sees the obligation
+```
+
+### PRO-S12 — A private proposal is approved inside the bank and never reaches the console `@integration` (INV-07, PRO-03)
+```gherkin
+Given a compliance officer in tenant A who proposed a private instrument
+Then the proposal carries owner_tenant_id A, set by the server and not by the request body
+And the console queue never lists it, and a library editor's fetch answers 404
+When the same officer approves it
+Then the response is 409 "four_eyes_violation"
+When a second person in tenant A with private_records.approve approves it with a fresh step-up
+Then the payload is applied, and the audit and outbox rows are written in tenant A's zone
+When a member of tenant A files a proposal against a shared record
+Then its owner stays empty and the console queue lists it as before
+```
+
+### PRO-S13 — An independent agent confirms a proposal from the same queue `@integration` `@e2e` (PRO-01, PRO-02, AUD-02)
+```gherkin
+Given a proposal filed by the agent "watch-sweeper" through its own key
+And a second platform key bound to a different agent definition, holding the scope "proposals:review"
+When that key reads the pending proposals through the queue route a person reads
+Then it sees the same proposal with the same source beside the same diff
+When it approves, corrects or rejects through the same routes
+Then the decision applies exactly as a person's does, in one transaction
+And a decision sent without the model call behind it answers 422, and one naming a run of another agent's key answers 404, and neither applies anything
+And a correction by the agent that moves the original language answers 422 and applies nothing
+And the model call behind each decision is logged against the proposal in the run the agent named
+And the audit row names the confirming agent, its definition version, its key and that run, and carries no step-up assertion
+When it approves a vocabulary proposal from the same queue
+Then the list row names the confirming agent and the proposal, every label it wrote is stored machine-made, and the list read names both agents and no person
+And a key without the review scope answers 403
+And no route under the review scope writes a library row except through apply
+```
+
+### PRO-S14 — The same principal can never both propose and approve `@integration` (PRO-02, AC-PRO2)
+```gherkin
+Given a proposal filed by an agent key
+When the same key approves it
+Then the request answers 409 with code "four_eyes_violation"
+When a second key of the same agent definition approves it
+Then the request answers 409 with code "four_eyes_violation"
+When the row is written directly, bypassing the logic
+Then the check constraint refuses it for a repeated user, key or agent alike
+And it refuses a reviewing key that names no agent, so two unbound keys cannot pass on nulls
+And such a key is refused before that, on every route of the queue, with 403 "agent_not_bound"
+And a key of a different agent definition approves it and the change applies
 ```

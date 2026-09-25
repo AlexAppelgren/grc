@@ -19,12 +19,42 @@ creation, role and security changes, re-enrolment) ask for a fresh passkey
 assertion, and the audit event keeps a reference to it. Permissions are
 constants in code; roles are rows the tenant composes from them, so nothing in
 the product branches on a role name. Agents and integrations use scoped API
-keys, and no scope reaches the library.
+keys, and no scope reaches the library. PRD 0.4 (D-62, ADR 0054) adds one
+platform-only scope, `proposals:review`: a key bound to an agent definition may
+read the proposal queue and approve, correct or reject, which still writes the
+library only through an approved proposal. A key can never step up, so the
+four-eyes check constraint, not a passkey, is what stands behind an agent's
+approval.
 
 Deliberately simplified for R1: no self-service recovery of any kind (an admin
 re-issues enrolment), no SSO or SCIM (R3, and they never add a password), and
 credential and session policies are fixed defaults until R2 makes them tenant
 settings.
+
+When SSO arrives in R3 it proves who a person is and nothing more (D-58, ADR
+0051): for an address on a bank's verified domain the identity provider replaces
+the emailed code at enrolment and re-enrolment, and with enforcement on it is
+asked again at every sign-in, after the passkey. There is no sign-in that starts
+at the provider, and SSO never recovers a passkey or replaces step-up. A
+stricter credential policy (D-55, ADR 0048) binds new registrations at once and
+existing passkeys from a notice date the admin sets, so a bank can tighten
+without locking itself out.
+
+PRD 0.5 (D-77, ADR 0056) adds a second kind of credential on the same table. A
+`service` key is bound to an agent access entry (`api_key.agent_access`) and acts
+as it. A `personal` access token is minted by a member holding the new permission
+`tokens.create`, from an authenticated session behind a passkey step-up, and
+**acts as that person**, never exceeding their permissions. One table means one
+hashing path, one revocation path and one security log. A personal token does not
+break "a passkey is the only way in", because the passkey is how the person got
+in to mint it, but that only holds while it is fenced: it cannot open a UI
+session, it cannot step up and so refuses every step-up action, it must carry an
+expiry, and it is revoked on the next request when the person is deactivated,
+loses their membership or loses the permission its scope depends on. The scope
+`tenant:read`, declared since chunk 1 and gated on no route, becomes the scope
+that reaches a tenant's register decisions and nothing else; its published
+description, which still sets it aside for reading the bank's own profile, changes
+when chunk 11 first gates a route with it.
 
 ## 2. Requirements
 
@@ -38,13 +68,14 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID-04 | Users manage passkeys (add, rename, remove, never the last) and see and revoke sessions | M | R1 | built |
 | ID-05 | Recovery: tenant admin re-issues enrolment behind step-up, audited, with notices; the last admin goes through platform support with an out-of-band check | M | R1 | built |
 | ID-06 | Step-up by fresh passkey assertion on the sensitive actions of playbook 4.2, recorded on the audit event | M | R1 | built |
-| ID-07 | Tenant credential policy: synced passkeys allowed, or attested device-bound authenticators required | S | R2 | pending |
+| ID-07 | Tenant credential policy: synced passkeys allowed, or attested device-bound authenticators required. It binds new registrations at once and existing passkeys from the admin's notice date; loosening applies at once (D-55) | S | R2 | pending |
 | ID-08 | Tenant session policy: idle and absolute limits within platform maximums | S | R2 | pending |
 | ID-09 | Permissions are code, roles are rows: seeded system roles plus tenant-defined roles; a tenant always keeps one admin | M | R1 | built |
-| ID-10 | Scoped API keys for agents and integrations, shown once, stored hashed, revocable, with last use | M | R1 | built |
+| ID-10 | Scoped API keys for agents and integrations, shown once, stored hashed, revocable, with last use. A bank's key holds reads and `proposals:write` only; a key bound to one of the platform's agents is minted in the console and alone holds the watch writes and `proposals:review` (D-61, D-62) | M | R1 | built |
 | ID-11 | Security log of sign-ins, failures, enrolments, recoveries and key use | M | R1 | built |
-| ID-12 | SSO (OIDC, SAML), verified domains and SCIM as a tenant option | C | R3 | pending |
+| ID-12 | SSO (OIDC, SAML), verified domains and SCIM as a tenant option. SSO proves identity and never opens a session on its own; with enforcement on it is asked after the passkey at every sign-in (D-58) | C | R3 | pending |
 | ID-13 | Optional IP allow-list per tenant | C | R3 | pending |
+| ACC-03 | Two credential kinds on one table: a service key bound to an agent access entry, and a personal access token minted under `tokens.create` behind a step-up that acts as the person. Both shown once, hashed, expiring, revocable, with a last use and a security log row. A token cannot open a session or step up, and dies with the person | M | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -258,19 +289,33 @@ Then the request answers 409 with code "last_admin"
 ### ID-S20 — An API key is shown once, stored hashed and revocable `@integration` `@e2e` (ID-10)
 ```gherkin
 Given an admin with integrations.manage and a fresh step-up assertion
-When they create a key with the scopes "watch.write" and "proposals.write"
+When they create a key with the scopes "library:read" and "proposals:write"
 Then the plain key appears in that one response and nowhere else
 And the row stores a hash, the scopes, created and an empty last used
 When the key is used
 Then last used updates
 When the key is revoked
 Then the next call with it answers 401
+When they ask for "agent-runs:write", "sources:write" or "changes:write"
+Then the request answers 422 with code "unknown_key" naming the scopes a bank's key may hold
+And a bank's key that already holds one works without it, and the security log records "key_scopes_withheld"
+Given a platform admin with agent_definitions.manage and a fresh step-up assertion
+When they read the platform's agent definitions
+Then each is listed by key, with its identifier, its version and whether it is released
+When they create a key bound to one of them, with scopes that may include "proposals:review"
+Then the plain key appears in that one response and nowhere else
+And the row stores its hash, no tenant and the agent
+And the audit event references the step-up assertion
+And the security log records "key_created", "key_used" and "key_revoked" for it
+When the key is revoked
+Then the next call with it answers 401
 ```
 
 ### ID-S21 — No API key scope allows a library edit `@integration` (ID-10, AC-PRO1)
 ```gherkin
-Given a key holding every scope that exists
-When it writes to an instrument, provision or obligation route directly
+Given a platform key bound to an agent, holding every scope that exists
+And a bank's key holding every scope a bank's key may hold
+When either writes to an instrument, provision or obligation route directly
 Then every such route answers 403 or does not exist
 And the only library-bound write it can make is a proposal
 ```
@@ -286,9 +331,10 @@ And the log table refuses update and delete
 ### ID-S23 — SSO and SCIM never introduce a password `@integration` (ID-12)
 ```gherkin
 Given a tenant that switched on an OIDC provider with a verified domain
-When a member signs in through it
-Then the app stores no password and still requires a passkey for step-up
+When a member enrols through it
+Then the identity provider replaces the emailed code and no password is stored anywhere
 And SCIM provisioning creates members in "invited" state without a credential
+And step-up still asks for a fresh passkey assertion
 ```
 
 ### ID-S24 — A tenant IP allow-list blocks other addresses `@integration` (ID-13)
@@ -313,4 +359,99 @@ Given a reader without cases.triage
 When they call the triage endpoint
 Then the response is 403 with detail, code "permission_denied" and requiredPermission "cases.triage"
 And the Restricted screen shows the server's detail and the missing grant in plain words
+```
+
+### ID-S27 — SSO proves who a person is and never opens a session on its own `@integration` (ID-12)
+```gherkin
+Given a tenant with enforcement on and a member whose account is linked
+When the member signs in
+Then the passkey is verified first and the response says the identity provider is next
+And the challenge is single-use and bound to the user, the tenant, the assertion and this browser
+When a response arrives that no challenge asked for, or in a URL rather than a POST
+Then it is refused and the security log records "idp_failed"
+And there is no route that starts a sign-in at the identity provider
+And on a verified domain the provider replaces the emailed code at enrolment and re-enrolment
+```
+
+### ID-S28 — A SCIM key carries one scope and its default role holds no admin permission `@integration` (ID-12)
+```gherkin
+Given an admin with security.manage, members.manage and a fresh step-up assertion
+When they create a SCIM key on the SSO route
+Then the key carries the single scope "scim" and is shown once
+When the same scope is asked for on the general API key route
+Then the request answers 422
+When the SCIM default role is set to, or later edited to hold, members.manage, roles.manage, security.manage or integrations.manage
+Then the request is refused, and a SCIM create with such a role is refused too
+```
+
+### ID-S29 — A stricter passkey policy binds new passkeys now and old ones from its notice date `@integration` (ID-07)
+```gherkin
+Given a tenant whose policy becomes device-bound with a notice date 14 days ahead
+When a member registers a synced passkey today
+Then the registration answers 422 with code "credential_policy"
+When a member signs in with an existing synced passkey before the notice date
+Then the sign-in succeeds
+When the same member signs in after the notice date
+Then the response is 403 with code "credential_policy" and the security log records it
+When an admin sets a date or an allow-list that would refuse their own passkeys
+Then the request answers 409
+
+### ID-S30 — A bank invitation never reaches platform staff `@integration` (ID-01, ID-02, ID-03)
+```gherkin
+Given an address that holds a platform role
+When a tenant admin invites it into the bank
+Then the answer is 422 "platform_account" and no invitation is written
+Given a bank invitation whose address is granted a platform role afterwards
+When the invited person enters the emailed code and registers their first passkey
+Then the answer is 422 "platform_account" with no passkey, no membership and no audit row written
+```
+
+### ID-S31 — The review scope reaches the queue and never a library row `@integration` (ID-10, AC-PRO1, AC-ID3)
+```gherkin
+Given a platform key bound to an agent definition and holding "proposals:review"
+When it reads the proposal queue and approves, corrects or rejects a proposal it did not file
+Then each call succeeds and the change reaches the library only through apply
+And a library list value it approves reaches the library the same way, stamped as confirmed by that agent
+When it writes to an instrument, provision, obligation or library vocabulary route
+Then every such route answers 403 or does not exist, as ID-S21 already proves for every scope
+When a key without "proposals:review" calls the same review routes
+Then the request answers 403 naming the missing scope
+When a key tries a step-up
+Then there is no path for it: a key holds no assertion, and the review routes ask for none
+And a tenant key carrying "proposals:review" is refused: the scope is platform-only
+```
+
+### ID-S32 — A member marks the library as seen and only their own bookmark moves `@integration` (PRO-03, AUD-01, AC-AUD1)
+```gherkin
+Given a member of a bank whose library bookmark stands at an earlier date
+When the tenant app records their visit
+Then the answer is 204, their bookmark stands at now and no colleague's bookmark moved
+And one audit event in that bank records the visit with the bookmark before and after
+When a platform session records a visit
+Then the answer is 404 and nothing is written
+```
+
+### ACC-S3 — A service key acts as the entry and a personal token acts as the person `@integration` `@e2e` (ACC-03)
+```gherkin
+Given an agent access entry and a member holding tokens.create
+When an admin issues a service key for the entry with a step-up
+Then the audit rows of its reads name the entry, not the key id
+When the member mints a personal access token with a fresh passkey assertion
+Then the token is shown once, carries an expiry, and the audit rows of its reads name the member
+And the token's effective permissions are the member's permissions intersected with its scopes
+When a member without tokens.create tries to mint one
+Then the request answers 403
+When either credential is used
+Then the security log records it with its own method, beside sign-ins and key use
+```
+
+### ACC-S9 — A personal token can never step up and dies with the person `@integration` (ACC-03, AC-ACC3)
+```gherkin
+Given a personal access token held by a compliance officer
+When it calls any route carrying @requires_step_up
+Then the request answers 403 "step_up_required" and there is no route by which the token could obtain an assertion
+When the officer is deactivated, loses their membership, or loses the permission the token's scope depends on
+Then the next request on that token is refused, without waiting for a sweep
+When a token is minted with no expiry
+Then the request is refused
 ```

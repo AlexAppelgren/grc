@@ -108,3 +108,7 @@ for _name in ("django", "apps"):
 # (12) E2E flag off: the deterministic-code path is tested explicitly by overriding this
 #      per test, never by running the whole suite in E2E mode.
 E2E_MODE = False
+
+# (13) Django's runner with one addition: CI may run one shard of the suite (TEST_SHARD=i/N)
+#      so the suite finishes on parallel runners; unset, it is Django's runner unchanged.
+TEST_RUNNER = "config.test_runner.ShardingDiscoverRunner"

@@ -6,7 +6,21 @@ Every factory that writes a tenant row activates that tenant first, because the 
 runner's own connection is the table owner and FORCE ROW LEVEL SECURITY applies to it
 too: a tenant row is invisible and unwritable until `tenancy.activate()` has run in the
 transaction (playbook 14). The activation lasts until the test's savepoint is rolled
-back, or until the next factory activates another tenant."""
+back, or until the next factory activates another tenant.
+
+**No factory here writes or names a library model.** The library fence
+(apps/shared/tests_library_fence.py) treats this file as a production module, so it may
+neither open `library_write()` or `watch_write()` nor name a `LibraryModel` beside a
+write call — that is what keeps a fixture from being a way round the fence. Builders that
+need one live in the app's own `testing.py`, which the fence exempts:
+
+| What you want | Where it is |
+|---|---|
+| An instrument, a provision, an obligation | `apps/library/testing.py` |
+| A source, a source check, a change with its timeline, pages, flags, scope terms and obligation links | `apps/watch/testing.py` |
+| An agent, a platform key bound to it, a platform run | `apps/agents/testing.py` |
+| A bank's case, its obligation-link decision, two banks with different footprints | `apps/cases/testing.py` |
+"""
 
 from __future__ import annotations
 
@@ -19,7 +33,7 @@ from types import SimpleNamespace
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import FootprintChangeRequest, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, VocabularySuggestion
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -62,7 +76,7 @@ def tenant(*, name: str | None = None, slug: str | None = None, timezone: str = 
         TenantContentLanguage.objects.create(tenant=row, language=english, sort_order=0)
         roles_logic.ensure_system_roles(row)
         # The tenant's own lists (chunk 2, apps/taxonomy/tenant_hooks.py), as a new tenant has them.
-        ensure_tenant_vocabularies(row)
+        ensure_tenant_vocabularies(row, actor=Actor.system("test_factory"))
     return row
 
 
@@ -128,8 +142,13 @@ def invitation(tenant: Tenant, *, email: str | None = None, roles: Iterable[str]
     return row
 
 
-def api_key(tenant: Tenant, *, name: str = "Agent key", scopes: Iterable[str] = ("changes:write",)) -> SimpleNamespace:
-    """A live key in `tenant`: `.id`, `.row` (the ApiKey) and `.plain_key` (shown once)."""
+def api_key(tenant: Tenant, *, name: str = "Agent key", scopes: Iterable[str] = ("library:read",)) -> SimpleNamespace:
+    """A live key in `tenant`: `.id`, `.row` (the ApiKey) and `.plain_key` (shown once).
+
+    `scopes` are written as given, so a test can stand up a key a bank could only hold from
+    before the watch writes became platform-only (PLATFORM_ONLY_SCOPES): such a key works
+    without them (apps/identity/api_keys_logic.py:resolve_api_key). The default is one a
+    bank's key may hold today."""
     plain, prefix, key_hash = tokens.new_api_key()
     with transaction.atomic():
         tenancy.activate(tenant.id)
@@ -148,7 +167,13 @@ def tenant_role_key(tenant: Tenant) -> SimpleNamespace:
 
 
 def footprint_request(tenant: Tenant) -> FootprintChangeRequest:
-    """The tenant-isolation guard's record for footprint request routes: a pending request."""
+    """The tenant-isolation guard's record for footprint request routes: the tenant's
+    pending request, reused when one waits, because a second cannot (FP-S6)."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        waiting = FootprintChangeRequest.objects.filter(tenant=tenant, status=ApprovalStatus.PENDING.value).first()  # ordering: at most one pending row per tenant, by constraint
+    if waiting is not None:
+        return waiting
     requester = member_user(tenant, roles=("compliance_officer",))
     with transaction.atomic():
         tenancy.activate(tenant.id)

@@ -5,8 +5,9 @@ import type { MessageKey } from '@/shared/i18n';
 // (`PRODUCT_NAME`) and the frontend mirrors it at build time.
 export const productName: string = process.env.NEXT_PUBLIC_PRODUCT_NAME ?? 'Compliance Watch';
 
-// Empty until the owner supplies one (docs/TODO_FOR_alex.md). Screens hide the
-// support link while it is empty rather than showing a placeholder address.
+// An email address, empty until the owner supplies one (docs/TODO_FOR_alex.md).
+// The public page's "Write to us" opens a mail to it; while it is empty the
+// link is hidden rather than showing a placeholder address.
 export const supportContact: string = process.env.NEXT_PUBLIC_SUPPORT_CONTACT ?? '';
 
 // The accessible name of the phonetic wordmark, in the user's language.

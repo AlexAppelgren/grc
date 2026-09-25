@@ -1,14 +1,25 @@
 #!/usr/bin/env bash
 # Boots the backend for E2E (playbook 8.3): drops and recreates the throwaway E2E
 # database, migrates it from zero (which proves the migration graph applies), seeds
-# seed_e2e, starts a real Celery worker, then serves Django with the E2E flag and mock
-# adapters. Playwright's webServer waits for /health/ on the port below, and /health/
+# seed_e2e, starts a real Celery worker and beat, then serves Django with the E2E flag
+# and mock adapters. Playwright's webServer waits for /health/ on the port below, and /health/
 # only answers 200 when the database, pgvector, the cache and the worker all answer, so
 # a journey never starts against a half-booted stack.
 #
 # The server runs under config.settings as cw_app (DATABASE_URL), never as the migrator:
 # row-level security must be real in E2E or J-8 proves nothing. Migration and seeding run
 # as cw_migrator, exactly as docker-entrypoint.sh does on a deploy.
+#
+# Two extra modes, both for the cold-start journey (docs/runbooks/FIRST_RUN_SETUP.md):
+#
+#   E2E_COLD_START=1        boot exactly as a deploy boots — migrate, then seed_reference,
+#                           and nothing else. No seed_e2e, no fixture, no extra row.
+#   start-backend.sh manage run one management command against this same database as
+#     <command> [args...]   cw_app and exit, the way a person runs one on the api shell.
+#
+# Both keep E2E_MODE and the mock adapters, so the emailed code stays deterministic and
+# no mail or model call leaves the machine. The Playwright config gives the cold-start
+# run its own database name and its own ports, so it can never touch the seeded run.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -56,17 +67,40 @@ export EMBEDDER_PROVIDER=mock
 export AGENT_RUNNER=mock
 export MAIL_PROVIDER=mock
 export STORAGE_BACKEND=local
+# No persistent connections under runserver: it starts a thread per request, and each
+# thread's connection outlives it, so with a max age every request leaks one until
+# Postgres runs out of slots (CI, 2026-09-23: "too many clients already" after 84
+# journeys). Django's own guidance for the development server; gunicorn keeps its default.
+export DATABASE_CONN_MAX_AGE_S=0
 export REDIS_URL="${REDIS_URL:-redis://localhost:6379/1}"
 export CORS_ALLOWED_ORIGINS="${CORS_ALLOWED_ORIGINS:-http://localhost:3000}"
 export WEBAUTHN_RP_ID="${WEBAUTHN_RP_ID:-localhost}"
 export WEBAUTHN_ORIGINS="${WEBAUTHN_ORIGINS:-http://localhost:3000}"
 export MIGRATOR_DATABASE_URL="$MIGRATOR_E2E_URL"
 
+# `manage`: one command against the database this script boots, as cw_app, then exit.
+# Nothing is recreated and nothing is seeded, so it is only ever run while the stack is
+# up. bootstrap_platform is not exempt from the database role guard (config/settings.py),
+# which is the point: a person runs it on the api service, as the app role, under
+# row-level security, and so does the journey.
+if [ "${1:-}" = "manage" ]; then
+  shift
+  export DATABASE_URL="$APP_E2E_URL"
+  exec "$PY" manage.py "$@"
+fi
+
 echo "start-backend: recreating $E2E_DB and migrating from zero (as cw_migrator)"
 DATABASE_URL="$MIGRATOR_URL" "$PY" manage.py migrate_from_zero --name "$E2E_DB" --keep
 
-echo "start-backend: seeding seed_e2e (as cw_migrator)"
-DATABASE_URL="$MIGRATOR_E2E_URL" "$PY" manage.py seed_e2e
+if [ "${E2E_COLD_START:-0}" = "1" ]; then
+  # What a deploy does and no more (backend/docker-entrypoint.sh): the reference seeds as
+  # cw_app, then serve. Everything the cold-start journey needs, a first deploy has too.
+  echo "start-backend: cold start, seeding reference data only (as cw_app)"
+  DATABASE_URL="$APP_E2E_URL" "$PY" manage.py seed_reference
+else
+  echo "start-backend: seeding seed_e2e (as cw_migrator)"
+  DATABASE_URL="$MIGRATOR_E2E_URL" "$PY" manage.py seed_e2e
+fi
 
 export DATABASE_URL="$APP_E2E_URL"
 
@@ -78,8 +112,13 @@ mkdir -p "$(dirname "$WORKER_LOG")"
 echo "start-backend: starting a Celery worker (log: $WORKER_LOG)"
 "$CELERY" -A config worker --pool=solo --loglevel=warning --without-gossip --without-mingle   >"$WORKER_LOG" 2>&1 </dev/null &
 WORKER_PID=$!
+# Beat, as its own process the way a deploy runs it (playbook 12), because a registered
+# change opens each bank's case on the outbox cursor beat drives (CAS-01), and J-4 reads
+# that case in the feed. Its own process rather than the worker's -B, which Windows lacks.
+"$CELERY" -A config beat --loglevel=warning --schedule "${WORKER_LOG%.log}-beat-schedule" >"${WORKER_LOG%.log}-beat.log" 2>&1 </dev/null &
+BEAT_PID=$!
 cleanup() {
-  kill "$WORKER_PID" 2>/dev/null || true
+  kill "$WORKER_PID" "$BEAT_PID" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
 

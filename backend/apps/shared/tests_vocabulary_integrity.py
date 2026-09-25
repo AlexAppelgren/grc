@@ -9,6 +9,10 @@ retire-never-delete) are proven on a throwaway model.
 
 Proven to fail 2026-09-19 by defining a concrete vocabulary in apps/taxonomy/models.py
 with no label model: the test named the vocabulary and what it lacked.
+
+Every registry entry must also name its own model's label model (the pairing
+apps/taxonomy/registry.py relies on). Proven to fail 2026-09-19 by pointing
+rejection_reason at FlagLabel: the test named the list and both models.
 """
 
 from __future__ import annotations
@@ -21,6 +25,7 @@ from django.test import TestCase
 from apps.shared import factories
 from apps.shared.management.commands.seed_reference import REFERENCE_SEEDS
 from apps.shared.vocabulary import TenantVocabulary, Vocabulary, VocabularyLabel, label_for
+from apps.taxonomy.registry import REGISTRY
 
 
 def concrete_vocabularies() -> list[type[Vocabulary]]:
@@ -66,6 +71,16 @@ class VocabularyIntegrityGuard(TestCase):
             except ProgrammingError:
                 problems.append(f"{name}: table {vocabulary._meta.db_table} does not exist (no migration)")
         self.assertEqual(problems, [], "Vocabulary integrity problems:\n  " + "\n  ".join(problems))
+
+    def test_every_registry_list_names_its_models_own_label_model(self) -> None:
+        # The generic routes write a list's labels through the registry's label_model; a
+        # copied entry naming another list's label model would file them under that list.
+        wrong = [
+            f"{name}: {entry.label_model.__name__} is not the label model of {entry.model.__name__}"
+            for name, entry in REGISTRY.items()
+            if label_model_for(entry.model) is not entry.label_model
+        ]
+        self.assertEqual(wrong, [])
 
 
 class ProbeVocabulary(Vocabulary):

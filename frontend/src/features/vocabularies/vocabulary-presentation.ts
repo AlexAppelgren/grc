@@ -1,7 +1,7 @@
 import type { PillTone } from '@/components/ui/pill-tones';
 import { pillToneNames } from '@/components/ui/pill-tones';
 import { byOrder, type PresentedPill } from '@/features/shared/presentation-types';
-import { complianceTone, severityTone, slotTone } from '@/features/shared/tone-by-kind';
+import { complianceTone, proposalStatusTone, severityTone, slotTone } from '@/features/shared/tone-by-kind';
 import type { MessageKey, Translate } from '@/shared/i18n';
 import { problemFrom } from '@/shared/utils/problem';
 
@@ -164,7 +164,9 @@ export function exactDuplicateFrom(error: unknown): NearDuplicateCandidate[] | n
 // The list names the API uses are keys; their titles come from the catalog
 // so a list an admin has never seen still reads as a phrase. A list the
 // catalog does not know yet reads as its key in plain words.
-const listTitle: Readonly<Record<string, MessageKey>> = {
+// Exported so a test can prove every key resolves in every catalog (chunk4-T20), without
+// a second, hand-kept list of list names that would drift from this one.
+export const listTitle: Readonly<Record<string, MessageKey>> = {
   tenant_tag: 'admin.vocabularies.list.tenant_tag',
   tenant_role: 'admin.vocabularies.list.tenant_role',
   compliance_status: 'admin.vocabularies.list.compliance_status',
@@ -187,9 +189,17 @@ const listTitle: Readonly<Record<string, MessageKey>> = {
   source_kind: 'admin.vocabularies.list.source_kind',
   jurisdiction: 'admin.vocabularies.list.jurisdiction',
   language: 'admin.vocabularies.list.language',
+  // PRO-01: the reasons a proposal is rejected for, a library vocabulary list without a
+  // kind since chunk4-T2 (docs/plans/briefs/CHUNK4_TASKS.md "DEFAULTS TAKEN"). The keys
+  // are written beside every other list's here by chunk4-T14, the first task that
+  // renders the list, in this file's own catalog pair rather than console/{en,sv}.json
+  // (T14's nominal owned path for them): every other `admin.vocabularies.list.*` and
+  // `.marker.*` key lives here, and a lone pair in a different file would drift from
+  // that convention for no reason next to it.
+  rejection_reason: 'admin.vocabularies.list.rejection_reason',
 };
 
-const listMarker: Readonly<Record<string, MessageKey>> = {
+export const listMarker: Readonly<Record<string, MessageKey>> = {
   tenant_tag: 'admin.vocabularies.marker.tenant_tag',
   tenant_role: 'admin.vocabularies.marker.tenant_role',
   compliance_status: 'admin.vocabularies.marker.compliance_status',
@@ -212,6 +222,7 @@ const listMarker: Readonly<Record<string, MessageKey>> = {
   source_kind: 'admin.vocabularies.marker.source_kind',
   jurisdiction: 'admin.vocabularies.marker.jurisdiction',
   language: 'admin.vocabularies.marker.language',
+  rejection_reason: 'admin.vocabularies.marker.rejection_reason',
 };
 
 export function humaniseListKey(list: string): string {
@@ -251,4 +262,9 @@ export function keyFromLabel(label: string): string {
 
 export function changeSummary(proposal: Pick<ProposalRef, 'title'>, t: Translate): string {
   return t('admin.vocabularies.proposed', { title: proposal.title });
+}
+
+/** A proposal this bank made on a library list and is still waiting on: the open status's tone. */
+export function presentPendingProposal(t: Translate): PresentedPill[] {
+  return [{ key: 'proposal:open', label: t('admin.vocabulary.waitingForReview'), tone: proposalStatusTone.open, order: 0 }];
 }

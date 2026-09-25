@@ -18,7 +18,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}'],
+    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.mjs'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json-summary'],
@@ -32,6 +32,10 @@ export default defineConfig({
         'src/features/vocabularies/**': { lines: 99, branches: 98, functions: 99, statements: 99 },
         // Measured 2026-09-19 (chunk 2, 5 test files): lines 100.0, branches 100.0, functions 100.0, statements 100.0
         'src/features/footprint/**': { lines: 99, branches: 99, functions: 99, statements: 99 },
+        // Measured 2026-09-21 (chunk 5, the watch data layer and the coverage
+        // presentation, 4 test files, 94 statements): lines 100.0, branches
+        // 100.0, functions 100.0, statements 100.0
+        'src/features/watch/**': { lines: 96, branches: 96, functions: 96, statements: 96 },
         // Measured 2026-09-19 (chunk 2, the picker, 1 test file): lines 100.0, branches 98.9, functions 100.0, statements 99.0
         'src/components/vocabularies/**': { lines: 99, branches: 98, functions: 99, statements: 98 },
         // Measured 2026-09-19 (chunk 1, 6 test files): lines 99.2, branches 96.5, functions 100.0, statements 98.6

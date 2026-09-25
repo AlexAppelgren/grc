@@ -1,7 +1,9 @@
 """Unit tests for the scoring and gate logic of scripts/search_eval.py.
 
-Run with `python scripts/search_eval.py --self-test` (not by `manage.py test apps`: this
-directory is not a Django app, and the harness needs no database)."""
+Run with `python scripts/search_eval.py --self-test`. This directory is not a Django app and
+the harness needs no database, so `manage.py test apps` does not find these tests itself;
+`apps/search/tests_eval.py` runs the self-test instead, because CI runs the gate without
+`--self-test` and nothing that blocks a build would run them otherwise."""
 
 from __future__ import annotations
 
@@ -17,7 +19,14 @@ sys.path.insert(0, str(BACKEND / "scripts"))
 
 import search_eval as se  # noqa: E402
 
-EXPECTED = {"change_type": "adopted", "flags": ["ai"], "scope": {"regime": ["securities", "ai_ict"], "service_type": ["advice"]}, "risk_flags": []}
+EXPECTED = {
+    "in_scope": True,
+    "change_type": "adopted",
+    "flags": ["ai"],
+    "scope": {"regime": ["securities", "ai_ict"], "service_type": ["advice"]},
+    "risk_flags": [],
+    "mirrored_dimensions": ["jurisdiction"],
+}
 
 
 def blank_baseline() -> dict:
@@ -109,6 +118,123 @@ class ClassificationScoring(unittest.TestCase):
         self.assertEqual(result.per_language["da"]["classification_change_type_accuracy"], 1.0)
 
 
+class MirroredTermScoring(unittest.TestCase):
+    """FP-S12, FP-S15: a change's market comes from its authority, never from a term, so a
+    classifier that sends a term of a mirrored dimension has the row's scope wrong however
+    right the rest of it is. Which dimensions mirror is the set's own data, read off the row
+    (`expected.mirrored_dimensions`), never a key the scorer knows."""
+
+    def test_a_predicted_term_of_a_mirrored_dimension_is_a_scope_miss(self) -> None:
+        right = json.loads(json.dumps(EXPECTED))
+        planted = dict(right, scope=dict(right["scope"], jurisdiction=["se"]))
+        self.assertEqual(se.score_classification(EXPECTED, right)["classification_scope_accuracy"], 1.0)
+        self.assertEqual(se.score_classification(EXPECTED, planted)["classification_scope_accuracy"], 0.0)
+        self.assertEqual(
+            se.score_classification(EXPECTED, planted)["classification_change_type_accuracy"], 1.0, "only the scope is a miss"
+        )
+
+    def test_an_empty_list_in_a_mirrored_dimension_sends_nothing(self) -> None:
+        predicted = dict(EXPECTED, scope=dict(EXPECTED["scope"], jurisdiction=[]))
+        self.assertEqual(se.score_classification(EXPECTED, predicted)["classification_scope_accuracy"], 1.0)
+
+    def test_the_mirrored_dimensions_come_from_the_row(self) -> None:
+        planted = dict(EXPECTED, scope=dict(EXPECTED["scope"], channel=["digital"]))
+        self.assertEqual(se.score_classification(EXPECTED, planted)["classification_scope_accuracy"], 1.0, "channel does not mirror here")
+        mirrors_channel = dict(EXPECTED, mirrored_dimensions=["channel"])
+        self.assertEqual(se.score_classification(mirrors_channel, planted)["classification_scope_accuracy"], 0.0)
+
+    def test_the_set_refuses_a_row_without_a_usable_list(self) -> None:
+        for name, expected, message in (
+            ("missing", {k: v for k, v in EXPECTED.items() if k != "mirrored_dimensions"}, "expected.mirrored_dimensions missing"),
+            ("not a list", dict(EXPECTED, mirrored_dimensions="jurisdiction"), "mirrored_dimensions must be a list"),
+            ("an empty key", dict(EXPECTED, mirrored_dimensions=[""]), "mirrored_dimensions must be a list"),
+            (
+                "an expected term of a mirrored dimension",
+                dict(EXPECTED, scope=dict(EXPECTED["scope"], jurisdiction=["se"])),
+                "expects a term of the mirrored dimension jurisdiction",
+            ),
+        ):
+            with self.subTest(name), self.assertRaises(ValueError) as caught:
+                se.validate_classification([scope_row("x", expected)])
+            self.assertIn(message, str(caught.exception))
+
+
+class SectorScopeScoring(unittest.TestCase):
+    """AGT-08, AC-AGT1: whether a text is inside the sector scope, and whether a standard's
+    opt-in term sits on the standard's own records and nowhere else, each scored on its own."""
+
+    def test_in_scope_must_be_stated_and_match(self) -> None:
+        off_sector = dict(OFF_SECTOR)
+        self.assertEqual(se.score_classification(off_sector, {"in_scope": False})["classification_in_scope_accuracy"], 1.0)
+        self.assertEqual(se.score_classification(off_sector, {"in_scope": True})["classification_in_scope_accuracy"], 0.0)
+        self.assertEqual(se.score_classification(EXPECTED, {})["classification_in_scope_accuracy"], 0.0, "a classifier that does not say is wrong")
+
+    def test_standard_terms_compare_as_sets_and_expect_none_unless_stated(self) -> None:
+        standard = dict(EXPECTED, standard_terms=[TERM])
+        self.assertEqual(se.score_classification(standard, {"standard_terms": [TERM]})["classification_standard_term_accuracy"], 1.0)
+        self.assertEqual(se.score_classification(standard, {})["classification_standard_term_accuracy"], 0.0)
+        self.assertEqual(se.score_classification(EXPECTED, {})["classification_standard_term_accuracy"], 1.0)
+        self.assertEqual(se.score_classification(EXPECTED, {"standard_terms": [TERM]})["classification_standard_term_accuracy"], 0.0)
+
+    def test_the_mock_reports_both_metrics_overall_and_per_group(self) -> None:
+        rows = scope_rows()
+        # The mock registers the medical-device rule and tags the law that cites the standard.
+        rows[0]["predictions"] = dict(rows[0]["expected"], in_scope=True)
+        rows[1]["predictions"] = dict(rows[1]["expected"], standard_terms=[TERM])
+        result = se.evaluate_classification(rows, se.MockClassifier(rows))
+        self.assertTrue(result.is_mock)
+        self.assertAlmostEqual(result.metrics["classification_in_scope_accuracy"], 3 / 4)
+        self.assertAlmostEqual(result.metrics["classification_standard_term_accuracy"], 3 / 4)
+        self.assertEqual(result.per_group["off_sector"]["classification_in_scope_accuracy"], 0.0)
+        self.assertEqual(result.per_group["cites_standard"]["classification_standard_term_accuracy"], 0.0)
+        self.assertEqual(result.per_group["standard"]["classification_standard_term_accuracy"], 1.0)
+        self.assertEqual(result.per_group["clean"]["classification_in_scope_accuracy"], 1.0)
+
+    def test_the_set_refuses_a_row_that_breaks_the_scope_rules(self) -> None:
+        for name, row, message in (
+            ("no in_scope", scope_row("x", {k: v for k, v in EXPECTED.items() if k != "in_scope"}), "expected.in_scope missing"),
+            ("in_scope not a boolean", scope_row("x", dict(EXPECTED, in_scope="yes")), "in_scope must be true or false"),
+            ("inside without a regime", scope_row("x", dict(OFF_SECTOR, in_scope=True)), "in_scope and regime disagree"),
+            ("outside with a regime", scope_row("x", dict(EXPECTED, in_scope=False)), "in_scope and regime disagree"),
+            ("a term not in the opt-in dimension", scope_row("x", dict(EXPECTED, standard_terms=["regime:ai_ict"])), "standard_terms must be"),
+            ("a term on an off-sector text", scope_row("x", dict(OFF_SECTOR, standard_terms=[TERM])), "a standard's own record"),
+            ("a term on a law citing a standard", dict(scope_row("x", dict(EXPECTED, standard_terms=[TERM])), cites_standard=True), "a standard's own record"),
+        ):
+            with self.subTest(name), self.assertRaises(ValueError) as caught:
+                se.validate_classification([row])
+            self.assertIn(message, str(caught.exception))
+        se.validate_classification(scope_rows())
+
+
+TERM = "standard:iso_iec_27001"
+OFF_SECTOR = {
+    "in_scope": False,
+    "change_type": "adopted",
+    "flags": [],
+    "scope": {"regime": [], "service_type": []},
+    "risk_flags": [],
+    "mirrored_dimensions": ["jurisdiction"],
+}
+
+
+def scope_row(row_id: str, expected: dict) -> dict:
+    return {"id": row_id, "language": "en", "text": f"text {row_id}", "injection": False, "expected": expected}
+
+
+def scope_rows() -> list[dict]:
+    """An off-sector text, a law citing a standard, the standard's own record and a plain
+    change, each predicted exactly by default."""
+    rows = [
+        scope_row("off", OFF_SECTOR),
+        dict(scope_row("cites", dict(EXPECTED, standard_terms=[])), cites_standard=True),
+        scope_row("standard", dict(EXPECTED, standard_terms=[TERM])),
+        scope_row("clean", EXPECTED),
+    ]
+    for row in rows:
+        row["predictions"] = json.loads(json.dumps(row["expected"]))
+    return rows
+
+
 class Gate(unittest.TestCase):
     def test_not_available_passes_only_while_unrecorded(self) -> None:
         missing = se.TrackResult("not_available", "none", False)
@@ -137,6 +263,21 @@ class Gate(unittest.TestCase):
         self.assertEqual(se.decide("classification", result, recorded_baseline(), tol), [])
         result.metrics["classification_screen_accuracy"] = 0.899
         self.assertEqual(len(se.decide("classification", result, recorded_baseline(), tol)), 1)
+
+    def test_in_scope_and_standard_term_accuracy_fail_below_their_tolerance(self) -> None:
+        tol = tolerance()
+        tol["metrics"]["classification_standard_term_accuracy"] = 0.0
+        result = se.TrackResult("scored", "real", False, metrics={m: 0.9 for m in se.CLASSIFICATION_METRICS})
+        self.assertEqual(se.decide("classification", result, recorded_baseline(), tol), [])
+        result.metrics["classification_in_scope_accuracy"] = 0.86
+        self.assertEqual(se.decide("classification", result, recorded_baseline(), tol), [], "within the tolerance")
+        result.metrics["classification_in_scope_accuracy"] = 0.84
+        result.metrics["classification_standard_term_accuracy"] = 0.899
+        failures = se.decide("classification", result, recorded_baseline(), tol)
+        self.assertEqual(
+            [failure.split(":")[0] for failure in failures],
+            ["classification_in_scope_accuracy", "classification_standard_term_accuracy"],
+        )
 
     def test_record_writes_scored_real_tracks_and_refuses_mock(self) -> None:
         real = se.TrackResult("scored", "apps.search.eval:Retriever", False, metrics={"retrieval_recall_at_10": 0.91234, "retrieval_mrr": 0.8}, rows=53)
@@ -238,11 +379,43 @@ class EndToEnd(unittest.TestCase):
         self.assertEqual(self.run_cli(), 1)
         self.assertIn("injection and risk_flags disagree", self.output[-1])
 
+    def test_the_mock_reports_in_scope_and_standard_term_accuracy(self) -> None:
+        retrieval, _ = self.rows(True)
+        self.write(retrieval, scope_rows(), blank_baseline())
+        self.assertEqual(self.run_cli(), 0)
+        self.assertTrue(any("classification_in_scope_accuracy: 1.000" in line for line in self.output))
+        self.assertTrue(any("classification_standard_term_accuracy: 1.000" in line for line in self.output))
+        self.assertTrue(any(line.strip().startswith("by group off_sector:") for line in self.output))
+
     def test_unknown_evaluator_spec_fails(self) -> None:
         self.write(*self.rows(False), blank_baseline())
         self.assertEqual(self.run_cli("--retriever", "no.such.module:Thing"), 1)
         self.assertIn("cannot be imported", self.output[-1])
         self.assertEqual(self.run_cli("--retriever", "tests_scoring:Missing"), 1)
+
+    def test_a_backend_module_can_be_named_from_the_script(self) -> None:
+        """`apps.search.eval:Retriever` is found although Python puts only scripts/ on the path."""
+        self.write(*self.rows(False), blank_baseline())
+        self.assertEqual(self.run_cli("--retriever", "apps.shared.kinds:Missing"), 1)
+        self.assertIn("Missing is not in apps.shared.kinds", self.output[-1])
+
+    def test_every_run_names_the_tracks_that_do_not_gate_yet(self) -> None:
+        self.write(*self.rows(False), blank_baseline())
+        self.assertEqual(self.run_cli(), 0)
+        self.assertIn("search_eval: no baseline is recorded for retrieval or classification, so a drop there fails nothing yet", self.output)
+
+        half = recorded_baseline()
+        half["tracks"]["retrieval"] = {"recorded": False}
+        half["metrics"].update({m: None for m in se.RETRIEVAL_METRICS})
+        self.write(*self.rows(False), half)
+        self.output.clear()
+        self.assertEqual(self.run_cli("--classifier", "tests_scoring:PerfectClassifier"), 0)
+        self.assertIn("search_eval: no baseline is recorded for retrieval, so a drop there fails nothing yet", self.output)
+
+        self.write(*self.rows(False), recorded_baseline())
+        self.output.clear()
+        self.assertEqual(self.run_cli("--retriever", "tests_scoring:PerfectRetriever", "--classifier", "tests_scoring:PerfectClassifier"), 0)
+        self.assertFalse(any("no baseline is recorded" in line for line in self.output))
 
 
 class PerfectRetriever:
@@ -252,11 +425,31 @@ class PerfectRetriever:
     def search(self, query: str, lang: str, as_of: date | None) -> list[str]:
         return ["a"]
 
+    def ask(self, query: str, lang: str, as_of: date | None) -> list[str]:
+        return ["a"]
+
 
 class EmptyRetriever(PerfectRetriever):
     name = "tests_scoring:EmptyRetriever"
 
     def search(self, query: str, lang: str, as_of: date | None) -> list[str]:
+        return []
+
+    def ask(self, query: str, lang: str, as_of: date | None) -> list[str]:
+        return []
+
+
+class SearchFindsAskDoesNot:
+    """What SRC-S12 expects of the real retriever: the page finds a record, and Ask's
+    passages hold none."""
+
+    name = "tests_scoring:SearchFindsAskDoesNot"
+    is_mock = False
+
+    def search(self, query: str, lang: str, as_of: date | None) -> list[str]:
+        return ["obl-conformance"]
+
+    def ask(self, query: str, lang: str, as_of: date | None) -> list[str]:
         return []
 
 
@@ -283,6 +476,103 @@ class RealSets(unittest.TestCase):
         self.assertTrue(all("predictions" not in r for r in retrieval + classification), "committed sets carry no mock predictions")
         se.validate_baseline(se.load_json(se.EVAL / "baseline.json"))
         se.validate_tolerance(se.load_json(se.EVAL / "tolerance.json"))
+
+    def test_the_sector_scope_rows_are_in_the_committed_set(self) -> None:
+        """AGT-08's rows, proved over the file: every row states whether it is inside the
+        sector scope, and there are at least four off-sector texts, one law that cites a
+        standard and three records of a standard, each metric with its tolerance explained
+        and small enough that one text judged wrong fails the gate."""
+        rows = se.load_jsonl(se.EVAL / "classification.jsonl")
+        self.assertTrue(all(isinstance(r["expected"].get("in_scope"), bool) for r in rows))
+        off_sector = [r for r in rows if not r["expected"]["in_scope"]]
+        cites = [r for r in rows if r.get("cites_standard")]
+        standards = [r for r in rows if r["expected"].get("standard_terms")]
+        self.assertGreaterEqual(len(off_sector), 4)
+        self.assertGreaterEqual(len(cites), 1)
+        self.assertGreaterEqual(len(standards), 3)
+        self.assertEqual({t for r in standards for t in r["expected"]["standard_terms"]}, {TERM})
+        tolerance = se.load_json(se.EVAL / "tolerance.json")
+        for metric in ("classification_in_scope_accuracy", "classification_standard_term_accuracy"):
+            self.assertIn(metric, tolerance["_rationale"])
+            self.assertLess(tolerance["metrics"][metric], 1 / len(rows), f"{metric}: one text judged wrong fails the gate")
+
+
+class TheMirroredTermCase(unittest.TestCase):
+    """The committed set holds a national supervisor's page whose expected scope names no
+    jurisdiction, every row names the jurisdiction dimension as mirrored, and a planted
+    `jurisdiction:se` on that page scores lower through the harness (tax-mirror-refusal)."""
+
+    def test_a_planted_jurisdiction_term_scores_lower_on_the_committed_row(self) -> None:
+        rows = se.load_jsonl(se.EVAL / "classification.jsonl")
+        self.assertTrue(all("jurisdiction" in r["expected"]["mirrored_dimensions"] for r in rows))
+        [row] = [r for r in rows if r["id"] == MIRRORED_CASE]
+        self.assertEqual(row["authority"], "Finansinspektionen", "a national supervisor, whose market is its own")
+        self.assertNotIn("jurisdiction", row["expected"]["scope"])
+        right = dict(row, predictions=row["expected"])
+        planted = dict(row, predictions=dict(row["expected"], scope=dict(row["expected"]["scope"], jurisdiction=["se"])))
+        scored = {
+            name: se.evaluate_classification([r], se.MockClassifier([r])).metrics["classification_scope_accuracy"]
+            for name, r in (("right", right), ("planted", planted))
+        }
+        self.assertLess(scored["planted"], scored["right"])
+
+    def test_the_sweeper_case_names_the_row_and_the_check(self) -> None:
+        cases = se.load_jsonl(BACKEND / "agents" / "watch-sweeper" / "v1" / "evals" / "cases.jsonl")
+        [case] = [c for c in cases if c["case"] == MIRRORED_CASE]
+        self.assertIn("no_mirrored_term", case["checks"])
+        self.assertIn("scope", case["checks"])
+
+
+MIRRORED_CASE = "mj-01"
+
+
+class NoAnswerQuestions(unittest.TestCase):
+    """A retrieval row with no expected keys is a question the library has no answer to
+    (SRC-S12): scored right only when the retriever returns nothing at all."""
+
+    def row(self, **fields: object) -> dict:
+        return {"id": "n", "language": "en", "query": "what does control 5.1 require", "expected": [], "match_kind": "concept", **fields}
+
+    def test_an_empty_expectation_is_right_only_on_an_empty_answer(self) -> None:
+        self.assertEqual(se.recall_at_k([], []), 1.0)
+        self.assertEqual(se.reciprocal_rank([], []), 1.0)
+        self.assertEqual(se.recall_at_k([], ["a"]), 0.0)
+        self.assertEqual(se.reciprocal_rank([], ["a"]), 0.0)
+        self.assertEqual(se.recall_at_k([], ["x"] * se.K + ["a"]), 0.0, "a hit below the top ten is still an answer")
+
+    def test_the_row_validates_and_scores_through_the_harness(self) -> None:
+        rows = [self.row(id="silent", predictions=[]), self.row(id="answers", language="sv", predictions=["obl-costs-charges"])]
+        se.validate_retrieval(rows)
+        result = se.evaluate_retrieval(rows, se.MockRetriever(rows))
+        self.assertEqual(result.per_language["en"], {"retrieval_recall_at_10": 1.0, "retrieval_mrr": 1.0})
+        self.assertEqual(result.per_language["sv"], {"retrieval_recall_at_10": 0.0, "retrieval_mrr": 0.0})
+
+    def test_a_row_via_ask_is_scored_against_asks_passages(self) -> None:
+        """SRC-S12: a question about a standard's control is one Search may answer, since it
+        finds the conformance duty, and Ask may not. So the row names `via: "ask"` and is
+        scored on the passages Ask would give a model, not on the search page."""
+        rows = [self.row(id="ask", via="ask"), self.row(id="search", language="sv")]
+        se.validate_retrieval(rows)
+        result = se.evaluate_retrieval(rows, SearchFindsAskDoesNot())
+        self.assertEqual(result.per_language["en"], {"retrieval_recall_at_10": 1.0, "retrieval_mrr": 1.0})
+        self.assertEqual(result.per_language["sv"], {"retrieval_recall_at_10": 0.0, "retrieval_mrr": 0.0})
+        for bad in ("model", "", None):
+            with self.subTest(via=bad), self.assertRaisesRegex(ValueError, "via"):
+                se.validate_retrieval([self.row(via=bad)])
+
+    def test_the_committed_set_holds_a_question_ask_must_not_answer(self) -> None:
+        rows = [r for r in se.load_jsonl(se.EVAL / "retrieval.jsonl") if r.get("via") == "ask"]
+        self.assertTrue(rows, "SRC-S12's no-answer row gates the release")
+        self.assertTrue(all(r["expected"] == [] for r in rows))
+
+    def test_expected_must_still_be_a_list(self) -> None:
+        for bad in (None, "obl-costs-charges", {}):
+            with self.subTest(expected=bad), self.assertRaises(ValueError):
+                se.validate_retrieval([self.row(expected=bad)])
+        row = self.row()
+        del row["expected"]
+        with self.assertRaisesRegex(ValueError, "expected missing"):
+            se.validate_retrieval([row])
 
 
 if __name__ == "__main__":

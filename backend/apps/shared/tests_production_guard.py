@@ -7,6 +7,11 @@ treated as production (fail closed): `prod`, `Production`, `demo` and `dev` all 
 guard on, `local`, `test` and `ci` are the only non-deployed names, and a host environment
 name alone makes any name deployed.
 
+Two settings' bounds do not name an environment: LIBRARY_DIFF_MAX_SENTENCES is refused
+outside 1 to 200 everywhere, because above 200 one "show what changed" can cost seconds on
+text a source fetched, and API_PAGE_OFFSET_MAX is refused below API_PAGE_SIZE_MAX, because
+under one page no reader reaches a list's second page. DEBUG never relaxes a bound.
+
 Each case names the rule of the production-safety block it proves. The subprocess
 environment is built from scratch (no inherited variable), so the runner's own settings
 cannot leak in. Cases run three at a time; each is a ~1 s interpreter start.
@@ -39,6 +44,7 @@ SETTING_NAMES = (
     "WEBAUTHN_ORIGINS",
     "LLM_PROVIDER",
     "EMBEDDER_PROVIDER",
+    "RERANKER_PROVIDER",
     "AGENT_RUNNER",
     "MAIL_PROVIDER",
     "STORAGE_BACKEND",
@@ -48,6 +54,10 @@ SETTING_NAMES = (
     "DB_ROLE_GUARD_ENABLED",
     "DJANGO_SETTINGS_MODULE",
     "SENTRY_DSN",
+    "LIBRARY_DIFF_MAX_SENTENCES",
+    "API_PAGE_OFFSET_MAX",
+    "API_PAGE_SIZE_MAX",
+    "RATE_LIMITING_ENABLED",
 )
 
 
@@ -91,6 +101,7 @@ class ProductionGuard(TestCase):
             "SECRET_KEY": "a-real-looking-key-for-the-subprocess",
             "LLM_PROVIDER": "anthropic",
             "EMBEDDER_PROVIDER": "none",
+            "RERANKER_PROVIDER": "none",
             "AGENT_RUNNER": "managed_agents",
             "MAIL_PROVIDER": "smtp",
             "STORAGE_BACKEND": "s3",
@@ -173,7 +184,8 @@ class ProductionGuard(TestCase):
             Case(
                 "host name refuses the default key",
                 self._local("ci", DEBUG="false", RAILWAY_ENVIRONMENT_NAME="ci", LLM_PROVIDER="anthropic",
-                            EMBEDDER_PROVIDER="none", AGENT_RUNNER="managed_agents", MAIL_PROVIDER="smtp",
+                            EMBEDDER_PROVIDER="none", RERANKER_PROVIDER="none", AGENT_RUNNER="managed_agents",
+                            MAIL_PROVIDER="smtp",
                             STORAGE_BACKEND="s3", STORAGE_S3_BUCKET="b"),
                 False,
                 "SECRET_KEY",
@@ -221,12 +233,20 @@ class ProductionGuard(TestCase):
                 "rule 5",
             ),
             Case(
+                "prod refuses the mock reranker",
+                self._good_deployed("prod", RERANKER_PROVIDER="mock"),
+                False,
+                "RERANKER_PROVIDER",
+                "rule 5",
+            ),
+            Case(
                 "deployed test allows mocks",
                 self._good_deployed(
                     "test",
                     RAILWAY_ENVIRONMENT_NAME="test",
                     LLM_PROVIDER="mock",
                     EMBEDDER_PROVIDER="mock",
+                    RERANKER_PROVIDER="mock",
                     AGENT_RUNNER="mock",
                     MAIL_PROVIDER="mock",
                 ),
@@ -261,6 +281,64 @@ class ProductionGuard(TestCase):
                 False,
                 "owns tables",
                 "rule 7: DEBUG never disarms a guard",
+            ),
+            # The sentence cap's bounds (H12): a setting, not a literal, but not any number.
+            Case(
+                "a diff cap of 0 refuses to boot",
+                self._local("local", LIBRARY_DIFF_MAX_SENTENCES="0"),
+                False,
+                "LIBRARY_DIFF_MAX_SENTENCES",
+                "the diff cap's bounds",
+            ),
+            Case(
+                "a negative diff cap refuses to boot",
+                self._local("local", LIBRARY_DIFF_MAX_SENTENCES="-1"),
+                False,
+                "LIBRARY_DIFF_MAX_SENTENCES",
+                "the diff cap's bounds",
+            ),
+            Case(
+                "a diff cap above 200 refuses to boot",
+                self._good_deployed("prod", LIBRARY_DIFF_MAX_SENTENCES="201"),
+                False,
+                "LIBRARY_DIFF_MAX_SENTENCES",
+                "the diff cap's bounds",
+            ),
+            Case("the diff cap boots at its ceiling", self._local("local", LIBRARY_DIFF_MAX_SENTENCES="200"), True),
+            # The offset bound (H1): below one page nobody reaches the second page of a
+            # list, and every list answers 422 to a number a caller cannot avoid.
+            Case(
+                "an offset bound below one page refuses to boot",
+                self._local("local", API_PAGE_OFFSET_MAX="50", API_PAGE_SIZE_MAX="100"),
+                False,
+                "API_PAGE_OFFSET_MAX",
+                "the offset bound's floor",
+            ),
+            Case(
+                "a negative offset bound refuses to boot",
+                self._good_deployed("prod", API_PAGE_OFFSET_MAX="-1"),
+                False,
+                "API_PAGE_OFFSET_MAX",
+                "the offset bound's floor",
+            ),
+            Case(
+                "the offset bound boots at its floor",
+                self._local("local", API_PAGE_OFFSET_MAX="100", API_PAGE_SIZE_MAX="100"),
+                True,
+            ),
+            # Rule 9 (security-review-c7, M2): one variable must not switch off every rate
+            # limit at once, the sign-in ceremonies' and the model spend's alike.
+            Case(
+                "rate limiting switched off refuses to boot when deployed",
+                self._good_deployed("prod", RATE_LIMITING_ENABLED="false"),
+                False,
+                "RATE_LIMITING_ENABLED",
+                "rule 9",
+            ),
+            Case(
+                "rate limiting switched off still boots on a laptop",
+                self._local("local", RATE_LIMITING_ENABLED="false"),
+                True,
             ),
             Case(
                 "DB_ROLE_GUARD_ENABLED=false does not disarm rule 7 when deployed",

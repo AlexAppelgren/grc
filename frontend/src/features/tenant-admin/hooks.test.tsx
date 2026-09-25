@@ -25,6 +25,7 @@ import {
   useRevokeMemberSessions,
   useRoles,
   useSecurityLog,
+  useSetTenantAi,
   useTenant,
   useUpdateMember,
   useUpdateRole,
@@ -46,6 +47,15 @@ describe('tenant-admin hooks', () => {
     tokenStore.set('tok');
   });
 
+  it('tenant: switching AI writes the answer into the cache', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: { id: 't1', aiEnabled: false } }));
+    const { wrapper, queryClient } = queryWrapper();
+    const toggle = renderHook(() => useSetTenantAi(), { wrapper });
+    await toggle.result.current.mutateAsync(false);
+    expect(queryClient.getQueryData(adminKeys.tenant)).toEqual({ id: 't1', aiEnabled: false });
+    expect(sent.map((s) => [s.method, s.path, s.body])).toEqual([['put', '/api/v1/tenant/ai', { enabled: false }]]);
+  });
+
   it('tenant: reads, and an update writes the answer into the cache and refreshes me', async () => {
     const sent = installAdapter((s) => ({ status: 200, data: s.method === 'get' ? { id: 't1', name: 'Old' } : { id: 't1', name: 'New' } }));
     const { wrapper, queryClient } = queryWrapper();
@@ -58,6 +68,8 @@ describe('tenant-admin hooks', () => {
       ['patch', '/api/v1/tenant'],
     ]);
     expect(await settled(renderHook(() => useLanguages(), { wrapper }))).toEqual({ id: 't1', name: 'Old' });
+    // Signed out, the list is not asked for at all.
+    expect(renderHook(() => useLanguages(false), { wrapper: queryWrapper().wrapper }).result.current.fetchStatus).toBe('idle');
   });
 
   it('members and invitations: lists at the page maximum, mutations invalidate both lists', async () => {

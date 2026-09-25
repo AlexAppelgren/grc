@@ -13,16 +13,48 @@ from unittest import skip
 
 from django.test import TestCase
 
+from apps.cases import creation, testing as case_build
+from apps.cases.tests_creation import cases_of, drain, registered
+from apps.taxonomy.models import CaseStatusCategory
+from apps.watch import testing as watch_build
+
 
 class CasesScenarioTests(TestCase):
     """Scenario tests for apps.cases, one method per @integration scenario."""
 
-    @skip("pending: CAS-S1")
     def test_cas_s1(self) -> None:
         """CAS-S1
 
         A change creates one case per tenant in "Needs triage" with its footprint match (CAS-01).
         """
+        creation.register()
+        watch_build.seed_watch_reference()
+        banks = case_build.two_tenants_with_different_footprints(
+            inside="regime:securities", outside="regime:aml"
+        )
+        drain()
+        change = watch_build.change_with_timeline(terms=("regime:securities",))
+        registered(change.id, title=change.title)
+        drain()
+
+        self.assertEqual(
+            watch_build.cases_per_tenant(change, [banks.inside, banks.outside]),
+            {banks.inside: 1, banks.outside: 1},
+            "every bank gets exactly one case for a registered change",
+        )
+        for bank, matches in ((banks.inside, True), (banks.outside, False)):
+            with self.subTest(bank=bank.slug):
+                case = cases_of(bank)[0]
+                self.assertEqual(case.status, CaseStatusCategory.NEW.value)
+                self.assertEqual(case.footprint_match, matches, "each case caches its own bank's verdict")
+
+        registered(change.id, title=change.title)
+        drain()
+        self.assertEqual(
+            watch_build.cases_per_tenant(change, [banks.inside, banks.outside]),
+            {banks.inside: 1, banks.outside: 1},
+            "registering the same change again leaves each bank with the one case it had",
+        )
 
     @skip("pending: CAS-S2")
     def test_cas_s2(self) -> None:
@@ -113,4 +145,11 @@ class CasesScenarioTests(TestCase):
         """CAS-S16
 
         Another tenant's case and evidence answer 404 (CAS-05, CAS-07, NFR-01).
+        """
+
+    @skip("pending: CAS-S17 (CAS-03, COL-04, chunk 9)")
+    def test_cas_s17(self) -> None:
+        """CAS-S17
+
+        Contributor teams are the case's team participants (CAS-03, COL-04).
         """

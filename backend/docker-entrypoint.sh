@@ -34,10 +34,16 @@ echo "entrypoint: reference seeds"
 python manage.py seed_reference
 
 echo "entrypoint: starting gunicorn as the app role"
+# The access format is explicit because gunicorn's default prints the whole request line,
+# query string included (`?q=` is what a person searched for), plus the client address,
+# referrer and user agent. This one keeps method, path without query, status, bytes,
+# milliseconds and the request id that joins the line to the app's own log.
+# apps/shared/tests_no_query_in_logs.py refuses any other atom.
 exec gunicorn config.wsgi:application \
     --bind "0.0.0.0:${PORT:-8000}" \
     --workers "${GUNICORN_WORKERS:-2}" \
     --threads "${GUNICORN_THREADS:-4}" \
     --timeout "${GUNICORN_TIMEOUT_S:-60}" \
     --access-logfile - \
+    --access-logformat '%(m)s %(U)s %(s)s %(b)s %(M)s %({x-request-id}o)s' \
     --error-logfile -

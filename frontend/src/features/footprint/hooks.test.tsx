@@ -14,7 +14,10 @@ import {
   useFootprintRequests,
   useRejectFootprintRequest,
   useSuggestTerm,
+  useJurisdictions,
   useTerms,
+  useUnwatchMarket,
+  useWatchMarket,
   useWithdrawFootprintRequest,
 } from './hooks';
 
@@ -28,26 +31,77 @@ describe('footprint hooks', () => {
   });
 
   it('reads the footprint, the requests, the terms and the dimensions', async () => {
-    const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('/footprint') ? { dimensions: [], pendingRequest: null } : s.path.endsWith('/requests') ? { items: [], total: 0 } : { items: [], total: 0 } }));
+    const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('/footprint') ? { dimensions: [], pendingRequest: null } : s.path.endsWith('/jurisdictions') ? [] : { items: [], total: 0 } }));
     const { wrapper } = queryWrapper();
     const fp = renderHook(() => useFootprint(), { wrapper });
-    await waitFor(() => expect(fp.result.current.data).toEqual({ dimensions: [], pendingRequest: null }));
+    await waitFor(() => expect(fp.result.current.data).toEqual({ dimensions: [], pendingRequest: null, markets: [] }));
     const requests = renderHook(() => useFootprintRequests(), { wrapper });
-    await waitFor(() => expect(requests.result.current.data).toEqual({ items: [], total: 0 }));
+    await waitFor(() => expect(requests.result.current.data?.pages).toEqual([{ items: [], total: 0 }]));
+    expect(requests.result.current.hasNextPage).toBe(false);
     const terms = renderHook(() => useTerms('service_type'), { wrapper });
     await waitFor(() => expect(terms.result.current.data).toEqual([]));
     const all = renderHook(() => useTerms(), { wrapper });
     await waitFor(() => expect(all.result.current.data).toEqual([]));
     const dims = renderHook(() => useDimensions(), { wrapper });
     await waitFor(() => expect(dims.result.current.data).toEqual([]));
+    const jurisdictions = renderHook(() => useJurisdictions(), { wrapper });
+    await waitFor(() => expect(jurisdictions.result.current.data).toEqual([]));
     expect(sent.map((s) => [s.path, s.params])).toEqual([
       ['/api/v1/tenant/footprint', null],
       ['/api/v1/tenant/footprint/requests', { limit: REQUEST_HISTORY_PAGE, offset: 0 }],
       ['/api/v1/taxonomy/terms', { dimension: 'service_type' }],
       ['/api/v1/taxonomy/terms', {}],
       ['/api/v1/taxonomy/dimensions', null],
+      ['/api/v1/reference/jurisdictions', null],
     ]);
     expect(footprintKeys.terms()).toEqual(['taxonomy', 'terms', 'all']);
+  });
+
+  it('pages the request history: the next page starts where the pages read so far end, and stops at the total', async () => {
+    const request = (id: string) => ({ id, status: 'approved', requestedAt: '2026-09-01T00:00:00Z', requestedBy: null, preview: {}, decisionNote: '', version: 1 });
+    const sent = installAdapter((s) => {
+      const offset = (s.params as { offset: number }).offset;
+      return { status: 200, data: { items: Array.from({ length: offset === 0 ? REQUEST_HISTORY_PAGE : 1 }, (_, i) => request(`r${offset + i}`)), total: REQUEST_HISTORY_PAGE + 1 } };
+    });
+    const { wrapper } = queryWrapper();
+    const requests = renderHook(() => useFootprintRequests(), { wrapper });
+    await waitFor(() => expect(requests.result.current.hasNextPage).toBe(true));
+    await requests.result.current.fetchNextPage();
+    await waitFor(() => expect(requests.result.current.data?.pages).toHaveLength(2));
+    expect(requests.result.current.hasNextPage).toBe(false);
+    expect(requests.result.current.data?.pages.flatMap((page) => page.items).map((r) => r.id)).toContain(`r${REQUEST_HISTORY_PAGE}`);
+    expect(sent.map((s) => s.params)).toEqual([
+      { limit: REQUEST_HISTORY_PAGE, offset: 0 },
+      { limit: REQUEST_HISTORY_PAGE, offset: REQUEST_HISTORY_PAGE },
+    ]);
+  });
+
+  it('watches and unwatches a market, reading the footprint again whether the save worked or not', async () => {
+    let refuse = false;
+    const sent = installAdapter((s) =>
+      s.method === 'get'
+        ? { status: 200, data: { dimensions: [], pendingRequest: null, markets: [] } }
+        : refuse
+          ? { status: 409, data: { code: 'already_watching', detail: 'Already watched.' } }
+          : { status: 200, data: { jurisdiction: { key: 'no', kind: 'country', label: 'Norway' }, level: 'watching' } },
+    );
+    const { wrapper } = queryWrapper();
+    const fp = renderHook(() => useFootprint(), { wrapper });
+    await waitFor(() => expect(fp.result.current.data).toBeDefined());
+    const reads = () => sent.filter((s) => s.method === 'get').length;
+
+    await renderHook(() => useWatchMarket(), { wrapper }).result.current.mutateAsync('no');
+    await waitFor(() => expect(reads()).toBe(2));
+    await renderHook(() => useUnwatchMarket(), { wrapper }).result.current.mutateAsync('no');
+    await waitFor(() => expect(reads()).toBe(3));
+    refuse = true;
+    await expect(renderHook(() => useWatchMarket(), { wrapper }).result.current.mutateAsync('no')).rejects.toBeDefined();
+    await waitFor(() => expect(reads()).toBe(4));
+    expect(sent.filter((s) => s.method === 'post').map((s) => [s.path, s.body])).toEqual([
+      ['/api/v1/tenant/footprint/watching', { jurisdiction: 'no' }],
+      ['/api/v1/tenant/footprint/watching/remove', { jurisdiction: 'no' }],
+      ['/api/v1/tenant/footprint/watching', { jurisdiction: 'no' }],
+    ]);
   });
 
   it('creates, approves, rejects and withdraws, refreshing the footprint after each', async () => {

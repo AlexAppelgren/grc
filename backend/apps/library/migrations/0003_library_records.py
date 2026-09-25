@@ -440,7 +440,9 @@ class Migration(migrations.Migration):
             model_name='verification',
             index=models.Index(fields=['subject_type', 'subject_id', '-verified_at'], name='verification_subject_idx'),
         ),
-        *rls_operations("instrument", mixed=True, column="owner_tenant_id"),
-        *rls_operations("obligation", mixed=True, column="owner_tenant_id"),
+        # library_fence: the fence and its AST guard are what may write a shared record
+        # (PRO-01), so these two keep one policy whose write check is the read rule (H16).
+        *rls_operations("instrument", mixed=True, library_fence=True, column="owner_tenant_id"),
+        *rls_operations("obligation", mixed=True, library_fence=True, column="owner_tenant_id"),
         *rls_operations("problem_report", mixed=True),
     ]

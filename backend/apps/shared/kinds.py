@@ -30,7 +30,11 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "CloseReason": ("close_reason", "CAS-02: dismissal vs completion; restorable or not"),
     "EvidenceKind": ("evidence_kind", "CAS-05: file, link or reference; storage branches"),
     "SubjectType": ("subject_type", "What an audit event or comment points at"),
-    "SearchSource": ("search_source", "SRC-02: keyword, vector or fused match kind"),
+    "SearchSource": (
+        "search_source",
+        "SRC-01: which library record a search chunk was built from; the rebuild and the "
+        "retrieval query both branch on it",
+    ),
     "AiPurpose": ("ai_purpose", "AUD-02: what a model call was for"),
     "AiStatus": ("ai_status", "AUD-02: review state of AI output"),
     "ReportStatus": ("report_status", "AUD-03: problem report lifecycle"),
@@ -39,9 +43,27 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "DatePrecision": ("date_precision", "Legal dates carry day, month, quarter or year"),
     "RecordStatus": ("record_status", "Library record lifecycle"),
     "ChangeStatus": ("change_status", "WAT-02: a reform's lifecycle stage"),
-    "FeedFilter": ("feed_filter", "FP-03: inside or outside the footprint"),
+    "FeedFilter": (
+        "feed_filter",
+        "HOM-03: which kinds of dated item the roadmap read includes - all, regulatory or "
+        "internal - and the roadmap query branches on it. Corrected twice on 2026-09-21: it "
+        "was recorded as FP-03's inside-or-outside-the-footprint, which it never was "
+        "(schema.sql line 61), and then as the calendar subscription's scope as well, which "
+        "D-52 and ADR 0045 removed - a calendar feed carries the dates the outside world set "
+        "and never the bank's own, so it has nothing left to choose between",
+    ),
     "TicketProvider": ("ticket_provider", "INT-02: the integration branches per provider"),
-    "AgentKind": ("agent_kind", "AGT-03: what an agent definition does"),
+    "AgentKind": (
+        "agent_kind",
+        "AGT-03: what an agent definition does. `watch` sweeps sources and proposes; "
+        "`review` (D-62, D-80) proposes nothing and decides what another definition "
+        "proposed, so a definition's kind says which side of four eyes it works on",
+    ),
+    "CaseLinkDecision": (
+        "case_link_decision",
+        "WAT-04: what a bank said about a suggested obligation link on its own case; the "
+        "change page branches on accepted or removed and there is no third answer",
+    ),
     "CaseStatusCategory": (
         "case_status",
         "CAS-02..08: the fixed categories the state machine and its guards read (D-13)",
@@ -70,7 +92,8 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     # stay an admin's to change (playbook 15, INPUT_DELTAS §1).
     "TermDimensionKind": (
         "term_dimension_kind",
-        "FP-01: a scope dimension may restrict the footprint, a classification never does; matching branches on it",
+        "FP-01, D-36: a scope dimension may restrict the footprint, a classification never does, and an "
+        "opt-in dimension (standards) matches only the terms the footprint names; matching branches on it",
     ),
     "ChangeLifecycleKind": (
         "change_lifecycle_kind",
@@ -86,7 +109,16 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     ),
     "JurisdictionKind": (
         "jurisdiction_kind",
-        "I18N-01, INV-01: supranational or country; instrument relations (implements) branch on it",
+        "I18N-01, INV-01, INV-08, D-38: supranational, country or international (a standards "
+        "body); instrument relations (implements) branch on it, and only supranational and "
+        "country rows are mirrored into the footprint's jurisdiction dimension",
+    ),
+    "InstrumentLevelKind": (
+        "instrument_level_kind",
+        "INV-01, INV-08, D-37: the one optional value, standard, is what tells a pill to "
+        "read Standard rather than Binding or Guidance, comply or explain, and what the "
+        "provision triggers refuse a provision under; the five other levels stay kindless "
+        "and no admin may add a second value",
     ),
     "FootprintAction": (
         "footprint_action",
@@ -96,9 +128,70 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "suggestion_status",
         "VOC-03: a member's suggestion is pending, accepted (the row was created) or declined; the admin's inbox branches on it",
     ),
+    # Chunk 7 (search and ask). The API's own kinds: what a hit points at, how it was
+    # matched, and what a reader said about an answer. Each has its own delta name;
+    # `search_source` above stays the chunk table's own column, which the index owns.
+    "SearchHitType": (
+        "search_hit_type",
+        "SRC-01: a hit is an obligation, a provision or a change; the screen and the ranking branch on it",
+    ),
+    "SearchMatchKind": (
+        "search_match_kind",
+        "SRC-02: keyword, concept or both; every hit says how it was won and the pill's tone follows it",
+    ),
+    "EvalVia": (
+        "eval_via",
+        "SRC-05, SRC-S12: an evaluation question is scored on search's hits or on Ask's passages; "
+        "the gate's scorer branches on it, and the file names it in `via`",
+    ),
+    "AnswerFeedbackKind": (
+        "answer_feedback",
+        "SRC-03, SRC-05: helpful or wrong; the evaluation set reads the verdict back",
+    ),
     # Chunk 3 (library and inventory).
     "VerificationOutcome": (
         "verification_outcome",
         "INV-06: a re-verification found no change, found a change (a proposal follows) or could not reach the source; the re-verify queue branches on it",
+    ),
+    # Chunk 5 (watch). `check_status`, `change_status` and `feed_filter` were already
+    # allowlisted above; these two are the build's own, recorded in INPUT_DELTAS §1.
+    "SourceCheckKind": (
+        "source_check_kind",
+        "WAT-01, AGT-01: a sweep for new documents or a re-check of one library record; the check names a subject only when it is a re-check",
+    ),
+    "CheckFrequency": (
+        "check_frequency",
+        "WAT-01: how often a source is checked; the scheduler and the stale rule branch on it, and no admin adds a cadence",
+    ),
+    # Chunk 6 (home, the briefing, the roadmap and the calendar feed). Both live as literals
+    # in apps/home/schemas.py, because the roadmap is computed and has no table of its own;
+    # they are declared here because they are kinds the code branches on, and an engineer
+    # looking for the list of kinds must find them where every other one is written down.
+    "RoadmapItemKind": (
+        "roadmap_item_kind",
+        "HOM-03: a roadmap item is about a date the outside world set or one this bank set; "
+        "the card picks an urgency pill for the first and 'Our deadline' for the second",
+    ),
+    "RoadmapItemType": (
+        "roadmap_item_type",
+        "HOM-03, HOM-04: what produced the date - a change's key date, an internal deadline, "
+        "an action due or a review due; the card and the calendar builder branch on it",
+    ),
+    # Chunk 10 (c10-collab-models): the notification and the mail it may send.
+    "NotificationKind": (
+        "notification_kind",
+        "COL-02: what a notification is about; the inbox, the preferences, delegation and the "
+        "mail composer branch on it. schema.sql's nine values plus participant_added, "
+        "involved_item_changed and review_due (COL-04, D-34), which chunk 10 produces with "
+        "mention, due_soon, overdue and escalation. assigned, signoff_requested and "
+        "approval_requested are produced by chunk 9 (c9-triage, c9-signoff); saved_search_hit "
+        "by chunk 13 (c13-saved-search-notify); proposal_waiting by no R2 chunk, because "
+        "'Decide now' counts waiting proposals on GET /me (D-23), and it is declared so the "
+        "kind list stays schema.sql's",
+    ),
+    "EmailStatus": (
+        "email_status",
+        "COL-02: queued, sent, delivered, bounced or failed; the delivery task and the "
+        "provider's callback branch on it, and no admin adds a delivery state",
     ),
 }

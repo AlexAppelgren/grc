@@ -4,6 +4,7 @@ and ADM-S3; TEN-S2 to S6 stay skipped (R2, chunk 8). Never delete a scenario wit
 updating app.md.
 
 Operations exercised (the audit-on-write guard reads these names): updateTenant,
+setTenantAi (its branches in tests_organisation.py),
 consoleReissueEnrolment (proven in identity ID-S13).
 
 Prefixes hosted: ADM, TEN.
@@ -89,39 +90,39 @@ class TenantsScenarioTests(ScenarioTestCase):
         self.assertTrue(steps["footprint"])
         self.assertFalse(steps["vocabularies"])
 
-    @skip("pending: TEN-S2 (TEN-02, R2)")
+    @skip("pending: TEN-S2 (TEN-02, chunk 8)")
     def test_ten_s2(self) -> None:
         """TEN-S2
 
         Legal entities and products are scoped like obligations (TEN-02).
         """
 
-    @skip("pending: TEN-S3 (TEN-03, R2)")
+    @skip("pending: TEN-S3 (TEN-03, chunk 8)")
     def test_ten_s3(self) -> None:
         """TEN-S3
 
         A team can own work and the ownership survives a member leaving (TEN-03).
         """
 
-    @skip("pending: TEN-S4 (TEN-04, R2)")
+    @skip("pending: TEN-S4 (TEN-04, chunk 8)")
     def test_ten_s4(self) -> None:
         """TEN-S4
 
         An out-of-office delegate receives approvals and reminders (TEN-04).
         """
 
-    @skip("pending: TEN-S5 (TEN-05, R2)")
+    @skip("pending: TEN-S5 (TEN-05, chunk 8)")
     def test_ten_s5(self) -> None:
         """TEN-S5
 
         Removing a member with open work offers bulk reassignment (TEN-05).
         """
 
-    @skip("pending: TEN-S6 (TEN-06, R2)")
+    @skip("pending: TEN-S6 (TEN-06, chunk 8)")
     def test_ten_s6(self) -> None:
         """TEN-S6
 
-        A support access grant is visible, time-boxed and logged (TEN-06).
+        Support access is requested by the platform, approved by the bank and time-boxed (TEN-06).
         """
 
     def test_adm_s1(self) -> None:
@@ -177,3 +178,38 @@ class TenantsScenarioTests(ScenarioTestCase):
         # admin holds neither grant, which is what keeps them off those screens.
         self.assertNotIn(perms.VOCAB_MANAGE, self.client.get("/api/v1/me", **people_admin).json()["permissions"])
         self.assertNotIn(perms.WORKFLOW_MANAGE, self.client.get("/api/v1/me", **people_admin).json()["permissions"])
+
+    @skip("pending: TEN-S8 (TEN-02, TEN-03, chunk 8)")
+    def test_ten_s8(self) -> None:
+        """TEN-S8
+
+        A department has a head and teams, and team membership is set on the member row (TEN-02, TEN-03).
+        """
+
+    @skip("pending: TEN-S9 (TEN-05, COL-04, chunk 8)")
+    def test_ten_s9(self) -> None:
+        """TEN-S9
+
+        Removing a member ends their participations and team memberships (TEN-05, COL-04).
+        """
+
+    @skip("pending: TEN-S10 (TEN-02, chunk 8)")
+    def test_ten_s10(self) -> None:
+        """TEN-S10
+
+        A legal entity records a certificate it holds (TEN-02, AC-TEN1).
+        """
+
+    @skip("pending: TEN-S11 (TEN-06, chunk 8)")
+    def test_ten_s11(self) -> None:
+        """TEN-S11
+
+        A support session reads and never writes, and never approves itself (TEN-06).
+        """
+
+    @skip("pending: TEN-S12 (REP-04, chunk 12)")
+    def test_ten_s12(self) -> None:
+        """TEN-S12
+
+        A closing tenant refuses writes and still lets people sign in and export (REP-04).
+        """

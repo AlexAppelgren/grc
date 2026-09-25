@@ -229,6 +229,21 @@ def verify_registration(principal: Principal, credential: dict[str, Any], nickna
     user = User.objects.get(pk=principal.subject_id)
     session = _session_of(principal)
     now = timezone.now()
+    enrolling = principal.kind is PrincipalKind.ENROLMENT
+    invitation = None
+    if enrolling:
+        # The invitation this enrolment session came from: the one open for the address
+        # in the session's tenant, never whichever tenant invited the address last
+        # (finding F8).
+        invitation = invitation_logic.find_open_for_tenant(user.email, session.tenant_id)
+        if invitation is not None and invitation.tenant_id is not None:
+            # A platform role granted after the invitation was sent, refused here and not
+            # at acceptance below: a ValidationError becomes a 422 inside the view and the
+            # request's transaction still commits, so a refusal after the credential
+            # insert would leave a credential row with no audit row, an account holding a
+            # live passkey it cannot sign in with, and an emailed code already closed
+            # (hardening H13, review 2026-09-20).
+            invitation_logic.refuse_platform_account(user)
     challenge = _consume_challenge(ChallengeKind.REGISTRATION, _challenge_from_credential(credential), user=user, session=session)
     try:
         verified = verify_registration_response(
@@ -263,12 +278,7 @@ def verify_registration(principal: Principal, credential: dict[str, Any], nickna
     except IntegrityError as exc:
         raise ValidationError("The passkey could not be registered. Try again.", code="registration_failed") from exc
     bundle: session_logic.SessionBundle | None = None
-    enrolling = principal.kind is PrincipalKind.ENROLMENT
     if enrolling:
-        # The invitation this enrolment session came from: the one open for the address
-        # in the session's tenant, never whichever tenant invited the address last
-        # (finding F8).
-        invitation = invitation_logic.find_open_for_tenant(user.email, session.tenant_id)
         if invitation is not None:
             invitation_logic.accept_invitation(invitation, user, now)
         user.status = UserStatus.ACTIVE.value
@@ -479,8 +489,16 @@ def rename_passkey(principal: Principal, passkey_id: uuid.UUID, nickname: str) -
 
 
 def remove_passkey(principal: Principal, passkey_id: uuid.UUID) -> None:
+    # Locked before they are counted: two removals at once would otherwise each count the
+    # other's passkey as the one left and leave the person with none, which only re-enrolment
+    # may do (ID-04, ID-05; the calendar feed reads that moment as a re-enrolment).
+    live = set(
+        WebAuthnCredential.objects.select_for_update()
+        .filter(user_id=principal.subject_id, retired_at__isnull=True)
+        .values_list("pk", flat=True)
+    )
     row = _own_passkey(principal.subject_id, passkey_id)
-    if not WebAuthnCredential.objects.filter(user_id=principal.subject_id, retired_at__isnull=True).exclude(pk=row.pk).exists():
+    if not live - {row.pk}:
         raise ValidationError("You cannot remove your last passkey.", code="last_passkey")
     row.retired_at = timezone.now()
     row.save(update_fields=["retired_at"])

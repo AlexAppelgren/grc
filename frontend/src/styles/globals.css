@@ -5,9 +5,28 @@
 @import './brand.css';
 @import './theme.css';
 
+/*
+ * The tab bar's clearance (design/system/navigation.md 9). TabBar.tsx
+ * overrides --tabbar-height on <html> with its measured height, so a wrapped
+ * label or text-only zoom never hides the last line of a page or a focused
+ * control behind the bar (WCAG 2.4.11, technique C43). --tabbar-top is the
+ * room the bar takes from the bottom of the viewport: none from 1024 px.
+ */
+:root {
+  --tabbar-height: 64px;
+  --tabbar-bottom: max(16px, env(safe-area-inset-bottom));
+  --tabbar-top: 0px;
+}
+@media (width < 64rem) {
+  :root {
+    --tabbar-top: calc(var(--tabbar-height) + var(--tabbar-bottom));
+  }
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    scroll-padding-bottom: calc(var(--tabbar-top) + 16px);
   }
   body {
     background: var(--color-page);
@@ -65,5 +84,53 @@
     outline: 2px solid var(--color-focus);
     outline-offset: 2px;
     border-radius: 6px;
+  }
+}
+
+/*
+ * The tab bar on short and landscape viewports (navigation.md 4a). Unlayered,
+ * so they override the bar's utilities. Below 480px of height (a phone in
+ * landscape) the icon sits beside its label in a 44px cell, the bar is about
+ * 54px, and it floats 8px up. Below 320px of height (400% zoom on a laptop)
+ * it leaves the fixed layer and scrolls away as a row above main, as WCAG's
+ * reflow guidance advises for sticky parts.
+ */
+@media (width < 64rem) and (height < 30rem) {
+  :root {
+    --tabbar-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  [data-slot='tab-bar'] {
+    padding: 4px;
+  }
+  [data-slot='tab-bar'] > ul {
+    grid-auto-columns: minmax(0, 8rem);
+  }
+  [data-slot='tab-bar'] li > * {
+    flex-direction: row;
+    gap: 6px;
+    min-height: 44px;
+  }
+}
+@media (width < 64rem) and (height < 20rem) {
+  :root {
+    --tabbar-top: 0px;
+  }
+  [data-slot='tab-bar'] {
+    position: static;
+    box-shadow: none;
+    margin: 8px auto 0;
+  }
+}
+
+/*
+ * The on-screen keyboard (navigation.md 8): below 1024 px on a touch screen,
+ * the bar steps aside while a text field has focus, so it never sits on the
+ * field being typed in (WCAG 2.4.11). visibility, not display: the bar keeps
+ * its box, so the measured clearance never collapses and the next focused
+ * control is still scrolled clear of it.
+ */
+@media (width < 64rem) and (pointer: coarse) {
+  body:has(:is(input:not([type='checkbox'], [type='radio'], [type='button'], [type='submit'], [type='reset'], [type='range'], [type='color'], [type='file'], [type='image']), textarea, [contenteditable]:not([contenteditable='false'])):focus) [data-slot='tab-bar'] {
+    visibility: hidden;
   }
 }

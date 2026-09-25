@@ -1,4 +1,5 @@
 import type { PillTone } from '@/components/ui/pill-tones';
+import type { components } from '@/types/api.generated';
 
 // Tone by kind and by slot (design/system/pills-and-labels.md, "Where tone
 // comes from"). Kinds are the fixed enums behind a severity scale; the
@@ -39,6 +40,102 @@ export const severityTone: Record<SeverityKind, PillTone> = {
   low: 'information',
 };
 
+// PRO-01, PRO-02: a proposal's status, on the queue's tabs and rows. `open`
+// needs attention (warning, "Waiting"), `approved` is good (positive), and
+// `rejected` and `superseded` are neutral facts the record still carries
+// (information) — never negative, because a rejection is a decision made on
+// purpose, not a failure.
+export type ProposalStatusKind = 'open' | 'approved' | 'rejected' | 'superseded';
+
+export const proposalStatusTone: Record<ProposalStatusKind, PillTone> = {
+  open: 'warning',
+  approved: 'positive',
+  rejected: 'information',
+  superseded: 'information',
+};
+
+// AUD-03: a problem report's status, on the record's "Reported problems"
+// section. `open` waits for a colleague (warning); `fixed` says the record was
+// wrong and is being corrected (positive); `answered` and `rejected` are
+// decisions made on purpose, neutral facts (information), never negative.
+export type ProblemReportStatusKind = 'open' | 'answered' | 'fixed' | 'rejected';
+
+export const problemReportStatusTone: Record<ProblemReportStatusKind, PillTone> = {
+  open: 'warning',
+  answered: 'information',
+  fixed: 'positive',
+  rejected: 'information',
+};
+
+// WAT-01: how a source check ended, as `CheckStatus` names it in the API.
+// The coverage log and the feed's Coverage tab read the check, never the
+// sentence it carries. `never` is the third member the coverage read answers:
+// a source nobody has checked yet is a neutral fact, not a failure.
+export type CheckStatusKind = 'ok' | 'failed' | 'never';
+
+export const checkStatusTone: Record<CheckStatusKind, PillTone> = {
+  ok: 'positive',
+  failed: 'negative',
+  never: 'information',
+};
+
+// ID-10: an agent key's state, computed from the key's own dates. Revoked
+// and expired are the same warning: the key has stopped working and the row
+// stays so the security log has something to point at.
+export type ApiKeyStateKind = 'active' | 'never_used' | 'revoked' | 'expired';
+
+export const apiKeyStateTone: Record<ApiKeyStateKind, PillTone> = {
+  active: 'positive',
+  never_used: 'information',
+  revoked: 'warning',
+  expired: 'warning',
+};
+
+// AUD-02: an AI log row's review state and a reader's verdict on an Ask
+// answer, as the API names them. A draft nobody has reviewed is a neutral
+// fact, as an agent's suggestion is; a person standing behind the words, as
+// drafted or rewritten, is positive; a rejection is a decision made on
+// purpose, so it stays neutral. A reader saying "wrong" needs a look, it is
+// not itself bad. The purpose sits in `slotTone.aiPurpose`.
+export type AiReviewKind = 'draft' | 'confirmed' | 'edited' | 'rejected';
+
+export const aiReviewTone: Record<AiReviewKind, PillTone> = {
+  draft: 'information',
+  confirmed: 'positive',
+  edited: 'positive',
+  rejected: 'information',
+};
+
+export type AiFeedbackKind = 'helpful' | 'wrong';
+
+export const aiFeedbackTone: Record<AiFeedbackKind, PillTone> = {
+  helpful: 'positive',
+  wrong: 'warning',
+};
+
+// COL-02 (c10-fe-collab-layer): why a person is told, as the API's
+// `CollabNotification.kind` names it (design/screens/tenant-notifications.html).
+// A neutral fact is information; something waiting on the reader is warning;
+// the overdue end of the scale is negative; what kind of change it is reads
+// notice, as a change type does. Typed against the generated kind, so a kind
+// the backend adds fails `tsc` here until it has a tone.
+export type NotificationKind = components['schemas']['CollabNotification']['kind'];
+
+export const notificationKindTone: Record<NotificationKind, PillTone> = {
+  mention: 'information',
+  assigned: 'information',
+  participant_added: 'information',
+  signoff_requested: 'warning',
+  approval_requested: 'warning',
+  due_soon: 'warning',
+  review_due: 'warning',
+  proposal_waiting: 'warning',
+  overdue: 'negative',
+  escalation: 'negative',
+  involved_item_changed: 'notice',
+  saved_search_hit: 'notice',
+};
+
 // "Applies" is positive on the system card's obligation row; the other two
 // are neutral facts.
 export const applicabilityTone: Record<ApplicabilityKind, PillTone> = {
@@ -47,17 +144,28 @@ export const applicabilityTone: Record<ApplicabilityKind, PillTone> = {
   not_assessed: 'information',
 };
 
-// Slot tones: fixed by where the pill sits.
+// Slot tones: fixed by where the pill sits. A header's "Guidance, comply or
+// explain" needs attention (warning); a row's short "Guidance" stays a
+// neutral fact (information), as the obligation and instrument cards show.
 export const slotTone = {
   changeType: 'notice',
+  // The queue's kind pill (console-queue.html): "New version", "Vocabulary"
+  // and so on, in the same slot a change type occupies elsewhere.
+  proposalKind: 'notice',
   instrument: 'brand',
+  jurisdiction: 'brand',
   flag: 'brand',
   libraryTag: 'brand',
   scopeTerm: 'brand',
   regime: 'information',
   workflowStatus: 'information',
+  instrumentLevel: 'information',
   bindingLevel: 'information',
+  guidanceComplyOrExplain: 'warning',
   guidance: 'information',
+  // SRC-02: how a search hit was won, keyword, concept or both — a neutral
+  // fact about the query, never a person's choice (design/system/pills-and-labels.md).
+  matchKind: 'information',
   tenantTag: 'information',
   source: 'information',
   waitingForApproval: 'warning',
@@ -66,4 +174,29 @@ export const slotTone = {
   you: 'positive',
   ourDeadline: 'brand',
   lead: 'brand',
+  // Chunk 5, from the watch and console cards. A fact an agent put forward
+  // is a neutral fact until a person settles it, which is why "Suggested by
+  // the agent" and a match confidence read information and a confirmation
+  // reads positive; a change still carrying unconfirmed facts needs a
+  // library editor, so its count reads warning. A paused source is a fact
+  // about the source, not a failure.
+  suggested: 'information',
+  confirmed: 'positive',
+  // D-74: a fact an independent agent confirmed. No person has settled it,
+  // so it keeps the suggestion's neutral tone and never a confirmation's.
+  machineConfirmed: 'information',
+  factsToConfirm: 'warning',
+  duplicate: 'information',
+  agentVersion: 'brand',
+  apiScope: 'information',
+  sourceKind: 'information',
+  paused: 'information',
+  // A source that has gone past its cadence, or failed more times in a row
+  // than the stale rule allows: it needs attention, it is not itself bad.
+  stale: 'warning',
+  // AUD-02: what a model call was for, a kind of call, as a change type is a kind of change.
+  aiPurpose: 'notice',
+  // AGT-07: a proposal carrying text the injection screen flagged waits for a person,
+  // so it needs attention; it is not itself bad.
+  riskFlagged: 'warning',
 } as const satisfies Record<string, PillTone>;

@@ -14,6 +14,22 @@ const nextConfig: NextConfig = {
   // filesystem root", 2026-09-19). The worktree slot sets the root to the main checkout,
   // which contains both. Unset everywhere else, so nothing changes outside a worktree.
   ...(process.env.NEXT_TURBOPACK_ROOT ? { turbopack: { root: process.env.NEXT_TURBOPACK_ROOT } } : {}),
+  // Clickjacking: no other site may frame a page of the app, where one click can
+  // approve or sign off. Our own origin may, because the public page frames the
+  // app as its demo (design/public/README.md "The demo"). The API refuses every
+  // frame on its own side (backend/config/settings.py). X-Frame-Options is the
+  // same rule for browsers that predate frame-ancestors.
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'self'" },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

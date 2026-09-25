@@ -6,16 +6,22 @@ the stack, override 9) and through the client where the runner keeps them.
 
 from __future__ import annotations
 
+import copy
+import json
 import logging
+import sys
 from typing import Any, cast
-from unittest import mock
 
+from django.db import IntegrityError
 from django.http import HttpRequest, HttpResponse
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.test.client import RequestFactory
+from sentry_sdk.integrations import logging as sentry_logging
+from sentry_sdk.utils import event_from_exception
 
 from apps.shared import middleware, sentry_scrub
 from apps.shared.logging import JsonFormatter
+from apps.shared.testing import sentry_init_kwargs
 
 
 class RequestId(TestCase):
@@ -175,25 +181,71 @@ class SentryScrubbers(SimpleTestCase):
             self.assertEqual(scrubbed["request"]["url"], f"https://api.example/api/v1/auth/invitations/{sentry_scrub.REDACTED}/open")
         self.assertEqual(sentry_scrub.scrub_url("https://api.example/api/v1/reference/product?x=1"), "https://api.example/api/v1/reference/product?x=1")
 
+    def test_an_access_line_breadcrumb_loses_its_query_and_addresses(self) -> None:
+        """Security review 2026-09-19: gunicorn's access line reached a captured event as a
+        breadcrumb message, search text and client address included. The logger is ignored
+        now (below); the message is scrubbed as well, whatever logger wrote it."""
+        message = (
+            '203.0.113.7 - - [19/Sep/2026:09:00:00 +0000] "GET /api/v1/obligations?q=secret+text HTTP/1.1" '
+            '200 512 "https://app.example/inventory?q=secret+text" "Mozilla/5.0" from 2001:db8::7 via ::1 '
+            "and ::ffff:198.51.100.9."
+        )
+        for hook in (sentry_scrub.before_send, sentry_scrub.before_send_transaction):
+            event = {
+                "breadcrumbs": {
+                    "values": [
+                        {"category": "gunicorn.access", "message": message, "data": {}},
+                        {"category": "django", "message": "Not Found: /api/v1/x", "data": {"request": "<WSGIRequest: GET '/api/v1/x?q=secret'>"}},
+                    ]
+                }
+            }
+            crumbs = cast(dict, hook(cast(Any, event), {}))["breadcrumbs"]["values"]
+            scrubbed = crumbs[0]["message"]
+            self.assertIn("GET /api/v1/obligations", scrubbed)
+            for leaked in ("secret", "203.0.113.7", "2001:db8::7", "::1", "51.100.9"):
+                self.assertNotIn(leaked, scrubbed)
+            self.assertEqual(crumbs[1]["message"], "Not Found: /api/v1/x")
+            self.assertEqual(crumbs[1]["data"]["request"], sentry_scrub.REDACTED)
+
     def test_settings_initialise_sentry_with_the_safe_flags_only_when_a_dsn_is_set(self) -> None:
-        import importlib
-        import os
-
-        env = {
-            "SENTRY_DSN": "https://public@sentry.example.invalid/1",
-            "ENVIRONMENT": "test",
-            "DEBUG": "true",
-        }
-        with mock.patch.dict(os.environ, env), mock.patch("sentry_sdk.init") as init:
-            import config.settings as base
-
-            importlib.reload(base)
-        kwargs = init.call_args.kwargs
+        kwargs = sentry_init_kwargs()
         self.assertFalse(kwargs["send_default_pii"])
         self.assertEqual(kwargs["max_request_body_size"], "never")
         self.assertFalse(kwargs["include_local_variables"])
         self.assertIs(kwargs["before_send"], sentry_scrub.before_send)
         self.assertIs(kwargs["before_send_transaction"], sentry_scrub.before_send_transaction)
-        # Reload once more without the DSN so later tests see the runner's settings module.
-        with mock.patch.dict(os.environ, {"SENTRY_DSN": "", "ENVIRONMENT": "test", "DEBUG": "false"}):
-            importlib.reload(base)
+        # gunicorn writes its access line outside any request scope, so as a breadcrumb it
+        # rides on later events, another tenant's included. It is never recorded.
+        self.assertIn("gunicorn.access", sentry_logging._IGNORED_LOGGERS)
+
+    def test_exception_messages_and_interpolated_log_text_never_leave(self) -> None:
+        """Security review 2026-09-19: a Postgres error's message carries row values
+        (`DETAIL: Failing row contains (...)`, every column), and exception values went out
+        untouched. The type, module and frames stay: they say where, never what."""
+        secret = "tenant-" + "secret-row"  # built, so no source line the frames quote holds it
+        options = {
+            "include_local_variables": sentry_init_kwargs()["include_local_variables"],
+            "include_source_context": True,
+            "max_value_length": 1024,
+        }
+
+        def insert(row: str) -> None:
+            try:
+                raise ValueError(f"invalid input value: {row}")
+            except ValueError as exc:
+                raise IntegrityError(f'null value in column "title"\nDETAIL:  Failing row contains ({row}).') from exc
+
+        try:
+            insert(secret)
+        except IntegrityError:
+            event, _ = event_from_exception(sys.exc_info(), client_options=options)
+        event["logentry"] = {"message": "Task %s raised: %r", "formatted": f"Task t1 raised: {secret!r}", "params": ["t1", secret]}
+        for hook in (sentry_scrub.before_send, sentry_scrub.before_send_transaction):
+            scrubbed = cast(dict, hook(cast(Any, copy.deepcopy(event)), {}))
+            self.assertNotIn(secret, json.dumps(scrubbed, default=str))
+            values = scrubbed["exception"]["values"]
+            self.assertEqual([value["type"] for value in values], ["ValueError", "IntegrityError"])
+            self.assertEqual({value["value"] for value in values}, {sentry_scrub.REDACTED})
+            self.assertTrue(all(value["stacktrace"]["frames"] for value in values))
+            self.assertEqual(scrubbed["logentry"], {"message": "Task %s raised: %r"})
+

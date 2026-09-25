@@ -5,7 +5,7 @@ or system actor and before and after values. The outbox row is what the worker d
 row, and vice versa.
 
 `AppendOnlyModel` refuses update and delete in Python; the migration's trigger makes the
-docstring true in the database, with a `SET LOCAL cw.maintenance = 'on'` escape hatch
+docstring true in the database, with the escape hatch in apps/shared/migration_helpers.py
 so a conscious fix states its intent.
 """
 
@@ -13,11 +13,13 @@ from __future__ import annotations
 
 import enum
 import uuid
+from contextlib import nullcontext
 from dataclasses import dataclass
 from typing import Any
 
 from django.db import connection, models, transaction
 
+from apps.shared import tenancy
 from apps.shared.middleware import current_request_id
 
 
@@ -94,10 +96,16 @@ def record(
 ) -> Any:
     """Write the audit event and its outbox event in the caller's transaction.
 
-    `tenant_id` is None for a library change (visible to everyone under the mixed
-    policy) and the tenant's id for tenant work. `topic` defaults to `action`; the
-    worker routes outbox rows by it. `payload` is what the worker needs to act; it
-    never carries tenant content the audit `after` does not already hold.
+    `tenant_id` is None for a library change (read by everyone under the mixed policy) and
+    the tenant's id for tenant work. Both rows are written in the zone `tenant_id` names,
+    because a mixed table accepts only the zone the session is in (H15): the two rows of a
+    library change made from a bank's own session go in with the tenant cleared, and this is
+    the one door that may cross the zones. Which calls may pass `tenant_id=None`, and under
+    which subject, is the guard's question, not the policy's (hardening H3).
+
+    `topic` defaults to `action`; the worker routes outbox rows by it. `payload` is what the
+    worker needs to act; it never carries tenant content the audit `after` does not already
+    hold.
     """
     from apps.shared.models import AuditEvent, OutboxEvent
 
@@ -106,7 +114,12 @@ def record(
             "record() must run inside the transaction of the write it records; "
             "requests run under ATOMIC_REQUESTS, tasks use @tenant_task or transaction.atomic()."
         )
-    with transaction.atomic():
+    # The zone the row belongs to, as the policies read it: the GUC, not the context
+    # variable, since that is what a policy sees. The zone block comes before the atomic one,
+    # so a failed insert rolls back to its savepoint before the tenant goes back on and the
+    # caller sees the error the insert raised.
+    crosses_zones = tenant_id is None and tenancy.database_tenant_id() is not None
+    with tenancy.platform_zone() if crosses_zones else nullcontext(), transaction.atomic():
         event = AuditEvent.objects.create(
             tenant_id=tenant_id,
             actor_type=actor.kind.value,

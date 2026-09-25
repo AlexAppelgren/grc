@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Screen card: workflow (/admin/workflow)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Serves COL-02 (reminder lead times, escalation threshold and role, the digest
+   day) and TEN-01 (the tenant's own settings), with the triage target that
+   change_case.triage_due_at reads (chunk 10). New card: the prototype has no
+   workflow settings. Written from docs/plans/briefs/CHUNK10_TASKS.md
+   (c10-collab-design-b, c10-workflow-policy, rulings 6 to 8) and the R2 wave 1
+   packages c10-workflow-policy and c10-cards-notifications-workflow.
+
+   Values follow design/system/foundations.md (14px base, 24px title, hairline
+   cards at 8px, 36px inputs and buttons at 6px); the build maps them to Green
+   tokens through tokens.generated.css, and the colours below are those tokens'
+   values in light and dark, never literals in the markup. */
+:root{
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --negative:#b92f13;--negative-soft:#fdebe8;
+  --warning:#8f530a;--warning-soft:#fce8cf;
+  --positive:#026436;--positive-soft:#dcefdc;
+  --notice:#005fb3;--notice-soft:#e6f3ff;
+  --bronze:#6a5730;--brass-bg:#ece5d6;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --negative:#f08975;--negative-soft:#5c170a;
+  --warning:#f5b970;--warning-soft:#5f3707;
+  --positive:#8ae58d;--positive-soft:#003d26;
+  --notice:#66b8ff;--notice-soft:#003666;
+  --bronze:#d9cba9;--brass-bg:#33291a;
+}}
+:root[data-theme="dark"]{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --negative:#f08975;--negative-soft:#5c170a;
+  --warning:#f5b970;--warning-soft:#5f3707;
+  --positive:#8ae58d;--positive-soft:#003d26;
+  --notice:#66b8ff;--notice-soft:#003666;
+  --bronze:#d9cba9;--brass-bg:#33291a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+a{color:var(--text);text-underline-offset:3px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px}
+p{margin:0 0 8px}
+ul{margin:0;padding:0;list-style:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+main{padding:24px 32px 64px;max-width:1200px;width:100%;margin:0 auto}
+/* The state label above each rendering. Not part of the screen. */
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-child{margin-top:0}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:8px 16px;flex-wrap:wrap;margin-bottom:16px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+.meta{color:var(--muted);font-size:13px;line-height:18px;display:flex;gap:4px 8px;flex-wrap:wrap;align-items:baseline}
+.meta b{color:var(--text);font-weight:500}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+.panel>h2{margin-bottom:4px}
+.panel+.panel{margin-top:16px}
+/* Pill: fully rounded, 20px, 13px at 500, no border. The six tones only. */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+.pill.notice{background:var(--notice-soft);color:var(--notice)}
+.pill.positive{background:var(--positive-soft);color:var(--positive)}
+.pill.warning{background:var(--warning-soft);color:var(--warning)}
+.pill.negative{background:var(--negative-soft);color:var(--negative)}
+.pill.brand{background:var(--brass-bg);color:var(--bronze)}
+/* Button: 36px, 6px radius, 14px at 500. */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap;text-decoration:none}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.ghost{background:transparent;color:var(--text);border-color:transparent}
+.btn.danger{background:var(--surface);color:var(--negative);border-color:var(--negative)}
+.btn.small{height:32px;padding:0 12px}
+.btn[disabled]{opacity:.45;cursor:default}
+@media (hover:hover){.btn.outline:hover,.btn.ghost:hover{background-image:linear-gradient(var(--hover),var(--hover))}}
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+/* Input and select: 36px, 10px side padding, 6px radius, the input border. */
+.field{display:grid;gap:4px;margin-top:16px}
+.field:first-child{margin-top:0}
+.field label,.field .label{font-weight:500}
+.field input,.field select,.field textarea{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px}
+.field textarea{height:auto;min-height:76px;padding:8px 10px;resize:vertical}
+.field .hint{color:var(--muted);font-size:13px;line-height:18px}
+.field .error{color:var(--negative);font-size:13px;line-height:18px}
+.field [aria-invalid="true"]{border-color:var(--negative)}
+.ok{color:var(--positive);font-size:13px;line-height:18px;margin:0}
+.err{color:var(--negative);font-size:13px;line-height:18px;margin:0}
+.skeleton{height:64px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.skeletons{display:grid;gap:8px}
+.emptystate,.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.emptystate h2,.errorstate h2{color:var(--text)}
+.emptystate p,.errorstate p{margin:8px auto 16px;max-width:60ch}
+.restricted{text-align:center;padding:48px 16px;max-width:60ch;margin:0 auto}
+.restricted p{color:var(--muted)}
+/* A 375px frame, to draw the phone width beside the desktop rendering. */
+.phone{width:375px;max-width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 16px 16px;background:var(--page)}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+.note p{margin:0 0 8px}
+table.tones{width:100%;table-layout:fixed;border-collapse:collapse;margin-top:8px;font-size:13px;line-height:18px}
+table.tones th,table.tones td{overflow-wrap:anywhere;text-align:left;padding:4px 12px 4px 0;border-bottom:1px solid var(--line);vertical-align:top}
+table.tones th{font-weight:500;color:var(--text)}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
+}
+/* The form: one card per group, a label, the control with its unit beside it,
+   then the platform default and the rule as the hint. */
+.form{display:grid;gap:16px;max-width:640px}
+.unit{display:flex;align-items:center;gap:8px}
+.unit input{width:88px;font-variant-numeric:tabular-nums}
+.unit span{color:var(--muted)}
+.field select{width:100%;max-width:320px}
+.default{color:var(--muted);font-size:13px;line-height:18px}
+.default b{color:var(--text);font-weight:500}
+/* The small list of day counts: each count a removable chip at 6px (a control,
+   not a pill), then the add control. */
+.days{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 4px 0 12px;border:1px solid var(--line-strong);border-radius:6px;background:var(--accent);font-weight:500;font-variant-numeric:tabular-nums}
+.chip.only{padding-right:12px}
+.chip button{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:4px;background:transparent;color:var(--muted)}
+svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.add{display:flex;gap:8px;align-items:center}
+.add input{width:72px;height:32px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px}
+.phone .form{max-width:none}
+.phone .unit input{width:72px}
+</style>
+</head>
+<body>
+<main>
+
+<h2 class="k">1 · The compliance officer (workflow manage) opens it: two values changed from the platform default</h2>
+<div class="head"><div><h1>Workflow</h1><p class="lede">When people are reminded, when overdue work is escalated, and how fast new changes are triaged.</p></div></div>
+<form class="form" onsubmit="return false">
+  <section class="panel" aria-labelledby="g1">
+    <h2 id="g1">Reminders</h2>
+    <div class="field">
+      <span class="label" id="l-due">Before a due date</span>
+      <div class="days" role="group" aria-labelledby="l-due" aria-describedby="h-due">
+        <span class="chip">7 days<button type="button" aria-label="Remove 7 days"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button></span>
+        <span class="chip">3 days<button type="button" aria-label="Remove 3 days"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button></span>
+        <span class="add"><input type="number" inputmode="numeric" min="1" max="90" aria-label="Days before a due date"><button class="btn outline small" type="button">Add</button></span>
+      </div>
+      <span class="default" id="h-due">Days before. Up to 5 reminders, each 1 to 90 days. Platform default: <b>3 days</b>.</span>
+    </div>
+    <div class="field">
+      <span class="label" id="l-rev">Before a review</span>
+      <div class="days" role="group" aria-labelledby="l-rev" aria-describedby="h-rev">
+        <span class="chip only">30 days</span>
+        <span class="add"><input type="number" inputmode="numeric" min="1" max="90" aria-label="Days before a review"><button class="btn outline small" type="button">Add</button></span>
+      </div>
+      <span class="default" id="h-rev">Days before the next review of an obligation or an item. Up to 5 reminders, each 1 to 90 days. Platform default: <b>30 days</b>.</span>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="g2">
+    <h2 id="g2">Escalation</h2>
+    <div class="field">
+      <label for="esc">Escalate after</label>
+      <div class="unit"><input id="esc" type="number" inputmode="numeric" min="1" max="90" value="10" aria-describedby="h-esc"><span>days overdue</span></div>
+      <span class="default" id="h-esc">1 to 90 days. Platform default: <b>5 days</b>.</span>
+    </div>
+    <div class="field">
+      <label for="role">Escalate to</label>
+      <select id="role" aria-describedby="h-role"><option selected>Compliance officer</option><option>Administrator</option><option>Approver</option><option>Head of risk</option></select>
+      <span class="default" id="h-role">Everyone with this role, and the head of the owner's department. Platform default: <b>Compliance officer</b>.</span>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="g3">
+    <h2 id="g3">Digest and triage</h2>
+    <div class="field">
+      <label for="day">Send the weekly digest on</label>
+      <select id="day" aria-describedby="h-day"><option selected>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option></select>
+      <span class="default" id="h-day">In the morning, in your organisation's timezone (Europe/Stockholm). Platform default: <b>Monday</b>.</span>
+    </div>
+    <div class="field">
+      <label for="tri">Triage new changes within</label>
+      <div class="unit"><input id="tri" type="number" inputmode="numeric" min="1" max="720" value="48" aria-describedby="h-tri"><span>hours</span></div>
+      <span class="default" id="h-tri">1 to 720 hours. Platform default: <b>48 hours</b>.</span>
+    </div>
+  </section>
+  <div class="bar" style="margin-top:0"><button class="btn outline" type="button">Reset to platform defaults</button><button class="btn" type="submit">Save</button></div>
+</form>
+
+<h2 class="k">2 · Saved</h2>
+<div class="bar" style="justify-content:flex-end;max-width:640px"><p class="ok" role="status" style="margin-right:auto">Saved.</p><button class="btn outline" type="button">Reset to platform defaults</button><button class="btn" type="button">Save</button></div>
+
+<h2 class="k">3 · Refused before sending: a number out of range, a day already in the list, a full list</h2>
+<div class="form">
+  <section class="panel">
+    <div class="field">
+      <label for="esc2">Escalate after</label>
+      <div class="unit"><input id="esc2" type="number" value="120" aria-invalid="true" aria-describedby="e-esc2"><span>days overdue</span></div>
+      <span class="error" id="e-esc2">Enter a whole number from 1 to 90.</span>
+    </div>
+    <div class="field">
+      <span class="label" id="l-due2">Before a due date</span>
+      <div class="days" role="group" aria-labelledby="l-due2">
+        <span class="chip">30 days<button type="button" aria-label="Remove 30 days"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button></span>
+        <span class="chip">14 days<button type="button" aria-label="Remove 14 days"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button></span>
+        <span class="chip">7 days<button type="button" aria-label="Remove 7 days"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button></span>
+        <span class="chip">3 days<button type="button" aria-label="Remove 3 days"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button></span>
+        <span class="chip">1 day<button type="button" aria-label="Remove 1 day"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button></span>
+        <span class="add"><input type="number" aria-label="Days before a due date" disabled><button class="btn outline small" type="button" disabled>Add</button></span>
+      </div>
+      <span class="default">Up to 5 reminders. Remove one to add another.</span>
+    </div>
+    <div class="field">
+      <span class="label" id="l-rev2">Before a review</span>
+      <div class="days" role="group" aria-labelledby="l-rev2">
+        <span class="chip only">30 days</span>
+        <span class="add"><input type="number" value="30" aria-label="Days before a review" aria-invalid="true" aria-describedby="e-rev2"><button class="btn outline small" type="button">Add</button></span>
+      </div>
+      <span class="error" id="e-rev2">30 days is already in the list.</span>
+    </div>
+  </section>
+</div>
+
+<h2 class="k">4 · Refused by the server: a role that no longer exists (422 unknown_key), and a lost permission (403), rendered in place</h2>
+<div class="form">
+  <section class="panel">
+    <div class="field">
+      <label for="role2">Escalate to</label>
+      <select id="role2" aria-invalid="true" aria-describedby="e-role2"><option selected>Head of risk</option><option>Compliance officer</option></select>
+      <span class="error" id="e-role2">That role no longer exists. Choose another.</span>
+    </div>
+  </section>
+  <section class="panel"><p class="err" role="alert">You do not have permission to do this. Needs workflow manage.</p></section>
+  <section class="panel"><p class="err" role="alert">Could not save. Check your connection and try again.</p></section>
+</div>
+
+<h2 class="k">5 · A member without workflow manage opens /admin/workflow: the shared Restricted screen</h2>
+<div class="restricted" role="alert"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p style="font-size:13px">Needs workflow manage</p></div>
+
+<h2 class="k">6 · Loading, and the error with Try again</h2>
+<div class="skeletons" aria-busy="true" role="status" style="max-width:640px"><span class="sr">Loading</span><div class="skeleton" style="height:160px"></div><div class="skeleton" style="height:160px"></div></div>
+<div class="errorstate" role="alert" style="margin-top:12px;max-width:640px">
+  <h2>Could not load the workflow settings</h2>
+  <p>Check your connection and try again.</p>
+  <button class="btn outline small" type="button">Try again</button>
+</div>
+
+<h2 class="k">7 · At 375px: one column, the unit stays beside the number, Save on the right</h2>
+<div class="phone">
+  <div class="head"><h1>Workflow</h1></div>
+  <div class="form">
+    <section class="panel">
+      <h2>Escalation</h2>
+      <div class="field">
+        <label for="esc3">Escalate after</label>
+        <div class="unit"><input id="esc3" type="number" value="10"><span>days overdue</span></div>
+        <span class="default">1 to 90 days. Platform default: <b>5 days</b>.</span>
+      </div>
+      <div class="field">
+        <label for="role3">Escalate to</label>
+        <select id="role3"><option selected>Compliance officer</option></select>
+        <span class="default">Everyone with this role, and the head of the owner's department. Platform default: <b>Compliance officer</b>.</span>
+      </div>
+    </section>
+    <div class="bar" style="margin-top:0"><button class="btn outline" type="button">Reset to platform defaults</button><button class="btn" type="button">Save</button></div>
+  </div>
+</div>
+
+<div class="note">
+<p>Workflow card (COL-02 and TEN-01; chunk 10). Route <b>/admin/workflow</b>, an Admin destination of its own, gated by workflow manage (CHUNK10_TASKS.md ruling 8: it is not a section of admin-organisation.html, which members manage gates). It reads the "workflow" object of GET /tenant and saves the whole object with PATCH /tenant/workflow. No step-up: this is a workflow control, not a security one. No four eyes and no request: a save applies at once and writes one audit event with before and after.</p>
+<p>Six fields, each with its unit beside the number and the platform default in its hint, so a bank sees what it is changing from. Reminder lead days are two small lists of day counts (before a due date, before a review), each 1 to 90, at most 5, no repeats, sorted from the largest down on save. The last chip in a list has no remove button: the server refuses an empty list, and a person who wants no reminders turns them off for themselves on /notifications. The escalation threshold is 1 to 90 days overdue. The escalation role lists the organisation's roles by label, sent as the role's key; the hint says who else is told, because escalation reaches the head of the owner's department too. The digest weekday lists the seven days by label, sent as a weekday key; the hint names the organisation's timezone from GET /tenant. The triage target is 1 to 720 hours.</p>
+<p>"Reset to platform defaults" fills the form with the defaults from the same response and saves nothing until Save. Client checks mirror the server's; the server's 422 names the field and renders under it, 422 unknown_key under the role or the weekday, a 403 in place with the permission it needs. A member without workflow manage never sees the destination; opening the address directly shows the shared Restricted screen (states.html).</p>
+<p>No pills on this page. Values, the role list and the timezone are sample data; each default is a setting with an environment override.</p>
+</div>
+
+</main>
+</body>
+</html>

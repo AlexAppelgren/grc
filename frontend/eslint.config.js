@@ -81,6 +81,10 @@ export default tseslint.config(
         { selector: `TemplateElement[value.raw=${LEGACY_FONT_SIZE.toString()}]`, message: LEGACY_FONT_MESSAGE },
       ],
       'bleqq/no-raw-pill': 'error',
+      // 11.2, AGT-07: fetched content is untrusted and is never rendered as HTML.
+      // `customComponentNames: ['*']` extends the rule past DOM elements, so the prop is
+      // refused on our own components too.
+      'react/no-danger': ['error', { customComponentNames: ['*'] }],
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },

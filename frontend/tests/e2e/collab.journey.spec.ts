@@ -18,3 +18,24 @@ test.describe('collab journeys', () => {
     // pending: COL-S4 (COL-03)
   });
 });
+
+// PRD 0.3: participants on register entries and cases (COL-04) and the
+// comments and mentions panel on My work (COL-01, HOM-05). Each stays
+// test.fixme until the task in docs/plans/briefs/FEATURES_0_3_TASKS.md lands.
+test.describe('participants, comments and mentions', () => {
+  test.fixme("COL-S6: A person or a team is added to a register entry, audited, and gains no access", async () => {
+    // pending: COL-S6 (COL-04, AC-COL1)
+  });
+
+  test.fixme("COL-S7: A participant leaves a register entry on their own", async () => {
+    // pending: COL-S7 (COL-04)
+  });
+
+  test.fixme("COL-S9: Case participants are managed by those who contribute, and refused across tenants", async () => {
+    // pending: COL-S9 (COL-04, AC-COL1, NFR-01)
+  });
+
+  test.fixme("COL-S12: My comments and mentions are found on My work, limited to what I can read, and never logged", async () => {
+    // pending: COL-S12 (COL-01, HOM-05)
+  });
+});

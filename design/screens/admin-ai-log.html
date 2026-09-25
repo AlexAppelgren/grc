@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Screen card: AI log (/admin/ai-log)</title>
+<style>
+/* Cut from design/prototype/index.html (playbook Section 7, step 4): the
+   tenant shell, .log, .pill, .btn, .filters, and the sand AI label of
+   tenant-ask.html. */
+:root{
+  --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;
+  --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
+  --btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;--red:#b92f13;--red-soft:#fdebe8;--amber:#8f530a;--amber-soft:#fce8cf;
+  --green:#026436;--green-soft:#dcefdc;--grey-soft:#eaebeb;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--red-soft:#3a1a14;--amber:#f5b970;--amber-soft:#3a2810;--green:#8ae58d;--green-soft:#12301c;--grey-soft:#313533;
+}}
+:root[data-theme="dark"]{
+  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--red-soft:#3a1a14;--amber:#f5b970;--amber-soft:#3a2810;--green:#8ae58d;--green-soft:#12301c;--grey-soft:#313533;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5}
+button,select{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+h1,h2,h3{margin:0;letter-spacing:-.01em;line-height:1.2;font-weight:500}h1{font-size:2rem;font-weight:400}h2{font-size:1.25rem}
+p{margin:0 0 .75rem}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--brand);color:#fff;padding:24px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{padding:0 8px 20px}.logo{display:block;width:100%;height:auto;max-width:196px}
+.nav button{display:flex;width:100%;background:none;border:0;color:#fff;text-align:left;padding:10px 12px;border-radius:999px;font-size:.95rem}
+.nav button[aria-current="page"]{background:#f8f6f1;color:#003824;font-weight:600}
+.nav hr{border:0;border-top:1px solid rgba(255,255,255,.18);margin:12px 8px}
+.who{margin:18px 4px 0;padding:12px;border:1px solid rgba(255,255,255,.25);border-radius:12px;font-size:.85rem;color:rgba(255,255,255,.75)}
+.who b{display:block;color:#fff;font-weight:600}
+main{padding:32px 36px 96px;max-width:1100px;width:100%}
+.mbrand{display:none}
+.back{background:none;border:0;color:var(--text);padding:0;margin-bottom:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.head p{color:var(--muted);margin:6px 0 0;max-width:70ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:4px 20px}
+.log{font-size:.9rem}
+.log>div{padding:12px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:170px 1fr;gap:4px 16px;align-items:start}
+.log>div:last-child{border-bottom:0}
+.log time{color:var(--muted);font-size:.85rem;display:block}
+.log .what{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.log .meta{color:var(--muted);font-size:.85rem;display:flex;gap:10px;flex-wrap:wrap}
+.log code{font-family:var(--mono);font-size:.82rem}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:600;background:var(--grey-soft);color:var(--text)}
+.pill.green{background:var(--green-soft);color:var(--green)}.pill.red{background:var(--red-soft);color:var(--red)}.pill.amber{background:var(--amber-soft);color:var(--amber)}
+.btn{background:var(--btn);color:var(--btn-text);border:1px solid var(--btn);border-radius:999px;padding:10px 20px;font-weight:600;min-height:44px}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line-strong)}
+.btn.small{padding:6px 14px;min-height:36px;font-size:.86rem}
+.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:.9rem;margin-top:16px;align-items:center}
+.empty{color:var(--muted);padding:28px;text-align:center;border:1px dashed var(--line-strong);border-radius:16px}
+.empty h2{color:var(--text);margin-bottom:8px}
+.states h2.k{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:28px 0 10px}
+.note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
+.tabbar{display:none}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}.side{display:none}
+  .mbrand{display:block;margin:0 0 12px}.mbrand .logo{width:150px}
+  main{padding:20px 16px 100px}h1{font-size:1.6rem}
+  .log>div{grid-template-columns:1fr}
+  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:var(--brand);z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+  .tabbar button{background:none;border:0;color:rgba(255,255,255,.7);padding:10px 2px 8px;font-size:.72rem}
+}
+.pill.blue{background:#dcebf7;color:#0b4f8a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pill.blue{background:#10283d;color:#8cc4f5}}
+:root[data-theme="dark"] .pill.blue{background:#10283d;color:#8cc4f5}
+.filters{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 16px;padding:16px 20px;margin-bottom:16px}
+.filters label{display:block;font-size:.85rem;font-weight:600;margin-bottom:4px}
+.filters select{width:100%;min-height:44px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);padding:0 10px}
+.chip{border:1px solid var(--line-strong);border-radius:6px;background:transparent;padding:6px 12px;font-size:.86rem;min-height:36px;align-self:end}
+.open{margin-top:10px;padding:14px 16px;background:var(--sand);border:1px solid var(--sand-2);border-radius:16px}
+.ailabel{background:var(--surface);border-radius:6px;padding:10px 14px;margin-bottom:10px;font-size:.85rem;font-weight:600;color:var(--bronze)}
+.stood{background:var(--surface);border-radius:6px;padding:10px 14px;margin-bottom:10px;font-size:.85rem;font-weight:600;color:var(--green)}
+.open ol{margin:8px 0 0;padding-left:20px;font-size:.85rem;color:var(--muted)}
+.open ol a{color:var(--text)}
+.reason{margin-top:10px;font-size:.85rem}
+.linkbtn{background:none;border:0;padding:0;text-decoration:underline;text-underline-offset:3px;font-size:.85rem;color:var(--text)}
+@media (max-width:820px){.filters{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
+    <nav class="nav" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Roadmap</button><button>Search and ask</button><hr><button aria-current="page">Admin</button></nav>
+    <div class="who">Signed in as<b>Maria Ek</b>Example Bank AB · Approver</div>
+  </aside>
+  <main id="main" tabindex="-1">
+    <div class="mbrand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
+    <button class="back">← Admin</button>
+    <div class="head"><div><h1>AI log</h1><p>Everything a model wrote for your organisation, which model wrote it, and whether a person has stood behind it. Nothing here can be edited.</p></div></div>
+
+    <div class="panel filters">
+      <div><label for="p">Purpose</label><select id="p"><option>Any purpose</option><option>So what?</option><option>Change summary</option><option>Scope suggestion</option><option>Link suggestion</option><option>Translation</option><option>Ask answer</option></select></div>
+      <div><label for="s">Review</label><select id="s"><option>Any review state</option><option>Not yet reviewed</option><option>Confirmed</option><option>Rewritten</option><option>Rejected</option></select></div>
+      <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap"><button class="chip">Record: Regulatory change ✕</button><button class="linkbtn">Clear the filters</button></div>
+    </div>
+
+    <div class="states">
+    <div class="panel"><div class="log">
+      <div><time>23 Sep 2026 10:14</time><div>
+        <div class="what"><span class="pill blue">Ask answer</span><span class="pill">Not yet reviewed</span><span class="pill amber">Marked wrong</span></div>
+        <div class="meta"><span>mock-model 2026-05-01</span><span>2 sources</span><button class="linkbtn" aria-expanded="true">Hide what it wrote</button></div>
+        <div class="open">
+          <div class="ailabel">Written by AI. No person has confirmed it.</div>
+          <p>A firm may accept a minor non-monetary benefit only where it enhances the quality of the service. [1] Payments for research must come from a separate research account. [2]</p>
+          <ol aria-label="Sources"><li><a href="#">MiFID II Delegated Directive, Article 12</a></li><li><a href="#">FFFS 2017:2, chapter 7</a></li></ol>
+          <p class="reason"><b>Reason given:</b> The answer misses the exemption for minor non-monetary benefits.</p>
+        </div>
+      </div></div>
+      <div><time>22 Sep 2026 06:02</time><div>
+        <div class="what"><span class="pill blue">So what?</span><span class="pill green">Confirmed</span></div>
+        <div class="meta"><span>claude-opus-5 2026-05-01</span><span>Model as reported by the agent</span><span>Regulatory change</span><span>1 source</span><button class="linkbtn" aria-expanded="true">Hide what it wrote</button><button class="linkbtn">Only this record</button></div>
+        <div class="open">
+          <div class="stood">Confirmed by Anna Nilsson, 22 Sep 2026 09:12</div>
+          <p>Teams that pay for external research should confirm that documented criteria exist.</p>
+          <ol aria-label="Sources"><li><a href="#">Finansinspektionen, decision memorandum FI Dnr 25-12345</a></li></ol>
+        </div>
+      </div></div>
+      <div><time>21 Sep 2026 06:01</time><div>
+        <div class="what"><span class="pill blue">So what?</span><span class="pill">Not yet reviewed</span></div>
+        <div class="meta"><span>claude-opus-5 2026-05-01</span><span>Model as reported by the agent</span><span>Regulatory change</span><span>1 source</span><button class="linkbtn" aria-expanded="false">Show what it wrote</button><button class="linkbtn">Only this record</button></div>
+      </div></div>
+      <div><time>20 Sep 2026 15:40</time><div>
+        <div class="what"><span class="pill blue">Ask answer</span><span class="pill">Not yet reviewed</span><span class="pill green">Marked helpful</span></div>
+        <div class="meta"><span>mock-model 2026-05-01</span><span>3 sources</span><button class="linkbtn" aria-expanded="false">Show what it wrote</button></div>
+      </div></div>
+    </div></div>
+    <div class="foot"><span>1 to 20 of 64</span><div style="display:flex;gap:8px"><button class="btn ghost small" disabled>Newer</button><button class="btn ghost small">Older</button></div></div>
+
+    <h2 class="k">Empty, filtered empty, loading, error, denied</h2>
+    <div class="empty"><h2>Nothing logged yet</h2><p>Every model call appears here as it is made.</p></div>
+    <div class="empty" style="margin-top:10px"><h2>Nothing logged yet</h2><p>No model call matches these filters.</p></div>
+    <div class="panel" aria-busy="true" style="margin-top:10px;height:120px;background:var(--surface-2)"></div>
+    <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the AI log</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
+    <div style="text-align:center;padding:48px 16px;max-width:60ch;margin:0 auto" role="alert"><h1>This page is not available to you</h1><p style="color:var(--muted)">Your role does not include what this page needs. Ask your administrator if you think it should.</p><p style="font-size:.85rem;color:var(--muted)">Needs ai log read</p></div>
+    </div>
+
+    <p class="note">AI log card (AUD-02). One row per model call, newest first, 20 at a time: time through formatDateTime in the tenant's timezone; the purpose as a pill in its slot tone (notice, what kind of call this is); the review state as a pill whose tone comes from its kind (not yet reviewed information, as an agent's suggestion is; confirmed and rewritten positive, a person settled it; rejected information, a decision made on purpose); the reader's verdict on an Ask answer (helpful positive, wrong warning, it needs a look). Then model and version, "Model as reported by the agent" where the agent reported them, the record kind, and the count of sources. Filters: purpose, review state, and one record picked from a row, as on the audit log. A row opens to what the model wrote and the sources it cites; the sand AI label stays on until a person confirmed the words as they stand, and a confirmation names the person and the time instead. A rewritten or rejected draft keeps the AI label, because the words shown are still the model's. The reason a reader gave with "Wrong" shows in the opened row. The Restricted screen names the grant when the person lacks it. At phone width the filters stack and each row is one column.</p>
+  </main>
+</div>
+<nav class="tabbar" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Search</button><button>More</button></nav>
+</body>
+</html>

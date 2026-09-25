@@ -157,3 +157,86 @@ pairs in `contrast.test.ts`. The other screen cards keep their old styling
 until their chunk restyles them. Playbook 6.4 lists button labels under
 `microlabel`; the design sets them in `body` at 500, which the owner confirms
 or corrects.
+
+## Amendment 2026-09-19: the tab bar below 1024 px
+
+**Source.** Alex's decision on 2026-09-19, in chat. On mobile and tablet he
+does not want a header menu button that opens the rail as a sheet. He wants a
+floating tab bar with five items, the fifth being More, which opens the rest
+of the menu, as many iPhone apps do. The full specification, with a reason and
+a source for every rule, is `design/system/navigation.md`. This owner decision
+overrides the prototype's phone navigation, so the prototype changed with it
+(`design/prototype/index.html`, `design/screens/tenant-shell.html`,
+`design/README.md` "The rail").
+
+**What it changes in the rail amendment.**
+- It replaces the phone sheet: the header menu button that opened the rail as
+  a sheet, and "an off-canvas sheet below 768 px" among the behaviours kept.
+- It strikes `SidebarTrigger` from that amendment's parts list. Nothing is
+  left for it to open.
+- It strikes "a second navigation model for phones" from that amendment's
+  "Deliberately not done", as Alex's new decision.
+- It keeps one navigation model per width: the tab bar and the More sheet
+  below 1024 px, the rail from 1024 px. Exactly one "Main" navigation is
+  exposed at any width.
+
+**Decision.**
+- **Which width gets what** (`navigation.md` section 1). Below 1024 px, a
+  floating bar at the bottom holds up to four dock destinations from the
+  registry, then More. From 1024 px, the rail, unchanged: it collapses to
+  icons, ctrl/cmd+b toggles it, and the open state is remembered. Below
+  1024 px ctrl/cmd+b is left to the browser.
+- **Why 1024.** Alex asked for the bar on mobile and tablet. 1024 covers every
+  phone in both orientations and every iPad below 13 inches in portrait, and
+  it is already a step in both of our systems (Green `viewport-m`, Tailwind
+  `lg`), so no custom breakpoint is added. 767 px (the old step) gives the bar
+  to no tablet. 820 px (the prototype's step) misses the iPad Pro 11 in
+  portrait, at 834 px. 840 px (Material's medium to expanded limit) is a step
+  in neither system.
+- **Known departures, accepted by Alex's instruction.** For a window 600 to
+  1023 px wide with a regular height, Material shows a rail, not a bar. Apple
+  puts the iPad tab bar at the top, or uses a sidebar. Apple keeps each tab's
+  place when a person switches tabs; here every tab links to its section's
+  root, as the rail does. Every destination stays reachable at every width,
+  as Apple asks.
+- **More** (`navigation.md` section 3). A button, always last and always
+  there, that opens a modal bottom sheet titled "More". The sheet holds a
+  Close button, the remaining destinations in the rail's groups, a hairline,
+  and the account laid flat: the name, organisation and roles, My passkeys, My
+  sessions and Sign out. A choice, Close, Escape, the scrim, any route change
+  and crossing 1024 px each close it. The sheet covers the bar.
+- **The component.** shadcn's `Sheet` with `side="bottom"`, written by hand in
+  `components/ui/sheet.tsx` on the Radix Dialog we already ship (ADR 0004), so
+  it adds no dependency. Only the bottom side is built. The rail's left sheet
+  is deleted, because the bar replaces its only user. Rejected: shadcn's Drawer
+  on vaul (its README says the repository is unmaintained, and it adds about
+  22 KB), the Base UI Drawer (a second headless library beside Radix), a
+  DropdownMenu (`role="menu"` is a command widget, not site navigation), and
+  community tab-bar components (their own tokens, no `aria-current`, or
+  `role="tablist"` for routes).
+- **The look** (`design/system/foundations.md`). The bar is a 12 px floating
+  layer on the surface colour with a hairline and one shadow, `float` (Green
+  `shadow-l-01` plus `shadow-l-02`). The current tab takes the rail's current
+  row treatment plus a 1 px inset outline, which is the part that reaches
+  3:1. The fully rounded shape stays the pill's.
+
+**Deliberately not done** (`navigation.md` section 14). A capsule-shaped bar
+or a fully rounded current tab. Glass, backdrop blur or a blurred scroll edge.
+Hiding or minimising the bar on scroll. Swiping the sheet down to close it.
+Back closing only the sheet (a route change does close it, but going back
+also leaves the page, and no history entry is pushed for the sheet). Per-tab
+memory. Animating the sheet. Apple's Edit screen for rearranging tabs. Any
+count or badge before a screen feeds one. A top tab bar on iPad. The
+prototype's brand-green, edge-to-edge bar: the rail amendment took brand green
+out of navigation, and Alex asked for a floating bar. Dark-theme screenshots
+until the app has a real theme switch. vaul, Base UI, `tw-animate-css`, a
+motion library, or any registry component.
+
+**Consequences.** The build changes the shell, not the registry's model: the
+tabs are `dockDestinations()` as they stand, More lists the rest, and a new
+optional `shortLabelKey` gives Search a one-word tab label. The E2E sign-out
+helper opens More below 1024 px, and `[data-who-panel]` stays on the rail's
+account row only. The other screen cards keep the old full-width brand bar
+until their chunk restyles them; until then `navigation.md` wins. The open
+questions each take their stated default and are listed in
+`docs/TODO_FOR_alex.md`, with the checks only a real device can make.

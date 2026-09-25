@@ -50,7 +50,7 @@ library or the agents.
 | `library` | Jurisdictions, languages, authorities, instruments, lineage, provisions, obligations, versions, translations | Library | R1 |
 | `proposals` | The review queue and `apply` | Library | R1 |
 | `watch` | Sources, coverage, changes, timelines, documents, obligation links | Library | R1 |
-| `register` | Tenant obligation overlay per entity, applicability requests, gaps, assessment history, internal links, attestations, waivers | Tenant | R2 |
+| `register` | Tenant obligation overlay per entity, applicability, gaps, assessment history, internal links, attestations, waivers | Tenant | R2 |
 | `cases` | Case, assessment, actions, evidence, sign-off, case file | Tenant | R1 (new + match), R2 |
 | `search` | Chunks, hybrid query, Ask, saved searches, evaluation sets | Library | R1 |
 | `home` | Home, briefing, roadmap, upcoming, calendar feeds | Tenant | R1 |
@@ -157,7 +157,8 @@ commits without them cannot exist and a failure in `record()` rolls the
 change back. `AppendOnlyModel` raises on update and delete; a trigger on
 each ledger (`BEFORE UPDATE OR DELETE … RAISE`) makes that true for raw SQL,
 with `SET LOCAL cw.maintenance = 'on'` as the escape hatch a conscious fix
-states. The audit-on-write guard fails any mutating route whose scenario
+states, honoured for the schema owner in a migration and ignored when the
+application role sets it. The audit-on-write guard fails any mutating route whose scenario
 wrote no audit row.
 
 ### The adapters

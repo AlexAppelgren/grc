@@ -61,10 +61,16 @@ class RequestIdMiddleware:
 
 
 class RequestIdLogFilter(logging.Filter):
-    """Attaches the current request ID to every log record (settings.LOGGING)."""
+    """Attaches the current request ID to every log record (settings.LOGGING) and changes
+    nothing else: a record passes every handler's filters in turn, so a change here would
+    reach every handler after it. What a line says of a request (the route, never the path
+    or the query) is apps.shared.logging.JsonFormatter's alone (playbook 4.7)."""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.request_id = _request_id.get()
+        # Django logs a refused request after RequestIdMiddleware has reset the context, so the
+        # id then comes from the request Django attaches to the record.
+        request = getattr(record, "request", None)
+        record.request_id = getattr(record, "request_id", None) or _request_id.get() or getattr(request, "request_id", None)
         return True
 
 

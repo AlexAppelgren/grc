@@ -8,6 +8,8 @@ import {
   isLibraryList,
   keyFromLabel,
   listLabel,
+  listMarker,
+  listTitle,
   nearDuplicateFrom,
   nearMatches,
   presentListSummary,
@@ -166,6 +168,29 @@ describe('keyFromLabel and changeSummary', () => {
   });
 
   it('describes a proposal that came back from a library-list write', () => {
-    expect(changeSummary({ title: 'Add "Client money"' }, t)).toBe('Add "Client money" is waiting for a library editor.');
+    expect(changeSummary({ title: 'Add "Client money"' }, t)).toBe('Add "Client money" is waiting for review.');
+  });
+});
+
+describe('every list title and marker resolves in every catalog (chunk4-T20)', () => {
+  const tSv = createT('sv');
+
+  it('rejection_reason is in both maps, alongside every other list this screen names', () => {
+    expect(listTitle.rejection_reason).toBeDefined();
+    expect(listMarker.rejection_reason).toBeDefined();
+  });
+
+  it('every key in listTitle resolves to real copy in English and Swedish', () => {
+    for (const [list, key] of Object.entries(listTitle)) {
+      expect(t(key), `listTitle.${list} (en)`).not.toBe(key);
+      expect(tSv(key), `listTitle.${list} (sv)`).not.toBe(key);
+    }
+  });
+
+  it('every key in listMarker resolves to real copy in English and Swedish', () => {
+    for (const [list, key] of Object.entries(listMarker)) {
+      expect(t(key), `listMarker.${list} (en)`).not.toBe(key);
+      expect(tSv(key), `listMarker.${list} (sv)`).not.toBe(key);
+    }
   });
 });

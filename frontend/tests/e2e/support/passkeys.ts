@@ -1,4 +1,4 @@
-import type { APIRequestContext, BrowserContext, Page } from '@playwright/test';
+import type { APIRequestContext, BrowserContext, Locator, Page } from '@playwright/test';
 
 import { expect, type ApiGuard } from './api-guard';
 
@@ -52,8 +52,21 @@ export const LOGINS = {
   auditor: 'auditor@example-bank.test',
   anna: 'anna@example-bank.test',
   secondBankAdmin: 'admin@second-bank.test',
+  /** Tenant B's second person: approves the scope change its admin requests (FP-S8). */
+  secondBankApprover: 'approver@second-bank.test',
+  /** Platform staff, no tenant: the console signs in as these. */
+  editor: 'editor@bleqq.test',
+  /** The second library editor, so the console can keep four eyes on a proposal. */
+  editor2: 'editor2@bleqq.test',
+  platform: 'platform@bleqq.test',
   /** Reserved for ADM-S2: it re-issues this member's enrolment, which retires their passkeys. */
   reissue: 'reissue@example-bank.test',
+  /** AGT-S10 (J-4): creates a platform agent key through the console. Not reserved: the key is revocable. */
+  agentKeys: 'agent-keys@bleqq.test',
+  /** The one login whose own `locale` is Swedish (WAT-S2); read-only, so not reserved. */
+  readerSv: 'reader-sv@example-bank.test',
+  /** Reserved for I18N-S3: it switches this member's own interface language, which every session of theirs follows. */
+  language: 'language@example-bank.test',
 } as const;
 
 export const ANNA_INVITE_TOKEN = 'e2e-invite-anna';
@@ -96,13 +109,23 @@ export function allowFreshContext(apiGuard: ApiGuard): void {
 }
 
 // The real ceremony on /sign-in: the seeded key answers the discoverable
-// request and the who panel shows the person.
+// request and the shell appears. The shell renders only for a signed-in
+// person, and exactly one "Main" navigation is visible at every width: the
+// rail from 1024 px, the tab bar below it (design/system/navigation.md 11).
 export async function signInAs(page: Page, login: string): Promise<SeededPasskey> {
   const passkey = await seedPasskeyFor(page.context(), login);
   await page.goto('/sign-in');
   await page.getByRole('button', { name: 'Sign in with a passkey' }).click();
-  await expect(page.locator('[data-who-panel]')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible({ timeout: 15_000 });
   return passkey;
+}
+
+/** Below 1024 px: opens the More sheet from the tab bar and returns it. */
+export async function openMore(page: Page): Promise<Locator> {
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'More' }).click();
+  const sheet = page.getByRole('dialog', { name: 'More' });
+  await expect(sheet).toBeVisible();
+  return sheet;
 }
 
 /** The quiet Restricted screen, distinct from Next's own route announcer (also role=alert). */
@@ -111,11 +134,23 @@ export function restrictedScreen(page: Page) {
 }
 
 export async function signOut(page: Page): Promise<void> {
-  // Sign out lives in the account menu since the sidebar rebuild (2026-09-19): open the
-  // account row first, then choose the menu item.
-  await page.locator('[data-who-panel]').getByRole('button', { name: /, account menu$/ }).click();
-  await page.getByRole('menuitem', { name: 'Sign out' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
+  // Settle first: a screen still loading its data (Today reads the briefing once
+  // GET /home is in) would send its next request after the session had ended,
+  // and that request answers 401.
+  await expect(page.locator('[data-loading-state]')).toHaveCount(0);
+  // The width decides, as COMPACT_QUERY does: below 1024 px the account lives
+  // in the More sheet; from 1024 px in the rail's account menu (open the
+  // account row first, then choose the menu item). [data-who-panel] marks the
+  // rail's row only, so journeys that read it run at desktop width.
+  if ((page.viewportSize()?.width ?? 1280) < 1024) {
+    await openMore(page);
+    await page.getByRole('dialog', { name: 'More' }).getByRole('button', { name: 'Sign out' }).click();
+  } else {
+    await page.locator('[data-who-panel]').getByRole('button', { name: /, account menu$/ }).click();
+    await page.getByRole('menuitem', { name: 'Sign out' }).click();
+  }
+  // Sign-out ends on the public page (public.journey.spec.ts).
+  await expect(page.getByRole('heading', { level: 1, name: 'A register of record for everything regulation asks of your bank.' })).toBeVisible();
 }
 
 // One-off helper to mint a fixed credential for a new seeded login: run it

@@ -17,6 +17,19 @@ overwritten.
 | 2026-09-19 | Plan created. Chunk 1 operations marked "in build" (cards `auth-*`, `me-*`, `admin-members|roles|api-keys|security-log|organisation` by the identity agent). Chunks 2 to 7 marked "designed" with their cards in `design/screens/`. R2 and R3 operations mapped to the card that will hold them, marked "later chunk, card pending" | design agent |
 | 2026-09-19 | Correction: the tenant never confirms a change's type or flags directly (library facts, PRO-01). `tenant-change.html` shows them as suggested; triage accepts them for the tenant, a library editor corrects them through `PATCH /changes/{id}`, a member reports. The earlier draft of the card had a tenant-side "Confirm classification" button; removed before the card was finished | design agent |
 | 2026-09-19 | Paths for the INPUT_DELTAS additions that the contract does not yet spell out (vocabulary writes, footprint change requests, suggestions) are proposed in this table and marked "path proposed". The chunk that builds them fixes the path and adds a ledger row | design agent |
+| 2026-09-19 | PRD 0.3: `GET /me/work` no longer feeds Today's "Decide now" — Today reads the queue counts on `GET /me`, and `/me/work` becomes the My work page in chunk 8 (D-23). New rows for the participant routes, the people reference, member teams, the watching routes and the unit and bulk-decision routes. `admin-footprint.html` gains the markets panel, and on screen the section is called Regulatory scope (PRD glossary) | docs agent |
+| 2026-09-19 | f03-T60: `tenant-my-work.html` drawn; the participants panel added to `tenant-obligation.html` and `tenant-change.html`; departments with heads and teams added to `admin-organisation.html`; team membership added to `admin-members.html`. My work is not a fifth dock destination: it has no `dockRank` and is reached from the rail and the More sheet | design agent |
+| 2026-09-25 | Alex, on a phone in dark: grey prose on black is hard to read, and § 2's one-line headers add nothing. Running text on the public page now takes the text colour, grey stays on short labels, and § 2 is the feature name and its paragraph. The frontend now refuses to be framed by any origin but its own (`frame-ancestors 'self'`, `X-Frame-Options: SAMEORIGIN`), which the demo needs and nothing else may use | public page |
+| 2026-09-24 | Alex: an interactive demo on the public page, the exact product UI with sample data, kept working as the UI and the API change. The app runs in a frame under the headline and answers from recordings of the seeded reader's walk through every non-admin screen; the demo journey re-walks on every push and fails on an unrecorded request or a changed answer shape (`npm run demo:record`). The sample record in § 3 is gone | public page |
+| 2026-09-24 | Alex: review the public page's text against his writing rules. Every string was rewritten to cut repetition, fragments and flourishes, and claims the product does not make yet were corrected or removed; the marginal notes and the coverage footnote are gone, headings state what each section shows, running prose is 16 px, and colour on paper is kept to the section references and rules | public page |
+| 2026-09-24 | Alex, on the live page: too cluttered to know where to look. The hero keeps the headline and one line; its two buttons (already in the sticky bar), the sample record (now § 3's worked example) and the facts strip are gone from the first screen; section breaks are the double rule alone. The top bar drops its green for the page's paper and a hairline, with Sign in as the neutral primary | public page |
+| 2026-09-24 | Alex: a person without a session ends on the public page. Sign-out, a session that ended by itself (idle, revoked, past its limit) and a first visit to any gated address all go to `/welcome`, which replaces the redirect to `/sign-in`; sign-in has a back link to it. ID-S11 and the E2E sign-out helper now expect the public page | public page |
+| 2026-09-24 | The public page (`design/public/index.html`, approved by Alex) built at `/welcome` in a `(public)` route group outside the session gate. An anonymous visitor at `/` now lands there; every other gated address still sends them to `/sign-in`. Sign in goes to the passkey flow, Request access to the page's invitation section, whose mail link shows only when `NEXT_PUBLIC_SUPPORT_CONTACT` is set. The design's inert form, its placeholder footer links and its organisation number are not built | public page |
+| 2026-09-21 | c7-search-screen: `POST /search` built at `/search` (`tenant-search.html`). Type, jurisdiction, duty type, binding and language filters plus "As of" and "Outside our scope" in the URL; the typed query stays out of it, in component state only. The card's instrument filter, per-hit language tag and "N obligations" instrument summary are cut: no route lists instruments to choose from and `SearchHit` carries none of the other two, so nothing here invents them. A provision hit renders as a fact rather than a link: no screen opens one yet | search agent |
+| 2026-09-23 | Correction (review of `645b1c3..2492f80`): the status cells are brought back to `main`. Three rows marked shipped name a journey that is still `test.fixme` and move to in build naming it (`GET /obligations`: FP-S4; `GET /obligations/{id}/versions` and `/diff`: AGT-S10; `POST .../problem-reports`: PRO-S7 and AUD-S5), and so do `tenant-inventory.html` until FP-04's watched-market view (FP-S13) lands and `tenant-obligation.html`, whose Related changes, This looks wrong and machine-confirmed journeys are fixme. Rows still reading "designed" for work that is on `main` read in build and say what is missing. `GET /me/whats-new` is served as `GET /library-updates` with `POST /me/visit` (622ce06). `GET /authorities` and `GET /obligations/{id}/changes` are served, and the related-changes panel renders the second. The console problem-report surface is removed (D-50). The footprint request and vocabulary paths are the built ones. `console-change-facts.html` and `console-agent-keys.html` join the card table. "in build" now means any chunk in progress, not chunk 1 alone. On review of this correction, `tenant-instrument.html` moves to in build for the same This looks wrong journeys as the obligation card (and INV-S11), `states.html` reads in build because its shared states are on `main`, and `tenant-calendar-feeds.html` reads in build like its routes' row | review-fixes |
+| 2026-09-23 | ask-screen: Ask built at `/search?mode=ask` (`tenant-ask.html`). The mode and "As of" are in the URL, the question never: it lives in component state and the request alone. The answer streams through the one axios instance on its fetch adapter, statement by statement, each with its citation numbers and a "Change pending" warning pill dated to its precision; the sources, linking to `/inventory/obligations/{id}`, arrive with the closing answer. The AI label names the basis and the "as of" date; an answer the model stopped at its length limit says it was cut short (D-82). No answer offers "Search instead", which carries the question over as the query; Ask switched off, loading, error, refused and denied states; Helpful and Wrong with a reason. Departure from the card: Search and Ask are tabs rather than chips, since they switch the panel and a chip named "Search" would share its name with the form's Search button. The card's "2 obligations searched in 3 languages" line and the bold lead phrase of a statement are cut, since the answer carries neither, and so is the no-answer card's "Ask a narrower question" button, since the question box sits right above it | ask-screen |
+| 2026-09-23 | problem-reports-frontend: the Reported problems section is built on `tenant-obligation.html` and `tenant-instrument.html` (`GET /problem-reports` on the record, `PATCH /problem-reports/{id}` to close with an outcome and a note) and AUD-S5 is un-fixme'd. The console problem-report card, its card row and its unused rail icon are deleted: no console surface for a bank's report exists (D-50) | problem-reports-frontend |
+| 2026-09-24 | R1 close (`r1-close-and-readiness`): every chunk 0 to 7 row reading "in build" is checked against the specs and the code. Moved to shipped: the chunk 1 auth, me and admin cards and their operations; vocabularies, the footprint with its markets panel (FP-S10) and Create in the picker; the inventory (FP-S4, FP-S13), obligation (WAT-S6's Related changes, INV-S14's machine-confirmed label) and instrument (INV-S11) cards; the console shell, queue (PRO-S13), Change facts with confirming through `POST /changes/{id}/confirmation`, and Agent keys on the live `/agent-keys` routes (ID-S20); library updates (PRO-S7, AGT-S10) with This looks wrong; the watch feed (FP-S4, FP-S15); Confirm link, Not related, Rewrite and Confirm wording (WAT-S4, WAT-S6, WAT-S7); briefing, roadmap and the calendar feeds screen (HOM-S5); search and Ask (SRC-S4, SRC-S5, SRC-S10); the audit and AI logs, evaluation and console tenants. No route answers 501 any more. Named deviations that remain: `tenant-change.html` stays in build because its two This looks wrong buttons are not built and no route takes a change as a report's subject, and its case panels are chunk 9; the console Sources page is read-only, so `POST /sources` and `PATCH /sources/{id}` are served with no R1 screen and Check now is chunk 11; `GET /authorities`, `POST /obligations/{id}/verifications`, the change event routes and the console reissue-enrolment route are served with no R1 screen caller (the last is chunk 11); Suggest (VOC-S6) is chunk 8; the batch queue is chunk 11; saved searches are chunk 13; console health and `POST /eval/runs` are chunk 14; Today shows no library-updates count | r1-close-and-readiness |
 
 ## Honesty rules (playbook 7.5, kept in spirit)
 
@@ -40,53 +53,71 @@ overwritten.
 | Status | Means |
 |---|---|
 | served | Exists from Phase 0 (`/health/`, `GET /me` minimal) |
-| in build | Chunk 1, on `main` in progress |
-| designed | A card in `design/screens/` exists; chunk 2 to 7 |
+| in build | On `main`, its chunk in progress, and not yet shown to meet the covered rule; the row names what is missing |
+| designed | A card in `design/screens/` exists and nothing of it is built on `main` |
+| shipped | The covered rule above holds: screen, role variants, every state, `@e2e` un-fixme'd and green, on `main` |
 | later chunk N, card pending | An R2/R3 operation; the screen that will hold it is named, its card is not drawn yet |
 | removed | Dropped by INPUT_DELTAS; the row says what replaces it |
 | agent only | Called with an API key by agents; no screen calls it |
 
 ## Screen cards
 
-| Card | Route | Surface | Chunk | Status |
-|---|---|---|---|---|
-| `tenant-shell.html`, `tenant-today.html` | `/` | tenant | 0, 6 | shell built in chunk 0; Today's panels chunk 6 |
-| `auth-invitation`, `auth-code`, `auth-enrol`, `auth-sign-in`, `auth-step-up`, `auth-recovery` | `/auth/*` | both | 1 | in build |
-| `me-passkeys`, `me-sessions` | `/me/passkeys`, `/me/sessions` | both | 1 | in build |
-| `admin-organisation`, `admin-members`, `admin-roles`, `admin-api-keys`, `admin-security-log` | `/admin/*` | tenant | 1 | in build |
-| `admin-vocabularies.html` | `/admin/vocabularies` | tenant | 2 | designed |
-| `admin-vocabulary.html` | `/admin/vocabularies/[list]`; console variant `/console/vocabularies/[list]` | both | 2, 4 | designed |
-| `admin-footprint.html` | `/admin/footprint` | tenant | 2 | designed |
-| `picker-create-or-suggest.html` | inside every vocabulary picker | both | 2 (near-duplicate), 8 (suggest) | designed |
-| `tenant-inventory.html` | `/inventory` (Obligations, Instruments tabs) | tenant | 3 | designed |
-| `tenant-obligation.html` | `/inventory/obligations/[obligationId]` | tenant | 3; register panels 8 | designed |
-| `tenant-instrument.html` | `/inventory/instruments/[instrumentId]` | tenant | 3 | designed |
-| `console-shell.html` | `/console` | console | 4 | designed |
-| `console-queue.html` | `/console/queue`, `/console/queue/[proposalId]` | console | 4 | designed |
-| `console-problem-reports.html` | `/console/problem-reports` | console | 4 | designed |
-| `tenant-library-updates.html` | `/inventory/updates` | tenant | 4 | designed |
-| `tenant-watch.html` | `/watch` (tabs by case category, Coverage) | tenant | 5; workflow tabs fill in 9 | designed |
-| `tenant-change.html` | `/watch/[changeId]` | tenant | 5; case panels 9 | designed |
-| `console-sources.html` | `/console/sources` | console | 5 | designed |
-| `tenant-briefing.html` | `/briefing`, `/briefing/[weekStart]` | tenant | 6 | designed |
-| `tenant-roadmap.html` | `/roadmap` | tenant | 6 | designed |
-| `tenant-calendar-feeds.html` | `/me/calendar-feeds` | tenant | 6 | designed |
-| `tenant-search.html` | `/search` | tenant | 7 | designed |
-| `tenant-ask.html` | `/search?mode=ask` | tenant | 7 | designed |
-| `states.html` | every screen | both | 2 onwards | designed |
-| `console-vocabularies.html` | `/console/vocabularies` | console | 4 | not drawn: `admin-vocabularies.html` shared-list tab is the same list, rendered for `library_vocab.manage` with Rename, Merge, Retire producing proposals. Draw a separate card only if the build finds a difference |
-| `console-languages.html` | `/console/languages` | console | 4 | card pending (languages and jurisdictions are library vocabularies; `admin-vocabulary.html` console variant renders them) |
-| `admin-audit-log.html` | `/admin/audit-log` | tenant | 4 (proposed, AUD-01 is R1 M and no chunk names its screen) | card pending; prototype `vAudit()` is the cut |
-| `admin-ai-log.html` | `/admin/ai-log` | tenant | 7 (AUD-02) | card pending |
-| `console-evaluation.html` | `/console/evaluation` | console | 7 (SRC-05) | card pending |
-| `tenant-gaps.html`, register panels | `/inventory/obligations/[id]` right column, `/gaps` | tenant | 8 | card pending; prototype `vGaps()`, `vGap()`, `entityPanel()`, `gapsPanel()`, `historyPanel()`, `interpPanel()` are the cut |
-| `admin-organisation.html` entities, products, teams | `/admin/organisation` | tenant | 8 | extends the chunk 1 card |
-| case panels on `tenant-change.html` | `/watch/[changeId]` | tenant | 9 | card pending; prototype `vChange()` work panels are the cut |
-| `tenant-notifications.html`, comments panel | who panel, every record | tenant | 10 | card pending |
-| `admin-agents.html`, `console-agent-definitions.html` | `/admin/agents`, `/console/agents` | both | 11 | card pending; prototype `vAgents()` is the cut |
-| `console-tenants.html`, `console-health.html` | `/console/tenants`, `/console/health` | console | 11, 14 | card pending |
-| `tenant-reports.html`, `admin-data.html` | `/reports`, `/admin/data` | tenant | 12 | card pending; prototype `vReports()` is the cut |
-| `admin-integrations.html`, `admin-security.html` | `/admin/integrations`, `/admin/security` | tenant | 13 | card pending |
+Measured is the median time from a client-side navigation to the screen's own
+real data against `next start`, in milliseconds, per `frontend/tests/e2e/support/screen-timing.ts`
+and the budgets in `screen-budgets.ts` (NFR-S7). The R1 performance pass (`r1-perf`,
+2026-09-23) recorded it from two runs, each on a fresh seed against `next start` in the
+cloud session (4 CPUs), five samples a screen: "run 1 / run 2". Every screen is inside its
+500 ms budget; the slowest is the inventory at about 250 ms. A screen with no number has no
+destination of its own in the registry.
+
+| Card | Route | Surface | Chunk | Status | Measured |
+|---|---|---|---|---|---|
+| `tenant-shell.html`, `tenant-today.html` | `/` | tenant | 0, 6 | shipped: the shell (chunk 0) and Today's panels (chunk 6), walked by HOM-S1 and HOM-S2 | 106 / 104 |
+| `auth-invitation`, `auth-code`, `auth-enrol`, `auth-sign-in`, `auth-step-up`, `auth-recovery` | `/auth/*` | both | 1 | shipped |  |
+| `design/public/index.html` | `/welcome` | public | none | shipped: `public.journey.spec.ts` green |  |
+| `me-passkeys`, `me-sessions` | `/me/passkeys`, `/me/sessions` | both | 1 | shipped | passkeys 60 / 69; sessions 65 / 51 |
+| `admin-organisation`, `admin-members`, `admin-roles`, `admin-api-keys`, `admin-security-log` | `/admin/*` | tenant | 1 | shipped | admin 8 / 13; organisation 78 / 71; members 96 / 99; roles 65 / 72; API keys 63 / 65; security log 72 / 65 |
+| `admin-vocabularies.html` | `/admin/vocabularies` | tenant | 2 | shipped (VOC-S2 to VOC-S5, VOC-S7, VOC-S11 and VOC-S15); Suggest, VOC-S6, is chunk 8 | 93 / 87 |
+| `admin-vocabulary.html` | `/admin/vocabularies/[list]`; console variant `/console/vocabularies/[list]` | both | 2, 4 | shipped, both variants | console list 67 / 67 |
+| `admin-footprint.html` (on screen: Regulatory scope) | `/admin/footprint` | tenant | 2; markets panel 3 | shipped: requests with preview, four eyes and step-up (FP-S2, FP-S5), and the markets panel, card states 17 to 19 (FP-S10) | 166 / 171 |
+| `picker-create-or-suggest.html` | inside every vocabulary picker | both | 2 (near-duplicate), 8 (suggest) | shipped for Create with the near-duplicate check (VOC-S7); Suggest is chunk 8 |  |
+| `tenant-inventory.html` | `/inventory` (Obligations, Instruments tabs) | tenant | 3 | shipped (INV-S1, INV-S3, INV-S4, FP-S4, and FP-S13 for the watched-market view) | 244 / 256 |
+| `tenant-obligation.html` | `/inventory/obligations/[obligationId]` | tenant | 3; register panels 8 | shipped (INV-S3 to INV-S7, AUD-S5, the Related changes panel walked by WAT-S6 and the machine-confirmed label by INV-S14); register panels land with chunk 8 |  |
+| `tenant-instrument.html` | `/inventory/instruments/[instrumentId]` | tenant | 3 | shipped (INV-S1, INV-S2, INV-S7 and INV-S11 for a standard's edition with no text); the Reported problems section is unit-tested here and walked end to end on the obligation card (AUD-S5) |  |
+| `console-shell.html` | `/console` | console | 4 | shipped (ADM-S4) |  |
+| `console-queue.html` | `/console/queue`, `/console/queue/[proposalId]` | console | 4 | shipped (PRO-S3, PRO-S4, PRO-S5, PRO-S9 and PRO-S13); the batch variant is chunk 11 | 76 / 76 |
+| `tenant-library-updates.html` | `/inventory/updates` | tenant | 4 | shipped: the screen reads `GET /library-updates`, moves the bookmark with `POST /me/visit` and offers This looks wrong (PRO-S7, AGT-S10) |  |
+| `tenant-watch.html` | `/watch` (tabs by case category, Coverage) | tenant | 5; workflow tabs fill in 9 | shipped (WAT-S1, WAT-S2, WAT-S9, FP-S4 and FP-S15's watched-market view); workflow tabs fill in with chunk 9 | 155 / 154 |
+| `tenant-change.html` | `/watch/[changeId]` | tenant | 5; case panels 9 | in build: timeline, documents, obligation links with Confirm link and Not related (WAT-S6), and the "So what?" with Rewrite and Confirm wording (WAT-S7) are shipped (WAT-S2, WAT-S4); the card's two This looks wrong buttons (Classification and Record panels) are not built, and no route takes a change as a report's subject; case panels are chunk 9 |  |
+| `console-sources.html` | `/console/sources` | console | 5 | shipped read-only (WAT-S1): Add, Edit and Pause are not on the page in R1 and Check now is chunk 11; no jurisdiction filter, which needs `GET /authorities` to admit a console session | 78 / 67 |
+| `console-change-facts.html` | `/console/change-facts`, `/console/change-facts/[changeId]` | console | 5 | shipped: the queue of facts nobody has confirmed, correcting one, and confirming a suggestion through `POST /changes/{id}/confirmation` (D-74, WAT-S4) | 80 / 76 |
+| `console-agent-keys.html` | `/console/agent-keys` | console | 5 | shipped: the screen lists, creates and revokes platform keys through `/agent-keys` (ID-S20's console journey, PRO-S13) | 53 / 59 |
+| `tenant-briefing.html` | `/briefing`, `/briefing/[weekStart]` | tenant | 6 | shipped (HOM-S3) | 104 / 101 |
+| `tenant-roadmap.html` | `/roadmap` | tenant | 6 | shipped (HOM-S4 and HOM-S6) | 81 / 73 |
+| `tenant-calendar-feeds.html` | `/me/calendar-feeds` | tenant | 6 | shipped (HOM-S5) | 58 / 84 |
+| `tenant-search.html` | `/search` | tenant | 7 | shipped (SRC-S1, SRC-S3, and J-7, SRC-S10); saved searches are chunk 13 | 16 / 15 |
+| `tenant-ask.html` | `/search?mode=ask` | tenant | 7 | shipped (SRC-S4, SRC-S5 and SRC-S10) |  |
+| `states.html` | every screen | both | 2 onwards | shipped for the R1 screens: the shared states (`components/ui/States.tsx` for loading, error, not found and the refusals rendered in place; `components/ui/EmptyState.tsx`; the Restricted screen that `RequirePermission` and `/restricted` render); each later screen meets the card as it ships |  |
+| `console-vocabularies.html` | `/console/vocabularies` | console | 4 | not drawn: `admin-vocabularies.html` shared-list tab is the same list, rendered for `library_vocab.manage` with Rename, Merge, Retire producing proposals. Draw a separate card only if the build finds a difference | 67 / 67 |
+| `console-languages.html` | `/console/languages` | console | 4 | card pending (languages and jurisdictions are library vocabularies; `admin-vocabulary.html` console variant renders them) |  |
+| `admin-audit-log.html` | `/admin/audit-log` | tenant | 4 (proposed, AUD-01 is R1 M and no chunk names its screen) | shipped without a card: cut from the prototype's `vAudit()` (AUD-S3) | 86 / 76 |
+| `admin-ai-log.html` | `/admin/ai-log` | tenant | 7 (AUD-02) | shipped: the screen reads `GET /ai-generations` under `ai_log.read`, filtered by purpose, review state and one record; a row opens to what the model wrote and its sources, labelled AI until a person confirmed it (AUD-S4) | 84 / 77 |
+| `console-evaluation.html` | `/console/evaluation` | console | 7 (SRC-05) | shipped: the set filterable by language, the baseline per metric ("Unrecorded", never zero), past runs and the add form marked not yet in the release gate; ADM-S4 walks it; starting a run, `POST /eval/runs`, is chunk 14 | 91 / 89 |
+| `tenant-gaps.html`, register panels | `/inventory/obligations/[id]` right column, `/gaps` | tenant | 8 | card pending; prototype `vGaps()`, `vGap()`, `entityPanel()`, `gapsPanel()`, `historyPanel()`, `interpPanel()` are the cut |  |
+| `admin-organisation.html` entities, licences and certificates, products, departments with heads, teams | `/admin/organisation` | tenant | 8 | extends the chunk 1 card; departments with heads and teams designed (f03-T60); the entity, licence, certificate and product sections are card pending |  |
+| `admin-members.html` team membership on the member row | `/admin/members` | tenant | 8 | extends the chunk 1 card; designed (f03-T60) |  |
+| `tenant-my-work.html` | `/work` | tenant | 8 | designed (HOM-05, f03-T60): scope switch, four sections, the link to Today, the permission-limited line, every state, and the comments and mentions panel from chunk 10 |  |
+| participants panel on `tenant-obligation.html` and `tenant-change.html` | `/inventory/obligations/[id]`, `/watch/[changeId]` | tenant | 8, 9 | designed (COL-04, f03-T60) |  |
+| units list, paste dialog and the Statement of Applicability view on `tenant-obligation.html` | `/inventory/obligations/[id]` | tenant | 8 | card pending (REG-08) |  |
+| case panels on `tenant-change.html` | `/watch/[changeId]` | tenant | 9 | card pending; prototype `vChange()` work panels are the cut |  |
+| `tenant-notifications.html` | `/notifications`, and the bell (a dot on the account row and on More, Notifications in the account menu) | tenant | 10 | built (COL-02, `c10-fe-notifications`): the bell from GET /me's `unreadNotifications` (the dot on the account row and on More, Notifications first in the account menu and the More sheet with its count), the inbox with kind pills, record links for obligations and changes, read and unread rows, optimistic mark one and mark all with rollback, Show more, loading, empty and error. Deviations: a case notification lists its title without a link (it carries the case id and no screen takes one, CHUNK9 ruling 1); the empty state has no Open My work until `/work` ships; the account row reads "name, N unread notifications, account menu" so the journeys' ", account menu" suffix holds; the per-person settings are `c10-fe-prefs-and-ooo`'s |  |
+| comments panel (`design/system/comments-and-mentions.md`) | on `tenant-change.html` (the bank's case), `tenant-obligation.html` and `tenant-my-work.html` | tenant | 10 | designed (COL-01, HOM-05): the list, the composer with its visibility line, mentions, Edit and Delete on one's own comments, the deleted marker, every state |  |
+| `admin-workflow.html` | `/admin/workflow` | tenant | 10 | designed (COL-02, TEN-01): the six workflow fields with unit and platform default, saved, refused and restricted (CHUNK10_TASKS.md ruling 8: not a section of `admin-organisation.html`) |  |
+| `me-out-of-office.html` | `/me/out-of-office` | tenant | 10 (moved from 8, D-95) | designed (TEN-04, TEN-S4): the last day away, the delegate picker, End now, `already_delegated`, the delegate's view |  |
+| `admin-agents.html`, `console-agent-definitions.html` | `/admin/agents`, `/console/agents` | both | 11 | card pending; prototype `vAgents()` is the cut |  |
+| `console-tenants.html`, `console-health.html` | `/console/tenants`, `/console/health` | console | 4; health 14 | tenants shipped without a card (the list, and a tenant created with its first administrator invited, ADM-S6; support access is TEN-06, chunk 8); health chunk 14 (ADM-S5), card pending | tenants 51 / 56 |
+| `tenant-reports.html`, `admin-data.html` | `/reports`, `/admin/data` | tenant | 12 | card pending; prototype `vReports()` is the cut |  |
+| `admin-integrations.html`, `admin-security.html` | `/admin/integrations`, `/admin/security` | tenant | 13 | card pending |  |
 
 ## Operations
 
@@ -103,85 +134,94 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
 | `GET /health` (served at `/health/`, site root, INPUT_DELTAS §7) | none, load balancer | none | none | no | none | NFR-S14 | served |
-| `POST /auth/invitations/open` | `auth-invitation.html` | both | none | no | anyone with the link | ID-S2, ID-S25 | in build |
-| `POST /auth/code/request` | `auth-code.html`, `auth-sign-in.html` | both | none | no | anyone; enrolled account looks identical | ID-S6, ID-S25 | in build |
-| `POST /auth/code/verify` | `auth-code.html` | both | none | no | anyone; lock after 5 attempts | ID-S3, ID-S4 | in build |
-| `POST /auth/passkeys/register/options`, `/verify` | `auth-enrol.html` (enrolment session), `me-passkeys.html` (add) | both | enrolment session or any signed-in | no | anyone | ID-S5, ID-S10 | in build |
-| `POST /auth/passkeys/authenticate/options`, `/verify` | `auth-sign-in.html` | both | none | no | anyone | ID-S8, ID-S25 | in build |
-| `POST /auth/step-up/options`, `/verify` | `auth-step-up.html`, opened by every step-up action | both | any signed-in | is the step-up | anyone | ID-S14, ID-S15 | in build |
-| `POST /auth/refresh` | none, `api-client.ts` | both | refresh cookie | no | none | ID-S9 | in build |
-| `POST /auth/sign-out` | who panel (`tenant-shell.html`, `console-shell.html`) | both | any signed-in | no | anyone | ID-S25 | in build |
-| `GET /me` | shell (who panel, registry permissions, queue counts) | both | any signed-in or enrolment | no | anyone | ID-S4, ID-S26 | served, grows in chunk 1 |
-| `PATCH /me` | who panel language switch (chunk 1); notification preferences on `tenant-notifications.html` (chunk 10) | both | any signed-in | no | anyone | ID-S18 | in build (locale); later chunk 10 (preferences), card pending |
-| `GET /me/work` | `tenant-today.html` Decide now | tenant | any signed-in | no | All 7; counts differ by permission | HOM-S1, CAS-S14 | designed (chunk 6); grows in 9 |
-| `GET /me/whats-new`, `POST /me/visit` | `tenant-library-updates.html`, count on `tenant-today.html` | tenant | `library.read` | no | All 7 | PRO-S7, AGT-S10 | designed |
-| `GET /me/passkeys`, `PATCH /me/passkeys/{id}`, `DELETE /me/passkeys/{id}` | `me-passkeys.html` | both | any signed-in | no | anyone; last passkey cannot go | ID-S10 | in build |
-| `GET /me/sessions`, `DELETE /me/sessions/{id}` | `me-sessions.html` | both | any signed-in | no | anyone | ID-S11 | in build |
+| `POST /auth/invitations/open` | `auth-invitation.html` | both | none | no | anyone with the link | ID-S2, ID-S25 | shipped |
+| `POST /auth/code/request` | `auth-code.html`, `auth-sign-in.html` | both | none | no | anyone; enrolled account looks identical | ID-S6, ID-S25 | shipped |
+| `POST /auth/code/verify` | `auth-code.html` | both | none | no | anyone; lock after 5 attempts | ID-S3, ID-S4 | shipped |
+| `POST /auth/passkeys/register/options`, `/verify` | `auth-enrol.html` (enrolment session), `me-passkeys.html` (add) | both | enrolment session or any signed-in | no | anyone | ID-S5, ID-S10 | shipped |
+| `POST /auth/passkeys/authenticate/options`, `/verify` | `auth-sign-in.html` | both | none | no | anyone | ID-S8, ID-S25 | shipped |
+| `POST /auth/step-up/options`, `/verify` | `auth-step-up.html`, opened by every step-up action | both | any signed-in | is the step-up | anyone | ID-S14, ID-S15 | shipped |
+| `POST /auth/refresh` | none, `api-client.ts` | both | refresh cookie | no | none | ID-S9 | shipped |
+| `POST /auth/sign-out` | who panel (`tenant-shell.html`, `console-shell.html`) | both | any signed-in | no | anyone | ID-S25 | shipped |
+| `GET /me` | shell (who panel, registry permissions, queue counts) | both | any signed-in or enrolment | no | anyone | ID-S4, ID-S26 | shipped |
+| `PATCH /me` | who panel language switch (chunk 1); notification preferences on `tenant-notifications.html` (chunk 10) | both | any signed-in | no | anyone | ID-S18 | shipped (locale); later chunk 10 (preferences), card designed (`tenant-notifications.html` block 10) |
+| `GET /me` queue counts (applicability added) | `tenant-today.html` Decide now | tenant | any signed-in | no | All 7; counts differ by permission | HOM-S1, CAS-S14 | shipped: `counts{triage, proposals, assignedToMe}` feed Decide now (HOM-S1); the sign-off and applicability counts come with chunks 9 and 8; `unreadNotifications` (chunk 10) feeds the bell on `tenant-notifications.html` |
+| `GET /me/work` (reshaped, INPUT_DELTAS §7) | `tenant-my-work.html` | tenant | any member; each row needs its own read permission | no | All 7; rows and counts filtered, unreadable kinds shown as permission-limited | HOM-S7, HOM-S9, HOM-S13 | later chunk 8, card designed (`tenant-my-work.html`) |
+| `GET /me/comments?about=written\|mentioned` | `tenant-my-work.html` Comments and mentions | tenant | any member; filtered by the subject's read permission | no | All 7 | COL-S12 | later chunk 10, card designed (`tenant-my-work.html` §6, `design/system/comments-and-mentions.md`) |
+| `GET /library-updates`, `POST /me/visit` (in place of the designed `GET /me/whats-new`, 622ce06; INPUT_DELTAS) | `tenant-library-updates.html`, count on `tenant-today.html` | tenant | `library.read` (list); any member session, for its own bookmark (visit) | no | All 7 | PRO-S7, AGT-S10 | shipped on `/inventory/updates` (PRO-S7, AGT-S10); Today shows no count of them in R1 |
+| `GET /me/passkeys`, `PATCH /me/passkeys/{id}`, `DELETE /me/passkeys/{id}` | `me-passkeys.html` | both | any signed-in | no | anyone; last passkey cannot go | ID-S10 | shipped |
+| `GET /me/sessions`, `DELETE /me/sessions/{id}` | `me-sessions.html` | both | any signed-in | no | anyone | ID-S11 | shipped |
 
 ### Tenant and administration (chunk 1)
 
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
-| `GET /tenant` | `admin-organisation.html` | tenant | any member (reads); edit needs `members.manage` | no | All 7 read; A edits | TEN-S1 | in build |
-| `PATCH /tenant` | `admin-organisation.html` (name, timezone, languages); reminders, escalation, retention on `admin-security.html`/`admin-data.html` | tenant | `members.manage` (profile), `workflow.manage` (reminders), `security.manage` (retention) | no | A; CO for workflow | TEN-S1, COL-S2, AUD-S6 | in build (profile); later chunks 10, 12 |
-| `GET /tenant/members`, `GET /tenant/members/{id}/sessions` | `admin-members.html` | tenant | `members.manage` | no | A | ADM-S2, ADM-S1 | in build |
-| `POST /tenant/members` (invite) | `admin-members.html` | tenant | `members.manage` | no | A | ID-S1, ADM-S2 | in build |
-| `PATCH /tenant/members/{id}` (roles, title) | `admin-members.html` | tenant | `members.manage` | yes (roles) | A; last-admin 409 rendered | ID-S19, ADM-S2 | in build |
-| `DELETE /tenant/members/{id}` (deactivate) | `admin-members.html` | tenant | `members.manage` | yes | A; bulk reassignment in chunk 8 | ADM-S2, TEN-S5 | in build |
-| `DELETE /tenant/members/{id}/sessions` | `admin-members.html` | tenant | `members.manage` | no | A | ID-S11 | in build |
-| `POST /tenant/members/{id}/reissue-enrolment` | `admin-members.html` | tenant | `members.manage` | yes | A | ID-S12 | in build |
-| `GET /tenant/invitations`, `POST .../{id}/resend`, `DELETE .../{id}` | `admin-members.html` Invitations tab | tenant | `members.manage` | no | A | ID-S1, ADM-S2 | in build |
-| `GET /tenant/roles`, `POST`, `PATCH /{key}`, `POST /{key}/retire`, `GET /reference/permissions` | `admin-roles.html` | tenant | `roles.manage` | yes (create, update, retire) | A | ID-S18, ADM-S3 | in build |
-| `GET /tenant/api-keys`, `POST`, `DELETE /{id}` | `admin-api-keys.html` | tenant | `integrations.manage` | yes (create) | A; key shown once | ID-S20, ID-S21 | in build |
-| `GET /tenant/security-log` | `admin-security-log.html` | tenant | `security.manage` | no | A | ID-S22 | in build |
-| `POST /console/tenants/{tenantId}/members/{userId}/reissue-enrolment` | `console-tenants.html` | console | `support_access.grant` | yes | PA; out-of-band check recorded | ID-S13, ADM-S6 | in build (endpoint); later chunk 11, card pending |
+| `GET /tenant` | `admin-organisation.html` | tenant | any member (reads); edit needs `members.manage` | no | All 7 read; A edits | TEN-S1 | shipped |
+| `PATCH /tenant` | `admin-organisation.html` (name, timezone, languages); retention on `admin-data.html` | tenant | `members.manage` (profile), `security.manage` (retention) | no | A | TEN-S1, AUD-S6 | shipped (profile); later chunk 12 (retention). The workflow fields moved to `PATCH /tenant/workflow` on `admin-workflow.html` (chunk 10) |
+| `GET /tenant/members`, `GET /tenant/members/{id}/sessions` | `admin-members.html` | tenant | `members.manage` | no | A | ADM-S2, ADM-S1 | shipped |
+| `POST /tenant/members` (invite) | `admin-members.html` | tenant | `members.manage` | no | A | ID-S1, ADM-S2 | shipped |
+| `PATCH /tenant/members/{id}` (roles, title) | `admin-members.html` | tenant | `members.manage` | yes (roles) | A; last-admin 409 rendered | ID-S19, ADM-S2 | shipped |
+| `DELETE /tenant/members/{id}` (deactivate) | `admin-members.html` | tenant | `members.manage` | yes | A; bulk reassignment, participations and team memberships end in chunk 8 | ADM-S2, TEN-S5, TEN-S9 | shipped |
+| `PUT /tenant/members/{userId}/teams` | `admin-members.html` member row | tenant | `members.manage` | no | A | TEN-S8 | later chunk 8, card pending |
+| `GET /reference/people` | every people picker (participants, owners) | tenant | any member session; refused for an enrolment session | no | All 7 | COL-S6, TEN-S8 | later chunk 8, card pending |
+| `DELETE /tenant/members/{id}/sessions` | `admin-members.html` | tenant | `members.manage` | no | A | ID-S11 | shipped |
+| `POST /tenant/members/{id}/reissue-enrolment` | `admin-members.html` | tenant | `members.manage` | yes | A | ID-S12 | shipped |
+| `GET /tenant/invitations`, `POST .../{id}/resend`, `DELETE .../{id}` | `admin-members.html` Invitations tab | tenant | `members.manage` | no | A | ID-S1, ADM-S2 | shipped |
+| `GET /tenant/roles`, `POST`, `PATCH /{key}`, `POST /{key}/retire`, `GET /reference/permissions` | `admin-roles.html` | tenant | `roles.manage` | yes (create, update, retire) | A | ID-S18, ADM-S3 | shipped |
+| `GET /tenant/api-keys`, `POST`, `DELETE /{id}` | `admin-api-keys.html` | tenant | `integrations.manage` | yes (create) | A; key shown once | ID-S20, ID-S21 | shipped |
+| `GET /tenant/security-log` | `admin-security-log.html` | tenant | `security.manage` | no | A | ID-S22 | shipped |
+| `POST /console/tenants/{tenantId}/members/{userId}/reissue-enrolment` | `console-tenants.html` | console | `support_access.grant` | yes | PA; out-of-band check recorded | ID-S13, ADM-S6 | served; no R1 screen calls it (later chunk 11, card pending) |
 
 ### Vocabularies (INPUT_DELTAS §1, chunk 2)
 
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
-| `GET /vocab` (list of lists, path proposed) | `admin-vocabularies.html`; console variant | both | any member (tenant lists), `library_vocab.manage` (console) | no | All 7 read their lists; A and CO get actions; LE in console | VOC-S1, VOC-S14 | designed |
-| `GET /vocab/{list}` | every picker, filter, presentation function; agents at run start | both | any member; `key:vocab:read` | no | All 7; agents | VOC-S2, AGT-S3, VOC-S14 | designed |
-| `POST /vocab/{list}` (path proposed) | `admin-vocabulary.html` Add a value; `picker-create-or-suggest.html` Create | tenant; console for library lists (becomes a proposal, VOC-07) | `vocab.manage`; `library_vocab.manage` via proposal | no | A, CO create; others see Suggest; 409 near_duplicate rendered in place | VOC-S2, VOC-S7, VOC-S11, VOC-S15 | designed |
-| `PATCH /vocab/{list}/{key}` (relabel, reorder, retire, restore; path proposed) | `admin-vocabulary.html` inline rename, drag, Retire, Restore | both | `vocab.manage`; console via proposal | no | A, CO; system rows relabel only; last value of a category has no Retire | VOC-S3, VOC-S4, VOC-S8, VOC-S15 | designed |
-| `POST /vocab/{list}/{key}/merge` (path proposed) | `admin-vocabulary.html` Merge with preview | both | `vocab.manage`; console via proposal | no | A, CO; preview shows the count moved | VOC-S5, VOC-S15 | designed |
-| `GET/POST /vocab/{list}/suggestions`, `POST .../{id}/accept`, `/decline` (path proposed) | `picker-create-or-suggest.html` Suggest; `admin-vocabulary.html` Suggested tab | tenant | suggest: any member; decide: `vocab.manage` | no | O, AP, C, R, AU suggest; A, CO decide | VOC-S6, VOC-S7 | designed; built with chunk 8 (VOC-03 is R2) |
+| `GET /vocab` (list of lists) | `admin-vocabularies.html`; console variant | both | any member (tenant lists), `library_vocab.manage` (console) | no | All 7 read their lists; A and CO get actions; LE in console | VOC-S1, VOC-S14 | shipped |
+| `GET /vocab/{list}` | every picker, filter, presentation function; agents at run start | both | any member; `key:vocab:read` | no | All 7; agents | VOC-S2, AGT-S3, VOC-S14 | shipped |
+| `POST /vocab/{list}` | `admin-vocabulary.html` Add a value; `picker-create-or-suggest.html` Create | tenant; console for library lists (becomes a proposal, VOC-07) | `vocab.manage`; `library_vocab.manage` via proposal | no | A, CO create; others see Suggest; 409 near_duplicate rendered in place | VOC-S2, VOC-S7, VOC-S11, VOC-S15 | shipped |
+| `PATCH /vocab/{list}/{key}` (relabel), `POST /vocab/{list}/reorder`, `POST /vocab/{list}/{key}/retire`, `/restore` (the built paths) | `admin-vocabulary.html` inline rename, drag, Retire, Restore | both | `vocab.manage`; console via proposal | no | A, CO; system rows relabel only; last value of a category has no Retire | VOC-S3, VOC-S4, VOC-S8, VOC-S15 | shipped |
+| `POST /vocab/{list}/{key}/merge` (`?dryRun=true` previews) | `admin-vocabulary.html` Merge with preview | both | `vocab.manage`; console via proposal | no | A, CO; preview shows the count moved | VOC-S5, VOC-S15 | shipped |
+| `POST /vocab/{list}/suggest`, `GET /vocab/{list}/suggestions`, `POST .../suggestions/{id}/decline`; accept is not built | `picker-create-or-suggest.html` Suggest; `admin-vocabulary.html` Suggested tab | tenant | suggest: any member; decide: `vocab.manage` | no | O, AP, C, R, AU suggest; A, CO decide | VOC-S6, VOC-S7 | later chunk 8 (VOC-03 is R2): the three routes above are on `main` with no screen |
 
 ### Taxonomy and footprint
 
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
-| `GET /taxonomy/terms` | `admin-footprint.html` dimensions; scope pickers; inventory and watch filters | both | `library.read`; `key:library:read` | no | All 7 | FP-S1, VOC-S1 | designed |
-| `POST /taxonomy/terms`, `PATCH /taxonomy/terms/{id}` | `admin-vocabulary.html` console variant (Scope terms) → `console-queue.html` (kind Vocabulary) | console | `library_vocab.manage`, applied by `proposals.review` | approve: yes | LE proposes, a second LE approves | VOC-S11, VOC-S15 | designed; direct write does not exist (VOC-S11) |
-| `GET /tenant/footprint` | `admin-footprint.html`; every footprint-respecting screen reads its match | both | `library.read`; `key:footprint:read` | no | All 7 | FP-S1, FP-S4 | designed |
+| `GET /taxonomy/terms` | `admin-footprint.html` dimensions; scope pickers; inventory and watch filters | both | `library.read`; `key:library:read` | no | All 7 | FP-S1, VOC-S1 | shipped |
+| `POST /taxonomy/terms`, `PATCH /taxonomy/terms/{id}` | `admin-vocabulary.html` console variant (Scope terms) → `console-queue.html` (kind Vocabulary) | console | `library_vocab.manage`, applied by `proposals.review` | approve: yes | LE proposes, a second LE approves | VOC-S11, VOC-S15 | shipped: each call files a proposal (202) and writes no term (VOC-S11) |
+| `GET /tenant/footprint` | `admin-footprint.html`; every footprint-respecting screen reads its match | both | `library.read`; `key:footprint:read` | no | All 7 | FP-S1, FP-S4 | shipped |
 | `PUT /tenant/footprint` | none | tenant | | | | | removed (INPUT_DELTAS §5); replaced by the change requests below |
-| `POST /tenant/footprint/preview` (path proposed) | `admin-footprint.html` preview panel | tenant | `footprint.request` | no | A, CO; others read-only banner | FP-S2, FP-S5 | designed |
-| `GET /tenant/footprint-change-requests`, `POST` (path proposed) | `admin-footprint.html` pending banner, Send for approval, History | tenant | `footprint.request` | no | A, CO request; All 7 see the pending banner | FP-S2, FP-S5 | designed |
-| `POST /tenant/footprint-change-requests/{id}/approve` (path proposed) | `admin-footprint.html` Approve | tenant | `footprint.approve` | yes | A, CO, AP; requester sees the refusal, server 409 four_eyes_violation | FP-S2, FP-S3, FP-S5 | designed |
-| `POST .../{id}/reject`, `POST .../{id}/withdraw` (path proposed) | `admin-footprint.html` Reject with reason, Withdraw | tenant | reject `footprint.approve`; withdraw: requester | no | A, CO, AP reject; requester withdraws | FP-S2 | designed |
+| `POST /tenant/footprint/requests?dryRun=true` (the built path) | `admin-footprint.html` preview panel | tenant | `footprint.request` | no | A, CO; others read-only banner | FP-S2, FP-S5 | shipped |
+| `GET /tenant/footprint/requests`, `POST` (the built path) | `admin-footprint.html` pending banner, Send for approval, History | tenant | `footprint.request` | no | A, CO request; All 7 see the pending banner | FP-S2, FP-S5 | shipped |
+| `POST /tenant/footprint/requests/{id}/approve` (the built path) | `admin-footprint.html` Approve | tenant | `footprint.approve` | yes | A, CO, AP; requester sees the refusal, server 409 four_eyes_violation | FP-S2, FP-S3, FP-S5 | shipped |
+| `POST /tenant/footprint/requests/{id}/reject`, `/withdraw` (the built paths) | `admin-footprint.html` Reject with reason, Withdraw | tenant | reject `footprint.approve`; withdraw: requester | no | A, CO, AP reject; requester withdraws | FP-S2, FP-S6 | shipped |
+| `GET /tenant/footprint` markets block | `admin-footprint.html` "Markets we watch" panel | tenant | any member reads | no | All 7 read; only `footprint.request` may change | FP-S10 | shipped: the "Markets we watch" panel reads `markets` (FP-S10) |
+| `POST /tenant/footprint/watching`, `POST /tenant/footprint/watching/remove` (key in the body, never a path) | `admin-footprint.html` "Markets we watch" panel | tenant | `footprint.request` | no | A, CO; others read-only | FP-S10, FP-S14 | shipped: the "Markets we watch" panel calls both (FP-S10) |
 
 ### Library and inventory (chunk 3)
 
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
-| `GET /authorities` | `console-sources.html` add form; `tenant-instrument.html` facts | both | `library.read`; `key:library:read` | no | All 7; LE | INV-S1 | designed |
-| `GET /instruments`, `GET /instruments/{id}` | `tenant-inventory.html` Instruments tab; `tenant-instrument.html` | tenant | `library.read`; `key:library:read` | no | All 7 | INV-S1, INV-S10 | designed |
-| `GET /instruments/{id}/relations` | `tenant-instrument.html` Lineage | tenant | `library.read` | no | All 7 | INV-S1 | designed |
-| `GET /instruments/{id}/provisions`, `GET /provisions/{id}/versions` | `tenant-instrument.html` provision tree | tenant | `library.read` | no | All 7 | INV-S2, INV-S10 | designed |
-| `GET /obligations` | `tenant-inventory.html` (filters, "as of", outside footprint) | tenant | `library.read`; `key:library:read` | no | All 7; register overlay columns from chunk 8 | INV-S3, INV-S4, FP-S4 | designed |
-| `GET /obligations/{id}` | `tenant-obligation.html` | tenant | `library.read` | no | All 7 | INV-S3, INV-S6, INV-S7 | designed |
-| `GET /obligations/{id}/versions`, `GET /obligations/{id}/diff` | `tenant-obligation.html` version chips, Show what changed, Versions panel; `tenant-library-updates.html` Show what changed | tenant | `library.read` | no | All 7 | INV-S4, INV-S5, AGT-S10 | designed |
-| `GET /obligations/{id}/changes` | `tenant-obligation.html` Related changes | tenant | `library.read` | no | All 7 | WAT-S6 | designed |
-| `POST /obligations/{id}/verifications` | `console-queue.html` (a Re-verification proposal applies the stamp on approval) | console | `proposals.review` | no | LE; never a tenant role | INV-S8 | designed |
-| `POST /obligations/{id}/problem-reports` | `tenant-obligation.html`, `tenant-instrument.html`, `tenant-change.html`, `tenant-library-updates.html` This looks wrong | tenant | `problems.report` | no | All 7 | INV-S7, PRO-S7, AUD-S5 | designed |
+| `GET /authorities` | `console-sources.html` add form and jurisdiction filter; the console's Change facts authority filter | console | `library.read` (a tenant session); `key:library:read`; a console session holding `sources.manage` is refused today | no | LE; All 7 and agents may read it | — | served to a tenant session and a key (INPUT_DELTAS §8); no R1 screen calls it, because the console session it is designed for is refused until the gate admits `sources.manage`, as `GET /sources` does |
+| `GET /instruments`, `GET /instruments/{id}` | `tenant-inventory.html` Instruments tab; `tenant-instrument.html` | tenant | `library.read`; `key:library:read` | no | All 7 | INV-S1, INV-S10 | shipped; no "Adopted" row on the card, because no such data exists |
+| `GET /instruments/{id}/relations` | `tenant-instrument.html` Lineage | tenant | `library.read` | no | All 7 | INV-S1 | shipped (no standalone route: `GET /instruments/{id}` answers `lineage` embedded, the same instrument read the card already makes) |
+| `GET /instruments/{id}/provisions`, `GET /provisions/{id}/diff` | `tenant-instrument.html` provision tree, Show what changed | tenant | `library.read` | no | All 7 | INV-S2, INV-S10 | shipped (a provision's versions and their text are embedded in the tree read; there is no `GET /provisions/{id}/versions`) |
+| `GET /obligations` | `tenant-inventory.html` (Obligations tab: filters, "as of", outside footprint, instrument filter with counts) | tenant | `library.read`; `key:library:read` | no | All 7; register overlay columns from chunk 8 | INV-S3, INV-S4, FP-S4 | shipped |
+| `GET /obligations/{id}` | `tenant-obligation.html` | tenant | `library.read` | no | All 7 | INV-S3, INV-S6, INV-S7 | shipped |
+| `GET /obligations/{id}/versions`, `GET /obligations/{id}/diff` | `tenant-obligation.html` version chips, Show what changed, Versions panel; `tenant-library-updates.html` Show what changed | tenant | `library.read` | no | All 7 | INV-S4, INV-S5, AGT-S10 | shipped (`versions[]` is embedded in `GET /obligations/{id}`, so there is no `GET /obligations/{id}/versions` route) |
+| `GET /obligations/{id}/changes` | `tenant-obligation.html` Related changes | tenant | `library.read` | no | All 7 | WAT-S6 | shipped: the Related changes panel (`ObligationRelatedChanges.tsx`) renders it |
+| `POST /obligations/{id}/verifications` | `console-queue.html` (a Re-verification proposal applies the stamp on approval) | console | `proposals.review` | no | LE; never a tenant role | INV-S8 | served (INV-S8's integration half is green); no R1 screen calls it |
+| `POST /obligations/{id}/problem-reports` | `tenant-obligation.html`, `tenant-instrument.html`, `tenant-change.html`, `tenant-library-updates.html` This looks wrong | tenant | `problems.report` | no | All 7 | INV-S7, PRO-S7, AUD-S5 | shipped on `tenant-obligation.html`, `tenant-instrument.html` (its own route, `POST /instruments/{id}/problem-reports`) and `tenant-library-updates.html`, body `{description, versionNumber?, language?}` with no "Where" select (open question for Alex, `docs/TODO_FOR_alex.md`); a report joins its record's Reported problems section. `tenant-change.html` has no This looks wrong: no route takes a change as the subject (see its card row) |
 
 ### Register (chunk 8, R2)
 
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
 | `PATCH /obligations/{id}/register` | `tenant-obligation.html` Where we stand, How we handle it, per legal entity | tenant | `register.edit` | no | CO, O edit; others read; `If-Match`, 409 stale_write rendered | REG-S3, REG-S4, REG-S11 | later chunk 8, card pending (prototype `vObligation()` right column) |
-| `GET /applicability-requests`, `POST /obligations/{id}/applicability-requests` | `tenant-obligation.html` Does it apply to us | tenant | `applicability.request` | no | CO, O | REG-S1 | later chunk 8, card pending |
-| `POST /applicability-requests/{id}/approve`, `/reject` | `tenant-obligation.html` Waiting for approval | tenant | `applicability.approve` | approve: yes | CO, AP; requester refused | REG-S1, REG-S2 | later chunk 8, card pending |
+| `PUT /obligations/{id}/applicability` (per obligation, legal entity or unit; path proposed) | `tenant-obligation.html` Does it apply to us, with its confirmation dialog | tenant | `applicability.approve` | no (D-75) | CO, AP; others read; one audit event per write | REG-S1, REG-S2, REG-S4, REG-S12 | later chunk 8, card pending |
+| `POST /applicability` (many rows in one call; path proposed) | `tenant-obligation.html` paste dialog, confirm the decisions | tenant | `applicability.approve` | no (D-75) | CO, AP; one audit event per row; `REGISTER_BULK_MAX` caps a call | REG-S14 | later chunk 8, card pending |
+| `GET/POST` units and the paste with its dry run (paths proposed) | `tenant-obligation.html` units list and paste dialog | tenant | `register.edit`; `applicability.approve` when the paste carries applicability | no | CO, O | REG-S13, REG-S15 | later chunk 8, card pending |
+| `GET/POST /obligations/{id}/participants`, `DELETE .../participants/{participantId}` | participants panel on `tenant-obligation.html` | tenant | `register.edit`; anyone may remove their own row | no | CO, O add; the participant leaves | COL-S6, COL-S7 | later chunk 8, card pending |
+| `GET/POST /changes/{id}/participants`, `DELETE .../participants/{participantId}` | participants panel on `tenant-change.html` | tenant | `cases.contribute`; anyone may remove their own row | no | CO, O, C add; the participant leaves | COL-S9, CAS-S17 | later chunk 9, card pending |
 | `GET/POST /obligations/{id}/internal-links`, `DELETE /internal-links/{id}` | `tenant-obligation.html` Linked internal items | tenant | `register.edit` | no | CO, O | REG-S8 | later chunk 8, card pending |
 | `GET/POST /obligations/{id}/attestations` | `tenant-obligation.html` Attestation | tenant | `register.edit` (owner only, server-checked) | no | O | REG-S9 | later chunk 13, card pending |
 | `GET/POST /obligations/{id}/waivers` | `tenant-obligation.html` Waivers | tenant | `risk.accept.approve` | yes | CO, AP | REG-S9, REG-S6 | later chunk 13, card pending |
@@ -190,20 +230,20 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
-| `GET /changes` | `tenant-watch.html` | tenant | `watch.read` | no | All 7; tabs by case category | WAT-S2, WAT-S9, FP-S4 | designed |
-| `GET /changes/{id}` | `tenant-change.html` | tenant | `watch.read` | no | All 7 | WAT-S2, WAT-S4, WAT-S6 | designed |
+| `GET /changes` | `tenant-watch.html` | tenant | `watch.read` | no | All 7; tabs by case category | WAT-S2, WAT-S9, FP-S4 | shipped |
+| `GET /changes/{id}` | `tenant-change.html` | tenant | `watch.read` | no | All 7 | WAT-S2, WAT-S4, WAT-S6 | shipped |
 | `POST /changes` | none | agent | `key:changes:write` | no | agents; 409 merge on known stableKey | AGT-S2, WAT-S3, AGT-S10 | agent only |
-| `PATCH /changes/{id}` (library facts: type, flags, scope) | `console-queue.html` (kind Change facts); agents | console; agent | `proposals.review`; `key:changes:write` | no | LE confirms or corrects agent suggestions; tenants see "Suggested by the agent" until then | WAT-S4, WAT-S5 | designed |
-| `POST /changes/{id}/events`, `PATCH /changes/{id}/events/{eventId}` | `console-queue.html` (Change facts); agents | console; agent | `proposals.review`; `key:changes:write` | no | LE; agents | WAT-S2 | designed |
-| `POST /changes/{id}/documents` | agents; `tenant-change.html` Documents reads them | agent; tenant | `key:changes:write` | no | agents write; All 7 read | WAT-S3 | designed |
-| `PUT /changes/{id}/obligations` | agents (suggest with confidence); `console-queue.html` (LE confirms for the library) | agent; console | `key:changes:write`; `proposals.review` | no | agents; LE | WAT-S6 | designed |
-| Case-side link confirmation (`tenant-change.html` Confirm link, Not related; stored on the tenant's case, path proposed `POST /changes/{id}/case/obligation-links`) | `tenant-change.html` | tenant | `cases.work` | no | CO, O confirm; others read | WAT-S6 | designed; the chunk 5 build fixes the path |
-| `GET /sources`, `GET /sources/coverage` | `tenant-watch.html` Coverage tab; `console-sources.html`; `tenant-today.html` foot | both | `watch.read`; `sources.manage`; `key:sources:read` | no | All 7 read; LE manages | WAT-S1, HOM-S1 | designed |
-| `POST /sources`, `PATCH /sources/{id}` | `console-sources.html` Add, Edit, Pause, Resume | console | `sources.manage` | no | LE | WAT-S1 | designed |
-| Check now (`POST /agent-runs` with one source, or a research request in chunk 11) | `console-sources.html` Check now | console | `sources.manage` | no | LE | WAT-S1, AGT-S7 | designed (chunk 5 uses the run API; chunk 11 the request) |
-| `GET /agent-runs` | `console-health.html`; `admin-agents.html` history | both | `system.health`; `agents.manage` | no | PA; A | AGT-S5, ADM-S5 | later chunk 11, card pending |
+| `PATCH /changes/{id}` (library facts: type, flags, scope) | `console-change-facts.html`; agents | console; agent | `proposals.review`; `key:changes:write` | no | LE confirms or corrects agent suggestions; tenants see "Suggested by the agent" until then | WAT-S4, WAT-S5 | shipped: the console's Change facts detail corrects a fact through it; confirming a suggestion goes through `POST /changes/{id}/confirmation` (D-74, WAT-S4) |
+| `POST /changes/{id}/events`, `PATCH /changes/{id}/events/{eventId}` | `console-change-facts.html`; agents | console; agent | `proposals.review`; `key:changes:write` | no | LE; agents | WAT-S2 | served; agents write them, and no R1 console control calls them |
+| `POST /changes/{id}/documents` | agents; `tenant-change.html` Documents reads them | agent; tenant | `key:changes:write` | no | agents write; All 7 read | WAT-S3 | shipped: agents write, `tenant-change.html` Documents reads |
+| `PUT /changes/{id}/obligations` | agents (suggest with confidence); `console-change-facts.html` (LE sets the links for the library) | agent; console | `key:changes:write`; `proposals.review` | no | agents; LE | WAT-S6 | shipped: agents suggest and the console's Change facts detail sets and confirms the links (D-74) |
+| Case-side link confirmation (`tenant-change.html` Confirm link, Not related; stored on the tenant's case): `POST /changes/{id}/case/obligation-links`, `DELETE /changes/{id}/case/obligation-links/{obligationId}` | `tenant-change.html` | tenant | `cases.work` | no | CO, O confirm; others read | WAT-S6 | shipped: Confirm link and Not related on `tenant-change.html` (INPUT_DELTAS §8) |
+| `GET /sources`, `GET /sources/coverage` | `tenant-watch.html` Coverage tab; `console-sources.html`; `tenant-today.html` foot | both | `watch.read`; `sources.manage`; `key:sources:read` | no | All 7 read; LE manages | WAT-S1, HOM-S1 | shipped: both routes are served to a tenant session and to a console session holding `sources.manage` (INPUT_DELTAS §8), and the Coverage tab and the console Sources page read them |
+| `POST /sources`, `PATCH /sources/{id}` | `console-sources.html` Add, Edit, Pause, Resume | console | `sources.manage` | no | LE | WAT-S1 | served; no R1 screen calls them, because the console Sources page is read-only in R1 |
+| Check now (`POST /agent-runs` with one source, or a research request in chunk 11) | `console-sources.html` Check now | console | `sources.manage` | no | LE | WAT-S1, AGT-S7 | later chunk 11 (AGT-05): the console Sources page has no Check now in R1 |
+| `GET /agent-runs` | `console-health.html`; `admin-agents.html` history | both | `system.health`; `agents.manage` | no | PA; A | AGT-S5, ADM-S5 | later chunks 11 and 14, card pending; the route itself is on `main` |
 | `POST /agent-runs`, `PATCH /agent-runs/{id}`, `POST /agent-runs/{id}/source-checks` | none | agent | `key:runs:write` | no | agents | AGT-S1, AGT-S9 | agent only |
-| `PUT /changes/{id}/so-what`, `POST /changes/{id}/so-what/confirm` | `tenant-change.html` Rewrite, Confirm wording; also from `tenant-today.html` lead card | tenant | `cases.work` | no | CO, O; others see the label and no buttons | WAT-S7, CAS-S14 | designed |
+| `PUT /changes/{id}/so-what`, `POST /changes/{id}/so-what/confirm` | `tenant-change.html` Rewrite, Confirm wording; also from `tenant-today.html` lead card | tenant | `cases.work` | no | CO, O; others see the label and no buttons | WAT-S7, CAS-S14 | shipped on `tenant-change.html`: the draft with its label, Rewrite and Confirm wording (WAT-S7); Today's lead card shows the wording and its label without the buttons (CAS-S14 is chunk 9) |
 
 ### Case workflow (chunk 9, R2)
 
@@ -226,32 +266,32 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
-| `GET /proposals`, `GET /proposals/{id}` | `console-queue.html` | console | `proposals.review` | no | LE; tenant roles see "Restricted" | PRO-S7, ADM-S4 | designed |
-| `POST /proposals` | agents; `admin-vocabularies.html` shared-list Suggest a change; `console-problem-reports.html` Start a proposal; `admin-vocabulary.html` console variant | agent; tenant; console | `key:proposals:write`; `proposals.create`; `proposals.review` | no | agents; CO; LE | PRO-S1, PRO-S6, VOC-S11, AUD-S5 | designed |
-| `POST /proposals/{id}/approve` (corrections in the body) | `console-queue.html` Approve and apply | console | `proposals.review` | yes | LE; proposer refused, 409 four_eyes_violation rendered | PRO-S3, PRO-S4, PRO-S5, AGT-S10 | designed |
-| `POST /proposals/{id}/reject` | `console-queue.html` Reject with reason | console | `proposals.review` | no | LE | PRO-S9 | designed |
+| `GET /proposals`, `GET /proposals/{id}` | `console-queue.html` | console | `proposals.review`; `key:proposals:review` (a platform key bound to an agent, D-62) | no | LE; tenant roles see "Restricted" | PRO-S7, ADM-S4 | shipped |
+| `POST /proposals` | agents; `admin-vocabularies.html` shared-list Suggest a change; `admin-vocabulary.html` console variant | agent; tenant; console | `key:proposals:write`; `proposals.create`; `proposals.review` | no | agents; CO; LE | PRO-S1, PRO-S6, VOC-S11, AUD-S5 | shipped: agents and the vocabulary screens file proposals |
+| `POST /proposals/{id}/approve` (corrections in the body) | `console-queue.html` Approve and apply | console | `proposals.review`; `key:proposals:review` (a key bound to a different agent from the proposer's, D-62) | yes for a person; a key never steps up | LE; an independent agent; proposer refused, 409 four_eyes_violation rendered | PRO-S3, PRO-S4, PRO-S5, AGT-S10 | shipped (and PRO-S13 for an independent agent) |
+| `POST /proposals/{id}/reject` | `console-queue.html` Reject with reason | console | `proposals.review`; `key:proposals:review` (D-62) | no | LE; an independent agent | PRO-S9 | shipped |
 | Batch proposals (re-tag, backfill; approve whole or row by row) | `console-queue.html` batch variant | console | `proposals.review` | yes | LE | PRO-S8, VOC-S12, AGT-S7 | later chunk 11, card pending |
 
 ### Search and ask (chunk 7)
 
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
-| `POST /search` | `tenant-search.html` | tenant | `search.use`; `key:search:read` | no | All 7 | SRC-S1, SRC-S3, SRC-S10 | designed |
+| `POST /search` | `tenant-search.html` | tenant | `search.use`; `key:search:read` | no | All 7 | SRC-S1, SRC-S3, SRC-S10 | shipped |
 | `POST /search/similar` | agents (find similar before registering); the near-duplicate hint in `picker-create-or-suggest.html` uses the vocabulary check, not this | agent | `key:search:read` | no | agents | AGT-S1 | agent only |
-| `POST /ask` | `tenant-ask.html` | tenant | `search.use` | no | All 7; "Ask is switched off" state when the tenant disables it | SRC-S4, SRC-S5, SRC-S6, SRC-S10 | designed |
-| `POST /answers/{id}/feedback` | `tenant-ask.html` Helpful, Wrong | tenant | `search.use` | no | All 7 | SRC-S4, AUD-S4 | designed |
+| `POST /ask` | `tenant-ask.html` | tenant | `search.use` | no | All 7; "Ask is switched off" state when the tenant disables it | SRC-S4, SRC-S5, SRC-S6, SRC-S10 | shipped: the route streams and the screen reads it statement by statement through the one axios instance (SRC-S4, SRC-S5, SRC-S10) |
+| `POST /answers/{id}/feedback` | `tenant-ask.html` Helpful, Wrong | tenant | `search.use` | no | All 7 | SRC-S4, AUD-S4 | shipped: Helpful and Wrong with a reason post from the Ask screen and confirm |
 | `GET/POST /saved-searches`, `DELETE /saved-searches/{id}` | `tenant-search.html` Saved tab | tenant | `search.use` | no | All 7 | SRC-S7 | later chunk 13, card pending |
 
 ### Home, briefing, roadmap (chunk 6)
 
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
-| `GET /home` | `tenant-today.html` | tenant | any member | no | All 7; Decide now differs by permission | HOM-S1, HOM-S2 | designed (card exists from chunk 0) |
-| `GET /briefings/current`, `GET /briefings/{weekStart}` | `tenant-briefing.html`; part on `tenant-today.html` | tenant | `watch.read` | no | All 7; lead button reads Triage for `cases.triage` | HOM-S3 | designed |
-| `GET /roadmap` | `tenant-roadmap.html`; Coming up on `tenant-today.html` and `tenant-briefing.html` | tenant | `roadmap.read` | no | All 7 | HOM-S4, HOM-S6, REG-S10 | designed |
+| `GET /home` | `tenant-today.html` | tenant | any member | no | All 7; Decide now differs by permission | HOM-S1, HOM-S2 | shipped |
+| `GET /briefings/current`, `GET /briefings/{weekStart}` | `tenant-briefing.html`; part on `tenant-today.html` | tenant | `watch.read` | no | All 7; lead button reads Triage for `cases.triage` | HOM-S3 | shipped |
+| `GET /roadmap` | `tenant-roadmap.html`; Coming up on `tenant-today.html` and `tenant-briefing.html` | tenant | `roadmap.read` | no | All 7 | HOM-S4, HOM-S6, REG-S10 | shipped (HOM-S4 and HOM-S6; REG-S10 is chunk 8) |
 | `GET /upcoming` | none (public facts for agents and newsletters) | agent | `key:upcoming:read` | no | agents | HOM-S5 | agent only |
-| `GET/POST /calendar-feeds`, `DELETE /calendar-feeds/{id}` | `tenant-calendar-feeds.html` | tenant | `roadmap.read` | no | All 7; address shown once | HOM-S5 | designed |
-| `GET /calendar/{feedToken}` | none (the calendar client) | none | token in path | no | none | HOM-S5 | designed |
+| `GET/POST /calendar-feeds`, `DELETE /calendar-feeds/{id}` | `tenant-calendar-feeds.html` | tenant | `roadmap.read` | create needs a recent sign-in or a step-up (D-52) | All 7; address shown once, no "Include" choice, at most 5 per person | HOM-S5 | shipped on `/me/calendar-feeds` |
+| `GET /calendar/feed.ics?token=…` | none (the calendar client) | none | token in the query string | no | none | HOM-S5 | shipped: the calendar client reads it, and HOM-S5 walks it to revocation |
 
 ### Reports, exports, imports (chunk 12, R3)
 
@@ -266,17 +306,19 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
-| `GET /audit-events` | `admin-audit-log.html` | tenant | `audit.read` | no | All 7 | AUD-S3, AUD-S7 | later chunk 4 (proposed), card pending (`vAudit()` is the cut) |
-| `GET /ai-generations` | `admin-ai-log.html` | tenant | `ai_log.read` | no | A, CO, AP, AU | AUD-S4 | later chunk 7, card pending |
-| `GET /problem-reports`, `PATCH /problem-reports/{id}` | `console-problem-reports.html` | console | `proposals.review` | no | LE | AUD-S5, PRO-S7 | designed |
-| `GET/POST /eval/questions`, `GET/POST /eval/runs` | `console-evaluation.html` | console | `eval.manage` | no | LE | SRC-S8 | later chunk 7, card pending |
+| `GET /audit-events` | `admin-audit-log.html` | tenant | `audit.read` | no | All 7 | AUD-S3, AUD-S7 | shipped without a card: the route (offset pages and its own filters, INPUT_DELTAS) behind `/admin/audit-log`, cut from `vAudit()` (AUD-S3) |
+| `GET /ai-generations` | `admin-ai-log.html` | tenant | `ai_log.read` | no | A, CO, AP, AU | AUD-S4 | shipped: the AI log screen reads it |
+| `GET /problem-reports`, `PATCH /problem-reports/{id}` | `tenant-obligation.html`, `tenant-instrument.html` Reported problems | tenant | `problems.report`; `proposals.create` reaches and closes every report of the bank, anyone else their own | no | All 7 | AUD-S5, INV-S7 | shipped: the Reported problems section on the obligation and instrument cards lists the record's reports and closes them with an outcome and a note, a 409 rendered in place (AUD-S5). No console card or destination exists: a report stays inside the bank that filed it (D-50) |
+| `GET/POST /eval/questions`, `GET /eval/runs`, `GET /eval/baseline` | `console-evaluation.html` | console | `eval.manage` | no | LE | ADM-S4, SRC-S8 | shipped: `/console/evaluation`; `POST /eval/runs` waits for chunk 14's job runner |
 
 ### Collaboration (chunk 10, R2)
 
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
-| `GET/POST /comments`, `PATCH/DELETE /comments/{id}` | comments panel on `tenant-change.html`, `tenant-obligation.html` | tenant | `comments.write` | no | All 7; own comments only for edit and delete | COL-S1, COL-S5 | later chunk 10, card pending |
-| `GET /notifications`, `POST /notifications/{id}/read`, `POST /notifications/read-all` | `tenant-notifications.html` from the who panel | tenant | any member | no | All 7 | COL-S2 | later chunk 10, card pending |
+| `GET/POST /comments`, `PATCH/DELETE /comments/{id}` | comments panel (`design/system/comments-and-mentions.md`) on `tenant-change.html` (the bank's case), `tenant-obligation.html` and, through `GET /me/comments`, `tenant-my-work.html` | tenant | `GET /comments` gated by the subject's read permission (404 otherwise); writes also need `comments.write` | no | All 7; Edit and Delete from `canEdit`/`canDelete`, the author's own comments only | COL-S1, COL-S5 | later chunk 10, card designed |
+| `GET /notifications`, `POST /notifications/{id}/read`, `POST /notifications/read-all` | `tenant-notifications.html` from the account menu and the More sheet; the bell's dot and count come from `GET /me` counts (`unreadNotifications`), not from this list | tenant | any member, own notifications only | no | All 7 | COL-S2 | built (`c10-fe-notifications`): the inbox reads and marks; the bell reads GET /me |
+| `PATCH /tenant/workflow` (and the `workflow` object on `GET /tenant`) | `admin-workflow.html` | tenant | `workflow.manage` | no | CO, A; everyone else the Restricted screen | COL-S2, COL-S11 | later chunk 10, card designed |
+| `GET/PUT /me/out-of-office` | `me-out-of-office.html` | tenant | any member, own window; the delegate must hold the approve permission (422 `delegate_cannot_approve`) | no | All 7; one window at a time (409 `already_delegated`) | TEN-S4 | later chunk 10 (D-95), card designed |
 
 ### Integrations (chunk 13, R3)
 

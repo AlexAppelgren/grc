@@ -1,6 +1,7 @@
-"""The prototype's library as rows (chunk 3, INV-01..INV-05): authorities, instruments with
-their titles and lineage, provisions, obligations with titles, versions, summaries, scope
-terms, tags, provisions and relations, from apps/library/fixtures/prototype_data.json.
+"""The prototype's library as rows (chunk 3, INV-01..INV-06): authorities, instruments with
+their titles and lineage, provisions with their own verbatim text versions (T8), obligations
+with titles, versions, summaries, scope terms, tags, cited provisions and relations, from
+apps/library/fixtures/prototype_data.json.
 
 `seed_authorities` is a reference seed (INPUT_DELTAS §3: jurisdictions come with their
 authorities) and runs on every deploy. `load_library` is demo data: `seed_demo` and
@@ -11,16 +12,24 @@ leaves one audit row through record().
 The research payment obligation's second version (in force 2026-10-01) exists in the
 fixture only as the payload of the open proposal `prop-research-payments-v2`. The loader
 files it as version 2 so "as of" and the diff have a future version to show
-(data-model §4, INV-S4); the proposal row itself is not seeded here."""
+(data-model §4, INV-S4); the proposal row itself is not seeded here.
+
+Every record carries a verified date (INV-06). The fixture dates obligations only, so an
+instrument without its own date takes the latest of its obligations', or the fixture's
+anchor date when it has none. `verified_by` is never loaded: the fixture's verifier is a
+tenant user, and a library record is verified by a library editor (INV-S8)."""
 
 from __future__ import annotations
 
 import datetime
+import json
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
 from apps.library.models import (
     Authority,
+    DatePrecision,
     Instrument,
     InstrumentRelation,
     InstrumentTitle,
@@ -34,6 +43,8 @@ from apps.library.models import (
     ObligationTitle,
     ObligationVersion,
     Provision,
+    ProvisionText,
+    ProvisionVersion,
 )
 from apps.proposals.models import OriginType
 from apps.shared.audit import Actor, record
@@ -47,6 +58,9 @@ RESEARCH_OBLIGATION = "obl-research-payments"
 # The prototype writes every obligation title in English; summaries name their original.
 TITLE_LANGUAGE = "en"
 SUMMARY_PREFIX = "summary_"
+# The provision tree's own text versions carry this prefix instead (T8), never a summary:
+# a provision's verbatim text is not an obligation's plain-language duty.
+PROVISION_TEXT_PREFIX = "text_"
 # The fixture's proposal kind for a new obligation version (schema v0.3 `proposal_kind`);
 # chunk 4 adds it to ProposalKind.
 NEW_OBLIGATION_VERSION = "new_obligation_version"
@@ -70,32 +84,47 @@ def _audit(subject_type: str, row: Any, key: str) -> None:
         subject_type=subject_type,
         subject_id=row.id,
         subject_title=key,
-        summary=f"Filed the {subject_type} {key} from the prototype library.",
+        summary=f"Filed the {subject_type} {key} from the sample library fixture.",
         tenant_id=None,
     )
 
 
+def _authorities(specs: list[dict[str, Any]]) -> None:
+    jurisdictions = {row.key: row for row in Jurisdiction.objects.all()}
+    for spec in specs:
+        row, created = Authority.objects.get_or_create(
+            key=spec["key"],
+            defaults={
+                "short_name": spec["code"],
+                "name": spec["name"],
+                "jurisdiction": jurisdictions[spec["jurisdiction"].lower()],
+                "url": spec["url"],
+            },
+        )
+        if created:
+            _audit("authority", row, row.key)
+
+
 def seed_authorities() -> int:
     """The issuing authorities. Without them no instrument names who issued it."""
-    jurisdictions = {row.key: row for row in Jurisdiction.objects.all()}
     specs = fixture.load()["authorities"]
     with library_write("seed_reference"):
-        for spec in specs:
-            row, created = Authority.objects.get_or_create(
-                key=spec["key"],
-                defaults={
-                    "short_name": spec["code"],
-                    "name": spec["name"],
-                    "jurisdiction": jurisdictions[spec["jurisdiction"].lower()],
-                    "url": spec["url"],
-                },
-            )
-            if created:
-                _audit("authority", row, row.key)
+        _authorities(specs)
     return len(specs)
 
 
-def _instrument(spec: dict[str, Any], terms: dict[str, TaxonomyTerm]) -> Instrument:
+def _instrument_verified_on(data: dict[str, Any]) -> dict[str, str]:
+    """Instrument key -> its verified date: its own, else its obligations' latest, else the
+    anchor date. ISO dates order as strings; check_prototype_data.py requires a verified
+    date on every obligation."""
+    latest: dict[str, str] = {}
+    for spec in data["obligations"]:
+        latest[spec["instrument"]] = max(latest.get(spec["instrument"], ""), spec["last_verified_at"])
+    anchor: str = data["_meta"]["anchor_date"]
+    return {spec["stable_key"]: spec["last_verified_at"] or latest.get(spec["stable_key"], anchor) for spec in data["instruments"]}
+
+
+def _instrument(spec: dict[str, Any], terms: dict[str, TaxonomyTerm], verified_on: str) -> Instrument:
     jurisdiction = Jurisdiction.objects.select_related("default_language").get(key=spec["jurisdiction"].lower())
     row, created = Instrument.objects.get_or_create(
         stable_key=spec["stable_key"],
@@ -108,13 +137,14 @@ def _instrument(spec: dict[str, Any], terms: dict[str, TaxonomyTerm]) -> Instrum
             "binding": spec["binding"],
             "jurisdiction": jurisdiction,
             "authority": Authority.objects.get(key=spec["authority"]) if spec["authority"] else None,
-            "regime": terms[spec["regime"]] if spec["regime"] else None,
+            "regime": terms[spec["regime"]],
             "in_force_from": _date(spec["in_force_from"]),
+            "in_force_from_precision": spec.get("in_force_from_precision") or DatePrecision.DAY.value,
             "in_force_to": _date(spec["in_force_to"]),
             "implements_note": spec["implements_note"] or "",
             "status": spec["status"],
             "created_origin": OriginType.USER.value,
-            "last_verified_at": _stamp(spec["last_verified_at"]),
+            "last_verified_at": _stamp(verified_on),
         },
     )
     if created:
@@ -165,6 +195,24 @@ def _version(spec: dict[str, Any], obligation: Obligation) -> None:
                 )
 
 
+def _provision_version(spec: dict[str, Any], provision: Provision) -> None:
+    """A provision's verbatim text version (INV-02, T8): write-once, like `_version` above.
+    `effective_to` is never set here; every read derives it from the version that follows."""
+    version, created = ProvisionVersion.objects.get_or_create(
+        provision=provision,
+        version_number=spec["version_no"],
+        defaults={"effective_from": _date(spec["effective_from"]), "transitional_note": spec["transitional_note"] or ""},
+    )
+    if created:
+        original = spec["original_language"]
+        for field, text in spec.items():
+            if field.startswith(PROVISION_TEXT_PREFIX):
+                language = field.removeprefix(PROVISION_TEXT_PREFIX)
+                ProvisionText.objects.create(
+                    version=version, language_id=language, text=text, is_original=language == original, is_machine=language != original
+                )
+
+
 def _version_specs(data: dict[str, Any]) -> list[dict[str, Any]]:
     """The fixture's versions plus the pending second version held in a proposal payload."""
     specs: list[dict[str, Any]] = list(data["obligation_versions"])
@@ -175,12 +223,19 @@ def _version_specs(data: dict[str, Any]) -> list[dict[str, Any]]:
     return specs
 
 
-def load_library() -> dict[str, int]:
-    data = fixture.load()
+def load_library(path: Path | None = None) -> dict[str, int]:
+    """The prototype's library, or the library fixture at `path` (seed_e2e's
+    e2e_standard.json), which names its own authorities and otherwise has the prototype's
+    sections and references its vocabularies. Terms resolve whatever their state: a fixture
+    may link an obligation to a held term without switching it on."""
+    data = fixture.load() if path is None else json.loads(path.read_text(encoding="utf-8"))
     terms = {f"{term.dimension.key}:{term.key}": term for term in TaxonomyTerm.objects.select_related("dimension")}
     relation_types = {row.key: row for row in RelationType.objects.all()}
+    verified_on = _instrument_verified_on(data)
     with library_write(SEED_REASON):
-        instruments = {spec["stable_key"]: _instrument(spec, terms) for spec in data["instruments"]}
+        if path is not None:
+            _authorities(data["authorities"])
+        instruments = {spec["stable_key"]: _instrument(spec, terms, verified_on[spec["stable_key"]]) for spec in data["instruments"]}
         for spec in data["instrument_relations"]:
             InstrumentRelation.objects.get_or_create(
                 from_instrument=instruments[spec["from_instrument"]],
@@ -190,7 +245,7 @@ def load_library() -> dict[str, int]:
             )
         provisions: dict[str, Provision] = {}
         for spec in data["provisions"]:  # a parent precedes its children in the file
-            provisions[spec["stable_key"]], _ = Provision.objects.get_or_create(
+            row, created = Provision.objects.get_or_create(
                 stable_key=spec["stable_key"],
                 defaults={
                     "instrument": instruments[spec["instrument"]],
@@ -202,6 +257,11 @@ def load_library() -> dict[str, int]:
                     "sort_order": spec["ordinal"],
                 },
             )
+            provisions[spec["stable_key"]] = row
+            if created:
+                _audit("provision", row, row.stable_key)
+        for spec in data.get("provision_versions", []):
+            _provision_version(spec, provisions[spec["provision"]])
         obligations = {spec["stable_key"]: _obligation(spec, instruments[spec["instrument"]]) for spec in data["obligations"]}
         versions = _version_specs(data)
         for spec in versions:

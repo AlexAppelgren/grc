@@ -12,6 +12,15 @@ CREATE ROLE cw_app      LOGIN PASSWORD 'cw-app-dev-only'      NOSUPERUSER NOBYPA
 -- CREATEDB on cw_migrator lets the test runner and migrate_from_zero create and drop
 -- throwaway databases locally and in CI. Production grants it nothing of the kind.
 GRANT ALL ON DATABASE compliance_watch TO cw_migrator;
+
+-- `migrate_from_zero` and the E2E stack drop and recreate their throwaway databases with
+-- DROP DATABASE ... WITH (FORCE), which has to terminate whatever is still connected — an
+-- orphaned test server, another worktree's run. Without this the drop fails with
+-- "permission denied to terminate process" and a local run cannot start at all
+-- (2026-09-21). Local and CI only: this file never runs on a deployed environment, whose
+-- roles are created by hand (docs/runbooks/RAILWAY_DEPLOY.md), and it lets the migrator
+-- terminate backends, never bypass row-level security.
+GRANT pg_signal_backend TO cw_migrator;
 \connect compliance_watch
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS citext;

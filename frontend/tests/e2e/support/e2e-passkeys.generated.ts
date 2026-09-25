@@ -74,4 +74,34 @@ export const E2E_PASSKEYS_GENERATED: Readonly<Record<string, SeededPasskey>> = {
     privateKey: 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgStUqENR4fhKyntTv_MNTC_vy28Ughi8rvzaD8UpCGnChRANCAAT_gvBHAilSDsrejuDpUDB4Bzax3kg21uGVH1ykv3mvGFBxtoKwHBoCDexeSKzv4Jtj2Z5Hj3N4CA5gvi9jKBoq',
     publicKey: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE_4LwRwIpUg7K3o7g6VAweAc2sd5INtbhlR9cpL95rxhQcbaCsBwaAg3sXkis7-CbY9meR49zeAgOYL4vYygaKg',
   },
+  'editor2@bleqq.test': {
+    id: 'suqmTkUo_TtcyQzOTs0MFg',
+    userHandle: 'AAAAAAAAQACAAAAAAAABDQ',
+    privateKey: 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg7NiZmIqngk7iNinf-X95Jzumu9zU92SgwtIRkGbO8UqhRANCAARp764kxYOUYxvqPp4MhYI7KwmBaiJZTywpzpFfp-53Iqfv_t-VRl-4a0g8ur7O_VmVQr8cgX_SEXpIX6HJY8LW',
+    publicKey: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEae-uJMWDlGMb6j6eDIWCOysJgWoiWU8sKc6RX6fudyKn7_7flUZfuGtIPLq-zv1ZlUK_HIF_0hF6SF-hyWPC1g',
+  },
+  'agent-keys@bleqq.test': {
+    id: 'RUlGV1nowK17BmGcPQ7zbQ',
+    userHandle: 'AAAAAAAAQACAAAAAAAABDg',
+    privateKey: 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgwbTLS-9PzTOq23KMLT4eYl1zAntZX1i2ZGyI7dZzLBmhRANCAASW-s2MUCdzA-kz6bnvy0RTuVW56gZsbCh438MXPYjzumK-Ramycmpw5EKiEeRFJaUgiKhJIPZf3RNjhH0F8Jlq',
+    publicKey: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAElvrNjFAncwPpM-m578tEU7lVueoGbGwoeN_DFz2I87pivkWpsnJqcORCohHkRSWlIIioSSD2X90TY4R9BfCZag',
+  },
+  'reader-sv@example-bank.test': {
+    id: 'Z6-QX06Ma-mkrsHpz1QBQg',
+    userHandle: 'AAAAAAAAQACAAAAAAAABDw',
+    privateKey: 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgXjQWZqtyaBvdSauPw7EQXwcL7Pzux4BT7PXI5mTmUHyhRANCAAQRNjo2Sl8qxneaYYjbBpMLfsl01osVq0s7xkDho4fT-OAVRR32_m-8VtPUTBlJzD58ymyHr4oIOzOrB4JHDtSf',
+    publicKey: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEETY6NkpfKsZ3mmGI2waTC37JdNaLFatLO8ZA4aOH0_jgFUUd9v5vvFbT1EwZScw-fMpsh6-KCDszqweCRw7Unw',
+  },
+  'language@example-bank.test': {
+    id: 'CsD6EpLYQKiDdv88Ld3F-g',
+    userHandle: 'AAAAAAAAQACAAAAAAAABEA',
+    privateKey: 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgfHckdrhZk-n7rS-Xsce_W7LQAMD6-KmHC3LZvo5aCOyhRANCAAS0YAk5zeOVgIE00-Bf19vA0NzPZ9ipMklLaQw4_hwSoVMIZkdlpH3tPJFLRHpy0hbLQdUlQyeMjRMGB4tBAaoq',
+    publicKey: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEtGAJOc3jlYCBNNPgX9fbwNDcz2fYqTJJS2kMOP4cEqFTCGZHZaR97TyRS0R6ctIWy0HVJUMnjI0TBgeLQQGqKg',
+  },
+  'approver@second-bank.test': {
+    id: 'HoDpXeyObXArC7s8SrOWzA',
+    userHandle: 'AAAAAAAAQACAAAAAAAABEQ',
+    privateKey: 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgqp4keK1CVCmUqb6cuZmxD4PZsm4iHTiQkEIDgB8CBTmhRANCAAQItrG7COh7F-vyB9XMk6g-gn4Jp6BtV6O3663YP4y-LUtTEc-4zlyk0tFyDvnF9JlXLtLIOE8vHq82uz9Z-763',
+    publicKey: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAECLaxuwjoexfr8gfVzJOoPoJ-CaegbVejt-ut2D-Mvi1LUxHPuM5cpNLRcg75xfSZVy7SyDhPLx6vNrs_Wfu-tw',
+  },
 };

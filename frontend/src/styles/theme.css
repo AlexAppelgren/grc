@@ -11,9 +11,10 @@
  * Tailwind's text-sm, text-lg and the rest so they generate nothing, and
  * eslint.config.js fails the build on any of them in a string literal. Values
  * are design/system/foundations.md (ADR 0020 amendment "Foundations",
- * 2026-09-19): shadcn/ui's proportions on Green's colours. hero 36/40,
- * display 24/32, title 16/24, body 14/20, meta 13/18, microlabel 11/16
- * uppercase; weights 400, 500, 600. Six roles, no seventh.
+ * 2026-09-19): shadcn/ui's proportions on Green's colours. hero 36 to 60
+ * (public pages only, below), display 24/32, title 16/24, body 14/20, meta
+ * 13/18, microlabel 11/16 uppercase; weights 400, 500, 600. Six roles, no
+ * seventh.
  */
 @import 'tailwindcss';
 
@@ -62,6 +63,10 @@
   --color-positive: var(--gds-sys-color-content-positive-03);
   --color-notice: var(--gds-sys-color-content-notice-01);
   --color-negative-soft: var(--gds-sys-color-l3-negative-02);
+  /* The danger button's hover fill. It has to differ by theme: in dark,
+     negative text on l3-negative-02 is 4.47:1 and fails AA, so dark goes one
+     step deeper to -03 (5.40:1). Pinned by contrast.test.ts. */
+  --color-negative-hover: var(--negative-hover);
   --color-warning-soft: var(--gds-sys-color-l3-warning-02);
   --color-positive-soft: var(--gds-sys-color-l3-positive-02);
   --color-notice-soft: var(--gds-sys-color-l3-notice-02);
@@ -87,10 +92,14 @@
   /* --- type: the named scale, replacing the numbered one --- */
   --text-*: initial;
 
-  --text-hero: 2.25rem;
-  --text-hero--line-height: 2.5rem;
-  --text-hero--font-weight: 600;
-  --text-hero--letter-spacing: -0.025em;
+  /* The public page's plate headline, set in Libre Caslon Display (design/public/,
+     approved by Alex 2026-09-24). A serif reads a step smaller than a grotesque
+     at the same size, so the role grows from 36 px on a phone to 60 px on a
+     wide screen. It is never used behind sign-in. */
+  --text-hero: clamp(2.25rem, 1.15rem + 4.4vw, 3.75rem);
+  --text-hero--line-height: 1.04;
+  --text-hero--font-weight: 400;
+  --text-hero--letter-spacing: -0.012em;
 
   --text-display: 1.5rem;
   --text-display--line-height: 2rem;
@@ -110,6 +119,10 @@
 
   --font-sans: 'Hanken Grotesk Variable', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
   --font-mono: 'Noto Sans Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  /* Public pages only (design/public/README.md). The faces load in the (public)
+     layout, so no signed-in screen downloads them. */
+  --font-serif: 'Libre Caslon Text', Georgia, 'Times New Roman', serif;
+  --font-serif-display: 'Libre Caslon Display', 'Libre Caslon Text', Georgia, 'Times New Roman', serif;
 
   /* Radius by use (foundations.md "Radius"), each a Green step: controls
      (button, input, toggle, nav row, banner) 6px, cards and list rows 8px,
@@ -121,6 +134,11 @@
   --radius-overlay: var(--gds-sys-radius-s);
   --radius-md: var(--gds-sys-radius-2xs);
   --radius-max: var(--gds-sys-radius-max);
+
+  /* One shadow, for the one layer that floats over scrolling content: the tab
+     bar below 1024 px (design/system/navigation.md 4). Cards stay flat.
+     Green's shadows come in pairs, so `float` is its large pair. */
+  --shadow-float: var(--gds-sys-shadow-l-01), var(--gds-sys-shadow-l-02);
 }
 
 /* Eyebrows, column heads, the "Drafted by AI" line: 11/16, uppercase,
@@ -176,6 +194,7 @@
   --sidebar-hover: var(--gds-sys-color-state-neutral-05);
   --hairline: var(--gds-sys-color-border-neutral-02);
   --subtle: var(--gds-sys-color-l1-neutral-02);
+  --negative-hover: var(--gds-sys-color-l3-negative-02);
   color-scheme: light;
 }
 
@@ -193,6 +212,9 @@
   --hairline: var(--gds-sys-color-border-neutral-03);
   /* Dark l1-neutral-02 is the page itself, so the muted fill is l2-neutral-01. */
   --subtle: var(--gds-sys-color-l2-neutral-01);
+  /* One step deeper than light's hover fill: negative text on l3-negative-02
+     measures 4.47:1 in dark (foundations.md "Restricted setting"). */
+  --negative-hover: var(--gds-sys-color-l3-negative-03);
   /* color-scheme follows the nearest theme class, so native controls and the
      pill's light-dark() background (Pill.tsx) switch with a .dark wrapper. */
   color-scheme: dark;

@@ -41,7 +41,19 @@ CHUNK_STATUS_BY_CODE: dict[str, int] = {
     "request_pending": 409,
     "invalid_transition": 409,
     "idempotency_conflict": 409,
+    "already_watching": 409,
     "forbidden": 403,
+    # An agent approved a kind whose record cannot name its confirming agent, so it waits
+    # for a person (D-79; a new provision or a provision version): the proposal is fine,
+    # the reviewer is the wrong kind of principal for it.
+    "person_review_required": 409,
+    # An agent approved or confirmed what the injection screen flagged (AGT-07, H40): the
+    # record is fine to decide, but only a person who has read the flag decides it.
+    "risk_flagged": 409,
+    # An agent confirmed a watch fact that it, or another key of its own agent, suggested
+    # (D-74): the fact is fine, the confirmer is not independent of it.
+    "own_suggestion": 409,
+    "same_agent": 409,
 }
 
 F = TypeVar("F", bound=Callable[..., Any])
@@ -114,10 +126,12 @@ def caller_tenant(request: HttpRequest) -> Any:
 
 
 def actor_for(request: HttpRequest, user: Any = None) -> Actor:
-    """The audit actor. A person's name may be in the audit log (playbook 4.7); an agent is
-    named by its key's id until agents have names of their own (chunk 5)."""
+    """The audit actor. A person's name may be in the audit log (playbook 4.7); an agent's
+    key names its agent (ID-10), and a key bound to none is still named by its own id."""
     who = principal(request)
     if who.kind is PrincipalKind.AGENT:
+        if who.agent_id is not None:
+            return Actor(kind=ActorType.AGENT, id=who.agent_id, label=who.agent_label)
         return Actor(kind=ActorType.AGENT, id=who.subject_id, label=f"api key {who.subject_id}")
     user = user if user is not None else caller_user(request)
     return Actor(kind=ActorType.USER, id=user.id, label=user.name)
@@ -175,6 +189,19 @@ def require_library_reader(request: HttpRequest) -> Principal:
     if who.kind is PrincipalKind.AGENT and not who.has_scope(perms.SCOPE_LIBRARY_READ):
         raise deny(perms.SCOPE_LIBRARY_READ)
     return who
+
+
+def require_library_read(request: HttpRequest) -> Principal:
+    """Library records (instruments, provisions, obligations) are read by a person holding
+    `library.read` in their tenant, or by an agent's key with `library:read` (INV-03,
+    AGT-02). Stricter than `require_library_reader`: a record read is filtered by a
+    tenant's footprint, so the caller is always in a tenant."""
+    who = principal(request)
+    if who.kind is PrincipalKind.AGENT:
+        if not who.has_scope(perms.SCOPE_LIBRARY_READ):
+            raise deny(perms.SCOPE_LIBRARY_READ)
+        return who
+    return require_any(request, perms.LIBRARY_READ)
 
 
 def require_proposer(request: HttpRequest) -> Principal:

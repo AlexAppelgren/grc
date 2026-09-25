@@ -154,6 +154,12 @@ regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgStUqENR4fhKyntTv_
 paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
 
 [[allowlists]]
+description = "E2E passkey private key for the seeded user editor2@bleqq.test: E2E virtual authenticator test keys, playbook 8.3. Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."
+condition = "AND"
+regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg7NiZmIqngk7iNinf-X95Jzumu9zU92SgwtIRkGbO8UqhRANCAARp764kxYOUYxvqPp4MhYI7KwmBaiJZTywpzpFfp-53Iqfv_t-VRl-4a0g8ur7O_VmVQr8cgX_SEXpIX6HJY8LW$''']
+paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
+
+[[allowlists]]
 description = "Stable keys of public legal records in the prototype fixture: CELEX numbers (EU law identifiers) and change keys. The generic-api-key rule reads their length and mix of digits as entropy. Exact literals, pinned to the one file that holds them (2026-09-19)."
 paths = ['''^backend/apps/library/fixtures/prototype_data\.json$''']
 regexes = [
@@ -175,3 +181,64 @@ regexes = [
 ]
 regexTarget = "secret"
 condition = "AND"
+
+[[allowlists]]
+description = "Work-package ids in the parallel build plan, not secrets: the generic-api-key rule reads the ids c5-integration-scenarios and p03-consolidation as keys because nearby table cells hold serialization keys named like idkeys (docs/plans/PARALLEL_PLAN.md, 2026-09-19). Exact literals, this one file only."
+condition = "AND"
+regexes = ['''^c5-integration-scenarios$''', '''^p03-consolidation$''']
+paths = ['''^docs/plans/PARALLEL_PLAN\.md$''']
+
+[[allowlists]]
+description = "E2E passkey private key for the seeded user agent-keys@bleqq.test: E2E virtual authenticator test keys, playbook 8.3. Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."
+condition = "AND"
+regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgwbTLS-9PzTOq23KMLT4eYl1zAntZX1i2ZGyI7dZzLBmhRANCAASW-s2MUCdzA-kz6bnvy0RTuVW56gZsbCh438MXPYjzumK-Ramycmpw5EKiEeRFJaUgiKhJIPZf3RNjhH0F8Jlq$''']
+paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
+
+[[allowlists]]
+description = "E2E passkey private key for the seeded user reader-sv@example-bank.test: E2E virtual authenticator test keys, playbook 8.3. Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."
+condition = "AND"
+regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgXjQWZqtyaBvdSauPw7EQXwcL7Pzux4BT7PXI5mTmUHyhRANCAAQRNjo2Sl8qxneaYYjbBpMLfsl01osVq0s7xkDho4fT-OAVRR32_m-8VtPUTBlJzD58ymyHr4oIOzOrB4JHDtSf$''']
+paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
+
+[[allowlists]]
+description = "E2E passkey private key for the seeded user language@example-bank.test: E2E virtual authenticator test keys, playbook 8.3. Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."
+condition = "AND"
+regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgfHckdrhZk-n7rS-Xsce_W7LQAMD6-KmHC3LZvo5aCOyhRANCAAS0YAk5zeOVgIE00-Bf19vA0NzPZ9ipMklLaQw4_hwSoVMIZkdlpH3tPJFLRHpy0hbLQdUlQyeMjRMGB4tBAaoq$''']
+paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
+
+[[allowlists]]
+description = "Stable keys the FP-S12 scenario gives the instrument and the obligation it builds (backend/apps/taxonomy/tests_scenarios.py, tax-mirror-refusal, 2026-09-23). Test record keys, not secrets: the generic-api-key rule reads a key= argument with a digit in it as a key. Exact literals, this one file only."
+condition = "AND"
+regexes = ['''^fp-s12-instrument$''', '''^fp-s12-obligation$''']
+paths = ['''^backend/apps/taxonomy/tests_scenarios\.py$''']
+
+[[allowlists]]
+description = "Stable key the watch registration test gives the change a person creates by hand (backend/apps/watch/tests_registration.py, watch-curation-confirm-backend, 2026-09-23). A test record key, not a secret: the generic-api-key rule reads a stableKey= argument with a year in it as a key. Exact literal, this one file only."
+condition = "AND"
+regexes = ['''^chg-fi-2026-by-hand$''']
+paths = ['''^backend/apps/watch/tests_registration\.py$''']
+
+[[allowlists]]
+description = "A package key in the R1 build plan's wave 3 briefs (docs/plans/r1-waves/wave3.json on the claude/r1-plan branch, 2026-09-23). CI scans every branch on origin, so this plan file is scanned too. A package name, not a secret: the generic-api-key rule reads a JSON \"key\" field with a digit in it as a key. Exact literal, this one file only."
+condition = "AND"
+regexes = ['''^aud-s4-integration$''']
+paths = ['''^docs/plans/r1-waves/wave3\.json$''']
+
+[[allowlists]]
+description = "Record keys in the public page demo's recordings (frontend/src/features/demo/recordings.json, written by `npm run demo:record` from seed_e2e, 2026-09-24): the seed's change keys and two CELEX numbers, the EU's public identifiers of Regulation (EU) No 1286/2014 (PRIIPs) and Regulation (EU) 2016/679 (GDPR). Identifiers, not secrets: the generic-api-key rule reads a JSON \"key\" or \"stableKey\" field with a digit in it as a key. Exact literals, this one file only; a re-recording that adds a key adds its literal here."
+condition = "AND"
+regexes = [
+  '''^chg-e2e-c5-curation$''',
+  '''^chg-e2e-c5-obligations$''',
+  '''^chg-e2e-dk-custody$''',
+  '''^celex-32014r1286$''',
+  '''^celex-32016r0679$''',
+]
+paths = ['''^frontend/src/features/demo/recordings\.json$''']
+
+# --- tax-market-journeys: tenant B's second person (FP-S8) ---
+[[allowlists]]
+description = "E2E passkey private key for the seeded user approver@second-bank.test: E2E virtual authenticator test keys, playbook 8.3. Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."
+condition = "AND"
+regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgqp4keK1CVCmUqb6cuZmxD4PZsm4iHTiQkEIDgB8CBTmhRANCAAQItrG7COh7F-vyB9XMk6g-gn4Jp6BtV6O3663YP4y-LUtTEc-4zlyk0tFyDvnF9JlXLtLIOE8vHq82uz9Z-763$''']
+paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']

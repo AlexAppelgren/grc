@@ -3,10 +3,11 @@
 Enumerates every table in `FOUR_EYES_TABLES` and demands that the requester-is-not-
 approver check constraint exists in `pg_constraint` with the expected definition. The
 list is empty in Phase 0: no approval table exists yet. That is allowed, with this note,
-and the list must grow in the same commit as each of: applicability requests (REG-01),
-case sign-off (CAS-06), footprint change requests (FP-02), proposals (PRO-02), risk
-acceptance (REG-03). The permissions module's APPROVE_PERMISSIONS is checked against the
-PRD so the set of approve permissions cannot drift silently either.
+and the list must grow in the same commit as each of: case sign-off (CAS-06), footprint
+change requests (FP-02), proposals (PRO-02), risk acceptance (REG-03). Applicability
+(REG-01) is not on it: one person sets it after a confirmation dialog, with an audit
+event and no second approver (D-75). The permissions module's APPROVE_PERMISSIONS is
+checked against the PRD so the set of approve permissions cannot drift silently either.
 
 Proven to fail 2026-09-19 by adding ("audit_event", "audit_event_four_eyes") to the list:
 the test named the table and the missing constraint.
@@ -57,5 +58,7 @@ class FourEyesGuard(TestCase):
     def test_the_approve_permissions_are_exactly_the_prd_list(self) -> None:
         self.assertEqual(
             APPROVE_PERMISSIONS,
-            {FOOTPRINT_APPROVE, CASES_SIGNOFF, APPLICABILITY_APPROVE, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW},
+            {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW},
         )
+        # One person sets applicability after a confirmation dialog, no second approver (D-75).
+        self.assertNotIn(APPLICABILITY_APPROVE, APPROVE_PERMISSIONS)

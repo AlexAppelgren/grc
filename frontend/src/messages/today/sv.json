@@ -1,0 +1,20 @@
+{
+  "today.title": "Vad som kommer, och var vi står",
+  "today.empty.title": "Inget att visa ännu",
+  "today.empty.body": "Kommande datum och veckans briefing visas här när den regulatoriska omfattningen är satt och de första källorna har kontrollerats.",
+  "today.empty.action": "Sätt den regulatoriska omfattningen under Admin",
+  "today.errorTitle": "Kunde inte läsa in Idag",
+  "today.comingUp.title": "Kommande",
+  "today.comingUp.empty": "Inget daterat framöver inom vår omfattning.",
+  "today.comingUp.roadmapLink": "Öppna färdplanen",
+  "today.comingUp.count": "{count, plural, one {# daterad post framöver} other {# daterade poster framöver}}",
+  "today.lead.moreThisWeek": "{count, plural, one {# post till denna vecka} other {# poster till denna vecka}}",
+  "today.lead.readBriefing": "Läs briefingen",
+  "today.decideNow.title": "Bestäm nu",
+  "today.decideNow.triage": "{count, plural, one {# ändring behöver triage.} other {# ändringar behöver triage.}}",
+  "today.decideNow.assignedToMe": "{count, plural, one {# ärende tilldelat dig.} other {# ärenden tilldelade dig.}}",
+  "today.decideNow.proposals": "{count, plural, one {# av era förslag väntar på granskning.} other {# av era förslag väntar på granskning.}}",
+  "today.sources.summary": "Källor: {checked} av {total} kontrollerade.",
+  "today.sources.failed": "{name} misslyckades.",
+  "today.sources.coverageLink": "Se bevakningsloggen"
+}

@@ -50,6 +50,8 @@ class Principal:
     `@requires_step_up` compares against `STEP_UP_FRESHNESS_MINUTES` (ID-06).
     `session_created_at` is when the session was opened (a refresh does not move it);
     adding or removing a passkey accepts a session younger than the window (F9).
+    `agent_id` and `agent_label` name the agent the key is bound to (ID-10, AGT-01), so
+    `record()` writes the agent as the actor rather than the key's id.
     """
 
     kind: PrincipalKind
@@ -62,6 +64,8 @@ class Principal:
     step_up_assertion_id: uuid.UUID | None = None
     session_id: uuid.UUID | None = None
     session_created_at: datetime | None = None
+    agent_id: uuid.UUID | None = None
+    agent_label: str = ""
 
     def has_permission(self, permission: str) -> bool:
         return self.kind is PrincipalKind.USER and permission in self.permissions

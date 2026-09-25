@@ -15,8 +15,8 @@ cancelled. The nightly run and manual runs execute everything in full.
 
 | Job | Runs when | Timeout | What it does |
 |---|---|---|---|
-| `changes` | always | 5 min | `dorny/paths-filter` with `base: github.ref_name` on push and extglob patterns decides which areas changed. Schedule, manual runs and any change under `.github/` mean everything runs |
-| `backend` | backend area changed, or full | 30 min | pgvector + Redis services, `infra/db/init.sql` applied, then in order: migration drift, `migrate_from_zero`, tests under coverage, `coverage report`, `coverage_gate.py`, ruff, mypy, `compliance_check.py --all`, `requirements_coverage.py`, `contract_drift.py`, `search_eval.py` |
+| `changes` | always | 5 min | `dorny/paths-filter` with `base: github.ref_name` on push and extglob patterns decides which areas changed. Schedule, manual runs and any change under `.github/` mean everything runs. Then `scripts/check_ci_tiers.py`, which fails when this file's tiers, `codeql.yml`'s and `scripts/prepush.sh`'s no longer agree |
+| `backend` | backend or specs changed, or full | 30 min | pgvector + Redis services, `infra/db/init.sql` applied, then in order: migration drift, `migrate_from_zero`, tests under coverage, `coverage report`, `coverage_gate.py`, ruff, mypy, `compliance_check.py --all`, `requirements_coverage.py`, `contract_drift.py`, `api_docs_gate.py`, `search_eval.py`. On the `specs` tier alone the steps that measure code are skipped — the two migration steps, the suite under coverage with its report and floors, and the search evaluation — leaving the checkers that read text |
 | `openapi-types-drift` | backend or frontend changed, or full | 15 min | `bash generate-types.sh`, then `git diff --exit-code` on `openapi.json` and `frontend/src/types/api.generated.ts` (both must be tracked) |
 | `frontend` | frontend area changed, or full | 20 min | `build:tokens`, `lint`, `typecheck`, `test:coverage`, `check:messages`, `check:copy-drift`, `build` |
 | `e2e` | backend or frontend changed, or full | 60 min | Same services and init; Chromium; `npm run test:e2e -- --grep @smoke` on push and PR, the full suite on schedule and manual runs. Uploads `frontend/test-results` and `frontend/playwright-report` on failure, kept 14 days. The pill gallery screenshot compare lives in this suite |
@@ -27,15 +27,26 @@ cancelled. The nightly run and manual runs execute everything in full.
 
 "Lockfiles" means `backend/poetry.lock`, `backend/pyproject.toml`,
 `frontend/package-lock.json`, `frontend/package.json`,
-`frontend/THIRD_PARTY_NOTICES.md` and `scripts/**`.
+`frontend/THIRD_PARTY_NOTICES.md` and `scripts/**`. "Specs" means
+`backend/apps/*/app.md`, `PRD.md` and `docs/inputs/openapi.yaml`: text the
+checkers parse, with no migration, test or build behind it.
+`docs/inputs/INPUT_DELTAS.md` counts as backend instead, because a scenario test
+reads it. The full list of tiers, and the rule they follow, is in
+`docs/PLAYBOOK.md` Appendix D.
 
 Timeouts are first estimates. Retune each to roughly twice the slowest
 observed run once there are observations (playbook 9).
 
 ### `workflows/codeql.yml`
 
-Triggers: same as `ci.yml`. One job, `analyze`, matrix over `python` and
-`javascript-typescript`, 45 min each, `security-extended` queries, SARIF
+Triggers: same as `ci.yml`. A `changes` job decides which languages a run
+analyses: Python when a `.py` file changed, JavaScript/TypeScript when a `.ts`,
+`.tsx`, `.js`, `.jsx`, `.mjs` or `.cjs` file changed, both on the schedule, on a
+manual run and on any change under `.github/`. It always runs, so a run that
+analyses neither language still concludes green for `scripts/ship.sh`, which in
+any case dispatches this workflow by hand and therefore always gets both.
+Then `analyze`, matrix over the languages that run, 45 min each,
+`security-extended` queries, SARIF
 uploaded to code scanning and kept as an artefact for 14 days. Then
 `scripts/codeql_gate.py` fails the job on any finding of medium severity or
 above (security-severity 4.0+, or level `error`/`warning` for rules with no
@@ -97,6 +108,7 @@ Dependabot's github-actions group keeps them moving.
 | `actions/setup-node` | v7.0.0 | `820762786026740c76f36085b0efc47a31fe5020` |
 | `actions/cache` | v6.1.0 | `55cc8345863c7cc4c66a329aec7e433d2d1c52a9` |
 | `actions/upload-artifact` | v7.0.1 | `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a` |
+| `actions/download-artifact` | v8.0.1 | `3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c` |
 | `gitleaks/gitleaks-action` | v3.0.0 | `e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e` |
 | `google/osv-scanner-action` | v2.6.0 | `a345acffa64b0eaede81a3d9aae6141214d9c8fc` |
 | `aquasecurity/trivy-action` | v0.36.0 | `ed142fd0673e97e23eac54620cfb913e5ce36c25` |

@@ -16,16 +16,30 @@ its own databases, Redis index and ports.
 
 ## The slot
 
-`scripts/worktree.sh` allocates slot N (1 to 9) per worktree and writes `.env.worktree`.
+`scripts/worktree.sh` allocates slot N (1 to 14) per worktree and writes `.env.worktree`.
 The main checkout is slot 0 and keeps the defaults.
 
 | Resource | Slot N |
 |---|---|
 | Database | `compliance_watch_wtN` (test runner uses `test_compliance_watch_wtN`) |
+| Worker clones | `test_compliance_watch_wtN_1` … one per `--parallel` worker |
 | Scratch database | `compliance_watch_wtN_scratch` (`migrate_from_zero` derives it) |
-| E2E database | `compliance_watch_wtN_e2e` |
+| E2E databases | `compliance_watch_wtN_e2e`, and `compliance_watch_wtN_e2e_cold` for a cold-start run |
+| Search evaluation | `test_compliance_watch_wtN_search_eval_<pid>`, one per `scripts/search_eval.py` run |
 | Redis | index N+1 |
 | API and web ports | `8000 + 10N` and `3000 + 10N` |
+
+The backend suite runs in parallel worker processes, four by default, each with a clone of
+the slot's own test database (`scripts/prepush.sh`; `BACKEND_TEST_PARALLEL` overrides the
+count). Four workers on an eight-core laptop is a deliberate under-commit, because several
+worktrees run their suites at the same time: raising it makes one agent finish sooner and
+every other agent wait. A run that was killed leaves its clones behind until `remove`.
+
+`remove` drops every database in the table above, and only those: `compliance_watch_wtN`,
+its `_scratch`, `_e2e` and `_e2e_cold`, `test_compliance_watch_wtN`, its worker clones
+`_<n>` and its search evaluation databases `_search_eval_<pid>`. It finds them by exact
+pattern, never by prefix, so removing slot 1 never touches slot 10's
+`compliance_watch_wt10…` databases.
 
 Dependencies are shared with the main checkout through a junction (Windows) or a symlink:
 `backend/.venv` and `frontend/node_modules`. **Never change dependencies through a shared
@@ -72,10 +86,11 @@ failures it caused.
    library fence, audit or four eyes also gets a security-review sub-agent. A critical
    finding blocks the merge and goes back to the task.
 5. **Integrate at once.** As soon as a task passes review, merge it into `main` squashed
-   (`git merge --squash wt/<task>`) and run `bash scripts/prepush.sh --all` before every commit
-   to `main`. It mirrors CI including CodeQL and its SARIF gate, and runs the full pre-push
-   checklist and the full E2E suite; a red gate means no commit. Then commit with a playbook
-   13.4 message, push, and watch CI and CodeQL until green. Then `remove` the worktree.
+   (`git merge --squash wt/<task>`), run `bash scripts/prepush.sh --quick`, and commit with a
+   playbook 13.4 message; a red gate means no commit. Then ship with `bash scripts/ship.sh`
+   (in the background: 20 to 40 minutes). It runs the real CI and CodeQL, including the full
+   E2E suite, on `candidate`, and moves `main` only when both are green. Several merged tasks
+   may ride one ship. Then `remove` the worktree.
    Never let finished work wait for the rest of the chunk. When a later branch conflicts,
    merge `main` into it inside its own worktree and rerun its gates there.
 
@@ -93,6 +108,53 @@ A new request becomes a new small task in its own worktree. Do not redirect a ru
 sub-agent unless its current work would otherwise be wasted: a message only reaches it at its
 next tool call, and changing its scope mid-task is how the long runs of 2026-09-19 happened.
 
+## Cloud tasks
+
+Alex approved moving work off the laptop on 2026-09-19. A task can run in a Claude Code cloud
+session instead of a local worktree when its files are disjoint from every running task and
+everything it builds on is already on `origin/main` (a cloud session clones GitHub, not the
+laptop). The cloud machine has 4 CPUs and 15 GB, enough for a full E2E stack of its own.
+
+1. **Dispatch.** The main agent creates a one-off routine with `RemoteTrigger` (no schedule):
+   repository `AlexAppelgren/grc`, model `claude-opus-5` set explicitly, the task's branch
+   `claude/<task>`, and a short prompt that names the task and its brief and points at "The
+   session's rules" below. Then it runs the routine once.
+2. **The session** runs `bash scripts/cloud-setup.sh` (with `--e2e` when its gates include E2E),
+   builds the task test-first exactly like a local sub-agent, runs its gates, commits, and
+   pushes only its own `claude/<task>-…` branch. It never pushes `main` or `candidate` and
+   never opens a pull request.
+3. **Follow it** with `RemoteTrigger` `list_runs` and `get_run_log`: a cloud session sends no
+   completion notice, so the main agent checks it whenever it is next active.
+4. **Review and integrate** as for a worktree: `git fetch origin claude/<task>-…`, read the
+   diff against the brief, security review where the task touches an invariant, then
+   `git merge --squash`, `prepush.sh --quick`, commit, `ship.sh`. Delete the remote branch
+   after the merge (`git push origin --delete claude/<task>-…`).
+
+### The session's rules
+
+A cloud session's prompt only names its task and brief; these are its standing rules.
+
+1. Run `bash scripts/cloud-setup.sh` first, with `--e2e` when the task's gates include E2E. If
+   it fails, fix only what stops it, say exactly what in the report, and continue.
+2. Read CLAUDE.md (loaded), this runbook, the brief's opening sections and the task in full,
+   then every file the task names. Stay inside the task's owned paths; any other file touched
+   is kept minimal and named in the report.
+3. Nobody can answer questions: take the documented default for any open decision and say so.
+4. Test-first where there is code. Never simplify away a guard, test, audit row, permission
+   check or validation. Never lower a gate, skip or quarantine a test, or mock an API in E2E.
+   Never commit `openapi.json` or `frontend/src/types/api.generated.ts`. Never change
+   dependencies.
+5. Run every gate the task lists, then `bash scripts/prepush.sh --quick`; all must be green.
+6. Commit on the session's own `claude/...` branch with a playbook 13.4 message (no model or
+   tool names, no Co-Authored-By line) and `git push -u origin HEAD`. Never push `main` or
+   `candidate`, never open a pull request, never send push notifications.
+7. End with a report: branch and commit; files changed; each gate and its result; every
+   default taken; any deviation from the task and why; what a reviewer should look at.
+
+Model and effort: the routine takes a model (`claude-opus-5`, set explicitly, never a smaller
+one); on 2026-09-19 its API accepted no effort setting, so a cloud session runs at the model's
+default effort.
+
 ## What went wrong on 2026-09-19, which this loop prevents
 
 | What happened | Cause | Now |
@@ -105,8 +167,10 @@ next tool call, and changing its scope mid-task is how the long runs of 2026-09-
 
 ## Rules
 
-- `main` is the only branch that is pushed. `wt/*` branches are local and short-lived.
-- One slot per worktree; `remove` frees it. Nine slots is the ceiling.
+- `main` is the only branch that deploys, and it moves only through `bash scripts/ship.sh`: the
+  quick local gates, then the real CI and CodeQL on `candidate`, then a fast-forward of `main`
+  (ADR 0015, 2026-09-19). `wt/*` branches are local and short-lived.
+- One slot per worktree; `remove` frees it. Fourteen slots is the ceiling: slot N uses Redis index N+1, and Redis has 16 databases. Memory, not slots, is the practical limit: at most three worktrees run an E2E stack at once on a 16 GB machine.
 - A worktree made by a tool has no slot until `init` runs in it (`list` shows `- (none)`),
   and until then it must not run the suite, since it would use the shared default database.
 - Never recursively delete a worktree directory by hand while its dependency links exist:

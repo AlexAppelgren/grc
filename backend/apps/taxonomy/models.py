@@ -1,4 +1,4 @@
-"""Models of the taxonomy app (VOC-01, VOC-02, VOC-07, FP-01, FP-02, I18N-01; INPUT_DELTAS
+"""Models of the taxonomy app (VOC-01, VOC-02, VOC-07, FP-01, FP-02, FP-04, I18N-01; INPUT_DELTAS
 §1; schema v0.3 `taxonomy_term`, `footprint_term`, `footprint_history`, `tenant_tag`,
 `tagging`).
 
@@ -20,6 +20,10 @@ The footprint (FP-01, FP-02): `FootprintTerm` rows are the company's terms; a ch
 a `FootprintChangeRequest` with a preview, decided by a second person (check constraint
 `footprint_change_request_four_eyes`), and every term switched leaves one
 `FootprintHistory` row (append-only) and one audit event.
+
+Markets (FP-04): the countries in the footprint are the ones the company operates in;
+`WatchedMarket` rows are the ones it watches instead. A market's level is computed from
+the two, never stored.
 """
 
 from __future__ import annotations
@@ -31,6 +35,7 @@ from django.db import models
 from apps.shared.audit import AppendOnlyModel
 from apps.shared.tenancy import LibraryModel, TenantModel
 from apps.shared.vocabulary import (
+    ORIGIN_CHOICES,
     LibraryVocabulary,
     LibraryVocabularyLabel,
     TenantListVocabulary,
@@ -58,8 +63,15 @@ class PillTone(enum.StrEnum):
 
 
 class TermDimensionKind(enum.StrEnum):
+    """What a dimension does to the footprint (FP-01, D-36). A scope dimension whose flag says
+    it restricts narrows the footprint once the footprint names a term in it; a
+    classification dimension never narrows it; an opt-in dimension (the standards a bank
+    follows) shows a record carrying one of its terms only when the footprint names that
+    term, even when it names none in the dimension, whatever the flag says."""
+
     SCOPE = "scope"
     CLASSIFICATION = "classification"
+    OPT_IN = "opt_in"
 
 
 class ChangeLifecycleKind(enum.StrEnum):
@@ -74,6 +86,17 @@ class ProvisionStructuralKind(enum.StrEnum):
     DIVISION = "division"
     UNIT = "unit"
     ANNEX = "annex"
+
+
+class InstrumentLevelKind(enum.StrEnum):
+    """Tier-one kind (INV-01, INV-08, D-37): the one optional sub-kind an instrument level
+    may carry. The five seeded levels (`eu_regulation`, `eu_directive`, `eu_guidance`,
+    `act`, `authority_regulation`) keep a null kind and are read by `binding`; `standard`
+    is the only value, and it is what tells a pill to read "Standard" instead of "Binding"
+    or "Guidance, comply or explain", and what the `provision` trigger (library 0008)
+    refuses a provision under."""
+
+    STANDARD = "standard"
 
 
 class ComplianceCategory(enum.StrEnum):
@@ -131,7 +154,8 @@ class SuggestionStatus(enum.StrEnum):
 class TermDimension(LibraryVocabulary):
     """A taxonomy dimension (schema v0.3 `term_dimension`): `restricts_footprint` says
     whether a record's terms in it narrow the footprint (FP-01); `kind` says whether it
-    describes scope or classifies."""
+    describes scope, classifies or is opted into (an opt-in dimension restricts whatever the
+    flag says, D-36)."""
 
     KIND_CHOICES = _choices(TermDimensionKind)
 
@@ -153,7 +177,10 @@ class TermDimensionLabel(LibraryVocabularyLabel):
 
 
 class InstrumentLevel(LibraryVocabulary):
-    """Jurisdiction-neutral instrument levels with a binding default and a rank."""
+    """Jurisdiction-neutral instrument levels with a binding default and a rank. The kind
+    is optional: null on every level but `standard` (D-37)."""
+
+    KIND_CHOICES = _choices(InstrumentLevelKind)
 
     binding_default = models.BooleanField(default=True)
     rank = models.PositiveIntegerField(default=0)
@@ -322,6 +349,25 @@ class FlagLabel(LibraryVocabularyLabel):
         constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="flag_label_unique")]
 
 
+class RejectionReason(LibraryVocabulary):
+    """Why a reviewer rejected a proposal (PRO-01). Replaces schema v0.3's
+    `proposal.rejection_code` CHECK; the proposal stores the key."""
+
+    class Meta:
+        db_table = "rejection_reason"
+        ordering = ["sort_order", "key"]
+        constraints = [models.UniqueConstraint(fields=["key"], name="rejection_reason_key_unique")]
+
+
+class RejectionReasonLabel(LibraryVocabularyLabel):
+    vocabulary = models.ForeignKey(RejectionReason, on_delete=models.CASCADE, related_name="labels")
+
+    class Meta:
+        db_table = "rejection_reason_label"
+        ordering = ["language"]
+        constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="rejection_reason_label_unique")]
+
+
 # ---------------------------------------------------------------------------------------
 # Taxonomy terms (library)
 # ---------------------------------------------------------------------------------------
@@ -329,16 +375,28 @@ class TaxonomyTerm(LibraryModel):
     """One term of one dimension (schema v0.3 `taxonomy_term`): immutable key unique per
     dimension, labels per language, an optional parent, retired never deleted. A new term
     is a proposal (VOC-07). Not a `Vocabulary` subclass because a term list has no
-    default row and its kind is its dimension."""
+    default row and its kind is its dimension.
+
+    `jurisdiction` is set on the terms that mirror a jurisdiction row (FP-04, D-28,
+    ADR 0026): the reference seed keeps them in step, and the rules that refuse a proposal
+    or a tagging in a mirrored dimension read this column rather than a dimension key.
+
+    `verified_origin`, `verified_by_agent` and `applied_by_proposal` are the term's
+    machine-confirmed provenance, kept exactly as on every library list
+    (`LibraryVocabulary`, INV-05, D-62, D-79); blank and null on a seeded term."""
 
     dimension = models.ForeignKey(TermDimension, on_delete=models.PROTECT, related_name="terms")
     key = models.SlugField(max_length=80)
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT, related_name="children")
+    jurisdiction = models.OneToOneField("library.Jurisdiction", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     usage_note = models.TextField(blank=True)
     sort_order = models.PositiveIntegerField(default=0)
     active = models.BooleanField(default=True)
     is_system = models.BooleanField(default=False)
     version = models.PositiveIntegerField(default=1)
+    verified_origin = models.CharField(max_length=16, choices=ORIGIN_CHOICES, blank=True, default="")
+    verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    applied_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -595,6 +653,15 @@ class FootprintChangeRequest(TenantModel):
     class Meta:
         db_table = "footprint_change_request"
         ordering = ["requested_at", "id"]
+        # One waiting request per tenant: two sent at the same moment cannot both wait
+        # (FP-02, FP-S6). create_request answers 409 `request_pending` from this.
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant"],
+                condition=models.Q(status=ApprovalStatus.PENDING.value),
+                name="footprint_change_request_one_pending",
+            )
+        ]
         # The four-eyes check constraint `footprint_change_request_four_eyes` is created by
         # RunSQL in migration 0001 as `decided_by_id IS NULL OR decided_by_id <> requested_by_id`.
         # Django can only spell "not equal" as NOT (a = b AND a IS NOT NULL), which is the
@@ -657,3 +724,29 @@ class FootprintHistory(AppendOnlyModel, TenantModel):
     def __str__(self) -> str:
         return f"{self.action} {self.term_id}"
 
+
+
+# ---------------------------------------------------------------------------------------
+# Markets (tenant)
+# ---------------------------------------------------------------------------------------
+class WatchedMarket(TenantModel):
+    """A market the company watches (FP-04, D-30, INPUT_DELTAS §1): a jurisdiction it does
+    not operate in but wants to see. Watching hides nothing, so it is a direct audited
+    write rather than a footprint change request.
+
+    The level is computed, never stored: a market is operating when its term is in the
+    footprint, otherwise watching when a row here names it, otherwise not followed. So a
+    market watched before it became operating reads as watched again once operating stops
+    (D-31), and footprint approval never touches these rows."""
+
+    jurisdiction = models.ForeignKey("library.Jurisdiction", on_delete=models.PROTECT, related_name="+")
+    added_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "watched_market"
+        ordering = ["added_at", "id"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "jurisdiction"], name="watched_market_unique")]
+
+    def __str__(self) -> str:
+        return f"{self.tenant_id}:{self.jurisdiction_id}"

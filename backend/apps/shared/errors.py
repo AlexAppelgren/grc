@@ -4,7 +4,9 @@
 status) or by the permission decorators. config/api.py turns it into a response. The
 `code` values are the contract's vocabulary: four_eyes_violation, open_actions,
 evidence_missing, invalid_transition, stale_write, unknown_key, step_up_required,
-permission_denied, unauthenticated, not_found, validation_error.
+feed_limit_reached, permission_denied, unauthenticated, not_found, validation_error,
+bad_request (a request Django cannot read: too large, too many fields, a broken multipart
+body) and internal_error (anything unexpected; no trace or message leaves the server).
 """
 
 from __future__ import annotations
@@ -39,6 +41,10 @@ STATUS_BY_CODE: dict[str, int] = {
     "role_in_use": 409,
     "stale_write": 409,
     "four_eyes_violation": 409,
+    # A person already holds as many calendar subscriptions as they may (HOM-04, D-52).
+    # A conflict with what they hold and not a field they can fix: the screen offers
+    # the revoke that makes room, which is why this is not a plain 422.
+    "feed_limit_reached": 409,
 }
 
 

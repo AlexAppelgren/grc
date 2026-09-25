@@ -6,6 +6,20 @@ import { allowFreshContext, LOGINS, restrictedScreen, signInAs, signOut } from '
 // the title is what scripts/requirements_coverage.py looks for. Never delete a
 // stub: un-fixme it when the journey is real.
 
+// TEN-S7's tenant-A rows (backend/apps/shared/e2e_seed.py, EXPECTED_TENANT_A_ONLY and
+// EXPECTED_FOOTPRINTS): a custom role, a tenant tag, terms A holds and B does not, and the
+// compliance officer who files A's pending scope request.
+const A_ONLY_ROLE = 'sanctions_lead';
+const A_ONLY_TAG_LIST = 'tenant_tag';
+const A_ONLY_TAG = 'whistleblowing';
+const A_ONLY_TERMS: ReadonlyArray<readonly [string, string]> = [
+  ['regime', 'insurance'],
+  ['account_type', 'isk'],
+  ['legal_entity', 'insurer'],
+  ['service_type', 'advice'],
+];
+const A_REQUESTER = 'Sara Lindqvist';
+
 test.describe('tenants journeys', () => {
   test("TEN-S1: A tenant profile holds timezone, languages and the onboarding checklist", async ({ page, apiGuard }) => {
     // pending: TEN-S1 (TEN-01) -> built in chunk 1. Deadlines do not exist yet, so the
@@ -52,24 +66,25 @@ test.describe('tenants journeys', () => {
   });
 
   test.fixme("TEN-S2: Legal entities and products are scoped like obligations", async () => {
-    // pending: TEN-S2 (TEN-02)
+    // pending: TEN-S2 (TEN-02, chunk 8)
   });
 
   test.fixme("TEN-S4: An out-of-office delegate receives approvals and reminders", async () => {
-    // pending: TEN-S4 (TEN-04)
+    // pending: TEN-S4 (TEN-04, chunk 8)
   });
 
   test.fixme("TEN-S5: Removing a member with open work offers bulk reassignment", async () => {
-    // pending: TEN-S5 (TEN-05)
+    // pending: TEN-S5 (TEN-05, chunk 8)
   });
 
-  test.fixme("TEN-S6: A support access grant is visible, time-boxed and logged", async () => {
-    // pending: TEN-S6 (TEN-06)
+  test.fixme("TEN-S6: Support access is requested by the platform, approved by the bank and time-boxed", async () => {
+    // pending: TEN-S6 (TEN-06, chunk 8)
   });
 
   test("TEN-S7 J-8 @smoke: tenant B cannot see tenant A", async ({ page, apiGuard }) => {
-    // pending: TEN-S7 (TEN-06, J-8) -> built in chunk 1 for members; cases, evidence and
-    // vocabularies join the journey as their screens land.
+    // TEN-S7 (TEN-06, J-8): members, the regulatory scope with its markets and pending
+    // request, roles and vocabulary rows. Cases, evidence, comments and participants join
+    // the journey with chunks 9 and 10 (tenants/app.md, the note under TEN-S7).
     allowFreshContext(apiGuard);
     apiGuard.allow(/\/tenant\/members\/[^/]+\/sessions$/, 404, "another tenant's member is not there, never forbidden");
 
@@ -79,6 +94,11 @@ test.describe('tenants journeys', () => {
     await expect(memberOfA).toBeVisible();
     const memberUrl = await memberOfA.getAttribute('href');
     expect(memberUrl).toMatch(/^\/admin\/members\/.+/);
+    // Tenant A's own role and tag exist, so their absence in B below is not vacuous.
+    await page.goto('/admin/roles');
+    await expect(page.locator(`[data-role-key="${A_ONLY_ROLE}"]`)).toBeVisible();
+    await page.goto(`/admin/vocabularies/${A_ONLY_TAG_LIST}`);
+    await expect(page.locator(`[data-value-key="${A_ONLY_TAG}"]`)).toBeVisible();
     await signOut(page);
 
     await signInAs(page, LOGINS.secondBankAdmin);
@@ -96,6 +116,29 @@ test.describe('tenants journeys', () => {
       expect(text).toContain('second-bank.test');
       expect(text).not.toContain('example-bank.test');
     }
+
+    // B's regulatory scope: Denmark, which A watches, is not watched here (FP-S8 may be
+    // operating it in B right now, so only "watching" is ruled out); none of A's terms is
+    // held; A's pending request and A's people appear nowhere on the page.
+    await page.goto('/admin/footprint');
+    await expect(page.locator('[data-footprint-dimensions]')).toBeVisible();
+    const denmark = page.locator('[data-markets] [data-market="dk"]');
+    await expect(denmark).toBeVisible();
+    await expect(denmark.getByRole('button', { pressed: true })).toHaveCount(0);
+    for (const [dimension, term] of A_ONLY_TERMS) {
+      await expect(page.locator(`[data-dimension="${dimension}"] [data-term="${term}"]`)).toContainText('Not in our scope');
+    }
+    await expect(page.locator('[data-footprint-history]')).toBeVisible();
+    await expect(page.locator('main')).not.toContainText(A_REQUESTER);
+    await expect(page.locator('[data-pending-request]').filter({ hasText: 'Remove Advice' })).toHaveCount(0);
+
+    // B's roles and vocabulary rows are B's own.
+    await page.goto('/admin/roles');
+    await expect(page.locator('[data-role-key="admin"]')).toBeVisible();
+    await expect(page.locator(`[data-role-key="${A_ONLY_ROLE}"]`)).toHaveCount(0);
+    await page.goto(`/admin/vocabularies/${A_ONLY_TAG_LIST}`);
+    await expect(page.locator(`[data-vocabulary-values="${A_ONLY_TAG_LIST}"]`).or(page.locator('[data-empty-state]')).first()).toBeVisible();
+    await expect(page.locator(`[data-value-key="${A_ONLY_TAG}"]`)).toHaveCount(0);
   });
 
   test("ADM-S1: Tenant admin surfaces are gated by their own permissions", async ({ page, apiGuard }) => {
@@ -204,5 +247,18 @@ test.describe('tenants journeys', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Members' })).toBeVisible();
     await page.goto('/admin/roles');
     await expect(page.getByRole('heading', { level: 1, name: 'Roles' })).toBeVisible();
+  });
+});
+
+// PRD 0.3: departments with heads and team membership (TEN-02, TEN-03) and
+// certificates on a legal entity (TEN-02, AC-TEN1). Each stays test.fixme
+// until the task in docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
+test.describe('departments, teams and certificates', () => {
+  test.fixme("TEN-S8: A department has a head and teams, and team membership is set on the member row", async () => {
+    // pending: TEN-S8 (TEN-02, TEN-03)
+  });
+
+  test.fixme("TEN-S10: A legal entity records a certificate it holds", async () => {
+    // pending: TEN-S10 (TEN-02, AC-TEN1)
   });
 });

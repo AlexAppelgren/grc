@@ -1,29 +1,34 @@
 import { describe, expect, it } from 'vitest';
 
 import { createT } from '@/shared/i18n';
-import { defaultFormatContext } from '@/shared/utils/format';
+import { defaultFormatContext, formatDateTime } from '@/shared/utils/format';
 
 import {
   canApprove,
   canWithdraw,
   diffFootprint,
+  draftAfter,
   draftOf,
+  hidesSomething,
   historyLine,
   isRequester,
+  marketLevelLabel,
+  narrowedGroups,
   pendingAdditions,
   pendingRemovals,
-  presentFootprintDimension,
+  pendingTermPill,
   presentRequestStatus,
-  presentScope,
   previewLines,
   previewSummary,
+  reachLines,
   requestTitle,
-  termsOutside,
+  scopeGroups,
   toggleTerm,
 } from './footprint-presentation';
-import type { FootprintChangeRequest, FootprintDimension, FootprintPreview, TaxonomyTerm } from './types';
+import type { FootprintChangeRequest, FootprintDimension, FootprintPreview, JurisdictionRef, Market, TaxonomyTerm } from './types';
 
 const t = createT('en');
+const sv = createT('sv');
 
 const service: FootprintDimension = {
   dimension: { key: 'service_type', kind: 'scope', label: 'Service' },
@@ -42,6 +47,8 @@ const preview: FootprintPreview = {
   revealed: { obligations: { count: 0, available: true }, cases: { count: 0, available: false } },
 };
 
+const retail = { key: 'retail', kind: null, label: 'Retail', dimension: 'client_category' };
+
 function request(overrides: Partial<FootprintChangeRequest> = {}): FootprintChangeRequest {
   return {
     id: 'r1',
@@ -59,20 +66,6 @@ function request(overrides: Partial<FootprintChangeRequest> = {}): FootprintChan
   };
 }
 
-describe('presentScope', () => {
-  it('renders one brand pill per term, "Every service" when all are selected and plain text when empty', () => {
-    expect(presentFootprintDimension(service, t)).toEqual({
-      pills: [
-        { key: 'term:advice', label: 'Advice', tone: 'brand', order: 0 },
-        { key: 'term:custody', label: 'Custody', tone: 'brand', order: 1 },
-      ],
-      emptyText: null,
-    });
-    expect(presentScope(service.dimension, service.terms, true, t)).toEqual({ pills: [{ key: 'scope:all', label: 'Every service', tone: 'brand', order: 0 }], emptyText: null });
-    expect(presentFootprintDimension(client, t)).toEqual({ pills: [], emptyText: 'Not restricted' });
-  });
-});
-
 describe('request status and title', () => {
   it('maps the status kind to a tone and a phrase', () => {
     expect(presentRequestStatus('pending', t)).toEqual({ key: 'status:pending', label: 'Waiting for approval', tone: 'warning', order: 0 });
@@ -81,10 +74,17 @@ describe('request status and title', () => {
     expect(presentRequestStatus('withdrawn', t)).toMatchObject({ label: 'Withdrawn', tone: 'information' });
   });
 
-  it('titles the request from its terms', () => {
-    expect(requestTitle(request(), t)).toBe('Switch off Advice');
-    expect(requestTitle(request({ adds: [{ key: 'fund_company', kind: null, label: 'Fund company', dimension: 'legal_entity' }], removes: [] }), t)).toBe('Add Fund company');
-    expect(requestTitle(request({ adds: [{ key: 'fund_company', kind: null, label: 'Fund company', dimension: 'legal_entity' }] }), t)).toBe('Add Fund company, switch off Advice');
+  it('titles the request from its terms, in plain words', () => {
+    const fund = { key: 'fund_company', kind: null, label: 'Fund company', dimension: 'legal_entity' };
+    expect(requestTitle(request(), t)).toBe('Remove Advice');
+    expect(requestTitle(request({ adds: [fund], removes: [] }), t)).toBe('Add Fund company');
+    expect(requestTitle(request({ adds: [fund] }), t)).toBe('Add Fund company, remove Advice');
+    const distribution = { key: 'insurance_distribution', kind: null, label: 'Insurance distribution', dimension: 'service_type' };
+    expect(requestTitle(request({ adds: [distribution, retail] }), t)).toBe('Add Insurance distribution and Retail, remove Advice');
+    expect(requestTitle(request({ adds: [distribution, retail, fund], removes: [] }), t)).toBe('Add Insurance distribution, Retail and Fund company');
+    expect(requestTitle(request({ adds: [{ ...retail, label: 'Icke-professionell' }], removes: [{ key: 'advice', kind: null, label: 'Rådgivning', dimension: 'service_type' }] }), sv)).toBe(
+      'Lägg till Icke-professionell, ta bort Rådgivning',
+    );
   });
 });
 
@@ -104,11 +104,36 @@ describe('preview', () => {
     expect(previewLines(null, t)).toEqual({ hides: [], reveals: [] });
   });
 
-  it('summarises the hidden side for the banner', () => {
+  it('summarises both sides in one sentence, leaving out what is not counted and a side that moves nothing', () => {
+    const counted: FootprintPreview = {
+      hidden: { obligations: { count: 2, available: true }, cases: { count: 0, available: false } },
+      revealed: { obligations: { count: 1, available: true }, cases: { count: 0, available: false } },
+    };
+    expect(previewSummary(counted, t)).toBe('Hides 2 obligations and reveals 1 obligation.');
+    expect(previewSummary(counted, sv)).toBe('Döljer 2 skyldigheter och visar 1 skyldighet.');
+    // Nothing revealed: the sentence names only what is hidden, each kind joined once.
     expect(previewSummary(preview, t)).toBe('Hides 4 obligations and 2 open cases.');
-    expect(previewSummary({ hidden: { obligations: { count: 1, available: true } }, revealed: {} }, t)).toBe('Hides 1 obligation.');
-    expect(previewSummary({ hidden: { obligations: { count: 0, available: false } }, revealed: {} }, t)).toBe('What it hides is not counted yet.');
+    expect(previewSummary(preview, sv)).toBe('Döljer 4 skyldigheter och 2 öppna ärenden.');
+    const three: FootprintPreview = { hidden: { obligations: { count: 1, available: true }, cases: { count: 2, available: true }, widgets: { count: 3, available: true } }, revealed: {} };
+    expect(previewSummary(three, t)).toBe('Hides 1 obligation, 2 open cases and 3 widgets.');
+    // Nothing hidden: only what appears.
+    const widening: FootprintPreview = { hidden: { obligations: { count: 0, available: true } }, revealed: { obligations: { count: 3, available: true }, cases: { count: 0, available: false } } };
+    expect(previewSummary(widening, t)).toBe('Reveals 3 obligations.');
+    expect(previewSummary(widening, sv)).toBe('Visar 3 skyldigheter.');
+    const still: FootprintPreview = { hidden: { obligations: { count: 0, available: true } }, revealed: { obligations: { count: 0, available: true } } };
+    expect(previewSummary(still, t)).toBe('Hides nothing and reveals nothing.');
+    expect(previewSummary(still, sv)).toBe('Döljer inget och visar inget.');
+    expect(previewSummary({ hidden: { obligations: { count: 0, available: false } }, revealed: { obligations: { count: 0, available: false } } }, t)).toBe('What it hides is not counted yet.');
     expect(previewSummary(undefined, t)).toBe('What it hides is not counted yet.');
+    // An answer that carries no revealed side is summarised from the side it does carry.
+    expect(previewSummary({ hidden: { obligations: { count: 2, available: true } } } as unknown as FootprintPreview, t)).toBe('Hides 2 obligations.');
+  });
+
+  it('knows whether the counted part hides anything, never guessing at a count it does not have', () => {
+    expect(hidesSomething(preview)).toBe(true);
+    expect(hidesSomething({ hidden: { obligations: { count: 0, available: true } }, revealed: {} })).toBe(false);
+    expect(hidesSomething({ hidden: { cases: { count: 3, available: false } }, revealed: {} })).toBe(false);
+    expect(hidesSomething(undefined)).toBe(false);
   });
 });
 
@@ -129,7 +154,7 @@ describe('who may do what', () => {
 });
 
 describe('draft and diff', () => {
-  it('builds a draft from the stored footprint, toggles terms and diffs into adds and removes', () => {
+  it('builds a draft from the stored scope, toggles terms and diffs into adds and removes', () => {
     const draft = draftOf([service, client]);
     expect([...(draft.service_type ?? [])]).toEqual(['advice', 'custody']);
     expect(diffFootprint([service, client], draft)).toEqual({ adds: [], removes: [] });
@@ -140,29 +165,163 @@ describe('draft and diff', () => {
     expect(diffFootprint([service], {})).toEqual({ adds: [], removes: [] });
   });
 
-  it('knows which terms a pending request switches off or on, and which terms sit outside the footprint', () => {
+  it('knows which terms a pending request removes or adds', () => {
     expect([...pendingRemovals(request(), 'service_type')]).toEqual(['advice']);
     expect([...pendingRemovals(request(), 'regime')]).toEqual([]);
     expect([...pendingRemovals(null, 'service_type')]).toEqual([]);
-    expect([...pendingAdditions(request({ adds: [{ key: 'retail', kind: null, label: 'Retail', dimension: 'client_category' }] }), 'client_category')]).toEqual(['retail']);
-    const all: TaxonomyTerm[] = [
-      { key: 'advice', kind: null, label: 'Advice', dimension: 'service_type' },
-      { key: 'execution_only', kind: null, label: 'Execution only', dimension: 'service_type', active: true },
-      { key: 'legacy', kind: null, label: 'Legacy', dimension: 'service_type', active: false },
-      { key: 'retail', kind: null, label: 'Retail', dimension: 'client_category' },
-    ];
-    expect(termsOutside(all, service).map((term) => term.key)).toEqual(['execution_only']);
-    expect(termsOutside(all, client).map((term) => term.key)).toEqual(['retail']);
+    expect([...pendingAdditions(request({ adds: [retail] }), 'client_category')]).toEqual(['retail']);
+  });
+
+  it('builds the scope a request would leave, so the approver hears what it narrows', () => {
+    const after = draftAfter([service, client], request({ adds: [retail] }));
+    expect([...(after.service_type ?? [])]).toEqual(['custody']);
+    expect([...(after.client_category ?? [])]).toEqual(['retail']);
+    expect(narrowedGroups([service, client], after).map((d) => d.dimension.key)).toEqual(['client_category']);
+    expect(narrowedGroups([service, client], draftAfter([service, client], request()))).toEqual([]);
+    // A draft that does not mention an empty group leaves it empty, so it narrows nothing.
+    expect(narrowedGroups([service, client], {})).toEqual([]);
+  });
+});
+
+describe('scopeGroups, narrowedGroups and pendingTermPill', () => {
+  const channel: FootprintDimension = { dimension: { key: 'channel', kind: 'classification', label: 'Channel' }, restrictsFootprint: false, terms: [{ key: 'digital', kind: null, label: 'Digital' }], allSelected: false };
+  const lifecycleStage: FootprintDimension = {
+    dimension: { key: 'lifecycle_stage', kind: 'classification', label: 'Lifecycle stage' },
+    restrictsFootprint: false,
+    terms: [{ key: 'pre_trade', kind: null, label: 'Pre-trade' }],
+    allSelected: false,
+  };
+  const theme: FootprintDimension = { dimension: { key: 'theme', kind: 'classification', label: 'Theme' }, restrictsFootprint: false, terms: [{ key: 'aml', kind: null, label: 'AML' }], allSelected: false };
+  const termless: FootprintDimension = { dimension: { key: 'jurisdiction', kind: 'scope', label: 'Jurisdiction' }, restrictsFootprint: true, terms: [], allSelected: false };
+  const product: FootprintDimension = { dimension: { key: 'product_type', kind: 'scope', label: 'Product type' }, restrictsFootprint: true, terms: [], allSelected: false };
+  const allTerms: TaxonomyTerm[] = [
+    { key: 'advice', kind: null, label: 'Advice', dimension: 'service_type' },
+    { key: 'custody', kind: null, label: 'Custody', dimension: 'service_type' },
+    { key: 'execution_only', kind: null, label: 'Execution only', dimension: 'service_type', active: true },
+    { key: 'legacy', kind: null, label: 'Legacy', dimension: 'service_type', active: false },
+    { key: 'digital', kind: null, label: 'Digital', dimension: 'channel' },
+    { key: 'retail', kind: null, label: 'Retail', dimension: 'client_category', active: true },
+    { key: 'professional', kind: null, label: 'Professional', dimension: 'client_category' },
+    { key: 'fund', kind: null, label: 'Fund', dimension: 'product_type', active: false },
+  ];
+
+  it('keeps the dimensions that restrict and have an active term, held or not, each listing every active term', () => {
+    const groups = scopeGroups([service, client, channel, lifecycleStage, theme, termless, product], allTerms);
+    // Channel, lifecycle stage and theme never restrict; jurisdiction and product type have no active term.
+    expect(groups.map((g) => g.dimension.key)).toEqual(['service_type', 'client_category']);
+    expect(groups[0]!.rows).toEqual([
+      { term: allTerms[0], held: true },
+      { term: allTerms[1], held: true },
+      { term: allTerms[2], held: false },
+    ]);
+    // Nothing held: the group still shows, because an empty group is the unrestricted one.
+    expect(groups[1]!.rows.map((row) => [row.term.key, row.held])).toEqual([
+      ['retail', false],
+      ['professional', false],
+    ]);
+  });
+
+  it('keeps a held term that is no longer active, held and after the active ones, so its group still reads as filtering and it can be unticked', () => {
+    // The seed takes a jurisdiction's term inactive with it, and the scope match ignores `active`.
+    const sweden = { key: 'se', kind: null, label: 'Sweden' };
+    const jurisdiction: FootprintDimension = { dimension: { key: 'jurisdiction', kind: 'scope', label: 'Jurisdiction' }, restrictsFootprint: true, terms: [sweden], allSelected: false };
+    const legacy = { key: 'legacy', kind: null, label: 'Legacy' };
+    const withLegacy: FootprintDimension = { ...service, terms: [...service.terms, legacy] };
+    const groups = scopeGroups([withLegacy, jurisdiction], allTerms);
+    expect(groups.map((g) => g.dimension.key)).toEqual(['service_type', 'jurisdiction']);
+    expect(groups[0]!.rows.map((row) => [row.term.key, row.held])).toEqual([
+      ['advice', true],
+      ['custody', true],
+      ['execution_only', false],
+      ['legacy', true],
+    ]);
+    expect(groups[1]!.rows).toEqual([{ term: sweden, held: true }]);
+    expect(groups.map((g) => g.mirrored)).toEqual([false, false]);
+  });
+
+  it('marks the group whose terms mirror the jurisdictions, whatever its dimension is called', () => {
+    const markets: FootprintDimension = { dimension: { key: 'where_we_operate', kind: 'scope', label: 'Markets' }, restrictsFootprint: true, terms: [], allSelected: false };
+    const mirrored: TaxonomyTerm[] = [...allTerms, { key: 'se', kind: null, label: 'Sweden', dimension: 'where_we_operate', mirrored: true }];
+    expect(scopeGroups([service, markets], mirrored).map((g) => [g.dimension.key, g.mirrored])).toEqual([
+      ['service_type', false],
+      ['where_we_operate', true],
+    ]);
+  });
+
+  it('detects narrowing (empty in the stored scope, non-empty in the draft) and not widening', () => {
+    const draft = draftOf([service, client]);
+    // Widening: adding to an already-restricting group is not a new narrowing.
+    expect(narrowedGroups([service, client], toggleTerm(draft, 'service_type', 'execution_only'))).toEqual([]);
+    // Narrowing: the first term ticked in an empty group.
+    expect(narrowedGroups([service, client], toggleTerm(draft, 'client_category', 'retail')).map((d) => d.dimension.key)).toEqual(['client_category']);
+    // A group already restricting, even if the draft empties it, was not narrowed by this draft.
+    expect(narrowedGroups([service], {})).toEqual([]);
+  });
+
+  // std-journeys (FP-01, INV-08, AC-FP3): an opt-in dimension, the standards a bank follows.
+  const standard: FootprintDimension = { dimension: { key: 'standard', kind: 'opt_in', label: 'Standards followed' }, restrictsFootprint: true, terms: [], allSelected: false };
+  const iso: TaxonomyTerm = { key: 'iso_iec_27001', kind: null, label: 'ISO/IEC 27001', dimension: 'standard' };
+
+  it('marks the opt-in group by the kind the footprint read serves, never by its key', () => {
+    const followed: FootprintDimension = { ...standard, dimension: { ...standard.dimension, key: 'certifications' } };
+    const terms: TaxonomyTerm[] = [...allTerms, { ...iso, dimension: 'certifications' }];
+    expect(scopeGroups([service, client, followed], terms).map((g) => [g.dimension.key, g.optIn])).toEqual([
+      ['service_type', false],
+      ['client_category', false],
+      ['certifications', true],
+    ]);
+  });
+
+  it('never lists an opt-in group as narrowed: following a standard only reveals', () => {
+    const draft = toggleTerm(draftOf([service, client, standard]), 'standard', 'iso_iec_27001');
+    expect(narrowedGroups([service, client, standard], draft)).toEqual([]);
+    // The same draft on a scope group still narrows.
+    expect(narrowedGroups([service, client, standard], toggleTerm(draft, 'client_category', 'retail')).map((d) => d.dimension.key)).toEqual(['client_category']);
+  });
+
+  it('reads an empty opt-in group as none followed, in both languages', () => {
+    expect(t('footprint.noneFollowed')).toBe('None followed.');
+    expect(sv('footprint.noneFollowed')).toBe('Ingen följs.');
+  });
+
+  it('pends a term with the warning tone and the added/removed labels', () => {
+    expect(pendingTermPill('add', t)).toEqual({ key: 'pending:add', label: 'Added when approved', tone: 'warning', order: 0 });
+    expect(pendingTermPill('remove', t)).toEqual({ key: 'pending:remove', label: 'Removed when approved', tone: 'warning', order: 0 });
   });
 });
 
 describe('historyLine', () => {
-  it('names the decider, the request and the outcome', () => {
+  it('names the decider, the request and the outcome, with the time it was decided', () => {
     const approved = request({ status: 'approved', decidedBy: { id: 'u4', name: 'Maria Ek' }, decidedAt: '2026-09-18T14:02:00Z' });
-    expect(historyLine(approved, t, defaultFormatContext)).toEqual({ when: '18 Sept 2026', who: 'Maria Ek', text: 'approved "Switch off Advice" requested by Sara Lindqvist.' });
+    expect(historyLine(approved, t, defaultFormatContext)).toEqual({ when: formatDateTime('2026-09-18T14:02:00Z', defaultFormatContext), who: 'Maria Ek', text: 'approved "Remove Advice" requested by Sara Lindqvist.' });
     const rejected = request({ status: 'rejected', decidedBy: { id: 'u4', name: 'Maria Ek' }, decidedAt: '2026-09-02T09:40:00Z', decisionNote: 'ISK tax reporting is ours.' });
-    expect(historyLine(rejected, t, defaultFormatContext).text).toBe('rejected "Switch off Advice" requested by Sara Lindqvist: "ISK tax reporting is ours."');
-    expect(historyLine(request({ status: 'withdrawn' }), t, defaultFormatContext)).toEqual({ when: '18 Sept 2026', who: 'Sara Lindqvist', text: 'withdrew "Switch off Advice".' });
-    expect(historyLine(request(), t, defaultFormatContext).text).toBe('requested "Switch off Advice".');
+    expect(historyLine(rejected, t, defaultFormatContext).text).toBe('rejected "Remove Advice" requested by Sara Lindqvist: "ISK tax reporting is ours."');
+    expect(historyLine(request({ status: 'withdrawn' }), t, defaultFormatContext)).toEqual({ when: formatDateTime('2026-09-18T12:00:00Z', defaultFormatContext), who: 'Sara Lindqvist', text: 'withdrew "Remove Advice".' });
+    expect(historyLine(request(), t, defaultFormatContext).text).toBe('requested "Remove Advice".');
+  });
+});
+
+describe('markets', () => {
+  const market = (key: string, label: string, level: Market['level']): Market => ({ jurisdiction: { key, kind: 'country', label }, level });
+  const markets = [market('se', 'Sweden', 'operating'), market('dk', 'Denmark', 'watching'), market('no', 'Norway', 'watching'), market('fi', 'Finland', 'not_followed')];
+  const jurisdictions: JurisdictionRef[] = [
+    { key: 'eu', kind: 'supranational', label: 'European Union', parentKey: null },
+    { key: 'se', kind: 'country', label: 'Sweden', parentKey: 'eu' },
+    { key: 'dk', kind: 'country', label: 'Denmark', parentKey: 'eu' },
+    { key: 'no', kind: 'country', label: 'Norway', parentKey: 'eu' },
+    { key: 'fi', kind: 'country', label: 'Finland', parentKey: 'eu' },
+  ];
+
+  it('says every level in words', () => {
+    expect(markets.map((m) => marketLevelLabel(m.level, t))).toEqual(['Operating', 'Watching', 'Watching', 'Not watched']);
+    expect(markets.map((m) => marketLevelLabel(m.level, sv))).toEqual(['Verksamma', 'Bevakar', 'Bevakar', 'Bevakas inte']);
+  });
+
+  it('says which rules reach which markets, read from the parent of each, in the order of the markets', () => {
+    expect(reachLines(markets, jurisdictions, t)).toEqual(['European Union rules reach Sweden, Denmark, Norway and Finland, so they show wherever those markets do.']);
+    // A market with no parent, or one the reference list has not loaded, adds nothing.
+    const alone = [...jurisdictions.slice(0, 2), { key: 'dk', kind: 'country', label: 'Denmark', parentKey: null }];
+    expect(reachLines(markets.slice(0, 3), alone, t)).toEqual(['European Union rules reach Sweden, so they show wherever those markets do.']);
+    expect(reachLines(markets, [], t)).toEqual([]);
   });
 });

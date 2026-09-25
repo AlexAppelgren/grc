@@ -9,7 +9,8 @@ the console applies it (apps/proposals/apply.py).
 The same checks a tenant write makes run here before the proposal exists: the labels are
 in real languages, the kind is one the list knows, the key is not taken, the value is not a
 near-duplicate, a system row is not retired. A proposal the reviewer could only reject for
-a reason the proposer could have been told at once wastes both people's time.
+a reason the proposer could have been told at once wastes both people's time. A term of a
+mirrored dimension is not proposed at all (FP-S12): the reference seed owns those.
 
 This module writes proposals, never library rows, and names no `LibraryModel` class.
 """
@@ -24,7 +25,7 @@ from django.core.exceptions import ValidationError
 from apps.proposals import logic as proposals
 from apps.proposals.models import Proposal, ProposalKind
 from apps.taxonomy import tenant_lists_logic as lists
-from apps.taxonomy import terms_logic
+from apps.taxonomy import repoint, terms_logic
 from apps.taxonomy.schemas import VocabularyMerged
 
 
@@ -38,14 +39,6 @@ def _proposable(list_name: str) -> Any:
             code="validation_error",
         )
     return entry
-
-
-def _extra_payload(entry: Any, extra: dict[str, Any] | None) -> dict[str, Any]:
-    """The list's own columns as the proposal shows them: camelCased like every other name
-    the reviewer reads. apply.py maps them back to columns."""
-    from pydantic.alias_generators import to_camel
-
-    return {to_camel(name): value for name, value in lists.extra_columns(entry, extra).items()}
 
 
 def _label(labels: dict[str, str]) -> str:
@@ -76,7 +69,7 @@ def propose_create(
         "usageNote": usage_note.strip(),
         "kind": lists.validated_kind(entry, kind),
         "sortOrder": sort_order,
-        "extra": _extra_payload(entry, extra),
+        "extra": lists.extra_payload(entry, extra),
     }
     proposal, _created = proposals.create(
         kind=ProposalKind.VOCABULARY_CREATE.value,
@@ -110,7 +103,7 @@ def propose_relabel(
         "labels": cleaned,
         "usageNote": usage_note,
         "sortOrder": sort_order,
-        "extra": _extra_payload(entry, extra) or None,
+        "extra": lists.extra_payload(entry, extra) or None,
     }
     proposal, _created = proposals.create(
         kind=ProposalKind.VOCABULARY_RELABEL.value,
@@ -177,7 +170,7 @@ def propose_merge(
     count = int(getattr(source, "usage_count", 0))
     if dry_run:
         return VocabularyMerged(
-            **{"from": key}, into=into, usage_count=count, repointed=entry.repoint(source, target, dry_run=True), dry_run=True
+            **{"from": key}, into=into, usage_count=count, repointed=repoint.count(entry.repoint(source, target, dry_run=True)), dry_run=True
         )
     proposal, _created = proposals.create(
         kind=ProposalKind.VOCABULARY_MERGE.value,
@@ -199,7 +192,9 @@ def propose_term_create(
     usage_note: str = "",
     parent: str | None = None,
 ) -> Proposal:
-    terms_logic.dimension_by_key(dimension)
+    # First, so a key the mirror already holds is refused for what the dimension is rather
+    # than answered `duplicate_key`, as if another key would do (FP-S12).
+    terms_logic.refuse_mirrored([terms_logic.dimension_by_key(dimension).id])
     cleaned = lists.validated_labels(labels)
     term_key = lists.key_for(cleaned, key)
     if terms_logic.term_exists(dimension, term_key):
@@ -226,6 +221,7 @@ def propose_term_update(
     expected_version: int | None,
 ) -> Proposal:
     term = terms_logic.term_by_id(term_id)
+    terms_logic.refuse_mirrored([term.dimension_id])
     if expected_version is not None and expected_version != term.version:
         raise ValidationError("Someone changed this first. Reload and try again.", code="stale_write")
     cleaned = lists.validated_labels(labels) if labels else {}

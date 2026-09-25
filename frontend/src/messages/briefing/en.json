@@ -1,0 +1,14 @@
+{
+  "briefing.title": "This week in brief",
+  "briefing.weekKicker": "Week {week}, {from} to {to}",
+  "briefing.runningWeekNote": "The same items go out in the weekly email once the week ends.",
+  "briefing.snapshot.banner": "Sent {date}. Items may have moved since.",
+  "briefing.snapshot.seeCurrent": "See this week",
+  "briefing.previousWeek": "Previous week",
+  "briefing.also.title": "Also this week",
+  "briefing.openChange": "Open this change",
+  "briefing.errorTitle": "Could not load the briefing",
+  "briefing.empty.title": "Nothing new matches our scope this week",
+  "briefing.empty.body": "Older items are under Watch.",
+  "briefing.notFound.body": "This bank was never sent a briefing for that week."
+}

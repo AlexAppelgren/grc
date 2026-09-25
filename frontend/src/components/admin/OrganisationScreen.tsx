@@ -9,7 +9,7 @@ import { CheckGroup, CheckRow, Field, Select, TextInput } from '@/components/ui/
 import { PageHead } from '@/components/ui/PageHead';
 import { Panel } from '@/components/ui/Panel';
 import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
-import { useLanguages, useTenant, useUpdateTenant } from '@/features/tenant-admin/hooks';
+import { useLanguages, useSetTenantAi, useTenant, useUpdateTenant } from '@/features/tenant-admin/hooks';
 import type { RoleRef, Tenant } from '@/features/tenant-admin/types';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -18,7 +18,9 @@ import { findDestination } from '@/shared/navigation/registry';
 // Organisation (design/screens/admin-organisation.html, TEN-01): name,
 // timezone, default language, content languages in order, and the
 // onboarding checklist the server computes. Any member may read; saving
-// needs security.manage and the server's 403 renders in place.
+// needs security.manage and the server's 403 renders in place. The switch over
+// this organisation's Ask and AI drafts (D-07) is its own security change: the
+// api client opens the passkey prompt on the server's step_up_required.
 
 const NORDIC_ZONES = ['Europe/Stockholm', 'Europe/Helsinki', 'Europe/Oslo', 'Europe/Copenhagen', 'Europe/Brussels'];
 
@@ -63,24 +65,38 @@ export function languageOptions(reference: RoleRef[] | undefined, tenant: Tenant
   return [...known.values()];
 }
 
+const sameOrder = (a: string[], b: string[]) => a.length === b.length && a.every((key, i) => key === b[i]);
+
 function ProfileForm({ tenant, languages }: { tenant: Tenant; languages: RoleRef[] }) {
   const t = useT();
   const update = useUpdateTenant();
+  const held = tenant.contentLanguages.map((l) => l.key);
   const [name, setName] = useState(tenant.name);
   const [timezone, setTimezone] = useState(tenant.timezone);
-  const [defaultLanguage, setDefaultLanguage] = useState(tenant.defaultLanguage?.key ?? languages[0]?.key ?? '');
-  const [content, setContent] = useState<string[]>(tenant.contentLanguages.map((l) => l.key));
+  // A tenant created from the console has no default language yet (D-68): the select
+  // starts on its placeholder rather than on whichever language happens to come first.
+  const [defaultLanguage, setDefaultLanguage] = useState(tenant.defaultLanguage?.key ?? '');
+  const [content, setContent] = useState<string[]>(held);
+  const [languagesMissing, setLanguagesMissing] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const toggle = (key: string, checked: boolean) => {
+    setLanguagesMissing(false);
     setContent((current) => (checked ? [...current.filter((k) => k !== key), key] : current.filter((k) => k !== key)));
   };
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setSaved(false);
+    // The server refuses an empty list; a tenant that keeps content languages cannot be left with none.
+    if (content.length === 0 && held.length > 0) {
+      setLanguagesMissing(true);
+      return;
+    }
+    // An omitted field is left alone: the languages go only when the draft changed them,
+    // and the default language only once one has been chosen.
     update.mutate(
-      { name: name.trim(), timezone: timezone.trim(), defaultLanguage: defaultLanguage || undefined, contentLanguages: content },
+      { name: name.trim(), timezone: timezone.trim(), defaultLanguage: defaultLanguage || undefined, contentLanguages: sameOrder(content, held) ? undefined : content },
       { onSuccess: () => setSaved(true) },
     );
   };
@@ -102,6 +118,9 @@ function ProfileForm({ tenant, languages }: { tenant: Tenant; languages: RoleRef
           </Field>
           <Field id="org-default-language" label={t('admin.organisation.defaultLanguage')}>
             <Select id="org-default-language" value={defaultLanguage} onChange={(e) => setDefaultLanguage(e.target.value)}>
+              <option value="" disabled>
+                {t('admin.organisation.defaultLanguagePlaceholder')}
+              </option>
               {languages.map((language) => (
                 <option key={language.key} value={language.key}>
                   {language.label}
@@ -110,7 +129,7 @@ function ProfileForm({ tenant, languages }: { tenant: Tenant; languages: RoleRef
             </Select>
           </Field>
         </div>
-        <CheckGroup legend={t('admin.organisation.contentLanguages')} hint={t('admin.organisation.contentLanguagesHint')}>
+        <CheckGroup legend={t('admin.organisation.contentLanguages')} hint={t('admin.organisation.contentLanguagesHint')} error={languagesMissing ? t('admin.organisation.contentLanguagesRequired') : undefined}>
           {languages.map((language) => (
             <CheckRow key={language.key} id={`org-lang-${language.key}`} label={language.label} checked={content.includes(language.key)} onChange={(checked) => toggle(language.key, checked)} />
           ))}
@@ -124,6 +143,24 @@ function ProfileForm({ tenant, languages }: { tenant: Tenant; languages: RoleRef
         </ButtonBar>
       </Panel>
     </form>
+  );
+}
+
+function AiSwitch({ tenant }: { tenant: Tenant }) {
+  const t = useT();
+  const toggle = useSetTenantAi();
+  const on = tenant.aiEnabled;
+  return (
+    <Panel title={t('admin.organisation.ai.title')} aria-busy={toggle.isPending}>
+      <p>{on ? t('admin.organisation.ai.on', { name: tenant.name }) : t('admin.organisation.ai.off', { name: tenant.name })}</p>
+      <p className="text-meta text-muted">{t('admin.organisation.ai.hint')}</p>
+      {toggle.isError ? <ProblemAlert error={toggle.error} codes={{ step_up_required: t('admin.organisation.ai.stepUpCancelled') }} /> : null}
+      <ButtonBar>
+        <Button variant={on ? 'outline' : 'primary'} disabled={toggle.isPending} onClick={() => toggle.mutate(!on)}>
+          {toggle.isPending ? t('admin.organisation.ai.switching') : on ? t('admin.organisation.ai.switchOff') : t('admin.organisation.ai.switchOn')}
+        </Button>
+      </ButtonBar>
+    </Panel>
   );
 }
 
@@ -175,7 +212,10 @@ export function OrganisationScreen() {
       ) : (
         <div className="grid items-start gap-4 md:grid-cols-[1.4fr_1fr]">
           {/* Keyed on the id: the form's own state is the draft, and a reseed elsewhere remounts it. */}
-          <ProfileForm key={tenant.data.id} tenant={tenant.data} languages={languageOptions(languages.data, tenant.data)} />
+          <div>
+            <ProfileForm key={tenant.data.id} tenant={tenant.data} languages={languageOptions(languages.data, tenant.data)} />
+            <AiSwitch tenant={tenant.data} />
+          </div>
           <Checklist tenant={tenant.data} />
         </div>
       )}

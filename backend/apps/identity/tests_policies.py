@@ -20,6 +20,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.management import CommandError, call_command
+from django.db import DataError, transaction
 from django.db.models import F
 from django.http import HttpRequest
 from django.test import RequestFactory, TestCase, override_settings
@@ -44,6 +45,7 @@ from apps.identity.models import (
     InvitationKind,
     LoginEvent,
     LoginEventKind,
+    LoginMethod,
     Membership,
     OtpCode,
     PlatformRoleAssignment,
@@ -58,7 +60,7 @@ from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.adapters.mailer import MockMailer, OutgoingMail
 from apps.shared.authentication import ApiKeyAuth, Principal, PrincipalKind
 from apps.shared.errors import ProblemError
-from apps.shared.models import AuditEvent
+from apps.shared.models import AuditEvent, Tenant
 from config.api import api
 from apps.shared.permissions import enforce_step_up
 from apps.shared.testing import sign_in, user_principal
@@ -218,10 +220,33 @@ class SessionLimits(TestCase):
         with self.assertRaises(ValidationError):
             session_logic.revoke_own_session(user_principal(subject_id=uuid.uuid4()), bundle.session.id, None)
 
+    def test_a_cookie_naming_a_session_without_its_secret_signs_nobody_out(self) -> None:
+        """Sign-out takes no bearer token, so the cookie is the only proof. Session ids are
+        not secret (every `session.created` audit row names one), so a cookie of
+        `<someone's session id>.<anything>` must not end their session or write
+        `session.revoked` in their name."""
+        bundle = self._session()
+        session_logic.sign_out(f"{bundle.session.id.hex}.forged", None)
+        self.assertIsNone(UserSession.objects.get(pk=bundle.session.pk).revoked_at)
+        self.assertFalse(AuditEvent.objects.filter(action="session.revoked", subject_id=bundle.session.id).exists())
+        self.assertTrue(AuditEvent.objects.filter(action="session.sign_out_without_session").exists())
+        session_logic.refresh(bundle.refresh_value, None)  # the owner's cookie still works
+
+    def test_the_cookie_just_rotated_away_still_signs_out_inside_the_grace_window(self) -> None:
+        """A tab signing out while another tab refreshes presents the previous secret; inside
+        the replay grace window that is still the owner's cookie."""
+        bundle = self._session()
+        session_logic.refresh(bundle.refresh_value, None)
+        session_logic.sign_out(bundle.refresh_value, None)
+        self.assertEqual(UserSession.objects.get(pk=bundle.session.pk).revoked_reason, "sign_out")
+
     def test_a_platform_user_gets_a_platform_session(self) -> None:
         staff = factories.platform_user()
         self.assertIsNone(session_logic.choose_tenant(staff))
-        bundle = session_logic.create_session(user=staff, kind=SessionKind.FULL, tenant_id=None, request=None)
+        # With no tenant activated, as the sign-in has it when choose_tenant finds none:
+        # user_session accepts a row of the session's own zone only (H15).
+        with tenancy.platform_zone():
+            bundle = session_logic.create_session(user=staff, kind=SessionKind.FULL, tenant_id=None, request=None)
         principal = session_logic.resolve_access_token(bundle.access_token, want=PrincipalKind.USER)
         assert principal is not None
         self.assertTrue(principal.is_platform_staff)
@@ -291,7 +316,7 @@ class ApiKeyAuthClass(TestCase):
     def setUp(self) -> None:
         self.factory = RequestFactory()
         self.tenant = factories.tenant()
-        issued = factories.api_key(self.tenant, scopes=(perms.SCOPE_CHANGES_WRITE,))
+        issued = factories.api_key(self.tenant, scopes=(perms.SCOPE_LIBRARY_READ,))
         self.key = issued.row
         self.plain = issued.plain_key
 
@@ -302,7 +327,7 @@ class ApiKeyAuthClass(TestCase):
             assert principal is not None
             self.assertEqual(principal.kind, PrincipalKind.AGENT)
             self.assertEqual(principal.tenant_id, self.tenant.id)
-            self.assertTrue(principal.has_scope(perms.SCOPE_CHANGES_WRITE))
+            self.assertTrue(principal.has_scope(perms.SCOPE_LIBRARY_READ))
         self.assertIsNone(ApiKeyAuth()(self.factory.get("/", HTTP_AUTHORIZATION="Bearer v1.not.a.key.x")))
 
     def test_last_used_is_throttled_and_expiry_and_revocation_bite(self) -> None:
@@ -317,11 +342,11 @@ class ApiKeyAuthClass(TestCase):
         self.assertIsNone(api_keys_logic.resolve_api_key(self.plain))
         with self.assertRaises(ValidationError):
             api_keys_logic.create_api_key(
-                tenant=self.tenant, actor=factories.user_actor(), created_by=factories.user(), name=" ", scopes=[perms.SCOPE_CHANGES_WRITE], expires_at=None, step_up_assertion_id=None
+                tenant=self.tenant, actor=factories.user_actor(), created_by=factories.user(), name=" ", scopes=[perms.SCOPE_LIBRARY_READ], expires_at=None, step_up_assertion_id=None
             )
         with self.assertRaises(ValidationError):
             api_keys_logic.create_api_key(
-                tenant=self.tenant, actor=factories.user_actor(), created_by=factories.user(), name="x", scopes=[perms.SCOPE_CHANGES_WRITE], expires_at=timezone.now() - timedelta(days=1), step_up_assertion_id=None
+                tenant=self.tenant, actor=factories.user_actor(), created_by=factories.user(), name="x", scopes=[perms.SCOPE_LIBRARY_READ], expires_at=timezone.now() - timedelta(days=1), step_up_assertion_id=None
             )
         with self.assertRaises(ValidationError):
             api_keys_logic.revoke_api_key(tenant=self.tenant, actor=factories.user_actor(), key_id=uuid.uuid4())
@@ -361,6 +386,39 @@ class BootstrapPlatform(TestCase):
         self.assertEqual([r["key"] for r in me["platformRoles"]], ["platform_admin"])
         self.assertEqual(self.client.get("/api/v1/tenant", **headers).status_code, 404)
         self.assertFalse(WebAuthnCredential.objects.filter(user=user).count() == 0)
+
+
+class ThePlatformRowIsWrittenInASavepointOfItsOwn(TestCase):
+    """`log_event()` leaves the tenant zone to write a platform row (H15), and puts the
+    tenant back on the way out whether the insert worked or not. A failed insert aborts the
+    transaction, so without a savepoint inside that block the way out runs its SET on an
+    aborted transaction and raises there instead — and what the caller sees is that, not
+    the error the insert raised. `record()` nests the two the same way.
+
+    A value too long for its column stands in for every database error an insert can raise:
+    a constraint, a policy, a connection that went away.
+
+    Proven to fail 2026-09-20 by taking the inner transaction back out: the error was
+    TransactionManagementError from the way out, and the DataError was lost.
+    """
+
+    def test_a_failed_insert_surfaces_its_own_error_and_gives_the_tenant_back(self) -> None:
+        tenant = factories.tenant(slug="security-log-savepoint")
+        with transaction.atomic():
+            tenancy.activate(tenant.id)
+
+            with self.assertRaises(DataError):
+                security_log.log_event(
+                    event=LoginEventKind.SIGNIN_FAILED,
+                    method=LoginMethod.PASSKEY,
+                    success=False,
+                    request=None,
+                    tenant_id=None,
+                    failure_reason="x" * 200,  # the column holds 100
+                )
+
+            self.assertEqual(tenancy.database_tenant_id(), tenant.id, "the tenant is back on")
+            self.assertEqual(LoginEvent.objects.filter(tenant__isnull=True).count(), 0)
 
 
 # ---------------------------------------------------------------------------------------
@@ -772,6 +830,12 @@ class MailLeavesThroughTheWorker(TestCase):
     Celery task after commit; the mock outbox lives in the cache so another process can
     read it."""
 
+    # Celery's import hook runs Django's model checks, which read the server version of
+    # every connection, the row-level-security alias `app` included. Whether that read hit
+    # the database depended on whether an earlier test had already opened `app`, so the
+    # first test here passed or failed by suite order.
+    databases = {"default", "app"}
+
     def setUp(self) -> None:
         MockMailer.reset()
 
@@ -786,6 +850,15 @@ class MailLeavesThroughTheWorker(TestCase):
         self.assertEqual(cache.get(MOCK_OUTBOX_CACHE_KEY)[0][0], "anna@bank.example")
         MockMailer.reset()
         self.assertEqual(MockMailer.sent, [])
+
+    def test_the_code_mail_names_enrolment_and_never_sign_in(self) -> None:
+        """The emailed code works once, for enrolment only, and stops working once the
+        first passkey exists (CLAUDE.md section 5), so the subject never calls it a sign-in
+        code: a person who read that would expect it to let them sign in again."""
+        mail.send_code("anna@bank.example", "123456")
+        subject = MockMailer.sent[0].subject
+        self.assertIn("enrolment code", subject)
+        self.assertNotIn("sign-in", subject.lower())
 
     @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
     def test_outside_tests_the_mail_waits_for_the_commit(self) -> None:
@@ -966,3 +1039,86 @@ class InvitationTokenNeverInAPath(TestCase):
     def test_a_token_longer_than_any_issued_is_refused_before_any_lookup(self) -> None:
         response = self.client.post("/api/v1/auth/invitations/open", data={"token": "x" * 129}, content_type="application/json")
         self.assertEqual(response.status_code, 422)
+
+
+class NotificationPreferences(TestCase):
+    """COL-02 (c10-notify-and-prefs): each person's own switches on `GET /me` and
+    `PATCH /me`, every one on until they turn it off, stored on their membership of the
+    bank the session is in and audited once with before and after."""
+
+    ALL_ON = {"weeklyDigest": True, "reminders": True, "mentions": True, "assignments": True, "weeklyBriefing": True}
+    tenant: Tenant
+    person: User
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.tenant = factories.tenant(slug="prefs-bank")
+        cls.person = factories.member_user(cls.tenant, roles=("reader",))
+
+    def setUp(self) -> None:
+        # Signed in before any test counts audit rows: signing in writes rows of its own.
+        self.headers = sign_in(self.person, tenant=self.tenant)
+
+    def patch(self, body: dict[str, Any]) -> Any:
+        return self.client.patch("/api/v1/me", data=body, content_type="application/json", **self.headers)
+
+    def stored(self) -> dict[str, Any]:
+        tenancy.activate(self.tenant.id)
+        return Membership.objects.get(tenant=self.tenant, user=self.person).notification_prefs
+
+    def test_a_member_who_never_chose_reads_every_switch_on(self) -> None:
+        body = self.client.get("/api/v1/me", **self.headers).json()
+        self.assertEqual(body["notificationPrefs"], self.ALL_ON)
+
+    def test_a_platform_session_has_no_switches(self) -> None:
+        editor = factories.platform_user(roles=("library_editor",), email="editor-prefs@bleqq.test")
+        self.assertIsNone(self.client.get("/api/v1/me", **sign_in(editor)).json()["notificationPrefs"])
+        refused = self.client.patch(
+            "/api/v1/me", data={"notificationPrefs": {"mentions": False}}, content_type="application/json", **sign_in(editor)
+        )
+        self.assertEqual((refused.status_code, refused.json()["code"]), (404, "not_found"))
+
+    def test_a_partial_patch_changes_its_switch_and_leaves_the_others_with_one_audit_event(self) -> None:
+        self.patch({"notificationPrefs": {"reminders": False}})
+        audit = AuditEvent.objects.count()
+
+        response = self.patch({"notificationPrefs": {"mentions": False}})
+
+        self.assertEqual(response.status_code, 200, response.content)
+        expected = {**self.ALL_ON, "reminders": False, "mentions": False}
+        self.assertEqual(response.json()["notificationPrefs"], expected)
+        self.assertEqual(self.stored(), expected)
+        self.assertEqual(AuditEvent.objects.count(), audit + 1)
+        event = AuditEvent.objects.filter(action="user.updated").order_by("-created").first()
+        assert event is not None
+        self.assertEqual(event.before["notificationPrefs"], {**self.ALL_ON, "reminders": False})
+        self.assertEqual(event.after["notificationPrefs"], expected)
+
+    def test_a_name_and_the_switches_together_are_one_audit_event(self) -> None:
+        audit = AuditEvent.objects.count()
+        response = self.patch({"name": "Anna Berg", "notificationPrefs": {"weeklyBriefing": False}})
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(AuditEvent.objects.count(), audit + 1)
+        self.assertEqual(response.json()["user"]["name"], "Anna Berg")
+        self.assertFalse(response.json()["notificationPrefs"]["weeklyBriefing"])
+
+    def test_an_unknown_switch_answers_422_and_writes_nothing(self) -> None:
+        audit = AuditEvent.objects.count()
+        name = User.objects.get(pk=self.person.pk).name
+
+        response = self.patch({"name": "Somebody Else", "notificationPrefs": {"mentions": False, "snooze": True}})
+
+        self.assertEqual((response.status_code, response.json()["code"]), (422, "unknown_key"))
+        self.assertEqual(self.stored(), {})
+        self.assertEqual(User.objects.get(pk=self.person.pk).name, name)
+        self.assertEqual(AuditEvent.objects.count(), audit)
+
+    def test_a_switch_that_is_not_a_boolean_is_refused(self) -> None:
+        response = self.patch({"notificationPrefs": {"mentions": "sometimes"}})
+        self.assertEqual((response.status_code, response.json()["code"]), (422, "validation_error"))
+        self.assertEqual(self.stored(), {})
+
+    def test_a_patch_without_switches_leaves_them_alone(self) -> None:
+        self.patch({"notificationPrefs": {"assignments": False}})
+        self.patch({"name": "Anna Berg"})
+        self.assertEqual(self.stored(), {**self.ALL_ON, "assignments": False})

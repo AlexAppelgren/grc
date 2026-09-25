@@ -43,7 +43,7 @@ TENANT_ROLE_USAGE: dict[str, str] = {
     "admin": "Runs the organisation: members, roles, security, integrations. Not a case worker.",
     "compliance_officer": "Triages changes, assesses, proposes to the library, manages vocabularies.",
     "owner": "Owns obligations and works the cases that touch them.",
-    "approver": "Signs off cases and approves footprint and applicability decisions. Never the requester.",
+    "approver": "Signs off cases and approves regulatory scope and applicability decisions. Never the requester.",
     "contributor": "Adds assessment input, actions and evidence on cases they are asked to help with.",
     "reader": "Reads everything, changes nothing.",
     "auditor": "Reads everything, exports and the AI log included.",

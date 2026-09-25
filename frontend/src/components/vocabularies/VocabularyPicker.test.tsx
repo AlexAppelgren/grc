@@ -108,7 +108,7 @@ describe('VocabularyPicker', () => {
     fireEvent.change(input, { target: { value: 'T+1' } });
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     fireEvent.keyDown(input, { key: 'Enter' });
-    expect(await screen.findByText('Add "T+1" is waiting for a library editor.')).toBeTruthy();
+    expect(await screen.findByText('Add "T+1" is waiting for review.')).toBeTruthy();
     expect(sent.find((s) => s.method === 'post')?.path).toBe('/api/v1/vocab/flag/suggest');
     fireEvent.click(screen.getByRole('button', { name: 'Remove Custody' }));
     expect(screen.getByTestId('value').textContent).toBe('');
@@ -177,7 +177,7 @@ describe('VocabularyPicker', () => {
     await waitFor(() => expect((input as HTMLInputElement).disabled).toBe(false));
     fireEvent.change(input, { target: { value: 'Zzz' } });
     fireEvent.click(document.querySelector('[data-picker-last="propose"]') as Element);
-    expect(await screen.findByText('Zzz is waiting for a library editor.')).toBeTruthy();
+    expect(await screen.findByText('Zzz is waiting for review.')).toBeTruthy();
 
     answer = { proposal: { id: 'p2', kind: 'vocabulary_create', status: 'open', title: 'Add Qqq' } };
     const { unmount } = renderPicker({ list: 'tenant_tag', tier: 'tenant', permissions: ['vocab.manage'] });

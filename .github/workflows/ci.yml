@@ -4,8 +4,9 @@
 # ----------------------------------------------------------------------------
 # Migration drift (makemigrations --check)      A model change without a migration       backend
 # Migration graph applies from zero             A conflicting or broken graph            backend
-# Backend tests under coverage                  Regressions                              backend
-# Global + per-module coverage floors           Coverage sliding, masked modules         backend
+# Backend tests under coverage (sharded)        Regressions                              backend-tests
+# Shards add up to the whole suite              A shard skipped or a test left unrun     backend-coverage
+# Global + per-module coverage floors           Coverage sliding, masked modules         backend-coverage
 # ruff + mypy                                   Undefined names, bugbear, Django footguns,
 #                                               bandit findings, type errors             backend
 # Compliance lint (--all)                       Unschema'd JSONField, stray enums, PII in
@@ -15,6 +16,8 @@
 #                                               with no test                             backend
 # Contract drift                                A designed operation missing or reshaped
 #                                               without an INPUT_DELTAS entry            backend
+# API documentation                             A published attribute, value set, limit or
+#                                               operation an integrator cannot understand backend
 # Search and classification evaluation          Retrieval/tagging quality dropping       backend
 # OpenAPI + TypeScript drift                    Frontend types diverging from the API    openapi-types-drift
 # Frontend lint, typecheck, unit coverage,
@@ -25,6 +28,9 @@
 # E2E (real stack, @smoke on push, all nightly) Broken journeys, undeclared API failures,
 #                                               page exceptions                          e2e
 # Pill gallery screenshot (both themes)         Tones, slots and labels drifting         e2e
+# Cold start (a deploy's own seeds, no fixture) A first deploy that cannot be set up:
+#                                               a missing seed, a screen that assumes
+#                                               data, a command that refuses            coldstart
 # Secret scan (gitleaks, every push)            Committed secrets                        secrets
 # Dependency CVEs (osv-scanner on the committed
 #   lockfiles + npm audit; nightly regardless)  Known-vulnerable dependencies            cve
@@ -32,7 +38,37 @@
 #                                               attribution for @sebgroup/*             licences
 # Container image scan (Trivy, HIGH+CRITICAL)   Vulnerable OS packages in the images     container-scan
 # CodeQL (own SARIF gate, medium and above)     Injection, traversal, unsafe deserialisation  codeql.yml
+# Tier lists agree (this file, codeql.yml and   A tier changed on one side only, so a green
+#   scripts/prepush.sh)                         prepush stops predicting a green CI      changes
 # ----------------------------------------------------------------------------
+#
+# Tiers (playbook Appendix D). scripts/prepush.sh classifies a changed file exactly
+# the same way, and the `changes` job below fails when the lists drift apart. A file
+# may skip a gate only when it cannot change what that gate measures: this is tiering,
+# never a lowered gate.
+#
+#   workflows   .github/**                        everything, as the nightly run does
+#   backend     backend code, INPUT_DELTAS.md, the contract artefacts, infra/db,
+#               docker-compose.yml                the whole backend job, and E2E
+#   specs       backend/apps/*/app.md, PRD.md, docs/inputs/openapi.yaml
+#                                                 the backend job's static checkers only
+#                                                 (lint, types, compliance, requirements
+#                                                 coverage, contract drift, API
+#                                                 documentation). Spec text has no
+#                                                 migration, no test, no coverage number
+#                                                 and no retrieval score behind it, so
+#                                                 the steps that measure those are
+#                                                 skipped, and so are E2E and the
+#                                                 OpenAPI/TypeScript drift job
+#   frontend    frontend code, the contract artefacts   the frontend job, and E2E
+#   lockfiles   the lockfiles and scripts/        CVEs and licences
+#   containers  the Dockerfiles and the entrypoint       the image scans
+#   python      **/*.py                           codeql.yml's Python analysis
+#   javascript  **/*.{ts,tsx,js,jsx,mjs,cjs}      codeql.yml's JavaScript analysis
+#
+# docs/inputs/INPUT_DELTAS.md stays in `backend` rather than `specs` because a live
+# scenario test reads it (taxonomy tests_scenarios, I18N-S2), so rewording it really
+# can change what the backend suite measures.
 #
 # Shape (playbook 9):
 # - Tiered by the `changes` job (dorny/paths-filter, `base: github.ref_name` on
@@ -93,6 +129,7 @@ jobs:
     outputs:
       full: ${{ steps.decide.outputs.full }}
       backend: ${{ steps.decide.outputs.backend }}
+      specs: ${{ steps.decide.outputs.specs }}
       frontend: ${{ steps.decide.outputs.frontend }}
       lockfiles: ${{ steps.decide.outputs.lockfiles }}
       containers: ${{ steps.decide.outputs.containers }}
@@ -116,16 +153,24 @@ jobs:
               - '.github/**'
             backend:
               - 'backend/**/!(*.md)'
-              # app.md is parsed by requirements_coverage.py, PRD.md is its
-              # source of truth, and contract_drift.py reads the design inputs.
-              - 'backend/apps/*/app.md'
-              - 'PRD.md'
-              - 'docs/inputs/openapi.yaml'
+              # A scenario test asserts on the text of INPUT_DELTAS.md, so it is
+              # code as far as the suite is concerned, not spec text.
               - 'docs/inputs/INPUT_DELTAS.md'
               - 'generate-types.sh'
               - 'openapi.json'
               - 'infra/db/**'
               - 'docker-compose.yml'
+            specs:
+              # Spec text: requirements_coverage.py parses app.md against PRD.md,
+              # contract_drift.py reads the designed contract. Nothing compiles it,
+              # nothing tests it, and no migration or build depends on it.
+              - 'backend/apps/*/app.md'
+              - 'PRD.md'
+              - 'docs/inputs/openapi.yaml'
+              # A journey spec is frontend code and runs the frontend tier too, but
+              # requirements_coverage.py also reads its titles: an @e2e scenario whose
+              # journey was renamed would otherwise land unchecked (2026-09-20).
+              - 'frontend/tests/e2e/*.spec.ts'
             frontend:
               - 'frontend/**/!(*.md)'
               - 'openapi.json'
@@ -149,6 +194,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           CHANGED_WORKFLOWS: ${{ steps.filter.outputs.workflows }}
           CHANGED_BACKEND: ${{ steps.filter.outputs.backend }}
+          CHANGED_SPECS: ${{ steps.filter.outputs.specs }}
           CHANGED_FRONTEND: ${{ steps.filter.outputs.frontend }}
           CHANGED_LOCKFILES: ${{ steps.filter.outputs.lockfiles }}
           CHANGED_CONTAINERS: ${{ steps.filter.outputs.containers }}
@@ -165,19 +211,29 @@ jobs:
           {
             echo "full=$full"
             decide backend "$CHANGED_BACKEND"
+            decide specs "$CHANGED_SPECS"
             decide frontend "$CHANGED_FRONTEND"
             decide lockfiles "$CHANGED_LOCKFILES"
             decide containers "$CHANGED_CONTAINERS"
           } | tee -a "$GITHUB_OUTPUT"
 
+      # Always, on every event: a tier that exists here and nowhere else is exactly
+      # the failure this job cannot detect by running.
+      - name: Tier lists agree with codeql.yml and scripts/prepush.sh
+        run: python3 scripts/check_ci_tiers.py
+
   # ---------------------------------------------------------------------------
   # Backend: migrations, tests under coverage, floors, lint, types, compliance
   # lint, requirements coverage, contract drift, search evaluation.
+  #
+  # The `specs` tier reaches this job too, but only its static checkers: spec text
+  # cannot move a migration, a test, a coverage number or a retrieval score, so the
+  # steps that measure those are gated on the `backend` tier.
   # ---------------------------------------------------------------------------
   backend:
     name: Backend gates
     needs: changes
-    if: needs.changes.outputs.backend == 'true'
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.specs == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
@@ -223,19 +279,12 @@ jobs:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Migration drift
+        if: needs.changes.outputs.backend == 'true'
         run: bash ./run.sh run python manage.py makemigrations --check --dry-run --settings=config.test_settings
 
       - name: Migration graph applies from zero
+        if: needs.changes.outputs.backend == 'true'
         run: bash ./run.sh run python manage.py migrate_from_zero --settings=config.test_settings
-
-      - name: Tests under coverage
-        run: bash ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput
-
-      - name: Coverage report
-        run: bash ./run.sh run coverage report
-
-      - name: Coverage floors (global + per module)
-        run: bash ./run.sh run python scripts/coverage_gate.py
 
       - name: ruff
         run: bash ./run.sh run ruff check .
@@ -252,8 +301,136 @@ jobs:
       - name: Contract drift
         run: bash ./run.sh run python scripts/contract_drift.py
 
+      - name: API documentation
+        run: bash ./run.sh run python scripts/api_docs_gate.py
+
       - name: Search and classification evaluation
+        if: needs.changes.outputs.backend == 'true'
         run: bash ./run.sh run python scripts/search_eval.py
+
+  # ---------------------------------------------------------------------------
+  # Backend tests under coverage, split across parallel runners (D-90). Each shard
+  # discovers the whole suite and runs the test modules dealt to it
+  # (backend/config/test_runner.py), on its own database, with one worker per vCPU.
+  # `backend-coverage` then proves the shards added up to the whole suite, merges
+  # their coverage data and applies the same floors to the whole. The shard count is
+  # the matrix length alone: TEST_SHARD reads it from strategy.job-total.
+  # ---------------------------------------------------------------------------
+  backend-tests:
+    name: Backend tests (${{ matrix.shard }})
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres-dev-only
+          POSTGRES_DB: compliance_watch
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d compliance_watch"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    defaults:
+      run:
+        shell: bash
+        working-directory: backend
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Create database roles and extensions
+        uses: ./.github/actions/init-db
+        with:
+          container-id: ${{ job.services.db.id }}
+
+      - name: Set up backend toolchain
+        uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      # One worker per vCPU of the ubuntu-24.04 runner (4), each with its own clone of the
+      # test database. scripts/prepush.sh runs the whole suite in one command with a count
+      # that suits the laptop it is on. tblib is in the locked dev dependencies so a
+      # worker's failure arrives here with its traceback.
+      - name: Tests under coverage (one shard of the suite)
+        env:
+          TEST_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+          TEST_SHARD_REPORT: shard-${{ matrix.shard }}.json
+        run: bash ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput --parallel 4
+
+      - name: Keep the shard's coverage data and report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: backend-shard-${{ matrix.shard }}
+          path: |
+            backend/.coverage.*
+            backend/shard-${{ matrix.shard }}.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  backend-coverage:
+    name: Backend coverage and floors
+    needs: [changes, backend-tests]
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+        working-directory: backend
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up backend toolchain
+        uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Fetch every shard's coverage data and report
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: backend-shard-*
+          merge-multiple: true
+          path: backend
+
+      # A shard that was skipped, cancelled or split differently fails here, so the floors
+      # below are never read over less than the whole suite.
+      - name: The shards ran the whole suite, each module once
+        run: bash ./run.sh run python scripts/test_shards_check.py .
+
+      # Each worker of each shard wrote coverage data of its own; the merge is what the
+      # report and the floors read (backend/pyproject.toml, [tool.coverage.run]).
+      - name: Combine the shards' coverage data
+        run: bash ./run.sh run coverage combine
+
+      - name: Coverage report
+        run: bash ./run.sh run coverage report
+
+      - name: Coverage floors (global + per module)
+        run: bash ./run.sh run python scripts/coverage_gate.py
 
   # ---------------------------------------------------------------------------
   # OpenAPI + TypeScript drift: regenerate and diff the committed artefacts.
@@ -340,13 +517,25 @@ jobs:
   # database, migrates from zero, seeds, boots Django with the E2E flag and
   # `next start`. @smoke on push and pull requests; the full suite nightly and
   # on manual runs. The pill gallery screenshot compare is part of this suite.
+  # Code tiers only: a journey exercises what is built, and no journey reads a
+  # spec file, so the `specs` tier deliberately never starts a browser here.
   # ---------------------------------------------------------------------------
   e2e:
-    name: E2E (Playwright)
+    name: E2E (Playwright ${{ matrix.part }})
     needs: changes
     if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    # Playwright's own sharding (D-90): each part boots its own real stack on its own
+    # fresh database. Six shards run the journeys; the screen budget journey (NFR-S7,
+    # four parts) runs as a seventh part of its own, because Playwright deals a shard a
+    # contiguous run of tests and would put all four parts in one shard. The shards
+    # leave out exactly what the seventh part runs, by the same title, so together they
+    # are every journey.
+    strategy:
+      fail-fast: false
+      matrix:
+        part: ["1/6", "2/6", "3/6", "4/6", "5/6", "6/6", "screens"]
     services:
       db:
         image: pgvector/pgvector:pg16
@@ -382,6 +571,39 @@ jobs:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
+      # Chromium and its system packages install while the database and the backend
+      # toolchain are set up (D-90): the apt step alone takes from 15 s to well over a
+      # minute depending on the mirror. "Chromium is installed" waits for it and fails
+      # the job with its log if it failed.
+      - name: Install Chromium (in the background)
+        run: |
+          (npx playwright install --with-deps chromium > "$RUNNER_TEMP/chromium.log" 2>&1; echo $? > "$RUNNER_TEMP/chromium.exit") &
+
+      - name: Build design tokens
+        run: npm run build:tokens
+
+      # The production build, the one Playwright would otherwise run first, starts here
+      # so it overlaps the database and backend setup (D-90). It bakes in the job's
+      # NEXT_PUBLIC_API_URL, the address the seeded stack serves on;
+      # "Run journeys" sets E2E_PREBUILT so Playwright starts this build instead of
+      # making its own.
+      - name: Build the web app (in the background)
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: |
+          (npm run build > "$RUNNER_TEMP/next-build.log" 2>&1; echo $? > "$RUNNER_TEMP/next-build.exit") &
+
       - name: Create database roles and extensions
         uses: ./.github/actions/init-db
         with:
@@ -392,6 +614,97 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Chromium is installed
+        run: |
+          until [ -f "$RUNNER_TEMP/chromium.exit" ]; do sleep 1; done
+          cat "$RUNNER_TEMP/chromium.log"
+          exit "$(cat "$RUNNER_TEMP/chromium.exit")"
+
+      - name: The web app is built
+        run: |
+          until [ -f "$RUNNER_TEMP/next-build.exit" ]; do sleep 1; done
+          cat "$RUNNER_TEMP/next-build.log"
+          exit "$(cat "$RUNNER_TEMP/next-build.exit")"
+
+      - name: Run journeys
+        env:
+          E2E_PREBUILT: "1"
+          FULL_SUITE: ${{ needs.changes.outputs.full }}
+          PART: ${{ matrix.part }}
+          SCREENS: "NFR-S7: Every screen reaches real data within its budget"
+        run: |
+          set -euo pipefail
+          if [ "$PART" = "screens" ]; then
+            if [ "$FULL_SUITE" = "true" ]; then
+              npm run test:e2e -- --grep "$SCREENS"
+            else
+              echo "The screen budget journey is not @smoke: nothing to run on a smoke push."
+            fi
+          elif [ "$FULL_SUITE" = "true" ]; then
+            npm run test:e2e -- --grep-invert "$SCREENS" --shard="$PART"
+          else
+            npm run test:e2e -- --grep @smoke --grep-invert "$SCREENS" --shard="$PART"
+          fi
+
+      - name: Upload screenshots and traces
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
+          path: |
+            frontend/test-results
+            frontend/playwright-report
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # Cold start: the same real stack, booted the way a deploy boots it — migrate,
+  # seed_reference, and nothing else — and walked from an empty database to a
+  # signed-in bank administrator (docs/runbooks/FIRST_RUN_SETUP.md, ADM-S8).
+  # Its own job, so it runs beside `e2e` on its own runner and its own database
+  # and never shares one with the seeded suite. Same tier as `e2e`: the cheapest
+  # insurance that a deploy is usable is worth a push, not only a nightly run.
+  # ---------------------------------------------------------------------------
+  coldstart:
+    name: Cold start (Playwright)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres-dev-only
+          POSTGRES_DB: compliance_watch
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d compliance_watch"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      CI: "true"
+      E2E_MODE: "true"
+    defaults:
+      run:
+        shell: bash
+        working-directory: frontend
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up frontend toolchain
         uses: ./.github/actions/setup-frontend
@@ -404,28 +717,44 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
 
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      # Chromium and its system packages install while the database and the backend
+      # toolchain are set up (D-90): the apt step alone takes from 15 s to well over a
+      # minute depending on the mirror. "Chromium is installed" waits for it and fails
+      # the job with its log if it failed.
+      - name: Install Chromium (in the background)
+        run: |
+          (npx playwright install --with-deps chromium > "$RUNNER_TEMP/chromium.log" 2>&1; echo $? > "$RUNNER_TEMP/chromium.exit") &
+
+      - name: Create database roles and extensions
+        uses: ./.github/actions/init-db
+        with:
+          container-id: ${{ job.services.db.id }}
+
+      - name: Set up backend toolchain
+        uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Build design tokens
         run: npm run build:tokens
 
-      - name: Run journeys
-        env:
-          FULL_SUITE: ${{ needs.changes.outputs.full }}
+      - name: Chromium is installed
         run: |
-          set -euo pipefail
-          if [ "$FULL_SUITE" = "true" ]; then
-            npm run test:e2e
-          else
-            npm run test:e2e -- --grep @smoke
-          fi
+          until [ -f "$RUNNER_TEMP/chromium.exit" ]; do sleep 1; done
+          cat "$RUNNER_TEMP/chromium.log"
+          exit "$(cat "$RUNNER_TEMP/chromium.exit")"
+
+      # NEXT_PUBLIC_API_URL is deliberately unset: the config points the build at
+      # the cold stack's own port, which is not the seeded suite's.
+      - name: Walk the first-run setup
+        run: npm run test:e2e -- --grep @coldstart
 
       - name: Upload screenshots and traces
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: playwright-${{ github.run_id }}-${{ github.run_attempt }}
+          name: playwright-coldstart-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             frontend/test-results
             frontend/playwright-report
@@ -548,12 +877,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # The frontend writes no build cache (D-90): uploading it took about 2m40s,
+          # longer than the npm ci and Next build it saves (about a minute), so the image
+          # builds cold every time. The backend keeps its cache: its Python dependencies
+          # are the slow layer and change rarely.
           - image: backend
             context: backend
             dockerfile: backend/Dockerfile
+            cache-to: type=gha,mode=max,scope=backend
           - image: frontend
             context: frontend
             dockerfile: frontend/Dockerfile
+            cache-to: ""
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -570,7 +905,7 @@ jobs:
           load: true
           tags: compliance-watch/${{ matrix.image }}:ci
           cache-from: type=gha,scope=${{ matrix.image }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          cache-to: ${{ matrix.cache-to }}
 
       - name: Trivy (MEDIUM and above)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0

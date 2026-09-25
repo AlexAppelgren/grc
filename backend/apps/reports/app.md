@@ -11,7 +11,11 @@ The slow loop: dashboards for the compliance officer, a committee pack, and
 exports of the inventory, changes, cases and the audit log. A spreadsheet
 register can be imported with a dry run and a near-match mapping asked once
 per value. Exit is a feature: a full tenant export in open formats and a
-verified deletion, because a bank's vendor review asks for it.
+verified deletion, because a bank's vendor review asks for it. Two different
+people holding `security.manage` request and approve the exit, each with a
+passkey; the tenant then goes read-only for the delay while the final export is
+taken, and the platform operator, as the schema owner, deletes every tenant row
+including the audit trail, leaving a tombstone report (D-56, ADR 0049).
 
 Exports, imports and the tenant export are asynchronous jobs with a status
 endpoint. Every export is behind step-up and its download streams through a
@@ -26,9 +30,9 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | REP-01 | Dashboard: open changes by urgency, overdue actions, gaps, unconfirmed AI drafts, time to triage, regime by account heatmap, load per owner | S | R3 | pending |
-| REP-02 | Committee pack and exports of inventory, changes, cases and the audit log | S | R3 | pending |
+| REP-02 | Committee pack and exports of inventory (including a dated Statement of Applicability per standard and entity), changes, cases and the audit log | S | R3 | pending |
 | REP-03 | Spreadsheet register import: dry run, near-match mapping asked once per value, then commit | S | R3 | pending |
-| REP-04 | Full tenant export in open formats and verified deletion | M | R3 | pending |
+| REP-04 | Full tenant export in open formats and verified deletion: requested and approved by two different people with a passkey each, a read-only period while the export is taken, then deletion of every tenant row, the audit trail included, leaving a tombstone report (D-56) | M | R3 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -93,9 +97,44 @@ Then the register rows exist and one audit event records the import with the map
 ### REP-S5 — A tenant can leave with everything and have deletion verified `@integration` `@e2e` (REP-04)
 ```gherkin
 Given a tenant admin with a fresh step-up
-When they request the full tenant export
-Then a job produces the register, cases, evidence, configuration and audit log in open formats
-When they confirm deletion after the export
-Then tenant rows are deleted, append-only tables keep their rows under retention, and a verification report lists both
+When they request the tenant's exit
+Then a second holder of security.manage must approve it, every active admin is emailed, and the tenant becomes "closing"
+When the approval lands
+Then a job produces the register, cases, evidence, configuration and audit log in open formats, and its SHA-256 is recorded
+When the operator runs the exit after the delay, as the schema owner, with the export downloaded
+Then every tenant row is deleted, the audit trail included, and the command verifies zero rows and an empty storage prefix
+And what remains is the tenant row marked "deleted" and a tombstone report with the counts, the export hash and the people involved
 And a later sign-in for the tenant answers 404
+```
+
+### REP-S6 — The Statement of Applicability exports as a dated inventory export `@integration` (REP-02, REG-08)
+```gherkin
+Given a user with exports.create and a fresh step-up
+When they export the inventory filtered by a standard's edition and one legal entity
+Then the job produces a file carrying its export date and, per unit, the reference, the tenant's title, applicability, reason, status, approver and decision date
+And the export writes one audit event
+And the request returns before the file is built
+```
+
+### REP-S7 — Tenant exit needs two different people, each with a passkey `@integration` (REP-04)
+```gherkin
+Given a holder of security.manage who requested the exit with a step-up
+When the same person approves their own request
+Then the response is 409 and the database refuses the row, because approved_by is never requested_by
+When a second holder of security.manage approves it with their own step-up
+Then the exit is approved, execution is set for the delay ahead, and every admin is emailed
+When anyone holding security.manage cancels with a step-up before that date
+Then nothing is deleted and the tenant is active again
+```
+
+### REP-S8 — Execution refuses until its conditions are met, and deletes nothing through the app role `@integration` (REP-04)
+```gherkin
+Given an approved exit whose delay has not passed, or whose final export was never downloaded
+When the operator runs the exit command
+Then it refuses and nothing is deleted
+Given the delay has passed and the export was downloaded
+When the app role tries to delete tenant ledger rows itself
+Then the database refuses it
+When the operator runs the command as the schema owner
+Then every tenant row goes, a former member still named by a library record keeps a name-only user row, and one platform audit row records the exit
 ```

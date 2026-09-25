@@ -8,7 +8,7 @@
 /* Serves PRO-03, INV-04, AUD-03, J-4 (chunk 4). The prototype is silent; the
    tenant side of the proposal queue is this screen, designed in the prototype's
    language (.rows, .pill notice, .log). One row per applied proposal that
-   touches the tenant's footprint, grouped by day, with the diff one tap away
+   touches the tenant's regulatory scope, grouped by day, with the diff one tap away
    and "This looks wrong" on every row. /me/whats-new and /me/visit. */
 :root{
   --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;--sand-3:#e7ddcb;
@@ -258,9 +258,9 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
   <main id="main" tabindex="-1">
     <div class="mbrand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
 <button class="back">← Inventory</button>
-    <div class="head"><div><h1>Library updates</h1><p>4 updates in your footprint since your last visit, 12 Sep</p></div><button class="btn ghost">Mark as seen</button></div>
+    <div class="head"><div><h1>Library updates</h1><p>4 updates in our scope since your last visit, 12 Sep</p></div><button class="btn ghost">Mark as seen</button></div>
     <div class="states">
-    <div class="filters"><select aria-label="Kind"><option>Any kind</option><option>New version</option><option>New obligation</option><option>New instrument</option><option>Re-verified</option><option>Retired</option><option>Vocabulary</option></select><button class="chip" aria-pressed="false">Show outside footprint</button></div>
+    <div class="filters"><select aria-label="Kind"><option>Any kind</option><option>New version</option><option>New obligation</option><option>New instrument</option><option>Re-verified</option><option>Retired</option><option>Vocabulary</option></select><button class="chip" aria-pressed="false">Show outside our scope</button></div>
 
     <h2 class="k">Grouped by day</h2>
     <h3 style="margin:8px 0">Wednesday 17 September</h3>
@@ -273,18 +273,18 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
       <div class="row"><div class="meta"><span class="pill notice">New obligation</span><span class="pill brand">AMLR</span><span>Applies from 10 Jul 2027</span></div><h3><a href="#">Apply customer due diligence under AMLR</a></h3><p style="margin:0 0 8px;color:var(--muted);font-size:.92rem">Scope: Bank, Insurer, all services, Retail and Professional.</p><div class="bar left" style="justify-content:flex-start"><a class="btn ghost small" href="#">Open</a><button class="btn ghost small">This looks wrong</button></div></div>
       <div class="row"><div class="meta"><span class="pill notice">Re-verified</span><span class="pill brand">ISK-lagen</span></div><h3><a href="#">Hold only approved investment assets on an ISK</a></h3><p style="margin:0;color:var(--muted);font-size:.92rem">Checked against Riksdagen's consolidated text on 15 Sep 2026, no change.</p></div>
     </div>
-    <div class="row outside" style="margin-top:10px"><div class="meta"><span class="pill notice">New version</span><span class="pill brand">LFD</span><span>Outside your footprint: Advice</span></div><h3><a href="#">Establish demands and needs for insurance-based investment products</a></h3></div>
+    <div class="row outside" style="margin-top:10px"><div class="meta"><span class="pill notice">New version</span><span class="pill brand">LFD</span><span>Outside our scope: Advice</span></div><h3><a href="#">Establish demands and needs for insurance-based investment products</a></h3></div>
 
     <h2 class="k">Your problem report was answered</h2>
     <div class="notice"><span class="pill positive">Fixed</span> Your report on "Pay for third-party research…" (translation) was fixed by version 2.1 on 19 Sep 2026. <a href="#">Show what changed</a></div>
 
     <h2 class="k">Empty, loading, error, denied</h2>
-    <div class="empty"><h2>Nothing changed since 18 Sep</h2><p>Updates appear here as the library editors approve proposals.</p><a href="#">Browse the inventory</a></div>
+    <div class="empty"><h2>Nothing changed since 18 Sep</h2><p>Updates appear here as changes to the shared library are approved.</p><a href="#">Browse the inventory</a></div>
     <div class="rows" aria-busy="true" style="margin-top:10px"><div class="skeleton"></div><div class="skeleton"></div></div>
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the updates</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     <div class="restricted" role="alert"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p style="font-size:.85rem">Needs library read</p></div>
     </div>
-    <p class="note">Library updates card. The kind pill is notice (what kind of change this is), the instrument brand. Only updates inside the footprint show unless "Show outside footprint" is on; the bookmark moves when the person presses Mark as seen or opens Today again. Today links here with the count. Every role reads; "This looks wrong" is the one action and every member has it. On phones the two small buttons share one row.</p>
+    <p class="note">Library updates card. The kind pill is notice (what kind of change this is), the instrument brand. Only updates inside our scope show unless "Show outside our scope" is on; the bookmark moves when the person presses Mark as seen or opens Today again. Today links here with the count. Every role reads; "This looks wrong" is the one action and every member has it. On phones the two small buttons share one row.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Today</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>Watch<span class="dot">3</span></button><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8"/></svg>Inventory</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>Search</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>

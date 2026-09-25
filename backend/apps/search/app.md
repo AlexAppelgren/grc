@@ -18,6 +18,13 @@ changes and returns "no answer" instead of guessing. A labelled evaluation
 set gates releases: a drop in retrieval or classification quality beyond the
 recorded tolerance fails CI.
 
+Nothing a tenant writes under a standard reaches an index or a model: units,
+scope notes, gaps, assessments, interpretations and links under a
+standard-level instrument are kept out of search chunks, embedding inputs and
+AI-generation inputs, and a guard test written per row proves it before D-10 is
+relaxed at R2. Ask returns "no answer" about a standard's clauses and controls,
+because the library holds none of them.
+
 Deliberately simplified for R1: the library only is indexed (D-10), tenant
 content is not; the embedder is a mock in tests and the real model is chosen
 against the evaluation set (D-09). The only tenant-zone text sent to a model
@@ -30,11 +37,11 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| SRC-01 | Hybrid search: exact identifiers by keyword, concepts by vector, fused by rank, reranked, per language | M | R1 | pending |
-| SRC-02 | Filters from vocabularies, an "as of" date, and the match kind on every hit | M | R1 | pending |
-| SRC-03 | Cited answers grounded only in the inventory, pending changes flagged, "no answer" instead of a guess | M | R1 | pending |
+| SRC-01 | Hybrid search: exact identifiers by keyword, concepts by vector, fused by rank, reranked, per language | M | R1 | built |
+| SRC-02 | Filters from vocabularies, an "as of" date, and the match kind on every hit | M | R1 | built |
+| SRC-03 | Cited answers grounded only in the inventory, pending changes flagged, "no answer" instead of a guess | M | R1 | built |
 | SRC-04 | Saved searches with notification, and "what changed since my last visit" | S | R3 | pending |
-| SRC-05 | An evaluation set that gates releases | M | R1 | pending |
+| SRC-05 | An evaluation set that gates releases. The mock and classification tracks gate releases; the retrieval track is wired and unrecorded until the D-09 embedding key (TODO_FOR_alex) | M | R1 | built |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -150,4 +157,21 @@ Then the identifier hit is first, the concept hits are relevant, and the answer 
 Given a tenant assessment note containing a distinctive phrase
 When the phrase is searched
 Then no chunk contains it and no embedding was requested for it
+```
+
+### SRC-S12 — A question about a standard's control gets "no answer" `@integration` (SRC-03, SRC-05, INV-08, AC-INV2)
+```gherkin
+Given the library holds a standard's edition with its conformance obligation and no clause text
+When a user asks what one of that standard's controls requires
+Then the answer is "no answer" and states nothing about the control
+And the evaluation set holds this question expecting no answer, and it gates the release
+```
+
+### SRC-S13 — Nothing a tenant writes under a standard reaches the index or a model `@integration` (REG-08, SRC-01, AC-REG2)
+```gherkin
+Given tenant A has the invented units "X.1" and "X.2" with its own titles for Example Bank AB under a standard
+And a status note, a gap, an assessment, an interpretation and an internal link on that conformance obligation
+When the index is rebuilt and a user of tenant A asks a question
+Then no search chunk, embedding input or AI-generation input contains text from any of those rows
+And a user of tenant B searching those titles finds nothing and receives 404 for the rows
 ```

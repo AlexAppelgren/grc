@@ -87,7 +87,8 @@ exactly once, to enrol a passkey, and with a passkey from then on.
   effective dates. Evidence is soft-deleted. Ledgers extend `AppendOnlyModel`
   (raises on update or delete) and a Postgres trigger makes it true
   (`BEFORE UPDATE OR DELETE … RAISE`, with `SET LOCAL cw.maintenance` as the
-  escape hatch for a conscious fix).
+  escape hatch for a conscious fix, which the trigger honours for the schema
+  owner in a migration and ignores for the application role).
 - **No write commits without its audit row.** `record()` writes `audit_event`
   and `outbox_event` in the same transaction with a user, agent or system
   actor and before and after values.
@@ -167,6 +168,44 @@ IP beyond the security log). **Tenant content:** assessment, gap, note,
 comment, evidence or Ask text never appears in logs, Sentry, analytics, or a
 prompt to a model endpoint the tenant's contract does not allow. Log the
 record id. The compliance lint checks both. Logs inherit a retention limit.
+A query string is tenant content (`?q=` is what someone searched for): the
+access log prints the path without it, and no formatter or Sentry hook may
+pass one on.
+
+### 1.8 The published API explains itself
+
+The standard is `docs/plans/briefs/API_DOCUMENTATION.md`; read it before
+writing a schema or a route. The reader is an integrator at a bank who has
+never seen this codebase and cannot ask a question, so `openapi.json` is the
+whole manual.
+
+- **Every attribute carries a description** in full sentences: what the fact
+  is in the bank's language, where it comes from (the library, the bank's own
+  zone, an agent, the server) and what a reader must not conclude from it
+  ("applies to us" is not "we comply"). A description that re-spaces the
+  property name documents nothing.
+- **Every value set is spelled out in words.** A kind enum names each member
+  and what the system does differently for it. A vocabulary names its
+  vocabulary and kinds, says the values are rows an admin may extend and
+  points at the vocabulary endpoint; it is never presented as a closed enum,
+  and never matched on the label.
+- **Every limit is in the sentence, not only in the keyword.** Pagination
+  default and maximum, the longest accepted text, which records need
+  `If-Match` and that a stale ETag is 412, which calls need a step-up or an
+  idempotency key, what is append-only or soft-delete-only, and which fields
+  never leave the bank.
+- **Every operation carries** a summary in the user's voice, a description
+  saying when to call it, what it changes, which permission or scope it needs
+  and what it records in the audit, at least one example from the prototype's
+  data and never from a real bank, and each error `code` the caller must
+  branch on with the condition that produces it.
+
+`backend/scripts/api_docs_gate.py` reads the exported contract, never the
+source, and blocks in `prepush.sh` and CI beside the contract-drift gate.
+What is not documented yet is listed in `backend/scripts/api_docs_pending.txt`,
+one line per schema class or operationId; the gate fails on a line that is
+already documented and on anything undocumented that is not listed, so the
+ledger only shrinks. It must be empty before R1 is called done.
 
 ## 2. Structural guard tests (playbook 5)
 
@@ -179,7 +218,8 @@ message that says what to do.
 | Row-level security | Every model with a tenant FK, against `pg_policies` and `pg_class` | RLS enabled and forced, a tenant policy exists |
 | Database role | The app's role | Not superuser, not owner, no `BYPASSRLS` |
 | Tenant isolation | Every tenant-scoped GET, PATCH, DELETE with another tenant's record | 404, never 403, never data |
-| Library fence | The AST of every module writing a `LibraryModel` | Only inside `library_write()` in `proposals/apply.py`, `watch/logic.py`, reference seeds |
+| Library fence | The AST of every module writing a `LibraryModel` | Only inside `library_write()` in `proposals/apply.py`, `watch/write.py` (the watch door: the seven watch tables, no inventory table), reference seeds |
+| Library door (ADR 0058) | Every `LibraryModel` table, `search_chunk` and the reference tables, from the app registry against `pg_trigger`; every proposal kind and watch step as cw_app | The `cw_library_door_guard()` trigger of shared 0008 with exactly the doors its table accepts; as cw_app a write outside a door refused and every real writer passing; each door named by one function and `seed` by the reference seeds only; the setting's name only where the `library-door` lint allows it |
 | Four eyes | Every table in the four-eyes list | The requester-is-not-approver check constraint exists |
 | Audit on write | Every non-GET operation through its scenario test | At least one `audit_event` written; a mutating route with no scenario fails |
 | Kinds only | Every `TextChoices`, Postgres enum, generated TS union | In the tier-one allowlist with a reason |
@@ -190,6 +230,7 @@ message that says what to do.
 | Seed integrity | The E2E seed | Two tenants; every fixed login has exactly the properties journeys depend on |
 | Celery registration | Every task module | Every beat entry points at a real task; every tenant task wrapped in `@tenant_task` |
 | Health | `/health/` | 200 all ok; 503 names the failing component; worker ping bounded |
+| No query in logs | gunicorn's access format in `docker-entrypoint.sh` | Only method, path, status, size, time and request id atoms: no query, address, referrer, agent or request header |
 
 Add a guard whenever a class of bug recurs; the docstring names the incident.
 
@@ -245,7 +286,9 @@ rule fails any legacy or one-off size, including in template literals and
 | `.microlabel` | Uppercase with tracking: eyebrows, column heads, button labels |
 
 Three weights, two families (Hanken Grotesk, Noto Sans Mono), `text-primary`
-only on things you can press. `body` and `meta` stay separate names.
+only on things you can press. `body` and `meta` stay separate names. Public
+pages add Libre Caslon (`font-serif-display` for `text-hero`, `font-serif` for
+section headings and ledes), loaded only by the `(public)` layout.
 
 ### 3.5 Screen copy
 
@@ -264,6 +307,20 @@ Placeholders are dim italic and "e.g." prefixed.
 or plain date plus precision in, user language and tenant timezone out).
 `logger` from `shared/utils/logger`, never `console.log`. No tokens, PII or
 tenant content in URLs, storage or logs.
+
+**One named exception, and it stays one.** `GET /api/v1/calendar/feed.ics`
+carries its token in the query string, because a calendar client sends no
+header, follows no sign-in and subscribes by web address alone (D-52, ADR
+0045). A token in the path would land in a hosting edge's request line, which
+is the finding that moved invitation tokens out of paths; our own access log
+prints the route and drops the query, proved by
+`apps/shared/tests_no_query_in_logs.py` and, for this route, by
+`test_no_token_prefix_or_secret_reaches_a_log_line` in `apps/home/tests_feed.py`,
+which captures every configured logger at its handler. The address is
+shown once, kept as a lookup prefix beside the secret's hash, revocable with
+immediate effect, and it is never put in a screen's URL, in browser storage or
+in a log line. `apps/home/tests_contract.py` reads the published contract and
+fails if any second operation takes a credential in a query string.
 
 ### 3.7 Pills and labels
 
@@ -341,6 +398,12 @@ text, distinctive spine, copy-drift check, one pinned language), retries
 inheriting wreckage (teardown on failure). Push CI runs `@smoke`; nightly
 runs everything; every chunk runs against a freshly seeded backend.
 
+**The public page's demo follows the app.** It is the real app answered from
+recordings of this stack (`design/public/README.md` "The demo"). Its journey
+fails when a screen asks for something the recordings cannot answer or an
+answer has changed shape; run `npm run demo:record` in `frontend/` and commit
+`src/features/demo/recordings.json` and `recorded-at.json` with the change.
+
 ## 6. CI and quality gates (playbook 9)
 
 Every gate blocks: migration drift, migration graph from zero, backend tests
@@ -352,6 +415,7 @@ on committed lockfiles plus `npm audit` under `bash -eo pipefail` and
 refusing an empty lockfile, CodeQL with its own SARIF gate (medium and above,
 acceptances per fingerprint with a reason, stale ones reported),
 requirements coverage, contract drift against `docs/inputs/openapi.yaml`,
+API documentation against the standard (Section 1.8),
 search and classification evaluation, message catalogs, pill gallery
 screenshot, dependency licences (no copyleft, Apache attribution for Green),
 container image scan.
@@ -557,8 +621,9 @@ split: `members.manage`, `roles.manage`, `vocab.manage`, `workflow.manage`,
 `llm`, `embedder` and `agent_runner` each have one interface, a mock for
 tests and E2E, and real providers chosen by a setting; production refuses a
 mock at boot; fetch provider docs before implementing one and record them in
-`Verification_Log.md`. The app is the scheduler of record: `agents/` holds
-versioned definitions only the platform changes; `apps/agents` holds
+`Verification_Log.md`. The app is the scheduler of record: `backend/agents/`
+holds versioned definitions only the platform changes (inside the API image,
+which builds from `backend/` and seeds from them); `apps/agents` holds
 per-tenant settings, schedules, research requests, runs and budgets. A tenant
 admin controls which agents are on, cadence within plan limits, scope, run
 now, pause, interrupt, history with findings and cost, a monthly budget cap

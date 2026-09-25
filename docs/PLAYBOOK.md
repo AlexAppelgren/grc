@@ -102,7 +102,6 @@ passes on an empty app.
 ├── README.md                # quick start + links, nothing else
 ├── .mcp.json                # Green Design System MCP for token and component lookups
 ├── design/                  # prototype/, system/ (cards), brand/ (logo)
-├── agents/                  # versioned agent definitions: prompt, tools, skills, evals
 ├── docs/
 │   ├── PLAYBOOK.md          # this file
 │   ├── CONVENTIONS.md       # architecture and conventions (Sections 4 to 18)
@@ -118,6 +117,7 @@ passes on an empty app.
 ├── backend/                 # Django + Django Ninja, Poetry
 │   ├── apps/<app>/          # models, schemas, logic, api, app.md, tests_*
 │   ├── apps/shared/         # auth, permissions, tenancy, audit, vocabulary base, storage, adapters, seed, guards
+│   ├── agents/              # versioned agent definitions: prompt, tools, skills, evals (the image seeds from them)
 │   ├── config/              # settings.py, test_settings.py, urls.py (/api/v1)
 │   ├── scripts/             # compliance_check.py, coverage_gate.py, requirements_coverage.py, contract_drift.py, search_eval.py
 │   └── run.sh / run.ps1     # Poetry wrapper that unsets VIRTUAL_ENV
@@ -126,7 +126,7 @@ passes on an empty app.
 │   ├── src/components/      # UI by domain + ui/ (Pill, Row, Chip and the other design primitives)
 │   ├── src/features/        # api.ts, hooks.ts, *-presentation.ts per domain
 │   ├── src/shared/          # api-client, format, logger, navigation registry, i18n
-│   ├── src/messages/        # one catalog per UI language
+│   ├── src/messages/        # <namespace>/{en,sv}.json, one file pair per feature namespace
 │   ├── src/styles/          # tokens.generated.css (from Green, never edited), brand.css (our override)
 │   ├── src/types/api.generated.ts   # generated, never hand-edited
 │   ├── tests/e2e/           # Playwright journeys + support/ (api-guard, passkeys, start-backend)
@@ -393,7 +393,8 @@ exactly once, to enrol a passkey, and with a passkey from then on.
   `AppendOnlyModel`, which raises on update or delete, and on Postgres a
   trigger makes the docstring true (`BEFORE UPDATE OR DELETE … RAISE`, with a
   `SET LOCAL cw.maintenance` escape hatch so a conscious fix states its
-  intent).
+  intent; the trigger ignores it for the application role, so the hatch is the
+  schema owner's, in a migration).
 - **No write commits without its audit row.** `record()` writes the
   `audit_event` and the `outbox_event` in the same transaction as the change,
   with a user, agent or system actor and before and after values.
@@ -515,7 +516,7 @@ says what to do. Each lives in `apps/shared/tests_*.py`.
 | **Row-level security** | Every model with a tenant foreign key, against `pg_policies` and `pg_class` | RLS is enabled and forced, and a tenant policy exists. A new tenant table without a policy fails here, not in production. |
 | **Database role** | The role the app connects with | Not a superuser, not the table owner, no `BYPASSRLS`. |
 | **Tenant isolation** | Every tenant-scoped GET, PATCH and DELETE route, with a record that belongs to another tenant | 404, never 403 and never data. |
-| **Library fence** | The AST of every module that writes a `LibraryModel` | Writes happen only inside `library_write()` in the allowlisted modules (`proposals/apply.py`, `watch/logic.py`, reference seeds). |
+| **Library fence** | The AST of every module that writes a `LibraryModel` | Writes happen only inside `library_write()` in the allowlisted modules (`proposals/apply.py`, `watch/write.py`, reference seeds). `watch/write.py` is the watch door: the only module under `apps/watch/` on the list, and it reaches the seven watch tables and no inventory table. |
 | **Four eyes** | Every table in the four-eyes list | The requester-is-not-approver check constraint exists. |
 | **Audit on write** | Every non-GET operation, through its scenario test | The request wrote at least one `audit_event`. A mutating route with no scenario fails too. |
 | **Kinds only** | Every `TextChoices`, Postgres enum and generated TypeScript union | Each is in the tier-one allowlist of Section 15 with a reason. |
@@ -1138,8 +1139,10 @@ always does.
   refuses a mock at boot. Before implementing a real provider, fetch its
   current documentation and record what you relied on in
   `Verification_Log.md`. Provider APIs move and are not to be recalled.
-- **The app is the scheduler of record.** `agents/` holds versioned
-  definitions (prompt, tools, skills) that only the platform changes.
+- **The app is the scheduler of record.** `backend/agents/` holds versioned
+  definitions (prompt, tools, skills) that only the platform changes. They sit
+  under `backend/` because the API image builds from it and the deploy seeds
+  from them.
   `apps/agents` holds per-tenant settings, schedules, research requests, runs
   and budgets. The worker starts runs and updates them from runner events.
 - **A tenant admin controls** which agents are on, cadence within plan
@@ -1337,10 +1340,16 @@ redis`, or a local PostgreSQL 16 with the `vector` extension installed).
 2. **Backend tests + coverage floors** (any backend change):
    ```bash
    cd backend
-   ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput
+   ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput --parallel 4
+   ./run.sh run coverage combine
    ./run.sh run coverage report
    ./run.sh run python scripts/coverage_gate.py
    ```
+   `--parallel` splits the suite by TestCase across worker processes, each with its
+   own clone of the test database, and each worker writes coverage data of its own,
+   which is what `coverage combine` merges. Both are part of the gate: leaving the
+   combine out fails with "No data to report". `scripts/prepush.sh` picks the worker
+   count (`BACKEND_TEST_PARALLEL` overrides it), and CI uses one per runner vCPU.
 3. **Backend lint + types**: `./run.sh run ruff check . && ./run.sh run mypy`
 4. **Compliance lint**, full tree: `python backend/scripts/compliance_check.py --all`
 5. **Requirements coverage**: `python backend/scripts/requirements_coverage.py`
@@ -1355,3 +1364,35 @@ redis`, or a local PostgreSQL 16 with the `vector` extension installed).
 11. **Copy drift** (any reworded user-facing string): `cd frontend && npm run check:copy-drift`
 12. **Time-anchored fixtures** (any seed or fixture derived from "now"):
     check against the clock rules in Section 8.3.
+
+### Which items a change runs
+
+"Run what the diff touched" is a list, not a judgement call. `scripts/prepush.sh`
+sorts the work since `origin/main` into tiers and the `changes` jobs in
+`.github/workflows/ci.yml` and `.github/workflows/codeql.yml` sort a push the same
+way. The rule behind every row: **a file may skip a gate only when it cannot change
+what that gate measures.** That is tiering; lowering a gate is something else and is
+never allowed.
+
+| Tier | The change | Items it runs |
+|---|---|---|
+| `workflows` | `.github/**` | everything, as the nightly run does |
+| `backend` | backend code, `docs/inputs/INPUT_DELTAS.md`, `generate-types.sh`, `openapi.json`, `infra/db/**`, `docker-compose.yml` | 1 to 6 and 9, the contract-drift and API-documentation gates, and E2E |
+| `specs` | `backend/apps/*/app.md`, `PRD.md`, `docs/inputs/openapi.yaml` | 3, 4, 5, plus the contract-drift and API-documentation gates: everything in the backend job that reads text rather than running code. No migration, no suite, no coverage, no search evaluation, no browser |
+| `frontend` | frontend code, `openapi.json`, `generate-types.sh` | 6, 7, 11, and E2E |
+| `lockfiles` | the lockfiles, `frontend/THIRD_PARTY_NOTICES.md`, `scripts/**` | dependency CVEs and licences |
+| `containers` | the Dockerfiles, `.dockerignore`, `backend/entrypoint.sh` | the image scans |
+| `python` / `javascript` | `**/*.py` / `**/*.{ts,tsx,js,jsx,mjs,cjs}` | that CodeQL language |
+
+Item 10, the secret scan, always runs, and so does the tier guard below. Nothing
+under `docs/` reaches a tier except `docs/inputs/`, so a rewritten plan, runbook or
+decision runs those two and nothing else. `INPUT_DELTAS.md` is
+the one design input that sits in `backend` and not in `specs`, because a live
+scenario test reads its text (taxonomy, I18N-S2), so editing it really can change
+what the suite measures.
+
+The three lists are one promise: a green prepush predicts a green CI run. Nothing
+notices a pattern added to one file and forgotten in the other two, so
+`scripts/check_ci_tiers.py` compares them (reducing both syntaxes to the paths they
+select) and runs on every prepush and in every CI run, whatever changed. Its
+`self-test` argument proves it still catches a dropped pattern.

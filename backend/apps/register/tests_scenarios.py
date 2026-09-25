@@ -6,7 +6,7 @@ that builds the scenario, and never delete one without updating app.md.
 The requirements coverage gate (scripts/requirements_coverage.py) fails
 when a scenario here and a heading in app.md drift apart.
 
-Prefixes hosted: REG.
+Prefixes hosted: ACC, REG.
 """
 
 from unittest import skip
@@ -21,14 +21,14 @@ class RegisterScenarioTests(TestCase):
     def test_reg_s1(self) -> None:
         """REG-S1
 
-        Applicability changes through a request a second person approves (REG-01).
+        One compliance person sets applicability after confirming it (REG-01).
         """
 
     @skip("pending: REG-S2")
     def test_reg_s2(self) -> None:
         """REG-S2
 
-        The requester cannot approve their own applicability request (REG-01).
+        Only a holder of applicability.approve sets applicability (REG-01).
         """
 
     @skip("pending: REG-S3")
@@ -92,4 +92,39 @@ class RegisterScenarioTests(TestCase):
         """REG-S11
 
         A stale write on a register row is refused (REG-02).
+        """
+
+    @skip("pending: REG-S12 (REG-01, chunk 8)")
+    def test_reg_s12(self) -> None:
+        """REG-S12
+
+        A legal entity follows a standard when its applicability is set to "Applies" (REG-01, REG-02).
+        """
+
+    @skip("pending: REG-S13 (REG-08, chunk 8)")
+    def test_reg_s13(self) -> None:
+        """REG-S13
+
+        A tenant lists its clauses and controls as units in its own words (REG-08).
+        """
+
+    @skip("pending: REG-S14 (REG-08, chunk 8)")
+    def test_reg_s14(self) -> None:
+        """REG-S14
+
+        Unit decisions are set from the paste in one confirmed call (REG-01, REG-08).
+        """
+
+    @skip("pending: REG-S15 (REG-08, chunk 8)")
+    def test_reg_s15(self) -> None:
+        """REG-S15
+
+        The register filtered by standard and entity is the Statement of Applicability (REG-08).
+        """
+
+    @skip("pending: ACC-S4 (ACC-04, chunk 11)")
+    def test_acc_s4(self) -> None:
+        """ACC-S4
+
+        With tenant reach on, an entry reads the register decisions in its scope and nothing else (ACC-04).
         """

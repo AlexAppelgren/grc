@@ -13,17 +13,18 @@ Every route here is gated with `@requires_permission` or listed in `UNGATED_BY_D
 (apps/shared/permissions.py) with its reason; `answers_problems` is always innermost.
 """
 
-from typing import Any
+from typing import Annotated, Any
 
 from django.http import HttpRequest
-from ninja import Query, Router
+from ninja import Path, Query, Router
 
 from apps.proposals import logic as proposals_logic
 from apps.proposals.schemas import ProposalAccepted
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
-from apps.taxonomy import footprint_logic, library_lists_logic, reading, terms_logic
+from apps.shared.schemas import PageQuery
+from apps.taxonomy import footprint_logic, library_lists_logic, markets_logic, reading, terms_logic
 from apps.taxonomy import tenant_lists_logic as lists
 from apps.taxonomy.http import (
     actor_for,
@@ -49,6 +50,8 @@ from apps.taxonomy.schemas import (
     FootprintRequestRow,
     FootprintView,
     JurisdictionRow,
+    MarketRow,
+    MarketWatchBody,
     TaxonomyDimensionPage,
     TaxonomyTermCreateBody,
     TaxonomyTermPage,
@@ -78,6 +81,42 @@ router = Router(tags=["Taxonomy"])
 SESSION = SessionAuth()
 SESSION_OR_KEY = [SessionAuth(), ApiKeyAuth()]
 
+_SUGGESTION_LIST = (
+    "The name of the list whose suggestions to read, such as `tenant_tag` for the "
+    "organisation's own tags: one of the names `GET /vocab` returns in `list`. The set of "
+    "lists is fixed by the product, not by an admin, who adds rows to a list and never a "
+    "list; a name that is not a vocabulary list answers 404 `not_found`."
+)
+
+
+_LIST = (
+    "The list to work on, by name, such as `tenant_tag` for the organisation's own tags or `change_type` "
+    "for the library's change types: one of the names `GET /vocab` returns in `list`. The set of lists is "
+    "fixed by the product, not by an admin, who adds values to a list and never a list; a name that is not "
+    "a vocabulary list answers 404 `not_found` with the valid names in `detail`."
+)
+_KEY = (
+    "The key of the value, as the list gives it in `key`, such as `custody`; a retired value is found by "
+    "its key too. A key the list does not hold answers 404 `not_found`."
+)
+_SUGGESTION_ID = (
+    "The suggestion to decline, as the `id` of a row of `GET /vocab/{list}/suggestions`: a UUID. One that is "
+    "not a UUID, is not on this list or is not in the caller's organisation answers 404 `not_found`."
+)
+
+ListName = Annotated[str, Path(description=_LIST)]
+RowKey = Annotated[str, Path(description=_KEY)]
+_FootprintRequestId = Annotated[
+    str,
+    Path(
+        description=(
+            "The `id` of the regulatory scope change request, a UUID as `GET /tenant/footprint/requests` "
+            "returns it. One of another organisation, one that does not exist, or anything that is not a "
+            "UUID answers 404 `not_found`."
+        )
+    ),
+]
+
 
 def _accepted(proposal: Any) -> tuple[int, ProposalAccepted]:
     return 202, ProposalAccepted(proposal=proposals_logic.row(proposal))
@@ -90,9 +129,29 @@ def _tenant_writer(request: HttpRequest) -> None:
 # ---------------------------------------------------------------------------------------
 # The list of lists
 # ---------------------------------------------------------------------------------------
-@router.get("/vocab", response=VocabularyListPage, auth=SESSION, operation_id="listVocabularies", by_alias=True)
+@router.get(
+    "/vocab",
+    response=VocabularyListPage,
+    auth=SESSION,
+    operation_id="listVocabularies",
+    by_alias=True,
+    summary="See every list whose values can be picked and managed",
+)
 @answers_problems
 def list_vocabularies(request: HttpRequest) -> VocabularyListPage:
+    """Every vocabulary list the caller can read, with how many active and retired values
+    each holds and which fixed kinds its values may carry, so an admin screen's index or an
+    integrator's setup needs no call per list. The shared library's lists come first; a
+    caller signed in to an organisation also gets its own lists, and a platform session
+    outside any organisation gets the library's only.
+
+    Not paginated: the set of lists is short and fixed by the product, so it always arrives
+    whole. A read: it changes nothing and writes no audit event. Any signed-in person may
+    call it; an API key is refused, and an agent reads the lists it needs by name with
+    `GET /vocab/{list}`.
+
+    Errors to branch on: `unauthenticated` (401) without a person's session.
+    """
     # Ungated by design: capability (any session; the admin screens' index, VOC-02).
     items = lists.list_of_lists(principal(request).tenant_id)
     return VocabularyListPage(items=items, total=len(items))
@@ -101,10 +160,35 @@ def list_vocabularies(request: HttpRequest) -> VocabularyListPage:
 # ---------------------------------------------------------------------------------------
 # Literal sub-paths first (see the module docstring)
 # ---------------------------------------------------------------------------------------
-@router.post("/vocab/{list_name}/reorder", response={200: VocabularyRowPage}, auth=SESSION, operation_id="reorderVocabulary", by_alias=True)
+@router.post(
+    "/vocab/{list_name}/reorder",
+    response={200: VocabularyRowPage},
+    auth=SESSION,
+    operation_id="reorderVocabulary",
+    by_alias=True,
+    summary="Put the values of one of our lists in the order people should see them",
+)
 @requires_permission(perms.VOCAB_MANAGE)
 @answers_problems
-def reorder_vocabulary(request: HttpRequest, list_name: str, body: VocabularyReorderBody) -> Any:
+def reorder_vocabulary(request: HttpRequest, list_name: ListName, body: VocabularyReorderBody) -> Any:
+    """What a drag on the vocabulary screen saves: the values named come first, in the order
+    given, and every value not named keeps its order after them. Pickers and filters follow
+    the new `sortOrder` at once. Only the organisation's own lists are reordered here; a
+    library list is shared by every organisation, so its order changes only through a
+    proposal (`PATCH /vocab/{list}/{key}` with `sortOrder`), and a reorder of one answers
+    403.
+
+    Answers the list's active values in their new order. No key, label or version changes
+    and no record changes what it carries. Needs `vocab.manage` in the caller's organisation
+    and a person's session; an API key is refused. Records one audit event,
+    `vocabulary.reordered`, with every value's place before and after.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without `vocab.manage`, or on a library list, with `library_vocab.manage` as the
+    permission it would need; `not_found` (404) for a name that is not a vocabulary list;
+    `unknown_key` (422) when a key is not on the list, and then nothing moves;
+    `validation_error` (422) for a field the body does not name.
+    """
     tenant = caller_tenant(request)
     entry = lists.entry_for(list_name)
     if entry.is_library:
@@ -120,9 +204,34 @@ def reorder_vocabulary(request: HttpRequest, list_name: str, body: VocabularyReo
     auth=SESSION,
     operation_id="suggestVocabularyRow",
     by_alias=True,
+    summary="Ask for a value a list does not have yet",
 )
 @answers_problems
-def suggest_vocabulary_row(request: HttpRequest, list_name: str, body: VocabularySuggestBody) -> Any:
+def suggest_vocabulary_row(request: HttpRequest, list_name: ListName, body: VocabularySuggestBody) -> Any:
+    """For a member without `vocab.manage` who types a value a picker does not offer. On one
+    of the organisation's own lists the suggestion waits in the admin's inbox
+    (`GET /vocab/{list}/suggestions`) and answers 201 with `status` `pending`; the list itself
+    does not change until an admin creates the value, which answers the suggestion, or
+    declines it. On a shared library list the suggestion becomes a proposal and answers 202:
+    the platform decides it, and nothing changes until a second person or agent approves it.
+
+    Checked like a create before anything is stored: the labels are in content languages,
+    the key is not taken, and the label is not a near match of a value the list has. There
+    is no `force` here: a member offered a near match picks it, or asks an admin.
+
+    Any signed-in person may suggest; a person's session is needed and an API key is
+    refused. Records `vocabulary.suggested` in the organisation's audit, or the proposal's
+    `proposal.created` for a library list.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `not_found` (404) for a
+    name that is not a vocabulary list, or an organisation's list from a session outside
+    any organisation; `duplicate_key` (409) when the key exists, with the value in
+    `candidates`; `near_duplicate` (422) when the label is close to an existing value's,
+    with the close matches in `candidates`; `unknown_key` (422) for a label in a language
+    that is not a content language; `validation_error` (422) for no label, a key that
+    normalises to nothing, a library list that is reference data, or a field the body does
+    not name.
+    """
     # Ungated by design: capability (any member may suggest, VOC-03 "Suggest" without vocab.manage).
     entry = lists.entry_for(list_name)
     if entry.is_library:
@@ -152,13 +261,41 @@ def suggest_vocabulary_row(request: HttpRequest, list_name: str, body: Vocabular
     auth=SESSION,
     operation_id="listVocabularySuggestions",
     by_alias=True,
+    summary="Work through what members suggested adding to one of our lists",
 )
 @requires_permission(perms.VOCAB_MANAGE)
 @answers_problems
-def list_vocabulary_suggestions(request: HttpRequest, list_name: str) -> VocabularySuggestionPage:
+def list_vocabulary_suggestions(
+    request: HttpRequest, list_name: Annotated[str, Path(description=_SUGGESTION_LIST)], page: Query[PageQuery]
+) -> VocabularySuggestionPage:
+    """The suggestions still waiting in one of the organisation's own lists, oldest first,
+    because the inbox is worked in the order it filled. A member without `vocab.manage` who
+    types a value a picker does not have suggests it (`POST /vocab/{list}/suggest`); an admin
+    reads them here and either creates the row, which answers every suggestion for that key,
+    or declines it with `POST /vocab/{list}/suggestions/{suggestionId}/decline`. Either way
+    it leaves this list.
+
+    A shared library list has no inbox here: a suggestion for it becomes a proposal that the
+    platform decides, so its inbox is always empty.
+
+    Paginated: 20 suggestions by default and 100 at most, with a larger limit refused rather
+    than quietly trimmed, and `total` counting every waiting suggestion. The order is by
+    when a suggestion was sent, oldest first, and by its id where two were sent in the same
+    instant, so two calls always agree on it; a suggestion answered between them shifts the
+    later page, as `offset` explains. An empty inbox is a 200 with an empty list and a total
+    of 0.
+
+    A read: it changes nothing and writes no audit event. Needs `vocab.manage` in the
+    caller's organisation and a person's session; an API key is refused.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without `vocab.manage`; `not_found` (404) for a list name that is not a
+    vocabulary list, with the valid names in `detail`; `validation_error` (422) when the
+    page size or offset is out of range.
+    """
     tenant = caller_tenant(request)
-    rows = [lists.suggestion_row(s) for s in lists.suggestions_of(list_name, tenant.id)]
-    return VocabularySuggestionPage(items=rows, total=len(rows))
+    rows, total = lists.suggestions_of(list_name, tenant.id, limit=page.limit, offset=page.offset)
+    return VocabularySuggestionPage(items=rows, total=total)
 
 
 @router.post(
@@ -167,10 +304,26 @@ def list_vocabulary_suggestions(request: HttpRequest, list_name: str) -> Vocabul
     auth=SESSION,
     operation_id="declineVocabularySuggestion",
     by_alias=True,
+    summary="Turn down a value a member suggested",
 )
 @requires_permission(perms.VOCAB_MANAGE)
 @answers_problems
-def decline_vocabulary_suggestion(request: HttpRequest, list_name: str, suggestion_id: str) -> VocabularySuggestionRow:
+def decline_vocabulary_suggestion(
+    request: HttpRequest, list_name: ListName, suggestion_id: Annotated[str, Path(description=_SUGGESTION_ID)]
+) -> VocabularySuggestionRow:
+    """Answers a waiting suggestion with no: it leaves the inbox with `status` `declined`
+    and the list does not change. The suggestion itself is kept, with the member's words.
+    To say yes instead, create the value with `POST /vocab/{list}` and the suggestion's key,
+    which answers it as accepted.
+
+    Needs `vocab.manage` in the caller's organisation and a person's session; an API key is
+    refused. Records one audit event, `vocabulary.suggestion_declined`.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without `vocab.manage`; `not_found` (404) for a name that is not a vocabulary list
+    or a suggestion that is not waiting on this list in the caller's organisation;
+    `invalid_transition` (409) when the suggestion was already accepted or declined.
+    """
     tenant = caller_tenant(request)
     return lists.decline_suggestion(
         list_name=list_name, tenant=tenant, actor=actor_for(request), suggestion_id=uuid_or_404(suggestion_id)
@@ -180,9 +333,35 @@ def decline_vocabulary_suggestion(request: HttpRequest, list_name: str, suggesti
 # ---------------------------------------------------------------------------------------
 # One list and one row
 # ---------------------------------------------------------------------------------------
-@router.get("/vocab/{list_name}", response=VocabularyRowPage, auth=SESSION_OR_KEY, operation_id="listVocabularyRows", by_alias=True)
+@router.get(
+    "/vocab/{list_name}",
+    response=VocabularyRowPage,
+    auth=SESSION_OR_KEY,
+    operation_id="listVocabularyRows",
+    by_alias=True,
+    summary="Read the values of one list, for a picker, a filter or an agent",
+)
 @answers_problems
-def list_vocabulary_rows(request: HttpRequest, list_name: str, query: Query[VocabularyQuery]) -> VocabularyRowPage:
+def list_vocabulary_rows(request: HttpRequest, list_name: ListName, query: Query[VocabularyQuery]) -> VocabularyRowPage:
+    """The values of one list in list order, each with its key, its fixed kind, its label
+    in the caller's language, how many records carry it and the version to send back as
+    `If-Match`. Store and compare the key, show the label, and never match on a label: it
+    may be reworded or translated at any time. Retired values are left out unless
+    `includeRetired` is true.
+
+    A library list is read by any person's session and by an API key with the
+    `library:read` scope, which is how an agent reads the values it may submit. An
+    organisation's own list is read the same ways from inside that organisation only.
+
+    Not paginated: a list is short enough to arrive whole, and a list with no values is a
+    200 with an empty list. A read: it changes nothing and writes no audit event.
+
+    Errors to branch on: `unauthenticated` (401) without a session or a key;
+    `permission_denied` (403) for a key without `library:read`, or an organisation's list
+    read from outside any organisation; `not_found` (404) for a name that is not a
+    vocabulary list, with the valid names in `detail`; `validation_error` (422) when
+    `includeRetired` is not a boolean.
+    """
     # Ungated by design: logic-gate (a person's session, or an agent's key with library:read; AGT-02).
     who = require_library_reader(request)
     entry = lists.entry_for(list_name)
@@ -198,9 +377,38 @@ def list_vocabulary_rows(request: HttpRequest, list_name: str, query: Query[Voca
     auth=SESSION,
     operation_id="createVocabularyRow",
     by_alias=True,
+    summary="Add a value to a list",
 )
 @answers_problems
-def create_vocabulary_row(request: HttpRequest, list_name: str, body: VocabularyCreateBody) -> Any:
+def create_vocabulary_row(request: HttpRequest, list_name: ListName, body: VocabularyCreateBody) -> Any:
+    """Adds a value without a deploy: it appears in pickers, filters, pills and the agents'
+    reads from the same row. On one of the organisation's own lists the value exists at once
+    and the answer is 201 with it; every suggestion waiting for the same key is answered as
+    accepted. On a shared library list nothing changes yet: the answer is 202 with a
+    proposal, and the value exists only when a second, independent person or agent approves
+    it in the console.
+
+    Checked before either: the labels are in content languages, the key is free in any
+    letter case, the kind is one the list takes, the list's own columns in `extra` are
+    valid, and the label is not a near match of a value the list has, unless `force` is
+    true.
+
+    An organisation's list needs `vocab.manage` in it; a library list needs
+    `proposals.create` in the caller's organisation or `library_vocab.manage` in the
+    console. A person's session is needed and an API key is refused. Records
+    `vocabulary.created` in the organisation's audit, or the proposal's `proposal.created`
+    for a library list.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without the permission above, which `requiredPermission` names; `not_found` (404)
+    for a name that is not a vocabulary list; `duplicate_key` (409) when the key exists,
+    with the value in `candidates`; `near_duplicate` (422) when the label is close to an
+    existing value's, with the close matches in `candidates`; `unknown_key` (422) for an
+    unknown language, a kind the list does not take or a missing required kind, or a
+    reference in `extra` to a value that does not exist; `validation_error` (422) for no
+    label, a key that normalises to nothing, a bad `extra` value, a library list that is
+    reference data, or a field the body does not name.
+    """
     # Ungated by design: logic-gate (vocab.manage for a tenant list; a proposal for a library list, VOC-07).
     entry = lists.entry_for(list_name)
     if entry.is_library:
@@ -235,9 +443,30 @@ def create_vocabulary_row(request: HttpRequest, list_name: str, body: Vocabulary
     return 201, row
 
 
-@router.get("/vocab/{list_name}/{key}", response=VocabularyRowDetail, auth=SESSION_OR_KEY, operation_id="getVocabularyRow", by_alias=True)
+@router.get(
+    "/vocab/{list_name}/{key}",
+    response=VocabularyRowDetail,
+    auth=SESSION_OR_KEY,
+    operation_id="getVocabularyRow",
+    by_alias=True,
+    summary="Open one value of a list, with where its labels came from",
+)
 @answers_problems
-def get_vocabulary_row(request: HttpRequest, list_name: str, key: str) -> VocabularyRowDetail:
+def get_vocabulary_row(request: HttpRequest, list_name: ListName, key: RowKey) -> VocabularyRowDetail:
+    """One value as a list row gives it, plus which language its labels were first written
+    in and which labels a machine translated and no person has confirmed since, so an edit
+    screen can mark them. A retired value is found too, so a record that still carries one
+    can show what it was.
+
+    Read like the list: a library value by any person's session or an API key with
+    `library:read`, an organisation's value from inside that organisation only. A read: it
+    changes nothing and writes no audit event.
+
+    Errors to branch on: `unauthenticated` (401) without a session or a key;
+    `permission_denied` (403) for a key without `library:read`; `not_found` (404) for a name
+    that is not a vocabulary list, a key the list does not hold, or an organisation's list
+    read from outside any organisation.
+    """
     # Ungated by design: logic-gate (a person's session, or an agent's key with library:read; AGT-02).
     who = require_library_reader(request)
     return lists.row_detail(list_name, key, who.tenant_id, reading.language_order(request))
@@ -249,9 +478,35 @@ def get_vocabulary_row(request: HttpRequest, list_name: str, key: str) -> Vocabu
     auth=SESSION,
     operation_id="updateVocabularyRow",
     by_alias=True,
+    summary="Rename a value, or change its note, its place or its own columns",
 )
 @answers_problems
-def update_vocabulary_row(request: HttpRequest, list_name: str, key: str, body: VocabularyPatchBody) -> Any:
+def update_vocabulary_row(request: HttpRequest, list_name: ListName, key: RowKey, body: VocabularyPatchBody) -> Any:
+    """Changes only what the body sends; the key never changes, so every record that carries
+    the value shows the new label and none of them is rewritten. A retired value can be
+    relabelled too. Send `If-Match` with the `version` you last read, quoted or not: a value
+    changed in between answers 409 `stale_write` instead of being overwritten. Without it the
+    change applies to whatever is current.
+
+    On one of the organisation's own lists the change is made at once and the answer is 200
+    with the value at its new version. On a shared library list nothing changes yet: the
+    answer is 202 with a proposal naming the value, applied only when a second, independent
+    person or agent approves it.
+
+    An organisation's list needs `vocab.manage` in it; a library list needs
+    `proposals.create` in the caller's organisation or `library_vocab.manage` in the
+    console. A person's session is needed and an API key is refused. Records
+    `vocabulary.updated` with the labels and usage note before and after, or the proposal's
+    `proposal.created` for a library list.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without the permission above; `not_found` (404) for an unknown list or key;
+    `stale_write` (409) when `If-Match` is not the current version; `unknown_key` (422) for
+    an unknown language or a reference in `extra` to a value that does not exist;
+    `validation_error` (422) for an `If-Match` that is not a version, labels whose every
+    text is empty, a bad `extra` value, a library list that is reference data, or a field
+    the body does not name.
+    """
     # Ungated by design: logic-gate (vocab.manage for a tenant list; a proposal for a library list, VOC-07).
     entry = lists.entry_for(list_name)
     expected = if_match(request)
@@ -291,9 +546,32 @@ def update_vocabulary_row(request: HttpRequest, list_name: str, key: str, body: 
     auth=SESSION,
     operation_id="retireVocabularyRow",
     by_alias=True,
+    summary="Stop offering a value, keeping every record that carries it",
 )
 @answers_problems
-def retire_vocabulary_row(request: HttpRequest, list_name: str, key: str, body: VocabularyRetireBody) -> Any:
+def retire_vocabulary_row(request: HttpRequest, list_name: ListName, key: RowKey, body: VocabularyRetireBody) -> Any:
+    """Retire, never delete: pickers stop offering the value, and every record that carries
+    it keeps it and still shows its label. A value records carry is retired only with
+    `confirm` true, so the person decides knowing how many records keep it. A system value
+    is never retired. `POST /vocab/{list}/{key}/restore` brings a retired value back.
+
+    On one of the organisation's own lists the value is retired at once: 200, with how many
+    records carry it. On a shared library list nothing changes yet: 202 with a proposal,
+    applied only when a second, independent person or agent approves it.
+
+    An organisation's list needs `vocab.manage` in it; a library list needs
+    `proposals.create` in the caller's organisation or `library_vocab.manage` in the
+    console. A person's session is needed and an API key is refused. Records
+    `vocabulary.retired` with the usage count, or the proposal's `proposal.created` for a
+    library list.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without the permission above; `not_found` (404) for an unknown list or key;
+    `system_row` (409) for a system value; `in_use` (409) when records carry the value and
+    `confirm` is not true, with the count in `usageCount`; `invalid_transition` (409) when
+    the value is already retired; `validation_error` (422) for a library list that is
+    reference data or a field the body does not name.
+    """
     # Ungated by design: logic-gate (vocab.manage for a tenant list; a proposal for a library list, VOC-07).
     entry = lists.entry_for(list_name)
     if entry.is_library:
@@ -311,9 +589,28 @@ def retire_vocabulary_row(request: HttpRequest, list_name: str, key: str, body: 
     auth=SESSION,
     operation_id="restoreVocabularyRow",
     by_alias=True,
+    summary="Offer a retired value again",
 )
 @answers_problems
-def restore_vocabulary_row(request: HttpRequest, list_name: str, key: str) -> Any:
+def restore_vocabulary_row(request: HttpRequest, list_name: ListName, key: RowKey) -> Any:
+    """The inverse of a retire: pickers offer the value again, under the same key, and the
+    records that kept it all along are untouched. A value merged away can be restored too,
+    but the records the merge moved stay with the value they moved to. No request body.
+
+    On one of the organisation's own lists the value is restored at once: 200, with how
+    many records carry it. On a shared library list nothing changes yet: 202 with a
+    proposal, applied only when a second, independent person or agent approves it.
+
+    An organisation's list needs `vocab.manage` in it; a library list needs
+    `proposals.create` in the caller's organisation or `library_vocab.manage` in the
+    console. A person's session is needed and an API key is refused. Records
+    `vocabulary.restored`, or the proposal's `proposal.created` for a library list.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without the permission above; `not_found` (404) for an unknown list or key;
+    `invalid_transition` (409) when the value is not retired; `validation_error` (422) for a
+    library list that is reference data.
+    """
     # Ungated by design: logic-gate (vocab.manage for a tenant list; a proposal for a library list, VOC-07).
     entry = lists.entry_for(list_name)
     if entry.is_library:
@@ -329,11 +626,36 @@ def restore_vocabulary_row(request: HttpRequest, list_name: str, key: str) -> An
     auth=SESSION,
     operation_id="mergeVocabularyRow",
     by_alias=True,
+    summary="Fold a duplicate value into the one to keep",
 )
 @answers_problems
 def merge_vocabulary_row(
-    request: HttpRequest, list_name: str, key: str, body: VocabularyMergeBody, query: Query[VocabularyMergeQuery]
+    request: HttpRequest, list_name: ListName, key: RowKey, body: VocabularyMergeBody, query: Query[VocabularyMergeQuery]
 ) -> Any:
+    """Moves every record that carries the value in the path to the value named in `into`,
+    then retires the value in the path, in one transaction. Preview it first with
+    `dryRun=true`: a 200 with how many records carry the value and how many would move,
+    which changes nothing and writes no audit event, on a library list as on the
+    organisation's own. Today only the organisation's tags have records to move; on the
+    other lists `repointed` is 0 and the merge retires the value.
+
+    Without `dryRun`, on one of the organisation's own lists the merge is made at once: 200
+    with the counts and `dryRun` false. On a shared library list nothing changes yet: 202
+    with a proposal, applied only when a second, independent person or agent approves it. A
+    system value is never merged away, though another value may be merged into one.
+
+    An organisation's list needs `vocab.manage` in it; a library list needs
+    `proposals.create` in the caller's organisation or `library_vocab.manage` in the
+    console. A person's session is needed and an API key is refused. Records
+    `vocabulary.merged` with the counts, or the proposal's `proposal.created` for a library
+    list.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without the permission above; `not_found` (404) for an unknown list, or a key or
+    `into` the list does not hold; `system_row` (409) when the value in the path is a system
+    value; `validation_error` (422) when `into` is the value itself, for a library list that
+    is reference data, or for a field the body does not name.
+    """
     # Ungated by design: logic-gate (vocab.manage for a tenant list; a proposal for a library list, VOC-07).
     entry = lists.entry_for(list_name)
     if entry.is_library:
@@ -358,18 +680,63 @@ def merge_vocabulary_row(
 # ---------------------------------------------------------------------------------------
 # Taxonomy dimensions and terms (library; writes are proposals, VOC-07)
 # ---------------------------------------------------------------------------------------
-@router.get("/taxonomy/dimensions", response=TaxonomyDimensionPage, auth=SESSION_OR_KEY, operation_id="listTaxonomyDimensions", by_alias=True)
+@router.get(
+    "/taxonomy/dimensions",
+    response=TaxonomyDimensionPage,
+    auth=SESSION_OR_KEY,
+    operation_id="listTaxonomyDimensions",
+    by_alias=True,
+    summary="See the groups a regulatory scope and a record's tags are organised in",
+)
 @answers_problems
 def list_taxonomy_dimensions(request: HttpRequest) -> TaxonomyDimensionPage:
+    """Every active dimension of the shared library's taxonomy, such as the regime, the
+    service or the client category, in picker order, with its kind and whether its terms
+    narrow what a bank sees. Call it to build a scope editor or a filter, then
+    `GET /taxonomy/terms?dimension=<key>` for the terms of one. Dimensions are library facts:
+    new ones arrive through an approved proposal, never through this route.
+
+    A short reference list that never paginates: `total` is the length of `items`, and an
+    empty taxonomy is a 200 with an empty list. Labels read in the caller's language.
+
+    A read: it changes nothing and writes no audit event. Open to any person's session and
+    to an agent's API key with the `library:read` scope.
+
+    Errors to branch on: `unauthenticated` (401) without a session or a valid key;
+    `permission_denied` (403) for an API key without `library:read`.
+    """
     # Ungated by design: logic-gate (a person's session, or an agent's key with library:read; AGT-02).
     require_library_reader(request)
     items = lists.rows_of("term_dimension", None, reading.language_order(request))
     return TaxonomyDimensionPage(items=items, total=len(items))
 
 
-@router.get("/taxonomy/terms", response=TaxonomyTermPage, auth=SESSION_OR_KEY, operation_id="listTerms", by_alias=True)
+@router.get(
+    "/taxonomy/terms",
+    response=TaxonomyTermPage,
+    auth=SESSION_OR_KEY,
+    operation_id="listTerms",
+    by_alias=True,
+    summary="See the terms we can choose in our regulatory scope and tag records with",
+)
 @answers_problems
 def list_terms(request: HttpRequest, query: Query[TaxonomyTermQuery]) -> TaxonomyTermPage:
+    """The terms of the shared library's taxonomy, of one dimension or of all, in picker
+    order: what a regulatory scope is built from and what a record is tagged with. Retired
+    terms are left out unless `includeRetired=true`. Each term carries every label it has,
+    and `mirrored` marks the jurisdiction terms that follow the jurisdiction list and are
+    never proposed or renamed. New terms arrive through `POST /taxonomy/terms`, a proposal.
+
+    A short reference list that never paginates: `total` is the length of `items`, and a
+    dimension with no terms is a 200 with an empty list.
+
+    A read: it changes nothing and writes no audit event. Open to any person's session and
+    to an agent's API key with the `library:read` scope.
+
+    Errors to branch on: `unknown_key` (422) for a `dimension` that is not an active
+    dimension, with the valid keys in `detail`; `unauthenticated` (401) without a session or
+    a valid key; `permission_denied` (403) for an API key without `library:read`.
+    """
     # Ungated by design: logic-gate (a person's session, or an agent's key with library:read; AGT-02).
     require_library_reader(request)
     terms = terms_logic.terms_of(query.dimension, include_retired=query.include_retired)
@@ -377,9 +744,34 @@ def list_terms(request: HttpRequest, query: Query[TaxonomyTermQuery]) -> Taxonom
     return TaxonomyTermPage(items=items, total=len(items))
 
 
-@router.post("/taxonomy/terms", response={202: ProposalAccepted}, auth=SESSION, operation_id="createTerm", by_alias=True)
+@router.post(
+    "/taxonomy/terms",
+    response={202: ProposalAccepted},
+    auth=SESSION,
+    operation_id="createTerm",
+    by_alias=True,
+    summary="Propose a new taxonomy term for the shared library",
+)
 @answers_problems
 def create_term(request: HttpRequest, body: TaxonomyTermCreateBody) -> Any:
+    """Ask for a new taxonomy term in the shared library (VOC-07). Nothing is written to the
+    library here: the answer is 202 with the proposal this call put in the queue, and the
+    term exists only once a second person approves it in the console. The proposal's
+    creation is recorded in the audit log.
+
+    Needs `proposals.create` in the caller's bank or `library_vocab.manage` in the console.
+
+    The terms of a dimension that mirrors the jurisdiction list belong to the reference
+    seed, which keeps them in step with that list, so no call adds one (FP-S12).
+
+    Errors to branch on: `jurisdiction_term_mirrored` (422) when the dimension's terms
+    mirror the jurisdiction list, whatever key is sent; `unknown_key` (422) for a dimension
+    that is not one, a label in a language the platform does not hold, or a parent that is
+    not a term of the dimension; `duplicate_key` (409) when the key is taken in the
+    dimension, a retired term's included; `validation_error` (422) for a key that is not a
+    slug or a body the schema refuses; `permission_denied` (403) without either permission;
+    `unauthenticated` (401) without a session.
+    """
     # Ungated by design: logic-gate (proposals.create from a tenant, library_vocab.manage from the console; VOC-07).
     require_proposer(request)
     return _accepted(
@@ -394,9 +786,59 @@ def create_term(request: HttpRequest, body: TaxonomyTermCreateBody) -> Any:
     )
 
 
-@router.patch("/taxonomy/terms/{term_id}", response={202: ProposalAccepted}, auth=SESSION, operation_id="updateTerm", by_alias=True)
+@router.patch(
+    "/taxonomy/terms/{term_id}",
+    response={202: ProposalAccepted},
+    auth=SESSION,
+    operation_id="updateTerm",
+    by_alias=True,
+    summary="Propose a change to a taxonomy term's labels, note or order",
+    openapi_extra={
+        "requestBody": {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "labels": {"en": "Investment advice", "sv": "Investeringsrådgivning"},
+                        "usageNote": "Personal recommendations on financial instruments.",
+                    }
+                }
+            }
+        }
+    },
+)
 @answers_problems
-def update_term(request: HttpRequest, term_id: str, body: VocabularyPatchBody) -> Any:
+def update_term(
+    request: HttpRequest,
+    term_id: Annotated[
+        str,
+        Path(
+            description=(
+                "The `id` of the term to change, a UUID as `GET /taxonomy/terms` returns it. An id no "
+                "term has, or anything that is not a UUID, answers 404 `not_found`."
+            )
+        ),
+    ],
+    body: VocabularyPatchBody,
+) -> Any:
+    """Ask for a change to a taxonomy term's labels, usage note or place in the list
+    (VOC-07). Nothing is written to the library here: the answer is 202 with the proposal
+    this call put in the queue, and the term changes only once a second person approves it
+    in the console. Send `If-Match` with the version last read to be told when someone
+    changed the term first. The proposal's creation is recorded in the audit log.
+
+    Needs `proposals.create` in the caller's bank or `library_vocab.manage` in the console.
+
+    A term that mirrors the jurisdiction list, and every other term of its dimension,
+    belongs to the reference seed and is never renamed here (FP-S12).
+
+    Errors to branch on: `jurisdiction_term_mirrored` (422) for a term of a dimension that
+    mirrors the jurisdiction list; `stale_write` (409) when `If-Match` names a version that
+    is no longer the term's; `unknown_key` (422) for a label in a language the platform
+    does not hold; `validation_error` (422) for an `If-Match` that is not a version or a
+    body the schema refuses; `not_found` (404) when no term has that id, and for anything
+    that is not a UUID; `permission_denied` (403) without either permission;
+    `unauthenticated` (401) without a session.
+    """
     # Ungated by design: logic-gate (proposals.create from a tenant, library_vocab.manage from the console; VOC-07).
     require_proposer(request)
     return _accepted(
@@ -414,24 +856,80 @@ def update_term(request: HttpRequest, term_id: str, body: VocabularyPatchBody) -
 # ---------------------------------------------------------------------------------------
 # Footprint (FP-01, FP-02, FP-03)
 # ---------------------------------------------------------------------------------------
-@router.get("/tenant/footprint", response=FootprintView, auth=SESSION, operation_id="getFootprint", by_alias=True)
+@router.get(
+    "/tenant/footprint",
+    response=FootprintView,
+    auth=SESSION,
+    operation_id="getFootprint",
+    by_alias=True,
+    summary="See our regulatory scope and the markets we operate in and watch",
+)
 @answers_problems
 def get_footprint(request: HttpRequest) -> FootprintView:
+    """The organisation's regulatory scope as it stands: for every taxonomy dimension, the
+    terms it has chosen, which decide what every list, the watch feed and search show it.
+    Also the change waiting for a second person, if one waits, and every active country
+    with whether the organisation operates there, watches it or does neither. Call it for
+    the Regulatory scope screen; `GET /tenant/footprint/requests` carries the history.
+
+    An organisation that has chosen nothing still gets a 200 with every dimension and empty
+    term lists, which means no restriction, or none followed in an opt-in dimension.
+
+    A read: it changes nothing and writes no audit event. Any member may call it, because
+    every member sees what the scope hides; it needs a person's session and no permission
+    beyond membership, and an API key is refused. The path says `footprint`, the code's name
+    for what the screens call the regulatory scope.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `not_found` (404) for a
+    principal in no organisation.
+    """
     # Ungated by design: capability (any member reads the footprint every surface is filtered by, FP-03).
     tenant = caller_tenant(request)
     return footprint_logic.view(tenant.id, reading.language_order(request, tenant=tenant))
 
 
 @router.get(
-    "/tenant/footprint/requests", response=FootprintRequestPage, auth=SESSION, operation_id="listFootprintRequests", by_alias=True
+    "/tenant/footprint/requests",
+    response=FootprintRequestPage,
+    auth=SESSION,
+    operation_id="listFootprintRequests",
+    by_alias=True,
+    summary="Read the history of changes to our regulatory scope",
 )
 @answers_problems
-def list_footprint_requests(request: HttpRequest) -> FootprintRequestPage:
+def list_footprint_requests(request: HttpRequest, page: Query[PageQuery]) -> FootprintRequestPage:
+    """Every change to the organisation's regulatory scope that anyone asked for, newest
+    first: the one waiting for a second person, if there is one, and every request already
+    approved, rejected or withdrawn, with who asked, who decided, when and the note they
+    left. Call it for the history on the Regulatory scope screen; `GET /tenant/footprint`
+    carries the waiting request on its own.
+
+    A waiting request's `preview` is counted again on every read, against today's library,
+    so the approver decides on what the change would hide and reveal now. A decided request
+    keeps the counts it was decided against, the same ones its decision's audit event holds.
+
+    Paginated: 20 requests by default and 100 at most, with a larger limit refused rather
+    than quietly trimmed, and `total` counting every request. The order is by when a request
+    was sent, newest first, and by its id where two were sent in the same instant, so two
+    calls always agree on it; a request sent between them shifts the later page by one, as
+    `offset` explains. An organisation that never asked for a change gets a 200 with an
+    empty list and a total of 0, never a 404.
+
+    A read: it changes nothing and writes no audit event. Any member of the organisation
+    may call it, because every member sees what the scope hides and why; it needs a
+    person's session and no permission beyond membership, and an API key is refused. The
+    path says `footprint`, the code's name for what the screens call the regulatory scope.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `not_found` (404) for a
+    principal in no organisation; `validation_error` (422) when the page size or offset is
+    out of range.
+    """
     # Ungated by design: capability (any member sees what was asked and decided, FP-02).
     tenant = caller_tenant(request)
-    order = reading.language_order(request, tenant=tenant)
-    rows = [footprint_logic.request_row(r, order) for r in footprint_logic.requests_of(tenant.id)]
-    return FootprintRequestPage(items=rows, total=len(rows))
+    rows, total = footprint_logic.requests_of(
+        tenant.id, reading.language_order(request, tenant=tenant), limit=page.limit, offset=page.offset
+    )
+    return FootprintRequestPage(items=rows, total=total)
 
 
 @router.post(
@@ -440,10 +938,31 @@ def list_footprint_requests(request: HttpRequest) -> FootprintRequestPage:
     auth=SESSION,
     operation_id="createFootprintRequest",
     by_alias=True,
+    summary="Preview a change to our regulatory scope, or send it for approval",
 )
 @requires_permission(perms.FOOTPRINT_REQUEST)
 @answers_problems
 def create_footprint_request(request: HttpRequest, body: FootprintRequestBody, query: Query[FootprintRequestQuery]) -> Any:
+    """Ask for terms to be put into or taken out of the organisation's regulatory scope.
+    Nothing in the scope changes here: the change waits for a second person, who approves it
+    with a passkey (`POST /tenant/footprint/requests/{requestId}/approve`) or rejects it.
+
+    With `dryRun=true` it only previews: a 200 with what the change would hide and reveal
+    among the obligations and the open cases, with nothing stored, no audit event and no
+    approval started. Without it, a 201 with the new pending request, its preview counted
+    now, and one `footprint.change_requested` audit event naming every term added and
+    removed. An organisation has one pending request at a time; withdraw or decide it first.
+
+    Needs `footprint.request` in the caller's organisation and a person's session; an API
+    key is refused. No passkey step-up: the approval carries it.
+
+    Errors to branch on: `request_pending` (409) when a change already waits for a decision;
+    `unknown_key` (422) for a dimension or term that is not an active one, with the valid
+    keys in `detail`; `validation_error` (422) for a change with no term, a term both added
+    and removed, a term named twice, or a body the schema refuses; `permission_denied` (403) without
+    `footprint.request`; `unauthenticated` (401) without a session; `not_found` (404) for a
+    principal in no organisation.
+    """
     tenant = caller_tenant(request)
     order = reading.language_order(request, tenant=tenant)
     adds = terms_logic.terms_by_selectors(body.adds)
@@ -466,7 +985,7 @@ def _footprint_request(tenant: Any, request_id: str) -> FootprintChangeRequest:
     if found is None:
         from django.core.exceptions import ValidationError
 
-        raise ValidationError("That footprint change is not here.", code="not_found")
+        raise ValidationError("That regulatory scope change is not here.", code="not_found")
     return found
 
 
@@ -476,11 +995,36 @@ def _footprint_request(tenant: Any, request_id: str) -> FootprintChangeRequest:
     auth=SESSION,
     operation_id="approveFootprintRequest",
     by_alias=True,
+    summary="Approve a change to our regulatory scope as the second person",
 )
 @requires_permission(perms.FOOTPRINT_APPROVE)
 @requires_step_up
 @answers_problems
-def approve_footprint_request(request: HttpRequest, request_id: str, body: FootprintDecisionBody) -> FootprintRequestRow:
+def approve_footprint_request(request: HttpRequest, request_id: _FootprintRequestId, body: FootprintDecisionBody) -> FootprintRequestRow:
+    """Approve a pending change: its terms enter and leave the regulatory scope at once, and
+    every list, the watch feed and search follow from the next read. The approver must be
+    someone other than the requester, which the database enforces too. The answer is the
+    request, now `approved`, with the counts it was approved against.
+
+    Needs `footprint.approve` in the caller's organisation and a passkey step-up younger
+    than the configured freshness window (`POST /auth/step-up/options`, then
+    `POST /auth/step-up/verify`); an API key is refused. Send `If-Match` with the version
+    last read to be told when the request moved on.
+
+    Writes one `footprint.change_approved` audit event with the note and the counts, and one
+    `footprint.term_added` or `footprint.term_removed` event per term that changed, each
+    carrying the step-up that authorised it.
+
+    Errors to branch on: `four_eyes_violation` (409) when the requester approves their own
+    change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
+    `stale_write` (409) when `If-Match` names an old version, or when a term the change
+    adds was retired while it waited, which the approver rejects so the requester can ask
+    again; `step_up_required` (403) without a fresh passkey step-up; `permission_denied`
+    (403) without `footprint.approve`;
+    `not_found` (404) for a request that is not here; `validation_error` (422) for an
+    `If-Match` that is not a version or a body the schema refuses; `unauthenticated` (401)
+    without a session.
+    """
     tenant = caller_tenant(request)
     user = caller_user(request)
     decided = footprint_logic.approve(
@@ -501,10 +1045,28 @@ def approve_footprint_request(request: HttpRequest, request_id: str, body: Footp
     auth=SESSION,
     operation_id="rejectFootprintRequest",
     by_alias=True,
+    summary="Turn down a change to our regulatory scope",
 )
 @requires_permission(perms.FOOTPRINT_APPROVE)
 @answers_problems
-def reject_footprint_request(request: HttpRequest, request_id: str, body: FootprintDecisionBody) -> FootprintRequestRow:
+def reject_footprint_request(request: HttpRequest, request_id: _FootprintRequestId, body: FootprintDecisionBody) -> FootprintRequestRow:
+    """Reject a pending change: the regulatory scope stays as it is and the request is
+    final. The note says why, for the requester and the history. The person rejecting must
+    be someone other than the requester, who withdraws their own change instead. The answer
+    is the request, now `rejected`, with the counts it was rejected against.
+
+    Needs `footprint.approve` in the caller's organisation and a person's session; an API
+    key is refused. No passkey step-up, because nothing in the scope changes. Send
+    `If-Match` with the version last read to be told when the request moved on. Writes one
+    `footprint.change_rejected` audit event with the note and the counts.
+
+    Errors to branch on: `four_eyes_violation` (409) when the requester rejects their own
+    change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
+    `stale_write` (409) when `If-Match` names an old version; `permission_denied` (403)
+    without `footprint.approve`; `not_found` (404) for a request that is not here;
+    `validation_error` (422) for an `If-Match` that is not a version or a body the schema
+    refuses; `unauthenticated` (401) without a session.
+    """
     tenant = caller_tenant(request)
     user = caller_user(request)
     decided = footprint_logic.reject(
@@ -524,10 +1086,26 @@ def reject_footprint_request(request: HttpRequest, request_id: str, body: Footpr
     auth=SESSION,
     operation_id="withdrawFootprintRequest",
     by_alias=True,
+    summary="Take back our own change to the regulatory scope before it is decided",
 )
 @requires_permission(perms.FOOTPRINT_REQUEST)
 @answers_problems
-def withdraw_footprint_request(request: HttpRequest, request_id: str) -> FootprintRequestRow:
+def withdraw_footprint_request(request: HttpRequest, request_id: _FootprintRequestId) -> FootprintRequestRow:
+    """Withdraw a pending change you asked for: the regulatory scope stays as it is, the
+    request is final, and a new change can be sent. Only the requester may withdraw, since
+    withdrawing is not a decision and never a way around the second person. The answer is
+    the request, now `withdrawn`, with no decider. No body.
+
+    Needs `footprint.request` in the caller's organisation and a person's session; an API
+    key is refused. Send `If-Match` with the version last read to be told when the request
+    moved on. Writes one `footprint.change_withdrawn` audit event.
+
+    Errors to branch on: `permission_denied` (403) without `footprint.request`, and for a
+    request someone else sent; `invalid_transition` (409) when it was already approved,
+    rejected or withdrawn; `stale_write` (409) when `If-Match` names an old version;
+    `not_found` (404) for a request that is not here; `validation_error` (422) for an
+    `If-Match` that is not a version; `unauthenticated` (401) without a session.
+    """
     tenant = caller_tenant(request)
     user = caller_user(request)
     found = _footprint_request(tenant, request_id)
@@ -540,12 +1118,110 @@ def withdraw_footprint_request(request: HttpRequest, request_id: str) -> Footpri
     return footprint_logic.request_row(withdrawn, reading.language_order(request, tenant=tenant))
 
 
+_MARKET_WATCH_EXAMPLE = {
+    "requestBody": {"content": {"application/json": {"example": {"jurisdiction": "no"}}}},
+    "responses": {200: {"content": {"application/json": {"example": {"jurisdiction": {"key": "no", "kind": "country", "label": "Norway"}, "level": "watching"}}}}},
+}
+
+
+@router.post(
+    "/tenant/footprint/watching",
+    response=MarketRow,
+    auth=SESSION,
+    operation_id="watchMarket",
+    by_alias=True,
+    summary="Start watching a market we do not operate in",
+    openapi_extra=_MARKET_WATCH_EXAMPLE,
+)
+@requires_permission(perms.FOOTPRINT_REQUEST)
+@answers_problems
+def watch_market(request: HttpRequest, body: MarketWatchBody) -> MarketRow:
+    """Add a country to the "Markets we watch" list (FP-04): a direct, audited write, not a
+    footprint change request, because watching hides nothing from anyone and needs no
+    preview, no second person and no step-up. Watching an already-watched country answers
+    409 `already_watching`; an unknown, inactive or non-country key answers 422
+    `unknown_key` or `not_a_country`. Watching an operating market is allowed and changes
+    nothing visible until operating stops, when the market reads as watched again.
+
+    Requires `footprint.request` in the caller's tenant, the same permission that starts a
+    footprint change. Errors: `permission_denied` without it, `unauthenticated` without a
+    session, `validation_error` for a body the schema rejects.
+    """
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    jurisdiction = markets_logic.watch(tenant=tenant, actor=actor_for(request, user), key=body.jurisdiction, added_by=user)
+    return markets_logic.row_for(tenant.id, jurisdiction, reading.language_order(request, tenant=tenant))
+
+
+@router.post(
+    "/tenant/footprint/watching/remove",
+    response=MarketRow,
+    auth=SESSION,
+    operation_id="unwatchMarket",
+    by_alias=True,
+    summary="Stop watching a market",
+    openapi_extra=_MARKET_WATCH_EXAMPLE,
+)
+@requires_permission(perms.FOOTPRINT_REQUEST)
+@answers_problems
+def unwatch_market(request: HttpRequest, body: MarketWatchBody) -> MarketRow:
+    """Remove a country from the "Markets we watch" list (FP-04): the same direct, audited
+    write as watching, with no preview, no second person and no step-up. A country that is
+    operating is untouched by this even when it once had a watch row, because the level is
+    computed, not stored. A country with no watch row answers 404 `not_found`; an unknown,
+    inactive or non-country key answers 422 `unknown_key` or `not_a_country`.
+
+    Requires `footprint.request` in the caller's tenant. Errors: `permission_denied`
+    without it, `unauthenticated` without a session, `not_found` for a market not
+    currently watched.
+    """
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    jurisdiction = markets_logic.unwatch(tenant=tenant, actor=actor_for(request, user), key=body.jurisdiction)
+    return markets_logic.row_for(tenant.id, jurisdiction, reading.language_order(request, tenant=tenant))
+
+
 # ---------------------------------------------------------------------------------------
 # Reference reads (I18N-01)
 # ---------------------------------------------------------------------------------------
-@router.get("/reference/jurisdictions", response=list[JurisdictionRow], auth=SESSION, operation_id="listJurisdictions", by_alias=True)
+@router.get(
+    "/reference/jurisdictions",
+    response=list[JurisdictionRow],
+    auth=SESSION,
+    operation_id="listJurisdictions",
+    by_alias=True,
+    summary="See the jurisdictions the library covers",
+    openapi_extra={
+        "responses": {
+            200: {
+                "content": {
+                    "application/json": {
+                        "example": [
+                            {"key": "eu", "kind": "supranational", "label": "European Union", "parentKey": None, "defaultLanguage": {"key": "en", "kind": None, "label": "English"}},
+                            {"key": "se", "kind": "country", "label": "Sweden", "parentKey": "eu", "defaultLanguage": {"key": "sv", "kind": None, "label": "Svenska"}},
+                            {"key": "no", "kind": "country", "label": "Norway", "parentKey": "eu", "defaultLanguage": {"key": "nb", "kind": None, "label": "Norsk bokmål"}},
+                        ]
+                    }
+                }
+            }
+        }
+    },
+)
 @answers_problems
 def list_jurisdictions(request: HttpRequest) -> list[JurisdictionRow]:
+    """Every active jurisdiction, in the library's order: the European Union, the Nordic
+    countries and the international standards bodies, each with its kind, the jurisdiction
+    whose rules also reach it and the language its legal texts are written in. Call it to
+    fill a jurisdiction picker or to label a record's jurisdiction key.
+
+    A reference read: a plain array, not a page, because the list is short and fixed; it
+    never paginates. Labels read in the caller's language.
+
+    A read: it changes nothing and writes no audit event. Open to any person's session with
+    no permission beyond it; an API key is refused.
+
+    Errors to branch on: `unauthenticated` (401) without a session.
+    """
     # Ungated by design: capability (any session; a reference read for pickers, I18N-01).
     from apps.library.models import Jurisdiction, JurisdictionLabel
     from apps.taxonomy.reading import Labels, label_of

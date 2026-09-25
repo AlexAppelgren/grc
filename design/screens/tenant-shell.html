@@ -2,38 +2,45 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Screen card: tenant shell</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Noto+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* Cut from design/prototype/index.html (playbook Section 7, step 4). Values follow
-   design/system/foundations.md; the build maps them to Green tokens through
-   theme.css (--sidebar-*) and overrides the brand pair in brand.css. This card
-   is the contract for the rail, the phone header and sheet, and the account row.
+   design/system/foundations.md and design/system/navigation.md; the build maps them
+   to Green tokens through theme.css (--sidebar-*) and overrides the brand pair in
+   brand.css. This card is the contract for the rail, the tab bar and More sheet
+   below 1024px, the compact header, and the account row.
 
    Direction (Alex, 2026-09-19; ADR 0020 amendments): the rail is shadcn's Sidebar
    structure in seb.io's restraint, at shadcn's proportions: 32px rows, 16px icons,
-   14px labels, a wordmark about 68px wide. */
+   14px labels, a wordmark about 68px wide. Below 1024px a floating tab bar with
+   five items, the fifth being More, takes the rail's place. */
 :root{
   --bg:#ffffff;--surface:#ffffff;--rail:#f7f8f7;--accent-bg:#eaebeb;--hover:rgba(0,0,0,.06);
-  --line:#dfe1e1;--line-control:#dfe1e1;--text:#0a0b0b;--muted:#636967;--focus:#005fb3;
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--focus:#005fb3;
+  --shadow-float:0px 4px 6px -2px rgba(10,11,10,.08),0px 12px 16px -4px rgba(10,11,10,.03); /* Green shadow-l-01 + shadow-l-02 */
+  --tabbar-height:64px; /* the build's TabBar measures itself and overrides this */
+  --tabbar-bottom:max(16px,env(safe-area-inset-bottom));
+  --tabbar-top:0px;
   --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0a0b0b;--surface:#191a1a;--rail:#0a0b0b;--accent-bg:#313533;--hover:rgba(255,255,255,.12);
-  --line:#282a29;--line-control:#454a48;--text:#f7f8f7;--muted:#abb0ae;--focus:#66b8ff;
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--focus:#66b8ff;
 }}
 *{box-sizing:border-box}
+html{scroll-padding-bottom:calc(var(--tabbar-top) + 16px)}
 body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit;cursor:pointer}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 h1{font-size:24px;line-height:32px;font-weight:600;letter-spacing:-.02em;margin:0}
 
 /* The rail: 15rem, a neutral surface one step off the page (flush with it in dark),
-   a hairline right border, no scrollbar. */
+   a hairline right border, no scrollbar. From 1024px only. */
 .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
-.side{background:var(--rail);border-right:1px solid var(--line);padding:16px 8px 8px;position:sticky;top:0;height:100vh;overflow:auto;scrollbar-width:none;display:flex;flex-direction:column}
+.side{background:var(--rail);border-right:1px solid var(--line);padding:16px 8px max(8px,env(safe-area-inset-bottom));position:sticky;top:0;height:100vh;overflow:auto;scrollbar-width:none;display:flex;flex-direction:column}
 .side::-webkit-scrollbar{display:none}
 .brand{padding:4px 8px 20px}
 .logo{display:block;width:68px;height:auto}
@@ -50,7 +57,8 @@ h1{font-size:24px;line-height:32px;font-weight:600;letter-spacing:-.02em;margin:
 svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 /* The signed-in person: one quiet row pinned at the bottom (name, then
    organisation and role), opening a menu with My passkeys, My sessions and
-   Sign out. No avatar, no card. Then "Minimise menu". */
+   Sign out. No avatar, no card. Then "Minimise menu". The rail's bottom padding
+   clears the iPad home indicator. */
 .foot{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:8px}
 .who{height:auto;padding:6px 8px}
 .who b{display:block;font-weight:500}
@@ -58,7 +66,8 @@ svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-widt
 .who small{display:block;color:var(--muted);font-size:13px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mini{color:var(--muted);font-size:13px}
 
-main{padding:24px 32px 64px;max-width:1200px;width:100%}
+/* The page gutter takes the larger of its step and the safe-area inset on every side. */
+main{padding:24px max(32px,env(safe-area-inset-right)) 64px max(32px,env(safe-area-inset-left));max-width:1200px;width:100%}
 .mbrand{display:none}
 .kicker{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:0 0 4px}
 .head{margin-bottom:20px}
@@ -67,17 +76,72 @@ main{padding:24px 32px 64px;max-width:1200px;width:100%}
 .empty p{margin:0 0 8px}
 .empty a{color:var(--text);font-weight:500;text-underline-offset:3px}
 .note{margin-top:32px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+.state{margin-top:32px}
 
-/* Phones: no dock. The header carries the wordmark on the left and the menu button
-   on the right (thumb side); the button opens the same rail as a sheet from the
-   left, holding every destination and the account row. */
+/* The tab bar (navigation.md sections 4 to 6). Equal cells of at most 96px, no gap,
+   each cell the whole target. A 20px icon over a meta label that wraps and is never
+   truncated. The current tab: the neutral tint over the cell, a 6px radius, medium
+   weight, and a 1px line-strong outline inset by 1px; keyboard focus swaps the
+   outline for the focus ring. */
+.tabbar{display:none}
+.tabbar ul{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,6rem);list-style:none;margin:0;padding:0}
+.tabbar li{display:flex}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:52px;padding:0;background-color:transparent;border:0;border-radius:6px;color:var(--muted);font-size:13px;line-height:18px;text-align:center;text-decoration:none;hyphens:auto;overflow-wrap:anywhere;transition:color .15s,background-color .15s}
+.tab svg.i{width:20px;height:20px}
+.tab[data-active="true"]{background-color:var(--accent-bg);color:var(--text);font-weight:500}
+.tab[data-active="true"]:not(:focus-visible){outline:1px solid var(--line-strong);outline-offset:-1px}
+
+/* The More sheet (navigation.md section 3), drawn open below as a state. Full width
+   at the bottom edge, centred at 560px at most once the viewport passes 592px; top
+   corners 12px; rows at the touch size (44px or more, labels wrap, no tooltip). */
+.frame{margin-top:8px;max-width:560px;padding-top:64px;background:rgba(10,11,11,.6);border-radius:8px;overflow:hidden}
+.sheet{background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:12px 12px 0 0;max-height:85svh;overflow:auto;padding:0 8px max(16px,env(safe-area-inset-bottom))}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px}
+.sheet-head h2{font-size:16px;line-height:24px;font-weight:600;letter-spacing:-.01em;margin:0}
+.close{width:44px;height:44px;flex:none;display:inline-flex;align-items:center;justify-content:center;background-color:transparent;border:0;border-radius:6px}
+.sheet ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.sheet .grp{margin-top:16px}
+.srow{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:8px;background-color:transparent;border:0;border-radius:6px;color:var(--text);text-align:left;text-decoration:none}
+.srow[aria-current="page"]{background-color:var(--accent-bg);font-weight:500;outline:1px solid var(--line-strong);outline-offset:-1px}
+.acct{border-top:1px solid var(--line);margin-top:16px;padding-top:8px;display:flex;flex-direction:column;gap:2px}
+.acct p{margin:0;padding:6px 8px}
+.acct b{display:block;font-weight:500}
+.acct small{display:block;color:var(--muted);font-size:13px;line-height:18px}
+@media (hover:hover){.tab:hover,.srow:hover,.close:hover{background-image:linear-gradient(var(--hover),var(--hover))}}
+
+/* Below 1024px (every phone, iPads below 13 inches in portrait, narrow windows): no
+   rail. The floating tab bar holds the registry's four dock destinations, then More.
+   It floats 16px above the bottom edge and from the sides (8px at the sides below
+   400px), each gap the larger of itself and the safe-area inset. The wordmark stays
+   as a line at the top of the page, a link to Today, not sticky. ctrl/cmd+b does
+   nothing here. */
+@media (width < 64rem){
+  :root{--tabbar-top:calc(var(--tabbar-height) + var(--tabbar-bottom))}
+  .app{grid-template-columns:1fr;align-content:start}.side{display:none}
+  .mbrand{display:flex;align-items:center;height:32px;margin:0 0 16px;color:var(--text)}.mbrand .logo{width:64px}
+  main{padding-bottom:calc(var(--tabbar-top) + 16px)}
+  .tabbar{display:block;position:fixed;z-index:30;bottom:var(--tabbar-bottom);left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));width:fit-content;margin-inline:auto;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-float)}
+}
+@media (width < 25rem){.tabbar{left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right))}}
+/* Short viewports (navigation.md 4a). Below 480px tall (a phone in landscape) the
+   icon sits beside the label; below 320px tall the bar leaves the fixed layer and
+   scrolls away at the top of the page. */
+@media (width < 64rem) and (height < 30rem){
+  :root{--tabbar-bottom:max(8px,env(safe-area-inset-bottom))}
+  .tabbar{padding:4px}
+  .tabbar ul{grid-auto-columns:minmax(0,8rem)}
+  .tab{flex-direction:row;gap:6px;min-height:44px}
+}
+@media (width < 64rem) and (height < 20rem){
+  :root{--tabbar-top:0px}
+  .tabbar{position:static;box-shadow:none;margin:8px auto 0}
+}
+/* Reading width, not navigation: these stay at 768px. */
 @media (max-width:767px){
-  .app{grid-template-columns:1fr}.side{display:none}
-  .mbrand{display:flex;justify-content:space-between;align-items:center;height:32px;margin:0 0 16px}.mbrand .logo{width:64px}
-  .mbrand button{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;background:none;border:0;border-radius:6px;margin-right:-6px}
-  main{padding:12px 16px 40px}
+  main{padding-top:max(12px,env(safe-area-inset-top));padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
   h1{font-size:20px;line-height:28px}
 }
+@media print{.tabbar{display:none}}
 </style>
 </head>
 <body>
@@ -99,14 +163,40 @@ main{padding:24px 32px 64px;max-width:1200px;width:100%}
       <button class="row mini" aria-expanded="true"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M9 5v14"/><path d="M15 10l-2 2 2 2"/></svg>Minimise menu</button>
     </div>
   </aside>
+  <nav class="tabbar" aria-label="Main" lang="en">
+    <ul>
+      <li><a class="tab" href="#" aria-current="page" data-active="true"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg><span>Today</span></a></li>
+      <li><a class="tab" href="#"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg><span>Watch</span></a></li>
+      <li><a class="tab" href="#"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8"/></svg><span>Inventory</span></a></li>
+      <li><a class="tab" href="#"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg><span>Search</span></a></li>
+      <li><button class="tab" type="button" aria-haspopup="dialog" aria-expanded="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg><span>More</span></button></li>
+    </ul>
+  </nav>
   <main id="main" tabindex="-1">
-    <div class="mbrand">
+    <a class="mbrand" href="#">
       <svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg>
-      <button aria-label="Toggle the menu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
-    </div>
+    </a>
     <div class="head"><p class="kicker">Saturday 19 September 2026</p><h1>What is coming, and where we stand</h1></div>
-    <div class="empty"><h2>Nothing to show yet</h2><p>Upcoming dates and the weekly briefing appear here once your footprint is set and the first sources have been checked.</p><a href="#">Set the footprint under Admin</a></div>
-    <p class="note">Shell card. Sizes follow design/system/foundations.md: 32px rows, 16px icons, 14px labels, a 68px wordmark (64px in the phone header). The rail is a neutral surface with a hairline, not a block of brand green, in both themes. The current row has a small radius, a neutral tint and medium weight, never a full pill. Every destination the registry unlocks is listed, grouped as the registry groups them, separated by space. "Minimise menu" or ctrl/cmd+b collapses the rail to icons (the wordmark becomes the open e alone, each row gets a tooltip) and the choice is remembered on this device. On phones the dock is gone: the menu button opens the same rail as a sheet, so Roadmap and Admin are reachable there too. A count, once a screen feeds one, is a quiet muted number at the end of its row. The prototype's "Switch user" never ships. The wordmark here is a stand-in for design/brand/logo-phonetic.svg.</p>
+    <div class="empty"><h2>Nothing to show yet</h2><p>Upcoming dates and the weekly briefing appear here once the regulatory scope is set and the first sources have been checked.</p><a href="#">Set the regulatory scope under Admin</a></div>
+
+    <h2 class="kicker state">More, open while on Roadmap (below 1024px)</h2>
+    <div class="frame">
+      <div class="sheet" role="dialog" aria-labelledby="more-title">
+        <div class="sheet-head"><h2 id="more-title">More</h2><button class="close" type="button" aria-label="Close"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+        <ul>
+          <li><a class="srow" href="#" aria-current="page"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v14H4z"/><path d="M4 10h16"/><path d="M8 3v4M16 3v4"/></svg>Roadmap</a></li>
+          <li class="grp"><a class="srow" href="#"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>Admin</a></li>
+        </ul>
+        <div class="acct" role="group" aria-label="Account">
+          <p><b>Sara Lindqvist</b><small>Example Bank AB · Compliance officer</small></p>
+          <a class="srow" href="#">My passkeys</a>
+          <a class="srow" href="#">My sessions</a>
+          <button class="srow" type="button">Sign out</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">Shell card. Sizes follow design/system/foundations.md: 32px rows, 16px icons, 14px labels, a 68px wordmark (64px in the compact header). The rail is a neutral surface with a hairline, not a block of brand green, in both themes. The current row has a small radius, a neutral tint and medium weight, never a full pill. Every destination the registry unlocks is listed, grouped as the registry groups them, separated by space. "Minimise menu" or ctrl/cmd+b collapses the rail to icons (the wordmark becomes the open e alone, each row gets a tooltip) and the choice is remembered on this device. The rail shows from 1024px. Below that, design/system/navigation.md applies: a floating tab bar takes the rail's place, with the registry's dock destinations (Today, Watch, Inventory and Search), then More. The bar is 64px tall with cells of at most 96px, a 12px radius, a hairline and the float shadow. It floats 16px above the bottom edge and from the sides, clear of any safe area. A tab is a 20px icon over a label that wraps rather than truncates. The current tab has the neutral tint, medium weight and a 1px outline, never a full pill. While the current page lives in More, More takes that treatment. More opens the sheet drawn above: Roadmap and Admin in the rail's groups, then the account laid flat (name, organisation and role, My passkeys, My sessions, Sign out). The sheet is at most 560px wide and covers the bar. A choice, Close, Escape, the scrim, a route change or a width of 1024px closes it. The wordmark stays as a line at the top of the page and scrolls away. A count, once a screen feeds one, is a quiet muted number at the end of its row. The prototype's "Switch user" never ships. The wordmark here is a stand-in for design/brand/logo-phonetic.svg.</p>
   </main>
 </div>
 </body>

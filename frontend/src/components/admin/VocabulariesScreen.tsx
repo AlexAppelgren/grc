@@ -14,6 +14,7 @@ import { useVocabularies } from '@/features/vocabularies/hooks';
 import { listLabel, presentListSummary } from '@/features/vocabularies/vocabulary-presentation';
 import type { VocabularyListSummary } from '@/features/vocabularies/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import type { Surface } from '@/shared/navigation/registry';
 
 // /admin/vocabularies: the list of lists
 // (design/screens/admin-vocabularies.html; VOC-01, VOC-02, VOC-07, ADM-03).
@@ -21,6 +22,10 @@ import { useT } from '@/shared/i18n/LocaleProvider';
 // pills of that list, so an admin sees the tone before opening it. The tenant
 // group is editable; the shared library group is read here and changed only
 // through a proposal.
+//
+// /console/vocabularies is the same screen on the console surface (ADM-02):
+// the shared library lists only, with no tabs and no way up to Admin, each
+// opening in the console, where library_vocab.manage proposes every change.
 
 const OURS = 'ours';
 const LIBRARY = 'library';
@@ -29,15 +34,20 @@ const LIBRARY = 'library';
 // role carries permissions (ID-09). The row links there instead.
 const ROLES_LIST = 'tenant_role';
 
-function href(list: string): string {
-  return list === ROLES_LIST ? '/admin/roles' : `/admin/vocabularies/${encodeURIComponent(list)}`;
+/** Where a surface's vocabulary screens live. */
+export function vocabulariesHref(surface: Surface): string {
+  return surface === 'console' ? '/console/vocabularies' : '/admin/vocabularies';
 }
 
-function ListRow({ summary }: { summary: VocabularyListSummary }) {
+function href(list: string, surface: Surface): string {
+  return list === ROLES_LIST ? '/admin/roles' : `${vocabulariesHref(surface)}/${encodeURIComponent(list)}`;
+}
+
+function ListRow({ summary, surface }: { summary: VocabularyListSummary; surface: Surface }) {
   const t = useT();
   return (
     <Link
-      href={href(summary.list)}
+      href={href(summary.list, surface)}
       className="block rounded-card border border-line bg-surface px-4 py-3 no-underline hover:hover-fill"
       data-vocabulary-list={summary.list}
       data-vocabulary-tier={summary.tier}
@@ -53,28 +63,32 @@ function ListRow({ summary }: { summary: VocabularyListSummary }) {
   );
 }
 
-function ListGroup({ id, summaries, lede }: { id: string; summaries: readonly VocabularyListSummary[]; lede?: string }) {
+function ListRows({ id, summaries, lede, surface }: { id: string; summaries: readonly VocabularyListSummary[]; lede?: string; surface: Surface }) {
   const t = useT();
   if (summaries.length === 0) {
-    return (
-      <TabPanel id={id}>
-        <EmptyState title={t('admin.vocabularies.emptyTitle')} body={t('admin.vocabularies.emptyBody')} />
-      </TabPanel>
-    );
+    return <EmptyState title={t('admin.vocabularies.emptyTitle')} body={t('admin.vocabularies.emptyBody')} />;
   }
   return (
-    <TabPanel id={id}>
+    <>
       {lede === undefined ? null : <p className="mb-3.5 max-w-[70ch] text-muted">{lede}</p>}
       <Rows data-vocabulary-lists={id}>
         {summaries.map((summary) => (
-          <ListRow key={summary.list} summary={summary} />
+          <ListRow key={summary.list} summary={summary} surface={surface} />
         ))}
       </Rows>
+    </>
+  );
+}
+
+function ListGroup({ id, summaries, lede }: { id: string; summaries: readonly VocabularyListSummary[]; lede?: string }) {
+  return (
+    <TabPanel id={id}>
+      <ListRows id={id} summaries={summaries} lede={lede} surface="tenant" />
     </TabPanel>
   );
 }
 
-export function VocabulariesScreen() {
+export function VocabulariesScreen({ surface = 'tenant' }: { surface?: Surface }) {
   const t = useT();
   const lists = useVocabularies();
   const [tab, setTab] = useState(OURS);
@@ -84,6 +98,15 @@ export function VocabulariesScreen() {
 
   const ours = lists.data.filter((summary) => summary.tier === 'tenant');
   const library = lists.data.filter((summary) => summary.tier === 'library');
+
+  if (surface === 'console') {
+    return (
+      <>
+        <PageHead title={t('admin.vocabularies.title')} lede={t('console.vocabularies.lede')} />
+        <ListRows id={LIBRARY} summaries={library} surface={surface} />
+      </>
+    );
+  }
 
   return (
     <>

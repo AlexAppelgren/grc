@@ -93,6 +93,8 @@ describe('presentLoginEvent and loginMethodText', () => {
     expect(presentLoginEvent({ event: 'signin_failed', success: false }, t)[0]).toMatchObject({ label: 'Sign-in failed', tone: 'negative' });
     expect(presentLoginEvent({ event: 'code_refused_enrolled', success: false }, t)[0]).toMatchObject({ label: 'Code refused, already enrolled', tone: 'warning' });
     expect(presentLoginEvent({ event: 'reenrolment_issued', success: true }, t)[0]).toMatchObject({ label: 'Enrolment re-issued', tone: 'information' });
+    expect(presentLoginEvent({ event: 'key_created', success: true }, t)[0]).toMatchObject({ label: 'Key created', tone: 'information' });
+    expect(presentLoginEvent({ event: 'key_scopes_withheld', success: false }, t)[0]).toMatchObject({ label: 'Scopes withheld from key', tone: 'warning' });
   });
 
   it('falls back to the kind in plain words with a tone from success', () => {

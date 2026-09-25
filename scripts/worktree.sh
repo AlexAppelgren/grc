@@ -17,7 +17,7 @@
 #   set -a; . ./.env.worktree; set +a
 set -euo pipefail
 
-MAX_SLOT=9
+MAX_SLOT=14   # Redis has 16 databases; slot N uses index N+1 (docs/runbooks/WORKTREES.md)
 SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 WT_DIR_REL=".claude/worktrees"   # git-ignored in .gitignore, checked in `ensure_ignored`
 APP_PW="cw-app-dev-only"
@@ -162,16 +162,26 @@ cmd_list() {
 }
 
 drop_databases() {
-  # Drop every database the slot created. As cw_migrator, which created and owns them.
+  # Drop every database the slot created, and only those. As cw_migrator, which created and
+  # owns them. Found by exact pattern, never by a bare prefix: a prefix match on
+  # compliance_watch_wt1 would also drop compliance_watch_wt10's databases.
+  #   <base>                          the slot's database (init)
+  #   <base>_scratch                  migrate_from_zero's scratch database
+  #   <base>_e2e, <base>_e2e_cold     the E2E stack's databases (playwright.config.ts)
+  #   test_<base>                     manage.py test
+  #   test_<base>_<n>                 its --parallel clones, left behind by a killed run
+  #   test_<base>_search_eval_<pid>   scripts/search_eval.py (apps/search/eval.py)
   local base="$1" py="$2"
   "$py" - "$base" <<'PY'
-import sys, psycopg
-base = sys.argv[1]
+import re, sys, psycopg
+base = re.escape(sys.argv[1])
 url = "postgres://cw_migrator:cw-migrator-dev-only@localhost:5432/postgres"
+slot = re.compile(rf"{base}(?:_scratch|_e2e|_e2e_cold)?|test_{base}(?:_\d+|_search_eval_\d+)?")
 with psycopg.connect(url, autocommit=True) as conn:
-    for name in (base, f"{base}_scratch", f"{base}_e2e", f"test_{base}"):
+    names = sorted(row[0] for row in conn.execute("SELECT datname FROM pg_database") if slot.fullmatch(row[0]))
+    for name in names:
         conn.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
-        print(f"worktree: dropped {name} (if it existed)")
+        print(f"worktree: dropped {name}")
 PY
 }
 
