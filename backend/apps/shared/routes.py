@@ -60,4 +60,6 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # acc-scope-and-reach (ACC-08): deciding a request for tenant reach.
     ("POST", "/tenant/reach/requests/{request_id}/approve", "governance.TenantReachRequest", "tenant_reach_request"),
     ("POST", "/tenant/reach/requests/{request_id}/reject", "governance.TenantReachRequest", "tenant_reach_request"),
+    # c8-reg-status: a legal entity's register row (REG-02).
+    ("PATCH", "/obligations/{obligation_id}/register/entities/{org_unit_id}", "register.TenantObligationScope", "register_entity"),
 ]

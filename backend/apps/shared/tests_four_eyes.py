@@ -39,6 +39,9 @@ FOUR_EYES_TABLES: list[tuple[str, str]] = [
     # acc-scope-and-reach (governance 0004, ACC-08): tenant reach is requested by one person
     # holding security.manage and approved or rejected by another.
     ("tenant_reach_request", "tenant_reach_request_four_eyes"),
+    # c8-register-models (register 0002, REG-03): risk acceptance. The person who accepts a
+    # gap's risk is never the person who asked for it.
+    ("gap", "gap_four_eyes"),
 ]
 
 # PRO-04 (proposals 0008): a batch's parent is a `proposal` row, so `proposal_four_eyes`
