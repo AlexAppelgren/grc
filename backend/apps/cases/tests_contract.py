@@ -308,6 +308,8 @@ class WorkflowContract(TestCase):
         bank = _bank_with_work()
         with stub_session(bank.principal):
             for route in WORKFLOW:
+                if route.operation_id == "getCaseFile":
+                    continue  # built by c9-case-file-export (apps/cases/tests_case_file.py)
                 with self.subTest(operation=route.operation_id):
                     response = _send(self.client, route, route.url(bank.change_id, bank.action_id, bank.evidence_id), AS_SESSION)
                     self.assertEqual(response.status_code, 501)
