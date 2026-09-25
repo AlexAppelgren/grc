@@ -11,7 +11,10 @@ leaves before the model is asked anything (the 2 s first-token budget, NFR-02).
 begun cannot change its status: the bank's AI switch (403 `feature_off`, and nothing is
 retrieved), the reader's own bucket (429 `rate_limited`), a session in no bank (404) and
 a language the library does not hold (422 `unknown_key`). The session, the permission
-and the question's cap were checked before this module was reached.
+and the question's cap were checked before this module was reached. Right after the
+bucket, one of the reader's `ASK_STREAMS_PER_USER` open streams is taken (429
+`rate_limited` when all are in use, hardening H47); it is given back when the stream
+closes, or at once when a later refusal means no stream opens.
 
 **Everything the answer rests on is read before the first byte too.** The stream is sent
 after the request's transaction has committed, with no bank activated, so the passages,
@@ -58,7 +61,7 @@ from __future__ import annotations
 import datetime
 import re
 import uuid
-from collections.abc import Generator, Iterator
+from collections.abc import Callable, Generator, Iterator
 from contextlib import closing
 from dataclasses import dataclass
 from typing import cast
@@ -158,6 +161,26 @@ def answer_events(body: AskRequest, *, tenant_id: uuid.UUID | None, user_id: uui
     """`POST /ask`: refuse or read everything now, then hand back the stream to send."""
     ai.ensure_enabled()
     limits.ask_bucket(user_id)
+    release = limits.ask_stream_slot(user_id)
+    events = None
+    try:
+        events = _answer(body, tenant_id=tenant_id, user_id=user_id)
+    finally:
+        if events is None:  # refused after the slot was taken: no stream opens
+            release()
+    return _releasing(events, release)
+
+
+def _releasing(events: Iterator[AskEvent], release: Callable[[], None]) -> Iterator[AskEvent]:
+    """The stream, giving the caller's slot back however it ends: finished, failed, or
+    closed by a reader who left."""
+    try:
+        yield from events
+    finally:
+        release()
+
+
+def _answer(body: AskRequest, *, tenant_id: uuid.UUID | None, user_id: uuid.UUID) -> Iterator[AskEvent]:
     tenant = hybrid.tenant_of(tenant_id)
     as_of = body.as_of or today_for(tenant)
     passages = _passages(body.question, tenant=tenant, lang=body.lang, as_of=as_of)
@@ -194,10 +217,10 @@ def answer_events(body: AskRequest, *, tenant_id: uuid.UUID | None, user_id: uui
 def rate_answer(
     answer_id: uuid.UUID, body: AnswerFeedbackBody, *, tenant_id: uuid.UUID | None, user_id: uuid.UUID
 ) -> None:
-    """`POST /answers/{answerId}/feedback`. A reader's verdict on one of the bank's own
-    answers, which the evaluation set reads back (SRC-05). Another bank's answer, and a
-    session in no bank, find nothing: 404."""
-    row = ai_log.answer_of(answer_id, tenant_id) if tenant_id is not None else None
+    """`POST /answers/{answerId}/feedback`. A reader's verdict on an answer they were
+    given themselves, which the evaluation set reads back (SRC-05). A colleague's answer,
+    another bank's, and a session in no bank find nothing: 404 (hardening H48)."""
+    row = ai_log.answer_of(answer_id, tenant_id, asker_id=user_id) if tenant_id is not None else None
     if row is None:
         raise ProblemError(status=404, code="not_found", detail="Not found.")
     if (row.feedback, row.feedback_note) == (body.feedback.value, body.note):
