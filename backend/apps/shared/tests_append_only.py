@@ -61,6 +61,9 @@ APPEND_ONLY_TRIGGERS = {
     # What a week's briefing told a bank, which nothing may rewrite afterwards: a later
     # change to the feed leaves a sent briefing exactly as it was sent (HOM-02, HOM-S3).
     "briefing_item": "cw_append_only_guard",
+    # The text an edit of a comment replaced: an edit keeps it and nobody rewrites it
+    # away (COL-01, CHUNK10_TASKS ruling 10).
+    "comment_revision": "cw_append_only_guard",
     "footprint_history": "cw_append_only_guard",
     "login_event": "cw_append_only_guard",
     "obligation_summary": "cw_append_only_guard",
