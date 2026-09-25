@@ -62,6 +62,9 @@ COMMENT_WRITES = [
     ("deleteComment", "delete", f"/api/v1/comments/{THING}", None),
 ]
 ROUTES = READS + OWN_WRITES + COMMENT_WRITES
+# c10-inbox-and-my-comments: what a built route answers a member past every gate (THING is
+# nobody's notification, so marking it is 404).
+BUILT = {"listNotifications": 200, "markNotificationRead": 404, "markAllNotificationsRead": 204, "listMyComments": 200}
 
 # What a landed module answers a session past every gate, instead of the stub's 501: the
 # comments (c10-comments-mentions) name a record, or a comment, this bank does not hold.
@@ -137,7 +140,9 @@ class CollabRouteGates(TestCase):
         with self._member(set()):
             for name, method, url, body in READS + OWN_WRITES:
                 with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, _answer(name)[0])
+                    self.assertEqual(
+                        _call(self.client, method, url, body, AS_SESSION).status_code, BUILT.get(name, _answer(name)[0])
+                    )
 
     def test_a_platform_session_belongs_to_no_bank_and_gets_404(self) -> None:
         with stub_session(user_principal(permissions={perms.COMMENTS_WRITE}, subject_id=self.person.id)):
@@ -177,6 +182,9 @@ class CollabRouteGates(TestCase):
             for name, method, url, body in ROUTES:
                 with self.subTest(operation=name):
                     response = _call(self.client, method, url, body, AS_SESSION)
+                    if name in BUILT:
+                        self.assertEqual(response.status_code, BUILT[name])
+                        continue
                     self.assertEqual((response.status_code, response.json()["code"]), _answer(name))
                     self.assertEqual(response.headers["Content-Type"], "application/problem+json")
                     self.assertNotIn("traceback", response.content.decode().lower())

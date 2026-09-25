@@ -77,6 +77,9 @@ export const destinations: readonly Destination[] = [
   { id: 'admin-audit-log', href: '/admin/audit-log', labelKey: 'nav.admin.auditLog', surface: 'tenant', anyOfPermissions: ['audit.read'], group: 'admin', parent: 'admin' },
   { id: 'admin-ai-log', href: '/admin/ai-log', labelKey: 'nav.admin.aiLog', surface: 'tenant', anyOfPermissions: ['ai_log.read'], group: 'admin', parent: 'admin' },
   // Account: any signed-in person, from the who panel.
+  // The person's own notification inbox (COL-02), first in the account group; its unread count
+  // comes from GET /me (c10-fe-notifications).
+  { id: 'notifications', href: '/notifications', labelKey: 'nav.notifications', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-passkeys', href: '/me/passkeys', labelKey: 'nav.me.passkeys', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-sessions', href: '/me/sessions', labelKey: 'nav.me.sessions', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   // A person's own calendar feeds (HOM-04): the grant the roadmap itself

@@ -78,5 +78,6 @@
   "collab.comments.limited.other": "Some records are not shown here, because your role cannot open them",
   "collab.time.today": "Today {time}",
   "collab.time.yesterday": "Yesterday {time}",
-  "collab.mentions.options": "People to mention"
+  "collab.mentions.options": "People to mention",
+  "collab.bell.withUnread": "{label}, {unread}"
 }

@@ -1451,3 +1451,13 @@ Built by default; nothing waits on you. Say if any should change.
 - [ ] **The 403 proof uses a case write, not the sign-off route.** Chunk 9's
       approve route does not exist on this base yet; `c10-out-of-office` or the
       sign-off package should repeat the proof there.
+## c10-fe-notifications: a case notification cannot link to its case yet (2026-09-25, COL-02)
+
+The inbox links an obligation's notification to `/inventory/obligations/{id}` and a change's to
+`/watch/{id}`. A notification about a case (`change_case`) carries the case's own id, while every
+case screen is addressed by its change (CHUNK9 ruling 1, no `/cases/{caseId}` route), so the screen
+cannot build the link. Default taken: the case's title lists without a link, never a link that would
+always land on Not found. Needs a choice before COL-S1's journey ("Erik finds the notification with a
+link back to the case"): either `notify()` names a case by its change (`subject_type` `change`, the
+change id), or the notification gains the change id, or the frontend adds a `/cases/{caseId}` page that
+redirects to its change. The second keeps the case's own read check (`cases.read`) on the row.

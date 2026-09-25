@@ -376,6 +376,14 @@ PERF_SAMPLES = env_int("PERF_SAMPLES", 20)
 PERF_REGRESSION_PCT = env_int("PERF_REGRESSION_PCT", 20)
 
 # ---------------------------------------------------------------------------------------
+# ===== c10-inbox-and-my-comments: the comment edit window (COL-01) ======================
+# How long after writing a comment its author may still edit it; afterwards it can only be
+# deleted. My work's panel reads it for `canEdit`. The same setting as c10-comments-mentions
+# declares for the edit itself: on merge, keep one declaration.
+# ---------------------------------------------------------------------------------------
+COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)
+
+# ---------------------------------------------------------------------------------------
 # ===== SRC-01..03 search and ask input caps (apps/search/schemas.py) =====================
 # What a caller may send to search, to the similarity read and to Ask. Each is a cap at a
 # trust boundary: the text reaches a text-search query, the embedder and, for Ask, a model

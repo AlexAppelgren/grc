@@ -38,5 +38,6 @@
   "sidebar.collapse": "Minimera menyn",
   "sidebar.expand": "Visa menyn",
   "nav.admin.vocabularies": "Vokabulärer",
-  "nav.admin.footprint": "Regulatorisk omfattning"
+  "nav.admin.footprint": "Regulatorisk omfattning",
+  "nav.notifications": "Aviseringar"
 }
