@@ -329,11 +329,13 @@ class AgentRunOut(CamelSchema):
             "going well'."
         )
     )
-    status: Literal["running", "succeeded", "failed"] = Field(
+    status: Literal["running", "succeeded", "failed", "interrupted"] = Field(
         description=(
             "Where the run stands. `running`: the agent is working and the server has heard "
             "nothing more. `succeeded`: the agent closed the run having filed what it found. "
-            "`failed`: it closed early, and what it filed before that still counts. This is a "
+            "`failed`: it closed early, and what it filed before that still counts. "
+            "`interrupted`: it was stopped from outside before it finished, by a person or by "
+            "the budget cap it would have passed, and what it filed before that still counts. This is a "
             "statement about the execution and never about the findings — everything an agent "
             "filed stays labelled as machine output until a person at the bank confirms it."
         )
