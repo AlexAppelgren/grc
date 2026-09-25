@@ -103,4 +103,8 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("DELETE", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
     # c8-duty-occurrences (REG-07): a dated duty occurrence, addressed by its id.
     ("POST", "/duty-occurrences/{occurrence_id}/complete", "register.DutyOccurrence", "duty_occurrence"),
+    # c9-case-participants (COL-04): a participant on a case of tenant A, for a change tenant B
+    # has no case for, so the case itself is invisible to tenant B.
+    ("GET", "/changes/{change_id}/participants", "collab.Participant", "case_participant"),
+    ("DELETE", "/changes/{change_id}/participants/{participant_id}", "collab.Participant", "case_participant"),
 ]

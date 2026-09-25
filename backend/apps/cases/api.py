@@ -30,7 +30,7 @@ whatever its scopes: a case is a bank's judgement (AGT-01).
 import uuid
 from inspect import cleandoc
 
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from ninja import File, Form, Path, Query, Router, UploadedFile
 from typing import Any
 
@@ -868,10 +868,11 @@ def send_back_signoff(request: HttpRequest, body: CasesNoteBody, change_id: uuid
 @answers_problems
 def get_case_file(request: HttpRequest, change_id: uuid.UUID = Path(..., description=_CHANGE_ID)) -> Any:
     tenant = caller_tenant(request)
-    return case_file.case_file(
+    text = case_file.case_file(
         tenant=tenant,
         actor=actor_for(request),
         user=caller_user(request),
         order=language_order(request, tenant=tenant),
         change_id=change_id,
     )
+    return HttpResponse(text, content_type="text/plain; charset=utf-8")

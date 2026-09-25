@@ -311,6 +311,13 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "the subject is one of those four tenant tables, never a library one, and the row is "
         "written in the removing bank's zone under its own tenant id, by the bank's administrator."
     ),
+    # c9-case-participants (COL-04): the one add and the one removal both subjects share.
+    "apps/collab/participants.py record(subject.audit_type) tenant_id=tenant_id actor=actor title=subject.title": (
+        "A person or a team joining or leaving a bank's register entry or case: the subject type "
+        "is `tenant_obligation` or `change_case`, never a library type, `tenant_id` is the "
+        "caller's bank and never None, and the title is the library's own title of the "
+        "obligation or the change."
+    ),
 }
 
 

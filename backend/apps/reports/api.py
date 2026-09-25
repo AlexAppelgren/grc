@@ -23,7 +23,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, caller_tenant, caller_user
+from apps.taxonomy.http import actor_for, caller_tenant, caller_user, principal
 
 router = Router(tags=["Reports"])
 
@@ -93,13 +93,16 @@ def create_export(request: HttpRequest, body: ExportInput) -> Any:
     without `exports.create`; `unauthenticated` without a session; `not_built` (501) for a
     kind whose file is not built yet, before any job is written; `format_not_offered` for a
     format the kind does not come in; `validation_error` for a body that is not the shape
-    above, or a case file that names no case in `subjectId` or another kind that names one.
+    above, or a case file that names no case in `subjectId` or another kind that names one;
+    for a case file, `not_found` when `subjectId` is not a case of the caller's bank, and
+    `permission_denied` without `cases.read`, both before any job is written.
     """
     user = caller_user(request)
     job = jobs.create(
         tenant=caller_tenant(request),
         user=user,
         actor=actor_for(request, user),
+        permissions=principal(request).permissions,
         body=body,
         step_up_assertion_id=getattr(request, "step_up_assertion_id", None),
     )
@@ -179,10 +182,13 @@ def download_export(request: HttpRequest, export_id: uuid.UUID = Path(..., descr
     Errors: `not_found` when no job of this bank has that id, which is also what another
     bank's job answers; `export_not_ready` (409) while the job is queued, running or failed;
     `export_expired` (409) once `expiresAt` has passed, when a new export is needed;
-    `permission_denied` without `exports.create`; `unauthenticated` without a session.
+    `permission_denied` without `exports.create`, or for a case file without `cases.read`;
+    `unauthenticated` without a session.
     """
     user = caller_user(request)
-    job, stream = jobs.download(tenant=caller_tenant(request), actor=actor_for(request, user), job_id=export_id)
+    job, stream = jobs.download(
+        tenant=caller_tenant(request), actor=actor_for(request, user), permissions=principal(request).permissions, job_id=export_id
+    )
     response = FileResponse(
         stream,
         as_attachment=True,

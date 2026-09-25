@@ -212,20 +212,17 @@ WORKFLOW = [
 ]
 
 
-# The operations whose module has landed: each answers for real past its gate, and its own
-# tests prove what it does.
-BUILT = frozenset(
-    {
-        # c9-triage: tests_triage.py and tests_close_paths.py
-        "triageChange",
-        "dismissChange",
-        "restoreChange",
-        "closeWithoutAction",
-        # c9-assessment: tests_assessment.py
-        "startAssessment",
-        "saveAssessment",
-    }
-)
+# The operations whose logic has landed, one line each, so each builder adds its own. Each
+# has its own test module proving what it answers past the gates.
+BUILT = {
+    "triageChange",  # c9-triage: apps/cases/tests_triage.py
+    "dismissChange",  # c9-triage: apps/cases/tests_triage.py
+    "restoreChange",  # c9-triage: apps/cases/tests_close_paths.py
+    "closeWithoutAction",  # c9-triage: apps/cases/tests_close_paths.py
+    "startAssessment",  # c9-assessment: apps/cases/tests_assessment.py
+    "saveAssessment",  # c9-assessment: apps/cases/tests_assessment.py
+    "getCaseFile",  # c9-case-file-export: apps/cases/tests_case_file.py
+}
 
 
 def _send(client: Any, route: Route, url: str, headers: dict[str, Any]) -> Any:
