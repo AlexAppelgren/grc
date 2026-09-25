@@ -293,19 +293,23 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
         )
 
 
-def merge_pair(entry: Any, key: str, into: str) -> tuple[Any, Any]:
+def merge_pair(entry: Any, key: str, into: str, *, lock: bool = False) -> tuple[Any, Any]:
     """The two rows a merge joins, checked against the list as it is now, when the merge is
     proposed and again when it is applied (VOC-02, INV-08, D-36). A value merges only into
     another active value of the same kind: a row's kind is what the rules read (a level of
     the kind `standard` holds licensed text and one conformance obligation, D-35), so a
     merge across kinds would move records from under one rule to another with no check of
-    either. Returns the source and the target."""
+    either. Returns the source and the target.
+
+    `lock` is the apply's: both rows are locked, in id order so two merges over the same pair
+    never wait on each other crosswise, and read as they are once the lock is held (H34)."""
+    rows = entry.model._default_manager.filter(key__in=[key, into]).order_by("id")
+    found = {row.key: row for row in (rows.select_for_update() if lock else rows)}
 
     def row(value: str) -> Any:
-        found = entry.model._default_manager.filter(key=value).order_by("sort_order", "key").first()
-        if found is None:
+        if value not in found:
             raise ValidationError(f"{value!r} is not a row of {entry.name!r}.", code="not_found")
-        return found
+        return found[value]
 
     source, target = row(key), row(into)
     if source.pk == target.pk:
@@ -329,7 +333,7 @@ def _validate_obligation_payload(payload: ProposalObligationVersionPayload | Pro
     from apps.taxonomy import tenant_lists_logic as lists
     from apps.taxonomy.terms_logic import refuse_mirrored
 
-    payload.summaries = lists.validated_labels(payload.summaries, max_chars=None)
+    payload.summaries = _capped(lists.validated_labels(payload.summaries, max_chars=None), "summary")
     _written_in(payload.original_language, payload.summaries, "summary")
     _validated_precision(payload.effective_from_precision)
     if not payload.terms:
@@ -340,6 +344,17 @@ def _validate_obligation_payload(payload: ProposalObligationVersionPayload | Pro
     terms = terms_of(payload.terms)
     refuse_mirrored(term.dimension_id for term in terms)
     return terms
+
+
+def _capped(texts: dict[str, str], what: str) -> dict[str, str]:
+    """`texts` as given, or 422 naming the languages whose text is longer than
+    `PROPOSAL_TEXT_MAX_CHARS`: a text is queued before anyone reads it, and nothing is queued
+    that approval could not write (H35)."""
+    cap = settings.PROPOSAL_TEXT_MAX_CHARS
+    long = sorted(language for language, text in texts.items() if len(text) > cap)
+    if long:
+        raise ValidationError(f"A {what} is at most {cap} characters. Too long: {', '.join(long)}.", code="validation_error")
+    return texts
 
 
 def _written_in(language: str, texts: dict[str, str], what: str) -> None:
@@ -416,10 +431,11 @@ def validated_obligation(payload: ProposalObligationPayload) -> tuple[Any, list[
 
 def _validate_text_payload(payload: ProposalProvisionPayload | ProposalProvisionVersionPayload) -> None:
     """A provision's verbatim text in real content languages, one of them the original the
-    authority published (INV-05), and a legal date with a precision (INV-S10)."""
+    authority published (INV-05), each at most `PROPOSAL_TEXT_MAX_CHARS`, and a legal date
+    with a precision (INV-S10)."""
     from apps.taxonomy import tenant_lists_logic as lists
 
-    payload.texts = lists.validated_labels(payload.texts, max_chars=None)
+    payload.texts = _capped(lists.validated_labels(payload.texts, max_chars=None), "text")
     _written_in(payload.original_language, payload.texts, "text")
     _validated_precision(payload.effective_from_precision)
 
@@ -642,7 +658,7 @@ def create(
     sources = {field: value.strip() for field, value in (field_sources or {}).items()}
     # Before the source check, so a standard's clause pasted as a source answers
     # `licensed_text`, the rule it breaks, rather than a generic refusal (D-35).
-    standards.check_payload(kind, target_id, parsed, sources)
+    standards.check_payload(kind, target_id, parsed, sources, source_label)
     check_field_sources(parsed, sources)
     source_url = source_url.strip()
     if kind in NEW_RECORD_KINDS and not is_link(source_url):
@@ -652,6 +668,10 @@ def create(
             "Give sourceUrl, the https link to the authority's page the new record is read from.",
             code="source_missing",
         )
+    if source_url and not is_link(source_url):
+        # Every kind's link is rendered as the proposal's source, so it is an https link or
+        # nothing (H35): never `http:` or another scheme a reader's browser would follow.
+        raise ValidationError("sourceUrl is an https link to the authority's page, or left out.", code="validation_error")
     effective_from = _agreed_effective_from(parsed, effective_from)
     stored_payload = payload_dict(parsed)
     title = title.strip()
@@ -1002,7 +1022,17 @@ def _log_decision(proposal: Proposal, decision: AgentDecision | None, run: Agent
     )
 
 
-def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any]) -> dict[str, Any]:
+def _field_value(payload: dict[str, Any], field: str) -> Any:
+    """The value a stored payload holds for a field as `sourced_fields()` names it:
+    `summaries.sv` is the Swedish summary, `effectiveFrom` the date."""
+    name, _, language = field.partition(".")
+    value = payload.get(name)
+    return value.get(language) if language and isinstance(value, dict) else value
+
+
+def corrected(
+    proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any], field_sources: dict[str, str] | None = None
+) -> dict[str, str]:
     """The payload as the reviewer corrected it, checked as firmly as the one that arrived
     (PRO-02, AC-PRO1).
 
@@ -1018,6 +1048,12 @@ def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any])
     a fact from an authority, so there is nothing to correct against a source, and a
     reviewer who disagrees rejects with a reason instead.
 
+    A correction that changes what a sourced field says names the fresh source it read the
+    new value from, in `field_sources`, and only such a field takes one (H35): the
+    proposer's source vouches for the value it was given for, not for the reviewer's. The
+    proposal keeps the fresh source for that field from then on. Returns the proposer's
+    sources the fresh ones replaced, for the approval's audit row.
+
     An agent's correction may reword a summary but not move `originalLanguage`: the
     original is the one text stored without the machine label, so moving it would store a
     machine translation as unlabelled and label the source-language text machine-made
@@ -1030,22 +1066,40 @@ def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any])
         )
     merged = {**proposal.payload, **overrides}
     parsed = validated_payload(proposal.kind, merged)
-    standards.check_payload(proposal.kind, proposal.target_id, parsed, proposal.field_sources)
-    check_field_sources(parsed, proposal.field_sources)
     stored = payload_dict(parsed)
+    fresh = {field: source.strip() for field, source in (field_sources or {}).items()}
+    sources = {**proposal.field_sources, **fresh}
+    # Before the source checks, so a correction that breaks a standards rule answers the rule
+    # it breaks, as at creation (D-35).
+    standards.check_payload(proposal.kind, proposal.target_id, parsed, sources, proposal.source_label)
+    changed = [field for field in sourced_fields(parsed) if _field_value(stored, field) != _field_value(proposal.payload, field)]
+    missing = [field for field in changed if not fresh.get(field)]
+    if missing:
+        raise ValidationError(
+            f"Give the source you read each corrected value in. Missing: {', '.join(missing)}.", code="source_missing"
+        )
+    stray = sorted(set(fresh) - set(changed))
+    if stray:
+        raise ValidationError(
+            f"{', '.join(stray)}: this correction does not change that field, so it takes no new source.",
+            code="validation_error",
+        )
+    check_field_sources(parsed, sources)
     if reviewer.user is None and stored.get("originalLanguage") != proposal.payload.get("originalLanguage"):
         raise ValidationError(
             "An agent cannot change which language a summary was written in. Reject it with a reason instead.",
             code="validation_error",
         )
+    replaced = {field: proposal.field_sources[field] for field in fresh if field in proposal.field_sources}
     proposal.corrected_payload = stored
     proposal.corrected_by = reviewer.user
     proposal.corrected_at = timezone.now()
+    proposal.field_sources = sources
     # The row's own date follows the correction, because a queue row that showed one date
     # while the version carried another would be a proposal nobody could read straight
     # (the same rule `_agreed_effective_from()` holds the proposer to).
     proposal.effective_from = getattr(parsed, "effective_from", proposal.effective_from)
-    return proposal.corrected_payload
+    return replaced
 
 
 def approve(
@@ -1055,6 +1109,7 @@ def approve(
     actor: Actor,
     note: str,
     payload_overrides: dict[str, Any] | None = None,
+    field_sources: dict[str, str] | None = None,
     step_up_assertion_id: uuid.UUID | None,
     decision: AgentDecision | None = None,
     agent_run_id: uuid.UUID | None = None,
@@ -1065,9 +1120,12 @@ def approve(
     worker or a shell caller that fails part way writes nothing, so its retry writes the
     version once (apps/proposals/tests_decide.py, DecidingOutsideARequest).
 
-    A reviewer may correct the payload on the way through (`payload_overrides`). What they
+    A reviewer may correct the payload on the way through (`payload_overrides`), naming in
+    `field_sources` the fresh source of every value the correction changes. What they
     approved is stored beside what was proposed, as their own correction, so the queue and
-    the audit trail keep both. `step_up_assertion_id` is null for an agent's decision: a key
+    the audit trail keep both. The review note stays on the proposal row and never in the
+    audit value: from R2 a proposal can be a bank's own (D-89), and a note is its reviewer's
+    words (CHUNK10 rule 13). `step_up_assertion_id` is null for an agent's decision: a key
     holds no passkey assertion (PRO-S13, D-62, ADR 0054).
 
     An agent's approval carries the model call behind it (`decision`) and the open run of
@@ -1104,9 +1162,10 @@ def approve(
                 code="risk_flagged",
             )
         decided = ["status", "reviewed_by", "reviewed_by_api_key", "reviewed_by_agent", "reviewed_at", "applied_at", "review_note"]
-        if payload_overrides:
-            corrected(proposal, reviewer, payload_overrides)
-            decided += ["corrected_payload", "corrected_by", "corrected_at", "effective_from"]
+        replaced: dict[str, str] = {}
+        if payload_overrides or field_sources:
+            replaced = corrected(proposal, reviewer, payload_overrides or {}, field_sources)
+            decided += ["corrected_payload", "corrected_by", "corrected_at", "effective_from", "field_sources"]
         apply.apply(proposal, actor=actor, reviewer=reviewer, step_up=step_up_assertion_id)
         now = timezone.now()
         proposal.status = ProposalStatus.APPROVED.value
@@ -1126,11 +1185,11 @@ def approve(
             subject_title=proposal.title,
             summary=f"Approved: {proposal.title}",
             tenant_id=None,
-            before={"status": ProposalStatus.OPEN.value},
+            before={"status": ProposalStatus.OPEN.value, **({"fieldSources": replaced} if field_sources else {})},
             after={
                 "status": proposal.status,
-                "note": proposal.review_note,
                 "corrected": proposal.corrected_payload is not None,
+                **({"fieldSources": {field: proposal.field_sources[field] for field in field_sources}} if field_sources else {}),
                 **_reviewer_facts(reviewer, run),
             },
             step_up_assertion_id=step_up_assertion_id,
@@ -1206,7 +1265,8 @@ def reject(
             summary=f"Rejected: {proposal.title}",
             tenant_id=None,
             before={"status": ProposalStatus.OPEN.value},
-            after={"status": proposal.status, "rejectionCode": code, "note": text, **_reviewer_facts(reviewer, run)},
+            # The note stays on the proposal row, as an approval's does.
+            after={"status": proposal.status, "rejectionCode": code, **_reviewer_facts(reviewer, run)},
             topic="proposal.rejected",
         )
     return proposal

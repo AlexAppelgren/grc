@@ -632,7 +632,12 @@ class AgentsScenarioTests(TestCase):
         corrected = "The institution pays for third-party research from its own resources or a research payment account."
         approved = self.client.post(
             f"/api/v1/proposals/{to_approve}/approve",
-            data={"payloadOverrides": {"summaries": {"en": corrected}}, "decision": agent_build.DECISION, "agentRunId": review_id},
+            data={
+                "payloadOverrides": {"summaries": {"en": corrected}},
+                "fieldSources": {"summaries.en": agent_build.DECISION["citations"][0]["url"]},
+                "decision": agent_build.DECISION,
+                "agentRunId": review_id,
+            },
             content_type="application/json",
             **as_confirmer,
         )
