@@ -526,6 +526,66 @@ class Verification(LibraryModel):
         return f"{self.subject_type}:{self.subject_id} {self.outcome}"
 
 
+class RecurringDuty(LibraryModel):
+    """A duty an obligation carries on a schedule (REG-07): a quarterly report, a yearly
+    attestation. A public fact about the duty, so no tenant column: a bank's own occurrences,
+    owners and completions are tenant rows on it (the register app). `recurrence_rule` is an
+    RFC 5545 RRULE stored as text, validated by the proposal kind that writes it; the
+    proposal is the only producer, the library fence and the door trigger (library 0010,
+    ADR 0058) refuse every other writer. `lead_days` is how long before a due date the duty
+    starts showing. `recipient_authority` is who receives it, when an authority does.
+
+    Provenance (INV-05, D-79, D-89): `created_origin` and `created_by_agent` name who
+    proposed it, `verified_origin` with `verified_by_agent` or `approved_by` who confirmed
+    it, set once from the approving proposal's two sides. The check constraints hold an
+    agent's proposal and an agent's confirmation to naming their agent, a person's
+    confirmation to naming the person, and the confirming agent to be another agent than the
+    proposer, so a record an agent confirmed never reads as verified by a person."""
+
+    obligation = models.ForeignKey(Obligation, on_delete=models.PROTECT, related_name="recurring_duties")
+    title = models.CharField(max_length=300)
+    recurrence_rule = models.CharField(max_length=500)
+    due_rule_note = models.TextField(blank=True)
+    recipient_authority = models.ForeignKey(Authority, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    lead_days = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=16, choices=_choices(RecordStatus), default=RecordStatus.ACTIVE.value)
+    applied_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    created_origin = models.CharField(max_length=16, choices=_choices(OriginType))
+    created_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    approved_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    approved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "recurring_duty"
+        ordering = ["obligation__stable_key", "title"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(created_origin=OriginType.AGENT.value) | models.Q(created_by_agent__isnull=False),
+                name="recurring_duty_agent_proposal_named",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(verified_origin=OriginType.AGENT.value) | models.Q(verified_by_agent__isnull=False),
+                name="recurring_duty_agent_confirmation_named",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(verified_origin=OriginType.USER.value) | models.Q(approved_by__isnull=False),
+                name="recurring_duty_person_confirmation_named",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(verified_by_agent__isnull=True)
+                | models.Q(created_by_agent__isnull=True)
+                | ~models.Q(verified_by_agent=models.F("created_by_agent")),
+                name="recurring_duty_confirmer_independent",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.title
+
+
 class ProblemReport(models.Model):
     """"This looks wrong" (INV-06, AUD-03). A mixed table under forced RLS whose rows all
     carry the bank that filed them: the writer refuses a report without a tenant, and the
