@@ -157,12 +157,76 @@ class CollabScenarioTests(TestCase):
         Participation, confirmed links and new versions notify the people involved, once, if they can read (COL-02, COL-04).
         """
 
-    @skip("pending: COL-S11 (COL-02, chunk 10)")
+    # COL-S11 (c10-reminders-escalation-reviews)
     def test_col_s11(self) -> None:
         """COL-S11
 
         Review reminders reach the people responsible, once (COL-02).
         """
+        from django.utils import timezone
+
+        from apps.identity.models import Membership
+        from apps.library import testing as library_build
+        from apps.register.models import TenantObligationScope
+        from apps.taxonomy.models import Team
+        from apps.tenants.models import OrgUnit, OrgUnitKind
+
+        watch_build.seed_watch_reference()
+        zone = ZoneInfo("Europe/Stockholm")
+        # Given a tenant reminder lead of 30 days
+        tenant = factories.tenant(slug="col-s11", timezone="Europe/Stockholm")
+        Tenant.objects.filter(pk=tenant.pk).update(review_reminder_days_before=[30])
+        review = today_for(tenant) + datetime.timedelta(days=30)
+        anna, erik, karin, lisa, johan = (factories.member_user(tenant, roles=("contributor",)) for _ in range(5))
+        User.objects.filter(pk=erik.pk).update(locale=factories.language("sv"))
+        Membership.objects.filter(user=johan).update(deactivated_at=timezone.now())
+        tenancy.activate(tenant.id)
+        legal = Team.objects.create(tenant=tenant, key="legal")
+        for person in (karin, lisa, johan):
+            factories.team_member(tenant, legal, person)
+        fund = OrgUnit.objects.create(tenant=tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name="Fund AB")
+        titles = {"en": "Keep client assets apart", "sv": "Håll kundmedel åtskilda"}
+        on = library_build.instrument(key="inst-col-s11", regime="regime:securities")
+        # And Anna is first-line owner of a "Compliant" obligation whose next review is in 30 days
+        compliant = factories.register_entry(
+            tenant, library_build.obligation(on, key="obl-col-s11-a", titles=titles).id, status="compliant",
+            first_line_owner=anna, next_review_date=review,
+        )
+        # And Erik owns that obligation's row for Fund AB, whose own next review is in 30 days
+        tenancy.activate(tenant.id)
+        TenantObligationScope.objects.create(
+            tenant=tenant, tenant_obligation=compliant, org_unit=fund, compliance_status=compliant.compliance_status,
+            owner=erik, next_review_date=review,
+        )
+        # And the team "Legal" owns a register entry whose next review is in 30 days
+        owned = factories.register_entry(
+            tenant, library_build.obligation(on, key="obl-col-s11-b", titles=titles).id, owner_team=legal,
+            next_review_date=review,
+        )
+        MockMailer.reset()
+        self.addCleanup(MockMailer.reset)
+        moment = datetime.datetime.combine(today_for(tenant), datetime.time(settings.REMINDER_SEND_HOUR), tzinfo=zone)
+
+        def run() -> None:
+            with mock.patch("django.utils.timezone.now", return_value=moment.astimezone(datetime.UTC)):
+                tasks.send_tenant_reminders(str(tenant.id))
+            tenancy.activate(tenant.id)
+
+        # When the reminder job runs
+        run()
+        told = sorted((row.subject_id, row.user_id) for row in Notification.objects.filter(kind="review_due"))
+        # Then Anna and Erik each receive one "review_due" reminder in their language, and
+        # each active member of "Legal" receives one
+        self.assertEqual(told, sorted([(compliant.id, anna.id), (compliant.id, erik.id), (owned.id, karin.id), (owned.id, lisa.id)]))
+        subjects = {mailed.to: mailed.subject for mailed in MockMailer.sent}
+        self.assertEqual(subjects[anna.email], f"Review due {review.isoformat()}: Keep client assets apart")
+        self.assertEqual(subjects[erik.email], f"Granskning senast {review.isoformat()}: Håll kundmedel åtskilda")
+        self.assertEqual(len(MockMailer.sent), 4)
+        # When the job runs again the same day
+        run()
+        # Then nobody is reminded twice
+        self.assertEqual(Notification.objects.filter(kind="review_due").count(), 4)
+        self.assertEqual(len(MockMailer.sent), 4)
 
     @skip("pending: COL-S12 (COL-01, HOM-05, chunk 10)")
     def test_col_s12(self) -> None:

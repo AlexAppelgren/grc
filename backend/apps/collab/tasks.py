@@ -9,8 +9,9 @@ nothing, however many workers retry it. A send the relay refused keeps its row a
 with the error's kind, and the next run tries that row again rather than adding another.
 
 `send_reminders` is the hourly beat entry: it hands on the banks whose local wall time has
-just reached `REMINDER_SEND_HOUR`, one `send_tenant_reminders` each (fan out, never chain),
-and that `@tenant_task` runs `reminders.py` for one bank inside its own transaction.
+just reached `REMINDER_SEND_HOUR`, one `send_tenant_reminders` and one
+`send_tenant_escalations` each (fan out, never chain). Each is a `@tenant_task` that runs
+`reminders.py` or `escalation.py` for one bank inside its own transaction.
 
 Nothing here logs a recipient's address, a subject or a body (playbook 4.7): the row's id,
 its template and its status are all that leave.
@@ -25,7 +26,7 @@ import uuid
 from celery import shared_task
 from django.utils import timezone
 
-from apps.collab import mail, reminders
+from apps.collab import escalation, mail, reminders
 from apps.collab.models import EmailMessage, EmailStatus
 from apps.identity.models import Membership, UserStatus
 from apps.library.reading import today_for
@@ -111,10 +112,19 @@ def send_reminders() -> None:
     """The beat entry, run hourly: hand on each bank whose own clock reads the send hour."""
     for tenant in reminders.tenants_at_send_hour(timezone.now()):
         send_tenant_reminders.delay(str(tenant.id))
+        send_tenant_escalations.delay(str(tenant.id))
 
 
 @shared_task
 @tenancy.tenant_task
 def send_tenant_reminders(tenant_id: uuid.UUID) -> None:
     """One bank's reminders for today, in one transaction with their notifications."""
-    reminders.send_triage_reminders(Tenant.objects.get(pk=tenant_id))
+    reminders.send_reminders(Tenant.objects.get(pk=tenant_id))
+
+
+@shared_task
+@tenancy.tenant_task
+def send_tenant_escalations(tenant_id: uuid.UUID) -> None:
+    """One bank's escalations of overdue actions, in one transaction with their notifications
+    and audit rows."""
+    escalation.escalate(Tenant.objects.get(pk=tenant_id))
