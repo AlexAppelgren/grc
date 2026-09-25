@@ -33,7 +33,7 @@ from types import SimpleNamespace
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, Team, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, Team, TeamLabel, VocabularySuggestion
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -56,7 +56,7 @@ from apps.library.seeds import LANGUAGES
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
-from apps.tenants.models import Licence, OrgUnit, OrgUnitKind, SupportAccess, TenantProduct
+from apps.tenants.models import Licence, OrgUnit, OrgUnitKind, SupportAccess, TeamMember, TenantProduct
 from apps.tenants.testing import licence_type_term
 
 _counter = itertools.count(1)
@@ -249,3 +249,21 @@ def support_access(tenant: Tenant) -> SupportAccess:
         return SupportAccess.objects.create(
             tenant=tenant, platform_user=requester, reason="The bank's watch feed stopped updating.", started_at=timezone.now()
         )
+
+
+# c8-ten-teams-people (TEN-02, TEN-03): a named team with its English label and department,
+# the people in it, and a department with a head.
+def team(tenant: Tenant, *, key: str, label: str, org_unit: OrgUnit | None = None, members: Iterable[User] = ()) -> Team:
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        row = Team.objects.create(tenant=tenant, key=key, org_unit=org_unit)
+        TeamLabel.objects.create(tenant=tenant, vocabulary=row, language="en", text=label, is_original=True)
+        for person in members:
+            TeamMember.objects.create(tenant=tenant, team=row, user=person)
+    return row
+
+
+def department(tenant: Tenant, *, name: str, head: User | None, kind: OrgUnitKind = OrgUnitKind.BUSINESS_AREA) -> OrgUnit:
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return OrgUnit.objects.create(tenant=tenant, kind=kind.value, name=name, head_user=head)
