@@ -1268,6 +1268,7 @@ builds it on the existing table rather than beside it:
   cut (parallel-plan ruling 14); a backfill is a batch of an existing kind, not a kind. And
   `proposal_batch_decision` (`pending`, `approved`, `rejected`) is new: the trigger and apply
   branch on it and no admin adds one.
+
 ## 19. Chunk 11's agent tables (2026-09-25, c11-agent-models)
 
 Agents migrations 0004 and 0005 build schema v0.3 PART 3's agent tables with three rulings
