@@ -210,6 +210,10 @@ class Actions(TestCase):
         self.assertNotIn(self.finished.change_id, listed)
         self.assertNotIn(self.done.change_id, listed)
 
+    def test_a_department_with_no_team_lists_no_case(self) -> None:
+        page = self.bank.read(self.bank.karin, scope="unit", unit=self.bank.legal.id)
+        self.assertEqual((page.items, page.total), ([], 0))
+
     def test_a_department_names_each_action_owner(self) -> None:
         item = row(self.bank.read(self.bank.karin, scope="unit", unit=self.bank.retail.id), self.later.change_id)
         self.assertEqual(whos(item), {("owner", "Erik Holm"), ("owner", "Johan Ek")})
