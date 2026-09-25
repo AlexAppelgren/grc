@@ -2,8 +2,9 @@
 runs, and the bank that no longer receives a platform run.
 
 A platform agent's cadence, the jurisdictions it sweeps and its budget are one setting for
-every bank, read without touching any bank's row. Changing them answers 501 until the fence
-decision in docs/TODO_FOR_alex.md (c11-definitions-platform). The console's run list carries bleqq's runs alone, newest first, with what each
+every bank, changed by a platform administrator with a fresh passkey and validated against
+the live jurisdiction list; the change reads no bank's row and leaves one audit row with no
+tenant. The console's run list carries bleqq's runs alone, newest first, with what each
 filed counted from the rows themselves in one query per page, and no bank's name or figure.
 
 Proven to fail 2026-09-25 against the declared contract: every route test below answered
@@ -28,8 +29,10 @@ from django.utils import timezone
 from apps.agents import testing as agent_build
 from apps.agents.models import Agent, AgentRun, RunTrigger
 from apps.agents.tests_definitions import platform_agent
+from apps.library.models import Jurisdiction
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, permissions as perms, tenancy
+from apps.shared.models import AuditEvent
 from apps.shared.tenancy import TenantModel, library_write
 from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, production_models, stub_session, user_principal
 from apps.taxonomy.seeds import seed_library_vocabularies
@@ -40,6 +43,7 @@ CONSOLE_RUNS = "/api/v1/console/agent-runs"
 RUNS = "/api/v1/agent-runs"
 AS_SESSION: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {SESSION_TOKEN_FOR_TESTS}"}
 JSON = "application/json"
+SETTINGS = {"cadence": "daily", "jurisdictions": ["se", "eu"], "monthlyBudget": "250.00"}
 BANK_NAMES = ("Nordbanken Settings AB", "Fjordbank Settings ASA")
 # The tables that hold a bank's rows: every tenant model, and the bank itself.
 TENANT_TABLES = frozenset({"tenant"} | {model._meta.db_table for model in production_models() if issubclass(model, TenantModel)})
@@ -115,17 +119,63 @@ class PlatformAgentSettings(ConsoleCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json(), {"agentKey": self.agent.key, "cadence": "weekly", "jurisdictions": [], "monthlyBudget": None})
 
+    def test_changing_them_for_every_bank(self) -> None:
+        response = self.call("put", self.url, SETTINGS)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json(), {"agentKey": self.agent.key, **SETTINGS})
+        stored = Agent.objects.get(pk=self.agent.pk)
+        self.assertEqual(
+            (stored.default_cadence, stored.platform_scope, stored.platform_monthly_budget),
+            ("daily", {"jurisdictions": ["se", "eu"]}, Decimal("250.00")),
+        )
+        self.assertEqual(self.call("get", self.url).json(), response.json())
+
+    def test_one_audit_row_with_no_bank_before_after_and_the_assertion(self) -> None:
+        self.call("put", self.url, SETTINGS)
+        [event] = AuditEvent.objects.filter(action="agent.settings_changed", subject_id=self.agent.id)
+        self.assertIsNone(event.tenant_id)
+        self.assertEqual(event.actor_id, self.admin.id)
+        self.assertEqual(event.step_up_assertion_id, self.assertion)
+        self.assertEqual(event.before, {"cadence": "weekly", "jurisdictions": [], "monthlyBudget": None})
+        self.assertEqual(event.after, SETTINGS)
+
+    def test_a_jurisdiction_the_live_list_does_not_hold_is_422_with_the_valid_keys(self) -> None:
+        with library_write("test"):
+            Jurisdiction.objects.filter(key="dk").update(active=False)
+        for unknown in ("xx", "dk"):
+            with self.subTest(key=unknown):
+                response = self.call("put", self.url, {**SETTINGS, "jurisdictions": ["se", unknown]})
+                self.assertEqual(response.status_code, 422, response.content)
+                self.assertEqual(response.json()["code"], "unknown_key")
+                valid = response.json()["validKeys"]
+                self.assertIn("se", valid)
+                self.assertNotIn("dk", valid, "a retired jurisdiction is not a key a setting may hold")
+        self.assertIsNone(Agent.objects.get(pk=self.agent.pk).platform_scope)
+        self.assertFalse(AuditEvent.objects.filter(action="agent.settings_changed").exists())
+
+    def test_a_key_sent_twice_is_stored_once(self) -> None:
+        response = self.call("put", self.url, {**SETTINGS, "jurisdictions": ["se", "eu", "se"]})
+        self.assertEqual(response.json()["jurisdictions"], ["se", "eu"])
+
+    def test_without_a_fresh_assertion_nothing_changes(self) -> None:
+        response = self.call("put", self.url, SETTINGS, self.principal(step_up=False))
+        self.assertEqual(response.json()["code"], "step_up_required")
+        self.assertEqual(Agent.objects.get(pk=self.agent.pk).default_cadence, "weekly")
+
     def test_a_definition_a_bank_adds_for_itself_has_no_platform_settings(self) -> None:
         own = _tenant_definition()
-        self.assertEqual(self.call("get", f"{DEFINITIONS}/{own.key}/settings").status_code, 404)
+        for method, body in (("get", None), ("put", SETTINGS)):
+            with self.subTest(method=method):
+                self.assertEqual(self.call(method, f"{DEFINITIONS}/{own.key}/settings", body).status_code, 404)
         self.assertEqual(self.call("get", f"{DEFINITIONS}/no-such-agent/settings").status_code, 404)
 
     def test_no_bank_row_is_read(self) -> None:
         """Two banks with agents and runs of their own are there to be read; the settings
-        read touches none of their tables."""
+        read and write read none of their tables."""
         two_banks()
         with CaptureQueriesContext(connection) as queries:
             self.assertEqual(self.call("get", self.url).status_code, 200)
+            self.assertEqual(self.call("put", self.url, SETTINGS).status_code, 200)
         reads = [query["sql"] for query in queries.captured_queries if query["sql"].lstrip().upper().startswith("SELECT")]
         self.assertTrue(reads)
         touched = {table for sql in reads for table in re.findall(r'(?:FROM|JOIN) "([a-z_]+)"', sql)}

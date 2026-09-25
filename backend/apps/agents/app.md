@@ -181,10 +181,11 @@ And a tenant admin's request to reach the definition at all, to read, publish, r
 And "nordic-watch" is one of bleqq's agents, so a bank's run log carries none of its runs, which the console lists
 ```
 
-A run pins the newest version still published when it opens, and a trigger keeps it there.
-Publishing and retiring wait on the owner's decision on how the console writes an agent
-definition, a library row the fence lets only a proposal's approval reach
-(`docs/TODO_FOR_alex.md`, c11-definitions-platform), so this scenario stays skipped.
+A version is published only from its shipped folder, read by the seed's reader: 409
+`version_exists` for a number already published, 422 `definition_unreadable` for a folder
+the reader refuses or one that changes the agent's id, kind, scope or zone, and 409
+`last_version` for retiring the last published version of an active agent. A run pins the
+newest published version when it opens, and a trigger keeps it there.
 
 ### AGT-S5 — A tenant controls its agents without touching their instructions `@integration` `@e2e` (AGT-04)
 ```gherkin
