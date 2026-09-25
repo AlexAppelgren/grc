@@ -68,6 +68,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `ASK_RETRIEVAL_DEPTH` | api | `6` | `6` | `6` | How many passages of the reader's own ranking Ask gives the model, best first: the whole of what an answer may rest on, each one a numbered citation. From 1 to `AI_GENERATION_CITATIONS_MAX`, or the app refuses to boot (SRC-03) |
 | `ASK_MAX_TOKENS` | api | `1024` | `1024` | `1024` | The most one Ask answer may write, beneath the `LLM_MAX_TOKENS` ceiling: an answer is a few cited sentences. At least 1, or the app refuses to boot (SRC-03) |
 | `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |
+| `AGENT_RESEARCH_TOPIC_MAX_CHARS` | api | `500` | `500` | `500` | The longest topic a research request or a console re-tag request may carry, in characters (AGT-05, c11-agents-contract); a longer one answers 422 `validation_error` |
 
 ## Testing, observability, budgets
 

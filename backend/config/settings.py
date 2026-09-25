@@ -274,6 +274,11 @@ EMBEDDER_PROVIDER = env_str("EMBEDDER_PROVIDER", "mock")  # mock | none | <chose
 EMBEDDER_API_KEY = env_str("EMBEDDER_API_KEY", "")
 EMBEDDING_DIMENSIONS = env_int("EMBEDDING_DIMENSIONS", 1024)  # DECISIONS D-09
 AGENT_RUNNER = env_str("AGENT_RUNNER", "mock")  # mock | managed_agents
+
+# --- c11-agents-contract (AGT-05) ------------------------------------------------------
+# The longest topic a research or re-tag request may carry, in characters: the text is a
+# bank's own (or the console's) and is validated at the boundary before anything reads it.
+AGENT_RESEARCH_TOPIC_MAX_CHARS = env_int("AGENT_RESEARCH_TOPIC_MAX_CHARS", 500)
 MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp
 MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")
 MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")

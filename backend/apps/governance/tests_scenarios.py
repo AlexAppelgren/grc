@@ -142,6 +142,20 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
     # editor, deciding behind a passkey too, so a platform admin is refused both.
     "getProposalBatch": ("GET", f"/proposal-batches/{_ANY_ID}", None),
     "decideProposalBatch": ("POST", f"/proposal-batches/{_ANY_ID}/decide", {"rest": "approved"}),
+    # c11-agents-contract (AGT-03, AGT-05): bleqq's agents, their versions, settings and runs
+    # are the platform admin's; a re-tag of library records is the library editor's. The
+    # three writes that change every bank also ask for a passkey, a different refusal.
+    "getAgentDefinition": ("GET", "/agent-definitions/watch-sweeper", None),
+    "publishAgentVersion": ("POST", "/agent-definitions/watch-sweeper/versions", {"versionNo": 2, "changeNote": "Reads the new index."}),
+    "retireAgentVersion": ("POST", "/agent-definitions/watch-sweeper/versions/1/retire", {}),
+    "getPlatformAgentSettings": ("GET", "/agent-definitions/watch-sweeper/settings", None),
+    "updatePlatformAgentSettings": (
+        "PUT",
+        "/agent-definitions/watch-sweeper/settings",
+        {"cadence": "daily", "jurisdictions": ["se"], "monthlyBudget": "250.00"},
+    ),
+    "listPlatformRuns": ("GET", "/console/agent-runs", None),
+    "createRetagRequest": ("POST", "/console/research-requests", {"topic": "Re-tag custody records with Client money."}),
 }
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a
