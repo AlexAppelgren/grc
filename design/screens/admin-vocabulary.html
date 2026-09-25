@@ -10,7 +10,13 @@
    real pill in a light and a dark swatch, with the key, usage count and usage note.
    Inline rename, drag handle to reorder, retire (usage count shown first), merge
    with a preview. The same screen serves the console for library lists, where
-   Save reads "Send for review" and the row shows "Waiting for review". */
+   Save reads "Send for review" and the row shows "Waiting for review".
+
+   Console variant for jurisdictions (chunk 11, ADM-02, ADM-S18): a label per content
+   language, retire and restore, each a proposal a second library editor approves; the
+   key never changes, and the jurisdiction's mirrored scope term follows the change when
+   it is applied, so the scope term itself is not edited on its own. Languages are the
+   platform's seeded list and read-only here. This replaces a console-languages card. */
 :root{
   --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;--sand-3:#e7ddcb;
   --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
@@ -247,6 +253,18 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
   .tabbar .dot{position:absolute;top:6px;right:calc(50% - 20px);background:#efe9dc;color:#003824;border-radius:999px;font-size:.65rem;font-weight:700;padding:0 6px}
 }
 @media (max-width:380px){.bar .btn{padding:10px 12px;font-size:.9rem}.bar .btn.small{padding:6px 10px}}
+/* Console variant: jurisdictions (chunk 11, ADM-02, ADM-S18). Fixed-theme frames at
+   375 px, so the narrow layout reads in light and dark on any screen. */
+.jlabels{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 12px}
+.jstates{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:821px){.jstates{grid-template-columns:repeat(2,minmax(0,375px))}}
+.jtheme{width:100%;max-width:375px;min-width:0;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--bg);color:var(--text)}
+.jtheme.light{--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;--sand-3:#e7ddcb;--line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;--accent:#003824;--btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;--red:#b92f13;--red-soft:#fdebe8;--amber:#8f530a;--amber-soft:#fce8cf;--green:#026436;--green-soft:#dcefdc;--blue:#005fb3;--blue-soft:#e6f3ff;--grey-soft:#eaebeb}
+.jtheme.dark{--bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--sand-3:#453921;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;--accent:#d6c7a8;--btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--red-soft:#3a1a14;--amber:#f5b970;--amber-soft:#3a2810;--green:#8ae58d;--green-soft:#12301c;--blue:#66b8ff;--blue-soft:#10273d;--grey-soft:#313533}
+.jtheme .vrow{grid-template-columns:1fr}.jtheme .vrow .grip{display:none}.jtheme .vrow .acts{grid-column:1}
+.jtheme .jlabels{grid-template-columns:1fr}
+.jlabels input{width:100%;min-width:0}
+.jtheme .bar{justify-content:flex-end;flex-wrap:nowrap}
 </style>
 </head>
 <body>
@@ -320,6 +338,55 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
         <div class="vrow"><span class="grip" role="button" tabindex="0" aria-label="Drag to reorder">⋮⋮</span><div class="lbl"><span class="swatch light"><span class="pill">Assessment in progress</span></span><span class="swatch dark"><span class="pill">Assessment in progress</span></span><span class="pill">System value</span><small>Used by 2 cases</small></div><div class="acts"><button class="btn ghost small">Rename</button></div></div>
         <div class="vrow"><span class="grip" role="button" tabindex="0" aria-label="Drag to reorder">⋮⋮</span><div class="lbl"><span class="swatch light"><span class="pill">Waiting for legal</span></span><span class="swatch dark"><span class="pill">Waiting for legal</span></span><small>Used by 1 case</small></div><div class="acts"><button class="btn ghost small">Rename</button><button class="btn ghost small">Merge into…</button><button class="btn ghost small">Retire</button></div></div>
       </div><p class="meta" style="margin-top:8px">A category always keeps one value, so the last one has no Retire.</p></div>
+
+    <h2 class="k" style="overflow-wrap:anywhere">Console variant: jurisdictions (/console/vocabularies/jurisdiction), every change is a proposal</h2>
+    <div class="rows">
+      <div class="vrow"><span class="grip" aria-hidden="true"> </span><div class="lbl"><span class="swatch light"><span class="pill brand">Sweden</span></span><span class="swatch dark"><span class="pill brand">Sweden</span></span><span class="mono" style="color:var(--muted)">se</span><small>Country · reached by EU rules · used by 87 instruments and 4 authorities</small><small>sv Sverige · da Sverige · nb Sverige · fi Ruotsi</small></div><div class="acts"><button class="btn ghost small">Edit labels</button><button class="btn ghost small">Retire</button></div></div>
+      <div class="vrow"><span class="grip" aria-hidden="true"> </span><div class="lbl"><span class="swatch light"><span class="pill brand">Denmark</span></span><span class="swatch dark"><span class="pill brand">Denmark</span></span><span class="mono" style="color:var(--muted)">dk</span><small>Country · reached by EU rules · used by 64 instruments and 3 authorities</small><small>sv Danmark · da Danmark · nb Danmark · fi Tanska</small><span class="pill warning">Rename waiting for review</span></div><div class="acts"><button class="btn ghost small">Open proposal</button></div></div>
+      <div class="vrow"><span class="grip" aria-hidden="true"> </span><div class="lbl"><span class="swatch light"><span class="pill brand">International</span></span><span class="swatch dark"><span class="pill brand">International</span></span><span class="mono" style="color:var(--muted)">intl</span><small>Standards bodies · used by 4 instruments · not a market, so it has no scope term</small></div><div class="acts"><button class="btn ghost small">Edit labels</button><button class="btn ghost small">Retire</button></div></div>
+      <div class="vrow retired"><span class="grip" aria-hidden="true"> </span><div class="lbl"><span class="swatch light"><span class="pill brand">Iceland</span></span><span class="swatch dark"><span class="pill brand">Iceland</span></span><span class="mono" style="color:var(--muted)">is</span><span class="pill">Retired</span><small>Retired 18 Sep 2026 · still shown on the 2 instruments that carry it</small></div><div class="acts"><button class="btn ghost small">Restore</button></div></div>
+    </div>
+
+    <div class="modal"><form class="box" aria-labelledby="jl"><h2 id="jl">Labels for Denmark</h2>
+      <p class="kicker">Key <span class="mono">dk</span>. The key never changes; only the labels do.</p>
+      <div class="jlabels">
+        <div class="field"><label for="jen">English</label><input id="jen" value="Denmark"></div>
+        <div class="field"><label for="jsv">Svenska</label><input id="jsv" value="Danmark"></div>
+        <div class="field"><label for="jda">Dansk</label><input id="jda" value="Danmark"></div>
+        <div class="field"><label for="jnb">Norsk bokmål</label><input id="jnb" value="Danmark"></div>
+        <div class="field"><label for="jfi">Suomi</label><input id="jfi" value="Tanska"></div>
+      </div>
+      <p class="hint" style="color:var(--muted);font-size:.82rem">When it is approved, the Denmark scope term in every bank's Regulatory scope follows.</p>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Send for review</button></div></form></div>
+
+    <div class="modal"><div class="box" role="dialog" aria-labelledby="jr"><h2 id="jr">Retire Iceland?</h2><p>It is used by 2 instruments and 1 authority. They keep it; pickers and filters stop offering it, and its scope term is retired with it. You can restore it later.</p><div class="bar"><button class="btn ghost">Cancel</button><button class="btn">Send for review</button></div></div></div>
+
+    <p class="err" role="alert" style="margin-top:14px">The Sweden scope term follows its jurisdiction. Change the jurisdiction instead. <a href="#">Open Sweden</a></p>
+    <p class="meta" style="margin-top:4px">What Scope terms shows when someone tries to rename or retire a mirrored term there (422).</p>
+
+    <div class="panel" style="margin-top:20px"><h2>Languages</h2>
+      <div class="rows">
+        <div class="vrow"><span class="grip" aria-hidden="true"> </span><div class="lbl"><b>English</b><span class="mono" style="color:var(--muted)">en</span></div><div class="acts"></div></div>
+        <div class="vrow"><span class="grip" aria-hidden="true"> </span><div class="lbl"><b>Svenska</b><span class="mono" style="color:var(--muted)">sv</span></div><div class="acts"></div></div>
+        <div class="vrow"><span class="grip" aria-hidden="true"> </span><div class="lbl"><b>Dansk</b><span class="mono" style="color:var(--muted)">da</span></div><div class="acts"></div></div>
+        <div class="vrow"><span class="grip" aria-hidden="true"> </span><div class="lbl"><b>Norsk bokmål</b><span class="mono" style="color:var(--muted)">nb</span></div><div class="acts"></div></div>
+        <div class="vrow"><span class="grip" aria-hidden="true"> </span><div class="lbl"><b>Suomi</b><span class="mono" style="color:var(--muted)">fi</span></div><div class="acts"></div></div>
+      </div>
+      <p class="meta" style="margin-top:10px">The languages bleqq writes in. They are set by the platform and read here.</p></div>
+
+    <div class="jstates" style="margin-top:20px">
+      <div class="jtheme light">
+        <div class="vrow"><span class="grip" aria-hidden="true"> </span><div class="lbl"><span class="pill brand">Denmark</span><span class="mono" style="color:var(--muted)">dk</span><small>Used by 64 instruments</small><span class="pill warning">Rename waiting for review</span></div><div class="acts"><button class="btn ghost small">Open proposal</button></div></div>
+        <div class="vrow retired" style="margin-top:8px"><span class="grip" aria-hidden="true"> </span><div class="lbl"><span class="pill brand">Iceland</span><span class="pill">Retired</span></div><div class="acts"><button class="btn ghost small">Restore</button></div></div>
+        <form class="panel" style="margin:8px 0 0" aria-label="Labels for Denmark"><div class="jlabels"><div class="field"><label for="ljen">English</label><input id="ljen" value="Denmark"></div><div class="field"><label for="ljfi">Suomi</label><input id="ljfi" value="Tanska"></div></div><div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Send for review</button></div></form>
+      </div>
+      <div class="jtheme dark">
+        <div class="vrow"><span class="grip" aria-hidden="true"> </span><div class="lbl"><span class="pill brand">Denmark</span><span class="mono" style="color:var(--muted)">dk</span><small>Used by 64 instruments</small><span class="pill warning">Rename waiting for review</span></div><div class="acts"><button class="btn ghost small">Open proposal</button></div></div>
+        <div class="vrow retired" style="margin-top:8px"><span class="grip" aria-hidden="true"> </span><div class="lbl"><span class="pill brand">Iceland</span><span class="pill">Retired</span></div><div class="acts"><button class="btn ghost small">Restore</button></div></div>
+        <form class="panel" style="margin:8px 0 0" aria-label="Labels for Denmark"><div class="jlabels"><div class="field"><label for="djen">English</label><input id="djen" value="Denmark"></div><div class="field"><label for="djfi">Suomi</label><input id="djfi" value="Tanska"></div></div><div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Send for review</button></div></form>
+      </div>
+    </div>
+    <p class="meta" style="margin-top:8px">Jurisdictions: a label per language, one proposal per change, a second library editor approves it in the queue with a passkey. The pill is brand, the scope slot's tone; "Retired" is information and "Rename waiting for review" warning, both from the row's facts. Empty, loading, error and denied are the list's own, below; denied names library vocabularies manage.</p>
 
     <h2 class="k">Empty, loading, error, denied</h2>
     <div class="empty"><h2>No values yet</h2><p>Add the first value so it appears in pickers and filters.</p><a href="#">Add a value</a></div>
