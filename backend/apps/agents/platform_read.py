@@ -4,7 +4,7 @@ nothing else (the TODO default: no prompt, tool, budget, run row or cost).
 
 Only library rows feed the answer: the agent definitions and their runs that carry no
 tenant. A bank's own run of the same definition is not how bleqq's watch last ended, so it
-is filtered out as well as fenced by row-level security. An agent has no display name of
+is filtered out; another bank's run is already fenced by row-level security. An agent has no display name of
 its own, so `name` is its stable key and the screen renders the words.
 """
 
