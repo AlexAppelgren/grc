@@ -380,14 +380,15 @@ def switch_on_term(dimension: str, key: str) -> None:
         )
 
 
-def seed_taxonomy_terms() -> int:
+def seed_taxonomy_terms(specs: list[dict[str, Any]] | None = None) -> int:
     """The taxonomy terms per dimension, and the jurisdiction dimension's mirror of the
     jurisdiction rows. Without them no footprint can be set, no obligation can be scoped and
-    no market can be named."""
+    no market can be named. `specs` in place of the reference list is seed_e2e's alone: the
+    terms its own fixtures need and no deployed library holds (acc-e2e-seed, J-11)."""
     dimensions = {row.key: row for row in TermDimension.objects.all()}
     count = 0
     with transaction.atomic(), library_write(SEED_REASON):
-        for spec in taxonomy_term_specs():
+        for spec in taxonomy_term_specs() if specs is None else specs:
             dimension = dimensions[spec["dimension"]]
             term, created = TaxonomyTerm.objects.get_or_create(
                 dimension=dimension,

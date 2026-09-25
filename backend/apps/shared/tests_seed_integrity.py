@@ -114,6 +114,8 @@ from apps.shared.e2e_seed import (
 )
 from apps.taxonomy.models import Team
 from apps.tenants.models import InternalItem, Licence, LicenceServiceTerm, OrgUnit, TeamMember, TenantProduct, TenantProductTerm
+# acc-e2e-seed
+from apps.shared.e2e_seed import EXPECTED_J11
 
 # The login search.journey.spec.ts asks as (LOGINS.reader), tenant A's reader.
 READER_EMAIL = "reader@example-bank.test"
@@ -1649,3 +1651,138 @@ class SeededChunk11(SeededOnce):
         self.assertFalse(TenantAgent.objects.exists() or TenantAgentBudget.objects.exists())
         self.assertFalse(AgentRun.objects.filter(tenant__isnull=False).exists())
 # --- end c11-e2e-seed -----------------------------------------------------------------------------
+
+
+# --- acc-e2e-seed -------------------------------------------------------------------------------
+class SeededJ11(SeededOnce):
+    """J-11's trading world (ACC-01, ACC-02, ACC-04, ACC-07, ACC-08), read from one seed: a
+    Trading department whose products narrow an entry to the trading duties, the bank's
+    decisions on them, a card duty outside that scope but inside the bank's, a summary the
+    mock model writes the same way every time, and reach off."""
+
+    def setUp(self) -> None:
+        self.tenant = Tenant.objects.get(slug=EXPECTED_J11.tenant_slug)
+        tenancy.activate(self.tenant.id)
+
+    def _trading_scope(self) -> dict[str, set[str]]:
+        """ACC-02 by hand: the terms of the products under the Trading department and every
+        unit below it, intersected with the bank's footprint."""
+        units = {OrgUnit.objects.get(name=EXPECTED_J11.department).id}
+        while children := set(OrgUnit.objects.filter(parent_id__in=units).exclude(id__in=units).values_list("id", flat=True)):
+            units |= children
+        products = TenantProduct.objects.filter(org_unit_id__in=units).exclude(status="retired")
+        self.assertEqual(set(products.values_list("name", flat=True)), set(EXPECTED_J11.products))
+        footprint = footprint_of(self.tenant.id)
+        scope: dict[str, set[str]] = {}
+        for term in TenantProductTerm.objects.filter(product__in=products).select_related("term__dimension"):
+            if term.term.key in footprint.get(term.term.dimension.key, set()):
+                scope.setdefault(term.term.dimension.key, set()).add(term.term.key)
+        return scope
+
+    def test_the_fixture_resolves_against_the_prototype_and_files_its_own_terms(self) -> None:
+        import json
+
+        from apps.library.fixtures.check_prototype_data import FIXTURE, check_e2e_standard
+        from apps.shared.e2e_seed import E2E_TRADING
+
+        trading = json.loads(E2E_TRADING.read_text(encoding="utf-8"))
+        self.assertEqual(check_e2e_standard(json.loads(FIXTURE.read_text(encoding="utf-8")), trading), [])
+        filed = {f"{spec['dimension']}:{spec['key']}" for spec in EXPECTED_J11.terms}
+        self.assertLessEqual(filed, set(trading["_meta"]["held_terms"]))
+        for ref in filed:
+            term = TaxonomyTerm.objects.get(dimension__key=ref.split(":")[0], key=ref.split(":")[1])
+            self.assertTrue(term.active, ref)
+            self.assertEqual(set(term.labels.values_list("language", flat=True)), {"en", "sv"})
+
+    def test_the_footprint_covers_trading_and_cards(self) -> None:
+        footprint = {f"{dimension}:{key}" for dimension, keys in footprint_of(self.tenant.id).items() for key in keys}
+        self.assertLessEqual(set(EXPECTED_J11.footprint), footprint)
+        self.assertIn("regime:payments", footprint)
+        self.assertIn("regime:securities", footprint)
+
+    def test_a_trading_entry_reads_the_trading_duties_and_never_the_card_duty(self) -> None:
+        """ACC-02, ACC-07: the card duty is in the bank's scope, so only the entry's own
+        narrowing hides it, and its card issuing term is the label an answer names."""
+        scope = self._trading_scope()
+        footprint = footprint_of(self.tenant.id)
+        restricting = restricting_dimensions()
+        obligations = Obligation.objects.prefetch_related("terms__dimension").select_related("instrument__regime__dimension")
+        for key in EXPECTED_J11.trading_obligations:
+            with self.subTest(obligation=key):
+                terms = _scope(obligations.get(stable_key=key))
+                self.assertTrue(in_footprint(terms, footprint, restricting=restricting))
+                self.assertTrue(in_footprint(terms, scope, restricting=restricting))
+        card = _scope(obligations.get(stable_key=EXPECTED_J11.card_obligation))
+        self.assertTrue(in_footprint(card, footprint, restricting=restricting), "the bank itself sees the card duty")
+        self.assertFalse(in_footprint(card, scope, restricting=restricting), "a Trading entry never does")
+        dimension, key = EXPECTED_J11.outside_scope_term.split(":")
+        self.assertIn(key, card[dimension])
+        self.assertIn(key, footprint[dimension])
+        self.assertNotIn(key, scope.get(dimension, set()))
+        term = TaxonomyTerm.objects.get(dimension__key=dimension, key=key)
+        self.assertEqual(term.labels.get(language="en").text, EXPECTED_J11.outside_scope_label)
+        card_product = TenantProduct.objects.get(name=EXPECTED_J11.card_product)
+        assert card_product.org_unit is not None
+        self.assertEqual(card_product.org_unit.name, EXPECTED_J11.card_department)
+        self.assertIn(
+            EXPECTED_J11.outside_scope_term,
+            {f"{t.term.dimension.key}:{t.term.key}" for t in TenantProductTerm.objects.filter(product=card_product).select_related("term__dimension")},
+        )
+        self.assertEqual(TenantProduct.objects.get(name=EXPECTED_J11.order_routing_product).status, "planned")
+
+    def test_the_bank_decided_each_trading_duty_and_none_on_the_card_duty(self) -> None:
+        """ACC-04: applies with a reason and who decided, a status, one live reading and one
+        live internal item each; the team that answers for Trading owns both."""
+        for key in EXPECTED_J11.trading_obligations:
+            with self.subTest(obligation=key):
+                entry = TenantObligation.objects.select_related("compliance_status", "owner_team").get(obligation__stable_key=key)
+                self.assertEqual(entry.applicability, "applies")
+                self.assertTrue(entry.applicability_reason)
+                self.assertIsNotNone(entry.applicability_decided_by_id)
+                self.assertNotEqual(entry.compliance_status.kind, "not_assessed")
+                assert entry.owner_team is not None
+                self.assertEqual(entry.owner_team.key, EXPECTED_J11.team)
+                self.assertEqual(Interpretation.objects.filter(tenant_obligation=entry, superseded_at__isnull=True).count(), 1)
+                self.assertEqual(InternalLink.objects.filter(tenant_obligation=entry, removed_at__isnull=True).count(), 1)
+                self.assertFalse(Gap.objects.filter(tenant_obligation=entry).exists(), "an agent never reads a gap (D-76)")
+        self.assertFalse(TenantObligation.objects.filter(obligation__stable_key=EXPECTED_J11.card_obligation).exists())
+
+    def test_the_mock_model_summarises_the_decisions_the_same_way_every_time(self) -> None:
+        """The J-11 summary: the mock quotes each chunk's first sentence with its marker, so
+        each reason and reading, being one sentence, is quoted whole, in the order given."""
+        from apps.shared.adapters.llm import MockLlm, format_context
+
+        texts: list[str] = []
+        for key in EXPECTED_J11.trading_obligations:
+            entry = TenantObligation.objects.get(obligation__stable_key=key)
+            reading = Interpretation.objects.get(tenant_obligation=entry, superseded_at__isnull=True)
+            texts += [entry.applicability_reason, reading.body]
+        expected = " ".join(f"{text} [{number}]" for number, text in enumerate(texts, start=1))
+        for _ in range(2):
+            answer = MockLlm().complete(system="", prompt=format_context(texts), max_tokens=500)
+            self.assertEqual(answer.text, expected)
+
+    def test_reach_starts_off_and_the_teardown_switches_an_entry_off_once(self) -> None:
+        """ACC-08: the seed leaves no entry reaching the register; `e2e_reach_off` switches
+        one off with its version bump and audit row, and a second run writes nothing."""
+        from apps.agents.models import AgentAccess
+        from apps.shared.e2e_seed import switch_reach_off
+
+        self.assertFalse(AgentAccess.objects.filter(tenant_reach=True).exists())
+        admin = User.objects.get(email="admin@example-bank.test")
+        entry = AgentAccess.objects.create(
+            tenant=self.tenant, name="Trading platform coding agent", purpose="Builds the order router.",
+            owner_team=Team.objects.get(key=EXPECTED_J11.team), tenant_reach=True, created_by=admin,
+        )
+        out = StringIO()
+        call_command("e2e_reach_off", stdout=out)
+        self.assertIn("1", out.getvalue())
+        tenancy.activate(self.tenant.id)
+        entry.refresh_from_db()
+        self.assertEqual((entry.tenant_reach, entry.version), (False, 2))
+        audit = AuditEvent.objects.get(action="agent_access.reach_switched_off", subject_id=entry.id)
+        self.assertEqual((audit.tenant_id, audit.actor_label, audit.after), (self.tenant.id, "seed_e2e", {"tenantReach": False}))
+        self.assertEqual(switch_reach_off(), 0)
+        tenancy.activate(self.tenant.id)
+        self.assertEqual(AuditEvent.objects.filter(action="agent_access.reach_switched_off").count(), 1)
+# --- end acc-e2e-seed ---------------------------------------------------------------------------

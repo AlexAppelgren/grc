@@ -37,6 +37,8 @@ from apps.agents.seeds import seed_agent_definitions
 # c11-e2e-seed
 from decimal import Decimal
 from apps.agents.models import AgentCadence, RunTrigger, TenantAgent, TenantAgentBudget
+# acc-e2e-seed
+from apps.agents.models import AgentAccess
 from apps.agents.seeds.e2e import publish_e2e_version
 from apps.proposals import batch as proposal_batch
 from apps.proposals.schemas import ObligationScopeChange, ObligationScopePayload
@@ -155,6 +157,12 @@ EXPECTED_FOOTPRINTS: dict[str, tuple[str, ...]] = {
         # have it, so a Danish record is outside this scope and "Markets we watch" has
         # something to add. Union rules reach Sweden, so none of them moves.
         "jurisdiction:se",
+        # acc-e2e-seed (J-11): trading, cards and card issuing, `EXPECTED_J11.footprint`. No
+        # record but the J-11 fixture carries a product type or a licensed activity, so none moves.
+        "product_type:securities",
+        "product_type:derivatives",
+        "product_type:cards",
+        "licensed_activity:card_issuing",
     ),
     TENANT_B_SLUG: (
         "regime:securities",
@@ -202,9 +210,10 @@ class SeedLibrary:
 # tax-nordic-seed (FP-04): plus Kapitalmarkedsloven and verdipapirhandelloven with one
 # obligation each, the Danish one for Custody and the Norwegian one for Advice.
 # Plus the one standard below (E2E_STANDARD): ISO/IEC 27001:2022 and its conformance duty.
+# acc-e2e-seed: plus J-11's three EU instruments with one duty each (E2E_TRADING).
 EXPECTED_LIBRARY = SeedLibrary(
-    instruments=18 + 1,
-    obligations=18 + 1,
+    instruments=18 + 1 + 3,
+    obligations=18 + 1 + 3,
     research_obligation=RESEARCH_OBLIGATION,
     advice_only_obligation="obl-suitability-statement",
     anchor_date=datetime.date(2026, 9, 16),
@@ -1971,6 +1980,10 @@ def seed_e2e() -> dict[str, int]:
         # lib-standard-e2e-seed: the one standard, added to the counts the command prints.
         for name, count in load_library(E2E_STANDARD).items():
             library[name] += count
+        # acc-e2e-seed (J-11): the product types, then the trading and card duties that carry them.
+        seed_taxonomy_terms(list(EXPECTED_J11.terms))
+        for name, count in load_library(E2E_TRADING).items():
+            library[name] += count
         # std-journeys: the standard's term on, so FP-S16 can follow it (E2E_STANDARD_TERM).
         switch_on_term(*E2E_STANDARD_TERM)
         # Chunk 6's sources and changes: library-zone rows, written here — before any
@@ -2010,6 +2023,8 @@ def seed_e2e() -> dict[str, int]:
         seed_org_register(tenants)
         # c11-e2e-seed: after the logins and the platform runs, before the search index.
         seed_chunk11_agents(tenants)
+        # acc-e2e-seed: a reseed leaves no entry of tenant A reaching its register (ACC-08).
+        switch_reach_off()
 
         # INV-S14, after the logins: the re-verification names a seeded library editor.
         machine_confirmed = seed_machine_confirmed()
@@ -2275,6 +2290,56 @@ HISTORY_OBLIGATION = "obl-appropriateness"
 # REG-01: the obligation that does not apply, with the status it had before kept.
 NOT_APPLYING_OBLIGATION = "obl-gdpr-article-22"
 
+
+# --- acc-e2e-seed (ACC-01, ACC-02, ACC-04, ACC-07, ACC-08, J-11): the trading world ----------
+@dataclass(frozen=True)
+class SeedJ11:
+    """What J-11 reads in tenant A: a Trading department whose products derive the scope
+    an agent access entry is narrowed to (ACC-02), the card issuing department beside it,
+    both inside the bank's footprint; the bank's decisions on two trading duties (ACC-04);
+    a duty only a card issuer carries, which a Trading entry answers 404 for and names as
+    outside its scope by the card issuing term's label (ACC-07). The journey registers the
+    entry itself, so the seed holds none, and reach starts off (ACC-08)."""
+
+    tenant_slug: str
+    terms: tuple[dict[str, Any], ...]
+    footprint: tuple[str, ...]
+    department: str
+    team: str
+    products: tuple[str, ...]
+    order_routing_product: str
+    card_department: str
+    card_product: str
+    trading_obligations: tuple[str, ...]
+    card_obligation: str
+    outside_scope_term: str
+    outside_scope_label: str
+
+
+# The product types no deployed library holds yet: E2E only, filed by seed_e2e.
+_J11_TERM_NOTE = "E2E only: the product types J-11's trading and card products carry."
+EXPECTED_J11 = SeedJ11(
+    tenant_slug=TENANT_A_SLUG,
+    terms=(
+        {"dimension": "product_type", "key": "securities", "label_en": "Securities", "label_sv": "Värdepapper", "sort_order": 1, "usage_note": _J11_TERM_NOTE},
+        {"dimension": "product_type", "key": "derivatives", "label_en": "Derivatives", "label_sv": "Derivat", "sort_order": 2, "usage_note": _J11_TERM_NOTE},
+        {"dimension": "product_type", "key": "cards", "label_en": "Cards", "label_sv": "Kort", "sort_order": 3, "usage_note": _J11_TERM_NOTE},
+    ),
+    footprint=("product_type:securities", "product_type:derivatives", "product_type:cards", "licensed_activity:card_issuing"),
+    department="Trading",
+    team="trading",
+    products=("Equity derivatives", "Cash equities", "Smart order routing"),
+    order_routing_product="Smart order routing",
+    card_department="Cards and payments",
+    card_product="Consumer debit card",
+    trading_obligations=("obl-e2e-order-routing-best-result", "obl-e2e-algo-pre-trade-controls"),
+    card_obligation="obl-e2e-card-interchange-caps",
+    outside_scope_term="licensed_activity:card_issuing",
+    outside_scope_label="Card issuing",
+)
+E2E_TRADING = Path(__file__).resolve().parents[1] / "library" / "fixtures" / "e2e_trading.json"
+# --- end acc-e2e-seed constants ------------------------------------------------------------
+
 EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
     SeedOrgRegister(
         tenant_slug=TENANT_A_SLUG,
@@ -2286,6 +2351,8 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
             SeedOrgUnit(RETAIL_DEPARTMENT, "business_area", "Example Bank AB", head="head@example-bank.test"),
             SeedOrgUnit("Cards and payments", "business_unit", RETAIL_DEPARTMENT, head="owner-approver@example-bank.test"),
             SeedOrgUnit("Risk control", "function", "Example Group", head=_SARA),
+            # acc-e2e-seed (J-11): the department a trading agent access entry is narrowed to.
+            SeedOrgUnit(EXPECTED_J11.department, "business_area", "Example Bank AB"),
         ),
         licences=(
             SeedLicence("Example Bank AB", "legal_entity:bank", "Banking business", ("service_type:custody",)),
@@ -2310,6 +2377,14 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
             SeedProduct("Guided investing", "Example Bank AB", "planned", _JOHAN, ("account_type:isk", "service_type:advice", "service_type:portfolio_management")),
             SeedProduct("Kapitalförsäkring", "Example Liv Försäkring AB", "live", _JOHAN, ("account_type:kf", "service_type:insurance_distribution", "service_type:advice")),
             SeedProduct("Pension insurance", "Example Liv Försäkring AB", "live", _SARA, ("account_type:pension", "service_type:insurance_distribution", "service_type:advice")),
+            # acc-e2e-seed (J-11): Trading's three products and card issuing's one.
+            SeedProduct("Equity derivatives", EXPECTED_J11.department, "live", _SARA, ("product_type:derivatives", "service_type:execution_only")),
+            SeedProduct("Cash equities", EXPECTED_J11.department, "live", _SARA, ("product_type:securities", "service_type:execution_only")),
+            SeedProduct(
+                EXPECTED_J11.order_routing_product, EXPECTED_J11.department, "planned", _SARA,
+                ("product_type:securities", "product_type:derivatives", "service_type:execution_only"),
+            ),
+            SeedProduct(EXPECTED_J11.card_product, EXPECTED_J11.card_department, "live", _SARA, ("product_type:cards", "licensed_activity:card_issuing")),
         ),
         teams=(
             SeedTeam(
@@ -2320,6 +2395,8 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
             ),
             SeedTeam("cards", {"en": "Cards", "sv": "Kort"}, "Cards and payments", ("owner-approver@example-bank.test", "admin@example-bank.test", "contributor@example-bank.test")),
             SeedTeam("legal", {"en": "Legal", "sv": "Juridik"}, "Risk control", ("reader@example-bank.test", _MARIA)),
+            # acc-e2e-seed (J-11): the team that answers for the trading agent and its duties.
+            SeedTeam(EXPECTED_J11.team, {"en": "Trading", "sv": "Handel"}, EXPECTED_J11.department, ()),
         ),
         entries=(
             SeedEntry(
@@ -2378,6 +2455,18 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
                 "A person reviews every appropriateness outcome before it takes effect, so no decision is solely automated.",
                 "partly_compliant", "medium", _SARA, _MARIA, "Digital trading onboarding", "Knowledge test service", "Review log", 6,
             ),
+            # acc-e2e-seed (J-11): the decisions a Trading entry reads when reach is on. Each
+            # reason is one sentence, so the mock model quotes it whole (the J-11 summary).
+            SeedEntry(
+                EXPECTED_J11.trading_obligations[0], "applies", "We route retail and professional client orders in shares and derivatives to other brokers for execution.",
+                "compliant", "high", None, _MARIA, "Order routing", "Smart order router", "Venue and broker quality reviews", 140,
+                owner_team=EXPECTED_J11.team,
+            ),
+            SeedEntry(
+                EXPECTED_J11.trading_obligations[1], "applies", "Our trading desk runs algorithms that enter orders on trading venues.",
+                "partly_compliant", "medium", None, _MARIA, "Algorithmic trading", "Pre-trade risk gateway", "Limit configuration log", 110,
+                status_note="Maximum message limits are not yet set for the newest venue.", owner_team=EXPECTED_J11.team,
+            ),
         ),
         entity_scopes=(
             SeedEntityScope(
@@ -2413,6 +2502,15 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
                 HISTORY_OBLIGATION, 2, 30,
                 "Every instrument outside the non-complex list in FFFS 2017:2 is complex for us, warrants and certificates included.", _SARA,
             ),
+            # acc-e2e-seed (J-11): how the bank reads each trading duty.
+            SeedReading(
+                EXPECTED_J11.trading_obligations[0], 1, 90,
+                "Every order the smart order router passes to another broker is a routed order, including orders split across brokers.", _SARA,
+            ),
+            SeedReading(
+                EXPECTED_J11.trading_obligations[1], 1, 90,
+                "The smart order router is an algorithm for us, so its orders pass the same pre-trade controls as the desk's.", _SARA,
+            ),
         ),
         gaps=(
             SeedGap(
@@ -2445,6 +2543,9 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
             # REG-S8 links these two itself, so they wait here unlinked.
             SeedInternalItem("policy", "Client asset policy", "POL-014", _SARA),
             SeedInternalItem("control", "Daily reconciliation", "CTL-203", _SARA),
+            # acc-e2e-seed (J-11): one internal item on each trading duty.
+            SeedInternalItem("policy", "Order execution and routing policy", "POL-021", _SARA, (EXPECTED_J11.trading_obligations[0],)),
+            SeedInternalItem("control", "Pre-trade limit checks", "CTL-310", _SARA, (EXPECTED_J11.trading_obligations[1],)),
         ),
     ),
     # Tenant B's small register (J-8): one entity, one team, two entries and a gap, so an
@@ -2694,3 +2795,39 @@ def seed_org_register(tenants: list[Tenant]) -> None:
         _seed_register(tenant, spec, people, org)
     tenancy.clear_tenant()
 # --- end c8-seed-org-register -------------------------------------------------------------
+
+
+# --- acc-e2e-seed (ACC-08, J-11): reach off, for the seed and a journey's teardown ------------
+def switch_reach_off() -> int:
+    """Every agent access entry of tenant A stops reaching the bank's register: the seed's
+    state, and what J-11's teardown restores on failure too (`manage.py e2e_reach_off`).
+    One version bump and one audit row per entry switched; an entry already off is left
+    alone, so a reseed writes nothing. Refused when deployed. Returns the entries switched.
+
+    The tenant-wide switch of D-72 (`governance.TenantReach`) reads off while it has no
+    row, which is how a fresh E2E database starts; the package that lands it beside this
+    one extends this function to switch that row off too."""
+    refuse_when_deployed("e2e_reach_off")
+    tenant = Tenant.objects.get(slug=EXPECTED_J11.tenant_slug)
+    switched = 0
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        for entry in AgentAccess.objects.select_for_update().filter(tenant_reach=True):
+            entry.tenant_reach = False
+            entry.version += 1
+            entry.save(update_fields=["tenant_reach", "version"])
+            record(
+                action="agent_access.reach_switched_off",
+                actor=SEED_ACTOR,
+                subject_type="agent_access",
+                subject_id=entry.id,
+                subject_title=entry.name,
+                summary="Switched tenant reach off for this agent access entry.",
+                tenant_id=tenant.id,
+                before={"tenantReach": True},
+                after={"tenantReach": False},
+            )
+            switched += 1
+        tenancy.clear_tenant()
+    return switched
+# --- end acc-e2e-seed ----------------------------------------------------------------------
