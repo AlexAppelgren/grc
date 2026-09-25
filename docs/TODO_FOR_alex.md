@@ -1414,29 +1414,18 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 
 ## c11-definitions-platform: publishing bleqq's agent versions, their settings and runs (2026-09-25, AGT-03, ADM-02, AGT-06)
 
-**Needs your decision (an invariant; the package stopped here).** The brief has the console
-publish and retire an agent version and change a platform agent's settings behind
-`agent_definitions.manage` and a step-up. `agent` and `agent_version` are library rows, and
-CLAUDE.md section 5 plus the library fence (`apps/shared/tests_library_fence.py`,
-`ProposalDoorGuard`) allow a route to reach a library write only as a proposal's approval,
-gated by `proposals.review`, a step-up and a person. Ruling 2 of CHUNK11_TASKS forbids a
-chunk 11 task to edit the fence. So `publishAgentVersion`, `retireAgentVersion` and
-`updatePlatformAgentSettings` still answer 501 on `claude/r2w3-c11-definitions-platform`,
-and AGT-S4 stays skipped.
+**Answered by Alex on 2026-09-25 (D-102, ADR 0059): "Platform config".** The question was
+how the console may write an agent definition, while `agent` and `agent_version` read as
+library rows that only a proposal's approval may reach.
 
-- [ ] **How may the console write an agent definition?** Recommended: a named exception in
-      the fence, like the re-verification stamp: these three routes, gated by
-      `agent_definitions.manage`, a fresh passkey and a person's session, writing only
-      `agent` and `agent_version` through one module (`agents/seeds/console.py`, the
-      database's `seed` door), each with one audit row and no tenant. Four eyes is not
-      asked, since nothing enters the inventory (the brief says so). The alternative is a
-      proposal kind for a definition version, with four eyes, which is a larger change in
-      the proposals app. The full recommended implementation, with its tests and AGT-S4
-      green, is on `claude/r2w3-c11-definitions-platform-writes`; with your yes, the fence
-      gains that entry and the branch merges as is. Its only red is the fence guard.
-      On that branch: versions publish in order (422 `version_not_next`), a folder that
-      changes the agent's id, kind, scope or zone is 422 `definition_unreadable`, and the
-      jurisdictions are checked against the live list.
+- [x] **How may the console write an agent definition?** Agent definitions, agent versions
+      and platform agent settings are platform configuration, not library rows. The console
+      writes them directly through `agents/seeds/console.py`, behind
+      `agent_definitions.manage`, a fresh passkey and a person's session, with one audit row
+      carrying no tenant and the assertion. The library fence names the three in one
+      platform-configuration list (`PlatformConfigurationGuard`) and still refuses every
+      other model, route, proposal kind and watch module. CLAUDE.md section 5 gains no
+      exception line. Built by `c11-agent-config-platform`; AGT-S4 is green.
 
 Defaults taken; nothing waits on them.
 
@@ -1450,3 +1439,19 @@ Defaults taken; nothing waits on them.
       keeps this one.
 - [ ] **A run opens on the newest version still published.** When every version is
       retired a run is refused with 409 `no_published_version`.
+
+## c11-agent-config-platform: agent definitions as platform configuration (2026-09-25, AGT-03, D-102)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **The console keeps the database's `seed` door.** The three console writers open the
+      same door as the reference seed, which the database accepts on every inventory table,
+      because a door of their own would change the database trigger, the door lint and the
+      library database guard, none of them this package's. What keeps the writers to agent
+      rows is the fence: `agents/seeds/console.py` may name no library model but `Agent`
+      and `AgentVersion`, and only the three console routes reach it. Default: keep it so.
+      The alternative is a `platform_config` door accepted only by `agent` and
+      `agent_version`, a small hardening for a later package.
+- [ ] **The AGT-S4 journey stays `fixme`.** The integration scenario is green; the console
+      screen that publishes and retires a version is not built yet, and its journey belongs
+      to the package that builds it.

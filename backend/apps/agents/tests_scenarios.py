@@ -363,12 +363,81 @@ class AgentsScenarioTests(TestCase):
             self.assertTrue(item["key"] and item["label"], name)
             self.assertIs(item["active"], True, name)
 
-    @skip("pending: AGT-S4 (AGT-03, chunk 11)")
     def test_agt_s4(self) -> None:
         """AGT-S4
 
         Agent definitions are versioned and owned by the platform (AGT-03).
         """
+        import datetime
+
+        from django.utils import timezone
+
+        from apps.agents import tests_definitions as publishing
+        from apps.agents.models import AgentRun
+
+        _SESSION: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {SESSION_TOKEN_FOR_TESTS}"}
+
+        # Given a definition "nordic-watch" at version 3 in the console, and a run of it.
+        nordic = publishing.platform_agent("nordic-watch", versions=3)
+        key = agent_build.agent_key(agent_row=nordic, scopes=(perms.SCOPE_AGENT_RUNS_WRITE,))
+
+        def open_run() -> AgentRun:
+            body = {"agent": "nordic-watch", "model": "claude-opus-5", "pipelineVersion": "1"}
+            response = self.client.post("/api/v1/agent-runs", data=body, content_type="application/json", HTTP_X_API_KEY=key.plain_key)
+            self.assertEqual(response.status_code, 201, response.content)
+            return AgentRun.objects.get(pk=response.json()["id"])
+
+        def version_of(run: AgentRun) -> int | None:
+            return AgentRun.objects.filter(pk=run.pk).values_list("agent_version__version_no", flat=True).first()  # ordering: pk lookup
+
+        earlier = open_run()
+        self.assertEqual(version_of(earlier), 3)
+        # One test is one transaction, so the database clock stands still: the earlier run is
+        # anchored an hour back, which is what it is.
+        AgentRun.objects.filter(pk=earlier.pk).update(started_at=earlier.started_at - datetime.timedelta(hours=1))
+
+        # When a platform admin publishes version 4 with a changed prompt, from the folder the
+        # build ships, with a fresh passkey.
+        admin = factories.platform_user()
+        console = user_principal(permissions={perms.AGENT_DEFINITIONS_MANAGE}, subject_id=admin.id, step_up_at=timezone.now())
+        publish = {"versionNo": 4, "changeNote": "Reads the new FFFS index page first."}
+        with publishing.definitions_root() as root, stub_session(console):
+            folder = publishing.shipped_folder(root, "nordic-watch", 4)
+            self.assertNotEqual(folder.joinpath("prompt.md").read_text(encoding="utf-8"), (publishing.SHIPPED_FOLDER / "prompt.md").read_text(encoding="utf-8"))
+            response = self.client.post("/api/v1/agent-definitions/nordic-watch/versions", data=publish, content_type="application/json", **_SESSION)
+        self.assertEqual(response.status_code, 201, response.content)
+
+        # Then runs started after that reference version 4 and earlier runs still reference 3.
+        self.assertEqual(version_of(open_run()), 4)
+        self.assertEqual(version_of(earlier), 3)
+
+        # And a tenant admin's request to reach the definition at all answers 403 naming
+        # agent_definitions.manage: every tenant permission there is, with a fresh passkey.
+        bank = factories.tenant(slug="agt-s4-bank")
+        tenant_admin = user_principal(permissions=perms.TENANT_PERMISSIONS, tenant_id=bank.id, step_up_at=timezone.now())
+        reaches: tuple[tuple[str, str, Any], ...] = (
+            ("get", "/api/v1/agent-definitions/nordic-watch", None),
+            ("post", "/api/v1/agent-definitions/nordic-watch/versions", {**publish, "versionNo": 5}),
+            ("post", "/api/v1/agent-definitions/nordic-watch/versions/3/retire", {}),
+            ("get", "/api/v1/agent-definitions/nordic-watch/settings", None),
+            ("put", "/api/v1/agent-definitions/nordic-watch/settings", {"cadence": "daily", "jurisdictions": ["se"], "monthlyBudget": None}),
+        )
+        with stub_session(tenant_admin):
+            for method, url, body in reaches:
+                with self.subTest(method=method, url=url):
+                    refused = getattr(self.client, method)(url, data=body, content_type="application/json", **_SESSION)
+                    self.assertEqual(refused.status_code, 403, refused.content)
+                    self.assertEqual(refused.json()["requiredPermission"], perms.AGENT_DEFINITIONS_MANAGE)
+            runs_seen = self.client.get("/api/v1/agent-runs?limit=100", **_SESSION)
+        self.assertEqual(Agent.objects.get(pk=nordic.pk).current_version, 4)
+
+        # And "nordic-watch" is one of bleqq's agents: a bank's run log carries none of its
+        # runs, which the console lists.
+        self.assertEqual(runs_seen.status_code, 200, runs_seen.content)
+        self.assertEqual([row for row in runs_seen.json()["items"] if row["agent"] == "nordic-watch"], [])
+        with stub_session(console):
+            listed = self.client.get("/api/v1/console/agent-runs?limit=100", **_SESSION).json()["items"]
+        self.assertEqual([row["agentVersion"] for row in listed if row["agent"] == "nordic-watch"], [4, 3])
 
     @skip("pending: AGT-S5 (AGT-04, chunk 11)")
     def test_agt_s5(self) -> None:
