@@ -1368,3 +1368,14 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 - [ ] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. It
       follows the app's existing terms (skyldighet, förslag, godkännande), but
       a native read of the headline and the questions is worth five minutes.
+
+## c10-fe-notifications: a case notification cannot link to its case yet (2026-09-25, COL-02)
+
+The inbox links an obligation's notification to `/inventory/obligations/{id}` and a change's to
+`/watch/{id}`. A notification about a case (`change_case`) carries the case's own id, while every
+case screen is addressed by its change (CHUNK9 ruling 1, no `/cases/{caseId}` route), so the screen
+cannot build the link. Default taken: the case's title lists without a link, never a link that would
+always land on Not found. Needs a choice before COL-S1's journey ("Erik finds the notification with a
+link back to the case"): either `notify()` names a case by its change (`subject_type` `change`, the
+change id), or the notification gains the change id, or the frontend adds a `/cases/{caseId}` page that
+redirects to its change. The second keeps the case's own read check (`cases.read`) on the row.
