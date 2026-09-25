@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Screen card: gaps and the gap record (/gaps, /gaps/[gapId])</title>
+<script>
+/* Card only: ?theme=light|dark fixes the theme, ?frame=1 hides the card bar
+   (the 375 px frames load this same file with both). Not part of the screen. */
+(function(){var q=new URLSearchParams(location.search),t=q.get('theme');
+if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);
+if(q.has('frame'))document.documentElement.classList.add('framed');})();
+</script>
+<style>
+/* Serves REG-03, REG-S5 and REG-S6 (chunk 8), and the gaps panel of
+   tenant-obligation.html links here. Cut from design/prototype/index.html,
+   vGaps() and vGap(), with the fields of the chunk 8 gap model
+   (docs/plans/briefs/CHUNK8_TASKS.md, c8-register-models-gaps-history): title,
+   description, legal entity, severity, source, status, identified by and when,
+   owner (a person or a team), target date, remediation plan, the acceptance
+   reason and who accepted, who closed and when, and a version.
+
+   Where the prototype was silent or is now wrong: the prototype's action
+   checklist is not in the model, so the record carries one remediation plan;
+   the list gains filters for status, severity, owner, legal entity and target
+   date; risk acceptance takes a reason from the tenant's reason list, the
+   four-eyes refusal renders from its code, and the approver confirms with a
+   passkey; a closed or accepted gap can be reopened.
+
+   Tone comes from the kind of the status row, never from its label: open
+   negative, remediating warning, risk_accepted information, closed positive;
+   severity high negative, medium warning, low information; the source pill is
+   the source slot, information. "Waiting for approval" is the computed warning
+   pill and sits in the Way out panel, never in the header slots. No new pill
+   slot and no new tone.
+
+   Values follow design/system/foundations.md (14px base, 24px page title,
+   hairline cards at 8px, 36px buttons at a 6px radius, dialogs at 12px) and
+   design/system/pills-and-labels.md; the build maps them to Green tokens. Names,
+   dates and counts are sample data; "today" is 25 Sep 2026. */
+:root,.t-light{
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --negative:#b92f13;--negative-soft:#fdebe8;
+  --warning:#8f530a;--warning-soft:#fce8cf;
+  --positive:#026436;--positive-soft:#dcefdc;
+  --notice:#005fb3;--notice-soft:#e6f3ff;
+  --bronze:#6a5730;--brass-bg:#ece5d6;--sand:#f8f6f1;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --negative:#f08975;--negative-soft:#5c170a;
+  --warning:#f5b970;--warning-soft:#5f3707;
+  --positive:#8ae58d;--positive-soft:#003d26;
+  --notice:#66b8ff;--notice-soft:#003666;
+  --bronze:#d9cba9;--brass-bg:#33291a;--sand:#231d10;
+}}
+:root[data-theme="dark"]{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --negative:#f08975;--negative-soft:#5c170a;
+  --warning:#f5b970;--warning-soft:#5f3707;
+  --positive:#8ae58d;--positive-soft:#003d26;
+  --notice:#66b8ff;--notice-soft:#003666;
+  --bronze:#d9cba9;--brass-bg:#33291a;--sand:#231d10;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+a{color:var(--text);text-underline-offset:3px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px}
+p{margin:0 0 8px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+main{padding:24px max(32px,env(safe-area-inset-right)) 64px max(32px,env(safe-area-inset-left));max-width:1200px;width:100%;margin:0 auto}
+
+/* Card only: the bar that switches theme and opens the 375 px frames, and the
+   state labels. Neither belongs to the screen. */
+.cardbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:8px 12px;border:1px dashed var(--line-control);border-radius:8px;color:var(--muted);font-size:13px;line-height:18px;margin-bottom:24px}
+.cardbar a{color:var(--text)}
+.framed .cardbar,.framed .note{display:none}
+.frames{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 24px}
+.frames iframe{width:377px;height:760px;border:1px solid var(--line-strong);border-radius:12px;background:var(--page)}
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-of-type{margin-top:0}
+
+.back{display:inline-block;margin-bottom:12px;font-weight:500}
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 16px;margin-bottom:16px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+.head .acts{margin-left:auto}
+.facets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.meta{color:var(--muted);font-size:13px;line-height:18px;display:flex;gap:4px 8px;flex-wrap:wrap;align-items:baseline}
+.meta b{color:var(--text);font-weight:500;font-variant-numeric:tabular-nums}
+.meta .late{color:var(--negative);font-weight:500}
+.count{color:var(--muted);font-size:13px;line-height:18px;font-variant-numeric:tabular-nums}
+.status{margin:0 0 12px;font-weight:500}
+
+/* Filters: native selects and a date, 36px at a 6px radius; a phone shows two
+   per row. Each keeps its key in the address so a filtered list can be shared. */
+.filters{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:16px;align-items:end}
+.filters label{display:grid;gap:4px;font-size:13px;line-height:18px;color:var(--muted);min-width:0}
+.filters select,.filters input,.field input,.field select,.field textarea{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;min-width:0;width:100%;color:var(--text)}
+.filters .clear{align-self:end}
+
+.items{display:grid;gap:8px}
+.item{display:block;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;text-decoration:none}
+a.item:hover{border-color:var(--line-strong)}
+.item h3{margin:0 0 2px}
+.item .of{color:var(--muted);margin:0 0 4px}
+
+.grid{display:grid;gap:16px;grid-template-columns:3fr 2fr;align-items:start}
+.col{display:grid;gap:16px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
+.panel>h2{margin-bottom:12px}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:8px 16px;margin:0}
+.kv dt{color:var(--muted)}.kv dd{margin:0;min-width:0}
+.prose{white-space:pre-line;margin:0 0 12px}
+.reason{background:var(--sand);border-radius:6px;padding:10px 12px;margin:8px 0 0}
+.reason b{display:block;font-weight:500;color:var(--muted);font-size:13px;line-height:18px}
+
+/* Pill: fully rounded, 20px, 13px at 500, no border. Existing tones only. */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+.pill.notice{background:var(--notice-soft);color:var(--notice)}
+.pill.positive{background:var(--positive-soft);color:var(--positive)}
+.pill.warning{background:var(--warning-soft);color:var(--warning)}
+.pill.negative{background:var(--negative-soft);color:var(--negative)}
+.pill.brand{background:var(--brass-bg);color:var(--bronze)}
+
+/* Button: 36px, 6px radius, 14px at 500. Actions right, the primary last. */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap;text-decoration:none}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.ghost{background:transparent;color:var(--text);border-color:transparent}
+.btn.small{height:32px;padding:0 12px}
+.btn.outline:hover,.btn.ghost:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+.bar .btn{min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+.notice{background:var(--subtle);color:var(--text);border-radius:6px;padding:10px 12px;margin:0 0 12px}
+.notice.warn{background:var(--warning-soft)}
+.notice.bad{background:var(--negative-soft)}
+.notice p:last-child{margin-bottom:0}
+
+.field{display:grid;gap:4px;margin-bottom:12px}
+.field label{font-weight:500}
+.field textarea{height:auto;min-height:76px;padding:8px 10px;resize:vertical}
+.field .hint,.field .err{font-size:13px;line-height:18px}
+.field .hint{color:var(--muted)}
+.field .err{color:var(--negative)}
+.field [aria-invalid="true"]{border-color:var(--negative)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+
+.modal{display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,11,11,.6);border-radius:8px}
+.modal .box{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.modal .box>h2{margin-bottom:12px}
+
+.skeleton{height:72px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.skeletons{display:grid;gap:8px}
+.emptystate,.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.emptystate h2,.errorstate h2{color:var(--text)}
+.emptystate p,.errorstate p{margin:8px auto 16px;max-width:60ch}
+.restricted{max-width:60ch;margin:0 auto;padding:48px 0;text-align:center}
+.restricted p{margin:12px 0 0;color:var(--muted)}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+@media (max-width:1023px){.filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
+  .grid{grid-template-columns:1fr}
+  .filters{grid-template-columns:1fr 1fr}
+  .kv{grid-template-columns:1fr;gap:0}.kv dd{margin-bottom:8px}
+  .pair{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<main>
+<div class="cardbar"><span>Card view:</span><a href="?theme=light">Light</a><a href="?theme=dark">Dark</a><a href="?">Follow the system</a><button class="btn outline small" type="button" id="phones" aria-expanded="false">Show both themes at 375 px</button></div>
+<div class="frames" id="frames" hidden></div>
+
+<h2 class="k">1 · The list, open work, seen by a compliance officer</h2>
+<div class="head">
+  <div><h1>Gaps</h1><p class="lede">Where we fall short of an obligation. Each gap has an owner, a target date and a way out: fix it, or have someone else accept the risk.</p></div>
+</div>
+<form class="filters" role="search" aria-label="Filter gaps">
+  <label>Status<select><option>Open and remediating</option><option>Open</option><option>Remediating</option><option>Risk accepted</option><option>Closed</option><option>All</option></select></label>
+  <label>Severity<select><option>Any severity</option><option>High</option><option>Medium</option><option>Low</option></select></label>
+  <label>Owner<select><option>Anyone</option><option>Me</option><option>Anna Nilsson</option><option>Retail compliance</option></select></label>
+  <label>Legal entity<select><option>All legal entities</option><option>Example Bank AB</option><option>Example Finans AB</option><option>Example Fonder AB</option></select></label>
+  <label>Target date by<input type="date" value="2026-12-31"></label>
+  <button class="btn ghost clear" type="reset">Clear filters</button>
+</form>
+<p class="count">4 gaps</p>
+<div class="items">
+  <a class="item" href="#g1"><div class="facets"><span class="pill negative">Open</span><span class="pill negative">High</span><span class="pill">Internal audit</span></div>
+    <h3>No annual assessment of the research we pay for</h3><p class="of">Pay for third-party research only under the permitted models</p>
+    <div class="meta"><span>Example Finans AB</span><span>Anna Nilsson</span><span>Target <b>30 Nov 2026</b>, in 66 days</span></div></a>
+  <a class="item" href="#g2"><div class="facets"><span class="pill warning">Remediating</span><span class="pill warning">Medium</span><span class="pill">Self-assessment</span></div>
+    <h3>Cost disclosure after the service misses custody fees</h3><p class="of">Disclose all costs and charges before and after the service</p>
+    <div class="meta"><span>Example Fonder AB</span><span>Retail compliance</span><span class="late">Target 15 Sep 2026, 10 days overdue</span></div></a>
+  <a class="item" href="#g3"><div class="facets"><span class="pill negative">Open</span><span class="pill">Low</span><span class="pill">Supervisor finding</span></div>
+    <h3>Complaints log lacks the date the client was answered</h3><p class="of">Keep a record of every complaint and how it was handled</p>
+    <div class="meta"><span>Example Bank AB</span><span>Erik Holm</span><span>Target <b>31 Dec 2026</b>, in 97 days</span><span>Risk acceptance waiting for approval</span></div></a>
+  <a class="item" href="#g4"><div class="facets"><span class="pill negative">Open</span><span class="pill warning">Medium</span><span class="pill">External audit</span></div>
+    <h3>Access reviews for the payments system run twice a year, not quarterly</h3><p class="of">Conform to ISO/IEC 27001:2022 · SEC-012, our own reference</p>
+    <div class="meta"><span>Example Bank AB</span><span>Sara Lindqvist</span><span>No target date</span></div></a>
+</div>
+
+<h2 class="k">2 · The list, filters that match nothing</h2>
+<p class="count">0 gaps</p>
+<div class="emptystate"><h2>No gaps match these filters</h2><p>Widen a filter or clear them all.</p><button class="btn outline small" type="button">Clear filters</button></div>
+
+<h2 class="k">3 · The list, no gap recorded yet</h2>
+<div class="emptystate"><h2>No gaps recorded</h2><p>A gap is recorded from an obligation, usually when its status lands on Gap or Partly compliant.</p><a href="#">Open the inventory</a></div>
+
+<h2 class="k">4 · Loading, error, and a member whose roles do not read the register</h2>
+<div class="skeletons" aria-busy="true" aria-label="Loading gaps"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+<div class="errorstate" role="alert" style="margin-top:12px"><h2>Gaps could not be loaded</h2><p>Check your connection and try again.</p><button class="btn outline small" type="button">Try again</button></div>
+<div class="restricted"><h1>You cannot open gaps</h1><p>Your roles do not include reading the register. Ask an administrator if you need it.</p><p><a href="#">Back to Today</a></p></div>
+
+<h2 class="k" id="g1">5 · The record, open, seen by its owner (holds gaps edit)</h2>
+<a class="back" href="#">← Gaps</a>
+<div class="facets"><span class="pill negative">Open</span><span class="pill negative">High</span><span class="pill">Internal audit</span></div>
+<h1 style="margin-bottom:16px">No annual assessment of the research we pay for</h1>
+<p class="status" role="status" tabindex="-1"></p>
+<div class="grid">
+  <div class="col">
+    <div class="panel"><h2>What is missing</h2>
+      <p class="prose">Research from three providers is paid from the research payment account, but nobody sets criteria for its quality or value, and no yearly assessment has been done since the account opened.</p>
+      <dl class="kv">
+        <dt>Obligation</dt><dd><a href="#">Pay for third-party research only under the permitted models</a></dd>
+        <dt>Legal entity</dt><dd>Example Finans AB</dd>
+        <dt>Identified</dt><dd>12 Sep 2026 by Johan Berg</dd>
+        <dt>Owner</dt><dd>Anna Nilsson</dd>
+        <dt>Target date</dt><dd>30 Nov 2026, in 66 days</dd>
+      </dl>
+      <div class="bar"><button class="btn outline small" type="button">Edit</button></div>
+    </div>
+    <div class="panel"><h2>Remediation plan</h2>
+      <p class="prose">Write the assessment criteria with the research desk by 31 Oct.
+Run the first assessment on the three providers in November and record it on the obligation.</p>
+      <div class="bar"><button class="btn outline small" type="button">Edit the plan</button></div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="panel"><h2>Way out</h2>
+      <p>Start the fix, or ask someone else to accept the risk as it is.</p>
+      <div class="bar"><button class="btn outline" type="button">Accept the risk</button><button class="btn" type="button">Start remediation</button></div>
+    </div>
+  </div>
+</div>
+
+<h2 class="k">6 · The record, remediating: the status line after Start remediation, then Close</h2>
+<div class="facets"><span class="pill warning">Remediating</span><span class="pill negative">High</span><span class="pill">Internal audit</span></div>
+<p class="status" role="status" tabindex="-1">Remediation started.</p>
+<div class="panel" style="max-width:480px"><h2>Way out</h2>
+  <p>Close the gap once the plan is carried out, then re-assess the obligation.</p>
+  <div class="bar"><button class="btn outline" type="button">Accept the risk</button><button class="btn" type="button">Close gap</button></div>
+</div>
+<div class="modal" style="margin-top:12px"><form class="box" aria-labelledby="cg"><h2 id="cg">Close this gap?</h2>
+  <p>The gap reads Closed in your name. Re-assess the obligation afterwards so its status shows the fix.</p>
+  <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Close gap</button></div>
+</form></div>
+
+<h2 class="k">7 · Accept the risk: the owner asks, with a reason from the list</h2>
+<div class="modal"><form class="box" aria-labelledby="ar"><h2 id="ar">Ask to accept the risk</h2>
+  <p class="meta" style="display:block;margin-bottom:12px">Someone else who may accept risk decides. Until then the gap stays open.</p>
+  <div class="field"><label for="arr">Reason</label><select id="arr" aria-invalid="true" aria-describedby="arre"><option value="">Choose a reason</option><option>Accepted by management</option><option>The cost is out of proportion</option><option>A compensating control covers it</option><option>For a limited time</option><option>Other</option></select><span class="err" id="arre" role="alert">Choose a reason.</span></div>
+  <p class="meta" style="display:block">Say more in the remediation plan if the approver needs it.</p>
+  <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Ask for approval</button></div>
+</form></div>
+
+<h2 class="k" id="g3">8 · Waiting for approval, seen by the person who asked</h2>
+<div class="facets"><span class="pill negative">Open</span><span class="pill">Low</span><span class="pill">Supervisor finding</span></div>
+<div class="panel" style="max-width:480px"><h2>Way out</h2>
+  <p><span class="pill warning">Waiting for approval</span> You asked to accept the risk on 22 Sep 2026.</p>
+  <div class="reason"><b>Reason</b>A compensating control covers it</div>
+  <div class="notice bad" role="alert" style="margin-top:12px">You asked for this, so someone else has to approve it.</div>
+  <div class="bar"><button class="btn outline" type="button">Withdraw</button></div>
+</div>
+<p class="meta" style="display:block;margin-top:8px;max-width:72ch">The requester sees no Approve button. The refusal above is what the screen renders if a stale page still posts the approval and the server answers 409 four_eyes_violation.</p>
+
+<h2 class="k">9 · Waiting for approval, seen by a compliance officer who may accept risk</h2>
+<div class="panel" style="max-width:480px"><h2>Way out</h2>
+  <p><span class="pill warning">Waiting for approval</span> Erik Holm asks to accept the risk, 22 Sep 2026.</p>
+  <div class="reason"><b>Reason</b>A compensating control covers it</div>
+  <div class="bar"><button class="btn outline" type="button">Reject</button><button class="btn" type="button">Approve with passkey</button></div>
+</div>
+<div class="modal" style="margin-top:12px"><div class="box" role="dialog" aria-labelledby="aa" aria-describedby="aad"><h2 id="aa">Accept the risk of "Complaints log lacks the date the client was answered"?</h2>
+  <p id="aad">The gap stops counting as open work. It stays on the obligation, and anyone who may edit gaps can reopen it.</p>
+  <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="button">Approve with passkey</button></div>
+</div></div>
+<div class="modal" style="margin-top:12px"><form class="box" aria-labelledby="rj"><h2 id="rj">Reject the risk acceptance?</h2>
+  <p>The gap stays open with Erik Holm as its owner, and the rejection is kept in the audit log.</p>
+  <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Reject</button></div>
+</form></div>
+
+<h2 class="k">10 · Risk accepted</h2>
+<div class="facets"><span class="pill">Risk accepted</span><span class="pill">Low</span><span class="pill">Supervisor finding</span></div>
+<p class="status" role="status" tabindex="-1">Risk accepted.</p>
+<div class="panel" style="max-width:480px"><h2>Way out</h2>
+  <p>Risk accepted by Sara Lindqvist on 23 Sep 2026, asked by Erik Holm.</p>
+  <div class="reason"><b>Reason</b>A compensating control covers it</div>
+  <div class="bar"><button class="btn outline" type="button">Reopen</button></div>
+</div>
+
+<h2 class="k">11 · Closed, and Reopen</h2>
+<div class="facets"><span class="pill positive">Closed</span><span class="pill warning">Medium</span><span class="pill">Self-assessment</span></div>
+<div class="panel" style="max-width:480px"><h2>Way out</h2>
+  <p>Closed 24 Sep 2026 by Anna Nilsson. Re-assess the obligation so its status shows the fix.</p>
+  <div class="bar"><button class="btn outline" type="button">Reopen</button></div>
+</div>
+<div class="modal" style="margin-top:12px"><form class="box" aria-labelledby="ro"><h2 id="ro">Reopen this gap?</h2>
+  <p>The gap reads Open again, with its owner, target date and plan as they were.</p>
+  <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Reopen</button></div>
+</form></div>
+
+<h2 class="k">12 · The answers the server can give, rendered above the buttons</h2>
+<div class="panel">
+  <div class="notice bad" role="alert">You asked for this, so someone else has to approve it.</div>
+  <div class="notice bad" role="alert">Someone changed this gap while you were editing. Reload to see their version, then make your change again.</div>
+  <div class="notice bad" role="alert">This gap has moved on: it is no longer waiting for approval.</div>
+  <div class="notice bad" role="alert">Only someone who may accept risk can approve this.</div>
+  <div class="notice bad" role="alert" style="margin-bottom:0">Confirm with your passkey to approve. The confirmation was cancelled or timed out.</div>
+</div>
+
+<h2 class="k">13 · Record a gap, opened from the obligation page (and Edit, prefilled)</h2>
+<div class="modal"><form class="box" aria-labelledby="rg"><h2 id="rg">Record a gap</h2>
+  <p class="meta" style="display:block;margin-bottom:12px">Pay for third-party research only under the permitted models</p>
+  <div class="field"><label for="rgt">Title</label><input id="rgt" aria-invalid="true" aria-describedby="rgte"><span class="err" id="rgte" role="alert">Give the gap a title.</span></div>
+  <div class="field"><label for="rgd">What is missing</label><textarea id="rgd" placeholder="e.g. No criteria for the yearly assessment of paid research"></textarea></div>
+  <div class="pair">
+    <div class="field"><label for="rge">Legal entity</label><select id="rge"><option>The whole obligation</option><option>Example Bank AB</option><option>Example Finans AB</option></select></div>
+    <div class="field"><label for="rgs">Severity</label><select id="rgs"><option>High</option><option>Medium</option><option>Low</option></select></div>
+    <div class="field"><label for="rgo">Found through</label><select id="rgo"><option>Self-assessment</option><option>Internal audit</option><option>External audit</option><option>Supervisor finding</option><option>Incident</option></select></div>
+    <div class="field"><label for="rgw">Owner</label><input id="rgw" value="Anna Nilsson" aria-describedby="rgwh"><span class="hint" id="rgwh">A person or a team.</span></div>
+    <div class="field"><label for="rgdt">Target date</label><input id="rgdt" type="date" value="2026-09-01" aria-invalid="true" aria-describedby="rgdte"><span class="err" id="rgdte" role="alert">Pick a date from today on.</span></div>
+  </div>
+  <div class="field"><label for="rgp">Remediation plan</label><textarea id="rgp" placeholder="What will be done, by whom and by when"></textarea></div>
+  <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Record gap</button></div>
+</form></div>
+
+<h2 class="k">14 · The record for a member who reads the register and may not edit gaps</h2>
+<div class="facets"><span class="pill warning">Remediating</span><span class="pill warning">Medium</span><span class="pill">Self-assessment</span></div>
+<div class="panel" style="max-width:480px"><h2>Way out</h2><p>Remediation is under way. Retail compliance owns it.</p></div>
+
+<p class="note">Gaps card. The list reads every gap of the bank across the register, newest target first, open work by default; filters for status, severity, owner, legal entity and target date store keys and live in the address. A row carries the three header pills (status, severity, source), the title, the obligation, the legal entity when the gap names one, the owner and the target date as text, overdue in the negative text colour; a pending risk acceptance is meta text, never a fourth pill. A gap under a standard names the unit by the tenant's own reference, never a clause of the standard. The record shows what is missing, the remediation plan and the way out by status. Record a gap, Edit, Start remediation, Close and Reopen need gaps edit, confirm where they change the status, send If-Match and answer a stale write in place. Accept the risk takes a reason from the tenant's risk-acceptance list; approval needs someone else holding risk accept approve and a passkey step-up, a refusal renders from its code, and the database refuses the same person in both roles. Risk accepted reads information from its kind. Every string here goes to the register catalogs in en and sv.</p>
+</main>
+<script>
+/* Card only: two frames of this file at 375 px, light and dark. */
+(function(){var b=document.getElementById('phones');if(!b)return;b.addEventListener('click',function(){var f=document.getElementById('frames');
+if(!f.childElementCount){['light','dark'].forEach(function(t){var i=document.createElement('iframe');i.src=location.pathname+'?frame=1&theme='+t;i.title='This card at 375 px, '+t;f.appendChild(i);});}
+f.hidden=!f.hidden;b.setAttribute('aria-expanded',String(!f.hidden));});})();
+</script>
+</body>
+</html>

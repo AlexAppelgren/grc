@@ -51,14 +51,14 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason, set by one person holding `applicability.approve` after a confirmation dialog, with an audit event and no second approver or step-up (D-75); many rows set in one call, one audit event per row | M | R2 | pending |
-| REG-02 | Compliance status, status note, risk, owners, process, system, evidence location, next review, per legal entity where the obligation spans several | M | R2 | pending |
-| REG-03 | Gaps with owner, severity, target date, remediation, and risk acceptance behind four eyes | M | R2 | pending |
-| REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 | pending |
-| REG-05 | Linked internal items (policy, procedure, control, process, system) with external references | M | R2 | pending |
+| REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason, set by one person holding `applicability.approve` after a confirmation dialog, with an audit event and no second approver or step-up (D-75); many rows set in one call, one audit event per row | M | R2 | in_progress |
+| REG-02 | Compliance status, status note, risk, owners, process, system, evidence location, next review, per legal entity where the obligation spans several | M | R2 | in_progress |
+| REG-03 | Gaps with owner, severity, target date, remediation, and risk acceptance behind four eyes | M | R2 | in_progress |
+| REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 | in_progress |
+| REG-05 | Linked internal items (policy, procedure, control, process, system) with external references | M | R2 | in_progress |
 | REG-06 | Yearly attestation by the owner, and waivers | C | R3 | pending |
-| REG-07 | Recurring duties on the roadmap from recurrence rules | S | R2 | pending |
-| REG-08 | Statement of Applicability: units per following legal entity, by reference and in the tenant's own words, entered one by one or pasted with a dry run, each with applicability, a reason, a status and gaps, fixed once it has history; nothing written under a standard is indexed, sent to a model or shown to another tenant | M | R2 | pending |
+| REG-07 | Recurring duties on the roadmap from recurrence rules | S | R2 | in_progress |
+| REG-08 | Statement of Applicability: units per following legal entity, by reference and in the tenant's own words, entered one by one or pasted with a dry run, each with applicability, a reason, a status and gaps, fixed once it has history; nothing written under a standard is indexed, sent to a model or shown to another tenant | M | R2 | in_progress |
 | ACC-04 | An agent access credential holding `tenant:read`, under an entry with tenant reach on, reads the register decisions on the obligations in its scope. Never gaps, cases, comments, evidence, the audit log or a private record | M | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
