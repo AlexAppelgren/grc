@@ -12,6 +12,33 @@ This module is plain Python on purpose: the compliance lint imports it without D
 
 from __future__ import annotations
 
+import enum
+
+
+class CaseStatusCategory(enum.StrEnum):
+    """The seven fixed categories the case state machine reads (D-13, VOC-04).
+
+    Here and not in apps/taxonomy/models.py so apps/cases/state.py stays a pure module
+    with no model import; apps.taxonomy.models re-exports it for every other caller.
+    """
+
+    NEW = "new"
+    ASSIGNED = "assigned"
+    ASSESSING = "assessing"
+    IMPLEMENTING = "implementing"
+    SIGNOFF = "signoff"
+    CLOSED = "closed"
+    DISMISSED = "dismissed"
+
+
+class CloseReason(enum.StrEnum):
+    """The fixed close categories (CAS-02): a tenant's closure reasons sit inside one."""
+
+    SIGNED_OFF = "signed_off"
+    NOT_APPLICABLE = "not_applicable"
+    NO_ACTION = "no_action"
+
+
 # class name -> (INPUT_DELTAS §1 name, why it is a kind and not a row)
 TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "ActorType": (
