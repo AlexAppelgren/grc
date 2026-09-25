@@ -337,7 +337,7 @@ test.describe('tenants journeys', () => {
       await page.getByRole('tab', { name: 'Members' }).click();
       await page.locator('[data-member-id]', { hasText: LOGINS.reissue }).click();
       await page.locator('label', { hasText: /^Reader/ }).getByRole('checkbox').check();
-      await page.getByRole('button', { name: 'Save' }).click();
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
       const prompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
       await expect(prompt).toBeVisible();
       await prompt.getByRole('button', { name: 'Use passkey' }).click();
