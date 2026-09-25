@@ -184,7 +184,7 @@ class AgentVersion(LibraryModel):
     the prompt's file inside the version folder, never its body."""
 
     agent = models.ForeignKey(Agent, on_delete=models.PROTECT, related_name="versions")
-    version_no = models.PositiveIntegerField()
+    version_number = models.PositiveIntegerField()
     model = models.CharField(max_length=120)
     prompt_path = models.CharField(max_length=300)
     tools = models.JSONField(default=list, blank=True)  # schema: AgentToolList
@@ -197,11 +197,11 @@ class AgentVersion(LibraryModel):
 
     class Meta:
         db_table = "agent_version"
-        ordering = ["agent", "-version_no"]
-        constraints = [models.UniqueConstraint(fields=["agent", "version_no"], name="agent_version_unique")]
+        ordering = ["agent", "-version_number"]
+        constraints = [models.UniqueConstraint(fields=["agent", "version_number"], name="agent_version_unique")]
 
     def __str__(self) -> str:
-        return f"{self.agent_id}:v{self.version_no}"
+        return f"{self.agent_id}:v{self.version_number}"
 
 
 class TenantAgent(TenantModel):

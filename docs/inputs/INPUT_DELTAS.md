@@ -1457,6 +1457,9 @@ Also departing from v0.3:
 - `agent_version.prompt_template_id` is `prompt_path`, the prompt's file inside the version
   folder (`backend/agents/<agent>/v<n>/`), because the definitions are files in the image.
   The version is append-only in the database, retiring it once being the one change.
+- `agent_version.version_no` is `version_number`, as on the library's own version tables,
+  because a column ending in a language code (`_no`, Norwegian) reads as a per-language
+  column and I18N-S1 refuses one.
 - `agent_run.api_key_id` (§5) becomes nullable: a run the worker opens has no key. A CHECK
   demands a key when `trigger = 'api'`, the default, which every R1 run is. The write
   policy asks for a key of the run's zone only when there is a key; the own-zone rule is

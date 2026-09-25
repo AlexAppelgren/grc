@@ -136,7 +136,7 @@ class Migration(migrations.Migration):
                         serialize=False,
                     ),
                 ),
-                ("version_no", models.PositiveIntegerField()),
+                ("version_number", models.PositiveIntegerField()),
                 ("model", models.CharField(max_length=120)),
                 ("prompt_path", models.CharField(max_length=300)),
                 ("tools", models.JSONField(blank=True, default=list)),
@@ -146,7 +146,7 @@ class Migration(migrations.Migration):
             ],
             options={
                 "db_table": "agent_version",
-                "ordering": ["agent", "-version_no"],
+                "ordering": ["agent", "-version_number"],
             },
         ),
         migrations.AddField(
@@ -366,7 +366,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="agentversion",
             constraint=models.UniqueConstraint(
-                fields=("agent", "version_no"), name="agent_version_unique"
+                fields=("agent", "version_number"), name="agent_version_unique"
             ),
         ),
         *library_door_trigger_operations("agent_version", INVENTORY_DOORS),
