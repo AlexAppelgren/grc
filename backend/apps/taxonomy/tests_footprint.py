@@ -32,7 +32,6 @@ from django.db import DEFAULT_DB_ALIAS, IntegrityError, connection, connections,
 from django.test import TestCase, TransactionTestCase
 
 from apps.cases import testing as cases_build
-from apps.cases.models import ChangeCase
 from apps.identity.models import User
 from apps.library import testing as build
 from apps.library.seeds import seed_jurisdictions, seed_languages
@@ -276,7 +275,7 @@ class PreviewCountsOpenCases(TestCase):
     def _case(self, scope: str, status: CaseStatusCategory) -> None:
         change = watch_build.change(authority=None)
         watch_build.term_link(change, term_ref=scope)
-        ChangeCase.objects.filter(pk=cases_build.case(self.tenant, change).pk).update(status=status.value)
+        cases_build.in_category(cases_build.case(self.tenant, change), status)
 
     def _cases(self, adds: list[Any], removes: list[Any]) -> tuple[int, int, bool]:
         counted = footprint_logic.preview_of(self.tenant.id, adds, removes).cases
