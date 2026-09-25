@@ -359,7 +359,7 @@ class ConsoleAgentRouteGates(TestCase):
 
         definition = _tenant_definition()
         with library_write("test"):
-            version = AgentVersion.objects.create(agent=definition, version_no=1, model="m", prompt_path="prompt.md")
+            version = AgentVersion.objects.create(agent=definition, version_number=1, model="m", prompt_path="prompt.md")
         with stub_session(user_principal(permissions={perms.AGENT_DEFINITIONS_MANAGE})):
             response = _call(self.client, "get", f"{DEFINITIONS}?limit=100", None, AS_SESSION)
         self.assertEqual(response.status_code, 200, response.content)
