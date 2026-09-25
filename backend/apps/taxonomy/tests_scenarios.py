@@ -649,7 +649,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         ):
             change = watch_build.change(title=title)
             watch_build.term_link(change, term_ref=scope)
-            ChangeCase.objects.filter(pk=cases_build.case(self.tenant, change).pk).update(status=status.value)
+            cases_build.in_category(cases_build.case(self.tenant, change), status)
         officer = sign_in(self.officer, tenant=self.tenant)
         body = {"adds": [{"dimension": "client_category", "key": "retail"}], "removes": [{"dimension": "service_type", "key": "advice"}]}
         # Dry run first (playbook 15: dry run, preview, commit): the same preview, nothing written.
