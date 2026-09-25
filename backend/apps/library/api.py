@@ -276,8 +276,8 @@ def list_languages(request: HttpRequest) -> list[RoleRef]:
 @answers_problems
 def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: Query[PageQuery]) -> ObligationPage:
     """The obligations inventory: every duty of the shared library whose scope overlaps this
-    bank's footprint, as it stood on a date, narrowed by instrument, duty type, scope terms
-    or a phrase. Call it for the inventory screen, for a picker that has to name a duty, and
+    bank's footprint, as it stood on a date, narrowed by instrument, duty type, scope terms,
+    the library's tags, the bank's own tags or a phrase. Call it for the inventory screen, for a picker that has to name a duty, and
     from an agent run that needs the duties an instrument carries.
 
     A read: it changes nothing and writes no audit row. It takes a person's session holding
@@ -285,7 +285,8 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     rows are shared library facts, the same for every bank and changed only through an
     approved proposal. Whether a duty applies to this bank, and whether the bank complies
     with it, are separate facts a person records elsewhere; a row appearing here decides
-    neither.
+    neither. Each row also carries the bank's own tags on it, which no other bank sees, and
+    whether the record is the bank's own rather than a shared fact.
 
     Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
     quietly trimmed, and rows ordered by their stable key so paging is repeatable. Nothing
@@ -295,14 +296,20 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     markets the bank watches add, each row naming its jurisdiction.
 
     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-    (403) without library.read or the library:read scope; `validation_error` (422) when a
-    term filter is not written dimension:key, when footprint is not in, all or watched,
-    when the retired outsideFootprint is sent, when the phrase is longer than 200 characters
-    or when the page size or offset is out of range; `unknown_key` (422) when a term filter
-    names no active term, listing every one that was not found.
+    (403) without library.read or the library:read scope; `unknown_filter` (422) when a key
+    that belongs to no bank sends tenantTag, since it has no tags of its own; `not_found`
+    (404) when a key that belongs to no bank reads the list at all; `validation_error` (422)
+    when a term filter is not written dimension:key, when instrument, dutyType or any term,
+    tag or tenantTag value is longer than 80 characters, when more than 20 terms, tags or
+    tenant tags are sent, when footprint is not in, all or watched, when the retired
+    outsideFootprint is sent, when the phrase is longer than 200 characters or when the page
+    size or offset is out of range; `unknown_key` (422) when a term filter names no active
+    term, a tag filter no library tag or a tenantTag filter none of the bank's own tags,
+    listing every one that was not found.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-03, AGT-02).
     require_library_read(request)
+    reading.refuse_bank_filters(principal(request).tenant_id, query)
     tenant = caller_tenant(request)
     order = language_order(request, tenant=tenant)
     items, total = reading.obligation_page(tenant, order, query, limit=page.limit, offset=page.offset)
@@ -433,8 +440,8 @@ def list_instruments(request: HttpRequest, query: Query[InstrumentQuery], page: 
     platform key without the scope gets this; `not_found` (404) when the caller is a
     platform key carrying the scope, since it belongs to no bank; `validation_error` (422)
     when footprint is not in, all or watched, when the retired outsideFootprint is sent,
-    when the phrase is longer than 200 characters or the page size or offset is out of
-    range.
+    when regime is longer than 80 characters, when the phrase is longer than 200 characters
+    or the page size or offset is out of range.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-01, AGT-02).
     require_library_read(request)
@@ -478,7 +485,7 @@ def get_instrument(
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-01, AGT-02).
     require_library_read(request)
     tenant = caller_tenant(request)
-    return reading.instrument_detail(language_order(request, tenant=tenant), instrument_id)
+    return reading.instrument_detail(tenant, language_order(request, tenant=tenant), instrument_id)
 
 
 @router.get(

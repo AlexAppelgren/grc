@@ -98,8 +98,8 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
   and translation is labelled until a person confirms.
 - **Pill contract:** the obligation row shows instrument, "Guidance, comply or
   explain" when not binding, applicability, compliance status if it applies,
-  "Change waiting for approval", "N open changes"; library tags render as `brand`
-  pills after the flags.
+  "N open changes"; library tags render as `brand` pills after the flags. No change to
+  applicability waits for approval (D-75), so the row carries no such pill.
 
 ## 4. Test scenarios (Gherkin)
 
