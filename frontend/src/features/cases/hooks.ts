@@ -4,8 +4,8 @@ import { useMutation, useQuery, useQueryClient, type UseMutationResult, type Use
 import { isAxiosError } from 'axios';
 
 import { homeKeys } from '@/features/home/hooks';
-import { watchKeys } from '@/features/watch/hooks';
-import { hasProblemCode } from '@/shared/utils/problem';
+import { CASES_WORK, watchKeys } from '@/features/watch/hooks';
+import { hasProblemCode, problemFrom } from '@/shared/utils/problem';
 
 import * as cases from './api';
 import type { EvidenceInput } from './api';
@@ -20,6 +20,7 @@ import type {
   CaseEvidencePage,
   CloseBody,
   NoteBody,
+  PersonRef,
   ReasonBody,
   TriageBody,
 } from './types';
@@ -156,4 +157,30 @@ export function useAddEvidence(changeId: string): UseMutationResult<CaseEvidence
 
 export function useRemoveEvidence(changeId: string): UseMutationResult<void, unknown, string> {
   return useCaseWrite(changeId, (evidenceId: string) => cases.removeEvidence(evidenceId));
+}
+
+// ---------------------------------------------------------------------------
+// c9-fe-triage-assessment: who may own a case
+// ---------------------------------------------------------------------------
+
+export const CASES_TRIAGE = 'cases.triage';
+export const CASES_CONTRIBUTE = 'cases.contribute';
+
+/** The people a triage may name as owner: active members who hold `cases.work`. */
+export function useCaseWorkers(enabled = true): UseQueryResult<PersonRef[]> {
+  return useQuery({ queryKey: ['people', CASES_WORK], queryFn: () => cases.listPeople(CASES_WORK), enabled });
+}
+
+/**
+ * The fields a 422 `validation_error` names in its `errors`, by their last
+ * segment (`body.ownerId` is `ownerId`), so a panel shows its own sentence
+ * under the field the server refused rather than guessing which one it was.
+ */
+export function refusedFieldsOf(error: unknown): string[] {
+  const problem = problemFrom(error);
+  if (problem?.code !== 'validation_error') return [];
+  return (problem.errors ?? []).flatMap((item) => {
+    const field = typeof item === 'object' && item !== null ? (item as { field?: unknown }).field : undefined;
+    return typeof field === 'string' ? [field.split('.').pop() ?? field] : [];
+  });
 }
