@@ -234,6 +234,10 @@ describe('scope items: proposing', () => {
     expect(address).toHaveAttribute('aria-invalid', 'true');
     expect(screen.queryByText('The address is not public.')).toBeNull();
     expect(statusLine()).toBeEmptyDOMElement();
+
+    fireEvent.change(address, { target: { value: 'https://www.fi.se/rules' } });
+    expect(screen.queryByText('Use a public https address.')).toBeNull();
+    expect(address).toHaveAttribute('aria-invalid', 'false');
   });
 
   it('removes an item through the same draft, and Keep takes the removal back', async () => {

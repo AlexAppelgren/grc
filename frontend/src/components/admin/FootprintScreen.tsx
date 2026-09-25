@@ -953,7 +953,11 @@ export function FootprintScreen() {
               regimes={regimes}
               disabled={create.isPending}
               addressRefused={hasProblemCode(create.error, SOURCE_NOT_PUBLIC_CODE)}
-              onChange={(item) => setDraft((current) => current && { ...current, item })}
+              onChange={(item) => {
+                // A refused address stops reading as refused once it is edited.
+                if (create.isError) create.reset();
+                setDraft((current) => current && { ...current, item });
+              }}
             />
           ) : null
         }
