@@ -62,8 +62,11 @@ from django.db.models import (
     UUIDField,
 )
 
+from apps.cases import logic as case_logic
+from apps.cases import state as case_state
 from apps.cases.models import CaseLinkDecision as CaseLinkDecisionKind
 from apps.cases.models import CaseObligationLink, ChangeCase
+from apps.cases.schemas import CasesVocabularyRef
 from apps.library.models import ObligationTitle
 from apps.library.reading import (
     NOT_FOUND,
@@ -80,7 +83,11 @@ from apps.shared.schemas import PageQuery
 from apps.taxonomy import matching
 from apps.taxonomy.models import (
     CaseStatusCategory,
+    CaseSubStatus,
+    CaseSubStatusLabel,
     ChangeTypeLabel,
+    ClosureReasonLabel,
+    DismissalReasonLabel,
     FlagLabel,
     TaxonomyTerm,
     TaxonomyTermLabel,
@@ -91,6 +98,7 @@ from apps.taxonomy.models import (
 from apps.taxonomy.reading import Labels, label_of
 from apps.watch import keys
 from apps.watch.models import ChangeDocument, ChangeObligation, ChangeTerm, RegulatoryChange
+from apps.taxonomy.schemas import PersonRef
 from apps.watch.schemas import (
     CaseCategory,
     CaseLinkDecision,
@@ -98,6 +106,7 @@ from apps.watch.schemas import (
     DatePrecision,
     Origin,
     WatchCaseObligationDecision,
+    WatchCaseWorkflow,
     WatchChangeCase,
     WatchChangeDetail,
     WatchChangeDocument,
@@ -130,6 +139,7 @@ _CASE_COLUMNS = {
     "so_what_confirmed": "so_what_confirmed",
     "so_what_confirmed_at": "so_what_confirmed_at",
     "so_what_confirmed_by_name": "so_what_confirmed_by__name",
+    "sub_status": "sub_status",
 }
 # Beside the case, where a change's jurisdiction comes from (its authority's) and the first
 # term it reaches that mirrors a market this bank watches (FP-04).
@@ -397,10 +407,26 @@ def _case_columns(change: RegulatoryChange) -> dict[str, Any]:
     return {column: getattr(change, f"case_{column}") for column in _CASE_COLUMNS}
 
 
+def _tenant_refs(label_model: type[Any], rows: Sequence[Any], order: list[str]) -> dict[uuid.UUID, CasesVocabularyRef]:
+    """`{key, kind, label}` per row of one of the bank's own lists, from one label query,
+    and none when there are no rows."""
+    return {
+        row_id: CasesVocabularyRef(key=ref.key, kind=ref.kind, label=ref.label)
+        for row_id, ref in vocabulary_refs(label_model, rows, order).items()
+    }
+
+
+def _sub_status_refs(ids: Collection[uuid.UUID], order: list[str]) -> dict[uuid.UUID, CasesVocabularyRef]:
+    """The sub-statuses a page of cases names, from two queries, and none when no case on
+    the page carries one."""
+    return _tenant_refs(CaseSubStatusLabel, list(CaseSubStatus.objects.filter(id__in=ids)) if ids else [], order)
+
+
 def _case_of(
     case: Mapping[str, Any],
     urgencies: Mapping[uuid.UUID, LibraryRef],
     decisions: Mapping[uuid.UUID, list[WatchCaseObligationDecision]],
+    sub_statuses: Mapping[uuid.UUID, CasesVocabularyRef],
 ) -> WatchChangeCase | None:
     """This bank's case, built from those columns. None where the bank has none: a change
     reaches the library before any bank has looked at it."""
@@ -418,9 +444,46 @@ def _case_of(
         so_what_confirmed_at=case["so_what_confirmed_at"],
         so_what_confirmed_by_name=case["so_what_confirmed_by_name"],
         obligation_decisions=decisions.get(case["id"], []),
-        # The state machine that would move a case is chunk 9, so nothing is offered yet.
-        # Empty means "no move is offered here", never "the case is stuck".
-        allowed_transitions=[],
+        sub_status=None if case["sub_status"] is None else sub_statuses[case["sub_status"]],
+    )
+
+
+def _person(user: Any) -> PersonRef | None:
+    return None if user is None else PersonRef(id=user.id, name=user.name)
+
+
+def _workflow_of(base: WatchChangeCase, *, reader: uuid.UUID | None, order: list[str]) -> WatchCaseWorkflow:
+    """The change page's workflow block beside what a feed row says (CAS-02 to CAS-08).
+
+    Two queries whatever the case holds — the case with its people and reasons joined, and
+    the guards' facts — and one label query per reason the case carries. The moves come
+    from the state machine through `case_facts()`, the same facts every guard reads, for
+    this reader: the sign-off guard compares them with whoever asked.
+    """
+    case = ChangeCase.objects.select_related(*case_logic.CASE_JOINS).get(pk=base.id)
+    facts = case_logic.case_facts(case, actor=reader)
+    allowed = case_state.allowed_transitions(CaseStatusCategory(case.status), facts)
+    dismissed = _tenant_refs(DismissalReasonLabel, [case.dismissed_reason] if case.dismissed_reason else [], order)
+    closed = _tenant_refs(ClosureReasonLabel, [case.close_reason] if case.close_reason else [], order)
+    return WatchCaseWorkflow(
+        **dict(base),
+        owner=_person(case.owner),
+        triaged_by=_person(case.triaged_by),
+        triaged_at=case.triaged_at,
+        dismissed_reason=dismissed.get(case.dismissed_reason_id) if case.dismissed_reason_id else None,
+        dismissed_by=_person(case.dismissed_by),
+        dismissed_at=case.dismissed_at,
+        signoff_requested_by=_person(case.signoff_requested_by),
+        signoff_requested_at=case.signoff_requested_at,
+        signed_off_by=_person(case.signed_off_by),
+        close_reason=closed.get(case.close_reason_id) if case.close_reason_id else None,
+        closed_at=case.closed_at,
+        open_action_count=facts.open_action_count,
+        # Sign-off is asked for only from implementing, so "the machine allows the move to
+        # signoff" is the whole rule; nothing here restates it.
+        can_request_signoff=CaseStatusCategory.SIGNOFF in allowed,
+        allowed_transitions=[category.value for category in allowed],
+        version=case.version,
     )
 
 
@@ -485,6 +548,7 @@ def _feed_rows(tenant: Tenant, page: Sequence[RegulatoryChange], order: list[str
     )
     type_refs = vocabulary_refs(ChangeTypeLabel, (change.change_type for change in page), order)
     decisions = _decisions_by_case(case_ids)
+    sub_statuses = _sub_status_refs({case["sub_status"] for case in cases if case["sub_status"] is not None}, order)
 
     return [
         WatchChangeRow(
@@ -506,7 +570,7 @@ def _feed_rows(tenant: Tenant, page: Sequence[RegulatoryChange], order: list[str
             in_footprint=scopes.inside[change.id],
             market=markets[scopes.market[change.id].id] if change.id in scopes.market else None,
             first_seen_at=change.first_seen_at,
-            case=_case_of(case, urgencies, decisions),
+            case=_case_of(case, urgencies, decisions, sub_statuses),
         )
         for change, case in zip(page, cases, strict=True)
     ]
@@ -588,10 +652,11 @@ def _console_rows(page: Sequence[RegulatoryChange], order: list[str]) -> list[Wa
 # ---------------------------------------------------------------------------------------
 # GET /changes/{changeId}: the whole change page
 # ---------------------------------------------------------------------------------------
-def get_change(tenant: Tenant, order: list[str], change_id: uuid.UUID) -> WatchChangeDetail:
+def get_change(tenant: Tenant, order: list[str], change_id: uuid.UUID, reader: uuid.UUID | None) -> WatchChangeDetail:
     """`GET /changes/{changeId}`: the reform's sourced facts — its type, its flags, its
     scope, its timeline, the pages it was found on and the obligations it affects — and
-    beside them the reader's own bank's case (WAT-02, WAT-03, WAT-04, CAS-01).
+    beside them the reader's own bank's case with its workflow block (WAT-02, WAT-03,
+    WAT-04, CAS-01 to CAS-08). `reader` is the person reading, for the moves open to them.
 
     A change nobody registered and a change the caller cannot see answer the same 404, so
     no id can be probed for."""
@@ -607,6 +672,12 @@ def get_change(tenant: Tenant, order: list[str], change_id: uuid.UUID) -> WatchC
     type_refs = vocabulary_refs(ChangeTypeLabel, [change.change_type], order)
     links = _SuggestedLinks([change.id], order)
     documents = list(change.documents.all())
+    base = _case_of(
+        case,
+        urgencies,
+        _decisions_by_case([case["id"]] if case["id"] is not None else []),
+        _sub_status_refs([case["sub_status"]] if case["sub_status"] is not None else [], order),
+    )
     return WatchChangeDetail(
         id=change.id,
         stable_key=change.stable_key,
@@ -664,7 +735,7 @@ def get_change(tenant: Tenant, order: list[str], change_id: uuid.UUID) -> WatchC
         agent_run_id=change.agent_run_id,
         first_seen_at=change.first_seen_at,
         in_footprint=_Scopes(tenant, [change], classification).inside[change.id],
-        case=_case_of(case, urgencies, _decisions_by_case([case["id"]] if case["id"] is not None else [])),
+        case=None if base is None else _workflow_of(base, reader=reader, order=order),
     )
 
 
