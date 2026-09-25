@@ -106,6 +106,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     ),
     # Chunk 1 (identity and tenant admin basics). Each is something the rules branch on.
     "TenantStatus": ("tenant_status", "TEN-01: active or deactivated; every request branches on it"),
+    "Weekday": ("digest_weekday", "COL-02: the seven days of the week; the digest's schedule branches on it"),
     "UserStatus": ("user_status", "ID-02, ID-03: invited, active or deactivated; sign-in branches on it"),
     "InvitationKind": ("invitation_kind", "ID-01, ID-05: invite or re-enrolment; acceptance branches on it"),
     "ChallengeKind": ("challenge_kind", "ID-02, ID-06: registration, authentication or step-up ceremony"),

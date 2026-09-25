@@ -11,10 +11,17 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Annotated
 
 from pydantic import ConfigDict, Field, JsonValue
 
 from apps.identity.schemas import RoleRef
+from apps.shared.models import (
+    ESCALATE_AFTER_DAYS_MAX,
+    LEAD_DAYS_MAX,
+    LEAD_DAYS_MAX_ENTRIES,
+    TRIAGE_TARGET_HOURS_MAX,
+)
 from apps.shared.schemas import CamelSchema, WriteBody
 
 __all__ = ["CamelSchema"]
@@ -24,6 +31,19 @@ __all__ = ["CamelSchema"]
 _EXAMPLE_LANGUAGE_SV: dict[str, JsonValue] = {"key": "sv", "kind": None, "label": "Svenska"}
 _EXAMPLE_LANGUAGE_EN: dict[str, JsonValue] = {"key": "en", "kind": None, "label": "English"}
 _EXAMPLE_LANGUAGE_DA: dict[str, JsonValue] = {"key": "da", "kind": None, "label": "Dansk"}
+_EXAMPLE_WORKFLOW: dict[str, JsonValue] = {
+    "reminderDaysBefore": [7, 3],
+    "reviewReminderDaysBefore": [30],
+    "escalateAfterDays": 5,
+    "escalateToRole": {"key": "compliance_officer", "kind": None, "label": "Compliance officer"},
+    "digestWeekday": "monday",
+    "triageTargetHours": 48,
+}
+
+_WEEKDAYS_IN_WORDS = (
+    "one of the seven days in lower case: `monday`, `tuesday`, `wednesday`, `thursday`, "
+    "`friday`, `saturday` or `sunday`"
+)
 
 
 class OnboardingStep(CamelSchema):
@@ -90,6 +110,64 @@ class Onboarding(CamelSchema):
     )
 
 
+class TenantWorkflow(CamelSchema):
+    """The bank's workflow policy: when its members are reminded, when overdue work
+    escalates and to whom, the day the digest goes out and how quickly a new change should
+    be triaged. Every bank starts at the platform defaults and changes its own through
+    `PATCH /tenant/workflow`."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_WORKFLOW]})
+
+    reminder_days_before: list[int] = Field(
+        description=(
+            f"How many days before a due date the owner of an open action or case is reminded, "
+            f"one reminder per entry, largest first — `[7, 3]` reminds a week ahead and again "
+            f"three days ahead. One to {LEAD_DAYS_MAX_ENTRIES} entries, each a whole number of "
+            f"days from 1 to {LEAD_DAYS_MAX}, counted in the bank's own timezone. The platform "
+            "default is `[3]`."
+        )
+    )
+    review_reminder_days_before: list[int] = Field(
+        description=(
+            f"How many days before a scheduled review the owner of the record under review is "
+            f"reminded, largest first. One to {LEAD_DAYS_MAX_ENTRIES} entries, each a whole "
+            f"number of days from 1 to {LEAD_DAYS_MAX}. The platform default is `[30]`."
+        )
+    )
+    escalate_after_days: int = Field(
+        description=(
+            f"How many whole days a piece of work may be overdue before it escalates, from 1 to "
+            f"{ESCALATE_AFTER_DAYS_MAX}. It escalates once, to the members holding "
+            "`escalateToRole`. The platform default is 5."
+        )
+    )
+    escalate_to_role: RoleRef = Field(
+        description=(
+            "The role of this bank whose members are told when overdue work escalates, as key, "
+            "kind and label; the key is what `PATCH /tenant/workflow` takes. Roles are rows of "
+            "the bank's role vocabulary: the seeded `admin`, `compliance_officer` (the platform "
+            "default), `owner`, `approver`, `contributor`, `reader` and `auditor`, plus any role "
+            "an admin may extend it with in the role editor (`GET /tenant/roles` lists the live "
+            "set), so an unfamiliar key is new data and not an error. It names a role and never "
+            "a person, so the escalation survives a member leaving."
+        )
+    )
+    digest_weekday: str = Field(
+        description=(
+            f"The day of the week the bank's digest goes out, in the bank's own timezone: "
+            f"{_WEEKDAYS_IN_WORDS}. A fixed set in code rather than a list a bank extends. The "
+            "platform default is `monday`."
+        )
+    )
+    triage_target_hours: int = Field(
+        description=(
+            f"How many hours a new change may wait before somebody at the bank has triaged it, "
+            f"from 1 to {TRIAGE_TARGET_HOURS_MAX} (thirty days). A case's triage due time is "
+            "counted from it. The platform default is 48."
+        )
+    )
+
+
 class TenantOut(CamelSchema):
     """The bank's own profile, as a member of that bank reads it."""
 
@@ -105,6 +183,7 @@ class TenantOut(CamelSchema):
                     "defaultLanguage": _EXAMPLE_LANGUAGE_SV,
                     "contentLanguages": [_EXAMPLE_LANGUAGE_SV, _EXAMPLE_LANGUAGE_EN],
                     "aiEnabled": True,
+                    "workflow": _EXAMPLE_WORKFLOW,
                     "onboarding": {
                         "stepsDone": 3,
                         "steps": [
@@ -195,6 +274,14 @@ class TenantOut(CamelSchema):
             "switched here."
         )
     )
+    workflow: TenantWorkflow = Field(
+        description=(
+            "The bank's workflow policy: reminder lead days, when overdue work escalates and "
+            "to which role, the digest's weekday and the triage target. Every member may read "
+            "it; only `PATCH /tenant/workflow`, with `workflow.manage`, changes it, and the "
+            "profile edit ignores it."
+        )
+    )
     onboarding: Onboarding = Field(
         description=(
             "How far the bank has got through first-run setup, computed by the server on "
@@ -255,6 +342,83 @@ class TenantPatch(CamelSchema):
             "the list alone; an empty list is refused with a 422, and a key that is not an "
             "active language row is refused with `unknown_key` naming the key. Keys such as "
             "`sv` and `en`, never labels."
+        ),
+    )
+
+
+class TenantWorkflowPatch(WriteBody):
+    """What a holder of `workflow.manage` may change about the bank's workflow policy. Send
+    only the fields you are changing; an omitted field, or one sent as null, is left as it
+    was, and a field this schema does not name is refused."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"reminderDaysBefore": [7, 3], "escalateAfterDays": 5, "digestWeekday": "monday"}]}
+    )
+
+    reminder_days_before: list[Annotated[int, Field(ge=1, le=LEAD_DAYS_MAX)]] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=LEAD_DAYS_MAX_ENTRIES,
+        description=(
+            f"The complete new list of days before a due date on which the owner is reminded: "
+            f"one to {LEAD_DAYS_MAX_ENTRIES} whole numbers, each from 1 to {LEAD_DAYS_MAX}. It "
+            "replaces the current list; a repeated day counts once and the list is stored "
+            "largest first. Omit the field to leave it alone; an empty list, a longer one or a "
+            "day out of range is refused with `validation_error` naming the field."
+        ),
+    )
+    review_reminder_days_before: list[Annotated[int, Field(ge=1, le=LEAD_DAYS_MAX)]] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=LEAD_DAYS_MAX_ENTRIES,
+        description=(
+            f"The complete new list of days before a scheduled review on which the owner is "
+            f"reminded: one to {LEAD_DAYS_MAX_ENTRIES} whole numbers, each from 1 to "
+            f"{LEAD_DAYS_MAX}, stored largest first with repeats counted once. Omit the field "
+            "to leave it alone; an empty list, a longer one or a day out of range is refused "
+            "with `validation_error` naming the field."
+        ),
+    )
+    escalate_after_days: int | None = Field(
+        default=None,
+        ge=1,
+        le=ESCALATE_AFTER_DAYS_MAX,
+        description=(
+            f"How many whole days work may be overdue before it escalates, from 1 to "
+            f"{ESCALATE_AFTER_DAYS_MAX}. Omit the field to leave it alone; a value out of range "
+            "is refused with `validation_error` naming the field."
+        ),
+    )
+    escalate_to_role: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=80,
+        description=(
+            "The key of the role whose members are told when work escalates, such as "
+            "`compliance_officer`, at most 80 characters. A key, never a label. It must be an "
+            "active role of this bank — read `GET /tenant/roles` for the set; a key that is "
+            "not, including a role of another bank or a retired one, is refused with "
+            "`unknown_key` naming the field. Omit the field to leave it alone."
+        ),
+    )
+    digest_weekday: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=16,
+        description=(
+            f"The day the digest goes out: {_WEEKDAYS_IN_WORDS}, at most 16 characters. Any "
+            "other value is refused with `unknown_key` naming the field. Omit the field to "
+            "leave it alone."
+        ),
+    )
+    triage_target_hours: int | None = Field(
+        default=None,
+        ge=1,
+        le=TRIAGE_TARGET_HOURS_MAX,
+        description=(
+            f"How many hours a new change may wait before it is triaged, from 1 to "
+            f"{TRIAGE_TARGET_HOURS_MAX}. Omit the field to leave it alone; a value out of range "
+            "is refused with `validation_error` naming the field."
         ),
     )
 
