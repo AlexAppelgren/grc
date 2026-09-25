@@ -83,6 +83,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     ),
     # Chunk 1 (identity and tenant admin basics). Each is something the rules branch on.
     "TenantStatus": ("tenant_status", "TEN-01: active or deactivated; every request branches on it"),
+    "Weekday": ("digest_weekday", "COL-02: the seven days of the week; the digest's schedule branches on it"),
     "UserStatus": ("user_status", "ID-02, ID-03: invited, active or deactivated; sign-in branches on it"),
     "InvitationKind": ("invitation_kind", "ID-01, ID-05: invite or re-enrolment; acceptance branches on it"),
     "ChallengeKind": ("challenge_kind", "ID-02, ID-06: registration, authentication or step-up ceremony"),
@@ -180,5 +181,15 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "roadmap_item_type",
         "HOM-03, HOM-04: what produced the date - a change's key date, an internal deadline, "
         "an action due or a review due; the card and the calendar builder branch on it",
+    ),
+    # Chunk 8's register lists (c8-vocab-lists-rules). Categories the rules read off a
+    # tenant row's fixed `kind`; the tenant's labels, order and extra rows stay its own.
+    "GapCategory": (
+        "gap_category",
+        "REG-03, VOC-04: open, remediating, risk accepted or closed; the gap workflow, the reports and the pill tone read the category, never the tenant's label",
+    ),
+    "RiskLevel": (
+        "risk_level",
+        "VOC-05: low, medium or high; the pill tone reads the level a risk rating maps to, never its editable ordinal or its label",
     ),
 }

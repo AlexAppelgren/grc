@@ -11,9 +11,11 @@ a kind and the language their legal texts are written in, so no column or branch
 names a country, and International (D-38) for standards bodies. Without this seed no
 instrument can be filed (chunk 3).
 
-Neither is a `LibraryModel`, but every bank reads both and no proposal writes them, so the
-database holds them behind the seed door (H16, shared 0008, ADR 0058): each seed opens it
-through `library_write()`, and the app role's write outside it is refused."""
+Neither is a `LibraryModel`, but every bank reads both, so the database holds them behind
+its doors (H16, shared 0008, ADR 0058): each seed opens the seed door through
+`library_write()`, and the app role's write outside a door is refused. A jurisdiction is also
+relabelled, retired and restored through an approved proposal (D-94, shared 0010), so the
+seed writes its labels, sort order and `active` only when it files the row."""
 
 from __future__ import annotations
 
@@ -71,16 +73,26 @@ def seed_jurisdictions() -> int:
     rows: dict[str, Jurisdiction] = {}
     with library_write(SEED_REASON):
         for sort_order, (key, (kind, parent_key, language_key, labels)) in enumerate(JURISDICTIONS.items()):
+            # The kind, the parent and the legal language are the seed's on every run. The
+            # sort order and `active` are written once: a proposal reorders, retires and
+            # restores a jurisdiction (D-94), and no deploy may undo an approved decision.
             row, created = Jurisdiction.objects.update_or_create(
                 key=key,
                 defaults={
                     "kind": kind.value,
                     "parent": rows[parent_key] if parent_key else None,
                     "default_language": languages[language_key],
-                    "sort_order": sort_order,
                     "is_system": True,
-                    "active": True,
                     "is_default": key == DEFAULT_JURISDICTION,
+                },
+                create_defaults={
+                    "kind": kind.value,
+                    "parent": rows[parent_key] if parent_key else None,
+                    "default_language": languages[language_key],
+                    "is_system": True,
+                    "is_default": key == DEFAULT_JURISDICTION,
+                    "sort_order": sort_order,
+                    "active": True,
                 },
             )
             if created:

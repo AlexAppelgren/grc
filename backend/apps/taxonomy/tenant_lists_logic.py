@@ -19,6 +19,9 @@ Three rules from playbook 15 that a screen cannot enforce on its own:
   radius. `restore` is its inverse.
 - **Merge re-points in one audited transaction**, previewed first (`?dryRun=true`).
 - **System rows can be relabelled, not removed** (409 `system_row`).
+- **A category never goes empty** (VOC-04): retiring the last active row of a fixed kind
+  answers 409 `category_empty`, checked before `system_row` because it names the real
+  reason: the state machine, the reports and the tone need a value in every category.
 """
 
 from __future__ import annotations
@@ -33,7 +36,7 @@ from django.utils.text import slugify
 
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
-from apps.shared.vocabulary import LibraryVocabulary
+from apps.shared.vocabulary import Vocabulary, VocabularyLabel
 from apps.taxonomy import repoint
 from apps.taxonomy.reading import CONFIRMATION_JOINS, Labels, confirmation_of, extra_of, label_of
 from apps.taxonomy.registry import REGISTRY, VocabularyList
@@ -63,6 +66,11 @@ ORIGINAL_LANGUAGE = "en"
 NEAR_DUPLICATE_RECALL = 0.3
 NEAR_DUPLICATE_RATIO = 0.8
 MAX_CANDIDATES = 5
+
+# A label is one row of a label table, so it is capped at that column's width (H35): a
+# longer one is a 422 naming the language, never a 500 when it is saved or approved.
+LABEL_MAX_CHARS: int = VocabularyLabel._meta.get_field("text").max_length or 0
+KEY_MAX_CHARS: int = Vocabulary._meta.get_field("key").max_length or 0
 
 
 class VocabularyProblem(ValidationError):
@@ -99,13 +107,11 @@ def _queryset(entry: VocabularyList, tenant_id: uuid.UUID | None) -> Any:
     """The list's rows with their usage count, in the list's own order. The order is
     explicit because Django drops `Meta.ordering` from a GROUP BY query, and the usage
     count is one: without it a reordered list came back in whatever order Postgres chose
-    (found by VOC-S3, 2026-09-19). A library list whose rows carry who confirmed them (every
-    LibraryVocabulary) joins those facts in; the seeded jurisdiction list has no such
-    columns and reads as a seeded row does, empty (D-38)."""
+    (found by VOC-S3, 2026-09-19). Every library list's rows carry who confirmed them (each
+    LibraryVocabulary, and the jurisdictions since D-94), so those facts are joined in."""
     queryset = entry.usage(entry.model._default_manager.all()).order_by(*(entry.model._meta.ordering or ()))
     if entry.is_library:
-        if issubclass(entry.model, LibraryVocabulary):
-            queryset = queryset.select_related(*CONFIRMATION_JOINS)
+        queryset = queryset.select_related(*CONFIRMATION_JOINS)
     else:
         if tenant_id is None:
             raise ValidationError("This list belongs to a tenant; sign in to one.", code="not_found")
@@ -214,13 +220,20 @@ def known_languages() -> set[str]:
     return set(Language.objects.filter(active=True).values_list("key", flat=True))
 
 
-def validated_labels(labels: dict[str, str]) -> dict[str, str]:
+def validated_labels(labels: dict[str, str], *, max_chars: int | None = LABEL_MAX_CHARS) -> dict[str, str]:
     """Labels are translation rows keyed by a language that exists (I18N-01). An unknown
     code is 422 `unknown_key` with the codes that would have worked, never a silent row
-    nobody can read."""
+    nobody can read. Each text is capped at `max_chars`, the label column's width; a caller
+    validating texts stored in an unbounded column (a provision's text, a summary) passes
+    None."""
     cleaned = {code: text.strip() for code, text in labels.items() if text and text.strip()}
     if not cleaned:
         raise ValidationError("Give the value a label in at least one language.", code="validation_error")
+    too_long = sorted(code for code, text in cleaned.items() if max_chars is not None and len(text) > max_chars)
+    if too_long:
+        raise ValidationError(
+            f"labels.{too_long[0]}: a label is at most {max_chars} characters; shorten it.", code="validation_error"
+        )
     known = known_languages()
     unknown = sorted(set(cleaned) - known)
     if unknown:
@@ -293,12 +306,15 @@ def _referenced(list_name: str, key: Any) -> Any:
 
 def key_for(labels: dict[str, str], key: str | None) -> str:
     """The immutable key (playbook 4.3). Given explicitly, or slugified with underscores
-    from the English label, then from whatever label there is."""
+    from the English label, then from whatever label there is, cut to the key column's
+    width. A key given longer than that is refused rather than cut."""
     if key:
         candidate = slugify(key).replace("-", "_")
+        if len(candidate) > KEY_MAX_CHARS:
+            raise ValidationError(f"key: a key is at most {KEY_MAX_CHARS} characters; shorten it.", code="validation_error")
     else:
         source = labels.get(ORIGINAL_LANGUAGE) or next(iter(labels.values()))
-        candidate = slugify(source).replace("-", "_")
+        candidate = slugify(source).replace("-", "_")[:KEY_MAX_CHARS].rstrip("_")
     if not candidate:
         raise ValidationError("That label makes no key; give the value a key.", code="validation_error")
     return candidate
@@ -554,12 +570,25 @@ def _refuse_system_row(row: Any, verb: str) -> None:
         )
 
 
+def _refuse_emptying_category(entry: VocabularyList, row: Any, tenant_id: uuid.UUID) -> None:
+    """VOC-04: a list whose rows sit inside fixed categories keeps an active row in each."""
+    if not entry.kind_required or row.kind is None or not row.active:
+        return
+    others = entry.model._default_manager.filter(tenant_id=tenant_id, kind=row.kind, active=True).exclude(pk=row.pk)
+    if not others.exists():
+        raise ValidationError(
+            f"{row.key} is the last value under {row.kind} on {entry.name}: add another there before retiring it.",
+            code="category_empty",
+        )
+
+
 def retire(
     *, list_name: str, tenant: Tenant, actor: Actor, key: str, confirm: bool
 ) -> VocabularyRetired:
     """Retire, never delete (playbook 15, AC-VOC2). The records that carry the value keep
     it and still render its label; the picker stops offering it."""
     [row] = row_for_write(list_name, [key], tenant.id)
+    _refuse_emptying_category(entry_for(list_name), row, tenant.id)
     _refuse_system_row(row, "retired")
     count = int(getattr(row, "usage_count", 0))
     if count and not confirm:
