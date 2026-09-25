@@ -121,8 +121,9 @@ def row_counts() -> dict[str, int]:
 def inventory_snapshot() -> dict[str, list[tuple[Any, ...]]]:
     """Every row of every library model and every register model, whole, so any insert,
     update or delete during a call shows as a difference. The register's models join the
-    snapshot by app as they land (c8-register-models), with no change here."""
-    models: list[type[Any]] = [model for model in apps.get_models() if issubclass(model, LibraryModel)]
+    snapshot by app as they land (c8-register-models), with no change here. A model with no
+    migrated table (a test's own probe, `managed = False`) has no rows to compare."""
+    models: list[type[Any]] = [model for model in apps.get_models() if issubclass(model, LibraryModel) and model._meta.managed]
     models += list(apps.get_app_config("register").get_models())
     return {
         model._meta.label: sorted(tuple(map(str, row)) for row in model.objects.order_by().values_list())

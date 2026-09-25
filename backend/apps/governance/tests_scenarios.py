@@ -138,6 +138,15 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
     ),
     "listEvalRuns": ("GET", "/eval/runs", None),
     "getEvalBaseline": ("GET", "/eval/baseline", None),
+    # Platform support's side of a bank's support access (TEN-06, c8-ten-support-grants): the
+    # platform admin's alone, and entering also needs a passkey, which the owner half proves.
+    "requestConsoleSupportAccess": (
+        "POST",
+        f"/console/tenants/{_ANY_ID}/support-access",
+        {"purpose": "The bank's watch feed stopped updating.", "hours": 2},
+    ),
+    "listConsoleSupportAccess": ("GET", "/console/support-access", None),
+    "enterConsoleSupportAccess": ("POST", f"/console/support-access/{_ANY_ID}/enter", {}),
 }
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a
