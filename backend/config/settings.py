@@ -646,6 +646,21 @@ CELERY_BEAT_SCHEDULE["briefing-weekly"] = {
 }
 
 # ---------------------------------------------------------------------------------------
+# ===== COL-02, TEN-01 the workflow policy's platform defaults (c10-workflow-policy) =====
+# What a bank's workflow policy starts at: a new tenant takes these, and the migration that
+# added the columns wrote them into every tenant that already existed. The bank changes its
+# own through PATCH /tenant/workflow; changing a value here moves no existing bank. The lead
+# days are comma-separated day counts, the weekday one of monday..sunday, the role a system
+# role key every tenant is seeded with.
+# ---------------------------------------------------------------------------------------
+WORKFLOW_REMINDER_DAYS_BEFORE = [int(value) for value in env_list("WORKFLOW_REMINDER_DAYS_BEFORE", "3")]
+WORKFLOW_REVIEW_REMINDER_DAYS_BEFORE = [int(value) for value in env_list("WORKFLOW_REVIEW_REMINDER_DAYS_BEFORE", "30")]
+WORKFLOW_ESCALATE_AFTER_DAYS = env_int("WORKFLOW_ESCALATE_AFTER_DAYS", 5)
+WORKFLOW_ESCALATE_TO_ROLE = env_str("WORKFLOW_ESCALATE_TO_ROLE", "compliance_officer")
+WORKFLOW_DIGEST_WEEKDAY = env_str("WORKFLOW_DIGEST_WEEKDAY", "monday")
+WORKFLOW_TRIAGE_TARGET_HOURS = env_int("WORKFLOW_TRIAGE_TARGET_HOURS", 48)
+
+# ---------------------------------------------------------------------------------------
 # ===== HOM-04 the calendar subscription's limits (D-52, ADR 0045) ========================
 # The token in a calendar address is a credential nobody can be asked to confirm: a
 # calendar client sends no header, follows no sign-in and polls unattended for years. Two
