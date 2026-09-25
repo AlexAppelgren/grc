@@ -29,6 +29,11 @@ const REMOVE_GLYPH = '×';
 // vocabulary row's label is wording a person writes, not a fact to correct
 // against a source, so those kinds reject instead of correct.
 //
+// A value changed from what was proposed names the source the reviewer read it
+// in: the proposer's source vouches only for the value it came with, so the
+// server refuses (422 `source_missing`) a changed value without a fresh one in
+// `fieldSources`. The form asks for that source once, for every field changed.
+//
 // The scope editor lets a reviewer remove a term the proposal suggested and
 // add another from the same dimensions it already touches, which is what
 // PRO-S4 exercises; the shared library's own picker for suggesting a term in
@@ -57,6 +62,7 @@ export function ProposalCorrectionForm({ proposal }: { proposal: ProposalRow }) 
   const [effectiveFrom, setEffectiveFrom] = useState(payload?.effectiveFrom ?? '');
   const [terms, setTerms] = useState<string[]>(proposedTerms ?? []);
   const [note, setNote] = useState('');
+  const [source, setSource] = useState('');
   const [rejecting, setRejecting] = useState(false);
 
   const dimensions = useMemo(() => [...new Set(terms.map((ref) => ref.split(':')[0]).filter((d): d is string => d !== undefined && d !== ''))], [terms]);
@@ -72,6 +78,15 @@ export function ProposalCorrectionForm({ proposal }: { proposal: ProposalRow }) 
 
   if (payload === null) return null;
 
+  // The fields as the server names them whose value now differs from the proposal's.
+  const changed = [
+    ...Object.entries(summaries)
+      .filter(([language, text]) => text !== payload.summaries[language])
+      .map(([language]) => `summaries.${language}`),
+    ...(dateEditable && effectiveFrom !== (payload.effectiveFrom ?? '') ? ['effectiveFrom'] : []),
+    ...(termsEditable && terms.join() !== (proposedTerms ?? []).join() ? ['terms'] : []),
+  ];
+
   const submit = () => {
     approve.mutate({
       note: note.trim(),
@@ -80,6 +95,7 @@ export function ProposalCorrectionForm({ proposal }: { proposal: ProposalRow }) 
         effectiveFrom: dateEditable ? (effectiveFrom === '' ? null : effectiveFrom) : undefined,
         ...(termsEditable ? { terms } : {}),
       },
+      ...(changed.length > 0 ? { fieldSources: Object.fromEntries(changed.map((field) => [field, source.trim()])) } : {}),
     });
   };
 
@@ -129,6 +145,11 @@ export function ProposalCorrectionForm({ proposal }: { proposal: ProposalRow }) 
               ))}
             </Select>
           ) : null}
+        </Field>
+      ) : null}
+      {changed.length > 0 ? (
+        <Field id="correct-source" label={t('console.queue.correct.source')} hint={t('console.queue.correct.sourceHint')}>
+          <TextInput id="correct-source" value={source} onChange={(e) => setSource(e.target.value)} />
         </Field>
       ) : null}
       <Field id="correct-note" label={t('console.queue.correct.note')} hint={t('console.queue.correct.noteHint')}>
