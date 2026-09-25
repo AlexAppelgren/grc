@@ -33,7 +33,7 @@ def list_platform_watch(*, limit: int, offset: int) -> PlatformWatchPage:
     """`GET /agents/platform`: bleqq's active agents by key, one page at a time, the same for
     every bank. A definition whose current version is retired is not running and not listed."""
     retired = AgentVersion.objects.filter(
-        agent=OuterRef("pk"), version_no=OuterRef("current_version"), retired_at__isnull=False
+        agent=OuterRef("pk"), version_number=OuterRef("current_version"), retired_at__isnull=False
     )
     queryset = (
         Agent.objects.filter(scope=AgentScopeKind.PLATFORM.value, active=True)

@@ -79,7 +79,7 @@ class WhatBleqqWatches(TestCase):
         _agent("switched-off", active=False)
         retired = _agent("retired-sweeper")
         with library_write("test"):
-            AgentVersion.objects.create(agent=retired, version_no=1, model="m", prompt_path="p.md", retired_at=NOW)
+            AgentVersion.objects.create(agent=retired, version_number=1, model="m", prompt_path="p.md", retired_at=NOW)
         _agent(
             "bank-watch",
             scope=AgentScopeKind.TENANT.value,
