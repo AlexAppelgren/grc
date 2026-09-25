@@ -9,6 +9,7 @@ import { machineConfirmedLabel, presentScope } from '@/features/library/obligati
 import type { ObligationDetail, ObligationVersionRow, RelatedObligation } from '@/features/library/types';
 import { inForceLabel } from '@/features/library/version-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { externalHref } from '@/shared/utils/external-href';
 import { formatDate, formatDateTime } from '@/shared/utils/format';
 
 // The panels of the obligation card (design/screens/tenant-obligation.html;
@@ -159,6 +160,7 @@ export function ProvenancePanel({ obligation, actions }: { obligation: Obligatio
   const t = useT();
   const ctx = useFormatContext();
   const { provenance, instrument } = obligation;
+  const sourceHref = externalHref(provenance.sourceUrl);
   const facts: Fact[] = [
     { key: 'instrument', label: t('inventory.obligation.instrumentLabel'), value: instrument.name === null ? instrument.shortName : instrument.name.text },
     { key: 'ref', label: t('inventory.obligation.officialRefLabel'), value: <span className="font-mono">{instrument.officialRef}</span> },
@@ -170,11 +172,14 @@ export function ProvenancePanel({ obligation, actions }: { obligation: Obligatio
   facts.push({
     key: 'source',
     label: t('inventory.obligation.sourceLabel'),
-    value: (
-      <a href={provenance.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline" data-source-link="">
-        {provenance.sourceLabel}
-      </a>
-    ),
+    value:
+      sourceHref === null ? (
+        provenance.sourceLabel
+      ) : (
+        <a href={sourceHref} target="_blank" rel="noopener noreferrer" className="underline" data-source-link="">
+          {provenance.sourceLabel}
+        </a>
+      ),
   });
   const machine = machineConfirmedLabel(obligation.version, provenance, t, ctx);
   const verified =
