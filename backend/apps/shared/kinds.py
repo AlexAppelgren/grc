@@ -302,4 +302,11 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "ACC-03: a service key or a personal access token on one api_key table; authentication, "
         "the step-up fence and the api_key CHECKs branch on it",
     ),
+    # Chunk 8's register (c8-register-models, register 0001). `Applicability` is listed above.
+    "AssessmentMethod": (
+        "assessment_method",
+        "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
+        "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
+        "reporting branches on",
+    ),
 }

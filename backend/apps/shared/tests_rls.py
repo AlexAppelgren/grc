@@ -209,6 +209,25 @@ TENANT_ONLY_TABLES = [
     "agent_access",
     "agent_access_department",
     "agent_access_product",
+    # c8-register-models (register 0001, 0002; REG-01 to REG-05): the bank's register. Each
+    # reference to another tenant row is also a composite key (apps/register/tests_models.py
+    # proves the database refuses every cross-tenant one).
+    "tenant_obligation",
+    "tenant_obligation_scope",
+    "compliance_assessment",
+    "gap",
+    "interpretation",
+    "internal_link",
+    # c8-teams-model (tenants 0003, TEN-03): a person in a team. Both keys are composite
+    # (apps/tenants/tests_team_models.py proves the database refuses a cross-tenant one).
+    "team_member",
+    # acc-scope-and-reach (governance 0004, ACC-08): a bank's requests for tenant reach and its
+    # one row of reach state. Each person and the approving request are composite keys.
+    "tenant_reach_request",
+    "tenant_reach",
+    # acc-entries-and-log (governance 0005, ACC-08): the access log of a bank's own agents,
+    # append-only; the entry and the person are composite keys.
+    "agent_access_call",
 ]
 
 # The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the

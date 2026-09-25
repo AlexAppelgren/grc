@@ -371,6 +371,9 @@ class AgentsScenarioTests(TestCase):
         """AGT-S5
 
         A tenant controls its agents without touching their instructions (AGT-04).
+
+        Built over createTenantAgent, updateTenantAgent, runTenantAgentNow, pauseTenantAgent,
+        resumeTenantAgent and interruptAgentRun (declared by c11-agents-contract).
         """
 
     @skip("pending: AGT-S6 (AGT-04, chunk 11)")
@@ -378,6 +381,8 @@ class AgentsScenarioTests(TestCase):
         """AGT-S6
 
         The budget cap pauses runs and the AI off switch stops every model call (AGT-04).
+
+        Built over getAgentBudget and putAgentBudget (declared by c11-agents-contract).
         """
 
     @skip("pending: AGT-S7 (AGT-05, chunk 11)")
@@ -385,6 +390,9 @@ class AgentsScenarioTests(TestCase):
         """AGT-S7
 
         Research requests ask an agent to check, research or re-tag (AGT-05).
+
+        Built over createResearchRequest, getResearchRequest and createRetagRequest (declared
+        by c11-agents-contract).
         """
 
     @skip("pending: AGT-S8 (AGT-06, chunk 11)")
@@ -701,12 +709,41 @@ class AgentsScenarioTests(TestCase):
         What applies returns a labelled summary above a full list the model never shortens (ACC-06).
         """
 
-    @skip("pending: ACC-S6 (ACC-07, AC-ACC1, chunk 11)")
     def test_acc_s6(self) -> None:
         """ACC-S6
 
         A narrowed entry never narrows silently (ACC-07, AC-ACC1).
         """
+        from apps.agents.tests_what_applies import CARD_FEATURE, TradingBank
+        from apps.shared.agent_access_guard import SCOPE_HEADER
+
+        # Given a Trading entry, and a tenant footprint that also covers card issuing and
+        # card acquiring.
+        bank = TradingBank(slug="acc-s6")
+        bank.decide(bank.card, "We issue debit cards to trading clients")
+        # When the entry asks what applies (whatApplies) to a feature that issues virtual cards.
+        response = bank.ask(self.client, bank.trading_key, CARD_FEATURE)
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        # Then the answer states the entry's name, its departments and products and its date,
+        # in the body and in the header every answer to the credential carries.
+        scope = body["scope"]
+        self.assertEqual(scope["entry"]["name"], "Trading platform coding agent")
+        self.assertEqual([unit["name"] for unit in scope["departments"]], ["Trading"])
+        self.assertEqual((scope["products"], scope["narrowed"]), ([], True))
+        self.assertTrue(scope["asOf"])
+        self.assertEqual(json.loads(response[SCOPE_HEADER]), scope)
+        # And it names "Licensed activity: Card issuing" and "Product type: Cards" among what
+        # it could not see, and says to ask compliance about them.
+        outside = [f"{row['dimension']['label']}: {row['term']['label']}" for row in body["outsideScope"]["terms"]]
+        self.assertIn("Licensed activity: Card issuing", outside)
+        self.assertIn("Product type: Cards", outside)
+        self.assertEqual(body["outsideScope"]["advice"], "ask_compliance")
+        # And no record carrying those terms appears anywhere in the response.
+        text = response.content.decode()
+        for leaked in (bank.card.stable_key, str(bank.card.id), "Authenticate card payments", "We issue debit cards"):
+            self.assertNotIn(leaked, text)
+        self.assertEqual(body["total"], 3)
 
     @skip("pending: ACC-S10 (ACC-10, chunk 13)")
     def test_acc_s10(self) -> None:

@@ -57,4 +57,17 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/footprint/requests/{request_id}/reject", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/tenant/footprint/requests/{request_id}/withdraw", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/vocab/{list_name}/suggestions/{suggestion_id}/decline", "taxonomy.VocabularySuggestion", "vocabulary_suggestion"),
+    # acc-scope-and-reach (ACC-08): deciding a request for tenant reach.
+    ("POST", "/tenant/reach/requests/{request_id}/approve", "governance.TenantReachRequest", "tenant_reach_request"),
+    ("POST", "/tenant/reach/requests/{request_id}/reject", "governance.TenantReachRequest", "tenant_reach_request"),
+    # c8-reg-status: a legal entity's register row (REG-02).
+    ("PATCH", "/obligations/{obligation_id}/register/entities/{org_unit_id}", "register.TenantObligationScope", "register_entity"),
+    # c8-reg-links-history (REG-05): a link is removed by id.
+    ("DELETE", "/internal-links/{link_id}", "register.InternalLink", "internal_link"),
+    # acc-entries-and-log (ACC-01, ACC-03, ACC-08): an agent access entry, its keys and its log.
+    ("GET", "/agent-access/{uuidstr:entry_id}", "agents.AgentAccess", "agent_access_entry"),
+    ("PATCH", "/agent-access/{uuidstr:entry_id}", "agents.AgentAccess", "agent_access_entry"),
+    ("POST", "/agent-access/{uuidstr:entry_id}/revoke", "agents.AgentAccess", "agent_access_entry"),
+    ("POST", "/agent-access/{uuidstr:entry_id}/keys/{uuidstr:key_id}/revoke", "identity.ApiKey", "agent_access_key"),
+    ("GET", "/agent-access/{uuidstr:entry_id}/calls", "agents.AgentAccess", "agent_access_entry"),
 ]

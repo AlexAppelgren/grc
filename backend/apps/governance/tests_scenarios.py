@@ -138,6 +138,20 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
     ),
     "listEvalRuns": ("GET", "/eval/runs", None),
     "getEvalBaseline": ("GET", "/eval/baseline", None),
+    # c11-agents-contract (AGT-03, AGT-05): bleqq's agents, their versions, settings and runs
+    # are the platform admin's; a re-tag of library records is the library editor's. The
+    # three writes that change every bank also ask for a passkey, a different refusal.
+    "getAgentDefinition": ("GET", "/agent-definitions/watch-sweeper", None),
+    "publishAgentVersion": ("POST", "/agent-definitions/watch-sweeper/versions", {"versionNo": 2, "changeNote": "Reads the new index."}),
+    "retireAgentVersion": ("POST", "/agent-definitions/watch-sweeper/versions/1/retire", {}),
+    "getPlatformAgentSettings": ("GET", "/agent-definitions/watch-sweeper/settings", None),
+    "updatePlatformAgentSettings": (
+        "PUT",
+        "/agent-definitions/watch-sweeper/settings",
+        {"cadence": "daily", "jurisdictions": ["se"], "monthlyBudget": "250.00"},
+    ),
+    "listPlatformRuns": ("GET", "/console/agent-runs", None),
+    "createRetagRequest": ("POST", "/console/research-requests", {"topic": "Re-tag custody records with Client money."}),
 }
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a
@@ -854,16 +868,160 @@ class GovernanceScenarioTests(ScenarioTestCase):
         self.assertIn("append-only", str(refused.exception))
         self.assertEqual(self._one("proposal.approved", uuid.UUID(approved.json()["id"])).summary, written)
 
-    @skip("pending: ACC-S11 (ACC-08, AC-ACC2, chunk 11)")
+    # acc-register-read: reach decided through its routes, read through the register's.
     def test_acc_s11(self) -> None:
         """ACC-S11
 
         Tenant reach needs two people, and off means off (ACC-08, AC-ACC2).
         """
+        from apps.governance.models import TenantReach
+        from apps.register.tests_agent_read import ENTRIES, ReadWorld
 
-    @skip("pending: ACC-S12 (ACC-08, chunk 11)")
+        world = ReadWorld(slug="acc-s11")
+        tenancy.activate(world.tenant.id)
+        TenantReach.objects.filter(tenant=world.tenant).delete()  # the bank starts with reach off
+        first = factories.member(world.tenant, roles=("admin",), user_row=factories.user(name="Erik Holm")).user
+        second = factories.member(world.tenant, roles=("admin",), user_row=factories.user(name="Magnus Öberg")).user
+
+        def post(path: str, user: Any) -> Any:
+            return self.client.post(
+                f"{V1}/tenant/reach{path}", "{}", content_type="application/json", **sign_in(user, tenant=world.tenant, step_up=True)
+            )
+
+        def reads(key: str) -> Any:
+            return world.get(self.client, ENTRIES, key)
+
+        # Off to begin with, whatever the entry's own toggle says.
+        self.assertEqual(reads(world.narrow_key).json()["code"], "tenant_reach_off")
+        # requestTenantReach, then the requester's own approval: refused.
+        asked = post("/requests", first).json()
+        own = post(f"/requests/{asked['id']}/approve", first)
+        self.assertEqual((own.status_code, own.json()["code"]), (409, "four_eyes_violation"))
+        # approveTenantReach by the second person: on, one audit row for each, assertion referenced.
+        self.assertEqual(post(f"/requests/{asked['id']}/approve", second).json()["status"], "approved")
+        tenancy.activate(world.tenant.id)
+        rows = {row.action: row for row in AuditEvent.objects.filter(tenant_id=world.tenant.id, action__startswith="tenant_reach.")}
+        self.assertEqual((rows["tenant_reach.requested"].actor_id, rows["tenant_reach.approved"].actor_id), (first.id, second.id))
+        self.assertTrue(all(row.step_up_assertion_id for row in rows.values()))
+        # The entry reads the register.
+        self.assertEqual(reads(world.narrow_key).status_code, 200)
+        # switchOffTenantReach by either: every register route refuses every entry.
+        self.assertFalse(post("/off", second).json()["enabled"])
+        for key in (world.narrow_key, world.general_key):
+            for path in (ENTRIES, f"{ENTRIES}/{world.in_scope[0].id}"):
+                refused = world.get(self.client, path, key)
+                self.assertEqual((refused.status_code, refused.json()["code"]), (403, "tenant_reach_off"))
+
+    # acc-entries-and-log. What applies and the register read land with their own packages;
+    # until then the entry's reads are the library list, whose free-text phrase stands in for
+    # the description, and a write it may not make. The entry is registered, changed, given
+    # reach and a key, and revoked through its own routes.
     def test_acc_s12(self) -> None:
         """ACC-S12
 
         The access log records the call and holds no content (ACC-08).
         """
+        import json
+        from types import SimpleNamespace
+
+        from apps.governance.models import AgentAccessCall
+
+        tenant = factories.tenant(slug="acc-s12")
+        admin_user = factories.member(tenant, roles=("admin",), user_row=factories.user(name="Erik Holm")).user
+
+        def admin(method: str, path: str, body: dict[str, Any] | None = None) -> Any:
+            response = self.client.generic(
+                method, f"{V1}/agent-access{path}", json.dumps(body or {}), content_type="application/json", **sign_in(admin_user, tenant=tenant, step_up=True)
+            )
+            self.assertLess(response.status_code, 300, response.content)
+            return response.json()
+
+        # registerAgentAccess, updateAgentAccess, setAgentAccessReach, createAgentAccessKey.
+        entry = admin("POST", "", {"name": "Coding agent", "purpose": "Builds the order router.", "ownerTeam": "compliance"})
+        admin("PATCH", f"/{entry['id']}", {"name": "Trading platform coding agent"})
+        admin("PUT", f"/{entry['id']}/tenant-reach", {"enabled": True})
+        key = admin("POST", f"/{entry['id']}/keys", {"name": "Order router CI", "scopes": ["library:read", "search:read"]})
+        person = factories.member(tenant, roles=("reader",), user_row=factories.user(name="Sara Lindqvist")).user
+        token = factories.personal_token(tenant, person, entry=SimpleNamespace(id=uuid.UUID(entry["id"])))
+
+        description = "a feature that issues virtual cards against a trading account"
+        listed = self.client.get(f"{V1}/obligations", {"q": description, "footprint": "in", "limit": "5"}, HTTP_X_API_KEY=key["plainKey"])
+        self.assertEqual(listed.status_code, 200, listed.content)
+        answered = len(listed.json()["items"])
+        by_token = self.client.get(f"{V1}/obligations", {"q": description}, HTTP_X_API_KEY=token.plain_key)
+        self.assertEqual(by_token.status_code, 200, by_token.content)
+        refused = self.client.post(f"{V1}/agent-access", "{}", content_type="application/json", HTTP_X_API_KEY=key["plainKey"])
+        self.assertEqual((refused.status_code, refused.json()["code"]), (403, "step_up_required"))
+
+        # listAgentAccessCalls: newest first.
+        page = self.client.get(f"{V1}/agent-access/{entry['id']}/calls", **sign_in(admin_user, tenant=tenant))
+        self.assertEqual(page.status_code, 200, page.content)
+        self.assertEqual(page.json()["total"], 3)
+        write, token_call, key_call = page.json()["items"]
+        self.assertEqual(key_call["credential"], {"id": key["id"], "keyPrefix": key["keyPrefix"], "kind": "service"})
+        self.assertIsNone(key_call["person"])
+        self.assertEqual(key_call["tool"], "listObligations")
+        self.assertEqual(key_call["filters"], {"q": [], "footprint": ["in"]})
+        self.assertEqual(key_call["recordCount"], answered)
+        self.assertEqual(key_call["scopes"], ["library:read", "search:read"])
+        self.assertEqual(key_call["scope"], {"narrowed": False, "terms": {}})
+        self.assertEqual(key_call["status"], 200)
+        self.assertGreaterEqual(key_call["durationMs"], 0)
+        self.assertEqual(token_call["credential"]["kind"], "personal")
+        self.assertEqual(token_call["person"], {"id": str(person.id), "name": "Sara Lindqvist"})
+        self.assertEqual((write["tool"], write["status"], write["recordCount"]), ("registerAgentAccess", 403, None))
+        # Neither the answer nor the database row holds the description or any record's text.
+        tenancy.activate(tenant.id)
+        stored = json.dumps([list(AgentAccessCall.objects.filter(tenant_id=tenant.id).values())], default=str)
+        for text in (page.content.decode(), stored):
+            self.assertNotIn("virtual cards", text)
+            self.assertNotIn("trading account", text)
+
+        # revokeAgentAccessKey, then revokeAgentAccess: a revoked credential is refused before
+        # it is anyone's call, so the log holds nothing more.
+        admin("POST", f"/{entry['id']}/keys/{key['id']}/revoke")
+        self.assertEqual(self.client.get(f"{V1}/obligations", HTTP_X_API_KEY=key["plainKey"]).status_code, 401)
+        self.assertFalse(admin("POST", f"/{entry['id']}/revoke")["active"])
+        self.assertEqual(self.client.get(f"{V1}/obligations", HTTP_X_API_KEY=token.plain_key).status_code, 401)
+        tenancy.activate(tenant.id)
+        self.assertEqual(AgentAccessCall.objects.filter(tenant_id=tenant.id).count(), 3)
+
+    # acc-scope-and-reach: the reach switch alone, ahead of the register reads ACC-S11 needs.
+    def test_acc_s14(self) -> None:
+        """ACC-S14
+
+        Tenant reach is switched on by two people and off by one (ACC-08).
+        """
+        from apps.governance import reach
+
+        tenant = factories.tenant(slug="acc-s14")
+        first = factories.member(tenant, roles=("admin",), user_row=factories.user(name="Erik Holm")).user
+        second = factories.member(tenant, roles=("admin",), user_row=factories.user(name="Maria Ek")).user
+
+        def post(path: str, user: Any) -> Any:
+            return self.client.post(f"{V1}/tenant/reach{path}", "{}", content_type="application/json", **sign_in(user, tenant=tenant, step_up=True))
+
+        def on() -> bool:
+            tenancy.activate(tenant.id)
+            return reach.tenant_reach_on(tenant.id)
+
+        # requestTenantReach, then the requester's own approveTenantReach: refused.
+        asked = post("/requests", first).json()
+        own = post(f"/requests/{asked['id']}/approve", first)
+        self.assertEqual((own.status_code, own.json()["code"]), (409, "four_eyes_violation"))
+        self.assertFalse(on())
+        # approveTenantReach by the second person: on, with a row naming each and their assertion.
+        self.assertEqual(post(f"/requests/{asked['id']}/approve", second).json()["status"], "approved")
+        self.assertTrue(on())
+        tenancy.activate(tenant.id)
+        rows = {row.action: row for row in AuditEvent.objects.filter(tenant_id=tenant.id, action__startswith="tenant_reach.")}
+        self.assertEqual(rows["tenant_reach.requested"].actor_id, first.id)
+        self.assertEqual(rows["tenant_reach.approved"].actor_id, second.id)
+        self.assertTrue(all(row.step_up_assertion_id for row in rows.values()))
+        # switchOffTenantReach by either of them: off at once.
+        self.assertFalse(post("/off", first).json()["enabled"])
+        self.assertFalse(on())
+        # rejectTenantReach by the second person: reach stays off.
+        again = post("/requests", first).json()
+        self.assertEqual(post(f"/requests/{again['id']}/reject", second).json()["status"], "rejected")
+        self.assertFalse(on())

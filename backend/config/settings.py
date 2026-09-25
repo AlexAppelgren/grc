@@ -118,6 +118,12 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # acc-entries-and-log (ACC-08): the access log row of an agent access credential's call,
+    # written after the response.
+    "apps.governance.access_log.AccessLogMiddleware",
+    # acc-what-applies (ACC-07): the scope statement on every answer to an agent access
+    # credential.
+    "apps.shared.agent_access_guard.ScopeStatementMiddleware",
     # Timing last so the measurement is the application's own time (playbook 10), not
     # the middleware stack above it.
     "apps.shared.middleware.ServerTimingMiddleware",
@@ -274,6 +280,11 @@ EMBEDDER_PROVIDER = env_str("EMBEDDER_PROVIDER", "mock")  # mock | none | <chose
 EMBEDDER_API_KEY = env_str("EMBEDDER_API_KEY", "")
 EMBEDDING_DIMENSIONS = env_int("EMBEDDING_DIMENSIONS", 1024)  # DECISIONS D-09
 AGENT_RUNNER = env_str("AGENT_RUNNER", "mock")  # mock | managed_agents
+
+# --- c11-agents-contract (AGT-05) ------------------------------------------------------
+# The longest topic a research or re-tag request may carry, in characters: the text is a
+# bank's own (or the console's) and is validated at the boundary before anything reads it.
+AGENT_RESEARCH_TOPIC_MAX_CHARS = env_int("AGENT_RESEARCH_TOPIC_MAX_CHARS", 500)
 MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp
 MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")
 MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")
@@ -741,6 +752,13 @@ BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200)
 EXPORT_RETENTION_DAYS = env_int("EXPORT_RETENTION_DAYS", 7)
 
 # ---------------------------------------------------------------------------------------
+# ===== c8-reg-applicability: REG-01, AC-REG1 many answers in one call (D-75) ============
+# The most applicability answers one confirmed call stores (POST /applicability). Each row
+# is a write and an audit event in one transaction, so the cap keeps a call inside the API
+# budget; a longer call is refused whole and stores nothing.
+REGISTER_BULK_MAX = env_int("REGISTER_BULK_MAX", 100)
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------
@@ -804,6 +822,16 @@ if min(AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS, AGENT_ACCESS_RATE_PER
     raise ImproperlyConfigured(
         "Refusing to boot: AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS and "
         "AGENT_ACCESS_RATE_PER_MINUTE must each be at least 1."
+    )
+# ===== acc-what-applies: what applies to a bank's own agent (ACC-06, ACC-07) =====
+# The longest description `POST /agent-access/what-applies` takes, in characters, and how
+# many words a footprint term's usage note must share with it to be named as outside the
+# entry's scope (a label matches when all its words are in the description).
+AGENT_ACCESS_DESCRIPTION_MAX_CHARS = env_int("AGENT_ACCESS_DESCRIPTION_MAX_CHARS", 2000)
+AGENT_ACCESS_NOTE_MATCH_WORDS = env_int("AGENT_ACCESS_NOTE_MATCH_WORDS", 2)
+if min(AGENT_ACCESS_DESCRIPTION_MAX_CHARS, AGENT_ACCESS_NOTE_MATCH_WORDS) < 1:
+    raise ImproperlyConfigured(
+        "Refusing to boot: AGENT_ACCESS_DESCRIPTION_MAX_CHARS and AGENT_ACCESS_NOTE_MATCH_WORDS must each be at least 1."
     )
 
 # ---------------------------------------------------------------------------------------
