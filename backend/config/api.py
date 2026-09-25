@@ -26,6 +26,7 @@ from apps.cases.api import router as cases_router
 from apps.governance.api import router as governance_router
 from apps.home.api import router as home_router
 from apps.identity.api import router as identity_router
+from apps.integrations.api import router as integrations_router
 from apps.library.api import router as library_router
 from apps.proposals.api import router as proposals_router
 from apps.search.api import router as search_router
@@ -65,6 +66,7 @@ api.add_router("", agents_router)
 api.add_router("", watch_router)
 api.add_router("", cases_router)
 api.add_router("", home_router)
+api.add_router("", integrations_router)  # acc-mcp-transport: POST /mcp
 
 
 @api.exception_handler(ProblemError)

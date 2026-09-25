@@ -496,6 +496,13 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # query string, so the exception stays one route wide.
     ("GET", "/upcoming"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_UPCOMING_READER),
     ("GET", "/calendar/feed.ics"): Ungated(UngatedReason.PUBLIC_TOKEN, _PUBLIC_CALENDAR_TOKEN),
+    # acc-mcp-transport (ACC-05): one endpoint for every tool, so no single scope fits it.
+    ("POST", "/mcp"): Ungated(
+        UngatedReason.LOGIC_GATE,
+        "Only the key of an agent access entry or a personal access token, through ApiKeyAuth; any other key "
+        "answers 403 agent_access_only. The gate is apps/integrations/mcp.py:handle, and the tool list offers a "
+        "tool only when the credential holds the scope its route needs, the register tool only with reach too.",
+    ),
 }
 
 

@@ -36,7 +36,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | INT-01 | Signed webhooks with a delivery log, from a transactional outbox | S | R3 | pending |
 | INT-02 | Ticket export for actions | C | R3 | pending |
 | INT-03 | Audit log stream to the customer's SIEM | S | R3 | pending |
-| ACC-05 | An MCP server over the same API: same authentication, same scope gates, same logic, same pagination, no read path of its own. Its tool list follows the credential, and every agent access credential is read-only through R2 | M | R2 | pending |
+| ACC-05 | An MCP server over the same API: same authentication, same scope gates, same logic, same pagination, no read path of its own. Its tool list follows the credential, and every agent access credential is read-only through R2 | M | R2 | in_progress |
 | ACC-09 | Limits: pagination as everywhere, a rate limit per credential, and model calls counted against the tenant's monthly budget cap and stopped by its AI off switch | M | R2 | in_progress |
 
 ## 3. Acceptance criteria (from PRD, condensed)

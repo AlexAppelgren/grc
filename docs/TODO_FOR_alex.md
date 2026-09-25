@@ -1389,3 +1389,26 @@ Built on these defaults; each stays yours to overrule.
       and the first refusal of each minute writes one `credential_rate_limited` row in
       the security log, not one per refused request, so a runaway agent cannot flood
       the log.
+
+## acc-mcp-transport: the MCP server's transport (2026-09-25, ACC-05)
+
+Built on these defaults; each stays yours to overrule.
+
+- [ ] **Both protocol eras, statelessly.** The plan named `initialize` and `ping`, which
+      the current MCP revision (2026-07-28, fetched today) removed along with sessions:
+      every request now carries its version in `params._meta`, and `server/discover`
+      replaces the handshake. `POST /mcp` serves both: 2026-07-28 (`server/discover`,
+      `tools/list`) and 2025-11-25 and 2025-06-18 (`initialize`, `ping`, `tools/list`),
+      never minting a session in either. Default: so, because most agent clients still
+      speak 2025-11-25. The alternative is to drop the earlier revisions.
+- [ ] **The register tool follows the entry's half of reach only, for now.** It is
+      offered to a credential holding `tenant:read` whose entry has tenant reach on. The
+      bank's own switch (`tenant_reach_on`, acc-scope-and-reach) was not on this branch's
+      base, so the tool list does not read it yet; the register route checks both on
+      every call (acc-register-read), so a listed tool still answers 403
+      `tenant_reach_off` with the switch off. The integrator adds the switch to
+      `apps/integrations/mcp.py:reaches_register` once both are merged.
+- [ ] **Only agent access credentials.** A bank's other keys and bleqq's own agent keys
+      answer 403 `agent_access_only` on `/mcp`; they keep the REST API.
+- [ ] **No caching of the tool list.** `ttlMs` is 0 and `cacheScope` `private`, because
+      reach can be switched off at any moment and the list must follow it at once.
