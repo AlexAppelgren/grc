@@ -710,6 +710,10 @@ SESSION_IDLE_MINUTES_DEFAULT = env_int("SESSION_IDLE_MINUTES_DEFAULT", 30)
 SESSION_ABSOLUTE_HOURS_DEFAULT = env_int("SESSION_ABSOLUTE_HOURS_DEFAULT", 12)
 SESSION_IDLE_MINUTES_MAX = env_int("SESSION_IDLE_MINUTES_MAX", 8 * 60)
 SESSION_ABSOLUTE_HOURS_MAX = env_int("SESSION_ABSOLUTE_HOURS_MAX", 24)
+# ===== c8-org-models: ID-07 credential policy (ADR 0048) =====
+# How many days ahead a tightened credential policy takes effect by default, so members can
+# enrol a device-bound passkey before theirs stop working (tenants.SecurityPolicy).
+CREDENTIAL_POLICY_NOTICE_DAYS = env_int("CREDENTIAL_POLICY_NOTICE_DAYS", 14)
 ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 10)
 REFRESH_REPLAY_GRACE_SECONDS = env_int("REFRESH_REPLAY_GRACE_SECONDS", 30)
 STEP_UP_FRESHNESS_MINUTES = env_int("STEP_UP_FRESHNESS_MINUTES", 5)
@@ -721,6 +725,18 @@ REFRESH_COOKIE_SECURE = not DEBUG
 # An API key's last_used_at (and its key_used security-log row) is written at most this
 # often, so a busy agent does not turn every call into a write (ID-10).
 API_KEY_LAST_USED_THROTTLE_SECONDS = env_int("API_KEY_LAST_USED_THROTTLE_SECONDS", 60)
+# ===== acc-foundation: agent access credentials (ACC-03, ACC-09, ADRs 0055 and 0056) =====
+# The longest a service key of an agent access entry, and a personal access token, may live;
+# a token cannot be minted without an expiry. And the requests one such credential may make
+# per minute, whatever it reads.
+AGENT_ACCESS_KEY_MAX_DAYS = env_int("AGENT_ACCESS_KEY_MAX_DAYS", 90)
+PERSONAL_TOKEN_MAX_DAYS = env_int("PERSONAL_TOKEN_MAX_DAYS", 90)
+AGENT_ACCESS_RATE_PER_MINUTE = env_int("AGENT_ACCESS_RATE_PER_MINUTE", 60)
+if min(AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS, AGENT_ACCESS_RATE_PER_MINUTE) < 1:
+    raise ImproperlyConfigured(
+        "Refusing to boot: AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS and "
+        "AGENT_ACCESS_RATE_PER_MINUTE must each be at least 1."
+    )
 
 # ---------------------------------------------------------------------------------------
 # ===== Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ===========

@@ -158,6 +158,38 @@ or has differently:
 In the API every such field is `{key, kind, label}` on reads and `key` on
 writes, never an OpenAPI `enum`.
 
+**Chunk 8 organisation (c8-org-models, tenants 0002, 2026-09-25).** Three tier-one kinds:
+
+- `org_unit_kind` (`group`, `legal_entity`, `business_area`, `business_unit`, `function`),
+  the designed Postgres enum as `OrgUnitKind`: only a legal entity carries the
+  `legal_entity` term and holds licences, and a department is a unit of the last three kinds
+  (TEN-02, D-21).
+- `product_status` (`planned`, `live`, `retired`) stays a kind, `ProductStatusKind`, not a
+  tenant list: `schema.sql` has it as a `CHECK` on a text column, and code branches on it,
+  because retired is how a product is withdrawn rather than deleted and a retired product
+  scopes nothing (TEN-02, D-70).
+- `credential_policy` (`any_passkey`, `device_bound`), `CredentialPolicyKind`: sign-in and
+  enrolment branch on it (ID-07, ADR 0048).
+**Chunk 8's register lists (2026-09-25, c8-vocab-lists-rules).** Tier-three lists
+`schema.sql` has as `CHECK` constraints or not at all, each with an immutable key, labels in
+`en` and `sv`, system rows the tenant hook files create-only, and forced row-level security:
+
+- `gap_status` with the tier-one kind `gap_category` (`open`, `remediating`,
+  `risk_accepted`, `closed`), a system row per kind. `risk_accepted` is the frontend's
+  spelling (`tone-by-kind.ts`), so one state has one name (REG-03, VOC-04).
+- `gap_source` (`assessment`, `change_case`, `audit`, `incident`, `regulator`), no kind:
+  its pill takes the `source` slot's tone (REG-03, pills-and-labels "Slot order").
+- `risk_acceptance_reason` (`accepted_by_management`, `cost_disproportionate`,
+  `compensating_control`, `time_limited`, `other`), no kind (VOC-06).
+- `team`, with the column `email` and `UNIQUE (tenant_id, id)` for composite keys, no
+  `is_lead`, served by `GET /vocab/team`; one system row, `compliance`, because every list
+  has a default. Its `org_unit_id` comes with the teams model (TEN-03).
+- `risk_rating` gains the tier-one kind `risk_level` (`low`, `medium`, `high`): each row
+  maps to one, and the tone reads it, never the editable ordinal (VOC-05). No schema
+  change; `seed_reference` puts the level on every tenant's system rows.
+
+Retiring the last active row under a fixed kind answers 409 `category_empty` (VOC-04).
+
 ## 2. Identity (PRD ID, playbook 4.2)
 
 - Drop `app_user.external_subject` as the primary identity, `mfa_enrolled`,
@@ -1239,3 +1271,108 @@ The shapes depart from the design on purpose:
 - `POST /eval/runs` (`startEvalRun`) waits for chunk 14's job runner
   (`backend/scripts/contract_drift_pending.txt`): a run builds the sample corpus in a
   database of its own and takes minutes, which no request should hold open.
+
+## c8-org-models. The bank's organisation as tables (2026-09-25, tenants 0002)
+
+Section 17 of `schema.sql` (`org_unit`, `licence`, `tenant_product`, `tenant_product_term`,
+`internal_item`) and the ID-07/ID-08 security policy are built with these departures:
+
+- Every reference to another tenant row is also a composite `(tenant_id, …)` foreign key,
+  written as SQL in the migration, because PostgreSQL checks a foreign key without
+  row-level security. `org_unit`, `licence`, `tenant_product` and `internal_item` carry
+  `UNIQUE (tenant_id, id)`, and so does `link_kind`, which `internal_item.kind` points at. A
+  head or owner (`head_user_id`, `owner_user_id`, `updated_by_id`) is a key into
+  `membership (tenant_id, user_id)`, so it is always a member of the same bank; the
+  designed `owner_id` is `owner_user_id`, beside the `owner_team_id` tenants 0003 adds.
+- `org_unit.entity_term_id` must be a term of the `legal_entity` dimension (a trigger, since
+  a CHECK cannot read another table) and only a legal entity may carry one (a CHECK).
+  `org_unit` gains `version` for `If-Match`.
+- `licence.licence_type` is a taxonomy term (`licence_type_id`), not the designed free
+  text: a type is a key, never a phrase. `service_term_ids uuid[]` is the
+  `licence_service_term` table, so each term is a real foreign key. D-43's certificate
+  columns are `issuer`, `number`, `scope_statement`, `issued_on`, `valid_until`,
+  `next_audit_on` and `owner_user_id`; none of them is a term.
+- `tenant_product_term` has its own `id` rather than the designed composite primary key,
+  like every other `TenantModel`, with `UNIQUE (product_id, term_id)`.
+- Units, licences, products and items are deactivated, withdrawn or retired, never
+  deleted: each model's `delete()` refuses, and every reference is `PROTECT`.
+- `security_policy` is one row per tenant: `credential_policy`, `allowed_authenticators`
+  (a list of AAGUIDs, schema `AllowedAuthenticators`), `device_bound_from` (a date),
+  `session_idle_minutes` and `session_absolute_hours` (null means the platform default,
+  both above zero and capped by `SESSION_IDLE_MINUTES_MAX` and `SESSION_ABSOLUTE_HOURS_MAX`
+  in the write), `updated_by_id`, `updated_at`. No row means the platform defaults.
+  `CREDENTIAL_POLICY_NOTICE_DAYS` (14) is the default notice a tightening gives.
+
+## 18. Chunk 11's agent tables (2026-09-25, c11-agent-models)
+
+Agents migrations 0004 and 0005 build schema v0.3 PART 3's agent tables with three rulings
+of `docs/plans/briefs/CHUNK11_TASKS.md` and the fence of ADR 0053 in the database:
+
+- **Ruling 1: a definition is always bleqq's.** Every `agent` row is a library row and no
+  bank ever creates one. `agent.scope` (`platform` or `tenant`) and `tenant_configurable`
+  say whether a bank may add it for itself. A CHECK refuses a platform row that is
+  tenant-configurable, and a tenant row carrying `platform_scope` or
+  `platform_monthly_budget` (the two platform settings v0.3 does not have) or a `writes_to`
+  other than `tenant`. A trigger on `tenant_agent` refuses a row, inserted or moved, whose
+  definition is not a configurable tenant one, and agents 0001's key guard now refuses a
+  changed `scope` too. `tenant_agent` is paused, never deleted: its trigger refuses a
+  DELETE outside the schema owner's maintenance hatch. Closed by c11-agent-models (tables)
+  and c11-tenant-agent-controls-a (the route's own refusal).
+- **Ruling 3: one cap per bank.** `tenant_agent.monthly_budget` is not built; the bank's
+  one cap is `tenant_agent_budget` (one row per tenant, `monthly_cap`, `currency`), and
+  spend is the month's `agent_run.cost` of the bank's own runs. Closed by
+  c11-run-scheduler-b.
+- **Ruling 4: the runner seam only.** `agent.runtime` keeps v0.3's three values as a kind,
+  and defaults to `agent_sdk`, not v0.3's `managed_agents`: D-54 refuses `managed_agents`
+  on every deployed environment but test and runs production agents in our own worker.
+  `agent_version.external_agent_id`, `tenant_agent.pinned_version_id`, `environment` and
+  `external_environment_id` are not built. Closed by c11-runner-adapter.
+
+Also departing from v0.3:
+
+- `agent_version.prompt_template_id` is `prompt_path`, the prompt's file inside the version
+  folder (`backend/agents/<agent>/v<n>/`), because the definitions are files in the image.
+  The version is append-only in the database, retiring it once being the one change.
+- `agent_run.api_key_id` (§5) becomes nullable: a run the worker opens has no key. A CHECK
+  demands a key when `trigger = 'api'`, the default, which every R1 run is. The write
+  policy asks for a key of the run's zone only when there is a key; the own-zone rule is
+  unchanged. A keyless run's zone is its tenant agent's, or the library's without one, and a
+  CHECK refuses a library run naming a tenant agent. `agent_version_id` is written once, at
+  open. `changes_found`, `proposals_made` and `search_count` are not columns: counts stay in
+  `stats` (`AgentRunStats`). `prompt_template_id` is not built. `scope` is the copy of the
+  scope the run started with (D-32).
+- `research_request.tenant_id` is nullable and the table mixed, with agent_run's split
+  policy: the console's `retag` (§5) has no tenant and no tenant agent, and a CHECK demands
+  both of every other kind. `reverify` is not a kind: re-verification is a person's stamp
+  (INV-06) or the platform's own agent, never a bank's request. `changes_found` is not
+  built; `batch_proposal_id` names the batch a retag produced, a plain uuid until the batch
+  table (c11-proposal-batches-model) gives it a foreign key.
+- `tenant_agent` gains `pause_reason`, what the person or the scheduler said when it paused
+  the agent.
+- New tier-one kinds (§1): `agent_scope`, `agent_cadence`, `agent_runtime`,
+  `agent_writes_to` (v0.3's `both` dropped: no definition writes both zones, and a bank's
+  never writes the library), `run_trigger`, `research_request_kind` and
+  `research_request_status`. Like `agent_kind` they are kinds in code with no database
+  constraint on their values.
+
+## acc-foundation. Agent access entries and credential kinds (2026-09-25, agents 0006, identity 0007)
+
+`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
+third column the R2 plan names (`acts_as_user`), are built with these departures:
+
+- `agent_access.owner_team_id` is required, not "null until chunk 8 lands teams": the team
+  list has landed and every bank has the system team `compliance` (ACC-01 names the team).
+  `revoked_at` and `revoked_by_id` are columns, and a CHECK keeps `active` false exactly when
+  `revoked_at` is set. An entry is revoked, never deleted (`delete()` refuses).
+- Every reference is also a composite `(tenant_id, …)` key: the team, the departments
+  (`org_unit`) and products (`tenant_product`) of the joins, the creator and revoker (into
+  `membership (tenant_id, user_id)`), and on `api_key` the entry and `acts_as_user`.
+- `api_key.kind` is the tier-one kind `credential_kind` (`service`, `personal`); every key
+  before identity 0007 is `service`. CHECKs: a personal token has a tenant, a person and an
+  expiry and no agent, and only a token acts as a person; a key bound to an entry has a
+  tenant and no agent definition (it is not one of the agents we run); an entry's key and
+  every token hold only `AGENT_ACCESS_SCOPES` (`library:read`, `search:read`,
+  `upcoming:read`, `tenant:read`), so "reads and nothing else" (ADR 0055) is the
+  database's rule as well as the code's.
+- `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
+  `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.

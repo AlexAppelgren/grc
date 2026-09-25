@@ -177,4 +177,73 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "HOM-03, HOM-04: what produced the date - a change's key date, an internal deadline, "
         "an action due or a review due; the card and the calendar builder branch on it",
     ),
+    # Chunk 8 organisation and chunk 11 security policy (c8-org-models, tenants 0002).
+    "OrgUnitKind": (
+        "org_unit_kind",
+        "TEN-02, D-21: a group, legal entity, business area, business unit or function; only a legal "
+        "entity holds licences and the legal-entity term, and a department is a unit of the last three kinds",
+    ),
+    "ProductStatusKind": (
+        "product_status",
+        "TEN-02: planned, live or retired; retired is how a product is withdrawn, never deleted, and "
+        "scope and agent-access narrowing (D-70) branch on it, so it is a kind and not a tenant list",
+    ),
+    "CredentialPolicyKind": (
+        "credential_policy",
+        "ID-07, ADR 0048: any passkey or device-bound only; sign-in and enrolment branch on it",
+    ),
+    # Chunk 8's register lists (c8-vocab-lists-rules). Categories the rules read off a
+    # tenant row's fixed `kind`; the tenant's labels, order and extra rows stay its own.
+    "GapCategory": (
+        "gap_category",
+        "REG-03, VOC-04: open, remediating, risk accepted or closed; the gap workflow, the reports and the pill tone read the category, never the tenant's label",
+    ),
+    "RiskLevel": (
+        "risk_level",
+        "VOC-05: low, medium or high; the pill tone reads the level a risk rating maps to, never its editable ordinal or its label",
+    ),
+    # Chunk 11 (agents 0004 and 0005, AGT-03 to AGT-06, INPUT_DELTAS §5). A definition is
+    # always bleqq's; what these say is which side of the platform fence it sits on and how
+    # the scheduler and the worker treat it and its runs.
+    "AgentScopeKind": (
+        "agent_scope",
+        "AGT-03, AGT-04, ADR 0053: one of bleqq's agents or a definition a bank may add for "
+        "itself; the tenant_agent fence trigger, the agent CHECKs and the screens branch on it",
+    ),
+    "AgentCadence": (
+        "agent_cadence",
+        "AGT-04: daily, weekly, monthly or manual; the scheduler computes next_run_at from it, "
+        "and manual means it never schedules the agent at all",
+    ),
+    "AgentRuntime": (
+        "agent_runtime",
+        "AGT-06, D-54: which runner executes a definition; the worker picks its adapter by it, "
+        "and the boot refuses managed_agents on every deployed environment but test",
+    ),
+    "AgentWritesTo": (
+        "agent_writes_to",
+        "AGT-04, ADR 0053: the zone an agent's output lands in; a tenant definition writes its "
+        "bank's zone only, which a CHECK on agent holds",
+    ),
+    "RunTrigger": (
+        "run_trigger",
+        "AGT-04, AGT-06: what started a run; an api run needs a key (CHECK on agent_run) and "
+        "the budget and history reads branch on schedule, manual and request",
+    ),
+    "ResearchRequestKind": (
+        "research_request_kind",
+        "AGT-05: what a request asks for; `retag` is the console's, has no tenant and produces "
+        "one batch proposal with a preview, never direct edits, and the worker branches on the rest",
+    ),
+    "ResearchRequestStatus": (
+        "research_request_status",
+        "AGT-05: a request's lifecycle, queued to done, failed, rejected or cancelled; the "
+        "worker and the request list branch on it",
+    ),
+    # acc-foundation (identity 0007, ACC-03, D-77, ADR 0056).
+    "CredentialKind": (
+        "credential_kind",
+        "ACC-03: a service key or a personal access token on one api_key table; authentication, "
+        "the step-up fence and the api_key CHECKs branch on it",
+    ),
 }
