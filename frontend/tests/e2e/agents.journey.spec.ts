@@ -55,128 +55,135 @@ test.describe('agents journeys', () => {
     // pending: AGT-S4 (AGT-03, chunk 11)
   });
 
-  test("AGT-S5: A tenant controls its agents without touching their instructions", async ({ page, apiGuard }) => {
-    // AGT-04: tenant A's admin steers the bank's own agent; bleqq's watch has no control.
-    // The screen offers the bank's own markets (Sweden operating, Denmark watched), so the
-    // scope is narrowed to Sweden; the integration test narrows it to SE and FI by the API.
-    allowFreshContext(apiGuard);
-    apiGuard.allow(/\/api\/v1\/agents\/[^/]+$/, 422, 'a cadence above the plan limit answers above_plan_limit');
-    await signInAs(page, LOGINS.admin);
-    try {
-      const card = await openAgents(page);
+  // AGT-S5 and AGT-S6 steer tenant A's one seeded agent and its cap, so they run one
+  // after the other rather than beside each other.
+  test.describe('a bank steers its own agent', () => {
+    test.describe.configure({ mode: 'serial' });
 
-      // What bleqq watches is listed with no control on it and no spend.
-      const watch = page.locator('[data-platform-watch]');
-      await expect(watch.locator('[data-platform-agent]').first()).toBeVisible();
-      await expect(watch.getByRole('button')).toHaveCount(0);
-      await expect(watch).not.toContainText('€');
+    test("AGT-S5: A tenant controls its agents without touching their instructions", async ({ page, apiGuard }) => {
+      // AGT-04: tenant A's admin steers the bank's own agent; bleqq's watch has no control.
+      // The screen offers the bank's own markets (Sweden operating, Denmark watched), so the
+      // scope is narrowed to Sweden; the integration test narrows it to SE and FI by the API.
+      allowFreshContext(apiGuard);
+      apiGuard.allow(/\/api\/v1\/agents\/[^/]+$/, 422, 'a cadence above the plan limit answers above_plan_limit');
+      apiGuard.allow(/\/api\/v1\/research-requests$/, 501, 'the list of research requests is not built yet; the screen shows its error state beside the controls');
+      await signInAs(page, LOGINS.admin);
+      try {
+        const card = await openAgents(page);
 
-      // Switch it on, weekly within the plan, over Sweden alone, with room under the cap.
-      await card.getByRole('button', { name: 'Switch off' }).click();
-      await expect(card.getByText('Switched off. Nothing runs until it is switched on again.')).toBeVisible();
-      await card.getByRole('button', { name: 'Switch on' }).click();
-      await expect(card.getByText('Switched on.')).toBeVisible();
-      await changeSchedule(card, 'Weekly', ['Sweden']);
-      await expect(card.getByText('Saved.')).toBeVisible();
-      await expect(card.locator('dd').filter({ hasText: /^Sweden$/ })).toBeVisible();
-      await setCap(page, '40.00');
+        // What bleqq watches carries no control and no spend.
+        const watch = page.locator('[data-platform-watch]');
+        await expect(watch.getByRole('heading', { name: 'What bleqq watches' })).toBeVisible();
+        await expect(watch.getByRole('button')).toHaveCount(0);
+        await expect(watch).not.toContainText('€');
 
-      // "Run now" queues a run, and Recent runs lists it beside the runs before it with what
-      // each found and cost.
-      const runs = card.locator('[data-run-id]');
-      const before = await runs.evaluateAll((rows) => rows.map((row) => row.getAttribute('data-run-id')));
-      const queued = page.waitForResponse((r) => /\/api\/v1\/agents\/[^/]+\/runs$/.test(r.url()) && r.request().method() === 'POST');
-      await card.getByRole('button', { name: 'Run now' }).click();
-      const run = (await (await queued).json()) as { id: string; status: string };
-      expect(run.status).toBe('running');
-      expect(before).not.toContain(run.id);
-      await expect(card.getByText('Run started. It is at the top of Recent runs.')).toBeVisible();
-      const row = card.locator(`[data-run-id="${run.id}"]`);
-      await expect(row).toHaveAttribute('data-run-state', 'running');
-      await expect(card.locator('[data-next-run]')).toHaveText('Running now');
-      await expect(runs.filter({ hasText: /\d+ findings?|no findings/ }).first()).toBeVisible();
-      await expect(runs.filter({ hasText: /€\s?\d/ }).first()).toBeVisible();
+        // Switch it on, weekly within the plan, over Sweden alone, with room under the cap.
+        await card.getByRole('button', { name: 'Switch off' }).click();
+        await expect(card.getByText('Switched off. Nothing runs until it is switched on again.')).toBeVisible();
+        await card.getByRole('button', { name: 'Switch on' }).click();
+        await expect(card.getByText('Switched on.')).toBeVisible();
+        await changeSchedule(card, 'Weekly', ['Sweden']);
+        await expect(card.getByText('Saved.')).toBeVisible();
+        await expect(card.locator('dd').filter({ hasText: /^Sweden$/ })).toBeVisible();
+        await setCap(page, '40.00');
 
-      // "Stop run" interrupts it, and its status says so.
-      await card.getByRole('button', { name: 'Stop run' }).click();
-      await card.getByRole('button', { name: 'Stop the run' }).click();
-      await expect(card.getByText('Stopped. The run shows as stopped under Recent runs.')).toBeVisible();
-      await expect(row).not.toHaveAttribute('data-run-state', 'running');
-      await expect(card.getByRole('button', { name: 'Stop run' })).toHaveCount(0);
+        // "Run now" queues a run, and Recent runs lists it beside the runs before it with what
+        // each found and cost.
+        const runs = card.locator('[data-run-id]');
+        const before = await runs.evaluateAll((rows) => rows.map((row) => row.getAttribute('data-run-id')));
+        const queued = page.waitForResponse((r) => /\/api\/v1\/agents\/[^/]+\/runs$/.test(r.url()) && r.request().method() === 'POST');
+        await card.getByRole('button', { name: 'Run now' }).click();
+        const run = (await (await queued).json()) as { id: string; status: string };
+        expect(run.status).toBe('running');
+        expect(before).not.toContain(run.id);
+        await expect(card.getByText('Run started. It is at the top of Recent runs.')).toBeVisible();
+        const row = card.locator(`[data-run-id="${run.id}"]`);
+        await expect(row).toHaveAttribute('data-run-state', 'running');
+        await expect(card.locator('[data-next-run]')).toHaveText('Running now');
+        await expect(runs.filter({ hasText: /\d+ findings?|no findings/ }).first()).toBeVisible();
+        await expect(runs.filter({ hasText: /€\s?\d/ }).first()).toBeVisible();
 
-      // A cadence above the plan limit is refused and nothing changes.
-      await changeSchedule(card, 'Daily', ['Sweden']);
-      await expect(card.getByText('Our plan does not allow this, so nothing changed.')).toBeVisible();
-      await page.reload();
-      await expect(agentCard(page).locator('dd').first()).toContainText('Weekly');
-    } finally {
-      await restoreSeededAgent(page);
-    }
+        // "Stop run" interrupts it, and its status says so.
+        await card.getByRole('button', { name: 'Stop run' }).click();
+        await card.getByRole('button', { name: 'Stop the run' }).click();
+        await expect(card.getByText('Stopped. The run shows as stopped under Recent runs.')).toBeVisible();
+        await expect(row).not.toHaveAttribute('data-run-state', 'running');
+        await expect(card.getByRole('button', { name: 'Stop run' })).toHaveCount(0);
+
+        // A cadence above the plan limit is refused and nothing changes.
+        await changeSchedule(card, 'Daily', ['Sweden']);
+        await expect(card.getByText('Our plan does not allow this, so nothing changed.')).toBeVisible();
+        await page.reload();
+        await expect(agentCard(page).locator('dd').first()).toContainText('Weekly');
+      } finally {
+        await restoreSeededAgent(page);
+      }
+    });
+
+    test("AGT-S6: The budget cap pauses runs and the AI off switch stops every model call", async ({ page, apiGuard }) => {
+      // AGT-04. The cap half is tenant A's, whose seeded runs put the month's spend just under
+      // its cap; the AI half switches tenant B's AI off, because tenant A's Ask journeys run in
+      // parallel and a bank's switch is the whole bank's. That the admins are notified when the
+      // beat pauses an agent is the integration test's: no journey waits for the beat.
+      allowFreshContext(apiGuard);
+      apiGuard.allow(/\/api\/v1\/agents\/[^/]+\/runs$/, 422, 'a run that could pass the monthly cap answers budget_cap_reached');
+      apiGuard.allow(/\/api\/v1\/research-requests$/, 501, 'the list of research requests is not built yet; the screen shows its error state beside the controls');
+      apiGuard.allow(/\/api\/v1\/tenant\/ai$/, 403, 'switching AI answers step_up_required first and opens the passkey prompt');
+      apiGuard.allow(/\/api\/v1\/ask$/, 403, 'Ask answers feature_off while the bank has AI off');
+      await signInAs(page, LOGINS.admin);
+      try {
+        const card = await openAgents(page);
+
+        // "Spend this month" is the bank's own runs, 6.25 of the 7.00 cap: bleqq's runs, which
+        // cost 7.47 this month, are not in it.
+        const spend = page.locator('[data-spend]');
+        await expect(spend).toContainText('6.25');
+        await expect(spend).toContainText('7.00');
+        await expect(page.locator('[data-agent-budget]')).toContainText("bleqq's watch runs at bleqq's cost and is not counted here.");
+        await setCap(page, SEEDED_CAP);
+
+        // A run that could take the month past the cap is not started.
+        const runs = card.locator('[data-run-id]');
+        await expect(runs.first()).toBeVisible();
+        const before = await runs.count();
+        const refused = page.waitForResponse((r) => /\/api\/v1\/agents\/[^/]+\/runs$/.test(r.url()) && r.request().method() === 'POST');
+        await card.getByRole('button', { name: 'Run now' }).click();
+        expect(((await (await refused).json()) as { code: string }).code).toBe('budget_cap_reached');
+        await expect(card.getByText("This month's cap is reached, so nothing more runs until next month or until the cap is raised.")).toBeVisible();
+        await expect(card.locator('[data-run-state="running"]')).toHaveCount(0);
+        await expect(runs).toHaveCount(before);
+        await expect(spend).toContainText('6.25');
+      } finally {
+        await restoreSeededAgent(page);
+      }
+      await signOut(page);
+
+      // Tenant B switches all AI features off.
+      await signInAs(page, LOGINS.secondBankAdmin);
+      try {
+        await setBankAi(page, false);
+
+        // None of the bank's own agents runs, and bleqq's watch keeps running.
+        await page.goto('/admin/agents');
+        await expect(page.locator('[data-ai-enabled="false"]')).toContainText('so our own agents do not run. What bleqq watches keeps running.');
+
+        // Ask answers feature_off before a model is asked.
+        await page.goto('/search?mode=ask');
+        const asked = page.waitForResponse((r) => r.url().endsWith('/api/v1/ask') && r.request().method() === 'POST');
+        await page.getByRole('searchbox', { name: 'Question' }).fill('What must we disclose about costs and charges?');
+        await page.getByRole('button', { name: 'Ask', exact: true }).click();
+        const answer = await asked;
+        expect(answer.status()).toBe(403);
+        expect(((await answer.json()) as { code: string }).code).toBe('feature_off');
+        await expect(page.locator('[data-ask-feature-off]')).toContainText('Ask is switched off for your organisation. Search still works.');
+      } finally {
+        await setBankAi(page, true);
+      }
+    });
   });
 
   test.fixme("AGT-S13: A bank cannot switch off, pause or re-scope one of bleqq's agents", async () => {
     // pending: AGT-S13 (AGT-03, AGT-04, chunk 11)
-  });
-
-  test("AGT-S6: The budget cap pauses runs and the AI off switch stops every model call", async ({ page, apiGuard }) => {
-    // AGT-04. The cap half is tenant A's, whose seeded runs put the month's spend just under
-    // its cap; the AI half switches tenant B's AI off, because tenant A's Ask journeys run in
-    // parallel and a bank's switch is the whole bank's. That the admins are notified when the
-    // beat pauses an agent is the integration test's: no journey waits for the beat.
-    allowFreshContext(apiGuard);
-    apiGuard.allow(/\/api\/v1\/agents\/[^/]+\/runs$/, 422, 'a run that could pass the monthly cap answers budget_cap_reached');
-    apiGuard.allow(/\/api\/v1\/tenant\/ai$/, 403, 'switching AI answers step_up_required first and opens the passkey prompt');
-    apiGuard.allow(/\/api\/v1\/ask$/, 403, 'Ask answers feature_off while the bank has AI off');
-    await signInAs(page, LOGINS.admin);
-    try {
-      const card = await openAgents(page);
-
-      // "Spend this month" is the bank's own runs, 6.25 of the 7.00 cap: bleqq's runs, which
-      // cost 7.47 this month, are not in it.
-      const spend = page.locator('[data-spend]');
-      await expect(spend).toContainText('6.25');
-      await expect(spend).toContainText('7.00');
-      await expect(page.locator('[data-agent-budget]')).toContainText("bleqq's watch runs at bleqq's cost and is not counted here.");
-      await setCap(page, SEEDED_CAP);
-
-      // A run that could take the month past the cap is not started.
-      const runs = card.locator('[data-run-id]');
-      await expect(runs.first()).toBeVisible();
-      const before = await runs.count();
-      const refused = page.waitForResponse((r) => /\/api\/v1\/agents\/[^/]+\/runs$/.test(r.url()) && r.request().method() === 'POST');
-      await card.getByRole('button', { name: 'Run now' }).click();
-      expect(((await (await refused).json()) as { code: string }).code).toBe('budget_cap_reached');
-      await expect(card.getByText("This month's cap is reached, so nothing more runs until next month or until the cap is raised.")).toBeVisible();
-      await expect(card.locator('[data-run-state="running"]')).toHaveCount(0);
-      await expect(runs).toHaveCount(before);
-      await expect(spend).toContainText('6.25');
-    } finally {
-      await restoreSeededAgent(page);
-    }
-    await signOut(page);
-
-    // Tenant B switches all AI features off.
-    await signInAs(page, LOGINS.secondBankAdmin);
-    try {
-      await setBankAi(page, false);
-
-      // None of the bank's own agents runs, and bleqq's watch keeps running.
-      await page.goto('/admin/agents');
-      await expect(page.locator('[data-ai-enabled="false"]')).toContainText('so our own agents do not run. What bleqq watches keeps running.');
-      await expect(page.locator('[data-platform-watch] [data-platform-agent]').first()).toBeVisible();
-
-      // Ask answers feature_off before a model is asked.
-      await page.goto('/search?mode=ask');
-      const asked = page.waitForResponse((r) => r.url().endsWith('/api/v1/ask') && r.request().method() === 'POST');
-      await page.getByRole('searchbox', { name: 'Question' }).fill('What must we disclose about costs and charges?');
-      await page.getByRole('button', { name: 'Ask', exact: true }).click();
-      const answer = await asked;
-      expect(answer.status()).toBe(403);
-      expect(((await answer.json()) as { code: string }).code).toBe('feature_off');
-      await expect(page.locator('[data-ask-feature-off]')).toContainText('Ask is switched off for your organisation. Search still works.');
-    } finally {
-      await setBankAi(page, true);
-    }
   });
 
   test.fixme("AGT-S7: Research requests ask an agent to check, research or re-tag", async () => {

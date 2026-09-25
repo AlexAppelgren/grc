@@ -79,5 +79,10 @@ export async function setBankAi(page: Page, enabled: boolean): Promise<void> {
   await expect(panel.getByRole('button', { name: target }).or(panel.getByRole('button', { name: already })).first()).toBeVisible();
   if (await panel.getByRole('button', { name: already }).isVisible()) return;
   await panel.getByRole('button', { name: target }).click();
-  await expect(panel.getByRole('button', { name: already })).toBeVisible();
+  // The prompt opens unless a passkey confirmed a moment ago still counts.
+  const prompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
+  const flipped = panel.getByRole('button', { name: already });
+  await expect(prompt.or(flipped).first()).toBeVisible();
+  if (await prompt.isVisible()) await prompt.getByRole('button', { name: 'Use passkey' }).click();
+  await expect(flipped).toBeVisible();
 }
