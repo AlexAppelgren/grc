@@ -220,4 +220,11 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "COL-02: queued, sent, delivered, bounced or failed; the delivery task and the "
         "provider's callback branch on it, and no admin adds a delivery state",
     ),
+    # Chunk 8's register (c8-register-models, register 0001). `Applicability` is listed above.
+    "AssessmentMethod": (
+        "assessment_method",
+        "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
+        "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
+        "reporting branches on",
+    ),
 }
