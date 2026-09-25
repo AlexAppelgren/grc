@@ -1739,3 +1739,15 @@ bank's zone at a time because forced row-level security binds the schema owner t
 that already left `new` keeps a null, since reminders read the column only while a case is
 `new` (`c10-reminders-core`). The backfill writes no audit row: the column is derived from
 two facts already on record, not a decision.
+
+## c9-owner-team-and-reassign. A team beside a case's owner, and removal covers case work (2026-09-25, cases 0005)
+
+`change_case.owner_team` (the column section 18 left unbuilt) is a nullable key to the bank's
+`team` row, also a composite key `(tenant_id, owner_team_id)` into `team (tenant_id, id)`, so
+the database refuses another bank's team. It sits beside `owner` and never replaces it: the
+worked-case CHECK still requires a person. `triageChange` takes it as `ownerTeam`, a team key
+(the brief's `ownerTeamId`; D-1xx c9-owner-team-and-reassign), and the case answers
+`ownerTeam` as `{key, kind, label}`, on `CasesCase` and on the change page's `case`.
+`TenantMemberOpenWork` and the removal now count and move `case`, `action` and
+`duty_occurrence`, the kinds its contract already named: a case and an action pass to a
+person only, and a case only to a member holding `cases.work`.

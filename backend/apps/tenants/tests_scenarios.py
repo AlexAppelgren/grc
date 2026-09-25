@@ -1,7 +1,7 @@
 """Scenario tests for the tenants app (playbook 4.1, Appendix B): one method per
 `@integration` scenario in app.md, each carrying its ID. Chunk 1 un-skips TEN-S1, ADM-S1
 and ADM-S3; TEN-S2 to S6 stay skipped (R2, chunk 8). `c8-ten-reassignment` un-skips TEN-S5
-and TEN-S9 and TEN-S3's register half; their case halves are `c9-owner-team-and-reassign`'s.
+and TEN-S9 and TEN-S3's register half; `c9-owner-team-and-reassign` adds their case halves.
 Never delete a scenario without updating app.md.
 
 Operations exercised (the audit-on-write guard reads these names): updateTenant,
@@ -16,11 +16,14 @@ from __future__ import annotations
 from typing import Any
 from unittest import skip
 
+from apps.cases import testing as case_build
+from apps.cases.models import Action, ChangeCase
 from apps.collab.models import Participant
 from apps.identity.models import Membership, TenantRole
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.register.models import TenantObligation
 from apps.shared import factories, permissions as perms
+from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import AuditEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy import tenant_lists_logic
@@ -113,6 +116,16 @@ class TenantsScenarioTests(ScenarioTestCase):
         anna = factories.member_user(self.tenant, roles=("compliance_officer",))
         return erik, anna, owned_work(self.tenant, erik, officer), sign_in(self.admin, tenant=self.tenant, step_up=True)
 
+    def _cases(self, owner: Any, *, team: Any = None, count: int = 2) -> list[Any]:
+        """`count` cases in assessment owned by `owner`, with `team` beside, each with an open
+        action `owner` owns (c9-owner-team-and-reassign)."""
+        cases = [case_build.case_on_a_new_change(self.tenant) for _ in range(count)]
+        self.activate(self.tenant)
+        ChangeCase.objects.filter(pk__in=[c.pk for c in cases]).update(status=CaseStatusCategory.ASSESSING.value, owner=owner, owner_team=team)
+        for case in cases:
+            Action.objects.create(tenant=self.tenant, case=case, title="Update the policy", owner=owner, due_date=case.created_at.date(), created_by=owner)
+        return cases
+
     def _remove(self, erik: Any, owners: list[dict[str, Any]], headers: dict[str, Any]) -> Any:
         return self.client.post(
             f"/api/v1/tenant/members/{erik.id}/remove", data={"owners": owners}, content_type="application/json", **headers
@@ -123,12 +136,15 @@ class TenantsScenarioTests(ScenarioTestCase):
 
         A team can own work and the ownership survives a member leaving (TEN-03). The
         register half: the team "Cards" owns an entry and takes part in another, and neither
-        moves when Erik, one of its members, is removed. The case half is
-        `c9-owner-team-and-reassign`'s.
+        moves when Erik, one of its members, is removed. The case half
+        (`c9-owner-team-and-reassign`): "Cards" owns a case beside Anna, and the case
+        still lists the team, with nothing to reassign on it, after Erik leaves.
         """
         erik, anna, work, headers = self._erik()
+        [team_case] = self._cases(anna, team=work.cards, count=1)
         preview = self.client.get(f"/api/v1/tenant/members/{erik.id}/open-work", **headers).json()
         self.assertNotIn(str(work.team_owned.id), str(preview))
+        self.assertNotIn("case", {row["kind"] for row in preview["items"]})
         owners = [{"kind": kind, "userId": str(anna.id)} for kind in ("register_entry", "register_entity", "gap", "internal_item")]
         self.assertEqual(self._remove(erik, owners, headers).status_code, 204)
         self.activate(self.tenant)
@@ -136,6 +152,9 @@ class TenantsScenarioTests(ScenarioTestCase):
         self.assertEqual((entry.owner_team_id, entry.first_line_owner_id, entry.version), (work.cards.id, None, 1))
         self.assertIsNone(Participant.objects.get(pk=work.team_part.pk).removed_at)
         self.assertFalse(AuditEvent.objects.filter(subject_id=work.team_owned.id, action="register_entry.reassigned").exists())
+        self.assertFalse(AuditEvent.objects.filter(subject_id=team_case.id).exclude(action="session.created").exists())
+        page = self.client.get(f"/api/v1/changes/{team_case.change_id}", **sign_in(anna, tenant=self.tenant)).json()
+        self.assertEqual((page["case"]["ownerTeam"]["key"], page["case"]["owner"]["id"]), ("cards", str(anna.id)))
 
     @skip("pending: TEN-S4 (TEN-04, chunk 8)")
     def test_ten_s4(self) -> None:
@@ -147,30 +166,43 @@ class TenantsScenarioTests(ScenarioTestCase):
     def test_ten_s5(self) -> None:
         """TEN-S5
 
-        Removing a member with open work offers bulk reassignment (TEN-05). The register
-        half: Erik owns register entries, an entity's row, a gap and an internal item; the
-        two open cases are `c9-owner-team-and-reassign`'s.
+        Removing a member with open work offers bulk reassignment (TEN-05). Erik owns register
+        entries, an entity's row, a gap and an internal item, and two open cases with an
+        action each (the case half, `c9-owner-team-and-reassign`).
         Operations: `getMemberOpenWork`, `removeMember`, `deactivateMember`.
         """
         erik, anna, work, headers = self._erik()
+        cases = self._cases(erik)
+        kinds = ("register_entry", "register_entity", "gap", "internal_item", "case", "action")
         preview = self.client.get(f"/api/v1/tenant/members/{erik.id}/open-work", **headers)
         self.assertEqual(preview.status_code, 200)
         owned = {row["kind"]: row["count"] for row in preview.json()["items"]}
-        self.assertEqual({k: owned[k] for k in ("register_entry", "register_entity", "gap", "internal_item")}, {"register_entry": 3, "register_entity": 1, "gap": 1, "internal_item": 1})
+        self.assertEqual({k: owned[k] for k in kinds}, {"register_entry": 3, "register_entity": 1, "gap": 1, "internal_item": 1, "case": 2, "action": 2})
         # Nothing changes until the admin confirms: the plain removal is refused with the counts.
         refused = self.client.delete(f"/api/v1/tenant/members/{erik.id}", **headers)
         self.assertEqual((refused.status_code, refused.json()["code"]), (422, "reassignment_required"))
         self.activate(self.tenant)
         self.assertEqual(TenantObligation.objects.filter(first_line_owner=erik).count(), 2)
+        self.assertEqual(ChangeCase.objects.filter(owner=erik).count(), 2)
         self.assertIsNone(Membership.objects.get(user=erik).deactivated_at)
 
-        owners = [{"kind": kind, "userId": str(anna.id)} for kind in ("register_entry", "register_entity", "gap", "internal_item")]
+        owners = [{"kind": kind, "userId": str(anna.id)} for kind in kinds]
         self.assertEqual(self._remove(erik, owners, headers).status_code, 204)
         self.activate(self.tenant)
         self.assertEqual(reassignment.open_work_counts(self.tenant.id, erik.id), [])
         self.assertEqual(TenantObligation.objects.filter(first_line_owner=anna).count(), 2)
+        self.assertEqual(set(ChangeCase.objects.filter(owner=anna).values_list("id", flat=True)), {c.id for c in cases})
+        self.assertEqual(Action.objects.filter(case__in=cases, owner=anna).count(), 2)
         self.assertIsNotNone(Membership.objects.get(user=erik).deactivated_at)
-        for action, count in (("register_entry.reassigned", 3), ("register_entity.reassigned", 1), ("gap.reassigned", 1), ("internal_item.reassigned", 1), ("member.deactivated", 1)):
+        for action, count in (
+            ("register_entry.reassigned", 3),
+            ("register_entity.reassigned", 1),
+            ("gap.reassigned", 1),
+            ("internal_item.reassigned", 1),
+            ("case.reassigned", 2),
+            ("action.reassigned", 2),
+            ("member.deactivated", 1),
+        ):
             self.assertEqual(AuditEvent.objects.filter(action=action, tenant_id=self.tenant.id).count(), count, action)
 
     @skip("pending: TEN-S6 (TEN-06, chunk 8)")

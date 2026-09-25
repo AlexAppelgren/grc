@@ -1,8 +1,10 @@
-"""Removing a member who owns open work (TEN-05, TEN-03, COL-04; TEN-S5, TEN-S9, TEN-S3).
+"""Removing a member who owns open work (TEN-05, TEN-03, COL-04, CAS-02, CAS-04, REG-07;
+TEN-S5, TEN-S9, TEN-S3).
 
 `owned_work()` is the one read of what a person holds, by kind, straight off the ownership
 columns: the register entries they are the first-line owner or the compliance contact of,
-the legal entities' rows, the gaps not closed and the active internal items they own. The
+the legal entities' rows, the gaps not closed, the open duty occurrences, the active internal
+items, the cases not closed or dismissed and the actions neither done nor removed. The
 preview counts it, the plain removal refuses while any of it is left, and the removal moves
 it; My work reads the same service (D-23).
 
@@ -11,7 +13,9 @@ own participations end with a stamp and their team memberships end, and the memb
 deactivated through `members_logic.deactivate_member()`, all in one transaction under the
 removal's step-up: one audit event per item and one for the removal. What a team owns or
 takes part in is never touched, which is how ownership survives a person leaving (TEN-03).
-Cases and actions are `c9-owner-team-and-reassign`'s; dated duties land with their table.
+A case and an action always have a person as owner, so they pass to a person and never to a
+team; a case passes only to someone who may work it, and a team named beside its owner stays
+(`c9-owner-team-and-reassign`).
 """
 
 from __future__ import annotations
@@ -25,13 +29,17 @@ from django.db.models import F, Model, Q, QuerySet
 from django.http import HttpRequest
 from django.utils import timezone
 
+from apps.cases.models import Action, ChangeCase
 from apps.collab.models import Participant
 from apps.identity import members_logic
 from apps.identity.models import Membership
 from apps.library.reading import obligation_headings
-from apps.register.models import Gap, TenantObligation, TenantObligationScope
+from apps.register.duties import OPEN as OPEN_DUTY
+from apps.register.models import DutyOccurrence, Gap, TenantObligation, TenantObligationScope
+from apps.shared import permissions as perms
 from apps.shared.audit import Actor, record
 from apps.shared.errors import ProblemError
+from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import Tenant
 from apps.taxonomy.models import GapCategory, Team
 from apps.tenants.models import InternalItem, TeamMember
@@ -39,6 +47,10 @@ from apps.tenants.schemas import TenantMemberRemoveBody, TenantRemovalOwner
 
 PARTICIPATION = "participation"
 TEAM_MEMBERSHIP = "team_membership"
+# The kinds whose owner is always a person: the database requires one on a worked case and
+# on every action, so a team can stand beside the owner of a case but never replace it.
+PERSON_ONLY = frozenset({"case", "action"})
+CLOSED_CASE = (CaseStatusCategory.CLOSED.value, CaseStatusCategory.DISMISSED.value)
 
 
 def owned_work(tenant_id: uuid.UUID, user_id: uuid.UUID) -> dict[str, QuerySet[Any]]:
@@ -49,7 +61,12 @@ def owned_work(tenant_id: uuid.UUID, user_id: uuid.UUID) -> dict[str, QuerySet[A
         ),
         "register_entity": TenantObligationScope.objects.filter(tenant_id=tenant_id, owner_id=user_id).select_related("tenant_obligation"),
         "gap": Gap.objects.filter(tenant_id=tenant_id, owner_id=user_id).exclude(status__kind=GapCategory.CLOSED.value),
+        "duty_occurrence": DutyOccurrence.objects.filter(tenant_id=tenant_id, owner_id=user_id, status__in=OPEN_DUTY).select_related("recurring_duty"),
         "internal_item": InternalItem.objects.filter(tenant_id=tenant_id, owner_user_id=user_id, active=True),
+        "case": ChangeCase.objects.filter(tenant_id=tenant_id, owner_id=user_id)
+        .exclude(status__in=CLOSED_CASE)
+        .select_related("change"),
+        "action": Action.objects.filter(tenant_id=tenant_id, owner_id=user_id, done_at__isnull=True, removed_at__isnull=True),
     }
 
 
@@ -107,6 +124,13 @@ def _targets(tenant: Tenant, user_id: uuid.UUID, owners: list[TenantRemovalOwner
     )
     if people - active:
         raise ValidationError("A new owner must be another current member of this bank.", code="unknown_member")
+    if any(owner.team_key is not None for owner in owners if owner.kind in PERSON_ONLY):
+        raise ValidationError("Cases and actions pass to a person, never to a team.", code="validation_error")
+    case_owner = next((owner.user_id for owner in owners if owner.kind == "case"), None)
+    if case_owner is not None and not Membership.objects.filter(
+        tenant=tenant, user_id=case_owner, roles__permissions__contains=[perms.CASES_WORK]
+    ).exists():
+        raise ValidationError("A case's new owner must be a member who works cases.", code="unknown_member")
     keys = {owner.team_key for owner in owners if owner.team_key is not None}
     teams = {team.key: team for team in Team.objects.filter(tenant=tenant, key__in=keys, active=True)}
     if keys - set(teams):
@@ -119,13 +143,19 @@ _OWNER_FIELDS = {
     "register_entry": ("first_line_owner", "compliance_contact", "owner_team"),
     "register_entity": ("owner", "owner_team"),
     "gap": ("owner", "owner_team"),
+    "duty_occurrence": ("owner", "owner_team"),
     "internal_item": ("owner_user", "owner_team"),
+    "case": ("owner", "owner_team"),
+    "action": ("owner",),
 }
 _SUBJECT_TYPE = {
     "register_entry": "tenant_obligation",
     "register_entity": "tenant_obligation_scope",
     "gap": "gap",
+    "duty_occurrence": "duty_occurrence",
     "internal_item": "internal_item",
+    "case": "change_case",
+    "action": "action",
 }
 
 
@@ -151,6 +181,9 @@ def _new_owner(kind: str, row: Model, user_id: uuid.UUID, target: Target) -> dic
         if team is not None:
             return {"owner_team": team, **{f"{field}_id": None for field in held}}
         return {f"{field}_id": person for field in held}
+    if kind in PERSON_ONLY:
+        # The team beside a case's owner is the team's and stays (TEN-S3).
+        return {"owner_id": person}
     person_field = "owner_user" if kind == "internal_item" else "owner"
     return {f"{person_field}_id": person, "owner_team": team}
 
@@ -158,6 +191,12 @@ def _new_owner(kind: str, row: Model, user_id: uuid.UUID, target: Target) -> dic
 def _title(kind: str, row: Any, headings: dict[uuid.UUID, Any]) -> str:
     if kind in ("gap", "internal_item"):
         return str(row)
+    if kind == "case":
+        return row.change.title
+    if kind == "action":
+        return row.title
+    if kind == "duty_occurrence":
+        return row.recurring_duty.title
     obligation_id = row.obligation_id if kind == "register_entry" else row.tenant_obligation.obligation_id
     heading = headings.get(obligation_id)
     return "" if heading is None else f"{heading.instrument_short_name}, {heading.reference_label}"
