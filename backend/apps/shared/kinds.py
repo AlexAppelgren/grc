@@ -202,4 +202,11 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "risk_level",
         "VOC-05: low, medium or high; the pill tone reads the level a risk rating maps to, never its editable ordinal or its label",
     ),
+    # Chunk 9 (c9-case-models). The evidence scan; `c9-scanner-adapter` adds the adapters
+    # that answer it.
+    "ScanState": (
+        "scan_state",
+        "CAS-05: a stored file is pending, clean, infected or error; the download serves "
+        "only `clean`, and a new row starts `pending`, so an unscanned file is never shown",
+    ),
 }

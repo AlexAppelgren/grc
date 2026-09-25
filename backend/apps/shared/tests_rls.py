@@ -169,6 +169,13 @@ TENANT_ONLY_TABLES = [
     # Chunk 8's team list (TEN-03, c8-vocab-lists-rules): a bank's teams and their labels.
     "team",
     "team_label",
+    # Chunk 9's case workflow (c9-case-models): one bank's impact assessment, actions,
+    # transition ledger and evidence on its own case. None ever holds a library row, and
+    # each child's case and people are composite (tenant_id, …) keys as well (D-18).
+    "impact_assessment",
+    "action",
+    "case_transition",
+    "evidence",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also
