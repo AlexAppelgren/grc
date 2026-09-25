@@ -8,13 +8,14 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from django.conf import settings
 from pydantic import ConfigDict, Field, JsonValue, ModelWrapValidatorHandler, ValidationInfo, model_validator
 
 from apps.shared import permissions as perms
 from apps.shared.schemas import CamelSchema, WriteBody
+from apps.taxonomy.schemas import PersonRef
 
 __all__ = ["CamelSchema"]
 
@@ -1545,9 +1546,12 @@ _EXAMPLE_API_KEY: dict[str, JsonValue] = {
     "expiresAt": "2027-09-15T23:59:59Z",
     "revokedAt": None,
     "lastUsedAt": "2026-09-22T05:00:12Z",
+    "kind": "service",
+    "agentAccess": None,
+    "person": None,
 }
 _EXAMPLE_API_KEY_CREATED: dict[str, JsonValue] = {
-    key: value for key, value in _EXAMPLE_API_KEY.items() if key not in ("revokedAt", "lastUsedAt")
+    key: value for key, value in _EXAMPLE_API_KEY.items() if key not in ("revokedAt", "lastUsedAt", "kind", "agentAccess", "person")
 } | {"plainKey": "cw_9a1f3c7e_<secret-shown-once>"}
 _EXAMPLE_SECURITY_EVENT: dict[str, JsonValue] = {
     "id": 48213,
@@ -2021,8 +2025,9 @@ _TENANT_KEY_SCOPES_TEXT = (
 
 
 class ApiKeyOut(CamelSchema):
-    """One of the bank's own API keys as the keys screen lists it. The secret is never here,
-    only its prefix."""
+    """One credential of the bank as the keys screen lists it: a key of its own, a service key
+    of one of its agent access entries, or a member's personal access token. The secret is
+    never here, only its prefix."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_API_KEY]})
 
@@ -2079,6 +2084,33 @@ class ApiKeyOut(CamelSchema):
     )
 
 
+    kind: Literal["service", "personal"] = Field(
+        description=(
+            "Which of the two credential kinds this is. `service`: a key that belongs to the bank "
+            "or to one of its agent access entries, acting as the integration or the entry. "
+            "`personal`: a personal access token a member minted for themselves, acting as that "
+            "member and never reading more than they could."
+        )
+    )
+    agent_access: CredentialEntryRef | None = Field(
+        description=(
+            "The agent access entry the credential is bound to, whose scope narrows what it reads: "
+            "an entry's service key, or a token that names the entry. Null for a key or token "
+            "bound to no entry."
+        )
+    )
+    person: PersonRef | None = Field(
+        description="The member a personal access token acts as. Null for a service key, which acts as no person."
+    )
+
+
+class CredentialEntryRef(CamelSchema):
+    """The agent access entry a credential is bound to: its id and name."""
+
+    id: uuid.UUID = Field(description="The entry's permanent identifier, a UUID, as `GET /agent-access` lists it.")
+    name: str = Field(description="What the bank calls the agent, such as `Trading platform coding agent`.")
+
+
 class ApiKeysPage(CamelSchema):
     """`{items, total}` with `limit` and `offset` (playbook 10)."""
 
@@ -2086,9 +2118,10 @@ class ApiKeysPage(CamelSchema):
 
     items: list[ApiKeyOut] = Field(
         description=(
-            "The bank's own keys on this page, newest first, revoked and expired ones included so "
-            "that the list is the whole history. The platform's agent keys are never here. An "
-            "empty list is a 200 and means the bank has no key yet."
+            "The bank's credentials on this page, newest first: its own keys, the service keys of "
+            "its agent access entries and every member's personal access token, revoked and "
+            "expired ones included so that the list is the whole history. The platform's agent "
+            "keys are never here. An empty list is a 200 and means the bank has no credential yet."
         )
     )
     total: int = Field(description="How many keys the bank has in total, not how many are on this page; use it to size a pager.")
@@ -2154,6 +2187,147 @@ class ApiKeyCreated(CamelSchema):
             "token. This answer is the only time it exists outside the caller: the server keeps "
             "only a hash of the secret, never logs it and never shows it again, so put it straight "
             "into the integration's secret store. A lost key is revoked and replaced, not recovered."
+        )
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# Personal access tokens (ACC-03, ADR 0056): a member's own, minted behind a step-up.
+# ---------------------------------------------------------------------------------------
+_PERSONAL_SCOPES_TEXT = (
+    "A token reads and nothing else, and each scope must be one the member's own permissions "
+    "back: `library:read` (needs `library.read`) reads the shared library's records; "
+    "`search:read` (needs `search.use`) searches them; `upcoming:read` (needs `roadmap.read`) "
+    "reads the public regulatory dates coming up; `tenant:read` (needs `register.read`) reads "
+    "the bank's own register decisions, only through a named agent access entry and only while "
+    "tenant reach is on for the bank and for the entry."
+)
+_EXAMPLE_PERSONAL_TOKEN: dict[str, JsonValue] = {
+    "id": "5d2b7e91-0c4a-4f38-b6e1-9a7c3d2f8e14",
+    "name": "Laptop coding agent",
+    "keyPrefix": "3e7a1c90",
+    "scopes": ["library:read", "search:read"],
+    "agentAccess": {"id": "0f9e8d7c-6b5a-4c3d-9e2f-1a0b9c8d7e6f", "name": "Trading platform coding agent"},
+    "createdAt": "2026-09-25T09:30:00Z",
+    "expiresAt": "2026-12-24T09:30:00Z",
+    "revokedAt": None,
+    "lastUsedAt": "2026-09-25T10:02:41Z",
+}
+
+
+class PersonalTokenOut(CamelSchema):
+    """One of the caller's own personal access tokens. The secret is never here, only its prefix."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_PERSONAL_TOKEN]})
+
+    id: uuid.UUID = Field(
+        description="The token's permanent identifier, a UUID: pass it to `DELETE /me/tokens/{token_id}`. It is not the token and cannot sign a request."
+    )
+    name: str = Field(description="The name the member gave the token, such as `Laptop coding agent`. A label only; nothing reads it.")
+    key_prefix: str = Field(
+        description=(
+            "The eight hexadecimal characters the token begins with after `cw_`, kept in the clear "
+            "so a token found in a log or a vault can be matched to this row. Not enough to call the API."
+        )
+    )
+    scopes: list[str] = Field(description="What the token may read, as scope keys, sorted. " + _PERSONAL_SCOPES_TEXT)
+    agent_access: CredentialEntryRef | None = Field(
+        description="The agent access entry the token names, whose scope narrows what it reads; null for a token that names none."
+    )
+    created_at: datetime = Field(description="When the token was minted, as a UTC timestamp in ISO 8601, set by the server.")
+    expires_at: datetime = Field(
+        description="When the token stops working on its own, as a UTC timestamp in ISO 8601; every token has one, and every call after it answers `unauthenticated` (401)."
+    )
+    revoked_at: datetime | None = Field(
+        description="When the token was revoked, by its member or an administrator, as a UTC timestamp in ISO 8601; null while it works. A revoked token never works again."
+    )
+    last_used_at: datetime | None = Field(
+        description=(
+            "When the token last authenticated a call, as a UTC timestamp in ISO 8601. It moves at "
+            f"most once every {settings.API_KEY_LAST_USED_THROTTLE_SECONDS} seconds by default (a "
+            "setting). Null for a token never used."
+        )
+    )
+
+
+class PersonalTokensPage(CamelSchema):
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_PERSONAL_TOKEN], "total": 1}]})
+
+    items: list[PersonalTokenOut] = Field(
+        description=(
+            "The caller's own tokens in the bank this session is signed in to, newest first, "
+            "revoked and expired ones included. Nobody else's token is here. An empty list is a "
+            "200 and means the caller has minted none."
+        )
+    )
+    total: int = Field(description="How many tokens the caller has in this bank in total, not how many are on this page.")
+
+
+class PersonalTokenCreate(WriteBody):
+    """`POST /me/tokens`: a new personal access token for the caller."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "Laptop coding agent",
+                    "scopes": ["library:read", "search:read"],
+                    "expiresAt": "2026-12-24T09:30:00Z",
+                    "agentAccessId": "0f9e8d7c-6b5a-4c3d-9e2f-1a0b9c8d7e6f",
+                }
+            ]
+        }
+    )
+
+    name: str = Field(
+        max_length=200,
+        description=(
+            "A name to tell the token apart on screen, at most 200 characters, such as `Laptop "
+            "coding agent`. Surrounding spaces are trimmed, and a name of spaces alone is refused "
+            "with `name_required`."
+        ),
+    )
+    scopes: list[str] = Field(
+        min_length=1,
+        description=(
+            "What the token may read, at least one scope key, each counted once. "
+            + _PERSONAL_SCOPES_TEXT
+            + " A scope that is not one of these four is refused with `unknown_key`; one the "
+            "caller's permissions do not back with `scope_not_held`; `tenant:read` without "
+            "`agentAccessId` with `entry_required`."
+        ),
+    )
+    expires_at: datetime = Field(
+        description=(
+            "When the token stops working on its own, required, as a UTC timestamp in ISO 8601. It "
+            "must lie in the future (`expiry_in_past`) and no more than `PERSONAL_TOKEN_MAX_DAYS` "
+            f"days from now, {settings.PERSONAL_TOKEN_MAX_DAYS} by default (`expiry_too_late`)."
+        ),
+    )
+    agent_access_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "Optional: the id of a live agent access entry of the bank, a UUID as `GET /agent-access` "
+            "lists it, whose scope then narrows what the token reads. Leave it out or send null "
+            "(the default) for a token bound to no entry. An entry the bank has not got, or one "
+            "revoked, is refused with `unknown_key`."
+        ),
+    )
+
+
+class PersonalTokenCreated(PersonalTokenOut):
+    """The secret appears here and nowhere else: no log, no audit value, no outbox payload."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{**_EXAMPLE_PERSONAL_TOKEN, "plainKey": "cw_3e7a1c90_<secret-shown-once>"}]})
+
+    plain_key: str = Field(
+        description=(
+            "The token itself, `cw_<prefix>_<secret>`, to be sent as `X-API-Key` or as a bearer "
+            "token. This answer is the only time it exists outside the caller: the server keeps "
+            "only a hash of the secret and never shows it again, so put it straight into the "
+            "agent's secret store. A lost token is revoked and replaced, not recovered."
         )
     )
 

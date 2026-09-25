@@ -75,7 +75,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID-11 | Security log of sign-ins, failures, enrolments, recoveries and key use | M | R1 | built |
 | ID-12 | SSO (OIDC, SAML), verified domains and SCIM as a tenant option. SSO proves identity and never opens a session on its own; with enforcement on it is asked after the passkey at every sign-in (D-58) | C | R3 | pending |
 | ID-13 | Optional IP allow-list per tenant | C | R3 | pending |
-| ACC-03 | Two credential kinds on one table: a service key bound to an agent access entry, and a personal access token minted under `tokens.create` behind a step-up that acts as the person. Both shown once, hashed, expiring, revocable, with a last use and a security log row. A token cannot open a session or step up, and dies with the person | M | R2 | in_progress |
+| ACC-03 | Two credential kinds on one table: a service key bound to an agent access entry, and a personal access token minted under `tokens.create` behind a step-up that acts as the person. Both shown once, hashed, expiring, revocable, with a last use and a security log row. A token cannot open a session or step up, and dies with the person | M | R2 | built |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -443,6 +443,12 @@ When a member without tokens.create tries to mint one
 Then the request answers 403
 When either credential is used
 Then the security log records it with its own method, beside sign-ins and key use
+When the member lists their tokens
+Then they see their own token and nobody else's, and never its secret
+When an admin with integrations.manage lists the bank's keys
+Then the service key and the token appear with their kind, and the entry or the person behind each
+When the admin revokes the token
+Then its next request answers 401 and the security log records the revocation as a token's
 ```
 
 ### ACC-S9 — A personal token can never step up and dies with the person `@integration` (ACC-03, AC-ACC3)

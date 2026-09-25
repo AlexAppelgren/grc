@@ -370,6 +370,10 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("DELETE", "/me/passkeys/{passkey_id}"): Ungated(UngatedReason.SELF, _SELF_ME),
     ("GET", "/me/sessions"): Ungated(UngatedReason.SELF, _SELF_ME),
     ("DELETE", "/me/sessions/{session_id}"): Ungated(UngatedReason.SELF, _SELF_ME),
+    # acc-personal-grants (ACC-03): a member lists and revokes their own tokens even after
+    # losing `tokens.create`; minting stays behind the permission and a step-up.
+    ("GET", "/me/tokens"): Ungated(UngatedReason.SELF, _SELF_ME),
+    ("DELETE", "/me/tokens/{token_id}"): Ungated(UngatedReason.SELF, _SELF_ME),
     ("POST", "/auth/step-up/options"): Ungated(UngatedReason.SELF, _SELF_STEP_UP),
     ("POST", "/auth/step-up/verify"): Ungated(UngatedReason.SELF, _SELF_STEP_UP),
     ("GET", "/reference/product"): Ungated(

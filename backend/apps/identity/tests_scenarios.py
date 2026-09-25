@@ -9,7 +9,7 @@ passkeyAuthenticateOptions, passkeyAuthenticateVerify, stepUpOptions, stepUpVeri
 refreshSession, signOut, updateMe, renameMyPasskey, removeMyPasskey, revokeMySession,
 inviteMember, updateMember, deactivateMember, revokeMemberSessions, reissueEnrolment,
 resendInvitation, revokeInvitation, createRole, updateRole, retireRole, createApiKey,
-revokeApiKey, markVisit.
+revokeApiKey, markVisit, createAgentAccessKey, createMyToken, revokeMyToken.
 
 The ceremonies run for real against py_webauthn through the software authenticator in
 tests_webauthn_support.py; the emailed link and code are read from the mock mailer.
@@ -1177,16 +1177,151 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.activate(self.tenant)
         self.assertEqual(AuditEvent.objects.filter(action="member.visited").count(), 1)
 
-    @skip("pending: ACC-S3 (ACC-03, chunk 11)")
+    # --- ACC: agent access credentials (acc-personal-grants) -------------------------------
+    def _mint_token(self, user: User, body: dict[str, Any]) -> Any:
+        return self._post("/me/tokens", body, **sign_in(user, tenant=self.tenant, step_up=True))
+
+    def _token_body(self, scopes: list[str], **extra: Any) -> dict[str, Any]:  # compliance: allow-kwargs test helper building a request body
+        return {"name": "Laptop coding agent", "scopes": scopes, "expiresAt": (timezone.now() + timedelta(days=30)).isoformat()} | extra
+
+    def _calls(self, key_id: Any) -> list[Any]:
+        from apps.governance.models import AgentAccessCall
+
+        self.activate(self.tenant)
+        return list(AgentAccessCall.objects.filter(api_key_id=key_id))
+
     def test_acc_s3(self) -> None:
         """ACC-S3
 
         A service key acts as the entry and a personal token acts as the person (ACC-03).
         """
+        entry = factories.agent_access_entry(self.tenant)
+        officer = factories.member(
+            self.tenant, roles=("compliance_officer",), user_row=factories.user(email="elsa@bank.example", name="Elsa Hansson")
+        ).user
+        reads = [perms.SCOPE_LIBRARY_READ]
 
-    @skip("pending: ACC-S9 (ACC-03, AC-ACC3, chunk 11)")
+        # An admin issues a service key for the entry with a step-up; its reads name the entry.
+        issued = self._post(
+            f"/agent-access/{entry.id}/keys", {"name": "Order router CI", "scopes": reads}, **sign_in(self.admin, tenant=self.tenant, step_up=True)
+        )
+        self.assertEqual(issued.status_code, 201, issued.content)
+        service = issued.json()
+        self.assertEqual(self.client.get("/api/v1/obligations", HTTP_X_API_KEY=service["plainKey"]).status_code, 200)
+        (service_call,) = self._calls(service["id"])
+        self.assertEqual((service_call.agent_access_id, service_call.acting_user_id), (entry.id, None))
+        service_principal = api_keys_logic.resolve_api_key(service["plainKey"])
+        assert service_principal is not None
+        self.assertEqual((service_principal.agent_access_id, service_principal.acting_user_id), (entry.id, None))
+
+        # The member mints a token with a fresh assertion: shown once, expiring, acting as them.
+        minted = self._mint_token(officer, self._token_body(reads))
+        self.assertEqual(minted.status_code, 201, minted.content)
+        token = minted.json()
+        self.assertIsNotNone(token["expiresAt"])
+        self.activate(self.tenant)
+        self.assertNotEqual(ApiKey.objects.get(pk=token["id"]).key_hash, token["plainKey"])
+        listed = self.client.get("/api/v1/me/tokens", **sign_in(officer, tenant=self.tenant)).json()["items"]
+        self.assertNotIn("plainKey", listed[0], "shown once")
+        self.assertEqual(self.client.get("/api/v1/obligations", HTTP_X_API_KEY=token["plainKey"]).status_code, 200)
+        (token_call,) = self._calls(token["id"])
+        self.assertEqual(token_call.acting_user_id, officer.id)
+        token_principal = api_keys_logic.resolve_api_key(token["plainKey"])
+        assert token_principal is not None
+        self.assertEqual((token_principal.acting_user_id, token_principal.acting_user_label), (officer.id, officer.name))
+
+        # Its effective permissions are the member's intersected with its scopes: the member
+        # reads the dates coming up in their own session, the token given library:read alone does not.
+        self.assertEqual(self.client.get("/api/v1/upcoming", **sign_in(officer, tenant=self.tenant)).status_code, 200)
+        beyond_scope = self.client.get("/api/v1/upcoming", HTTP_X_API_KEY=token["plainKey"])
+        self.assertEqual((beyond_scope.status_code, beyond_scope.json()["requiredPermission"]), (403, perms.SCOPE_UPCOMING_READ))
+        # A read the member cannot make themselves cannot be put on their token either.
+        self.activate(self.tenant)
+        narrow = TenantRole.objects.create(tenant=self.tenant, key="tokens-library-only", permissions=[perms.LIBRARY_READ, perms.TOKENS_CREATE])
+        narrow_member = factories.member(self.tenant, roles=(narrow.key,)).user
+        beyond = self._mint_token(narrow_member, self._token_body([perms.SCOPE_SEARCH_READ]))
+        self.assertEqual((beyond.status_code, beyond.json()["code"]), (422, "scope_not_held"))
+
+        # A member without tokens.create cannot mint one.
+        reader = factories.member(self.tenant, roles=("reader",)).user
+        refused = self._mint_token(reader, self._token_body(reads))
+        self.assertEqual((refused.status_code, refused.json()["code"]), (403, "permission_denied"))
+
+        # Each use is in the security log with its own method, beside sign-ins and key use.
+        self.activate(self.tenant)
+        used = {
+            (row.event, row.method)
+            for row in LoginEvent.objects.filter(api_key_id__in=[service["id"], token["id"]], event__in=["key_used", "token_used"])
+        }
+        self.assertEqual(
+            used,
+            {(LoginEventKind.KEY_USED.value, LoginMethod.API_KEY.value), (LoginEventKind.TOKEN_USED.value, LoginMethod.PERSONAL_TOKEN.value)},
+        )
+        self.assertTrue(LoginEvent.objects.filter(api_key_id=token["id"], event=LoginEventKind.TOKEN_CREATED.value).exists())
+
+        # The admin sees both with their kind and the entry or person behind each, and revokes the token.
+        keys = {item["id"]: item for item in self.client.get("/api/v1/tenant/api-keys", **sign_in(self.admin, tenant=self.tenant)).json()["items"]}
+        self.assertEqual((keys[service["id"]]["kind"], keys[service["id"]]["agentAccess"]["id"], keys[service["id"]]["person"]), ("service", str(entry.id), None))
+        self.assertEqual((keys[token["id"]]["kind"], keys[token["id"]]["person"]["id"]), ("personal", str(officer.id)))
+        revoked = self.client.delete(f"/api/v1/tenant/api-keys/{token['id']}", **sign_in(self.admin, tenant=self.tenant))
+        self.assertEqual(revoked.status_code, 204, revoked.content)
+        self.assertEqual(self.client.get("/api/v1/obligations", HTTP_X_API_KEY=token["plainKey"]).status_code, 401)
+        self.activate(self.tenant)
+        self.assertTrue(
+            LoginEvent.objects.filter(api_key_id=token["id"], event=LoginEventKind.TOKEN_REVOKED.value, method=LoginMethod.PERSONAL_TOKEN.value).exists()
+        )
+
     def test_acc_s9(self) -> None:
         """ACC-S9
 
         A personal token can never step up and dies with the person (ACC-03, AC-ACC3).
         """
+        from apps.shared.permissions import step_up_of
+
+        officer = factories.member(self.tenant, roles=("compliance_officer",)).user
+        token = factories.personal_token(self.tenant, officer, scopes=sorted(perms.AGENT_ACCESS_SCOPES), entry=factories.agent_access_entry(self.tenant))
+
+        # Every route carrying @requires_step_up answers 403 step_up_required.
+        step_up_routes = [op for op in iter_operations(api) if step_up_of(op.view_func)]
+        self.assertIn(("POST", "/me/tokens"), {(op.method, op.path) for op in step_up_routes})
+        wrong = []
+        for op in step_up_routes:
+            url = "/api/v1" + re.sub(r"\{[^}]+\}", lambda _: "00000000-0000-4000-8000-000000000001", op.path)
+            response = self.client.generic(op.method, url, data="{}", content_type="application/json", HTTP_X_API_KEY=token.plain_key)
+            if response.status_code != 403 or response.json().get("code") != "step_up_required":
+                wrong.append(f"{op.method} {op.path}: {response.status_code}")
+        self.assertEqual(wrong, [])
+        # And there is no route by which it could obtain an assertion.
+        for path in ("/auth/step-up/options", "/auth/step-up/verify", "/auth/refresh"):
+            with self.subTest(path):
+                response = self._post(path, {}, HTTP_X_API_KEY=token.plain_key)
+                self.assertIn(response.status_code, (401, 403), response.content)
+
+        # It dies with the person, on the next request.
+        def reads(credential: Any) -> int:
+            return int(self.client.get("/api/v1/obligations", HTTP_X_API_KEY=credential.plain_key).status_code)
+
+        self.activate(self.tenant)
+        library_only = TenantRole.objects.create(tenant=self.tenant, key="acc-s9-library-only", permissions=[perms.LIBRARY_READ])
+        endings = {
+            "deactivated": lambda person: User.objects.filter(pk=person.id).update(status=UserStatus.DEACTIVATED.value, deactivated_at=timezone.now()),
+            "membership ended": lambda person: Membership.objects.filter(tenant=self.tenant, user=person).update(deactivated_at=timezone.now()),
+            "permission lost": lambda person: Membership.objects.get(tenant=self.tenant, user=person).roles.set(
+                [library_only], through_defaults={"tenant": self.tenant}
+            ),
+        }
+        for name, end in endings.items():
+            with self.subTest(name):
+                person = factories.member(self.tenant, roles=("compliance_officer",)).user
+                credential = factories.personal_token(self.tenant, person, scopes=[perms.SCOPE_LIBRARY_READ, perms.SCOPE_SEARCH_READ])
+                self.assertEqual(reads(credential), 200)
+                self.activate(self.tenant)
+                end(person)
+                self.assertEqual(reads(credential), 401)
+
+        # A token minted with no expiry is refused.
+        body = {"name": "No expiry", "scopes": [perms.SCOPE_LIBRARY_READ]}
+        refused = self._mint_token(officer, body)
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.activate(self.tenant)
+        self.assertFalse(ApiKey.objects.filter(acts_as_user=officer, name="No expiry").exists())

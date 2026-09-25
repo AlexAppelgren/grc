@@ -267,6 +267,15 @@ def personal_token(
             expires_at=timezone.now() + timedelta(days=90),
         )
     return SimpleNamespace(id=row.id, row=row, plain_key=plain)
+
+
+def member_personal_token(tenant: Tenant) -> SimpleNamespace:
+    """The tenant-isolation guard's record for the token routes (acc-personal-grants): a
+    token of a new compliance officer of `tenant`."""
+    return personal_token(tenant, member_user(tenant, roles=("compliance_officer",)))
+
+
+# ---------------------------------------------------------------------------------------
 # c9-case-contract: the tenant-isolation guard's records for the case workflow routes.
 # A case names a library change, so the case itself is built by `apps/cases/testing.py`
 # (the fence exempts it); the children are this bank's own rows and are built here.

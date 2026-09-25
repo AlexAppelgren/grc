@@ -349,7 +349,7 @@ class ApiKeyAuthClass(TestCase):
                 tenant=self.tenant, actor=factories.user_actor(), created_by=factories.user(), name="x", scopes=[perms.SCOPE_LIBRARY_READ], expires_at=timezone.now() - timedelta(days=1), step_up_assertion_id=None
             )
         with self.assertRaises(ValidationError):
-            api_keys_logic.revoke_api_key(tenant=self.tenant, actor=factories.user_actor(), key_id=uuid.uuid4())
+            api_keys_logic.revoke_api_key(tenant=self.tenant, actor=factories.user_actor(), revoked_by=factories.user(), key_id=uuid.uuid4())
 
 
 class E2EOutbox(TestCase):

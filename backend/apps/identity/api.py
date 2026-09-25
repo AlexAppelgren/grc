@@ -19,12 +19,14 @@ from apps.identity import (
     me_logic,
     members_logic,
     passkey_logic,
+    personal_tokens,
     roles_logic,
     security_log,
     session_logic,
 )
 from apps.identity.models import ApiKey, User
 from apps.identity.schemas import (
+    CredentialEntryRef,
     AgentKeyCreate,
     AgentKeyCreated,
     AgentKeyOut,
@@ -56,6 +58,10 @@ from apps.identity.schemas import (
     PasskeyPatch,
     PasskeyRegisterBody,
     PasskeyRegistered,
+    PersonalTokenCreate,
+    PersonalTokenCreated,
+    PersonalTokenOut,
+    PersonalTokensPage,
     PERMISSIONS_EXAMPLE,
     PermissionOut,
     RefreshResult,
@@ -78,6 +84,7 @@ from apps.shared.authentication import EnrolmentAuth, Principal, PrincipalKind, 
 from apps.shared.models import Tenant
 from apps.shared.permissions import enforce_recent_sign_in_or_step_up, enforce_step_up, requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
+from apps.taxonomy.schemas import PersonRef
 
 router = Router(tags=["Identity"])
 
@@ -138,6 +145,7 @@ _SETTINGS_IN_DOCS = {
     "codes_per_address_hour": settings.ENROLMENT_CODE_RATE_PER_ADDRESS_PER_HOUR,
     "codes_per_ip_hour": settings.ENROLMENT_CODE_RATE_PER_IP_PER_HOUR,
     "auth_calls_per_ip_minute": settings.AUTH_RATE_PER_IP_PER_MINUTE,
+    "token_max_days": settings.PERSONAL_TOKEN_MAX_DAYS,
 }
 
 
@@ -861,6 +869,153 @@ def revoke_my_session(request: HttpRequest, session_id: uuid.UUID = _SESSION_ID)
 
 
 # ---------------------------------------------------------------------------------------
+# Personal access tokens (ACC-03, ADR 0056): a member's own credential for an agent they
+# run, acting as them. Each docstring is the route's published description.
+# ---------------------------------------------------------------------------------------
+_TOKEN_ID = Path(
+    ...,
+    description=(
+        "The identifier of one of the caller's own personal access tokens, the UUID "
+        "`GET /me/tokens` lists as `id`, never the token itself. Someone else's token, a service "
+        "key or an unknown identifier answers `not_found`."
+    ),
+)
+
+
+def _entry_ref(key: ApiKey) -> CredentialEntryRef | None:
+    entry = key.agent_access
+    return None if entry is None else CredentialEntryRef(id=entry.id, name=entry.name)
+
+
+def _token_out(key: ApiKey) -> PersonalTokenOut:
+    assert key.expires_at is not None  # a CHECK demands an expiry on every token
+    return PersonalTokenOut(
+        id=key.id,
+        name=key.name,
+        key_prefix=key.key_prefix,
+        scopes=sorted(key.scopes),
+        agent_access=_entry_ref(key),
+        created_at=key.created_at,
+        expires_at=key.expires_at,
+        revoked_at=key.revoked_at,
+        last_used_at=key.last_used_at,
+    )
+
+
+@router.get(
+    "/me/tokens",
+    response=PersonalTokensPage,
+    auth=SessionAuth(),
+    operation_id="listMyTokens",
+    by_alias=True,
+    summary="See the personal access tokens you have minted",
+)
+def list_my_tokens(request: HttpRequest, page: PageQuery = Query(...)) -> PersonalTokensPage:
+    """Returns the caller's own personal access tokens in the bank this session is signed in
+    to, one page at a time, newest first: what each may read, the agent access entry it
+    names, when it expires and when it was last used. Revoked and expired tokens stay in the
+    list. The secret is never shown again after minting: a row carries its prefix alone.
+
+    Self-service: needs a full session and no permission, so a member who no longer holds
+    `tokens.create` still sees what they minted. A token cannot list tokens. It changes
+    nothing and writes no audit event. An empty page is a 200 with `total` 0.
+
+    Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
+    depth; `not_found` (404) on a platform session, which has no bank; `unauthenticated` (401)
+    without a live session.
+    """
+    # Ungated by design: self.
+    items, total = personal_tokens.list_own(_tenant_id(request), _principal(request).subject_id, limit=page.limit, offset=page.offset)
+    return PersonalTokensPage(items=[_token_out(row) for row in items], total=total)
+
+
+@router.post(
+    "/me/tokens",
+    response={201: PersonalTokenCreated},
+    auth=SessionAuth(),
+    operation_id="createMyToken",
+    by_alias=True,
+    summary="Mint a personal access token that acts as you, for an agent you run",
+)
+@requires_permission(perms.TOKENS_CREATE)
+@requires_step_up
+@_quoting_settings
+def create_my_token(request: HttpRequest, body: PersonalTokenCreate) -> tuple[int, PersonalTokenCreated]:
+    """Mints a personal access token for the caller and answers it once, with 201. The token
+    acts as the caller: the audit and access logs name them, and it reads with the scopes it
+    is given, each one a read the caller's own permissions back, so it never reads more than
+    they could. Naming an agent access entry narrows it to the entry's scope and lets
+    `tenant:read` reach the bank's register while tenant reach is on. Put `plainKey` straight
+    into the agent's secret store: the server keeps only a hash and never shows it again.
+
+    A token reads and nothing else. It cannot open a session, it cannot step up, so every
+    action that asks for a passkey refuses it, and it stops on the next request when the
+    caller is deactivated, leaves the bank or loses a permission one of its scopes stands on.
+    It must expire, no later than $token_max_days days from now.
+
+    Needs `tokens.create` and a passkey step-up on this session younger than $step_up_minutes
+    minutes; a token cannot mint a token. Writes "token_created" to the security log and the
+    audit event `personal_token.created` with the prefix, scopes, entry and expiry, never the
+    secret, and with the step-up assertion.
+
+    Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
+    opening the passkey prompt and retrying, and always to a key or token; `unknown_key`
+    (422) for a scope a token may not hold, the message naming the valid ones, or for an
+    entry the bank has not got or has revoked; `scope_not_held` (422) for a scope the caller's
+    permissions do not back; `entry_required` (422) for `tenant:read` without an entry;
+    `expiry_in_past` (422) for an expiry that is not in the future; `expiry_too_late` (422)
+    for one beyond $token_max_days days; `name_required` (422) for a name of spaces alone;
+    `validation_error` (422) for a missing expiry, an empty scope list, a name over 200
+    characters or a field the body does not take; `permission_denied` (403) without
+    `tokens.create`; `unauthenticated` (401) without a live session.
+    """
+    user = _actor_user(request)
+    key, plain = personal_tokens.mint(
+        tenant=_tenant(request),
+        user=user,
+        actor=session_logic.actor_of(user),
+        name=body.name,
+        scopes=body.scopes,
+        expires_at=body.expires_at,
+        agent_access_id=body.agent_access_id,
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return 201, PersonalTokenCreated(**_token_out(key).model_dump(), plain_key=plain)
+
+
+@router.delete(
+    "/me/tokens/{token_id}",
+    response={204: None},
+    auth=SessionAuth(),
+    operation_id="revokeMyToken",
+    by_alias=True,
+    summary="Stop one of your personal access tokens working for good; a repeat revoke answers 204 again",
+)
+def revoke_my_token(request: HttpRequest, token_id: uuid.UUID = _TOKEN_ID) -> tuple[int, None]:
+    """Revokes one of the caller's own personal access tokens at once: from this moment every
+    call made with it answers `unauthenticated`. Call it when a token may have leaked or its
+    agent is retired. A revoked token cannot be turned back on; mint a new one instead. It
+    stays listed with its revocation time.
+
+    Revoking a token already revoked changes nothing and answers 204 again, so a retry is
+    safe; the retry is audited too but writes no second security-log entry.
+
+    Self-service: needs a full session and no permission and no step-up, because stopping a
+    token only takes power away, and a member who lost `tokens.create` can still stop theirs.
+    Writes "token_revoked" to the security log the first time and the audit event
+    `personal_token.revoked` each time.
+
+    Errors: `not_found` (404) when the caller has no token with that identifier in this bank,
+    one answer for someone else's token, a service key and an unknown identifier;
+    `unauthenticated` (401) without a live session.
+    """
+    # Ungated by design: self.
+    user = _actor_user(request)
+    personal_tokens.revoke_own(tenant=_tenant(request), user=user, actor=session_logic.actor_of(user), token_id=token_id)
+    return 204, None
+
+
+# ---------------------------------------------------------------------------------------
 # Tenant admin: members (members.manage). Each docstring is the route's published
 # description (API_DOCUMENTATION.md).
 # ---------------------------------------------------------------------------------------
@@ -891,9 +1046,9 @@ _ROLE_KEY = Path(
 _API_KEY_ID = Path(
     ...,
     description=(
-        "The identifier of one of this bank's own API keys, the UUID `GET /tenant/api-keys` "
-        "lists as `id`, never the key itself. A platform key, another bank's key or an unknown "
-        "identifier answers `not_found`."
+        "The identifier of one of this bank's credentials, a key or a member's personal access "
+        "token, the UUID `GET /tenant/api-keys` lists as `id`, never the key itself. A platform "
+        "key, another bank's credential or an unknown identifier answers `not_found`."
     ),
 )
 
@@ -1441,14 +1596,16 @@ def list_permissions(request: HttpRequest) -> list[PermissionOut]:
     auth=SessionAuth(),
     operation_id="listApiKeys",
     by_alias=True,
-    summary="See your bank's API keys and whether each still works",
+    summary="See every key and personal access token of your bank and whether each still works",
 )
 @requires_permission(perms.INTEGRATIONS_MANAGE)
 def list_api_keys(request: HttpRequest, page: PageQuery = Query(...)) -> ApiKeysPage:
-    """Returns the bank's own API keys one page at a time, newest first: what each may do,
-    when it was last used, and whether it has expired or been revoked. Revoked and expired
-    keys stay in the list, so it is the whole history. The secret of a key is never shown
-    again after creation: a row carries its eight-character prefix and nothing more. The
+    """Returns every credential of the bank one page at a time, newest first: its own keys,
+    the service keys of its agent access entries and every member's personal access token.
+    Each row says which kind it is, the entry it is bound to and the member a token acts as,
+    what it may do, when it was last used, and whether it has expired or been revoked. Revoked
+    and expired credentials stay in the list, so it is the whole history. The secret is never
+    shown again after creation: a row carries its eight-character prefix and nothing more. The
     platform's agent keys are never here.
 
     Needs `integrations.manage` on a person's session in the bank; an API key cannot list
@@ -1459,7 +1616,24 @@ def list_api_keys(request: HttpRequest, page: PageQuery = Query(...)) -> ApiKeys
     without a live session.
     """
     items, total = api_keys_logic.list_api_keys(_tenant_id(request), limit=page.limit, offset=page.offset)
-    return ApiKeysPage(items=[ApiKeyOut.model_validate(row) for row in items], total=total)
+    return ApiKeysPage(items=[_api_key_out(row) for row in items], total=total)
+
+
+def _api_key_out(key: ApiKey) -> ApiKeyOut:
+    person = key.acts_as_user
+    return ApiKeyOut(
+        id=key.id,
+        name=key.name,
+        key_prefix=key.key_prefix,
+        scopes=list(key.scopes),
+        created_at=key.created_at,
+        expires_at=key.expires_at,
+        revoked_at=key.revoked_at,
+        last_used_at=key.last_used_at,
+        kind=key.kind,  # type: ignore[arg-type]
+        agent_access=_entry_ref(key),
+        person=None if person is None else PersonRef(id=person.id, name=person.name),
+    )
 
 
 @router.post(
@@ -1518,28 +1692,31 @@ def create_api_key(request: HttpRequest, body: ApiKeyCreate) -> tuple[int, ApiKe
     auth=SessionAuth(),
     operation_id="revokeApiKey",
     by_alias=True,
-    summary="Stop one of your bank's API keys working for good; a repeat revoke answers 204 again",
+    summary="Stop one of your bank's keys or personal access tokens working for good; a repeat revoke answers 204 again",
 )
 @requires_permission(perms.INTEGRATIONS_MANAGE)
 def revoke_api_key(request: HttpRequest, key_id: uuid.UUID = _API_KEY_ID) -> tuple[int, None]:
-    """Revokes one of the bank's own keys at once: from this moment every call made with it
-    answers `unauthenticated`. Call it when a key may have leaked, when an integration is
-    retired, or when a key is replaced. There is no way to turn a revoked key back on; create
-    a new one instead. The key stays listed with its revocation time.
+    """Revokes one credential of the bank at once, any of those `GET /tenant/api-keys` lists:
+    one of its own keys, a service key of one of its agent access entries or a member's
+    personal access token. From this moment every call made with it answers
+    `unauthenticated`. Call it when a credential may have leaked, when an integration is
+    retired, or when a key is replaced. There is no way to turn a revoked credential back on;
+    create a new one instead. It stays listed with its revocation time.
 
     Revoking a key that is already revoked changes nothing and answers 204 again, so a retry
     is safe; the retry is recorded in the audit log too, but writes no second security-log
     entry.
 
     Needs `integrations.manage`, and no step-up: stopping a key only takes power away. Writes
-    "key_revoked" to the security log the first time and the audit event `api_key.revoked`
-    each time.
+    "key_revoked" to the security log the first time, "token_revoked" for a personal access
+    token, and the audit event `api_key.revoked` each time.
 
-    Errors: `not_found` (404) when the bank has no key with that identifier;
+    Errors: `not_found` (404) when the bank has no credential with that identifier;
     `permission_denied` (403) without `integrations.manage`; `unauthenticated` (401) without
     a live session.
     """
-    api_keys_logic.revoke_api_key(tenant=_tenant(request), actor=session_logic.actor_of(_actor_user(request)), key_id=key_id)
+    actor_user = _actor_user(request)
+    api_keys_logic.revoke_api_key(tenant=_tenant(request), actor=session_logic.actor_of(actor_user), revoked_by=actor_user, key_id=key_id)
     return 204, None
 
 
