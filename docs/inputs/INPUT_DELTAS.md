@@ -1574,6 +1574,9 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
 - **`Assessment` has no `contributors`** (ruling 2, section 18) and gains `version`;
   `effort` is the bank's `effort_size` row, `{key, kind, label}` on a read and a key on a
   write, rather than the enum `S`, `M`, `L`.
+- **`startAssessment` and `saveAssessment` answer `CasesCase`**, as every move above does.
+  Saving with `applies` `no` closes a case being assessed with the bank's `not_applicable`
+  close reason, only for a holder of `cases.work` (D-92). Closed by `c9-assessment`.
 - **`Action`** has no `changeTitle` or ticket fields, a required `dueDate`, and gains
   `doneBy` and `version`; `updateAction` and `deleteAction` read the action's own
   `If-Match`, and every move of the case reads the case's. `deleteAction` and
@@ -1613,3 +1616,13 @@ real, each with the whole `CasesCase` of section 19. Where they differ from `ope
   the status before and after and the new `version`; triage adds `ownerId` and the urgency
   key, a dismissal and a close add `reasonKey`. The close's note is on the case and its
   `case_transition` row, never in an audit value.
+
+## 21. The change page's case carries its assessment and close note (2026-09-25, c9-fe-triage-assessment)
+
+The case panels card has every panel read the case from `GET /changes/{changeId}`, but the
+workflow block (§19) carried neither the impact assessment nor the note of a one-person
+close, which only a write's `CasesCase` answered, so a reload lost both. `WatchCaseWorkflow`
+gains `assessment` (`CasesAssessment`, null before the case reaches assessing) and
+`closedNote`, as `CasesCase` names them. The assessment is joined to the case in the block's
+one case query, so the read costs one label query more only when the assessment names an
+effort. Both are tenant content in the bank's own zone.

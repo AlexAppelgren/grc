@@ -694,8 +694,9 @@ class CasesAssessmentBody(WriteBody):
     applies: AssessmentApplies = Field(
         description=(
             "Whether the change applies to the bank, a fixed kind: `yes` (it applies and work "
-            "follows), `partly` (it applies to part of the business) or `no` (it does not apply; "
-            "closing on that is `POST /changes/{changeId}/close`). It never says the bank complies."
+            "follows), `partly` (it applies to part of the business) or `no` (it does not apply, "
+            "and saving it closes a case being assessed on one person's word, which needs "
+            "`cases.work`). It never says the bank complies."
         ),
         examples=["yes"],
     )

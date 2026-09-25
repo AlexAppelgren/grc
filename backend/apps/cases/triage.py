@@ -40,7 +40,6 @@ from apps.identity.models import Membership, UserStatus
 from apps.library.reading import vocabulary_refs
 from apps.shared import permissions as perms
 from apps.shared.audit import Actor
-from apps.shared.errors import ProblemError
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import Tenant
 from apps.taxonomy.models import CaseSubStatusLabel, ClosureReasonLabel, DismissalReasonLabel, EffortSizeLabel
@@ -224,14 +223,6 @@ def restore_change(
         update_fields=["dismissed_reason", "dismissed_by", "dismissed_at", "close_reason", "closed_at", "closed_note", "sub_status", "updated_at"]
     )
     return case_out(case, reader=user.id, order=order)
-
-
-def start_assessment(
-    *, tenant: Tenant, actor: Actor, user: Any, order: list[str], change_id: uuid.UUID, expected_version: int | None
-) -> CasesCase:
-    """`assigned` to `assessing`, opening an empty assessment (CAS-03)."""
-    logic.load_case(tenant, change_id, for_update=True)
-    raise ProblemError(status=501, code="not_built", detail=NOT_BUILT)
 
 
 def close_without_action(
