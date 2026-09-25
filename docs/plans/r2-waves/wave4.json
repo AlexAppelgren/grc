@@ -1307,5 +1307,31 @@
   "size": "M",
   "acceptance": "Idempotent, deterministic; seed-integrity entries; teardown switches reach off.",
   "brief": "Read R2_CROSS_CUTTING.md. Tenant A: a Trading department with derivatives, securities and order-routing products; a card-issuing department with its product; footprint covering trading, cards and payments; register decisions on two trading obligations (applies with reason, status, reading, one internal item); a card-only obligation; a deterministic mock-LLM what-applies summary; reach off."
+ },
+ {
+  "package": "c11-agent-config-platform",
+  "title": "The console publishes and retires bleqq's agent versions and sets platform agent settings, as platform configuration",
+  "goal": "Alex decided (D-102) that agent definitions, their versions and platform agent settings are platform configuration, not library facts: the console writes them directly behind a platform permission, a passkey step-up and an audit row, and the library fence stays exactly as written for everything else.",
+  "requirement_ids": [
+   "AGT-03"
+  ],
+  "scenario_ids": [
+   "AGT-S4"
+  ],
+  "files_owned": [],
+  "shared_files": [
+   "backend/apps/agents/",
+   "backend/apps/shared/tests_library_fence.py",
+   "docs/DECISIONS.md",
+   "docs/adr/",
+   "CLAUDE.md"
+  ],
+  "depends_on": [
+   "c11-definitions-platform"
+  ],
+  "wave": 4,
+  "size": "M",
+  "acceptance": "publishAgentVersion, retireAgentVersion and updatePlatformAgentSettings answer as c11-definitions-platform's acceptance says (409 version_exists, 422 unreadable folder, 409 last_version, 422 unknown_key with the valid list), each behind its platform permission and step-up with one record() carrying tenant_id None and the assertion id; AGT-S4 un-skipped and green; the library fence names agent definitions, agent versions and platform agent settings once, in an explicit platform-configuration list with the reason, and still fails closed on any other new shared model, proposal kind or watch write module (a test plants one and sees it refused); no agent, API key or tenant session can write these rows (tests); D-102 row and an ADR (next free number) record the reclassification; CLAUDE.md section 5 gains no exception line, because these rows are no longer library rows; security review of your diff.",
+  "brief": "Alex, 2026-09-25 (D-102): 'Platform config'. First merge origin/claude/r2w3-c11-definitions-platform-writes, which holds the full implementation and fails only the fence test; then reclassify instead of excepting. Read R2_CROSS_CUTTING.md, ADR 0058 (the library door guard) and the c11-definitions-platform question in docs/TODO_FOR_alex.md; mark that TODO item answered by D-102. If reclassifying would let anything other than these three console routes write these rows, stop and report."
  }
 ]

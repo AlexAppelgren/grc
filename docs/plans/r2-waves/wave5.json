@@ -660,7 +660,8 @@
    "c11-definitions-platform",
    "c11-scheduler",
    "c11-e2e-seed",
-   "c11-proposal-batches-decide"
+   "c11-proposal-batches-decide",
+   "c11-agent-config-platform"
   ],
   "wave": 5,
   "size": "M",
