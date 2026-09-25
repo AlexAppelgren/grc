@@ -51,7 +51,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | VOC-05 | Tenant scales for compliance status and risk mapped to fixed ordinals | S | R2 | pending |
 | VOC-06 | Reason lists for dismissal, closure and risk acceptance | S | R2 | pending |
 | VOC-07 | Library vocabulary changes go through the proposal queue | M | R1 | built |
-| VOC-08 | Bulk tagging from list views with preview and one audit entry | S | R2 | in_progress |
+| VOC-08 | Bulk tagging from list views with preview and one audit entry | S | R2 | built |
 | VOC-09 | Tenant configuration is versioned, exportable and importable | S | R3 | pending |
 | FP-01 | Footprint across all dimensions; a record matches when every dimension it carries has a term in the footprint; an empty dimension does not restrict, except an opt-in dimension (standards), which matches only what the scope names; an obligation also needs its instrument's regime | M | R1 | built |
 | FP-02 | A footprint change previews what it hides and reveals, needs a second person and step-up, one audit event per term | M | R1 | built |
