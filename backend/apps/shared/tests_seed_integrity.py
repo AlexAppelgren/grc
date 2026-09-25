@@ -1402,3 +1402,53 @@ class SeededR2Roster(SeededOnce):
         self.assertEqual(created.count(), 1, "the role is written once, through record()")
         self.assertEqual(created.get().actor_label, "seed_e2e")
 # --- end r2-e2e-login-roster --------------------------------------------------------------------
+
+
+# --- c9-e2e-seed ----------------------------------------------------------------------------------
+class SeededCaseJourneys(SeededOnce):
+    """Each journey that moves a case finds its own change and case, in the category it starts
+    from, with the people it signs in as (c9-e2e-seed, CAS-02 to CAS-06, J-2, J-3)."""
+
+    def test_each_case_journey_finds_its_own_case_in_its_category(self) -> None:
+        from apps.cases.models import Action, ImpactAssessment
+        from apps.shared.e2e_seed import APPROVER_A, EXPECTED_CASE_JOURNEYS
+
+        self.assertEqual(len({spec.stable_key for spec in EXPECTED_CASE_JOURNEYS}), len(EXPECTED_CASE_JOURNEYS), "no two journeys share a change")
+        roster = {login.email: login for login in SEED_LOGINS}
+        for spec in EXPECTED_CASE_JOURNEYS:
+            with self.subTest(journey=spec.journey, change=spec.stable_key):
+                tenancy.activate(Tenant.objects.get(slug=spec.tenant_slug).id)
+                case = ChangeCase.objects.select_related("owner", "signoff_requested_by", "signed_off_by").get(change__stable_key=spec.stable_key)
+                self.assertEqual(case.status, spec.status.value)
+                self.assertEqual(case.owner.email if case.owner else None, spec.owner)
+                self.assertEqual(case.signoff_requested_by.email if case.signoff_requested_by else None, spec.requested_by)
+                for email in filter(None, (spec.owner, spec.requested_by, *(action.owner for action in spec.actions))):
+                    self.assertEqual(roster[email].tenant_slug, spec.tenant_slug, "every person on a case is a roster login of its bank")
+                actions = list(Action.objects.filter(case=case).order_by("title"))
+                self.assertEqual(
+                    [(action.title, action.owner.email, action.done_at is not None) for action in actions],
+                    sorted((plan.title, plan.owner, plan.done) for plan in spec.actions),
+                )
+                has_assessment = ImpactAssessment.objects.filter(case=case, saved=True).exists()
+                self.assertEqual(has_assessment, spec.status.value in ("assessing", "implementing", "signoff", "closed"))
+                if spec.status.value == "closed":
+                    assert case.signed_off_by is not None
+                    self.assertEqual(case.signed_off_by.email, APPROVER_A)
+                    self.assertNotEqual(case.signed_off_by_id, case.signoff_requested_by_id)
+                # Another bank never sees the case.
+                other = TENANT_B_SLUG if spec.tenant_slug == TENANT_A_SLUG else TENANT_A_SLUG
+                tenancy.activate(Tenant.objects.get(slug=other).id)
+                self.assertFalse(ChangeCase.objects.filter(change__stable_key=spec.stable_key).exists())
+
+    def test_the_self_signoff_case_is_requested_by_someone_who_may_sign_off(self) -> None:
+        """CAS-S9 is refusable only if its requester holds cases.signoff, so the 409 is four
+        eyes and not a missing permission."""
+        from apps.shared.e2e_seed import EXPECTED_CASE_JOURNEYS
+
+        spec = next(spec for spec in EXPECTED_CASE_JOURNEYS if spec.journey == "CAS-S9")
+        tenant = Tenant.objects.get(slug=spec.tenant_slug)
+        tenancy.activate(tenant.id)
+        membership = Membership.objects.get(user__email=spec.requested_by, tenant=tenant)
+        self.assertIn("cases.signoff", {permission for role in membership.roles.all() for permission in role.permissions})
+        self.assertIn("CAS-S9", next(login for login in SEED_LOGINS if login.email == spec.requested_by).reserved_for)
+# --- end c9-e2e-seed ------------------------------------------------------------------------------
