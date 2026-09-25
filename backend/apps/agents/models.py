@@ -49,11 +49,14 @@ AGENT_KIND_CHOICES = [(kind.value, kind.value) for kind in AgentKind]
 
 
 class RunStatus(enum.StrEnum):
-    """Tier-one kind (apps/shared/kinds.py): the run lifecycle the scheduler branches on."""
+    """Tier-one kind (apps/shared/kinds.py): the run lifecycle the scheduler branches on.
+    `interrupted` is a run stopped from outside before it finished: by a person, or by the
+    cap it would pass (AGT-04, AGT-06)."""
 
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
+    INTERRUPTED = "interrupted"
 
 
 RUN_STATUS_CHOICES = [(status.value, status.value) for status in RunStatus]
