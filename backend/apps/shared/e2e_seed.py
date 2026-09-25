@@ -84,6 +84,8 @@ from apps.register import logic as register_logic
 from apps.register.models import ComplianceAssessment, Gap, InternalLink, Interpretation, TenantObligation, TenantObligationScope
 from apps.taxonomy.models import ComplianceStatus, GapSource, GapStatus, LinkKind, RiskRating, Team
 from apps.tenants.models import InternalItem, Licence, LicenceServiceTerm, OrgUnit, TeamMember, TenantProduct, TenantProductTerm
+# c8-ui-links-history-participants
+from apps.collab.models import Participant
 
 
 @dataclass(frozen=True)
@@ -1810,6 +1812,8 @@ def seed_e2e() -> dict[str, int]:
         seed_standard_change()
         # c8-seed-org-register: after the logins and chunk 5's links.
         seed_org_register(tenants)
+        # c8-ui-links-history-participants: after the register entries it names.
+        seed_participants(tenants)
 
         # INV-S14, after the logins: the re-verification names a seeded library editor.
         machine_confirmed = seed_machine_confirmed()
@@ -2494,3 +2498,34 @@ def seed_org_register(tenants: list[Tenant]) -> None:
         _seed_register(tenant, spec, people, org)
     tenancy.clear_tenant()
 # --- end c8-seed-org-register -------------------------------------------------------------
+
+
+# --- c8-ui-links-history-participants (COL-04, COL-S6, COL-S7) ------------------------------
+# COL-S7: the Reader takes part in one register entry, added by the compliance officer, and
+# leaves it on their own. COL-S6: the obligation the compliance officer adds people and a
+# team to, which has no register entry until the first add creates it.
+PARTICIPATION_OBLIGATION = "obl-costs-charges"
+PARTICIPANT = "reader@example-bank.test"
+PARTICIPANT_ADDED_BY = _SARA
+NO_ENTRY_OBLIGATION = "obl-idd-demands-needs"
+
+
+def seed_participants(tenants: list[Tenant]) -> None:
+    """One live participation of the Reader on tenant A's entry, recorded through record()
+    like every seeded row. A reseed finds it live and writes nothing; after COL-S7 has left
+    it, a reseed puts it back."""
+    tenant = next(t for t in tenants if t.slug == TENANT_A_SLUG)
+    tenancy.activate(tenant.id)
+    entry = TenantObligation.objects.get(obligation_id=_obligation_id(PARTICIPATION_OBLIGATION))
+    person = User.objects.get(email=PARTICIPANT)
+    if not Participant.objects.filter(tenant_obligation=entry, user=person, removed_at__isnull=True).exists():
+        row = Participant.objects.create(
+            tenant=tenant,
+            tenant_obligation=entry,
+            user=person,
+            added_by=User.objects.get(email=PARTICIPANT_ADDED_BY),
+            added_at=_at(datetime.datetime.now(ZoneInfo(tenant.timezone)).date(), -6, tenant.timezone),
+        )
+        _seeded(tenant, "participant", row, PARTICIPATION_OBLIGATION, {"tenantObligationId": str(entry.id), "userId": str(person.id)})
+    tenancy.clear_tenant()
+# --- end c8-ui-links-history-participants ----------------------------------------------------

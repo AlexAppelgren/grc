@@ -80,9 +80,9 @@ function ReadingLine({ reading }: { reading: ReadingVersion }) {
   const t = useT();
   const ctx = useFormatContext();
   return (
-    <Meta className="mt-1.5">
+    <p className="mt-1.5 text-meta text-muted" data-reading-by="">
       {t('obligationHistory.readingBy', { version: reading.versionNo, name: reading.author.name, date: formatDate(reading.writtenAt, ctx) })}
-    </Meta>
+    </p>
   );
 }
 

@@ -529,9 +529,13 @@ describe('the diff sentence', () => {
   });
 });
 
+// Panels whose packages have filled them, each with tests of its own.
+// c8-ui-links-history-participants: Links, History and Participants.
+const FILLED: readonly string[] = ['Links', 'History', 'Participants'];
+
 describe('the panel stubs', () => {
   it('render nothing until their packages fill them', async () => {
-    for (const name of PANELS) {
+    for (const name of PANELS.filter((panel) => !FILLED.includes(panel))) {
       const actual = await vi.importActual<Record<string, (props: { obligationId: string }) => ReactNode>>(`./Obligation${name}Panel`);
       const Panel = actual[`Obligation${name}Panel`] as (props: { obligationId: string }) => ReactNode;
       const { container, unmount } = render(<Panel obligationId="ob-1" />);

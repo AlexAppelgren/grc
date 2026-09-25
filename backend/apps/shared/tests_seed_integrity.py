@@ -30,7 +30,9 @@ from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.core.management import call_command
+from django.db.models import F
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from apps.agents.models import AgentRun
 from apps.cases.models import ChangeCase
@@ -98,6 +100,9 @@ from apps.taxonomy.matching import footprint_of, in_footprint, in_footprint_sql,
 from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm, TaxonomyTerm, WatchedMarket
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
+# c8-ui-links-history-participants
+from apps.collab.models import Participant
+from apps.shared.e2e_seed import NO_ENTRY_OBLIGATION, PARTICIPANT, PARTICIPANT_ADDED_BY, PARTICIPATION_OBLIGATION
 # c8-seed-org-register
 from apps.register.models import ComplianceAssessment, Gap, InternalLink, Interpretation, TenantObligation, TenantObligationScope
 from apps.shared.e2e_seed import (
@@ -1601,3 +1606,39 @@ class SeededOrgAndRegister(SeededOnce):
         for entry in TenantObligation.objects.all():
             self.assertTrue(AuditEvent.objects.filter(action="register.entry_created", subject_id=entry.id).exists())
 # --- end c8-seed-org-register -------------------------------------------------------------------
+
+
+# --- c8-ui-links-history-participants -----------------------------------------------------------
+class SeededParticipant(SeededOnce):
+    """COL-S7's participation and COL-S6's obligation without an entry (COL-04)."""
+
+    def test_the_reader_takes_part_in_one_entry_added_by_the_compliance_officer_and_recorded(self) -> None:
+        tenant = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant.id)
+        [row] = Participant.objects.filter(removed_at__isnull=True).values_list(
+            "id", "user__email", "added_by__email", "tenant_obligation__obligation__stable_key", "team_id"
+        )
+        self.assertEqual(row[1:], (PARTICIPANT, PARTICIPANT_ADDED_BY, PARTICIPATION_OBLIGATION, None))
+        reader = Membership.objects.get(user__email=PARTICIPANT)
+        self.assertEqual(list(reader.roles.values_list("key", flat=True)), ["reader"])
+        self.assertTrue(AuditEvent.objects.filter(action="participant.seeded", subject_id=row[0], actor_label="seed_e2e").exists())
+
+    def test_the_no_entry_obligation_has_no_entry_and_tenant_b_takes_part_in_nothing(self) -> None:
+        tenancy.activate(Tenant.objects.get(slug=TENANT_A_SLUG).id)
+        self.assertFalse(TenantObligation.objects.filter(obligation__stable_key=NO_ENTRY_OBLIGATION).exists())
+        tenancy.activate(Tenant.objects.get(slug=TENANT_B_SLUG).id)
+        self.assertFalse(Participant.objects.exists())
+
+    def test_a_reseed_writes_nothing_and_puts_back_a_participation_the_journey_ended(self) -> None:
+        tenant = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant.id)
+        audited = AuditEvent.objects.filter(tenant=tenant).count()
+        seed_e2e()
+        tenancy.activate(tenant.id)
+        self.assertEqual((Participant.objects.count(), AuditEvent.objects.filter(tenant=tenant).count()), (1, audited))
+        Participant.objects.update(removed_at=timezone.now(), removed_by=F("user"))
+        seed_e2e()
+        tenancy.activate(tenant.id)
+        self.assertEqual(Participant.objects.filter(removed_at__isnull=True).count(), 1)
+        self.assertEqual(Participant.objects.count(), 2)
+# --- end c8-ui-links-history-participants -------------------------------------------------------
