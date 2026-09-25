@@ -156,6 +156,9 @@ TENANT_ONLY_TABLES = [
     "briefing",
     "briefing_item",
     "calendar_feed",
+    # Chunk 8's team list (TEN-03, c8-vocab-lists-rules): a bank's teams and their labels.
+    "team",
+    "team_label",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also
@@ -636,3 +639,29 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
                 tenancy.activate(tenant_id, using="app")
             cursor.execute(f'SELECT id FROM "{table}" WHERE id = ANY(%s)', [probes])
             return {row[0] for row in cursor.fetchall()}
+
+
+class TeamRowsAreTenantOnly(TransactionTestCase):
+    """The team list as cw_app (TEN-03, c8-vocab-lists-rules): each bank reads only its own
+    teams and their labels, a session with no tenant reads none, and a bank cannot file a
+    team under another. Every tenant gets the system team from the tenant hook, so both
+    banks already hold one."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def test_a_bank_reads_and_writes_only_its_own_teams(self) -> None:
+        from apps.taxonomy.models import Team, TeamLabel
+
+        tenant_a = factories.tenant(slug="team-a")
+        tenant_b = factories.tenant(slug="team-b")
+        with transaction.atomic(using="app"):
+            tenancy.activate(tenant_a.id, using="app")
+            self.assertEqual(set(Team.objects.using("app").values_list("tenant_id", flat=True)), {tenant_a.id})
+            self.assertEqual(set(TeamLabel.objects.using("app").values_list("tenant_id", flat=True)), {tenant_a.id})
+        with transaction.atomic(using="app"):
+            self.assertFalse(Team.objects.using("app").exists(), "an unset tenant must match no team (fail closed)")
+            self.assertFalse(TeamLabel.objects.using("app").exists())
+        with self.assertRaises(ProgrammingError):
+            with transaction.atomic(using="app"):
+                tenancy.activate(tenant_a.id, using="app")
+                Team.objects.using("app").create(tenant_id=tenant_b.id, key="legal")
