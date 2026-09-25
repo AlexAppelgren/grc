@@ -324,9 +324,11 @@ def _seed_passkey(user: User, login: SeedLogin) -> None:
             "sign_count": 0,
             "transports": ["internal"],
             "aaguid": fixed.aaguid,
-            "backup_eligible": True,
-            "backed_up": True,
-            "device_type": PasskeyDeviceType.MULTI_DEVICE.value,
+            # What Playwright's virtual authenticator reports for a credential it was
+            # handed: not backup eligible. Sign-in holds each assertion's flag to this one.
+            "backup_eligible": False,
+            "backed_up": False,
+            "device_type": PasskeyDeviceType.SINGLE_DEVICE.value,
             "nickname": "E2E virtual authenticator",
             "retired_at": None,
         },
