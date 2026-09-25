@@ -681,9 +681,11 @@ class Team(TenantListVocabulary):
     """A team that can own work (TEN-03, INPUT_DELTAS §1): a tenant list, so create, rename
     and retire are the generic list routes under `vocab.manage`. `UNIQUE (tenant_id, id)` is
     added in SQL (taxonomy 0009) so membership and departments can point at a team with a
-    composite key; its org unit arrives with the teams model."""
+    composite key. `org_unit` is the department the team belongs to (D-21, taxonomy 0010), a
+composite key to the same bank's unit."""
 
     email = models.EmailField(blank=True)
+    org_unit = models.ForeignKey("tenants.OrgUnit", null=True, blank=True, on_delete=models.PROTECT, related_name="teams")
 
     class Meta:
         db_table = "team"
