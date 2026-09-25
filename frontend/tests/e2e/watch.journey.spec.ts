@@ -7,6 +7,7 @@ import { expect, test } from './support/api-guard';
 import { allowFreshContext, LOGINS, signInAs, signOut } from './support/passkeys';
 import { CHUNK5_WATCH, consoleSourceRow, openChangeByStableKey, openWatchFeed, signInAsSv } from './support/watch-coverage';
 import { openChangeFromFeed } from './support/watch-facts';
+import { lockTenantAScope, unlockTenantAScope } from './support/tenant-scope';
 
 /**
  * Answers the passkey prompt a person's first confirmation opens (playbook 4.2), or none
@@ -347,6 +348,8 @@ function seededDateText(offsetDays: number): string {
 }
 
 test.describe('standards revisions', () => {
+  test.beforeEach(lockTenantAScope);
+  test.afterEach(unlockTenantAScope);
   test("WAT-S10: A new edition of a standard is one change, and only tenants that follow it see it", async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
     const transitionEnds = seededDateText(STANDARD_CHANGE.transitionOffsetDays);
