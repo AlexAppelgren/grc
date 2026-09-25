@@ -119,6 +119,9 @@ class ChangeCase(TenantModel):
     urgency_confirmed = models.BooleanField(default=False)
     footprint_match = models.BooleanField()
     owner = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    # A team of the bank beside the owner, never instead of one (CAS-02, TEN-03): it stays
+    # when the owner changes or leaves. A composite key (cases 0005) keeps it this bank's.
+    owner_team = models.ForeignKey("taxonomy.Team", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     so_what_text = models.TextField(blank=True)
     so_what_confirmed = models.BooleanField(default=False)
     so_what_confirmed_by = models.ForeignKey(

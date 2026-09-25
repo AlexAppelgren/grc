@@ -52,7 +52,7 @@ from pydantic import ConfigDict, HttpUrl, UrlConstraints, model_validator
 from pydantic.json_schema import JsonDict
 
 from apps.cases.schemas import ASSESSMENT_EXAMPLE as CASES_ASSESSMENT_EXAMPLE
-from apps.cases.schemas import NOTE_MAX, CasesAssessment, CasesVocabularyRef
+from apps.cases.schemas import NOTE_MAX, OWNER_TEAM_REF, CasesAssessment, CasesVocabularyRef
 from apps.governance.schemas import AiCitation
 from apps.library.schemas import AgentRef, LibraryRef, LibraryResponse
 from apps.shared.schemas import AgentDecision, CamelSchema, PageQuery, WriteBody
@@ -190,6 +190,7 @@ CASE_WORKFLOW_EXAMPLE: JsonDict = {
     "urgencyConfirmed": True,
     "ownerId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
     "owner": {"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Sara Lind"},
+    "ownerTeam": {"key": "cards", "kind": None, "label": "Cards compliance"},
     "triagedBy": {"id": "5b7e2c1a-9d3f-4e8b-a6c4-0f1e2d3c4b5a", "name": "Johan Berg"},
     "triagedAt": "2026-09-17T08:40:00Z",
     "dismissedReason": None,
@@ -1892,6 +1893,7 @@ class WatchCaseWorkflow(WatchChangeCase):
     model_config = ConfigDict(json_schema_extra={"examples": [CASE_WORKFLOW_EXAMPLE]})
 
     owner: PersonRef | None = Field(description=f"Who owns the case, named at triage. {_PERSON} Null before triage.")
+    owner_team: CasesVocabularyRef | None = Field(description=OWNER_TEAM_REF)
     triaged_by: PersonRef | None = Field(description=f"Who triaged the case. {_PERSON} Null before triage.")
     triaged_at: datetime.datetime | None = Field(
         description="When the case was triaged, as an RFC 3339 timestamp in UTC (`2026-09-17T08:40:00Z`). Null before triage.",
