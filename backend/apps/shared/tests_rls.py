@@ -156,6 +156,21 @@ TENANT_ONLY_TABLES = [
     "briefing",
     "briefing_item",
     "calendar_feed",
+    # Chunk 10's (c10-collab-models): a comment, the people it mentions, the text an edit
+    # replaced, a person's notifications and the proof a mail went out. All one bank's own;
+    # comments and revisions hold tenant text (COL-01, COL-02).
+    "comment",
+    "comment_mention",
+    "comment_revision",
+    "notification",
+    "email_message",
+    # Chunk 9's case workflow (c9-case-models): one bank's impact assessment, actions,
+    # transition ledger and evidence on its own case. None ever holds a library row, and
+    # each child's case and people are composite (tenant_id, …) keys as well (D-18).
+    "impact_assessment",
+    "action",
+    "case_transition",
+    "evidence",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also

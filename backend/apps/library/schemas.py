@@ -1407,6 +1407,11 @@ class ObligationQuery(CamelSchema):
 # ---------------------------------------------------------------------------------------
 # Writes on a record (INV-06)
 # ---------------------------------------------------------------------------------------
+# `problem_report.version_number` is a PostgreSQL integer: a larger number answered 500
+# rather than 422 (hardening H39).
+PROBLEM_REPORT_VERSION_MAX = 2**31 - 1
+
+
 class ProblemReportBody(WriteBody):
     """"This looks wrong" (INV-06). `description` is what the reader believes is wrong;
     `versionNumber` and `language` say which words were on their screen, so a colleague
@@ -1441,11 +1446,14 @@ class ProblemReportBody(WriteBody):
     version_number: int | None = Field(
         default=None,
         ge=1,
+        le=PROBLEM_REPORT_VERSION_MAX,
         description=(
             "Which version of the summary the reader had on screen, numbered from 1 in the order the "
-            "versions took effect, so a colleague opens the same words rather than today's. The "
-            "default is none, for a screen that showed no particular version. It records what was "
-            "read and is not checked against the record, so it never changes what the server stores."
+            "versions took effect, so a colleague opens the same words rather than today's: a whole "
+            f"number from 1 to {PROBLEM_REPORT_VERSION_MAX}, the largest the report's column holds, "
+            "and anything outside that range is refused with a 422 naming the field. The default is "
+            "none, for a screen that showed no particular version. It records what was read and is "
+            "not checked against the record, so it never changes what the server stores."
         ),
     )
     language: str | None = Field(

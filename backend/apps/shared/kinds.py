@@ -79,6 +79,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     ),
     # Chunk 1 (identity and tenant admin basics). Each is something the rules branch on.
     "TenantStatus": ("tenant_status", "TEN-01: active or deactivated; every request branches on it"),
+    "Weekday": ("digest_weekday", "COL-02: the seven days of the week; the digest's schedule branches on it"),
     "UserStatus": ("user_status", "ID-02, ID-03: invited, active or deactivated; sign-in branches on it"),
     "InvitationKind": ("invitation_kind", "ID-01, ID-05: invite or re-enrolment; acceptance branches on it"),
     "ChallengeKind": ("challenge_kind", "ID-02, ID-06: registration, authentication or step-up ceremony"),
@@ -176,5 +177,29 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "roadmap_item_type",
         "HOM-03, HOM-04: what produced the date - a change's key date, an internal deadline, "
         "an action due or a review due; the card and the calendar builder branch on it",
+    ),
+    # Chunk 10 (c10-collab-models): the notification and the mail it may send.
+    "NotificationKind": (
+        "notification_kind",
+        "COL-02: what a notification is about; the inbox, the preferences, delegation and the "
+        "mail composer branch on it. schema.sql's nine values plus participant_added, "
+        "involved_item_changed and review_due (COL-04, D-34), which chunk 10 produces with "
+        "mention, due_soon, overdue and escalation. assigned, signoff_requested and "
+        "approval_requested are produced by chunk 9 (c9-triage, c9-signoff); saved_search_hit "
+        "by chunk 13 (c13-saved-search-notify); proposal_waiting by no R2 chunk, because "
+        "'Decide now' counts waiting proposals on GET /me (D-23), and it is declared so the "
+        "kind list stays schema.sql's",
+    ),
+    "EmailStatus": (
+        "email_status",
+        "COL-02: queued, sent, delivered, bounced or failed; the delivery task and the "
+        "provider's callback branch on it, and no admin adds a delivery state",
+    ),
+    # Chunk 9 (c9-case-models). The evidence scan; `c9-scanner-adapter` adds the adapters
+    # that answer it.
+    "ScanState": (
+        "scan_state",
+        "CAS-05: a stored file is pending, clean, infected or error; the download serves "
+        "only `clean`, and a new row starts `pending`, so an unscanned file is never shown",
     ),
 }

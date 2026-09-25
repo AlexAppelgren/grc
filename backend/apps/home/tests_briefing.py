@@ -114,8 +114,7 @@ class TheRunningWeek(TestCase):
         finished = cases_build.case(
             cls.tenant, a_change(title="Settled", key_date=KEY_DATE + datetime.timedelta(days=4))
         )
-        tenancy.activate(cls.tenant.id)
-        ChangeCase.objects.filter(pk=finished.pk).update(status=CaseStatusCategory.DISMISSED.value)
+        cases_build.in_category(finished, CaseStatusCategory.DISMISSED)
 
     def read(self) -> Any:
         with mock.patch("django.utils.timezone.now", return_value=INSTANT):
@@ -253,6 +252,17 @@ class TheWeeklyJob(TestCase):
         self.assertEqual(
             sorted(sent.to for sent in MockMailer.sent), sorted([self.reader.email, self.swede.email])
         )
+
+    def test_a_member_who_switched_the_briefing_off_gets_no_mail(self) -> None:
+        """COL-02: `weeklyBriefing` off leaves that person out; an explicit true and a key
+        never set both still get the mail."""
+        tenancy.activate(self.tenant.id)
+        Membership.objects.filter(tenant=self.tenant, user=self.swede).update(notification_prefs={"weeklyBriefing": False})
+        Membership.objects.filter(tenant=self.tenant, user=self.reader).update(notification_prefs={"weeklyBriefing": True, "mentions": False})
+
+        self.run_job()
+
+        self.assertEqual([sent.to for sent in MockMailer.sent], [self.reader.email])
 
     def test_each_person_gets_their_own_language(self) -> None:
         self.run_job()
