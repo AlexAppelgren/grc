@@ -52,7 +52,6 @@ CASES_CONTRIBUTE = "cases.contribute"  # compliance officer, owner, contributor
 CASES_SIGNOFF = "cases.signoff"  # approver
 REGISTER_EDIT = "register.edit"  # compliance officer, owner
 GAPS_EDIT = "gaps.edit"  # compliance officer, owner
-APPLICABILITY_REQUEST = "applicability.request"  # compliance officer, owner
 APPLICABILITY_APPROVE = "applicability.approve"  # compliance officer, approver
 RISK_ACCEPT_APPROVE = "risk.accept.approve"  # compliance officer, approver
 PROPOSALS_CREATE = "proposals.create"  # compliance officer
@@ -98,7 +97,6 @@ TENANT_PERMISSIONS: frozenset[str] = frozenset(
         CASES_SIGNOFF,
         REGISTER_EDIT,
         GAPS_EDIT,
-        APPLICABILITY_REQUEST,
         APPLICABILITY_APPROVE,
         RISK_ACCEPT_APPROVE,
         PROPOSALS_CREATE,
@@ -127,9 +125,10 @@ PLATFORM_PERMISSIONS: frozenset[str] = frozenset(
 )
 ALL_PERMISSIONS: frozenset[str] = TENANT_PERMISSIONS | PLATFORM_PERMISSIONS
 
-# Four eyes applies to every approve permission: never the requester (PRD §6).
+# Four eyes applies to every approve permission: never the requester (PRD §6). Not to
+# `applicability.approve`: one person sets applicability after a confirmation (D-75).
 APPROVE_PERMISSIONS: frozenset[str] = frozenset(
-    {FOOTPRINT_APPROVE, CASES_SIGNOFF, APPLICABILITY_APPROVE, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW}
+    {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW}
 )
 
 # ---------------------------------------------------------------------------------------
@@ -174,7 +173,6 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         CASES_CONTRIBUTE,
         REGISTER_EDIT,
         GAPS_EDIT,
-        APPLICABILITY_REQUEST,
         APPLICABILITY_APPROVE,
         RISK_ACCEPT_APPROVE,
         PROPOSALS_CREATE,
@@ -184,7 +182,7 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         WORKFLOW_MANAGE,
     },
     "owner": _EVERYONE
-    | {CASES_WORK, CASES_CONTRIBUTE, REGISTER_EDIT, GAPS_EDIT, APPLICABILITY_REQUEST},
+    | {CASES_WORK, CASES_CONTRIBUTE, REGISTER_EDIT, GAPS_EDIT},
     "approver": _EVERYONE
     | {
         FOOTPRINT_APPROVE,
@@ -275,8 +273,7 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     CASES_SIGNOFF: "Sign off a case worked by someone else.",
     REGISTER_EDIT: "Edit register entries.",
     GAPS_EDIT: "Edit gaps.",
-    APPLICABILITY_REQUEST: "Request an applicability decision.",
-    APPLICABILITY_APPROVE: "Approve an applicability decision requested by someone else.",
+    APPLICABILITY_APPROVE: "Set whether an obligation applies, after confirming it.",
     RISK_ACCEPT_APPROVE: "Approve a risk acceptance requested by someone else.",
     PROPOSALS_CREATE: "Propose a change to the shared library.",
     EXPORTS_CREATE: "Create exports.",
@@ -340,6 +337,11 @@ _LOGIC_LIBRARY_RECORDS = "library.read in the caller's tenant, or an agent's key
 _LOGIC_UPCOMING_READER = "roadmap.read in the caller's tenant, or an agent's key with upcoming:read, because the newsletter run has to know which dates are already public (HOM-04, AGT-02). The list holds library facts only — no case, no footprint verdict, no owner, no 'So what?' — which is what makes a key safe on it, and it is the one route of the home app a key reaches. The gate is apps/home/api.py:require_upcoming_reader, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
 _LOGIC_PROPOSALS_REVIEW = "The queue read, the detail read, approve and reject accept a session holding `proposals.review` or a platform key bound to an agent and holding the scope `proposals:review`, because `Principal.has_permission`/`has_scope` are kind-exclusive and one decorator cannot express 'a session or a key' (PRO-01, PRO-S13, PRO-S14, D-62, ADR 0054). The gate is apps/proposals/api.py:require_reviewer, which branches on the principal kind, refuses a tenant-carrying key even if its scopes list somehow names the scope, refuses a key bound to no agent definition (`agent_not_bound`), and never applies a step-up to a key, which holds no passkey assertion; approve calls `enforce_step_up` for a person in its body."
 _PUBLIC_CALENDAR_TOKEN = "The revocable token in the calendar address is the whole grant: a calendar client sends no header, follows no sign-in and cannot be asked for a passkey, so the URL is the only credential it can carry (HOM-04, D-52, ADR 0045). The mitigations are the ones that decision weighed. The token is `<prefix>.<secret>` with 256 bits of secret, kept as a lookup prefix beside the secret's SHA-256, shown once and never again. It rides in the query string, not the path, because our own access log prints the route and drops the query while a hosting edge writes whole request lines, which makes this the one named exception to CONVENTIONS 3.6 and is pinned by a guard test that no other route reads a token from the query string. A person may hold only CALENDAR_FEEDS_PER_USER addresses and mints one only from a recent sign-in or a step-up, so a stolen access token cannot leave a lasting one behind. Every fetch re-checks that the owner is still a member holding roadmap.read and has not been enrolled again, revoking the subscription when a check fails; an idle one expires after CALENDAR_FEED_IDLE_DAYS; unknown, revoked and expired answer one 404. What is left is the residual risk the decision accepted and the dialog states: whoever holds the address can see which public regulatory dates, stated to the day, the bank has open work on, and nothing else - no internal deadline, owner, urgency or 'So what?' reaches a calendar. The behaviour is apps/home/feed.py's and apps/home/tests_feed.py proves each of these mitigations."  # noqa: S105 a reviewer's note, not a credential
+
+# c10-collab-contract.
+_SELF_NOTIFICATIONS = "Acts only on the caller's own notification rows; no parameter reaches another person's (COL-02)."
+_SELF_MY_COMMENTS = "Returns the caller's own comments and mentions, filtered afterwards by each subject's read permission (COL-01)."
+_LOGIC_COMMENT_SUBJECT = "The gate is the read permission of the subject's kind, which `collab/subjects.py` decides per record; the write also needs `comments.write` (COL-01)."
 
 # (METHOD, path as Ninja registers it under /api/v1) -> why it needs no permission gate.
 UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
@@ -482,6 +484,17 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # query string, so the exception stays one route wide.
     ("GET", "/upcoming"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_UPCOMING_READER),
     ("GET", "/calendar/feed.ics"): Ungated(UngatedReason.PUBLIC_TOKEN, _PUBLIC_CALENDAR_TOKEN),
+
+    # c10-collab-contract (chunk 10, COL-01, COL-02, HOM-05). The three inbox routes and
+    # GET /me/comments act on the caller's own rows; the comment reads and writes are gated
+    # per record by the subject registry (collab/subjects.py). PATCH and DELETE
+    # /comments/{comment_id} carry comments.write and are not listed here.
+    ("GET", "/notifications"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
+    ("POST", "/notifications/{notification_id}/read"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
+    ("POST", "/notifications/read-all"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
+    ("GET", "/me/comments"): Ungated(UngatedReason.SELF, _SELF_MY_COMMENTS),
+    ("GET", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
+    ("POST", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
 }
 
 

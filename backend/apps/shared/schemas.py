@@ -5,6 +5,7 @@ shapes carry the app prefix."""
 
 from __future__ import annotations
 
+import unicodedata
 from typing import Annotated, Any
 
 from django.conf import settings
@@ -29,12 +30,60 @@ class CamelSchema(Schema):
     model_config = ConfigDict(from_attributes=True, alias_generator=to_camel, populate_by_name=True)
 
 
+def _nul_at(value: Any, path: str) -> str | None:
+    """Where in a request body a NUL character sits, as a dotted path of field names, or
+    None. Keys are walked as well as values, since a key reaches a JSON column as it is;
+    a key holding one is named by the object it sits in, so the key is never echoed."""
+    if isinstance(value, str):
+        return path if "\x00" in value else None
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if isinstance(key, str) and "\x00" in key:
+                return path
+            if (found := _nul_at(item, f"{path}.{key}" if path else str(key))) is not None:
+                return found
+    if isinstance(value, (list, tuple)):
+        for index, item in enumerate(value):
+            if (found := _nul_at(item, f"{path}.{index}" if path else str(index))) is not None:
+                return found
+    return None
+
+
 class WriteBody(CamelSchema):
     """A write's request body or a proposal's payload: a field the schema does not name
     answers 422 instead of being dropped, so a tone or a colour never rides along unseen
-    (NFR-S10). Response schemas stay open, so a new field never breaks an older client."""
+    (NFR-S10). Response schemas stay open, so a new field never breaks an older client.
+
+    No string anywhere in it, nested or a key, may hold a NUL character (`\\x00`):
+    PostgreSQL refuses one in a text column, so it answered 500 on every free-text write
+    (hardening H39). It is refused with a 422 naming where it sat; the value is not echoed."""
 
     model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _no_nul(cls, values: Any) -> Any:
+        if (where := _nul_at(values, "")) is not None:
+            raise ValueError(f"{where or 'The body'} cannot contain a NUL character.")
+        return values
+
+
+# Unicode's control (Cc) and format (Cf) categories: line breaks, tabs, NUL, and the
+# invisible marks that reorder or hide text (bidi overrides, zero-width characters).
+_NOT_IN_A_NAME = frozenset({"Cc", "Cf"})
+
+
+def _single_line(value: str) -> str:
+    if any(unicodedata.category(character) in _NOT_IN_A_NAME for character in value):
+        raise ValueError("A name is one line of visible text: no line breaks, tabs or invisible characters.")
+    return value
+
+
+# A name a person gives something that other people then read in a list, a heading or a
+# mail's subject line: a bank, a team, a role. It refuses every control and format
+# character, so a line break cannot break the mail the name goes into and a bidi override
+# cannot make it read as something else (hardening H38).
+SingleLineName = Annotated[str, AfterValidator(_single_line)]
 
 
 class LibraryResponse(CamelSchema):
