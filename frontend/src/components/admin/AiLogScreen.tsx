@@ -19,6 +19,7 @@ import { useFormatContext } from '@/features/identity/hooks';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { RestrictedScreen, forbiddenFrom } from '@/shared/navigation/require-permission';
+import { externalHref } from '@/shared/utils/external-href';
 import { formatDateTime, type FormatContext } from '@/shared/utils/format';
 
 // The AI log (AUD-02; design/screens/admin-ai-log.html). Every model call the
@@ -214,9 +215,13 @@ function Output({ row, t, ctx }: { row: AiGeneration; t: Translate; ctx: FormatC
         <ol aria-label={t('admin.aiLog.sourcesLabel')} className="mt-2 list-decimal pl-5 text-meta text-muted">
           {row.citations.map((citation, index) => (
             <li key={index}>
-              <a href={citation.url} target="_blank" rel="noopener noreferrer" className="break-words text-fg underline">
-                {citation.label}
-              </a>
+              {externalHref(citation.url) === null ? (
+                <span className="break-words text-fg">{citation.label}</span>
+              ) : (
+                <a href={citation.url} target="_blank" rel="noopener noreferrer" className="break-words text-fg underline">
+                  {citation.label}
+                </a>
+              )}
             </li>
           ))}
         </ol>

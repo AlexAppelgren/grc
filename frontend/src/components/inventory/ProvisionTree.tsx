@@ -17,6 +17,7 @@ import { STANDARD_LEVEL_KIND } from '@/features/library/obligation-presentation'
 import type { ProvisionNode } from '@/features/library/types';
 import { inForceLabel } from '@/features/library/version-presentation';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
+import { externalHref } from '@/shared/utils/external-href';
 import { problemStatus } from '@/shared/utils/problem';
 
 // The provision tree, on the instrument card (design/screens/tenant-instrument.html;
@@ -141,13 +142,18 @@ function ProvisionUnit({ node }: { node: ProvisionNode }) {
  */
 function LicensedText({ sourceUrl }: { sourceUrl: string }) {
   const t = useT();
+  const href = externalHref(sourceUrl);
   return (
     <div className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-provisions-licensed="">
       <h2 className="text-fg">{t('inventory.instrument.provisionsLicensed.title')}</h2>
       <p className="mx-auto mt-2 max-w-[60ch]">{t('inventory.instrument.provisionsLicensed.body')}</p>
-      <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block font-medium text-fg underline">
-        {t('inventory.instrument.provisionsLicensed.link')}
-      </a>
+      {href === null ? (
+        <p className="mt-3 break-all text-fg">{sourceUrl}</p>
+      ) : (
+        <a href={href} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block font-medium text-fg underline">
+          {t('inventory.instrument.provisionsLicensed.link')}
+        </a>
+      )}
     </div>
   );
 }
