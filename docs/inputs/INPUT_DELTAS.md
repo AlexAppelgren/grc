@@ -1536,3 +1536,13 @@ enabled and forced row-level security, with these departures on purpose:
 - `GET /exports/{exportId}/download` streams the file itself (section 4, section 7), with
   `Content-Disposition: attachment` and `Cache-Control: no-store`, and records every
   download in the audit log. There is no `DownloadLink`.
+
+## 20. A case knows when triage is due (2026-09-25, c10-case-triage-due)
+
+`change_case.triage_due_at` (`schema.sql` §13, "from the tenant's triage target") is a
+nullable timestamp, set when the case opens to its opening time plus the bank's
+`triage_target_hours` (section 19). Cases 0004 backfills it for every open `new` case, one
+bank's zone at a time because forced row-level security binds the schema owner too; a case
+that already left `new` keeps a null, since reminders read the column only while a case is
+`new` (`c10-reminders-core`). The backfill writes no audit row: the column is derived from
+two facts already on record, not a decision.

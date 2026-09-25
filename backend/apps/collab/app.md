@@ -34,7 +34,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | COL-01 | Comments and mentions on any record, and a person's own comments and mentions on My work, limited to records they can read. These shared comments are the notes on My work; there are no private notes (D-60) | S | R2 | pending |
-| COL-02 | Notifications, reminders before due dates including next reviews, notice when a change is linked to an involved obligation or a new version applies, escalation to the head of the owner's department, a weekly digest in the user's language, once per person per event | M | R2 | pending |
+| COL-02 | Notifications, reminders before due dates including next reviews, notice when a change is linked to an involved obligation or a new version applies, escalation to the head of the owner's department, a weekly digest in the user's language, once per person per event | M | R2 | in_progress |
 | COL-03 | Follow a record | C | R3 | pending |
 | COL-04 | Participants: people or teams added to a register entry or a case by someone who can edit it; participation lists and notifies, grants no access, and a participant can leave | M | R2 | pending |
 
@@ -86,9 +86,11 @@ Then each user receives one digest in their language listing their open items as
 
 ### COL-S3 — Schedules run in the tenant's timezone `@integration` (COL-02)
 ```gherkin
-Given a tenant in Europe/Helsinki and a digest scheduled for Monday 08:00
-When the worker's beat fires in UTC
-Then the digest is sent at 08:00 Helsinki time, across a daylight saving change too
+Given a tenant in Europe/Helsinki, reminders sent at the REMINDER_SEND_HOUR of 07:00 and a lead of three days
+And a case awaiting triage, due three days after the tenant-local date
+When the worker's beat fires every hour of that local day in UTC
+Then the triage reminder is sent once, at 07:00 Helsinki time, and at no other hour
+And on the day before a daylight saving change and on the day of it, in both directions, it still arrives at 07:00 local, one UTC hour apart
 And the fixture anchors to the tenant-local date, never to "now plus hours"
 ```
 
@@ -216,4 +218,16 @@ Then no case comment is returned, cases are listed as permission-limited, and he
 When Johan comments on an obligation Anna owns
 Then it appears on Anna's My work under "Changes on your items" for the awareness window
 And the application log, the audit after value and the outbox payload for these requests hold ids and never the comment text
+```
+
+### COL-S13 — Notification preferences mute a kind for one person, never an escalation `@integration` (COL-02)
+```gherkin
+Given Anna has turned mentions off and Erik has not
+When Erik mentions them both on a case
+Then Anna receives no notification and no mail, and Erik's own row is written
+And the comment still lists both mentions, and the case is unchanged for Anna
+When an action Anna owns passes the escalation threshold
+Then Anna is notified although reminders are off, because escalation is the bank's control and not hers
+When Anna turns mentions back on
+Then the next mention reaches her, and the muted one is not replayed
 ```
