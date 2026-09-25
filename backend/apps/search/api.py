@@ -22,7 +22,9 @@ The evaluation set's four routes at the end are the platform console's (SRC-05,
 ADM-02): `eval.manage` only, and the one write, adding a question, is audited.
 
 Who may call what: a person searching, asking or rating an answer holds `search.use`
-(PRD §6, "everyone"). `POST /search/similar` is the agents' route, gated on the
+(PRD §6, "everyone"). A bank's key holding `search:read` searches too, which is how a bank's
+own agent reads (ACC-04, ACC-05); an agent access credential's search is narrowed to its
+entry's scope in `hybrid.py`, and it is the one POST such a credential may send. `POST /search/similar` is the agents' route, gated on the
 `search:read` key scope alone (AGT-02, INPUT_DELTAS §7): no permission in the matrix
 gives a person a similarity read, and a console surface that wants one comes with its own
 permission and its own review. The one write, the reader's verdict on an answer, goes
@@ -35,6 +37,7 @@ from collections.abc import Iterator
 from django.http import HttpRequest
 from ninja import SSE, Path, Query, Router
 
+from apps.library.reading import reader_of
 from apps.search import ask, eval_sets, hybrid
 from apps.search.schemas import (
     AnswerFeedbackBody,
@@ -50,32 +53,49 @@ from apps.search.schemas import (
     SimilarRequest,
 )
 from apps.shared import permissions as perms
-from apps.shared.authentication import ApiKeyAuth, SessionAuth
+from apps.shared.authentication import ApiKeyAuth, PrincipalKind, SessionAuth
 from apps.shared.permissions import requires_permission, requires_scope
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, answers_problems, principal, uuid_or_404
+from apps.taxonomy.http import actor_for, answers_problems, deny, principal, require_any, uuid_or_404
 
 router = Router(tags=["Search"])
 
 SESSION = SessionAuth()
+SESSION_OR_KEY = [SessionAuth(), ApiKeyAuth()]
+
+
+def require_searcher(request: HttpRequest) -> None:
+    """`POST /search`: a person with `search.use`, or a key with `search:read`, which is how
+    a bank's own agent searches the library in its scope (SRC-01, ACC-04). The 403 names the
+    scope it wanted to a key and the permission it wanted to a person."""
+    who = principal(request)
+    if who.kind is PrincipalKind.AGENT:
+        if not who.has_scope(perms.SCOPE_SEARCH_READ):
+            raise deny(perms.SCOPE_SEARCH_READ)
+        return
+    require_any(request, perms.SEARCH_USE)
 
 
 @router.post(
     "/search",
     response=SearchResponse,
-    auth=SESSION,
+    auth=SESSION_OR_KEY,
     operation_id="search",
     by_alias=True,
     summary="Find an obligation, a provision or a change in the shared library",
 )
-@requires_permission(perms.SEARCH_USE)
 @answers_problems
 def search(request: HttpRequest, body: SearchRequest) -> SearchResponse:
     """Find obligations, provisions and registered changes in the shared library, by
     identifier or by concept, as they stood on a chosen date (SRC-01, SRC-02).
 
-    Who may call it: a person with `search.use`, on their own session. An API key is
-    refused; agents use `POST /search/similar`.
+    Who may call it: a person with `search.use`, on their own session, or a bank's own key
+    holding the `search:read` scope, which is how an agent the bank runs itself searches. A
+    key of an agent access entry finds only what that entry may open: the bank's scope and
+    then the entry's own, its departments' and products' terms, so a trading agent never
+    finds a card rule, and it cannot ask for what the scope holds back (`inFootprint`
+    false). A platform key belongs to no bank and gets 404; bleqq's watch agents use
+    `POST /search/similar`.
 
     What comes back: one ranked page, best first. `limit` defaults to 20 and may not
     exceed 100; a larger number answers 422 naming the field and is never clamped. The
@@ -95,15 +115,19 @@ def search(request: HttpRequest, body: SearchRequest) -> SearchResponse:
     writes no audit row, because nothing changed. It is a POST so the query never travels
     in a URL: what a reader types is the bank's own text.
 
-    Errors: `rate_limited` when that reader has searched more than the limit above in the
-    last minute, which is a 429 to wait out and retry rather than a call to change;
+    Errors: `rate_limited` when that reader or key has searched more than the limit above
+    in the last minute, which is a 429 to wait out and retry rather than a call to change;
     `unknown_key` for a `lang` that is not one of the library's language rows;
     `validation_error` for a query over the cap, a `limit` above 100 or a filter the
-    contract does not name; `not_found` when the session belongs to no bank;
-    `permission_denied` without `search.use`; `unauthenticated` without a session.
+    contract does not name; `unknown_filter` (422) when an agent access credential sends
+    `inFootprint` false; `not_found` when the session or the key belongs to no bank;
+    `permission_denied` without `search.use`, or a key without `search:read`;
+    `unauthenticated` without a session or a key.
     """
+    # Ungated by design: logic-gate (search.use in a tenant, or a key with search:read; SRC-01, ACC-04).
+    require_searcher(request)
     who = principal(request)
-    return hybrid.run_search(body, tenant_id=who.tenant_id, user_id=who.subject_id)
+    return hybrid.run_search(body, tenant_id=who.tenant_id, user_id=who.subject_id, reader=reader_of(who))
 
 
 @router.post(

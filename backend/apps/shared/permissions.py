@@ -496,6 +496,14 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # query string, so the exception stays one route wide.
     ("GET", "/upcoming"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_UPCOMING_READER),
     ("GET", "/calendar/feed.ics"): Ungated(UngatedReason.PUBLIC_TOKEN, _PUBLIC_CALENDAR_TOKEN),
+    # acc-scoped-reads (SRC-01, ACC-04, ACC-05): a bank's own agent searches the library in its scope.
+    ("POST", "/search"): Ungated(
+        UngatedReason.LOGIC_GATE,
+        "search.use in the caller's tenant, or a key holding search:read, which is how an agent a bank runs "
+        "itself searches; an agent access credential's search is narrowed to its entry's scope (SRC-01, ACC-04). "
+        "The gate is apps/search/api.py:require_searcher, which branches on the principal kind and names the "
+        "scope it wanted to a key and the permission it wanted to a person.",
+    ),
 }
 
 

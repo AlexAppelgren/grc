@@ -183,10 +183,17 @@ class SearchGateTests(SearchApiTestCase):
             response = self.post(SIMILAR, SIMILAR_BODY, SESSION_HEADERS)
         self.assertEqual(response.status_code, 401)
 
-    def test_search_refuses_an_api_key_because_it_is_a_persons_route(self) -> None:
+    def test_search_takes_a_key_only_with_the_search_scope_and_a_bank(self) -> None:
+        # acc-scoped-reads (ACC-04): a bank's own agent searches with `search:read`; what it
+        # finds inside its entry's scope is apps/search/tests_agent_access.py.
+        with stub_api_key(agent_principal(scopes={perms.SCOPE_LIBRARY_READ}, tenant_id=uuid.uuid4())):
+            refused = self.post(SEARCH, SEARCH_BODY, KEY_HEADERS)
+        self.assertEqual(refused.status_code, 403)
+        self.assertEqual(refused.json()["requiredPermission"], perms.SCOPE_SEARCH_READ)
+        # A platform key belongs to no bank, so there is no scope to search in.
         with stub_api_key(agent_principal(scopes={perms.SCOPE_SEARCH_READ})):
-            response = self.post(SEARCH, SEARCH_BODY, KEY_HEADERS)
-        self.assertEqual(response.status_code, 401)
+            nowhere = self.post(SEARCH, SEARCH_BODY, KEY_HEADERS)
+        self.assertEqual((nowhere.status_code, nowhere.json()["code"]), (404, "not_found"))
 
 
 class SearchRequestValidationTests(SearchApiTestCase):

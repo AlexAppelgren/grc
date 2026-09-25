@@ -44,6 +44,12 @@ features off sends them nothing: its search reads by the words alone, as a deplo
 neither does (D-07, owner item 14). `POST /search` writes nothing at all, which is why its
 scenarios assert the audit count is unchanged.
 
+**A bank's own agent searches inside its entry's scope.** `POST /search` also answers an
+agent access credential holding `search:read` (ACC-04, ACC-05): the same statement, the same
+footprint, and then the entry's second pass over the same scope (`library.reading.
+entry_admits()`, ACC-02), so it finds nothing its entry could not open. It cannot lift the
+footprint: `inFootprint: false` is refused by name. The chunks stay the library's (D-10).
+
 **`find_similar` is the same statement, read by an agent.** `POST /search/similar` is the
 agents' route (AGT-02): a watch agent sends a passage it fetched and asks which library
 records are nearest it. Three things differ from a reader's search, and nothing else does.
@@ -75,7 +81,6 @@ from django.db.models import (
     Exists,
     F,
     FloatField,
-    Func,
     OuterRef,
     Q,
     QuerySet,
@@ -92,7 +97,7 @@ from django.utils import timezone
 from pgvector.django import CosineDistance
 
 from apps.library.models import Instrument, Obligation, ObligationTitle, ObligationVersion, Provision
-from apps.library.reading import instrument_scope_term_ids, scope_term_ids, today_for
+from apps.library.reading import OPEN, Reader, entry_admits, instrument_scope_term_ids, scope_term_ids, today_for
 from apps.search import limits
 from apps.search.models import TEXT_SEARCH_CONFIGS, SearchChunk, SearchSource
 from apps.search.schemas import (
@@ -151,12 +156,18 @@ ELLIPSIS = "…"
 # ---------------------------------------------------------------------------------------
 # POST /search, POST /search/similar
 # ---------------------------------------------------------------------------------------
-def run_search(body: SearchRequest, *, tenant_id: uuid.UUID | None, user_id: uuid.UUID) -> SearchResponse:
+def run_search(body: SearchRequest, *, tenant_id: uuid.UUID | None, user_id: uuid.UUID, reader: Reader = OPEN) -> SearchResponse:
     """`POST /search`. The tenant scopes the footprint filter; the chunks are the
     library's (D-10: only the library is indexed in R1). The reader's own bucket is spent
-    before any of it runs, so a runaway client is refused at the door (NFR-02)."""
+    before any of it runs, so a runaway client is refused at the door (NFR-02). A confined
+    reader, a bank's own agent, is kept inside the footprint and its entry's scope."""
     limits.search_bucket(user_id)
     tenant = tenant_of(tenant_id)
+    if reader.confined and body.filters is not None and body.filters.in_footprint is False:
+        raise ValidationError(
+            "An agent access credential searches inside the bank's regulatory scope only, so inFootprint is true.",
+            code="unknown_filter",
+        )
     as_of = body.as_of or today_for(tenant)
     found = _candidates(
         body.q,
@@ -167,6 +178,7 @@ def run_search(body: SearchRequest, *, tenant_id: uuid.UUID | None, user_id: uui
         as_of=as_of,
         limit=body.limit,
         models=tenant.ai_enabled,
+        entry_id=reader.entry_id,
     )
     ranked = _best_per_record(_reranked(body.q, found, models=tenant.ai_enabled))
     return SearchResponse(items=[_hit(row, body.q) for row in ranked[: body.limit]], as_of=as_of)
@@ -249,11 +261,12 @@ def _candidates(
     limit: int,
     models: bool,
     standards: bool = True,
+    entry_id: uuid.UUID | None = None,
 ) -> list[dict[str, Any]]:
     """The rows either leg found, best fused first. One query, however many hits. With
     `models` false the query reaches no embedder: the vector leg finds nothing."""
     asked = _asked(text, configurations)
-    rows = _filtered(types=types, filters=filters, tenant=tenant, as_of=as_of, standards=standards)
+    rows = _filtered(types=types, filters=filters, tenant=tenant, as_of=as_of, standards=standards, entry_id=entry_id)
     rows = rows.annotate(
         keyword_score=SearchRank(F("tsv"), asked),
         similarity=_similarity(text) if models else Value(None, output_field=FloatField()),
@@ -313,11 +326,13 @@ def _filtered(
     tenant: Tenant | None,
     as_of: datetime.date,
     standards: bool = True,
+    entry_id: uuid.UUID | None = None,
 ) -> QuerySet[SearchChunk]:
     """Everything the caller may see and asked for, before a single row is ranked. A filter
     applied after ranking would answer a short page of a long list and call it the answer.
     `standards=False` leaves out every chunk whose instrument sits at a level of the kind
-    `standard`: the kind decides, never the level's key (D-81)."""
+    `standard`: the kind decides, never the level's key (D-81). `entry_id` narrows the
+    footprint's answer by an agent access entry's scope, over the same scope (ACC-02)."""
     rows = SearchChunk.objects.filter(owner_tenant__isnull=True)
     rows = rows.filter(Q(valid_from__isnull=True) | Q(valid_from__lte=as_of))
     rows = rows.filter(Q(valid_to__isnull=True) | Q(valid_to__gte=as_of))
@@ -346,33 +361,35 @@ def _filtered(
         # to apply — not a wider read, because `owner_tenant_id IS NULL` above has already
         # confined it to the shared library, which is what an agent is asking about.
         return rows
-    rows = rows.annotate(in_scope=_in_footprint(tenant))
+    rows = rows.annotate(in_scope=matching.in_footprint_expression(tenant.id, _scope()))
+    if entry_id is not None:
+        rows = rows.filter(*entry_admits(tenant.id, entry_id, _scope()))
     # Absent and true are both the bank's standing scope; false is the reader asking to see
     # what the scope holds back, which is the screen's "Search outside our scope".
     return rows.filter(in_scope=filters.in_footprint is not False)
 
 
-def _in_footprint(tenant: Tenant) -> Func:
-    """FP-03's verdict, from the database function the obligations list and the watch feed
-    use, over the scope the inventory hands it: `library.reading`'s SQL twins, read for the
+def _scope() -> Coalesce:
+    """The scope a chunk is judged by for FP-03's verdict, which the database function the
+    obligations list and the watch feed use takes, as the inventory hands it: `library.reading`'s SQL twins, read for the
     chunk's own record and never copied here. An obligation's chunk is judged by the
     obligation's own terms plus its instrument's scope; a provision's, which has no terms of
     its own, by its instrument's scope alone; a registered change's by the scope the watch
     feed judges it by (`watch.reading`); a chunk that names none of them carries no scope
     and matches every bank. So the regime and the jurisdictions an
     instrument's rules reach (D-28, D-29) narrow a search exactly as they narrow the
-    inventory."""
+    inventory. The scope a chunk is judged by, handed to the footprint's function and to an
+    entry's second pass alike."""
     obligation = Obligation.objects.filter(id=_outer_metadata_uuid("obligation_id")).values(scope=scope_term_ids())
     instrument = Instrument.objects.filter(id=_outer_metadata_uuid("instrument_id")).values(scope=instrument_scope_term_ids())
     change = RegulatoryChange.objects.filter(id=OuterRef("source_id")).values(scope=change_scope_term_ids())
-    scope = Coalesce(
+    return Coalesce(
         Subquery(obligation[:1]),
         Subquery(instrument[:1]),
         Subquery(change[:1]),
         Value([], output_field=ArrayField(UUIDField())),
         output_field=ArrayField(UUIDField()),
     )
-    return matching.in_footprint_expression(tenant.id, scope)
 
 
 def _similarity(query: str) -> Any:
