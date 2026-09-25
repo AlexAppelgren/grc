@@ -129,7 +129,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 | built |
 | AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | built |
-| AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | in_progress |
+| AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | built |
 | AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. Such an agent writes only in its own tenant's zone (D-61); what it files for a scope item is OWN-02 | M | R2 | in_progress |
 | AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console (D-61); an approved scope item opens a research request (OWN-02) | S | R2 | in_progress |
 | AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | in_progress |
@@ -207,6 +207,14 @@ A version is published only from its shipped folder, read by the seed's reader: 
 the reader refuses or one that changes the agent's id, kind, scope or zone, and 409
 `last_version` for retiring the last published version of an active agent. A run pins the
 newest published version when it opens, and a trigger keeps it there.
+
+The journey (c11-e2e-console) has the platform admin publish the sweeper's next version from
+the console with a passkey, from a fixture folder the E2E stack ships beside a copy of
+`backend/agents/` (`AGENT_DEFINITIONS_DIR`, read only under `E2E_MODE`); the list grows by
+it, the seeded runs still read "Version 1" and "Version 2", and a bank's admin finds no
+console entry, the client gate by address and the server's 403 naming
+`agent_definitions.manage` on every definition route. Runs started after the publish are
+the integration test's, since no journey drives the beat.
 
 ### AGT-S5 — A tenant controls its agents without touching their instructions `@integration` `@e2e` (AGT-04)
 ```gherkin
@@ -318,6 +326,13 @@ database refuses such a row on one of bleqq's definitions, so the fence is prove
 request can name bleqq's agent: adding it, its console settings and its runs. The screen
 line is the `@e2e` half's; the integration test proves the rest, the AI off line through
 both beats.
+
+The journey (c11-e2e-console) reads bleqq's sweeper on the bank admin's agents page with
+its cadence, next run and last run, nothing on it to press and none of it among the bank's
+own agents, then sends the three requests the page never offers and reads each 403 naming
+`agent_definitions.manage` and the sweeper unchanged. The E2E stack runs the sweeper as
+released (`status: active` in its copy of the definitions), as a deploy does once its
+evaluation passes.
 
 ### AGT-S14 — A bank's own agent writes only in its own zone `@integration` (AGT-04, AGT-05, OWN-02)
 ```gherkin

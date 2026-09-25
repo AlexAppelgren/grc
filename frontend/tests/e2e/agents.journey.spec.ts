@@ -1,8 +1,18 @@
 import type { APIResponse } from '@playwright/test';
 
+import {
+  answered,
+  openDefinition,
+  publishVersion,
+  sessionApi,
+  SWEEPER_RUN_ON_V1,
+  SWEEPER_RUN_ON_V2,
+  versionPill,
+  versionRow,
+} from './support/agent-definitions';
 import { mintAgentKey, revokeAgentKey } from './support/agent-key';
 import { expect, test } from './support/api-guard';
-import { allowFreshContext, BACKEND_URL, LOGINS, signInAs, signOut } from './support/passkeys';
+import { allowFreshContext, BACKEND_URL, LOGINS, restrictedScreen, signInAs, signOut } from './support/passkeys';
 import { approveQueueProposal } from './support/watch';
 
 // agents: the @e2e scenarios from backend/apps/agents/app.md (playbook Appendix B).
@@ -50,16 +60,110 @@ async function send<T = unknown>(call: Promise<APIResponse>, status: number): Pr
 }
 
 test.describe('agents journeys', () => {
-  test.fixme("AGT-S4: Agent definitions are versioned and owned by the platform", async () => {
-    // pending: AGT-S4 (AGT-03, chunk 11)
+  test("AGT-S4: Agent definitions are versioned and owned by the platform", async ({ page, apiGuard }, testInfo) => {
+    // AGT-03, ADM-02: a platform admin publishes the sweeper's next version from the folder
+    // the E2E stack ships (support/start-backend.sh: v3 to v5, one per attempt), behind a
+    // passkey; the seeded runs keep the versions they started under; a bank's admin reaches
+    // no definition. Publishing only adds a version and the seeded ones are left as they
+    // were, so there is nothing to restore: a retry publishes the next folder, and the
+    // screen offers no retiring of the current version, which new runs need.
+    test.setTimeout(120_000);
+    allowFreshContext(apiGuard);
+    apiGuard.allow(/\/agent-definitions\/watch-sweeper\/versions$/, 403, 'publishing asks for a fresh passkey first, which opens the step-up prompt');
+    const note = `Reads the new FFFS index page first (attempt ${testInfo.retry}).`;
+
+    await signInAs(page, LOGINS.platform);
+    await page.goto('/console/agents');
+    await page.locator('[data-agent-definition="watch-sweeper"]').getByRole('link').click();
+    await expect(page).toHaveURL(/\/console\/agents\/watch-sweeper$/);
+    const before = await openDefinition(page, 'watch-sweeper');
+    expect(before).toEqual(expect.arrayContaining([1, 2]));
+    const current = Math.max(...before);
+    const next = current + 1;
+
+    await publishVersion(page, next, note);
+    // The list grows by the one version, which is now the current one, with its note.
+    await expect(page.locator('[data-agent-versions] [data-agent-version]')).toHaveCount(before.length + 1);
+    const row = versionRow(page, next);
+    await expect(versionPill(row, 'Current')).toBeVisible();
+    await expect(row).toContainText(note);
+    await expect(row).toContainText(`agents/watch-sweeper/v${next}`);
+    await expect(versionPill(versionRow(page, current), 'Current')).toHaveCount(0);
+
+    // Earlier runs still name the version they started under, by exact text: the second
+    // fact of each run's line, after its start.
+    const facts = (runId: string) => page.locator(`[data-platform-runs] [data-run-id="${runId}"] > span`).first();
+    await expect(facts(SWEEPER_RUN_ON_V1)).toHaveText(/^[^·]+ · Version 1 · \d+ min · /);
+    await expect(facts(SWEEPER_RUN_ON_V2)).toHaveText(/^[^·]+ · Version 2 · \d+ min · /);
+
+    // A bank's admin: no console entry, the client gate by address, and the server's own
+    // structured 403 naming the permission on every definition route.
+    await signOut(page);
+    await signInAs(page, LOGINS.admin);
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+    await expect(page.locator('a[href^="/console"]')).toHaveCount(0);
+    await page.goto('/console/agents/watch-sweeper');
+    await expect(restrictedScreen(page)).toContainText('Needs agent definitions manage');
+    apiGuard.allow(/\/agent-definitions/, 403, "a bank's admin reaches no agent definition (agent_definitions.manage)");
+    const api = await sessionApi(page);
+    for (const call of [
+      api.get('/agent-definitions'),
+      api.get('/agent-definitions/watch-sweeper'),
+      api.post('/agent-definitions/watch-sweeper/versions', { versionNo: 9, changeNote: 'Not ours to publish.' }),
+      api.post('/agent-definitions/watch-sweeper/versions/1/retire', {}),
+    ]) {
+      const refused = await answered<{ code: string; requiredPermission: string }>(call, 403);
+      expect(refused).toMatchObject({ code: 'permission_denied', requiredPermission: 'agent_definitions.manage' });
+    }
   });
 
   test.fixme("AGT-S5: A tenant controls its agents without touching their instructions", async () => {
     // pending: AGT-S5 (AGT-04, chunk 11)
   });
 
-  test.fixme("AGT-S13: A bank cannot switch off, pause or re-scope one of bleqq's agents", async () => {
-    // pending: AGT-S13 (AGT-03, AGT-04, chunk 11)
+  test("AGT-S13: A bank cannot switch off, pause or re-scope one of bleqq's agents", async ({ page, apiGuard }) => {
+    // AGT-03, AGT-04: a bank's admin holding agents.manage reads bleqq's agents on the
+    // agents screen, read-only, with when each runs next and how its last run ended; none is
+    // among the bank's own agents; and the requests the screen never sends answer 403 naming
+    // agent_definitions.manage and change nothing. The AI switch line is the integration
+    // test's (a beat run, which no journey drives).
+    allowFreshContext(apiGuard);
+    apiGuard.allow(/\/api\/v1\/research-requests$/, 501, 'research requests answer not_built until c11-research-requests fills the route; the page draws them against the published contract');
+    await signInAs(page, LOGINS.admin);
+    await page.goto('/admin/agents');
+    await expect(page.getByRole('heading', { level: 1, name: 'Agents' })).toBeVisible();
+
+    const watch = page.locator('[data-platform-watch]');
+    const sweeper = watch.locator('[data-platform-agent="watch-sweeper"]');
+    await expect(sweeper).toBeVisible();
+    await expect(sweeper).toContainText('Weekly');
+    // Next run: a date, never "Not scheduled", for a weekly agent.
+    await expect(sweeper).toContainText('Next run');
+    await expect(sweeper).not.toContainText('Not scheduled');
+    // Last run: its state as a pill (a journey running beside this one may be mid-run).
+    await expect(sweeper.locator('[data-pill]', { hasText: /^(Done|Running|Failed|Stopped)$/ })).toHaveCount(1);
+    // Read-only: nothing on bleqq's watch can be pressed, and none of it is the bank's own.
+    await expect(watch.getByRole('button')).toHaveCount(0);
+    const own = page.locator('[data-our-agents]');
+    await expect(own.locator('[data-agent-key="tenant-source-watch"]')).toBeVisible();
+    await expect(own.locator('[data-agent-key="watch-sweeper"]')).toHaveCount(0);
+
+    // Adding it as the bank's own, changing how it runs, and stopping one of its runs.
+    apiGuard.allow(/\/api\/v1\/(agents|agent-definitions\/watch-sweeper\/settings|agent-runs\/[^/]+\/interrupt)$/, 403, "bleqq's agents are the platform's: a bank's admin is refused (agent_definitions.manage)");
+    const api = await sessionApi(page);
+    const before = await answered<{ items: { key: string; cadence: string; jurisdictions: string[] }[] }>(api.get('/agents/platform?limit=100'), 200);
+    for (const call of [
+      api.post('/agents', { agent: 'watch-sweeper' }),
+      api.put('/agent-definitions/watch-sweeper/settings', { cadence: 'monthly', jurisdictions: ['se'], monthlyBudget: '1.00' }),
+      api.post(`/agent-runs/${SWEEPER_RUN_ON_V2}/interrupt`, {}),
+    ]) {
+      const refused = await answered<{ code: string; requiredPermission: string }>(call, 403);
+      expect(refused).toMatchObject({ code: 'permission_denied', requiredPermission: 'agent_definitions.manage' });
+    }
+    // Nothing about it changed.
+    const after = await answered<typeof before>(api.get('/agents/platform?limit=100'), 200);
+    const pick = (page: typeof before) => page.items.filter((item) => item.key === 'watch-sweeper').map(({ key, cadence, jurisdictions }) => ({ key, cadence, jurisdictions }));
+    expect(pick(after)).toEqual(pick(before));
   });
 
   test.fixme("AGT-S6: The budget cap pauses runs and the AI off switch stops every model call", async () => {

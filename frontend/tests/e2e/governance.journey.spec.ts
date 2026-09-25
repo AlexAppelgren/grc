@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 
 import { destinations, type Destination } from '@/shared/navigation/registry';
 
+import { answered, sessionApi } from './support/agent-definitions';
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, BACKEND_URL, inviteLinkFrom, LOGINS, mailOutbox, mailsTo, restrictedScreen, signInAs, signOut } from './support/passkeys';
 
@@ -333,6 +334,16 @@ test.describe('governance journeys', () => {
     const row = page.locator(`[data-question-key="${key}"]`);
     await expect(row).toContainText('Not yet in the release gate');
     await expect(page.locator('[data-eval-questions] [data-question-key]:not([data-lang="sv"])')).toHaveCount(0);
+
+    // Behind the navigation, the server's own refusal of chunk 11's surfaces (c11-e2e-console):
+    // the agent definitions to the library editor, a batch proposal to the platform admin.
+    apiGuard.allow(/\/api\/v1\/(agent-definitions|proposal-batches\/[^/]+)$/, 403, "each platform role is refused the other's surface, with the permission it wanted named");
+    const editorApi = await sessionApi(page);
+    expect(await answered(editorApi.get('/agent-definitions'), 403)).toMatchObject({ code: 'permission_denied', requiredPermission: 'agent_definitions.manage' });
+    await signOut(page);
+    await signInAs(page, LOGINS.platform);
+    const platformApi = await sessionApi(page);
+    expect(await answered(platformApi.get(`/proposal-batches/${crypto.randomUUID()}`), 403)).toMatchObject({ code: 'permission_denied', requiredPermission: 'proposals.review' });
   });
 
   test.fixme("ADM-S5: System health names what is wrong", async () => {

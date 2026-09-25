@@ -2,6 +2,7 @@ import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
 
 import { destinations } from '@/shared/navigation/registry';
 
+import { answered, completeStepUp, sessionApi, type SessionApi } from './support/agent-definitions';
 import { mintAgentKey, revokeAgentKey, type MintedAgentKey } from './support/agent-key';
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, BACKEND_URL, LOGINS, restrictedScreen, signInAs, signOut } from './support/passkeys';
@@ -50,6 +51,55 @@ const CONFIRMER_STATS = { modelCalls: 1, fetches: 1, sourcesChecked: 0, changesR
 // The console's destinations, read from the registry (src/shared/navigation/registry.ts)
 // and never from a list written here, as ADM-S4 reads them.
 const CONSOLE_HREFS: readonly string[] = destinations.filter((d) => d.surface === 'console').map((d) => d.href);
+
+// PRO-S8 (e2e_seed.py EXPECTED_CHUNK11): the seeded re-tag's title, term and source.
+const RETAG_TITLE = 'Add the reporting stage to twelve obligations whose duty ends in a report';
+const RETAG_TERM = 'lifecycle_stage:reporting';
+const RETAG_SOURCE = 'https://www.fi.se/en/our-registers/reporting/';
+
+interface BatchRow {
+  id: string;
+  subjectId: string;
+  decision: 'pending' | 'approved' | 'rejected';
+  before: { terms: string[] };
+  after: { terms: string[] };
+}
+interface Batch {
+  id: string;
+  status: string;
+  rows: BatchRow[];
+}
+
+/** One row asked again, turned around: the term goes on where the row left it off, and off where it left it on. */
+function turn(row: BatchRow | undefined): { obligationId: string; add: string[]; remove: string[]; source: string } {
+  const on = (row?.decision === 'approved' ? row.after : row?.before)?.terms.includes(RETAG_TERM) === true;
+  return { obligationId: row?.subjectId ?? '', add: on ? [] : [RETAG_TERM], remove: on ? [RETAG_TERM] : [], source: RETAG_SOURCE };
+}
+
+/**
+ * The open re-tag of PRO-S8: the seeded one while it waits; after an earlier attempt decided
+ * it, the proposer asks for the newest decided one's twelve rows again, turned around.
+ */
+async function openRetag(api: SessionApi, retry: number): Promise<string> {
+  const listed = await answered<{ items: { id: string; title: string; status: string; isBatch?: boolean }[] }>(
+    api.get('/proposals?kind=obligation_scope&status=open,approved,rejected&order=newest&limit=100'),
+    200,
+  );
+  const retags = listed.items.filter((item) => item.isBatch === true && item.title.startsWith(RETAG_TITLE));
+  const open = retags.find((item) => item.status === 'open');
+  if (open !== undefined) return open.id;
+  expect(retags.length, 'the seeded re-tag is in the queue').toBeGreaterThan(0);
+  const previous = await answered<Batch>(api.get(`/proposal-batches/${retags[0]?.id}`), 200);
+  const again = await answered<Batch>(
+    api.post(
+      '/proposal-batches',
+      { kind: 'obligation_scope', title: `${RETAG_TITLE} (again, attempt ${retry})`, payload: { changes: previous.rows.map(turn) }, sourceUrl: RETAG_SOURCE },
+      { 'Idempotency-Key': crypto.randomUUID() },
+    ),
+    201,
+  );
+  return again.id;
+}
 
 /** The queue has settled when its rows or its empty state is on screen (states.html). */
 async function queueSettled(page: Page): Promise<void> {
@@ -285,8 +335,121 @@ test.describe('proposals journeys', () => {
     expect(consoleReports?.status()).toBe(404);
   });
 
-  test.fixme('PRO-S8: A batch proposal previews and is approved whole or row by row', async () => {
-    // pending: PRO-S8 (PRO-04)
+  test('PRO-S8: A batch proposal previews and is approved whole or row by row', async ({ page, browser, apiGuard }, testInfo) => {
+    // PRO-04: the re-tag the second editor asked for (e2e_seed.py EXPECTED_CHUNK11) waits in
+    // the console. Its proposer cannot decide it; the first editor rejects two rows and
+    // approves the rest behind a passkey; ten obligations change and two do not, and the
+    // bank's audit log reads each row's outcome. The one batch entry that names every row
+    // (`proposal.batch_decided`) belongs to no bank and no console screen reads it yet; the
+    // integration test proves it. A retry finds the seeded batch decided and has the second
+    // editor ask for the same twelve rows again, turned around, so every row is a change.
+    test.setTimeout(180_000);
+    allowFreshContext(apiGuard);
+    apiGuard.allow(/\/proposal-batches\/[^/]+\/decide$/, 403, 'deciding asks for a fresh passkey first, which opens the step-up prompt');
+
+    // The second editor, who asked for it: the batch reads as theirs, with nothing to decide.
+    await signInAs(page, LOGINS.editor2);
+    const proposerApi = await sessionApi(page);
+    const batchId = await openRetag(proposerApi, testInfo.retry);
+    await page.goto(`/console/queue/batches/${batchId}`);
+    await expect(page.locator('[data-batch-four-eyes]')).toContainText('You asked for this re-tag.');
+    await expect(page.locator('[data-batch-rows] [data-batch-row]')).toHaveCount(12);
+    await expect(page.locator('[data-batch-decision]')).toHaveCount(0);
+    await signOut(page);
+
+    // The first editor opens it from the queue: twelve rows, each before and after.
+    await signInAs(page, LOGINS.editor);
+    await page.goto('/console/queue');
+    await queueSettled(page);
+    await page.locator(`a[href="/console/queue/batches/${batchId}"]`).click();
+    const rows = page.locator('[data-batch-rows] [data-batch-row]');
+    await expect(rows).toHaveCount(12);
+    for (const row of await rows.all()) {
+      await expect(row.getByText('Before', { exact: true })).toBeVisible();
+      await expect(row.getByText('After', { exact: true })).toBeVisible();
+    }
+
+    // Two rows rejected with a reason, the rest approved with a passkey.
+    const rejected: string[] = [];
+    for (const row of (await rows.all()).slice(0, 2)) {
+      rejected.push((await row.getAttribute('data-batch-row')) ?? '');
+      await row.getByRole('button', { name: 'Reject', exact: true }).click();
+      await row.getByLabel('Reason', { exact: true }).selectOption({ index: 1 });
+      await row.getByRole('button', { name: 'Reject the row' }).click();
+      await expect(row).toHaveAttribute('data-batch-row-decision', 'rejected');
+    }
+    await expect(page.locator('[data-batch-decision]')).toContainText('10 not decided');
+    const decided = page.waitForResponse((r) => r.url().endsWith(`/api/v1/proposal-batches/${batchId}/decide`) && r.ok());
+    await page.getByRole('button', { name: 'Approve the rest' }).click();
+    await completeStepUp(page, page.locator('[data-batch-result]'));
+    const batch = (await (await decided).json()) as Batch;
+    await expect(page.locator('[data-batch-result]').getByRole('heading')).toHaveText('10 changed, 2 did not');
+    await expect(page.locator('[data-batch-row-decision="approved"]')).toHaveCount(10);
+    await expect(page.locator('[data-batch-row-decision="rejected"]')).toHaveCount(2);
+    expect(batch.rows.filter((row) => row.decision === 'rejected').map((row) => row.id).sort()).toEqual([...rejected].sort());
+
+    // The proposer's own decision is refused by the server too. The first editor, holding a
+    // fresh passkey, asks for a one-row re-tag and tries to decide it: 409, nothing decided.
+    // Its second editor rejects it in the teardown, on failure too.
+    const editorApi = await sessionApi(page);
+    const [first] = batch.rows.filter((row) => row.decision === 'rejected');
+    const own = await answered<Batch>(
+      editorApi.post(
+        '/proposal-batches',
+        {
+          kind: 'obligation_scope',
+          title: `PRO-S8 four eyes ${testInfo.retry}-${Date.now()}`,
+          payload: { changes: [turn(first)] },
+          sourceUrl: RETAG_SOURCE,
+        },
+        { 'Idempotency-Key': crypto.randomUUID() },
+      ),
+      201,
+    );
+    try {
+      apiGuard.allow(new RegExp(`/proposal-batches/${own.id}/decide$`), 409, 'the person who asked for a batch cannot decide it (four_eyes_violation)');
+      const refused = await answered<{ code: string }>(editorApi.post(`/proposal-batches/${own.id}/decide`, { rows: [], rest: 'approved', restRejectionCode: '', note: '' }), 409);
+      expect(refused.code).toBe('four_eyes_violation');
+      await page.goto(`/console/queue/batches/${own.id}`);
+      await expect(page.locator('[data-batch-four-eyes]')).toBeVisible();
+      await expect(page.locator('[data-batch-row-decision="pending"]')).toHaveCount(1);
+      await signOut(page);
+
+      // The bank reads each row's outcome in its audit log, under the editor who decided it.
+      await signInAs(page, LOGINS.reader);
+      const readerApi = await sessionApi(page);
+      for (const row of batch.rows) {
+        const log = await answered<{ items: { action: string; actor: { label: string } }[] }>(readerApi.get(`/audit-events?subjectType=obligation&subjectId=${row.subjectId}&limit=100`), 200);
+        const action = row.decision === 'approved' ? 'obligation.scope_changed' : 'proposal.batch_row_rejected';
+        expect(log.items.filter((event) => event.action === action).length, `${row.subjectId} ${action}`).toBeGreaterThan(0);
+      }
+      const [changed] = batch.rows.filter((row) => row.decision === 'approved');
+      await page.goto('/admin/audit-log');
+      await page.getByLabel('Record kind').selectOption('obligation');
+      await expect(page.locator(`[data-audit-row][data-subject-id="${changed?.subjectId}"][data-action="obligation.scope_changed"]`).first()).toBeVisible();
+      await signOut(page);
+    } finally {
+      // In a context of its own, so it runs whatever state the journey's page is left in.
+      const second = await browser.newContext({ baseURL: testInfo.project.use.baseURL });
+      const other = await second.newPage();
+      apiGuard.watch(other);
+      try {
+        await signInAs(other, LOGINS.editor2);
+        await other.goto(`/console/queue/batches/${own.id}`);
+        const result = other.locator('[data-batch-result]');
+        await expect(result.or(other.getByRole('button', { name: 'Reject all' })).first()).toBeVisible();
+        if ((await result.count()) === 0) {
+          await other.getByRole('button', { name: 'Reject all' }).click();
+          const dialog = other.getByRole('dialog');
+          await dialog.getByLabel('Reason', { exact: true }).selectOption({ index: 1 });
+          await dialog.getByRole('button', { name: 'Reject all' }).click();
+          await completeStepUp(other, result);
+        }
+        await expect(result.getByRole('heading')).toHaveText('0 changed, 1 did not');
+      } finally {
+        await second.close();
+      }
+    }
   });
 
   test('PRO-S9: A rejection needs a reason and is audited', async ({ page, apiGuard }, testInfo) => {
