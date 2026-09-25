@@ -194,4 +194,52 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "COL-02: queued, sent, delivered, bounced or failed; the delivery task and the "
         "provider's callback branch on it, and no admin adds a delivery state",
     ),
+    # Chunk 8 organisation and chunk 11 security policy (c8-org-models, tenants 0002).
+    "OrgUnitKind": (
+        "org_unit_kind",
+        "TEN-02, D-21: a group, legal entity, business area, business unit or function; only a legal "
+        "entity holds licences and the legal-entity term, and a department is a unit of the last three kinds",
+    ),
+    "ProductStatusKind": (
+        "product_status",
+        "TEN-02: planned, live or retired; retired is how a product is withdrawn, never deleted, and "
+        "scope and agent-access narrowing (D-70) branch on it, so it is a kind and not a tenant list",
+    ),
+    "CredentialPolicyKind": (
+        "credential_policy",
+        "ID-07, ADR 0048: any passkey or device-bound only; sign-in and enrolment branch on it",
+    ),
+    # Chunk 8's register lists (c8-vocab-lists-rules). Categories the rules read off a
+    # tenant row's fixed `kind`; the tenant's labels, order and extra rows stay its own.
+    "GapCategory": (
+        "gap_category",
+        "REG-03, VOC-04: open, remediating, risk accepted or closed; the gap workflow, the reports and the pill tone read the category, never the tenant's label",
+    ),
+    "RiskLevel": (
+        "risk_level",
+        "VOC-05: low, medium or high; the pill tone reads the level a risk rating maps to, never its editable ordinal or its label",
+    ),
+    # Chunk 8's register (c8-register-models, register 0001). `Applicability` is listed above.
+    "AssessmentMethod": (
+        "assessment_method",
+        "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
+        "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
+        "reporting branches on",
+    ),
+    # My work (c8-mywork-service, HOM-05, D-23). Literals in apps/home/schemas.py, because My
+    # work is computed and has no table of its own.
+    "WorkReason": (
+        "work_reason",
+        "HOM-05: owner or participant; the row's reason phrase branches on it with the person or team it names",
+    ),
+    "WorkBucket": (
+        "work_bucket",
+        "HOM-05: overdue, due soon, changes on your items (aware) or open; the service assigns each item to "
+        "the first it qualifies for and the screen draws a section per value",
+    ),
+    "WorkDateKind": (
+        "work_date_kind",
+        "HOM-05: what produced a row's date - a review, a gap target, a duty, an internal deadline, an action, "
+        "a key date, a confirmed link, an applied version or a comment; the date phrase branches on it",
+    ),
 }

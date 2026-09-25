@@ -61,6 +61,9 @@ APPEND_ONLY_TRIGGERS = {
     # The text an edit of a comment replaced: an edit keeps it and nobody rewrites it
     # away (COL-01, CHUNK10_TASKS ruling 10).
     "comment_revision": "cw_append_only_guard",
+    # Every status assessment a bank made, which a later one supersedes and never rewrites
+    # (REG-04, c8-register-models, register 0001).
+    "compliance_assessment": "cw_append_only_guard",
     "footprint_history": "cw_append_only_guard",
     "login_event": "cw_append_only_guard",
     "obligation_summary": "cw_append_only_guard",
