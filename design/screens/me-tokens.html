@@ -3,22 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Screen card: API keys (/admin/api-keys)</title>
+<title>Screen card: my access tokens (/me/tokens)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Noto+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* Serves ID-20, ID-21 (chunk 1; ID-S20, ID-S21) and ACC-03 (chunk 11; ACC-S3), for an admin
-   holding integrations.manage. Cut from design/prototype/index.html in chunk 1 and redrawn
-   here at the foundations' proportions by acc-cards, which widens it to every credential
-   in the organisation.
+/* Serves ACC-03 (chunk 11; ACC-S3, ACC-S9), from docs/plans/briefs/AGENT_ACCESS.md
+   section 8, for a member. Reached from the account menu beside My passkeys and My
+   sessions (rail and the More sheet), shown only to a member holding tokens.create or
+   one who still holds a token. The prototype is silent; designed in the language of
+   me-passkeys.html at the foundations' proportions.
 
-   One table holds every credential (AGENT_ACCESS.md section 3), so one list shows them
-   all: our integrations' keys, the keys of the agents we register under Agents, Access
-   (admin-agent-access.html), and our members' personal tokens (me-tokens.html). Each row
-   says its kind and who it reads as: an integration, an agent access entry, or a person.
-   An admin revokes any of them here; issuing an agent's key happens on its entry, and a
-   person mints their own token, so Create a key stays what it was in chunk 1: a key for
-   an integration, behind a passkey, shown once.
+   A personal access token lets an agent the person runs read bleqq as that person:
+   never more than their own permissions, narrowed further by the scopes they pick and,
+   when they name one, by an agent access entry's scope. It is fenced, and the card says
+   so where it matters rather than as policy: it reads only, it cannot sign in or confirm
+   anything with a passkey, it must expire (at most 90 days), and it stops when the
+   person leaves or loses the permission behind a scope. Creating one asks for a passkey
+   and shows the token once. Revoking one's own token needs no passkey: it only takes
+   access away.
 
    Values follow design/system/foundations.md and design/system/pills-and-labels.md; the
    build maps them to Green tokens. Names, figures and dates are sample data. */
@@ -273,161 +275,155 @@ table.log td.num{text-align:right;font-variant-numeric:tabular-nums}
 <body>
 <main>
 
-<h2 class="k">1 · The page (an admin holding integrations manage)</h2>
-<button class="back">Admin</button>
+<h2 class="k">1 · The page (a member holding tokens create)</h2>
 <div class="head">
   <div>
-    <h1>API keys</h1>
-    <p class="lede">Every key and token in Example Bank AB: our integrations, the agents we register, and our members' own tokens. No key can change the library.</p>
+    <h1>My access tokens</h1>
+    <p class="lede">A token lets an agent you run read bleqq as you. It reads only, never more than you can, and it cannot sign in or approve anything.</p>
   </div>
-  <div class="acts"><button class="btn">Create a key</button></div>
+  <div class="acts"><button class="btn">Create a token</button></div>
 </div>
 <p class="status" role="status" tabindex="-1"></p>
 
-<div class="rows" aria-label="Keys and tokens">
+<div class="rows" aria-label="My access tokens">
   <div class="row">
-    <h3 class="t">GRC export sync <span class="pill">Service</span></h3>
-    <p class="meta">For an integration · <span class="mono">cw_a1b2c3d4…</span></p>
-    <div class="pills" style="margin:8px 0 0"><span class="pill">library read</span><span class="pill">upcoming read</span></div>
-    <p class="meta" style="margin:8px 0 0">Created 19 Sep 2026 by Erik Holm · expires 19 Sep 2027 · never used</p>
-    <div class="bar"><button class="btn danger small">Revoke</button></div>
-  </div>
-  <div class="row">
-    <h3 class="t">Order router CI <span class="pill">Service</span></h3>
-    <p class="meta">Reads as <a href="admin-agent-access.html#entry">Trading platform coding agent</a> · <span class="mono">cw_7c1e40aa…</span></p>
-    <div class="pills" style="margin:8px 0 0"><span class="pill">library read</span><span class="pill">search read</span><span class="pill">upcoming read</span><span class="pill">tenant read</span></div>
-    <p class="meta" style="margin:8px 0 0">Issued 12 Sep 2026 by Erik Holm · expires 11 Dec 2026 · last used 25 Sep 2026 08:41</p>
-    <div class="bar"><button class="btn danger small">Revoke</button></div>
-  </div>
-  <div class="row">
-    <h3 class="t">Order router, my laptop <span class="pill">Personal</span></h3>
-    <p class="meta">Acts as Anna Berg, within <a href="admin-agent-access.html#entry">Trading platform coding agent</a> · <span class="mono">cw_b44f0e92…</span></p>
+    <h3 class="t">Order router, my laptop</h3>
+    <p class="meta"><span class="mono">cw_b44f0e92…</span> · reads as me within Trading platform coding agent</p>
     <div class="pills" style="margin:8px 0 0"><span class="pill">library read</span><span class="pill">tenant read</span></div>
     <p class="meta" style="margin:8px 0 0">Created 20 Sep 2026 · expires 19 Dec 2026 · last used 24 Sep 2026 11:02</p>
     <div class="bar"><button class="btn danger small">Revoke</button></div>
   </div>
   <div class="row">
-    <h3 class="t">Policy drafting assistant <span class="pill">Personal</span></h3>
-    <p class="meta">Acts as Sara Lindqvist · <span class="mono">cw_91aa03c7…</span></p>
+    <h3 class="t">Policy drafting assistant</h3>
+    <p class="meta"><span class="mono">cw_91aa03c7…</span> · reads as me</p>
     <div class="pills" style="margin:8px 0 0"><span class="pill">library read</span><span class="pill">search read</span><span class="pill">upcoming read</span></div>
     <p class="meta" style="margin:8px 0 0">Created 25 Sep 2026 · expires 24 Oct 2026 · never used</p>
     <div class="bar"><button class="btn danger small">Revoke</button></div>
   </div>
   <div class="row">
-    <h3 class="t">Card prototype <span class="pill">Service</span><span class="pill">Revoked</span></h3>
-    <p class="meta">Reads as <a href="admin-agent-access.html#revoked">Card pilot agent</a> · <span class="mono">cw_c4rd0001…</span></p>
-    <p class="meta" style="margin:8px 0 0">Issued 2 Sep 2026 · last used 18 Sep 2026 17:44 · revoked 19 Sep 2026 with its agent</p>
+    <h3 class="t">Spreadsheet sync <span class="pill warning">Expired</span></h3>
+    <p class="meta"><span class="mono">cw_5e0c7712…</span> · reads as me</p>
+    <p class="meta" style="margin:8px 0 0">Created 1 Jun 2026 · expired 30 Aug 2026 · last used 29 Aug 2026 18:10</p>
   </div>
   <div class="row">
-    <h3 class="t">Old connector <span class="pill">Service</span><span class="pill warning">Expired</span></h3>
-    <p class="meta">For an integration · <span class="mono">cw_0ldc0nn3…</span></p>
-    <p class="meta" style="margin:8px 0 0">Created 1 Mar 2026 · expired 1 Sep 2026</p>
+    <h3 class="t">Old notebook <span class="pill">Revoked</span></h3>
+    <p class="meta"><span class="mono">cw_77d1e0b4…</span> · reads as me</p>
+    <p class="meta" style="margin:8px 0 0">Created 2 Sep 2026 · revoked 10 Sep 2026 by Erik Holm · last used 9 Sep 2026 12:30</p>
   </div>
 </div>
-<div class="pager"><span class="meta">1 to 6 of 6</span></div>
 
-<h2 class="k">2 · Revoke a member's personal token</h2>
+<h2 class="k">2 · Create a token (dialog)</h2>
 <div class="modal">
-  <div class="box" role="dialog" aria-labelledby="rt" aria-describedby="rtd">
-    <h2 id="rt">Revoke Anna Berg's token "Order router, my laptop"?</h2>
-    <p id="rtd">Its next call is refused. It stays on Anna Berg's list and this one as revoked.</p>
-    <div class="bar"><button class="btn outline">Keep it</button><button class="btn danger">Revoke token</button></div>
-  </div>
-</div>
-<p class="status" role="status" tabindex="-1">Token revoked.</p>
-
-<h2 class="k">3 · Revoke a key</h2>
-<div class="modal">
-  <div class="box" role="dialog" aria-labelledby="rk" aria-describedby="rkd">
-    <h2 id="rk">Revoke GRC export sync?</h2>
-    <p id="rkd">Anything using it stops working now.</p>
-    <div class="bar"><button class="btn outline">Keep it</button><button class="btn danger">Revoke key</button></div>
-  </div>
-</div>
-<p class="cap">An agent's key reads the same as on its entry (admin-agent-access.html, state 12), where revoking asks for a passkey.</p>
-
-<h2 class="k">4 · Create a key for an integration (dialog; unchanged from chunk 1)</h2>
-<div class="modal">
-  <form class="box" aria-labelledby="ck">
-    <h2 id="ck">Create a key</h2>
-    <div class="pair">
-      <div class="field"><label for="kn">Name</label><input id="kn" placeholder="e.g. GRC export sync"></div>
-      <div class="field"><label for="ke">Expires</label><input id="ke" type="date"><span class="hint">Optional. Leave empty for no expiry.</span></div>
-    </div>
+  <form class="box" aria-labelledby="ct">
+    <h2 id="ct">Create a token</h2>
+    <div class="field"><label for="tn">Name</label><input id="tn" placeholder="e.g. Order router, my laptop"><span class="hint">Where the token will live, so you know which to revoke.</span></div>
     <fieldset class="field">
-      <legend>Scopes</legend>
-      <label class="check" for="c0"><input type="checkbox" id="c0"><span>tenant read<small>Read the tenant profile</small></span></label>
-      <label class="check" for="c1"><input type="checkbox" id="c1"><span>library read<small>Read instruments and obligations</small></span></label>
-      <label class="check" for="c2"><input type="checkbox" id="c2"><span>upcoming read<small>Read upcoming dates</small></span></label>
-      <label class="check" for="c3"><input type="checkbox" id="c3"><span>search read<small>Run searches</small></span></label>
-      <label class="check" for="c4"><input type="checkbox" id="c4"><span>proposals write<small>Submit proposals to the library queue</small></span></label>
+      <legend>What it may read</legend>
+      <span class="hint">Only what you can read yourself.</span>
+      <label class="check" for="s1"><input type="checkbox" id="s1" checked><span>library read<small>Instruments and obligations</small></span></label>
+      <label class="check" for="s2"><input type="checkbox" id="s2"><span>search read<small>Search the library</small></span></label>
+      <label class="check" for="s3"><input type="checkbox" id="s3"><span>upcoming read<small>Dated changes ahead</small></span></label>
+      <label class="check" for="s4"><input type="checkbox" id="s4" disabled><span>tenant read<small>Our register decisions. Needs register read, which your role does not include.</small></span></label>
     </fieldset>
-    <p class="err" role="alert" style="color:var(--negative);margin:0 0 8px">Pick at least one scope.</p>
-    <p class="meta">A key for one of our agents is issued on its entry under Agents, Access.</p>
-    <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Create key</button></div>
-    <p class="meta" style="margin:8px 0 0;text-align:right">Creating a key asks for your passkey.</p>
+    <div class="field"><label for="te">Read as an agent</label><select id="te"><option selected>None: it reads what I can read</option><option>Trading platform coding agent</option><option>Staff assistant</option></select><span class="hint">Optional. Naming one narrows the token to that agent's scope as well as yours.</span></div>
+    <div class="field"><label for="tx">Expires</label><input id="tx" type="date" value="2026-10-25" aria-describedby="txh"><span class="hint" id="txh">Required. At most 90 days, so 24 Dec 2026 at the latest.</span></div>
+    <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Create token</button></div>
+    <p class="meta" style="margin:8px 0 0;text-align:right">Creating a token asks for your passkey.</p>
   </form>
 </div>
 
-<h2 class="k">5 · The new key, shown once</h2>
+<h2 class="k">3 · Create, with no scope and no expiry (422, rendered in place)</h2>
+<div class="panel">
+  <p class="err" role="alert" style="color:var(--negative);margin:0 0 12px">Pick at least one thing it may read.</p>
+  <div class="field" style="margin:0"><label for="tx2">Expires</label><input id="tx2" type="date" aria-invalid="true" aria-describedby="tx2e"><span class="err" id="tx2e" role="alert">Choose when it expires, 24 Dec 2026 at the latest.</span></div>
+</div>
+
+<h2 class="k">4 · The passkey step-up on Create</h2>
 <div class="modal">
-  <div class="box" role="dialog" aria-labelledby="once">
-    <h2 id="once">Copy your new key now</h2>
-    <p class="secret">cw_a1b2c3d4_9f8e7d6c5b4a39281706f5e4d3c2b1a0f9e8d7c6b5a4938271605f4e3d2c1b0a</p>
-    <p class="meta">It is not shown again. Store it where your integration keeps secrets.</p>
-    <div class="bar"><button class="btn outline">Done</button><button class="btn">Copy key</button></div>
+  <div class="box" role="dialog" aria-labelledby="su" aria-describedby="sud">
+    <h2 id="su">Use your passkey to create this token</h2>
+    <p id="sud" class="meta">Order router, my laptop · library read, tenant read · until 19 Dec 2026</p>
+    <p>Anything holding the token reads as you, so we ask for your passkey first.</p>
+    <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Continue with passkey</button></div>
   </div>
 </div>
 
-<h2 class="k">6 · Empty, loading, error and denied, in both themes</h2>
-<p class="cap">The same markup with the light and the dark aliases fixed.</p>
+<h2 class="k">5 · The new token, shown once</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="once">
+    <h2 id="once">Copy your token now</h2>
+    <p class="secret">cw_b44f0e92_3a9c1d7e5b2f80c4a6e9d1b3f7c05a8e2d4b6c9f1a3e7d0b5c2</p>
+    <p class="meta">It is not shown again. Keep it where your agent keeps its secrets, never in code. It stops working on 19 Dec 2026, or sooner if you revoke it.</p>
+    <div class="bar"><button class="btn outline">Done</button><button class="btn">Copy token</button></div>
+  </div>
+</div>
+
+<h2 class="k">6 · Revoke</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="rv" aria-describedby="rvd">
+    <h2 id="rv">Revoke Order router, my laptop?</h2>
+    <p id="rvd">Its next call is refused. It stays on the list as revoked.</p>
+    <div class="bar"><button class="btn outline">Keep it</button><button class="btn danger">Revoke token</button></div>
+  </div>
+</div>
+<p class="status" role="status" tabindex="-1">Revoked. The token no longer works.</p>
+
+<h2 class="k">7 · A member without tokens create</h2>
+<p class="cap">No Create button. Tokens the member still holds stay listed, and revoking them stays open.</p>
+<div class="head">
+  <div>
+    <h1>My access tokens</h1>
+    <p class="lede">A token lets an agent you run read bleqq as you. It reads only, never more than you can, and it cannot sign in or approve anything.</p>
+  </div>
+</div>
+<div class="notice" role="status"><p>Creating tokens needs tokens create, which your role does not include. Ask your administrator if you need one.</p></div>
+
+<h2 class="k">8 · Empty, loading and error, in both themes</h2>
+<p class="cap">The same markup with the light and the dark aliases fixed. The page is every member's own, so it has no denied state: without tokens create it renders state 7.</p>
 <div class="statebox">
   <div class="theme light">
     <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Light</p>
-    <div class="empty"><h2>No API keys</h2><p>Create a key when an integration needs one. Our agents' keys and our members' tokens show here too.</p><button class="btn outline small">Create a key</button></div>
+    <div class="empty"><h2>No tokens</h2><p>Create one when an agent you run needs to read bleqq as you.</p><button class="btn outline small">Create a token</button></div>
+    <div class="empty" style="margin-top:16px"><h2>No tokens</h2><p>Creating tokens needs tokens create, which your role does not include.</p></div>
     <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:16px 0"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
-    <div class="errorstate" role="alert"><h2>Could not load API keys</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
-    <div class="restricted" role="alert" style="padding:24px 0"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p class="meta">Needs integrations manage</p></div>
+    <div class="errorstate" role="alert"><h2>Could not load your tokens</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
   </div>
   <div class="theme dark">
     <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Dark</p>
-    <div class="empty"><h2>No API keys</h2><p>Create a key when an integration needs one. Our agents' keys and our members' tokens show here too.</p><button class="btn outline small">Create a key</button></div>
+    <div class="empty"><h2>No tokens</h2><p>Create one when an agent you run needs to read bleqq as you.</p><button class="btn outline small">Create a token</button></div>
+    <div class="empty" style="margin-top:16px"><h2>No tokens</h2><p>Creating tokens needs tokens create, which your role does not include.</p></div>
     <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:16px 0"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
-    <div class="errorstate" role="alert"><h2>Could not load API keys</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
-    <div class="restricted" role="alert" style="padding:24px 0"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p class="meta">Needs integrations manage</p></div>
+    <div class="errorstate" role="alert"><h2>Could not load your tokens</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
   </div>
 </div>
 
-<h2 class="k">7 · At 375 px, light and dark: a service key and a personal token</h2>
+<h2 class="k">9 · At 375 px, light and dark: a token and the shown-once value</h2>
 <div class="statebox">
   <div class="theme light" style="padding:0;border:0">
     <div class="phone">
-      <div class="rows">
-        <div class="row"><h3 class="t">Order router CI <span class="pill">Service</span></h3><p class="meta">Reads as <a href="admin-agent-access.html#entry">Trading platform coding agent</a></p><p class="meta" style="margin:8px 0 0">Expires 11 Dec 2026 · last used 25 Sep 2026 08:41</p><div class="bar"><button class="btn danger small">Revoke</button></div></div>
-        <div class="row"><h3 class="t">Order router, my laptop <span class="pill">Personal</span></h3><p class="meta">Acts as Anna Berg, within <a href="admin-agent-access.html#entry">Trading platform coding agent</a></p><p class="meta" style="margin:8px 0 0">Expires 19 Dec 2026 · last used 24 Sep 2026 11:02</p><div class="bar"><button class="btn danger small">Revoke</button></div></div>
-      </div>
+      <div class="row"><h3 class="t">Order router, my laptop</h3><p class="meta">Reads as me within Trading platform coding agent</p><div class="pills" style="margin:8px 0 0"><span class="pill">library read</span><span class="pill">tenant read</span></div><p class="meta" style="margin:8px 0 0">Expires 19 Dec 2026 · last used 24 Sep 2026 11:02</p><div class="bar"><button class="btn danger small">Revoke</button></div></div>
+      <div class="panel" style="margin:12px 0 0"><h2>Copy your token now</h2><p class="secret">cw_b44f0e92_3a9c1d7e5b2f80c4a6e9d1b3f7c05a8e2d4b6c9f1a3e7d0b5c2</p><p class="meta">It is not shown again.</p><div class="bar"><button class="btn outline">Done</button><button class="btn">Copy token</button></div></div>
     </div>
   </div>
   <div class="theme dark" style="padding:0;border:0">
     <div class="phone">
-      <div class="rows">
-        <div class="row"><h3 class="t">Order router CI <span class="pill">Service</span></h3><p class="meta">Reads as <a href="admin-agent-access.html#entry">Trading platform coding agent</a></p><p class="meta" style="margin:8px 0 0">Expires 11 Dec 2026 · last used 25 Sep 2026 08:41</p><div class="bar"><button class="btn danger small">Revoke</button></div></div>
-        <div class="row"><h3 class="t">Order router, my laptop <span class="pill">Personal</span></h3><p class="meta">Acts as Anna Berg, within <a href="admin-agent-access.html#entry">Trading platform coding agent</a></p><p class="meta" style="margin:8px 0 0">Expires 19 Dec 2026 · last used 24 Sep 2026 11:02</p><div class="bar"><button class="btn danger small">Revoke</button></div></div>
-      </div>
+      <div class="row"><h3 class="t">Order router, my laptop</h3><p class="meta">Reads as me within Trading platform coding agent</p><div class="pills" style="margin:8px 0 0"><span class="pill">library read</span><span class="pill">tenant read</span></div><p class="meta" style="margin:8px 0 0">Expires 19 Dec 2026 · last used 24 Sep 2026 11:02</p><div class="bar"><button class="btn danger small">Revoke</button></div></div>
+      <div class="panel" style="margin:12px 0 0"><h2>Copy your token now</h2><p class="secret">cw_b44f0e92_3a9c1d7e5b2f80c4a6e9d1b3f7c05a8e2d4b6c9f1a3e7d0b5c2</p><p class="meta">It is not shown again.</p><div class="bar"><button class="btn outline">Done</button><button class="btn">Copy token</button></div></div>
     </div>
   </div>
 </div>
 
-<p class="note">API keys card (/admin/api-keys), under Admin for integrations manage. Every
-credential of the organisation in one list, newest first and paged: its name, its kind (Service
-or Personal, information pills from the credential's kind), who it reads as (an integration, an
-agent access entry linking to its page, or a person, with the entry the token names), its prefix,
-scopes as information pills, created, expires and last use, and Revoked (information) or Expired
-(warning) from its facts. Revoke asks once for any of them; an agent's key revoked on its entry
-asks for a passkey there, as every write on that card does. Create a key is chunk 1's integration
-key: a name, the scopes a bank's key may hold, an optional expiry and a passkey, shown once in a dialog with a
-copy button. Keys for our agents are issued on their entry and tokens are minted by their person,
-so neither is created here. Two buttons per row on a phone, the primary on the right.</p>
+<p class="note">My access tokens card (/me/tokens), in the account menu beside My passkeys and My
+sessions. The list is the member's own tokens: prefix, what it reads as (me, or me within a named
+agent), its scopes as information pills, created, expires and last use, with Expired (warning) and
+Revoked (information) from the row's facts; no kind pill, since every row here is personal.
+Create needs tokens create and a passkey: a name, at least one of the four read scopes, where a
+scope the member's own permissions do not back is disabled with its reason, an optional agent
+access entry, and a required expiry of at most 90 days. The plain token shows once. Revoke asks
+once and needs no passkey. Without tokens create there is no Create button and a sentence says
+why; tokens already held stay listed and revocable. An administrator sees and revokes every
+token in API keys (admin-api-keys.html). Two buttons per row on a phone, the primary on the
+right.</p>
 
 </main>
 </body>
