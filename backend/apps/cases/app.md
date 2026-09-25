@@ -41,12 +41,12 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | CAS-01 | One case per tenant per change, created in "needs triage" with its footprint match | M | R1 | built |
-| CAS-02 | Triage needs urgency and owner; dismissal needs a reason and can be restored | M | R2 | pending |
-| CAS-03 | Impact assessment: applies, why, what must change, internal deadline, effort, and contributor teams, recorded as the case's team participants | M | R2 | pending |
+| CAS-02 | Triage needs urgency and owner; dismissal needs a reason and can be restored | M | R2 | built |
+| CAS-03 | Impact assessment: applies, why, what must change, internal deadline, effort, and contributor teams, recorded as the case's team participants (backend built by c9-assessment and c9-case-participants; the contributor-teams picker waits for the assessment panel) | M | R2 | in_progress |
 | CAS-04 | Actions with owner and due date, locked while sign-off is pending, exportable as tickets | M | R2 | pending |
 | CAS-05 | Evidence as file, link or reference, scanned, hashed, streamed through permission checks | M | R2 | pending |
 | CAS-06 | Sign-off only with no open action and at least one piece of evidence, only by a second person, with step-up | M | R2 | pending |
-| CAS-07 | A case file that stands alone, as text and as an export | M | R2 | pending |
+| CAS-07 | A case file that stands alone, as text and as an export | M | R2 | built |
 | CAS-08 | Every response lists allowed transitions; concurrent edits are refused, never merged silently | M | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
@@ -107,11 +107,16 @@ Then the case is back in "Needs triage" and the audit trail shows both moves
 ### CAS-S4 — The impact assessment records what applies and what must change `@integration` `@e2e` (CAS-03)
 ```gherkin
 Given an assigned case and its owner with cases.work
-When they choose "Start assessment" and save applies, why, what must change, an internal deadline and an effort size, and add two contributor teams
-Then the case moves to assessing and the assessment stores each field with a key for effort
-And the two contributor teams are the case's team participants
+When they choose "Start assessment"
+Then the case moves to assessing with an empty assessment at version 1
+When they save applies, why, what must change, an internal deadline and an effort size
+Then the assessment stores each field with a key for effort and the case stays in assessing
 When they save without a why
 Then the request answers 422
+When a contributor without cases.work saves applies "no"
+Then the request answers 403 naming cases.work
+When the owner saves applies "no"
+Then the case is closed with a reason of the not_applicable kind and can be restored to triage
 ```
 
 ### CAS-S5 — Two people saving the same assessment: the second receives stale_write `@integration` (CAS-03, CAS-08, AC-CAS2)
@@ -218,9 +223,11 @@ And the guard declares the one expected 409 on the self sign-off
 
 ### CAS-S16 — Another tenant's case and evidence answer 404 `@integration` (CAS-05, CAS-07, NFR-01)
 ```gherkin
-Given a case with evidence in tenant A
-When tenant B fetches the case, its evidence file and its case file
-Then each answers 404 and no audit row records a download
+Given a case with actions and evidence in tenant A, and tenant B's own case for the same change
+When tenant B fetches the case file of that change
+Then it reads its own case's file, holding none of A's "So what?", actions, evidence or people
+When tenant B fetches A's evidence file, removes it, or edits or removes A's action
+Then each answers 404 and no refusal writes an audit row
 ```
 
 ### CAS-S17 — Contributor teams are the case's team participants `@integration` (CAS-03, COL-04)
@@ -232,4 +239,19 @@ Given Erik added the team "Cards" to the case after the owner loaded the assessm
 When the owner removes "Legal" and saves the assessment
 Then "Cards" is still a participant, because contributor changes are single adds and removals, never a list replacement
 And the case file shows that "Legal" took part until it was removed
+```
+
+### CAS-S19 — One person closes a case that needs no work, audited, and can restore it `@integration` `@e2e` (CAS-02)
+```gherkin
+Given an assigned case and its owner, who holds cases.work
+When they choose "No action" with a close reason of the signed_off kind
+Then the request answers 409 with code "four_eyes_violation"
+When they choose "No action" with the reason key "no_action" and a note
+Then the case is closed on their word alone and the note stays on the case
+And the audit trail names them and the reason key, never the note
+When they choose "Move back to triage"
+Then the case is back in "Needs triage" and both moves stay in its history
+Given a case waiting for sign-off requested by someone else
+When a person closes it without action
+Then the request answers 409 with code "invalid_transition"
 ```

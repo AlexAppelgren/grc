@@ -509,8 +509,12 @@ def get_change(request: HttpRequest, change_id: uuid.UUID = Path(..., descriptio
     """The whole change page: the reform's sourced facts — its type, its flags, its scope,
     its timeline from consultation to in force, the pages it was found on and the obligations
     it affects — and beside them the reader's own bank's case, with its urgency, its
-    footprint verdict and its "So what?". Call it when a person opens a change from the feed,
-    a briefing or an obligation.
+    footprint verdict, its "So what?" and its workflow block: who owns, triaged, dismissed,
+    asked for and gave sign-off and when, the close reason, the open action count, whether
+    sign-off can be asked for, the moves open to this reader and the `version` every
+    workflow write sends in `If-Match`. Call it when a person opens a change from the feed,
+    a briefing or an obligation. The moves come from the case state machine; a screen never
+    guesses one.
 
     A read: it changes nothing and writes no audit row. A person's session holding
     `watch.read` in their own bank. Everything outside `case` is a library fact shared by
@@ -533,7 +537,7 @@ def get_change(request: HttpRequest, change_id: uuid.UUID = Path(..., descriptio
     probed; `permission_denied` without `watch.read`; `unauthenticated` without a session.
     """
     tenant = caller_tenant(request)
-    return reading.get_change(tenant, language_order(request, tenant=tenant), change_id)
+    return reading.get_change(tenant, language_order(request, tenant=tenant), change_id, principal(request).subject_id)
 
 
 @router.get(

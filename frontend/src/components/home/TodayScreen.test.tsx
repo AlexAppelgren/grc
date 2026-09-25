@@ -28,8 +28,9 @@ const me: Me = {
   enrolmentPending: false,
   passkeyCount: 1,
   stepUpValidUntil: null,
-  counts: { triage: 3, proposals: 2, assignedToMe: 1 },
+  counts: { triage: 3, proposals: 2, assignedToMe: 1, unreadNotifications: 0 },
   lastVisitAt: null,
+  notificationPrefs: null,
 };
 
 const fact = (key: string, label: string) => ({ ref: { key, kind: null, label }, confidence: null, suggested: false });
@@ -56,7 +57,7 @@ const lead: Home['lead'] = {
   case: {
     id: 'case-1',
     category: 'new',
-    allowedTransitions: [],
+    subStatus: null,
     footprintMatch: true,
     obligationDecisions: [],
     ownerId: null,
@@ -154,7 +155,7 @@ describe('TodayScreen', () => {
 
   it('a quiet tenant (nothing dated, no lead, no sources, nothing to decide) gets the empty state, not a blank page', async () => {
     const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
-    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0 } };
+    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0 } };
     serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
     render(shell(<TodayScreen />));
 
@@ -165,7 +166,7 @@ describe('TodayScreen', () => {
   // permission that opens it: anyone else would land on the restricted page.
   it.each([['footprint.request'], ['footprint.approve']])('offers a holder of %s the way to the regulatory scope from the empty state', async (permission) => {
     const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
-    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0 } };
+    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0 } };
     serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
     render(shell(<TodayScreen />, ['watch.read', permission]));
 
@@ -175,7 +176,7 @@ describe('TodayScreen', () => {
 
   it('leaves the link out of the empty state for a member who cannot open the regulatory scope', async () => {
     const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
-    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0 } };
+    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0 } };
     serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
     render(shell(<TodayScreen />, ['watch.read', 'roadmap.read', 'audit.read']));
 
