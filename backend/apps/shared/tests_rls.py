@@ -186,6 +186,12 @@ TENANT_ONLY_TABLES = [
     # them. bleqq's own agents are library rows with no tenant column (ADR 0053).
     "tenant_agent",
     "tenant_agent_budget",
+    # acc-foundation (agents 0006, ACC-01, ACC-02): the agents a bank runs itself and the
+    # departments and products narrowing each (apps/agents/tests_agent_access_models.py
+    # proves the composite keys refuse another bank's row).
+    "agent_access",
+    "agent_access_department",
+    "agent_access_product",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also
