@@ -331,7 +331,7 @@ def _validate_obligation_payload(payload: ProposalObligationVersionPayload | Pro
     from apps.taxonomy import tenant_lists_logic as lists
     from apps.taxonomy.terms_logic import refuse_mirrored
 
-    payload.summaries = _capped(lists.validated_labels(payload.summaries), "summary")
+    payload.summaries = _capped(lists.validated_labels(payload.summaries, max_chars=None), "summary")
     _written_in(payload.original_language, payload.summaries, "summary")
     _validated_precision(payload.effective_from_precision)
     if not payload.terms:
@@ -395,7 +395,7 @@ def validated_instrument(payload: ProposalInstrumentPayload) -> tuple[Instrument
     the apply."""
     from apps.taxonomy import tenant_lists_logic as lists
 
-    payload.titles = lists.validated_labels(payload.titles)
+    payload.titles = lists.validated_labels(payload.titles, max_chars=None)
     _written_in(payload.original_language, payload.titles, "title")
     _validated_precision(payload.in_force_from_precision)
     _validated_precision(payload.in_force_to_precision)
@@ -417,7 +417,7 @@ def validated_obligation(payload: ProposalObligationPayload) -> tuple[Any, list[
     rows the creation check did."""
     from apps.taxonomy import tenant_lists_logic as lists
 
-    payload.titles = lists.validated_labels(payload.titles)
+    payload.titles = lists.validated_labels(payload.titles, max_chars=None)
     _written_in(payload.original_language, payload.titles, "title")
     terms = _validate_obligation_payload(payload)
     if stable_key_taken(SubjectType.OBLIGATION.value, payload.key):
@@ -433,7 +433,7 @@ def _validate_text_payload(payload: ProposalProvisionPayload | ProposalProvision
     with a precision (INV-S10)."""
     from apps.taxonomy import tenant_lists_logic as lists
 
-    payload.texts = _capped(lists.validated_labels(payload.texts), "text")
+    payload.texts = _capped(lists.validated_labels(payload.texts, max_chars=None), "text")
     _written_in(payload.original_language, payload.texts, "text")
     _validated_precision(payload.effective_from_precision)
 
