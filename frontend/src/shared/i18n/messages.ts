@@ -10,6 +10,8 @@ import enConsole from '@/messages/console/en.json';
 import svConsole from '@/messages/console/sv.json';
 import enConsoleAgentKeys from '@/messages/console-agent-keys/en.json';
 import svConsoleAgentKeys from '@/messages/console-agent-keys/sv.json';
+import enConsoleAgents from '@/messages/console-agents/en.json';
+import svConsoleAgents from '@/messages/console-agents/sv.json';
 import enConsoleChangeFacts from '@/messages/console-change-facts/en.json';
 import svConsoleChangeFacts from '@/messages/console-change-facts/sv.json';
 import enConsoleSources from '@/messages/console-sources/en.json';
@@ -54,6 +56,7 @@ const en = {
   ...enCommon,
   ...enConsole,
   ...enConsoleAgentKeys,
+  ...enConsoleAgents,
   ...enConsoleChangeFacts,
   ...enConsoleSources,
   ...enDev,
@@ -78,6 +81,7 @@ const sv = {
   ...svCommon,
   ...svConsole,
   ...svConsoleAgentKeys,
+  ...svConsoleAgents,
   ...svConsoleChangeFacts,
   ...svConsoleSources,
   ...svDev,
