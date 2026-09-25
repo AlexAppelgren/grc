@@ -74,7 +74,7 @@ from contextlib import contextmanager
 from typing import Any
 from unittest import mock
 
-from django.db import DEFAULT_DB_ALIAS, DatabaseError, connections, models, transaction
+from django.db import DEFAULT_DB_ALIAS, DatabaseError, IntegrityError, connections, models, transaction
 from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 
@@ -91,6 +91,7 @@ from apps.library.models import (
     ObligationTitle,
     ObligationVersion,
     Provision,
+    RecurringDuty,
     Verification,
 )
 from apps.library.seeds import seed_jurisdictions, seed_languages
@@ -128,7 +129,7 @@ from apps.watch.schemas import (
     WatchSoWhatInput,
     WatchSourceInput,
 )
-from apps.watch.write import WATCH_TABLES, watch_write
+from apps.watch.write import WATCH_TABLES, WatchWriteRefused, watch_write
 
 APP = "app"
 EVERY_DOOR: tuple[str, ...] = ("proposal", "reverification", "seed", "watch", "index", "eval")
@@ -870,3 +871,81 @@ class EachDoorNamesItselfAndPutsBackTheOneItFound(TestCase):
         with self.assertRaises(ValueError), library_write("   ", door="proposal"):
             pass
         self.assertEqual(open_door(), "")
+
+
+class RecurringDutyWritesOnlyThroughTheProposalDoor(TransactionTestCase):
+    """REG-07 (c8-recurring-duty-library): the recurring duty table carries the door
+    trigger with the inventory's doors, and cw_app's direct write is refused by the
+    database whatever path it takes; an agent's confirmation names two different agents."""
+
+    databases = {DEFAULT_DB_ALIAS, APP}
+
+    def setUp(self) -> None:
+        with transaction.atomic():
+            seed_languages()
+            seed_jurisdictions()
+            seed_library_vocabularies()
+            seed_taxonomy_terms()
+            seed_authorities()
+        self.bank = factories.tenant(slug="duty-door-bank")
+        instrument = library_testing.instrument(key="duty-door-act", regime="regime:securities")
+        self.obligation = library_testing.obligation(instrument, key="duty-door-act/1")
+        self.proposer = agents_testing.agent(key="duty-proposer")
+
+    def _duty(self, **fields: Any) -> RecurringDuty:
+        return RecurringDuty.objects.create(
+            **{
+                "obligation": self.obligation,
+                "title": "Quarterly report to the supervisor",
+                "recurrence_rule": "FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=-1",
+                "lead_days": 14,
+                "created_origin": "agent",
+                "created_by_agent": self.proposer,
+            }
+            | fields
+        )
+
+    def test_the_table_is_in_the_census_with_the_inventory_doors(self) -> None:
+        self.assertEqual(library_zone_tables()[RecurringDuty._meta.db_table], INVENTORY_DOORS)
+
+    def test_a_direct_write_as_the_app_role_is_refused(self) -> None:
+        with library_write("a test builder"):
+            duty = self._duty()
+        with as_the_app_role(), transaction.atomic():
+            tenancy.activate(self.bank.id)
+            # The Python fence first: the model refuses outside library_write().
+            with self.assertRaises(tenancy.LibraryWriteRefused), transaction.atomic():
+                self._duty()
+            # Then the database, on every path the Python fence never sees.
+            with self.assertRaises(DatabaseError) as refused, transaction.atomic():
+                models.QuerySet.update(RecurringDuty.objects.filter(pk=duty.pk), lead_days=0)
+            self.assertIn("UPDATE on recurring_duty refused: the door open is none", str(refused.exception))
+            with self.assertRaises(DatabaseError) as refused, transaction.atomic():
+                models.QuerySet.delete(RecurringDuty.objects.filter(pk=duty.pk))
+            self.assertIn("DELETE on recurring_duty refused: the door open is none", str(refused.exception))
+            with self.assertRaises(DatabaseError) as refused, transaction.atomic(), connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+                cursor.execute("UPDATE recurring_duty SET title = 'a bank rewrite'")
+            self.assertIn("UPDATE on recurring_duty refused", str(refused.exception))
+            # The watch door does not reach it either: it refuses before the database does,
+            # and the census above holds the database to the same.
+            with self.assertRaises(WatchWriteRefused), transaction.atomic(), watch_write("a watch step"):
+                models.QuerySet.update(RecurringDuty.objects.filter(pk=duty.pk), lead_days=0)
+            # The proposal door is the one that opens it.
+            with library_write("an approved proposal", door="proposal"):
+                self._duty(title="Annual attestation", recurrence_rule="FREQ=YEARLY")
+        self.assertEqual(RecurringDuty.objects.get(pk=duty.pk).lead_days, 14)
+        self.assertTrue(RecurringDuty.objects.filter(title="Annual attestation").exists())
+
+    def test_an_agent_confirmation_names_an_agent_other_than_the_proposer(self) -> None:
+        confirmer = agents_testing.agent(key="duty-confirmer")
+        with library_write("a test builder"):
+            duty = self._duty(verified_origin="agent", verified_by_agent=confirmer)
+            self.assertEqual((duty.created_by_agent_id, duty.verified_by_agent_id), (self.proposer.id, confirmer.id))
+            for case, fields in (
+                ("an agent confirms its own duty", {"verified_origin": "agent", "verified_by_agent": self.proposer}),
+                ("an agent's confirmation names no agent", {"verified_origin": "agent"}),
+                ("an agent's proposal names no agent", {"created_by_agent": None}),
+                ("a person's confirmation names no person", {"verified_origin": "user"}),
+            ):
+                with self.subTest(case), self.assertRaises(IntegrityError), transaction.atomic():
+                    self._duty(**fields)

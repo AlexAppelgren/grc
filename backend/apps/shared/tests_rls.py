@@ -636,3 +636,26 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
                 tenancy.activate(tenant_id, using="app")
             cursor.execute(f'SELECT id FROM "{table}" WHERE id = ANY(%s)', [probes])
             return {row[0] for row in cursor.fetchall()}
+
+
+class RecurringDutyIsLibraryOnly(TestCase):
+    """REG-07 (c8-recurring-duty-library): a recurring duty is a public fact about an
+    obligation, shared by every bank. It carries no tenant column, so no bank's judgement
+    can hide in it (that lives on the bank's own occurrences), and no policy: what holds it
+    is the library fence and the door trigger (tests_library_db_guard.py). Adding a tenant
+    column or a policy here is a review question."""
+
+    def test_the_table_has_no_tenant_column_and_no_policy(self) -> None:
+        from apps.library.models import RecurringDuty
+
+        self.assertNotIn(RecurringDuty, tenant_scoped_models())
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute("SELECT to_regclass('recurring_duty') IS NOT NULL")
+            self.assertEqual(cursor.fetchone(), (True,), "the migration did not create the table")
+            cursor.execute(
+                "SELECT count(*) FROM information_schema.columns WHERE table_name = 'recurring_duty' AND column_name LIKE %s",
+                ["%tenant%"],
+            )
+            self.assertEqual(cursor.fetchone(), (0,))
+            cursor.execute("SELECT count(*) FROM pg_policies WHERE tablename = 'recurring_duty'")
+            self.assertEqual(cursor.fetchone(), (0,))
