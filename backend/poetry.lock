@@ -1870,4 +1870,4 @@ pyOpenSSL = ">=26.3.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "5af2a0183fadebf2d516fda6f350275a548b1cd470f7ea0ae4d6ca1c67bc7def"
+content-hash = "587ac1e8edf9228dd6efd4485d40709b7f24cfdb12aa38867ad854f58b553284"
