@@ -1439,7 +1439,7 @@ class ObligationQuery(CamelSchema):
             "bank's tags are never matched. Each value is at most 80 characters; a longer "
             "one is refused with 422 `validation_error`, a key the bank has no tag for with "
             "422 `unknown_key` naming every one that was not found, and the filter itself "
-            "with 422 `unknown_filter` when the caller is a key that belongs to no bank."
+            "with 422 `unknown_filter` when the caller belongs to no bank, such as a platform key."
         ),
         examples=[["custody"]],
     )

@@ -296,9 +296,9 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     markets the bank watches add, each row naming its jurisdiction.
 
     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-    (403) without library.read or the library:read scope; `unknown_filter` (422) when a key
-    that belongs to no bank sends tenantTag, since it has no tags of its own; `not_found`
-    (404) when a key that belongs to no bank reads the list at all; `validation_error` (422)
+    (403) without library.read or the library:read scope; `unknown_filter` (422) when a
+    caller that belongs to no bank, such as a platform key, sends tenantTag, since it has no
+    tags of its own; `not_found` (404) when such a caller reads the list at all; `validation_error` (422)
     when a term filter is not written dimension:key, when instrument, dutyType or any term,
     tag or tenantTag value is longer than 80 characters, when more than 20 terms, tags or
     tenant tags are sent, when footprint is not in, all or watched, when the retired

@@ -303,10 +303,11 @@ def _tag_ids(tags: QuerySet[Any], keys: list[str], unknown_detail: str) -> list[
 
 
 def refuse_bank_filters(tenant_id: uuid.UUID | None, query: ObligationQuery) -> None:
-    """A key that belongs to no bank has no tags of its own (VOC-08), so its `tenantTag` is
-    refused by name rather than read against nobody's list."""
+    """A caller that belongs to no bank, a platform key or session, has no tags of its own
+    (VOC-08), so its `tenantTag` is refused by name rather than read against nobody's
+    list."""
     if tenant_id is None and query.tenant_tag:
-        raise ValidationError("tenantTag filters by a bank's own tags, and this key belongs to no bank.", code="unknown_filter")
+        raise ValidationError("tenantTag filters by a bank's own tags, and this caller belongs to no bank.", code="unknown_filter")
 
 
 def tagged(queryset: _Listed, tenant: Tenant, query: ObligationQuery) -> _Listed:
