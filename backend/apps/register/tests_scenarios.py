@@ -188,9 +188,10 @@ class RegisterScenarioTests(TestCase):
         """REG-S5
 
         A gap has an owner, severity, target date and remediation (REG-03).
-        Operations: `createGap`, `updateGap`.
+        Operations: `createGap`, `updateGap`, `getRoadmap`.
 
-        Up to the roadmap line: "Our deadline" on the roadmap is c8-home-standing-roadmap's.
+        The roadmap line is c8-home-standing-roadmap's: the target date is an `internal`
+        item, which the screen marks "Our deadline", naming the gap's owner.
         """
         from apps.register.tests_gaps import GapWorld, gap_body, seed_library
         from apps.shared.testing import sign_in
@@ -207,6 +208,10 @@ class RegisterScenarioTests(TestCase):
         self.assertEqual((gap["severity"]["key"], gap["severity"]["label"]), ("high", "High"))
         self.assertEqual(gap["source"]["label"], "Assessment")
         self.assertEqual((gap["owner"]["id"], gap["targetDate"], gap["remediation"]), (str(world.owner.id), body["targetDate"], body["remediation"]))
+        # c8-home-standing-roadmap: the roadmap lists the target date as our own deadline.
+        on_roadmap = [item for item in self.client.get("/api/v1/roadmap", {"kind": "internal"}, **owner).json()["items"] if item["id"] == f"gap_target:{gap['id']}"]
+        self.assertEqual([(item["kind"], item["itemType"], item["date"]) for item in on_roadmap], [("internal", "gap_target", body["targetDate"])])
+        self.assertEqual((on_roadmap[0]["owner"]["person"]["id"], on_roadmap[0]["subject"]["gapId"]), (str(world.owner.id), gap["id"]))
         started = self.client.patch(
             f"/api/v1/gaps/{gap['id']}", data={"status": "remediating"}, content_type="application/json", HTTP_IF_MATCH=str(gap["version"]), **owner
         )

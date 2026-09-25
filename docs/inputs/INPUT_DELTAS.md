@@ -1414,3 +1414,23 @@ of range answers 422 `validation_error` and an unknown role or weekday 422 `unkn
 naming the field in `errors`. The change is recorded as `tenant.workflow_updated` with every
 value before and after. `review_reminder_days_before` is not in the chunk 10 brief's five
 columns; the wave plan added it for the review reminder COL-02 names.
+
+## c8-home-standing-roadmap. Where we stand, and our own deadlines on the roadmap (2026-09-25, HOM-01, HOM-03)
+
+The chunk 8 brief's `c8-home-register-feeds` is built as this package, with these departures:
+
+- The roadmap is a query in `apps/home/roadmap.py`, not a database view (R2_CROSS_CUTTING
+  (j)), so there is no migration. Each branch is one query, with a count beside it for
+  Today's "Coming up"; a duty occurrence's due date is not a branch yet, because the duty
+  occurrences have no package in this wave.
+- `standing` on `GET /home` is six counts (`applying`, one per compliance category and
+  `openGaps`), not counts per legal entity: one count per obligation, in the worst category
+  of the entities it applies to, as the obligation's pill reads. It is null without
+  `register.read`.
+- A roadmap item gains `owner` (a person, a team, or both on a register entry) and `subject`
+  (the obligation, gap or licence, and the legal entity); `status`, `label` and
+  `sourceLabel` become nullable and are null on an internal item. `itemType` gains
+  `gap_target`, `certificate_expiry` and `certificate_audit`.
+- The register's two branches need `register.read`; a certificate's dates are any member's,
+  as `GET /tenant/org-units/{id}/licences` is. A gap's target is listed whatever the answer
+  on its obligation; a review is left out where the answer is "does not apply".

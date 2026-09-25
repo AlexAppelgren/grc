@@ -476,7 +476,7 @@ def _event(change_key: str, item: HomeRoadmapItem, now: datetime.datetime) -> li
         f"DTSTAMP:{now.astimezone(datetime.UTC):%Y%m%dT%H%M%SZ}",
         f"DTSTART;VALUE=DATE:{item.date:%Y%m%d}",
         f"SUMMARY:{_escape(summary)}",
-        f"DESCRIPTION:{_escape(item.source_label)}",
+        f"DESCRIPTION:{_escape(item.source_label or '')}",
         f"URL:{_escape(link)}",
         "END:VEVENT",
     ]

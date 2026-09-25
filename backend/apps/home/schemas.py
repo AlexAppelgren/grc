@@ -64,11 +64,19 @@ __all__ = ["CamelSchema"]
 
 # What a roadmap item is about, and what produced its date. Both are tier-one kinds
 # (apps/shared/kinds.py): the screen picks its pill from the first and the ICS builder picks
-# its summary line from the second, so neither is a list an admin curates. Declared in full
-# although R1 fills only `regulatory` / `change_date`, so a client written now does not have
-# to change when chunks 8 and 9 add the branches that fill the rest.
+# its summary line from the second, so neither is a list an admin curates. Declared in full:
+# chunk 8 fills `review_due`, `gap_target`, `certificate_expiry` and `certificate_audit`, and
+# `internal_deadline` and `action_due` wait for the case workflow (chunk 9).
 RoadmapItemKind = Literal["regulatory", "internal"]
-RoadmapItemType = Literal["change_date", "internal_deadline", "action_due", "review_due"]
+RoadmapItemType = Literal[
+    "change_date",
+    "internal_deadline",
+    "action_due",
+    "review_due",
+    "gap_target",
+    "certificate_expiry",
+    "certificate_audit",
+]
 # Which kinds of dated item the roadmap read includes (`feed_filter`). A calendar
 # subscription used to share this choice; D-52 took it away, because a feed carries the
 # dates the outside world set and never the bank's own, leaving it nothing to choose.
@@ -105,6 +113,8 @@ ROADMAP_ITEM_EXAMPLE: JsonDict = {
     "urgency": {"key": "act_now", "kind": None, "label": "Act now"},
     "sourceLabel": "Finansinspektionen",
     "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+    "owner": None,
+    "subject": None,
     "obligations": [
         {
             "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
@@ -130,12 +140,40 @@ SOURCE_HEALTH_EXAMPLE: JsonDict = {
         }
     ],
 }
+# An internal item: a certificate's next audit, the bank's own deadline (D-43, AC-TEN1).
+ROADMAP_OWNER_EXAMPLE: JsonDict = {"person": {"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Anna Berg"}, "team": None}
+ROADMAP_ENTITY_EXAMPLE: JsonDict = {"id": "3b8e2f10-6c4d-4a95-b7e1-0d2c9f5a8e36", "name": "Example Bank AB"}
+ROADMAP_SUBJECT_EXAMPLE: JsonDict = {
+    "obligationId": None,
+    "gapId": None,
+    "licenceId": "2e7b9d41-5c08-4a6f-b3e2-8d1f0a7c6e59",
+    "entity": ROADMAP_ENTITY_EXAMPLE,
+}
+INTERNAL_ROADMAP_ITEM_EXAMPLE: JsonDict = {
+    "id": "certificate_audit:2e7b9d41-5c08-4a6f-b3e2-8d1f0a7c6e59",
+    "kind": "internal",
+    "itemType": "certificate_audit",
+    "date": "2027-03-15",
+    "datePrecision": "day",
+    "quarter": "2027-Q1",
+    "label": None,
+    "title": "ISO/IEC 27001:2022 certificate",
+    "status": None,
+    "urgency": None,
+    "sourceLabel": None,
+    "changeId": None,
+    "owner": ROADMAP_OWNER_EXAMPLE,
+    "subject": ROADMAP_SUBJECT_EXAMPLE,
+    "obligations": [],
+}
+STANDING_EXAMPLE: JsonDict = {"applying": 142, "compliant": 118, "partly": 9, "gap": 4, "notAssessed": 11, "openGaps": 6}
 HOME_EXAMPLE: JsonDict = {
     "date": "2026-09-21",
-    "comingUp": [ROADMAP_ITEM_EXAMPLE],
+    "comingUp": [ROADMAP_ITEM_EXAMPLE, INTERNAL_ROADMAP_ITEM_EXAMPLE],
     "roadmapCount": 7,
     "lead": CHANGE_ROW_EXAMPLE,
     "sources": SOURCE_HEALTH_EXAMPLE,
+    "standing": STANDING_EXAMPLE,
 }
 BRIEFING_EXAMPLE: JsonDict = {
     "weekStart": "2026-09-14",
@@ -195,33 +233,100 @@ _QUARTER = (
 _ITEM_KIND = (
     "What the item is about, a fixed kind the screen branches on: `regulatory` (a date the "
     "outside world set, such as a reform coming into force) or `internal` (a date this bank "
-    "set for itself, which the screen marks 'Our deadline'). R1 answers `regulatory` only; "
-    "the `internal` branches arrive with the register (chunk 8) and the case workflow "
-    "(chunk 9). An empty `internal` list means those branches have not shipped, never that "
-    "the bank has no deadlines."
+    "set for itself, which the screen marks 'Our deadline'). An `internal` item never "
+    "reaches a calendar subscription."
 )
 _ITEM_TYPE = (
-    "What produced the date, a fixed kind the calendar builder branches on: `change_date` "
-    "(a regulatory change's key date), `internal_deadline` (a deadline the bank set on its "
-    "own work), `action_due` (an action's due date) and `review_due` (a next review falling "
-    "due). R1 produces `change_date` only; `review_due` arrives with the register (chunk 8) "
-    "and `internal_deadline` and `action_due` with the case workflow (chunk 9)."
+    "What produced the date, a fixed kind the screen and the calendar builder branch on: "
+    "`change_date` (a regulatory change's key date, the one `regulatory` type); and, all "
+    "`internal`, `review_due` (the next review of a register entry or of one legal entity's "
+    "row, a compliant one included), `gap_target` (the target date of a gap that is open or "
+    "being remediated), `certificate_expiry` (the last day a certificate is valid), "
+    "`certificate_audit` (a certificate's next audit), `internal_deadline` (a deadline the "
+    "bank set on a case) and `action_due` (an action's due date). The last two arrive with "
+    "the case workflow (chunk 9) and are not produced yet."
 )
 
 
 # ---------------------------------------------------------------------------------------
 # The roadmap (HOM-03, FP-03)
 # ---------------------------------------------------------------------------------------
+class HomeRoadmapOwner(CamelSchema):
+    """Who answers for one of the bank's own deadlines on the roadmap."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [ROADMAP_OWNER_EXAMPLE]})
+
+    person: PersonRef | None = Field(
+        description="The member who owns the record, as id and name, or null when a team owns it alone."
+    )
+    team: TermRef | None = Field(
+        description=(
+            "The team that owns the record, as `{key, kind, label}` from the bank's own `team` "
+            "vocabulary, or null when a person owns it alone. Its rows carry no kind, so `kind` "
+            "is null. The bank's admin may add, relabel or retire a team without a deploy, so "
+            "read `GET /vocab/team` for the live set and match on the key, never on the label."
+        )
+    )
+
+
+class HomeRoadmapEntity(CamelSchema):
+    """The legal entity an internal roadmap item's date belongs to."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [ROADMAP_ENTITY_EXAMPLE]})
+
+    id: uuid.UUID = Field(description="The organisation unit's identifier, as a uuid.", examples=["3b8e2f10-6c4d-4a95-b7e1-0d2c9f5a8e36"])
+    name: str = Field(description="The bank's own name for the unit, for display only; it may change.", examples=["Example Bank AB"])
+
+
+class HomeRoadmapSubject(CamelSchema):
+    """The bank's own record behind an internal roadmap item: an obligation's register
+    entry, a gap or a certificate, and the legal entity the date belongs to where it is one
+    entity's own."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [ROADMAP_SUBJECT_EXAMPLE]})
+
+    obligation_id: uuid.UUID | None = Field(
+        description=(
+            "On a `review_due` or `gap_target` item, the library obligation the register entry "
+            "is on, as a uuid, which the obligation page opens on; null on a certificate's date."
+        ),
+        examples=["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"],
+    )
+    gap_id: uuid.UUID | None = Field(
+        description="On a `gap_target` item, the bank's gap, as a uuid; null otherwise.",
+        examples=[None],
+    )
+    licence_id: uuid.UUID | None = Field(
+        description=(
+            "On a `certificate_expiry` or `certificate_audit` item, the licence row that records "
+            "the certificate, as a uuid; null otherwise."
+        ),
+        examples=["2e7b9d41-5c08-4a6f-b3e2-8d1f0a7c6e59"],
+    )
+    entity: HomeRoadmapEntity | None = Field(
+        description=(
+            "The legal entity the date belongs to: the entity a review row or a gap is for, or "
+            "the entity holding the certificate. Null when the date is the whole register "
+            "entry's own."
+        )
+    )
+
+
 class HomeRoadmapItem(CamelSchema):
     """One dated thing on the bank's calendar of regulation: what happens, when, and what
     this bank has open against it.
 
     Two zones in one row. The date, the label, the title and the source are library facts
     shared by every bank; the case status and the confirmed urgency are this bank's own
-    judgement and never leave it. A row appearing here means the bank has a case open on a
-    dated change — it does not say the obligation applies to the bank, and it says nothing
-    about whether the bank complies, which are separate facts in the register (REG-01,
-    REG-02).
+    judgement and never leave it. A regulatory row appearing here means the bank has a case
+    open on a dated change — it does not say the obligation applies to the bank, and it says
+    nothing about whether the bank complies, which are separate facts in the register
+    (REG-01, REG-02).
+
+    An `internal` row is a date the bank set for itself, entirely its own zone: a next
+    review, a gap's target date, or a certificate's expiry or next audit, each with its
+    owner and the record it belongs to. It carries no case, so `status`, `urgency`,
+    `changeId`, `label` and `sourceLabel` are null on it and `obligations` is empty.
     """
 
     model_config = ConfigDict(json_schema_extra={"examples": [ROADMAP_ITEM_EXAMPLE]})
@@ -258,27 +363,30 @@ class HomeRoadmapItem(CamelSchema):
         examples=["day"],
     )
     quarter: str = Field(max_length=QUARTER_MAX, description=_QUARTER, examples=["2026-Q4"])
-    label: str = Field(
+    label: str | None = Field(
         max_length=LABEL_MAX,
         description=(
             f"What the date is, in the source's own words and at most {LABEL_MAX} characters: "
             "'In force', 'Applies', 'Transition ends'. A library fact copied from the change, "
             "so two banks read the same phrase. It is free text a publisher chose, never a "
-            "value the system branches on — `itemType` is what code reads."
+            "value the system branches on — `itemType` is what code reads. Null on an "
+            "`internal` item, whose date the screen names from `itemType`."
         ),
         examples=["In force"],
     )
     title: str = Field(
         max_length=LABEL_MAX,
         description=(
-            f"What the item is called, at most {LABEL_MAX} characters. For a regulatory item "
-            "it is the reform's title from the shared library, in the source's words; an "
-            "internal item will carry the name of the bank's own record. It holds no bank's "
-            "judgement and is safe to show in a calendar client."
+            f"What the item is called, at most {LABEL_MAX} characters. On a regulatory item "
+            "it is the reform's title from the shared library, in the source's words, and holds "
+            "no bank's judgement. On an internal item it names the bank's own record: the "
+            "obligation's library title for a review, the gap's title as the bank wrote it for "
+            "a gap target, and the certificate's type, from the taxonomy in the reader's "
+            "language, for a certificate's expiry or audit."
         ),
         examples=["FI adopts amended rules on paying for investment research"],
     )
-    status: CaseCategory = Field(
+    status: CaseCategory | None = Field(
         description=(
             "Where this bank's own work on the item stands, one of the seven fixed categories "
             "the case state machine reads (D-13): `new` (registered, nobody has looked — the "
@@ -287,7 +395,8 @@ class HomeRoadmapItem(CamelSchema):
             "open), `signoff` (waiting for a second person), `closed` and `dismissed` (not for "
             "us, with a reason, and restorable). The bank's own zone: another bank's roadmap "
             "shows its own status for the same date. A closed or dismissed item is not on the "
-            "roadmap at all, so those two values never appear here in R1."
+            "roadmap at all, so those two values never appear here. Null on an `internal` "
+            "item, which has no case."
         ),
         examples=["new"],
     )
@@ -295,15 +404,16 @@ class HomeRoadmapItem(CamelSchema):
         description=(
             f"{_URGENCY} It starts as the agent's suggestion for every bank and becomes this "
             "bank's own at triage; until then a reader must not report it as the bank's "
-            "decision. Null when no urgency has been set at all."
+            "decision. Null when no urgency has been set at all, and always null on an "
+            "`internal` item, whose date is the bank's own and carries no urgency."
         )
     )
-    source_label: str = Field(
+    source_label: str | None = Field(
         max_length=LABEL_MAX,
         description=(
-            f"Where the date comes from, in words a reader recognises and at most {LABEL_MAX} "
-            "characters: the publisher for a regulatory item, and the bank's own record for an "
-            "internal one. A library fact for a regulatory item, so it names no bank."
+            f"Who published the date, in words a reader recognises and at most {LABEL_MAX} "
+            "characters. A library fact, so it names no bank. Null on an `internal` item, "
+            "whose source is the bank's own record named in `subject`."
         ),
         examples=["Finansinspektionen"],
     )
@@ -315,12 +425,28 @@ class HomeRoadmapItem(CamelSchema):
         ),
         examples=["c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19"],
     )
+    owner: HomeRoadmapOwner | None = Field(
+        description=(
+            "Who answers for an `internal` item's date, a person, a team or, on a register "
+            "entry, both: the entry's first-line owner and owning team, the owner of one legal "
+            "entity's row, of a gap or of a certificate. Null on a regulatory item, and on an "
+            "internal one nobody owns yet. The bank's own zone."
+        )
+    )
+    subject: HomeRoadmapSubject | None = Field(
+        description=(
+            "The bank's own record an `internal` item's date belongs to, so the card can say "
+            "what it is about and link to it. Null on a regulatory item, whose record is "
+            "`changeId`."
+        )
+    )
     obligations: list[WatchObligationLink] = Field(
         description=(
-            "The library obligations this item touches, as the watch feed answers them, most "
-            "confident first. Only links a library editor has confirmed appear here, so a "
+            "The library obligations a regulatory item touches, as the watch feed answers them, "
+            "most confident first. Only links a library editor has confirmed appear here, so a "
             "reader may treat each as checked. An empty list means no obligation has been "
-            "linked yet, never that the change affects none."
+            "linked yet, never that the change affects none; always empty on an `internal` "
+            "item, whose obligation, where it has one, is in `subject`."
         )
     )
 
@@ -371,10 +497,10 @@ class HomeRoadmapQuery(CamelSchema):
         description=(
             "Which kinds of item to include, a fixed kind with three members and `all` by "
             "default: `all` (both), `regulatory` (dates the outside world set) and `internal` "
-            "(deadlines this bank set for itself). `internal` is accepted and answers an empty "
-            "list in R1, because the branches that produce our own deadlines arrive with the "
-            "register (chunk 8) and the case workflow (chunk 9); an empty answer is a 200 and "
-            "never a 422."
+            "(deadlines this bank set for itself). The register's deadlines, next reviews and "
+            "gap targets, are included only for a reader holding `register.read`; a "
+            "certificate's expiry and next audit for every reader. An empty answer is a 200 "
+            "and never a 422."
         ),
         examples=["all"],
     )
@@ -441,16 +567,76 @@ class HomeSourceHealth(CamelSchema):
     )
 
 
+class HomeStanding(CamelSchema):
+    """Where the bank stands (HOM-01): how many obligations apply, each counted once in the
+    category of its compliance status, and how many gaps are open. The bank's own zone,
+    computed by the server from its register and inside its regulatory scope (FP-03).
+
+    Counted per obligation: an obligation that applies to several legal entities is counted
+    once, in the worst category of the entities it applies to (`gap`, then `partly`, then
+    `not_assessed`, then `compliant`), exactly as its pill on the obligation page reads, so a
+    standard's one conformance obligation is one obligation however many entities follow it
+    and however many clauses and controls they list. "Applies" and "we comply" stay separate
+    facts: an obligation that does not apply, or whose applicability nobody has answered, is
+    in none of the categories, and a gap is counted whatever the answer on its obligation.
+    """
+
+    model_config = ConfigDict(json_schema_extra={"examples": [STANDING_EXAMPLE]})
+
+    applying: int = Field(
+        ge=0,
+        description=(
+            "How many obligations inside the bank's regulatory scope apply, to the bank or to at "
+            "least one of its legal entities, 0 or more. The four categories below add up to it."
+        ),
+        examples=[142],
+    )
+    compliant: int = Field(
+        ge=0,
+        description="How many of them are in a status of the fixed `compliant` category, 0 or more.",
+        examples=[118],
+    )
+    partly: int = Field(
+        ge=0,
+        description="How many of them are in a status of the fixed `partly` category, 0 or more.",
+        examples=[9],
+    )
+    gap: int = Field(
+        ge=0,
+        description=(
+            "How many of them are in a status of the fixed `gap` category, 0 or more. It counts "
+            "obligations, not gap records: `openGaps` counts those."
+        ),
+        examples=[4],
+    )
+    not_assessed: int = Field(
+        ge=0,
+        description=(
+            "How many of them are in a status of the fixed `not_assessed` category, 0 or more: "
+            "they apply and nobody has yet recorded whether the bank complies."
+        ),
+        examples=[11],
+    )
+    open_gaps: int = Field(
+        ge=0,
+        description=(
+            "How many gaps on obligations inside the bank's regulatory scope are open or being "
+            "remediated, 0 or more. A gap whose risk was accepted, or that is closed, is not "
+            "counted."
+        ),
+        examples=[6],
+    )
+
+
 class Home(CamelSchema):
     """`GET /home`: everything the timeline home shows, in one call, so the screen never
     chains a second request behind the first.
 
     Panels a reader may not see are null rather than refused: a person without `watch.read`
-    gets a 200 with `lead` and `sources` empty and the screen hides those panels, instead of
-    a 403 that would take the whole page away (chunk 6 defaults). Two panels of the design
-    are deliberately absent: what needs a decision is the `counts` object on `GET /me` (D-23),
-    and the compliance standing arrives with the register in chunk 8, because "0 gaps" before
-    a register exists is a false statement about the bank.
+    gets a 200 with `lead` and `sources` empty, and one without `register.read` with
+    `standing` empty, and the screen hides those panels, instead of a 403 that would take the
+    whole page away (chunk 6 defaults). What needs a decision is deliberately absent: it is
+    the `counts` object on `GET /me` (D-23).
     """
 
     model_config = ConfigDict(json_schema_extra={"examples": [HOME_EXAMPLE]})
@@ -495,6 +681,14 @@ class Home(CamelSchema):
             "covered?'. Null for a reader without `watch.read`, and the screen then hides the "
             "panel rather than showing zeros, because a zero here would read as a claim that "
             "nothing was checked."
+        )
+    )
+    standing: HomeStanding | None = Field(
+        description=(
+            "Where the bank stands, from its obligation register, for the panel that answers "
+            "'how compliant are we?'. Null for a reader without `register.read`, and the screen "
+            "then hides the panel rather than showing zeros, because '0 gaps' would read as a "
+            "claim about the bank's compliance."
         )
     )
 
