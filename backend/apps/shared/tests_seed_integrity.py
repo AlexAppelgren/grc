@@ -1402,3 +1402,39 @@ class SeededR2Roster(SeededOnce):
         self.assertEqual(created.count(), 1, "the role is written once, through record()")
         self.assertEqual(created.get().actor_label, "seed_e2e")
 # --- end r2-e2e-login-roster --------------------------------------------------------------------
+
+
+# --- c11-e2e-seed ---------------------------------------------------------------------------------
+class SeededChunk11(SeededOnce):
+    """What the chunk 11 journeys read (AGT-S4 to AGT-S7, PRO-S8), table by table: the proofs
+    of the clock and of the one batch writer are in apps/agents/tests_seed.py."""
+
+    def test_each_chunk_11_table_holds_what_its_journeys_read(self) -> None:
+        from apps.agents.models import AgentVersion, TenantAgent, TenantAgentBudget
+        from apps.proposals.models import Proposal, ProposalBatchRow
+        from apps.library.models import Obligation
+        from apps.shared.e2e_seed import C11_TENANT_RUNS, EXPECTED_CHUNK11 as spec
+
+        tenancy.clear_tenant()
+        # agent_version: the sweeper's two versions, each named by a scheduled platform run.
+        versions = AgentVersion.objects.filter(agent__key=spec.platform_agent)
+        self.assertEqual(sorted(versions.values_list("version_no", flat=True)), list(spec.platform_versions))
+        platform_runs = AgentRun.objects.filter(tenant__isnull=True, agent_version__in=versions)
+        self.assertEqual(set(platform_runs.values_list("agent_version__version_no", flat=True)), set(spec.platform_versions))
+        # proposal and proposal_batch_row: one open batch, a row per obligation.
+        batch = Proposal.objects.get(is_batch=True, status="open", title=spec.batch_title)
+        self.assertEqual(
+            set(ProposalBatchRow.objects.filter(proposal=batch, decision="pending").values_list("subject_id", flat=True)),
+            set(Obligation.objects.filter(stable_key__in=spec.batch_obligations).values_list("id", flat=True)),
+        )
+        # tenant_agent, tenant_agent_budget and agent_run: tenant A's own, tenant B none.
+        tenants = {tenant.slug: tenant for tenant in Tenant.objects.all()}
+        tenancy.activate(tenants[TENANT_A_SLUG].id)
+        agent = TenantAgent.objects.get(agent__key=spec.tenant_agent)
+        self.assertTrue(agent.enabled)
+        self.assertEqual(TenantAgentBudget.objects.get().monthly_cap, spec.monthly_cap)
+        self.assertEqual(set(AgentRun.objects.filter(tenant_agent=agent).values_list("id", flat=True)), set(C11_TENANT_RUNS))
+        tenancy.activate(tenants[TENANT_B_SLUG].id)
+        self.assertFalse(TenantAgent.objects.exists() or TenantAgentBudget.objects.exists())
+        self.assertFalse(AgentRun.objects.filter(tenant__isnull=False).exists())
+# --- end c11-e2e-seed -----------------------------------------------------------------------------
