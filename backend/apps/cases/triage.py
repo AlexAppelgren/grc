@@ -40,7 +40,6 @@ from apps.identity.models import Membership, UserStatus
 from apps.library.reading import vocabulary_refs
 from apps.shared import permissions as perms
 from apps.shared.audit import Actor
-from apps.shared.errors import ProblemError
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import Tenant
 from apps.taxonomy.models import CaseSubStatusLabel, ClosureReasonLabel, DismissalReasonLabel, EffortSizeLabel
