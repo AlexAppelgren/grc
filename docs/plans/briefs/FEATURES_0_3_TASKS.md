@@ -825,7 +825,7 @@ starts (`CHUNK8_TASKS.md`, "Amended by D-75").
 
 **Owned paths:** `frontend/tests/e2e/register.journey.spec.ts`, `backend/apps/shared/e2e_seed.py`
 
-**Done when:** REG-S16 is un-fixme'd and green against the real stack with no mocked API. `seed_e2e` stays idempotent, and no real clause or control title appears in the repository.
+**Done when:** REG-S16 is un-fixme'd, titled `REG-S16 J-10 @smoke: …` so push CI runs it with the other golden paths (PRD section 5), and green against the real stack with no mocked API. `seed_e2e` stays idempotent, and no real clause or control title appears in the repository.
 
 ## Chunk 9: the case workflow
 
