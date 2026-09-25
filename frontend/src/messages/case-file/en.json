@@ -1,3 +1,15 @@
 {
-  "caseFile.heading": "Case file"
+  "caseFile.heading": "Case file",
+  "caseFile.intro": "The whole case as one text that stands alone, for an auditor or a file.",
+  "caseFile.show": "Show case file",
+  "caseFile.textLabel": "Case file text",
+  "caseFile.close": "Close",
+  "caseFile.errorTitle": "Could not load the case file",
+  "caseFile.export": "Export",
+  "caseFile.exportPreparing": "Preparing the file…",
+  "caseFile.exportReady": "The file is ready.",
+  "caseFile.download": "Download the case file",
+  "caseFile.exportFailed": "The file could not be prepared. Try again.",
+  "caseFile.exportExpired": "The file is no longer kept. Export it again.",
+  "caseFile.stepUpCancelled": "Nothing was exported. Export needs your passkey."
 }

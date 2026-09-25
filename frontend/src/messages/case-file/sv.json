@@ -1,3 +1,15 @@
 {
-  "caseFile.heading": "Ärendeakt"
+  "caseFile.heading": "Ärendeakt",
+  "caseFile.intro": "Hela ärendet som en text som står på egen hand, för en revisor eller ett arkiv.",
+  "caseFile.show": "Visa ärendeakt",
+  "caseFile.textLabel": "Ärendeaktens text",
+  "caseFile.close": "Stäng",
+  "caseFile.errorTitle": "Det gick inte att läsa in ärendeakten",
+  "caseFile.export": "Exportera",
+  "caseFile.exportPreparing": "Filen förbereds…",
+  "caseFile.exportReady": "Filen är klar.",
+  "caseFile.download": "Ladda ner ärendeakten",
+  "caseFile.exportFailed": "Filen kunde inte förberedas. Försök igen.",
+  "caseFile.exportExpired": "Filen sparas inte längre. Exportera den igen.",
+  "caseFile.stepUpCancelled": "Inget exporterades. Export kräver din passkey."
 }

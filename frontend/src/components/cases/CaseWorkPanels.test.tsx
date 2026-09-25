@@ -2,6 +2,7 @@ import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import type { CaseVocabularyRef, CaseWorkflow } from '@/features/cases/types';
+import { queryWrapper } from '@/shared/testing/api-adapter';
 
 import { CaseWorkPanels, casePanelsFor } from './CaseWorkPanels';
 
@@ -39,9 +40,14 @@ describe('casePanelsFor', () => {
 });
 
 describe('CaseWorkPanels', () => {
-  it('renders its panels, which render nothing until they are built', () => {
-    const workflow = { ...at('closed', reason('signed_off')), id: 'case-1', version: 7 } as CaseWorkflow;
-    const { container } = render(<CaseWorkPanels change={{ id: 'c-1' } as never} workflow={workflow} />);
-    expect(container.querySelector('[data-case-panels="closed"]')).toBeEmptyDOMElement();
+  it('mounts its panels: a signed-off case shows its sign-off', () => {
+    const workflow = { ...at('closed', reason('signed_off')), id: 'case-1', version: 7, signedOffBy: null, signoffRequestedBy: null } as unknown as CaseWorkflow;
+    const { wrapper: Query } = queryWrapper();
+    const { container } = render(
+      <Query>
+        <CaseWorkPanels change={{ id: 'c-1' } as never} workflow={workflow} />
+      </Query>,
+    );
+    expect(container.querySelector('[data-case-panels="closed"] [data-signoff-panel="signed_off"]')).toBeInTheDocument();
   });
 });
