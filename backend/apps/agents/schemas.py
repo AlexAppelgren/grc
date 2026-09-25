@@ -26,7 +26,7 @@ from pydantic import ConfigDict, JsonValue
 
 from django.conf import settings
 
-from apps.library.schemas import LocalizedText, ObligationInstrumentRef, ObligationVersionRef
+from apps.library.schemas import LibraryRef, LocalizedText, ObligationInstrumentRef, ObligationVersionRef
 from apps.register.schemas import RegisterDecision
 from apps.shared.schemas import CamelSchema, PageQuery, SingleLineName, WriteBody
 from apps.taxonomy.schemas import PersonRef
@@ -78,7 +78,6 @@ __all__ = [
     "WhatAppliesOutsideScope",
     "WhatAppliesOutsideTerm",
     "WhatAppliesSummary",
-    "WhatAppliesVocabRef",
 ]
 
 # The examples are one night's sweep by the shipped `watch-sweeper` definition over Nordic
@@ -1387,22 +1386,28 @@ class WhatAppliesInput(WriteBody):
     )
 
 
-class WhatAppliesVocabRef(CamelSchema):
-    """A footprint dimension or term, by key and label."""
-
-    key: str = Field(
-        description="The dimension's or term's stable key in the shared taxonomy; store and compare the key, never the label.",
-        examples=["card_issuing"],
-    )
-    label: str = Field(description="Its label in the reader's language, for display only.", examples=["Card issuing"])
-
-
 class WhatAppliesOutsideTerm(CamelSchema):
     """One term of the bank's footprint that the description touches and the entry's scope
     leaves out, named by label and never by any record carrying it."""
 
-    dimension: WhatAppliesVocabRef = Field(description="The dimension the term sits in, such as `licensed_activity`, Licensed activity.")
-    term: WhatAppliesVocabRef = Field(description="The term itself, such as `card_issuing`, Card issuing.")
+    dimension: LibraryRef = Field(
+        description=(
+            "The taxonomy dimension the term sits in, as `{key, kind, label}`, such as "
+            "`licensed_activity`, Licensed activity. Dimensions are vocabulary rows, not a closed "
+            "enum: a platform admin may extend, relabel or retire them without a deploy, so read "
+            "`GET /taxonomy/dimensions` for the live set and match on the key, never the label. "
+            "The `kind` is one of three kinds fixed in code: `scope`, `classification` or `opt_in`."
+        )
+    )
+    term: LibraryRef = Field(
+        description=(
+            "The term itself, as `{key, kind, label}`, such as `card_issuing`, Card issuing. Terms "
+            "are vocabulary rows, not a closed enum: a platform admin may add one through an "
+            "approved proposal, and relabel or retire one, without a deploy, so read "
+            "`GET /taxonomy/terms` for the live set and match on the key, never the label. A term "
+            "has no kind of its own, so `kind` is always null: its dimension is its kind."
+        )
+    )
 
 
 class WhatAppliesOutsideScope(CamelSchema):
@@ -1486,8 +1491,8 @@ class WhatAppliesAnswer(CamelSchema):
                     "outsideScope": {
                         "terms": [
                             {
-                                "dimension": {"key": "licensed_activity", "label": "Licensed activity"},
-                                "term": {"key": "card_issuing", "label": "Card issuing"},
+                                "dimension": {"key": "licensed_activity", "kind": "scope", "label": "Licensed activity"},
+                                "term": {"key": "card_issuing", "kind": None, "label": "Card issuing"},
                             }
                         ],
                         "advice": "ask_compliance",

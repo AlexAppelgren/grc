@@ -27,7 +27,8 @@ import uuid
 from django.conf import settings
 from django.db.models import Prefetch
 
-from apps.agents.schemas import WhatAppliesOutsideTerm, WhatAppliesVocabRef
+from apps.agents.schemas import WhatAppliesOutsideTerm
+from apps.library.schemas import LibraryRef
 from apps.shared.vocabulary import label_for
 from apps.taxonomy import matching
 from apps.taxonomy.entry_scope import EntryScope
@@ -95,8 +96,8 @@ def outside_terms(tenant_id: uuid.UUID, scope: EntryScope, description: str, ord
         if by_label or by_note:
             touched.append(
                 WhatAppliesOutsideTerm(
-                    dimension=WhatAppliesVocabRef(key=dimension.key, label=label_for(dimension, order)),
-                    term=WhatAppliesVocabRef(key=term.key, label=label_for(term, order)),  # type: ignore[arg-type]
+                    dimension=LibraryRef(key=dimension.key, kind=dimension.kind, label=label_for(dimension, order)),
+                    term=LibraryRef(key=term.key, kind=None, label=label_for(term, order)),  # type: ignore[arg-type]
                 )
             )
     return touched

@@ -721,7 +721,7 @@ class AgentsScenarioTests(TestCase):
         # card acquiring.
         bank = TradingBank(slug="acc-s6")
         bank.decide(bank.card, "We issue debit cards to trading clients")
-        # When the entry asks what applies to a feature that issues virtual cards.
+        # When the entry asks what applies (whatApplies) to a feature that issues virtual cards.
         response = bank.ask(self.client, bank.trading_key, CARD_FEATURE)
         self.assertEqual(response.status_code, 200, response.content)
         body = response.json()
