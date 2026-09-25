@@ -376,7 +376,8 @@ here names it with its backticked `METHOD /path`.
   steps[{key,done}]}}`; the patch takes `{name?, timezone?, defaultLanguage?,
   contentLanguages?}` as keys. Reminder, escalation, digest-day and triage settings land
   with the workflow policy (chunk 10, `c10-workflow-policy`, section 19) as columns of their
-  own, not chunk 9's (CHUNK9_TASKS ruling 6); retention is chunk 12's.
+  own, not chunk 9's (CHUNK9_TASKS ruling 6); retention is chunk 12's. `change_case.triage_due_at`
+  lands with `c10-case-triage-due`.
 - `GET /tenant/members` answers a page `{items, total}` (playbook 10: every list
   paginates) of `{userId, email, name, status, roles[{key,kind,label}], title,
   lastSeenAt, passkeyCount, activeSessions}` rather than a bare array of the designed
@@ -1729,3 +1730,12 @@ existed; building them on `gap` as `c8-register-models` shaped it changes these 
 - A gap on a Statement of Applicability unit (`unitId`) answers 501 `not_built` until
   `c8-units-paste-soa` adds the column.
 
+## 20. A case knows when triage is due (2026-09-25, c10-case-triage-due)
+
+`change_case.triage_due_at` (`schema.sql` §13, "from the tenant's triage target") is a
+nullable timestamp, set when the case opens to its opening time plus the bank's
+`triage_target_hours` (section 18). Cases 0004 backfills it for every open `new` case, one
+bank's zone at a time because forced row-level security binds the schema owner too; a case
+that already left `new` keeps a null, since reminders read the column only while a case is
+`new` (`c10-reminders-core`). The backfill writes no audit row: the column is derived from
+two facts already on record, not a decision.
