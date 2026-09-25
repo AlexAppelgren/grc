@@ -12,8 +12,10 @@ security without activating it again."""
 
 from __future__ import annotations
 
+import datetime
 from typing import Any
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
@@ -138,6 +140,10 @@ def mark_visit(principal: Principal) -> None:
     Platform staff read the library itself rather than a bank's view of it, so a session
     with no tenant has no bookmark to move: 404, like every other tenant route, with
     nothing written.
+
+    Each move writes an audit and an outbox row kept for ten years, so a visit within
+    `VISIT_MIN_INTERVAL_SECONDS` of the last one writes nothing at all (hardening H38): the
+    bookmark it would have moved is already that recent.
     """
     membership = None
     if principal.tenant_id is not None:
@@ -148,7 +154,10 @@ def mark_visit(principal: Principal) -> None:
     if membership is None:
         raise ValidationError("Not found.", code="not_found")
     seen_before = membership.last_visit_at
-    membership.last_visit_at = timezone.now()
+    now = timezone.now()
+    if seen_before is not None and datetime.timedelta(0) <= now - seen_before < datetime.timedelta(seconds=settings.VISIT_MIN_INTERVAL_SECONDS):
+        return
+    membership.last_visit_at = now
     membership.save(update_fields=["last_visit_at"])
     record(
         action="member.visited",
