@@ -13,7 +13,7 @@ if behaviour changes. Numbering never reuses a number.
 | [0004](0004-ui-foundation.md) | UI foundation: Tailwind, Radix primitives and our own components on Green tokens | D-04 | accepted by default (spike outcome pending) |
 | [0005](0005-brand-layer.md) | Brand layer: Green tokens with our own brand pair | D-05 | accepted by default |
 | [0006](0006-sessions.md) | Sessions: in-memory access token, rotating refresh cookie, a row per session | D-06 | accepted by default |
-| [0007](0007-llm-provider-and-inference-region.md) | LLM provider adapter and the inference region | D-07 | accepted by default; amended by ADR 0057 |
+| [0007](0007-llm-provider-and-inference-region.md) | LLM provider adapter and the inference region | D-07 | accepted by default; amended by ADRs 0057 and 0061 |
 | [0008](0008-agent-runtime.md) | Agent runtime behind an adapter, the app as scheduler of record | D-08 | accepted by default |
 | [0009](0009-embedding-model-and-reranker.md) | Embedding model and reranker chosen against the evaluation set | D-09 | accepted by default |
 | [0010](0010-search-scope.md) | Search indexes the library only in R1 | D-10 | accepted by default |
@@ -65,6 +65,7 @@ if behaviour changes. Numbering never reuses a number.
 | [0056](0056-two-credential-kinds-one-table.md) | A service key and a personal access token, on one table, and a token can never step up | D-77 | accepted |
 | [0057](0057-a-bank-pulls-its-own-register.md) | A bank may pull its own register into its own agent; we still send nothing | D-72, D-76 (amends D-07) | accepted |
 | [0058](0058-library-writes-refused-by-the-database.md) | The database refuses a library write that never entered a door | D-83 | accepted by default |
+| [0061](0061-a-banks-research-text-reaches-its-own-agent.md) | A bank's capped research text may reach its own agent, the second exception beside Ask | D-98 (amends D-07, D-32) | accepted |
 
 Still to write, when the playbook's Appendix C says so:
 the switch from one branch to `staging` and `main` (supersedes 0015), the
