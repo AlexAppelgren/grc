@@ -37,6 +37,10 @@ write proof both named it.
 The problem-report pin was proven to fail 2026-09-23 by adding, in a scratch copy of library
 0009, a SELECT policy reading a review setting (the set of policies was named) and, alone, a
 BEFORE UPDATE trigger (the trigger was named).
+
+The child census was proven to fail 2026-09-25 by leaving `recurring_duty` out of a scratch copy
+of library 0012: the table was named twice, for row-level security neither enabled nor forced
+and for carrying no policy.
 """
 
 from __future__ import annotations

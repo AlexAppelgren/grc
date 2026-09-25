@@ -20,6 +20,11 @@ A new row is a copy of the shared child with its parent swapped and, where a uni
 collide under A's parent, one column changed (`CHANGED`), so the probe reaches the policy and
 not a constraint. A provision under a parent its writer cannot see is refused by
 `provision_not_under_standard` first, which fails closed the same way (tests_library.py).
+
+Proven to fail 2026-09-25 by giving `obligation_title`, in a scratch copy of library 0012, its
+read rule as its write rule: tenant B's insert under the shared parent went through, A's under
+the shared parent reached the unique key instead of the policy, and B's update and delete
+reached the shared title; `obligation_summary`, left as it was, stayed green.
 """
 
 from __future__ import annotations
