@@ -155,6 +155,14 @@ or has differently:
   reaches the seven watch tables and refuses every other library table at
   runtime, so no watch step can write an authority, an instrument, a provision,
   an obligation or a version table (PRO-01, chunk 5 ruling H).
+**Chunk 9 (c9-scanner-adapter, 2026-09-25).** `scan_state` (`pending`, `clean`,
+`infected`, `error`), declared by `c9-case-models` as `ScanState` in
+`apps/shared/adapters/scanner.py`: whether a stored file may be shown. The download and
+the scan task branch on it and no admin curates it, so it is a kind in code (CAS-05). A
+scan answers only `clean`, `infected` or `error`; `pending` is the state before one.
+`schema.sql` has no scan at all; the scanner seam is the playbook 16 adapter the design
+names without a shape, and evidence reaches it multipart through the API (D-101).
+
 In the API every such field is `{key, kind, label}` on reads and `key` on
 writes, never an OpenAPI `enum`.
 
