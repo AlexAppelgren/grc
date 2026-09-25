@@ -673,6 +673,18 @@ CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
 CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
 
 # ---------------------------------------------------------------------------------------
+# ===== HOM-05 My work's windows (apps/home/my_work.py, c8-mywork-service, D-23, D-25) ===
+# A row is "due soon" when its next date is today or within MY_WORK_DUE_SOON_DAYS; the
+# tenant's reminder lead replaces it once COL-02 lands. A new version of an obligation stays
+# under "Changes on your items" for MY_WORK_AWARE_DAYS after it was applied: a fixed window
+# needs no write on every page load. Each is at least 1, or the app refuses to boot.
+# ---------------------------------------------------------------------------------------
+MY_WORK_DUE_SOON_DAYS = env_int("MY_WORK_DUE_SOON_DAYS", 30)
+MY_WORK_AWARE_DAYS = env_int("MY_WORK_AWARE_DAYS", 14)
+if min(MY_WORK_DUE_SOON_DAYS, MY_WORK_AWARE_DAYS) < 1:
+    raise ImproperlyConfigured("Refusing to boot: MY_WORK_DUE_SOON_DAYS and MY_WORK_AWARE_DAYS are each at least 1.")
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------
@@ -710,6 +722,10 @@ SESSION_IDLE_MINUTES_DEFAULT = env_int("SESSION_IDLE_MINUTES_DEFAULT", 30)
 SESSION_ABSOLUTE_HOURS_DEFAULT = env_int("SESSION_ABSOLUTE_HOURS_DEFAULT", 12)
 SESSION_IDLE_MINUTES_MAX = env_int("SESSION_IDLE_MINUTES_MAX", 8 * 60)
 SESSION_ABSOLUTE_HOURS_MAX = env_int("SESSION_ABSOLUTE_HOURS_MAX", 24)
+# ===== c8-org-models: ID-07 credential policy (ADR 0048) =====
+# How many days ahead a tightened credential policy takes effect by default, so members can
+# enrol a device-bound passkey before theirs stop working (tenants.SecurityPolicy).
+CREDENTIAL_POLICY_NOTICE_DAYS = env_int("CREDENTIAL_POLICY_NOTICE_DAYS", 14)
 ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 10)
 REFRESH_REPLAY_GRACE_SECONDS = env_int("REFRESH_REPLAY_GRACE_SECONDS", 30)
 STEP_UP_FRESHNESS_MINUTES = env_int("STEP_UP_FRESHNESS_MINUTES", 5)
