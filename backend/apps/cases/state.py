@@ -88,29 +88,29 @@ class Guard:
 
 
 _ONE_PERSON_CLOSE_GUARDS = (
-    Guard("close_reason_given", "reason_required", lambda f: f.close_reason_kind is not None, on_request=True),
-    Guard("one_person_close", "four_eyes_violation", lambda f: f.close_reason_kind in ONE_PERSON_CLOSE, on_request=True),
+    Guard(name="close_reason_given", code="reason_required", holds=lambda f: f.close_reason_kind is not None, on_request=True),
+    Guard(name="one_person_close", code="four_eyes_violation", holds=lambda f: f.close_reason_kind in ONE_PERSON_CLOSE, on_request=True),
 )
 
 GUARDS: dict[tuple[CaseStatusCategory, CaseStatusCategory], tuple[Guard, ...]] = {
-    (C.NEW, C.ASSIGNED): (Guard("owner_on_triage", "owner_required", lambda f: f.owner_set, on_request=True),),
-    (C.NEW, C.DISMISSED): (Guard("reason_on_dismissal", "reason_required", lambda f: f.reason_given, on_request=True),),
+    (C.NEW, C.ASSIGNED): (Guard(name="owner_on_triage", code="owner_required", holds=lambda f: f.owner_set, on_request=True),),
+    (C.NEW, C.DISMISSED): (Guard(name="reason_on_dismissal", code="reason_required", holds=lambda f: f.reason_given, on_request=True),),
     (C.ASSIGNED, C.CLOSED): _ONE_PERSON_CLOSE_GUARDS,
-    (C.ASSESSING, C.IMPLEMENTING): (Guard("why_saved", "why_required", lambda f: f.why_saved),),
+    (C.ASSESSING, C.IMPLEMENTING): (Guard(name="why_saved", code="why_required", holds=lambda f: f.why_saved),),
     (C.ASSESSING, C.CLOSED): _ONE_PERSON_CLOSE_GUARDS,
     (C.IMPLEMENTING, C.SIGNOFF): (
-        Guard("no_open_action", "open_actions", lambda f: f.open_action_count == 0),
-        Guard("clean_evidence", "evidence_missing", lambda f: f.clean_evidence_count >= 1),
+        Guard(name="no_open_action", code="open_actions", holds=lambda f: f.open_action_count == 0),
+        Guard(name="clean_evidence", code="evidence_missing", holds=lambda f: f.clean_evidence_count >= 1),
     ),
     (C.SIGNOFF, C.CLOSED): (
         Guard(
-            "second_person",
-            "four_eyes_violation",
-            lambda f: f.signoff_requester is not None and f.actor is not None and f.actor != f.signoff_requester,
+            name="second_person",
+            code="four_eyes_violation",
+            holds=lambda f: f.signoff_requester is not None and f.actor is not None and f.actor != f.signoff_requester,
         ),
     ),
     (C.CLOSED, C.NEW): (
-        Guard("restorable_close", "invalid_transition", lambda f: f.close_reason_kind in ONE_PERSON_CLOSE),
+        Guard(name="restorable_close", code="invalid_transition", holds=lambda f: f.close_reason_kind in ONE_PERSON_CLOSE),
     ),
 }
 
