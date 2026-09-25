@@ -253,6 +253,7 @@ class ProposalApply(ScenarioTestCase):
         self.assertEqual(made.json()["payload"]["labels"], {"en": "Client money"})
 
     def test_a_stored_payload_that_no_longer_parses_is_refused_at_approval_and_stays_open(self) -> None:
+        tenancy.clear_tenant()  # the console's zone, as its own request has in production (proposals 0009)
         stored = Proposal.objects.create(
             kind="vocabulary_create", title="Written before the payload schema closed", payload={"list": "flag", "key": "x"}, origin="user"
         )

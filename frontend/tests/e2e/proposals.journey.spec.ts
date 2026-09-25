@@ -395,3 +395,10 @@ test.describe('proposals journeys', () => {
     await expect(page.locator('[data-versions-panel] [data-version-row="2"] [data-machine-confirmed]')).toContainText(/proposed by watch-sweeper, confirmed by library-confirmer/);
   });
 });
+
+// The bank's own queue (PRD 0.7, OWN-03): stays test.fixme until chunk 11 builds it.
+test.describe("the bank's own queue", () => {
+  test.fixme("PRO-S15: The bank's own queue decides what its own agent filed", async () => {
+    // pending: PRO-S15 (OWN-03, INV-07, PRO-03, AC-OWN1, chunk 11)
+  });
+});

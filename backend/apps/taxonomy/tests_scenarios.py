@@ -1199,6 +1199,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
         # When a proposal filed before the mirror rule would tag an obligation with a
         # jurisdiction term, applying it answers 422 and scopes nothing.
+        tenancy.clear_tenant()  # the console's zone, as its own request has in production (proposals 0009)
         filed = Proposal.objects.create(
             kind=ProposalKind.NEW_OBLIGATION_VERSION.value,
             title="Filed before the mirror rule",
@@ -1968,6 +1969,13 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             matching.in_footprint(as_dict(iso), {})  # type: ignore[call-arg]
         with self.assertRaises(TypeError):
             matching.in_footprint(as_dict(iso), {}, restricting={"service_type", "standard"})
+
+    @skip("pending: FP-S18 (OWN-01, FP-02, AC-OWN2, chunk 11)")
+    def test_fp_s18(self) -> None:
+        """FP-S18
+
+        A scope item the library does not cover is requested by one person and approved by another with a passkey (OWN-01, FP-02, AC-OWN2).
+        """
 
     @skip("pending: ACC-S2 (ACC-02, AC-ACC1, chunk 11)")
     def test_acc_s2(self) -> None:
