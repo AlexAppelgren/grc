@@ -161,7 +161,7 @@ class FootprintRaces(TransactionTestCase):
             request = FootprintChangeRequest.objects.get(pk=request_id)
             self.assertEqual((request.status, request.version), (ApprovalStatus.APPROVED.value, 2))
             history = FootprintHistory.objects.filter(tenant=self.tenant, request=request)
-            self.assertEqual(sorted((h.action, h.term.key) for h in history), [("added", "retail"), ("removed", "advice")])
+            self.assertEqual(sorted(history.values_list("action", "term__key")), [("added", "retail"), ("removed", "advice")])
             events = list(AuditEvent.objects.filter(tenant=self.tenant, action__in=TERM_EVENTS).exclude(actor_type=ActorType.SYSTEM.value))
             self.assertEqual(sorted(e.action for e in events), sorted(TERM_EVENTS), "one audit event per term")
             self.assertEqual({(e.after or e.before)["request"] for e in events}, {str(request_id)})

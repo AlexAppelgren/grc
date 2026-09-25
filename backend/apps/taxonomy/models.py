@@ -19,7 +19,9 @@ restricts the footprint. Everything else on the row is an admin's.
 The footprint (FP-01, FP-02): `FootprintTerm` rows are the company's terms; a change is
 a `FootprintChangeRequest` with a preview, decided by a second person (check constraint
 `footprint_change_request_four_eyes`), and every term switched leaves one
-`FootprintHistory` row (append-only) and one audit event.
+`FootprintHistory` row (append-only) and one audit event. A request may also add or remove
+a `ScopeItem` (OWN-01, D-89): a regulation the library does not cover, which the bank's own
+agent researches and which no term matching ever reads.
 
 Markets (FP-04): the countries in the footprint are the ones the company operates in;
 `WatchedMarket` rows are the ones it watches instead. A market's level is computed from
@@ -29,7 +31,12 @@ the two, never stored.
 from __future__ import annotations
 
 import enum
+import ipaddress
+from urllib.parse import urlsplit
 
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.db import models
 
 from apps.shared.audit import AppendOnlyModel
@@ -139,6 +146,18 @@ class ApprovalStatus(enum.StrEnum):
 
 class FootprintAction(enum.StrEnum):
     ADDED = "added"
+    REMOVED = "removed"
+
+
+class ScopeItemStatus(enum.StrEnum):
+    """Where a scope item stands (OWN-01, D-91): `requested` while the request that adds it
+    waits, `in_scope` once a second person approved it, `declined` when that request was
+    rejected or withdrawn, and `removed` once an approved request took it out. Research
+    (OWN-02) and the request logic branch on it; no admin adds a state."""
+
+    REQUESTED = "requested"
+    IN_SCOPE = "in_scope"
+    DECLINED = "declined"
     REMOVED = "removed"
 
 
@@ -665,9 +684,11 @@ class Team(TenantListVocabulary):
     """A team that can own work (TEN-03, INPUT_DELTAS §1): a tenant list, so create, rename
     and retire are the generic list routes under `vocab.manage`. `UNIQUE (tenant_id, id)` is
     added in SQL (taxonomy 0009) so membership and departments can point at a team with a
-    composite key; its org unit arrives with the teams model."""
+    composite key. `org_unit` is the department the team belongs to (D-21, taxonomy 0010), a
+    composite key to the same bank's unit."""
 
     email = models.EmailField(blank=True)
+    org_unit = models.ForeignKey("tenants.OrgUnit", null=True, blank=True, on_delete=models.PROTECT, related_name="teams")
 
     class Meta:
         db_table = "team"
@@ -752,7 +773,9 @@ class FootprintChangeRequest(TenantModel):
                 fields=["tenant"],
                 condition=models.Q(status=ApprovalStatus.PENDING.value),
                 name="footprint_change_request_one_pending",
-            )
+            ),
+            # The target of a scope-item row's composite key (taxonomy 0012).
+            models.UniqueConstraint(fields=["tenant", "id"], name="footprint_change_request_tenant_id_unique"),
         ]
         # The four-eyes check constraint `footprint_change_request_four_eyes` is created by
         # RunSQL in migration 0001 as `decided_by_id IS NULL OR decided_by_id <> requested_by_id`.
@@ -794,13 +817,17 @@ class FootprintChangeRemove(TenantModel):
 
 class FootprintHistory(AppendOnlyModel, TenantModel):
     """"What was our footprint on that date" without parsing the audit log (schema v0.3
-    `footprint_history`): one row per term added or removed, with the request, the actor
-    and the step-up assertion that unlocked it. Append-only in Python and by trigger."""
+    `footprint_history`): one row per term or scope item added or removed, with the request,
+    the actor and the step-up assertion that unlocked it. Append-only in Python and by
+    trigger. A row names exactly one of a term or a scope item (CHECK
+    `footprint_history_term_or_scope_item`, taxonomy 0012), so replaying the terms never
+    reads an item and an item never widens a term (OWN-01)."""
 
     # A ledger row: a monotonic big integer id breaks ties between rows written in the same
     # transaction, so "the footprint as of" replays them in the order they happened.
     id = models.BigAutoField(primary_key=True)  # type: ignore[assignment]  # TenantModel's uuid id, replaced on purpose
-    term = models.ForeignKey(TaxonomyTerm, on_delete=models.PROTECT, related_name="+")
+    term = models.ForeignKey(TaxonomyTerm, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    scope_item = models.ForeignKey("taxonomy.ScopeItem", null=True, blank=True, on_delete=models.PROTECT, related_name="history")
     action = models.CharField(max_length=16, choices=_choices(FootprintAction))
     request = models.ForeignKey(FootprintChangeRequest, null=True, blank=True, on_delete=models.PROTECT, related_name="history")
     changed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
@@ -812,10 +839,109 @@ class FootprintHistory(AppendOnlyModel, TenantModel):
         db_table = "footprint_history"
         ordering = ["changed_at", "id"]
         indexes = [models.Index(fields=["tenant", "changed_at"], name="footprint_history_tenant_time")]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(term__isnull=False, scope_item__isnull=True)
+                | models.Q(term__isnull=True, scope_item__isnull=False),
+                name="footprint_history_term_or_scope_item",
+            )
+        ]
 
     def __str__(self) -> str:
-        return f"{self.action} {self.term_id}"
+        return f"{self.action} {self.term_id or self.scope_item_id}"
 
+
+# ---------------------------------------------------------------------------------------
+# Scope items (tenant; OWN-01, D-89, D-91, ADR 0059)
+# ---------------------------------------------------------------------------------------
+_HTTPS = URLValidator(schemes=["https"])
+# Names that never resolve to a public host: RFC 6761's special-use names and the private
+# suffixes networks use for themselves (RFC 8375, RFC 6762).
+_PRIVATE_SUFFIXES = (".localhost", ".local", ".internal", ".home.arpa", ".lan", ".invalid", ".test", ".example")
+
+
+def validate_public_https_url(value: str) -> None:
+    """A scope item's source address is an https page on a public host (OWN-01, D-91):
+    never another scheme, a user or password, a port other than https's own, an address
+    that is not global, `localhost`, a one-label name or a private suffix. This is the
+    boundary's check on what a person typed; the fetch checks the host again as it resolves
+    it, because a public name can still point inward (AGT-07)."""
+    _HTTPS(value)
+    parts = urlsplit(value)
+    host = (parts.hostname or "").rstrip(".").lower()
+    refused = ValidationError("Give the address of a public https page.", code="source_not_public")
+    if parts.username is not None or parts.port not in (None, 443):
+        raise refused
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        if host == "localhost" or "." not in host or host.endswith(_PRIVATE_SUFFIXES):
+            raise refused from None
+        return
+    if not address.is_global:
+        raise refused
+
+
+def validate_scope_item_description(value: str) -> None:
+    """The description's cap is a setting (`SCOPE_ITEM_DESCRIPTION_MAX_CHARS`), read when
+    the check runs so an override applies without a migration."""
+    limit: int = settings.SCOPE_ITEM_DESCRIPTION_MAX_CHARS
+    if len(value) > limit:
+        raise ValidationError(f"Keep the description to {limit} characters.", code="description_too_long")
+
+
+class ScopeItem(TenantModel):
+    """A regulation or area the shared library does not cover yet, which the bank's own
+    agent researches (OWN-01, D-89, D-91, ADR 0059): a name, a description, the jurisdiction
+    and the regime term it belongs to, an official reference where one exists and the
+    public https page to research. It is written only by a person's regulatory scope request
+    (`FootprintChangeScopeItem`) and in scope only once a second person approved it; no key
+    and no agent writes one. It is not a term: FP-01's matching never reads it, so approving
+    it widens nothing. Every reference is also a composite `(tenant_id, …)` key where the
+    target is a tenant row (taxonomy 0012)."""
+
+    key = models.SlugField(max_length=80)
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True, validators=[validate_scope_item_description])
+    jurisdiction = models.ForeignKey("library.Jurisdiction", on_delete=models.PROTECT, related_name="+")
+    regime_term = models.ForeignKey(TaxonomyTerm, on_delete=models.PROTECT, related_name="+")
+    official_reference = models.CharField(max_length=200, blank=True)
+    source_url = models.URLField(max_length=2000, validators=[validate_public_https_url])
+    status = models.CharField(max_length=16, choices=_choices(ScopeItemStatus), default=ScopeItemStatus.REQUESTED.value)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "scope_item"
+        ordering = ["created_at", "id"]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "key"], name="scope_item_key_unique"),
+            # The target of the composite keys of the request rows and the history.
+            models.UniqueConstraint(fields=["tenant", "id"], name="scope_item_tenant_id_unique"),
+            # The boundary's check, stated again where no code path can skip it.
+            models.CheckConstraint(condition=models.Q(source_url__startswith="https://"), name="scope_item_source_https"),
+        ]
+
+    def __str__(self) -> str:
+        return self.key
+
+
+class FootprintChangeScopeItem(TenantModel):
+    """A scope item a regulatory scope request adds or removes (OWN-01, FP-02): the same
+    request, the same one-waiting rule and the same four-eyes check constraint as its terms,
+    because the decision is the request's."""
+
+    request = models.ForeignKey(FootprintChangeRequest, on_delete=models.CASCADE, related_name="scope_item_links")
+    scope_item = models.ForeignKey(ScopeItem, on_delete=models.PROTECT, related_name="request_links")
+    action = models.CharField(max_length=16, choices=_choices(FootprintAction))
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "footprint_change_scope_item"
+        ordering = ["created_at", "id"]
+        constraints = [models.UniqueConstraint(fields=["request", "scope_item"], name="footprint_change_scope_item_unique")]
+
+    def __str__(self) -> str:
+        return f"{self.action} {self.scope_item_id}"
 
 
 # ---------------------------------------------------------------------------------------
