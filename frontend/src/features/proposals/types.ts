@@ -43,7 +43,8 @@ export type ProposalKind =
   | 'vocabulary_restore'
   | 'vocabulary_merge'
   | 'term_create'
-  | 'term_update';
+  | 'term_update'
+  | 'obligation_scope';
 
 export type ProposalStatus = 'open' | 'approved' | 'rejected' | 'superseded';
 
@@ -78,3 +79,22 @@ export interface VocabularyProposalPayload {
   usageNote?: string | null;
   sortOrder?: number | null;
 }
+
+// ——— batch proposals and the console's re-tag (PRO-04, AGT-05, ADM-02) ——————————
+
+/** GET /proposal-batches/{batchId}: the batch proposal and every row beneath it with its preview. */
+export type ProposalBatch = Schemas['ProposalBatch'];
+export type ProposalBatchRow = Schemas['ProposalBatchRow'];
+/** POST /proposal-batches/{batchId}/decide: decisions on named rows, and one for the rest. */
+export type ProposalBatchDecision = Schemas['ProposalBatchDecision'];
+export type ProposalBatchRowDecision = Schemas['ProposalBatchRowDecision'];
+
+// Local: the fixed kinds a batch row's `decision` carries (apps/proposals/models.py).
+export type BatchRowDecision = 'pending' | 'approved' | 'rejected';
+
+/** A live taxonomy term, as the re-tag form's term field matches against it (GET /taxonomy/terms). */
+export type TaxonomyTerm = Schemas['TaxonomyTermRow'];
+export type TaxonomyTermPage = Schemas['TaxonomyTermPage'];
+export type RetagRequestInput = Schemas['RetagRequestInput'];
+/** POST /console/research-requests and its status read: the request, and the batch once filed. */
+export type RetagRequest = Schemas['ResearchRequestOut'];

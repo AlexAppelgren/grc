@@ -79,4 +79,31 @@ describe('proposals api', () => {
     await proposals.listTenantProposals({ kind: 'vocabulary_create' });
     expect(sent[0]?.params).toEqual({ kind: 'vocabulary_create' });
   });
+
+  it('reads a batch and decides its rows and the rest in one call', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: { id: 'b-1', rows: [] } }));
+    await proposals.getProposalBatch('b-1');
+    await proposals.decideProposalBatch('b-1', { rows: [{ rowId: 'r-1', decision: 'rejected', rejectionCode: 'wrong_scope' }], rest: 'approved', restRejectionCode: '', note: '' });
+    expect(sent.map((call) => [call.method, call.path])).toEqual([
+      ['get', '/api/v1/proposal-batches/b-1'],
+      ['post', '/api/v1/proposal-batches/b-1/decide'],
+    ]);
+    expect(sent[1]?.body).toEqual({ rows: [{ rowId: 'r-1', decision: 'rejected', rejectionCode: 'wrong_scope' }], rest: 'approved', restRejectionCode: '', note: '' });
+  });
+
+  it('asks for a re-tag in the console and reads the request back', async () => {
+    const sent = installAdapter(() => ({ status: 202, data: { id: 'q-1', status: 'queued' } }));
+    await proposals.createRetagRequest({ topic: 'Add the term Client money' });
+    await proposals.getRetagRequest('q-1');
+    expect(sent.map((call) => [call.method, call.path, call.body])).toEqual([
+      ['post', '/api/v1/console/research-requests', { topic: 'Add the term Client money' }],
+      ['get', '/api/v1/console/research-requests/q-1', null],
+    ]);
+  });
+
+  it('reads every taxonomy term, across dimensions', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: { items: [{ id: 't-1', key: 'custody', label: 'Custody', dimension: 'service_type' }], total: 1 } }));
+    const terms = await proposals.listTaxonomyTerms();
+    expect([sent[0]?.path, terms.map((term) => term.key)]).toEqual(['/api/v1/taxonomy/terms', ['custody']]);
+  });
 });

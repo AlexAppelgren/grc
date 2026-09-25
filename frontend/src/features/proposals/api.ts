@@ -1,6 +1,21 @@
 import { api } from '@/shared/utils/api-client';
 
-import type { ProposalApproveBody, ProposalDetail, ProposalPage, ProposalQuery, ProposalRejectBody, ProposalRow, TenantProposalPage, TenantProposalQuery } from './types';
+import type {
+  ProposalApproveBody,
+  ProposalBatch,
+  ProposalBatchDecision,
+  ProposalDetail,
+  ProposalPage,
+  ProposalQuery,
+  ProposalRejectBody,
+  ProposalRow,
+  RetagRequest,
+  RetagRequestInput,
+  TaxonomyTerm,
+  TaxonomyTermPage,
+  TenantProposalPage,
+  TenantProposalQuery,
+} from './types';
 
 // Thin typed wrappers returning `.data` (playbook 6.1): the console queue's
 // four real routes (PRO-01, PRO-02, PRO-03, AC-PRO2). GET /proposals pages
@@ -45,4 +60,32 @@ export async function listTenantProposals(query: TenantProposalQuery = {}): Prom
   if (query.kind !== undefined && query.kind !== '') params.kind = query.kind;
   if (query.targetList !== undefined && query.targetList !== '') params.targetList = query.targetList;
   return (await api.get<TenantProposalPage>(TENANT_PROPOSALS, { params })).data;
+}
+
+// A batch proposal (PRO-04): one queue entry with a row per record. Deciding it
+// asks for a fresh passkey assertion, which the client's step-up handler supplies.
+const BATCHES = '/api/v1/proposal-batches';
+
+export async function getProposalBatch(batchId: string): Promise<ProposalBatch> {
+  return (await api.get<ProposalBatch>(`${BATCHES}/${batchId}`)).data;
+}
+
+export async function decideProposalBatch(batchId: string, body: ProposalBatchDecision): Promise<ProposalBatch> {
+  return (await api.post<ProposalBatch>(`${BATCHES}/${batchId}/decide`, body)).data;
+}
+
+// The console's re-tag (AGT-05): a job whose status names the batch it produced.
+const RETAG_REQUESTS = '/api/v1/console/research-requests';
+
+export async function createRetagRequest(body: RetagRequestInput): Promise<RetagRequest> {
+  return (await api.post<RetagRequest>(RETAG_REQUESTS, body)).data;
+}
+
+export async function getRetagRequest(requestId: string): Promise<RetagRequest> {
+  return (await api.get<RetagRequest>(`${RETAG_REQUESTS}/${requestId}`)).data;
+}
+
+/** Every live taxonomy term, across dimensions, for the re-tag form's near match. */
+export async function listTaxonomyTerms(): Promise<TaxonomyTerm[]> {
+  return (await api.get<TaxonomyTermPage>('/api/v1/taxonomy/terms')).data.items;
 }

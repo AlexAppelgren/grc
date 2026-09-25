@@ -2,6 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+
+import { RetagRequestForm } from '@/components/console/RetagRequestForm';
 
 import { Button } from '@/components/ui/Button';
 import { Chip, ChipRow } from '@/components/ui/Chip';
@@ -102,9 +105,10 @@ function QueueRow({ row }: { row: ProposalQueueRow }) {
   const ctx = useFormatContext();
   const target = targetLine(row, t);
   const source = sourceLine(row, t);
+  // A batch is one queue entry (PRO-04) and opens on its own review screen.
   return (
     <Link
-      href={`/console/queue/${row.id}`}
+      href={row.isBatch === true ? `/console/queue/batches/${row.id}` : `/console/queue/${row.id}`}
       prefetch={false}
       data-proposal-id={row.id}
       data-proposal-kind={row.kind}
@@ -114,6 +118,7 @@ function QueueRow({ row }: { row: ProposalQueueRow }) {
       <PillRow pills={presentProposal(row, t)}>
         <span className="text-meta text-muted">{proposerLine(row, t)}</span>
         <span className="text-meta text-muted">{formatDateTime(row.createdAt, ctx)}</span>
+        {row.isBatch === true ? <span className="text-meta text-muted">{t('console.queue.rowCount', { count: row.rowCount ?? 0 })}</span> : null}
       </PillRow>
       <h3 className="my-1.5 font-semibold">{row.title}</h3>
       {target !== null || source !== null ? (
@@ -131,6 +136,7 @@ export function QueueScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
+  const [retagging, setRetagging] = useState(false);
 
   const tab = tabFrom(params);
   const filters = filtersFrom(params);
@@ -159,7 +165,18 @@ export function QueueScreen() {
 
   return (
     <>
-      <PageHead title={t('console.queue.title')} lede={t('console.queue.lede')} />
+      <PageHead
+        title={t('console.queue.title')}
+        lede={t('console.queue.lede')}
+        actions={
+          retagging ? undefined : (
+            <Button variant="outline" onClick={() => setRetagging(true)}>
+              {t('console.retag.open')}
+            </Button>
+          )
+        }
+      />
+      {retagging ? <RetagRequestForm onClose={() => setRetagging(false)} /> : null}
       <Tabs tabs={tabs} current={tab} onSelect={(id) => go(isTab(id) ? id : 'waiting')} />
       <TabPanel id={tab}>
         <ChipRow className="mb-4">
