@@ -7,6 +7,8 @@
   ID when the request exceeds `API_BUDGET_MS`.
 - `ContentSecurityPolicyMiddleware` sets the strict policy on every response that has
   none, relaxing it only for the DEBUG docs page.
+- `SupportReadOnlyMiddleware` answers 403 `support_read_only` to a support session's
+  request for any route off `SUPPORT_READ_ROUTES`, before any view runs (TEN-06, ADR 0042).
 """
 
 from __future__ import annotations
@@ -16,6 +18,8 @@ import time
 import uuid
 from collections.abc import Callable
 from contextvars import ContextVar
+
+from typing import Any
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
@@ -135,3 +139,39 @@ class ContentSecurityPolicyMiddleware:
             settings.CONTENT_SECURITY_POLICY_DOCS if relaxed else settings.CONTENT_SECURITY_POLICY
         )
         return response
+
+
+class SupportReadOnlyMiddleware:
+    """The read-only guard of a support session (TEN-06, D-49, ADR 0042). A request whose
+    token is a support session's reaches only the `(method, route template)` pairs written
+    out in `SUPPORT_READ_ROUTES` (apps/shared/routes.py), and its own refresh and sign-out
+    (`SUPPORT_SESSION_ROUTES`); everything else, a new GET as much
+    as any write, the evidence and export downloads, search and Ask, answers 403
+    `support_read_only` before its view, its auth class or its body parser runs. It matches
+    the template Django resolved, never the raw path, so a path id cannot smuggle a request
+    onto the list; a path that resolves to no API route is refused as well, and one that
+    resolves to nothing at all reaches no view and is Django's 404. Whether the
+    grant is still open is the auth layer's, per request (apps/identity/session_logic.py)."""
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        return self.get_response(request)
+
+    def process_view(
+        self, request: HttpRequest, view_func: Callable[..., Any], view_args: tuple[Any, ...], view_kwargs: dict[str, Any]
+    ) -> HttpResponse | None:
+        from apps.identity.session_logic import support_token_presented
+        from apps.shared.agent_access_guard import operation_of
+        from apps.shared.errors import ProblemError, problem_response
+        from apps.shared.routes import SUPPORT_READ_ROUTES, SUPPORT_SESSION_ROUTES
+
+        if not support_token_presented(request):
+            return None
+        operation = operation_of(request)
+        if operation is not None and (operation.method, operation.path) in SUPPORT_READ_ROUTES | SUPPORT_SESSION_ROUTES:
+            return None
+        return problem_response(
+            ProblemError(status=403, code="support_read_only", detail="Support access reads the bank and changes nothing.")
+        )

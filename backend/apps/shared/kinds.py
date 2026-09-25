@@ -297,4 +297,10 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "AGT-05: a request's lifecycle, queued to done, failed, rejected or cancelled; the "
         "worker and the request list branch on it",
     ),
+    # acc-foundation (identity 0007, ACC-03, D-77, ADR 0056).
+    "CredentialKind": (
+        "credential_kind",
+        "ACC-03: a service key or a personal access token on one api_key table; authentication, "
+        "the step-up fence and the api_key CHECKs branch on it",
+    ),
 }

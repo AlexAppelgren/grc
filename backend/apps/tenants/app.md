@@ -46,7 +46,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | TEN-03 | Teams as owners and participants, so ownership survives a person leaving | M | R2 | pending |
 | TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | pending |
 | TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | pending |
-| TEN-06 | Support access grants: requested by the platform, approved by a tenant admin with a passkey, read-only, visible to the tenant, time-boxed, revocable and logged in the bank (D-49) | M | R2 | in_progress |
+| TEN-06 | Support access grants: requested by the platform, approved by a tenant admin with a passkey, read-only, visible to the tenant, time-boxed, revocable and logged in the bank (D-49) | M | R2 | built |
 | ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
 | ADM-03 | Admin duties are separate permissions | M | R1 | built |
 
@@ -143,10 +143,10 @@ Then every item is reassigned and the member removed in one transaction with one
 ### TEN-S6 — Support access is requested by the platform, approved by the bank and time-boxed `@integration` `@e2e` (TEN-06)
 
 Which package makes each half green: the request, approve, decline and revoke halves are
-`c8-ten-support-grants`, green in `test_ten_s6`; entering, the logged reads, the 403 on a
-write and the 401 after a revoke or the end of the window are `c8-support-access-mechanism`,
-which adds them to the same method where its comments mark them; the journey is
-`c8-ui-support-access`.
+`c8-ten-support-grants`; entering, the logged reads, the 403 on a write and the 401 after a
+revoke or the end of the window are `c8-support-session-guard`; both are green in
+`test_ten_s6`. "The ones after that answer 404" is the platform person's next console
+session reading the bank. The journey is `c8-ui-support-console`.
 
 ```gherkin
 Given a platform admin without any grant

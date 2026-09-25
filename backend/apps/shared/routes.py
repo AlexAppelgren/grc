@@ -69,4 +69,69 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/support-access/{grant_id}/approve", "tenants.SupportAccess", "support_access"),
     ("POST", "/tenant/support-access/{grant_id}/decline", "tenants.SupportAccess", "support_access"),
     ("POST", "/tenant/support-access/{grant_id}/revoke", "tenants.SupportAccess", "support_access"),
+    # c9-case-contract: the workflow routes whose request an empty body satisfies. Each
+    # loads the case under row-level security before its stub answers 501, so another
+    # bank's case, action or evidence is a 404 now and stays one when the logic lands. The
+    # routes that need a body are proven the same way in apps/cases/tests_contract.py.
+    ("POST", "/changes/{change_id}/restore", "cases.ChangeCase", "case_change"),
+    ("POST", "/changes/{change_id}/assessment/start", "cases.ChangeCase", "case_change"),
+    ("GET", "/changes/{change_id}/actions", "cases.ChangeCase", "case_change"),
+    ("GET", "/changes/{change_id}/evidence", "cases.ChangeCase", "case_change"),
+    ("POST", "/changes/{change_id}/signoff/request", "cases.ChangeCase", "case_change"),
+    ("POST", "/changes/{change_id}/signoff/approve", "cases.ChangeCase", "case_change"),
+    ("POST", "/changes/{change_id}/signoff/send-back", "cases.ChangeCase", "case_change"),
+    ("GET", "/changes/{change_id}/case-file", "cases.ChangeCase", "case_change"),
+    ("PATCH", "/actions/{action_id}", "cases.Action", "case_action"),
+    ("DELETE", "/actions/{action_id}", "cases.Action", "case_action"),
+    ("GET", "/evidence/{evidence_id}/download", "cases.Evidence", "case_evidence"),
+    ("DELETE", "/evidence/{evidence_id}", "cases.Evidence", "case_evidence"),
 ]
+
+
+# c8-support-session-guard (TEN-06, D-49, ADR 0042): every route a support session may call,
+# as (method, path as Ninja registers it under /api/v1). The reads the seven support
+# permissions cover, written out one by one, and nothing else: every other route, a GET
+# added later as much as any write, answers 403 `support_read_only` from
+# `SupportReadOnlyMiddleware` until someone adds it here, under
+# apps/shared/tests_support_routes.py. Deliberately left off: evidence and export downloads,
+# search, Ask, the person's own calendar feeds, member, role, team and key lists, the
+# tenant's profile, footprint and support-access list, proposals, agent runs and the AI log.
+SUPPORT_READ_ROUTES: frozenset[tuple[str, str]] = frozenset(
+    {
+        # library.read: the shared library and its reference lists.
+        ("GET", "/authorities"),
+        ("GET", "/instruments"),
+        ("GET", "/instruments/{instrument_id}"),
+        ("GET", "/instruments/{instrument_id}/provisions"),
+        ("GET", "/obligations"),
+        ("GET", "/obligations/{obligation_id}"),
+        ("GET", "/obligations/{obligation_id}/diff"),
+        ("GET", "/obligations/{obligation_id}/sources"),
+        ("GET", "/provisions/{provision_id}/diff"),
+        ("GET", "/library-updates"),
+        ("GET", "/sources"),
+        ("GET", "/sources/coverage"),
+        ("GET", "/taxonomy/dimensions"),
+        ("GET", "/taxonomy/terms"),
+        # watch.read: the feed, a change and the weekly briefing.
+        ("GET", "/changes"),
+        ("GET", "/changes/{change_id}"),
+        ("GET", "/obligations/{obligation_id}/changes"),
+        ("GET", "/briefings/current"),
+        ("GET", "/briefings/{week_start}"),
+        # roadmap.read: the timeline home, the roadmap and what is coming up.
+        ("GET", "/home"),
+        ("GET", "/roadmap"),
+        ("GET", "/upcoming"),
+        # cases.read: a case's actions, its evidence list and its case file; never a download.
+        ("GET", "/changes/{change_id}/actions"),
+        ("GET", "/changes/{change_id}/evidence"),
+        ("GET", "/changes/{change_id}/case-file"),
+        # audit.read: the bank's audit log, where every one of these reads is written.
+        ("GET", "/audit-events"),
+    }
+)
+# The support session's own two calls, which read nothing of the bank: turning its refresh
+# cookie into the next access token, never past the grant's window, and signing out. Both
+# act on the refresh cookie alone.
+SUPPORT_SESSION_ROUTES: frozenset[tuple[str, str]] = frozenset({("POST", "/auth/refresh"), ("POST", "/auth/sign-out")})

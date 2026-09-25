@@ -22,6 +22,7 @@ import uuid
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
+from apps.shared import permissions as perms
 from apps.shared.audit import AppendOnlyModel
 from apps.shared.fields import CIEmailField
 from apps.shared.tenancy import TenantModel
@@ -60,12 +61,28 @@ class PasskeyDeviceType(enum.StrEnum):
 class SessionKind(enum.StrEnum):
     ENROLMENT = "enrolment"
     FULL = "full"
+    # A platform person reading one bank under a grant it approved (TEN-06, ADR 0042): only
+    # `identity/session_logic.py` mints one, and its token names the kind, so the read-only
+    # guard refuses a route off the allow-list before anything else runs.
+    SUPPORT = "support"
 
 
 class LoginMethod(enum.StrEnum):
     EMAIL_CODE = "email_code"
     PASSKEY = "passkey"
     API_KEY = "api_key"
+    # A personal access token's mint, use and revocation (ACC-03, ADR 0056), logged apart
+    # from key use so the security log shows who acted as themselves through a token.
+    PERSONAL_TOKEN = "personal_token"  # noqa: S105 an enum value, not a credential
+
+
+class CredentialKind(enum.StrEnum):
+    """What an `api_key` row is (ACC-03, D-77, ADR 0056). A service key acts as itself, or
+    as the agent access entry it is bound to; a personal access token acts as the member
+    who minted it and can never step up. One table, one hashing and revocation path."""
+
+    SERVICE = "service"
+    PERSONAL = "personal"
 
 
 class LoginEventKind(enum.StrEnum):
@@ -93,6 +110,13 @@ class LoginEventKind(enum.StrEnum):
     # The only credential in the product that is not a passkey, a session or a key, so its
     # use belongs in the same log; throttled like `key_used` and recording no address.
     FEED_USED = "feed_used"
+    # A personal access token was minted, used (throttled like `key_used`) or revoked
+    # (ACC-03, ADR 0056), and a credential of an agent access entry or a token went over
+    # its rate (ACC-09, AGENT_ACCESS_RATE_PER_MINUTE).
+    TOKEN_CREATED = "token_created"  # noqa: S105 an enum value, not a credential
+    TOKEN_USED = "token_used"  # noqa: S105 an enum value, not a credential
+    TOKEN_REVOKED = "token_revoked"  # noqa: S105 an enum value, not a credential
+    CREDENTIAL_RATE_LIMITED = "credential_rate_limited"
 
 
 # ---------------------------------------------------------------------------------------
@@ -348,7 +372,11 @@ class WebAuthnCredential(models.Model):
 # ---------------------------------------------------------------------------------------
 class UserSession(models.Model):
     """One signed-in device (D-06, ADR 0006). A row behind every refresh so a person or an
-    admin can revoke at once. `tenant` is null for a platform session."""
+    admin can revoke at once. `tenant` is null for a platform session.
+
+    A support session (TEN-06, ADR 0042) names the bank in `tenant` and the grant it stands
+    on in `support_access`, and expires with the grant's window; a CHECK keeps the two
+    columns and the kind together."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sessions")
@@ -364,10 +392,23 @@ class UserSession(models.Model):
     revoked_reason = models.CharField(max_length=64, blank=True)
     ip = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.CharField(max_length=500, blank=True)
+    support_access = models.ForeignKey(
+        "tenants.SupportAccess", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
 
     class Meta:
         db_table = "user_session"
         ordering = ["created_at", "id"]
+        constraints = [
+            # A support session, and only one, stands on a grant in a bank (identity 0009).
+            models.CheckConstraint(
+                condition=(
+                    models.Q(kind=SessionKind.SUPPORT.value, support_access__isnull=False, tenant__isnull=False)
+                    | (~models.Q(kind=SessionKind.SUPPORT.value) & models.Q(support_access__isnull=True))
+                ),
+                name="user_session_support_stands_on_a_grant",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.kind} {self.id}"
@@ -393,11 +434,23 @@ class StepUpAssertion(models.Model):
 
 class ApiKey(models.Model):
     """A scoped key for agents and integrations (ID-10). `tenant` null is a platform key.
-    A key bound to an `agent` names that agent as the actor of everything it writes."""
+    A key bound to an `agent` names that agent as the actor of everything it writes.
+
+    `kind` (ACC-03, identity 0007): every key before it is a `service` key. A service key
+    bound to an `agent_access` entry acts as that entry and needs a tenant; a `personal`
+    access token acts as `acts_as_user`, a member of its tenant, always expires and is
+    never an agent's. Both read only: a credential of an entry, and every token, holds
+    nothing beyond `AGENT_ACCESS_SCOPES` (ADR 0055). CHECKs hold each rule, and the entry
+    and the person are composite `(tenant_id, …)` keys, so neither can be another bank's."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    kind = models.CharField(max_length=16, choices=_choices(CredentialKind), default=CredentialKind.SERVICE.value)
     agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="api_keys")
+    agent_access = models.ForeignKey(
+        "agents.AgentAccess", null=True, blank=True, on_delete=models.PROTECT, related_name="api_keys"
+    )
+    acts_as_user = models.ForeignKey(User, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     name = models.CharField(max_length=200)
     key_prefix = models.CharField(max_length=8, unique=True)
     key_hash = models.CharField(max_length=64)
@@ -411,6 +464,33 @@ class ApiKey(models.Model):
     class Meta:
         db_table = "api_key"
         ordering = ["created_at", "id"]
+        constraints = [
+            # A token acts as a member of one bank, always expires and is never an agent's;
+            # only a token acts as a person.
+            models.CheckConstraint(
+                condition=models.Q(kind=CredentialKind.SERVICE.value, acts_as_user__isnull=True)
+                | models.Q(
+                    kind=CredentialKind.PERSONAL.value,
+                    tenant__isnull=False,
+                    acts_as_user__isnull=False,
+                    expires_at__isnull=False,
+                    agent__isnull=True,
+                ),
+                name="api_key_personal_token_fenced",
+            ),
+            # An entry is a bank's, so its key is too, and it is never one of our agents.
+            models.CheckConstraint(
+                condition=models.Q(agent_access__isnull=True)
+                | models.Q(tenant__isnull=False, agent__isnull=True),
+                name="api_key_entry_key_is_a_tenant_key",
+            ),
+            # A credential of an entry, and every token, reads and nothing else (ADR 0055).
+            models.CheckConstraint(
+                condition=models.Q(kind=CredentialKind.SERVICE.value, agent_access__isnull=True)
+                | models.Q(scopes__contained_by=sorted(perms.AGENT_ACCESS_SCOPES)),
+                name="api_key_agent_access_reads_only",
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.name

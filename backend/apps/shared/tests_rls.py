@@ -206,6 +206,12 @@ TENANT_ONLY_TABLES = [
     # c8-teams-model (tenants 0003, TEN-03): a person in a team. Both keys are composite
     # (apps/tenants/tests_team_models.py proves the database refuses a cross-tenant one).
     "team_member",
+    # acc-foundation (agents 0006, ACC-01, ACC-02): the agents a bank runs itself and the
+    # departments and products narrowing each (apps/agents/tests_agent_access_models.py
+    # proves the composite keys refuse another bank's row).
+    "agent_access",
+    "agent_access_department",
+    "agent_access_product",
 ]
 
 # The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the

@@ -610,12 +610,26 @@ class IdentityScenarioTests(ScenarioTestCase):
         A tenant can require attested device-bound authenticators (ID-07).
         """
 
-    @skip("pending: ID-S17 (ID-08, chunk 11)")
     def test_id_s17(self) -> None:
         """ID-S17
 
-        Session limits are tenant policy within platform maximums (ID-08).
+        Session limits are tenant policy within platform maximums (ID-08). The 422 line
+        (an admin's write above the maximum) lands with the security policy routes.
         """
+        from apps.tenants.models import SecurityPolicy
+
+        self.activate(self.tenant)
+        SecurityPolicy.objects.create(tenant=self.tenant, session_idle_minutes=15, session_absolute_hours=8)
+        cookie = sign_in(self.admin, tenant=self.tenant)["HTTP_COOKIE"]
+        refreshed = self._post("/auth/refresh", HTTP_COOKIE=cookie)
+        self.assertEqual(refreshed.status_code, 200, refreshed.content)
+        self.assertAlmostEqual(int(refreshed.cookies[COOKIE]["max-age"]), 8 * 3600, delta=5)
+        with self._later(minutes=16):
+            idle = self._post("/auth/refresh", **self._cookie(refreshed.cookies[COOKIE].value))
+        self.assertEqual(idle.status_code, 401)
+        self.assertEqual(idle.json()["code"], "unauthenticated")
+        self.activate(self.tenant)
+        self.assertEqual(UserSession.objects.get(user=self.admin, tenant=self.tenant).revoked_reason, "idle")
 
     def test_id_s18(self) -> None:
         """ID-S18
@@ -831,7 +845,8 @@ class IdentityScenarioTests(ScenarioTestCase):
         tenancy.clear_tenant()
         platform = agents_testing.agent_key(scopes=tuple(sorted(perms.ALL_SCOPES)))
         bank = factories.api_key(self.tenant, scopes=tuple(sorted(perms.TENANT_KEY_SCOPES)))
-        for probe, holds in ((platform, perms.ALL_SCOPES), (bank, perms.TENANT_KEY_SCOPES)):
+        # A bank's key bound to no agent access entry holds `tenant:read` to no effect (ACC-04).
+        for probe, holds in ((platform, perms.ALL_SCOPES), (bank, perms.TENANT_KEY_SCOPES - {perms.SCOPE_TENANT_READ})):
             resolved = api_keys_logic.resolve_api_key(probe.plain_key)
             assert resolved is not None
             self.assertEqual(resolved.scopes, holds)

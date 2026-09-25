@@ -297,7 +297,9 @@ class SessionTokens(CamelSchema):
             "other route answers 403 `enrolment_only` until a passkey is registered, and that "
             "registration replaces it with a full session. `full`: a normal signed-in session "
             "with the person's own permissions in their bank, or on the platform for platform "
-            "staff."
+            "staff. `support`: platform support reading one bank under a grant the bank approved; it "
+            "reaches the reads the grant allows and nothing else, answering 403 "
+            "`support_read_only` anywhere else and 401 `support_access_ended` once the grant ends."
         )
     )
     expires_in: int = Field(
@@ -307,7 +309,9 @@ class SessionTokens(CamelSchema):
             "before it runs out. The session itself lasts longer: it ends after "
             f"{settings.SESSION_IDLE_MINUTES_DEFAULT} minutes without a refresh or "
             f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after sign-in, whichever comes "
-            "first."
+            "first. Those are the defaults; a bank's security policy may set its own limits, "
+            f"never above {settings.SESSION_IDLE_MINUTES_MAX} minutes and "
+            f"{settings.SESSION_ABSOLUTE_HOURS_MAX} hours."
         )
     )
 
@@ -332,7 +336,8 @@ class RefreshResult(CamelSchema):
             f"{settings.ACCESS_TOKEN_TTL_MINUTES * 60} by default (a setting). It never "
             "outlives the session, which still ends after "
             f"{settings.SESSION_IDLE_MINUTES_DEFAULT} idle minutes or "
-            f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after sign-in."
+            f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after sign-in by default, or "
+            "at the limits of the bank's security policy, which apply at the next refresh."
         )
     )
 
@@ -1271,8 +1276,9 @@ class SessionOut(CamelSchema):
     created_at: datetime = Field(
         description=(
             "When the person signed in on this device, as a UTC timestamp. The session ends "
-            f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after it at the latest (a "
-            "setting)."
+            f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after it at the latest by default "
+            "(a setting), or at the bank's own limit, never later than "
+            f"{settings.SESSION_ABSOLUTE_HOURS_MAX} hours."
         )
     )
     last_seen_at: datetime = Field(
@@ -1281,7 +1287,8 @@ class SessionOut(CamelSchema):
             "recent use that lags real activity by up to the access token's "
             f"{settings.ACCESS_TOKEN_TTL_MINUTES}-minute lifetime. After "
             f"{settings.SESSION_IDLE_MINUTES_DEFAULT} minutes without a refresh the session "
-            "ends."
+            "ends, or after the bank's own idle limit, never longer than "
+            f"{settings.SESSION_IDLE_MINUTES_MAX} minutes."
         )
     )
     ip: str | None = Field(
@@ -1807,8 +1814,8 @@ class PermissionOut(CamelSchema):
 _TENANT_KEY_SCOPES_TEXT = (
     "`library:read` reads the shared library's instruments, provisions and obligations; "
     "`search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; "
-    "`tenant:read` is set aside for reading the bank's own profile, and no route reads with it "
-    "yet; and `proposals:write` files a proposal to the shared library, which changes nothing "
+    "`tenant:read` reads the bank's register only as an agent access entry, so a key bound to "
+    "no entry holds it to no effect; and `proposals:write` files a proposal to the shared library, which changes nothing "
     "until someone independent approves it. No scope "
     "writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and "
     "`proposals:review` belong to the platform's own agents and are refused on a bank's key."
