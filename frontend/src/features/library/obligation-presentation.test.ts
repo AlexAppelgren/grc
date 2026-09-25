@@ -34,7 +34,6 @@ const esma: ObligationFacts = {
   binding: false,
   applicability: { key: 'applies', kind: 'applies', label: 'Applies' },
   complianceStatus: { key: 'gap', kind: 'gap', label: 'Gap' },
-  changeWaitingForApproval: true,
   libraryTags: [{ key: 'appropriateness', label: 'Appropriateness' }],
   tenantTags: [{ key: 'digital', label: 'Digital investing' }],
 };
@@ -49,13 +48,12 @@ describe('presentObligation row', () => {
     ]);
   });
 
-  it('matches the card: Guidance when not binding, Change waiting for approval, then tags', () => {
+  it('matches the card: Guidance when not binding, then tags', () => {
     expect(presentObligation(esma, 'row', t).map((p) => [p.label, p.tone, p.outlined ?? false])).toEqual([
       ['ESMAGL', 'brand', false],
       ['Guidance', 'information', false],
       ['Applies', 'positive', false],
       ['Gap', 'negative', false],
-      ['Change waiting for approval', 'warning', false],
       ['Appropriateness', 'brand', false],
       ['Digital investing', 'information', true],
     ]);

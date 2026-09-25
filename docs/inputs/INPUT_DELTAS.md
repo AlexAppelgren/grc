@@ -553,7 +553,7 @@ Chunk 3 (library and inventory), 2026-09-19:
   `pendingApplicability` and `complianceStatus` are null until the register (chunk 8), as
   are the designed `applicability`, `riskRating` and `owner` and the `applicability`,
   `complianceStatus`, `ownerId`, `hasOpenChanges` and `reviewDueBefore` filters. The tag
-  filter is deferred. A person with `library.read` in their tenant, or an API key with
+  filter is deferred (closed 2026-09-25, "Chunk 10" below). A person with `library.read` in their tenant, or an API key with
   `library:read`.
 
 Chunk 7 (the search and ask contract), 2026-09-19:
@@ -969,6 +969,25 @@ behind their real gates and answer 501 `not_built` until `collab/inbox.py`,
   `comments.write` checked by the route on the write; `PATCH` and `DELETE` carry
   `@requires_permission("comments.write")` and leave the author check to the logic. A
   platform session belongs to no bank and gets 404.
+
+Chunk 10 (the obligation row's R2 fields, c10-tag-filters-and-limits), 2026-09-25:
+
+- `GET /obligations` gains the deferred tag filter as two repeatable filters, because a row
+  carries two kinds of tag: `tag` over the library's own tag keys (the row's `tags`) and
+  `tenantTag` over the caller's bank's own `tenant_tag` keys. Every tag named must be on
+  the obligation (AND, like `term`), at most `LIBRARY_TERM_FILTER_MAX` of each; a key that
+  names no tag answers 422 `unknown_key` naming each one, and a key that belongs to no bank
+  sending `tenantTag` answers 422 `unknown_filter` (without it, such a key reads 404 as
+  before). The row and `GET /obligations/{id}` gain `tenantTags[{key, kind, label}]`, read
+  for the page in one query and never shared with another bank, and `privateToUs`, true
+  only on a record the caller's bank owns; `GET /instruments` and `GET /instruments/{id}`
+  gain `privateToUs` too.
+- `pendingApplicability` is gone from the row (D-75): an applicability change is one
+  person's decision, so no request ever waits on a row, and a field that could only answer
+  null is dropped rather than kept.
+- Every string filter of `GET /obligations` and `GET /instruments` is at most 80 characters
+  (`instrument`, `dutyType`, `regime`, each `term`, `tag` and `tenantTag` item), as the key
+  columns are; a longer one answers 422 `validation_error` (hardening H27).
 
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
