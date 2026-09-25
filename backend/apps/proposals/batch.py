@@ -12,7 +12,17 @@ approved: the `If-Match` rule, applied to a batch.
 the seed all file through it. It writes proposal rows only; a preview writes nothing into
 the library, whose rows are read through apps/library/reading.py. Re-tagging is the
 platform's (AGT-05): a bank's session or key never reaches it, and the rows carry no tenant
-content. `decide()` is declared and answers 501 until the decision half is built.
+content.
+
+`decide()` is the decision half (PRO-S8): a second person holding `proposals.review`, with a
+fresh passkey, approves or rejects rows one by one and gives every row left pending one
+decision. Approved rows are written by `apply.apply()` inside the proposal door; a rejected
+row names a live reason from the `rejection_reason` list. One audit row per row and one more
+naming every row's outcome, the library writes and their re-index commit together or not at
+all. Who decides is a person: an agent reviewer is refused with 409
+`person_review_required`, and the proposer with 409 `four_eyes_violation` before a single
+row moves, beside the row trigger and the parent's `proposal_four_eyes` check, which stay
+the database's word on it.
 """
 
 from __future__ import annotations
@@ -24,13 +34,14 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
+from django.utils import timezone
 
 from apps.agents import runs
 from apps.agents.screen import screen_all
 from apps.library.reading import active_shared_obligations, obligation_headings, obligation_scope_terms, terms_of, unknown_provision_keys
 from apps.proposals import logic, standards
-from apps.proposals.logic import Proposer
-from apps.proposals.models import BatchRowDecision, Proposal, ProposalBatchRow, ProposalKind, ProposalStatus
+from apps.proposals.logic import Proposer, Reviewer
+from apps.proposals.models import DECISION_FIELDS, BatchRowDecision, Proposal, ProposalBatchRow, ProposalKind, ProposalStatus
 from apps.proposals.schemas import (
     ObligationScopePayload,
     ProposalActorRef,
@@ -43,6 +54,7 @@ from apps.proposals.schemas import (
 from apps.shared import tenancy
 from apps.shared.audit import record
 from apps.shared.errors import ProblemError
+from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.terms_logic import refuse_mirrored
 
 # What a re-tag row changes, as `target_type` names a single proposal's record.
@@ -290,8 +302,162 @@ def read(proposal: Proposal, order: list[str]) -> ProposalBatch:
     return ProposalBatch(**dict(logic.row(proposal)), rows=out)
 
 
-def decide(*, proposal: Proposal, decision: ProposalBatchDecision, reviewer: Any, step_up_assertion_id: uuid.UUID) -> Proposal:
-    """Decide a batch whole or row by row (PRO-S8). Declared ahead of its logic, which the
-    decision half of the batch work fills: until then it answers 501 `not_built`, behind the
-    route's real gate."""
-    raise ProblemError(status=501, code="not_built", detail="Deciding a batch is not built yet.")
+DECISIONS = (BatchRowDecision.APPROVED.value, BatchRowDecision.REJECTED.value)
+
+
+def _reason(decision: str, code: str, reasons: dict[str, Any]) -> Any:
+    """The `rejection_reason` row a rejection names, or None for an approval. A rejection
+    without a live reason is 422 `reason_required`, as a single proposal's is; an approval
+    that names one is a contradiction, 422 `validation_error`."""
+    if decision not in DECISIONS:
+        raise ValidationError(f"{decision!r} is not a decision. Valid decisions: {', '.join(DECISIONS)}.", code="validation_error")
+    code = code.strip()
+    if decision == BatchRowDecision.APPROVED.value:
+        if code:
+            raise ValidationError("An approval takes no rejection reason.", code="validation_error")
+        return None
+    if code not in reasons:
+        reasons[code] = REGISTRY[logic.REJECTION_REASON_LIST].model.objects.filter(key=code, active=True).first() if code else None  # ordering: unique key, at most one row
+    if reasons[code] is None:
+        raise ValidationError("Say why: choose a live reason from the rejection reason list for every rejected row.", code="reason_required")
+    return reasons[code]
+
+
+def _decisions(decision: ProposalBatchDecision) -> tuple[dict[uuid.UUID, tuple[str, Any]], tuple[str, Any] | None]:
+    """The body as decisions with their reason rows, checked before anything is locked."""
+    reasons: dict[str, Any] = {}
+    named: dict[uuid.UUID, tuple[str, Any]] = {}
+    for row in decision.rows:
+        if row.row_id in named:
+            raise ValidationError(f"Name each row once. Repeated: {row.row_id}.", code="validation_error")
+        named[row.row_id] = (row.decision, _reason(row.decision, row.rejection_code, reasons))
+    rest = None if decision.rest is None else (decision.rest, _reason(decision.rest, decision.rest_rejection_code, reasons))
+    if decision.rest is None and decision.rest_rejection_code.strip():
+        raise ValidationError("restRejectionCode goes with a rest that is rejected.", code="validation_error")
+    if not named and rest is None:
+        raise ValidationError("Decide at least one row, or give the rest a decision.", code="validation_error")
+    return named, rest
+
+
+def decide(*, proposal: Proposal, decision: ProposalBatchDecision, reviewer: Reviewer, step_up_assertion_id: uuid.UUID | None) -> Proposal:
+    """Decide a batch whole or row by row (PRO-04, PRO-S8), in one transaction of its own.
+
+    Refused before anything is locked or written: an agent reviewer (409
+    `person_review_required`: a re-tag batch is decided by a person), a caller inside a bank
+    (403), and a malformed body. Then, under the batch's lock, a decided batch is 409
+    `invalid_transition`, and the batch's proposer is 409 `four_eyes_violation`, the call
+    deciding nothing at all. The proposer is the person who asked for the re-tag: the
+    console's form files it in their name. A row named that does not belong to the batch is
+    422 `unknown_key`, and one already decided is 409 `invalid_transition`.
+
+    A pending row whose record was retired or moved since the batch was filed is stale: named
+    for approval it is 409 `stale_write` and nothing is decided; under an approved `rest` it
+    is left pending, so the others still apply and the reviewer rejects it. The batch closes
+    only when no row is pending: approved if any row was, else rejected with the rows' shared
+    reason. The note stays on the proposal row, never in an audit value."""
+    from apps.proposals import apply
+
+    if reviewer.user is None:
+        raise ValidationError("A person decides a batch: an agent cannot approve or reject its rows.", code="person_review_required")
+    if tenancy.database_tenant_id() is not None:
+        raise ProblemError(status=403, code="permission_denied", detail="A bank does not decide the shared library's batches.")
+    named, rest = _decisions(decision)
+    with transaction.atomic():
+        proposal.refresh_from_db(from_queryset=Proposal.objects.select_for_update())
+        if proposal.status != ProposalStatus.OPEN.value:
+            raise ValidationError("This batch has already been decided.", code="invalid_transition")
+        if proposal.proposed_by_user_id == reviewer.user.id:
+            raise ValidationError("A batch is decided by someone other than the person who asked for it.", code="four_eyes_violation")
+        rows = list(
+            ProposalBatchRow.objects.select_for_update(of=("self",))
+            .select_related("rejection_reason")
+            .filter(proposal=proposal)
+            .order_by("subject_type", "subject_id")
+        )
+        unknown = sorted(str(row_id) for row_id in set(named) - {row.id for row in rows})
+        if unknown:
+            raise ValidationError(f"Not a row of this batch: {', '.join(unknown)}.", code="unknown_key")
+        pending = [row for row in rows if row.decision == BatchRowDecision.PENDING.value]
+        decided = [row for row in rows if row.id in named and row.decision != BatchRowDecision.PENDING.value]
+        if decided:
+            raise ValidationError("A row is decided once, and this call names one already decided.", code="invalid_transition")
+        ids = [row.subject_id for row in pending]
+        in_force = active_shared_obligations(ids)
+        live = obligation_scope_terms(ids)
+        stale = {row.id for row in pending if row.subject_id not in in_force or sorted(live.get(row.subject_id, {})) != row.before.get("terms", [])}
+        chosen: list[tuple[ProposalBatchRow, str, Any]] = []
+        for row in pending:
+            given = named.get(row.id, rest)
+            if given is None:
+                continue
+            if given[0] == BatchRowDecision.APPROVED.value and row.id in stale:
+                if row.id in named:
+                    raise ValidationError("A row whose record changed after the batch was filed cannot be approved: reject it.", code="stale_write")
+                continue
+            chosen.append((row, *given))
+        if not chosen:
+            raise ValidationError("Every row left to approve changed after the batch was filed: reject them.", code="stale_write")
+        approved = [row for row, outcome, _ in chosen if outcome == BatchRowDecision.APPROVED.value]
+        if approved:
+            apply.apply(proposal, actor=reviewer.actor, reviewer=reviewer, step_up=step_up_assertion_id, rows=approved)
+        now = timezone.now()
+        for row, outcome, reason in chosen:
+            row.decision, row.rejection_reason, row.decided_by, row.decided_at = outcome, reason, reviewer.user, now
+            row.save(update_fields=list(DECISION_FIELDS))
+            if reason is not None:
+                record(
+                    action="proposal.batch_row_rejected",
+                    actor=reviewer.actor,
+                    subject_type=OBLIGATION,
+                    subject_id=row.subject_id,
+                    subject_title=proposal.title,
+                    summary=f"Kept the scope as it is: a row of {proposal.title} was rejected.",
+                    tenant_id=None,
+                    before={"terms": row.before.get("terms", [])},
+                    after={"decision": outcome, "rejectionCode": reason.key, "proposal": str(proposal.id), "batchRow": str(row.id)},
+                    step_up_assertion_id=step_up_assertion_id,
+                )
+        _close(proposal, rows, reviewer, now, decision.note.strip())
+        record(
+            action="proposal.batch_decided",
+            actor=reviewer.actor,
+            subject_type=logic.SUBJECT_TYPE,
+            subject_id=proposal.id,
+            subject_title=proposal.title,
+            summary=f"Decided {len(chosen)} of {len(rows)} rows: {proposal.title}",
+            tenant_id=None,
+            before={"status": ProposalStatus.OPEN.value},
+            after={
+                "status": proposal.status,
+                "rows": [
+                    {
+                        "rowId": str(row.id),
+                        "subjectId": str(row.subject_id),
+                        "decision": row.decision,
+                        "rejectionCode": "" if row.rejection_reason is None else row.rejection_reason.key,
+                    }
+                    for row in rows
+                ],
+            },
+            step_up_assertion_id=step_up_assertion_id,
+        )
+    return proposal
+
+
+def _close(proposal: Proposal, rows: list[ProposalBatchRow], reviewer: Reviewer, now: Any, note: str) -> None:
+    """Keep the reviewer's note on the batch, and close it once no row is pending: approved
+    if any row was, else rejected with the reason its rows share (none when they differ).
+    The parent's `proposal_four_eyes` check refuses the proposer here too."""
+    fields = ["review_note"] if note else []
+    proposal.review_note = note or proposal.review_note
+    if all(row.decision != BatchRowDecision.PENDING.value for row in rows):
+        approved = any(row.decision == BatchRowDecision.APPROVED.value for row in rows)
+        reasons = {row.rejection_reason.key for row in rows if row.rejection_reason is not None}
+        proposal.status = ProposalStatus.APPROVED.value if approved else ProposalStatus.REJECTED.value
+        proposal.reviewed_by = reviewer.user
+        proposal.reviewed_at = now
+        proposal.applied_at = now if approved else None
+        proposal.rejection_code = "" if approved or len(reasons) != 1 else reasons.pop()
+        fields += ["status", "reviewed_by", "reviewed_at", "applied_at", "rejection_code"]
+    if fields:
+        proposal.save(update_fields=fields)

@@ -301,6 +301,14 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/proposals/batch.py record(logic.SUBJECT_TYPE) tenant_id=None actor=proposer.actor title=existing.title": (
         "The retry of the same platform-only batch filing: the same platform proposer and the title it filed."
     ),
+    # c11-proposal-batches-decide (PRO-04, PRO-S8).
+    "apps/proposals/batch.py record(logic.SUBJECT_TYPE) tenant_id=None actor=reviewer.actor title=proposal.title": (
+        "A batch's decision is a platform person's (proposals.review, a session route, and decide refuses "
+        "a caller inside a bank); the title is the platform-filed batch's."
+    ),
+    "apps/proposals/batch.py record(logic.OBLIGATION_TARGET) tenant_id=None actor=reviewer.actor title=proposal.title": (
+        "A rejected row of the same platform-only decision, titled by the platform-filed batch."
+    ),
 }
 
 
