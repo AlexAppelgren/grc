@@ -29,6 +29,7 @@ import uuid
 from typing import Any
 
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 
 from apps.cases import reading
@@ -106,9 +107,12 @@ def _write(case: ChangeCase, *, actor: Actor, user: Any, text: str, action: str)
     case.so_what_confirmed = True
     case.so_what_confirmed_by = user
     case.so_what_confirmed_at = timezone.now()
+    # No `If-Match` here, but the case has changed: a workflow write made from a copy read
+    # before this one must be told it is stale (CAS-08).
+    case.version = F("version") + 1
     with transaction.atomic():
         case.save(
-            update_fields=["so_what_text", "so_what_confirmed", "so_what_confirmed_by", "so_what_confirmed_at"]
+            update_fields=["so_what_text", "so_what_confirmed", "so_what_confirmed_by", "so_what_confirmed_at", "version"]
         )
         record(
             action=action,
