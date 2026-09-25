@@ -516,8 +516,7 @@ def list_tenant_agents(request: HttpRequest, page: Query[PageQuery]) -> Any:
     nothing to the audit log. An empty list is a 200 and means the bank has added none.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `validation_error` (422) when `limit` is above 100. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `validation_error` (422) when `limit` is above 100.
     """
     tenant = caller_tenant(request)
     return tenant_agents.list_tenant_agents(tenant=tenant, limit=page.limit, offset=page.offset)
@@ -536,7 +535,8 @@ def list_tenant_agents(request: HttpRequest, page: Query[PageQuery]) -> Any:
 def create_tenant_agent(request: HttpRequest, body: TenantAgentInput) -> Any:
     """Adds an agent of the bank's own from a definition bleqq offers banks, with its
     cadence and scope; it starts switched off. What it finds stays in the bank's own zone:
-    it never writes the shared library.
+    it never writes the shared library. The plan limits are the most frequent cadence and
+    how many agents of its own a bank may add.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
     event naming the person and the definition.
@@ -544,11 +544,13 @@ def create_tenant_agent(request: HttpRequest, body: TenantAgentInput) -> Any:
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
     naming `agent_definitions.manage` when the definition is one of bleqq's own agents,
     which no bank adds or steers; `unknown_key` (422) for a definition key that does not
-    exist; `validation_error` (422). Published ahead of the logic that will fill it, and
-    answering 501 `not_built` until that ships.
+    exist, or a scope key the vocabulary does not hold, with the valid keys in `validKeys`;
+    `above_plan_limit` (422) for a cadence more frequent than the plan allows, or one agent
+    more than it allows; `duplicate_key` (409) when the bank has already added this
+    definition; `validation_error` (422).
     """
     tenant = caller_tenant(request)
-    return tenant_agents.create_tenant_agent(who=principal(request), tenant=tenant, body=body)
+    return 201, tenant_agents.create_tenant_agent(who=principal(request), tenant=tenant, body=body)
 
 
 @router.patch(
@@ -566,15 +568,16 @@ def update_tenant_agent(
 ) -> Any:
     """Changes what the body sends on one of the bank's own agents: its switch, cadence,
     run day and hour, or scope, and nothing else. Its instructions and tools are never the
-    bank's to change.
+    bank's to change. Switching an agent on needs the bank's monthly cap to be set first.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
     event with the fields before and after.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
     `not_found` (404) for an agent the bank does not have; `unknown_key` (422) for a scope
-    key the vocabulary does not hold; `validation_error` (422). Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    key the vocabulary does not hold, with the valid keys in `validKeys`; `above_plan_limit`
+    (422) for a cadence more frequent than the plan allows; `budget_cap_required` (422) when
+    switching on before the bank has set its monthly cap; `validation_error` (422).
     """
     tenant = caller_tenant(request)
     return tenant_agents.update_tenant_agent(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id, body=body)
@@ -708,8 +711,6 @@ def get_agent_budget(request: HttpRequest) -> Any:
     nothing to the audit log.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until
-    that ships.
     """
     return budget.get_budget(tenant=caller_tenant(request))
 
@@ -725,16 +726,16 @@ def get_agent_budget(request: HttpRequest) -> Any:
 @requires_permission(perms.AGENTS_MANAGE)
 @answers_problems
 def put_agent_budget(request: HttpRequest, body: AgentBudgetInput) -> Any:
-    """Sets the bank's monthly cap on its own agents. A run that would pass the cap does not
-    start, and a cap set below this month's spend pauses the bank's agents until the month
-    turns or the cap rises.
+    """Sets the bank's monthly cap on its own agents; the first time, it creates it. A run
+    that would pass the cap does not start, and a cap at or below this month's spend is
+    accepted and pauses every running agent of the bank's own at once, since a bank must
+    always be able to stop spending. A person resumes them.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
-    event with the cap before and after.
+    event with the cap before and after, and one more for each agent the cap pauses.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `validation_error` (422) for a negative or malformed amount. Published ahead of the
-    logic that will fill it, and answering 501 `not_built` until that ships.
+    `validation_error` (422) for a negative or malformed amount.
     """
     tenant = caller_tenant(request)
     return budget.put_budget(who=principal(request), tenant=tenant, body=body)
