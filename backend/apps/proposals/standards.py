@@ -6,7 +6,8 @@ opt-in dimension (the standards a bank follows). Four rules, each with its own c
 
 - `licensed_text`: no provision and no provision version under a standard, every field
   source on a standard's obligation an https link, never a pasted clause or a provision key,
-  and a new obligation's `ref_label` the standard's official reference, never a clause.
+  and a new obligation's `ref_label` and any proposal's `source_label` the standard's
+  official reference, never a clause (the label lands on the obligation, H35).
 - `one_conformance_obligation`: a new obligation under a standard that already holds an
   active one.
 - `standard_term_required`: a standard's obligation whose scope holds no opt-in term, or
@@ -65,6 +66,10 @@ OFFICIAL_REFERENCE_ONLY = (
     "A standard's obligation is labelled by the standard's official reference, {ref}, and never by a "
     "clause or a control."
 )
+OFFICIAL_SOURCE_LABEL_ONLY = (
+    "A standard's source is named by its official reference, {ref}, and never by a clause, a control or "
+    "quoted text. Give that reference as sourceLabel, or leave it out."
+)
 STANDARD_TERM_REQUIRED = (
     "A standard's obligation carries exactly one standard term, the standard it is for. It carries {count}."
 )
@@ -76,11 +81,13 @@ def check(
     term_ids: Collection[uuid.UUID] | None,
     field_sources: Mapping[str, str],
     ref_label: str | None = None,
+    source_label: str = "",
 ) -> None:
     """Refuse what `kind` may not say about `instrument` (see the module docstring for the
     four codes, all 422). `term_ids` is the obligation's scope as the proposal sets it,
-    resolved, or None when it leaves the scope alone; `field_sources` are the proposal's;
-    `ref_label` is a new obligation's, which under a standard is its official reference."""
+    resolved, or None when it leaves the scope alone; `field_sources` and `source_label` are
+    the proposal's; `ref_label` is a new obligation's. Under a standard both labels are its
+    official reference, and the source label may be left empty."""
     from apps.proposals.logic import is_link
 
     opt_in = 0
@@ -103,10 +110,16 @@ def check(
         raise ValidationError(ONE_CONFORMANCE_REFUSAL, code="one_conformance_obligation")
     if kind in OBLIGATION_KINDS and term_ids is not None and opt_in != 1:
         raise ValidationError(STANDARD_TERM_REQUIRED.format(count=opt_in), code="standard_term_required")
+    if source_label.strip() not in ("", instrument.official_ref):
+        raise ValidationError(OFFICIAL_SOURCE_LABEL_ONLY.format(ref=instrument.official_ref), code="licensed_text")
 
 
 def check_payload(
-    kind: str, target_id: uuid.UUID | None, payload: pydantic.BaseModel, field_sources: Mapping[str, str]
+    kind: str,
+    target_id: uuid.UUID | None,
+    payload: pydantic.BaseModel,
+    field_sources: Mapping[str, str],
+    source_label: str = "",
 ) -> None:
     """`check()` over a parsed payload, for creation and correction: the instrument the
     record sits under, read as the library holds it now, and the scope the payload asks
@@ -124,4 +137,4 @@ def check_payload(
     else:
         return
     term_ids = None if terms is None else [term.id for term in terms_of(terms)] if terms else []
-    check(kind, instrument, term_ids, field_sources, ref_label)
+    check(kind, instrument, term_ids, field_sources, ref_label, source_label)
