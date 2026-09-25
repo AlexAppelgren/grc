@@ -1,12 +1,13 @@
 'use client';
 
-import { useMutation, useQuery, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 
 import * as library from './api';
 import type {
   Instrument,
   InstrumentDetail,
   InstrumentQuery,
+  LibraryRef,
   Obligation,
   ObligationDetail,
   ObligationQuery,
@@ -70,6 +71,31 @@ export function useObligationDiff(obligationId: string, lang: string, enabled: b
  */
 export function useReportObligationProblem(obligationId: string): UseMutationResult<ProblemReportCreated, unknown, ProblemReportBody> {
   return useMutation({ mutationFn: (body) => library.reportObligationProblem(obligationId, body) });
+}
+
+/** One of the bank's tags going on (`on`) or coming off the obligation. */
+export interface ObligationTagChange {
+  tagKey: string;
+  on: boolean;
+}
+
+/**
+ * Tag or untag the obligation (VOC-08). The answer is the record's tags as they
+ * now stand, written into every cached read of this obligation (any "as of":
+ * the bank's tags carry no version); the inventory lists re-read, since their
+ * rows and the tag filter show the same tags.
+ */
+export function useChangeObligationTag(obligationId: string): UseMutationResult<LibraryRef[], unknown, ObligationTagChange> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tagKey, on }) => (on ? library.tagObligation(obligationId, tagKey) : library.untagObligation(obligationId, tagKey)),
+    onSuccess: async (tenantTags) => {
+      queryClient.setQueriesData<ObligationDetail>({ queryKey: ['library', 'obligation', obligationId] }, (old) =>
+        old !== undefined && 'tenantTags' in old ? { ...old, tenantTags } : old,
+      );
+      await queryClient.invalidateQueries({ queryKey: ['library', 'obligations'] });
+    },
+  });
 }
 
 /** Playbook 10: the Instruments tab's own page size, like the obligations list. */
