@@ -123,6 +123,15 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
         {"name": "Watch sweeper", "agentId": str(_ANY_ID), "scopes": ["changes:write"]},
     ),
     "revokeAgentKey": ("POST", f"/agent-keys/{_ANY_ID}/revoke", {}),
+    # Support access (TEN-06, D-49, c8-tenants-contract) is the platform admin's alone: a
+    # library editor is refused. Entering also needs a passkey, a different refusal.
+    "requestConsoleSupportAccess": (
+        "POST",
+        f"/console/tenants/{_ANY_ID}/support-access",
+        {"purpose": "The bank reports that its watch feed stopped updating on Monday.", "ticketRef": "SUP-2511", "hours": 2},
+    ),
+    "listConsoleSupportAccess": ("GET", "/console/support-access", None),
+    "enterConsoleSupportAccess": ("POST", f"/console/support-access/{_ANY_ID}/enter", {}),
     # The definitions a key is bound to, read under the same permission (ID-10, AGT-01).
     "listAgentDefinitions": ("GET", "/agent-definitions", None),
     # The re-verification stamp (chunk 3, INV-S8): a console action on a library record,
