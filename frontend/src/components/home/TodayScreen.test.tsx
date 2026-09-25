@@ -31,6 +31,7 @@ const me: Me = {
   counts: { triage: 3, proposals: 2, assignedToMe: 1, unreadNotifications: 0 },
   lastVisitAt: null,
   notificationPrefs: null,
+  headOf: [],
 };
 
 const fact = (key: string, label: string) => ({ ref: { key, kind: null, label }, confidence: null, suggested: false });
@@ -57,7 +58,7 @@ const lead: Home['lead'] = {
   case: {
     id: 'case-1',
     category: 'new',
-    allowedTransitions: [],
+    subStatus: null,
     footprintMatch: true,
     obligationDecisions: [],
     ownerId: null,

@@ -3,7 +3,7 @@ import { PillRow } from '@/components/ui/PillRow';
 import { presentRoadmapItem } from '@/features/home/roadmap-presentation';
 import { presentInstrument } from '@/features/library/instrument-presentation';
 import { presentObligation, presentScope } from '@/features/library/obligation-presentation';
-import { presentGap } from '@/features/register/gap-presentation';
+import { presentGap } from '@/features/register/register-presentation';
 import { presentChange } from '@/features/watch/change-presentation';
 import { createT, defaultLocale, type Locale } from '@/shared/i18n';
 

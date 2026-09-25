@@ -31,12 +31,15 @@ from apps.shared.audit import record
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.models import Tenant
 from apps.taxonomy.models import CaseStatusCategory
+from apps.tenants.models import OrgUnit, OrgUnitKind
 
 # The two categories a case has finished in (D-13): excluded from "assigned to me" so a
 # closed or dismissed case a person once owned does not sit in their queue forever. The
 # same pair `apps/home/roadmap.py` excludes from the roadmap; identity does not import
 # from home; two lines is not worth a cross-app dependency for.
 _FINISHED_CASES = (CaseStatusCategory.CLOSED.value, CaseStatusCategory.DISMISSED.value)
+
+DEPARTMENT_KINDS = (OrgUnitKind.BUSINESS_AREA.value, OrgUnitKind.BUSINESS_UNIT.value, OrgUnitKind.FUNCTION.value)
 
 
 def _tenant_out(tenant: Tenant | None) -> dict[str, Any] | None:
@@ -67,6 +70,13 @@ def _counts(principal: Principal) -> dict[str, int]:
     return {"triage": triage, "proposals": proposals, "assignedToMe": assigned_to_me, "unreadNotifications": unread}
 
 
+def _head_of(tenant: Tenant, user: User) -> list[dict[str, Any]]:
+    """The active departments the member heads, by name (TEN-02, HOM-05, D-21). A department is
+    a business area, business unit or function; a legal entity or group never is."""
+    units = OrgUnit.objects.filter(tenant=tenant, head_user=user, active=True, kind__in=DEPARTMENT_KINDS).order_by("name", "id")
+    return [{"id": unit.id, "name": unit.name} for unit in units]
+
+
 def notification_prefs(membership: Membership) -> dict[str, bool]:
     """A member's switches as stored (the schema's camelCase keys), with every key they
     never set read as on, so an older row needs no migration (COL-02)."""
@@ -80,6 +90,7 @@ def me(principal: Principal) -> dict[str, Any]:
     roles: list[dict[str, Any]] = []
     last_visit_at = None
     prefs = None
+    head_of: list[dict[str, Any]] = []
     if principal.kind is PrincipalKind.USER and tenant is not None:
         membership = (
             Membership.objects.filter(tenant=tenant, user=user, deactivated_at__isnull=True)
@@ -90,6 +101,7 @@ def me(principal: Principal) -> dict[str, Any]:
             roles = [roles_logic.role_ref(role, order) for role in membership.roles.all()]
             last_visit_at = membership.last_visit_at
             prefs = notification_prefs(membership)
+            head_of = _head_of(tenant, user)
     platform_roles = [
         roles_logic.role_ref(assignment.role, order)
         for assignment in PlatformRoleAssignment.objects.filter(user=user, role__active=True).select_related("role").prefetch_related("role__labels")
@@ -104,6 +116,7 @@ def me(principal: Principal) -> dict[str, Any]:
         "counts": _counts(principal) if principal.tenant_id is not None else None,
         "last_visit_at": last_visit_at,
         "notification_prefs": prefs,
+        "head_of": head_of,
         "roles": roles,
         "permissions": sorted(principal.permissions),
         "platform_roles": platform_roles,

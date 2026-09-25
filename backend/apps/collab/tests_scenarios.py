@@ -9,6 +9,13 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: COL.
 """
 
+import contextlib
+import io
+import json
+import logging
+from collections.abc import Iterator
+from pathlib import Path
+from typing import Any, cast
 from unittest import skip
 
 from apps.collab.tests_participants import run_col_s6, run_col_s7, run_col_s8
@@ -18,23 +25,95 @@ from apps.shared.testing import ScenarioTestCase
 from apps.cases import testing as cases_build
 from apps.cases.models import ChangeCase
 from apps.collab.logic import notify
-from apps.collab.models import Comment, CommentMention, EmailMessage, Notification, NotificationKind
+from apps.collab import comments
+from apps.collab.models import Comment, CommentMention, CommentRevision, EmailMessage, Notification, NotificationKind
 from apps.identity.models import User
-from apps.shared import factories, tenancy
-from apps.shared.testing import sign_in
+from apps.shared import factories, sentry_scrub, tenancy
+from apps.shared import tests_compliance_lint as lint
+from apps.shared.logging import JsonFormatter
+from apps.shared.models import AuditEvent, OutboxEvent
+from apps.shared.testing import AuditAssertingClient, sign_in
 from apps.watch import testing as watch_build
+
+
+@contextlib.contextmanager
+def _captured_logs() -> Iterator[list[str]]:
+    """Every line the application logs meanwhile, at every level, as production writes it."""
+    stream = io.StringIO()
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(JsonFormatter())
+    loggers = [logging.getLogger(name) for name in ("", "apps", "django", "config")]
+    levels = [logger.level for logger in loggers]
+    for logger in loggers:
+        logger.addHandler(handler)
+        logger.setLevel(logging.DEBUG)
+    lines: list[str] = []
+    try:
+        yield lines
+    finally:
+        for logger, level in zip(loggers, levels, strict=True):
+            logger.removeHandler(handler)
+            logger.setLevel(level)
+        lines.extend(line for line in stream.getvalue().splitlines() if line.strip())
 
 
 class CollabScenarioTests(ScenarioTestCase):
     """Scenario tests for apps.collab, one method per @integration scenario."""
 
-    @skip("pending: COL-S1")
+    # COL-S1 (c10-comments-mentions)
     def test_col_s1(self) -> None:
         """COL-S1
 
         A comment with a mention notifies the mentioned person (COL-01).
         Operations: `addComment`, `markNotificationRead`, `markAllNotificationsRead`.
         """
+        # Given a case and a contributor with comments.write
+        watch_build.seed_watch_reference()
+        tenant = factories.tenant(slug="col-s1")
+        other = factories.tenant(slug="col-s1-other")
+        anna = factories.member_user(tenant, roles=("contributor",))
+        erik = factories.member_user(tenant, roles=("reader",))
+        case = cases_build.case(tenant, watch_build.change(title="FI amends the custody rules for client assets"))
+
+        # When they comment "@Erik can you check the custody angle?"
+        response = self.client.post(
+            "/api/v1/comments",
+            data={
+                "subjectType": "change_case",
+                "subjectId": str(case.id),
+                "body": "@Erik can you check the custody angle?",
+                "mentionUserIds": [str(erik.id)],
+            },
+            content_type="application/json",
+            **sign_in(anna, tenant=tenant),
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        self.assertEqual(response.json()["undeliveredMentions"], [])
+
+        # Then the comment is stored against the case with the subject kind and id
+        tenancy.activate(tenant.id)
+        comment = Comment.objects.get(pk=response.json()["id"])
+        self.assertEqual((comment.subject_type, comment.subject_id, comment.author_id), ("change_case", case.id, anna.id))
+        self.assertEqual(list(CommentMention.objects.filter(comment=comment).values_list("user_id", flat=True)), [erik.id])
+
+        # And Erik receives a notification linking to the case
+        (told,) = Notification.objects.filter(user=erik)
+        self.assertEqual((told.kind, told.subject_type, told.subject_id), ("mention", "change_case", case.id))
+        self.assertEqual(told.title, "FI amends the custody rules for client assets")
+        self.assertFalse(Notification.objects.filter(user=anna).exists())
+
+        # And the comment is visible only inside the tenant
+        erik_reads = self.client.get(
+            f"/api/v1/comments?subjectType=change_case&subjectId={case.id}", **sign_in(erik, tenant=tenant)
+        )
+        self.assertEqual([item["id"] for item in erik_reads.json()["items"]], [str(comment.id)])
+        stranger = factories.member_user(other, roles=("compliance_officer",))
+        foreign_read = self.client.get(
+            f"/api/v1/comments?subjectType=change_case&subjectId={case.id}", **sign_in(stranger, tenant=other)
+        )
+        self.assertEqual(foreign_read.status_code, 404)
+        tenancy.activate(other.id)
+        self.assertFalse(Comment.objects.filter(pk=comment.pk).exists())
 
     @skip("pending: COL-S2")
     def test_col_s2(self) -> None:
@@ -57,13 +136,74 @@ class CollabScenarioTests(ScenarioTestCase):
         A user follows a record and hears about changes (COL-03).
         """
 
-    @skip("pending: COL-S5")
+    # COL-S5 (c10-comments-mentions)
     def test_col_s5(self) -> None:
         """COL-S5
 
         Comment text never reaches a log (COL-01).
         Operations: `addComment`, `editComment`, `deleteComment`.
+
+        The sweep reads every line the application logs while the comment is created,
+        edited and deleted, written by the JSON formatter production uses, and also the
+        audit rows, their outbox payloads, the notifications and what Sentry's `before_send`
+        would send for each request and log line. The kept revision is covered with it.
         """
+        watch_build.seed_watch_reference()
+        tenant = factories.tenant(slug="col-s5")
+        anna = factories.member_user(tenant, roles=("contributor",))
+        erik = factories.member_user(tenant, roles=("reader",))
+        case = cases_build.case(tenant, watch_build.change(title="FI amends the custody rules for client assets"))
+        client = AuditAssertingClient()
+        headers = sign_in(anna, tenant=tenant)
+        first, second = "col-s5-first-4b1d custody", "col-s5-second-9e2a custody"
+        requests: list[tuple[str, dict[str, Any]]] = []
+
+        # Given a comment is created, edited and deleted
+        with _captured_logs() as lines:
+            payload = {"subjectType": "change_case", "subjectId": str(case.id), "body": first, "mentionUserIds": [str(erik.id)]}
+            created = client.post("/api/v1/comments", data=payload, content_type="application/json", **headers)
+            self.assertEqual(created.status_code, 201, created.content)
+            comment_id = created.json()["id"]
+            requests.append(("/api/v1/comments", payload))
+            edited = client.patch(f"/api/v1/comments/{comment_id}", data={"body": second}, content_type="application/json", **headers)
+            self.assertEqual(edited.status_code, 200, edited.content)
+            requests.append((f"/api/v1/comments/{comment_id}", {"body": second}))
+            deleted = client.delete(f"/api/v1/comments/{comment_id}", **headers)
+            self.assertEqual(deleted.status_code, 204)
+            requests.append((f"/api/v1/comments/{comment_id}", {}))
+
+        # When the application log for those requests is read
+        written = [json.loads(line) for line in lines]
+        ours = [line for line in written if line["logger"] == "apps.collab.comments"]
+
+        # Then it holds the comment id and the actor id and never the text
+        self.assertEqual([line["message"] for line in ours], ["comment added", "comment edited", "comment deleted"])
+        for line in ours:
+            self.assertEqual((line["comment_id"], line["actor_id"]), (comment_id, str(anna.id)))
+        tenancy.activate(tenant.id)
+        stored = [
+            " ".join(lines),
+            " ".join(f"{e.summary} {e.subject_title} {e.before} {e.after}" for e in AuditEvent.objects.all()),
+            " ".join(str(p) for p in OutboxEvent.objects.values_list("payload", flat=True)),
+            " ".join(Notification.objects.values_list("title", flat=True)),
+        ]
+        events = [
+            {"request": {"url": f"http://testserver{path}", "data": body, "query_string": ""}, "extra": {"body": body.get("body")}}
+            for path, body in requests
+        ] + [{"message": line["message"], "extra": line, "breadcrumbs": {"values": [{"message": line["message"], "data": line}]}} for line in written]
+        scrubbed = json.dumps([sentry_scrub.before_send(cast(Any, event), {}) for event in events])
+        for fragment in ("col-s5-first-4b1d", "col-s5-second-9e2a"):
+            for place, text in zip(("log", "audit", "outbox", "notification"), stored, strict=True):
+                self.assertNotIn(fragment, text, place)
+            self.assertNotIn(fragment, scrubbed, "sentry")
+        # The replaced text is kept by the bank, which is what the sweep had to cover.
+        self.assertEqual(list(CommentRevision.objects.filter(comment_id=comment_id).values_list("body", flat=True)), [first])
+
+        # And the compliance lint fails on a log call that passes a comment body
+        planted = {"apps/collab/comments.py": 'logger.info("comment added", extra={"body": comment.body})\n'}
+        self.assertEqual(lint.flagged(planted), [("apps/collab/comments.py", "log-content")])
+        real = {"apps/collab/comments.py": Path(comments.__file__).read_text(encoding="utf-8")}
+        self.assertEqual(lint.flagged(real), [])
 
     def test_col_s6(self) -> None:
         """COL-S6

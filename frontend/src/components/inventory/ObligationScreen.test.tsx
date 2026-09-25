@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createT } from '@/shared/i18n';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
@@ -16,6 +16,25 @@ import { defaultFormatContext } from '@/shared/utils/format';
 // slots in order, the summary in one language with the machine label, the
 // scope and duty panels, provenance with "Last verified", and every state the
 // card names. Nothing here writes, and nothing claims the duty applies here.
+
+// The register's panels, participants, tags and comments are mounted by the
+// page and filled by their own packages. Here each one stands in as a marker,
+// so the page's mount points and their order are what the tests read.
+const PANELS = ['Applicability', 'Status', 'Gaps', 'Links', 'Participants', 'Units', 'History', 'Tags', 'Comments'] as const;
+function marker(name: string) {
+  return {
+    [`Obligation${name}Panel`]: ({ obligationId }: { obligationId: string }) => <span data-panel-mount={name} data-for={obligationId} />,
+  };
+}
+vi.mock('./ObligationApplicabilityPanel', () => marker('Applicability'));
+vi.mock('./ObligationStatusPanel', () => marker('Status'));
+vi.mock('./ObligationGapsPanel', () => marker('Gaps'));
+vi.mock('./ObligationLinksPanel', () => marker('Links'));
+vi.mock('./ObligationParticipantsPanel', () => marker('Participants'));
+vi.mock('./ObligationUnitsPanel', () => marker('Units'));
+vi.mock('./ObligationHistoryPanel', () => marker('History'));
+vi.mock('./ObligationTagsPanel', () => marker('Tags'));
+vi.mock('./ObligationCommentsPanel', () => marker('Comments'));
 
 const t = createT('en');
 
@@ -224,9 +243,27 @@ describe('ObligationScreen', () => {
     // The reforms filed against this duty, read for this bank (WAT-04); none here.
     expect(within(document.querySelector('[data-related-changes]') as HTMLElement).getByRole('heading', { level: 2, name: 'Related changes' })).toBeInTheDocument();
 
-    // Nothing on the card claims the duty applies here, or that the bank complies.
-    expect(document.querySelectorAll('[data-pending-panel]')).toHaveLength(1);
-    expect(document.querySelector('[data-pending-panel="register"]')).not.toBeNull();
+    // Nothing on the card claims the duty applies here, or that the bank complies:
+    // those are the register panels' own facts.
+    expect(screen.queryByText('Applies')).toBeNull();
+    expect(screen.queryByText('Compliant')).toBeNull();
+  });
+
+  it('mounts every panel once, in the card order, for this obligation, and units only on a standard', async () => {
+    serve(research);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    const mounts = () => [...document.querySelectorAll<HTMLElement>('[data-panel-mount]')];
+    expect(mounts().map((mount) => mount.dataset.panelMount)).toEqual(['Tags', 'Links', 'History', 'Applicability', 'Status', 'Gaps', 'Participants', 'Comments']);
+    expect(mounts().every((mount) => mount.dataset.for === 'ob-1')).toBe(true);
+  });
+
+  it('mounts the units panel on a standard\'s conformance obligation', async () => {
+    serve({ ...research, bindingLevel: { key: 'standard', kind: 'standard', label: 'Standard' } });
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    const names = [...document.querySelectorAll<HTMLElement>('[data-panel-mount]')].map((mount) => mount.dataset.panelMount);
+    expect(names).toEqual(['Tags', 'Links', 'Units', 'History', 'Applicability', 'Status', 'Gaps', 'Participants', 'Comments']);
   });
 
   it('labels the machine translation and puts the original back behind a chip', async () => {
@@ -489,5 +526,18 @@ describe('the diff sentence', () => {
     expect(diffSentence(versionDiff, t, defaultFormatContext)).toBe(
       'Comparing version 1 (in force since it began) with version 2 (in force from 1 Oct 2026).',
     );
+  });
+});
+
+describe('the panel stubs', () => {
+  it('render nothing until their packages fill them', async () => {
+    // Comments is filled (c10-fe-comments-panel) and tested in features/collab/CommentsPanel.test.tsx.
+    for (const name of PANELS.filter((panel) => panel !== 'Comments')) {
+      const actual = await vi.importActual<Record<string, (props: { obligationId: string }) => ReactNode>>(`./Obligation${name}Panel`);
+      const Panel = actual[`Obligation${name}Panel`] as (props: { obligationId: string }) => ReactNode;
+      const { container, unmount } = render(<Panel obligationId="ob-1" />);
+      expect(container).toBeEmptyDOMElement();
+      unmount();
+    }
   });
 });

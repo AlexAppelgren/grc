@@ -309,6 +309,15 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "A bank's own tag going on or off one record: `tenant.id` is a bank's id and never "
         "None, so the row stays in that bank's zone even when the record is a library one."
     ),
+    # c10-comments-mentions: a comment on a record is always the bank's own row.
+    "apps/collab/comments.py record(subject_type) tenant_id=tenant.id actor=actor title=title": (
+        "A comment written on a record: the row always carries the writer's bank, so no other "
+        "bank reads it, and the title is the record's own title, never the comment's text."
+    ),
+    "apps/collab/comments.py record(comment.subject_type) tenant_id=tenant.id actor=actor title=title": (
+        "A comment edited or deleted by its author: the same bank's own row, titled by the "
+        "record the comment is on."
+    ),
 }
 
 

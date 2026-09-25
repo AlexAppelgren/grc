@@ -4,6 +4,8 @@ import enBriefing from '@/messages/briefing/en.json';
 import svBriefing from '@/messages/briefing/sv.json';
 import enCalendarFeeds from '@/messages/calendar-feeds/en.json';
 import svCalendarFeeds from '@/messages/calendar-feeds/sv.json';
+import enCollab from '@/messages/collab/en.json';
+import svCollab from '@/messages/collab/sv.json';
 import enCommon from '@/messages/common/en.json';
 import svCommon from '@/messages/common/sv.json';
 import enConsole from '@/messages/console/en.json';
@@ -26,6 +28,23 @@ import enMe from '@/messages/me/en.json';
 import svMe from '@/messages/me/sv.json';
 import enNav from '@/messages/nav/en.json';
 import svNav from '@/messages/nav/sv.json';
+// c8-fe-obligation-shell: the obligation page's register panels, one namespace each.
+import enObligationApplicability from '@/messages/obligation-applicability/en.json';
+import svObligationApplicability from '@/messages/obligation-applicability/sv.json';
+import enObligationStatus from '@/messages/obligation-status/en.json';
+import svObligationStatus from '@/messages/obligation-status/sv.json';
+import enObligationGaps from '@/messages/obligation-gaps/en.json';
+import svObligationGaps from '@/messages/obligation-gaps/sv.json';
+import enObligationLinks from '@/messages/obligation-links/en.json';
+import svObligationLinks from '@/messages/obligation-links/sv.json';
+import enObligationParticipants from '@/messages/obligation-participants/en.json';
+import svObligationParticipants from '@/messages/obligation-participants/sv.json';
+import enObligationUnits from '@/messages/obligation-units/en.json';
+import svObligationUnits from '@/messages/obligation-units/sv.json';
+import enObligationHistory from '@/messages/obligation-history/en.json';
+import svObligationHistory from '@/messages/obligation-history/sv.json';
+import enObligationTags from '@/messages/obligation-tags/en.json';
+import svObligationTags from '@/messages/obligation-tags/sv.json';
 import enPublic from '@/messages/public/en.json';
 import svPublic from '@/messages/public/sv.json';
 import enRoadmap from '@/messages/roadmap/en.json';
@@ -40,6 +59,23 @@ import enVocabularies from '@/messages/vocabularies/en.json';
 import svVocabularies from '@/messages/vocabularies/sv.json';
 import enWatch from '@/messages/watch/en.json';
 import svWatch from '@/messages/watch/sv.json';
+// The case panels' catalogs (c9-fe-cases-shell).
+import enCases from '@/messages/cases/en.json';
+import svCases from '@/messages/cases/sv.json';
+import enCaseTriage from '@/messages/case-triage/en.json';
+import svCaseTriage from '@/messages/case-triage/sv.json';
+import enCaseAssessment from '@/messages/case-assessment/en.json';
+import svCaseAssessment from '@/messages/case-assessment/sv.json';
+import enCaseActions from '@/messages/case-actions/en.json';
+import svCaseActions from '@/messages/case-actions/sv.json';
+import enCaseEvidence from '@/messages/case-evidence/en.json';
+import svCaseEvidence from '@/messages/case-evidence/sv.json';
+import enCaseSignoff from '@/messages/case-signoff/en.json';
+import svCaseSignoff from '@/messages/case-signoff/sv.json';
+import enCaseFile from '@/messages/case-file/en.json';
+import svCaseFile from '@/messages/case-file/sv.json';
+import enCaseParticipants from '@/messages/case-participants/en.json';
+import svCaseParticipants from '@/messages/case-participants/sv.json';
 
 // One catalog per UI language (playbook 6.5), stored as one file pair per
 // feature namespace under src/messages/<namespace>/ so that packages owning
@@ -51,6 +87,7 @@ const en = {
   ...enAuth,
   ...enBriefing,
   ...enCalendarFeeds,
+  ...enCollab,
   ...enCommon,
   ...enConsole,
   ...enConsoleAgentKeys,
@@ -62,6 +99,15 @@ const en = {
   ...enLibrary,
   ...enMe,
   ...enNav,
+  // c8-fe-obligation-shell
+  ...enObligationApplicability,
+  ...enObligationStatus,
+  ...enObligationGaps,
+  ...enObligationLinks,
+  ...enObligationParticipants,
+  ...enObligationUnits,
+  ...enObligationHistory,
+  ...enObligationTags,
   ...enPublic,
   ...enRoadmap,
   ...enSearch,
@@ -69,12 +115,21 @@ const en = {
   ...enToday,
   ...enVocabularies,
   ...enWatch,
+  ...enCases,
+  ...enCaseTriage,
+  ...enCaseAssessment,
+  ...enCaseActions,
+  ...enCaseEvidence,
+  ...enCaseSignoff,
+  ...enCaseFile,
+  ...enCaseParticipants,
 };
 
 const sv = {
   ...svAuth,
   ...svBriefing,
   ...svCalendarFeeds,
+  ...svCollab,
   ...svCommon,
   ...svConsole,
   ...svConsoleAgentKeys,
@@ -86,6 +141,15 @@ const sv = {
   ...svLibrary,
   ...svMe,
   ...svNav,
+  // c8-fe-obligation-shell
+  ...svObligationApplicability,
+  ...svObligationStatus,
+  ...svObligationGaps,
+  ...svObligationLinks,
+  ...svObligationParticipants,
+  ...svObligationUnits,
+  ...svObligationHistory,
+  ...svObligationTags,
   ...svPublic,
   ...svRoadmap,
   ...svSearch,
@@ -93,6 +157,14 @@ const sv = {
   ...svToday,
   ...svVocabularies,
   ...svWatch,
+  ...svCases,
+  ...svCaseTriage,
+  ...svCaseAssessment,
+  ...svCaseActions,
+  ...svCaseEvidence,
+  ...svCaseSignoff,
+  ...svCaseFile,
+  ...svCaseParticipants,
 };
 
 export const locales = ['en', 'sv'] as const;

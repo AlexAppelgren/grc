@@ -124,6 +124,8 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `LIBRARY_UPDATES_DEFAULT_DAYS` | api | `30` | `30` | `30` | How far back `GET /library-updates` looks for a reader who has never marked the library as seen (PRO-03). Once they have, their own bookmark is the start and this is not used. Raise it and a first visit reads further back; lower it and a reader returning from leave sees less than they were away |
 | `CREDENTIAL_POLICY_NOTICE_DAYS` | api | `14` | `14` | `14` | How many days ahead a tightened credential policy takes effect by default (ID-07, ADR 0048), so members can enrol a device-bound passkey before theirs stop working. The tenant's own `security_policy.device_bound_from` holds the date it chose |
 | `BULK_TAGGING_MAX_RECORDS` | api | `200` | `200` | `200` | How many distinct records one bulk tagging preview or batch may name (VOC-08). A list page holds at most 100 rows, so this covers two pages' selection, and the one audit event a batch writes stays readable. Above it both answer 422 `too_many_records` and nothing is tagged |
+| `COMMENT_MAX_CHARS` | api | `4000` | `4000` | `4000` | The longest comment a person may write on a record, in characters (COL-01). A longer one is refused with a 422 and nothing is stored. It bounds what one request stores and what a thread costs to read; lower it and a pasted paragraph that was accepted yesterday is refused today |
+| `COMMENT_EDIT_MINUTES` | api | `15` | `15` | `15` | How many minutes after writing a comment its author may still correct it (COL-01). Afterwards it can be deleted but not edited (409 `edit_window_closed`), so colleagues never find a comment rewritten under them long after they read it. Every edit keeps the text it replaced |
 
 ## Web app
 

@@ -1,4 +1,5 @@
 import type { PillTone } from '@/components/ui/pill-tones';
+import type { components } from '@/types/api.generated';
 
 // Tone by kind and by slot (design/system/pills-and-labels.md, "Where tone
 // comes from"). Kinds are the fixed enums behind a severity scale; the
@@ -112,12 +113,63 @@ export const aiFeedbackTone: Record<AiFeedbackKind, PillTone> = {
   wrong: 'warning',
 };
 
+// COL-02 (c10-fe-collab-layer): why a person is told, as the API's
+// `CollabNotification.kind` names it (design/screens/tenant-notifications.html).
+// A neutral fact is information; something waiting on the reader is warning;
+// the overdue end of the scale is negative; what kind of change it is reads
+// notice, as a change type does. Typed against the generated kind, so a kind
+// the backend adds fails `tsc` here until it has a tone.
+export type NotificationKind = components['schemas']['CollabNotification']['kind'];
+
+export const notificationKindTone: Record<NotificationKind, PillTone> = {
+  mention: 'information',
+  assigned: 'information',
+  participant_added: 'information',
+  signoff_requested: 'warning',
+  approval_requested: 'warning',
+  due_soon: 'warning',
+  review_due: 'warning',
+  proposal_waiting: 'warning',
+  overdue: 'negative',
+  escalation: 'negative',
+  involved_item_changed: 'notice',
+  saved_search_hit: 'notice',
+};
+
+// CAS-05 (c9-fe-cases-shell): a piece of evidence's malware scan, as the API
+// names it (`ScanState`). A file still being checked is a fact about where it
+// is (notice), a checked file is good, a scan that could not finish needs a
+// look, and a file refused for malware is bad (design/system/pills-and-labels.md,
+// "Case work").
+export type ScanStateKind = 'pending' | 'clean' | 'error' | 'infected';
+
+export const scanStateTone: Record<ScanStateKind, PillTone> = {
+  pending: 'notice',
+  clean: 'positive',
+  error: 'warning',
+  infected: 'negative',
+};
+
 // "Applies" is positive on the system card's obligation row; the other two
 // are neutral facts.
 export const applicabilityTone: Record<ApplicabilityKind, PillTone> = {
   applies: 'positive',
   does_not_apply: 'information',
   not_assessed: 'information',
+};
+
+// c8-fe-obligation-shell, REG-02: a risk rating, a row of the bank's own
+// `risk_rating` list. Risk reads as a neutral fact on every card
+// (design/system/pills-and-labels.md, `information`), whatever its place on
+// the scale: it says how much is at stake, not how the bank is doing. A row
+// whose list carries no kind reads as the lowest does.
+export type RiskKind = 'low' | 'medium' | 'high' | 'critical';
+
+export const riskTone: Record<RiskKind, PillTone> = {
+  low: 'information',
+  medium: 'information',
+  high: 'information',
+  critical: 'information',
 };
 
 // Slot tones: fixed by where the pill sits. A header's "Guidance, comply or
@@ -175,4 +227,7 @@ export const slotTone = {
   // AGT-07: a proposal carrying text the injection screen flagged waits for a person,
   // so it needs attention; it is not itself bad.
   riskFlagged: 'warning',
+  // CAS-04 (c9-fe-cases-shell): an open action past its due date, computed
+  // against the tenant-local today. A due date still ahead shows no pill.
+  overdue: 'negative',
 } as const satisfies Record<string, PillTone>;

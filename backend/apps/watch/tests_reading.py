@@ -252,7 +252,8 @@ class FeedTests(WatchReadFixture):
         self.assertFalse(case["soWhatConfirmed"])
         self.assertIsNone(case["soWhatConfirmedAt"])
         self.assertIsNone(case["ownerId"])
-        self.assertEqual(case["allowedTransitions"], [], "the workflow that would move a case is chunk 9")
+        self.assertIsNone(case["subStatus"])
+        self.assertNotIn("allowedTransitions", case, "the moves are the change page's workflow block, not the feed's")
         self.assertEqual(
             case["obligationDecisions"],
             [{"obligationId": str(self.obligation.id), "decision": "accepted", "decidedAt": case["obligationDecisions"][0]["decidedAt"], "decidedByName": None}],

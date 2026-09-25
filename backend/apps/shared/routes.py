@@ -61,4 +61,32 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # tenant A, so the obligation itself is invisible to tenant B.
     ("GET", "/obligations/{obligation_id}/participants", "collab.Participant", "obligation_participant"),
     ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}", "collab.Participant", "obligation_participant"),
+    # c9-case-contract: the workflow routes whose request an empty body satisfies. Each
+    # loads the case under row-level security before its stub answers 501, so another
+    # bank's case, action or evidence is a 404 now and stays one when the logic lands. The
+    # routes that need a body are proven the same way in apps/cases/tests_contract.py.
+    ("POST", "/changes/{change_id}/restore", "cases.ChangeCase", "case_change"),
+    ("POST", "/changes/{change_id}/assessment/start", "cases.ChangeCase", "case_change"),
+    ("GET", "/changes/{change_id}/actions", "cases.ChangeCase", "case_change"),
+    ("GET", "/changes/{change_id}/evidence", "cases.ChangeCase", "case_change"),
+    ("POST", "/changes/{change_id}/signoff/request", "cases.ChangeCase", "case_change"),
+    ("POST", "/changes/{change_id}/signoff/approve", "cases.ChangeCase", "case_change"),
+    ("POST", "/changes/{change_id}/signoff/send-back", "cases.ChangeCase", "case_change"),
+    ("GET", "/changes/{change_id}/case-file", "cases.ChangeCase", "case_change"),
+    ("PATCH", "/actions/{action_id}", "cases.Action", "case_action"),
+    ("DELETE", "/actions/{action_id}", "cases.Action", "case_action"),
+    ("GET", "/evidence/{evidence_id}/download", "cases.Evidence", "case_evidence"),
+    ("DELETE", "/evidence/{evidence_id}", "cases.Evidence", "case_evidence"),
+    # c8-tenants-contract (TEN-02, TEN-03, TEN-05, TEN-06). The licence create is proved in
+    # apps/tenants/tests_api_contract.py: it refuses this guard's empty body before it loads.
+    ("PATCH", "/tenant/org-units/{org_unit_id}", "tenants.OrgUnit", "org_unit"),
+    ("GET", "/tenant/org-units/{org_unit_id}/licences", "tenants.OrgUnit", "org_unit"),
+    ("PATCH", "/tenant/licences/{licence_id}", "tenants.Licence", "licence"),
+    ("PATCH", "/tenant/products/{product_id}", "tenants.TenantProduct", "tenant_product"),
+    ("GET", "/tenant/teams/{key}/members", "taxonomy.Team", "team_key"),
+    ("GET", "/tenant/members/{user_id}/open-work", "identity.Membership", "member_user"),
+    ("POST", "/tenant/members/{user_id}/remove", "identity.Membership", "member_user"),
+    ("POST", "/tenant/support-access/{grant_id}/approve", "tenants.SupportAccess", "support_access"),
+    ("POST", "/tenant/support-access/{grant_id}/decline", "tenants.SupportAccess", "support_access"),
+    ("POST", "/tenant/support-access/{grant_id}/revoke", "tenants.SupportAccess", "support_access"),
 ]

@@ -33,7 +33,7 @@ from types import SimpleNamespace
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, Team, TeamLabel, VocabularySuggestion
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -56,6 +56,8 @@ from apps.library.seeds import LANGUAGES
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
+from apps.tenants.models import Licence, OrgUnit, OrgUnitKind, SupportAccess, TeamMember, TenantProduct
+from apps.tenants.testing import licence_type_term
 
 _counter = itertools.count(1)
 
@@ -210,3 +212,124 @@ def user_actor(*, label: str = "Test Person", user_id: uuid.UUID | None = None) 
 
 def agent_actor(*, label: str = "Test Agent", agent_id: uuid.UUID | None = None) -> Actor:
     return Actor(kind=ActorType.AGENT, id=agent_id or uuid.uuid4(), label=label)
+
+
+# ---------------------------------------------------------------------------------------
+# c9-case-contract: the tenant-isolation guard's records for the case workflow routes.
+# A case names a library change, so the case itself is built by `apps/cases/testing.py`
+# (the fence exempts it); the children are this bank's own rows and are built here.
+# ---------------------------------------------------------------------------------------
+def case_change(tenant: Tenant) -> SimpleNamespace:
+    """A change with a case of `tenant`, addressed by the change's id as every workflow
+    route addresses it. Another bank has no case for it, so tenancy alone answers 404."""
+    from apps.cases import testing as case_build
+
+    row = case_build.case_on_a_new_change(tenant)
+    return SimpleNamespace(id=row.change_id, case=row)
+
+
+def case_action(tenant: Tenant) -> SimpleNamespace:
+    """A live action on a case of `tenant`, addressed by its own id."""
+    from apps.cases.models import Action
+
+    row = case_change(tenant).case
+    owner = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        action = Action.objects.create(
+            tenant=tenant,
+            case=row,
+            title="Document the research criteria",
+            owner=owner,
+            due_date=timezone.localdate(),
+            created_by=owner,
+        )
+    return SimpleNamespace(id=action.id, case=row)
+
+
+def case_evidence(tenant: Tenant) -> SimpleNamespace:
+    """A live piece of evidence (a link, so no bytes) on a case of `tenant`, by its own id."""
+    from apps.cases.models import Evidence, EvidenceKind
+
+    row = case_change(tenant).case
+    uploader = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        evidence = Evidence.objects.create(
+            tenant=tenant,
+            case=row,
+            kind=EvidenceKind.LINK.value,
+            name="FI decision memo",
+            url="https://intranet.example.com/memo/42",
+            uploaded_by=uploader,
+            # A link has no bytes to scan, so it is recorded clean (CasesEvidence.scanState).
+            scan_state="clean",
+            scanned_at=timezone.now(),
+        )
+    return SimpleNamespace(id=evidence.id, case=row)
+
+
+# ---------------------------------------------------------------------------------------
+# c8-tenants-contract: the tenant-isolation guard's records for the chunk 8 tenants routes
+# (TEN-02, TEN-03, TEN-06). A licence's type is a library term this file may not write;
+# apps/tenants/testing.py, which the library fence exempts, writes it.
+# ---------------------------------------------------------------------------------------
+def org_unit(tenant: Tenant, *, name: str | None = None) -> OrgUnit:
+    """A department of `tenant` (a business area), which needs no legal-entity term."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return OrgUnit.objects.create(
+            tenant=tenant, kind=OrgUnitKind.BUSINESS_AREA.value, name=name or f"Business area {next(_counter)}"
+        )
+
+
+def licence(tenant: Tenant) -> Licence:
+    """A licence held by a department of `tenant`; its type is the one test term."""
+    unit = org_unit(tenant=tenant)
+    term = licence_type_term()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return Licence.objects.create(tenant=tenant, org_unit=unit, licence_type=term)
+
+
+def tenant_product(tenant: Tenant, *, name: str | None = None) -> TenantProduct:
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantProduct.objects.create(tenant=tenant, name=name or f"Product {next(_counter)}")
+
+
+def team_key(tenant: Tenant) -> SimpleNamespace:
+    """A team of `tenant`, addressed by key: `.id` is its key, which no other bank's team
+    shares, so the only thing between another bank and the team is tenancy."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        team = Team.objects.create(tenant=tenant, key=f"team-{next(_counter)}")
+    return SimpleNamespace(id=team.key, team=team)
+
+
+def support_access(tenant: Tenant) -> SupportAccess:
+    """A support-access row of `tenant`, as chunk 1's recovery writes one."""
+    requester = platform_user()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return SupportAccess.objects.create(
+            tenant=tenant, platform_user=requester, reason="The bank's watch feed stopped updating.", started_at=timezone.now()
+        )
+
+
+# c8-ten-teams-people (TEN-02, TEN-03): a named team with its English label and department,
+# the people in it, and a department with a head.
+def team(tenant: Tenant, *, key: str, label: str, org_unit: OrgUnit | None = None, members: Iterable[User] = ()) -> Team:
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        row = Team.objects.create(tenant=tenant, key=key, org_unit=org_unit)
+        TeamLabel.objects.create(tenant=tenant, vocabulary=row, language="en", text=label, is_original=True)
+        for person in members:
+            TeamMember.objects.create(tenant=tenant, team=row, user=person)
+    return row
+
+
+def department(tenant: Tenant, *, name: str, head: User | None, kind: OrgUnitKind = OrgUnitKind.BUSINESS_AREA) -> OrgUnit:
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return OrgUnit.objects.create(tenant=tenant, kind=kind.value, name=name, head_user=head)
