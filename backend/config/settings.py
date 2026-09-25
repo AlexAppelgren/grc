@@ -751,6 +751,28 @@ COMMENT_MAX_CHARS = env_int("COMMENT_MAX_CHARS", 4000)
 COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)
 
 # ---------------------------------------------------------------------------------------
+# ===== HOM-05 My work's windows (apps/home/my_work.py, c8-mywork-service, D-23, D-25) ===
+# A row is "due soon" when its next date is today or within MY_WORK_DUE_SOON_DAYS; the
+# tenant's reminder lead replaces it once COL-02 lands. A new version of an obligation stays
+# under "Changes on your items" for MY_WORK_AWARE_DAYS after it was applied: a fixed window
+# needs no write on every page load. Each is at least 1, or the app refuses to boot.
+# ---------------------------------------------------------------------------------------
+MY_WORK_DUE_SOON_DAYS = env_int("MY_WORK_DUE_SOON_DAYS", 30)
+MY_WORK_AWARE_DAYS = env_int("MY_WORK_AWARE_DAYS", 14)
+if min(MY_WORK_DUE_SOON_DAYS, MY_WORK_AWARE_DAYS) < 1:
+    raise ImproperlyConfigured("Refusing to boot: MY_WORK_DUE_SOON_DAYS and MY_WORK_AWARE_DAYS are each at least 1.")
+
+# ---------------------------------------------------------------------------------------
+# ===== COL-02 the weekly digest's content (apps/collab/digest.py, c10-digest-content) ===
+# At most DIGEST_MAX_ITEMS of My work's rows in one digest, the most urgent, then "and N
+# more". My work's page size is at most 100, so the cap is 1 to 100, or the app refuses
+# to boot.
+# ---------------------------------------------------------------------------------------
+DIGEST_MAX_ITEMS = env_int("DIGEST_MAX_ITEMS", 20)
+if not 1 <= DIGEST_MAX_ITEMS <= 100:
+    raise ImproperlyConfigured("Refusing to boot: DIGEST_MAX_ITEMS is 1 to 100.")
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------

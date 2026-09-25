@@ -206,6 +206,15 @@ TENANT_ONLY_TABLES = [
     "tenant_agent",
     "tenant_agent_budget",
     "export_job",
+    # c8-register-models (register 0001, 0002; REG-01 to REG-05): the bank's register. Each
+    # reference to another tenant row is also a composite key (apps/register/tests_models.py
+    # proves the database refuses every cross-tenant one).
+    "tenant_obligation",
+    "tenant_obligation_scope",
+    "compliance_assessment",
+    "gap",
+    "interpretation",
+    "internal_link",
 ]
 
 # The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the
