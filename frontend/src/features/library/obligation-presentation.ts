@@ -13,12 +13,12 @@ import type { ObligationProvenance, ObligationVersionRow, VersionConfirmation } 
 
 // Obligation row and header (design/system/pills-and-labels.md, slot order).
 // Row: instrument, "Guidance" if not binding ("Standard" for a standard), applicability, compliance
-// status if it applies, "Change waiting for approval", "N open changes".
+// status if it applies, "N open changes". No applicability change waits for approval (D-75).
 // Header: instrument, regime, binding level, compliance status. The level's
 // kind decides the binding slots before `binding` does (D-37): a standard is
 // neither law nor guidance, so it reads "Standard" in both.
 // Computed labels come from the message catalog with plural forms; the API
-// sends `openChangeCount` and `changeWaitingForApproval`, never a phrase.
+// sends `openChangeCount`, never a phrase.
 
 export interface ObligationFacts {
   /** The instrument's short name, e.g. "LVM". */
@@ -30,10 +30,11 @@ export interface ObligationFacts {
   applicability?: KindRef<ApplicabilityKind>;
   /** Present only when the obligation applies and has been assessed. */
   complianceStatus?: KindRef<ComplianceKind>;
-  changeWaitingForApproval?: boolean;
   openChangeCount?: number;
   libraryTags?: readonly VocabularyRef[];
   tenantTags?: readonly VocabularyRef[];
+  /** The bank's own record rather than a shared fact; carried as data, not yet shown. */
+  privateToUs?: boolean;
 }
 
 export type ObligationView = 'row' | 'header';
@@ -48,7 +49,6 @@ export const OBLIGATION_SLOT_ORDER = {
   guidance: 20,
   applicability: 30,
   complianceStatus: 40,
-  changeWaitingForApproval: 50,
   openChanges: 60,
   libraryTags: 70,
   tenantTags: 80,
@@ -100,14 +100,6 @@ export function presentObligation(obligation: ObligationFacts, view: ObligationV
   }
 
   if (view === 'row') {
-    if (obligation.changeWaitingForApproval === true) {
-      pills.push({
-        key: 'change-waiting-for-approval',
-        label: t('pill.changeWaitingForApproval'),
-        tone: slotTone.waitingForApproval,
-        order: OBLIGATION_SLOT_ORDER.changeWaitingForApproval,
-      });
-    }
     const count = obligation.openChangeCount ?? 0;
     if (count > 0) {
       pills.push({
