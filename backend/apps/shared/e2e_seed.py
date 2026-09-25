@@ -1874,7 +1874,7 @@ def seed_chunk11_agents(tenants: list[Tenant], now: datetime.datetime | None = N
 
     # AGT-S4: the sweeper at two versions, a scheduled platform run on each, and one of the
     # confirmer, so the console lists runs no bank owns.
-    first_version = _agent(spec.platform_agent).versions.get(version_no=spec.platform_versions[0])
+    first_version = _agent(spec.platform_agent).versions.get(version_number=spec.platform_versions[0])
     second_version = publish_e2e_version(
         key=spec.platform_agent,
         version_no=spec.platform_versions[1],
@@ -1887,7 +1887,7 @@ def seed_chunk11_agents(tenants: list[Tenant], now: datetime.datetime | None = N
         for pk, agent, version, weeks, cost in (
             (C11_PLATFORM_RUNS[0], _agent(spec.platform_agent), first_version, 3, Decimal("3.4000")),
             (C11_PLATFORM_RUNS[1], _agent(spec.platform_agent), second_version, 1, Decimal("3.1500")),
-            (C11_PLATFORM_RUNS[2], confirmer, confirmer.versions.get(version_no=confirmer.current_version), 1, Decimal("0.9200")),
+            (C11_PLATFORM_RUNS[2], confirmer, confirmer.versions.get(version_number=confirmer.current_version), 1, Decimal("0.9200")),
         ):
             _c11_run(
                 pk, today - datetime.timedelta(weeks=weeks), now,
@@ -1922,7 +1922,7 @@ def seed_chunk11_agents(tenants: list[Tenant], now: datetime.datetime | None = N
             subject_title=tenant.slug, summary="Seeded for E2E journeys.", tenant_id=tenant.id,
             after={"monthlyCap": str(spec.monthly_cap), "currency": spec.currency},
         )
-    version = definition.versions.get(version_no=definition.current_version)
+    version = definition.versions.get(version_number=definition.current_version)
     for pk, started, cost in zip(C11_TENANT_RUNS, [*this_month, *earlier], [*spec.month_costs, *spec.earlier_costs], strict=True):
         _c11_run(
             pk, started, now,

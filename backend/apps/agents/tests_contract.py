@@ -230,7 +230,18 @@ TENANT_ROUTES: list[tuple[str, str, str, Any, str]] = [
 ]
 # The operations served for real, which answer from their logic and no longer 501:
 # `c11-tenant-agents-budget-scope` (tests_tenant_agents.py, tests_budget.py).
-SERVED = {"listTenantAgents", "createTenantAgent", "updateTenantAgent", "getAgentBudget", "putAgentBudget"}
+SERVED = {
+    "listTenantAgents",
+    "createTenantAgent",
+    "updateTenantAgent",
+    "getAgentBudget",
+    "putAgentBudget",
+    # `c11-tenant-controls-cap` (tests_control.py).
+    "runTenantAgentNow",
+    "pauseTenantAgent",
+    "resumeTenantAgent",
+    "interruptAgentRun",
+}
 # Which record each id route addresses: a bank's own agent, its run, or its request.
 ID_KIND = {
     "updateTenantAgent": "agent",

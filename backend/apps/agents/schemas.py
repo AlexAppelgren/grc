@@ -998,8 +998,11 @@ class PlatformWatchLastRun(CamelSchema):
     finished_at: datetime | None = Field(
         description="When the last run finished, as a UTC timestamp in ISO 8601, or null while it is still running."
     )
-    status: Literal["running", "succeeded", "failed"] = Field(
-        description="How it ended. `running`: still going. `succeeded`: it finished. `failed`: it stopped early."
+    status: Literal["running", "succeeded", "failed", "interrupted"] = Field(
+        description=(
+            "How it ended. `running`: still going. `succeeded`: it finished. `failed`: it stopped early. "
+            "`interrupted`: it was stopped from outside before it finished."
+        )
     )
 
 

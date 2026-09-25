@@ -439,24 +439,201 @@ class AgentsScenarioTests(TestCase):
             listed = self.client.get("/api/v1/console/agent-runs?limit=100", **_SESSION).json()["items"]
         self.assertEqual([row["agentVersion"] for row in listed if row["agent"] == "nordic-watch"], [4, 3])
 
-    @skip("pending: AGT-S5 (AGT-04, chunk 11)")
+    def _as(self, principal: Any, method: str, url: str, body: Any = None) -> Any:
+        """One session call; the tenant is cleared after it, as between two requests."""
+        extra = {} if body is None else {"data": body, "content_type": "application/json"}
+        with stub_session(principal):
+            answer = getattr(self.client, method)(url, HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}", **extra)
+        tenancy.clear_tenant()
+        return answer
+
     def test_agt_s5(self) -> None:
         """AGT-S5
 
         A tenant controls its agents without touching their instructions (AGT-04).
 
-        Built over createTenantAgent, updateTenantAgent, runTenantAgentNow, pauseTenantAgent,
-        resumeTenantAgent and interruptAgentRun (declared by c11-agents-contract).
+        Built over createTenantAgent, updateTenantAgent, runTenantAgentNow, listAgentRuns and
+        interruptAgentRun, with a runner event reporting what the run found and spent, as the
+        worker applies it. bleqq's agent is reached where a request can name it: adding it, its settings and
+        its runs; no agent of the bank's own can be made from it (AGT-S13).
         """
+        from decimal import Decimal
 
-    @skip("pending: AGT-S6 (AGT-04, chunk 11)")
+        from apps.agents import runner_events
+        from apps.shared.adapters.agent_runner import RunnerEvent
+
+        # Given a tenant admin with agents.manage and an agent the bank added for itself from
+        # a tenant-scoped definition
+        world = self._scheduler_world()
+        TenantAgent.objects.filter(pk=world.agent.pk).update(enabled=False)
+        tenancy.clear_tenant()
+        admin = user_principal(permissions={perms.AGENTS_MANAGE}, tenant_id=world.bank.id, subject_id=world.admin.id)
+        own = f"/api/v1/agents/{world.agent.id}"
+
+        # When they switch it on, set a weekly cadence within the plan limit, restrict scope
+        # to SE and FI, and choose "Run now"
+        changed = self._as(
+            admin, "patch", own, {"enabled": True, "cadence": "weekly", "scope": {"jurisdictions": ["se", "fi"], "terms": []}}
+        )
+        self.assertEqual(changed.status_code, 200, changed.content)
+        queued = self._as(admin, "post", f"{own}/runs", {})
+
+        # Then a run is queued with those settings
+        self.assertEqual(queued.status_code, 202, queued.content)
+        self.assertEqual((queued.json()["status"], queued.json()["trigger"]), ("running", "manual"))
+        [run] = self._bank_runs(world)
+        self.assertEqual([row["key"] for row in run.scope["jurisdictions"]], ["se", "fi"])
+        self.assertEqual(run.requested_by_id, world.admin.id)
+
+        # And "Recent runs" lists it with findings and cost
+        tenancy.activate(world.bank.id)
+        runner_events.apply_event(
+            RunnerEvent(run_id=run.id, status=RunStatus.RUNNING, stats={"sourcesChecked": 3, "changesRegistered": 1}, cost=Decimal("0.4200"))
+        )
+        tenancy.clear_tenant()
+        history = self._as(admin, "get", f"/api/v1/agent-runs?tenantAgentId={world.agent.id}")
+        self.assertEqual(history.status_code, 200, history.content)
+        [listed] = history.json()["items"]
+        self.assertEqual(listed["id"], str(run.id))
+        self.assertEqual(listed["stats"]["changesRegistered"], 1)
+        self.assertEqual(Decimal(listed["cost"]), Decimal("0.42"))
+
+        # When they choose "Stop run"
+        stopped = self._as(admin, "post", f"/api/v1/agent-runs/{run.id}/interrupt", {})
+
+        # Then the run is interrupted and its status says so
+        self.assertEqual(stopped.status_code, 200, stopped.content)
+        self.assertEqual(stopped.json()["status"], "interrupted")
+        [listed] = self._as(admin, "get", f"/api/v1/agent-runs?tenantAgentId={world.agent.id}").json()["items"]
+        self.assertEqual(listed["status"], "interrupted")
+        self.assertIsNotNone(listed["interruptedAt"])
+
+        # When they set a cadence above the plan limit
+        refused = self._as(admin, "patch", own, {"cadence": "daily"})
+
+        # Then the request answers 422 with code "above_plan_limit"
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "above_plan_limit")
+
+        # When they send the same calls against one of bleqq's agents
+        self._bleqqs_beat(datetime.datetime.now(datetime.UTC))
+        [library_run] = AgentRun.objects.filter(agent=world.bleqq)
+        before = Agent.objects.filter(pk=world.bleqq.pk).values().get()
+        calls: tuple[tuple[str, str, dict[str, Any]], ...] = (
+            ("post", "/api/v1/agents", {"agent": world.bleqq.key, "cadence": "weekly"}),
+            ("put", f"/api/v1/agent-definitions/{world.bleqq.key}/settings", {"cadence": "weekly", "jurisdictions": ["se", "fi"], "monthlyBudget": "1.00"}),
+            ("post", f"/api/v1/agent-runs/{library_run.id}/interrupt", {}),
+        )
+        for method, url, body in calls:
+            with self.subTest(url):
+                answer = self._as(admin, method, url, body)
+
+                # Then each answers 403 naming agent_definitions.manage
+                self.assertEqual(answer.status_code, 403, answer.content)
+                self.assertEqual(answer.json()["requiredPermission"], perms.AGENT_DEFINITIONS_MANAGE)
+
+        # And nothing about that agent changes
+        self.assertEqual(Agent.objects.filter(pk=world.bleqq.pk).values().get(), before)
+        library_run.refresh_from_db()
+        self.assertEqual(library_run.status, RunStatus.RUNNING.value)
+        self.assertFalse(TenantAgent.objects.filter(agent=world.bleqq).exists())
+
     def test_agt_s6(self) -> None:
         """AGT-S6
 
         The budget cap pauses runs and the AI off switch stops every model call (AGT-04).
 
-        Built over getAgentBudget and putAgentBudget (declared by c11-agents-contract).
+        Built over putAgentBudget, getAgentBudget, the bank's beat, runTenantAgentNow,
+        resumeTenantAgent, setTenantAi and ask. The cap pauses through the one pause
+        pauseTenantAgent uses, with no person. The clock is the test's, so "this month" never depends on
+        when the test runs.
         """
+        from decimal import Decimal
+
+        from django.utils import timezone
+
+        from apps.agents.tests_tasks import WEDNESDAY, frozen
+        from apps.collab.models import Notification
+
+        world = self._scheduler_world()
+        tenancy.clear_tenant()
+        admin = user_principal(permissions={perms.AGENTS_MANAGE}, tenant_id=world.bank.id, subject_id=world.admin.id)
+        security = user_principal(
+            permissions={perms.SECURITY_MANAGE}, tenant_id=world.bank.id, subject_id=world.admin.id, step_up_at=timezone.now()
+        )
+        reader = user_principal(permissions={perms.SEARCH_USE}, tenant_id=world.bank.id, subject_id=world.admin.id)
+
+        # Given a monthly cap on the bank's own agents set with "Set cap" and "Spend this
+        # month" close to it
+        with frozen(WEDNESDAY - datetime.timedelta(days=2)):
+            capped = self._as(admin, "put", "/api/v1/tenant/agent-budget", {"monthlyCap": "10.00"})
+            self.assertEqual(capped.status_code, 200, capped.content)
+            tenancy.activate(world.bank.id)
+            AgentRun.objects.create(
+                agent=world.definition, tenant_agent=world.agent, trigger=RunTrigger.MANUAL.value, requested_by=world.admin,
+                model="claude-opus-5", pipeline_version="1", status=RunStatus.SUCCEEDED.value, cost=Decimal("7.2000"),
+            )
+            tenancy.clear_tenant()
+            library = agent_build.platform_run()
+            AgentRun.objects.filter(pk=library.pk).update(cost=Decimal("50.0000"))
+
+        # When a run of one of the bank's own agents would exceed the cap
+        with frozen(WEDNESDAY):
+            spend = self._as(admin, "get", "/api/v1/tenant/agent-budget").json()
+            asked = self._as(admin, "post", f"/api/v1/agents/{world.agent.id}/runs", {})
+        self._bank_beat(world, WEDNESDAY)
+
+        # Then it is not started and the admin is notified
+        self.assertEqual(asked.status_code, 422, asked.content)
+        self.assertEqual(asked.json()["code"], "budget_cap_reached")
+        self.assertEqual([run.cost for run in self._bank_runs(world)], [Decimal("7.2000")])
+        tenancy.activate(world.bank.id)
+        paused = TenantAgent.objects.get(pk=world.agent.pk)
+        self.assertEqual(paused.pause_reason, "budget_cap")
+        self.assertTrue(Notification.objects.filter(user=world.admin, subject_id=world.agent.id).exists())
+        tenancy.clear_tenant()
+
+        # And "Spend this month" counts the bank's own runs only, never a run of bleqq's agents
+        library.refresh_from_db()
+        self.assertEqual((library.tenant_id, library.cost), (None, Decimal("50.0000")))
+        self.assertEqual((spend["monthlyCap"], spend["spentThisMonth"]), ("10.00", "7.20"))
+
+        # When the admin switches all AI features off
+        switched = self._as(security, "put", "/api/v1/tenant/ai", {"enabled": False})
+        self.assertEqual(switched.status_code, 200, switched.content)
+        with frozen(WEDNESDAY + datetime.timedelta(days=1)):
+            self._as(admin, "put", "/api/v1/tenant/agent-budget", {"monthlyCap": "500.00"})
+        resumed = self._as(admin, "delete", f"/api/v1/agents/{world.agent.id}/pause")
+        self.assertEqual(resumed.status_code, 200, resumed.content)
+        tenancy.activate(world.bank.id)
+        self.assertEqual(
+            TenantAgent.objects.filter(pk=world.agent.pk).update(next_run_at=WEDNESDAY + datetime.timedelta(days=6)), 1
+        )
+        tenancy.clear_tenant()
+        logged = AiGeneration.objects.filter(tenant_id=world.bank.id).count()
+        with frozen(WEDNESDAY + datetime.timedelta(days=7)):
+            asked = self._as(admin, "post", f"/api/v1/agents/{world.agent.id}/runs", {})
+        self._bank_beat(world, WEDNESDAY + datetime.timedelta(days=7))
+        platform_before = AgentRun.objects.filter(agent=world.bleqq, tenant__isnull=True).count()
+        self._bleqqs_beat(WEDNESDAY + datetime.timedelta(days=7))
+        ask = self._as(reader, "post", "/api/v1/ask", {"question": "What must we disclose about costs?", "lang": "en"})
+
+        # Then none of the bank's own agents starts a run, Ask answers 403 "feature_off" and
+        # the LLM adapter records no call for the tenant
+        self.assertEqual(asked.status_code, 422, asked.content)
+        self.assertEqual(asked.json()["code"], "feature_off")
+        self.assertEqual(len(self._bank_runs(world)), 1)
+        tenancy.activate(world.bank.id)
+        skipped = AuditEvent.objects.filter(action="agent_run.skipped", subject_id=world.definition.id).values_list("after", flat=True)
+        self.assertEqual([row["reason"] for row in skipped], ["feature_off"], "the due run was skipped, not missed")
+        tenancy.clear_tenant()
+        self.assertEqual(ask.status_code, 403, ask.content)
+        self.assertEqual(ask.json()["code"], "feature_off")
+        self.assertEqual(AiGeneration.objects.filter(tenant_id=world.bank.id).count(), logged)
+
+        # And bleqq's watch is unaffected: its agents keep their schedule, because they read
+        # public sources only
+        self.assertEqual(AgentRun.objects.filter(agent=world.bleqq, tenant__isnull=True).count(), platform_before + 1)
 
     @skip("pending: AGT-S7 (AGT-05, chunk 11)")
     def test_agt_s7(self) -> None:
