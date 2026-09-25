@@ -33,6 +33,9 @@ from apps.shared.permissions import (
 FOUR_EYES_TABLES: list[tuple[str, str]] = [
     ("footprint_change_request", "footprint_change_request_four_eyes"),
     ("proposal", "proposal_four_eyes"),
+    # c8-register-models (register 0002, REG-03): risk acceptance. The person who accepts a
+    # gap's risk is never the person who asked for it.
+    ("gap", "gap_four_eyes"),
 ]
 
 
