@@ -371,12 +371,15 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     term of the regime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes
     an obligation with a term of a dimension that mirrors the jurisdiction list;
     `duplicate_key` (409) when a new record's key is already a record's;
-    `validation_error` (422) for a body the schema or the kind's payload refuses;
+    `validation_error` (422) for a body the schema or the kind's payload refuses, a
+    `sourceUrl` that is not an https link on any kind, or a summary or text longer than
+    `PROPOSAL_TEXT_MAX_CHARS` (50000 unless the platform sets another number);
     `standard_term_only_on_standards` (422) when the scope puts a standard's term on an
     obligation whose instrument is not a standard; `licensed_text` (422) for a provision or
     provision version under a standard, a source on a standard's obligation that is not
-    an https link, or a standard's new obligation whose `refLabel` is not the standard's
-    official reference; `one_conformance_obligation` (422) for a new obligation under a standard
+    an https link, a standard's new obligation whose `refLabel` is not the standard's
+    official reference, or a `sourceLabel` under a standard that is anything but that
+    reference; `one_conformance_obligation` (422) for a new obligation under a standard
     that already holds one; `standard_term_required` (422) when a standard's obligation
     would carry no standard term, or more than one; `idempotency_conflict` (409) when the
     same proposer's `Idempotency-Key` arrives with a different body or from another bank
@@ -528,7 +531,8 @@ def approve_proposal(
     waits for a person who reads the flag; `invalid_transition` when the proposal was
     already approved or rejected, which is also what a repeated or simultaneous second call
     answers, since nothing is ever applied twice; `source_missing` when a correction
-    introduces a field the proposal never sourced; `validation_error` when a key sends no
+    introduces a field the proposal never sourced, or changes a value without its fresh
+    source in `fieldSources`; `validation_error` when a key sends no
     `decision` or a person sends one or names a run, and when a correction is offered on a
     kind that cannot be corrected or does not fit its payload; `unknown_key` when the
     payload names a row the library does not hold; `not_a_regime` when a new instrument's
@@ -547,6 +551,7 @@ def approve_proposal(
         actor=reviewer.actor,
         note=body.note,
         payload_overrides=body.payload_overrides,
+        field_sources=body.field_sources,
         step_up_assertion_id=step_up_assertion_id,
         decision=body.decision,
         agent_run_id=body.agent_run_id,

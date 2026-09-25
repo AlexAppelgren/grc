@@ -776,6 +776,11 @@ CHUNK_8_CHANGES: dict[str, tuple[Any, ...]] = {
     "risk_acceptance_reason": (3, "RiskAcceptanceReason", "RiskAcceptanceReasonLabel", None, (), False, (), True, (), ()),
     "team": (3, "Team", "TeamLabel", None, (), False, ("email",), True, (), ()),
 }
+# x-jurisdictions-by-proposal (D-94): the jurisdiction list becomes proposable with fixed keys,
+# relabelled, retired and restored by proposal and never merged, so it still names no links.
+JURISDICTIONS_BY_PROPOSAL: dict[str, tuple[Any, ...]] = {
+    "jurisdiction": (2, "Jurisdiction", "JurisdictionLabel", "jurisdiction_kind", ("supranational", "country", "international"), True, (), True, (), ()),
+}
 
 # One category of each categorised tenant list and the system row that holds it (VOC-04).
 CATEGORY_ROWS = {
@@ -809,7 +814,10 @@ class RegisterLists(ScenarioTestCase):
         return {row["key"]: row for row in response.json()["items"]}
 
     def test_the_registry_gained_exactly_the_five_changes(self) -> None:
-        self.assertEqual({name: _shape(entry) for name, entry in REGISTRY.items()}, REGISTRY_BEFORE_CHUNK_8 | CHUNK_8_CHANGES)
+        self.assertEqual(
+            {name: _shape(entry) for name, entry in REGISTRY.items()}, REGISTRY_BEFORE_CHUNK_8 | CHUNK_8_CHANGES | JURISDICTIONS_BY_PROPOSAL
+        )
+        self.assertEqual({name for name, entry in REGISTRY.items() if entry.fixed_keys}, {"jurisdiction"})
         self.assertEqual(set(REGISTRY) - set(REGISTRY_BEFORE_CHUNK_8), {"gap_status", "gap_source", "risk_acceptance_reason", "team"})
 
     def test_retiring_the_last_value_of_a_category_is_refused_on_every_categorised_list(self) -> None:
