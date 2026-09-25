@@ -27,12 +27,16 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 
+from apps.identity.rate_limit import enforce
 from apps.library.models import Language, ProblemReport, SubjectType
 from apps.shared.audit import Actor, record
 
 ACTION = "library.problem_reported"
+BUCKET = "problem-report-file"
+HOUR = 3600
 
 
 def create_report(
@@ -52,6 +56,10 @@ def create_report(
     `subject_title` is the record's public reference (a stable key or an official
     reference), which a colleague reads in the audit log; it is never the reader's words.
     """
+    if not tenant_id:
+        # The hint says a tenant, and the route answers 404 first; a caller written later
+        # that passes none anyway must not file a report every bank reads (hardening H39).
+        raise ValidationError("A problem report belongs to a bank.", code="not_found")
     text = description.strip()
     if not text:
         raise ValidationError("Say what looks wrong, so a colleague can check it.", code="description_required")
@@ -59,6 +67,10 @@ def create_report(
         raise ValidationError("A version number starts at 1.", code="invalid_value")
     if language is not None and not Language.objects.filter(key=language, active=True).exists():
         raise ValidationError(f"{language!r} is not a content language.", code="unknown_key")
+    # Each report is a row and an audit row kept for ten years: one person's reports are
+    # bounded per hour (ACC-09, hardening H39), counted after the checks so a refusal
+    # spends nothing.
+    enforce(BUCKET, str(reporter.id), settings.PROBLEM_REPORTS_PER_USER_PER_HOUR, HOUR)
 
     report = ProblemReport.objects.create(
         tenant_id=tenant_id,
