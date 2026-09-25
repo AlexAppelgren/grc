@@ -369,13 +369,14 @@ class RegisterScenarioTests(TestCase):
         """REG-S10
 
         Recurring duties appear on the roadmap from recurrence rules (REG-07).
-        Operations: `listDuties`, `completeDutyOccurrence`.
+        Operations: `listDuties`, `getRoadmap`, `completeDutyOccurrence`.
 
-        Green up to its roadmap line: the roadmap's duty branch is c8-home-register-feeds',
-        which asserts that step. Here the quarterly duty's occurrence due 2026-12-31 reads back
-        through the duties route, and completing it generates exactly 2027-03-31.
+        The quarterly duty's occurrence due 2026-12-31 reads back through the duties route and
+        on the roadmap for Q4 2026 as "Our deadline" with its owner; completing it generates
+        exactly 2027-03-31, which takes its place (x-roadmap-case-deadlines).
         """
         import datetime
+        from unittest import mock
 
         from apps.register import duties
         from apps.register.logic import ensure_register_entry
@@ -389,16 +390,28 @@ class RegisterScenarioTests(TestCase):
         actor = factories.user_actor(label="Sara Lind", user_id=a.officer.id)
         tenancy.activate(a.tenant.id)
         entry = ensure_register_entry(tenant_id=a.tenant.id, obligation_id=law.id, actor=actor)
+        TenantObligation.objects.filter(pk=entry.pk).update(first_line_owner=a.officer)
+        entry.refresh_from_db()
         # The obligation began to apply at 22:30 UTC on 30 September, 1 October in Stockholm.
         at = datetime.datetime(2026, 9, 30, 22, 30, tzinfo=datetime.UTC)
+
+        def roadmap(to: str) -> list[Any]:
+            """The bank's own deadlines read on 1 October, whatever day the suite runs."""
+            with mock.patch("django.utils.timezone.now", return_value=at):
+                response = self.client.get(f"/api/v1/roadmap?kind=internal&to={to}", **sign_in(a.officer, tenant=a.tenant))
+            self.assertEqual(response.status_code, 200, response.content)
+            return [(i["itemType"], i["date"], i["quarter"], i["title"], i["owner"]["person"]["id"], i["subject"]["obligationId"]) for i in response.json()["items"]]
+
         duties.schedule_first(tenant=a.tenant, actor=actor, targets=[(entry, None)], at=at)
 
         headers = sign_in(a.officer, tenant=a.tenant)
         [item] = self.client.get(f"/api/v1/obligations/{law.id}/duties", **headers).json()["items"]
         occurrence = item["nextOccurrence"]
         self.assertEqual((item["title"], occurrence["dueDate"], occurrence["status"]), ("Quarterly client asset report", "2026-12-31", "upcoming"))
-        # When the roadmap for Q4 2026 is read, the duty appears with "Our deadline":
-        # asserted by c8-home-register-feeds, which builds the roadmap's duty branch.
+        # When the roadmap for Q4 2026 is read, then the duty appears with "Our deadline"
+        # (an internal item, which the screen marks so) and its owner
+        officer, duty = str(a.officer.id), str(law.id)
+        self.assertEqual(roadmap("2026-12-31"), [("duty_due", "2026-12-31", "2026-Q4", "Quarterly client asset report", officer, duty)])
 
         response = self.client.post(
             f"/api/v1/duty-occurrences/{occurrence['id']}/complete", data={}, content_type="application/json", **headers
@@ -410,6 +423,8 @@ class RegisterScenarioTests(TestCase):
             sorted((row.due_date.isoformat(), row.status) for row in DutyOccurrence.objects.all()),
             [("2026-12-31", "done"), ("2027-03-31", "upcoming")],
         )
+        # The completed occurrence leaves the roadmap and the next one takes its place.
+        self.assertEqual(roadmap("2027-03-31"), [("duty_due", "2027-03-31", "2027-Q1", "Quarterly client asset report", officer, duty)])
 
     def test_reg_s11(self) -> None:
         """REG-S11
@@ -563,9 +578,7 @@ class RegisterScenarioTests(TestCase):
         """REG-S15
 
         The register filtered by standard and entity is the Statement of Applicability (REG-08).
-        Operations: `getStatementOfApplicability`.
-
-        "Today's standing counts the standard as one obligation" is x-roadmap-case-deadlines'.
+        Operations: `getStatementOfApplicability`, `getHome`.
         """
         # c8-units-paste-soa
         from apps.register.tests_units import SoaWorld
@@ -595,6 +608,11 @@ class RegisterScenarioTests(TestCase):
         conformance = statement["conformance"]
         self.assertEqual((conformance["orgUnitId"], conformance["applicability"]), (str(w.bank.bank_ab.id), "applies"))
         self.assertEqual(conformance["complianceStatus"]["key"], ComplianceStatus.objects.get(is_default=True).key)
+        # And Today's standing counts the standard as one obligation: its one conformance
+        # entry, in its own not-assessed category, however many units sit under it
+        standing = w.expect(w.call("GET", "/home"), 200)["standing"]
+        self.assertEqual((standing["applying"], standing["notAssessed"], standing["compliant"]), (1, 1, 0))
+        self.assertEqual(len(w.units()), 2)
 
     @skip("pending: ACC-S4 (ACC-04, chunk 11)")
     def test_acc_s4(self) -> None:

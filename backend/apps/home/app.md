@@ -36,7 +36,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | HOM-01 | Timeline home: next dates as a short list on every screen size, the lead item, what needs a decision, compliance standing, source health. R1 built every part but compliance standing, which `c8-home-standing-roadmap` added with the register | M | R1 | built |
 | HOM-02 | Weekly briefing, reachable from home with part of it shown there, snapshotted when emailed | M | R1 | built |
-| HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place; from R2 a certificate's expiry and next audit are our deadlines and never reach the calendar feed. R1 built the regulatory branch; `c8-home-standing-roadmap` added next reviews, gap targets and certificates (HOM-S15); the case workflow's deadlines and actions join in chunk 9 | M | R1 | in_progress |
+| HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place; from R2 a certificate's expiry and next audit are our deadlines and never reach the calendar feed. R1 built the regulatory branch; `c8-home-standing-roadmap` added next reviews, gap targets and certificates (HOM-S15); `x-roadmap-case-deadlines` added duty occurrences, an open case's internal deadline and its actions' due dates, and keeps a month, quarter or year date until its period ends (H22) | M | R1 | built |
 | HOM-04 | Upcoming changes as public facts for agents and newsletters, and a revocable calendar feed | S | R1 | built |
 | HOM-05 | My work: what a person or their teams are responsible for or take part in, as overdue, due soon, changes on those items and the rest, with next reviews and a department head's view; permission-filtered rows and counts; the footprint never hides a person's own items | M | R2 | pending |
 
@@ -140,13 +140,23 @@ The "Our deadline" half is the note below; `roadmap-presentation.test.ts` alread
 that pill's tone, so the rule is proved before a branch produces a row for it.
 
 > **Note — our own deadlines on the roadmap.** A roadmap item is either a date the outside
-> world set or one this bank set for itself. `c8-home-standing-roadmap` built four internal
-> branches, each with its owner and its record, proved in `tests_roadmap.py`: next reviews of
-> register entries and entity rows, compliant ones included, and targets of open or
-> remediating gaps, both inside the regulatory scope and only for a reader holding
-> `register.read`; and a certificate's expiry and next audit, left out once withdrawn (D-43,
-> AC-TEN1, HOM-S15). None reaches the calendar feed. The case workflow's internal deadlines
-> and actions are chunk 9's, so HOM-03 stays `in_progress`.
+> world set or one this bank set for itself, which the screen marks "Our deadline" with its
+> owner. The internal branches, each with its owner and its record:
+> - next reviews of register entries and entity rows, compliant ones included, targets of
+>   open or remediating gaps, and the open occurrence of a recurring duty (REG-07), dropped
+>   when it is completed and replaced by the next; all inside the regulatory scope, left out
+>   where the answer is "does not apply", and only for a reader holding `register.read`
+>   (`c8-home-standing-roadmap`, `x-roadmap-case-deadlines`; `tests_roadmap.py`,
+>   `tests_roadmap_cases.py`);
+> - an open case's internal deadline (CAS-03) and the due date of each of its actions that
+>   is neither done nor removed (CAS-04), on cases inside the regulatory scope and only for a
+>   reader holding `cases.read`; they link to the case by `changeId`
+>   (`x-roadmap-case-deadlines`, `tests_roadmap_cases.py`);
+> - a certificate's expiry and next audit, left out once withdrawn (D-43, AC-TEN1, HOM-S15).
+>
+> None reaches the calendar feed, proved per branch on the document in `tests_feed.py`. A
+> regulatory date stated as a month, a quarter or a year stays on the roadmap and in "Coming
+> up" until that period has ended (H22).
 
 ### HOM-S7 — My work lists what I'm responsible for or take part in, most urgent first `@integration` `@e2e` (HOM-05, AC-HOM1)
 ```gherkin

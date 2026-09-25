@@ -207,7 +207,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "RoadmapItemType": (
         "roadmap_item_type",
         "HOM-03, HOM-04: what produced the date - a change's key date, an internal deadline, "
-        "an action due, a review due, a gap target, or a certificate's expiry or audit; the card "
+        "an action due, a review due, a gap target, a duty due, or a certificate's expiry or audit; the card "
         "and the calendar builder branch on it",
     ),
     # Chunk 8 organisation and chunk 11 security policy (c8-org-models, tenants 0002).

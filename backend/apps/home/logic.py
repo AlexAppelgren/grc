@@ -170,7 +170,9 @@ def standing(tenant: Tenant) -> HomeStanding:
 # ---------------------------------------------------------------------------------------
 # GET /home (HOM-01, NFR-02)
 # ---------------------------------------------------------------------------------------
-def home_today(tenant: Tenant, order: list[str], *, watch_reader: bool, register_reader: bool = False) -> Home:
+def home_today(
+    tenant: Tenant, order: list[str], *, watch_reader: bool, register_reader: bool = False, cases_reader: bool = False
+) -> Home:
     """Everything the timeline home shows, in one call (HOM-01).
 
     Five independent reads, none of them chained behind another: a fixed number of queries
@@ -179,11 +181,12 @@ def home_today(tenant: Tenant, order: list[str], *, watch_reader: bool, register
     `lead` and `sources` are null for a reader without `watch.read`, and `standing` for one
     without `register.read`, and the reads behind them are not made at all — the permission
     decides before the query, so a reader who may not see a panel never pays for it either.
-    The same `register.read` decides whether the register's deadlines are in "Coming up".
+    The same `register.read` decides whether the register's deadlines are in "Coming up", and
+    `cases.read` whether the case workflow's are.
     """
     today = today_for(tenant)
     coming_up, roadmap_count = roadmap.coming_up(
-        tenant, order, settings.HOME_COMING_UP_ITEMS, register_reader=register_reader
+        tenant, order, settings.HOME_COMING_UP_ITEMS, register_reader=register_reader, cases_reader=cases_reader
     )
     lead = _lead(tenant, order, week_start_of(today)) if watch_reader else None
     return Home(

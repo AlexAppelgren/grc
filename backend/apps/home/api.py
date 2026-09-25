@@ -200,6 +200,7 @@ def get_home(request: HttpRequest) -> Any:
         language_order(request, tenant=tenant),
         watch_reader=who.has_permission(perms.WATCH_READ),
         register_reader=who.has_permission(perms.REGISTER_READ),
+        cases_reader=who.has_permission(perms.CASES_READ),
     )
 
 
@@ -309,13 +310,16 @@ def get_roadmap(request: HttpRequest, query: Query[HomeRoadmapQuery]) -> Any:
 
     A regulatory item is here while all three are true: the bank's case for the change is
     open (a `closed` or `dismissed` case has left), the change is inside the bank's regulatory
-    scope, and its date is today or later in the bank's own time zone. The bank's own
+    scope, and its date is today or later in the bank's own time zone; a date the source
+    stated as a month, a quarter or a year stays until that period has ended. The bank's own
     deadlines, each with its owner, are the next reviews of register entries and entity rows
-    that are not marked as not applying and the target dates of open or remediating gaps, on
-    obligations inside the regulatory scope and only for a reader holding `register.read`, and
-    a certificate's expiry and next audit until its licence row is withdrawn. A date that has gone leaves
-    the roadmap and stays on the change itself, so a `from` earlier than the bank's today
-    widens nothing. The quarter key on every item is computed in that same time zone, which
+    that are not marked as not applying, the target dates of open or remediating gaps and the
+    open occurrences of recurring duties, on obligations inside the regulatory scope and only
+    for a reader holding `register.read`; an open in-scope case's internal deadline and the due
+    dates of its actions that are neither done nor removed, only for a reader holding
+    `cases.read`; and a certificate's expiry and next audit until its licence row is
+    withdrawn. A date that has gone leaves the roadmap and stays on the change itself, so a
+    `from` earlier than the bank's today widens nothing. The quarter key on every item is computed in that same time zone, which
     is why two banks an hour apart can open the same day in two quarters.
 
     A window with nothing in it is a 200 with an empty `items` and an empty `quarters`, never
@@ -336,6 +340,7 @@ def get_roadmap(request: HttpRequest, query: Query[HomeRoadmapQuery]) -> Any:
         language_order(request, tenant=tenant),
         query,
         register_reader=principal(request).has_permission(perms.REGISTER_READ),
+        cases_reader=principal(request).has_permission(perms.CASES_READ),
     )
 
 

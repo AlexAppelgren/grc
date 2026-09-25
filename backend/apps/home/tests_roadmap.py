@@ -78,9 +78,10 @@ GONE = D(2026, 9, 29)  # yesterday in both zones
 # number of items, which is what the test below demands.
 ROADMAP_QUERIES = 7
 # The bank's own deadlines for a `register.read` holder, measured 2026-09-25: the two
-# certificate branches, the entries', entity rows' and gaps' dates (5), the reviewed
-# obligations' titles (2), the owning teams' labels (1) and the certificates' type labels (1).
-INTERNAL_QUERIES = 9
+# certificate branches, the entries', entity rows', gaps' and duty occurrences' dates (6), the
+# reviewed obligations' titles (2), the owning teams' labels (1) and the certificates' type
+# labels (1). The duties' branch joined with x-roadmap-case-deadlines.
+INTERNAL_QUERIES = 10
 
 
 def a_change(*, key_date: datetime.date | None, title: str = "A reform", urgency: str = "act_now") -> RegulatoryChange:
