@@ -133,9 +133,9 @@ export function headerPill(page: Page, text: string): Locator {
   return page.locator('[data-change] > span [data-pill]').filter({ hasText: new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) });
 }
 
-/** A plain date `days` after the bank's own today, in its own zone. */
-export function tenantDay(days: number, timeZone = 'Europe/Stockholm'): string {
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+/** A plain date `days` after tenant A's own today, in its zone (CLAUDE.md section 11). */
+export function tenantDay(days: number): string {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Stockholm', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   const date = new Date(`${today}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
