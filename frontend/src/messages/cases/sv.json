@@ -1,0 +1,13 @@
+{
+  "cases.heading": "Ärende",
+  "cases.scan.pending": "Kontrolleras",
+  "cases.scan.clean": "Kontrollerad",
+  "cases.scan.error": "Kunde inte kontrolleras",
+  "cases.scan.infected": "Avvisad, skadlig kod hittad",
+  "cases.due.overdue": "Försenad",
+  "cases.due.today": "Förfaller i dag",
+  "cases.due.daysLeft": "{count, plural, one {# dag kvar} other {# dagar kvar}}",
+  "cases.due.daysLate": "{count, plural, one {# dag sen} other {# dagar sen}}",
+  "cases.staleWrite.body": "Någon annan sparade medan du arbetade. Inget av ditt sparades eller slogs ihop. Ladda om för att se deras version och gör sedan din ändring igen.",
+  "cases.staleWrite.reload": "Ladda om deras version"
+}

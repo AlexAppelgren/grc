@@ -136,6 +136,20 @@ export const notificationKindTone: Record<NotificationKind, PillTone> = {
   saved_search_hit: 'notice',
 };
 
+// CAS-05 (c9-fe-cases-shell): a piece of evidence's malware scan, as the API
+// names it (`ScanState`). A file still being checked is a fact about where it
+// is (notice), a checked file is good, a scan that could not finish needs a
+// look, and a file refused for malware is bad (design/system/pills-and-labels.md,
+// "Case work").
+export type ScanStateKind = 'pending' | 'clean' | 'error' | 'infected';
+
+export const scanStateTone: Record<ScanStateKind, PillTone> = {
+  pending: 'notice',
+  clean: 'positive',
+  error: 'warning',
+  infected: 'negative',
+};
+
 // "Applies" is positive on the system card's obligation row; the other two
 // are neutral facts.
 export const applicabilityTone: Record<ApplicabilityKind, PillTone> = {
@@ -213,4 +227,7 @@ export const slotTone = {
   // AGT-07: a proposal carrying text the injection screen flagged waits for a person,
   // so it needs attention; it is not itself bad.
   riskFlagged: 'warning',
+  // CAS-04 (c9-fe-cases-shell): an open action past its due date, computed
+  // against the tenant-local today. A due date still ahead shows no pill.
+  overdue: 'negative',
 } as const satisfies Record<string, PillTone>;
