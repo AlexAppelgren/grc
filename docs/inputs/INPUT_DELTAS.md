@@ -158,6 +158,37 @@ or has differently:
 In the API every such field is `{key, kind, label}` on reads and `key` on
 writes, never an OpenAPI `enum`.
 
+**Chunk 10 (2026-09-25, c10-collab-models).** The comment, notification and mail tables
+(`schema.sql` §8, §10, §21), built in collab 0001:
+
+- `comment.mentions uuid[]` becomes `comment_mention` rows, one per person, unique per
+  comment. An array cannot carry a composite foreign key, and every other array of ids in
+  the schema is already rows (above), so only a row makes the database refuse a mention of
+  someone who is not a member of the comment's bank (COL-01, D-18).
+- `comment_revision` is new: the text an edit replaced, append-only with its trigger.
+  `schema.sql` has only `comment.edited_at`, and dropping the replaced text would
+  overwrite tenant work (CLAUDE.md §5, CHUNK10_TASKS ruling 10). No route returns it.
+- Every person column of the five tables (`comment.author_id`, `comment_mention.user_id`,
+  `comment_revision.edited_by_id`, `notification.user_id`, `notification.on_behalf_of_id`,
+  `email_message.user_id`) is also a composite `(tenant_id, user_id)` foreign key to
+  `membership`, and a mention or a revision points at its comment through
+  `(tenant_id, comment_id)`, for which `comment` gains `UNIQUE (tenant_id, id)`. A
+  foreign-key check does not pass through row-level security, so only these refuse another
+  bank's person or comment (D-18).
+- `comment.subject_type` and `notification.subject_type` are strings of at most 64
+  characters, as on `tagging`, rather than the `subject_type` Postgres enum: which kinds
+  may be named, and who may read each, is the subject registry's (ruling 3).
+- `notification_kind` is the `NotificationKind` kind (the `CHECK` constraint's nine
+  values plus the three PRD 0.3 added above), and `notification` gains a nullable
+  `on_behalf_of_id`, the absent person a delegate is told in place of (TEN-04).
+  `proposal_waiting` has no R2 producer (D-23) and `saved_search_hit` is chunk 13's.
+- `email_status` is the `EmailStatus` kind on a text column with choices.
+  `email_message` gains `sent_on`, the bank's local date of the send, and
+  `UNIQUE (tenant_id, user_id, template, subject_type, subject_id, sent_on)` with nulls
+  not distinct, so a retried worker cannot send the same mail twice in a day, the digest
+  (which names no record) included. It keeps no body column: the proof of a send is the
+  template key and the record, never the text.
+
 ## 2. Identity (PRD ID, playbook 4.2)
 
 - Drop `app_user.external_subject` as the primary identity, `mfa_enrolled`,
