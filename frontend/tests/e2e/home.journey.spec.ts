@@ -262,7 +262,7 @@ test.describe('my work and certificate deadlines', () => {
     // pending: HOM-S9 (HOM-05, TEN-02, TEN-03)
   });
 
-  test.fixme("HOM-S13: J-9: Monday morning", async () => {
+  test.fixme("HOM-S13 J-9 @smoke: Monday morning", async () => {
     // pending: HOM-S13 (HOM-05, COL-04, TEN-03, J-9)
   });
 
