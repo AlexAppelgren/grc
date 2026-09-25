@@ -264,6 +264,17 @@ describe('the documents panel', () => {
     expect(screen.getByRole('link', { name: 'https://www.fi.se/press/' })).toBeInTheDocument();
   });
 
+  it('a javascript: or data: address renders as plain text, never as a link (H26)', () => {
+    const documents = [
+      { ...change.documents[0]!, id: 'd-js', title: 'Scripted page', url: 'javascript:alert(1)' },
+      { ...change.documents[1]!, id: 'd-data', title: null, url: 'data:text/html,<b>hi</b>' },
+    ];
+    render(shell(<ChangeDocuments documents={documents} />));
+    expect(screen.getByText('Scripted page')).toBeInTheDocument();
+    expect(screen.getByText('data:text/html,<b>hi</b>')).toBeInTheDocument();
+    expect(screen.queryByRole('link')).toBeNull();
+  });
+
   it('an empty panel says so', () => {
     render(shell(<ChangeDocuments documents={[]} />));
     expect(screen.getByText('No source page yet')).toBeInTheDocument();
