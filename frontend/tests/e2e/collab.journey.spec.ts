@@ -26,6 +26,8 @@ test.describe('collab journeys', () => {
 // c8-ui-links-history-participants: the obligations of COL-S6 and COL-S7, as the seed names them.
 const NO_ENTRY_OBLIGATION = 'obl-idd-demands-needs';
 const PARTICIPATION_OBLIGATION = 'obl-costs-charges';
+// c8-ui-mywork: the obligation the seeded comments are on (apps/shared/e2e_seed.py).
+const DORA_REGISTER = 'Keep a register of information on ICT third-party arrangements';
 
 /** Adds one person or team through the picker and returns the new participant's id. */
 async function addParticipant(page: Page, panel: Locator, search: string, name: RegExp): Promise<string> {
@@ -142,7 +144,46 @@ test.describe('participants, comments and mentions', () => {
     // pending: COL-S9 (COL-04, AC-COL1, NFR-01)
   });
 
-  test.fixme("COL-S12: My comments and mentions are found on My work, limited to what I can read, and never logged", async () => {
-    // pending: COL-S12 (COL-01, HOM-05)
+  // c8-ui-mywork. The scenario's Anna is the seeded Reader, Oskar Lund, mentioned on a case by
+  // Sara Lindqvist and on the DORA register by Karin Nyström; the author of My comments is the
+  // owner, Johan Berg, whose case comment stands and whose other was deleted; Johan-without-
+  // cases.read is the library-only login, Axel Norén, mentioned on the same case
+  // (EXPECTED_COMMENTS in apps/shared/e2e_seed.py). That the log, the audit row and the outbox
+  // never hold the text is proved in apps/collab/tests_scenarios.py.
+  test("COL-S12: My comments and mentions are found on My work, limited to what I can read, and never logged", async ({ page, apiGuard, browser }, testInfo) => {
+    allowFreshContext(apiGuard);
+    allowRegisterEntryPending(apiGuard);
+    await signInAs(page, LOGINS.reader);
+    await page.goto('/work');
+    const panel = page.locator('[data-my-comments-panel]');
+    await expect(panel.getByRole('tab', { name: 'Mentions' })).toHaveAttribute('aria-selected', 'true');
+    const onCase = panel.locator('[data-my-comment]').filter({ hasText: 'Sara Lindqvist mentioned you' });
+    await expect(onCase).toHaveCount(1);
+    await expect(panel.locator('[data-my-comment]').filter({ hasText: 'Karin Nyström mentioned you' }).getByRole('link', { name: DORA_REGISTER })).toBeVisible();
+
+    // The mention links to the case, where the comment was written and where a reply is.
+    await onCase.getByRole('link').click();
+    await expect(page).toHaveURL(/\/watch\/[^/?]+$/);
+    const thread = page.locator('[data-comments-panel="change_case"]');
+    await expect(thread.getByText('Everyone in your organisation can read comments.')).toBeVisible();
+
+    // My comments: the owner's own, newest first; the one he deleted is gone.
+    const johan = await signInElsewhere(browser, testInfo.project.use.baseURL, apiGuard, LOGINS.owner);
+    await johan.goto('/work');
+    const his = johan.locator('[data-my-comments-panel]');
+    await his.getByRole('tab', { name: 'My comments' }).click();
+    await expect(his.getByRole('tab', { name: 'My comments' })).toHaveAttribute('aria-selected', 'true');
+    await expect(his.locator('[data-my-comment]').first()).toBeVisible();
+    await expect(his.locator('[data-my-comment]').filter({ hasText: DORA_REGISTER })).toHaveCount(0);
+    await johan.context().close();
+
+    // A role without cases.read gets no case comment, and is told cases are held back.
+    const axel = await signInElsewhere(browser, testInfo.project.use.baseURL, apiGuard, LOGINS.libraryOnly);
+    await axel.goto('/work');
+    const limited = axel.locator('[data-my-comments-panel]');
+    await expect(limited.getByText('Cases are not shown here, because your role cannot open them')).toBeVisible();
+    await expect(limited.locator('[data-my-comment]').filter({ hasText: 'Sara Lindqvist mentioned you' })).toHaveCount(0);
+    await expect(axel.getByText('Changes are not shown here, and are left out of the counts, because your role cannot open them.')).toBeVisible();
+    await axel.context().close();
   });
 });

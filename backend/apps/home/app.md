@@ -38,7 +38,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | HOM-02 | Weekly briefing, reachable from home with part of it shown there, snapshotted when emailed | M | R1 | built |
 | HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place; from R2 a certificate's expiry and next audit are our deadlines and never reach the calendar feed. R1 builds the regulatory branch; our own deadlines join with the register and the cases (chunks 8 and 9), and certificates with TEN-02 (chunk 8, HOM-S15) | M | R1 | in_progress |
 | HOM-04 | Upcoming changes as public facts for agents and newsletters, and a revocable calendar feed | S | R1 | built |
-| HOM-05 | My work: what a person or their teams are responsible for or take part in, as overdue, due soon, changes on those items and the rest, with next reviews and a department head's view; permission-filtered rows and counts; the footprint never hides a person's own items | M | R2 | in_progress |
+| HOM-05 | My work: what a person or their teams are responsible for or take part in, as overdue, due soon, changes on those items and the rest, with next reviews and a department head's view; permission-filtered rows and counts; the footprint never hides a person's own items | M | R2 | built |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -237,6 +237,15 @@ And Karin's department view lists it with Anna named as responsible
 When Erik chooses "Leave"
 Then the obligation leaves Erik's My work and the audit log holds both events
 ```
+
+The journeys run on the seeded people, not these names (c8-ui-mywork): Anna is the owner
+login, Johan Berg (`J9_OWNER` in `apps/shared/e2e_seed.py`), whose overdue review is the
+research-payments obligation and whose DORA register carries the independently confirmed
+change; Erik is the J-9 contributor, Viktor Hedlund (`participant@example-bank.test`); Karin is
+the head of Retail Banking, Karin Ek (`head@example-bank.test`). HOM-S7 and HOM-S9 read the
+same people; in HOM-S9 Johan stands for the scenario's Johan and opens the department by its
+address (`/work?unit=`), since only a head gets the switch. Erik's deactivation in HOM-S9 is
+proved by `test_hom_s9` alone.
 
 ### HOM-S14 — Case work reaches My work `@integration` (HOM-05)
 ```gherkin

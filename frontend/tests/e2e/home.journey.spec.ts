@@ -1,4 +1,7 @@
+import type { Locator, Page } from '@playwright/test';
+
 import { expect, test } from './support/api-guard';
+import { allowRegisterEntryPending, openObligation, signInElsewhere } from './support/obligation-page';
 import { LOGINS, allowFreshContext, signInAs } from './support/passkeys';
 
 // home: the @e2e scenarios from backend/apps/home/app.md (playbook Appendix B).
@@ -250,20 +253,157 @@ test.describe('home journeys', () => {
   });
 });
 
+// c8-ui-mywork: the seed's names My work's journeys read (apps/shared/e2e_seed.py).
+const RESEARCH_PAYMENTS = 'Pay for third-party research only under the permitted models';
+const DORA_REGISTER = 'Keep a register of information on ICT third-party arrangements';
+const SUITABILITY = 'Assess suitability when giving investment advice';
+const J9_CHANGED_OBLIGATION = 'obl-dora-ict-register';
+const RETAIL_BANKING = 'Retail Banking';
+
+/** My work by its address, settled on its sections or its empty state. */
+async function openMyWork(page: Page): Promise<void> {
+  await page.goto('/work');
+  await expect(page.getByRole('heading', { level: 1, name: 'My work' })).toBeVisible();
+  await expect(page.locator('[data-work-section]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+}
+
+/** The rows about one record, found by their title: a change's row names its obligation too. */
+function workItems(page: Page, title: string, within = '[data-work-item]'): Locator {
+  return page.locator(within).filter({ has: page.getByRole('heading', { name: title, exact: true }) });
+}
+
+function workRow(page: Page, bucket: string, title: string): Locator {
+  return workItems(page, title, `[data-work-section="${bucket}"] [data-work-item]`);
+}
+
 // PRD 0.3: My work (HOM-05, J-9) and a certificate's dates on the roadmap
 // (HOM-03, TEN-02). Each stays test.fixme until the task in
 // docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
 test.describe('my work and certificate deadlines', () => {
-  test.fixme("HOM-S7: My work lists what I'm responsible for or take part in, most urgent first", async () => {
-    // pending: HOM-S7 (HOM-05, AC-HOM1)
+  // c8-ui-mywork. The seed's people (apps/shared/e2e_seed.py, EXPECTED_ORG_REGISTER): the
+  // scenarios' Anna is the owner login, Johan Berg (J9_OWNER); Karin is the head of Retail
+  // Banking, Karin Ek; Erik is the J-9 contributor, Viktor Hedlund. Johan owns the overdue
+  // research-payments review, the DORA register the confirmed change is linked to and the
+  // internal item "Research procurement"; his team Retail compliance owns the suitability duty.
+  test("HOM-S7: My work lists what I'm responsible for or take part in, most urgent first", async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.owner);
+    // My work is in the rail, with no permission of its own.
+    await page.getByRole('link', { name: 'My work', exact: true }).first().click();
+    await expect(page.getByRole('heading', { level: 1, name: 'My work' })).toBeVisible();
+
+    const overdue = workRow(page, 'overdue', RESEARCH_PAYMENTS);
+    await expect(overdue).toContainText("You're responsible");
+    await expect(overdue).toContainText(/\d+ days? overdue/);
+    await expect(overdue.getByRole('link', { name: RESEARCH_PAYMENTS })).toHaveAttribute('href', /\/inventory\/obligations\//);
+    // Each item appears once, in its most urgent section.
+    await expect(workItems(page, RESEARCH_PAYMENTS)).toHaveCount(1);
+    // The team's obligation, with the team as the reason, and the internal item, which has no page.
+    await expect(workItems(page, SUITABILITY)).toContainText('Your team is responsible');
+    const item = workItems(page, 'Research procurement', '[data-work-item="internal_item"]');
+    await expect(item).toHaveCount(1);
+    await expect(item).toContainText("You're responsible");
+    await expect(item.getByRole('link')).toHaveCount(0);
+    // Decisions stay on Today.
+    await page.getByRole('link', { name: 'Open Today' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'What is coming, and where we stand' })).toBeVisible();
   });
 
-  test.fixme("HOM-S9: A department head sees the department's work, naming who is responsible", async () => {
-    // pending: HOM-S9 (HOM-05, TEN-02, TEN-03)
+  test("HOM-S9: A department head sees the department's work, naming who is responsible", async ({ page, apiGuard, browser }, testInfo) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.departmentHead);
+    const read = page.waitForResponse((r) => r.url().includes('/api/v1/me/work') && r.url().includes('scope=unit'));
+    await openMyWork(page);
+
+    // She opens on her department, and every row names who is responsible.
+    await expect(page.getByRole('group', { name: 'Whose work' }).getByRole('button', { name: RETAIL_BANKING })).toHaveAttribute('aria-pressed', 'true');
+    await expect(workItems(page, SUITABILITY).first()).toContainText('Retail compliance is responsible');
+    await expect(workItems(page, RESEARCH_PAYMENTS).first()).toContainText('Johan Berg is responsible');
+    const unit = new URL((await read).url()).searchParams.get('unit');
+    expect(unit).not.toBeNull();
+
+    // Johan opens the same department by its address: a filter, so he sees the same work.
+    const johan = await signInElsewhere(browser, testInfo.project.use.baseURL, apiGuard, LOGINS.owner);
+    await johan.goto(`/work?unit=${unit}`);
+    await expect(johan.getByRole('group', { name: 'Whose work' }).getByRole('button', { name: 'This department' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(workItems(johan, SUITABILITY).first()).toContainText('Retail compliance is responsible');
+    await expect(workItems(johan, RESEARCH_PAYMENTS).first()).toContainText('Johan Berg is responsible');
+    await johan.context().close();
+
+    // Her choice is remembered on this device.
+    await page.getByRole('group', { name: 'Whose work' }).getByRole('button', { name: 'Mine' }).click();
+    await page.reload();
+    await expect(page.getByRole('group', { name: 'Whose work' }).getByRole('button', { name: 'Mine' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test.fixme("HOM-S13 J-9 @smoke: Monday morning", async () => {
-    // pending: HOM-S13 (HOM-05, COL-04, TEN-03, J-9)
+  test("HOM-S13 J-9 @smoke: Monday morning", async ({ page, apiGuard, browser }, testInfo) => {
+    allowFreshContext(apiGuard);
+    allowRegisterEntryPending(apiGuard);
+    await signInAs(page, LOGINS.owner);
+    await openMyWork(page);
+
+    // Johan's overdue review, and the change linked to the obligation he is responsible for.
+    await expect(workRow(page, 'overdue', RESEARCH_PAYMENTS)).toContainText("You're responsible");
+    const linked = page.locator('[data-work-section="aware"] [data-work-item="change_case"]').filter({ hasText: `Linked to ${DORA_REGISTER}` });
+    await expect(linked.first()).toBeVisible();
+
+    // He opens that obligation and adds Viktor as a participant.
+    await openObligation(page, J9_CHANGED_OBLIGATION);
+    const panel = page.locator('[data-participants-panel]');
+    await expect(panel.locator('[data-participants-empty]').or(panel.locator('[data-participant-id]')).first()).toBeVisible();
+    const viktorRow = panel.locator('[data-participant-id]').filter({ hasText: 'Viktor Hedlund' });
+    let taking = false;
+    try {
+      await panel.getByRole('button', { name: 'Add a participant' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Add a participant' });
+      await dialog.getByRole('searchbox', { name: 'Person or team' }).fill('Viktor');
+      await dialog.getByRole('radio', { name: /^Viktor Hedlund/ }).click();
+      await dialog.getByRole('button', { name: 'Add' }).click();
+      await expect(dialog).toBeHidden();
+      await expect(viktorRow).toHaveCount(1);
+      taking = true;
+
+      // Viktor's My work lists it because he takes part.
+      const viktor = await signInElsewhere(browser, testInfo.project.use.baseURL, apiGuard, LOGINS.participant);
+      allowRegisterEntryPending(apiGuard);
+      await openMyWork(viktor);
+      const his = workItems(viktor, DORA_REGISTER);
+      await expect(his.first()).toContainText('You take part');
+
+      // Karin's department view names Johan as responsible for it.
+      const karin = await signInElsewhere(browser, testInfo.project.use.baseURL, apiGuard, LOGINS.departmentHead);
+      await openMyWork(karin);
+      await expect(karin.getByRole('group', { name: 'Whose work' }).getByRole('button', { name: RETAIL_BANKING })).toHaveAttribute('aria-pressed', 'true');
+      await expect(workItems(karin, DORA_REGISTER, '[data-work-item="tenant_obligation"]').first()).toContainText('Johan Berg is responsible');
+      await karin.context().close();
+
+      // Viktor leaves, and the obligation leaves his My work.
+      await openObligation(viktor, J9_CHANGED_OBLIGATION);
+      const own = viktor.locator('[data-participants-panel] [data-participant-id]').filter({ hasText: 'Viktor Hedlund' });
+      const leaving = viktor.waitForResponse((r) => r.url().includes('/participants/') && r.request().method() === 'DELETE');
+      await own.getByRole('button', { name: 'Leave' }).click();
+      expect((await leaving).status()).toBe(204);
+      taking = false;
+      await openMyWork(viktor);
+      await expect(workItems(viktor, DORA_REGISTER)).toHaveCount(0);
+      await viktor.context().close();
+
+      // The audit log holds both events on the register entry: Viktor, reserved for this
+      // journey, leaving, and Johan adding him.
+      await page.goto('/admin/audit-log');
+      await expect(page.getByRole('heading', { level: 1, name: 'Audit log' })).toBeVisible();
+      const event = (action: string, by: string) => page.locator(`[data-audit-row][data-action="${action}"]`).filter({ hasText: `By ${by}` });
+      await event('participant.left', 'Viktor Hedlund').first().locator('[data-only-record]').click();
+      await expect(event('participant.left', 'Viktor Hedlund').first()).toBeVisible();
+      await expect(event('participant.added', 'Johan Berg').first()).toBeVisible();
+    } finally {
+      // Johan takes Viktor off again if the journey stopped half-way, as the seed had it.
+      if (taking) {
+        await page.reload();
+        await viktorRow.getByRole('button', { name: 'Remove' }).click();
+        await expect(viktorRow).toHaveCount(0);
+      }
+    }
   });
 
   test.fixme("HOM-S15: A certificate's expiry and next audit are our deadlines, never in the calendar feed", async () => {
