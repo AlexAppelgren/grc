@@ -95,8 +95,8 @@ export function SoaView({ obligationId, entity }: { obligationId: string; entity
                         <details data-soa-history="">
                           <summary className="cursor-pointer">{t('obligationUnits.historyCount', { count: unit.history.length })}</summary>
                           <ol className="mt-1.5 grid gap-1.5">
-                            {unit.history.map((decision) => (
-                              <li key={decision.decidedAt}>
+                            {unit.history.map((decision, index) => (
+                              <li key={`${decision.decidedAt}-${index}`}>
                                 <PillRow pills={[presentApplicability(decision.applicability, t)]} />
                                 <span className="block">{decision.reason}</span>
                                 <span className="block text-muted">
