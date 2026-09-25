@@ -170,6 +170,25 @@ writes, never an OpenAPI `enum`.
   scopes nothing (TEN-02, D-70).
 - `credential_policy` (`any_passkey`, `device_bound`), `CredentialPolicyKind`: sign-in and
   enrolment branch on it (ID-07, ADR 0048).
+**Chunk 8's register lists (2026-09-25, c8-vocab-lists-rules).** Tier-three lists
+`schema.sql` has as `CHECK` constraints or not at all, each with an immutable key, labels in
+`en` and `sv`, system rows the tenant hook files create-only, and forced row-level security:
+
+- `gap_status` with the tier-one kind `gap_category` (`open`, `remediating`,
+  `risk_accepted`, `closed`), a system row per kind. `risk_accepted` is the frontend's
+  spelling (`tone-by-kind.ts`), so one state has one name (REG-03, VOC-04).
+- `gap_source` (`assessment`, `change_case`, `audit`, `incident`, `regulator`), no kind:
+  its pill takes the `source` slot's tone (REG-03, pills-and-labels "Slot order").
+- `risk_acceptance_reason` (`accepted_by_management`, `cost_disproportionate`,
+  `compensating_control`, `time_limited`, `other`), no kind (VOC-06).
+- `team`, with the column `email` and `UNIQUE (tenant_id, id)` for composite keys, no
+  `is_lead`, served by `GET /vocab/team`; one system row, `compliance`, because every list
+  has a default. Its `org_unit_id` comes with the teams model (TEN-03).
+- `risk_rating` gains the tier-one kind `risk_level` (`low`, `medium`, `high`): each row
+  maps to one, and the tone reads it, never the editable ordinal (VOC-05). No schema
+  change; `seed_reference` puts the level on every tenant's system rows.
+
+Retiring the last active row under a fixed kind answers 409 `category_empty` (VOC-04).
 
 ## 2. Identity (PRD ID, playbook 4.2)
 
