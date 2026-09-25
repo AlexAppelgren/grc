@@ -1379,3 +1379,10 @@ departures:
 - `internal_link` points at an `internal_item` (nullable, a composite key) rather than
   carrying the designed `kind`: the item carries the kind. It is removed by stamping
   `removed_at` and `removed_by`, never deleted, with one live link per entry and item.
+
+## c10-digest-content. The weekly digest is keyed to its week (2026-09-25)
+
+- `email_message.sent_on` of a `weekly_digest` row is the first day (Monday) of the bank's
+  local week rather than the day of the send, so the same unique key that stops a second
+  reminder in a day stops a second digest in a week (COL-02: "one email per user per
+  week"). Every other template keeps the day of the send.

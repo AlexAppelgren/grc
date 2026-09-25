@@ -16,6 +16,12 @@ STRINGS: dict[str, str] = {
         "{title}, som ägs av {name}, skulle ha varit klar den {date} och är fortfarande inte klar.\n"
         "Dagar försenad: {count}\nÖppna: {link}"
     ),
-    "weekly_digest.subject": "Dina öppna uppgifter den här veckan: {count}",
+    "weekly_digest.subject": "Dina öppna uppgifter, veckan från {date}: {count}",
     "weekly_digest.body": "Dina öppna uppgifter per den {date}: {count}\nSe alla: {link}",
+    "weekly_digest.overdue": "Försenade: {count}",
+    "weekly_digest.due_soon": "Snart dags: {count}",
+    "weekly_digest.aware": "Ändringar på dina uppgifter: {count}",
+    "weekly_digest.open": "Allt du ansvarar för: {count}",
+    "weekly_digest.item": "- {title}\n  {link}",
+    "weekly_digest.more": "...och {count} till.",
 }

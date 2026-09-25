@@ -27,7 +27,7 @@ from unittest import mock
 from django.conf import settings
 from django.test import TestCase
 
-from apps.collab import mail
+from apps.collab import digest, mail
 from apps.collab.mail_strings import CATALOGS, en, sv
 from apps.collab.models import EmailMessage, EmailStatus
 from apps.identity.models import Membership, UserStatus
@@ -66,9 +66,11 @@ class Catalog(TestCase):
         self.assertEqual(set(CATALOGS), {"en", "sv"})
 
     def test_every_template_has_a_subject_and_a_body_beside_the_header_and_footer(self) -> None:
-        expected = {"header", "footer"} | {
-            f"{t}.{part}" for t in mail.TEMPLATES for part in ("subject", "body")
-        }
+        expected = (
+            {"header", "footer"}
+            | {f"{t}.{part}" for t in mail.TEMPLATES for part in ("subject", "body")}
+            | set(digest.SECTION_KEYS)
+        )
         self.assertEqual(set(en.STRINGS), expected)
         self.assertEqual(
             set(mail.TEMPLATES),
@@ -294,9 +296,12 @@ class Delivery(TestCase):
         self.assertEqual(EmailMessage.objects.count(), 1)
         self.assertEqual(AuditEvent.objects.filter(action="mail.sent").count(), 1)
 
-    def test_the_digest_which_names_no_record_is_also_sent_once_a_day(self) -> None:
-        self.send("weekly_digest", subject_id=None)
-        self.send("weekly_digest", subject_id=None)
+    def test_the_digest_which_names_no_record_is_also_sent_once(self) -> None:
+        """Its content is My work's (tests_digest.py); here only the row that names no record."""
+        composed = OutgoingMail(to=self.member.user.email, subject="Digest", body="Rows")
+        with mock.patch("apps.collab.digest.compose", return_value=composed):
+            self.send("weekly_digest", subject_id=None)
+            self.send("weekly_digest", subject_id=None)
         self.assertEqual(len(MockMailer.sent), 1)
         self.assertEqual(EmailMessage.objects.get().subject_id, None)
 

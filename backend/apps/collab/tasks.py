@@ -5,8 +5,10 @@ tenant id is its first argument and it runs activated inside its own transaction
 `email_message` row and the send commit together. The row is the idempotency key: its
 unique `(tenant, user, template, subject_type, subject_id, sent_on)`, with `sent_on` the
 bank's local date, makes a second send of the same mail the same day find the row and do
-nothing, however many workers retry it. A send the relay refused keeps its row as `failed`
-with the error's kind, and the next run tries that row again rather than adding another.
+nothing, however many workers retry it; the weekly digest's `sent_on` is the first day of
+the bank's week, so it goes once a week (`collab/digest.py`). A send the relay refused keeps
+its row as `failed` with the error's kind, and the next run tries that row again rather than
+adding another.
 
 Nothing here logs a recipient's address, a subject or a body (playbook 4.7): the row's id,
 its template and its status are all that leave.
@@ -21,7 +23,7 @@ import uuid
 from celery import shared_task
 from django.utils import timezone
 
-from apps.collab import mail
+from apps.collab import digest, mail
 from apps.collab.models import EmailMessage, EmailStatus
 from apps.identity.models import Membership, UserStatus
 from apps.library.reading import today_for
@@ -57,15 +59,24 @@ def deliver_mail(
         )
     except Membership.DoesNotExist:
         return
-    outgoing = mail.compose(membership, template, mail.MailContext.from_task(context))
     tenant = Tenant.objects.get(pk=tenant_id)
+    sent_on = today_for(tenant)
+    if template == digest.TEMPLATE:
+        # Composed here from My work as it stands, so no record title rides the queue, and
+        # once a week rather than once a day. Nothing open any more: no mail and no row.
+        composed = digest.compose(membership)
+        if composed is None:
+            return
+        outgoing, sent_on = composed, digest.week_of(sent_on)
+    else:
+        outgoing = mail.compose(membership, template, mail.MailContext.from_task(context))
     key = {
         "tenant": tenant,
         "user": membership.user,
         "template": template,
         "subject_type": subject_type,
         "subject_id": subject_id,
-        "sent_on": today_for(tenant),
+        "sent_on": sent_on,
     }
     # Insert the day's row unless it exists, then lock it: a second worker waits here for
     # the first to commit and then finds the mail already sent.
