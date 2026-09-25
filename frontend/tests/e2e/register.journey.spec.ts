@@ -55,7 +55,7 @@ test.describe('standards per legal entity', () => {
     // pending: REG-S15 (REG-08)
   });
 
-  test.fixme("REG-S16: J-10: a legal entity follows a standard from regulatory scope to Statement of Applicability", async () => {
+  test.fixme("REG-S16 J-10 @smoke: a legal entity follows a standard from regulatory scope to Statement of Applicability", async () => {
     // pending: REG-S16 (FP-02, TEN-02, REG-01, REG-08, J-10)
   });
 });
