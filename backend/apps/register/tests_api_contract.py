@@ -195,6 +195,7 @@ BUILT = {
     "getRegisterEntry",
     "updateRegister",
     "updateRegisterEntity",
+    "setApplicability", "setApplicabilityMany",  # c8-reg-applicability, tests_applicability.py
 }
 
 
