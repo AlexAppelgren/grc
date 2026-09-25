@@ -228,6 +228,9 @@ TENANT_ROUTES: list[tuple[str, str, str, Any, str]] = [
     ("getResearchRequest", "get", f"{REQUESTS}/{{id}}", None, perms.AGENTS_MANAGE),
     ("listPlatformWatch", "get", f"{TENANT_AGENTS}/platform", None, perms.WATCH_READ),
 ]
+# The operations served for real, which answer from their logic and no longer 501:
+# `c11-tenant-agents-budget-scope` (tests_tenant_agents.py, tests_budget.py).
+SERVED = {"listTenantAgents", "createTenantAgent", "updateTenantAgent", "getAgentBudget", "putAgentBudget"}
 # Which record each id route addresses: a bank's own agent, its run, or its request.
 ID_KIND = {
     "updateTenantAgent": "agent",
@@ -421,6 +424,8 @@ class TenantAgentRouteGates(TestCase):
     def test_inside_its_own_bank_each_answers_not_built(self) -> None:
         with stub_session(self.bank_a.principal(frozenset({perms.AGENTS_MANAGE, perms.WATCH_READ}))):
             for name, method, url, body, _ in TENANT_ROUTES:
+                if name in SERVED:
+                    continue
                 if name == "createResearchRequest":
                     body = {**body, "tenantAgentId": str(self.bank_a.agent.id)}
                 with self.subTest(operation=name):
