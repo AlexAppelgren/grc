@@ -153,9 +153,11 @@ ADR (0026 to 0041), each reversible. These are the ones that need you.
 - [ ] Design cards still to be drawn before their chunks: the "Standard" pill's
       wording and tone; the regulatory scope page's opt-in group with "None
       followed"; the "Markets we watch" panel; My work; the participants panels;
-      the entity screen's "Licences and certificates"; the units list and paste
-      dialog; the approver's decide-selected queue; the Statement of
-      Applicability view; and a standard instrument's empty provision tree.
+      the entity screen's "Licences and certificates"; and a standard
+      instrument's empty provision tree. (c8-cards-register, 2026-09-25: the units
+      list, the paste dialog and the Statement of Applicability view are drawn in
+      `design/screens/tenant-obligation-units.html`; the decide-selected queue is
+      struck, because D-75 leaves nothing to decide in bulk.)
 
 ### Legal, before any standard is seeded
 
