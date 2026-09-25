@@ -212,6 +212,19 @@ WORKFLOW = [
 ]
 
 
+# The operations whose module has landed: each answers for real past its gate, and its own
+# tests prove what it does.
+BUILT = frozenset(
+    {
+        # c9-triage: tests_triage.py and tests_close_paths.py
+        "triageChange",
+        "dismissChange",
+        "restoreChange",
+        "closeWithoutAction",
+    }
+)
+
+
 def _send(client: Any, route: Route, url: str, headers: dict[str, Any]) -> Any:
     if route.body is MULTIPART:
         return client.post(url, data=EVIDENCE_FORM, **headers)
@@ -308,6 +321,8 @@ class WorkflowContract(TestCase):
         bank = _bank_with_work()
         with stub_session(bank.principal):
             for route in WORKFLOW:
+                if route.operation_id in BUILT:
+                    continue
                 with self.subTest(operation=route.operation_id):
                     response = _send(self.client, route, route.url(bank.change_id, bank.action_id, bank.evidence_id), AS_SESSION)
                     self.assertEqual(response.status_code, 501)
