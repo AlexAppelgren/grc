@@ -36,7 +36,7 @@ describe('navigation registry (playbook 6.2)', () => {
     ]);
     // A console destination registers with its page: vocabularies and tenants
     // from chunk 4, Change facts, Sources and Agent keys from chunk 5,
-    // Evaluation from chunk 7. The queue joins with its own.
+    // Evaluation from chunk 7, Support access from chunk 8. The queue joins with its own.
     expect(visibleDestinations('console', PLATFORM).map((d) => d.id)).toEqual([
       'console-queue',
       'console-vocabularies',
@@ -45,6 +45,7 @@ describe('navigation registry (playbook 6.2)', () => {
       'console-tenants',
       'console-agent-keys',
       'console-evaluation',
+      'console-support-access',
     ]);
     // Each console destination answers to the one platform role that holds
     // its permission, so neither platform role sees the other's (ADM-S4).
@@ -105,7 +106,7 @@ describe('navigation registry (playbook 6.2)', () => {
   it('puts every visible destination that is not a tab in More, and never promotes an unranked one', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(moreDestinations('tenant', all).map((d) => d.id)).toEqual(['roadmap', 'admin']);
-    expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys', 'console-evaluation']);
+    expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys', 'console-evaluation', 'console-support-access']);
 
     expect(dockDestinations('tenant', []).map((d) => d.id)).toEqual(['today']);
     expect(moreDestinations('tenant', []).map((d) => d.id)).toEqual([]);

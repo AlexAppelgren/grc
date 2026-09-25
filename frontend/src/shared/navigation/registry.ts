@@ -100,6 +100,8 @@ export const destinations: readonly Destination[] = [
   { id: 'console-agent-keys', href: '/console/agent-keys', labelKey: 'nav.console.agentKeys', surface: 'console', anyOfPermissions: ['agent_definitions.manage'], group: 'primary' },
   // The search evaluation set (SRC-05): the library editor's, beside Sources.
   { id: 'console-evaluation', href: '/console/evaluation', labelKey: 'nav.console.evaluation', surface: 'console', anyOfPermissions: ['eval.manage'], group: 'primary' },
+  // Support access (TEN-06): the platform admin asks a bank to read, and enters a grant it approved.
+  { id: 'console-support-access', href: '/console/support-access', labelKey: 'nav.console.supportAccess', surface: 'console', anyOfPermissions: ['support_access.grant'], group: 'primary' },
 ];
 
 /** The console's landing: it sends each person on to the first console destination they may open. */
