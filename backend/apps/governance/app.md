@@ -23,6 +23,16 @@ stays inside the bank that filed it: no bleqq editor, other bank, agent or model
 reads it, and a library error reaches the library instead through the watch
 agents' re-check and a proposal (D-50, ADR 0043).
 
+The access log of the agents a bank runs itself (ACC-08, acc-entries-and-log) is here
+too: `agent_access_call`, one row per call an agent access credential makes, written after
+the response by `apps/governance/access_log.py` and read on the entry with
+`GET /agent-access/{entryId}/calls`. It names the credential, the entry, the person a
+personal token acts as, the tool, the filters (names, and values only when they are keys),
+the record count, the scopes and the entry's term scope, the time and the status, never
+the content. It is a tenant ledger, append-only by trigger under forced row-level security:
+the D-53 purge deletes a row whole ten years after it was written, and nothing else
+changes or removes one. A call refused for its rate is in the security log instead.
+
 Since PRD 0.4 (Alex, 2026-09-20, D-62 and ADR 0054) a library proposal may be
 confirmed by an independent agent rather than a person, so the audit trail
 carries decisions nobody signed with a passkey. Nothing about `record()`
@@ -73,7 +83,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | AUD-03 | A problem report stays inside the bank that filed it and nobody outside reads it; the loop to the library is closed by the watch agents' re-check, which proposes the correction (D-50) | S | R1 | built |
 | AUD-04 | Retention: a record is deleted ten years after its last use. The purge never updates an append-only row, deletes one only past that age, and runs through one database-guarded path (D-53) | S | R3 | pending |
 | ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, evaluation sets, tenants and plans, support access, system health (coverage, runs, outbox lag, failed jobs with retry, and each bank's usage figures through one audited read of numbers only). No problem-report surface (D-50, D-59). R1 built the proposal queue, library vocabularies, Change facts, sources, evaluation sets, tenants and agent keys; agent definitions come in chunk 11 and support access in chunk 8 (R2), languages and jurisdictions in R2 (jurisdictions read-only on the vocabularies screen until then), plans and system health in chunk 14 (R3) | M | R1 to R3 | in_progress |
-| ACC-08 | Tenant reach is requested and approved by two different people holding `security.manage`, each with a passkey; a tenant admin then enables it per entry. Off means off for every entry. Every call is logged with its credential, entry, tool, filters, record count, scope and timing, never content | M | R2 | pending |
+| ACC-08 | Tenant reach is requested and approved by two different people holding `security.manage`, each with a passkey; a tenant admin then enables it per entry. Off means off for every entry. Every call is logged with its credential, entry, tool, filters, record count, scope and timing, never content | M | R2 | in_progress |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -329,4 +339,16 @@ When the tenant reads the entry's access log
 Then each row carries the credential, the entry, the tool, the filters, the record count, the scope applied and the timing
 And the person is named for a personal token and not for a service key
 And no row holds the description that was asked, an obligation's text, or any register content
+```
+
+### ACC-S14 — Tenant reach is switched on by two people and off by one `@integration` (ACC-08)
+```gherkin
+Given two members holding security.manage and a bank whose tenant reach is off
+When one of them requests tenant reach with a fresh passkey assertion and tries to approve it themselves
+Then the approval answers 409 "four_eyes_violation" and reach stays off
+When the second approves it with a fresh passkey assertion
+Then reach is on, and the request's and the approval's audit rows each name their person and assertion
+When either of them switches it off with a fresh passkey assertion
+Then reach is off from the next read, with no second person
+And a new request rejected by the second person leaves it off
 ```

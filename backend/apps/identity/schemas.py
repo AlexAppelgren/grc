@@ -1807,8 +1807,8 @@ class PermissionOut(CamelSchema):
 _TENANT_KEY_SCOPES_TEXT = (
     "`library:read` reads the shared library's instruments, provisions and obligations; "
     "`search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; "
-    "`tenant:read` is set aside for reading the bank's own profile, and no route reads with it "
-    "yet; and `proposals:write` files a proposal to the shared library, which changes nothing "
+    "`tenant:read` reads the bank's register only as an agent access entry, so a key bound to "
+    "no entry holds it to no effect; and `proposals:write` files a proposal to the shared library, which changes nothing "
     "until someone independent approves it. No scope "
     "writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and "
     "`proposals:review` belong to the platform's own agents and are refused on a bank's key."

@@ -68,9 +68,13 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `ASK_STREAMS_PER_USER` | api | `2` | `2` | `2` | How many Ask answers one caller may have streaming at once. Each open stream holds a server thread until the model finishes (up to `LLM_DEADLINE_S`), so without it a few callers could hold every thread for every bank; one past it answers 429 `rate_limited` before any byte. Below 1 the app refuses to boot (NFR-02, H47) |
 | `PROBLEM_REPORTS_PER_USER_PER_HOUR` | api | `30` | `30` | `30` | How many problem reports one person may file in an hour, and separately how many they may close; over it is 429 `rate_limited`. Each is a row and an audit row kept for ten years. Below 1 the app refuses to boot (AUD-03, ACC-09, H39) |
 | `VISIT_MIN_INTERVAL_SECONDS` | api | `60` | `60` | `60` | A `POST /me/visit` this soon after the person's last one answers 204 and writes nothing, because each visit writes an audit and an outbox row kept for ten years. Below 1 the app refuses to boot (H38) |
+| `AGENT_ACCESS_KEY_MAX_DAYS` | api | `90` | `90` | `90` | The longest a service key of an agent access entry may live, in days (ACC-03, ADR 0056). A key is minted with an expiry no later than this; at least 1 or the app refuses to boot |
+| `PERSONAL_TOKEN_MAX_DAYS` | api | `90` | `90` | `90` | The longest a personal access token may live, in days (ACC-03, ADR 0056). A token cannot be minted without an expiry, and never one later than this; at least 1 or the app refuses to boot |
+| `AGENT_ACCESS_RATE_PER_MINUTE` | api | `60` | `60` | `60` | Requests per minute one agent access credential, a service key of an entry or a personal token, may make before it answers 429 and writes `credential_rate_limited` to the security log (ACC-09); at least 1 or the app refuses to boot |
 | `ASK_RETRIEVAL_DEPTH` | api | `6` | `6` | `6` | How many passages of the reader's own ranking Ask gives the model, best first: the whole of what an answer may rest on, each one a numbered citation. From 1 to `AI_GENERATION_CITATIONS_MAX`, or the app refuses to boot (SRC-03) |
 | `ASK_MAX_TOKENS` | api | `1024` | `1024` | `1024` | The most one Ask answer may write, beneath the `LLM_MAX_TOKENS` ceiling: an answer is a few cited sentences. At least 1, or the app refuses to boot (SRC-03) |
 | `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |
+| `AGENT_RESEARCH_TOPIC_MAX_CHARS` | api | `500` | `500` | `500` | The longest topic a research request or a console re-tag request may carry, in characters (AGT-05, c11-agents-contract); a longer one answers 422 `validation_error` |
 
 ## Testing, observability, budgets
 
