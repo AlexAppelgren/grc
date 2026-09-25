@@ -672,6 +672,18 @@ CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
 # into a write every time and fill the security log with one bank's polling.
 CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
 
+# ===== CAS-05 the malware scanner (apps/shared/adapters/scanner.py, c9-scanner-adapter) ==
+# `mock` answers from the EICAR string and marker names and is refused at first use on
+# every deployed environment, `test` included; `clamd` streams the bytes over INSTREAM to
+# a clamd service on the private network (D-101). A timeout, a refused connection or an
+# unreadable reply is a failed scan, never a clean one.
+SCANNER_PROVIDER = env_str("SCANNER_PROVIDER", "mock")  # mock | clamd
+SCANNER_HOST = env_str("SCANNER_HOST", "localhost")
+SCANNER_PORT = env_int("SCANNER_PORT", 3310)  # clamd's TCPSocket in the official image
+# Bounds the connect and each send and read, not the whole scan. clamd reads the whole
+# stream before it answers, so this must cover scanning the largest evidence file.
+SCANNER_TIMEOUT_SECONDS = float(env_str("SCANNER_TIMEOUT_SECONDS", "60.0"))
+
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
