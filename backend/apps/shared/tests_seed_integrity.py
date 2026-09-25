@@ -98,6 +98,22 @@ from apps.taxonomy.matching import footprint_of, in_footprint, in_footprint_sql,
 from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm, TaxonomyTerm, WatchedMarket
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
+# c8-seed-org-register
+from apps.register.models import ComplianceAssessment, Gap, InternalLink, Interpretation, TenantObligation, TenantObligationScope
+from apps.shared.e2e_seed import (
+    EXPECTED_ORG_REGISTER,
+    HISTORY_OBLIGATION,
+    J9_CHANGED_OBLIGATION,
+    J9_OVERDUE_OBLIGATION,
+    J9_OWNER,
+    LEAVER,
+    NOT_APPLYING_OBLIGATION,
+    RETAIL_DEPARTMENT,
+    RETAIL_TEAM,
+    SPANNING_OBLIGATION,
+)
+from apps.taxonomy.models import Team
+from apps.tenants.models import InternalItem, Licence, LicenceServiceTerm, OrgUnit, TeamMember, TenantProduct, TenantProductTerm
 
 # The login search.journey.spec.ts asks as (LOGINS.reader), tenant A's reader.
 READER_EMAIL = "reader@example-bank.test"
@@ -1026,6 +1042,8 @@ class ReseedTenantsAndScope(SeededOnce):
             created = AuditEvent.objects.filter(tenant=tenant, action="vocabulary.created")
             # TEN-S7's one tenant-A tag is the seed's work too, but not a system row.
             system = created.exclude(subject_title=f"{EXPECTED_TENANT_A_ONLY.tag_list}:{EXPECTED_TENANT_A_ONLY.tag_key}")
+            # c8-seed-org-register: each bank's own teams are the seed's work too, not system rows.
+            system = system.exclude(subject_title__in=[f"team:{team.key}" for spec in EXPECTED_ORG_REGISTER for team in spec.teams])
             self.assertEqual(system.count(), sum(len(rows) for _, rows in TENANT_SYSTEM_ROWS.values()))
             self.assertEqual(set(created.values_list("actor_label", flat=True)), {"seed_e2e"})
 
@@ -1402,3 +1420,184 @@ class SeededR2Roster(SeededOnce):
         self.assertEqual(created.count(), 1, "the role is written once, through record()")
         self.assertEqual(created.get().actor_label, "seed_e2e")
 # --- end r2-e2e-login-roster --------------------------------------------------------------------
+
+
+# --- c8-seed-org-register -----------------------------------------------------------------------
+class SeededOrgAndRegister(SeededOnce):
+    """Each bank's organisation and register (TEN-02, TEN-03, TEN-05, HOM-05, REG-01 to
+    REG-05), named row by row as `EXPECTED_ORG_REGISTER` has it, so a seed change cannot
+    hollow out a chunk 8 journey without failing here."""
+
+    def _activate(self, slug: str) -> Tenant:
+        tenant = Tenant.objects.get(slug=slug)
+        tenancy.activate(tenant.id)
+        return tenant
+
+    def _today(self, tenant: Tenant) -> datetime.date:
+        return datetime.datetime.now(ZoneInfo(tenant.timezone)).date()
+
+    def _entry(self, stable_key: str) -> TenantObligation:
+        return TenantObligation.objects.select_related("compliance_status", "risk_rating", "owner_team").get(
+            obligation__stable_key=stable_key
+        )
+
+    def test_each_bank_holds_its_units_licences_products_and_teams(self) -> None:
+        for spec in EXPECTED_ORG_REGISTER:
+            with self.subTest(tenant=spec.tenant_slug):
+                self._activate(spec.tenant_slug)
+                units = {unit.name: unit for unit in OrgUnit.objects.select_related("parent", "entity_term__dimension", "head_user")}
+                self.assertEqual(set(units), {unit.name for unit in spec.units})
+                for unit in spec.units:
+                    row = units[unit.name]
+                    self.assertEqual(row.kind, unit.kind)
+                    self.assertEqual(row.parent.name if row.parent else None, unit.parent)
+                    self.assertEqual(row.org_number, unit.org_number)
+                    term = row.entity_term
+                    self.assertEqual(f"{term.dimension.key}:{term.key}" if term else None, unit.entity_term)
+                    self.assertEqual(row.head_user.email if row.head_user else None, unit.head)
+                licences = {
+                    (licence.org_unit.name, licence.scope_note): licence
+                    for licence in Licence.objects.select_related("org_unit", "licence_type__dimension", "authority")
+                }
+                self.assertEqual(set(licences), {(licence.org_unit, licence.scope_note) for licence in spec.licences})
+                for licence in spec.licences:
+                    licence_row = licences[(licence.org_unit, licence.scope_note)]
+                    self.assertEqual(f"{licence_row.licence_type.dimension.key}:{licence_row.licence_type.key}", licence.licence_type)
+                    services = {f"{s.term.dimension.key}:{s.term.key}" for s in LicenceServiceTerm.objects.filter(licence=licence_row)}
+                    self.assertEqual(services, set(licence.services))
+                products = {product.name: product for product in TenantProduct.objects.select_related("org_unit", "owner_user")}
+                self.assertEqual(set(products), {product.name for product in spec.products})
+                for product in spec.products:
+                    product_row = products[product.name]
+                    assert product_row.org_unit is not None and product_row.owner_user is not None
+                    self.assertEqual(
+                        (product_row.org_unit.name, product_row.status, product_row.owner_user.email), (product.org_unit, product.status, product.owner)
+                    )
+                    terms = {f"{t.term.dimension.key}:{t.term.key}" for t in TenantProductTerm.objects.filter(product=product_row)}
+                    self.assertEqual(terms, set(product.terms))
+                for team in spec.teams:
+                    team_row = Team.objects.select_related("org_unit").get(key=team.key)
+                    self.assertEqual(team_row.org_unit.name if team_row.org_unit else None, team.org_unit)
+                    self.assertEqual({label.language: label.text for label in team_row.labels.all()}, team.labels)
+                    members = set(TeamMember.objects.filter(team=team_row).values_list("user__email", flat=True))
+                    self.assertEqual(members, set(team.members))
+
+    def test_the_department_head_sees_a_team_owned_and_a_person_owned_obligation(self) -> None:
+        """HOM-S9 and J-9: Karin heads Retail Banking, Cards and payments sits under it, and
+        Retail compliance, in the department, owns one entry while its member Johan owns others."""
+        self._activate(TENANT_A_SLUG)
+        department = OrgUnit.objects.get(name=RETAIL_DEPARTMENT)
+        assert department.head_user is not None
+        self.assertEqual(department.head_user.email, "head@example-bank.test")
+        self.assertTrue(OrgUnit.objects.filter(parent=department, kind="business_unit").exists())
+        team = Team.objects.get(key=RETAIL_TEAM)
+        self.assertEqual(team.org_unit_id, department.id)
+        self.assertTrue(TenantObligation.objects.filter(owner_team=team, first_line_owner__isnull=True).exists())
+        self.assertTrue(TeamMember.objects.filter(team=team, user__email=J9_OWNER).exists())
+        self.assertTrue(TenantObligation.objects.filter(first_line_owner__email=J9_OWNER).exists())
+
+    def test_j9_finds_the_owners_overdue_review_and_a_confirmed_change_on_their_obligation(self) -> None:
+        tenant = self._activate(TENANT_A_SLUG)
+        overdue = self._entry(J9_OVERDUE_OBLIGATION)
+        self.assertEqual(overdue.first_line_owner.email, J9_OWNER)
+        assert overdue.next_review_date is not None
+        self.assertLess(overdue.next_review_date, self._today(tenant))
+        changed = self._entry(J9_CHANGED_OBLIGATION)
+        self.assertEqual(changed.first_line_owner.email, J9_OWNER)
+        link = ChangeObligation.objects.get(obligation__stable_key=J9_CHANGED_OBLIGATION, confirmed_at__isnull=False)
+        self.assertTrue(ChangeCase.objects.filter(change=link.change).exists(), "tenant A has the change as a case")
+        self.assertFalse(
+            TenantObligation.objects.filter(first_line_owner__email="participant@example-bank.test").exists(),
+            "J-9's contributor owns nothing, so the obligation reaches their My work only as a participant",
+        )
+
+    def test_applies_and_complies_are_kept_apart(self) -> None:
+        """REG-01, REG-02: applying and compliant; applying with a gap; not applying with the
+        status it had before; one entry kept per legal entity with a different status each."""
+        self._activate(TENANT_A_SLUG)
+        compliant = self._entry(HISTORY_OBLIGATION)
+        self.assertEqual((compliant.applicability, compliant.compliance_status.kind), ("applies", "compliant"))
+        with_gap = self._entry("obl-esma-warnings")
+        self.assertEqual((with_gap.applicability, with_gap.compliance_status.kind), ("applies", "gap"))
+        self.assertTrue(with_gap.gaps.exists())
+        not_applying = self._entry(NOT_APPLYING_OBLIGATION)
+        self.assertEqual(not_applying.applicability, "does_not_apply")
+        self.assertTrue(not_applying.applicability_reason)
+        self.assertIsNotNone(not_applying.applicability_decided_by)
+        earlier = ComplianceAssessment.objects.filter(tenant_obligation=not_applying).order_by("-assessed_at").first()
+        assert earlier is not None
+        self.assertEqual(not_applying.compliance_status_id, earlier.status_id, "the status from before stays")
+        self.assertNotEqual(not_applying.compliance_status.kind, "not_assessed")
+        spanning = self._entry(SPANNING_OBLIGATION)
+        scopes = {scope.org_unit.name: scope for scope in spanning.scopes.select_related("org_unit", "compliance_status")}
+        self.assertEqual(set(scopes), {"Example Bank AB", "Example Fonder AB"})
+        self.assertEqual(scopes["Example Bank AB"].compliance_status.key, "compliant")
+        self.assertEqual(scopes["Example Fonder AB"].compliance_status.key, "partly_compliant")
+        self.assertTrue(scopes["Example Fonder AB"].status_note)
+        for scope in scopes.values():
+            self.assertEqual(scope.applicability, "applies")
+            self.assertIsNotNone(scope.applicability_decided_at)
+
+    def test_gaps_of_every_severity_history_readings_and_links(self) -> None:
+        """REG-03 to REG-05: a gap per severity with an owner and a date, two assessments and
+        two readings a year apart, and internal items with their references and links."""
+        tenant = self._activate(TENANT_A_SLUG)
+        gaps = Gap.objects.select_related("severity", "status")
+        self.assertEqual({gap.severity.kind for gap in gaps}, {"low", "medium", "high"})
+        self.assertEqual({gap.status.kind for gap in gaps}, {"open", "remediating"})
+        for gap in gaps:
+            self.assertTrue(gap.owner_id and gap.target_date and gap.target_date > self._today(tenant))
+        entry = self._entry(HISTORY_OBLIGATION)
+        assessments = list(ComplianceAssessment.objects.filter(tenant_obligation=entry).order_by("assessed_at"))
+        self.assertEqual(len(assessments), 2)
+        self.assertGreater((assessments[1].assessed_at - assessments[0].assessed_at).days, 270)
+        self.assertEqual(assessments[-1].status_id, entry.compliance_status_id)
+        readings = list(Interpretation.objects.filter(tenant_obligation=entry).order_by("version_number"))
+        self.assertEqual([reading.version_number for reading in readings], [1, 2])
+        self.assertIsNotNone(readings[0].superseded_at)
+        self.assertIsNone(readings[1].superseded_at)
+        for item in EXPECTED_ORG_REGISTER[0].items:
+            row = InternalItem.objects.get(kind__key=item.kind, name=item.name)
+            self.assertEqual(row.reference, item.reference)
+            linked = set(
+                InternalLink.objects.filter(internal_item=row, removed_at__isnull=True).values_list(
+                    "tenant_obligation__obligation__stable_key", flat=True
+                )
+            )
+            self.assertEqual(linked, set(item.linked_to))
+
+    def test_the_member_to_be_removed_owns_work(self) -> None:
+        """TEN-S5: three obligations and a gap to reassign."""
+        self._activate(TENANT_A_SLUG)
+        self.assertEqual(TenantObligation.objects.filter(first_line_owner__email=LEAVER).count(), 3)
+        self.assertTrue(Gap.objects.filter(owner__email=LEAVER).exists())
+
+    def test_tenant_b_has_its_own_small_register_and_sees_none_of_tenant_a(self) -> None:
+        self._activate(TENANT_B_SLUG)
+        spec = EXPECTED_ORG_REGISTER[1]
+        self.assertEqual(set(OrgUnit.objects.values_list("name", flat=True)), {unit.name for unit in spec.units})
+        self.assertEqual(
+            set(TenantObligation.objects.values_list("obligation__stable_key", flat=True)), {entry.obligation for entry in spec.entries}
+        )
+        self.assertEqual(Gap.objects.count(), len(spec.gaps))
+        self.assertFalse(Team.objects.filter(key=RETAIL_TEAM).exists())
+
+    def test_a_reseed_changes_nothing_and_every_row_was_recorded(self) -> None:
+        tenant_a = self._activate(TENANT_A_SLUG)
+        models = (OrgUnit, Licence, LicenceServiceTerm, TenantProduct, TenantProductTerm, Team, TeamMember, TenantObligation,
+                  TenantObligationScope, ComplianceAssessment, Interpretation, Gap, InternalItem, InternalLink)
+        before = {model.__name__: model.objects.count() for model in models}
+        audited = AuditEvent.objects.filter(tenant=tenant_a).count()
+        seed_e2e()
+        tenancy.activate(tenant_a.id)
+        self.assertEqual({model.__name__: model.objects.count() for model in models}, before)
+        self.assertEqual(AuditEvent.objects.filter(tenant=tenant_a).count(), audited)
+        seeded = AuditEvent.objects.filter(tenant=tenant_a, action__endswith=".seeded")
+        self.assertEqual(set(seeded.values_list("actor_label", flat=True)), {"seed_e2e"})
+        for model, subject in ((OrgUnit, "org_unit"), (Gap, "gap"), (InternalLink, "internal_link"), (TeamMember, "team_member")):
+            with self.subTest(subject=subject):
+                ids = set(model.objects.values_list("id", flat=True))
+                self.assertEqual(set(seeded.filter(subject_type=subject).values_list("subject_id", flat=True)), ids)
+        for entry in TenantObligation.objects.all():
+            self.assertTrue(AuditEvent.objects.filter(action="register.entry_created", subject_id=entry.id).exists())
+# --- end c8-seed-org-register -------------------------------------------------------------------
