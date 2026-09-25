@@ -1432,6 +1432,20 @@ Built on these defaults; each stays yours to overrule.
       the security log, not one per refused request, so a runaway agent cannot flood
       the log.
 
+## c9-signoff: evidence can leave a case while it waits for sign-off (2026-09-25)
+
+- [ ] **Should the approval re-check the evidence, or should evidence lock?** A sign-off
+      request needs no open action and one piece of evidence the scanner passed. While
+      the case waits, the actions lock (`c9-actions`, `actions_locked`), but nothing in
+      the plan locks the evidence: `removeEvidence` only sets `removed_at`, and a rescan
+      could mark a file infected. The approval then closes a case whose evidence is gone,
+      because the fixed guard on `signoff → closed` checks only the second person.
+      Default taken: no change, since the guards are fixed (CLAUDE.md section 5) and this
+      package does not own `state.py` or `evidence.py`. Two ways out: (a) `c9-evidence-b`
+      refuses `removeEvidence` with 409 `actions_locked`-style `evidence_locked` while
+      the case is in `signoff`, which mirrors the actions lock; or (b) the
+      `signoff → closed` edge also carries the `no_open_action` and `clean_evidence`
+      guards. The first keeps the state machine as designed; say which.
 ## acc-scope-and-reach: an entry's scope and tenant reach, answered by default (2026-09-25, ACC-02, ACC-08, D-70, D-72)
 
 - [ ] Default taken: an opt-in dimension keeps its rule inside an entry's scope too. The

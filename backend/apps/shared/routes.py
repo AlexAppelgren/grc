@@ -57,6 +57,39 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/footprint/requests/{request_id}/reject", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/tenant/footprint/requests/{request_id}/withdraw", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/vocab/{list_name}/suggestions/{suggestion_id}/decline", "taxonomy.VocabularySuggestion", "vocabulary_suggestion"),
+    # c9-case-contract: the workflow routes whose request an empty body satisfies. Each
+    # loads the case under row-level security before its stub answers 501, so another
+    # bank's case, action or evidence is a 404 now and stays one when the logic lands. The
+    # routes that need a body are proven the same way in apps/cases/tests_contract.py.
+    ("POST", "/changes/{change_id}/restore", "cases.ChangeCase", "case_change"),
+    ("POST", "/changes/{change_id}/assessment/start", "cases.ChangeCase", "case_change"),
+    ("GET", "/changes/{change_id}/actions", "cases.ChangeCase", "case_change"),
+    ("GET", "/changes/{change_id}/evidence", "cases.ChangeCase", "case_change"),
+    ("POST", "/changes/{change_id}/signoff/request", "cases.ChangeCase", "case_change"),
+    ("POST", "/changes/{change_id}/signoff/approve", "cases.ChangeCase", "case_change"),
+    ("POST", "/changes/{change_id}/signoff/send-back", "cases.ChangeCase", "case_change"),
+    ("GET", "/changes/{change_id}/case-file", "cases.ChangeCase", "case_change"),
+    ("PATCH", "/actions/{action_id}", "cases.Action", "case_action"),
+    ("DELETE", "/actions/{action_id}", "cases.Action", "case_action"),
+    ("GET", "/evidence/{evidence_id}/download", "cases.Evidence", "case_evidence"),
+    ("DELETE", "/evidence/{evidence_id}", "cases.Evidence", "case_evidence"),
+    # c8-reg-gaps-risk (REG-03). `POST /gaps/{gap_id}/accept-risk` needs a body the guard's
+    # empty one fails before the lookup, so apps/register/tests_gaps.py proves its 404.
+    ("PATCH", "/gaps/{gap_id}", "register.Gap", "gap"),
+    ("POST", "/gaps/{gap_id}/accept-risk/approve", "register.Gap", "gap"),
+    ("POST", "/gaps/{gap_id}/reopen", "register.Gap", "gap"),
+    # c8-tenants-contract (TEN-02, TEN-03, TEN-05, TEN-06). The licence create is proved in
+    # apps/tenants/tests_api_contract.py: it refuses this guard's empty body before it loads.
+    ("PATCH", "/tenant/org-units/{org_unit_id}", "tenants.OrgUnit", "org_unit"),
+    ("GET", "/tenant/org-units/{org_unit_id}/licences", "tenants.OrgUnit", "org_unit"),
+    ("PATCH", "/tenant/licences/{licence_id}", "tenants.Licence", "licence"),
+    ("PATCH", "/tenant/products/{product_id}", "tenants.TenantProduct", "tenant_product"),
+    ("GET", "/tenant/teams/{key}/members", "taxonomy.Team", "team_key"),
+    ("GET", "/tenant/members/{user_id}/open-work", "identity.Membership", "member_user"),
+    ("POST", "/tenant/members/{user_id}/remove", "identity.Membership", "member_user"),
+    ("POST", "/tenant/support-access/{grant_id}/approve", "tenants.SupportAccess", "support_access"),
+    ("POST", "/tenant/support-access/{grant_id}/decline", "tenants.SupportAccess", "support_access"),
+    ("POST", "/tenant/support-access/{grant_id}/revoke", "tenants.SupportAccess", "support_access"),
     # acc-scope-and-reach (ACC-08): deciding a request for tenant reach.
     ("POST", "/tenant/reach/requests/{request_id}/approve", "governance.TenantReachRequest", "tenant_reach_request"),
     ("POST", "/tenant/reach/requests/{request_id}/reject", "governance.TenantReachRequest", "tenant_reach_request"),

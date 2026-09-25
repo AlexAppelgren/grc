@@ -14,6 +14,10 @@
   "today.decideNow.triage": "{count, plural, one {# change needs triage.} other {# changes need triage.}}",
   "today.decideNow.assignedToMe": "{count, plural, one {# case assigned to you.} other {# cases assigned to you.}}",
   "today.decideNow.proposals": "{count, plural, one {# of your proposals pending review.} other {# of your proposals pending review.}}",
+  "today.decideNow.signoffs": "{count, plural, one {# case waiting for your sign-off.} other {# cases waiting for your sign-off.}}",
+  "today.decideNow.riskAcceptances": "{count, plural, one {# risk acceptance to approve.} other {# risk acceptances to approve.}}",
+  "today.decideNow.supportAccessRequests": "{count, plural, one {# support access request to decide.} other {# support access requests to decide.}}",
+  "today.decideNow.tenantReachRequests": "{count, plural, one {# tenant reach request to decide.} other {# tenant reach requests to decide.}}",
   "today.sources.summary": "Sources: {checked} of {total} checked.",
   "today.sources.failed": "{name} failed.",
   "today.sources.coverageLink": "See coverage log"

@@ -203,6 +203,15 @@ TENANT_ONLY_TABLES = [
     "tenant_agent",
     "tenant_agent_budget",
     "export_job",
+    # c8-register-models (register 0001, 0002; REG-01 to REG-05): the bank's register. Each
+    # reference to another tenant row is also a composite key (apps/register/tests_models.py
+    # proves the database refuses every cross-tenant one).
+    "tenant_obligation",
+    "tenant_obligation_scope",
+    "compliance_assessment",
+    "gap",
+    "interpretation",
+    "internal_link",
     # acc-foundation (agents 0006, ACC-01, ACC-02): the agents a bank runs itself and the
     # departments and products narrowing each (apps/agents/tests_agent_access_models.py
     # proves the composite keys refuse another bank's row).
@@ -234,6 +243,11 @@ PROPOSAL_LIBRARY_TABLES = frozenset({"proposal", "proposal_batch_row"})
 OTHER_POLICIES = frozenset(
     [(table, LIBRARY_READ_POLICY) for table in MIXED_TABLES]
     + [(table, IDENTITY_LOOKUP_POLICY) for table in IDENTITY_LOOKUP_TABLES]
+    # c8-ten-support-grants (tenants 0004, ADR 0042's named exception): a platform person
+    # reads the support access rows that name them, keyed on `app.platform_user_id`, so the
+    # console can list and check their own grants before any bank is active. SELECT only,
+    # and inert while the setting is unset (tenants/tests_support_access.py proves both).
+    + [("support_access", "support_access_own_grants")]
 )
 
 # Platform-only tables (SRC-05, search 0002): no tenant column, so the enumeration above

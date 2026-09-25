@@ -74,12 +74,42 @@ test.describe('home journeys', () => {
     // journey owns is that the panel counts triage at all (2026-09-21).
     await expect(decide.getByText(/\d+ changes? needs? triage\./)).toBeVisible();
     await expect(decide.getByText(/proposal.*pending review/)).toBeVisible();
+    // R2's decisions (x-decide-now-counts): the officer holds risk.accept.approve, and neither
+    // cases.signoff nor security.manage, so only the risk line is theirs.
+    await expect(decide.getByRole('link', { name: /\d+ risk acceptances? to approve\./ })).toHaveAttribute('href', '/gaps');
+    await expect(decide.getByText(/waiting for your sign-off/)).toHaveCount(0);
+    await expect(decide.getByText(/support access requests? to decide/)).toHaveCount(0);
+    await expect(decide.getByText(/tenant reach requests? to decide/)).toHaveCount(0);
 
     const sources = page.locator('[data-source-health]');
     // The panel counts the sources the seed holds, and chunk 5 added three more, so the
     // sentence is asserted by shape and the failed source this journey seeded by name.
     await expect(sources).toContainText(/Sources: \d+ of \d+ checked\./);
     await expect(sources).toContainText('EBA news feed (E2E) failed.');
+  });
+
+  // What needs a decision is counted per person: each line is one the reader's permissions
+  // unlock, and each leads to where that decision is made. A number, not the number: other
+  // journeys add and decide these requests as they run.
+  test('HOM-S1: Decide now shows an approver the sign-offs and risk acceptances they may decide', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.approver);
+
+    const decide = page.locator('[data-decide-now]');
+    await expect(decide.getByRole('link', { name: /\d+ cases? waiting for your sign-off\./ })).toHaveAttribute('href', '/watch?tab=inProgress');
+    await expect(decide.getByRole('link', { name: /\d+ risk acceptances? to approve\./ })).toHaveAttribute('href', '/gaps');
+    await expect(decide.getByText(/support access requests? to decide/)).toHaveCount(0);
+    await expect(decide.getByText(/needs? triage/)).toHaveCount(0);
+  });
+
+  test('HOM-S1: Decide now shows an admin the support access and tenant reach requests to decide', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.admin);
+
+    const decide = page.locator('[data-decide-now]');
+    await expect(decide.getByRole('link', { name: /\d+ support access requests? to decide\./ })).toHaveAttribute('href', '/admin/support-access');
+    await expect(decide.getByRole('link', { name: /\d+ tenant reach requests? to decide\./ })).toHaveAttribute('href', '/admin/security');
+    await expect(decide.getByText(/waiting for your sign-off/)).toHaveCount(0);
   });
 
   test('HOM-S2: The same short list appears on a phone', async ({ page, apiGuard }) => {

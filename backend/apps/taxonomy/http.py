@@ -55,6 +55,10 @@ CHUNK_STATUS_BY_CODE: dict[str, int] = {
     # (D-74): the fact is fine, the confirmer is not independent of it.
     "own_suggestion": 409,
     "same_agent": 409,
+    # c9-signoff: a sign-off request while an action is open or before any evidence passed
+    # the scan (CAS-06, AC-CAS1). The case is fine; its state does not allow the move yet.
+    "open_actions": 409,
+    "evidence_missing": 409,
 }
 
 F = TypeVar("F", bound=Callable[..., Any])

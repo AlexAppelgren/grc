@@ -28,8 +28,10 @@ const me: Me = {
   enrolmentPending: false,
   passkeyCount: 1,
   stepUpValidUntil: null,
-  counts: { triage: 3, proposals: 2, assignedToMe: 1 },
+  counts: { triage: 3, proposals: 2, assignedToMe: 1, unreadNotifications: 0, signoffs: 1, riskAcceptances: 2, supportAccessRequests: 1, tenantReachRequests: 1 },
   lastVisitAt: null,
+  notificationPrefs: null,
+  headOf: [],
 };
 
 const fact = (key: string, label: string) => ({ ref: { key, kind: null, label }, confidence: null, suggested: false });
@@ -56,7 +58,7 @@ const lead: Home['lead'] = {
   case: {
     id: 'case-1',
     category: 'new',
-    allowedTransitions: [],
+    subStatus: null,
     footprintMatch: true,
     obligationDecisions: [],
     ownerId: null,
@@ -141,6 +143,32 @@ describe('TodayScreen', () => {
     expect(await screen.findByText('1 case assigned to you.')).toBeInTheDocument();
     expect(screen.queryByText(/needs triage/)).not.toBeInTheDocument();
     expect(screen.queryByText(/pending review/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/sign-off/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/risk acceptance/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/support access/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/tenant reach/)).not.toBeInTheDocument();
+  });
+
+  it('shows each decision the permissions unlock with the way to where it is decided', async () => {
+    const decider = ['watch.read', 'roadmap.read', 'cases.signoff', 'risk.accept.approve', 'security.manage'];
+    serve({ status: 200, data: home }, { status: 200, data: { ...me, permissions: decider } });
+    render(shell(<TodayScreen />, decider));
+
+    expect(await screen.findByRole('link', { name: '1 case waiting for your sign-off.' })).toHaveAttribute('href', '/watch?tab=inProgress');
+    expect(screen.getByRole('link', { name: '2 risk acceptances to approve.' })).toHaveAttribute('href', '/gaps');
+    expect(screen.getByRole('link', { name: '1 support access request to decide.' })).toHaveAttribute('href', '/admin/support-access');
+    expect(screen.getByRole('link', { name: '1 tenant reach request to decide.' })).toHaveAttribute('href', '/admin/security');
+    expect(screen.queryByText(/needs triage/)).not.toBeInTheDocument();
+  });
+
+  it('a waiting decision alone keeps the page off the empty state', async () => {
+    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
+    const zeros = { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 1 };
+    serve({ status: 200, data: quiet }, { status: 200, data: { ...me, permissions: ['security.manage'], counts: zeros } });
+    render(shell(<TodayScreen />, ['security.manage']));
+
+    expect(await screen.findByRole('link', { name: '1 tenant reach request to decide.' })).toBeInTheDocument();
+    expect(screen.queryByText('Nothing to show yet')).not.toBeInTheDocument();
   });
 
   it('hides the source foot when the reader has no watch.read (null, not zeros)', async () => {
@@ -154,7 +182,7 @@ describe('TodayScreen', () => {
 
   it('a quiet tenant (nothing dated, no lead, no sources, nothing to decide) gets the empty state, not a blank page', async () => {
     const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
-    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0 } };
+    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 0 } };
     serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
     render(shell(<TodayScreen />));
 
@@ -165,7 +193,7 @@ describe('TodayScreen', () => {
   // permission that opens it: anyone else would land on the restricted page.
   it.each([['footprint.request'], ['footprint.approve']])('offers a holder of %s the way to the regulatory scope from the empty state', async (permission) => {
     const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
-    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0 } };
+    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 0 } };
     serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
     render(shell(<TodayScreen />, ['watch.read', permission]));
 
@@ -175,7 +203,7 @@ describe('TodayScreen', () => {
 
   it('leaves the link out of the empty state for a member who cannot open the regulatory scope', async () => {
     const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
-    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0 } };
+    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 0 } };
     serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
     render(shell(<TodayScreen />, ['watch.read', 'roadmap.read', 'audit.read']));
 
