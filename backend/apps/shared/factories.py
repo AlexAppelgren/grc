@@ -448,3 +448,36 @@ def duty_occurrence(tenant: Tenant) -> DutyOccurrence:
         tenancy.activate(tenant.id)
         entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=duty.obligation_id, actor=user_actor(user_id=officer.id))
         return DutyOccurrence.objects.create(tenant=tenant, recurring_duty=duty, tenant_obligation=entry, due_date=timezone.localdate())
+
+
+# c8-reg-links-history (REG-05): the tenant-isolation guard's record for DELETE /internal-links/{id}.
+def internal_link(tenant: Tenant) -> SimpleNamespace:
+    """A live link of `tenant` to a fresh library obligation, with the item it points at.
+    The obligation comes from apps/library/testing.py, the one place a test writes the
+    library; the reference rows it needs are seeded idempotently first."""
+    from apps.library import testing as library_testing
+    from apps.library.seeds import seed_jurisdictions, seed_languages
+    from apps.register.logic import ensure_register_entry
+    from apps.register.models import InternalLink
+    from apps.taxonomy.models import LinkKind
+    from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+    from apps.tenants.models import InternalItem
+
+    n = next(_counter)
+    with transaction.atomic():
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_taxonomy_terms()
+    act = library_testing.instrument(key=f"factory-act-{n}", regime="regime:securities")
+    duty = library_testing.obligation(act, key=f"factory-act-{n}/1")
+    person = member_user(tenant, roles=("compliance_officer",))
+    actor = Actor(kind=ActorType.USER, id=person.id, label=person.name)
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=duty.id, actor=actor)
+        item = InternalItem.objects.create(tenant=tenant, kind=LinkKind.objects.get(key="policy"), name=f"Policy {n}")
+        link = InternalLink.objects.create(
+            tenant=tenant, tenant_obligation=entry, internal_item=item, label=item.name, created_by=person
+        )
+    return SimpleNamespace(id=link.id, link=link)

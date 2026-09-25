@@ -16,25 +16,30 @@ from __future__ import annotations
 
 import importlib
 import json
+import sys
+import time
 import uuid
 from typing import Any
+from unittest import mock
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import DEFAULT_DB_ALIAS, IntegrityError, connection, transaction
-from django.test import Client, TransactionTestCase
+from django.test import Client, TransactionTestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from apps.library import testing as library_testing
 from apps.library.models import Obligation
-from apps.register import logic, units
+from apps.library.reading import obligation_scopes
+from apps.register import applicability, logic, units
 from apps.register.models import Applicability, Gap, SoaUnit, TenantObligationScope
 from apps.register.tests_models import APP, Register, _seed_library
 from apps.shared import factories, tenancy
 from apps.shared import permissions as perms
 from apps.shared.models import AuditEvent, Tenant
-from apps.shared.testing import ScenarioTestCase, stub_session, user_principal
-from apps.taxonomy.models import ComplianceStatus, GapSource, GapStatus, RiskRating
+from apps.shared.testing import ScenarioTestCase, sign_in, stub_session, user_principal
+from apps.taxonomy.models import ComplianceStatus, FootprintTerm, GapSource, GapStatus, RiskRating
 from apps.tenants.models import OrgUnit, OrgUnitKind
 
 COMPOSITE_KEYS = importlib.import_module("apps.register.migrations.0003_soa_unit").COMPOSITE_KEYS
@@ -122,7 +127,10 @@ class UnitTableUnderRowLevelSecurity(TransactionTestCase):
 # ---------------------------------------------------------------------------------------
 # The rules, through the routes
 # ---------------------------------------------------------------------------------------
-class UnitRules(ScenarioTestCase):
+class UnitWorld(ScenarioTestCase):
+    """One bank with a standard its Bank AB follows, Liv does not and Finance never answered,
+    and a duty that is not under a standard. Holds no test, so each class below runs only its own."""
+
     def setUp(self) -> None:
         _seed_library()
         self.tenant = factories.tenant(slug="units-bank")
@@ -146,6 +154,11 @@ class UnitRules(ScenarioTestCase):
         self._scope(other_entry.id, self.bank_ab, Applicability.APPLIES)
         self.who = user_principal(
             permissions={perms.REGISTER_READ, perms.REGISTER_EDIT}, tenant_id=self.tenant.id, subject_id=self.officer.id
+        )
+        self.decider = user_principal(
+            permissions={perms.REGISTER_READ, perms.REGISTER_EDIT, perms.APPLICABILITY_APPROVE},
+            tenant_id=self.tenant.id,
+            subject_id=self.officer.id,
         )
 
     # --- fixtures ----------------------------------------------------------------------
@@ -196,6 +209,12 @@ class UnitRules(ScenarioTestCase):
         self.assertEqual(response.status_code, status, response.content)
         self.assertEqual(response.json()["code"], code)
 
+    def _live(self) -> list[SoaUnit]:
+        self.activate(self.tenant)
+        return list(SoaUnit.objects.filter(removed_at__isnull=True).order_by("reference"))
+
+
+class UnitRules(UnitWorld):
     # --- add and list ------------------------------------------------------------------
     def test_a_unit_is_added_undecided_with_one_audit_event_and_listed_per_entity(self) -> None:
         response = self._add("X.1", "  Our access rules  ")
@@ -407,3 +426,287 @@ class UnitRules(ScenarioTestCase):
         self.assertEqual(listed.json(), {"items": [], "total": 0})
         self._problem(self._call("PATCH", f"/units/{unit.id}", {"title": "Theirs"}, version=1, who=who), 404, "not_found")
         self._problem(self._call("DELETE", f"/units/{unit.id}", version=1, who=who), 404, "not_found")
+
+
+# ---------------------------------------------------------------------------------------
+# c8-units-paste-soa: the paste's commit, a unit's own decision, and a gap on a unit
+# ---------------------------------------------------------------------------------------
+class PasteCommit(UnitWorld):
+    """The commit stores every unit, and every decision the lines carry through
+    applicability's bulk path, in the request's one transaction: all of it or none. Written
+    before the logic: every test here failed on the 501 `not_built` the commit answered."""
+
+    def _paste(self, lines: list[dict[str, Any]], *, dry_run: bool = False, who: Any = None, client: Any = None) -> Any:
+        body = {"orgUnitId": str(self.bank_ab.id), "lines": lines, "dryRun": dry_run}
+        return self._call("POST", f"/obligations/{self.standard.id}/units/paste", body, who=who or self.decider, client=client)
+
+    def test_a_commit_creates_every_unit_with_one_audit_event_each(self) -> None:
+        lines = [{"reference": f"X.{n}", "title": f"Our control number {n}"} for n in range(1, 13)]
+        response = self._paste(lines, who=self.who)
+        self.assertEqual(response.status_code, 200, response.content)
+        answer = response.json()
+        self.assertEqual((answer["dryRun"], answer["created"]), (False, 12))
+        live = {unit.reference: unit for unit in self._live()}
+        self.assertEqual(
+            [(row["outcome"], row["unitId"]) for row in answer["rows"]],
+            [("created", str(live[line["reference"]].id)) for line in lines],
+        )
+        self.assertTrue(all(unit.applicability == Applicability.NOT_ASSESSED.value for unit in live.values()))
+        events = self._events(units.UNIT_CREATED)
+        self.assertEqual(sorted(event.subject_id for event in events), sorted(unit.id for unit in live.values()))
+        self.assertEqual({event.actor_id for event in events}, {self.officer.id})
+
+    def test_a_commit_sets_each_lines_decision_with_one_audit_event_per_unit(self) -> None:
+        lines = [
+            {"reference": "X.1", "title": "Our access rules", "applicability": "applies", "reason": "In the certificate"},
+            {"reference": "X.2", "title": "Our backups", "applicability": "not_applicable", "reason": "No own data centre"},
+            {"reference": "X.3", "title": "Our logging"},
+        ]
+        response = self._paste(lines)
+        self.assertEqual(response.status_code, 200, response.content)
+        x1, x2, x3 = self._live()
+        self.assertEqual((x1.applicability, x1.applicability_reason, x1.applicability_decided_by_id), ("applies", "In the certificate", self.officer.id))
+        self.assertEqual((x2.applicability, x2.applicability_reason), ("does_not_apply", "No own data centre"))
+        self.assertIsNotNone(x1.applicability_decided_at)
+        self.assertEqual((x3.applicability, x3.applicability_decided_at), ("not_assessed", None))
+        events = self._events(applicability.APPLICABILITY_SET)
+        self.assertEqual([(e.subject_type, e.subject_id, e.actor_id) for e in events], [("soa_unit", x1.id, self.officer.id), ("soa_unit", x2.id, self.officer.id)])
+        self.assertEqual(events[0].before, {"applicability": "under_assessment", "reason": None})
+        self.assertEqual(
+            {k: events[1].after[k] for k in ("unitId", "orgUnitId", "applicability", "reason")},
+            {"unitId": str(x2.id), "orgUnitId": str(self.bank_ab.id), "applicability": "not_applicable", "reason": "No own data centre"},
+        )
+        listed = self._call("GET", f"/obligations/{self.standard.id}/units?entity={self.bank_ab.id}").json()["items"]
+        self.assertEqual([row["hasHistory"] for row in listed], [True, True, False])
+
+    def test_decisions_need_applicability_approve_and_store_nothing_without_it(self) -> None:
+        line = {"reference": "X.1", "title": "Our access rules", "applicability": "applies", "reason": "In the certificate"}
+        for dry_run in (True, False):
+            with self.subTest(dry_run=dry_run):
+                response = self._paste([line], dry_run=dry_run, who=self.who, client=Client())
+                self._problem(response, 403, "permission_denied")
+                self.assertEqual(response.json()["requiredPermission"], perms.APPLICABILITY_APPROVE)
+        self.assertEqual(self._live(), [])
+        self.assertEqual(self._events(units.UNIT_CREATED), [])
+
+    def test_a_line_with_half_a_decision_is_refused_on_its_row(self) -> None:
+        lines = [
+            {"reference": "X.1", "title": "Our access rules", "applicability": "applies", "reason": "  "},
+            {"reference": "X.2", "title": "Our backups", "reason": "No own data centre"},
+            {"reference": "X.3", "title": "Our logging", "applicability": "applies", "reason": "Certified"},
+        ]
+        answer = self._paste(lines, dry_run=True, client=Client()).json()
+        self.assertEqual(
+            [(row["outcome"], row["problem"]) for row in answer["rows"]],
+            [("refused", "reason_missing"), ("refused", "reason_missing"), ("will_create", None)],
+        )
+
+    def test_a_commit_with_any_refused_line_stores_nothing(self) -> None:
+        lines = [{"reference": "X.1", "title": "Our access rules"}, {"reference": "X.1", "title": "Twice"}]
+        response = self._paste(lines, client=Client())
+        self.assertEqual(response.status_code, 200, response.content)
+        answer = response.json()
+        self.assertEqual((answer["dryRun"], answer["created"]), (True, 0))
+        self.assertEqual([row["outcome"] for row in answer["rows"]], ["will_create", "refused"])
+        self.assertEqual(self._live(), [])
+
+    def test_a_paste_over_the_cap_is_refused_whole_and_stores_nothing(self) -> None:
+        lines = [{"reference": f"X.{n}", "title": "Ours", "applicability": "applies", "reason": "Certified"} for n in range(3)]
+        with override_settings(REGISTER_BULK_MAX=2):
+            for dry_run in (True, False):
+                with self.subTest(dry_run=dry_run):
+                    self._problem(self._paste(lines, dry_run=dry_run, client=Client()), 422, "validation_error")
+        self.assertEqual(self._live(), [])
+        self.assertEqual(self._events(units.UNIT_CREATED) + self._events(applicability.APPLICABILITY_SET), [])
+
+    def test_a_decision_refused_by_the_bulk_path_takes_the_units_back_with_it(self) -> None:
+        line = {"reference": "X.1", "title": "Our access rules", "applicability": "applies", "reason": "Certified"}
+        refused = ValidationError("Refused for the test.", code="validation_error")
+        with mock.patch.object(applicability, "_write", autospec=True, side_effect=refused):
+            self._problem(self._paste([line], client=Client()), 422, "validation_error")
+        self.assertEqual(self._live(), [])
+        self.assertEqual(self._events(units.UNIT_CREATED), [])
+
+    def test_93_decided_lines_stay_inside_the_budget_with_a_fixed_cost_per_line(self) -> None:
+        """AC-REG1 at its size. Every lookup is once per call; only each unit's insert share,
+        its events and its decision are per line, so the step between two sizes is fixed."""
+        batch = iter(range(10_000))
+
+        def lines(count: int) -> list[dict[str, Any]]:
+            return [
+                {"reference": f"A.{next(batch)}", "title": "Our own words", "applicability": "applies", "reason": "Certified"}
+                for _ in range(count)
+            ]
+
+        def queries(count: int) -> int:
+            with CaptureQueriesContext(connection) as captured:
+                self.assertEqual(self._paste(lines(count)).status_code, 200)
+            return len(captured)
+
+        one, three = queries(1), queries(3)
+        self.assertEqual(three - one, 2 * PASTE_LINE_QUERIES)
+        spent = []
+        tracer = sys.gettrace()
+        sys.settrace(None)
+        try:
+            for _ in range(5):
+                pasted = lines(93)
+                started = time.thread_time()
+                response = self._paste(pasted, client=Client())
+                spent.append((time.thread_time() - started) * 1000)
+                self.assertEqual(response.json()["created"], 93)
+        finally:
+            sys.settrace(tracer)
+        self.assertLess(min(spent), settings.API_BUDGET_MS)
+        self.assertEqual(len(self._events(applicability.APPLICABILITY_SET)), 4 + 5 * 93)
+
+
+# Each pasted line: its unit's audit event (savepoint, audit row, outbox row, release) and
+# its decision's audit event (four again). The units are one INSERT for the whole paste and
+# their decisions one UPDATE, so neither grows with the paste.
+PASTE_LINE_QUERIES = 8
+
+
+class UnitDecisions(UnitWorld):
+    """A unit's own answer through `PUT /obligations/{id}/applicability` and
+    `POST /applicability`: stored on the unit, never on its entity's conformance row."""
+
+    def _answer(self, unit: Any, value: str = "applies", *, version: int | None = 1, obligation: Any = None) -> Any:
+        body = {"unitId": str(getattr(unit, "id", unit)), "applicability": value, "reason": "Certified"}
+        return self._call("PUT", f"/obligations/{(obligation or self.standard).id}/applicability", body, version=version, who=self.decider)
+
+    def test_a_unit_answer_is_stored_on_the_unit_with_if_match(self) -> None:
+        unit = self._unit("X.1")
+        self._problem(self._answer(unit, version=7), 409, "stale_write")
+        response = self._answer(unit)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual({k: response.json()[k] for k in ("unitId", "orgUnitId", "applicability", "version")}, {"unitId": str(unit.id), "orgUnitId": None, "applicability": "applies", "version": 2})
+        self.activate(self.tenant)
+        unit.refresh_from_db()
+        self.bank_ab_scope.refresh_from_db()
+        self.assertEqual((unit.applicability, unit.version), ("applies", 2))
+        self.assertEqual((self.bank_ab_scope.applicability_reason, self.bank_ab_scope.version), ("Certified", 1), "the conformance row keeps its own answer")
+
+    def test_many_unit_answers_are_one_call(self) -> None:
+        first, second = self._unit("X.1"), self._unit("X.2")
+        rows = [
+            {"obligationId": str(self.standard.id), "unitId": str(unit.id), "applicability": value, "reason": "Certified"}
+            for unit, value in ((first, "applies"), (second, "not_applicable"))
+        ]
+        response = self._call("POST", "/applicability", {"rows": rows}, who=self.decider)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual([row["unitId"] for row in response.json()["items"]], [str(first.id), str(second.id)])
+        self.assertEqual([unit.applicability for unit in self._live()], ["applies", "does_not_apply"])
+
+    def test_a_unit_the_answer_cannot_reach_is_refused_and_stores_nothing(self) -> None:
+        unit = self._unit("X.1")
+        removed = self._unit("X.2")
+        self.assertEqual(self._call("DELETE", f"/units/{removed.id}", version=1).status_code, 204)
+        self._problem(self._answer(uuid.uuid4(), version=None), 404, "not_found")
+        self._problem(self._answer(removed, version=None), 404, "not_found")
+        self._problem(self._answer(unit, obligation=self.not_a_standard, version=None), 404, "not_found")
+        self.activate(self.tenant)
+        TenantObligationScope.objects.filter(pk=self.bank_ab_scope.pk).update(applicability=Applicability.DOES_NOT_APPLY.value)
+        self._problem(self._answer(unit), 422, "scope_not_applicable")
+        self.assertEqual(self._events(applicability.APPLICABILITY_SET), [])
+
+
+class GapsOnUnits(UnitWorld):
+    """A gap may name a live unit under its own register entry (D-41): the gap is then in the
+    unit's entity, and the unit's reference and title are fixed by it."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.recorder = user_principal(
+            permissions={perms.REGISTER_READ, perms.REGISTER_EDIT, perms.GAPS_EDIT}, tenant_id=self.tenant.id, subject_id=self.officer.id
+        )
+
+    def _gap(self, unit_id: Any, *, obligation: Any = None, entity: Any = None) -> Any:
+        body: dict[str, Any] = {"title": "Reviews are late", "severity": "high", "source": "audit", "unitId": str(unit_id)}
+        if entity is not None:
+            body["orgUnitId"] = str(entity.id)
+        return self._call("POST", f"/obligations/{(obligation or self.standard).id}/gaps", body, who=self.recorder)
+
+    def test_a_gap_on_a_live_unit_is_in_the_units_entity_and_fixes_the_unit(self) -> None:
+        unit = self._unit("X.1")
+        response = self._gap(unit.id)
+        self.assertEqual(response.status_code, 201, response.content)
+        gap = response.json()
+        self.assertEqual((gap["unitId"], gap["orgUnitId"]), (str(unit.id), str(self.bank_ab.id)))
+        (event,) = self._events("register.gap_recorded")
+        self.assertEqual((event.after["unitId"], event.after["orgUnitId"]), (str(unit.id), str(self.bank_ab.id)))
+        listed = self._call("GET", f"/obligations/{self.standard.id}/gaps").json()["items"]
+        self.assertEqual([row["unitId"] for row in listed], [str(unit.id)])
+        self._problem(self._call("PATCH", f"/units/{unit.id}", {"title": "Moved"}, version=1), 409, "unit_has_history")
+
+    def test_a_unit_outside_the_gaps_entry_or_entity_is_422_and_stores_nothing(self) -> None:
+        unit = self._unit("X.1")
+        removed = self._unit("X.2")
+        self.assertEqual(self._call("DELETE", f"/units/{removed.id}", version=1).status_code, 204)
+        refusals = {
+            "unknown": self._gap(uuid.uuid4()),
+            "removed": self._gap(removed.id),
+            "another entry": self._gap(unit.id, obligation=self.not_a_standard),
+            "another entity": self._gap(unit.id, entity=self.liv),
+        }
+        for name, response in refusals.items():
+            with self.subTest(name):
+                self._problem(response, 422, "unknown_unit")
+        self.activate(self.tenant)
+        self.assertFalse(Gap.objects.exists())
+
+    def test_a_unit_that_does_not_apply_has_no_gap(self) -> None:
+        unit = self._unit("X.1")
+        self.activate(self.tenant)
+        SoaUnit.objects.filter(pk=unit.pk).update(applicability=Applicability.DOES_NOT_APPLY.value)
+        self._problem(self._gap(unit.id), 409, "does_not_apply")
+        self.activate(self.tenant)
+        self.assertFalse(Gap.objects.exists())
+
+
+class SoaWorld:
+    """The scenarios' world (REG-S13 to REG-S15, SRC-S13): the prototype's Example Group with
+    the standard in its regulatory scope, Example Bank AB following it and Liv not, each
+    answered by the officer through the route, and every later call a real session."""
+
+    def __init__(self, case: Any, slug: str) -> None:
+        from apps.register.tests_applicability import Bank, seed_library
+
+        self.case = case
+        seed_library()
+        self.bank = Bank(slug)
+        self.tenant, self.officer = self.bank.tenant, self.bank.officer
+        self.standard = library_testing.standard()
+        with transaction.atomic():
+            tenancy.activate(self.tenant.id)
+            for terms in obligation_scopes([self.standard.id])[self.standard.id].values():
+                FootprintTerm.objects.bulk_create([FootprintTerm(tenant=self.tenant, term=term) for term in terms])
+        for entity, value in ((self.bank.bank_ab, "applies"), (self.bank.liv, "not_applicable")):
+            answer = {"orgUnitId": str(entity.id), "applicability": value, "reason": "Certified" if value == "applies" else "Not in the certificate"}
+            self.expect(self.call("PUT", f"/obligations/{self.standard.id}/applicability", answer, version=0), 200)
+
+    def call(self, method: str, path: str, body: Any = None, *, version: int | None = None, who: Any = None) -> Any:
+        headers = sign_in(who or self.officer, tenant=self.tenant)
+        if version is not None:
+            headers["HTTP_IF_MATCH"] = f'"{version}"'
+        if body is None:
+            return Client().generic(method, V1 + path, **headers)
+        return Client().generic(method, V1 + path, data=json.dumps(body), content_type="application/json", **headers)
+
+    def expect(self, response: Any, status: int, code: str | None = None) -> Any:
+        self.case.assertEqual(response.status_code, status, response.content)
+        if code is not None:
+            self.case.assertEqual(response.json()["code"], code)
+        return response.json() if response.content else None
+
+    def paste(self, lines: list[dict[str, Any]], *, dry_run: bool, entity: Any = None) -> Any:
+        body = {"orgUnitId": str((entity or self.bank.bank_ab).id), "lines": lines, "dryRun": dry_run}
+        return self.call("POST", f"/obligations/{self.standard.id}/units/paste", body)
+
+    def events(self, action: str) -> list[AuditEvent]:
+        tenancy.activate(self.tenant.id)
+        return list(AuditEvent.objects.filter(action=action, subject_type="soa_unit").order_by("created", "id"))
+
+    def units(self) -> list[SoaUnit]:
+        tenancy.activate(self.tenant.id)
+        return list(SoaUnit.objects.filter(removed_at__isnull=True).order_by("reference"))

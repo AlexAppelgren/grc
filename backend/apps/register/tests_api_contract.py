@@ -84,7 +84,6 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("completeDutyOccurrence", "post", f"/api/v1/duty-occurrences/{RECORD}/complete", COMPLETE_BODY, perms.REGISTER_EDIT, False),
 ]
 
-
 def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
     if body is None:
         return getattr(client, method)(url, **headers)
@@ -189,24 +188,6 @@ IF_MATCH_ROUTES = {
 }
 
 
-# The operations whose logic has landed, each proved in its package's own tests.
-BUILT = {
-    # c8-reg-status (apps/register/tests_status.py)
-    "getRegisterEntry",
-    "updateRegister",
-    "updateRegisterEntity",
-    "listObligationGaps",
-    "createGap",
-    "listRegisterGaps",
-    "updateGap",
-    "requestRiskAcceptance",
-    "approveRiskAcceptance",
-    "reopenGap",
-    "setApplicability", "setApplicabilityMany",  # c8-reg-applicability, tests_applicability.py
-    "listDuties", "completeDutyOccurrence",  # c8-duty-occurrences, tests_duties.py
-}
-
-
 # Operations whose logic has landed, each with the package that built it. Past every gate they
 # answer from the logic: for this file's made-up ids, 404 `not_found` in the same problem shape.
 BUILT_ROUTES = {
@@ -214,7 +195,36 @@ BUILT_ROUTES = {
     "createUnit",  # c8-reg-units
     "updateUnit",  # c8-reg-units
     "removeUnit",  # c8-reg-units
-    "pasteUnits",  # c8-reg-units (the dry run; its commit is c8-units-paste-soa's)
+    "pasteUnits",  # c8-reg-units (the dry run) and c8-units-paste-soa (the commit)
+}
+
+
+# The operations whose logic has landed, each proved in its package's own tests (one line
+# each, so the packages that build them in parallel merge mechanically).
+BUILT: set[str] = {
+    "setApplicability", "setApplicabilityMany",  # c8-reg-applicability, tests_applicability.py
+    # c8-reg-status (apps/register/tests_status.py)
+    "getRegisterEntry",
+    "updateRegister",
+    "updateRegisterEntity",
+    # c8-reg-gaps-risk (REG-03): apps/register/tests_gaps.py
+    "listObligationGaps",
+    "createGap",
+    "listRegisterGaps",
+    "updateGap",
+    "requestRiskAcceptance",
+    "approveRiskAcceptance",
+    "reopenGap",
+    # c8-reg-links-history: tests_history.py, tests_links.py
+    "listAssessments",
+    "getInterpretation",
+    "saveInterpretation",
+    "listInternalLinks",
+    "addInternalLink",
+    "removeInternalLink",
+    # c8-units-paste-soa (REG-08): tests_soa.py
+    "getStatementOfApplicability",
+    "listDuties", "completeDutyOccurrence",  # c8-duty-occurrences, tests_duties.py
 }
 
 

@@ -252,7 +252,7 @@ class RecordingAGap(GapTestCase):
             ({"ownerId": str(self.world.owner.id), "ownerTeam": "compliance"}, 422, "validation_error"),
             ({"orgUnitId": str(foreign_entity.id)}, 404, "not_found"),
             ({"orgUnitId": str(group.id)}, 404, "not_found"),
-            ({"unitId": str(uuid.uuid4())}, 501, "not_built"),
+            ({"unitId": str(uuid.uuid4())}, 422, "unknown_unit"),  # c8-units-paste-soa: a unit the bank does not have
         ]
         headers = self.as_(self.world.officer)
         for overrides, status, code in cases:

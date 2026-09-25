@@ -97,4 +97,6 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("DELETE", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
     # c8-duty-occurrences (REG-07): a dated duty occurrence, addressed by its id.
     ("POST", "/duty-occurrences/{occurrence_id}/complete", "register.DutyOccurrence", "duty_occurrence"),
+    # c8-reg-links-history (REG-05): a link is removed by id.
+    ("DELETE", "/internal-links/{link_id}", "register.InternalLink", "internal_link"),
 ]

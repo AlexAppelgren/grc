@@ -71,11 +71,11 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason, set by one person holding `applicability.approve` after a confirmation dialog, with an audit event and no second approver or step-up (D-75); many rows set in one call, one audit event per row | M | R2 | in_progress |
 | REG-02 | Compliance status, status note, risk, owners, process, system, evidence location, next review, per legal entity where the obligation spans several | M | R2 | built |
 | REG-03 | Gaps with owner, severity, target date, remediation, and risk acceptance behind four eyes | M | R2 | built |
-| REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 | in_progress |
-| REG-05 | Linked internal items (policy, procedure, control, process, system) with external references | M | R2 | in_progress |
+| REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 | built |
+| REG-05 | Linked internal items (policy, procedure, control, process, system) with external references | M | R2 | built |
 | REG-06 | Yearly attestation by the owner, and waivers | C | R3 | pending |
 | REG-07 | Recurring duties on the roadmap from recurrence rules | S | R2 | in_progress |
-| REG-08 | Statement of Applicability: units per following legal entity, by reference and in the tenant's own words, entered one by one or pasted with a dry run, each with applicability, a reason, a status and gaps, fixed once it has history; nothing written under a standard is indexed, sent to a model or shown to another tenant | M | R2 | in_progress |
+| REG-08 | Statement of Applicability: units per following legal entity, by reference and in the tenant's own words, entered one by one or pasted with a dry run, each with applicability, a reason, a status and gaps, fixed once it has history; nothing written under a standard is indexed, sent to a model or shown to another tenant | M | R2 | built |
 | ACC-04 | An agent access credential holding `tenant:read`, under an entry with tenant reach on, reads the register decisions on the obligations in its scope. Never gaps, cases, comments, evidence, the audit log or a private record | M | R2 | pending |
 | OWN-05 | The bank's own agent may propose a private obligation's controls as linked internal items of the control kind (REG-05), approved in the bank's own queue; waits for Alex's answer on what a control inventory is (D-91) | S | R2 | pending |
 
@@ -100,6 +100,8 @@ the PRD rows and the playbook rules read as tests:
   only if it applies, the compliance status pill whose tone comes from the
   category (compliant `positive`, partly `warning`, gap `negative`, not assessed
   `information`).
+- A gap may name a live Statement of Applicability unit under its own register entry, and is
+  then in the unit's legal entity; any other unit answers 422 `unknown_unit` (D-41).
 - A gap shows status, severity and source as pills; risk acceptance needs
   `risk.accept.approve` by a second person with step-up and a reason key.
 - Tenant-editable rows carry `version`; a write without a matching `If-Match`
@@ -188,6 +190,11 @@ Then "How we read this rule" shows the current interpretation with its author an
 And the history lists each earlier assessment unchanged, with who and when
 ```
 
+An interpretation is a version without an approval step (plan 7.2): every save writes the
+next version under `If-Match` and stamps the one before superseded, which stays readable;
+no second person and no four-eyes check apply. Its text never reaches an audit value, a log
+or the outbox; the audit row names the obligation and the version number.
+
 ### REG-S8 — Linked internal items carry external references `@integration` `@e2e` (REG-05)
 ```gherkin
 Given an obligation
@@ -195,6 +202,13 @@ When the owner links the policy "Client asset policy" with the reference "POL-01
 Then "Linked internal items" lists both with their kind label and external reference
 And the API exposes them so an external GRC system can read the links
 ```
+
+There is no separate internal-items screen in R2: a link either picks one of the bank's
+internal items or creates it from the same call, with its kind (a `link_kind` row), name,
+reference, url, owner person or team, org unit, external system and reference and review
+dates, one audit event each. Every link points at an item, which carries the kind; the link
+keeps its own label, url and external reference. Removing a link stamps `removed_at` and
+`removed_by`; the link row and the item stay, and the list shows live links only.
 
 ### REG-S9 — Yearly attestation and waivers `@integration` `@e2e` (REG-06)
 ```gherkin
@@ -266,6 +280,10 @@ When they confirm
 Then each unit carries its own decision, reason and time, and 93 audit events name the officer
 And a call with more rows than the configured cap is refused and stores nothing
 ```
+`@integration` proves the paste's commit: its units and the decisions its lines carry are
+stored in one transaction, the decisions through the same bulk path as `POST /applicability`,
+all of it or none, and a line with a decision needs `applicability.approve`. The dialog is the
+screen's step.
 
 ### REG-S15 — The register filtered by standard and entity is the Statement of Applicability `@integration` `@e2e` (REG-08)
 ```gherkin
@@ -276,6 +294,10 @@ And each unit's history lists its applicability decisions with who and when
 And the conformance row shows its own assessed status, and no status is computed from the units
 And Today's standing counts the standard as one obligation
 ```
+`@integration` proves the statement (`getStatementOfApplicability`): each unit's history is its
+own decision events, a standard outside the regulatory scope is hidden (404) and nothing is
+deleted, and an entity that does not follow the standard has none (422
+`scope_not_applicable`). Today's count is `x-roadmap-case-deadlines`'.
 
 ### REG-S16 — J-10: a legal entity follows a standard from regulatory scope to Statement of Applicability `@e2e` (FP-02, TEN-02, REG-01, REG-08, J-10)
 ```gherkin
