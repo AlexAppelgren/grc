@@ -1348,6 +1348,7 @@ departures:
 - `internal_link` points at an `internal_item` (nullable, a composite key) rather than
   carrying the designed `kind`: the item carries the kind. It is removed by stamping
   `removed_at` and `removed_by`, never deleted, with one live link per entry and item.
+
 ## 18. Chunk 11's agent tables (2026-09-25, c11-agent-models)
 
 Agents migrations 0004 and 0005 build schema v0.3 PART 3's agent tables with three rulings
