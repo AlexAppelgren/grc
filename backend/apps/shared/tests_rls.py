@@ -180,6 +180,8 @@ TENANT_ONLY_TABLES = [
     "internal_link",
     # c8-reg-units (register 0003; REG-08, D-41): the Statement of Applicability's units.
     "soa_unit",
+    # c8-duty-occurrences (register 0004; REG-07): the dated occurrences of a library duty.
+    "duty_occurrence",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also
@@ -709,3 +711,33 @@ class TeamRowsAreTenantOnly(TransactionTestCase):
             with transaction.atomic(using="app"):
                 tenancy.activate(tenant_a.id, using="app")
                 Team.objects.using("app").create(tenant_id=tenant_b.id, key="legal")
+
+
+class DutyOccurrencesAreTenantOnly(TransactionTestCase):
+    """A bank's dated duty occurrences as cw_app (REG-07, c8-duty-occurrences): each bank
+    reads only its own, a session with no tenant reads none, and a bank cannot file one under
+    another. The recurring duty it hangs on is the library's, shared by both."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def test_a_bank_reads_and_writes_only_its_own_occurrences(self) -> None:
+        from apps.register.models import DutyOccurrence
+
+        tenant_a = factories.tenant(slug="duty-rls-a")
+        tenant_b = factories.tenant(slug="duty-rls-b")
+        mine = factories.duty_occurrence(tenant_a)
+        factories.duty_occurrence(tenant_b)
+        with transaction.atomic(using="app"):
+            tenancy.activate(tenant_a.id, using="app")
+            self.assertEqual(list(DutyOccurrence.objects.using("app").values_list("id", flat=True)), [mine.id])
+        with transaction.atomic(using="app"):
+            self.assertFalse(DutyOccurrence.objects.using("app").exists(), "an unset tenant must match no occurrence (fail closed)")
+        with self.assertRaises(ProgrammingError):
+            with transaction.atomic(using="app"):
+                tenancy.activate(tenant_a.id, using="app")
+                DutyOccurrence.objects.using("app").create(
+                    tenant_id=tenant_b.id,
+                    recurring_duty_id=mine.recurring_duty_id,
+                    tenant_obligation_id=mine.tenant_obligation_id,
+                    due_date=mine.due_date + timedelta(days=90),
+                )

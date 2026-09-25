@@ -209,4 +209,9 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
         "reporting branches on",
     ),
+    # c8-duty-occurrences (register 0004, REG-07).
+    "DutyStatus": (
+        "duty_status",
+        "REG-07: where a dated duty occurrence stands; completion, the roadmap and Today branch on it",
+    ),
 }

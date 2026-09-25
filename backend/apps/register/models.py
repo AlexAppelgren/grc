@@ -15,7 +15,8 @@ which makes every person named here a member of the same bank.
 Nothing is overwritten: an assessment is an append-only ledger row with a trigger, and an
 internal link is removed by stamping `removed_at` and `removed_by`, never deleted. Risk
 acceptance is the one four-eyes step here (`gap_four_eyes`); applicability has none (D-75).
-The Statement of Applicability's units (`SoaUnit`, REG-08, D-41) are register 0003."""
+The Statement of Applicability's units (`SoaUnit`, REG-08, D-41) are register 0003, and the
+dated occurrences of a library recurring duty (`DutyOccurrence`, REG-07) register 0004."""
 
 from __future__ import annotations
 
@@ -49,6 +50,18 @@ class AssessmentMethod(enum.StrEnum):
     INTERNAL_AUDIT = "internal_audit"
     EXTERNAL_AUDIT = "external_audit"
     REGULATOR = "regulator"
+
+
+class DutyStatus(enum.StrEnum):
+    """Tier-one kind (apps/shared/kinds.py): where a dated duty occurrence stands (REG-07),
+    as the contract publishes it (`schemas.DutyStatus`). Completing one moves it to `done`
+    and generates the next; the roadmap and Today read the open ones."""
+
+    UPCOMING = "upcoming"
+    IN_PROGRESS = "in_progress"
+    DONE = "done"
+    MISSED = "missed"
+    NOT_APPLICABLE = "not_applicable"
 
 
 def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
@@ -310,3 +323,44 @@ class InternalLink(TenantModel):
 
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:  # compliance: allow-kwargs Django Model.delete signature
         raise ValidationError("A link is removed by stamping removed_at, never deleted.", code="remove_not_delete")
+
+
+class DutyOccurrence(TenantModel):
+    """One dated occurrence of a library recurring duty in one bank's calendar (REG-07): the
+    duty is the public fact, the occurrence the bank's work. On the bank's register entry,
+    and on one legal entity where the answer that made the obligation apply was an entity's;
+    null for the bank as a whole. The first is written when applicability becomes "applies",
+    and completing one writes only the next (`duties.py`); a read never writes one. One row
+    per duty, bank, entity and due date, the entity's null counted as a value, so a repeated
+    completion meets the key instead of writing a second. Owned by a person or a team, never
+    both."""
+
+    recurring_duty = models.ForeignKey("library.RecurringDuty", on_delete=models.PROTECT, related_name="+")
+    tenant_obligation = models.ForeignKey(TenantObligation, on_delete=models.PROTECT, related_name="duty_occurrences")
+    org_unit = models.ForeignKey("tenants.OrgUnit", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    due_date = models.DateField()
+    status = models.CharField(max_length=16, choices=_choices(DutyStatus), default=DutyStatus.UPCOMING.value)
+    owner = _person()
+    owner_team = models.ForeignKey("taxonomy.Team", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    completed_at = models.DateTimeField(null=True, blank=True)
+    completed_by = _person()
+    note = models.TextField(blank=True)
+    version = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        db_table = "duty_occurrence"
+        ordering = ["due_date", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["recurring_duty", "tenant", "org_unit", "due_date"],
+                name="duty_occurrence_unique",
+                nulls_distinct=False,
+            ),
+            models.CheckConstraint(
+                condition=models.Q(owner__isnull=True) | models.Q(owner_team__isnull=True),
+                name="duty_occurrence_one_owner_kind",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.recurring_duty_id}@{self.due_date}"
