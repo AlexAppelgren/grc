@@ -1431,3 +1431,19 @@ Built on these defaults; each stays yours to overrule.
       and the first refusal of each minute writes one `credential_rate_limited` row in
       the security log, not one per refused request, so a runaway agent cannot flood
       the log.
+## acc-scope-and-reach: an entry's scope and tenant reach, answered by default (2026-09-25, ACC-02, ACC-08, D-70, D-72)
+
+- [ ] Default taken: an opt-in dimension keeps its rule inside an entry's scope too. The
+      second pass is FP-01 unchanged against the entry's terms, so an entry narrowed to
+      Trading sees a standard's records (ISO/IEC 27001) only when a Trading product names
+      that standard. Say if a narrowed entry should instead inherit every standard the bank
+      follows.
+- [ ] Default taken: a department brings its own products and those of every active unit
+      below it; a deactivated unit cuts its branch, and a retired product derives nothing.
+      An entry that names departments or products deriving no term reads nothing
+      (`entry_scope_empty`), and an entry the session cannot see, or one revoked, fails
+      closed the same way rather than reading the whole footprint.
+- [ ] Default taken: rejecting a reach request needs a passkey step-up like approving it,
+      and a reach request is never withdrawn (the requester's colleague rejects it).
+      Switching reach off needs one person and a step-up; on again takes a new request and
+      a second person. `GET /tenant/reach` is readable with `security.manage` alone.

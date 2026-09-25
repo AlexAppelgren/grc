@@ -22,6 +22,13 @@ the library row's state is a platform act and chunk 7 builds it.
 Nothing here holds a prompt: `prompt_hash` and `prompt_template` are what is stored, so a
 bank's own words can never be read back out of this log even by the platform (NFR-04,
 D-07).
+
+acc-scope-and-reach (governance 0004, ACC-08, D-72, ADR 0057) adds tenant reach: whether a
+bank's own register may leave its zone for the agents it runs itself. A request and a
+second person's approval switch it on (`TenantReachRequest`, four eyes by check constraint),
+and `TenantReach` is the bank's one row of state, off until then and off again the moment
+anyone holding `security.manage` says so. Both are tenant tables under forced row-level
+security.
 """
 
 from __future__ import annotations
@@ -30,6 +37,9 @@ import enum
 import uuid
 
 from django.db import models
+
+from apps.shared.tenancy import TenantModel
+from apps.taxonomy.models import ApprovalStatus
 
 
 def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
@@ -169,3 +179,57 @@ class AiGeneration(models.Model):
 
     def __str__(self) -> str:
         return f"{self.purpose}:{self.model}"
+
+
+class TenantReachRequest(TenantModel):
+    """A request to let the bank's register reach its own agents (ACC-08, D-72), waiting for
+    a second person holding `security.manage`. `status` is the shared approval kind: pending,
+    then approved or rejected (a reach request is never withdrawn). One pending request per
+    bank. The four-eyes check constraint `tenant_reach_request_four_eyes` is created by
+    RunSQL in governance 0004 as `decided_by_id IS NULL OR decided_by_id <> requested_by_id`,
+    in the words the four-eyes guard reads back (apps/shared/tests_four_eyes.py)."""
+
+    requested_by = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
+    requested_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=16, choices=_choices(ApprovalStatus), default=ApprovalStatus.PENDING.value)
+    decided_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    decided_at = models.DateTimeField(null=True, blank=True)
+    version = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        db_table = "tenant_reach_request"
+        ordering = ["-requested_at", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant"],
+                condition=models.Q(status=ApprovalStatus.PENDING.value),
+                name="tenant_reach_request_one_pending",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(decided_by__isnull=True, decided_at__isnull=True)
+                | models.Q(decided_by__isnull=False, decided_at__isnull=False),
+                name="tenant_reach_request_decision_names_a_person",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.status} {self.id}"
+
+
+class TenantReach(TenantModel):
+    """The bank's one row of tenant reach state (ACC-08): off until a request is approved,
+    and no row reads as off. `request` is the approval that last switched it on; `changed_by`
+    and `changed_at` name the last person to switch it either way."""
+
+    enabled = models.BooleanField(default=False)
+    request = models.ForeignKey(TenantReachRequest, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    changed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    changed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "tenant_reach"
+        ordering = ["tenant"]
+        constraints = [models.UniqueConstraint(fields=["tenant"], name="tenant_reach_one_row")]
+
+    def __str__(self) -> str:
+        return f"{self.tenant_id}:{self.enabled}"
