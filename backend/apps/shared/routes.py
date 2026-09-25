@@ -60,4 +60,13 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # c8-reg-units (REG-08): a Statement of Applicability unit, addressed by its id.
     ("PATCH", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
     ("DELETE", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
+    # c8-reg-status: a legal entity's register row (REG-02).
+    ("PATCH", "/obligations/{obligation_id}/register/entities/{org_unit_id}", "register.TenantObligationScope", "register_entity"),
+    # c8-reg-gaps-risk (REG-03). `POST /gaps/{gap_id}/accept-risk` needs a body the guard's
+    # empty one fails before the lookup, so apps/register/tests_gaps.py proves its 404.
+    ("PATCH", "/gaps/{gap_id}", "register.Gap", "gap"),
+    ("POST", "/gaps/{gap_id}/accept-risk/approve", "register.Gap", "gap"),
+    ("POST", "/gaps/{gap_id}/reopen", "register.Gap", "gap"),
+    # c8-reg-links-history (REG-05): a link is removed by id.
+    ("DELETE", "/internal-links/{link_id}", "register.InternalLink", "internal_link"),
 ]

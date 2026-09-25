@@ -47,11 +47,13 @@ UNIT_TITLE_MAX = 300
 PASTE_FIELD_MAX = 1000
 
 Applicability = Literal["applies", "not_applicable", "under_assessment"]
-GapSource = Literal["assessment", "change_case", "audit", "incident", "regulator"]
 AssessmentMethod = Literal["self_assessment", "second_line_review", "internal_audit", "external_audit", "regulator"]
 DutyStatus = Literal["upcoming", "in_progress", "done", "missed", "not_applicable"]
 PasteOutcome = Literal["will_create", "created", "refused"]
-PasteProblem = Literal["duplicate_reference", "reference_exists", "reference_too_long", "title_too_long", "empty_line"]
+PasteProblem = Literal[
+    "duplicate_reference", "reference_exists", "reference_too_long", "title_too_long", "empty_line", "reason_missing"
+]
+PastedAnswer = Literal["applies", "not_applicable"]
 
 _APPLICABILITY = (
     "Whether the obligation applies to the bank here: `applies` when it binds this bank, "
@@ -77,6 +79,17 @@ _RISK_KEY = (
     "The key of a row in the bank's own `risk_rating` vocabulary, at most 64 characters. "
     "Seeded as `low`, `medium` and `high`, each with a fixed ordinal; the bank's admin may "
     "add or relabel rows, so read `GET /vocab/risk_rating` for the live set."
+)
+_TEAM_KEY = (
+    "The key of a row in the bank's own `team` vocabulary, at most 64 characters, such as "
+    "`compliance`; the bank's admin adds, renames and retires teams, so read `GET /vocab/team` "
+    "for the live set. A key that is not an active team of this bank is refused; null or "
+    "absent leaves the field as it is on a patch."
+)
+_TEAM_REF = (
+    "The team that owns the obligation here, as a row of the bank's own `team` vocabulary, "
+    "which its admin may extend; read `GET /vocab/team` for the live set. The key is stable "
+    "and the label is for showing. Null when no team owns it."
 )
 _PERSON_ID = (
     "A member of the bank, by their user UUID. Someone who is not an active member of "
@@ -112,6 +125,7 @@ _APPLICABILITY_REASON = (
 _PERSON_EXAMPLE: dict[str, Any] = {"id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30", "name": "Sara Lind"}
 _STATUS_EXAMPLE: dict[str, Any] = {"key": "partly_compliant", "kind": "partly", "label": "Partly compliant"}
 _RISK_EXAMPLE: dict[str, Any] = {"key": "medium", "kind": None, "label": "Medium"}
+_TEAM_EXAMPLE: dict[str, Any] = {"key": "compliance", "kind": None, "label": "Compliance"}
 _GAP_STATUS_EXAMPLE: dict[str, Any] = {"key": "open", "kind": "open", "label": "Open"}
 _ENTITY_EXAMPLE: dict[str, Any] = {
     "orgUnitId": "55555555-5555-4555-8555-555555555555",
@@ -124,6 +138,7 @@ _ENTITY_EXAMPLE: dict[str, Any] = {
     "statusNote": "Reconciliation runs daily; the evidence log is still manual.",
     "riskRating": _RISK_EXAMPLE,
     "owner": _PERSON_EXAMPLE,
+    "ownerTeam": None,
     "process": "Client asset reconciliation",
     "system": "Custody ledger",
     "evidenceLocation": "Compliance share / Client assets / 2026",
@@ -203,7 +218,10 @@ class RegisterEntityStatus(CamelSchema):
             "set. Null until rated."
         )
     )
-    owner: RegisterPersonRef | None = Field(description="The member who owns the obligation for this entity; null when nobody does yet.")
+    owner: RegisterPersonRef | None = Field(
+        description="The member who owns the obligation for this entity; null when nobody does, or when a team owns it instead."
+    )
+    owner_team: RegisterVocabRef | None = Field(description=f"{_TEAM_REF} An entity's row is owned by a person or a team, never both.")
     process: str | None = Field(description="The bank's own business process the obligation is met in, by its name; null when not recorded.")
     system: str | None = Field(description="The bank's own system the obligation is met in, by its name; null when not recorded.")
     evidence_location: str | None = Field(
@@ -233,6 +251,7 @@ class RegisterEntry(CamelSchema):
                     "riskRating": _RISK_EXAMPLE,
                     "firstLineOwner": _PERSON_EXAMPLE,
                     "complianceContact": {"id": "2b9e4c71-5a3d-4f08-9c6e-7d1a0b3f5e82", "name": "Johan Berg"},
+                    "ownerTeam": _TEAM_EXAMPLE,
                     "process": "Client asset reconciliation",
                     "system": "Custody ledger",
                     "evidenceLocation": "Compliance share / Client assets / 2026",
@@ -254,9 +273,10 @@ class RegisterEntry(CamelSchema):
         description=(
             "How the bank complies, as a row of its own `compliance_status` vocabulary, which "
             "its admin may extend under fixed categories; read `GET /vocab/compliance_status` "
-            "for the live set. Where the obligation spans several legal entities it is the worse "
-            "of their statuses by the category's ordinal, computed by the server. The `gap` "
-            "category means a gap exists, which applicability never hides."
+            "for the live set. Where legal entities the obligation applies to have rows, it is the "
+            "worst of their statuses by category, computed by the server: `gap`, then `partly`, "
+            "then `not_assessed`, then `compliant`; the label and the bank's ordinal never decide. "
+            "The `gap` category means a gap exists, which applicability never hides."
         )
     )
     status_note: str | None = Field(description="The bank's note on the status, in its own words; null when none was written.")
@@ -269,6 +289,7 @@ class RegisterEntry(CamelSchema):
     )
     first_line_owner: RegisterPersonRef | None = Field(description="The first-line member who owns meeting the obligation; null when nobody does yet.")
     compliance_contact: RegisterPersonRef | None = Field(description="The compliance member who follows the obligation; null when nobody does yet.")
+    owner_team: RegisterVocabRef | None = Field(description=_TEAM_REF)
     process: str | None = Field(description="The bank's own business process the obligation is met in, by its name; null when not recorded.")
     system: str | None = Field(description="The bank's own system the obligation is met in, by its name; null when not recorded.")
     evidence_location: str | None = Field(
@@ -300,6 +321,7 @@ class RegisterStatusFields(WriteBody):
         description=f"The bank's note on the status, at most {NOTE_MAX} characters. Tenant content that never leaves the bank.",
     )
     risk_rating: str | None = Field(default=None, max_length=KEY_MAX, description=_RISK_KEY)
+    owner_team: str | None = Field(default=None, max_length=KEY_MAX, description=_TEAM_KEY)
     process: str | None = Field(
         default=None, max_length=NAME_MAX, description=f"The business process the obligation is met in, by name, at most {NAME_MAX} characters."
     )
@@ -353,7 +375,19 @@ class RegisterEntityPatch(RegisterStatusFields):
         }
     )
 
-    owner_id: uuid.UUID | None = Field(default=None, description=f"The entity's owner of the obligation. {_PERSON_ID}")
+    owner_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            f"The entity's owner of the obligation. {_PERSON_ID} A person and a team never own "
+            "the same row: setting one clears the other, and sending both is refused."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _one_owner_kind(self) -> RegisterEntityPatch:
+        if self.owner_id is not None and self.owner_team is not None:
+            raise ValueError("Send an owner or an owner team, not both.")
+        return self
 
 
 # ---------------------------------------------------------------------------------------
@@ -507,9 +541,17 @@ class RegisterApplicabilityMany(CamelSchema):
 # Gaps and risk acceptance (REG-03)
 # ---------------------------------------------------------------------------------------
 _GAP_SOURCE = (
-    "Where the gap was found: `assessment` in the bank's own status assessment, "
+    "The key of a row in the bank's own `gap_source` vocabulary, at most 64 characters: "
+    "where the gap was found. Seeded as `assessment` in the bank's own status assessment, "
     "`change_case` while working a regulatory change, `audit` by internal or external audit, "
-    "`incident` after something went wrong, `regulator` raised by a supervisor. A fixed kind."
+    "`incident` after something went wrong and `regulator` raised by a supervisor; the bank's "
+    "admin may add or relabel rows, so read `GET /vocab/gap_source` for the live set."
+)
+_TEAM_KEY = (
+    "The key of a row in the bank's own `team` vocabulary, at most 64 characters, for a gap "
+    "a team owns rather than one person. A gap has one owner kind: sending a team clears the "
+    "person and sending a person clears the team, and sending both is refused. Read "
+    "`GET /vocab/team` for the live set; null or absent leaves the owner as it is on a patch."
 )
 _GAP_STATUS_KEY = (
     "The key of a row in the bank's own `gap_status` vocabulary, at most 64 characters, "
@@ -519,7 +561,7 @@ _GAP_STATUS_KEY = (
 )
 
 _RISK_ACCEPTANCE_EXAMPLE: dict[str, Any] = {
-    "reason": {"key": "cost_exceeds_benefit", "kind": None, "label": "Cost exceeds benefit"},
+    "reason": {"key": "compensating_control", "kind": None, "label": "Compensating control"},
     "note": "Automation is planned with the ledger replacement in 2027.",
     "requestedBy": _PERSON_EXAMPLE,
     "requestedAt": "2026-09-20T10:00:00Z",
@@ -534,9 +576,10 @@ _GAP_EXAMPLE: dict[str, Any] = {
     "title": "Evidence of reconciliation is manual",
     "description": "The daily reconciliation is run, but its evidence is a hand-kept log.",
     "severity": {"key": "high", "kind": None, "label": "High"},
-    "source": "assessment",
+    "source": {"key": "assessment", "kind": None, "label": "Assessment"},
     "status": _GAP_STATUS_EXAMPLE,
     "owner": _PERSON_EXAMPLE,
+    "ownerTeam": None,
     "targetDate": "2026-12-31",
     "remediation": "Automate the daily reconciliation report.",
     "identifiedAt": "2026-09-18T13:05:00Z",
@@ -561,7 +604,7 @@ class RegisterRiskAcceptance(CamelSchema):
     approved_by: RegisterPersonRef | None = Field(
         description=(
             "The second person who approved it with a passkey step-up, never the person who "
-            "identified the gap. Null while the acceptance is waiting for approval."
+            "asked for it. Null while the acceptance is waiting for approval."
         )
     )
     approved_at: datetime.datetime | None = Field(description="The UTC timestamp of the approval, null while waiting for approval.")
@@ -586,7 +629,12 @@ class RegisterGap(CamelSchema):
             "its admin may extend; read `GET /vocab/risk_rating` for the live set."
         )
     )
-    source: GapSource = Field(description=_GAP_SOURCE)
+    source: RegisterVocabRef = Field(
+        description=(
+            "Where the gap was found, as a row of the bank's own `gap_source` vocabulary, which "
+            "its admin may extend; read `GET /vocab/gap_source` for the live set."
+        )
+    )
     status: RegisterVocabRef = Field(
         description=(
             "Where the gap stands, as a row of the bank's own `gap_status` vocabulary, which its "
@@ -594,13 +642,22 @@ class RegisterGap(CamelSchema):
             "`remediating`, `risk_accepted` or `closed` and decides the pill's tone."
         )
     )
-    owner: RegisterPersonRef | None = Field(description="The member who owns closing the gap; null when nobody does yet.")
+    owner: RegisterPersonRef | None = Field(
+        description="The member who owns closing the gap; null when a team owns it or nobody does yet."
+    )
+    owner_team: RegisterVocabRef | None = Field(
+        description=(
+            "The team that owns closing the gap, as a row of the bank's own `team` vocabulary, "
+            "which its admin may extend; read `GET /vocab/team` for the live set. Null when a "
+            "person owns it or nobody does yet; never set together with `owner`."
+        )
+    )
     target_date: datetime.date | None = Field(
         description="The plain date the bank means to close the gap by, shown on the roadmap as our own deadline; null when not set."
     )
     remediation: str | None = Field(description="The bank's plan for closing the gap, in its own words; null when none was written.")
     identified_at: datetime.datetime = Field(description="The UTC timestamp at which the gap was recorded, set by the server.")
-    identified_by: RegisterPersonRef = Field(description="The person who recorded the gap; they can never approve its risk acceptance.")
+    identified_by: RegisterPersonRef = Field(description="The person who recorded the gap.")
     risk_acceptance: RegisterRiskAcceptance | None = Field(
         description="The request to accept the gap's risk and its approval, null when nobody has asked."
     )
@@ -638,7 +695,7 @@ class RegisterGapBody(WriteBody):
     title: str = Field(min_length=1, max_length=TITLE_MAX, description=f"What falls short, 1 to {TITLE_MAX} characters.")
     description: str | None = Field(default=None, max_length=NOTE_MAX, description=f"The longer account, at most {NOTE_MAX} characters.")
     severity: str = Field(max_length=KEY_MAX, description=f"How serious the gap is. {_RISK_KEY}")
-    source: GapSource = Field(description=_GAP_SOURCE)
+    source: str = Field(max_length=KEY_MAX, description=_GAP_SOURCE)
     org_unit_id: uuid.UUID | None = Field(
         default=None, description="The legal entity the gap is in, as a UUID; absent for the obligation as a whole."
     )
@@ -646,6 +703,7 @@ class RegisterGapBody(WriteBody):
         default=None, description="The Statement of Applicability unit the gap is in, as a UUID; absent when it is not about one unit."
     )
     owner_id: uuid.UUID | None = Field(default=None, description=f"The gap's owner. {_PERSON_ID}")
+    owner_team: str | None = Field(default=None, max_length=KEY_MAX, description=f"The team that owns the gap. {_TEAM_KEY}")
     target_date: datetime.date | None = Field(default=None, description="The plain date the bank means to close the gap by.")
     remediation: str | None = Field(default=None, max_length=NOTE_MAX, description=f"The plan, at most {NOTE_MAX} characters.")
 
@@ -662,6 +720,7 @@ class RegisterGapPatch(WriteBody):
     severity: str | None = Field(default=None, max_length=KEY_MAX, description=f"How serious the gap is. {_RISK_KEY}")
     status: str | None = Field(default=None, max_length=KEY_MAX, description=_GAP_STATUS_KEY)
     owner_id: uuid.UUID | None = Field(default=None, description=f"The gap's owner. {_PERSON_ID}")
+    owner_team: str | None = Field(default=None, max_length=KEY_MAX, description=f"The team that owns the gap. {_TEAM_KEY}")
     target_date: datetime.date | None = Field(default=None, description="The plain date the bank means to close the gap by.")
     remediation: str | None = Field(default=None, max_length=NOTE_MAX, description=f"The plan, at most {NOTE_MAX} characters.")
 
@@ -669,7 +728,7 @@ class RegisterGapPatch(WriteBody):
 class RegisterRiskAcceptanceBody(WriteBody):
     """`POST /gaps/{gapId}/accept-risk`: ask for the gap's risk to be accepted."""
 
-    model_config = ConfigDict(json_schema_extra={"examples": [{"reason": "cost_exceeds_benefit", "note": "Automation comes with the 2027 ledger."}]})
+    model_config = ConfigDict(json_schema_extra={"examples": [{"reason": "compensating_control", "note": "The weekly custody review covers the risk until 2027."}]})
 
     reason: str = Field(
         max_length=KEY_MAX,
@@ -817,7 +876,8 @@ _LINK_EXAMPLE: dict[str, Any] = {
     "label": "Client asset policy",
     "url": "https://intranet.example-bank.test/policies/client-assets",
     "externalRef": "POL-014",
-    "internalItemId": None,
+    "externalSystem": "ServiceNow GRC",
+    "internalItemId": "2b4d6f8a-0c1e-4a3b-9d5f-7e9a1c3b5d24",
     "createdBy": _PERSON_EXAMPLE,
     "createdAt": "2026-09-18T13:05:00Z",
 }
@@ -840,8 +900,15 @@ class RegisterInternalLink(CamelSchema):
     label: str = Field(description="The item's name as the bank calls it, such as `Client asset policy`.")
     url: str | None = Field(description="Where the item lives in the bank's own systems; null when none was given. Never fetched by the server.")
     external_ref: str | None = Field(description="The item's reference in the bank's GRC or document system, such as `POL-014`; null when none was given.")
-    internal_item_id: uuid.UUID | None = Field(
-        description="The bank's internal item this link points at, as a UUID, when it was picked from the organisation; null for an ad hoc link."
+    external_system: str | None = Field(
+        description="The name of the outside system that reference belongs to, such as `ServiceNow GRC`; null when none was given."
+    )
+    internal_item_id: uuid.UUID = Field(
+        description=(
+            "The bank's internal item this link points at, as a UUID: the one picked from its "
+            "organisation, or the one this link's call created. The item carries the kind and "
+            "survives the link's removal."
+        )
     )
     created_by: RegisterPersonRef = Field(description="The person who made the link.")
     created_at: datetime.datetime = Field(description="The UTC timestamp at which the link was made, set by the server.")
@@ -872,11 +939,36 @@ class RegisterInternalLinkBody(WriteBody):
         ),
     )
     label: str = Field(min_length=1, max_length=TITLE_MAX, description=f"The item's name as the bank calls it, 1 to {TITLE_MAX} characters.")
-    url: str | None = Field(default=None, max_length=URL_MAX, description=f"Where the item lives, a link of at most {URL_MAX} characters. Never fetched by the server.")
+    url: str | None = Field(default=None, max_length=URL_MAX, description=f"Where the item lives, an http or https address of at most {URL_MAX} characters. Never fetched by the server.")
     external_ref: str | None = Field(
         default=None, max_length=EXTERNAL_REF_MAX, description=f"The item's reference in the bank's GRC system, at most {EXTERNAL_REF_MAX} characters."
     )
-    internal_item_id: uuid.UUID | None = Field(default=None, description="An internal item of the bank's organisation to link, as a UUID; absent for an ad hoc link.")
+    internal_item_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "An internal item of the bank's organisation to link, as a UUID, whose kind must be "
+            "`kind`. Absent to create the item from this call: its kind, `label` as its name, "
+            "`url`, `externalRef` and the item fields below. Another bank's item answers 404."
+        ),
+    )
+    # The item's own fields, read only when this call creates the item (REG-05).
+    reference: str | None = Field(
+        default=None, max_length=EXTERNAL_REF_MAX, description=f"The bank's own reference for a new item, such as `POL-014`, at most {EXTERNAL_REF_MAX} characters."
+    )
+    external_system: str | None = Field(
+        default=None, max_length=100, description="The outside system a new item's `externalRef` belongs to, such as `ServiceNow GRC`, at most 100 characters."
+    )
+    owner_id: uuid.UUID | None = Field(
+        default=None, description="A new item's owner, a member of the bank by their user UUID; never together with `ownerTeamId`."
+    )
+    owner_team_id: uuid.UUID | None = Field(
+        default=None, description="A new item's owning team, one of the bank's teams by its UUID; never together with `ownerId`."
+    )
+    org_unit_id: uuid.UUID | None = Field(
+        default=None, description="The part of the bank's organisation a new item belongs to, as a UUID from its organisation."
+    )
+    last_reviewed_on: datetime.date | None = Field(default=None, description="The plain date a new item was last reviewed.")
+    next_review_on: datetime.date | None = Field(default=None, description="The plain date a new item is next due for review.")
 
 
 # ---------------------------------------------------------------------------------------
@@ -989,6 +1081,24 @@ class RegisterUnitPasteLine(WriteBody):
             "One longer than a unit's title may be is reported on its row."
         ),
     )
+    applicability: PastedAnswer | None = Field(
+        default=None,
+        description=(
+            "The unit's answer, when the line carries one: `applies`, or `not_applicable` when "
+            "the bank decided it does not. Absent leaves the new unit undecided. A commit sets "
+            "it through the same path as `POST /applicability`, so it needs "
+            "`applicability.approve`; the line needs a reason with it."
+        ),
+    )
+    reason: str | None = Field(
+        default=None,
+        max_length=REASON_MAX,
+        description=(
+            f"Why, in the bank's own words, at most {REASON_MAX} characters, such as `Certified`. "
+            "Sent with `applicability` and only with it; a line with one and not the other is "
+            "refused on its row as `reason_missing`. Tenant content that never leaves the bank."
+        ),
+    )
 
 
 class RegisterUnitPasteBody(WriteBody):
@@ -999,7 +1109,10 @@ class RegisterUnitPasteBody(WriteBody):
             "examples": [
                 {
                     "orgUnitId": "55555555-5555-4555-8555-555555555555",
-                    "lines": [{"reference": "A.5.1", "title": "Our information security policies"}],
+                    "lines": [
+                        {"reference": "A.5.1", "title": "Our information security policies", "applicability": "applies", "reason": "Certified"},
+                        {"reference": "A.5.2", "title": "Our security roles"},
+                    ],
                     "dryRun": True,
                 }
             ]
@@ -1011,14 +1124,16 @@ class RegisterUnitPasteBody(WriteBody):
         min_length=1,
         description=(
             "The pasted lines, at least 1, in the order pasted. A call holds at most the "
-            "configured `REGISTER_BULK_MAX` lines, 100 by default."
+            "configured `REGISTER_BULK_MAX` lines, 100 by default; a longer paste is refused "
+            "whole and stores nothing."
         ),
     )
     dry_run: bool = Field(
         default=True,
         description=(
             "True, the default, answers what would be created and stores nothing; false creates "
-            "the units, only when no line is refused, with one audit event per unit."
+            "the units, only when no line is refused, with one audit event per unit, and sets "
+            "the answers the lines carry in the same transaction, one audit event per answer."
         ),
     )
 
@@ -1040,7 +1155,8 @@ class RegisterUnitPasteRow(CamelSchema):
             "Why a line is refused: `duplicate_reference` when the paste repeats a reference, "
             "`reference_exists` when the entity already has a unit with it, "
             "`reference_too_long` or `title_too_long` past the unit limits, `empty_line` for a "
-            "line with no reference or title. Null when the line is not refused."
+            "line with no reference or title, `reason_missing` for an answer without a reason or "
+            "a reason without an answer. Null when the line is not refused."
         )
     )
     unit_id: uuid.UUID | None = Field(description="The created unit's UUID, null on a dry run and for a refused line.")
@@ -1061,9 +1177,46 @@ class RegisterUnitPaste(CamelSchema):
         }
     )
 
-    dry_run: bool = Field(description="True when nothing was stored, as asked; false when the units were created.")
+    dry_run: bool = Field(
+        description=(
+            "True when nothing was stored: a dry run, or a commit with any line refused; false "
+            "when the units, and the answers the lines carried, were stored."
+        )
+    )
     rows: list[RegisterUnitPasteRow] = Field(description="One row per pasted line, in the order pasted.")
     created: int = Field(description="How many units were created, 0 on a dry run and whenever any line was refused.")
+
+
+_STATEMENT_UNIT_EXAMPLE: dict[str, Any] = {
+    **_UNIT_EXAMPLE,
+    "history": [
+        {
+            "applicability": "applies",
+            "reason": "Required by our certification scope",
+            "decidedAt": "2026-09-24T09:12:00Z",
+            "decidedBy": _PERSON_EXAMPLE,
+        }
+    ],
+}
+
+
+class RegisterUnitDecision(CamelSchema):
+    """One applicability answer a unit was given, as its audit event recorded it."""
+
+    applicability: Applicability = Field(description=_APPLICABILITY)
+    reason: str = Field(description="Why, in the bank's own words, as the person gave it. Tenant content that never leaves the bank.")
+    decided_at: datetime.datetime = Field(description="The UTC timestamp at which the answer was stored.")
+    decided_by: RegisterPersonRef = Field(description="The person who set the answer after confirming it.")
+
+
+class RegisterStatementUnit(RegisterUnit):
+    """A unit as the Statement of Applicability shows it: the unit and its decisions."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_STATEMENT_UNIT_EXAMPLE]})
+
+    history: list[RegisterUnitDecision] = Field(
+        description="Every applicability answer the unit was given, oldest first, each with who set it and when; empty while it is undecided."
+    )
 
 
 class RegisterStatementOfApplicability(CamelSchema):
@@ -1076,7 +1229,7 @@ class RegisterStatementOfApplicability(CamelSchema):
                 {
                     "obligationId": "44444444-4444-4444-8444-444444444444",
                     "conformance": _ENTITY_EXAMPLE,
-                    "units": [_UNIT_EXAMPLE],
+                    "units": [_STATEMENT_UNIT_EXAMPLE],
                     "total": 1,
                 }
             ]
@@ -1087,7 +1240,7 @@ class RegisterStatementOfApplicability(CamelSchema):
     conformance: RegisterEntityStatus = Field(
         description="The entity's conformance row with its own assessed status, never computed from the units."
     )
-    units: list[RegisterUnit] = Field(description="The entity's units on this page, by reference.")
+    units: list[RegisterStatementUnit] = Field(description="The entity's live units on this page, by reference, each with its history of decisions.")
     total: int = Field(description="How many units the entity has under the standard, not how many are on this page.")
 
 

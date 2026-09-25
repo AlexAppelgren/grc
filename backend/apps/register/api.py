@@ -60,7 +60,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, if_match
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, if_match, principal
 from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Register"])
@@ -103,9 +103,11 @@ def get_register_entry(request: HttpRequest, obligation_id: uuid.UUID = Path(...
     writes nothing, not even an empty entry, so an obligation nobody has answered for reads as
     "under assessment" with version 0.
 
+    Where legal entities the obligation applies to have rows, `complianceStatus` is the worst
+    of theirs by category: gap, then partly, then not assessed, then compliant.
+
     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
-    `register.read`; `not_found` (404) for an obligation the bank cannot see. Published ahead
-    of the logic that will fill it, and answering 501 `not_built` until that ships.
+    `register.read`; `not_found` (404) for an obligation the bank cannot see.
     """
     tenant = caller_tenant(request)
     return status_logic.read_register(tenant=tenant, order=language_order(request, tenant=tenant), obligation_id=obligation_id)
@@ -126,19 +128,24 @@ def update_register(
 ) -> Any:
     """Changes the fields the body sends on the bank's register entry: compliance status,
     status note, risk, first-line owner, compliance contact, process, system, evidence
-    location and next review. Applicability is not here; it has its own route. A status
-    change also writes an assessment row with the rationale, so the history has it.
+    location, owner team and next review. Applicability is not here; it has its own route. A
+    status outside the not assessed category needs applicability `applies` first. A
+    status change also writes an assessment row with the rationale, so the history has it.
+    The first write creates the entry.
 
-    A person's session holding `register.edit`. Send `If-Match` with the `version` last read;
-    a row changed in between is refused and nothing is merged. Records one audit event naming
-    the person with the fields before and after. No step-up.
+    A person's session holding `register.edit`. `If-Match` is required: the `version` last
+    read, 0 for an entry nobody has written; a row changed in between is refused and nothing
+    is merged. Records one audit event naming the person with keys, ids and dates before and
+    after, and the names of the text fields that changed, never their words. No step-up.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
     `not_found` (404) for an obligation the bank cannot see; `stale_write` (409) when
-    `If-Match` is not the current version; `unknown_key` (422) for a status or risk key that is
-    not an active row of the bank's list; `validation_error` (422) for an `If-Match` that is
-    not a version or a body the schema refuses. Published ahead of the logic that will fill
-    it, and answering 501 `not_built` until that ships.
+    `If-Match` is not the current version; `invalid_transition` (409) for a status outside the not
+    assessed category while the obligation does not apply or is still under assessment;
+    `unknown_key` (422) for a status, risk or team key that is not an active row of the bank's
+    list, with `validKeys` listing those that are; `unknown_member` (422) for an owner or
+    contact who is not an active member of the bank; `validation_error` (422) for a missing
+    `If-Match`, one that is not a version, or a body the schema refuses.
     """
     tenant = caller_tenant(request)
     return status_logic.update_register(
@@ -168,19 +175,25 @@ def update_register_entity(
     org_unit_id: uuid.UUID = Path(..., description=_ORG_UNIT_ID),
 ) -> Any:
     """Changes the fields the body sends on one legal entity's row under an obligation that
-    spans several: status, note, risk, owner, process, system, evidence location and next
-    review. The entity's row is created in the same transaction when it does not exist yet;
-    the obligation's own status then reads the worse of its entities.
+    spans several: status, note, risk, owner or owner team, process, system, evidence location
+    and next review. The entity's row is created in the same transaction when it does not
+    exist yet; the obligation's own status then reads the worst of the entities it applies to.
+    A person or a team owns the row, never both: setting one clears the other. A status other
+    than the not assessed category needs the entity's applicability `applies` first.
 
-    A person's session holding `register.edit`. Send `If-Match` with the row's `version`, 0
-    for a row not written yet. Records one audit event naming the person with the fields
-    before and after. No step-up.
+    A person's session holding `register.edit`. `If-Match` is required: the row's `version`,
+    0 for a row not written yet. Records one audit event naming the person with keys, ids and
+    dates before and after, and the names of the text fields that changed, never their words.
+    No step-up.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-    `not_found` (404) for an obligation or entity the bank cannot see; `stale_write` (409);
-    `unknown_key` (422) for a status or risk key the bank's list does not hold;
-    `validation_error` (422). Published ahead of the logic that will fill it, and answering
-    501 `not_built` until that ships.
+    `not_found` (404) for an obligation the bank cannot see, or an org unit that is not one of
+    its active legal entities; `stale_write` (409); `invalid_transition` (409) for a status
+    outside the not assessed category while the entity's applicability is not `applies`;
+    `unknown_key` (422) for a status, risk or team key the bank's list does not hold, with
+    `validKeys`; `unknown_member` (422) for an owner who is not an active member;
+    `validation_error` (422) for a missing `If-Match`, an owner and a team sent together, or a
+    body the schema refuses.
     """
     tenant = caller_tenant(request)
     return status_logic.update_entity_status(
@@ -223,9 +236,11 @@ def set_applicability(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `applicability.approve`; `not_found` (404) for an obligation, entity or unit the bank
-    cannot see; `stale_write` (409); `validation_error` (422) for an unknown value, an empty
-    reason, or both `orgUnitId` and `unitId`. Published ahead of the logic that will fill it,
-    and answering 501 `not_built` until that ships.
+    cannot see, or a legal entity the obligation does not span; `stale_write` (409);
+    `validation_error` (422) for an unknown value, an empty reason, or both `orgUnitId` and
+    `unitId`; `scope_not_applicable` (422) for a unit whose legal entity no longer follows the
+    standard. A unit's answer is stored on the unit, never on its entity's conformance row, and
+    joins the unit's history in the Statement of Applicability.
     """
     tenant = caller_tenant(request)
     return applicability.set_applicability(
@@ -261,9 +276,10 @@ def set_applicability_many(request: HttpRequest, body: RegisterApplicabilityMany
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `applicability.approve`; `not_found` (404) when any row names an obligation, entity or unit
-    the bank cannot see; `validation_error` (422) for an empty list, a list over the cap or a
-    row the schema refuses. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    the bank cannot see, or a legal entity its obligation does not span; `validation_error`
+    (422) for an empty list, a list over the cap, the same target twice or a row the schema
+    refuses; `scope_not_applicable` (422) for a unit whose legal entity no longer follows the
+    standard.
     """
     tenant = caller_tenant(request)
     return applicability.set_applicability_many(
@@ -296,8 +312,7 @@ def list_obligation_gaps(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
-    page out of range. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    page out of range.
     """
     tenant = caller_tenant(request)
     return gaps.list_obligation_gaps(
@@ -322,19 +337,25 @@ def list_obligation_gaps(
 def create_gap(
     request: HttpRequest, body: RegisterGapBody, obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID)
 ) -> Any:
-    """Records how the bank falls short of an obligation, on the obligation as a whole, one
-    legal entity or one unit, with its title, severity, source, owner, target date and
-    remediation plan. The gap starts in the gap status list's open row, and its target date
-    appears on the roadmap as our own deadline.
+    """Records how the bank falls short of an obligation, on the obligation as a whole or one
+    legal entity, with its title, severity, source, owner (a person or a team), target date
+    and remediation plan. The gap starts in the gap status list's open row, and its target
+    date appears on the roadmap as our own deadline. The bank's register entry on the
+    obligation is created with it when nobody has worked on the obligation yet.
 
     A person's session holding `gaps.edit`. No step-up. Records one audit event naming the
-    person. Answers 201 with the gap.
+    person, with ids and keys and never the text they typed. Answers 201 with the gap.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
-    `not_found` (404) for an obligation, entity or unit the bank cannot see; `unknown_key`
-    (422) for a severity key the bank's list does not hold; `validation_error` (422) for a
-    body the schema refuses. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    `not_found` (404) for an obligation or legal entity the bank cannot see;
+    `does_not_apply` (409) when the obligation, or its answer for that legal entity, is
+    "does not apply": a gap is a fact about how the bank complies with a rule that applies;
+    `unknown_key` (422) for a severity, source or team key the bank's list does not hold;
+    `unknown_member` (422) for an owner who is not an active member of the bank;
+    `validation_error` (422) for a body the schema refuses or a person and a team as owner
+    together; `unknown_unit` (422) for a `unitId` that is not a live unit under this
+    obligation, or not of the legal entity the gap names. A gap on a unit is in the unit's
+    legal entity, and fixes the unit's reference and title from then on.
     """
     tenant = caller_tenant(request)
     return 201, gaps.create_gap(
@@ -367,8 +388,7 @@ def list_register_gaps(request: HttpRequest, filters: Query[RegisterGapQuery], p
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
     `validation_error` (422) for an owner or entity that is not a UUID, a date that is not a
-    date, a key longer than 64 characters or a page out of range. Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    date, a key longer than 64 characters or a page out of range.
     """
     tenant = caller_tenant(request)
     return gaps.list_gaps(
@@ -388,17 +408,20 @@ def list_register_gaps(request: HttpRequest, filters: Query[RegisterGapQuery], p
 @answers_problems
 def update_gap(request: HttpRequest, body: RegisterGapPatch, gap_id: uuid.UUID = Path(..., description=_GAP_ID)) -> Any:
     """Changes the fields the body sends on a gap: title, description, severity, owner, target
-    date, plan, or its status, such as from open to remediating to closed. Accepting a risk is
-    not a status change here; it has its own routes and its four eyes.
+    date, plan, or its status, between the open and remediating categories and on to closed.
+    Closing a gap clears a risk acceptance still waiting on it. Accepting a risk is not a
+    status change here, and neither is reopening a closed gap; each has its own route.
 
-    A person's session holding `gaps.edit`. Send `If-Match` with the gap's `version`. No
-    step-up. Records one audit event naming the person with the fields before and after.
+    A person's session holding `gaps.edit`. Send `If-Match` with the gap's `version`; it is
+    required. No step-up. Records one audit event naming the person with the keys, ids and
+    dates before and after, and the names (never the text) of the typed fields it changed.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
-    `not_found` (404) for a gap the bank does not have; `stale_write` (409);
-    `invalid_transition` (409) for a status the gap cannot move to; `unknown_key` (422) for a
-    key the bank's list does not hold; `validation_error` (422). Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a gap the bank does not have; `stale_write` (409) for an `If-Match`
+    that is absent or not the current version; `invalid_transition` (409) for a status the gap
+    cannot move to here; `unknown_key` (422) for a key the bank's list does not hold;
+    `unknown_member` (422) for an owner who is not an active member; `validation_error`
+    (422) for a body the schema refuses or a person and a team as owner together.
     """
     tenant = caller_tenant(request)
     return gaps.update_gap(
@@ -429,13 +452,13 @@ def request_risk_acceptance(
     does not move until a second person approves.
 
     A person's session holding `gaps.edit`. No step-up. Records one audit event naming the
-    person and the reason.
+    person and the reason key; the note stays on the gap and never enters the audit row.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
     `not_found` (404) for a gap the bank does not have; `invalid_transition` (409) for a gap
-    that is closed or already accepted; `unknown_key` (422) for a reason the bank's list does
-    not hold; `validation_error` (422). Published ahead of the logic that will fill it, and
-    answering 501 `not_built` until that ships.
+    that is closed or already accepted; `request_pending` (409) when an acceptance is already
+    waiting for approval; `unknown_key` (422) for a reason the bank's list does not hold,
+    naming the keys it does; `validation_error` (422) for a body the schema refuses.
     """
     tenant = caller_tenant(request)
     return gaps.request_risk_acceptance(
@@ -457,18 +480,17 @@ def request_risk_acceptance(
 def approve_risk_acceptance(request: HttpRequest, gap_id: uuid.UUID = Path(..., description=_GAP_ID)) -> Any:
     """Approves a waiting risk acceptance, which moves the gap to the gap status list's
     risk-accepted row and stores the approver and the time. Four eyes: the approver is never
-    the person who identified the gap.
+    the person who asked for the acceptance, which a check constraint enforces as well.
 
     A person's session holding `risk.accept.approve`, with a passkey step-up younger than the
-    configured freshness window. No body. Records one audit event naming both people and the
-    step-up assertion.
+    configured freshness window. No body. Records one audit event naming both people, the
+    reason key and the step-up assertion, and never the requester's note.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `risk.accept.approve`; `step_up_required` (403) without a fresh step-up, which the screen
     answers by opening the passkey prompt and retrying; `not_found` (404) for a gap the bank
-    does not have; `four_eyes_violation` (409) when the caller identified the gap;
-    `invalid_transition` (409) when no acceptance is waiting. Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    does not have; `four_eyes_violation` (409) when the caller asked for the acceptance,
+    before anything is written; `invalid_transition` (409) when no acceptance is waiting.
     """
     tenant = caller_tenant(request)
     return gaps.approve_risk_acceptance(
@@ -499,8 +521,7 @@ def reopen_gap(request: HttpRequest, gap_id: uuid.UUID = Path(..., description=_
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
     `not_found` (404) for a gap the bank does not have; `invalid_transition` (409) for a gap
-    that is already open. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    that is open or remediating.
     """
     tenant = caller_tenant(request)
     return gaps.reopen_gap(
@@ -533,8 +554,7 @@ def list_assessments(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
-    page out of range. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    page out of range.
     """
     tenant = caller_tenant(request)
     return history.list_assessments(
@@ -564,8 +584,7 @@ def get_interpretation(request: HttpRequest, obligation_id: uuid.UUID = Path(...
     A person's session holding `register.read`. A read.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
-    `not_found` (404) for an obligation the bank cannot see. Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for an obligation the bank cannot see.
     """
     return history.read_interpretation(tenant=caller_tenant(request), obligation_id=obligation_id)
 
@@ -593,8 +612,6 @@ def save_interpretation(
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
     `not_found` (404) for an obligation the bank cannot see; `stale_write` (409) when somebody
     wrote a version in between; `validation_error` (422) for empty or over-long text.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     return history.save_interpretation(
         tenant=caller_tenant(request),
@@ -630,8 +647,7 @@ def list_internal_links(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
-    page out of range. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    page out of range.
     """
     tenant = caller_tenant(request)
     return links.list_links(
@@ -657,17 +673,21 @@ def add_internal_link(
     request: HttpRequest, body: RegisterInternalLinkBody, obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID)
 ) -> Any:
     """Links an item of the bank's own to an obligation: picked from its organisation's
-    internal items, or ad hoc with its kind, name, link and external reference. The url is
-    stored as given and never fetched.
+    internal items, or created from this same call with its kind, name, reference, link,
+    owner, part of the organisation, external system and reference, and review dates. The url
+    is an http or https address, stored as given and never fetched.
 
-    A person's session holding `register.edit`. No step-up. Records one audit event naming
-    the person. Answers 201 with the link.
+    A person's session holding `register.edit`. No step-up. Records one audit event for the
+    link, and one more for the item when the call creates it, each naming the person.
+    Answers 201 with the link.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-    `not_found` (404) for an obligation or internal item the bank cannot see; `unknown_key`
-    (422) for a kind that is not an active row of the bank's link kind list;
-    `validation_error` (422). Published ahead of the logic that will fill it, and answering
-    501 `not_built` until that ships.
+    `not_found` (404) for an obligation or internal item the bank cannot see; `already_linked`
+    (409) when the item is already linked to this obligation; `duplicate_key` (409) when a new
+    item's kind and name are taken, so pick that item instead; `unknown_key` (422) for a kind
+    that is not an active row of the bank's link kind list; `validation_error` (422) for a
+    url that is not a web address, a picked item of another kind, an item picked and
+    described at once, or an owner who is not a member.
     """
     tenant = caller_tenant(request)
     return 201, links.add_link(
@@ -698,8 +718,7 @@ def remove_internal_link(request: HttpRequest, link_id: uuid.UUID = Path(..., de
     the person.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-    `not_found` (404) for a link the bank does not have or one already removed. Published
-    ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a link the bank does not have or one already removed.
     """
     links.remove_link(tenant=caller_tenant(request), actor=actor_for(request), link_id=link_id)
 
@@ -855,20 +874,35 @@ def remove_unit(request: HttpRequest, unit_id: uuid.UUID = Path(..., description
 def paste_units(
     request: HttpRequest, body: RegisterUnitPasteBody, obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID)
 ) -> Any:
-    """Lists many units for one legal entity from pasted lines of reference and title. With
-    `dryRun` true, the default, it answers what each line would become and stores nothing;
-    with `dryRun` false it creates every unit in one transaction, only when no line is
-    refused. Set their applicability afterwards with `POST /applicability`.
+    """Lists many units for one legal entity from pasted lines of reference and title, each
+    optionally with its applicability and reason. With `dryRun` true, the default, it answers
+    what each line would become and stores nothing; show that to the person and ask them to
+    confirm. With `dryRun` false it creates every unit and sets every answer the lines carry
+    in one transaction, only when no line is refused: all of it is stored or none. A commit
+    with a refused line answers like a dry run and stores nothing.
 
-    A person's session holding `register.edit`. At most `REGISTER_BULK_MAX` lines, 100 by
-    default. No step-up. A commit records one audit event per unit naming the person.
+    A person's session holding `register.edit`, and `applicability.approve` as well when any
+    line carries an answer (D-75). At most `REGISTER_BULK_MAX` lines, 100 by default. No
+    step-up. A commit records one audit event per unit naming the person, and one per answer
+    naming the person, the value before and after, and the reason.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-    `not_found` (404) for an obligation or entity the bank cannot see; `validation_error`
-    (422) for no lines, too many lines or a line longer than the paste allows. Published ahead
-    of the logic that will fill it, and answering 501 `not_built` until that ships.
+    Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`, or
+    without `applicability.approve` for a line with an answer; `not_found` (404) for an
+    obligation or entity the bank cannot see; `units_only_under_standards` (422) under an
+    obligation that is not a standard's; `scope_not_applicable` (422) for an entity that does
+    not follow the standard; `duplicate_key` (409) when another write listed a reference
+    first; `validation_error` (422) for no lines, too many lines, an unknown answer or a line
+    longer than the paste allows.
     """
-    return units.paste_units(tenant=caller_tenant(request), actor=actor_for(request), obligation_id=obligation_id, body=body)
+    tenant = caller_tenant(request)
+    return units.paste_units(
+        tenant=tenant,
+        actor=actor_for(request),
+        order=language_order(request, tenant=tenant),
+        obligation_id=obligation_id,
+        body=body,
+        may_decide=principal(request).has_permission(perms.APPLICABILITY_APPROVE),
+    )
 
 
 @router.get(
@@ -888,17 +922,19 @@ def get_statement_of_applicability(
     obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID),
 ) -> Any:
     """The register filtered by a standard and one legal entity: the entity's conformance row
-    with its own assessed status, and each unit with its reference, the bank's title, its
-    applicability and reason, its status, who set it and when. No status is computed from the
-    units.
+    with its own assessed status, and each live unit with its reference, the bank's title, its
+    applicability and reason, its status, who set it and when, and its history of answers.
+    No status is computed from the units.
 
     A person's session holding `register.read`. A read. `entity` is required. Units page with
-    `limit` and `offset`, 20 by default and 100 at most.
+    `limit` and `offset`, 20 by default and 100 at most, by reference.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
-    `not_found` (404) for an obligation or entity the bank cannot see; `validation_error`
-    (422) without `entity` or with a page out of range. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for an obligation or entity the bank cannot see, or a standard outside
+    the bank's regulatory scope, which hides the statement and deletes nothing;
+    `units_only_under_standards` (422) for an obligation that is not a standard's;
+    `scope_not_applicable` (422) for an entity that does not follow the standard;
+    `validation_error` (422) without `entity` or with a page out of range.
     """
     tenant = caller_tenant(request)
     return soa.statement_of_applicability(
