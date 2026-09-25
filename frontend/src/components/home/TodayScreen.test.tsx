@@ -57,7 +57,7 @@ const lead: Home['lead'] = {
   case: {
     id: 'case-1',
     category: 'new',
-    allowedTransitions: [],
+    subStatus: null,
     footprintMatch: true,
     obligationDecisions: [],
     ownerId: null,

@@ -108,3 +108,11 @@ def two_tenants_with_different_footprints(
             tenancy.activate(tenant.id)
             FootprintTerm.objects.create(tenant=tenant, term=watch_build.term(ref))
     return SimpleNamespace(inside=matching, outside=other)
+
+
+def case_on_a_new_change(tenant: Tenant) -> ChangeCase:
+    """A fresh library change with a case of `tenant` and of nobody else, the reference rows
+    seeded first. The tenant-isolation guard's subject for the workflow routes
+    (`apps/shared/factories.py:case_change`)."""
+    watch_build.seed_watch_reference()
+    return case(tenant, watch_build.change())
