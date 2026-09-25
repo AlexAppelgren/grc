@@ -52,7 +52,6 @@ CASES_CONTRIBUTE = "cases.contribute"  # compliance officer, owner, contributor
 CASES_SIGNOFF = "cases.signoff"  # approver
 REGISTER_EDIT = "register.edit"  # compliance officer, owner
 GAPS_EDIT = "gaps.edit"  # compliance officer, owner
-APPLICABILITY_REQUEST = "applicability.request"  # compliance officer, owner
 APPLICABILITY_APPROVE = "applicability.approve"  # compliance officer, approver
 RISK_ACCEPT_APPROVE = "risk.accept.approve"  # compliance officer, approver
 PROPOSALS_CREATE = "proposals.create"  # compliance officer
@@ -98,7 +97,6 @@ TENANT_PERMISSIONS: frozenset[str] = frozenset(
         CASES_SIGNOFF,
         REGISTER_EDIT,
         GAPS_EDIT,
-        APPLICABILITY_REQUEST,
         APPLICABILITY_APPROVE,
         RISK_ACCEPT_APPROVE,
         PROPOSALS_CREATE,
@@ -127,9 +125,10 @@ PLATFORM_PERMISSIONS: frozenset[str] = frozenset(
 )
 ALL_PERMISSIONS: frozenset[str] = TENANT_PERMISSIONS | PLATFORM_PERMISSIONS
 
-# Four eyes applies to every approve permission: never the requester (PRD §6).
+# Four eyes applies to every approve permission: never the requester (PRD §6). Not to
+# `applicability.approve`: one person sets applicability after a confirmation (D-75).
 APPROVE_PERMISSIONS: frozenset[str] = frozenset(
-    {FOOTPRINT_APPROVE, CASES_SIGNOFF, APPLICABILITY_APPROVE, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW}
+    {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW}
 )
 
 # ---------------------------------------------------------------------------------------
@@ -174,7 +173,6 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         CASES_CONTRIBUTE,
         REGISTER_EDIT,
         GAPS_EDIT,
-        APPLICABILITY_REQUEST,
         APPLICABILITY_APPROVE,
         RISK_ACCEPT_APPROVE,
         PROPOSALS_CREATE,
@@ -184,7 +182,7 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         WORKFLOW_MANAGE,
     },
     "owner": _EVERYONE
-    | {CASES_WORK, CASES_CONTRIBUTE, REGISTER_EDIT, GAPS_EDIT, APPLICABILITY_REQUEST},
+    | {CASES_WORK, CASES_CONTRIBUTE, REGISTER_EDIT, GAPS_EDIT},
     "approver": _EVERYONE
     | {
         FOOTPRINT_APPROVE,
@@ -275,15 +273,17 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     CASES_SIGNOFF: "Sign off a case worked by someone else.",
     REGISTER_EDIT: "Edit register entries.",
     GAPS_EDIT: "Edit gaps.",
-    APPLICABILITY_REQUEST: "Request an applicability decision.",
-    APPLICABILITY_APPROVE: "Approve an applicability decision requested by someone else.",
+    APPLICABILITY_APPROVE: "Set whether an obligation applies, after confirming it.",
     RISK_ACCEPT_APPROVE: "Approve a risk acceptance requested by someone else.",
     PROPOSALS_CREATE: "Propose a change to the shared library.",
     EXPORTS_CREATE: "Create exports.",
     AI_LOG_READ: "Read the AI generation log.",
     MEMBERS_MANAGE: "Invite, change and deactivate members; re-issue enrolment; revoke sessions.",
     ROLES_MANAGE: "Create and change the tenant's roles.",
-    SECURITY_MANAGE: "Change the security policy and read the security log.",
+    SECURITY_MANAGE: (
+        "Change the security policy and read the security log; includes approving, declining and "
+        "revoking support access, and requesting or approving tenant exit, never both by the same person."
+    ),
     VOCAB_MANAGE: "Manage the tenant's vocabularies.",
     WORKFLOW_MANAGE: "Manage workflow policy.",
     AGENTS_MANAGE: "Switch agents on and off and set their cadence and budget.",
@@ -294,7 +294,7 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     EVAL_MANAGE: "Manage evaluation sets.",
     TENANTS_MANAGE: "Manage tenants and plans.",
     AGENT_DEFINITIONS_MANAGE: "Manage agent definitions.",
-    SUPPORT_ACCESS_GRANT: "Enter a tenant under a logged support access grant.",
+    SUPPORT_ACCESS_GRANT: "Request support access to a bank and enter it read-only once a tenant admin approves.",
     SYSTEM_HEALTH: "Read system health.",
     SCOPE_PROPOSALS_REVIEW: "Read the proposal queue and approve, correct or reject a proposal, as an independent agent (platform-only).",
 }
@@ -504,6 +504,25 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # register.edit; removal is the one gated in logic, because leaving needs no permission.
     ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}"): Ungated(
         UngatedReason.LOGIC_GATE, _LOGIC_PARTICIPANT_REMOVAL
+    ),
+
+    # c8-tenants-contract (TEN-02, TEN-03, TEN-06, COL-04). The bank's organisation, its teams
+    # and who from the platform may look in are read by every member: the pickers, the
+    # department view and the Support access panel need them. Writes keep their permission.
+    ("GET", "/tenant/org-units"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/org-units/{org_unit_id}/licences"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/products"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/teams"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/teams/{key}/members"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/support-access"): Ungated(
+        UngatedReason.CAPABILITY,
+        "Every member may see who from the platform asked to look in, and who was let in (TEN-06, D-49).",
+    ),
+    ("GET", "/reference/people"): Ungated(
+        UngatedReason.CAPABILITY,
+        "A member's session is the grant, never an enrolment session: the owner and participant "
+        "pickers need the bank's active members, as ids and names only; `GET /tenant/members` "
+        "stays under members.manage (COL-04, TEN-03).",
     ),
 }
 
