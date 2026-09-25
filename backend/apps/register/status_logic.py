@@ -25,6 +25,7 @@ from apps.identity.models import Membership
 from apps.library.reading import obligation_headings
 from apps.register.logic import ensure_register_entry
 from apps.register.models import Applicability, ComplianceAssessment, TenantObligation, TenantObligationScope
+from apps.register.overlay import RANK
 from apps.register.schemas import Applicability as ApplicabilityAnswer
 from apps.register.schemas import (
     RegisterEntityPatch,
@@ -53,11 +54,6 @@ from apps.tenants.models import OrgUnit, OrgUnitKind
 ENTRY_UPDATED = "register.status_updated"
 ENTITY_UPDATED = "register.entity_status_updated"
 
-# Worst first. The rank is the category's, fixed in code, because the bank may relabel and
-# reorder its own rows: not assessed ranks below partly, since nobody has shown compliance.
-_WORST_FIRST = (ComplianceCategory.GAP, ComplianceCategory.PARTLY, ComplianceCategory.NOT_ASSESSED, ComplianceCategory.COMPLIANT)
-_RANK = {category.value: index for index, category in enumerate(_WORST_FIRST)}
-
 # The model's kind in the contract's words (INPUT_DELTAS, c8-register-models).
 _APPLICABILITY_OUT: dict[str, ApplicabilityAnswer] = {
     Applicability.APPLIES.value: "applies",
@@ -75,9 +71,10 @@ _LIST_FIELDS = ("compliance_status", "risk_rating", "owner_team")
 
 
 def worst_of(statuses: Iterable[ComplianceStatus]) -> ComplianceStatus | None:
-    """The worst of these statuses by category; the first of equals. None for none."""
+    """The worst of these statuses by category (`overlay.RANK`, which the inventory's
+    overlay ranks by too); the first of equals. None for none."""
     ranked = list(statuses)
-    return min(ranked, key=lambda status: _RANK[status.kind or ""]) if ranked else None
+    return min(ranked, key=lambda status: RANK[status.kind or ""]) if ranked else None
 
 
 # ---------------------------------------------------------------------------------------
