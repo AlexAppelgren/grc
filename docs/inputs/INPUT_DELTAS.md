@@ -311,7 +311,8 @@ here names it with its backticked `METHOD /path`.
   status, defaultLanguage{key,kind,label}, contentLanguages[...], onboarding{stepsDone,
   steps[{key,done}]}}`; the patch takes `{name?, timezone?, defaultLanguage?,
   contentLanguages?}` as keys. Reminder, escalation and retention settings land with
-  the workflow policy (chunk 9) as columns of their own.
+  the workflow policy as columns of their own: `c10-workflow-policy`, not chunk 9
+  (CHUNK9_TASKS ruling 6), which also adds `change_case.triage_due_at`.
 - `GET /tenant/members` answers a page `{items, total}` (playbook 10: every list
   paginates) of `{userId, email, name, status, roles[{key,kind,label}], title,
   lastSeenAt, passkeyCount, activeSessions}` rather than a bare array of the designed
@@ -1239,3 +1240,50 @@ The shapes depart from the design on purpose:
 - `POST /eval/runs` (`startEvalRun`) waits for chunk 14's job runner
   (`backend/scripts/contract_drift_pending.txt`): a run builds the sample corpus in a
   database of its own and takes minutes, which no request should hold open.
+
+## 18. Chunk 9's case workflow tables (2026-09-25, c9-case-models)
+
+`change_case` gains the designed workflow columns §8 left out — `triaged_by`, `triaged_at`,
+`dismissed_by`, `dismissed_at`, `signoff_requested_by`, `signoff_requested_at`,
+`signed_off_by`, `closed_note`, `closed_at` — with these departures:
+
+- `dismissed_reason` and `close_reason` are foreign keys to the bank's own
+  `dismissal_reason` and `close_reason` rows (§1, VOC-06), not free text and not the
+  `close_reason` enum; the close category is the row's fixed kind. `sub_status` is a
+  nullable key to the bank's `case_sub_status` row inside the fixed category (D-13), and
+  `version` is what every case write's `If-Match` compares (§4, CAS-08).
+- The designed CHECKs are kept, with the four-eyes one tightened: a sign-off needs a
+  request, so `signed_off_by` is empty or both set and different
+  (`change_case_four_eyes`, enumerated by `apps/shared/tests_four_eyes.py`). The owner
+  CHECK covers `assigned` to `signoff`, so one person may close a case from triage
+  (q-case-close, Option B, audited).
+- No `closed_by`: whoever closed the case is `by_user` on its last `case_transition` row.
+- `UNIQUE (tenant_id, id)`, and every person on the case — the R1 owner and the So what's
+  confirmer included — is also a composite key `(tenant_id, user)` into `membership`, so
+  the database refuses a person who is not the bank's member. `case_obligation_link`
+  gains the same keys on its case and its decider.
+- Not built: `triage_due_at` (`c10-workflow-policy`, ruling 6) and `owner_team`
+  (`c9-owner-team-and-reassign`).
+
+`impact_assessment`, `action`, `case_transition` and `evidence` are tenant tables under
+forced row-level security, each child's case a composite key `(tenant_id, case_id)` into
+`change_case` and each person a composite key into `membership`:
+
+- `impact_assessment` has **no `contributors` column** (ruling 2, D-20): the contributor
+  teams are the case's team participants (`f03-T76`). `effort` is a nullable key to the
+  bank's `effort_size` row rather than a NOT NULL enum defaulting to `M`, and `why` is
+  text that a saved assessment may not leave empty. It gains `version` (§4).
+- `action` has **no ticket columns** (`ticket_provider`, `ticket_key`, `ticket_url`;
+  ruling 3): `c13-tickets-export` adds them with the export. `due_date` is required
+  (CAS-04). It gains `version`, and `removed_at` and `removed_by` instead of a hard
+  delete: nothing is overwritten, and the case file shows what was planned. The partial
+  index covers open actions that are not removed.
+- `case_transition` is append-only by the shared trigger, so the time a case spent in
+  each stage cannot be rewritten (CAS-08). Its id is a uuid like every other table's.
+- `evidence` belongs to a case: `case_id` is NOT NULL and `tenant_obligation_id` is not
+  built, because no R2 route writes evidence on a register entry; the chunk that does adds
+  the column and the designed either-or CHECK. It gains `scan_state` (`pending`, `clean`,
+  `infected`, `error`, the `scan_state` kind; a new row is `pending`) and `scanned_at`,
+  because a file must be invisible until the malware scan passes (CAS-05) and the design
+  has nowhere to record it. A CHECK per kind: only a file carries a storage key, and it
+  carries its hash, size and type with it; a link carries a url.
