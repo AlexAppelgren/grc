@@ -22,6 +22,7 @@ class RegisterScenarioTests(TestCase):
         """REG-S1
 
         One compliance person sets applicability after confirming it (REG-01).
+        Operations: `setApplicability`.
         """
 
     @skip("pending: REG-S2")
@@ -36,6 +37,7 @@ class RegisterScenarioTests(TestCase):
         """REG-S3
 
         Compliance status and its details are kept per legal entity (REG-02).
+        Operations: `updateRegisterEntity`.
         """
 
     @skip("pending: REG-S4")
@@ -50,6 +52,7 @@ class RegisterScenarioTests(TestCase):
         """REG-S5
 
         A gap has an owner, severity, target date and remediation (REG-03).
+        Operations: `createGap`, `updateGap`.
         """
 
     @skip("pending: REG-S6")
@@ -57,6 +60,7 @@ class RegisterScenarioTests(TestCase):
         """REG-S6
 
         Risk acceptance is behind four eyes with step-up (REG-03).
+        Operations: `requestRiskAcceptance`, `approveRiskAcceptance`, `reopenGap`.
         """
 
     @skip("pending: REG-S7")
@@ -64,6 +68,7 @@ class RegisterScenarioTests(TestCase):
         """REG-S7
 
         Assessment history and "How we read this rule" are kept per obligation (REG-04).
+        Operations: `saveInterpretation`.
         """
 
     @skip("pending: REG-S8")
@@ -71,6 +76,7 @@ class RegisterScenarioTests(TestCase):
         """REG-S8
 
         Linked internal items carry external references (REG-05).
+        Operations: `addInternalLink`, `removeInternalLink`.
         """
 
     @skip("pending: REG-S9")
@@ -85,6 +91,7 @@ class RegisterScenarioTests(TestCase):
         """REG-S10
 
         Recurring duties appear on the roadmap from recurrence rules (REG-07).
+        Operations: `completeDutyOccurrence`.
         """
 
     @skip("pending: REG-S11")
@@ -92,6 +99,7 @@ class RegisterScenarioTests(TestCase):
         """REG-S11
 
         A stale write on a register row is refused (REG-02).
+        Operations: `updateRegister`.
         """
 
     @skip("pending: REG-S12 (REG-01, chunk 8)")
@@ -106,6 +114,7 @@ class RegisterScenarioTests(TestCase):
         """REG-S13
 
         A tenant lists its clauses and controls as units in its own words (REG-08).
+        Operations: `createUnit`, `updateUnit`, `removeUnit`, `pasteUnits`.
         """
 
     @skip("pending: REG-S14 (REG-08, chunk 8)")
@@ -113,6 +122,7 @@ class RegisterScenarioTests(TestCase):
         """REG-S14
 
         Unit decisions are set from the paste in one confirmed call (REG-01, REG-08).
+        Operations: `setApplicabilityMany`.
         """
 
     @skip("pending: REG-S15 (REG-08, chunk 8)")
