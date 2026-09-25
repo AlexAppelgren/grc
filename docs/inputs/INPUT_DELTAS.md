@@ -158,6 +158,26 @@ or has differently:
 In the API every such field is `{key, kind, label}` on reads and `key` on
 writes, never an OpenAPI `enum`.
 
+**Chunk 8's register lists (2026-09-25, c8-vocab-lists-rules).** Tier-three lists
+`schema.sql` has as `CHECK` constraints or not at all, each with an immutable key, labels in
+`en` and `sv`, system rows the tenant hook files create-only, and forced row-level security:
+
+- `gap_status` with the tier-one kind `gap_category` (`open`, `remediating`,
+  `risk_accepted`, `closed`), a system row per kind. `risk_accepted` is the frontend's
+  spelling (`tone-by-kind.ts`), so one state has one name (REG-03, VOC-04).
+- `gap_source` (`assessment`, `change_case`, `audit`, `incident`, `regulator`), no kind:
+  its pill takes the `source` slot's tone (REG-03, pills-and-labels "Slot order").
+- `risk_acceptance_reason` (`accepted_by_management`, `cost_disproportionate`,
+  `compensating_control`, `time_limited`, `other`), no kind (VOC-06).
+- `team`, with the column `email` and `UNIQUE (tenant_id, id)` for composite keys, no
+  `is_lead`, served by `GET /vocab/team`; one system row, `compliance`, because every list
+  has a default. Its `org_unit_id` comes with the teams model (TEN-03).
+- `risk_rating` gains the tier-one kind `risk_level` (`low`, `medium`, `high`): each row
+  maps to one, and the tone reads it, never the editable ordinal (VOC-05). No schema
+  change; `seed_reference` puts the level on every tenant's system rows.
+
+Retiring the last active row under a fixed kind answers 409 `category_empty` (VOC-04).
+
 ## 2. Identity (PRD ID, playbook 4.2)
 
 - Drop `app_user.external_subject` as the primary identity, `mfa_enrolled`,
@@ -310,8 +330,9 @@ here names it with its backticked `METHOD /path`.
   the designed `settings` blob and `region`. The response is `{id, name, slug, timezone,
   status, defaultLanguage{key,kind,label}, contentLanguages[...], onboarding{stepsDone,
   steps[{key,done}]}}`; the patch takes `{name?, timezone?, defaultLanguage?,
-  contentLanguages?}` as keys. Reminder, escalation and retention settings land with
-  the workflow policy (chunk 9) as columns of their own.
+  contentLanguages?}` as keys. Reminder, escalation, digest-day and triage settings land
+  with the workflow policy (chunk 10, `c10-workflow-policy`, section 18) as columns of their
+  own; retention is chunk 12's.
 - `GET /tenant/members` answers a page `{items, total}` (playbook 10: every list
   paginates) of `{userId, email, name, status, roles[{key,kind,label}], title,
   lastSeenAt, passkeyCount, activeSessions}` rather than a bare array of the designed
@@ -1239,3 +1260,24 @@ The shapes depart from the design on purpose:
 - `POST /eval/runs` (`startEvalRun`) waits for chunk 14's job runner
   (`backend/scripts/contract_drift_pending.txt`): a run builds the sample corpus in a
   database of its own and takes minutes, which no request should hold open.
+
+## 18. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
+
+The designed `tenant.settings` blob is six columns on `tenant` (shared 0009):
+`reminder_days_before` and `review_reminder_days_before` (one to five day counts, each 1 to
+90, stored largest first; defaults `[3]` and `[30]`), `escalate_after_days` (1 to 90,
+default 5), `escalate_to_role` (the key of an active `TenantRole` of that bank, default
+`compliance_officer`), `digest_weekday` (a kind, `monday` to `sunday`, default `monday`) and
+`triage_target_hours` (1 to 720, default 48). Each platform default is a setting with an env
+override (`WORKFLOW_*`); the migration wrote them into every existing tenant, and check
+constraints hold the bounds for every writer. `GET /tenant` gains `workflow`, with the role
+as `{key, kind, label}`.
+
+Writes go through a route of their own, `PATCH /tenant/workflow` (`updateTenantWorkflow`),
+under `workflow.manage` and with no step-up, rather than through `PATCH /tenant`, which stays
+under `security.manage`. It is simpler than splitting one patch between two permissions: no
+body is ever half-allowed, and each permission reaches exactly one route. A number or list out
+of range answers 422 `validation_error` and an unknown role or weekday 422 `unknown_key`, each
+naming the field in `errors`. The change is recorded as `tenant.workflow_updated` with every
+value before and after. `review_reminder_days_before` is not in the chunk 10 brief's five
+columns; the wave plan added it for the review reminder COL-02 names.

@@ -24,6 +24,7 @@ from django.db.models import Count, IntegerField, OuterRef, QuerySet, Subquery, 
 from django.db.models.functions import Coalesce
 
 from apps.library.models import (
+    Authority,
     Instrument,
     InstrumentRelation,
     Jurisdiction,
@@ -58,6 +59,11 @@ from apps.taxonomy.models import (
     EffortSizeLabel,
     Flag,
     FlagLabel,
+    GapCategory,
+    GapSource,
+    GapSourceLabel,
+    GapStatus,
+    GapStatusLabel,
     InstrumentLevel,
     InstrumentLevelKind,
     InstrumentLevelLabel,
@@ -73,6 +79,9 @@ from apps.taxonomy.models import (
     RejectionReasonLabel,
     RelationType,
     RelationTypeLabel,
+    RiskAcceptanceReason,
+    RiskAcceptanceReasonLabel,
+    RiskLevel,
     RiskRating,
     RiskRatingLabel,
     SourceKind,
@@ -82,6 +91,8 @@ from apps.taxonomy.models import (
     TermDimension,
     TermDimensionKind,
     TermDimensionLabel,
+    Team,
+    TeamLabel,
     Urgency,
     UrgencyLabel,
 )
@@ -132,6 +143,9 @@ class VocabularyList:
     kind_required: bool = False
     extra_fields: tuple[str, ...] = ()  # model columns exposed as extra{} (snake_case here)
     proposable: bool = True  # tier 2 only: False means the list is seeded and never proposed
+    # tier 2 only: True means the seed alone adds a value and no value is merged away, so a
+    # proposal relabels, retires or restores and a system row may be retired (D-94)
+    fixed_keys: bool = False
     usage: Callable[[QuerySet[Any]], QuerySet[Any]] = _no_usage
     repoint: Callable[..., Moves] = repoint.nothing_to_repoint  # (source, target, *, dry_run) -> ids moved and dropped per table
     references: dict[str, str] = field(default_factory=dict)  # extra field -> related list
@@ -173,16 +187,29 @@ REGISTRY: dict[str, VocabularyList] = {
         _library(VocabularyList("library_tag", LIBRARY_TIER, LibraryTag, LibraryTagLabel), Link(ObligationTag, "tag", ("obligation",))),
         _library(VocabularyList("flag", LIBRARY_TIER, Flag, FlagLabel), Link(ChangeTerm, "flag", ("change",))),
         VocabularyList("rejection_reason", LIBRARY_TIER, RejectionReason, RejectionReasonLabel),
-        VocabularyList("jurisdiction", LIBRARY_TIER, Jurisdiction, JurisdictionLabel, "jurisdiction_kind", _values(JurisdictionKind), True, proposable=False),
+        # The seed files every jurisdiction with its kind, parent and legal language, and its
+        # key never changes (D-94): a proposal relabels, retires or restores one, and the
+        # mirrored term follows in the same approval. Counted by the records filed under it,
+        # so a retirement asks first; never merged, so nothing is re-pointed.
+        VocabularyList(
+            "jurisdiction", LIBRARY_TIER, Jurisdiction, JurisdictionLabel, "jurisdiction_kind", _values(JurisdictionKind), True,
+            fixed_keys=True, usage=_uses(Link(Instrument, "jurisdiction"), Link(Authority, "jurisdiction")),
+        ),
         # --- tier 3: tenant lists, managed with vocab.manage ---
         VocabularyList("tenant_tag", TENANT_TIER, TenantTag, TenantTagLabel, usage=_count("taggings"), repoint=repoint.tenant_tag),
         VocabularyList("link_kind", TENANT_TIER, LinkKind, LinkKindLabel),
         VocabularyList("effort_size", TENANT_TIER, EffortSize, EffortSizeLabel),
         VocabularyList("compliance_status", TENANT_TIER, ComplianceStatus, ComplianceStatusLabel, "compliance_category", _values(ComplianceCategory), True, ("ordinal",)),
-        VocabularyList("risk_rating", TENANT_TIER, RiskRating, RiskRatingLabel, extra_fields=("ordinal",)),
+        # The tone reads the fixed level, never the editable ordinal (VOC-05).
+        VocabularyList("risk_rating", TENANT_TIER, RiskRating, RiskRatingLabel, "risk_level", _values(RiskLevel), True, ("ordinal",)),
         VocabularyList("case_sub_status", TENANT_TIER, CaseSubStatus, CaseSubStatusLabel, "case_status", _values(CaseStatusCategory), True),
         VocabularyList("dismissal_reason", TENANT_TIER, DismissalReason, DismissalReasonLabel),
         VocabularyList("close_reason", TENANT_TIER, ClosureReason, ClosureReasonLabel, "close_reason", _values(CloseReason), True),
+        # Chunk 8's register lists (REG-03, VOC-04, VOC-06, TEN-03).
+        VocabularyList("gap_status", TENANT_TIER, GapStatus, GapStatusLabel, "gap_category", _values(GapCategory), True),
+        VocabularyList("gap_source", TENANT_TIER, GapSource, GapSourceLabel),
+        VocabularyList("risk_acceptance_reason", TENANT_TIER, RiskAcceptanceReason, RiskAcceptanceReasonLabel),
+        VocabularyList("team", TENANT_TIER, Team, TeamLabel, extra_fields=("email",)),
     )
 }
 

@@ -35,6 +35,7 @@ from pydantic.alias_generators import to_camel
 from apps.library.models import (
     Instrument,
     InstrumentTitle,
+    Jurisdiction,
     Obligation,
     ObligationSummary,
     ObligationTerm,
@@ -54,6 +55,7 @@ from apps.proposals.logic import (
     as_reviewer,
     merge_pair,
     parsed_payload,
+    refuse_vocabulary_change,
     validated_instrument,
     validated_obligation,
     validated_provision,
@@ -586,10 +588,14 @@ def _provision_version(
 # ---------------------------------------------------------------------------------------
 # Vocabulary rows
 # ---------------------------------------------------------------------------------------
-def _entry(name: str) -> VocabularyList:
+def _entry(name: str, kind: str, keys: list[str]) -> VocabularyList:
+    """The library list a vocabulary proposal names, with the rules its change obeys checked
+    again for the list as it is now (`logic.refuse_vocabulary_change`): a proposal filed
+    before a rule existed may still wait in the queue."""
     entry = REGISTRY[name]
     if not entry.is_library:  # pragma: no cover - logic.validated_payload refused it
         raise ValidationError(f"{name!r} is a tenant list; its admin writes it.", code="unknown_key")
+    refuse_vocabulary_change(entry, kind, keys)
     return entry
 
 
@@ -665,7 +671,7 @@ def _write_labels(entry: VocabularyList, row: Any, labels: dict[str, str], revie
 def _vocabulary_create(
     payload: ProposalVocabularyCreatePayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
 ) -> None:
-    entry = _entry(payload.list)
+    entry = _entry(payload.list, proposal.kind, [payload.key])
     if entry.model._default_manager.filter(key__iexact=payload.key).exists():
         raise ValidationError(f"{payload.key!r} already exists on {payload.list!r}.", code="duplicate_key")
     highest = entry.model._default_manager.order_by("-sort_order").values_list("sort_order", flat=True).first()
@@ -698,7 +704,7 @@ def _vocabulary_create(
 def _vocabulary_relabel(
     payload: ProposalVocabularyRelabelPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
 ) -> None:
-    entry = _entry(payload.list)
+    entry = _entry(payload.list, proposal.kind, [payload.key])
     row = _row(entry, payload.key)
     before = {label.language: label.text for label in entry.label_model._default_manager.filter(vocabulary=row)}
     if payload.labels:
@@ -723,6 +729,8 @@ def _vocabulary_relabel(
         )
     row.version += 1
     row.save()
+    if isinstance(row, Jurisdiction):
+        _mirrored_term_follows(row, payload.labels, payload.sort_order, proposal, actor, reviewer, step_up)
     record(
         action="vocabulary.updated",
         actor=actor,
@@ -742,9 +750,11 @@ def _vocabulary_relabel(
 
 
 def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None, *, active: bool) -> None:
-    entry = _entry(payload.list)
+    entry = _entry(payload.list, proposal.kind, [payload.key])
     row = _row(entry, payload.key)
-    if not active and row.is_system:
+    # On a list of fixed keys every row is the seed's, so being seeded cannot be what keeps a
+    # row: retiring is how a market leaves (D-94).
+    if not active and row.is_system and not entry.fixed_keys:
         raise ValidationError(f"{payload.key} is a system value: it can be relabelled but not retired.", code="system_row")
     if row.active == active:
         raise ValidationError(
@@ -753,6 +763,8 @@ def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Propo
     row.active = active
     row.version += 1
     row.save(update_fields=["active", "version"])
+    if isinstance(row, Jurisdiction):
+        _mirrored_term_follows(row, {}, None, proposal, actor, None, step_up)
     record(
         action="vocabulary.restored" if active else "vocabulary.retired",
         actor=actor,
@@ -768,7 +780,7 @@ def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Propo
 
 
 def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
-    entry = _entry(payload.list)
+    entry = _entry(payload.list, proposal.kind, [payload.key, payload.into])
     source, target = merge_pair(entry, payload.key, payload.into, lock=True)
     if source.is_system:
         raise ValidationError(f"{payload.key} is a system value: it can be relabelled but not merged away.", code="system_row")
@@ -806,6 +818,50 @@ def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposa
         },
         step_up_assertion_id=step_up,
     )
+
+
+def _mirrored_term_follows(
+    row: Jurisdiction,
+    labels: dict[str, str],
+    sort_order: int | None,
+    proposal: Proposal,
+    actor: Actor,
+    reviewer: Reviewer | None,
+    step_up: uuid.UUID | None,
+) -> None:
+    """The term that mirrors a jurisdiction takes what the approval just wrote on the row, in
+    the same transaction (FP-04, D-28, D-94): the labels, marked and stamped as a term
+    update's are, the sort order, and whether it is active. No proposal may change a mirrored
+    term itself (FP-S12), so this is the one way its wording moves after the seed filed it;
+    the seed puts back only its link, its parent and `active` (apps/taxonomy/seeds). A
+    jurisdiction with no mirrored term (International, D-38) changes alone. `reviewer` is
+    needed only when there are labels to write."""
+    terms = TaxonomyTerm.objects.select_for_update(of=("self",)).select_related("dimension").filter(jurisdiction=row).order_by("id")
+    for term in terms:
+        if not labels and sort_order is None and term.active == row.active:
+            continue
+        before = {label.language: label.text for label in TaxonomyTermLabel.objects.filter(term=term)}
+        was_active = term.active
+        if labels and reviewer is not None:
+            _term_labels(term, labels, reviewer)
+            _restamp(term, proposal, reviewer, TaxonomyTermLabel.objects.filter(term=term), usage_note_written=False)
+        if sort_order is not None:
+            term.sort_order = sort_order
+        term.active = row.active
+        term.version += 1
+        term.save()
+        record(
+            action="taxonomy.term_updated",
+            actor=actor,
+            subject_type="taxonomy_term",
+            subject_id=term.id,
+            subject_title=f"{term.dimension.key}:{term.key}",
+            summary=f"The term {term.key} in {term.dimension.key} followed the jurisdiction {row.key} (proposal {proposal.id}).",
+            tenant_id=None,
+            before={"labels": before, "active": was_active},
+            after={"labels": {**before, **labels}, "active": term.active, "proposal": str(proposal.id)},
+            step_up_assertion_id=step_up,
+        )
 
 
 def _repoint_rows(moving: Any, twins: Any, field: str, target: Any) -> int:
