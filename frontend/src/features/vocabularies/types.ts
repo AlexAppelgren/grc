@@ -96,6 +96,23 @@ export interface VocabularySuggest {
   usageNote?: string;
 }
 
+/** One waiting suggestion in a tenant list's inbox (VOC-03): a value a member without vocab.manage asked for. */
+export interface VocabularySuggestion {
+  id: string;
+  key: string;
+  labels: Record<string, string>;
+  usageNote: string;
+  /** The member who suggested it, by name; empty when the answer names nobody. */
+  suggestedBy: string;
+  createdAt: string;
+}
+
+/**
+ * A suggestion on a tenant list answers 201 with the suggestion row, which
+ * waits for an admin; on a library list it answers 202 with a proposal (VOC-07).
+ */
+export type VocabularySuggestResult = { outcome: 'suggested'; suggestion: VocabularySuggestion } | { outcome: 'proposed'; proposal: ProposalRef };
+
 export interface VocabularyQuery {
   includeRetired?: boolean;
 }

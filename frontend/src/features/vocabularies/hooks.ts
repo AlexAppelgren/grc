@@ -6,13 +6,14 @@ import { proposalKeys } from '@/features/proposals/hooks';
 
 import * as vocab from './api';
 import type {
-  ProposalRef,
   VocabularyCreate,
   VocabularyListSummary,
   VocabularyMergePreview,
   VocabularyRetireResult,
   VocabularyRow,
   VocabularySuggest,
+  VocabularySuggestResult,
+  VocabularySuggestion,
   VocabularyUpdate,
   VocabularyWrite,
 } from './types';
@@ -25,6 +26,7 @@ export const vocabularyKeys = {
   lists: ['vocab'] as const,
   values: (list: string, includeRetired: boolean) => ['vocab', list, includeRetired ? 'all' : 'active'] as const,
   list: (list: string) => ['vocab', list] as const,
+  suggestions: (list: string) => ['vocab', list, 'suggestions'] as const,
 };
 
 export function useVocabularies(): UseQueryResult<VocabularyListSummary[]> {
@@ -79,8 +81,18 @@ export function useRestoreValue(list: string): UseMutationResult<Awaited<ReturnT
   return useMutation({ mutationFn: (key) => vocab.restoreValue(list, key), onSuccess: () => invalidate() });
 }
 
-export function useSuggestValue(list: string): UseMutationResult<ProposalRef, unknown, VocabularySuggest> {
+export function useSuggestValue(list: string): UseMutationResult<VocabularySuggestResult, unknown, VocabularySuggest> {
   const invalidate = useInvalidateList(list);
   return useMutation({ mutationFn: (body) => vocab.suggestValue(list, body), onSuccess: () => invalidate() });
+}
+
+/** The admin's inbox for a tenant list (VOC-03); under the list's key, so any write to the list refreshes it. */
+export function useVocabularySuggestions(list: string, enabled = true): UseQueryResult<{ items: VocabularySuggestion[]; total: number }> {
+  return useQuery({ queryKey: vocabularyKeys.suggestions(list), queryFn: () => vocab.listSuggestions(list), enabled });
+}
+
+export function useDeclineSuggestion(list: string): UseMutationResult<VocabularySuggestion, unknown, string> {
+  const invalidate = useInvalidateList(list);
+  return useMutation({ mutationFn: (suggestionId) => vocab.declineSuggestion(list, suggestionId), onSuccess: () => invalidate() });
 }
 
