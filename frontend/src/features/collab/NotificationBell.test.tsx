@@ -74,11 +74,11 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function renderShell(unread: number | null) {
-  session.me = me(unread);
+function renderShell(unread: number | null, platform = false) {
+  session.me = platform ? { ...me(unread), tenant: null, permissions: ['proposals.review'] } : me(unread);
   return render(
     <PermissionsProvider permissions={session.me.permissions}>
-      <AppShell surface="tenant">
+      <AppShell surface={platform ? 'console' : 'tenant'}>
         <h1>{'Page'}</h1>
       </AppShell>
     </PermissionsProvider>,
@@ -155,5 +155,14 @@ describe('the bell in the shell', () => {
     expect(first).toHaveAccessibleName('Notifications, 2 unread notifications');
     expect(first).toHaveAttribute('href', '/notifications');
     expect(first?.querySelector('[data-unread-count]')).toHaveTextContent('2');
+  });
+
+  it('offers platform staff, who belong to no bank, no Notifications row and no dot', () => {
+    renderShell(null, true);
+    fireEvent.click(within(tabBar()).getByRole('button', { name: 'More' }));
+    const account = within(screen.getByRole('dialog', { name: 'More' })).getByRole('group', { name: 'Account' });
+    expect(within(account).queryByRole('link', { name: /Notifications/ })).toBeNull();
+    expect(within(account).getByRole('link', { name: 'My passkeys' })).toBeInTheDocument();
+    expect(document.querySelector('[data-unread-dot]')).toBeNull();
   });
 });

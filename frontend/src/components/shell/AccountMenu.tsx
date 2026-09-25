@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useId, useState } from 'react';
 
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
-import { BellIcon, UnreadCount, useUnreadCount, withUnread } from '@/features/collab/NotificationBell';
+import { BellIcon, showsAccountLink, UnreadCount, useUnreadCount, withUnread } from '@/features/collab/NotificationBell';
 import { isDemoFrame } from '@/features/demo/frame';
 import { useSession, useSetLanguage, useSignOut } from '@/features/identity/hooks';
 import type { Me } from '@/features/identity/types';
@@ -97,7 +97,7 @@ export function AccountMenu() {
   if (me === null) return null;
 
   const detail = accountLine(me, t);
-  const links = childDestinations(ACCOUNT_PARENT, me.permissions);
+  const links = childDestinations(ACCOUNT_PARENT, me.permissions).filter((d) => showsAccountLink(d.id, me));
 
   return (
     <SidebarMenu data-who-panel="">

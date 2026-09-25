@@ -9,7 +9,7 @@ import { groupDestinations } from '@/components/shell/AppSidebar';
 import { NavIcon } from '@/components/shell/NavIcon';
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { SidebarGroup, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
-import { UnreadCount, useUnreadCount, withUnread } from '@/features/collab/NotificationBell';
+import { showsAccountLink, UnreadCount, useUnreadCount, withUnread } from '@/features/collab/NotificationBell';
 import { useSession } from '@/features/identity/hooks';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
 import { ACCOUNT_PARENT, childDestinations, isCurrent, moreDestinations, type Destination, type Surface } from '@/shared/navigation/registry';
@@ -106,7 +106,11 @@ export function MoreSheet({ surface, children }: { surface: Surface; children: R
                 <p className="font-medium">{me.user.name}</p>
                 {detail.length > 0 ? <p className="text-meta text-muted">{detail}</p> : null}
               </div>
-              <SidebarMenu>{childDestinations(ACCOUNT_PARENT, permissions).map((d) => row(d, false))}</SidebarMenu>
+              <SidebarMenu>
+                {childDestinations(ACCOUNT_PARENT, permissions)
+                  .filter((d) => showsAccountLink(d.id, me))
+                  .map((d) => row(d, false))}
+              </SidebarMenu>
               {languages.options.length > 1 ? (
                 // Stays open on a choice, so the sheet itself is seen to change language.
                 <fieldset className="m-0 min-w-0 border-0 p-0">

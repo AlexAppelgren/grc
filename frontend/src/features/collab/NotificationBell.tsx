@@ -18,6 +18,15 @@ export function useUnreadCount(): number {
   return me?.counts?.unreadNotifications ?? 0;
 }
 
+/**
+ * Whether an account link belongs in this session's account group: the inbox
+ * is a bank member's own, so platform staff, who belong to no bank, get no
+ * Notifications row (their GET /notifications answers 404).
+ */
+export function showsAccountLink(id: string, me: { tenant: object | null } | null): boolean {
+  return id !== 'notifications' || me?.tenant != null;
+}
+
 /** A label that also says the unread count, "More, 3 unread notifications"; the label alone at 0. */
 export function withUnread(label: string, count: number, t: Translate): string {
   return count > 0 ? t('collab.bell.withUnread', { label, unread: t('collab.notifications.unreadCount', { count }) }) : label;
@@ -28,14 +37,15 @@ const RING = { sidebar: 'ring-sidebar', surface: 'ring-surface' } as const;
 /**
  * A navigation icon with the unread dot at its top right, ringed in the fill
  * it sits on so it reads on any row. Hidden from assistive technology: the
- * accessible name says the count.
+ * accessible name says the count. Neither element is a span, because a tab's
+ * label is its cell's one span (the navigation journeys read it so).
  */
 export function BellIcon({ id, count, size = 'row', ring }: { id: string; count: number; size?: 'row' | 'tab'; ring: keyof typeof RING }) {
   return (
-    <span className="relative inline-flex shrink-0">
+    <i className="relative inline-flex shrink-0 not-italic">
       <NavIcon id={id} size={size} />
-      {count > 0 ? <span aria-hidden="true" data-unread-dot="" className={`absolute -top-0.5 -right-[3px] size-2 rounded-full bg-notice ring-2 ${RING[ring]}`} /> : null}
-    </span>
+      {count > 0 ? <i aria-hidden="true" data-unread-dot="" className={`absolute -top-0.5 -right-[3px] size-2 rounded-full bg-notice ring-2 ${RING[ring]}`} /> : null}
+    </i>
   );
 }
 
