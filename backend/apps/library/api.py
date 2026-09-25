@@ -142,10 +142,15 @@ REVERIFY_DESCRIPTION = (
 # What the published contract says about the record reads
 # ---------------------------------------------------------------------------------------
 READ_OBLIGATION_ID_DESCRIPTION = (
-    "The obligation to read, by its identifier (a UUID), which is the `id` a row of "
-    "`GET /obligations` carries. A record this caller cannot see answers 404 exactly as an "
-    "identifier that names nothing does, so no id can be probed for."
+    "The obligation to read, either by its identifier (a UUID), which is the `id` a row of "
+    "`GET /obligations` carries, or by its stable key, the `stableKey` of that row, which "
+    "never changes and is what an agent cites. A value written as a UUID is always read as "
+    "the identifier. At most 120 characters of letters, digits, hyphens and underscores. A "
+    "record this caller cannot see answers 404 exactly as an identifier or a key that names "
+    "nothing does, so neither can be probed for."
 )
+# A UUID or a stable key (a slug of at most 120 characters, `Obligation.stable_key`).
+OBLIGATION_ADDRESS = r"^[A-Za-z0-9_-]+$"
 DIFF_OBLIGATION_ID_DESCRIPTION = (
     "The obligation whose two versions are compared, by its identifier (a UUID). Both "
     "versions belong to this one record: a diff is never taken across obligations. A record "
@@ -290,6 +295,13 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     shared fact. The overlay filters (applicability, complianceStatus, owner, ownerTeam)
     narrow on those.
 
+    An agent the bank runs itself, whose key or personal token belongs to an agent access
+    entry, reads narrower: only shared duties, never the bank's own; only inside the bank's
+    footprint, so footprint stays in; and only inside the departments and products its entry
+    names. Its rows carry the bank's overlay and tags only while tenant reach is on for the
+    bank and for the entry, and never on a duty under a standard; otherwise they read as not
+    assessed, with no status, owner or tag.
+
     Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
     quietly trimmed, and rows ordered by their stable key so paging is repeatable. Nothing
     matching the filters is a 200 with an empty items list and a total of 0, never a 404.
@@ -301,7 +313,9 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     (403) without library.read or the library:read scope; `unknown_filter` (422) when a
     caller that belongs to no bank, such as a platform key, sends tenantTag or an overlay
     filter, since it has no tags or register of its own; `not_found` (404) when such a caller
-    reads the list at all; `validation_error` (422) when a term filter is not written
+    reads the list at all; `unknown_filter` (422) when an agent access credential sends
+    footprint all or watched; `tenant_reach_off` (403) when one sends an overlay or tenantTag
+    filter while tenant reach is off for it; `validation_error` (422) when a term filter is not written
     dimension:key, when instrument, dutyType, complianceStatus, ownerTeam or any term, tag or
     tenantTag value is longer than 80 characters, when applicability is not applies,
     not_applicable or under_assessment, when owner is not a UUID, when more than 20 terms, tags or
@@ -313,10 +327,11 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-03, AGT-02).
     require_library_read(request)
-    reading.refuse_bank_filters(principal(request).tenant_id, query)
+    who = principal(request)
+    reading.refuse_bank_filters(who.tenant_id, query)
     tenant = caller_tenant(request)
     order = language_order(request, tenant=tenant)
-    items, total = reading.obligation_page(tenant, order, query, limit=page.limit, offset=page.offset)
+    items, total = reading.obligation_page(tenant, order, query, limit=page.limit, offset=page.offset, reader=reading.reader_of(who))
     return ObligationPage(items=items, total=total)
 
 
@@ -331,7 +346,7 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
 @answers_problems
 def get_obligation(
     request: HttpRequest,
-    obligation_id: Annotated[uuid.UUID, Path(description=READ_OBLIGATION_ID_DESCRIPTION)],
+    obligation_id: Annotated[str, Path(description=READ_OBLIGATION_ID_DESCRIPTION, max_length=120, pattern=OBLIGATION_ADDRESS)],
     query: Query[ObligationAsOfQuery],
 ) -> ObligationDetail:
     """One duty of the shared library as it stood on a date: the plain-language summary in
@@ -347,6 +362,13 @@ def get_obligation(
     overlay, the same as the duty's row in the list: whether the bank decided it applies, how
     it judges its compliance where it applies, and who owns it. No other bank sees it.
 
+    The duty is addressed by its id or by its stable key, which never changes and is what an
+    agent cites. An agent the bank runs itself, whose key or personal token belongs to an
+    agent access entry, opens only a shared duty inside the bank's footprint and inside the
+    departments and products its entry names; any other answers the same 404 as a duty that
+    does not exist, never a filtered answer. Its related duties are only ones it could open
+    itself, and the overlay and tags are answered to it on the terms the list gives.
+
     A library record is never overwritten, so this read carries no `If-Match` and can answer
     no stale write: a correction arrives as a new version through an approved proposal, and
     the older version stays readable at its own number. Reading as of a date before the
@@ -355,14 +377,15 @@ def get_obligation(
 
     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
     (403) without library.read or the library:read scope; `not_found` (404) when no
-    obligation has that id or it is one this caller may not see, the two answering alike so
-    that no id can be probed for; `validation_error` (422) when the path segment is not a
-    UUID or asOf is not a date.
+    obligation has that id or key or it is one this caller may not see, the two answering
+    alike so that nothing can be probed for; `validation_error` (422) when the path segment
+    is neither a UUID nor a key (letters, digits, hyphens and underscores, at most 120
+    characters) or asOf is not a date.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-03, AGT-02).
-    require_library_read(request)
+    who = require_library_read(request)
     tenant = caller_tenant(request)
-    return reading.obligation_detail(tenant, language_order(request, tenant=tenant), obligation_id, query)
+    return reading.obligation_detail(tenant, language_order(request, tenant=tenant), obligation_id, query, reading.reader_of(who))
 
 
 @router.get(
@@ -395,7 +418,8 @@ def get_obligation_diff(
     library's own content. It takes a person's session holding `library.read` in their bank,
     or an agent's key carrying the `library:read` scope. A sentence shown as removed is a
     change to the wording of the rule, never a decision that this bank may stop doing
-    something.
+    something. An agent access entry's key or token reads the diff of a duty it could open
+    itself, and gets the 404 of a missing duty for any other.
 
     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
     (403) without library.read or the library:read scope; `not_found` (404) when no
@@ -406,9 +430,9 @@ def get_obligation_diff(
     when the path segment is not a UUID.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-04, AGT-02).
-    require_library_read(request)
+    who = require_library_read(request)
     tenant = caller_tenant(request)
-    return reading.obligation_diff(language_order(request, tenant=tenant), obligation_id, query)
+    return reading.obligation_diff(language_order(request, tenant=tenant), obligation_id, query, reading.reader_of(who))
 
 
 @router.get(
@@ -431,7 +455,10 @@ def list_instruments(request: HttpRequest, query: Query[InstrumentQuery], page: 
     `library:read` scope. The list is read against that bank's footprint, so a platform
     key, such as the one bleqq's own watch agents run with, belongs to no bank and answers
     404 even when it carries `library:read`. The rows are shared library facts, the same
-    for every bank and changed only through an approved proposal.
+    for every bank and changed only through an approved proposal. An agent the bank runs
+    itself, through an agent access entry's key or token, lists only shared instruments
+    inside the bank's footprint and its entry's scope, and counts only the duties it could
+    open.
 
     Paginated: 20 rows by default and 100 at most, ordered by stable key so paging is
     repeatable. `footprint` is one value: `in` by default, `all` for every instrument, or
@@ -443,16 +470,17 @@ def list_instruments(request: HttpRequest, query: Query[InstrumentQuery], page: 
     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
     (403) without library.read or the library:read scope, which is checked first, so a
     platform key without the scope gets this; `not_found` (404) when the caller is a
-    platform key carrying the scope, since it belongs to no bank; `validation_error` (422)
+    platform key carrying the scope, since it belongs to no bank; `unknown_filter` (422)
+    when an agent access credential sends footprint all or watched; `validation_error` (422)
     when footprint is not in, all or watched, when the retired outsideFootprint is sent,
     when regime is longer than 80 characters, when the phrase is longer than 200 characters
     or the page size or offset is out of range.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-01, AGT-02).
-    require_library_read(request)
+    who = require_library_read(request)
     tenant = caller_tenant(request)
     order = language_order(request, tenant=tenant)
-    items, total = reading.instrument_page(tenant, order, query, limit=page.limit, offset=page.offset)
+    items, total = reading.instrument_page(tenant, order, query, limit=page.limit, offset=page.offset, reader=reading.reader_of(who))
     return InstrumentPage(items=items, total=total)
 
 
@@ -478,7 +506,10 @@ def get_instrument(
     holding `library.read` in their bank, or a bank's own API key carrying the
     `library:read` scope; a platform key belongs to no bank and answers 404 even when it
     carries `library:read`. The designed `GET /instruments/{instrumentId}/relations` is
-    served here as `lineage`, and the provision tree is its own read.
+    served here as `lineage`, and the provision tree is its own read. An agent access
+    entry's key or token opens only a shared instrument inside the bank's footprint and its
+    entry's scope, and its lineage names only instruments it could open; any other is the
+    404 of an instrument that does not exist.
 
     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
     (403) without library.read or the library:read scope, which is checked first;
@@ -488,9 +519,9 @@ def get_instrument(
     not a UUID.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-01, AGT-02).
-    require_library_read(request)
+    who = require_library_read(request)
     tenant = caller_tenant(request)
-    return reading.instrument_detail(tenant, language_order(request, tenant=tenant), instrument_id)
+    return reading.instrument_detail(tenant, language_order(request, tenant=tenant), instrument_id, reading.reader_of(who))
 
 
 @router.get(
@@ -525,7 +556,9 @@ def list_instrument_provisions(
 
     Answered as a plain array of root nodes rather than a page, because a tree has no
     natural page boundary; an instrument with no provisions yet is a 200 with an empty
-    array. The number of queries does not grow with the tree's size.
+    array. The number of queries does not grow with the tree's size. An agent access
+    entry's key or token reads the tree of an instrument it could open, and each node names
+    only the citing duties it could open itself.
 
     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
     (403) without library.read or the library:read scope, which is checked first;
@@ -534,9 +567,9 @@ def list_instrument_provisions(
     (422) when the path segment is not a UUID or asOf is not a date.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-02, AGT-02).
-    require_library_read(request)
+    who = require_library_read(request)
     tenant = caller_tenant(request)
-    return reading.provision_tree(tenant, instrument_id, language_order(request, tenant=tenant), query)
+    return reading.provision_tree(tenant, instrument_id, language_order(request, tenant=tenant), query, reading.reader_of(who))
 
 
 @router.get(
@@ -567,7 +600,8 @@ def get_provision_diff(
     A read: it changes nothing, writes no audit row and logs none of the text, which is
     the library's own content. It takes a person's session holding `library.read` in
     their bank, or a bank's own API key carrying the `library:read` scope; a platform key
-    belongs to no bank and answers 404 even when it carries `library:read`.
+    belongs to no bank and answers 404 even when it carries `library:read`. An agent access
+    entry's key or token reads only a provision of an instrument it could open.
 
     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
     (403) without library.read or the library:read scope, which is checked first;
@@ -579,9 +613,9 @@ def get_provision_diff(
     longer than 8 characters, or when the path segment is not a UUID.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-04, AGT-02).
-    require_library_read(request)
+    who = require_library_read(request)
     tenant = caller_tenant(request)
-    return reading.provision_diff(language_order(request, tenant=tenant), provision_id, query)
+    return reading.provision_diff(language_order(request, tenant=tenant), provision_id, query, reading.reader_of(who))
 
 
 @router.get(
@@ -644,6 +678,8 @@ def get_record_sources(
     principal, and never a direct edit (PRO-01). A page whose hash has changed means the page
     moved, never that the record is wrong.
 
+    An agent access entry's key or token reads the sources of a duty it could open itself.
+
     A record with no field-level citation yet is a 200 with an empty `items`, not a 404; the
     record's own `provenance` on `GET /obligations/{obligationId}` still names where it came
     from. Errors: `not_found` when no obligation has that id or the caller may not see it;
@@ -651,8 +687,8 @@ def get_record_sources(
     credential.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-06, AGT-01).
-    require_library_read(request)
-    return reading.get_record_sources(obligation_id, reading.today_of(principal(request).tenant_id))
+    who = require_library_read(request)
+    return reading.get_record_sources(obligation_id, reading.today_of(who.tenant_id), reading.reader_of(who))
 
 
 @router.post(
