@@ -5,10 +5,6 @@
 # A line is deleted when its operation ships in the designed shape, or moved to
 # docs/inputs/INPUT_DELTAS.md when the build departs from the design on purpose.
 
-DELETE /comments/{} chunk 10
-DELETE /actions/{} chunk 9
-DELETE /evidence/{} chunk 9
-DELETE /internal-links/{} chunk 8
 DELETE /saved-searches/{} chunk 13
 DELETE /webhooks/{} chunk 13
 GET /changes/{}/actions chunk 9
