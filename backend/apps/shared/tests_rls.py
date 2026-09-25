@@ -169,6 +169,9 @@ TENANT_ONLY_TABLES = [
     # Chunk 8's team list (TEN-03, c8-vocab-lists-rules): a bank's teams and their labels.
     "team",
     "team_label",
+    # c8-teams-model (tenants 0003, TEN-03): a person in a team. Both keys are composite
+    # (apps/tenants/tests_team_models.py proves the database refuses a cross-tenant one).
+    "team_member",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also
