@@ -542,6 +542,19 @@ section. Copied here as chunk3-rest-T20 requires.
       unrelated push. That brief is `docs/plans/briefs/AGENT_ACCESS.md`, and its entry
       scope is one more reader of the footprint this reshapes (D-70).
 
+## Inventory search and filters (2026-09-25, `inventory-search-filters`)
+- [ ] **Approve the chosen design** on the canvas's "Chosen design" page (D-9x): search in
+      Inventory, the Filters sheet, the three quick filters, and what shows outside your
+      scope. Nothing is built; on your approval the screen cards and foundations change
+      first, then the code.
+- [ ] **The Instruments tab.** The design lets the same bar find instruments by reference
+      or name. Say if it should find provisions there instead.
+- [ ] **What ships before R2.** The bar, the sheet, the quick filters and filter values
+      bounded by the scope need no R2 work, with My scope equal to the bank's scope until
+      teams exist. Team scope and the withheld reading, status, gaps and evidence wait for
+      teams (TEN-03) and the register (chunk 8), next to D-69's entity scope. Say whether
+      to ship the first part now.
+
 ## Landed from `origin/claude/r1-integration` (2026-09-23, lost-content)
 
 Two designs lived on `origin/claude/r1-integration` and nowhere on main. Each landed
