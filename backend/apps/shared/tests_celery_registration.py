@@ -76,6 +76,18 @@ class WeeklyBriefingSchedule(TestCase):
         self.assertEqual(list(inspect.signature(tasks.send_weekly_briefing.run).parameters)[0], "tenant_id")
 
 
+
+class CollabMailDelivery(TestCase):
+    """`c10-mail-catalog`: the one door a collab mail leaves through writes one bank's
+    `email_message` rows, so it must activate that bank inside its own transaction."""
+
+    def test_the_delivery_task_is_registered_and_a_wrapped_tenant_task(self) -> None:
+        from apps.collab import tasks
+
+        self.assertIn("apps.collab.tasks.deliver_mail", celery_app.tasks)
+        self.assertTrue(is_tenant_task(tasks.deliver_mail.run))
+        self.assertEqual(list(inspect.signature(tasks.deliver_mail.run).parameters)[0], "tenant_id")
+
 class TenantTaskDecorator(TestCase):
     def test_tenant_task_activates_inside_its_own_transaction(self) -> None:
         tenant = factories.tenant()
