@@ -52,7 +52,6 @@ CASES_CONTRIBUTE = "cases.contribute"  # compliance officer, owner, contributor
 CASES_SIGNOFF = "cases.signoff"  # approver
 REGISTER_EDIT = "register.edit"  # compliance officer, owner
 GAPS_EDIT = "gaps.edit"  # compliance officer, owner
-APPLICABILITY_REQUEST = "applicability.request"  # compliance officer, owner
 APPLICABILITY_APPROVE = "applicability.approve"  # compliance officer, approver
 RISK_ACCEPT_APPROVE = "risk.accept.approve"  # compliance officer, approver
 PROPOSALS_CREATE = "proposals.create"  # compliance officer
@@ -65,6 +64,9 @@ VOCAB_MANAGE = "vocab.manage"  # admin, compliance officer
 WORKFLOW_MANAGE = "workflow.manage"  # admin, compliance officer
 AGENTS_MANAGE = "agents.manage"  # admin
 INTEGRATIONS_MANAGE = "integrations.manage"  # admin
+# acc-foundation (PRD 0.5, ACC-01, ACC-03, D-77): a bank's own agents and personal tokens.
+AGENT_ACCESS_MANAGE = "agent_access.manage"  # admin
+TOKENS_CREATE = "tokens.create"  # admin, compliance officer, owner
 
 # ---------------------------------------------------------------------------------------
 # Platform permissions (PRD §6): library_editor and platform_admin.
@@ -98,7 +100,6 @@ TENANT_PERMISSIONS: frozenset[str] = frozenset(
         CASES_SIGNOFF,
         REGISTER_EDIT,
         GAPS_EDIT,
-        APPLICABILITY_REQUEST,
         APPLICABILITY_APPROVE,
         RISK_ACCEPT_APPROVE,
         PROPOSALS_CREATE,
@@ -111,6 +112,8 @@ TENANT_PERMISSIONS: frozenset[str] = frozenset(
         WORKFLOW_MANAGE,
         AGENTS_MANAGE,
         INTEGRATIONS_MANAGE,
+        AGENT_ACCESS_MANAGE,
+        TOKENS_CREATE,
     }
 )
 PLATFORM_PERMISSIONS: frozenset[str] = frozenset(
@@ -127,9 +130,10 @@ PLATFORM_PERMISSIONS: frozenset[str] = frozenset(
 )
 ALL_PERMISSIONS: frozenset[str] = TENANT_PERMISSIONS | PLATFORM_PERMISSIONS
 
-# Four eyes applies to every approve permission: never the requester (PRD §6).
+# Four eyes applies to every approve permission: never the requester (PRD §6). Not to
+# `applicability.approve`: one person sets applicability after a confirmation (D-75).
 APPROVE_PERMISSIONS: frozenset[str] = frozenset(
-    {FOOTPRINT_APPROVE, CASES_SIGNOFF, APPLICABILITY_APPROVE, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW}
+    {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW}
 )
 
 # ---------------------------------------------------------------------------------------
@@ -164,6 +168,8 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         WORKFLOW_MANAGE,
         AGENTS_MANAGE,
         INTEGRATIONS_MANAGE,
+        AGENT_ACCESS_MANAGE,
+        TOKENS_CREATE,
     },
     "compliance_officer": _EVERYONE
     | {
@@ -174,7 +180,6 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         CASES_CONTRIBUTE,
         REGISTER_EDIT,
         GAPS_EDIT,
-        APPLICABILITY_REQUEST,
         APPLICABILITY_APPROVE,
         RISK_ACCEPT_APPROVE,
         PROPOSALS_CREATE,
@@ -182,9 +187,10 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         AI_LOG_READ,
         VOCAB_MANAGE,
         WORKFLOW_MANAGE,
+        TOKENS_CREATE,
     },
     "owner": _EVERYONE
-    | {CASES_WORK, CASES_CONTRIBUTE, REGISTER_EDIT, GAPS_EDIT, APPLICABILITY_REQUEST},
+    | {CASES_WORK, CASES_CONTRIBUTE, REGISTER_EDIT, GAPS_EDIT, TOKENS_CREATE},
     "approver": _EVERYONE
     | {
         FOOTPRINT_APPROVE,
@@ -251,6 +257,13 @@ PLATFORM_ONLY_SCOPES: frozenset[str] = frozenset(
 # What a bank's own key may be given: reads, and filing a proposal, which changes nothing
 # until someone independent approves it (AC-PRO1).
 TENANT_KEY_SCOPES: frozenset[str] = ALL_SCOPES - PLATFORM_ONLY_SCOPES
+# What a credential of an agent access entry, and every personal access token, may hold
+# (acc-foundation, ACC-03, ADR 0055): reads, none of which writes. `tenant:read` reaches the
+# bank's register decisions and only with tenant reach on (D-72, D-76). A CHECK on api_key
+# (identity 0007) holds the same set.
+AGENT_ACCESS_SCOPES: frozenset[str] = frozenset(
+    {SCOPE_LIBRARY_READ, SCOPE_SEARCH_READ, SCOPE_UPCOMING_READ, SCOPE_TENANT_READ}
+)
 
 # ---------------------------------------------------------------------------------------
 # The permission catalogue for the role editor (`GET /reference/permissions`, ID-09):
@@ -275,8 +288,7 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     CASES_SIGNOFF: "Sign off a case worked by someone else.",
     REGISTER_EDIT: "Edit register entries.",
     GAPS_EDIT: "Edit gaps.",
-    APPLICABILITY_REQUEST: "Request an applicability decision.",
-    APPLICABILITY_APPROVE: "Approve an applicability decision requested by someone else.",
+    APPLICABILITY_APPROVE: "Set whether an obligation applies, after confirming it.",
     RISK_ACCEPT_APPROVE: "Approve a risk acceptance requested by someone else.",
     PROPOSALS_CREATE: "Propose a change to the shared library.",
     EXPORTS_CREATE: "Create exports.",
@@ -291,6 +303,8 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     WORKFLOW_MANAGE: "Manage workflow policy.",
     AGENTS_MANAGE: "Switch agents on and off and set their cadence and budget.",
     INTEGRATIONS_MANAGE: "Manage integrations and API keys.",
+    AGENT_ACCESS_MANAGE: "Register, change and revoke the agents the bank runs itself, issue their keys and set their tenant reach.",
+    TOKENS_CREATE: "Mint a personal access token for yourself, which acts as you and never exceeds your own permissions.",
     PROPOSALS_REVIEW: "Review proposals in the platform console.",
     LIBRARY_VOCAB_MANAGE: "Manage the library vocabularies.",
     SOURCES_MANAGE: "Manage sources.",

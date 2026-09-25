@@ -249,3 +249,57 @@ def support_access(tenant: Tenant) -> SupportAccess:
         return SupportAccess.objects.create(
             tenant=tenant, platform_user=requester, reason="The bank's watch feed stopped updating.", started_at=timezone.now()
         )
+
+
+# ---------------------------------------------------------------------------------------
+# acc-principal-guard: an agent access entry and its two credential kinds (ACC-03).
+# ---------------------------------------------------------------------------------------
+def agent_access_entry(tenant: Tenant, *, name: str = "Trading platform coding agent") -> SimpleNamespace:
+    """A live agent access entry of `tenant`, owned by its seeded compliance team and
+    registered by a new admin. Activates the tenant."""
+    from apps.agents.models import AgentAccess
+    from apps.taxonomy.models import Team
+
+    admin = member_user(tenant, roles=("admin",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        row = AgentAccess.objects.create(
+            tenant=tenant,
+            name=name,
+            purpose="Builds the order-routing service.",
+            owner_team=Team.objects.get(key="compliance"),
+            created_by=admin,
+        )
+    return SimpleNamespace(id=row.id, row=row, admin=admin)
+
+
+def entry_key(tenant: Tenant, entry: SimpleNamespace, *, scopes: Iterable[str] = ("library:read",)) -> SimpleNamespace:
+    """A service key bound to `entry`: `.id`, `.row` and `.plain_key`."""
+    plain, prefix, key_hash = tokens.new_api_key()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        row = ApiKey.objects.create(
+            tenant=tenant, agent_access_id=entry.id, name="Entry key", key_prefix=prefix, key_hash=key_hash, scopes=list(scopes)
+        )
+    return SimpleNamespace(id=row.id, row=row, plain_key=plain)
+
+
+def personal_token(
+    tenant: Tenant, person: User, *, scopes: Iterable[str] = ("library:read",), entry: SimpleNamespace | None = None
+) -> SimpleNamespace:
+    """A personal access token acting as `person`, a member of `tenant`, expiring in 90 days."""
+    plain, prefix, key_hash = tokens.new_api_key()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        row = ApiKey.objects.create(
+            tenant=tenant,
+            kind="personal",
+            acts_as_user=person,
+            agent_access_id=entry.id if entry is not None else None,
+            name="Personal token",
+            key_prefix=prefix,
+            key_hash=key_hash,
+            scopes=list(scopes),
+            expires_at=timezone.now() + timedelta(days=90),
+        )
+    return SimpleNamespace(id=row.id, row=row, plain_key=plain)

@@ -1368,3 +1368,24 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 - [ ] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. It
       follows the app's existing terms (skyldighet, förslag, godkännande), but
       a native read of the headline and the questions is worth five minutes.
+
+## acc-principal-guard: how an agent access credential is fenced (2026-09-25, ACC-03, ACC-09)
+
+Built on these defaults; each stays yours to overrule.
+
+- [ ] **A token whose person loses a permission is refused, not revoked.** A personal
+      access token stops on the next request when its person is deactivated, leaves
+      the bank, or loses the permission behind any one of its scopes (`library.read`,
+      `search.use`, `roadmap.read`, `register.read`); it is refused whole rather than
+      narrowed. It is a check on every request, so if the person gets the permission
+      back the token works again until it expires. Default: so. The alternative is to
+      stamp the token revoked the first time the check fails.
+- [ ] **A session-only route answers a key or token with the fence's 403.** A key of
+      an agent access entry or a token that reaches a write or a step-up route which
+      takes only a person's session is answered 403 `read_only_credential` or
+      `step_up_required`, not 401, so every such route answers the same way whichever
+      auth it takes. A read it cannot use still answers 401.
+- [ ] **The rate-limit log.** Over `AGENT_ACCESS_RATE_PER_MINUTE` a credential gets 429,
+      and the first refusal of each minute writes one `credential_rate_limited` row in
+      the security log, not one per refused request, so a runaway agent cannot flood
+      the log.

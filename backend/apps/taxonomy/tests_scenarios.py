@@ -1002,9 +1002,12 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(by_key["se"]["defaultLanguage"]["key"], "sv")
         self.assertEqual(by_key["se"]["label"], "Sweden")
         # No model column names a language or a country; the references are foreign keys.
+        # `version_no` is a number, not Norwegian (agents 0004), and is the one field named.
         for model in django_apps.get_models():
             for field in model._meta.get_fields():
                 name = field.name.lower()
+                if name == "version_no":
+                    continue
                 self.assertNotRegex(name, r"_(sv|en|da|nb|fi|no)$", f"{model._meta.label}.{field.name} names a language")
                 self.assertNotRegex(name, r"(swedish|danish|norwegian|finnish|english)", f"{model._meta.label}.{field.name} names a language")
         self.assertIsInstance(User._meta.get_field("locale"), ForeignKey)
