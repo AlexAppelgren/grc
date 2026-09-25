@@ -31,6 +31,7 @@ from apps.library.models import (
     Provision,
     ProvisionText,
     ProvisionVersion,
+    RecurringDuty,
 )
 from apps.identity.models import User
 from apps.proposals.models import OriginType
@@ -290,3 +291,12 @@ def standard() -> Obligation:
         duty_type="governance",
         terms=("standard:iso_iec_27001",),
     )
+
+
+def recurring_duty(on: Obligation, *, title: str = "Quarterly report to the supervisor", rule: str = "FREQ=MONTHLY;BYMONTH=3,6,9,12;BYMONTHDAY=-1", note: str = "", status: str = "active") -> RecurringDuty:
+    """A duty `on` carries on a schedule (REG-07), as an approved proposal would write it:
+    proposed by a person, `rule` an RFC 5545 RRULE."""
+    with library_write(REASON):
+        return RecurringDuty.objects.create(
+            obligation=on, title=title, recurrence_rule=rule, due_rule_note=note, status=status, created_origin=OriginType.USER.value
+        )
