@@ -189,4 +189,10 @@ export const slotTone = {
   // AGT-07: a proposal carrying text the injection screen flagged waits for a person,
   // so it needs attention; it is not itself bad.
   riskFlagged: 'warning',
+  // d89-fe-private (OWN-03, OWN-04; design/screens/tenant-private-records.html). What
+  // belongs to the bank itself reads outlined information, as a tenant tag does, never
+  // brand, which means the shared library. A proposal the bank's own agent filed wears the
+  // tone of an agent version until a person here decides it.
+  privateToUs: 'information',
+  ownAgentProposal: 'brand',
 } as const satisfies Record<string, PillTone>;

@@ -33,7 +33,7 @@ export interface ObligationFacts {
   openChangeCount?: number;
   libraryTags?: readonly VocabularyRef[];
   tenantTags?: readonly VocabularyRef[];
-  /** The bank's own record rather than a shared fact; carried as data, not yet shown. */
+  /** The bank's own record rather than a shared fact: it wears "Private to us" first (OWN-04). */
   privateToUs?: boolean;
 }
 
@@ -43,6 +43,7 @@ export type ObligationView = 'row' | 'header';
 export const STANDARD_LEVEL_KIND = 'standard';
 
 export const OBLIGATION_SLOT_ORDER = {
+  privateToUs: 0,
   instrument: 10,
   regime: 20,
   bindingLevel: 20,
@@ -123,7 +124,25 @@ export function presentObligation(obligation: ObligationFacts, view: ObligationV
     });
   }
 
-  return pills.sort(byOrder);
+  pills.sort(byOrder);
+  return obligation.privateToUs === true ? markPrivateToUs(pills, t) : pills;
+}
+
+// "Private to us" (OWN-04, design/screens/tenant-private-records.html state 15): a record
+// the bank owns leads its row and its head with the marker, as an outlined information
+// pill, and its instrument's short name turns outlined information too, because a brand
+// pill means the shared library. The obligation row and head and the instrument head all
+// mark their pills here, so the three read alike. The marker says who sees the record; it
+// is not a link and not a filter.
+export function markPrivateToUs(pills: readonly PresentedPill[], t: Translate): PresentedPill[] {
+  const marker: PresentedPill = {
+    key: 'private-to-us',
+    label: t('library.privateToUs'),
+    tone: slotTone.privateToUs,
+    order: OBLIGATION_SLOT_ORDER.privateToUs,
+    outlined: true,
+  };
+  return [marker, ...pills.map((pill) => (pill.key.startsWith('instrument:') ? { ...pill, tone: slotTone.privateToUs, outlined: true } : pill))];
 }
 
 function presentStandard(order: number, t: Translate): PresentedPill {
