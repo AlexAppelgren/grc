@@ -70,6 +70,7 @@ from apps.home.schemas import (
     HomeUpcomingItem,
     HomeUpcomingQuery,
 )
+from apps.library.reading import reader_of
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, PrincipalKind, SessionAuth
 from apps.shared.permissions import requires_permission
@@ -355,7 +356,10 @@ def list_upcoming(request: HttpRequest, page: Query[HomeUpcomingQuery]) -> Any:
     this app a key reaches, because it is the only one with no bank in it. Library facts
     exactly: no case, no footprint verdict, no owner and no "So what?", so two banks calling
     it receive identical answers and nothing here may be read as any bank's judgement or
-    compliance position.
+    compliance position. The one narrower caller is an agent the bank runs itself, whose key
+    or token reads only the changes inside the bank's regulatory scope and inside the
+    departments and products its agent access entry names; every row it gets is still the
+    row everyone gets.
 
     A change is here while all three are true: the shared library holds it as active (a
     withdrawn or superseded reform has left, whatever its date still says), it carries a key
@@ -375,7 +379,7 @@ def list_upcoming(request: HttpRequest, page: Query[HomeUpcomingQuery]) -> Any:
     """
     # Ungated by design: logic-gate (roadmap.read in a tenant, or a key with upcoming:read).
     require_upcoming_reader(request)
-    return calendar_reads.list_upcoming(language_order(request), page)
+    return calendar_reads.list_upcoming(language_order(request), page, reader_of(principal(request)))
 
 
 @router.get(
