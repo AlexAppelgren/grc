@@ -33,6 +33,9 @@ from apps.shared.permissions import (
 FOUR_EYES_TABLES: list[tuple[str, str]] = [
     ("footprint_change_request", "footprint_change_request_four_eyes"),
     ("proposal", "proposal_four_eyes"),
+    # acc-scope-and-reach (governance 0004, ACC-08): tenant reach is requested by one person
+    # holding security.manage and approved or rejected by another.
+    ("tenant_reach_request", "tenant_reach_request_four_eyes"),
 ]
 
 
