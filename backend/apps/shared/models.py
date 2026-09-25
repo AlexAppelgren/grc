@@ -15,6 +15,8 @@ from __future__ import annotations
 import enum
 import uuid
 
+from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 from apps.shared.audit import ACTOR_TYPE_CHOICES, AppendOnlyModel
@@ -28,6 +30,54 @@ class TenantStatus(enum.StrEnum):
 
 
 TENANT_STATUS_CHOICES = [(kind.value, kind.value) for kind in TenantStatus]
+
+
+class Weekday(enum.StrEnum):
+    """Tier-one kind (apps/shared/kinds.py): the day a bank's digest goes out (COL-02)."""
+
+    MONDAY = "monday"
+    TUESDAY = "tuesday"
+    WEDNESDAY = "wednesday"
+    THURSDAY = "thursday"
+    FRIDAY = "friday"
+    SATURDAY = "saturday"
+    SUNDAY = "sunday"
+
+
+WEEKDAY_CHOICES = [(kind.value, kind.value) for kind in Weekday]
+
+# The workflow policy's bounds (COL-02). The schema refuses a value outside them with a 422
+# naming the field; the check constraints below hold them for every other writer too.
+LEAD_DAYS_MAX = 90
+LEAD_DAYS_MAX_ENTRIES = 5
+ESCALATE_AFTER_DAYS_MAX = 90
+TRIAGE_TARGET_HOURS_MAX = 720
+
+
+# Each default is read from settings when a tenant row is created, so a platform default is
+# changed with an env variable and never a migration (COL-02, c10-workflow-policy).
+def default_reminder_days_before() -> list[int]:
+    return list(settings.WORKFLOW_REMINDER_DAYS_BEFORE)
+
+
+def default_review_reminder_days_before() -> list[int]:
+    return list(settings.WORKFLOW_REVIEW_REMINDER_DAYS_BEFORE)
+
+
+def default_escalate_after_days() -> int:
+    return int(settings.WORKFLOW_ESCALATE_AFTER_DAYS)
+
+
+def default_escalate_to_role() -> str:
+    return str(settings.WORKFLOW_ESCALATE_TO_ROLE)
+
+
+def default_digest_weekday() -> str:
+    return str(settings.WORKFLOW_DIGEST_WEEKDAY)
+
+
+def default_triage_target_hours() -> int:
+    return int(settings.WORKFLOW_TRIAGE_TARGET_HOURS)
 
 
 class Tenant(models.Model):
@@ -52,11 +102,51 @@ class Tenant(models.Model):
     # bank's zone. No route writes it yet: the switch's own route, behind a passkey
     # step-up, is still to come.
     ai_enabled = models.BooleanField(default=True)
+    # The workflow policy (COL-02): reminder lead days before a due date and before a review,
+    # how long overdue work waits before it escalates and to which role (a `TenantRole` key of
+    # this tenant, compared as a key), the digest's weekday and the triage target. Written only
+    # by PATCH /tenant/workflow under workflow.manage.
+    reminder_days_before = ArrayField(models.PositiveSmallIntegerField(), default=default_reminder_days_before)
+    review_reminder_days_before = ArrayField(models.PositiveSmallIntegerField(), default=default_review_reminder_days_before)
+    escalate_after_days = models.PositiveSmallIntegerField(default=default_escalate_after_days)
+    escalate_to_role = models.CharField(max_length=80, default=default_escalate_to_role)
+    digest_weekday = models.CharField(max_length=16, choices=WEEKDAY_CHOICES, default=default_digest_weekday)
+    triage_target_hours = models.PositiveSmallIntegerField(default=default_triage_target_hours)
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "tenant"
         ordering = ["slug"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(
+                    reminder_days_before__len__gte=1,
+                    reminder_days_before__len__lte=LEAD_DAYS_MAX_ENTRIES,
+                    reminder_days_before__contained_by=list(range(1, LEAD_DAYS_MAX + 1)),
+                ),
+                name="tenant_reminder_days_before_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    review_reminder_days_before__len__gte=1,
+                    review_reminder_days_before__len__lte=LEAD_DAYS_MAX_ENTRIES,
+                    review_reminder_days_before__contained_by=list(range(1, LEAD_DAYS_MAX + 1)),
+                ),
+                name="tenant_review_reminder_days_before_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(escalate_after_days__gte=1, escalate_after_days__lte=ESCALATE_AFTER_DAYS_MAX),
+                name="tenant_escalate_after_days_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(triage_target_hours__gte=1, triage_target_hours__lte=TRIAGE_TARGET_HOURS_MAX),
+                name="tenant_triage_target_hours_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(digest_weekday__in=[kind.value for kind in Weekday]),
+                name="tenant_digest_weekday_valid",
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.slug
