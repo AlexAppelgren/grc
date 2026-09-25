@@ -44,3 +44,5 @@ release. If it is cut, it moves whole to chunk 13, where ACC-10 already sits, an
 nothing else in chunk 11 changes. ACC-10 is R3 either way. `CHUNK11_TASKS.md` and
 `CHUNK13_TASKS.md` were written before ACC landed and carry no ACC task yet; its
 tasks are planned from the brief before chunk 11 starts.
+
+**PRD 0.7 (D-89, 2026-09-25).** Chunk 11 gains group OWN, the bank's own regulations (OWN-01 to OWN-05, INV-07 moved from chunk 13, J-12; D-91, ADR 0059, `docs/plans/briefs/SCOPE_ITEMS.md`); its register half follows chunk 8, and private sources (WAT-06) stay in chunk 13.

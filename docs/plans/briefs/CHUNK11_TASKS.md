@@ -147,6 +147,8 @@ No chunk 11 task starts before the work it names is on `main`:
   Agent definitions surface.
 - The chunk's own security review, its fix package and its close.
 
+> **PRD 0.7 (D-89, D-91, ADR 0059, 2026-09-25).** Ruling 2 is superseded for group OWN: a tenant agent's findings for an approved scope item become the bank's own proposals through runner events applied in the worker, and ADR 0050's tranches 1 and 2 (`c13-private-contract`, `c13-private-child-rls`) move into this chunk; `docs/plans/briefs/SCOPE_ITEMS.md` is the design, and its tasks are planned before chunk 11 starts.
+
 ### Rulings where the sources disagree
 
 1. **A definition is always bleqq's; a bank adds an agent, not a prompt.** `PARALLEL_PLAN`
