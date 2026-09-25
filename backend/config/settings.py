@@ -292,6 +292,36 @@ AGENTS_PER_TENANT_MAX = env_int("AGENTS_PER_TENANT_MAX", 3)
 AGENT_DEFAULT_RUN_HOUR = env_int("AGENT_DEFAULT_RUN_HOUR", 6)
 if not 0 <= AGENT_DEFAULT_RUN_HOUR <= 23:
     raise ImproperlyConfigured(f"AGENT_DEFAULT_RUN_HOUR must be an hour from 0 to 23, got {AGENT_DEFAULT_RUN_HOUR}")
+
+# --- c11-scheduler (AGT-03, AGT-04, AGT-06) ----------------------------------------------
+# How often the two agent beats fire, in minutes: bleqq's (apps.agents.tasks.
+# run_platform_agents) and the banks' (schedule_tenant_agents). The most runs of bleqq's
+# agents one beat starts, so a beat never starts the whole library at once; the rest start
+# on the next beat. The most one run of a bank's own agent may spend, in EUR: a run starts
+# only when the month's spend plus this still fits under the bank's cap, and it is stored
+# on the run as its `budget_limit`.
+from decimal import Decimal, InvalidOperation  # noqa: E402 this block's own import, kept beside it
+
+AGENT_BEAT_INTERVAL_MINUTES = env_int("AGENT_BEAT_INTERVAL_MINUTES", 15)
+AGENT_RUNS_PER_BEAT = env_int("AGENT_RUNS_PER_BEAT", 5)
+AGENT_RUN_BUDGET_LIMIT = env_str("AGENT_RUN_BUDGET_LIMIT", "5.00")
+if AGENT_BEAT_INTERVAL_MINUTES < 1 or AGENT_RUNS_PER_BEAT < 1:
+    raise ImproperlyConfigured("AGENT_BEAT_INTERVAL_MINUTES and AGENT_RUNS_PER_BEAT must each be at least 1")
+try:
+    _run_budget_limit = Decimal(AGENT_RUN_BUDGET_LIMIT)
+except InvalidOperation:
+    _run_budget_limit = Decimal(0)
+if not (_run_budget_limit.is_finite() and Decimal(0) < _run_budget_limit < Decimal(100_000_000)):
+    raise ImproperlyConfigured(f"AGENT_RUN_BUDGET_LIMIT must be an amount in EUR above zero, got {AGENT_RUN_BUDGET_LIMIT!r}")
+CELERY_BEAT_SCHEDULE["agents-platform"] = {
+    "task": "apps.agents.tasks.run_platform_agents",
+    "schedule": AGENT_BEAT_INTERVAL_MINUTES * 60,
+}
+CELERY_BEAT_SCHEDULE["agents-tenant"] = {
+    "task": "apps.agents.tasks.schedule_tenant_agents",
+    "schedule": AGENT_BEAT_INTERVAL_MINUTES * 60,
+}
+
 MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp
 MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")
 MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")

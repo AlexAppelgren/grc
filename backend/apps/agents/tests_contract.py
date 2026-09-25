@@ -350,7 +350,18 @@ class ConsoleAgentRouteGates(TestCase):
                 self.assertEqual(response.json()["code"], "step_up_required")
 
     def test_behind_the_gate_each_answers_not_built(self) -> None:
+        # Served since `c11-definitions-platform`: tests_definitions.py and tests_platform.py.
+        built = {
+            "getAgentDefinition",
+            "publishAgentVersion",
+            "retireAgentVersion",
+            "getPlatformAgentSettings",
+            "updatePlatformAgentSettings",
+            "listPlatformRuns",
+        }
         for name, method, url, body, permission, _ in CONSOLE_ROUTES:
+            if name in built:
+                continue
             with self.subTest(operation=name), stub_session(user_principal(permissions={permission}, step_up_at=timezone.now())):
                 response = _call(self.client, method, url, body, AS_SESSION)
                 self.assertEqual(response.status_code, 501, response.content)
@@ -364,7 +375,7 @@ class ConsoleAgentRouteGates(TestCase):
 
         definition = _tenant_definition()
         with library_write("test"):
-            version = AgentVersion.objects.create(agent=definition, version_no=1, model="m", prompt_path="prompt.md")
+            version = AgentVersion.objects.create(agent=definition, version_number=1, model="m", prompt_path="prompt.md")
         with stub_session(user_principal(permissions={perms.AGENT_DEFINITIONS_MANAGE})):
             response = _call(self.client, "get", f"{DEFINITIONS}?limit=100", None, AS_SESSION)
         self.assertEqual(response.status_code, 200, response.content)
