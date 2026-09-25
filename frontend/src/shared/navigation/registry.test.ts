@@ -31,7 +31,7 @@ describe('navigation registry (playbook 6.2)', () => {
       'watch',
       'inventory',
       'roadmap',
-      'search',
+      'ask',
       'admin',
     ]);
     // A console destination registers with its page: vocabularies and tenants
@@ -82,12 +82,12 @@ describe('navigation registry (playbook 6.2)', () => {
     expect(unlocks(['watch.read'], [])).toBe(false);
     expect(unlocks(['members.manage', 'vocab.manage'], ['vocab.manage'])).toBe(true);
     expect(visibleDestinations('tenant', []).map((d) => d.id)).toEqual(['today']);
-    expect(visibleDestinations('tenant', ['search.use']).map((d) => d.id)).toEqual(['today', 'search']);
+    expect(visibleDestinations('tenant', ['search.use']).map((d) => d.id)).toEqual(['today', 'ask']);
   });
 
   it('orders the phone dock by rank', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
-    expect(dockDestinations('tenant', all).map((d) => d.id)).toEqual(['today', 'watch', 'inventory', 'search']);
+    expect(dockDestinations('tenant', all).map((d) => d.id)).toEqual(['today', 'watch', 'inventory', 'ask']);
     expect(dockDestinations('console', all).map((d) => d.id)).toEqual(['console-queue', 'console-vocabularies', 'console-tenants', 'console-sources']);
   });
 
@@ -113,7 +113,7 @@ describe('navigation registry (playbook 6.2)', () => {
     // A ranked destination the person cannot open is skipped; the rest move up
     // and the empty slot stays empty rather than taking Roadmap or Admin.
     const noWatch = all.filter((p) => p !== 'watch.read');
-    expect(dockDestinations('tenant', noWatch).map((d) => d.id)).toEqual(['today', 'inventory', 'search']);
+    expect(dockDestinations('tenant', noWatch).map((d) => d.id)).toEqual(['today', 'inventory', 'ask']);
     expect(moreDestinations('tenant', noWatch).map((d) => d.id)).toEqual(['roadmap', 'admin']);
   });
 
@@ -162,7 +162,7 @@ describe('navigation registry (playbook 6.2)', () => {
     // Children never reach the rail or the dock.
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(visibleDestinations('tenant', all).every((d) => d.parent === undefined)).toBe(true);
-    expect(dockDestinations('tenant', all).map((d) => d.id)).toEqual(['today', 'watch', 'inventory', 'search']);
+    expect(dockDestinations('tenant', all).map((d) => d.id)).toEqual(['today', 'watch', 'inventory', 'ask']);
     for (const child of destinations.filter((d) => d.parent !== undefined && d.parent !== ACCOUNT_PARENT)) {
       expect(findDestination(child.parent ?? '')).toBeDefined();
     }
@@ -188,15 +188,16 @@ describe('navigation registry (playbook 6.2)', () => {
     }
   });
 
-  it('gives a tab its short label in every language, and Search one word', () => {
+  it('gives a tab its short label in every language where it has one, and Ask needs none', () => {
+    // Search needed "Search" while its label was "Search and ask"; since D-9x the destination is Ask, one word.
     const short = destinations.filter((d) => d.shortLabelKey !== undefined);
-    expect(short.map((d) => d.id)).toEqual(['search']);
     for (const d of short) {
       const key = d.shortLabelKey ?? d.labelKey;
       expect(catalogs.en[key]).toBeTruthy();
       expect(catalogs.sv[key]).toBeTruthy();
     }
-    expect(catalogs.en['nav.search.short']).toBe('Search');
-    expect(catalogs.sv['nav.search.short']).toBe('Sök');
+    expect(findDestination('ask')?.shortLabelKey).toBeUndefined();
+    expect(catalogs.en['nav.ask']).toBe('Ask');
+    expect(catalogs.sv['nav.ask']).toBe('Fråga');
   });
 });

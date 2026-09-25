@@ -382,11 +382,10 @@ describe('at compact width: the tab bar', () => {
     expect(within(bar).getAllByRole('link').map((l) => [l.textContent, l.getAttribute('href')])).toEqual(
       tabs.map((d) => [t(d.shortLabelKey ?? d.labelKey), d.href]),
     );
-    expect(within(bar).getAllByRole('link').map((l) => l.textContent)).toEqual(['Today', 'Watch', 'Inventory', 'Search']);
+    expect(within(bar).getAllByRole('link').map((l) => l.textContent)).toEqual(['Today', 'Watch', 'Inventory', 'Ask']);
     expect(within(items[4] as HTMLElement).getByRole('button', { name: 'More' })).toHaveAttribute('type', 'button');
-    // One word on a tab; the rail keeps the full label.
-    expect(within(bar).queryByText('Search and ask')).toBeNull();
-    expect(within(mainNav()).getByRole('link', { name: 'Search and ask' })).toBeInTheDocument();
+    // One word on a tab and in the rail alike.
+    expect(within(mainNav()).getByRole('link', { name: 'Ask' })).toHaveAttribute('href', '/ask');
     // A 20px icon over every label.
     for (const cell of [...within(bar).getAllByRole('link'), moreButton()]) {
       expect(cell.querySelector('svg[aria-hidden="true"]')).toHaveClass('size-5');
@@ -397,7 +396,7 @@ describe('at compact width: the tab bar', () => {
     render(<LocaleProvider locale="sv">{shell(EVERYONE_AND_ADMIN)}</LocaleProvider>);
     const bar = tabBar();
     expect(bar).toHaveAttribute('lang', 'sv');
-    expect([...bar.querySelectorAll('a, button')].map((cell) => cell.textContent)).toEqual(['Idag', 'Bevakning', 'Inventarie', 'Sök', 'Mer']);
+    expect([...bar.querySelectorAll('a, button')].map((cell) => cell.textContent)).toEqual(['Idag', 'Bevakning', 'Inventarie', 'Fråga', 'Mer']);
   });
 
   it('marks the current tab alone, nested routes included', () => {

@@ -543,17 +543,20 @@ section. Copied here as chunk3-rest-T20 requires.
       scope is one more reader of the footprint this reshapes (D-70).
 
 ## Inventory search and filters (2026-09-25, `inventory-search-filters`)
-- [ ] **Approve the chosen design** on the canvas's "Chosen design" page (D-9x): search in
-      Inventory, the Filters sheet, the three quick filters, and what shows outside your
-      scope. Nothing is built; on your approval the screen cards and foundations change
-      first, then the code.
-- [ ] **The Instruments tab.** The design lets the same bar find instruments by reference
-      or name. Say if it should find provisions there instead.
-- [ ] **What ships before R2.** The bar, the sheet, the quick filters and filter values
-      bounded by the scope need no R2 work, with My scope equal to the bank's scope until
-      teams exist. Team scope and the withheld reading, status, gaps and evidence wait for
-      teams (TEN-03) and the register (chunk 8), next to D-69's entity scope. Say whether
-      to ship the first part now.
+- [x] **Approve the chosen design** (D-9x). Taken from your "Go ahead" of 2026-09-25, whose
+      message was cut off after those words; say if you meant something else. The part that
+      needs no R2 work is built: the search bar, the Filters sheet, the three quick filters,
+      filter values bounded by the scope, and Ask at `/ask`.
+- [ ] **The Instruments tab.** Its search bar finds instruments by reference or name. Say if
+      it should find provisions there instead.
+- [ ] **Team scope and the withheld reading (R2).** My scope equals the bank's scope until teams
+      (TEN-03) give each person a slice, and a record outside your teams' scope will show only
+      whether it applies once the register lands (chunk 8). Both belong in the R2 plan, next to
+      D-69's entity scope.
+- [ ] **The Windows tab-bar screenshot.** The tab bar now reads "Ask", so
+      `frontend/tests/e2e/navigation.journey.spec.ts-snapshots/tab-bar-chromium-win32.png` is stale.
+      The Linux one is re-recorded; run `npx playwright test navigation --update-snapshots` once on
+      Windows and commit the new file.
 
 ## Landed from `origin/claude/r1-integration` (2026-09-23, lost-content)
 

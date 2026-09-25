@@ -245,8 +245,8 @@ describe('InstrumentScreen', () => {
     expect(read[0]?.params).toMatchObject({ instrument: 'fffs-2017-2' });
     expect(read[0]?.params).not.toHaveProperty('footprint');
     const panel = document.querySelector('[data-obligations-panel]') as HTMLElement;
-    expect(within(panel).getByRole('button', { name: 'In our scope' })).toHaveAttribute('aria-pressed', 'true');
-    expect(within(panel).getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'false');
+    expect(within(panel).getByRole('button', { name: 'My scope' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(panel).getByRole('button', { name: 'Show all items' })).toHaveAttribute('aria-pressed', 'false');
     expect(panel.querySelector('[data-obligations-total]')).toHaveTextContent('34 obligations');
     expect(within(panel).getByRole('link', { name: 'Open in the inventory' })).toHaveAttribute('href', '/inventory?instrument=fffs-2017-2');
   });
@@ -256,9 +256,9 @@ describe('InstrumentScreen', () => {
     renderIn(<InstrumentScreen instrumentId="in-1" />);
     await screen.findByText('Pay for third-party research only under the permitted models');
     const panel = document.querySelector('[data-obligations-panel]') as HTMLElement;
-    fireEvent.click(within(panel).getByRole('button', { name: 'Show outside our scope' }));
+    fireEvent.click(within(panel).getByRole('button', { name: 'Show all items' }));
     await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/obligations').at(-1)?.params).toMatchObject({ instrument: 'fffs-2017-2', footprint: 'all' }));
-    expect(within(panel).getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(panel).getByRole('button', { name: 'Show all items' })).toHaveAttribute('aria-pressed', 'true');
     expect(await within(panel).findByRole('link', { name: 'Open in the inventory' })).toHaveAttribute('href', '/inventory?instrument=fffs-2017-2&scope=all');
   });
 
@@ -287,7 +287,7 @@ describe('InstrumentScreen', () => {
     renderIn(<InstrumentScreen instrumentId="in-1" />);
     expect(await screen.findByText('No obligation from this instrument is in our scope.')).toBeVisible();
     expect(screen.queryByRole('link', { name: 'Open in the inventory' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Show outside our scope' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show all items' }));
     expect(await screen.findByText('This instrument has no obligation yet.')).toBeVisible();
   });
 

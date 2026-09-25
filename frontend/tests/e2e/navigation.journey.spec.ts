@@ -73,7 +73,7 @@ test.describe('navigation on a phone, 375 × 812', () => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.reader);
     const nav = mainNav(page);
-    await expect(nav.getByRole('link')).toHaveText(['Today', 'Watch', 'Inventory', 'Search']);
+    await expect(nav.getByRole('link')).toHaveText(['Today', 'Watch', 'Inventory', 'Ask']);
     await expect(nav.getByRole('link', { name: 'Today', exact: true })).toHaveAttribute('aria-current', 'page');
     await expect(nav.getByRole('button', { name: 'More' })).toBeVisible();
     await expect(rail(page)).toBeHidden();
@@ -88,7 +88,7 @@ test.describe('navigation on a phone, 375 × 812', () => {
     for (const [name, path, heading] of [
       ['Watch', '/watch', 'Watch'],
       ['Inventory', '/inventory', 'Inventory'],
-      ['Search', '/search', 'Search and ask'],
+      ['Ask', '/ask', 'Ask'],
     ] as const) {
       await mainNav(page).getByRole('link', { name, exact: true }).tap();
       await expect(page).toHaveURL(new RegExp(`${path}$`));
@@ -233,7 +233,7 @@ for (const viewport of [
       allowFreshContext(apiGuard);
       await signInAs(page, LOGINS.reader);
       const found = await labels(page);
-      expect(found.map((l) => l.text)).toEqual(['Today', 'Watch', 'Inventory', 'Search', 'More']);
+      expect(found.map((l) => l.text)).toEqual(['Today', 'Watch', 'Inventory', 'Ask', 'More']);
       for (const label of found) {
         expect(label.height, `${label.text} is one line`).toBeLessThanOrEqual(label.lineHeight + 0.5);
         expect(label.clipped, `${label.text} is not clipped`).toBe(false);
@@ -264,7 +264,7 @@ test.describe('navigation on a phone in landscape, 844 × 390', () => {
           };
         }),
       );
-    expect(cells.map((c) => c.text)).toEqual(['Today', 'Watch', 'Inventory', 'Search', 'More']);
+    expect(cells.map((c) => c.text)).toEqual(['Today', 'Watch', 'Inventory', 'Ask', 'More']);
     for (const cell of cells) {
       expect(cell.oneLine, `${cell.text} is one line`).toBe(true);
       expect(cell.beside, `${cell.text} sits beside its icon`).toBe(true);

@@ -593,12 +593,12 @@ test.describe('taxonomy journeys', () => {
 
       // The inventory, narrowed to the obligation's regime so a growing library never pages
       // it out of sight: absent by default while the rest reads, then marked once the Scope
-      // filter is set to "Show outside our scope".
+      // filter is set to "Show all items".
       await page.goto(`/inventory?regime=insurance&asOf=${INVENTORY_AS_OF}`);
       const outsideObligation = page.locator(`[data-obligation="${OUTSIDE_SCOPE_OBLIGATION}"]`);
       await expect(page.locator('[data-obligation]').first()).toBeVisible();
       await expect(outsideObligation).toHaveCount(0);
-      await page.getByRole('group', { name: 'Scope' }).getByRole('button', { name: 'Show outside our scope' }).click();
+      await page.getByRole('group', { name: 'Scope' }).getByRole('button', { name: 'Show all items' }).click();
       await expect(page).toHaveURL(/scope=all/);
       await expect(outsideObligation).toHaveAttribute('data-outside-footprint', '');
 
@@ -677,13 +677,13 @@ test.describe('taxonomy journeys', () => {
         await expect(adviceItem(page)).toHaveText(/^Advice Not in our scope$/);
 
         // J-6 on the inventory: the obligation the change hides is gone, the
-        // rest of the library still reads, and "Show outside our scope" brings
+        // rest of the library still reads, and "Show all items" brings
         // it back dashed with the term that put it there.
         await openInventory(page);
         await expect(adviceOnlyRow(page)).toHaveCount(0);
         await expect(page.locator('[data-obligation]').first()).toBeVisible();
 
-        await page.getByRole('group', { name: 'Scope' }).getByRole('button', { name: 'Show outside our scope' }).click();
+        await page.getByRole('group', { name: 'Scope' }).getByRole('button', { name: 'Show all items' }).click();
         await expect(adviceOnlyRow(page)).toHaveAttribute('data-outside-footprint', '');
         await expect(adviceOnlyRow(page).getByText('Outside our scope: Advice')).toBeVisible();
 
@@ -747,10 +747,10 @@ test.describe('taxonomy journeys', () => {
       await signInAs(page, LOGINS.complianceOfficer);
       await officerStartsClean(page);
 
-      // Absent from the inventory, and there, marked, under "Show outside our scope".
+      // Absent from the inventory, and there, marked, under "Show all items".
       const duty = await openStandardDuty(page);
       await expect(duty).toHaveCount(0);
-      await page.getByRole('button', { name: 'Show outside our scope' }).click();
+      await page.getByRole('button', { name: 'Show all items' }).click();
       await expect(duty).toHaveAttribute('data-outside-footprint', '');
 
       // The scope page reads the empty opt-in group as following nothing, never as unrestricted.
@@ -943,7 +943,7 @@ test.describe('regulatory scope, markets and standards', () => {
         await expect(page.locator(`[data-obligation="${UNION_OBLIGATION}"]`)).toBeVisible();
         await expect(page.locator(`[data-obligation="${COUNTRY_OBLIGATION}"]`)).toBeVisible();
         await expect(page.locator(`[data-obligation="${HOME_OBLIGATION}"]`)).toHaveCount(0);
-        await page.getByRole('button', { name: 'Show outside our scope' }).click();
+        await page.getByRole('button', { name: 'Show all items' }).click();
         await expect(page.locator(`[data-obligation="${HOME_OBLIGATION}"]`)).toHaveAttribute('data-outside-footprint', '');
       } finally {
         await restoreSecondBank(page, approver);
@@ -1031,8 +1031,8 @@ test.describe('regulatory scope, markets and standards', () => {
     await scope.getByRole('button', { name: 'Markets we watch' }).click();
     await expect(page).toHaveURL(/scope=watched/);
     await expect(scope.getByRole('button', { name: 'Markets we watch' })).toHaveAttribute('aria-pressed', 'true');
-    await expect(scope.getByRole('button', { name: 'In our scope' })).toHaveAttribute('aria-pressed', 'false');
-    await expect(scope.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(scope.getByRole('button', { name: 'My scope' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(scope.getByRole('button', { name: 'Show all items' })).toHaveAttribute('aria-pressed', 'false');
 
     // The Danish "Custody" duty is listed with its market as meta text, neither dashed nor
     // marked outside; no EU or Swedish duty is listed, because they are already in the

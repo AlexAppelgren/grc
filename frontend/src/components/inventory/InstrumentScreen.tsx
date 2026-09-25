@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { BackLink } from '@/components/admin/AdminGate';
-import { ScopeChips } from '@/components/inventory/InventoryFilters';
+import { ScopeControl } from '@/components/inventory/InventoryFilters';
 import { searchOf } from '@/components/inventory/InventoryScreen';
 import { Facts, type Fact } from '@/components/inventory/ObligationPanels';
 import { ObligationRow } from '@/components/inventory/ObligationRow';
@@ -141,7 +141,7 @@ function ObligationsPanel({ instrument }: { instrument: InstrumentDetail }) {
   return (
     <Panel title={t('inventory.instrument.obligationsTitle')} data-obligations-panel="">
       <div className="mb-3">
-        <ScopeChips value={scope} onChange={setScope} />
+        <ScopeControl value={scope} onChange={setScope} />
       </div>
       {obligations.isPending ? (
         <LoadingState rows={2} />

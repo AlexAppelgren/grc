@@ -37,15 +37,17 @@ function rows(page: Page) {
   return page.locator('[data-search-rows] > *');
 }
 
+/** Search lives in the inventory's search bar (D-9x); Enter runs it. */
 async function runSearch(page: Page, query: string): Promise<void> {
-  await page.goto('/search');
-  await page.getByRole('searchbox', { name: 'Search' }).fill(query);
-  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  if (!new URL(page.url()).pathname.startsWith('/inventory')) await page.goto('/inventory');
+  const box = page.getByRole('searchbox', { name: 'Search the inventory' });
+  await box.fill(query);
+  await box.press('Enter');
   // Settle before reading a row: either a result or the no-match state.
   await expect(rows(page).first().or(page.getByRole('heading', { name: 'No match in the inventory' })).first()).toBeVisible();
 }
 
-/** Ask the question from the Ask tab and wait for the answer to close, whichever it is. */
+/** Ask the question on the Ask page and wait for the answer to close, whichever it is. */
 async function askQuestion(page: Page, question: string): Promise<void> {
   await page.getByRole('searchbox', { name: 'Question' }).fill(question);
   await page.getByRole('button', { name: 'Ask', exact: true }).click();
@@ -109,22 +111,23 @@ test.describe('search journeys', () => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.reader);
 
-    // Each filter is read back from the URL before the next one is set: the
-    // filter row is controlled by the URL, and a second change fired before
-    // the first one lands would otherwise overwrite it.
-    await page.goto('/search');
-    await page.getByRole('combobox', { name: 'Jurisdiction' }).selectOption('se');
-    await expect(page).toHaveURL(/jurisdiction=se/);
-    await page.getByRole('combobox', { name: 'Duty type' }).selectOption('reporting');
+    // The filters are the inventory's own, set in its Filters sheet; each is read
+    // back from the URL before the next one is set: the sheet is controlled by the
+    // URL, and a second change fired before the first one lands would otherwise
+    // overwrite it.
+    await page.goto('/inventory');
+    await page.getByRole('button', { name: 'Filters', exact: true }).click();
+    const sheet = page.getByRole('dialog', { name: 'Filters' });
+    await sheet.getByRole('group', { name: 'Duty type' }).getByRole('button', { name: 'Reporting', exact: true }).click();
     await expect(page).toHaveURL(/dutyType=reporting/);
-    await page.getByLabel('As of').fill('2026-09-16');
+    await sheet.getByLabel('As of').fill('2026-09-16');
     await expect(page).toHaveURL(/asOf=2026-09-16/);
-    await page.getByRole('searchbox', { name: 'Search' }).fill('report');
-    await page.getByRole('button', { name: 'Search', exact: true }).click();
+    await sheet.getByRole('button', { name: 'Done', exact: true }).click();
+    await runSearch(page, 'report');
 
-    // Only the one record carrying both keys comes back, and it states how
-    // it matched; a renamed vocabulary label could never change this, since
-    // what travelled was the key.
+    // The search runs inside the filters: only the one reporting duty in our
+    // scope comes back, and it states how it matched; a renamed vocabulary label
+    // could never change this, since what travelled was the key.
     await expect(rows(page)).toHaveCount(1);
     const hit = rows(page).first();
     await expect(hit).toContainText('Report ISK standard income to Skatteverket every year');
@@ -137,7 +140,7 @@ test.describe('search journeys', () => {
     // no screen shows it to a reader.
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.reader);
-    await page.goto('/search?mode=ask');
+    await page.goto('/ask');
     await askQuestion(page, ANSWERED_QUESTION);
 
     // Labelled AI output, read as of today since no date was set.
@@ -158,7 +161,7 @@ test.describe('search journeys', () => {
   test("SRC-S5: A question without support returns \"no answer\"", async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.reader);
-    await page.goto('/search?mode=ask');
+    await page.goto('/ask');
     await askQuestion(page, UNSUPPORTED_QUESTION);
 
     // No answer, and nothing invented in its place: no statement, no source.
@@ -167,13 +170,11 @@ test.describe('search journeys', () => {
     await expect(page.locator('[data-ask-statement]')).toHaveCount(0);
     await expect(page.getByRole('list', { name: 'Sources' })).toHaveCount(0);
 
-    // "Search instead" runs the same words as a plain search, and the question never
+    // "Search the inventory" opens the inventory's search bar, and the question never
     // reaches the address bar.
-    await none.getByRole('button', { name: 'Search instead' }).click();
-    await expect(page).not.toHaveURL(/mode=ask/);
-    await expect(page.getByRole('tab', { name: 'Search' })).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByRole('searchbox', { name: 'Search' })).toHaveValue(UNSUPPORTED_QUESTION);
-    await expect(rows(page).first().or(page.getByRole('heading', { name: 'No match in the inventory' })).first()).toBeVisible();
+    await none.getByRole('button', { name: 'Search the inventory' }).click();
+    await expect(page).toHaveURL(/\/inventory$/);
+    await expect(page.getByRole('searchbox', { name: 'Search the inventory' })).toBeVisible();
     expect(page.url()).not.toContain('crypto');
   });
 
@@ -195,9 +196,9 @@ test.describe('search journeys', () => {
     await expect(rows(page).first()).toContainText('Make appropriateness warnings prominent');
     await expect(rows(page).first().getByText('Concept match')).toBeVisible();
 
-    // Ask, as of a day ahead of today and before the pending change takes effect.
-    await page.getByRole('tab', { name: 'Ask a question' }).click();
-    await expect(page).toHaveURL(/mode=ask/);
+    // Ask, on its own page, as of a day ahead of today and before the pending change takes effect.
+    await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Ask', exact: true }).click();
+    await expect(page).toHaveURL(/\/ask$/);
     const asOf = isoDay(10);
     await page.getByLabel('As of').fill(asOf);
     await expect(page).toHaveURL(new RegExp(`asOf=${asOf}`));

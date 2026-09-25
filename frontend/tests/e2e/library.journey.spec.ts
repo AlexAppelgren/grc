@@ -91,19 +91,19 @@ test.describe('library journeys', () => {
     // the scope as one filter of three values, the total and a way into that list.
     const obligations = page.locator('[data-obligations-panel]');
     const scope = obligations.getByRole('group', { name: 'Scope' });
-    await expect(scope.getByRole('button', { name: 'In our scope' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(scope.getByRole('button', { name: 'My scope' })).toHaveAttribute('aria-pressed', 'true');
     await expect(scope.getByRole('button', { name: 'Markets we watch' })).toHaveAttribute('aria-pressed', 'false');
-    await expect(scope.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(scope.getByRole('button', { name: 'Show all items' })).toHaveAttribute('aria-pressed', 'false');
     await expect(obligations.locator(`[data-obligation="${RESEARCH}"]`)).toBeVisible();
     await expect(obligations.locator('[data-obligations-total]')).toHaveText(/^\d+ obligations?$/);
     const inventory = obligations.getByRole('link', { name: 'Open in the inventory' });
     await expect(inventory).toHaveAttribute('href', '/inventory?instrument=fffs-2017-2');
 
-    // The inventory it opens is filtered by this instrument, and its picker
-    // says so rather than "All instruments".
+    // The inventory it opens is filtered by this instrument, and a chip beside
+    // the Filters button says so.
     await inventory.click();
     await expect(page.locator(`[data-obligation-rows] [data-obligation="${RESEARCH}"]`)).toBeVisible();
-    await expect(page.locator('[data-inventory-filters]').getByLabel('Instrument', { exact: true })).toHaveValue('fffs-2017-2');
+    await expect(page.locator('[data-inventory-filters]').getByRole('button', { name: 'Remove the Instrument filter, FFFS 2017:2' })).toBeVisible();
   });
 
   test("INV-S2: The provision tree holds verbatim text versions", async ({ page, apiGuard }) => {
@@ -292,7 +292,7 @@ test.describe('library journeys', () => {
 // PRD 0.3: a standard is an instrument of public facts with no provision tree
 // (INV-08). The one standard is seeded for E2E only (backend/apps/shared/e2e_seed.py,
 // E2E_STANDARD_INSTRUMENT and E2E_STANDARD_OBLIGATION) and no seeded bank follows it,
-// so its conformance duty is reached through "Show outside our scope". Its instrument
+// so its conformance duty is reached through "Show all items". Its instrument
 // carries only its regime, which tenant A holds, so the Instruments tab lists it.
 const STANDARD_INSTRUMENT = 'iso-iec-27001-2022';
 const STANDARD_OBLIGATION = 'iso-iec-27001-2022-conformance';
@@ -327,13 +327,13 @@ test.describe('standards in the library', () => {
     await expect(catalogue).toHaveAttribute('rel', /noopener/);
 
     // The one conformance duty, through the inventory's outside view: no seeded bank
-    // follows the standard, so it is absent until "Show outside our scope", where its
+    // follows the standard, so it is absent until "Show all items", where its
     // row reads "Standard" and never "Guidance".
     await page.goto(`/inventory?regime=ai_ict&asOf=${AS_OF}`);
     const duty = page.locator(`[data-obligation="${STANDARD_OBLIGATION}"]`);
     await expect(page.locator('[data-obligation-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
     await expect(duty).toHaveCount(0);
-    await page.getByRole('button', { name: 'Show outside our scope' }).click();
+    await page.getByRole('button', { name: 'Show all items' }).click();
     await expect(duty).toHaveAttribute('data-outside-footprint', '');
     await expect(duty.locator('[data-pill]').filter({ hasText: /^Standard$/ })).toHaveCount(1);
     await expect(duty.locator('[data-pill]').filter({ hasText: /^Guidance$/ })).toHaveCount(0);

@@ -152,7 +152,7 @@ test.describe('governance journeys', () => {
     const reason = `AUD-S4 misses the exemption ${Date.now().toString(36)}-${testInfo.retry}`;
 
     await signInAs(page, LOGINS.reader);
-    await page.goto('/search?mode=ask');
+    await page.goto('/ask');
     await page.getByRole('searchbox', { name: 'Question' }).fill('What does the appropriateness assessment require?');
     await page.getByRole('button', { name: 'Ask', exact: true }).click();
     const answer = page.locator('[data-ask-answer="done"]');

@@ -27,18 +27,17 @@ import { NETWORK_PROBLEM_CODE, problemFrom } from '@/shared/utils/problem';
 // The question is the bank's own words (D-07): it lives in component state
 // and the request alone, never in the URL, storage or the logger.
 
-export function AskPanel({ asOf, lang, onSearchInstead }: { asOf: string; lang: string; onSearchInstead: (question: string) => void }) {
+export function AskPanel({ asOf, onSearchInstead }: { asOf: string; onSearchInstead: () => void }) {
   const t = useT();
   const ctx = useFormatContext();
   const { state, ask } = useAsk();
   const [draft, setDraft] = useState('');
-  // The question the answer on screen is for, which "Search instead" carries over.
+  // The question the answer on screen is for, which Try again asks again.
   const [asked, setAsked] = useState('');
 
   const send = (question: string) => {
     const body: AskRequestBody = { question };
     if (asOf !== '') body.asOf = asOf;
-    if (lang !== '') body.lang = lang;
     setAsked(question);
     ask(body);
   };
@@ -66,7 +65,7 @@ export function AskPanel({ asOf, lang, onSearchInstead }: { asOf: string; lang: 
           {t('search.ask.action')}
         </Button>
       </form>
-      <AskResult state={state} onRetry={() => send(asked)} onSearchInstead={() => onSearchInstead(asked)} t={t} ctx={ctx} />
+      <AskResult state={state} onRetry={() => send(asked)} onSearchInstead={onSearchInstead} t={t} ctx={ctx} />
     </>
   );
 }

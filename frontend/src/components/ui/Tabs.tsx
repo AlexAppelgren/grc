@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import { cn } from '@/shared/utils/cn';
 
 // Prototype `.tabs`: a row of tabs that switch what the panel below shows
@@ -13,9 +15,9 @@ export interface TabDef {
   badge?: string;
 }
 
-export function Tabs({ tabs, current, onSelect }: { tabs: readonly TabDef[]; current: string; onSelect: (id: string) => void }) {
-  return (
-    <div role="tablist" className="mb-4 flex flex-wrap gap-1 border-b border-line">
+export function Tabs({ tabs, current, onSelect, end }: { tabs: readonly TabDef[]; current: string; onSelect: (id: string) => void; end?: ReactNode }) {
+  const list = (
+    <div role="tablist" className={cn('flex flex-wrap gap-1', end === undefined ? 'mb-4 border-b border-line' : 'max-lg:w-full max-lg:border-b max-lg:border-line')}>
       {tabs.map((tab) => {
         const selected = tab.id === current;
         return (
@@ -36,9 +38,18 @@ export function Tabs({ tabs, current, onSelect }: { tabs: readonly TabDef[]; cur
       })}
     </div>
   );
+  if (end === undefined) return list;
+  // What applies to every tab (the inventory's scope) sits at the end of the tab row,
+  // and under the tabs at full width below the rail's breakpoint (foundations.md).
+  return (
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-x-3 gap-y-3 lg:border-b lg:border-line">
+      {list}
+      <div className="max-lg:w-full lg:mb-1.5">{end}</div>
+    </div>
+  );
 }
 
-export function TabPanel({ id, children }: { id: string; children: React.ReactNode }) {
+export function TabPanel({ id, children }: { id: string; children: ReactNode }) {
   return (
     <div role="tabpanel" id={`panel-${id}`} aria-labelledby={`tab-${id}`}>
       {children}

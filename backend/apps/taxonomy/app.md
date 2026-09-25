@@ -300,7 +300,7 @@ And the database check constraint refuses the row on its own
 Given a regulatory scope that leaves a term out
 When a user opens the feed, the inventory, the roadmap and the briefing
 Then the records whose only term in that dimension is the one left out are absent from each
-When they choose "Show outside our scope" in the inventory's Scope filter
+When they choose "Show all items" in the inventory's Scope filter
 Then those records appear marked as outside our scope
 ```
 Reports are the note below.
@@ -504,7 +504,7 @@ And its case gets no urgency from the market and nobody is notified
 Given the dimension "Standards followed" of kind opt_in with the term "ISO/IEC 27001"
 And the obligation "ISO/IEC 27001:2022 conformance" carrying that term under an instrument whose regime is "AI and ICT"
 And tenant A's regulatory scope holds the regime "AI and ICT" and no standard
-Then the obligation is absent from tenant A's inventory and appears with "Show outside our scope"
+Then the obligation is absent from tenant A's inventory and appears with "Show all items"
 And the regulatory scope page shows "None followed" for the group
 When a compliance officer with footprint.request proposes adding "ISO/IEC 27001"
 Then the preview reveals the obligation, hides nothing and shows no narrowing warning

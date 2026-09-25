@@ -11,6 +11,7 @@ import { InstrumentRow } from './InstrumentRow';
 import { InventoryScreen, filtersFrom, isNarrowed, queryOf, searchOf } from './InventoryScreen';
 import { ObligationRow, factsOf, metaOf } from './ObligationRow';
 import type { Instrument, Obligation } from '@/features/library/types';
+import type { SearchHit } from '@/features/search/types';
 import { createT } from '@/shared/i18n';
 import { defaultFormatContext } from '@/shared/utils/format';
 
@@ -105,6 +106,46 @@ const fffs: Instrument = {
   sourceUrl: 'https://www.fi.se/en/published/regulations/2017/fffs-20172/',
 };
 
+const regimes = [
+  { dimension: { key: 'regime' }, key: 'securities', kind: null, label: 'Securities' },
+  { dimension: { key: 'regime' }, key: 'insurance', kind: null, label: 'Insurance' },
+];
+const services = [
+  { dimension: { key: 'service_type' }, key: 'advice', kind: null, label: 'Advice' },
+  { dimension: { key: 'service_type' }, key: 'custody', kind: null, label: 'Custody' },
+];
+/** The bank's regulatory scope: securities only; services restrict nothing, so every one is offered. */
+const footprint = {
+  dimensions: [
+    { dimension: { key: 'regime', kind: null, label: 'Regime' }, restrictsFootprint: true, terms: [{ key: 'securities', kind: null, label: 'Securities' }], allSelected: false },
+    { dimension: { key: 'service_type', kind: null, label: 'Service' }, restrictsFootprint: true, terms: [], allSelected: false },
+  ],
+  pendingRequest: null,
+  markets: [],
+};
+
+const obligationHit: SearchHit = {
+  type: 'obligation',
+  id: 'ob-1',
+  title: 'Assess appropriateness before non-advised trades',
+  snippet: 'Before providing a non-advised service, the institution warns when the appropriateness test fails.',
+  matchKind: 'both',
+  score: 0.9,
+  instrumentShortName: 'LVM',
+  binding: true,
+  validFrom: '2026-01-01',
+  validTo: null,
+  versionNo: 1,
+  urgency: null,
+};
+const provisionHit: SearchHit = { ...obligationHit, type: 'provision', id: 'prov-1', title: '9 kap. Protection of clients', matchKind: 'keyword', versionNo: null, validFrom: null };
+
+/** Opens the Filters sheet and answers the dialog. */
+async function openFilters() {
+  fireEvent.click(await screen.findByRole('button', { name: 'Filters' }));
+  return screen.findByRole('dialog', { name: 'Filters' });
+}
+
 /**
  * The server: /me for the format context, the taxonomy and vocabulary reads for the filters, and the page.
  * `outsidePage` answers the instrument reads that lift the footprint filter; by default the same page.
@@ -113,15 +154,21 @@ function serve(
   page: { items: Obligation[]; total: number } | 'error',
   instrumentPage: { items: Instrument[]; total: number } = { items: [fffs], total: 1 },
   outsidePage: { items: Instrument[]; total: number } = instrumentPage,
+  hits: SearchHit[] = [],
 ) {
   return installAdapter((sent) => {
+    if (sent.path === '/api/v1/search') return { status: 200, data: { items: hits, asOf: '2026-09-25' } };
+    if (sent.path === '/api/v1/tenant/footprint') return { status: 200, data: footprint };
     if (sent.path === '/api/v1/obligations') return page === 'error' ? { status: 500 } : { status: 200, data: page };
     if (sent.path === '/api/v1/instruments') {
       const outside = (sent.params as { footprint?: string } | null)?.footprint === 'all';
       return { status: 200, data: outside ? outsidePage : instrumentPage };
     }
     if (sent.path === '/api/v1/me') return { status: 200, data: { user: { id: 'u1', name: 'Sara', locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, permissions: [], enrolmentPending: false } };
-    if (sent.path === '/api/v1/taxonomy/terms') return { status: 200, data: { items: [{ dimension: { key: 'regime' }, key: 'securities', kind: null, label: 'Securities' }], total: 1 } };
+    if (sent.path === '/api/v1/taxonomy/terms') {
+      const items = (sent.params as { dimension?: string } | null)?.dimension === 'service_type' ? services : regimes;
+      return { status: 200, data: { items, total: items.length } };
+    }
     return { status: 200, data: [{ key: 'conduct', kind: null, label: 'Conduct', labels: { en: 'Conduct' }, usageNote: '', sortOrder: 1, active: true, isSystem: true, isDefault: true, usageCount: 2, extra: {} }] };
   });
 }
@@ -299,12 +346,12 @@ describe('InventoryScreen', () => {
     expect(screen.getByText('Could not load the inventory')).toBeVisible();
   });
 
-  it('offers to look outside the footprint when a filter matched nothing', async () => {
+  it('offers every item when a filter matched nothing', async () => {
     nav.search = 'service=advice';
     serve({ items: [], total: 0 });
     renderIn(<InventoryScreen />);
     expect(await screen.findByText('No obligations match')).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Show outside our scope' })).toHaveAttribute('href', '/inventory?service=advice&scope=all');
+    expect(screen.getByRole('link', { name: 'Show all items' })).toHaveAttribute('href', '/inventory?service=advice&scope=all');
   });
 
   it('drops the offer once the reader is already looking outside the footprint', async () => {
@@ -312,7 +359,7 @@ describe('InventoryScreen', () => {
     serve({ items: [], total: 0 });
     renderIn(<InventoryScreen />);
     expect(await screen.findByText('No obligations match')).toBeVisible();
-    expect(screen.queryByRole('link', { name: 'Show outside our scope' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Show all items' })).toBeNull();
   });
 
   it.each([['footprint.request'], ['footprint.approve']])('points a holder of %s at the regulatory scope when nothing is in it yet', async (permission) => {
@@ -339,20 +386,61 @@ describe('InventoryScreen', () => {
     expect(nav.replace).toHaveBeenCalledWith('/inventory');
   });
 
-  it('stores a filter as a key in the URL, never a label', async () => {
+  it('stores a filter chosen in the sheet as a key in the URL, never a label', async () => {
     serve({ items: [research], total: 1 });
     renderIn(<InventoryScreen />);
-    const regime = await screen.findByLabelText('Regime');
-    await waitFor(() => expect(within(regime).getByRole('option', { name: 'Securities' })).toBeDefined());
-    fireEvent.change(regime, { target: { value: 'securities' } });
+    const sheet = await openFilters();
+    fireEvent.click(await within(within(sheet).getByRole('group', { name: 'Regime' })).findByRole('button', { name: 'Securities' }));
     expect(nav.replace).toHaveBeenCalledWith('/inventory?regime=securities');
 
-    fireEvent.change(screen.getByLabelText('Duty type'), { target: { value: 'conduct' } });
+    fireEvent.click(await within(within(sheet).getByRole('group', { name: 'Duty type' })).findByRole('button', { name: 'Conduct' }));
     expect(nav.replace).toHaveBeenCalledWith('/inventory?dutyType=conduct');
-    fireEvent.change(screen.getByLabelText('As of'), { target: { value: '2026-09-16' } });
+    fireEvent.change(within(sheet).getByLabelText('As of'), { target: { value: '2026-09-16' } });
     expect(nav.replace).toHaveBeenCalledWith('/inventory?asOf=2026-09-16');
-    fireEvent.click(screen.getByRole('button', { name: 'Show outside our scope' }));
+    // Done only closes: every change above applied at once.
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Done' }));
+    expect(screen.queryByRole('dialog', { name: 'Filters' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Show all items' }));
     expect(nav.replace).toHaveBeenCalledWith('/inventory?scope=all');
+  });
+
+  it('clears a pressed value when it is pressed again, and everything with "Clear all"', async () => {
+    nav.search = 'regime=securities&asOf=2026-06-01';
+    serve({ items: [research], total: 1 });
+    renderIn(<InventoryScreen />);
+    const sheet = await openFilters();
+    const securities = await within(within(sheet).getByRole('group', { name: 'Regime' })).findByRole('button', { name: 'Securities' });
+    expect(securities).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(securities);
+    expect(nav.replace).toHaveBeenCalledWith('/inventory?asOf=2026-06-01');
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Clear all' }));
+    expect(nav.replace).toHaveBeenCalledWith('/inventory');
+  });
+
+  it('offers only the regimes inside the scope, and every one under "Show all items"', async () => {
+    serve({ items: [research], total: 1 });
+    const { unmount } = renderIn(<InventoryScreen />);
+    let regime = within(await openFilters()).getByRole('group', { name: 'Regime' });
+    await waitFor(() => expect(within(regime).getAllByRole('button').map((chip) => chip.textContent)).toEqual(['Securities']));
+    // Services restrict nothing in this scope, so every one is offered.
+    await waitFor(() => expect(within(screen.getByRole('group', { name: 'Service' })).getAllByRole('button').map((chip) => chip.textContent)).toEqual(['Advice', 'Custody']));
+    unmount();
+
+    nav.search = 'scope=all';
+    renderIn(<InventoryScreen />);
+    regime = within(await openFilters()).getByRole('group', { name: 'Regime' });
+    await waitFor(() => expect(within(regime).getAllByRole('button').map((chip) => chip.textContent)).toEqual(['Securities', 'Insurance']));
+  });
+
+  it('shows each set filter as a chip that removes it, then "Clear filters" for all of them', async () => {
+    nav.search = 'regime=securities&dutyType=conduct';
+    serve({ items: [research], total: 1 });
+    renderIn(<InventoryScreen />);
+    await waitFor(() => expect([...document.querySelectorAll('[data-set-filter]')].map((chip) => chip.textContent)).toEqual(['Securities', 'Conduct']));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove the Regime filter, Securities' }));
+    expect(nav.replace).toHaveBeenCalledWith('/inventory?dutyType=conduct');
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(nav.replace).toHaveBeenCalledWith('/inventory');
   });
 
   it('offers the scope as one filter of three values, exactly one pressed', async () => {
@@ -360,9 +448,9 @@ describe('InventoryScreen', () => {
     renderIn(<InventoryScreen />);
     const scope = await screen.findByRole('group', { name: 'Scope' });
     expect(within(scope).getAllByRole('button').map((chip) => [chip.textContent, chip.getAttribute('aria-pressed')])).toEqual([
-      ['In our scope', 'true'],
+      ['My scope', 'true'],
       ['Markets we watch', 'false'],
-      ['Show outside our scope', 'false'],
+      ['Show all items', 'false'],
     ]);
     fireEvent.click(within(scope).getByRole('button', { name: 'Markets we watch' }));
     expect(nav.replace).toHaveBeenCalledWith('/inventory?scope=watched');
@@ -385,46 +473,55 @@ describe('InventoryScreen', () => {
     renderIn(<InventoryScreen />);
     expect(await screen.findByText('The markets we watch add nothing here')).toBeVisible();
     expect(screen.queryByText('No obligations match')).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Show outside our scope' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Show all items' })).toBeNull();
   });
 
-  it('asks for everything with the reason once "Show outside our scope" is on', async () => {
+  it('asks for everything with the reason once "Show all items" is on', async () => {
     nav.search = 'scope=all';
     const sent = serve({ items: [adviceOnly], total: 1 });
     renderIn(<InventoryScreen />);
-    await screen.findByRole('link');
+    await waitFor(() => expect(document.querySelector('[data-obligation-rows] [data-outside-footprint]')).not.toBeNull());
     expect(sent.find((s) => s.path === '/api/v1/obligations')?.params).toMatchObject({ footprint: 'all' });
-    expect(screen.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Show all items' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('lists an instrument filter whose options carry the obligation count, read at the route maximum of 100', async () => {
+  it('reads the instrument options, each with its obligation count, at the route maximum of 100, only once the sheet opens', async () => {
     const sent = serve({ items: [research], total: 1 });
     renderIn(<InventoryScreen />);
-    const instrument = await screen.findByLabelText('Instrument');
-    await waitFor(() => expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toBeDefined());
-    // The picker's own read, and not the Instruments tab's page of 20, which only that tab shows.
+    await screen.findByText('1 obligation');
+    // Nothing is set and the sheet is shut, so a hundred instruments are not read.
+    expect(sent.filter((s) => s.path === '/api/v1/instruments')).toEqual([]);
+    const picker = within(within(await openFilters()).getByRole('group', { name: 'Instrument' }));
+    const option = await picker.findByRole('button', { name: 'FFFS 2017:2 (2)' });
+    expect(picker.getByRole('button', { name: 'All instruments' })).toHaveAttribute('aria-pressed', 'true');
     expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toEqual([expect.objectContaining({ limit: 100 })]);
-    fireEvent.change(instrument, { target: { value: 'fffs-2017-2' } });
+    fireEvent.click(option);
     expect(nav.replace).toHaveBeenCalledWith('/inventory?instrument=fffs-2017-2');
   });
 
-  it('keeps an instrument outside our scope as the picked one, by its name, never "All instruments", while it filters', async () => {
+  it('finds an instrument by its name inside the sheet', async () => {
+    const lvm: Instrument = { ...fffs, id: 'in-3', stableKey: 'sfs-2007-528', shortName: 'LVM' };
+    serve({ items: [research], total: 1 }, { items: [fffs, lvm], total: 2 });
+    renderIn(<InventoryScreen />);
+    const picker = within(within(await openFilters()).getByRole('group', { name: 'Instrument' }));
+    await picker.findByRole('button', { name: 'LVM (2)' });
+    fireEvent.change(picker.getByRole('searchbox', { name: 'Find an instrument' }), { target: { value: 'lv' } });
+    expect(picker.queryByRole('button', { name: 'FFFS 2017:2 (2)' })).toBeNull();
+    expect(picker.getByRole('button', { name: 'LVM (2)' })).toBeVisible();
+  });
+
+  it('names an instrument outside our scope in its chip while it filters, read from the instruments outside it', async () => {
     // An instrument outside our scope, reached from its own card: the list is
-    // filtered by it, so the picker says so rather than claiming no filter, and
-    // names it from the instruments outside our scope, read only for this.
+    // filtered by it, so the chip names it from the instruments outside our
+    // scope, read only for this.
     nav.search = 'instrument=lfd-2005-405';
     const lfd: Instrument = { ...fffs, id: 'in-2', stableKey: 'lfd-2005-405', shortName: 'LFD', inFootprint: false };
     const sent = serve({ items: [], total: 0 }, { items: [fffs], total: 1 }, { items: [fffs, lfd], total: 2 });
     renderIn(<InventoryScreen />);
-    const instrument = (await screen.findByLabelText('Instrument')) as HTMLSelectElement;
-    await waitFor(() => expect(within(instrument).getByRole('option', { name: 'LFD' })).toHaveProperty('selected', true));
-    expect(instrument.value).toBe('lfd-2005-405');
-    expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toBeDefined();
-    expect(within(instrument).queryByRole('option', { name: 'lfd-2005-405' })).toBeNull();
+    expect(await screen.findByRole('button', { name: 'Remove the Instrument filter, LFD' })).toBeVisible();
     expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toContainEqual(expect.objectContaining({ footprint: 'all', limit: 100 }));
     expect(sent.find((s) => s.path === '/api/v1/obligations')?.params).toMatchObject({ instrument: 'lfd-2005-405' });
-    // Choosing "All instruments" clears it like any other filter.
-    fireEvent.change(instrument, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Remove the Instrument filter, LFD' }));
     expect(nav.replace).toHaveBeenCalledWith('/inventory');
   });
 
@@ -432,22 +529,76 @@ describe('InventoryScreen', () => {
     nav.search = 'instrument=sfs-1999-999';
     const sent = serve({ items: [], total: 0 });
     renderIn(<InventoryScreen />);
-    const instrument = (await screen.findByLabelText('Instrument')) as HTMLSelectElement;
     // Neither the options in our scope nor the ones outside it name this key.
     await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toContainEqual(expect.objectContaining({ footprint: 'all' })));
-    await waitFor(() => expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toBeDefined());
-    expect(instrument.value).toBe('sfs-1999-999');
-    expect(within(instrument).getByRole('option', { name: 'sfs-1999-999' })).toHaveProperty('selected', true);
+    expect(await screen.findByRole('button', { name: 'Remove the Instrument filter, sfs-1999-999' })).toBeVisible();
   });
 
   it('asks for the instruments outside our scope only when the picked one is not an option', async () => {
     nav.search = 'instrument=fffs-2017-2';
     const sent = serve({ items: [research], total: 1 });
     renderIn(<InventoryScreen />);
-    const instrument = (await screen.findByLabelText('Instrument')) as HTMLSelectElement;
-    await waitFor(() => expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toHaveProperty('selected', true));
+    expect(await screen.findByRole('button', { name: 'Remove the Instrument filter, FFFS 2017:2' })).toBeVisible();
     await screen.findByText('1 obligation');
     expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).not.toContainEqual(expect.objectContaining({ footprint: 'all' }));
+  });
+
+  it('searches inside the scope and every filter that is set, over obligations and provisions, and Clear returns the list', async () => {
+    nav.search = 'instrument=fffs-2017-2&regime=securities&dutyType=conduct&asOf=2026-06-01&scope=watched';
+    const sent = serve({ items: [research], total: 1 }, undefined, undefined, [obligationHit, provisionHit]);
+    renderIn(<InventoryScreen />, ['library.read', 'search.use']);
+    fireEvent.change(await screen.findByRole('searchbox', { name: 'Search the inventory' }), { target: { value: ' appropriateness ' } });
+    fireEvent.submit(screen.getByRole('search'));
+    expect(await screen.findByText('2 results')).toBeVisible();
+    expect(sent.find((s) => s.path === '/api/v1/search')?.body).toEqual({
+      q: 'appropriateness',
+      limit: 20,
+      types: ['obligation', 'provision'],
+      asOf: '2026-06-01',
+      filters: { footprint: 'watched', instrument: 'fffs-2017-2', term: ['regime:securities'], dutyType: 'conduct' },
+    });
+    const rows = document.querySelector('[data-search-rows]') as HTMLElement;
+    expect(within(rows).getByRole('link')).toHaveAttribute('href', '/inventory/obligations/ob-1');
+    expect(rows.querySelector('[data-hit-type="provision"]')).toHaveTextContent('9 kap. Protection of clients');
+    expect(within(rows).getAllByText('appropriateness')[0]?.tagName).toBe('MARK');
+    // The words typed are the bank's own: they never reach the address bar.
+    expect(nav.replace).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear the search' }));
+    expect(await screen.findByRole('link', { name: /Pay for third-party research/ })).toBeVisible();
+    expect(document.querySelector('[data-search-rows]')).toBeNull();
+  });
+
+  it('says a search matched nothing and offers every item', async () => {
+    serve({ items: [research], total: 1 });
+    renderIn(<InventoryScreen />, ['library.read', 'search.use']);
+    fireEvent.change(await screen.findByRole('searchbox', { name: 'Search the inventory' }), { target: { value: 'crypto custody' } });
+    fireEvent.submit(screen.getByRole('search'));
+    expect(await screen.findByText('No match in the inventory')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Show all items' })).toHaveAttribute('href', '/inventory?scope=all');
+  });
+
+  it('shows the obligations search only to a reader who may search, and the instruments search to every reader', async () => {
+    serve({ items: [research], total: 1 });
+    const { unmount } = renderIn(<InventoryScreen />, ['library.read']);
+    await screen.findByText('1 obligation');
+    expect(screen.queryByRole('searchbox', { name: 'Search the inventory' })).toBeNull();
+    unmount();
+
+    nav.search = 'tab=instruments';
+    renderIn(<InventoryScreen />, ['library.read']);
+    expect(await screen.findByRole('searchbox', { name: 'Search the inventory' })).toBeVisible();
+  });
+
+  it('finds instruments by reference or name on the Instruments tab', async () => {
+    nav.search = 'tab=instruments';
+    const sent = serve({ items: [], total: 0 });
+    renderIn(<InventoryScreen />);
+    const box = await screen.findByRole('searchbox', { name: 'Search the inventory' });
+    expect(box).toHaveAttribute('placeholder', 'Find an instrument by reference or name');
+    fireEvent.change(box, { target: { value: 'FFFS' } });
+    fireEvent.submit(screen.getByRole('search'));
+    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toContainEqual(expect.objectContaining({ q: 'FFFS' })));
   });
 
   it('switches to the Instruments tab, carrying the tab and the filters in the URL', async () => {
@@ -469,15 +620,18 @@ describe('InventoryScreen', () => {
     expect(row).toHaveAttribute('href', '/inventory/instruments/in-1');
   });
 
-  it('narrows the Instruments tab by regime, and shows outside the footprint on request', async () => {
+  it('narrows the Instruments tab by regime from its sheet, and shows every item on request', async () => {
     nav.search = 'tab=instruments';
     const sent = serve({ items: [], total: 0 }, { items: [], total: 0 });
     renderIn(<InventoryScreen />);
     await screen.findByText('No instruments match');
     expect(sent.find((s) => s.path === '/api/v1/instruments')?.params).not.toHaveProperty('footprint');
-    fireEvent.change(screen.getByLabelText('Regime'), { target: { value: 'securities' } });
+    const sheet = await openFilters();
+    expect(within(sheet).queryByRole('group', { name: 'Duty type' })).toBeNull();
+    fireEvent.click(await within(within(sheet).getByRole('group', { name: 'Regime' })).findByRole('button', { name: 'Securities' }));
     expect(nav.replace).toHaveBeenCalledWith('/inventory?tab=instruments&regime=securities');
-    fireEvent.click(screen.getByRole('button', { name: 'Show outside our scope' }));
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Close filters' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show all items' }));
     expect(nav.replace).toHaveBeenCalledWith('/inventory?tab=instruments&scope=all');
   });
 
@@ -487,16 +641,16 @@ describe('InventoryScreen', () => {
     renderIn(<InventoryScreen />);
     expect(await screen.findByText('The markets we watch add nothing here')).toBeVisible();
     expect(sent.find((s) => s.path === '/api/v1/instruments')?.params).toMatchObject({ footprint: 'watched' });
-    expect(screen.queryByRole('link', { name: 'Show outside our scope' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Show all items' })).toBeNull();
   });
 
-  it('asks the Instruments tab for everything once "Show outside our scope" is on', async () => {
+  it('asks the Instruments tab for everything once "Show all items" is on', async () => {
     nav.search = 'tab=instruments&scope=all';
     const sent = serve({ items: [], total: 0 }, { items: [{ ...fffs, inFootprint: false }], total: 1 });
     renderIn(<InventoryScreen />);
     await waitFor(() => expect(document.querySelector('[data-instrument-rows]')).not.toBeNull());
     expect(sent.find((s) => s.path === '/api/v1/instruments')?.params).toMatchObject({ footprint: 'all' });
-    expect(screen.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Show all items' })).toHaveAttribute('aria-pressed', 'true');
     expect(document.querySelector('[data-instrument-rows] [data-outside-footprint]')).not.toBeNull();
   });
 });
