@@ -1466,3 +1466,17 @@ Built on these defaults; each stays yours to overrule.
 - [ ] Default taken: a key sent with no expiry lives `AGENT_ACCESS_KEY_MAX_DAYS` (90); a
       later one is refused (`expiry_too_late`). Revoking an entry twice answers 409
       `invalid_transition`; revoking one key twice is a safe retry.
+
+## acc-scoped-reads: what a bank's own agent reads in the library, answered by default (2026-09-25, ACC-02, ACC-04, ACC-07)
+
+- [ ] Default taken: only an agent access credential is narrowed. A bank's own API key bound
+      to no entry (the integration keys of ID-10) reads the library, the overlay and the
+      bank's own private records as it did before. Say if those keys should be confined too.
+- [ ] Default taken: the bank's own tags on an obligation travel with the register overlay:
+      an agent reads them only while tenant reach is on for the bank and the entry, and
+      never on an obligation under a standard, like the overlay itself.
+- [ ] Default taken: a personal access token that names no entry is confined to the bank's
+      footprint and shared records, and never reads the overlay (reach needs an entry).
+- [ ] Default taken: `GET /obligations/{obligationId}` reads a stable key in the id's place,
+      so the MCP server's `get_obligation` needs no path of its own; a slug that is not a
+      UUID now answers 404 rather than 422.

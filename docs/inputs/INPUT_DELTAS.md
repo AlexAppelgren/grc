@@ -973,6 +973,27 @@ Chunk 8 (the register overlay on the inventory, c8-inventory-overlay), 2026-09-2
   bank has no row for matches nothing, as `dutyType` does; a caller that belongs to no bank
   sending one answers 422 `unknown_filter`, as `tenantTag` does.
 
+acc-scoped-reads (ACC-02, ACC-04, ACC-05, ACC-07), 2026-09-25:
+
+- `GET /obligations/{obligationId}` (`getObligation`) takes the obligation's id or its
+  stable key in the one path segment, because AGENT_ACCESS.md section 6 has an agent's
+  `get_obligation` read `GET /obligations/{stableKey}` and a second path for the same card
+  would be a second read path. A value written as a UUID is always the id; anything else,
+  letters, digits, hyphens and underscores up to 120 characters, is the key. A slug that is
+  no UUID now answers 404 where it answered 422 as a malformed id.
+- `POST /search` (`search`) takes `ApiKeyAuth` beside the session: a bank's key holding
+  `search:read` searches, and an agent access credential's search is narrowed to its
+  entry's scope. The designed contract has it session-only; the body and the answer are
+  unchanged.
+- Every library read (`listObligations`, `getObligation`, `getObligationDiff`,
+  `getRecordSources`, `listInstruments`, `getInstrument`, `listInstrumentProvisions`,
+  `getProvisionDiff`), `search` and `listUpcoming` confine an agent access credential to
+  shared records inside the footprint and its entry's scope; a record beyond them answers
+  the 404 of a missing one. For such a credential `footprint` all or watched, and
+  `inFootprint` false on search, answer 422 `unknown_filter`, and an overlay or `tenantTag`
+  filter answers 403 `tenant_reach_off` unless tenant reach is on for the bank and the
+  entry. No schema changes.
+
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
 **`change_case` (`c5-contract-models-cases`).** Built with R1 columns only:
