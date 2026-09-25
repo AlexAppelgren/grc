@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Screen card: inventory (/inventory)</title>
+<script>
+/* Card only: ?theme=light|dark fixes the theme, ?frame=1 hides the card bar
+   (the 375 px frames load this same file with both). Not part of the screen. */
+(function(){var q=new URLSearchParams(location.search),t=q.get('theme');
+if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);
+if(q.has('frame'))document.documentElement.classList.add('framed');})();
+</script>
 <style>
 /* Serves INV-01, INV-03, INV-04, INV-06, FP-03, WAT-04 counts (chunk 3). Cut from
    design/prototype/index.html, vInventory(). Rows keep the fixed slot order of
@@ -13,7 +20,12 @@
    (D-75). Applicability and compliance status are the register overlay
    (chunk 8); in chunk 3 those slots are empty. Added where the prototype was
    silent: the Instruments tab, "Show outside our scope" (FP-03), an "as of" date,
-   and the library-updates link. */
+   and the library-updates link. Chunk 10 adds bulk tagging (VOC-08, VOC-S12),
+   numbered blocks 1 to 12 below the chunk 3 states: row checkboxes and a
+   select-all for the page, a Tag control for a holder of vocab.manage, the
+   preview of POST /taggings/preview (would gain, already carry, skipped), the
+   commit of POST /taggings/batch with its result, the cap refusal, the tenant
+   tags on each row and the tenant-tag filter. No new pill slot, no new tone. */
 :root{
   --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;--sand-3:#e7ddcb;
   --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
@@ -69,7 +81,7 @@ p{margin:0 0 .75rem}
 .who{margin:18px 4px 0;padding:12px;border:1px solid rgba(255,255,255,.25);border-radius:12px;font-size:.85rem;color:rgba(255,255,255,.75)}
 .who b{display:block;color:#fff;font-weight:600}
 
-main{padding:32px 36px 96px;max-width:1100px;width:100%}
+main{padding:32px 36px 96px;max-width:1100px;width:100%;min-width:0}
 .head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
 .head p{color:var(--muted);margin:6px 0 0;max-width:70ch}
 .back{background:none;border:0;color:var(--text);padding:0;margin-bottom:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px}
@@ -224,6 +236,22 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
 .toast{display:inline-block;background:#0a0b0b;color:#fff;padding:12px 18px;border-radius:999px;font-size:.92rem;border:1px solid rgba(255,255,255,.2)}
 .note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
 .tabbar{display:none}
+/* Chunk 10, bulk tagging: a pickable row is a grid with its checkbox; the
+   title stays the link, so no control sits inside a link. */
+.row.pick{display:grid;grid-template-columns:28px minmax(0,1fr);gap:0 10px;align-items:start}
+.row.pick>input,.selall input{width:20px;height:20px;margin:3px 0 0;accent-color:var(--brand)}
+.row.pick h3 a{text-decoration:none}.row.pick h3 a:hover{text-decoration:underline}
+.row.pick.on{border-color:var(--text);background:var(--sand)}
+.selall{display:flex;gap:10px;align-items:center;font-weight:600;font-size:.92rem;margin:0 0 10px 18px}
+.selbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--text);border-radius:16px;padding:10px 14px;margin-bottom:12px}
+.selbar .bar{margin-top:0}
+.counts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 14px}
+.counts .stat b{font-size:1.75rem}
+/* Card only: the theme links and the 375 px frames. */
+.cardbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:8px 12px;border:1px dashed var(--line-strong);border-radius:12px;color:var(--muted);font-size:.85rem;margin-bottom:20px}
+.framed .cardbar,.framed .note{display:none}
+.frames{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 24px}
+.frames iframe{width:377px;height:760px;border:1px solid var(--line-strong);border-radius:12px;background:var(--bg)}
 @media (max-width:820px){
   .app{grid-template-columns:1fr}.side{display:none}
   .mbrand{display:block;margin:0 0 12px}.mbrand .logo{width:150px}
@@ -239,6 +267,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
   .barwrap{flex-direction:column;align-items:flex-end;gap:6px}.barwrap .bar{align-self:stretch}
   .head>.btn{margin-left:auto}
   .g4{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}
+  .counts{grid-template-columns:1fr}.selbar{position:sticky;bottom:72px;z-index:5}
   .kv{grid-template-columns:1fr;gap:2px 0}.kv dd{margin-bottom:10px}
   .lagrum{grid-template-columns:1fr}.lagrum .margin{display:flex;gap:10px;align-items:baseline;text-align:left;padding:10px 16px}
   .lagrum .margin b{font-size:1.4rem}.lagrum .margin small{margin:0}.lagrum .body{padding:16px}
@@ -260,6 +289,8 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="who">Signed in as<b>Sara Lindqvist</b>Compliance officer</div>
   </aside>
   <main id="main" tabindex="-1">
+    <div class="cardbar"><span>Card view:</span><a href="?theme=light">Light</a><a href="?theme=dark">Dark</a><a href="?">Follow the system</a><button class="btn ghost small" type="button" id="phones" aria-expanded="false">Show both themes at 375 px</button></div>
+    <div class="frames" id="frames" hidden></div>
     <div class="mbrand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
 <div class="head"><div><h1>Inventory</h1><p>15 obligations across 12 instruments</p></div><a class="btn ghost" href="#">4 library updates</a></div>
     <div class="states">
@@ -305,6 +336,102 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="rows" aria-busy="true" style="margin-top:10px"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the inventory</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     <div class="restricted" role="alert"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p style="font-size:.85rem">Needs library read</p></div>
+
+    <!-- Bulk tagging (chunk 10, VOC-08, VOC-S12). Blocks 1 to 12. Tenant tags are outlined information pills, after the meta text; they are not a slot of the top line. -->
+    <h2 class="k">1 · Tenant tags on each row, and the tenant-tag filter, seen by every role</h2>
+    <div class="filters">
+      <select aria-label="Instrument"><option>All instruments</option></select>
+      <select aria-label="Our tags"><option>Any of our tags</option><option>Custody (4)</option><option>Onboarding (2)</option><option>Priority (1)</option></select>
+      <select aria-label="Scope"><option>In our scope</option></select>
+    </div>
+    <div class="rows">
+      <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill positive">Applies</span><span class="pill">Not assessed</span><span class="pill notice">1 open change</span></div><h3>Pay for third-party research only under the permitted models</h3><div class="meta"><span class="mono">Third-party payments</span><span>Advice, Portfolio management</span><span>Johan Berg</span><span class="pill outlined">Custody</span><span class="pill outlined">Priority</span></div></a>
+      <a class="row" href="#"><div class="meta"><span class="pill brand">LVM</span><span class="pill positive">Applies</span><span class="pill positive">Compliant</span></div><h3>Assess appropriateness before non-advised trades in complex instruments</h3><div class="meta"><span class="mono">9 kap.</span><span>Non-advised, Execution only</span><span>Johan Berg</span></div></a>
+    </div>
+
+    <h2 class="k">2 · The filter set to one of our tags ("Custody")</h2>
+    <div class="filters"><select aria-label="Our tags"><option>Custody (4)</option></select><button class="btn ghost small">Clear our tags</button></div>
+    <div class="rows">
+      <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill positive">Applies</span><span class="pill warning">Partly compliant</span></div><h3>Disclose all costs and charges before and after the service</h3><div class="meta"><span class="mono">Costs and charges</span><span>All services</span><span>Sara Lindqvist</span><span class="pill outlined">Custody</span></div></a>
+    </div>
+    <div class="empty" style="margin-top:10px"><h2>No obligations carry this tag</h2><p>Pick another of our tags, or clear the filter.</p><a href="#">Clear our tags</a></div>
+
+    <h2 class="k">3 · Selecting, seen by a holder of vocab.manage: nothing selected yet</h2>
+    <label class="selall"><input type="checkbox"> Select all 20 on this page</label>
+    <div class="rows">
+      <div class="row pick"><input type="checkbox" aria-label="Select Pay for third-party research only under the permitted models"><div><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill positive">Applies</span><span class="pill">Not assessed</span></div><h3><a href="#">Pay for third-party research only under the permitted models</a></h3><div class="meta"><span class="mono">Third-party payments</span><span>Johan Berg</span><span class="pill outlined">Custody</span></div></div></div>
+      <div class="row pick"><input type="checkbox" aria-label="Select Assess appropriateness before non-advised trades in complex instruments"><div><div class="meta"><span class="pill brand">LVM</span><span class="pill positive">Applies</span><span class="pill positive">Compliant</span></div><h3><a href="#">Assess appropriateness before non-advised trades in complex instruments</a></h3><div class="meta"><span class="mono">9 kap.</span><span>Johan Berg</span></div></div></div>
+    </div>
+
+    <h2 class="k">4 · Six selected: the selection bar with Tag</h2>
+    <div class="selbar" role="region" aria-label="Selection"><b>6 selected</b><div class="bar"><button class="btn ghost small">Clear selection</button><button class="btn small">Tag</button></div></div>
+    <label class="selall"><input type="checkbox" data-mixed> Select all 20 on this page</label>
+    <div class="rows">
+      <div class="row pick on"><input type="checkbox" checked aria-label="Select Pay for third-party research only under the permitted models"><div><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill positive">Applies</span><span class="pill">Not assessed</span></div><h3><a href="#">Pay for third-party research only under the permitted models</a></h3><div class="meta"><span class="mono">Third-party payments</span><span>Johan Berg</span><span class="pill outlined">Custody</span></div></div></div>
+      <div class="row pick on"><input type="checkbox" checked aria-label="Select Make appropriateness warnings prominent and do not encourage clients to ignore them"><div><div class="meta"><span class="pill brand">ESMA guidelines</span><span class="pill">Guidance</span><span class="pill positive">Applies</span><span class="pill negative">Gap</span></div><h3><a href="#">Make appropriateness warnings prominent and do not encourage clients to ignore them</a></h3><div class="meta"><span class="mono">Guideline on warnings</span><span>Johan Berg</span></div></div></div>
+      <div class="row pick"><input type="checkbox" aria-label="Select Apply safeguards to solely automated decisions with significant effects"><div><div class="meta"><span class="pill brand">GDPR</span><span class="pill">Not assessed</span></div><h3><a href="#">Apply safeguards to solely automated decisions with significant effects</a></h3><div class="meta"><span class="mono">Article 22</span><span>Sara Lindqvist</span></div></div></div>
+    </div>
+    <p class="meta" style="display:block;margin-top:8px">The selection holds while a filter changes on this page and clears when the page changes, so Tag only ever acts on rows in view.</p>
+
+    <h2 class="k">5 · Tag: choose the tag (the picker of picker-create-or-suggest.html)</h2>
+    <div class="modal"><form class="box" aria-labelledby="bt1"><h2 id="bt1">Tag 6 obligations</h2>
+      <div class="field"><label for="btp">Tag</label>
+        <div class="combo"><input id="btp" role="combobox" aria-expanded="true" aria-controls="btm" value="cust" autocomplete="off">
+          <div class="menu" id="btm" role="listbox"><button type="button" role="option" aria-selected="true"><span class="pill outlined">Custody</span> <small>Used by 4 obligations</small></button><button type="button" role="option">Create "cust"<small>Adds it to Tenant tags and selects it</small></button></div></div>
+        <span class="hint">Nothing changes until you have seen what it would do.</span></div>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Preview</button></div></form></div>
+
+    <h2 class="k">6 · Preview: what tagging would do, nothing written yet</h2>
+    <div class="modal"><div class="box" role="dialog" aria-labelledby="bt2"><h2 id="bt2">Add "Custody" to 6 obligations?</h2>
+      <div class="counts"><div class="stat"><b>4</b><span>Would gain the tag</span></div><div class="stat"><b>2</b><span>Already carry it</span></div><div class="stat"><b>0</b><span>Skipped</span></div></div>
+      <div class="log">
+        <div>Make appropriateness warnings prominent and do not encourage clients to ignore them<span class="meta" style="display:flex">Would gain the tag</span></div>
+        <div>Assess appropriateness before non-advised trades in complex instruments<span class="meta" style="display:flex">Would gain the tag</span></div>
+        <div>Apply safeguards to solely automated decisions with significant effects<span class="meta" style="display:flex">Would gain the tag</span></div>
+        <div>Establish demands and needs and assess suitability for insurance-based investment products<span class="meta" style="display:flex">Would gain the tag</span></div>
+        <div>Pay for third-party research only under the permitted models<span class="meta" style="display:flex"><span class="pill outlined">Custody</span>Already carries it</span></div>
+        <div>Disclose all costs and charges before and after the service<span class="meta" style="display:flex"><span class="pill outlined">Custody</span>Already carries it</span></div>
+      </div>
+      <p class="meta" style="display:block;margin-top:10px">It is stored in your name and kept in the audit log as one entry.</p>
+      <div class="bar"><button class="btn ghost" type="button">Back</button><button class="btn" type="button">Tag 4 obligations</button></div></div></div>
+
+    <h2 class="k">7 · Preview with rows skipped (counted, never named)</h2>
+    <div class="modal"><div class="box" role="dialog" aria-labelledby="bt3"><h2 id="bt3">Add "Custody" to 6 obligations?</h2>
+      <div class="counts"><div class="stat"><b>3</b><span>Would gain the tag</span></div><div class="stat"><b>2</b><span>Already carry it</span></div><div class="stat"><b>1</b><span>Skipped</span></div></div>
+      <p class="meta" style="display:block">1 obligation is left out: you cannot read it any more, or it cannot be tagged.</p>
+      <div class="bar"><button class="btn ghost" type="button">Back</button><button class="btn" type="button">Tag 3 obligations</button></div></div></div>
+    <div class="modal"><div class="box" role="dialog" aria-labelledby="bt4"><h2 id="bt4">Nothing to add</h2>
+      <div class="counts"><div class="stat"><b>0</b><span>Would gain the tag</span></div><div class="stat"><b>6</b><span>Already carry it</span></div><div class="stat"><b>0</b><span>Skipped</span></div></div>
+      <p class="meta" style="display:block">All 6 already carry "Custody".</p>
+      <div class="bar"><button class="btn" type="button">Close</button></div></div></div>
+
+    <h2 class="k">8 · Committed: the result, the selection cleared, the tag on each row</h2>
+    <p class="ok" role="status">"Custody" added to 4 obligations. 2 already carried it.</p>
+    <div class="rows" style="margin-top:10px">
+      <a class="row" href="#"><div class="meta"><span class="pill brand">ESMA guidelines</span><span class="pill">Guidance</span><span class="pill positive">Applies</span><span class="pill negative">Gap</span></div><h3>Make appropriateness warnings prominent and do not encourage clients to ignore them</h3><div class="meta"><span class="mono">Guideline on warnings</span><span>Johan Berg</span><span class="pill outlined">Custody</span></div></a>
+    </div>
+
+    <h2 class="k">9 · Too many at once: refused before any call, and the server's answer (422 too_many_records)</h2>
+    <div class="selbar" role="region" aria-label="Selection"><b>100 selected</b><div class="bar"><button class="btn ghost small">Clear selection</button><button class="btn small" disabled aria-describedby="capm">Tag</button></div></div>
+    <p class="err" id="capm">You can tag at most 50 obligations at a time. Clear some rows first.</p>
+    <div class="modal"><div class="box" role="dialog" aria-labelledby="bt5"><h2 id="bt5">Tag 60 obligations</h2>
+      <div class="notice bad" role="alert">Too many at once. You can tag at most 50 obligations at a time.</div>
+      <div class="bar"><button class="btn" type="button">Back to the list</button></div></div></div>
+
+    <h2 class="k">10 · The other answers, rendered above the buttons</h2>
+    <div class="notice bad" role="alert">"Custody" was retired while you were choosing. Pick another tag.</div>
+    <div class="notice bad" role="alert">Your roles no longer include managing vocabularies. Nothing was tagged.</div>
+    <div class="notice bad" role="alert">Could not tag the obligations. Nothing was changed. <div class="bar left"><button class="btn ghost small" type="button">Try again</button></div></div>
+    <div class="modal"><div class="box" aria-busy="true"><h2>Add "Custody" to 6 obligations?</h2><div class="counts"><div class="skeleton" style="height:72px"></div><div class="skeleton" style="height:72px"></div><div class="skeleton" style="height:72px"></div></div></div></div>
+
+    <h2 class="k">11 · Read only: a member without vocab.manage sees the tags and the filter, no checkboxes and no Tag</h2>
+    <div class="rows">
+      <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill positive">Applies</span><span class="pill">Not assessed</span></div><h3>Pay for third-party research only under the permitted models</h3><div class="meta"><span class="mono">Third-party payments</span><span>Johan Berg</span><span class="pill outlined">Custody</span><span class="pill outlined">Priority</span></div></a>
+    </div>
+
+    <h2 class="k">12 · The bank has no tags of its own yet</h2>
+    <div class="filters"><select aria-label="Our tags" disabled><option>No tags of our own yet</option></select></div>
+    <p class="meta" style="display:block">A holder of vocab.manage creates the first one from Tag, or under Admin, Vocabularies.</p>
     </div>
     <p class="note">Inventory card. Filters come from vocabularies (instrument, regime, service, duty type) and store keys. Rows outside our scope render dashed with the reason in the meta, only when "Show outside our scope" is on. The instrument pill is brand, Guidance is information from the binding kind, applicability and compliance status take their tone from the ordinal, "N open changes" is a computed notice pill; the API sends facts, never a phrase. "As of" re-reads every row's version. Every role reads this screen; nothing on it writes.
     Scope is one filter with one value, not a pair of toggles, so no contradictory pair can be
@@ -319,9 +446,31 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     list. Catalog keys, added by f03-T37: library.scope.label "Scope", library.scope.in "In our
     scope", library.scope.watched "Markets we watch", library.scope.all "Show outside our scope",
     library.watchedMarket "Market we watch: {jurisdiction}", library.empty.watched for the empty
-    state. Instrument and obligation titles here are sample data.</p>
+    state. Instrument and obligation titles here are sample data.
+    Bulk tagging (chunk 10, blocks 1 to 12). Pill tones on these blocks: instrument brand;
+    "Guidance" information; applicability "Applies" positive and "Not assessed" information;
+    compliance "Compliant" positive, "Partly compliant" warning, "Gap" negative; "N open changes"
+    notice; tenant tags an outlined information pill, placed after the meta text so the slot
+    order of the top line does not change. No warning or negative pill says what a batch did:
+    the preview counts are stat tiles and the answers are notices. Only a holder of vocab.manage
+    sees the checkboxes, the select-all and Tag; every role sees the tenant tags and the "Our
+    tags" filter, which sends tenantTag keys. Tag opens the picker, then the preview
+    (POST /taggings/preview) lists each selected obligation with whether it would gain the tag
+    or already carries it; a skipped row is counted and never named. The commit
+    (POST /taggings/batch) sends the ids the preview showed, not the current selection, and is
+    one transaction with one audit entry. The cap is BULK_TAGGING_MAX_RECORDS (default 200);
+    block 9 draws it at 50 so it shows with a page of 100, the control refuses before calling,
+    and the server's 422 too_many_records reads the same. Retired tag (422 unknown_key), lost
+    permission (403) and a failure each say that nothing was changed.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Today</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>Watch<span class="dot">3</span></button><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8"/></svg>Inventory</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>Search</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>
+<script>
+/* Card only: two frames of this file at 375 px, light and dark. */
+document.querySelectorAll('[data-mixed]').forEach(function(e){e.indeterminate=true;});
+(function(){var b=document.getElementById('phones');if(!b)return;b.addEventListener('click',function(){var f=document.getElementById('frames');
+if(!f.childElementCount){['light','dark'].forEach(function(t){var i=document.createElement('iframe');i.src=location.pathname+'?frame=1&theme='+t;i.title='This card at 375 px, '+t;f.appendChild(i);});}
+f.hidden=!f.hidden;b.setAttribute('aria-expanded',String(!f.hidden));});})();
+</script>
 </body>
 </html>
