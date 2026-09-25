@@ -8,14 +8,14 @@ row and hash stay; that every download is one audit row and a refusal none; and 
 filename reaches a log. Removal is `tests_evidence_remove.py`'s.
 
 Proven to fail 2026-09-25: with the sniff dropped, the HTML file named `.pdf` was stored;
-with the delete dropped from the scan task, the EICAR bytes stayed in storage.
+with the delete dropped from the scan task, the EICAR bytes stayed in storage; with a log
+line naming the evidence planted in `add_evidence`, the log-capture test failed on it.
 """
 
 from __future__ import annotations
 
 import hashlib
 import io
-import logging
 import tempfile
 import uuid
 import zipfile
@@ -32,6 +32,7 @@ from apps.cases import evidence as evidence_logic
 from apps.cases import tasks
 from apps.cases import testing as case_build
 from apps.cases.models import ChangeCase, Evidence
+from apps.home.tests_feed import captured_logs
 from apps.shared import factories, tenancy
 from apps.shared import permissions as perms
 from apps.shared.adapters.scanner import EICAR_MARKER, MOCK_ERROR_MARKER, ScanState
@@ -434,17 +435,17 @@ class AnotherBank(EvidenceTestCase):
 
 class NoFilenameInLogs(EvidenceTestCase):
     def test_upload_scan_and_download_log_no_filename_path_or_byte(self) -> None:
+        """Every logger, the ones that do not propagate included, at DEBUG, formatted as
+        production writes them; the scanner's own line proves the capture is live."""
         secret_file = "kista-branch-closure-minutes.pdf"
-        with self.assertLogs(level=logging.DEBUG) as captured:
+        with captured_logs() as written:
             body = self.attach_file(a_file(filename=secret_file), name=SECRET_NAME).json()["evidence"]
             self.download(body["id"])
-            logging.getLogger("apps.cases").info("marker so the capture is never empty")
         stored = self.row(body["id"])
-        forbidden = (SECRET_NAME, secret_file, "kista", stored.storage_key, "%PDF")
-        for log in captured.records:
-            text = log.getMessage() + " " + " ".join(str(value) for value in vars(log).values())
-            for value in forbidden:
-                self.assertNotIn(value, text, f"{log.name} logged tenant content")
+        self.assertTrue(any("scan finished" in line for line in written), written)
+        for line in written:
+            for value in (SECRET_NAME, secret_file, "kista", stored.storage_key, "%PDF"):
+                self.assertNotIn(value, line, "a log line carried tenant content")
 
 
 class CaseStatusIsUntouched(EvidenceTestCase):
