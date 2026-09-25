@@ -924,6 +924,7 @@ Chunk 8 (the register contract, `c8-register-contract`), 2026-09-25:
   adds `applicabilityDecidedBy`, `entities` (one row per legal entity, D-42) and `version`
   for `If-Match` (section 4) to the designed `Register`, and returns the status and risk
   as `{key, kind, label}` rows of the bank's own lists (section 1).
+
 **Chunk 10 (2026-09-25, c10-collab-contract).** The eight collab operations are declared
 behind their real gates and answer 501 `not_built` until `collab/inbox.py`,
 `collab/comments.py` and `collab/me_comments.py` land. They depart from the design here:

@@ -25,7 +25,6 @@ GET /webhooks chunk 13
 GET /webhooks/{}/deliveries chunk 13
 PATCH /actions/{} chunk 9
 PATCH /comments/{} chunk 10
-PATCH /obligations/{}/register chunk 8
 PATCH /webhooks/{} chunk 13
 POST /changes/{}/actions chunk 9
 POST /changes/{}/actions/export-tickets chunk 13 INT-02, ticket export, is R3
@@ -36,7 +35,6 @@ POST /changes/{}/signoff/send-back chunk 9
 POST /eval/runs chunk 14 a run builds the sample corpus in a database of its own and takes minutes, so it waits for chunk 14's job runner; record_eval_run records runs until then
 POST /imports chunk 12
 POST /imports/{}/commit chunk 12
-POST /obligations/{}/applicability-requests chunk 8
 POST /obligations/{}/attestations chunk 13 REG-06, attestations and waivers, is R3
 POST /obligations/{}/internal-links chunk 8
 POST /obligations/{}/waivers chunk 13 REG-06, attestations and waivers, is R3
