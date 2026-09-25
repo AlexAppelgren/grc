@@ -1,11 +1,12 @@
 """Scenario tests for the tenants app (playbook 4.1, Appendix B): one method per
 `@integration` scenario in app.md, each carrying its ID. Chunk 1 un-skips TEN-S1, ADM-S1
-and ADM-S3; TEN-S2 to S6 stay skipped (R2, chunk 8). Never delete a scenario without
+and ADM-S3; chunk 8 un-skips TEN-S6's grant halves (c8-ten-support-grants). Never delete a scenario without
 updating app.md.
 
 Operations exercised (the audit-on-write guard reads these names): updateTenant,
 setTenantAi (its branches in tests_organisation.py),
-consoleReissueEnrolment (proven in identity ID-S13).
+consoleReissueEnrolment (proven in identity ID-S13), requestConsoleSupportAccess,
+approveSupportAccess, declineSupportAccess, revokeSupportAccess.
 
 Prefixes hosted: ADM, TEN.
 """
@@ -18,6 +19,7 @@ from unittest import skip
 from apps.identity.models import TenantRole
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, permissions as perms
+from apps.shared.adapters.mailer import MockMailer
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy import tenant_lists_logic
 from apps.taxonomy.models import FootprintTerm
@@ -95,6 +97,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S2
 
         Legal entities and products are scoped like obligations (TEN-02).
+        Operations: `createOrgUnit`, `createLicence`, `createProduct`, `updateProduct`.
         """
 
     @skip("pending: TEN-S3 (TEN-03, chunk 8)")
@@ -116,14 +119,59 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S5
 
         Removing a member with open work offers bulk reassignment (TEN-05).
+        Operations: `removeMember`.
         """
 
-    @skip("pending: TEN-S6 (TEN-06, chunk 8)")
     def test_ten_s6(self) -> None:
         """TEN-S6
 
         Support access is requested by the platform, approved by the bank and time-boxed (TEN-06).
+        Operations: `requestConsoleSupportAccess`, `approveSupportAccess`, `declineSupportAccess`,
+        `revokeSupportAccess`. The request, approve, decline and revoke halves are proven here;
+        entering (`enterConsoleSupportAccess`), the logged reads, the 403 on a write and the 401
+        after a revoke or the end of the window are pending: c8-support-access-mechanism adds
+        them to this method.
         """
+        MockMailer.reset()
+        platform = factories.platform_user()
+        console = sign_in(platform, tenant=None)
+        bank = sign_in(self.admin, tenant=self.tenant, step_up=True)
+        url = f"/api/v1/console/tenants/{self.tenant.id}/support-access"
+        body = {"purpose": "The bank reports that its watch feed stopped updating.", "hours": 2}
+
+        # Given a platform admin without any grant, the bank's reads answer 404.
+        self.assertEqual(self.client.get("/api/v1/tenant/support-access", **console).status_code, 404)
+        # They request two hours with a purpose: nothing is granted and security.manage hears.
+        requested = self.client.post(url, data=body, content_type="application/json", **console)
+        self.assertEqual(requested.status_code, 201, requested.content)
+        self.assertEqual(requested.json()["state"], "pending")
+        self.assertEqual(self.client.get("/api/v1/tenant/support-access", **console).status_code, 404)
+        self.assertEqual([mail.to for mail in MockMailer.sent], [self.admin.email])
+        grant = requested.json()["id"]
+
+        # A tenant admin approves with a fresh step-up; the panel shows purpose, person and end.
+        approved = self.client.post(f"/api/v1/tenant/support-access/{grant}/approve", **bank)
+        self.assertEqual(approved.status_code, 200, approved.content)
+        panel = self.client.get("/api/v1/tenant/support-access", **bank).json()["items"][0]
+        self.assertEqual(panel["state"], "active")
+        self.assertEqual(panel["purpose"], body["purpose"])
+        self.assertEqual(panel["platformPerson"]["id"], str(platform.id))
+        self.assertIsNotNone(panel["endsAt"])
+
+        # pending: c8-support-access-mechanism enters here, proves each read lands in the
+        # bank's audit log as support_access.read and that a write answers 403.
+
+        # The tenant admin revokes it.
+        revoked = self.client.post(f"/api/v1/tenant/support-access/{grant}/revoke", **bank)
+        self.assertEqual(revoked.status_code, 200, revoked.content)
+        self.assertEqual(revoked.json()["state"], "revoked")
+        # pending: c8-support-access-mechanism, the next request 401, the ones after it 404.
+
+        # And a second request the bank does not want is declined, granting nothing.
+        second = self.client.post(url, data=body, content_type="application/json", **console).json()["id"]
+        declined = self.client.post(f"/api/v1/tenant/support-access/{second}/decline", **bank)
+        self.assertEqual(declined.json()["state"], "declined")
+        self.assertEqual(self.client.post(f"/api/v1/tenant/support-access/{second}/approve", **bank).status_code, 422)
 
     def test_adm_s1(self) -> None:
         """ADM-S1
@@ -189,6 +237,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S8
 
         A department has a head and teams, and team membership is set on the member row (TEN-02, TEN-03).
+        Operations: `createOrgUnit`, `updateOrgUnit`.
         """
 
     @skip("pending: TEN-S9 (TEN-05, COL-04, chunk 8)")
@@ -203,6 +252,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S10
 
         A legal entity records a certificate it holds (TEN-02, AC-TEN1).
+        Operations: `createLicence`, `updateLicence`.
         """
 
     @skip("pending: TEN-S11 (TEN-06, chunk 8)")

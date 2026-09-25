@@ -46,7 +46,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | TEN-03 | Teams as owners and participants, so ownership survives a person leaving | M | R2 | pending |
 | TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | pending |
 | TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | pending |
-| TEN-06 | Support access grants: requested by the platform, approved by a tenant admin with a passkey, read-only, visible to the tenant, time-boxed, revocable and logged in the bank (D-49) | M | R2 | pending |
+| TEN-06 | Support access grants: requested by the platform, approved by a tenant admin with a passkey, read-only, visible to the tenant, time-boxed, revocable and logged in the bank (D-49) | M | R2 | in_progress |
 | ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
 | ADM-03 | Admin duties are separate permissions | M | R1 | built |
 
@@ -141,6 +141,13 @@ Then every item is reassigned and the member removed in one transaction with one
 ```
 
 ### TEN-S6 — Support access is requested by the platform, approved by the bank and time-boxed `@integration` `@e2e` (TEN-06)
+
+Which package makes each half green: the request, approve, decline and revoke halves are
+`c8-ten-support-grants`, green in `test_ten_s6`; entering, the logged reads, the 403 on a
+write and the 401 after a revoke or the end of the window are `c8-support-access-mechanism`,
+which adds them to the same method where its comments mark them; the journey is
+`c8-ui-support-access`.
+
 ```gherkin
 Given a platform admin without any grant
 When they read a tenant's cases
@@ -150,10 +157,13 @@ Then nothing is granted, the reads still answer 404, and the holders of security
 When a tenant admin approves the request with a fresh step-up assertion
 Then the grant appears on the tenant's Support access panel with the purpose, the person and the end of the window
 And every read under it lands in the bank's audit log as "support_access.read" with the route and the platform user
+And a write under it answers 403 "support_read_only"
 When the tenant admin revokes the grant
 Then the next request answers 401 "support_access_ended" and the ones after that answer 404
 When the two hours pass without a revocation
 Then the grant ends the same way and the reads answer 404 again
+When a tenant admin declines a second request, or nobody decides it within the request's lifetime
+Then nothing was ever granted and the request can no longer be approved
 ```
 
 ### TEN-S7 — J-8: tenant B cannot see tenant A `@e2e` (TEN-06, COL-04, J-8)

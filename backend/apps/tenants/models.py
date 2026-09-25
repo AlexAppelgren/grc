@@ -11,7 +11,13 @@ order. Every table is under forced row-level security, and every reference to an
 row is also a composite `(tenant_id, …)` foreign key written as SQL in the migration, because
 PostgreSQL checks a foreign key without row-level security: a plain key would let one bank
 point at another's row. A unit, licence, product or item is deactivated or withdrawn, never
-deleted; teams (`owner_team`) arrive with tenants 0003."""
+deleted.
+
+Chunk 8's teams model (TEN-03, tenants 0003) adds `TeamMember`, a person in one of the bank's
+teams (the `team` tenant list, taxonomy 0009), and lets a team own a licence or an internal
+item in place of a person, so the ownership survives the person leaving. Both keys of a team
+member are composite as above; the key to `membership` makes the person a member of the same
+bank. A team member has no lead flag: a department's head sits on its org unit (D-21)."""
 
 from __future__ import annotations
 
@@ -20,6 +26,7 @@ from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 from apps.shared.tenancy import TenantModel
 
@@ -31,7 +38,25 @@ class SupportAccessLevel(enum.StrEnum):
     WRITE = "write"
 
 
+class SupportAccessStatus(enum.StrEnum):
+    """Tier-one kind (apps/shared/kinds.py): where a support access request stands (TEN-06,
+    D-49). A pending request and an open window lapse on read, with no job: a `requested` row
+    past `request_expires_at` reads as lapsed and an `approved` one past `expires_at` as ended.
+    `expired` is what a row born with no decision is, which is chunk 1's one-shot recovery."""
+
+    REQUESTED = "requested"
+    APPROVED = "approved"
+    DECLINED = "declined"
+    REVOKED = "revoked"
+    EXPIRED = "expired"
+
+
 class SupportAccess(TenantModel):
+    """Platform support's access to one bank (ID-05, TEN-06, ADR 0042). A request grants
+    nothing; the bank approves it with a passkey, declines or revokes it. The database keeps
+    the approver from being the person who asked, and a guard trigger refuses a delete and
+    any change to who asked, for what, at which level and for how long (tenants 0004)."""
+
     platform_user = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="support_accesses")
     reason = models.TextField()
     ticket_ref = models.CharField(max_length=100, blank=True)
@@ -40,15 +65,44 @@ class SupportAccess(TenantModel):
         choices=[(kind.value, kind.value) for kind in SupportAccessLevel],
         default=SupportAccessLevel.READ.value,
     )
+    status = models.CharField(
+        max_length=16,
+        choices=[(kind.value, kind.value) for kind in SupportAccessStatus],
+        default=SupportAccessStatus.EXPIRED.value,
+    )
+    # The window asked for, in whole hours; 0 on a recovery row, which opens no window.
+    hours = models.PositiveSmallIntegerField(default=0)
+    requested_at = models.DateTimeField(default=timezone.now)
+    request_expires_at = models.DateTimeField(null=True, blank=True)
     approved_by = models.ForeignKey(
         "identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
-    started_at = models.DateTimeField()
+    approved_step_up_assertion_id = models.UUIDField(null=True, blank=True)
+    # The window: it starts when the bank approves and closes `hours` later.
+    started_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    # A decline or a revoke: when, and by whom.
     ended_at = models.DateTimeField(null=True, blank=True)
+    ended_by = models.ForeignKey(
+        "identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
 
     class Meta:
         db_table = "support_access"
-        ordering = ["started_at", "id"]
+        ordering = ["requested_at", "id"]
+        constraints = [
+            # Four eyes (D-49): the bank's approver is never the platform person who asked.
+            models.CheckConstraint(
+                condition=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F("platform_user")),
+                name="support_access_approver_is_not_the_requester",
+            ),
+            # Read-only grants: a write-level row is never approved, which leaves chunk 1's
+            # one-shot recovery as the only write-level row there is.
+            models.CheckConstraint(
+                condition=models.Q(access_level=SupportAccessLevel.READ.value) | models.Q(approved_by__isnull=True),
+                name="support_access_only_a_read_is_approved",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.platform_user_id}@{self.tenant_id}"
@@ -151,10 +205,16 @@ class Licence(NeverDeleted):
     valid_until = models.DateField(null=True, blank=True)
     next_audit_on = models.DateField(null=True, blank=True)
     owner_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    owner_team = models.ForeignKey("taxonomy.Team", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
 
     class Meta:
         db_table = "licence"
         ordering = ["org_unit", "granted_on", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(owner_user__isnull=True) | models.Q(owner_team__isnull=True), name="licence_one_owner"
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.licence_type_id}@{self.org_unit_id}"
@@ -212,6 +272,7 @@ class InternalItem(NeverDeleted):
     reference = models.CharField(max_length=200, blank=True)
     url = models.URLField(max_length=2000, blank=True)
     owner_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    owner_team = models.ForeignKey("taxonomy.Team", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     org_unit = models.ForeignKey(OrgUnit, null=True, blank=True, on_delete=models.PROTECT, related_name="internal_items")
     external_system = models.CharField(max_length=100, blank=True)
     external_ref = models.CharField(max_length=200, blank=True)
@@ -222,7 +283,12 @@ class InternalItem(NeverDeleted):
     class Meta:
         db_table = "internal_item"
         ordering = ["name", "id"]
-        constraints = [models.UniqueConstraint(fields=["tenant", "kind", "name"], name="internal_item_kind_name_unique")]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "kind", "name"], name="internal_item_kind_name_unique"),
+            models.CheckConstraint(
+                condition=models.Q(owner_user__isnull=True) | models.Q(owner_team__isnull=True), name="internal_item_one_owner"
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.name
@@ -257,3 +323,19 @@ class SecurityPolicy(TenantModel):
                 name="security_policy_absolute_positive",
             ),
         ]
+
+
+class TeamMember(TenantModel):
+    """A person in one of the bank's teams (TEN-03). Team notices go to a team's active members
+    and a department's head sits on its org unit, so there is no lead flag (D-21, D-34)."""
+
+    team = models.ForeignKey("taxonomy.Team", on_delete=models.PROTECT, related_name="members")
+    user = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
+
+    class Meta:
+        db_table = "team_member"
+        ordering = ["team", "user"]
+        constraints = [models.UniqueConstraint(fields=["team", "user"], name="team_member_unique")]
+
+    def __str__(self) -> str:
+        return f"{self.user_id}@{self.team_id}"
