@@ -6,9 +6,21 @@
 | `system/foundations.md` | Type roles, radius, spacing, the component specs and the Green token behind every colour |
 | `system/navigation.md` | The rail and the tab bar: which width gets what, the More sheet, and the reason and source for each rule |
 | `system/pills-and-labels.md` and `.html` | The pill and label contract, and a rendered card |
+| `system/comments-and-mentions.md` | The comments panel on the change page, the obligation page and My work (chunk 10) |
 | `public/` | The public page: `index.html` is the whole page as one standalone file, `README.md` is the design note |
 | `brand/` | The phonetic wordmark `[blɛkː]`, the favicon, and the brand layer placeholders |
-| `screens/` | Empty. Cut one card per screen from the prototype as each chunk starts (playbook Section 7) |
+| `screens/` | One card per screen, cut from the prototype as each chunk starts (playbook Section 7). Chunk 10's are indexed below |
+
+## Chunk 10 cards
+
+| Card | Route | What it fixes |
+|---|---|---|
+| `screens/tenant-notifications.html` | `/notifications`, and the bell in the shell | The unread dot on the account row and on More, Notifications in the account menu with its count, the inbox (kind pill, record title, time, read and unread), mark one and mark all read, empty, loading, error, and the per-person settings with escalations always on |
+| `system/comments-and-mentions.md` | the change page, the obligation page, My work | The panel: oldest first with author, time and "Edited", the composer and its visibility line, mentions over `GET /reference/people`, Edit and Delete on one's own comments, the deleted marker, a mention that reached nobody, every state |
+| `screens/admin-workflow.html` | `/admin/workflow` | Reminder and review reminder lead days, the escalation threshold and role, the digest weekday and the triage target, each with its unit and platform default; saved, refused and restricted |
+| `screens/me-out-of-office.html` | `/me/out-of-office` | The last day away in the tenant's timezone, the delegate picker, what a delegate may do, End now, `already_delegated`, and the delegate's own view |
+| `screens/tenant-inventory.html`, tagging blocks | `/inventory` | Selecting obligations, the Tag control with its preview and result, the cap, tenant tags on each row and the tenant-tag filter (numbered blocks appended by chunk 10's tagging cards) |
+| `screens/tenant-obligation.html`, tags facet | `/inventory/obligations/[id]` | Tenant tags on the obligation, added through `screens/picker-create-or-suggest.html` and removed by a holder of vocabulary manage, read-only for everyone else (numbered blocks appended by chunk 10's tagging cards) |
 
 ## Direction (already chosen)
 
