@@ -1407,7 +1407,6 @@ forced row-level security, each child's case a composite key `(tenant_id, case_i
   carries its hash, size and type with it; a link carries a url.
 
 ## 19. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
-## 18. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
 
 The designed `tenant.settings` blob is six columns on `tenant` (shared 0009):
 `reminder_days_before` and `review_reminder_days_before` (one to five day counts, each 1 to
@@ -1617,3 +1616,13 @@ real, each with the whole `CasesCase` of section 19. Where they differ from `ope
   the status before and after and the new `version`; triage adds `ownerId` and the urgency
   key, a dismissal and a close add `reasonKey`. The close's note is on the case and its
   `case_transition` row, never in an audit value.
+
+## 21. The change page's case carries its assessment and close note (2026-09-25, c9-fe-triage-assessment)
+
+The case panels card has every panel read the case from `GET /changes/{changeId}`, but the
+workflow block (§19) carried neither the impact assessment nor the note of a one-person
+close, which only a write's `CasesCase` answered, so a reload lost both. `WatchCaseWorkflow`
+gains `assessment` (`CasesAssessment`, null before the case reaches assessing) and
+`closedNote`, as `CasesCase` names them. The assessment is joined to the case in the block's
+one case query, so the read costs one label query more only when the assessment names an
+effort. Both are tenant content in the bank's own zone.

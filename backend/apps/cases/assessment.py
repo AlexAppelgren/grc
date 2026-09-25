@@ -164,6 +164,12 @@ def _ref(label_model: type[Any], row: Any, order: list[str]) -> CasesVocabularyR
 
 def _assessment(case: ChangeCase, order: list[str]) -> CasesAssessment | None:
     row = ImpactAssessment.objects.select_related("effort", "saved_by").filter(case=case).first()  # ordering: one per case
+    return assessment_of(row, order)
+
+
+def assessment_of(row: ImpactAssessment | None, order: list[str]) -> CasesAssessment | None:
+    """The assessment as every case read answers it, from a row read with its effort and
+    saver; one label query when it names an effort. None before the assessment starts."""
     if row is None:
         return None
     return CasesAssessment(
