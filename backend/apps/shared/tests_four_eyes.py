@@ -38,6 +38,14 @@ FOUR_EYES_TABLES: list[tuple[str, str]] = [
     ("gap", "gap_four_eyes"),
 ]
 
+# PRO-04 (proposals 0008): a batch's parent is a `proposal` row, so `proposal_four_eyes`
+# above already refuses its proposer as its reviewer. Its rows are decided one by one, and a
+# check constraint cannot read the parent, so the row's trigger compares the decider with
+# the batch's proposer. (table, trigger, the clause its function must hold.)
+FOUR_EYES_TRIGGERS: list[tuple[str, str, str]] = [
+    ("proposal_batch_row", "proposal_batch_row_decision_guard", "proposed_by_user_id = NEW.decided_by_id"),
+]
+
 
 class FourEyesGuard(TestCase):
     def test_every_four_eyes_table_has_its_check_constraint(self) -> None:
@@ -63,3 +71,21 @@ class FourEyesGuard(TestCase):
             APPROVE_PERMISSIONS,
             {FOOTPRINT_APPROVE, CASES_SIGNOFF, APPLICABILITY_APPROVE, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW},
         )
+
+
+class FourEyesTriggerGuard(TestCase):
+    def test_every_four_eyes_trigger_exists_and_compares_the_decider_with_the_proposer(self) -> None:
+        missing: list[str] = []
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            for table, trigger, clause in FOUR_EYES_TRIGGERS:
+                cursor.execute(
+                    "SELECT p.prosrc FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid "
+                    "JOIN pg_proc p ON p.oid = t.tgfoid WHERE c.relname = %s AND t.tgname = %s",
+                    [table, trigger],
+                )
+                row = cursor.fetchone()
+                if row is None:
+                    missing.append(f"{table}: trigger {trigger} not found")
+                elif clause not in row[0]:
+                    missing.append(f"{table}: {trigger} does not compare the decider with the proposer")
+        self.assertEqual(missing, [], "Four-eyes triggers missing:\n  " + "\n  ".join(missing))

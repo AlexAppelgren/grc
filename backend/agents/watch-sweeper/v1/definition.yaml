@@ -10,7 +10,13 @@ description: >
   Checks registered sources for new or changed regulatory documents, registers
   one change per reform with a stable key, and proposes obligation links.
 prompt: prompt.md      # the system prompt, this folder
-writes_to: shared_library_through_proposals   # tenant-private sources: tenant_private_records
+model: claude-opus-5   # the model this version was written and evaluated for; the runner picks the EU endpoint (D-54)
+change_note: >
+  The first version: sweeps the registered sources, registers one change per reform and
+  proposes obligation links and corrections.
+scope: platform        # agent_scope: one of bleqq's agents; no bank steers it (D-61, ruling 1)
+tenant_configurable: false
+writes_to: library     # agent_writes_to: through proposals only, never a direct library write
 default_cadence: weekly
 
 # Tools are the agent API operations of docs/inputs/openapi.yaml, in the order a run

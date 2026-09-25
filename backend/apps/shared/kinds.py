@@ -24,6 +24,10 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "CheckStatus": ("check_status", "Source check outcome; coverage reports branch on it"),
     "ProposalKind": ("proposal_kind", "PRO-01: what a proposal changes; apply() branches on it"),
     "ProposalStatus": ("proposal_status", "PRO-02: the queue's state machine"),
+    "BatchRowDecision": (
+        "proposal_batch_decision",
+        "PRO-04: a batch row is pending until decided once; apply and the trigger branch on it",
+    ),
     "ApprovalStatus": ("approval_status", "Four-eyes request lifecycle"),
     "Applicability": ("applicability", "REG-01: applies / does not apply / unknown"),
     "AssessmentApplies": ("assessment_applies", "CAS-03: the assessment's verdict"),
@@ -208,5 +212,43 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
         "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
         "reporting branches on",
+    ),
+    # Chunk 11 (agents 0004 and 0005, AGT-03 to AGT-06, INPUT_DELTAS §5). A definition is
+    # always bleqq's; what these say is which side of the platform fence it sits on and how
+    # the scheduler and the worker treat it and its runs.
+    "AgentScopeKind": (
+        "agent_scope",
+        "AGT-03, AGT-04, ADR 0053: one of bleqq's agents or a definition a bank may add for "
+        "itself; the tenant_agent fence trigger, the agent CHECKs and the screens branch on it",
+    ),
+    "AgentCadence": (
+        "agent_cadence",
+        "AGT-04: daily, weekly, monthly or manual; the scheduler computes next_run_at from it, "
+        "and manual means it never schedules the agent at all",
+    ),
+    "AgentRuntime": (
+        "agent_runtime",
+        "AGT-06, D-54: which runner executes a definition; the worker picks its adapter by it, "
+        "and the boot refuses managed_agents on every deployed environment but test",
+    ),
+    "AgentWritesTo": (
+        "agent_writes_to",
+        "AGT-04, ADR 0053: the zone an agent's output lands in; a tenant definition writes its "
+        "bank's zone only, which a CHECK on agent holds",
+    ),
+    "RunTrigger": (
+        "run_trigger",
+        "AGT-04, AGT-06: what started a run; an api run needs a key (CHECK on agent_run) and "
+        "the budget and history reads branch on schedule, manual and request",
+    ),
+    "ResearchRequestKind": (
+        "research_request_kind",
+        "AGT-05: what a request asks for; `retag` is the console's, has no tenant and produces "
+        "one batch proposal with a preview, never direct edits, and the worker branches on the rest",
+    ),
+    "ResearchRequestStatus": (
+        "research_request_status",
+        "AGT-05: a request's lifecycle, queued to done, failed, rejected or cancelled; the "
+        "worker and the request list branch on it",
     ),
 }
