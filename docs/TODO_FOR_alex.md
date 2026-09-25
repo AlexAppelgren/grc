@@ -1474,3 +1474,17 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       changed value in", an agent's correction without one answers 422 `source_missing`
       and applies nothing (fails safe; it can still approve as proposed or reject).
       Default if you say nothing: v3 carries that line when the confirmer next changes.
+
+## R2 wave 2 integration: one CodeQL finding needs your triage (2026-09-25)
+
+- [ ] **CodeQL `py/clear-text-storage-sensitive-data` at `backend/apps/identity/session_logic.py`
+      `set_refresh_cookie` (fingerprint `a6ba8ac839efa77d:1`).** CodeQL now reports the refresh
+      token written into its cookie. That write is the session design (D-06, ADR 0006): the
+      cookie is HttpOnly, Secure, SameSite=Strict and scoped to the auth path, the token is a
+      random 256-bit secret the database keeps only as a hash, and it rotates on every refresh
+      with replay detection (ID-S9). The same flow is on main unreported; CodeQL sees it since
+      `c11-session-policy` (ID-08) made the cookie's lifetime follow the session's absolute
+      end, whose test builds a concrete `HttpResponse`. The integration did not accept it on
+      its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
+      then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
+      (Default proposed: accept with that reason, acceptedBy you.)
