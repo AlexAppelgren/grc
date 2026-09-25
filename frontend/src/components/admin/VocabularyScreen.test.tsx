@@ -190,12 +190,16 @@ describe('the suggestions waiting on a tenant list', () => {
     await waitFor(() => expect(sent.filter((s) => s.method === 'post' && s.path !== REFRESH_PATH).map((s) => s.path)).toEqual(['/api/v1/vocab/tenant_tag/suggestions/s-1/decline']));
   });
 
-  it('says why an add was refused, by the refusal', async () => {
-    tenantServer({ status: 200, data: { items: [pension], total: 1 } }, { status: 422, data: { code: 'near_duplicate', detail: 'Too close to Pensions.', candidates: [{ key: 'pensions', label: 'Pensions' }] } });
+  it.each([
+    [{ status: 422, data: { code: 'near_duplicate', detail: 'Too close.', candidates: [{ key: 'pensions', label: 'Pensions' }] } }, 'Did you mean Pensions?'],
+    [{ status: 409, data: { code: 'duplicate_key', detail: 'Taken.', candidates: [{ key: 'pensions', label: 'Pensions' }] } }, '"Pensions" already exists.'],
+    [{ status: 500, data: { code: 'server_error', detail: 'Could not save.' } }, /^Could not save\./],
+  ])('says why an add was refused, by the refusal: %#', async (answer, words) => {
+    tenantServer({ status: 200, data: { items: [pension], total: 1 } }, answer);
     await renderTags();
     fireEvent.click(await screen.findByRole('button', { name: 'Suggested (1)' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-    expect(await screen.findByText('Did you mean Pensions?')).toBeVisible();
+    expect(await screen.findByText(words)).toBeVisible();
   });
 
   it('says so when nothing is waiting, and when the suggestions cannot be read', async () => {

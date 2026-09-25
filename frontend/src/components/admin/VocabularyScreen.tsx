@@ -518,7 +518,8 @@ function SuggestionRow({ list, suggestion }: { list: string; suggestion: Vocabul
   const create = useCreateValue(list);
   const decline = useDeclineSuggestion(list);
   const label = suggestion.labels.en ?? Object.values(suggestion.labels)[0] ?? suggestion.key;
-  const near = nearDuplicateFrom(create.error)?.[0] ?? exactDuplicateFrom(create.error)?.[0];
+  const exact = exactDuplicateFrom(create.error)?.[0];
+  const near = nearDuplicateFrom(create.error)?.[0];
   const busy = create.isPending || decline.isPending;
 
   return (
@@ -529,9 +530,9 @@ function SuggestionRow({ list, suggestion }: { list: string; suggestion: Vocabul
         </SwatchPair>
         <small className="mt-1 block text-meta text-muted">{t('admin.vocabularies.suggestedBy', { name: suggestion.suggestedBy, date: formatDate(suggestion.createdAt, ctx) })}</small>
         {suggestion.usageNote.length > 0 ? <small className="block text-meta text-muted">{suggestion.usageNote}</small> : null}
-        {near !== undefined ? (
+        {exact !== undefined || near !== undefined ? (
           <p role="alert" className="mt-1 text-meta text-negative">
-            {t('admin.vocabularies.didYouMean', { label: near.label })}
+            {exact !== undefined ? t('picker.alreadyExists', { label: exact.label }) : t('admin.vocabularies.didYouMean', { label: near?.label ?? '' })}
           </p>
         ) : create.isError ? (
           <ProblemAlert error={create.error} />
