@@ -1120,11 +1120,26 @@ class TenantMemberOpenWork(CamelSchema):
     owner per kind before anything changes."""
 
     model_config = ConfigDict(
-        json_schema_extra={"examples": [{"member": _EXAMPLE_PERSON, "items": [{"kind": "register_entry", "count": 3}, {"kind": "case", "count": 2}]}]}
+        json_schema_extra={
+            "examples": [
+                {
+                    "member": _EXAMPLE_PERSON,
+                    "items": [{"kind": "register_entry", "count": 3}, {"kind": "participation", "count": 3}, {"kind": "team_membership", "count": 2}],
+                    "teams": ["cards", "legal"],
+                }
+            ]
+        }
     )
 
     member: PersonRef = Field(description="The member whose open work this is.")
     items: list[TenantOpenWork] = Field(description="One row per kind the member holds; an empty list is a 200 and means the removal moves nothing.")
+    teams: list[str] = Field(
+        description=(
+            "The keys of the teams the member is in, rows of the bank's `team` vocabulary at "
+            "`GET /vocab/team`, in that list's order; the removal takes the member out of every "
+            "one. An empty list means they are in no team."
+        )
+    )
 
 
 class TenantRemovalOwner(WriteBody):

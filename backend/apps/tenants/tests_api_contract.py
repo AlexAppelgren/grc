@@ -324,6 +324,8 @@ class TenantsRouteStubs(TenantsContractCase):
     VERSIONED = {"updateOrgUnit", "updateLicence", "updateProduct"}
     # c8-ten-teams-people: built, and proven in tests_teams.py and tests_reference_people.py.
     BUILT = {"listTeams", "listTeamMembers", "listPeople"}
+    # c8-ten-reassignment: built, and proven in tests_reassignment.py.
+    BUILT |= {"getMemberOpenWork", "removeMember"}
 
     def test_an_if_match_that_is_not_a_version_is_422_on_every_versioned_write(self) -> None:
         with stub_session(self.everything()):

@@ -205,8 +205,19 @@ def update_member(
     return membership
 
 
-def deactivate_member(*, tenant: Tenant, actor: Actor, user_id: uuid.UUID, request: HttpRequest | None) -> Membership:
+def deactivate_member(
+    *, tenant: Tenant, actor: Actor, user_id: uuid.UUID, request: HttpRequest | None, step_up_assertion_id: uuid.UUID | None = None
+) -> Membership:
+    """The member's removal. Refused while they still own work, take part in items or are in
+    a team (TEN-05): `POST /tenant/members/{userId}/remove` moves and ends those first, then
+    calls this with its step-up, and no plain removal leaves an owner who cannot sign in."""
+    # Imported here: tenants.reassignment reads the membership through this module.
+    from apps.tenants import reassignment
+
     membership = membership_of(tenant.id, user_id)
+    held = reassignment.open_work_counts(tenant.id, user_id)
+    if held:
+        raise reassignment.reassignment_required(held)
     assert_not_last_admin(tenant.id, membership, keeps_members_manage=False)
     now = timezone.now()
     membership.deactivated_at = now
@@ -227,6 +238,7 @@ def deactivate_member(*, tenant: Tenant, actor: Actor, user_id: uuid.UUID, reque
         tenant_id=tenant.id,
         before={"deactivatedAt": None},
         after={"deactivatedAt": membership.deactivated_at.isoformat(), "invitationsClosed": closed},
+        step_up_assertion_id=step_up_assertion_id,
     )
     return membership
 

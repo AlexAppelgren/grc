@@ -1067,9 +1067,14 @@ def deactivate_member(request: HttpRequest, user_id: uuid.UUID = _MEMBER_ID) -> 
     `members.manage`, so the last one cannot be removed. Writes a "session_revoked" entry to
     the security log for each ended session, and the audit events `session.revoked` for each
     and `member.deactivated` with how many sessions and invitations were closed. Answers 204.
-    Removing someone already removed answers `not_found`.
+    Removing someone already removed answers `not_found`. A member who still owns work, takes
+    part in items or is in a team is refused and nothing changes: `GET
+    /tenant/members/{userId}/open-work` shows what they hold and `POST
+    /tenant/members/{userId}/remove` hands it on and removes them in one step.
 
-    Errors: `last_admin` (409) for the last member holding `members.manage`; `not_found`
+    Errors: `reassignment_required` (422) while the member holds work, listing in `errors`
+    each kind they hold as `field` with its `count`; `last_admin` (409) for the last member
+    holding `members.manage`; `not_found`
     (404) when the person is not a current member; `permission_denied` (403) without
     `members.manage`; `unauthenticated` (401) without a live session.
     """
