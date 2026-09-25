@@ -12,7 +12,7 @@ import { ErrorState, LoadingState } from '@/components/ui/States';
 import { ToneDot } from '@/components/ui/ToneDot';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useRoadmap } from '@/features/home/hooks';
-import { presentRoadmapItem, roadmapWhen } from '@/features/home/roadmap-presentation';
+import { presentRoadmapItem, roadmapOwner, roadmapSubjectHref, roadmapWhat, roadmapWhen } from '@/features/home/roadmap-presentation';
 import type { Roadmap, RoadmapItem, RoadmapQuery } from '@/features/home/types';
 import { urgencyOf } from '@/features/watch/change-presentation';
 import type { Translate } from '@/shared/i18n';
@@ -25,6 +25,9 @@ import type { FormatContext } from '@/shared/utils/format';
 // change the bank has open work on, by quarter, filtered by `kind` in the
 // URL so a filtered view is linkable. A card expands in place — the detail
 // panel below the roster — and never navigates; the link inside it does.
+// One of the bank's own deadlines (a review, a gap's target, a certificate's
+// expiry or audit, and the case workflow's deadlines and actions) reads "Our
+// deadline", says what produced the date and names its owner and its record.
 // The head links to the person's calendar feeds (HOM-04), which need the
 // same grant as this page.
 
@@ -82,7 +85,9 @@ function RoadmapCard({
       <span className="min-w-0">
         <span className="block font-medium tabular-nums">{roadmapWhen(item, ctx, new Date()).date}</span>
         <span className="block text-meta">{item.title}</span>
-        <span className="block text-meta text-muted">{item.kind === 'internal' ? t('pill.ourDeadline') : t('roadmap.regulatoryDate')}</span>
+        <span className="block text-meta text-muted">
+          {item.kind === 'internal' ? [t('pill.ourDeadline'), roadmapWhat(item.itemType, t), roadmapOwner(item.owner, t)].join(' · ') : t('roadmap.regulatoryDate')}
+        </span>
       </span>
     </button>
   );
@@ -98,6 +103,7 @@ function RoadmapDetail({ item, t, ctx }: { item: RoadmapItem; t: Translate; ctx:
         {when.daysLeft !== null ? <span className="text-meta text-muted">{t('watch.row.daysLeft', { count: when.daysLeft })}</span> : null}
       </div>
       <h2 className="mb-3">{item.title}</h2>
+      {item.kind === 'internal' ? <OurDeadline item={item} t={t} /> : null}
       {item.changeId !== null ? (
         <Link
           href={`/watch/${item.changeId}`}
@@ -108,6 +114,36 @@ function RoadmapDetail({ item, t, ctx }: { item: RoadmapItem; t: Translate; ctx:
         </Link>
       ) : null}
     </div>
+  );
+}
+
+function OurDeadline({ item, t }: { item: RoadmapItem; t: Translate }) {
+  const href = roadmapSubjectHref(item.subject);
+  const entity = item.subject?.entity ?? null;
+  return (
+    <>
+      <dl className="mb-3 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1" data-our-deadline="">
+        <dt className="text-muted">{t('roadmap.detail.what')}</dt>
+        <dd>{roadmapWhat(item.itemType, t)}</dd>
+        <dt className="text-muted">{t('roadmap.detail.owner')}</dt>
+        <dd className="font-medium">{roadmapOwner(item.owner, t)}</dd>
+        {entity !== null ? (
+          <>
+            <dt className="text-muted">{t('roadmap.detail.entity')}</dt>
+            <dd>{entity.name}</dd>
+          </>
+        ) : null}
+      </dl>
+      {href !== null ? (
+        <Link
+          href={href}
+          prefetch={false}
+          className="inline-flex h-9 items-center rounded-control border border-line-control bg-surface px-4 font-medium no-underline hover:hover-fill"
+        >
+          {t('roadmap.openObligation')}
+        </Link>
+      ) : null}
+    </>
   );
 }
 

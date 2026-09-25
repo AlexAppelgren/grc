@@ -4,7 +4,9 @@ import { createT } from '@/shared/i18n';
 
 import { defaultFormatContext } from '@/shared/utils/format';
 
-import { presentRoadmapItem, roadmapWhen } from './roadmap-presentation';
+import type { RoadmapItem } from './types';
+
+import { presentRoadmapItem, roadmapOwner, roadmapSubjectHref, roadmapWhat, roadmapWhen } from './roadmap-presentation';
 
 const t = createT('en');
 
@@ -43,5 +45,43 @@ describe('roadmapWhen', () => {
 
   it('today itself counts no days', () => {
     expect(roadmapWhen({ date: '2026-09-21', datePrecision: 'day' }, defaultFormatContext, today).daysLeft).toBeNull();
+  });
+});
+
+describe('our own deadlines', () => {
+  const person = { id: 'u1', name: 'Johan Berg' };
+  const team = { key: 'retail_compliance', kind: null, label: 'Retail compliance' };
+  const subject = { obligationId: 'o1', gapId: null, licenceId: null, entity: { id: 'e1', name: 'Example Bank AB' } };
+
+  it('names what produced the date, for every kind of item, in both languages', () => {
+    const types: RoadmapItem['itemType'][] = ['change_date', 'review_due', 'gap_target', 'certificate_expiry', 'certificate_audit', 'internal_deadline', 'action_due'];
+    expect(types.map((type) => roadmapWhat(type, t))).toEqual([
+      'Regulatory date',
+      'Next review',
+      'Gap target date',
+      'Certificate expires',
+      'Certificate audit',
+      'Case deadline',
+      'Action due',
+    ]);
+    const sv = createT('sv');
+    expect(new Set(types.map((type) => roadmapWhat(type, sv))).size).toBe(types.length);
+  });
+
+  it('names the owner: a person, a team, or both', () => {
+    expect(roadmapOwner({ person, team: null }, t)).toBe('Johan Berg');
+    expect(roadmapOwner({ person: null, team }, t)).toBe('Retail compliance');
+    expect(roadmapOwner({ person, team }, t)).toBe('Johan Berg, Retail compliance');
+  });
+
+  it('says so when nobody owns the date yet', () => {
+    expect(roadmapOwner(null, t)).toBe('Nobody yet');
+    expect(roadmapOwner({ person: null, team: null }, t)).toBe('Nobody yet');
+  });
+
+  it("links a review or a gap target to the obligation it is on, and a certificate's date nowhere", () => {
+    expect(roadmapSubjectHref(subject)).toBe('/inventory/obligations/o1');
+    expect(roadmapSubjectHref({ ...subject, obligationId: null, licenceId: 'l1' })).toBeNull();
+    expect(roadmapSubjectHref(null)).toBeNull();
   });
 });

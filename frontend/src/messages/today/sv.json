@@ -20,5 +20,15 @@
   "today.decideNow.tenantReachRequests": "{count, plural, one {# begäran om organisationsräckvidd att besluta om.} other {# begäranden om organisationsräckvidd att besluta om.}}",
   "today.sources.summary": "Källor: {checked} av {total} kontrollerade.",
   "today.sources.failed": "{name} misslyckades.",
-  "today.sources.coverageLink": "Se bevakningsloggen"
+  "today.sources.coverageLink": "Se bevakningsloggen",
+  "today.standing.title": "Var vi står",
+  "today.standing.applying": "{count, plural, one {# skyldighet gäller för oss.} other {# skyldigheter gäller för oss.}}",
+  "today.standing.compliant": "Uppfyller",
+  "today.standing.partly": "Uppfyller delvis",
+  "today.standing.gap": "Brist",
+  "today.standing.notAssessed": "Inte bedömd",
+  "today.standing.openGaps": "{count, plural, one {# brist öppen eller under åtgärd} other {# brister öppna eller under åtgärd}}",
+  "today.standing.seeGaps": "Visa bristerna",
+  "today.standing.empty": "Inget är registrerat i registret ännu. Räkningen börjar när någon beslutar att en skyldighet gäller för oss.",
+  "today.standing.emptyAction": "Öppna inventeringen"
 }

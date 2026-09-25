@@ -13,11 +13,13 @@ import { TodayScreen } from './TodayScreen';
 
 // / (design/screens/tenant-today.html): "Coming up" in the roadmap's own
 // order, the lead card with its brand pill and confirmed "So what?",
-// "Decide now" reading GET /me's counts with a permission-gated line, the
-// source foot, and the states the design card names.
+// "Decide now" reading GET /me's counts with a permission-gated line, "Where
+// we stand" with each line leading to its filtered list, the source foot, and
+// the states the design card names.
 
 const ME_PATH = '/api/v1/me';
 const HOME_PATH = '/api/v1/home';
+const STATUSES_PATH = '/api/v1/vocab/compliance_status';
 
 const me: Me = {
   user: { id: 'u1', email: 'sara@example.test', name: 'Sara Lindqvist', locale: 'en' },
@@ -98,6 +100,11 @@ const home: Home = {
   standing: null,
 };
 
+const status = (key: string, kind: string) => ({ key, kind, label: key, labels: {}, usageNote: '', sortOrder: 0, active: true, isSystem: true, isDefault: false, usageCount: 0, extra: {} });
+const STATUSES = [status('compliant', 'compliant'), status('partly_compliant', 'partly'), status('gap', 'gap'), status('not_assessed', 'not_assessed')];
+const standing: NonNullable<Home['standing']> = { applying: 14, compliant: 8, partly: 3, gap: 1, notAssessed: 2, openGaps: 6 };
+const REGISTER_READER = [...me.permissions, 'register.read'];
+
 function shell(children: ReactNode, permissions: readonly string[] = me.permissions): ReactNode {
   const { wrapper: Query } = queryWrapper();
   return (
@@ -113,6 +120,7 @@ function serve(homeAnswer: { status: number; data?: unknown }, meAnswer: { statu
   return installAdapter((sent) => {
     if (sent.path === ME_PATH) return meAnswer;
     if (sent.path === HOME_PATH) return homeAnswer;
+    if (sent.path === STATUSES_PATH) return { status: 200, data: STATUSES };
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
   });
 }
@@ -165,7 +173,7 @@ describe('TodayScreen', () => {
   });
 
   it('a waiting decision alone keeps the page off the empty state', async () => {
-    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
+    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null, standing: null };
     const zeros = { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 1 };
     serve({ status: 200, data: quiet }, { status: 200, data: { ...me, permissions: ['security.manage'], counts: zeros } });
     render(shell(<TodayScreen />, ['security.manage']));
@@ -238,5 +246,48 @@ describe('TodayScreen', () => {
     expect(await screen.findByText('Could not load Today')).toBeInTheDocument();
     screen.getByRole('button', { name: 'Try again' }).click();
     expect(await screen.findByRole('heading', { name: 'FI adopts amended rules on paying for investment research' })).toBeInTheDocument();
+  });
+
+  it('shows where we stand, each category leading to the inventory filtered to it and the open gaps to /gaps', async () => {
+    serve({ status: 200, data: { ...home, standing } });
+    render(shell(<TodayScreen />, REGISTER_READER));
+
+    expect(await screen.findByRole('heading', { name: 'Where we stand' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '14 obligations apply to us.' })).toHaveAttribute('href', '/inventory?applicability=applies');
+    expect(await screen.findByRole('link', { name: 'Partly compliant' })).toHaveAttribute('href', '/inventory?applicability=applies&complianceStatus=partly_compliant');
+    expect(screen.getByRole('link', { name: 'Compliant' })).toHaveAttribute('href', '/inventory?applicability=applies&complianceStatus=compliant');
+    expect(screen.getByRole('link', { name: 'Gap' })).toHaveAttribute('href', '/inventory?applicability=applies&complianceStatus=gap');
+    expect(screen.getByRole('link', { name: 'Not assessed' })).toHaveAttribute('href', '/inventory?applicability=applies&complianceStatus=not_assessed');
+    expect(screen.getByText('6 gaps open or in remediation')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'See the gaps' })).toHaveAttribute('href', '/gaps');
+  });
+
+  it('says so, and leads to the inventory, when the register holds nothing yet', async () => {
+    const nothing = { applying: 0, compliant: 0, partly: 0, gap: 0, notAssessed: 0, openGaps: 0 };
+    serve({ status: 200, data: { ...home, standing: nothing } });
+    render(shell(<TodayScreen />, REGISTER_READER));
+
+    expect(await screen.findByText(/Nothing is recorded in the register yet/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open the inventory' })).toHaveAttribute('href', '/inventory');
+    expect(screen.queryByRole('link', { name: 'See the gaps' })).not.toBeInTheDocument();
+  });
+
+  it('leaves where we stand out for a reader without register.read, and never asks for the statuses', async () => {
+    const sent = serve({ status: 200, data: home });
+    render(shell(<TodayScreen />));
+
+    expect(await screen.findByRole('heading', { name: 'FI adopts amended rules on paying for investment research' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Where we stand' })).not.toBeInTheDocument();
+    expect(sent.some((request) => request.path === STATUSES_PATH)).toBe(false);
+  });
+
+  it('where we stand alone keeps the page off the empty state', async () => {
+    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null, standing };
+    const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 0 } };
+    serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
+    render(shell(<TodayScreen />, REGISTER_READER));
+
+    expect(await screen.findByRole('heading', { name: 'Where we stand' })).toBeInTheDocument();
+    expect(screen.queryByText('Nothing to show yet')).not.toBeInTheDocument();
   });
 });
