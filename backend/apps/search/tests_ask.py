@@ -38,6 +38,7 @@ from typing import Any, ClassVar
 from unittest import mock
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.signals import request_finished
 from django.db import connection
 from django.test import Client, SimpleTestCase, TestCase, override_settings
@@ -46,7 +47,7 @@ from django.test.utils import CaptureQueriesContext
 from apps.governance.models import AiGeneration, AiPurpose, AiStatus
 from apps.identity.models import User
 from apps.library.models import ProblemReport, SubjectType
-from apps.search import ask, indexing
+from apps.search import ask, indexing, limits
 from apps.search.tests_hybrid import (
     COSTS_SUMMARY_FI,
     COSTS_SUMMARY_SV,
@@ -57,6 +58,7 @@ from apps.search.tests_hybrid import (
 )
 from apps.shared import ai, factories
 from apps.shared.adapters import llm
+from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.tenancy import library_write
 from apps.shared.testing import sign_in
@@ -660,3 +662,86 @@ class AskSettingsBoundsTests(SimpleTestCase):
         result = self.boot("ASK_RETRIEVAL_DEPTH", settings.AI_GENERATION_CITATIONS_MAX)
 
         self.assertEqual(result.returncode, 0, result.stderr[-800:])
+
+
+class AskStreamCapTests(AskTestCase):
+    """Hardening H47: each open stream holds a server thread until the model finishes, so
+    one reader may have at most `ASK_STREAMS_PER_USER` open at once. One past the cap
+    answers 429 before any byte; a stream gives its slot back when it closes, however it
+    closes, and a refusal after the slot was taken gives it back at once. Rate limiting is
+    off in tests except where a test proves it fires, as for every bucket."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        cache.clear()
+        self.addCleanup(cache.clear)
+
+    def open_stream(self) -> Any:
+        """A stream the reader is still reading: the model has written its first sentence."""
+        response = self.post({"question": COSTS_QUESTION, "lang": "en"})
+        self.assertEqual(response.status_code, 200, getattr(response, "content", b""))
+        stream = iter(response.streaming_content)
+        events = [json.loads(next(stream).decode().removeprefix("data: "))["event"] for _ in range(2)]
+        self.assertEqual(events, ["start", "statement"])
+        return response
+
+    @override_settings(RATE_LIMITING_ENABLED=True, ASK_STREAMS_PER_USER=1)
+    def test_a_stream_past_the_cap_answers_429_before_any_byte(self) -> None:
+        with replying("Costs are disclosed in advance. [1] ", "They are itemised. [1]") as model:
+            first = self.open_stream()
+            refused = self.post({"question": COSTS_QUESTION, "lang": "en"})
+            leave(first)
+
+        self.assertEqual(refused.status_code, 429)
+        self.assertFalse(getattr(refused, "streaming", False), "a refusal is a problem body, never a stream begun")
+        self.assertEqual(refused["Content-Type"], "application/problem+json")
+        self.assertEqual(refused.json()["code"], "rate_limited")
+        self.assertEqual(model.call_count, 1, "only the first stream asked a model")
+
+    @override_settings(RATE_LIMITING_ENABLED=True, ASK_STREAMS_PER_USER=1)
+    def test_a_stream_that_closes_gives_its_slot_back(self) -> None:
+        with replying("Costs are disclosed in advance. [1]"):
+            leave(self.open_stream())  # the reader left mid-answer
+            events_of(self.post({"question": COSTS_QUESTION, "lang": "en"}))  # read to the end
+            answered = self.post({"question": COSTS_QUESTION, "lang": "en"})
+
+        self.assertEqual(answered.status_code, 200)
+        self.assertEqual(events_of(answered)[-1]["event"], "answer")
+
+    @override_settings(RATE_LIMITING_ENABLED=True, ASK_STREAMS_PER_USER=1)
+    def test_a_refusal_after_the_slot_or_an_answer_no_model_gave_frees_it(self) -> None:
+        for _ in range(2):
+            self.assertEqual(self.post({"question": COSTS_QUESTION, "lang": "xx"}).status_code, 422)
+        events_of(self.post({"question": UNSUPPORTED_QUESTION, "lang": "en"}))
+
+        with replying("Costs are disclosed in advance. [1]"):
+            answered = self.post({"question": COSTS_QUESTION, "lang": "en"})
+
+        self.assertEqual(answered.status_code, 200)
+        self.assertEqual(events_of(answered)[-1]["event"], "answer")
+
+    @override_settings(RATE_LIMITING_ENABLED=True, ASK_STREAMS_PER_USER=1)
+    def test_one_readers_open_stream_leaves_a_colleague_untouched(self) -> None:
+        colleague = factories.member_user(self.tenant, roles=("reader",))
+        with replying("Costs are disclosed in advance. [1]"):
+            mine = self.open_stream()
+            theirs = Client().post(
+                ASK, data={"question": COSTS_QUESTION, "lang": "en"}, content_type="application/json", **sign_in(colleague, tenant=self.tenant)
+            )
+            self.assertEqual(theirs.status_code, 200)
+            events_of(theirs)
+            leave(mine)
+
+    @override_settings(RATE_LIMITING_ENABLED=True, ASK_STREAMS_PER_USER=1)
+    def test_a_slot_given_back_twice_is_given_back_once(self) -> None:
+        caller = uuid.uuid4()
+        release = limits.ask_stream_slot(caller)
+        release()
+        release()
+        second = limits.ask_stream_slot(caller)  # the one slot is free again, and only one
+
+        with self.assertRaises(ProblemError) as refusal:
+            limits.ask_stream_slot(caller)
+
+        self.assertEqual((refusal.exception.status, refusal.exception.code), (429, "rate_limited"))
+        second()

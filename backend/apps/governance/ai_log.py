@@ -114,11 +114,15 @@ def log_generation(
     )
 
 
-def answer_of(answer_id: uuid.UUID, tenant_id: uuid.UUID) -> AiGeneration | None:
-    """One of the bank's own Ask answers by the id its stream gave it, or nothing. An id of
-    another bank's answer is nothing too: row-level security has already hidden it, and the
-    tenant is named here as well so a query written before that policy could not reach it."""
-    return AiGeneration.objects.filter(pk=answer_id, tenant_id=tenant_id, purpose=AiPurpose.ANSWER.value).first()  # ordering: pk lookup, at most one row
+def answer_of(answer_id: uuid.UUID, tenant_id: uuid.UUID, *, asker_id: uuid.UUID) -> AiGeneration | None:
+    """One Ask answer `asker_id` was given in their bank, by the id its stream gave it, or
+    nothing. An id of another bank's answer is nothing too: row-level security has already
+    hidden it, and the tenant is named here as well so a query written before that policy
+    could not reach it. A colleague's answer is nothing as well, so nobody replaces the
+    verdict of the person who asked (hardening H48)."""
+    return AiGeneration.objects.filter(
+        pk=answer_id, tenant_id=tenant_id, asker_id=asker_id, purpose=AiPurpose.ANSWER.value
+    ).first()  # ordering: pk lookup, at most one row
 
 
 def set_feedback(row: AiGeneration, *, feedback: str, note: str) -> None:
