@@ -29,7 +29,7 @@ const seeded = { id: 'ta', name: 'Example Bank AB', slug: 'example-bank', timezo
 const fresh = { ...seeded, id: 'tn', name: 'Third Bank AB', slug: 'third-bank-ab', defaultLanguage: null, contentLanguages: [] };
 
 // The sections below the profile read their own lists; this bank has recorded none.
-const EMPTY_LISTS = ['/api/v1/tenant/org-units', '/api/v1/tenant/products'];
+const EMPTY_LISTS = ['/api/v1/tenant/org-units', '/api/v1/tenant/products', '/api/v1/tenant/teams'];
 
 /** The server: the tenant as given, the three reference languages, and a PATCH that answers the tenant back. */
 function server(tenant: typeof seeded | typeof fresh): Sent[] {
