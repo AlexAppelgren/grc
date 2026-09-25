@@ -1680,3 +1680,13 @@ departures:
   local week rather than the day of the send, so the same unique key that stops a second
   reminder in a day stops a second digest in a week (COL-02: "one email per user per
   week"). Every other template keeps the day of the send.
+
+## c10-case-triage-due. A case knows when triage is due (2026-09-25, c10-case-triage-due)
+
+`change_case.triage_due_at` (`schema.sql` §13, "from the tenant's triage target") is a
+nullable timestamp, set when the case opens to its opening time plus the bank's
+`triage_target_hours` (section 19). Cases 0004 backfills it for every open `new` case, one
+bank's zone at a time because forced row-level security binds the schema owner too; a case
+that already left `new` keeps a null, since reminders read the column only while a case is
+`new` (`c10-reminders-core`). The backfill writes no audit row: the column is derived from
+two facts already on record, not a decision.
