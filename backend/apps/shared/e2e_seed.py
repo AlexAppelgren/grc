@@ -2494,3 +2494,38 @@ def seed_org_register(tenants: list[Tenant]) -> None:
         _seed_register(tenant, spec, people, org)
     tenancy.clear_tenant()
 # --- end c8-seed-org-register -------------------------------------------------------------
+
+
+# --- c8-ui-departments-teams-removal (TEN-05, TEN-S5) ---------------------------------------
+def restore_leaver() -> None:
+    """TEN-S5's teardown (`manage.py e2e_restore_leaver`): the member the journey removes is
+    a member again and owns what the seed gave them, so a retry or the next journey finds
+    them as seeded. Each row put back leaves its audit row through record(). The journey's
+    own reassignment and removal events stay in the log; nothing is deleted. Refused when
+    deployed."""
+    refuse_when_deployed("e2e_restore_leaver")
+    tenant = Tenant.objects.get(slug=TENANT_A_SLUG)
+    spec = next(s for s in EXPECTED_ORG_REGISTER if s.tenant_slug == TENANT_A_SLUG)
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        membership = Membership.objects.select_related("user").get(tenant=tenant, user__email=LEAVER)
+        leaver = membership.user
+        if membership.deactivated_at is not None:
+            membership.deactivated_at = None
+            membership.save(update_fields=["deactivated_at"])
+            _seeded(tenant, "membership", membership, LEAVER, {"deactivatedAt": None})
+        for entry in spec.entries:
+            if entry.owner != LEAVER:
+                continue
+            row = TenantObligation.objects.get(obligation_id=_obligation_id(entry.obligation))
+            if row.first_line_owner_id != leaver.id or row.owner_team_id is not None:
+                TenantObligation.objects.filter(pk=row.pk).update(first_line_owner=leaver, owner_team=None, version=row.version + 1)
+                _seeded(tenant, "tenant_obligation", row, entry.obligation, {"firstLineOwnerId": str(leaver.id)})
+        for gap in spec.gaps:
+            if gap.owner != LEAVER:
+                continue
+            gap_row = Gap.objects.get(tenant_obligation__obligation_id=_obligation_id(gap.obligation), title=gap.title)
+            if gap_row.owner_id != leaver.id or gap_row.owner_team_id is not None:
+                Gap.objects.filter(pk=gap_row.pk).update(owner=leaver, owner_team=None, version=gap_row.version + 1)
+                _seeded(tenant, "gap", gap_row, gap.obligation, {"ownerId": str(leaver.id)})
+# --- end c8-ui-departments-teams-removal ------------------------------------------------------

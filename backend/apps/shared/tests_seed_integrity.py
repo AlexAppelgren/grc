@@ -31,6 +31,7 @@ from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from apps.agents.models import AgentRun
 from apps.cases.models import ChangeCase
@@ -1571,6 +1572,32 @@ class SeededOrgAndRegister(SeededOnce):
         self._activate(TENANT_A_SLUG)
         self.assertEqual(TenantObligation.objects.filter(first_line_owner__email=LEAVER).count(), 3)
         self.assertTrue(Gap.objects.filter(owner__email=LEAVER).exists())
+
+    # c8-ui-departments-teams-removal (TEN-S5): the journey's teardown puts the leaver back.
+    def test_the_removed_member_is_restored_as_seeded(self) -> None:
+        tenant = self._activate(TENANT_A_SLUG)
+        sara = User.objects.get(email="compliance_officer@example-bank.test")
+        team = Team.objects.get(key="cards")
+        owned = list(TenantObligation.objects.filter(first_line_owner__email=LEAVER).values_list("id", flat=True))
+        gaps = list(Gap.objects.filter(owner__email=LEAVER).values_list("id", flat=True))
+        # What the removal leaves: entries owned by a team, a gap by another person, and no membership.
+        TenantObligation.objects.filter(id__in=owned).update(first_line_owner=None, owner_team=team)
+        Gap.objects.filter(id__in=gaps).update(owner=sara)
+        Membership.objects.filter(tenant=tenant, user__email=LEAVER).update(deactivated_at=timezone.now())
+
+        call_command("e2e_restore_leaver", stdout=StringIO())
+
+        self._activate(TENANT_A_SLUG)
+        self.assertIsNone(Membership.objects.get(tenant=tenant, user__email=LEAVER).deactivated_at)
+        entries = TenantObligation.objects.filter(id__in=owned)
+        self.assertEqual({(row.first_line_owner.email, row.owner_team_id) for row in entries.select_related("first_line_owner")}, {(LEAVER, None)})
+        self.assertEqual(set(Gap.objects.filter(id__in=gaps).values_list("owner__email", flat=True)), {LEAVER})
+        self.assertEqual(AuditEvent.objects.filter(action="tenant_obligation.seeded", subject_id__in=owned, tenant_id=tenant.id).count(), 2 * len(owned))
+        # A second run finds everything as seeded and writes nothing more.
+        before = AuditEvent.objects.count()
+        call_command("e2e_restore_leaver", stdout=StringIO())
+        self._activate(TENANT_A_SLUG)
+        self.assertEqual(AuditEvent.objects.count(), before)
 
     def test_tenant_b_has_its_own_small_register_and_sees_none_of_tenant_a(self) -> None:
         self._activate(TENANT_B_SLUG)
