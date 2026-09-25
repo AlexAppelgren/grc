@@ -43,6 +43,7 @@ from apps.register.schemas import (
     RegisterApplicabilityMany,
     RegisterApplicabilityManyBody,
     RegisterPersonRef,
+    RegisterSpannedEntity,
 )
 from apps.shared.audit import Actor, record
 from apps.shared.errors import ProblemError
@@ -342,3 +343,11 @@ def _write(
         version=row.version,
     )
 
+
+# c8-ui-applicability-status: the legal entities an answer can be given for (REG-01, D-42).
+def list_spanned(*, obligation_id: uuid.UUID) -> list[RegisterSpannedEntity]:
+    """`GET /obligations/{obligationId}/register/entities`: `entities_spanned()` for one
+    obligation the bank can see, so the screen offers exactly the entities the write accepts."""
+    if obligation_id not in obligation_headings([obligation_id], []):
+        raise ValidationError("That obligation is not here.", code="not_found")
+    return [RegisterSpannedEntity(org_unit_id=entity.id, org_unit_name=entity.name) for entity in entities_spanned([obligation_id])[obligation_id]]
