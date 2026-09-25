@@ -1,3 +1,7 @@
 {
-  "obligationGaps.heading": "Gaps"
+  "obligationGaps.heading": "Gaps",
+  "obligationGaps.record": "Record a gap",
+  "obligationGaps.none": "No gaps recorded.",
+  "obligationGaps.statusSaysGap": "The status says something is missing, but no gap is recorded. Record it so it gets an owner and a date.",
+  "obligationGaps.errorTitle": "The gaps could not be loaded"
 }

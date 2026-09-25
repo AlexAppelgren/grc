@@ -57,6 +57,8 @@ export const destinations: readonly Destination[] = [
   { id: 'watch', href: '/watch', labelKey: 'nav.watch', surface: 'tenant', anyOfPermissions: ['watch.read'], dockRank: 2, group: 'primary' },
   { id: 'inventory', href: '/inventory', labelKey: 'nav.inventory', surface: 'tenant', anyOfPermissions: ['library.read'], dockRank: 3, group: 'primary' },
   { id: 'roadmap', href: '/roadmap', labelKey: 'nav.roadmap', surface: 'tenant', anyOfPermissions: ['roadmap.read'], group: 'secondary' },
+  // c8-ui-gaps-risk: the bank's gaps across the register (REG-03).
+  { id: 'gaps', href: '/gaps', labelKey: 'nav.gaps', surface: 'tenant', anyOfPermissions: ['register.read'], group: 'secondary' },
   // The briefing (HOM-02): reached from Today's lead card and the mailed
   // link, never the rail or the More sheet. `parent` names a destination
   // nothing renders children for (only 'admin' and the account parent do),

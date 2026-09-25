@@ -18,6 +18,9 @@ import enDev from '@/messages/dev/en.json';
 import svDev from '@/messages/dev/sv.json';
 import enFootprint from '@/messages/footprint/en.json';
 import svFootprint from '@/messages/footprint/sv.json';
+// c8-ui-gaps-risk: the gaps screen and the gap record.
+import enGaps from '@/messages/gaps/en.json';
+import svGaps from '@/messages/gaps/sv.json';
 import enInventory from '@/messages/inventory/en.json';
 import svInventory from '@/messages/inventory/sv.json';
 import enLibrary from '@/messages/library/en.json';
@@ -75,6 +78,8 @@ const en = {
   ...enConsoleSources,
   ...enDev,
   ...enFootprint,
+  // c8-ui-gaps-risk
+  ...enGaps,
   ...enInventory,
   ...enLibrary,
   ...enMe,
@@ -108,6 +113,8 @@ const sv = {
   ...svConsoleSources,
   ...svDev,
   ...svFootprint,
+  // c8-ui-gaps-risk
+  ...svGaps,
   ...svInventory,
   ...svLibrary,
   ...svMe,

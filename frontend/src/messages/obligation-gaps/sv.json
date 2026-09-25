@@ -1,3 +1,7 @@
 {
-  "obligationGaps.heading": "Brister"
+  "obligationGaps.heading": "Brister",
+  "obligationGaps.record": "Registrera en brist",
+  "obligationGaps.none": "Inga brister registrerade.",
+  "obligationGaps.statusSaysGap": "Statusen säger att något saknas, men ingen brist är registrerad. Registrera den så att den får en ägare och ett datum.",
+  "obligationGaps.errorTitle": "Bristerna kunde inte läsas in"
 }
