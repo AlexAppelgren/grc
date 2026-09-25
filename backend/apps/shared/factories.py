@@ -62,7 +62,7 @@ from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
 from apps.tenants.models import Licence, OrgUnit, OrgUnitKind, SupportAccess, TenantProduct
-from apps.tenants.testing import entity_term, licence_type_term
+from apps.tenants.testing import licence_type_term
 
 _counter = itertools.count(1)
 
