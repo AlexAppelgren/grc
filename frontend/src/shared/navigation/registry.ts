@@ -79,6 +79,8 @@ export const destinations: readonly Destination[] = [
   // member reaches it; the controls on the page are drawn only for agents.manage (ruling 6).
   { id: 'admin-agents', href: '/admin/agents', labelKey: 'nav.admin.agents', surface: 'tenant', anyOfPermissions: ['watch.read'], group: 'admin', parent: 'admin' },
   { id: 'admin-ai-log', href: '/admin/ai-log', labelKey: 'nav.admin.aiLog', surface: 'tenant', anyOfPermissions: ['ai_log.read'], group: 'admin', parent: 'admin' },
+  // c11-fe-admin-security
+  { id: 'admin-security', href: '/admin/security', labelKey: 'nav.admin.security', surface: 'tenant', anyOfPermissions: ['security.manage'], group: 'admin', parent: 'admin' },
   // Account: any signed-in person, from the who panel.
   { id: 'me-passkeys', href: '/me/passkeys', labelKey: 'nav.me.passkeys', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-sessions', href: '/me/sessions', labelKey: 'nav.me.sessions', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },

@@ -44,6 +44,9 @@ import enVocabularies from '@/messages/vocabularies/en.json';
 import svVocabularies from '@/messages/vocabularies/sv.json';
 import enWatch from '@/messages/watch/en.json';
 import svWatch from '@/messages/watch/sv.json';
+// c11-fe-admin-security
+import enAdminSecurity from '@/messages/admin-security/en.json';
+import svAdminSecurity from '@/messages/admin-security/sv.json';
 
 // One catalog per UI language (playbook 6.5), stored as one file pair per
 // feature namespace under src/messages/<namespace>/ so that packages owning
@@ -75,6 +78,8 @@ const en = {
   ...enToday,
   ...enVocabularies,
   ...enWatch,
+  // c11-fe-admin-security
+  ...enAdminSecurity,
 };
 
 const sv = {
@@ -101,6 +106,8 @@ const sv = {
   ...svToday,
   ...svVocabularies,
   ...svWatch,
+  // c11-fe-admin-security
+  ...svAdminSecurity,
 };
 
 export const locales = ['en', 'sv'] as const;

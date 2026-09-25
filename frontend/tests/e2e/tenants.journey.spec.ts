@@ -1,4 +1,6 @@
-import { expect, test } from './support/api-guard';
+import type { Page } from '@playwright/test';
+
+import { expect, test, type ApiGuard } from './support/api-guard';
 import { allowFreshContext, LOGINS, restrictedScreen, signInAs, signOut } from './support/passkeys';
 
 // tenants: the @e2e scenarios from backend/apps/tenants/app.md (playbook Appendix B).
@@ -19,6 +21,59 @@ const A_ONLY_TERMS: ReadonlyArray<readonly [string, string]> = [
   ['service_type', 'advice'],
 ];
 const A_REQUESTER = 'Sara Lindqvist';
+
+// c11-fe-admin-security (ADM-S1, ID-08): the admin sets the bank's session limits. Above the
+// platform maximum the server's 422 renders under its field; a limit at the maximum saves
+// behind the passkey step-up. The limits the bank had are restored whatever happens, so no
+// other journey signs in under a changed session policy for longer than this step.
+const SECURITY_POLICY = /\/api\/v1\/tenant\/security-policy$/;
+type SessionLimits = { sessionIdleMinutes: number | null; sessionAbsoluteHours: number | null; sessionAbsoluteHoursMax: number };
+
+async function saveSecurityPage(page: Page): Promise<void> {
+  const answered = page.waitForResponse((r) => SECURITY_POLICY.test(r.url()) && r.request().method() === 'PUT' && r.status() !== 403);
+  await page.getByRole('button', { name: 'Save' }).click();
+  // The step-up is asked for unless this session's passkey assertion is still fresh.
+  const prompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
+  const prompted = prompt.waitFor({ state: 'visible' }).then(
+    () => true,
+    () => false,
+  );
+  if (await Promise.race([answered.then(() => false), prompted])) await prompt.getByRole('button', { name: 'Use passkey' }).click();
+  await answered;
+}
+
+async function setSessionLimits(page: Page, apiGuard: ApiGuard): Promise<void> {
+  apiGuard.allow(SECURITY_POLICY, 403, 'the save answers step_up_required first and opens the prompt');
+  apiGuard.allow(SECURITY_POLICY, 422, 'a limit above the platform maximum is refused with above_platform_maximum');
+  const read = page.waitForResponse((r) => SECURITY_POLICY.test(r.url()) && r.request().method() === 'GET');
+  await page.goto('/admin/security');
+  const held = (await (await read).json()) as SessionLimits;
+  const absolute = page.getByLabel('Sign out after this long in all, in hours', { exact: true });
+  const idle = page.getByLabel('Sign out after this long without activity, in minutes', { exact: true });
+  const max = held.sessionAbsoluteHoursMax;
+  await expect(page.getByText(`At most ${max} hours.`, { exact: false })).toBeVisible();
+  // No passkey policy on this page in this release (D-100).
+  await expect(page.getByText('Passkeys we accept')).toHaveCount(0);
+  try {
+    await absolute.fill(String(max + 1));
+    await saveSecurityPage(page);
+    await expect(page.getByText(`At most ${max} hours. Choose ${max} or fewer.`, { exact: true })).toBeVisible();
+    await expect(absolute).toHaveAttribute('aria-invalid', 'true');
+
+    // At the maximum, never below what the bank had: nobody is signed out sooner by this step.
+    await absolute.fill(String(max));
+    await saveSecurityPage(page);
+    await expect(page.getByText('Saved. New limits apply to sessions from their next refresh.', { exact: true })).toBeVisible();
+    await page.reload();
+    await expect(absolute).toHaveValue(String(max));
+  } finally {
+    await page.goto('/admin/security');
+    await idle.fill(held.sessionIdleMinutes === null ? '' : String(held.sessionIdleMinutes));
+    await absolute.fill(held.sessionAbsoluteHours === null ? '' : String(held.sessionAbsoluteHours));
+    await saveSecurityPage(page);
+    await expect(page.getByText('Saved. New limits apply to sessions from their next refresh.', { exact: true })).toBeVisible();
+  }
+}
 
 test.describe('tenants journeys', () => {
   test("TEN-S1: A tenant profile holds timezone, languages and the onboarding checklist", async ({ page, apiGuard }) => {
@@ -151,6 +206,9 @@ test.describe('tenants journeys', () => {
     for (const section of ['admin-organisation', 'admin-members', 'admin-roles', 'admin-api-keys', 'admin-security-log']) {
       await expect(page.locator(`[data-admin-section="${section}"]`)).toBeVisible();
     }
+    // c11-fe-admin-security: the security page (ID-08) is the admin's by security.manage.
+    await expect(page.locator('[data-admin-section="admin-security"]')).toBeVisible();
+    await setSessionLimits(page, apiGuard);
     await signOut(page);
 
     await signInAs(page, LOGINS.complianceOfficer);
@@ -160,6 +218,10 @@ test.describe('tenants journeys', () => {
     await expect(page.locator('[data-admin-section="admin-security-log"]')).toHaveCount(0);
     await page.goto('/admin/members');
     await expect(restrictedScreen(page)).toContainText('Needs members manage');
+    // c11-fe-admin-security: without security.manage the security page is neither listed nor open.
+    await expect(page.locator('[data-admin-section="admin-security"]')).toHaveCount(0);
+    await page.goto('/admin/security');
+    await expect(restrictedScreen(page)).toContainText('Needs security manage');
 
     // --- c11-fe-admin-agents: Agents (AGT-03, AGT-04, ADM-01) ---------------------------
     // Every member holding watch.read reaches Agents and reads what bleqq watches; the

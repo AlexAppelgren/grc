@@ -610,12 +610,35 @@ class IdentityScenarioTests(ScenarioTestCase):
         A tenant can require attested device-bound authenticators (ID-07).
         """
 
-    @skip("pending: ID-S17 (ID-08, chunk 11)")
     def test_id_s17(self) -> None:
         """ID-S17
 
         Session limits are tenant policy within platform maximums (ID-08).
         """
+        from apps.tenants.models import SecurityPolicy
+
+        self.activate(self.tenant)
+        SecurityPolicy.objects.create(tenant=self.tenant, session_idle_minutes=15, session_absolute_hours=8)
+        cookie = sign_in(self.admin, tenant=self.tenant)["HTTP_COOKIE"]
+        refreshed = self._post("/auth/refresh", HTTP_COOKIE=cookie)
+        self.assertEqual(refreshed.status_code, 200, refreshed.content)
+        self.assertAlmostEqual(int(refreshed.cookies[COOKIE]["max-age"]), 8 * 3600, delta=5)
+        with self._later(minutes=16):
+            idle = self._post("/auth/refresh", **self._cookie(refreshed.cookies[COOKIE].value))
+        self.assertEqual(idle.status_code, 401)
+        self.assertEqual(idle.json()["code"], "unauthenticated")
+        self.activate(self.tenant)
+        self.assertEqual(UserSession.objects.get(user=self.admin, tenant=self.tenant).revoked_reason, "idle")
+        # An admin's write above the platform maximum (a setting) is refused (putSecurityPolicy).
+        above = self.client.put(
+            "/api/v1/tenant/security-policy",
+            data={"sessionIdleMinutes": 15, "sessionAbsoluteHours": settings.SESSION_ABSOLUTE_HOURS_MAX + 1},
+            content_type="application/json",
+            **sign_in(self.admin, tenant=self.tenant, step_up=True),
+        )
+        self.assertEqual((above.status_code, above.json()["code"]), (422, "above_platform_maximum"))
+        self.activate(self.tenant)
+        self.assertEqual(SecurityPolicy.objects.get(tenant=self.tenant).session_absolute_hours, 8)
 
     def test_id_s18(self) -> None:
         """ID-S18
