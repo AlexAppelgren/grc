@@ -184,7 +184,8 @@ def ask_question(request: HttpRequest, body: AskRequest) -> Iterator[AskEvent]:
     Limits and budgets: the question is at most 2000 characters
     (`ASK_QUESTION_MAX_CHARS`), and a longer one answers 422 before any stream opens. Each
     reader may ask 10 questions a minute (`ASK_RATE_PER_USER_PER_MINUTE`), counted per
-    person. The model is given at most 6 passages (`ASK_RETRIEVAL_DEPTH`) and may write at
+    person, and may have at most 2 answers streaming at once (`ASK_STREAMS_PER_USER`); an
+    answer stops counting the moment its stream closes. The model is given at most 6 passages (`ASK_RETRIEVAL_DEPTH`) and may write at
     most 1024 tokens (`ASK_MAX_TOKENS`). The first token arrives inside 2 s (NFR-02).
 
     Shape of the call: a read of the library and a model call. It needs no idempotency
@@ -197,7 +198,8 @@ def ask_question(request: HttpRequest, body: AskRequest) -> Iterator[AskEvent]:
     Errors, each a status with a problem body before any stream opens:
     `feature_off` (403) when the reader's bank has switched its AI features off, which is
     the bank's decision and not a fault to retry; `rate_limited` (429) when that reader has
-    asked more than the limit above in the last minute, to wait out and retry;
+    asked more than the limit above in the last minute, or already has as many answers
+    streaming as the cap above allows, to wait out and retry;
     `unknown_key` (422) for a `lang` that is not one of the library's language rows;
     `validation_error` (422) for a question over the cap or a field the contract does not
     name; `not_found` (404) when the session belongs to no bank; `permission_denied`
@@ -231,8 +233,9 @@ def rate_answer(
         description=(
             "The answer to rate, as a UUID: the `id` of the `start` event that `POST /ask` "
             "streamed first, which is also the answer's row in the AI log. It must be an "
-            "answer of the caller's own bank. Another bank's answer, an id that is no answer "
-            "and a value that is not a UUID all answer `not_found`, never saying which."
+            "answer the caller was given themselves. A colleague's answer, another bank's, an "
+            "id that is no answer and a value that is not a UUID all answer `not_found`, never "
+            "saying which."
         ),
     ),
 ) -> tuple[int, None]:
@@ -240,7 +243,8 @@ def rate_answer(
     — so the people who tune retrieval know where it fails (AUD-02, SRC-05).
 
     Who may call it: a person with `search.use`, on their own session, about an answer
-    of their own bank. An answer of another bank answers 404.
+    they were given themselves. A colleague's answer, or another bank's, answers 404, so
+    nobody replaces the verdict of the person who asked.
 
     What comes back: 204 and no body.
 
@@ -254,7 +258,7 @@ def rate_answer(
     audit row. A different verdict replaces the earlier one, and the audit trail keeps
     both. Neither the question nor the answer nor the note reaches the audit row.
 
-    Errors: `not_found` (404) for an answer that is not one of the bank's own, or a
+    Errors: `not_found` (404) for an answer the caller was not given themselves, or a
     session that belongs to no bank; `validation_error` (422) for a verdict other than
     `helpful` or `wrong`, a note over the cap or a field the contract does not name;
     `permission_denied` (403) without `search.use`; `unauthenticated` (401) without a

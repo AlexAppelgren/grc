@@ -9,8 +9,9 @@ What these tests hold in place:
    reader's note reaches the audit row, its outbox row or a log line: the verdict is a
    kind, and the note stays beside the answer for the bank's own review.
 3. **The same verdict twice is one verdict.** A repeat writes nothing and answers 204.
-4. **An answer is the bank's own.** Another bank's answer, an unknown id and a model call
-   that was not an answer all answer 404, and nothing is written.
+4. **An answer is the asker's own.** A colleague's answer (hardening H48), another bank's
+   answer, an unknown id and a model call that was not an answer all answer 404, and
+   nothing is written.
 """
 
 from __future__ import annotations
@@ -63,7 +64,7 @@ class RateAnswerTests(TestCase):
         # Signing in is itself an audited act, so the session opens before any count.
         self.headers = sign_in(self.reader, tenant=self.tenant)
 
-    def answer(self, tenant: Tenant, purpose: AiPurpose = AiPurpose.ANSWER) -> AiGeneration:
+    def answer(self, tenant: Tenant, purpose: AiPurpose = AiPurpose.ANSWER, asker: User | None = None) -> AiGeneration:
         """One model call of `tenant`'s, logged the way Ask logs an answer. The test reads
         from the reader's bank afterwards, whichever bank the row was written in."""
         with transaction.atomic():
@@ -75,7 +76,7 @@ class RateAnswerTests(TestCase):
                 output=OUTPUT,
                 citations=[CITATION],
                 tenant_id=tenant.id,
-                asker_id=self.reader.id,
+                asker_id=(asker or self.reader).id,
                 prompt_template=ask.PROMPT_TEMPLATE,
                 metadata_reported_by_agent=purpose is AiPurpose.SO_WHAT,
             )
@@ -206,6 +207,24 @@ class RateAnswerTests(TestCase):
         self.assertEqual(AuditEvent.objects.count(), before)
         row = self.row(theirs)
         self.assertEqual((row.feedback, row.feedback_note), ("", ""))
+
+    def test_a_colleagues_answer_is_not_found_and_keeps_their_verdict(self) -> None:
+        """Hardening H48: the AI log shows a colleague's answer id, and a member who knew it
+        could replace the verdict and note of the person who asked. Only the asker rates."""
+        colleague = factories.member_user(self.tenant, roles=("reader",))
+        theirs = self.answer(self.tenant, asker=colleague)
+        colleagues_headers = sign_in(colleague, tenant=self.tenant)
+        kept = self.client.post(feedback_path(theirs.id), {"feedback": "helpful", "note": NOTE}, content_type="application/json", **colleagues_headers)
+        self.assertEqual(kept.status_code, 204, kept.content)
+        before = AuditEvent.objects.count()
+
+        response = self.rate(theirs.id, {"feedback": "wrong", "note": "Replaced."})
+
+        self.assertEqual(response.status_code, 404, response.content)
+        self.assertEqual(response.json()["code"], "not_found")
+        self.assertEqual(AuditEvent.objects.count(), before)
+        row = self.row(theirs)
+        self.assertEqual((row.feedback, row.feedback_note), ("helpful", NOTE))
 
     def test_an_unknown_answer_and_a_model_call_that_was_no_answer_are_not_found(self) -> None:
         so_what = self.answer(self.tenant, AiPurpose.SO_WHAT)

@@ -394,7 +394,7 @@ class TenantListRaces(TransactionTestCase):
             ensure_tenant_vocabularies(self.tenant, actor=Actor.system("test"))
             tenant_lists_logic.create_row(
                 list_name="risk_rating", tenant=self.tenant, actor=Actor.system("test"), labels={"en": "Negligible"},
-                key="negligible", extra={"ordinal": 0}, force=True,
+                key="negligible", kind="low", extra={"ordinal": 0}, force=True,
             )
         self.admin = factories.member(self.tenant, roles=("admin",)).user
 
