@@ -44,12 +44,13 @@ SUBJECT_TYPE = "change_case"
 MOVED = "case.moved"
 
 # What a workflow read and write joins beside the case, so naming the people and the
-# reasons costs no query of its own.
+# reasons costs no query of its own. The owner is named through its field, because "owner"
+# is also a system role's key and no logic module spells a role name (ID-S18).
 CASE_JOINS = (
     "change",
     "urgency",
     "sub_status",
-    "owner",
+    ChangeCase.owner.field.name,
     "owner_team",
     "triaged_by",
     "dismissed_reason",
