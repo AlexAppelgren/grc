@@ -262,7 +262,8 @@ CORS_ALLOW_HEADERS = [
     "x-request-id",
     "x-tenant-id",
 ]
-CORS_EXPOSE_HEADERS = ["etag", "server-timing", "x-request-id"]
+# content-disposition: an evidence download is saved under the name the server chose (CAS-05).
+CORS_EXPOSE_HEADERS = ["content-disposition", "etag", "server-timing", "x-request-id"]
 
 # ---------------------------------------------------------------------------------------
 # Adapters (playbook 16). One interface each, a mock chosen by setting. A mock outside the

@@ -150,8 +150,11 @@ export function useDeleteAction(changeId: string): UseMutationResult<void, unkno
   return useCaseWrite(changeId, (action: Pick<CaseAction, 'id' | 'version'>) => cases.deleteAction(action.id, action.version));
 }
 
-export function useAddEvidence(changeId: string): UseMutationResult<CaseEvidenceCreated, unknown, EvidenceInput> {
-  return useCaseWrite(changeId, (input: EvidenceInput) => cases.addEvidence(changeId, input));
+/** `onProgress` hears the share of a file's bytes sent so far, from 0 to 1. */
+export function useAddEvidence(changeId: string, onProgress?: (sent: number) => void): UseMutationResult<CaseEvidenceCreated, unknown, EvidenceInput> {
+  return useCaseWrite(changeId, (input: EvidenceInput) =>
+    cases.addEvidence(changeId, input, onProgress === undefined ? undefined : (event) => onProgress(event.total ? event.loaded / event.total : 0)),
+  );
 }
 
 export function useRemoveEvidence(changeId: string): UseMutationResult<void, unknown, string> {
