@@ -170,6 +170,7 @@ writes, never an OpenAPI `enum`.
   scopes nothing (TEN-02, D-70).
 - `credential_policy` (`any_passkey`, `device_bound`), `CredentialPolicyKind`: sign-in and
   enrolment branch on it (ID-07, ADR 0048).
+
 **Chunk 8's register lists (2026-09-25, c8-vocab-lists-rules).** Tier-three lists
 `schema.sql` has as `CHECK` constraints or not at all, each with an immutable key, labels in
 `en` and `sv`, system rows the tenant hook files create-only, and forced row-level security:
