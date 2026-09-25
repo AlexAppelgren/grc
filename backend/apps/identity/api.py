@@ -626,25 +626,33 @@ def get_me(request: HttpRequest) -> Me:
     auth=SessionAuth(),
     operation_id="updateMe",
     by_alias=True,
-    summary="Change your name or reading language",
+    summary="Change your name, reading language or notification switches",
 )
 def update_me(request: HttpRequest, body: MePatch) -> Me:
-    """Updates the caller's own name, preferred language or both, and answers with the whole
-    of `GET /me` as it now stands. Send only what changes: an omitted or null field is left
-    alone. The name belongs to the account, so every bank the person is in shows the new
-    one; the language decides which language their screens and labels use.
+    """Updates the caller's own name, preferred language, notification switches or any of
+    them, and answers with the whole of `GET /me` as it now stands. Send only what changes:
+    an omitted or null field, or switch, is left alone. The name belongs to the account, so
+    every bank the person is in shows the new one; the language decides which language
+    their screens and labels use; the switches belong to the person's membership of the
+    bank this session is signed in to.
 
     Self-service: it needs a full session and no permission, and reaches no one else's
-    account. It writes the audit event `user.updated` with the name and language before and
-    after.
+    account. It writes one audit event `user.updated` with the name, language and, when
+    they were sent, the switches before and after.
 
     Errors: `name_required` (422) for a blank name; `unknown_key` (422) for a language key
-    that is not an active language; `validation_error` (422) for a name over 200 characters
-    or a language key over 8; `unauthenticated` (401) without a live session;
-    `enrolment_only` (403) from an enrolment session.
+    that is not an active language or a switch that does not exist, and then nothing is
+    saved; `not_found` (404) for switches sent from a platform session, which belongs to no
+    bank; `validation_error` (422) for a name over 200 characters, a language key over 8 or
+    a switch that is not true, false or null; `unauthenticated` (401) without a live
+    session; `enrolment_only` (403) from an enrolment session.
     """
     # Ungated by design: self.
-    return Me.model_validate(me_logic.update_me(_principal(request), name=body.name, locale=body.locale))
+    return Me.model_validate(
+        me_logic.update_me(
+            _principal(request), name=body.name, locale=body.locale, notification_prefs_patch=body.notification_prefs
+        )
+    )
 
 
 @router.post(
