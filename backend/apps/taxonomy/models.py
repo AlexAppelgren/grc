@@ -106,6 +106,26 @@ class ComplianceCategory(enum.StrEnum):
     NOT_ASSESSED = "not_assessed"
 
 
+class GapCategory(enum.StrEnum):
+    """The four fixed states of a gap (REG-03, VOC-04): a tenant's gap statuses sit inside
+    one, and the pill tone and the reports read it. `risk_accepted` is the frontend's
+    spelling (tone-by-kind.ts), so one state has one name."""
+
+    OPEN = "open"
+    REMEDIATING = "remediating"
+    RISK_ACCEPTED = "risk_accepted"
+    CLOSED = "closed"
+
+
+class RiskLevel(enum.StrEnum):
+    """The fixed level a tenant's risk rating maps to (VOC-05): the tone reads it, never the
+    rating's editable ordinal or its label."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
 class CaseStatusCategory(enum.StrEnum):
     """The seven fixed categories the case state machine reads (D-13, VOC-04)."""
 
@@ -515,6 +535,11 @@ class ComplianceStatusLabel(VocabularyLabel):
 
 
 class RiskRating(TenantListVocabulary):
+    """A tenant's risk scale (VOC-05): `kind` is the fixed level the tone reads, `ordinal`
+    the bank's own order, which an admin may edit."""
+
+    KIND_CHOICES = _choices(RiskLevel)
+
     ordinal = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -591,6 +616,91 @@ class ClosureReasonLabel(VocabularyLabel):
         db_table = "close_reason_label"
         ordering = ["language"]
         constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="close_reason_label_unique")]
+
+
+class GapStatus(TenantListVocabulary):
+    """A tenant's gap statuses (REG-03, VOC-04), each inside a fixed `GapCategory`."""
+
+    KIND_CHOICES = _choices(GapCategory)
+
+    class Meta:
+        db_table = "gap_status"
+        ordering = ["sort_order", "key"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "key"], name="gap_status_key_unique")]
+
+
+class GapStatusLabel(VocabularyLabel):
+    tenant = models.ForeignKey("shared.Tenant", on_delete=models.PROTECT, related_name="+")
+    vocabulary = models.ForeignKey(GapStatus, on_delete=models.CASCADE, related_name="labels")
+
+    class Meta:
+        db_table = "gap_status_label"
+        ordering = ["language"]
+        constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="gap_status_label_unique")]
+
+
+class GapSource(TenantListVocabulary):
+    """Where a gap was found (REG-03). No kind: its pill takes the `source` slot's tone."""
+
+    class Meta:
+        db_table = "gap_source"
+        ordering = ["sort_order", "key"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "key"], name="gap_source_key_unique")]
+
+
+class GapSourceLabel(VocabularyLabel):
+    tenant = models.ForeignKey("shared.Tenant", on_delete=models.PROTECT, related_name="+")
+    vocabulary = models.ForeignKey(GapSource, on_delete=models.CASCADE, related_name="labels")
+
+    class Meta:
+        db_table = "gap_source_label"
+        ordering = ["language"]
+        constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="gap_source_label_unique")]
+
+
+class RiskAcceptanceReason(TenantListVocabulary):
+    """Why a gap's risk was accepted (VOC-06)."""
+
+    class Meta:
+        db_table = "risk_acceptance_reason"
+        ordering = ["sort_order", "key"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "key"], name="risk_acceptance_reason_key_unique")]
+
+
+class RiskAcceptanceReasonLabel(VocabularyLabel):
+    tenant = models.ForeignKey("shared.Tenant", on_delete=models.PROTECT, related_name="+")
+    vocabulary = models.ForeignKey(RiskAcceptanceReason, on_delete=models.CASCADE, related_name="labels")
+
+    class Meta:
+        db_table = "risk_acceptance_reason_label"
+        ordering = ["language"]
+        constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="risk_acceptance_reason_label_unique")]
+
+
+class Team(TenantListVocabulary):
+    """A team that can own work (TEN-03, INPUT_DELTAS §1): a tenant list, so create, rename
+    and retire are the generic list routes under `vocab.manage`. `UNIQUE (tenant_id, id)` is
+    added in SQL (taxonomy 0009) so membership and departments can point at a team with a
+    composite key. `org_unit` is the department the team belongs to (D-21, taxonomy 0010), a
+    composite key to the same bank's unit."""
+
+    email = models.EmailField(blank=True)
+    org_unit = models.ForeignKey("tenants.OrgUnit", null=True, blank=True, on_delete=models.PROTECT, related_name="teams")
+
+    class Meta:
+        db_table = "team"
+        ordering = ["sort_order", "key"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "key"], name="team_key_unique")]
+
+
+class TeamLabel(VocabularyLabel):
+    tenant = models.ForeignKey("shared.Tenant", on_delete=models.PROTECT, related_name="+")
+    vocabulary = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="labels")
+
+    class Meta:
+        db_table = "team_label"
+        ordering = ["language"]
+        constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="team_label_unique")]
 
 
 class VocabularySuggestion(TenantModel):
