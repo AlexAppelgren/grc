@@ -1354,3 +1354,25 @@ Also departing from v0.3:
   never writes the library), `run_trigger`, `research_request_kind` and
   `research_request_status`. Like `agent_kind` they are kinds in code with no database
   constraint on their values.
+
+## acc-foundation. Agent access entries and credential kinds (2026-09-25, agents 0006, identity 0007)
+
+`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
+third column the R2 plan names (`acts_as_user`), are built with these departures:
+
+- `agent_access.owner_team_id` is required, not "null until chunk 8 lands teams": the team
+  list has landed and every bank has the system team `compliance` (ACC-01 names the team).
+  `revoked_at` and `revoked_by_id` are columns, and a CHECK keeps `active` false exactly when
+  `revoked_at` is set. An entry is revoked, never deleted (`delete()` refuses).
+- Every reference is also a composite `(tenant_id, …)` key: the team, the departments
+  (`org_unit`) and products (`tenant_product`) of the joins, the creator and revoker (into
+  `membership (tenant_id, user_id)`), and on `api_key` the entry and `acts_as_user`.
+- `api_key.kind` is the tier-one kind `credential_kind` (`service`, `personal`); every key
+  before identity 0007 is `service`. CHECKs: a personal token has a tenant, a person and an
+  expiry and no agent, and only a token acts as a person; a key bound to an entry has a
+  tenant and no agent definition (it is not one of the agents we run); an entry's key and
+  every token hold only `AGENT_ACCESS_SCOPES` (`library:read`, `search:read`,
+  `upcoming:read`, `tenant:read`), so "reads and nothing else" (ADR 0055) is the
+  database's rule as well as the code's.
+- `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
+  `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
