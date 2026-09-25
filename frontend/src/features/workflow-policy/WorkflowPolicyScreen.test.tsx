@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { AdminGate } from '@/components/admin/AdminGate';
-import { WorkflowPolicyScreen } from '@/features/workflow-policy/WorkflowPolicyScreen';
+import { roleOptions, WorkflowPolicyScreen } from '@/features/workflow-policy/WorkflowPolicyScreen';
 import { childDestinations } from '@/shared/navigation/registry';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
@@ -125,6 +125,42 @@ describe('the workflow policy page', () => {
     expect(patches(sent)).toEqual([]);
   });
 
+  it('refuses a reminder day out of range and saves an added review reminder', async () => {
+    const sent = server();
+    await renderScreen();
+    fireEvent.change(screen.getByLabelText('Days before a review'), { target: { value: '91' } });
+    fireEvent.click(within(field('reviewReminderDaysBefore')).getByRole('button', { name: 'Add' }));
+    expect(within(field('reviewReminderDaysBefore')).getByRole('alert')).toHaveTextContent('Enter a whole number from 1 to 90.');
+    fireEvent.change(screen.getByLabelText('Days before a review'), { target: { value: '60' } });
+    fireEvent.click(within(field('reviewReminderDaysBefore')).getByRole('button', { name: 'Add' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('Saved.');
+    expect(patches(sent)).toEqual([
+      { reminderDaysBefore: [7, 3], reviewReminderDaysBefore: [60, 30], escalateAfterDays: 10, escalateToRole: 'compliance_officer', digestWeekday: 'monday', triageTargetHours: 48 },
+    ]);
+  });
+
+  it('says the settings could not be loaded, with a way to try again', async () => {
+    installAdapter((sent) => {
+      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
+      if (sent.path === ROLES_PATH) return { status: 200, data: [role(admin), role(officer)] };
+      return { status: 500, data: { code: 'internal_error', detail: 'Something went wrong on our side. Try again.' } };
+    });
+    const { wrapper: Query } = queryWrapper();
+    render(
+      <Query>
+        <PermissionsProvider permissions={['workflow.manage']}>
+          <AdminGate id="admin-workflow">
+            <WorkflowPolicyScreen />
+          </AdminGate>
+        </PermissionsProvider>
+      </Query>,
+    );
+    expect(await screen.findByText('Could not load the workflow settings')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Try again/ }));
+    expect(await screen.findByText('Could not load the workflow settings')).toBeInTheDocument();
+  });
+
   it('fills the form with the platform defaults on reset and saves nothing until Save', async () => {
     const sent = server();
     await renderScreen();
@@ -145,6 +181,24 @@ describe('the workflow policy page', () => {
     expect(await within(field('escalateToRole')).findByRole('alert')).toHaveTextContent('That role no longer exists. Choose another.');
     expect(screen.getByLabelText('Escalate to')).toHaveAttribute('aria-invalid', 'true');
     expect(screen.queryByText('Pick one of your organisation roles.')).toBeNull();
+  });
+
+  it('renders an unknown weekday and a refused reminder list under their fields', async () => {
+    server(() => ({
+      status: 422,
+      data: { code: 'unknown_key', detail: 'Pick a day.', status: 422, errors: [{ field: 'body.digestWeekday', message: 'x' }, { field: 'body.reminderDaysBefore.0', message: 'y' }] },
+    }));
+    await renderScreen();
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await within(field('digestWeekday')).findByRole('alert')).toHaveTextContent('Pick a day of the week.');
+    expect(screen.getByLabelText('Send the weekly digest on')).toHaveAttribute('aria-invalid', 'true');
+    expect(within(field('reminderDaysBefore')).getByRole('alert')).toHaveTextContent('Each list holds 1 to 5 reminders, each 1 to 90 days.');
+  });
+
+  it('keeps a retired target role among the choices so the form still shows what it points at', () => {
+    const retired = { key: 'old_role', kind: null, label: 'Old role' };
+    const options = roleOptions(undefined, { ...tenant, workflow: { ...tenant.workflow, escalateToRole: retired } });
+    expect(options.map((option) => option.key)).toEqual(['old_role', 'compliance_officer']);
   });
 
   it('renders a validation_error under the field it names', async () => {

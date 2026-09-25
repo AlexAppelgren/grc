@@ -61,4 +61,9 @@ describe('the workflow form rules', () => {
     expect(serverFieldErrors(answered(403, { code: 'permission_denied', requiredPermission: 'workflow.manage' }))).toBeNull();
     expect(serverFieldErrors(new Error('offline'))).toBeNull();
   });
+
+  it('reads a 422 with no field list, or with entries that name no field, as a whole error', () => {
+    expect(serverFieldErrors(answered(422, { code: 'validation_error' }))).toBeNull();
+    expect(serverFieldErrors(answered(422, { code: 'validation_error', errors: ['escalateAfterDays', null, { message: 'x' }, { field: 7 }] }))).toBeNull();
+  });
 });
