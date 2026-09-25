@@ -177,4 +177,36 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "HOM-03, HOM-04: what produced the date - a change's key date, an internal deadline, "
         "an action due or a review due; the card and the calendar builder branch on it",
     ),
+    # Chunk 8 organisation and chunk 11 security policy (c8-org-models, tenants 0002).
+    "OrgUnitKind": (
+        "org_unit_kind",
+        "TEN-02, D-21: a group, legal entity, business area, business unit or function; only a legal "
+        "entity holds licences and the legal-entity term, and a department is a unit of the last three kinds",
+    ),
+    "ProductStatusKind": (
+        "product_status",
+        "TEN-02: planned, live or retired; retired is how a product is withdrawn, never deleted, and "
+        "scope and agent-access narrowing (D-70) branch on it, so it is a kind and not a tenant list",
+    ),
+    "CredentialPolicyKind": (
+        "credential_policy",
+        "ID-07, ADR 0048: any passkey or device-bound only; sign-in and enrolment branch on it",
+    ),
+    # Chunk 8's register lists (c8-vocab-lists-rules). Categories the rules read off a
+    # tenant row's fixed `kind`; the tenant's labels, order and extra rows stay its own.
+    "GapCategory": (
+        "gap_category",
+        "REG-03, VOC-04: open, remediating, risk accepted or closed; the gap workflow, the reports and the pill tone read the category, never the tenant's label",
+    ),
+    "RiskLevel": (
+        "risk_level",
+        "VOC-05: low, medium or high; the pill tone reads the level a risk rating maps to, never its editable ordinal or its label",
+    ),
+    # Chunk 8's register (c8-register-models, register 0001). `Applicability` is listed above.
+    "AssessmentMethod": (
+        "assessment_method",
+        "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
+        "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
+        "reporting branches on",
+    ),
 }
