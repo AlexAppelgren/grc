@@ -1368,3 +1368,19 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 - [ ] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. It
       follows the app's existing terms (skyldighet, förslag, godkännande), but
       a native read of the headline and the questions is worth five minutes.
+
+## c10-reminders-core: triage reminders and the delegation hop, defaults taken (2026-09-25, COL-02, TEN-04)
+
+Built by default; nothing waits on you. Say if any should change.
+
+- [ ] **Who is reminded about a case awaiting triage.** Every active member whose
+      roles hold `cases.triage`, since a new case has no owner yet. Default: so.
+- [ ] **An overdue triage is reminded once.** The morning after its due time
+      passes, not every day after; escalation is what follows it. Default: so.
+- [ ] **The absent person's switch decides.** A reminder routed to a delegate
+      follows the absent person's own `reminders` switch, because it is their
+      notice; the delegate's switch is not read. Default: so.
+- [ ] **A delegate already told for themself gets one notice.** It carries no
+      "on behalf of", so they are not told twice about one record. Default: so.
+- [ ] **The mail does not yet say on whose behalf it came.** The notification
+      row names the absent person; the mail wording is the mail catalog's to add.
