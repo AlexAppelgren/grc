@@ -24,7 +24,17 @@ from apps.shared import permissions as perms
 from apps.shared import tenancy
 from apps.shared.audit import Actor, record
 from apps.shared.errors import ProblemError
-from apps.shared.models import Tenant, TenantContentLanguage, Weekday
+from apps.shared.models import (
+    Tenant,
+    TenantContentLanguage,
+    Weekday,
+    default_digest_weekday,
+    default_escalate_after_days,
+    default_escalate_to_role,
+    default_reminder_days_before,
+    default_review_reminder_days_before,
+    default_triage_target_hours,
+)
 from apps.taxonomy.models import FootprintTerm
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.tenants.models import SupportAccess, SupportAccessLevel
@@ -73,6 +83,7 @@ def tenant_out(tenant: Tenant) -> dict[str, Any]:
         "content_languages": [language_ref(language) for language in content_languages(tenant)],
         "ai_enabled": tenant.ai_enabled,
         "workflow": workflow_out(tenant),
+        "workflow_defaults": workflow_defaults_out(tenant),
         "onboarding": onboarding(tenant),
     }
 
@@ -196,18 +207,34 @@ def _workflow_values(tenant: Tenant) -> dict[str, Any]:
     }
 
 
-def workflow_out(tenant: Tenant) -> dict[str, Any]:
+def _escalation_role(tenant: Tenant, key: str) -> dict[str, Any]:
     # A retired role still reads with its label: retiring the target is refused nowhere yet,
     # and the policy should say what it points at rather than fail the whole profile.
-    role = roles_logic.tenant_roles(tenant.id, include_retired=True).filter(key=tenant.escalate_to_role).first()  # ordering: unique (tenant, key), at most one row
-    order = roles_logic.language_order(None, tenant)
+    role = roles_logic.tenant_roles(tenant.id, include_retired=True).filter(key=key).first()  # ordering: unique (tenant, key), at most one row
+    return roles_logic.role_ref(role, roles_logic.language_order(None, tenant)) if role else {"key": key, "kind": None, "label": key}
+
+
+def workflow_out(tenant: Tenant) -> dict[str, Any]:
     return {
         "reminder_days_before": list(tenant.reminder_days_before),
         "review_reminder_days_before": list(tenant.review_reminder_days_before),
         "escalate_after_days": tenant.escalate_after_days,
-        "escalate_to_role": roles_logic.role_ref(role, order) if role else {"key": tenant.escalate_to_role, "kind": None, "label": tenant.escalate_to_role},
+        "escalate_to_role": _escalation_role(tenant, tenant.escalate_to_role),
         "digest_weekday": tenant.digest_weekday,
         "triage_target_hours": tenant.triage_target_hours,
+    }
+
+
+def workflow_defaults_out(tenant: Tenant) -> dict[str, Any]:
+    """The platform defaults, read from the same functions a new tenant row takes them from,
+    so the workflow page shows what a bank is changing from and can reset to it."""
+    return {
+        "reminder_days_before": default_reminder_days_before(),
+        "review_reminder_days_before": default_review_reminder_days_before(),
+        "escalate_after_days": default_escalate_after_days(),
+        "escalate_to_role": _escalation_role(tenant, default_escalate_to_role()),
+        "digest_weekday": default_digest_weekday(),
+        "triage_target_hours": default_triage_target_hours(),
     }
 
 

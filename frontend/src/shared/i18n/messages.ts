@@ -57,6 +57,9 @@ import enVocabularies from '@/messages/vocabularies/en.json';
 import svVocabularies from '@/messages/vocabularies/sv.json';
 import enWatch from '@/messages/watch/en.json';
 import svWatch from '@/messages/watch/sv.json';
+// c10-fe-workflow-policy: the workflow policy page (COL-02, TEN-01).
+import enWorkflow from '@/messages/workflow/en.json';
+import svWorkflow from '@/messages/workflow/sv.json';
 
 // One catalog per UI language (playbook 6.5), stored as one file pair per
 // feature namespace under src/messages/<namespace>/ so that packages owning
@@ -95,6 +98,7 @@ const en = {
   ...enToday,
   ...enVocabularies,
   ...enWatch,
+  ...enWorkflow,
 };
 
 const sv = {
@@ -128,6 +132,7 @@ const sv = {
   ...svToday,
   ...svVocabularies,
   ...svWatch,
+  ...svWorkflow,
 };
 
 export const locales = ['en', 'sv'] as const;
