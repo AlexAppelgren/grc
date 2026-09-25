@@ -19,7 +19,6 @@ from typing import Any
 from unittest import skip
 
 from django.db import transaction
-from django.test import TestCase
 from django.utils import timezone
 
 from apps.cases import creation, logic, state, testing as case_build
