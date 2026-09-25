@@ -11,10 +11,11 @@ Prefixes hosted: COL.
 
 from unittest import skip
 
-from django.test import TestCase
+from apps.collab.tests_participants import run_col_s6, run_col_s7, run_col_s8
+from apps.shared.testing import ScenarioTestCase
 
 
-class CollabScenarioTests(TestCase):
+class CollabScenarioTests(ScenarioTestCase):
     """Scenario tests for apps.collab, one method per @integration scenario."""
 
     @skip("pending: COL-S1")
@@ -54,26 +55,29 @@ class CollabScenarioTests(TestCase):
         Operations: `addComment`, `editComment`, `deleteComment`.
         """
 
-    @skip("pending: COL-S6 (COL-04, chunk 8)")
     def test_col_s6(self) -> None:
         """COL-S6
 
         A person or a team is added to a register entry, audited, and gains no access (COL-04, AC-COL1).
+        Operations: `addObligationParticipant`, `listObligationParticipants`.
         """
+        run_col_s6(self)
 
-    @skip("pending: COL-S7 (COL-04, chunk 8)")
     def test_col_s7(self) -> None:
         """COL-S7
 
         A participant leaves a register entry on their own (COL-04).
+        Operations: `removeObligationParticipant`.
         """
+        run_col_s7(self)
 
-    @skip("pending: COL-S8 (COL-04, chunk 8)")
     def test_col_s8(self) -> None:
         """COL-S8
 
         Register-entry participant routes refuse other tenants, strangers and people who cannot read (COL-04, NFR-01).
+        Operations: `addObligationParticipant`, `listObligationParticipants`, `removeObligationParticipant`.
         """
+        run_col_s8(self)
 
     @skip("pending: COL-S9 (COL-04, chunk 9)")
     def test_col_s9(self) -> None:

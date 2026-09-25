@@ -2,7 +2,8 @@
 class names where a shape is specific to this app (playbook 4.1).
 
 Eight operations read and write these: a person's notification inbox, the comments on one
-record, and a person's own comments and mentions on My work (COL-01, COL-02, HOM-05). Every
+record, and a person's own comments and mentions on My work (COL-01, COL-02, HOM-05). Three
+more list, add and remove the people and teams taking part in a register entry (COL-04). Every
 list is a page of `{items, total}` on the shared `limit` and `offset` (playbook 10), which is
 where the designed bare array of comments and the designed cursor on notifications were left
 (INPUT_DELTAS §7).
@@ -18,7 +19,7 @@ import datetime
 import uuid
 from typing import Literal
 
-from pydantic import ConfigDict, Field, JsonValue
+from pydantic import ConfigDict, Field, JsonValue, model_validator
 
 from apps.shared.schemas import CamelSchema, PageQuery, WriteBody
 from apps.taxonomy.schemas import PersonRef
@@ -404,3 +405,152 @@ class CollabMyCommentPage(CamelSchema):
         ),
         examples=[["change_case"]],
     )
+
+
+# ---------------------------------------------------------------------------------------
+# Participants of a register entry (COL-04, D-18, D-19)
+# ---------------------------------------------------------------------------------------
+_PARTICIPANT_EXAMPLE: dict[str, JsonValue] = {
+    "id": "6d5c4b3a-2e1f-4a09-8b7c-5d4e3f2a1b0c",
+    "person": _ERIK,
+    "team": None,
+    "addedBy": _ANNA,
+    "addedAt": "2026-09-24T08:15:00Z",
+}
+_TEAM_PARTICIPANT_EXAMPLE: dict[str, JsonValue] = {
+    "id": "7e6d5c4b-3f2a-4b1c-9d8e-6f5a4b3c2d1e",
+    "person": None,
+    "team": {"key": "legal", "kind": None, "label": "Legal"},
+    "addedBy": _ANNA,
+    "addedAt": "2026-09-24T08:16:00Z",
+}
+
+
+class CollabTeamRef(CamelSchema):
+    """A team of the bank, as a picker and a list read it: the key to store and send back,
+    and a label to show."""
+
+    key: str = Field(
+        description=(
+            "The team's key, a lowercase code of at most 80 characters such as `legal`, and the only "
+            "part to store, compare or send back. Teams are rows of the bank's own `team` vocabulary, "
+            "which its administrators extend, rename and retire (`GET /vocab/team` for the live set); the "
+            "`compliance` team is there from day one. A key never changes once issued."
+        ),
+        examples=["legal"],
+    )
+    kind: str | None = Field(
+        default=None,
+        description=(
+            "The fixed kind of the value, as on every vocabulary reference; always null here, "
+            "because the team list has no kinds: every team is simply a team of the bank."
+        ),
+        examples=[None],
+    )
+    label: str = Field(
+        description=(
+            "The team's name in the reader's language: the caller's own language first, then the "
+            "bank's default language, then English, then any label the team has, and the key itself "
+            "when it has none. For display only: an administrator may rename it at any time, so "
+            "nothing may match on it."
+        ),
+        examples=["Legal"],
+    )
+
+
+class CollabParticipant(CamelSchema):
+    """One person or one team taking part in a register entry (COL-04). Taking part puts the
+    record on their My work and in their notifications and grants them nothing: what they
+    may read or do is still their role's alone."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_PARTICIPANT_EXAMPLE]})
+
+    id: uuid.UUID = Field(
+        description=(
+            "The participation's identifier, as a uuid, which "
+            "`DELETE /obligations/{obligationId}/participants/{participantId}` takes. It names this "
+            "participation, never the person or the team."
+        ),
+        examples=[_PARTICIPANT_EXAMPLE["id"]],
+    )
+    person: PersonRef | None = Field(
+        description=(
+            "The person taking part, by id and name, or null when a team takes part. Exactly one of "
+            "`person` and `team` is set."
+        ),
+        examples=[_ERIK],
+    )
+    team: CollabTeamRef | None = Field(
+        description=(
+            "The team taking part, or null when a person takes part: a row of the bank's own `team` "
+            "vocabulary, which its administrators extend (`GET /vocab/team` for the live set). A "
+            "team has no kinds. A team reaches its active "
+            "members, each of whom still sees only what their own role can read. Exactly one of "
+            "`person` and `team` is set."
+        ),
+        examples=[None],
+    )
+    added_by: PersonRef = Field(
+        description="Who added the participant, by id and name: a member of the bank holding `register.edit` when they did.",
+        examples=[_ANNA],
+    )
+    added_at: datetime.datetime = Field(
+        description="When the participant was added, as an RFC 3339 timestamp in UTC (`2026-09-24T08:15:00Z`). Set by the server.",
+        examples=["2026-09-24T08:15:00Z"],
+    )
+
+
+class CollabParticipantPage(CamelSchema):
+    """`{items, total}` of a register entry's participants, with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"items": [_PARTICIPANT_EXAMPLE, _TEAM_PARTICIPANT_EXAMPLE], "total": 2}]}
+    )
+
+    items: list[CollabParticipant] = Field(
+        description=(
+            "The people and teams taking part now, in the order they were added. One who left or "
+            "was removed is not listed; the record's history keeps that they took part. An empty "
+            "list is a 200: nobody takes part, or the bank has not worked on the obligation yet."
+        )
+    )
+    total: int = Field(description="How many take part now in total, not how many are on this page.")
+
+
+class CollabParticipantInput(WriteBody):
+    """Who to add: exactly one of a person and a team. A field the schema does not name
+    answers 422."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={"examples": [{"userId": _ERIK["id"]}, {"teamKey": "legal"}]},
+    )
+
+    user_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "The person to add, as the uuid of an active member of this bank, from the people "
+            "picker; null by default. Someone who is not an active member of this bank, whether "
+            "from another bank, deactivated or unknown, is refused with the one 422 "
+            "`unknown_member`; a member whose roles cannot read the register with 422 "
+            "`participant_cannot_read`. Set this or `teamKey`, never both."
+        ),
+        examples=[_ERIK["id"]],
+    )
+    team_key: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=80,
+        description=(
+            "The team to add, as the key of an active row of the bank's `team` list (`GET "
+            "/vocab/team`), at most 80 characters; null by default. A key the bank has no active "
+            "team for is refused with 422 `unknown_key`. Set this or `userId`, never both."
+        ),
+        examples=["legal"],
+    )
+
+    @model_validator(mode="after")
+    def exactly_one(self) -> CollabParticipantInput:
+        if (self.user_id is None) == (self.team_key is None):
+            raise ValueError("Name a person or a team, not both and not neither.")
+        return self

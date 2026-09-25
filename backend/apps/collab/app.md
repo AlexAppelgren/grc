@@ -36,7 +36,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | COL-01 | Comments and mentions on any record, and a person's own comments and mentions on My work, limited to records they can read. These shared comments are the notes on My work; there are no private notes (D-60) | S | R2 | pending |
 | COL-02 | Notifications, reminders before due dates including next reviews, notice when a change is linked to an involved obligation or a new version applies, escalation to the head of the owner's department, a weekly digest in the user's language, once per person per event | M | R2 | pending |
 | COL-03 | Follow a record | C | R3 | pending |
-| COL-04 | Participants: people or teams added to a register entry or a case by someone who can edit it; participation lists and notifies, grants no access, and a participant can leave | M | R2 | pending |
+| COL-04 | Participants: people or teams added to a register entry or a case by someone who can edit it; participation lists and notifies, grants no access, and a participant can leave. Built for register entries (c8-participants: `participant` table, `collab/participants.py`, `/obligations/{obligationId}/participants`); the case half is `c9-case-participants`' and the notifications chunk 10's | M | R2 | in_progress |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
