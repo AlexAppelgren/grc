@@ -76,19 +76,65 @@ class CasesScenarioTests(TestCase):
         Dismissal needs a reason and can be restored (CAS-02).
         """
 
-    @skip("pending: CAS-S4")
     def test_cas_s4(self) -> None:
         """CAS-S4
 
         The impact assessment records what applies and what must change (CAS-03).
         """
+        from apps.cases.tests_assessment import AssessmentClient, bank_with_a_case, body
 
-    @skip("pending: CAS-S5")
+        bank = bank_with_a_case(CaseStatusCategory.ASSIGNED)
+        calls = AssessmentClient(self, bank)
+
+        started = calls.start()
+        self.assertEqual(started.status_code, 200, started.content)
+        self.assertEqual(started.json()["status"], CaseStatusCategory.ASSESSING.value)
+        self.assertEqual(started.json()["assessment"]["version"], 1)
+
+        saved = calls.save(body())
+        self.assertEqual(saved.status_code, 200, saved.content)
+        answer = saved.json()
+        self.assertEqual(answer["status"], CaseStatusCategory.ASSESSING.value, "saving moves no state")
+        stored = answer["assessment"]
+        self.assertEqual(
+            {name: stored[name] for name in ("applies", "why", "whatMustChange", "internalDeadline")},
+            {name: body()[name] for name in ("applies", "why", "whatMustChange", "internalDeadline")},
+        )
+        self.assertEqual(stored["effort"]["key"], "m", "the effort is a key of the bank's list")
+
+        without_why = calls.save(body(why=""))
+        self.assertEqual(without_why.status_code, 422)
+
+        refused = calls.save(body(applies="no"), bank.contributor)
+        self.assertEqual(refused.status_code, 403)
+        self.assertEqual(refused.json()["requiredPermission"], "cases.work")
+
+        closed = calls.save(body(applies="no"))
+        self.assertEqual(closed.status_code, 200, closed.content)
+        self.assertEqual(closed.json()["status"], CaseStatusCategory.CLOSED.value)
+        self.assertEqual(closed.json()["closeReason"]["kind"], "not_applicable")
+        self.assertIn(CaseStatusCategory.NEW.value, closed.json()["allowedTransitions"], "restorable to triage")
+
     def test_cas_s5(self) -> None:
         """CAS-S5
 
         Two people saving the same assessment: the second receives stale_write (CAS-03, CAS-08, AC-CAS2).
         """
+        from apps.cases.tests_assessment import OTHER_WHY, WHY, AssessmentClient, bank_with_a_case, body
+
+        bank = bank_with_a_case(CaseStatusCategory.ASSESSING)
+        calls = AssessmentClient(self, bank)
+        loaded = calls.version()  # the owner and the contributor both read this version
+
+        first = calls.save(body(), bank.owner, if_match=loaded)
+        self.assertEqual(first.status_code, 200, first.content)
+        self.assertEqual(first.json()["version"], loaded + 1)
+
+        second = calls.save(body(why=OTHER_WHY), bank.contributor, if_match=loaded)
+        self.assertEqual(second.status_code, 409)
+        self.assertEqual(second.json()["code"], "stale_write")
+        self.assertEqual(second.json()["currentVersion"], loaded + 1, "the screen reloads to this version")
+        self.assertEqual(calls.assessment().why, WHY, "never merged")
 
     @skip("pending: CAS-S6")
     def test_cas_s6(self) -> None:
@@ -139,12 +185,29 @@ class CasesScenarioTests(TestCase):
         Every response lists allowed transitions and an invalid one is refused (CAS-08).
         """
 
-    @skip("pending: CAS-S13")
     def test_cas_s13(self) -> None:
         """CAS-S13
 
         Sub-statuses inside a category leave the guards untouched (CAS-02, VOC-04).
         """
+        from apps.cases.tests_assessment import AssessmentClient, bank_with_a_case, body, sub_status
+
+        bank = bank_with_a_case(CaseStatusCategory.ASSESSING)
+        sub_status(bank.tenant, "waiting_for_legal", CaseStatusCategory.ASSESSING, "Waiting for legal")
+        calls = AssessmentClient(self, bank)
+        plain = calls.save(body())
+        self.assertEqual(plain.status_code, 200, plain.content)
+
+        placed = calls.save(body(subStatus="waiting_for_legal"))
+
+        self.assertEqual(placed.status_code, 200, placed.content)
+        answer = placed.json()
+        self.assertEqual(answer["status"], CaseStatusCategory.ASSESSING.value, "the machine still reads assessing")
+        self.assertEqual(answer["allowedTransitions"], plain.json()["allowedTransitions"], "the guards are untouched")
+        self.assertNotIn(CaseStatusCategory.SIGNOFF.value, answer["allowedTransitions"])
+        self.assertFalse(answer["canRequestSignoff"], "sign-off rules apply unchanged")
+        # The pill's tone comes from the kind, the category; its text is the bank's label.
+        self.assertEqual(answer["subStatus"], {"key": "waiting_for_legal", "kind": "assessing", "label": "Waiting for legal"})
 
     @skip("pending: CAS-S16")
     def test_cas_s16(self) -> None:

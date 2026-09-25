@@ -44,14 +44,6 @@ def restore_change(
     raise ProblemError(status=501, code="not_built", detail=NOT_BUILT)
 
 
-def start_assessment(
-    *, tenant: Tenant, actor: Actor, user: Any, order: list[str], change_id: uuid.UUID, expected_version: int | None
-) -> CasesCase:
-    """`assigned` to `assessing`, opening an empty assessment (CAS-03)."""
-    logic.load_case(tenant, change_id, for_update=True)
-    raise ProblemError(status=501, code="not_built", detail=NOT_BUILT)
-
-
 def close_without_action(
     *, tenant: Tenant, actor: Actor, user: Any, order: list[str], change_id: uuid.UUID, expected_version: int | None, body: CasesCloseBody
 ) -> CasesCase:
