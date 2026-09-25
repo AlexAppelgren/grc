@@ -7,7 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Noto+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* Serves ID-07, ID-08 and ADM-01 (chunk 11; ID-S16, ID-S17), from ADR 0048 and ID-08,
+/* Serves ID-07, ID-08, ACC-08 and ADM-01 (chunk 11; ID-S16, ID-S17, ACC-S11), from ADR 0048,
+   ID-08 and docs/plans/briefs/AGENT_ACCESS.md section 9,
    for an admin holding security.manage. The prototype is silent; designed in its
    language on the tenant shell. The UI plan had this card at chunk 13; ID-07 and ID-08
    are R2 and chunk 11 (CHUNK11_TASKS ruling 7).
@@ -16,8 +17,15 @@
    - IP allow-list (ID-13): chunk 13.
    - Single sign-on (SSO): chunk 13.
    - Retention: chunk 12 (admin-data.html).
-   - Tenant reach: the agent access card (acc-cards) draws it below Sessions, in the
-     place marked on this card.
+
+   Tenant reach (ACC-08, acc-cards): whether the agents the bank registers under Agents,
+   Access (admin-agent-access.html) may read its register decisions at all. It is its
+   own panel below the policy form, with its own actions, never part of Save: off until
+   two different members holding security.manage switch it on, one asking and another
+   approving, each with a passkey. The requester never approves; a request that reaches
+   the server from them answers 409 four_eyes_violation, drawn as a state. Rejecting and
+   switching off ask for a passkey too, and switching off is immediate and needs only one
+   person, because it takes access away.
 
    Passkeys we accept: a stricter policy binds new registrations at once and existing
    passkeys at a notice date, 14 days ahead by default; loosening takes effect at once.
@@ -240,7 +248,6 @@ legend{padding:0;font-weight:500}
 .models{max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:0 12px;margin-top:4px}
 .unit{display:flex;align-items:center;gap:8px}
 .unit input{width:96px}
-.slot{border:1px dashed var(--line-control);border-radius:8px;padding:16px;color:var(--muted);margin-bottom:16px}
 </style>
 </head>
 <body>
@@ -251,7 +258,7 @@ legend{padding:0;font-weight:500}
 <div class="head">
   <div>
     <h1>Security</h1>
-    <p class="lede">Which passkeys our members may sign in with, and how long a session lasts.</p>
+    <p class="lede">Which passkeys our members may sign in with, how long a session lasts, and whether our own agents may read our register.</p>
   </div>
 </div>
 <p class="status" role="status" tabindex="-1"></p>
@@ -300,11 +307,16 @@ legend{padding:0;font-weight:500}
   <p class="meta" style="margin:0">New limits apply to sessions from their next refresh.</p>
 </section>
 
-<div class="slot" aria-hidden="true"><p class="microlabel" style="margin:0">Tenant reach</p><p style="margin:4px 0 0">Room for the agent access panel, drawn by its own card.</p></div>
-
 <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Save</button></div>
 <p class="meta" style="margin:8px 0 0;text-align:right">Saving asks for your passkey.</p>
 </form>
+
+<section class="panel" aria-labelledby="tr" style="margin-top:24px">
+  <h2 id="tr">Our register and our own agents</h2>
+  <p>Off. The agents we register under <a href="admin-agent-access.html">Agents, Access</a> read the shared library only; our register decisions stay in bleqq.</p>
+  <p class="meta">Switching it on lets each agent we allow read our applicability decisions, compliance status and how we read each rule, for the obligations in its scope. It needs two of us holding security manage: one asks, another approves, each with a passkey.</p>
+  <div class="bar"><button class="btn" type="button">Ask to switch it on</button></div>
+</section>
 
 <h2 class="k">2 · The passkey step-up on Save</h2>
 <div class="modal">
@@ -345,13 +357,67 @@ legend{padding:0;font-weight:500}
   <p class="meta" style="margin:8px 0 0">Allowing any passkey takes effect as soon as you save.</p>
 </section>
 
-<h2 class="k">7 · Loading, error and denied, in both themes</h2>
+<h2 class="k">7 · Tenant reach: the passkey step-up on asking</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="ra" aria-describedby="rad">
+    <h2 id="ra">Use your passkey to ask for our register to be readable</h2>
+    <p id="rad">Nothing changes until another member holding security manage approves. Entries whose own reach is on then read our register decisions on their next call.</p>
+    <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Continue with passkey</button></div>
+  </div>
+</div>
+<p class="status" role="status" tabindex="-1">Asked. Another member holding security manage can approve it here.</p>
+
+<h2 class="k">8 · Tenant reach: waiting, as the member who asked sees it</h2>
+<section class="panel" aria-labelledby="tr2">
+  <h2 id="tr2">Our register and our own agents</h2>
+  <div class="notice warn" role="status"><p><b>You asked to switch this on, 25 Sep 2026 09:12.</b> Another member holding security manage approves or rejects it. Until then it stays off.</p></div>
+  <p class="meta" style="margin:0">There is nothing for you to do here: the decision is someone else's.</p>
+</section>
+
+<h2 class="k">9 · Tenant reach: waiting, as a second member holding security manage sees it</h2>
+<section class="panel" aria-labelledby="tr3">
+  <h2 id="tr3">Our register and our own agents</h2>
+  <div class="notice warn" role="status"><p><b>Sara Lindqvist asked to switch this on, 25 Sep 2026 09:12.</b> Approving lets each agent we allow read our register decisions in its scope. 1 entry has its own reach on: Trading platform coding agent.</p></div>
+  <div class="bar"><button class="btn danger" type="button">Reject</button><button class="btn" type="button">Approve with passkey</button></div>
+  <p class="meta" style="margin:8px 0 0;text-align:right">Approving and rejecting ask for your passkey.</p>
+</section>
+
+<h2 class="k">10 · Tenant reach: the member who asked tries to approve (409 four_eyes_violation), a state</h2>
+<section class="panel" role="alert" aria-labelledby="fe">
+  <h2 id="fe">Someone else must approve this</h2>
+  <p>You asked for it, so another member holding security manage approves it. Nothing changed.</p>
+  <div class="bar"><button class="btn">Back to Security</button></div>
+</section>
+
+<h2 class="k">11 · Tenant reach: on, and switching it off</h2>
+<section class="panel" aria-labelledby="tr4">
+  <h2 id="tr4">Our register and our own agents</h2>
+  <p>On since 25 Sep 2026 09:40. Asked by Sara Lindqvist, approved by Erik Holm. 1 of our 3 active entries reads our register; the others read the shared library only. <a href="admin-agent-access.html">See them under Agents, Access</a></p>
+  <p class="meta">Switching it off stops every entry reading our register on its next call. Switching it back on needs two of us again.</p>
+  <div class="bar"><button class="btn danger" type="button">Switch off</button></div>
+</section>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="off" aria-describedby="offd">
+    <h2 id="off">Switch off reading our register?</h2>
+    <p id="offd">Every entry reads the shared library only from its next call. Each entry keeps its own setting for when this is switched on again.</p>
+    <div class="bar"><button class="btn outline">Keep it on</button><button class="btn danger">Switch off</button></div>
+    <p class="meta" style="margin:8px 0 0;text-align:right">Switching off asks for your passkey.</p>
+  </div>
+</div>
+<p class="status" role="status" tabindex="-1">Switched off. Every entry now reads the shared library only.</p>
+
+<h2 class="k">12 · Tenant reach: rejected</h2>
+<p class="status" role="status" tabindex="-1">Rejected. It stays off, and Sara Lindqvist can ask again.</p>
+<p class="cap">The panel returns to its off state (state 1). The security log names who asked and who rejected.</p>
+
+<h2 class="k">13 · Loading, error and denied, in both themes</h2>
 <p class="cap">The same markup with the light and the dark aliases fixed. The page always has a policy, so it has no empty state: a new organisation reads Any passkey, 30 minutes and 12 hours. Denied is what an admin without security manage sees here.</p>
 <div class="statebox">
   <div class="theme light">
     <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Light</p>
     <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:0 0 16px"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
     <div class="errorstate" role="alert"><h2>Could not load the security policy</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+    <section class="panel" style="margin-top:16px"><h2>Our register and our own agents</h2><div class="notice warn" role="status"><p><b>Sara Lindqvist asked to switch this on, 25 Sep 2026 09:12.</b> Another member holding security manage approves or rejects it.</p></div><div class="bar"><button class="btn danger small">Reject</button><button class="btn small">Approve with passkey</button></div></section>
     <section class="panel" role="alert" style="margin-top:16px"><h2>This would lock you out</h2><p>None of your own passkeys is a model on the list, so you could not sign in after 9 Oct 2026. Nothing was saved.</p><div class="bar"><a class="btn outline" href="me-passkeys.html">My passkeys</a><button class="btn">Back to the list</button></div></section>
     <div class="restricted" role="alert" style="padding:24px 0"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p class="meta">Needs security manage</p></div>
   </div>
@@ -359,18 +425,20 @@ legend{padding:0;font-weight:500}
     <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Dark</p>
     <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:0 0 16px"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
     <div class="errorstate" role="alert"><h2>Could not load the security policy</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+    <section class="panel" style="margin-top:16px"><h2>Our register and our own agents</h2><div class="notice warn" role="status"><p><b>Sara Lindqvist asked to switch this on, 25 Sep 2026 09:12.</b> Another member holding security manage approves or rejects it.</p></div><div class="bar"><button class="btn danger small">Reject</button><button class="btn small">Approve with passkey</button></div></section>
     <section class="panel" role="alert" style="margin-top:16px"><h2>This would lock you out</h2><p>None of your own passkeys is a model on the list, so you could not sign in after 9 Oct 2026. Nothing was saved.</p><div class="bar"><a class="btn outline" href="me-passkeys.html">My passkeys</a><button class="btn">Back to the list</button></div></section>
     <div class="restricted" role="alert" style="padding:24px 0"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p class="meta">Needs security manage</p></div>
   </div>
 </div>
 
-<h2 class="k">8 · At 375 px, light and dark: the policy, the notice date and the session limits</h2>
+<h2 class="k">14 · At 375 px, light and dark: the policy, the session limits and tenant reach waiting for approval</h2>
 <div class="statebox">
   <div class="theme light" style="padding:0;border:0">
     <div class="phone">
       <section class="panel"><h2>Passkeys we accept</h2><label class="check" for="q1"><input type="radio" name="q" id="q1"><span>Any passkey</span></label><label class="check" for="q2"><input type="radio" name="q" id="q2" checked><span>Device-bound, from the list<small>3 models chosen</small></span></label><div class="field" style="margin:8px 0 0"><label for="qd">Passkeys that do not meet it stop working on</label><input id="qd" type="date" value="2026-10-09"></div></section>
       <section class="panel"><h2>Sessions</h2><div class="field"><label for="qi">Sign out after this long without activity</label><div class="unit"><input id="qi" type="number" value="15"><span>minutes</span></div><span class="hint">At most 480 minutes, which is 8 hours.</span></div><div class="field" style="margin:0"><label for="qa">Sign out after this long in all</label><div class="unit"><input id="qa" type="number" value="8"><span>hours</span></div><span class="hint">At most 24 hours.</span></div></section>
       <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Save</button></div>
+      <section class="panel" style="margin:16px 0 0"><h2>Our register and our own agents</h2><div class="notice warn" role="status"><p><b>Sara Lindqvist asked to switch this on, 25 Sep 2026 09:12.</b> Another member holding security manage approves or rejects it.</p></div><div class="bar"><button class="btn danger">Reject</button><button class="btn">Approve with passkey</button></div></section>
     </div>
   </div>
   <div class="theme dark" style="padding:0;border:0">
@@ -378,6 +446,7 @@ legend{padding:0;font-weight:500}
       <section class="panel"><h2>Passkeys we accept</h2><label class="check" for="r1"><input type="radio" name="r" id="r1"><span>Any passkey</span></label><label class="check" for="r2"><input type="radio" name="r" id="r2" checked><span>Device-bound, from the list<small>3 models chosen</small></span></label><div class="field" style="margin:8px 0 0"><label for="rd">Passkeys that do not meet it stop working on</label><input id="rd" type="date" value="2026-10-09"></div></section>
       <section class="panel"><h2>Sessions</h2><div class="field"><label for="ri">Sign out after this long without activity</label><div class="unit"><input id="ri" type="number" value="15"><span>minutes</span></div><span class="hint">At most 480 minutes, which is 8 hours.</span></div><div class="field" style="margin:0"><label for="ra">Sign out after this long in all</label><div class="unit"><input id="ra" type="number" value="8"><span>hours</span></div><span class="hint">At most 24 hours.</span></div></section>
       <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Save</button></div>
+      <section class="panel" style="margin:16px 0 0"><h2>Our register and our own agents</h2><div class="notice warn" role="status"><p><b>Sara Lindqvist asked to switch this on, 25 Sep 2026 09:12.</b> Another member holding security manage approves or rejects it.</p></div><div class="bar"><button class="btn danger">Reject</button><button class="btn">Approve with passkey</button></div></section>
     </div>
   </div>
 </div>
@@ -391,9 +460,15 @@ disappears. A save that would leave the acting admin with no passkey that meets 
 refused with 409 and drawn as its own panel with two ways forward, My passkeys and back to the
 list, never as a red banner, and nothing is saved. The session limits show the platform maximum
 beside each field, read from the platform's settings; above it the server's 422 renders under
-the field. No pill is added: every state is a sentence. The Tenant reach panel is drawn by the
-agent access card in the marked place, and the IP allow-list, single sign-on (chunk 13) and
-retention (chunk 12) arrive with their own cards. Two buttons per row on a phone, the primary on
+the field. No pill is added: every state is a sentence. Below the form, outside Save, "Our
+register and our own agents" is the tenant reach switch (ACC-08): off by default; one member
+holding security manage asks with a passkey, and the panel then names who asked and when in a
+warning banner; the asker sees no action, since the request's decider is never
+its requester, and another member holding security manage sees Reject and Approve with passkey. A 409 four_eyes_violation, if the asker's approval reaches
+the server, is drawn as its own panel, not as an error banner. On, the panel names who asked and
+who approved and how many entries read the register, and Switch off confirms once, asks for a
+passkey and takes effect at once for every entry, whatever each entry's own toggle says. The IP
+allow-list, single sign-on (chunk 13) and retention (chunk 12) arrive with their own cards. Two buttons per row on a phone, the primary on
 the right.</p>
 
 </main>
