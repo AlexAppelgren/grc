@@ -1536,3 +1536,51 @@ enabled and forced row-level security, with these departures on purpose:
 - `GET /exports/{exportId}/download` streams the file itself (section 4, section 7), with
   `Content-Disposition: attachment` and `Cache-Control: no-store`, and records every
   download in the audit log. There is no `DownloadLink`.
+
+## acc-foundation. Agent access entries and credential kinds (2026-09-25, agents 0006, identity 0007)
+
+`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
+third column the R2 plan names (`acts_as_user`), are built with these departures:
+
+- `agent_access.owner_team_id` is required, not "null until chunk 8 lands teams": the team
+  list has landed and every bank has the system team `compliance` (ACC-01 names the team).
+  `revoked_at` and `revoked_by_id` are columns, and a CHECK keeps `active` false exactly when
+  `revoked_at` is set. An entry is revoked, never deleted (`delete()` refuses).
+- Every reference is also a composite `(tenant_id, …)` key: the team, the departments
+  (`org_unit`) and products (`tenant_product`) of the joins, the creator and revoker (into
+  `membership (tenant_id, user_id)`), and on `api_key` the entry and `acts_as_user`.
+- `api_key.kind` is the tier-one kind `credential_kind` (`service`, `personal`); every key
+  before identity 0007 is `service`. CHECKs: a personal token has a tenant, a person and an
+  expiry and no agent, and only a token acts as a person; a key bound to an entry has a
+  tenant and no agent definition (it is not one of the agents we run); an entry's key and
+  every token hold only `AGENT_ACCESS_SCOPES` (`library:read`, `search:read`,
+  `upcoming:read`, `tenant:read`), so "reads and nothing else" (ADR 0055) is the
+  database's rule as well as the code's.
+- `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
+  `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
+
+## d89-scope-items-model. Scope items on the regulatory scope request (2026-09-25, taxonomy 0012, OWN-01, D-91)
+
+Version 0.3 of the schema has no scope item: PRD 0.7's OWN-01 adds one (D-89, ADR 0059).
+Taxonomy 0012 builds it on the regulatory scope request rather than beside it:
+
+- `scope_item` is new, a tenant table under enabled and forced row-level security: `key`
+  (stable, unique per bank), `name`, `description` (capped by
+  `SCOPE_ITEM_DESCRIPTION_MAX_CHARS`), `jurisdiction_id`, `regime_term_id`,
+  `official_reference`, `source_url` and `status`. The address is an https page on a public
+  host, checked by the model's validator at the boundary and its scheme again by the check
+  `scope_item_source_https`. One jurisdiction and one regime term per item, and one address:
+  a bank that needs more asks for a second item.
+- `scope_item_status` is a new tier-one kind (§1): `requested` while the request that adds
+  the item waits, `in_scope` once approved, `declined` when that request is rejected or
+  withdrawn, `removed` once an approved request takes it out. The item row is written with
+  its request, so the request carries what the approver sees; it is in scope only after the
+  approval.
+- `footprint_change_scope_item` is new: the request, the item and `action` (`added` or
+  `removed`, `footprint_action`), unique per request and item. The decision stays the
+  request's, so `footprint_change_request_four_eyes` and the one-waiting-request rule cover
+  it unchanged.
+- `footprint_history.term_id` becomes nullable and `scope_item_id` is added; the check
+  `footprint_history_term_or_scope_item` demands exactly one. The table stays append-only.
+- Every reference to a tenant row is also a composite `(tenant_id, …)` key, so
+  `footprint_change_request` and `scope_item` gain `UNIQUE (tenant_id, id)`.

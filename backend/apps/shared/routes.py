@@ -57,4 +57,9 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/footprint/requests/{request_id}/reject", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/tenant/footprint/requests/{request_id}/withdraw", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/vocab/{list_name}/suggestions/{suggestion_id}/decline", "taxonomy.VocabularySuggestion", "vocabulary_suggestion"),
+    # acc-scope-and-reach (ACC-08): deciding a request for tenant reach.
+    ("POST", "/tenant/reach/requests/{request_id}/approve", "governance.TenantReachRequest", "tenant_reach_request"),
+    ("POST", "/tenant/reach/requests/{request_id}/reject", "governance.TenantReachRequest", "tenant_reach_request"),
+    # d89-scope-items-logic (OWN-01): one of the bank's own scope items.
+    ("GET", "/tenant/footprint/scope-items/{scope_item_id}", "taxonomy.ScopeItem", "scope_item"),
 ]

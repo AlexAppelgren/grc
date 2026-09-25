@@ -1,4 +1,4 @@
-"""The compliance lint's two setting rules (scripts/compliance_check.py).
+"""The compliance lint's two setting rules and its record-content rule (scripts/compliance_check.py).
 
 maintenance-hatch: the setting that switches the append-only triggers off may be named only
 by the migration helpers, migrations and tests, so request code cannot reach it. PostgreSQL
@@ -11,6 +11,13 @@ holds its name and the `library_door()` that sets it may be named only by the te
 module, the index door, the migration helpers, migrations and tests. The app role can set
 the setting itself, so opening a door anywhere else would let that module's writes through
 the database's own check; the lint keeps it to the doors.
+
+record-content (COL-01, CHUNK10_TASKS rule 13, R2_CROSS_CUTTING rule m): an audit
+`before` or `after` value and an outbox `payload` carry ids, keys and dates, never the text a
+person typed. A key of such a value whose head noun is body, text, comment, note, summary,
+assessment or question is a finding, whether the dict is written in the call, bound to a name
+first or returned by a helper of the same module. `record()`'s own `summary=` is the audit
+row's sentence about the actor and the record, and is exempt.
 
 The lint is loaded by path and run over planted files in a temporary tree, never over the
 source tree."""
@@ -122,5 +129,61 @@ class LibraryDoorRule(SimpleTestCase):
                 ("apps/register/logic.py", "library-door"),
                 ("apps/watch/curation.py", "library-door"),
                 ("config/settings.py", "library-door"),
+            ],
+        )
+
+
+RECORD_PLANTED = {
+    # Refused: a body in the call, a note bound first, a camelCase summary from a helper, a
+    # key set by subscript, a dict() call, a key nested inside a value, an outbox payload.
+    "apps/collab/logic.py": "record(action='comment.created', after={'body': body})\n",
+    "apps/taxonomy/footprint_logic.py": (
+        "def decide(note):\n"
+        "    after = {'status': 'approved', 'note': note}\n"
+        "    record(action='x', after=after)\n"
+    ),
+    "apps/watch/registration.py": (
+        "def _values(change):\n"
+        "    return {'stableKey': change.key, 'changeSummary': change.summary}\n"
+        "def register(change):\n"
+        "    audit.record(action='x', after=_values(change))\n"
+    ),
+    "apps/cases/logic.py": (
+        "def close(case):\n"
+        "    before = {'status': case.status}\n"
+        "    before['assessmentText'] = case.text\n"
+        "    record(action='x', before=before)\n"
+    ),
+    "apps/register/logic.py": "record(action='x', after=dict(question=q))\n",
+    "apps/home/logic.py": "record(action='x', after={'rows': [{'comment': c}]})\n",
+    "apps/agents/logic.py": "record(action='x', payload={'text': t})\n",
+    # Allowed: record()'s own summary=, ids and counts named after the content, a key that
+    # only contains a word, the same keys outside record(), a suppression with a reason.
+    "apps/proposals/logic.py": (
+        "record(action='x', summary='Added a comment.', subject_title=title,\n"
+        "       after={'commentId': cid, 'noteCount': 2, 'summaryKey': 'k', 'notes_ids': []})\n"
+    ),
+    "apps/library/logic.py": "row = {'body': body}\nsave(after={'note': note})\n",
+    "apps/taxonomy/tenant_lists_logic.py": (
+        "record(action='x', after={'usageNote': n})  # compliance: record-content the row's own note\n"
+    ),
+    # Refused: a suppression without a reason.
+    "apps/search/logic.py": "record(action='x', after={'summary': s})  # compliance: record-content\n",
+}
+
+
+class RecordContentRule(SimpleTestCase):
+    def test_audit_values_and_outbox_payloads_carry_no_typed_text(self) -> None:
+        self.assertEqual(
+            flagged(RECORD_PLANTED),
+            [
+                ("apps/agents/logic.py", "record-content"),
+                ("apps/cases/logic.py", "record-content"),
+                ("apps/collab/logic.py", "record-content"),
+                ("apps/home/logic.py", "record-content"),
+                ("apps/register/logic.py", "record-content"),
+                ("apps/search/logic.py", "record-content"),
+                ("apps/taxonomy/footprint_logic.py", "record-content"),
+                ("apps/watch/registration.py", "record-content"),
             ],
         )

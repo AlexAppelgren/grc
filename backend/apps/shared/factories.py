@@ -33,7 +33,8 @@ from types import SimpleNamespace
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, ScopeItem, VocabularySuggestion
+from apps.governance.models import TenantReachRequest
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -182,6 +183,30 @@ def footprint_request(tenant: Tenant) -> FootprintChangeRequest:
         return FootprintChangeRequest.objects.create(tenant=tenant, requested_by=requester)
 
 
+def scope_item(tenant: Tenant) -> ScopeItem:
+    """The tenant-isolation guard's record for the scope item route (d89-scope-items-logic,
+    OWN-01): one of the bank's own scope items, on the reference jurisdictions and terms,
+    which it seeds when they are missing (the seeds are idempotent)."""
+    from apps.library.models import Jurisdiction
+    from apps.library.seeds import seed_jurisdictions, seed_languages
+    from apps.taxonomy import terms_logic
+    from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+
+    for seed in (seed_languages, seed_jurisdictions, seed_library_vocabularies, seed_term_dimensions, seed_taxonomy_terms):
+        seed()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        item: ScopeItem = ScopeItem.objects.create(
+            tenant=tenant,
+            key=f"scope-item-{uuid.uuid4().hex[:8]}",
+            name="Local crypto-asset rules",
+            jurisdiction=Jurisdiction.objects.get(key="se"),
+            regime_term=terms_logic.term_by_ref("regime", "securities"),
+            source_url="https://www.fi.se/sv/vara-register/",
+        )
+    return item
+
+
 def vocabulary_suggestion(tenant: Tenant) -> SimpleNamespace:
     """The tenant-isolation guard's record for suggestion routes. Its path carries the list
     as well as the id, so it names both: a list that exists means the only thing between
@@ -201,3 +226,18 @@ def user_actor(*, label: str = "Test Person", user_id: uuid.UUID | None = None) 
 
 def agent_actor(*, label: str = "Test Agent", agent_id: uuid.UUID | None = None) -> Actor:
     return Actor(kind=ActorType.AGENT, id=agent_id or uuid.uuid4(), label=label)
+
+
+# acc-scope-and-reach (ACC-08): the tenant-isolation guard's record for tenant reach routes.
+def tenant_reach_request(tenant: Tenant) -> TenantReachRequest:
+    """The tenant's pending request for tenant reach, reused when one waits, because a
+    second cannot."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        waiting = TenantReachRequest.objects.filter(tenant=tenant, status=ApprovalStatus.PENDING.value).first()  # ordering: at most one pending row per tenant, by constraint
+    if waiting is not None:
+        return waiting
+    requester = member_user(tenant, roles=("admin",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantReachRequest.objects.create(tenant=tenant, requested_by=requester)

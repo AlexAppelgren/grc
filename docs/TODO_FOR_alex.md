@@ -1111,6 +1111,7 @@ to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WA
       Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
       note says only that each national body adopts the edition under its own
       reference. A person verifies them before the note names any.
+
 ## ai-log-read: a shared "So what?" reads each bank's own review state (2026-09-23, AUD-02)
 
 - [ ] **A library "So what?" in the AI log shows the reading bank's own review, not one
@@ -1142,6 +1143,7 @@ to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WA
 - [ ] **Default taken: a new instrument in the bank's library updates is never cut to the
       footprint.** A new obligation is cut like a new version; an instrument is not a duty,
       so it reaches every bank, as a change to a shared list does.
+
 ## watch-regime-required: a run's classification is logged with metadata it reports itself (2026-09-23, D-66, AUD-02, D-39)
 
 Nothing waits for these; each has the default the build took.
@@ -1165,6 +1167,7 @@ Nothing waits for these; each has the default the build took.
       footprint of the bank whose case they belong to, so no cached scope verdict moved; the
       one visible difference is that tenant B's feed now shows the AI-mapping change as
       outside its scope, since tenant B does not follow the AI and ICT regime.
+
 ## ask-screen: what a reader is told when the model cut an answer off (2026-09-23, SRC-03, AUD-02, D-82)
 
 - [ ] **An Ask answer the model stopped at its length limit (`ASK_MAX_TOKENS`, 1024 tokens)
@@ -1268,6 +1271,7 @@ needs a decision.
 - One medium finding waits as a named fix task, `merge-moved-ids` (H23): a vocabulary
   merge's audit row counts the records it moved but does not name them. Default: it is
   built with the next batch that owns `proposals/apply.py`.
+
 ## security-review-c7: the chunk 7 security review (2026-09-23, D-07, SRC-01, SRC-03)
 
 - [ ] **May a bank's search text reach the embedder and the reranker?** D-07 says the Ask
@@ -1411,3 +1415,44 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       changed value in", an agent's correction without one answers 422 `source_missing`
       and applies nothing (fails safe; it can still approve as proposed or reject).
       Default if you say nothing: v3 carries that line when the confirmer next changes.
+
+## acc-scope-and-reach: an entry's scope and tenant reach, answered by default (2026-09-25, ACC-02, ACC-08, D-70, D-72)
+
+- [ ] Default taken: an opt-in dimension keeps its rule inside an entry's scope too. The
+      second pass is FP-01 unchanged against the entry's terms, so an entry narrowed to
+      Trading sees a standard's records (ISO/IEC 27001) only when a Trading product names
+      that standard. Say if a narrowed entry should instead inherit every standard the bank
+      follows.
+- [ ] Default taken: a department brings its own products and those of every active unit
+      below it; a deactivated unit cuts its branch, and a retired product derives nothing.
+      An entry that names departments or products deriving no term reads nothing
+      (`entry_scope_empty`), and an entry the session cannot see, or one revoked, fails
+      closed the same way rather than reading the whole footprint.
+- [ ] Default taken: rejecting a reach request needs a passkey step-up like approving it,
+      and a reach request is never withdrawn (the requester's colleague rejects it).
+      Switching reach off needs one person and a step-up; on again takes a new request and
+      a second person. `GET /tenant/reach` is readable with `security.manage` alone.
+
+## d89-scope-items-model: what a scope item row holds (2026-09-25, OWN-01, D-91)
+
+- [ ] Default taken: a scope item names one jurisdiction, one regime term and one public
+      https address, as the package's acceptance says; PRD OWN-01 speaks of terms and
+      addresses in the plural. A bank that needs more asks for a second item. Say if one item
+      should carry several of each (a join table per list, no other change).
+- [ ] Default taken: the item row is written with the request that asks for it, as
+      `requested`, so the approver sees exactly what they approve; it is `in_scope` only after
+      the second person's passkey approval, and `declined` if the request is rejected or
+      withdrawn. No key and no agent writes one either way.
+
+## d89-scope-items-logic: scope items on the regulatory scope request (2026-09-25, OWN-01, FP-02, D-91)
+
+- [ ] Default taken: a scope item's key is derived from its name when it is asked for and is
+      never reused, so asking again after a decline gives `…_2`. The screens show the name;
+      the key is what the outbox event and the research carry. Say if a person should type
+      the key instead.
+- [ ] Default taken: `FOOTPRINT_CHANGE_MAX_TERMS` is 50 per list (terms added, terms removed,
+      items added, items removed) and the decision note is capped at 2000 characters (H24).
+      Say if either should be different.
+- [ ] Default taken: `research` reads `waiting_for_agent` for every item in scope until the
+      bank's own agent's research (d89-agent-research) reports how it stands; removing an item
+      stops nothing that agent already filed, which stays in the bank's own queue.

@@ -296,4 +296,16 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "AGT-05: a request's lifecycle, queued to done, failed, rejected or cancelled; the "
         "worker and the request list branch on it",
     ),
+    # acc-foundation (identity 0007, ACC-03, D-77, ADR 0056).
+    "CredentialKind": (
+        "credential_kind",
+        "ACC-03: a service key or a personal access token on one api_key table; authentication, "
+        "the step-up fence and the api_key CHECKs branch on it",
+    ),
+    # d89-scope-items-model (taxonomy 0012, OWN-01, D-91).
+    "ScopeItemStatus": (
+        "scope_item_status",
+        "OWN-01: a scope item is requested, in scope, declined or removed; the request logic and "
+        "the bank's own agent's research branch on it, and no admin adds a state",
+    ),
 }

@@ -718,6 +718,21 @@ class GovernanceScenarioTests(ScenarioTestCase):
         self.assertEqual(after["defaultLanguage"]["key"], "da")
         self.assertTrue(next(step for step in after["onboarding"]["steps"] if step["key"] == "profile")["done"])
 
+    def test_adm_s18(self) -> None:
+        """ADM-S18
+
+        A jurisdiction is relabelled, retired and restored by proposal, and the market that
+        mirrors it follows (ADM-02, VOC-07, FP-04, I18N-01, D-94).
+
+        Proven by the proposal apply's own classes, through the real routes: a person's relabel
+        and an agent's, each moving the mirrored term in the same approval with its stamp, a
+        retire the reference seeds leave standing and a restore, no key added or merged away,
+        and the mirrored dimension row closed at propose and at apply (H28).
+        """
+        from apps.proposals import tests_apply
+
+        self._prove(tests_apply.JurisdictionsByProposal, tests_apply.MirroredDimensionRowAndMergesWithoutLinks)
+
     @skip("pending: AUD-S8 (AUD-04, chunk 12)")
     def test_aud_s8(self) -> None:
         """AUD-S8
@@ -867,3 +882,43 @@ class GovernanceScenarioTests(ScenarioTestCase):
 
         The access log records the call and holds no content (ACC-08).
         """
+
+    # acc-scope-and-reach: the reach switch alone, ahead of the register reads ACC-S11 needs.
+    def test_acc_s14(self) -> None:
+        """ACC-S14
+
+        Tenant reach is switched on by two people and off by one (ACC-08).
+        """
+        from apps.governance import reach
+
+        tenant = factories.tenant(slug="acc-s14")
+        first = factories.member(tenant, roles=("admin",), user_row=factories.user(name="Erik Holm")).user
+        second = factories.member(tenant, roles=("admin",), user_row=factories.user(name="Maria Ek")).user
+
+        def post(path: str, user: Any) -> Any:
+            return self.client.post(f"{V1}/tenant/reach{path}", "{}", content_type="application/json", **sign_in(user, tenant=tenant, step_up=True))
+
+        def on() -> bool:
+            tenancy.activate(tenant.id)
+            return reach.tenant_reach_on(tenant.id)
+
+        # requestTenantReach, then the requester's own approveTenantReach: refused.
+        asked = post("/requests", first).json()
+        own = post(f"/requests/{asked['id']}/approve", first)
+        self.assertEqual((own.status_code, own.json()["code"]), (409, "four_eyes_violation"))
+        self.assertFalse(on())
+        # approveTenantReach by the second person: on, with a row naming each and their assertion.
+        self.assertEqual(post(f"/requests/{asked['id']}/approve", second).json()["status"], "approved")
+        self.assertTrue(on())
+        tenancy.activate(tenant.id)
+        rows = {row.action: row for row in AuditEvent.objects.filter(tenant_id=tenant.id, action__startswith="tenant_reach.")}
+        self.assertEqual(rows["tenant_reach.requested"].actor_id, first.id)
+        self.assertEqual(rows["tenant_reach.approved"].actor_id, second.id)
+        self.assertTrue(all(row.step_up_assertion_id for row in rows.values()))
+        # switchOffTenantReach by either of them: off at once.
+        self.assertFalse(post("/off", first).json()["enabled"])
+        self.assertFalse(on())
+        # rejectTenantReach by the second person: reach stays off.
+        again = post("/requests", first).json()
+        self.assertEqual(post(f"/requests/{again['id']}/reject", second).json()["status"], "rejected")
+        self.assertFalse(on())
