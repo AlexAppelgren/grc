@@ -30,7 +30,8 @@ const serverRow = {
   lastVerifiedAt: '2026-06-30',
   verifiedBy: null,
   openChangeCount: 1,
-  pendingApplicability: null,
+  tenantTags: [{ key: 'custody', label: 'Custody' }],
+  privateToUs: false,
   complianceStatus: null,
 };
 
@@ -56,7 +57,8 @@ const screenRow = {
   lastVerifiedAt: '2026-06-30',
   verifiedBy: null,
   openChangeCount: 1,
-  pendingApplicability: null,
+  tenantTags: [{ key: 'custody', kind: null, label: 'Custody' }],
+  privateToUs: false,
   complianceStatus: null,
 };
 
@@ -84,6 +86,8 @@ const serverDetail = {
   retention: '5 years',
   sanctionExposure: 'FI remark, warning or sanction fee',
   tags: [{ key: 'research', kind: null, label: 'Research' }],
+  tenantTags: [{ key: 'custody', kind: null, label: 'Custody' }],
+  privateToUs: false,
   scope: [{ dimension: { key: 'service_type', kind: null, label: 'Service' }, terms: [{ key: 'advice', kind: null, label: 'Advice' }], allSelected: false }],
   provisions: [{ id: 'pr-1', refLabel: '9 kap. 6 §', path: 'FFFS 2017:2 > 9 kap. > 6 §' }],
   inFootprint: true,
@@ -145,6 +149,8 @@ const screenDetail = {
   retention: serverDetail.retention,
   sanctionExposure: serverDetail.sanctionExposure,
   tags: serverDetail.tags,
+  tenantTags: serverDetail.tenantTags,
+  privateToUs: false,
   scope: serverDetail.scope,
   inFootprint: true,
   outsideReason: [],
@@ -220,7 +226,8 @@ describe('library api', () => {
         { dimension: { key: 'channel', kind: null, label: 'Channel' } },
       ],
       lastVerifiedAt: null,
-      pendingApplicability: true,
+      tenantTags: undefined,
+      privateToUs: true,
       complianceStatus: { key: 'gap', kind: 'gap', label: 'Gap' },
     };
     // A dimension the record carries no term in, and a server that sends no reason at all.
@@ -248,7 +255,8 @@ describe('library api', () => {
         { dimension: { key: 'channel', kind: null, label: 'Channel' }, terms: [] },
       ],
       lastVerifiedAt: null,
-      pendingApplicability: true,
+      tenantTags: [],
+      privateToUs: true,
       complianceStatus: { key: 'gap', kind: 'gap', label: 'Gap' },
     });
   });
@@ -278,6 +286,7 @@ describe('library api', () => {
         versions: undefined,
         related: undefined,
         tags: undefined,
+        tenantTags: undefined,
         scope: undefined,
         outsideReason: undefined,
         provenance: { ...serverDetail.provenance, lastVerifiedAt: null, verifiedBy: null },
@@ -290,6 +299,7 @@ describe('library api', () => {
       versions: [],
       related: [],
       tags: [],
+      tenantTags: [],
       scope: [],
       outsideReason: [],
       provenance: { lastVerifiedAt: null, verifiedBy: null },
@@ -356,6 +366,7 @@ const serverInstrumentRow = {
   implementsNote: 'MiFID II delegated directive (EU) 2017/593',
   obligationCount: 2,
   inFootprint: true,
+  privateToUs: false,
   lastVerifiedAt: '2026-06-30T07:12:44Z',
   sourceUrl: 'https://www.fi.se/en/published/regulations/2017/fffs-20172/',
 };
@@ -401,6 +412,7 @@ describe('library instruments api', () => {
           implementsNote: 'MiFID II delegated directive (EU) 2017/593',
           obligationCount: 2,
           inFootprint: true,
+          privateToUs: false,
           lastVerifiedAt: '2026-06-30T07:12:44Z',
           sourceUrl: serverInstrumentRow.sourceUrl,
         },
@@ -439,6 +451,7 @@ describe('library instruments api', () => {
       sourceUrl: serverInstrumentRow.sourceUrl,
       lastVerifiedAt: '2026-06-30T07:12:44Z',
       verifiedBy: null,
+      privateToUs: false,
       lineage: [
         {
           relation: { key: 'amends', kind: null, label: 'Amends' },

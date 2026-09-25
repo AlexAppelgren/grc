@@ -71,6 +71,8 @@ const research: ObligationDetail = {
   retention: '5 years',
   sanctionExposure: 'FI remark, warning or sanction fee',
   tags: [{ key: 'research', kind: null, label: 'Research' }],
+  tenantTags: [],
+  privateToUs: false,
   scope: [
     { dimension: { key: 'service_type', kind: null, label: 'Service' }, terms: [{ key: 'advice', kind: null, label: 'Advice' }], allSelected: false },
     { dimension: { key: 'client_category', kind: null, label: 'Client category' }, terms: [], allSelected: false },
