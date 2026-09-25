@@ -11,6 +11,7 @@ Prefixes hosted: COL.
 
 from unittest import skip
 
+from apps.collab.tests_case_participants import run_col_s9
 from apps.collab.tests_participants import run_col_s6, run_col_s7, run_col_s8
 from apps.shared.testing import ScenarioTestCase
 
@@ -88,12 +89,13 @@ class CollabScenarioTests(ScenarioTestCase):
         """
         run_col_s8(self)
 
-    @skip("pending: COL-S9 (COL-04, chunk 9)")
     def test_col_s9(self) -> None:
         """COL-S9
 
         Case participants are managed by those who contribute, and refused across tenants (COL-04, NFR-01).
+        Operations: `addCaseParticipant`, `listCaseParticipants`, `removeCaseParticipant`.
         """
+        run_col_s9(self)
 
     @skip("pending: COL-S10 (COL-02, COL-04, chunk 10)")
     def test_col_s10(self) -> None:

@@ -1,5 +1,6 @@
 """What every case workflow module shares (CAS-02 to CAS-08): finding the caller's case,
-`If-Match`, the facts the guards read, and the one way a case changes category.
+who takes part in it, `If-Match`, the facts the guards read, and the one way a case changes
+category.
 
 Nothing else lives here. Each route's own logic is in its own module — `triage.py`,
 `assessment.py`, `actions.py`, `evidence.py`, `signoff.py`, `case_file.py` — and every
@@ -31,11 +32,13 @@ from django.db.models.functions import Coalesce
 
 from apps.cases import state
 from apps.cases.models import Action, CaseTransition, ChangeCase, Evidence, ImpactAssessment
+from apps.collab.models import Participant
 from apps.shared.adapters.scanner import ScanState
 from apps.shared.audit import Actor, record
 from apps.shared.errors import ProblemError
 from apps.shared.kinds import CaseStatusCategory, CloseReason
 from apps.shared.models import Tenant
+from apps.taxonomy.models import Team
 
 SUBJECT_TYPE = "change_case"
 MOVED = "case.moved"
@@ -99,6 +102,27 @@ def load_evidence(tenant: Tenant, evidence_id: uuid.UUID) -> Evidence:
     if evidence is None:
         raise _not_found()
     return evidence
+
+
+# ---------------------------------------------------------------------------------------
+# Who takes part (COL-04, D-18, D-20)
+# ---------------------------------------------------------------------------------------
+def participations(case: ChangeCase) -> list[Participant]:
+    """Everyone who takes or took part in the case, people and teams, in the order they
+    were added, ended participations included, with the people and the teams' labels
+    beside them: two queries however many there are. Adding and removing them is
+    `apps/collab/participants.py`'s."""
+    return list(
+        Participant.objects.select_related("user", "team", "added_by", "removed_by")
+        .prefetch_related("team__labels")
+        .filter(case=case)
+    )
+
+
+def contributor_teams(rows: Sequence[Participant]) -> list[Team]:
+    """The assessment's contributor teams: the live team participants among `rows` (D-20).
+    `impact_assessment` stores no list of its own, so the two can never disagree."""
+    return [row.team for row in rows if row.team is not None and row.removed_at is None]
 
 
 # ---------------------------------------------------------------------------------------

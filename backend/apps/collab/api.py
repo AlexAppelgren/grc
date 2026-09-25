@@ -22,6 +22,12 @@ Three more list, add and remove the participants of a register entry (COL-04), i
 removing is `logic-gate`, because a person may always leave their own row and removing
 anyone else needs `register.edit` (D-19). Participation approves nothing and grants nothing,
 so none of them asks for a step-up.
+
+Three more do the same for a bank's case (COL-04, CAS-03), through the same logic: reading
+needs `cases.read` and adding `cases.contribute`; removing is `logic-gate` again, a person
+leaving their own row and anyone else needing `cases.contribute`. A case's contributor teams
+are its team participants (D-20), so the assessment's picker makes one of these calls per
+change and never sends a list.
 """
 
 import uuid
@@ -70,6 +76,16 @@ _PARTICIPANT_ID = (
     "The participation, as a uuid from `GET /obligations/{obligationId}/participants`. One on "
     "another bank's register, one that has already ended and one on another obligation answer "
     "404, never 403, so no id can be probed."
+)
+_CHANGE_ID = (
+    "The change, as a uuid from the watch feed. It names this bank's own case for the change: a "
+    "bank has exactly one case per change. A change the bank has no case for answers 404, never "
+    "403, the same as an id that does not exist, so no id can be probed."
+)
+_CASE_PARTICIPANT_ID = (
+    "The participation, as a uuid from `GET /changes/{changeId}/participants`. One on another "
+    "bank's case, one that has already ended and one on another case answer 404, never 403, so "
+    "no id can be probed."
 )
 _COMMENT_ID = (
     "The comment, as a uuid from `GET /comments`. A comment in another bank answers 404, never "
@@ -493,5 +509,142 @@ def remove_obligation_participant(
         caller_id=user.id,
         actor=actor_for(request, user),
         can_edit=principal(request).has_permission(perms.REGISTER_EDIT),
+    )
+    return 204, None
+
+
+# ---------------------------------------------------------------------------------------
+# Participants of a case (COL-04, CAS-03, D-18 to D-20; c9-case-participants)
+# ---------------------------------------------------------------------------------------
+@router.get(
+    "/changes/{change_id}/participants",
+    response=CollabParticipantPage,
+    auth=SESSION,
+    operation_id="listCaseParticipants",
+    by_alias=True,
+    summary="See who takes part in a case",
+)
+@requires_permission(perms.CASES_READ)
+@answers_problems
+def list_case_participants(
+    request: HttpRequest, page: Query[PageQuery], change_id: uuid.UUID = Path(..., description=_CHANGE_ID)
+) -> Any:
+    """The people and teams taking part in the bank's case for a change, in the order they
+    were added, for the case's participants and the assessment's contributor teams, which are
+    the team participants (D-20).
+
+    A read: it changes nothing and writes no audit row. Needs a person's session in a bank
+    holding `cases.read`; no API key reaches it. Taking part grants nothing, so the list says
+    who is involved and nothing about what they may do.
+
+    Pages with `limit` and `offset`, 20 rows by default and 100 at most. A case nobody takes
+    part in is a 200 with an empty `items`.
+
+    Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+    finish enrolling, `permission_denied` without `cases.read` (naming it in
+    `requiredPermission`), `not_found` for a platform session and for a change the bank has
+    no case for, and `validation_error` for a `limit` outside 1 to 100.
+    """
+    tenant = caller_tenant(request)
+    caller_user(request)
+    return participants.list_case_participants(
+        tenant=tenant,
+        change_id=change_id,
+        order=language_order(request, tenant=tenant),
+        limit=page.limit,
+        offset=page.offset,
+    )
+
+
+@router.post(
+    "/changes/{change_id}/participants",
+    response={201: CollabParticipant},
+    auth=SESSION,
+    operation_id="addCaseParticipant",
+    by_alias=True,
+    summary="Add a person or a team to a case",
+)
+@requires_permission(perms.CASES_CONTRIBUTE)
+@answers_problems
+def add_case_participant(
+    request: HttpRequest, body: CollabParticipantInput, change_id: uuid.UUID = Path(..., description=_CHANGE_ID)
+) -> Any:
+    """Name a person or a team on the bank's case for a change, so it reaches their My work
+    and their notifications. Adding a team is how the assessment records a contributor team
+    (D-20): one call per team, never a list, so a form loaded earlier cannot undo someone
+    else's add. It grants them nothing: a participant still gets 403 on anything their role
+    lacks.
+
+    Needs a person's session in a bank holding `cases.contribute`; no API key reaches it, and
+    no step-up is asked, because taking part approves nothing. Records one audit event on the
+    case holding the participation's, the person's or the team's ids and never a name. A
+    shared change lands on this bank's own case and changes nothing another bank sees. The
+    case's `version` is not raised. Answers 201 with the participant.
+
+    Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+    finish enrolling, `permission_denied` without `cases.contribute` (naming it in
+    `requiredPermission`), `not_found` for a platform session and for a change the bank has
+    no case for, `invalid_transition` (409) for a case that is closed or dismissed,
+    `validation_error` for a body naming both or neither of `userId` and `teamKey`, or a
+    field it does not name, `unknown_member` for a person who is not an active member of this
+    bank, whether from another bank, deactivated or unknown, `unknown_key` for a team the bank
+    has no active row for, `participant_cannot_read` for a member whose roles cannot read
+    cases, `already_participant` (409) when they already take part, and
+    `too_many_participants` when the case already holds as many as the deployment allows (50
+    unless configured otherwise).
+    """
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    return 201, participants.add_case_participant(
+        tenant=tenant,
+        change_id=change_id,
+        user_id=body.user_id,
+        team_key=body.team_key,
+        caller_id=user.id,
+        actor=actor_for(request, user),
+        order=language_order(request, tenant=tenant),
+    )
+
+
+@router.delete(
+    "/changes/{change_id}/participants/{participant_id}",
+    response={204: None},
+    auth=SESSION,
+    operation_id="removeCaseParticipant",
+    by_alias=True,
+    summary="Remove a participant, or leave a case",
+)
+@answers_problems
+def remove_case_participant(
+    request: HttpRequest,
+    change_id: uuid.UUID = Path(..., description=_CHANGE_ID),
+    participant_id: uuid.UUID = Path(..., description=_CASE_PARTICIPANT_ID),
+) -> Any:
+    """End one participation on the bank's case for a change: "Leave" on the caller's own
+    row, or "Remove" on anyone else's, a contributor team included.
+
+    Any person's session in a bank may leave their own participation, whatever their role,
+    and the audit event is `participant.left`; removing anyone else needs `cases.contribute`,
+    and the audit event is `participant.removed`. Either holds ids only. The participation is
+    ended with its time and who ended it, never deleted, so the case file still shows who took
+    part until when; it may end on a closed case too. No API key reaches it and no step-up is
+    asked. Answers 204 with no body.
+
+    Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+    finish enrolling, `permission_denied` for removing someone else without
+    `cases.contribute` (naming it in `requiredPermission`), and `not_found` for a platform
+    session, for a change the bank has no case for and for a participation that is not live
+    on this bank's case for it.
+    """
+    # Ungated by design: logic-gate (cases.contribute, or the person on their own row).
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    participants.remove_case_participant(
+        tenant=tenant,
+        change_id=change_id,
+        participant_id=participant_id,
+        caller_id=user.id,
+        actor=actor_for(request, user),
+        can_contribute=principal(request).has_permission(perms.CASES_CONTRIBUTE),
     )
     return 204, None

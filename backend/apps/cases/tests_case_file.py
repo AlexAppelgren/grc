@@ -209,8 +209,9 @@ class CaseFileText(ScenarioTestCase):
             counts.append(len(queries))
         self.assertEqual(counts[0], counts[1])
         # The case with its people, the urgency, effort and close reason labels, the
-        # assessment, the actions, the evidence, the moves and the sign-off's step-up.
-        self.assertEqual(counts[0], 9)
+        # participants, the assessment, the actions, the evidence, the moves and the
+        # sign-off's step-up.
+        self.assertEqual(counts[0], 10)
 
     def test_a_case_at_both_caps_is_served_inside_the_budget(self) -> None:
         built = factories.closed_case(self.bank, actions=ACTIONS_CAP, evidence=EVIDENCE_CAP)

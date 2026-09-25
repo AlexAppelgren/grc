@@ -305,6 +305,13 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "A bank's own tag going on or off one record: `tenant.id` is a bank's id and never "
         "None, so the row stays in that bank's zone even when the record is a library one."
     ),
+    # c9-case-participants (COL-04): the one add and the one removal both subjects share.
+    "apps/collab/participants.py record(subject.audit_type) tenant_id=tenant_id actor=actor title=subject.title": (
+        "A person or a team joining or leaving a bank's register entry or case: the subject type "
+        "is `tenant_obligation` or `change_case`, never a library type, `tenant_id` is the "
+        "caller's bank and never None, and the title is the library's own title of the "
+        "obligation or the change."
+    ),
 }
 
 

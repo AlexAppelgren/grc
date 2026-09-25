@@ -267,6 +267,21 @@ def case_evidence(tenant: Tenant) -> SimpleNamespace:
     return SimpleNamespace(id=evidence.id, case=row)
 
 
+def case_participant(tenant: Tenant) -> SimpleNamespace:
+    """c9-case-participants: a member of `tenant` taking part in a case of `tenant`, for a
+    change no other bank has a case for. `.id` is the participation, `.params` names the
+    change, as the case participant routes address it."""
+    from apps.collab.models import Participant
+
+    row = case_change(tenant).case
+    officer = member_user(tenant, roles=("compliance_officer",))
+    person = member_user(tenant)
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        participation = Participant.objects.create(tenant=tenant, case=row, user=person, added_by=officer)
+    return SimpleNamespace(id=participation.id, params={"change_id": row.change_id})
+
+
 # ---------------------------------------------------------------------------------------
 # c9-case-file-export: a case worked from triage to sign-off, for the case file (CAS-07).
 # ---------------------------------------------------------------------------------------

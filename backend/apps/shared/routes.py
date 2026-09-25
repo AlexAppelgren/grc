@@ -77,4 +77,8 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("DELETE", "/actions/{action_id}", "cases.Action", "case_action"),
     ("GET", "/evidence/{evidence_id}/download", "cases.Evidence", "case_evidence"),
     ("DELETE", "/evidence/{evidence_id}", "cases.Evidence", "case_evidence"),
+    # c9-case-participants (COL-04): a participant on a case of tenant A, for a change tenant B
+    # has no case for, so the case itself is invisible to tenant B.
+    ("GET", "/changes/{change_id}/participants", "collab.Participant", "case_participant"),
+    ("DELETE", "/changes/{change_id}/participants/{participant_id}", "collab.Participant", "case_participant"),
 ]

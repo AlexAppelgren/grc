@@ -408,7 +408,7 @@ class CollabMyCommentPage(CamelSchema):
 
 
 # ---------------------------------------------------------------------------------------
-# Participants of a register entry (COL-04, D-18, D-19)
+# Participants of a register entry or a case (COL-04, D-18 to D-20)
 # ---------------------------------------------------------------------------------------
 _PARTICIPANT_EXAMPLE: dict[str, JsonValue] = {
     "id": "6d5c4b3a-2e1f-4a09-8b7c-5d4e3f2a1b0c",
@@ -459,17 +459,19 @@ class CollabTeamRef(CamelSchema):
 
 
 class CollabParticipant(CamelSchema):
-    """One person or one team taking part in a register entry (COL-04). Taking part puts the
-    record on their My work and in their notifications and grants them nothing: what they
-    may read or do is still their role's alone."""
+    """One person or one team taking part in a register entry or a case (COL-04). Taking part
+    puts the record on their My work and in their notifications and grants them nothing: what
+    they may read or do is still their role's alone. A case's team participants are its
+    assessment's contributor teams (D-20)."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [_PARTICIPANT_EXAMPLE]})
 
     id: uuid.UUID = Field(
         description=(
             "The participation's identifier, as a uuid, which "
-            "`DELETE /obligations/{obligationId}/participants/{participantId}` takes. It names this "
-            "participation, never the person or the team."
+            "`DELETE /obligations/{obligationId}/participants/{participantId}` or "
+            "`DELETE /changes/{changeId}/participants/{participantId}` takes, on the record it was "
+            "listed for. It names this participation, never the person or the team."
         ),
         examples=[_PARTICIPANT_EXAMPLE["id"]],
     )
@@ -491,7 +493,10 @@ class CollabParticipant(CamelSchema):
         examples=[None],
     )
     added_by: PersonRef = Field(
-        description="Who added the participant, by id and name: a member of the bank holding `register.edit` when they did.",
+        description=(
+            "Who added the participant, by id and name: a member of the bank holding `register.edit` "
+            "(a register entry) or `cases.contribute` (a case) when they did."
+        ),
         examples=[_ANNA],
     )
     added_at: datetime.datetime = Field(
@@ -501,7 +506,7 @@ class CollabParticipant(CamelSchema):
 
 
 class CollabParticipantPage(CamelSchema):
-    """`{items, total}` of a register entry's participants, with `limit` and `offset` (playbook 10)."""
+    """`{items, total}` of a register entry's or a case's participants, with `limit` and `offset` (playbook 10)."""
 
     model_config = ConfigDict(
         json_schema_extra={"examples": [{"items": [_PARTICIPANT_EXAMPLE, _TEAM_PARTICIPANT_EXAMPLE], "total": 2}]}
@@ -532,8 +537,9 @@ class CollabParticipantInput(WriteBody):
             "The person to add, as the uuid of an active member of this bank, from the people "
             "picker; null by default. Someone who is not an active member of this bank, whether "
             "from another bank, deactivated or unknown, is refused with the one 422 "
-            "`unknown_member`; a member whose roles cannot read the register with 422 "
-            "`participant_cannot_read`. Set this or `teamKey`, never both."
+            "`unknown_member`; a member whose roles cannot read the record, the register "
+            "(`register.read`) or cases (`cases.read`), with 422 `participant_cannot_read`. Set "
+            "this or `teamKey`, never both."
         ),
         examples=[_ERIK["id"]],
     )
