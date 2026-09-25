@@ -177,4 +177,11 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "HOM-03, HOM-04: what produced the date - a change's key date, an internal deadline, "
         "an action due or a review due; the card and the calendar builder branch on it",
     ),
+    # Chunk 9 (c9-case-models). The evidence scan; `c9-scanner-adapter` adds the adapters
+    # that answer it.
+    "ScanState": (
+        "scan_state",
+        "CAS-05: a stored file is pending, clean, infected or error; the download serves "
+        "only `clean`, and a new row starts `pending`, so an unscanned file is never shown",
+    ),
 }
