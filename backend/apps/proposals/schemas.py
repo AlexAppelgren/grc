@@ -305,7 +305,8 @@ class ProposalRow(CamelSchema):
             "that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, "
             "`vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` "
             "points a row's users at another row and retires it, and `term_create` and `term_update` do "
-            "the same for a taxonomy term. The other kinds of the data model are not built yet, so a "
+            "the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as "
+            "one batch (`isBatch`). The other kinds of the data model are not built yet, so a "
             "reader must not treat this list as the full set for ever."
         )
     )
@@ -324,7 +325,7 @@ class ProposalRow(CamelSchema):
             "the console without its proposer, and it is not the library record's title."
         )
     )
-    target_type: str = Field(default="", description="What the proposal changes, when it changes a record that already exists: `obligation` today, empty for a proposal that creates something.")
+    target_type: str = Field(default="", description="What the proposal changes, when it changes one record that already exists: `obligation` today, empty for a proposal that creates something and for a batch, whose rows name their records.")
     target_id: UUID | None = Field(default=None, description="The library record the proposal changes, as a UUID, or null when it creates one. Read the record itself for what it currently says.")
     change_id: UUID | None = Field(default=None, description="The regulatory change that prompted this, as a UUID, when an agent's watch run found one. Null means nobody linked one, not that no change exists.")
     payload: dict[str, Any] = Field(  # schema: ProposalPayload
@@ -449,6 +450,21 @@ class ProposalRow(CamelSchema):
     )
     review_note: str = Field(default="", description="The reviewer's own sentence to the proposer, on an approval or a rejection: a platform person's words, or the deciding agent's output when an agent decided, which is AI output like any other. It is not part of the library record.")
     applied_at: datetime | None = Field(default=None, description="When the change reached the library: a UTC timestamp, date and time together, which is the moment of approval. Null unless the status is `approved`.")
+    is_batch: bool = Field(
+        default=False,
+        description=(
+            "True when the proposal is a batch: one request that changes many library records, with a row "
+            "per record read through `GET /proposal-batches/{batchId}`. The queue lists a batch once, as this "
+            "row. False for a proposal that changes one record or creates one."
+        ),
+        examples=[False],
+    )
+    row_count: int = Field(
+        default=0,
+        ge=0,
+        description="How many records a batch would change, one row each, at most `PROPOSAL_BATCH_MAX_ROWS`. Always 0 when `isBatch` is false.",
+        examples=[0],
+    )
     created_at: datetime = Field(description="When the proposal was filed: a UTC timestamp, date and time together. Not the legal date of the change, which is `effectiveFrom`.")
 
     model_config = ConfigDict(
@@ -495,6 +511,8 @@ class ProposalRow(CamelSchema):
                     "rejectionCode": "",
                     "reviewNote": "",
                     "appliedAt": None,
+                    "isBatch": False,
+                    "rowCount": 0,
                     "createdAt": "2026-09-16T07:12:00Z",
                 }
             ]
@@ -1271,7 +1289,9 @@ class ProposalCreateBody(WriteBody):
             "`provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` per language, "
             "`originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. "
             "`new_provision_version`: `texts`, `originalLanguage`, `isMachine`, `effectiveFrom` and "
-            "`effectiveFromPrecision`. The vocabulary and term kinds name a "
+            "`effectiveFromPrecision`. Each summary and each text is at most "
+            f"{settings.PROPOSAL_TEXT_MAX_CHARS} characters per language, else 422 `validation_error`. "
+            "The vocabulary and term kinds name a "
             "`list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and "
             "term keys are library rows that change only through proposals; `GET /vocabularies` and "
             "`GET /taxonomy/terms` return the live sets."
@@ -1348,7 +1368,9 @@ class ProposalCreateBody(WriteBody):
         description=(
             "The source in words, as a reviewer and a reader see it beside a link, at most 500 "
             "characters, for example the authority and the decision. A new obligation keeps it as its "
-            "own source label; left empty, it reads the instrument's reference and the duty's."
+            "own source label; left empty, it reads the instrument's reference and the duty's. Under a "
+            "standard it is the standard's official reference or empty, never a clause or quoted text, "
+            "else 422 `licensed_text`."
         ),
         examples=["Finansinspektionen, board decision 15 September 2026"],
     )
@@ -1359,7 +1381,9 @@ class ProposalCreateBody(WriteBody):
             "The authority's page the proposal was read from, at most 2000 characters. Required for a "
             "new instrument, obligation or provision, as an https link (a new instrument or obligation "
             "keeps it as its own source): "
-            "without one it answers 422 `source_missing`. Optional on the other kinds."
+            "without one it answers 422 `source_missing`. Optional on the other kinds, but when given it "
+            "is an https link on every kind, since the queue shows it as the proposal's source: any "
+            "other scheme answers 422 `validation_error`."
         ),
         examples=["https://www.fi.se/en/published/news/2026/research-payments/"],
     )
@@ -1463,10 +1487,27 @@ class ProposalApproveBody(WriteBody):
             f"`dimension:key`, at most {settings.PROPOSAL_SCOPE_MAX_TERMS}, which replace the "
             "obligation's scope). The merged payload must still carry a source for every field it "
             "changes, so a correction that introduces a field the proposal never sourced answers 422 "
-            "`source_missing` and applies nothing. What is applied is kept beside what was proposed, as "
+            "`source_missing` and applies nothing, and a value changed from what was proposed needs its "
+            "fresh source in `fieldSources`. Each summary is at most "
+            f"{settings.PROPOSAL_TEXT_MAX_CHARS} characters per language. What is applied is kept beside what was proposed, as "
             "the reviewer's own correction: a reader must not take the proposal's payload as the text "
             "the library now holds."
         ),
+    )
+    field_sources: dict[str, str] | None = Field(  # schema: ProposalFieldSources
+        default=None,
+        description=(
+            "The fresh source of every value `payloadOverrides` changes from what was proposed, keyed as "
+            "the queue names the field (`summaries.sv`, `effectiveFrom`, `terms`), because the "
+            "proposer's source vouches only for the value it was given for. Each is checked as a "
+            f"proposal's own are: at most {settings.PROPOSAL_SOURCE_MAX_CHARS} characters, an https link "
+            "or the stable key of a provision the library holds, and an https link only on a new record "
+            "or a standard's obligation. A changed value without one answers 422 `source_missing`; a "
+            "source for a field the correction leaves as proposed answers 422 `validation_error`. The "
+            "proposal keeps these sources for the corrected fields from then on. Optional, and left out "
+            "when nothing is corrected."
+        ),
+        examples=[{"summaries.sv": "https://www.fi.se/sv/publicerat/nyheter/2026/analysbetalningar/"}],
     )
     decision: AgentDecision | None = Field(default=None, description=_DECISION_DESCRIPTION)
     agent_run_id: UUID | None = Field(default=None, description=_RUN_DESCRIPTION, examples=[_RUN_EXAMPLE])
@@ -1482,6 +1523,10 @@ class ProposalApproveBody(WriteBody):
                             "en": "Research from third parties may be received only if it is paid from the institution's own resources or from a research payment account.",
                         },
                         "effectiveFrom": "2026-10-01",
+                    },
+                    "fieldSources": {
+                        "summaries.sv": "https://www.fi.se/sv/publicerat/nyheter/2026/analysbetalningar/",
+                        "summaries.en": "https://www.fi.se/en/published/news/2026/research-payments/",
                     },
                 },
                 {"note": "Confirmed against the board decision.", "decision": _DECISION_EXAMPLE, "agentRunId": _RUN_EXAMPLE},
@@ -1612,4 +1657,490 @@ class ProposalQuery(CamelSchema):
             "queue reads oldest first."
         ),
         examples=["newest"],
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# Batch proposals (PRO-04, AGT-05; c11-proposal-batches-create). A batch is one proposal
+# with one row per library record it would change; the rows carry the preview a reviewer
+# decides on, computed when the batch is filed (apps/proposals/batch.py).
+# ---------------------------------------------------------------------------------------
+_BATCH_EXAMPLE_ID = "6d0c4b1a-2f7e-4c3d-9a8b-1e5f7a9c3b20"
+_BATCH_ROW_EXAMPLE_ID = "e4a7c2d9-5b1f-4e6a-8c3d-7f9b2a4c6e81"
+_OBLIGATION_EXAMPLE_ID = "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44"
+_BATCH_SOURCE_EXAMPLE = "https://www.fi.se/en/published/news/2026/client-money/"
+
+
+class ObligationScopeChange(WriteBody):
+    """One obligation's part of a re-tag: the scope terms to add to it and the ones to take
+    off it, with the source that says why. The rest of its scope stays as it is."""
+
+    obligation_id: UUID = Field(
+        description=(
+            "The shared library obligation to re-tag, as the UUID `GET /obligations` returns. It must be "
+            "in force and one of the library's own, else 422 `unknown_key`; a bank's private obligation "
+            "never enters a batch. Each obligation appears once in a batch, else 422 `validation_error`."
+        ),
+        examples=[_OBLIGATION_EXAMPLE_ID],
+    )
+    add: TermRefs = Field(
+        default_factory=list,
+        max_length=settings.PROPOSAL_SCOPE_MAX_TERMS,
+        description=(
+            "Scope terms to put on the obligation, each written `dimension:key` as `GET /taxonomy/terms` "
+            f"lists them, at most {settings.PROPOSAL_SCOPE_MAX_TERMS}. Every one must be a live term, else "
+            "422 `unknown_key`; a term of a dimension that mirrors the jurisdiction list answers 422 "
+            "`jurisdiction_term_mirrored`, because an obligation's market comes from its instrument. A term "
+            "the obligation already carries changes nothing."
+        ),
+        examples=[["service_type:custody"]],
+    )
+    remove: TermRefs = Field(
+        default_factory=list,
+        max_length=settings.PROPOSAL_SCOPE_MAX_TERMS,
+        description=(
+            "Scope terms to take off the obligation, written and checked as `add` is, at most "
+            f"{settings.PROPOSAL_SCOPE_MAX_TERMS}. A term the obligation does not carry changes nothing; "
+            "one named in both `add` and `remove` answers 422 `validation_error`."
+        ),
+        examples=[["service_type:execution_only"]],
+    )
+    source: str = Field(
+        max_length=settings.PROPOSAL_SOURCE_MAX_CHARS,
+        description=(
+            "Where the new scope comes from: an https link to the authority's page or the stable key of a "
+            f"provision the library holds, at most {settings.PROPOSAL_SOURCE_MAX_CHARS} characters. Missing "
+            "or blank answers 422 `source_missing`; anything else that is neither answers 422 "
+            "`validation_error`. On a standard's obligation it is an https link only, else 422 "
+            "`licensed_text`."
+        ),
+        examples=[_BATCH_SOURCE_EXAMPLE],
+    )
+
+
+class ObligationScopePayload(WriteBody):
+    """The payload of the `obligation_scope` kind (PRO-04, AGT-05): a re-tag of many
+    obligations, each changing only its scope terms, filed as one batch. Every obligation
+    gets one row in the batch, previewed as its scope before and after. Checked in full when
+    the batch is filed, as every other kind's payload is: live obligations, live terms, no
+    mirrored jurisdiction term, and the standards rule (a standard's term only on a
+    standard's obligation, which keeps exactly one)."""
+
+    changes: list[ObligationScopeChange] = Field(
+        min_length=1,
+        description=(
+            "One entry per obligation to re-tag, at least one and at most "
+            f"{settings.PROPOSAL_BATCH_MAX_ROWS} (`PROPOSAL_BATCH_MAX_ROWS`); more answers 422 "
+            "`batch_too_large`, so a larger re-tag is filed as more than one batch. An entry that would "
+            "leave its obligation's scope exactly as it is answers 422 `validation_error`."
+        ),
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "changes": [
+                        {
+                            "obligationId": _OBLIGATION_EXAMPLE_ID,
+                            "add": ["service_type:custody"],
+                            "remove": [],
+                            "source": _BATCH_SOURCE_EXAMPLE,
+                        }
+                    ]
+                }
+            ]
+        }
+    )
+
+
+class ProposalBatchRowPayload(CamelSchema):
+    """One side of a batch row's preview: the fields of the record that would change, and
+    nothing else. For a re-tag that is the obligation's scope."""
+
+    terms: TermRefs = Field(
+        default_factory=list,
+        description=(
+            "The obligation's scope terms, each `dimension:key`, sorted. On `before` it is the scope the "
+            "obligation carried when the batch was filed, read from the library then; on `after` the scope "
+            "approving the row would leave it with. It is a preview: until the row is approved the library "
+            "keeps the scope it has."
+        ),
+        examples=[["client_category:retail", "service_type:custody"]],
+    )
+
+
+class ProposalBatchRow(CamelSchema):
+    """One record a batch would change, with the preview the reviewer decides on and the
+    decision made on it. Library data from the platform queue: no bank's judgement and no
+    tenant content is ever on a row."""
+
+    id: UUID = Field(description="The row, as a UUID the server assigns once. A decision on the batch names rows by this id.", examples=[_BATCH_ROW_EXAMPLE_ID])
+    subject_type: str = Field(
+        description="What kind of library record the row changes. A fixed kind: `obligation`, a duty's scope, is the only one a batch changes today.",
+        examples=["obligation"],
+    )
+    subject_id: UUID = Field(description="The library record the row changes, as a UUID, which is the id `GET /obligations/{obligationId}` takes.", examples=[_OBLIGATION_EXAMPLE_ID])
+    target: ProposalTarget | None = Field(
+        default=None,
+        description="The record by its own title and reference, as the queue names a proposal's target. Null only if the record can no longer be read.",
+    )
+    before: ProposalBatchRowPayload = Field(description="The record's fields that would change, as the library held them when the batch was filed.")
+    after: ProposalBatchRowPayload = Field(description="The same fields as approving this row would leave them. Nothing is written until then.")
+    source: str = Field(
+        default="",
+        description="Where the change comes from, as the proposer gave it: an https link or a provision's stable key. It is a claim for the reviewer to open and check, not a verified fact.",
+        examples=[_BATCH_SOURCE_EXAMPLE],
+    )
+    stale: bool = Field(
+        default=False,
+        description=(
+            "True when the record has changed since the batch was filed, so `before` no longer says what "
+            "the library holds: the row was previewed against another scope, and it cannot be approved; "
+            "the batch is filed again instead. Computed when read, and only for a row still pending. False "
+            "for a decided row, whatever the library says now."
+        ),
+        examples=[False],
+    )
+    decision: str = Field(
+        description=(
+            "Where the row stands. A fixed kind: `pending` waits for a reviewer, `approved` means the "
+            "library carries its `after`, and `rejected` means it was refused with a reason and changed "
+            "nothing. A row is decided once and never again."
+        ),
+        examples=["pending"],
+    )
+    rejection_code: str = Field(
+        default="",
+        description=(
+            "Why the row was refused: the key of a row of the `rejection_reason` library list, which an "
+            "admin may extend, so compare the key and show the label `GET /vocab/rejection_reason` gives. "
+            "Empty unless `decision` is `rejected`."
+        ),
+        examples=[""],
+    )
+    decided_by: ProposalActorRef | None = Field(default=None, description="The platform person who decided the row, never the batch's proposer, which the database enforces. Null while pending.")
+    decided_at: datetime | None = Field(default=None, description="When the row was decided: a UTC timestamp, date and time together. Null while pending.")
+
+
+class ProposalBatch(ProposalRow):
+    """A batch proposal as a reviewer reads it: the one proposal the queue lists, and every
+    row beneath it with its preview. `isBatch` is true and `rowCount` counts `rows`. Every
+    row is returned in one answer, since a batch holds at most `PROPOSAL_BATCH_MAX_ROWS`.
+    Reading it changes nothing: until a row is approved the library says what it said."""
+
+    rows: list[ProposalBatchRow] = Field(
+        default_factory=list,
+        description=f"Every row of the batch, at most {settings.PROPOSAL_BATCH_MAX_ROWS}, ordered by the record it changes so the order is the same on every read.",
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": _BATCH_EXAMPLE_ID,
+                    "kind": "obligation_scope",
+                    "status": "open",
+                    "title": "Re-tag the client asset duties with custody",
+                    "payload": {
+                        "changes": [
+                            {"obligationId": _OBLIGATION_EXAMPLE_ID, "add": ["service_type:custody"], "remove": [], "source": _BATCH_SOURCE_EXAMPLE}
+                        ]
+                    },
+                    "sourceLabel": "Finansinspektionen, client money guidance 2026",
+                    "sourceUrl": _BATCH_SOURCE_EXAMPLE,
+                    "origin": "user",
+                    "proposedBy": {"id": "0b6f2c4e-8d1a-4f3b-9e27-5c8a1d3f6b90", "name": "Kari Nygaard"},
+                    "fromOrganisation": False,
+                    "isBatch": True,
+                    "rowCount": 1,
+                    "createdAt": "2026-09-25T08:30:00Z",
+                    "rows": [
+                        {
+                            "id": _BATCH_ROW_EXAMPLE_ID,
+                            "subjectType": "obligation",
+                            "subjectId": _OBLIGATION_EXAMPLE_ID,
+                            "target": {
+                                "id": _OBLIGATION_EXAMPLE_ID,
+                                "title": "Keep client money apart from the firm's own",
+                                "referenceLabel": "8 kap. 1 §",
+                                "instrumentShortName": "FFFS 2017:2",
+                            },
+                            "before": {"terms": ["client_category:retail"]},
+                            "after": {"terms": ["client_category:retail", "service_type:custody"]},
+                            "source": _BATCH_SOURCE_EXAMPLE,
+                            "stale": False,
+                            "decision": "pending",
+                            "rejectionCode": "",
+                            "decidedBy": None,
+                            "decidedAt": None,
+                        }
+                    ],
+                }
+            ]
+        }
+    )
+
+
+class ProposalBatchInput(WriteBody):
+    """The body of `POST /proposal-batches`: one request that changes many library records
+    the same way, filed as one proposal with a row per record. Nothing in the library changes
+    when it is accepted; each row waits for a second, independent reviewer. A field the body
+    does not name answers 422 `validation_error` rather than being dropped."""
+
+    kind: str = Field(
+        description=(
+            "What the batch changes. A fixed kind: `obligation_scope`, a re-tag of obligations' scope "
+            "terms, is the only batch kind today; any other value answers 422 `unknown_key`."
+        ),
+        examples=["obligation_scope"],
+    )
+    title: str = Field(
+        max_length=500,
+        description="The request in one line, as the reviewer reads it in the queue, at most 500 characters and never blank (422 `validation_error`).",
+        examples=["Re-tag the client asset duties with custody"],
+    )
+    payload: ObligationScopePayload = Field(description="The change per record, in the shape `kind` names.")
+    agent_run_id: UUID | None = Field(
+        default=None,
+        description=(
+            "The open run of the calling key the batch is filed under, as the UUID `POST /agent-runs` "
+            "returned. Required from a key (none, or a closed run, answers 422 `run_not_open`; another "
+            "key's run answers 404 `not_found`), and left out by a person."
+        ),
+        examples=[_RUN_EXAMPLE],
+    )
+    model: str = Field(default="", max_length=200, description="The model that drafted the request, at most 200 characters, when an agent did. Left empty by a person.", examples=[""])
+    source_label: str = Field(
+        default="",
+        max_length=500,
+        description="The batch's source in words, as a reviewer reads it beside the link, at most 500 characters. Under a standard it is the standard's official reference or empty, else 422 `licensed_text`.",
+        examples=["Finansinspektionen, client money guidance 2026"],
+    )
+    source_url: str = Field(
+        default="",
+        max_length=2000,
+        description="The authority's page the request was read from, at most 2000 characters, as an https link or left out; any other scheme answers 422 `validation_error`.",
+        examples=[_BATCH_SOURCE_EXAMPLE],
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "kind": "obligation_scope",
+                    "title": "Re-tag the client asset duties with custody",
+                    "payload": {
+                        "changes": [
+                            {"obligationId": _OBLIGATION_EXAMPLE_ID, "add": ["service_type:custody"], "remove": [], "source": _BATCH_SOURCE_EXAMPLE}
+                        ]
+                    },
+                    "sourceLabel": "Finansinspektionen, client money guidance 2026",
+                    "sourceUrl": _BATCH_SOURCE_EXAMPLE,
+                }
+            ]
+        }
+    )
+
+
+class ProposalBatchRowDecision(WriteBody):
+    """A reviewer's decision on one row of a batch."""
+
+    row_id: UUID = Field(description="The row decided, as the UUID `ProposalBatchRow.id` names it.", examples=[_BATCH_ROW_EXAMPLE_ID])
+    decision: str = Field(
+        description="The decision. A fixed kind: `approved` lets the row's `after` into the library, `rejected` refuses it with `rejectionCode`.",
+        examples=["rejected"],
+    )
+    rejection_code: str = Field(
+        default="",
+        description=(
+            "Why the row is refused, as the key of a live row of the `rejection_reason` library list, for "
+            "example `wrong_scope`; its rows are data an admin may extend, and `GET /vocab/rejection_reason` "
+            "returns the live ones. Required for a rejection and left empty for an approval."
+        ),
+        examples=["wrong_scope"],
+    )
+
+
+class ProposalBatchDecision(WriteBody):
+    """The body of `POST /proposal-batches/{batchId}/decide`: decisions on named rows, and
+    one decision for every row left pending, so a reviewer rejects a few and approves the
+    rest in one call."""
+
+    rows: list[ProposalBatchRowDecision] = Field(
+        default_factory=list,
+        max_length=settings.PROPOSAL_BATCH_MAX_ROWS,
+        description=f"The rows decided one by one, at most {settings.PROPOSAL_BATCH_MAX_ROWS}, each named once.",
+    )
+    rest: str | None = Field(
+        default=None,
+        description=(
+            "One decision for every row this call does not name and that is still pending: `approved` or "
+            "`rejected`, the same fixed kind a row's decision takes. Null leaves those rows pending."
+        ),
+        examples=["approved"],
+    )
+    rest_rejection_code: str = Field(
+        default="",
+        description="Why the rest are refused when `rest` is `rejected`: the key of a live row of the `rejection_reason` library list. Left empty otherwise.",
+        examples=[""],
+    )
+    note: str = Field(default="", max_length=2000, description="The reviewer's own sentence to the proposer about the batch, at most 2000 characters. It is never part of any library record.", examples=["This duty concerns the firm's own assets, not client money."])
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "rows": [{"rowId": _BATCH_ROW_EXAMPLE_ID, "decision": "rejected", "rejectionCode": "wrong_scope"}],
+                    "rest": "approved",
+                    "restRejectionCode": "",
+                    "note": "This duty concerns the firm's own assets, not client money.",
+                }
+            ]
+        }
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# The bank's own queue (INV-07, OWN-03; D-57, ADR 0050, ADR 0059; d89-proposal-owner)
+# ---------------------------------------------------------------------------------------
+_PRIVATE_EXAMPLE_ID = "5e2a7c1d-3b9f-4d6e-8a10-2c4f6b8d0e13"
+_PRIVATE_ROW_EXAMPLE: dict[str, Any] = {
+    "id": _PRIVATE_EXAMPLE_ID,
+    "kind": "new_obligation",
+    "status": "open",
+    "title": "New obligation: report outsourced functions to the board every year",
+    "origin": "agent",
+    "isMine": False,
+    "payload": {
+        "key": "obl-nordbank-outsourcing-board-report",
+        "instrument": "fffs-2026-9",
+        "titles": {"en": "Report outsourced functions to the board every year"},
+        "originalLanguage": "en",
+        "isMachine": True,
+        "refLabel": "4 kap. 5 §",
+        "dutyType": "governance",
+        "effectiveFrom": "2027-01-01",
+        "terms": ["legal_entity:bank"],
+    },
+    "fieldSources": {"titles.en": "https://www.fi.se/sv/vara-register/forfattningssamling/fffs-2026-9/"},
+    "sourceUrl": "https://www.fi.se/sv/vara-register/forfattningssamling/fffs-2026-9/",
+    "createdAt": "2026-09-24T06:40:00Z",
+}
+
+
+class PrivateProposalRow(CamelSchema):
+    """One proposal in this bank's own queue: a record of the bank's own, an instrument or an
+    obligation the shared library does not hold, waiting for a person here to decide it
+    (OWN-03). It belongs to this bank alone. The console never lists it, no other bank reads
+    it, and no platform reviewer decides it.
+
+    It is a request, not a record: until `status` is `approved` nothing of the bank's own
+    inventory changes, and even then the record reads "Private to us" and is never a fact of
+    the shared library. Whether it applies to the bank, and whether the bank complies, are
+    decided in the register afterwards, never here.
+    """
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_PRIVATE_ROW_EXAMPLE]})
+
+    id: UUID = Field(description="The proposal, as a UUID the server assigned when it was filed and never changes.")
+    kind: str = Field(
+        description=(
+            "What the proposal adds or changes. A fixed kind, not a vocabulary row: `new_instrument` adds an "
+            "instrument of the bank's own, `new_obligation` adds a duty of its own with its first version, "
+            "and `new_obligation_version` adds a version to a duty the bank already holds as its own."
+        )
+    )
+    status: str = Field(
+        description=(
+            "Where the request stands. A fixed kind: `open` is waiting for a person here to decide it, "
+            "`approved` means the bank's own inventory now carries it, `rejected` means it was refused with a "
+            "reason and changed nothing, and `superseded` means a later proposal overtook it."
+        )
+    )
+    title: str = Field(description="The one-line request as its proposer wrote it, which is what the queue lists it under.")
+    origin: str = Field(
+        description=(
+            "Who filed it. A fixed kind: `agent` means the bank's own research agent found it and a person has "
+            "not confirmed it yet, so it reads as proposed by our agent; `user` means a person here filed it."
+        )
+    )
+    is_mine: bool = Field(
+        description=(
+            "True when the reader filed it. Four eyes never lets them decide it, so a screen offers them no "
+            "approve or reject button; the server refuses them either way."
+        )
+    )
+    payload: dict[str, Any] = Field(  # schema: ProposalPayload
+        default_factory=dict,
+        description=(
+            "What was proposed, in the shape its `kind` names (`ProposalPayload`), kept exactly as it arrived. "
+            "It is the bank's own content and never leaves the bank."
+        ),
+    )
+    field_sources: dict[str, str] = Field(  # schema: ProposalFieldSources
+        default_factory=dict,
+        description=(
+            "Per field the proposal sets, where its value came from: an https link to the authority's public "
+            "page. A source is the authority's page, not the bank's reading of it."
+        ),
+    )
+    source_url: str = Field(default="", description="The https link to the authority's public page the new record is read from, which the record keeps as its own source.")
+    created_at: datetime = Field(description="When it was filed: a UTC timestamp, date and time together, so the queue can order and date it.")
+
+
+class PrivateProposalPage(CamelSchema):
+    """A page of this bank's own queue, oldest first, with the count of every proposal in it."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_PRIVATE_ROW_EXAMPLE], "total": 1}]})
+
+    items: list[PrivateProposalRow] = Field(description="This page of the bank's own proposals, oldest first, so the queue is worked in the order it was filed.")
+    total: int = Field(description="How many of the bank's own proposals there are in all, across every page, so a screen can show a count without reading them.", examples=[1])
+
+
+class PrivateProposalApproveBody(WriteBody):
+    """The body of `POST /private-proposals/{proposalId}/approve`: a person's word that this
+    record of the bank's own may enter the bank's own inventory. It needs
+    `private_records.approve` and a fresh passkey step-up, and the approver is never the
+    proposer. A field the body does not name answers 422 `validation_error`."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"note": "Checked against FFFS 2026:9, 4 kap. 5 §."}]})
+
+    note: str = Field(
+        default="",
+        max_length=2000,
+        description=(
+            "The approver's own sentence to the proposer, at most 2000 characters, stored on the proposal. "
+            "Optional. It is a comment on the request and never part of the record's text."
+        ),
+        examples=["Checked against FFFS 2026:9, 4 kap. 5 §."],
+    )
+
+
+class PrivateProposalRejectBody(WriteBody):
+    """The body of `POST /private-proposals/{proposalId}/reject`: why a person here turned a
+    proposal of the bank's own down. Nothing changes in the bank's inventory, and the
+    proposal is closed for good. A field the body does not name answers 422
+    `validation_error`."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"rejectionCode": "duplicate", "note": "We already hold this duty as our own."}]})
+
+    rejection_code: str = Field(
+        default="",
+        description=(
+            "Why the proposal is refused, as the key of a live row of the `rejection_reason` vocabulary: for "
+            "example `duplicate`, `wrong_scope`, `poor_wording` or `outside_sector_scope`. Its rows are data an "
+            "admin may extend, relabel or retire without a deploy, never a closed set, and "
+            "`GET /vocab/rejection_reason` returns the live ones; compare the key, never the label. Required."
+        ),
+        examples=["duplicate"],
+    )
+    note: str = Field(
+        default="",
+        max_length=2000,
+        description=(
+            "The person's own sentence to the proposer saying what is wrong, at most 2000 characters, stored on "
+            "the proposal. Required. It is a comment on the request and never part of any record's text."
+        ),
+        examples=["We already hold this duty as our own."],
     )

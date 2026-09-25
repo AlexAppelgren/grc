@@ -1226,3 +1226,27 @@ def get_record_sources(obligation_id: uuid.UUID, on: datetime.date) -> LibraryRe
             for field, url, label in cited
         ],
     )
+
+
+# ---------------------------------------------------------------------------------------
+# What a batch proposal re-tags (PRO-04; c11-proposal-batches-create): many obligations
+# read at once, so a batch's preview costs the same few queries however many rows it has.
+# ---------------------------------------------------------------------------------------
+def active_shared_obligations(obligation_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, Obligation]:
+    """Those of `obligation_ids` that are the library's own (never a bank's private record,
+    INV-07) and in force, with their instrument and its level, in one query. An id that is
+    missing, private or retired is simply absent, for the caller to refuse by name."""
+    rows = Obligation.objects.filter(
+        pk__in=obligation_ids, owner_tenant__isnull=True, status=RecordStatus.ACTIVE.value
+    ).select_related("instrument__level")
+    return {row.id: row for row in rows}
+
+
+def obligation_scope_terms(obligation_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, dict[str, uuid.UUID]]:
+    """Each obligation's own scope as the live `obligation_term` rows hold it, as
+    `dimension:key` to the term's id, in one query. An obligation with no terms is absent."""
+    scopes: dict[uuid.UUID, dict[str, uuid.UUID]] = {}
+    links = ObligationTerm.objects.filter(obligation_id__in=obligation_ids).select_related("term__dimension").order_by()
+    for link in links:
+        scopes.setdefault(link.obligation_id, {})[f"{link.term.dimension.key}:{link.term.key}"] = link.term_id
+    return scopes

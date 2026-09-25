@@ -105,6 +105,8 @@
   "console.queue.correct.title": "Korrigera innan du godkänner",
   "console.queue.correct.hint": "Bara fält det här förslaget redan har en källa för kan korrigeras.",
   "console.queue.correct.scopeHint": "Lägg till eller ta bort en term det här förslaget redan har en källa för.",
+  "console.queue.correct.source": "Källa för din korrigering",
+  "console.queue.correct.sourceHint": "Länken (https), eller bestämmelsens nyckel, där du läste de korrigerade värdena.",
   "console.queue.correct.note": "Anteckning för protokollet",
   "console.queue.correct.noteHint": "Valfritt. Sparas tillsammans med versionen.",
   "console.queue.approve": "Godkänn och genomför",

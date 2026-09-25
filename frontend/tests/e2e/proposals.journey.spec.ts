@@ -189,6 +189,8 @@ test.describe('proposals journeys', () => {
       const english = form.getByLabel(/^Text \(English\)/);
       const original = await english.inputValue();
       await english.fill(`${original} A library editor confirmed this wording for PRO-S4.`);
+      // Every corrected value names the source the reviewer read it in.
+      await form.getByLabel('Source of your correction', { exact: true }).fill('https://www.fi.se/');
       await form.getByRole('button', { name: 'Approve and apply' }).click();
       const prompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
       await expect(prompt.or(applied).first()).toBeVisible();
@@ -391,5 +393,12 @@ test.describe('proposals journeys', () => {
     await signInAs(page, LOGINS.reader);
     await expectVersionOnCard(page, 'obl-idd-demands-needs', 2);
     await expect(page.locator('[data-versions-panel] [data-version-row="2"] [data-machine-confirmed]')).toContainText(/proposed by watch-sweeper, confirmed by library-confirmer/);
+  });
+});
+
+// The bank's own queue (PRD 0.7, OWN-03): stays test.fixme until chunk 11 builds it.
+test.describe("the bank's own queue", () => {
+  test.fixme("PRO-S15: The bank's own queue decides what its own agent filed", async () => {
+    // pending: PRO-S15 (OWN-03, INV-07, PRO-03, AC-OWN1, chunk 11)
   });
 });

@@ -523,6 +523,21 @@ LIBRARY_TERM_FILTER_MAX = env_int("LIBRARY_TERM_FILTER_MAX", 20)
 # ---------------------------------------------------------------------------------------
 PROPOSAL_SOURCE_MAX_CHARS = env_int("PROPOSAL_SOURCE_MAX_CHARS", 2000)
 PROPOSAL_SCOPE_MAX_TERMS = env_int("PROPOSAL_SCOPE_MAX_TERMS", 20)
+# A payload text (a provision's verbatim text or an obligation's summary, per language)
+# arrives from an agent or a person and is stored in the queue before anyone reads it, so it
+# is bounded too (H35). The longest article a Nordic or Union source publishes runs to a few
+# tens of thousands of characters; anything beyond this is refused with 422 rather than
+# queued.
+PROPOSAL_TEXT_MAX_CHARS = env_int("PROPOSAL_TEXT_MAX_CHARS", 50000)
+
+# ---------------------------------------------------------------------------------------
+# ===== PRO-04 how many rows one batch proposal may hold (c11-proposal-batches-create) ====
+# A batch is one proposal with a row per library record it would change, each carrying its
+# preview, and a reviewer reads the whole batch in one answer. The cap keeps that read one
+# page (the API's own maximum page is 100) and inside the 250 ms budget; a larger re-tag is
+# filed as more than one batch, and above the cap creation answers 422 `batch_too_large`.
+# ---------------------------------------------------------------------------------------
+PROPOSAL_BATCH_MAX_ROWS = env_int("PROPOSAL_BATCH_MAX_ROWS", 100)
 
 # ---------------------------------------------------------------------------------------
 # ===== PRO-03 how far back "what changed in the library" looks ===========================
@@ -644,6 +659,21 @@ CELERY_BEAT_SCHEDULE["briefing-weekly"] = {
     "task": "apps.home.tasks.send_weekly_briefings",
     "schedule": crontab(minute="0"),
 }
+
+# ---------------------------------------------------------------------------------------
+# ===== COL-02, TEN-01 the workflow policy's platform defaults (c10-workflow-policy) =====
+# What a bank's workflow policy starts at: a new tenant takes these, and the migration that
+# added the columns wrote them into every tenant that already existed. The bank changes its
+# own through PATCH /tenant/workflow; changing a value here moves no existing bank. The lead
+# days are comma-separated day counts, the weekday one of monday..sunday, the role a system
+# role key every tenant is seeded with.
+# ---------------------------------------------------------------------------------------
+WORKFLOW_REMINDER_DAYS_BEFORE = [int(value) for value in env_list("WORKFLOW_REMINDER_DAYS_BEFORE", "3")]
+WORKFLOW_REVIEW_REMINDER_DAYS_BEFORE = [int(value) for value in env_list("WORKFLOW_REVIEW_REMINDER_DAYS_BEFORE", "30")]
+WORKFLOW_ESCALATE_AFTER_DAYS = env_int("WORKFLOW_ESCALATE_AFTER_DAYS", 5)
+WORKFLOW_ESCALATE_TO_ROLE = env_str("WORKFLOW_ESCALATE_TO_ROLE", "compliance_officer")
+WORKFLOW_DIGEST_WEEKDAY = env_str("WORKFLOW_DIGEST_WEEKDAY", "monday")
+WORKFLOW_TRIAGE_TARGET_HOURS = env_int("WORKFLOW_TRIAGE_TARGET_HOURS", 48)
 
 # ---------------------------------------------------------------------------------------
 # ===== HOM-04 the calendar subscription's limits (D-52, ADR 0045) ========================

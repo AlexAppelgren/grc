@@ -564,11 +564,11 @@ class AgentsScenarioTests(TestCase):
         A bank cannot switch off, pause or re-scope one of bleqq's agents (AGT-03, AGT-04).
         """
 
-    @skip("pending: AGT-S14 (AGT-04, AGT-05, chunk 11)")
+    @skip("pending: AGT-S14 (AGT-04, AGT-05, OWN-02, chunk 11)")
     def test_agt_s14(self) -> None:
         """AGT-S14
 
-        A bank's own agent writes only in its own zone (AGT-04, AGT-05).
+        A bank's own agent writes only in its own zone (AGT-04, AGT-05, OWN-02).
         """
 
     def test_agt_s15(self) -> None:
@@ -632,7 +632,12 @@ class AgentsScenarioTests(TestCase):
         corrected = "The institution pays for third-party research from its own resources or a research payment account."
         approved = self.client.post(
             f"/api/v1/proposals/{to_approve}/approve",
-            data={"payloadOverrides": {"summaries": {"en": corrected}}, "decision": agent_build.DECISION, "agentRunId": review_id},
+            data={
+                "payloadOverrides": {"summaries": {"en": corrected}},
+                "fieldSources": {"summaries.en": agent_build.DECISION["citations"][0]["url"]},
+                "decision": agent_build.DECISION,
+                "agentRunId": review_id,
+            },
             content_type="application/json",
             **as_confirmer,
         )
@@ -674,6 +679,13 @@ class AgentsScenarioTests(TestCase):
             (to_approve, "agent", confirmer_key.agent.id, None),
         )
         self.assertEqual(confirmer.propose(review_id, obligation_id=world.obligation.id).status_code, 403)
+
+    @skip("pending: AGT-S16 (OWN-02, AGT-04, AGT-05, AGT-06, chunk 11)")
+    def test_agt_s16(self) -> None:
+        """AGT-S16
+
+        An approved scope item opens research, and the findings arrive as the bank's own proposals (OWN-02, AGT-04, AGT-05, AGT-06).
+        """
 
     @skip("pending: ACC-S1 (ACC-01, J-11, chunk 11)")
     def test_acc_s1(self) -> None:
