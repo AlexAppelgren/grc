@@ -82,6 +82,21 @@ a.row:hover{border-color:var(--text)}
 .box h2{margin-bottom:12px}
 .restricted{text-align:center;padding:64px 16px;max-width:60ch;margin:0 auto}
 .restricted p{color:var(--muted)}
+/* TEN-05 removal dialog: one row per kind, the count then the new owner. */
+.kinds{display:grid;gap:0;margin:0 0 12px}
+.kind{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,220px);gap:6px 14px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.kind:last-child{border-bottom:0}
+.kind b{font-weight:600}.kind .n{color:var(--muted);font-size:.86rem}
+.kind select{width:100%;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:9px 12px;min-height:44px}
+.kind select[aria-invalid="true"]{border-color:var(--red)}
+/* Fixed-theme frames at 375 px, so a state reads in light and dark on any screen. */
+.theme.light{--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;--red:#b92f13}
+.theme.dark{--bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975}
+.theme{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:16px;padding:12px}
+.phones{display:flex;flex-wrap:wrap;gap:16px}
+.phones>*{flex:0 1 375px;min-width:0}
+@media (max-width:820px){.kind{grid-template-columns:1fr}}
+.phones .kind{grid-template-columns:1fr}
 .states h2.k{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:28px 0 10px}
 .note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
 .tabbar{display:none}
@@ -168,6 +183,55 @@ a.row:hover{border-color:var(--text)}
     <div class="panel"><h2>Passkeys</h2><p style="color:var(--muted)">If this person lost every passkey, re-issue their enrolment. Every session ends, every passkey is retired, and they get a new invitation by email.</p><div class="bar"><button class="btn danger small">Re-issue enrolment</button></div></div>
     <div class="panel"><h2>Access</h2><p style="color:var(--muted)">Deactivating ends every session and keeps the history.</p><p class="err" role="alert">This is the last member who can manage members. Give someone else that role first.</p><div class="bar"><button class="btn danger small">Deactivate</button></div></div>
 
+    <h2 class="k">Deactivate a member who owns open work (the preview; Deactivate on the Access panel opens it)</h2>
+    <div class="modal"><form class="box" aria-labelledby="rm"><h2 id="rm">Deactivate Johan Berg</h2>
+      <p>Johan Berg owns open work. Choose who takes it over, a person or a team, for each kind.</p>
+      <div class="kinds"><div class="kind"><div><b>Obligations</b> <span class="n">3 owned</span></div><select aria-label="New owner of the obligations"><option>Choose a new owner</option><optgroup label="Teams"><option>Retail compliance</option><option>Cards</option><option>Legal</option></optgroup><optgroup label="People"><option>Sara Lindqvist</option><option>Anna Nilsson</option><option>Erik Holm</option></optgroup></select></div><div class="kind"><div><b>Obligations per legal entity</b> <span class="n">1 owned</span></div><select aria-label="New owner of the obligations per legal entity"><option>Choose a new owner</option><optgroup label="Teams"><option>Retail compliance</option><option>Cards</option><option>Legal</option></optgroup><optgroup label="People"><option>Sara Lindqvist</option><option>Anna Nilsson</option><option>Erik Holm</option></optgroup></select></div><div class="kind"><div><b>Gaps</b> <span class="n">2 open</span></div><select aria-label="New owner of the gaps"><option>Choose a new owner</option><optgroup label="Teams"><option>Retail compliance</option><option>Cards</option><option>Legal</option></optgroup><optgroup label="People"><option>Sara Lindqvist</option><option>Anna Nilsson</option><option>Erik Holm</option></optgroup></select></div><div class="kind"><div><b>Recurring duty dates</b> <span class="n">1 due</span></div><select aria-label="New owner of the recurring duty dates"><option>Choose a new owner</option><optgroup label="Teams"><option>Retail compliance</option><option>Cards</option><option>Legal</option></optgroup><optgroup label="People"><option>Sara Lindqvist</option><option>Anna Nilsson</option><option>Erik Holm</option></optgroup></select></div><div class="kind"><div><b>Internal items</b> <span class="n">1 open</span></div><select aria-label="New owner of the internal items"><option>Choose a new owner</option><optgroup label="Teams"><option>Retail compliance</option><option>Cards</option><option>Legal</option></optgroup><optgroup label="People"><option>Sara Lindqvist</option><option>Anna Nilsson</option><option>Erik Holm</option></optgroup></select></div><div class="kind"><div><b>Cases</b> <span class="n">2 open</span></div><select aria-label="New owner of the cases"><option>Choose a new owner</option><optgroup label="Teams"><option>Retail compliance</option><option>Cards</option><option>Legal</option></optgroup><optgroup label="People"><option>Sara Lindqvist</option><option>Anna Nilsson</option><option>Erik Holm</option></optgroup></select></div><div class="kind"><div><b>Actions</b> <span class="n">4 open</span></div><select aria-label="New owner of the actions"><option>Choose a new owner</option><optgroup label="Teams"><option>Retail compliance</option><option>Cards</option><option>Legal</option></optgroup><optgroup label="People"><option>Sara Lindqvist</option><option>Anna Nilsson</option><option>Erik Holm</option></optgroup></select></div></div>
+      <p style="margin-bottom:6px"><b>Takes part in 5 items.</b> That ends; the items keep their other participants.</p>
+      <p><b>Teams:</b> Retail compliance, Cards. Johan Berg leaves both; what the teams own stays with the teams.</p>
+      <p style="color:var(--muted)">Nothing changes until you confirm. Then every item moves, every session ends and the history stays.</p>
+      <p class="hint" style="color:var(--muted);font-size:.82rem">Deactivating asks for your passkey.</p>
+      <div class="bar" style="justify-content:flex-end"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Deactivate</button></div>
+    </form></div>
+
+    <h2 class="k">Deactivate: loading the preview, then a member who owns nothing open</h2>
+    <div class="modal"><div class="box" aria-busy="true"><h2>Deactivate Johan Berg</h2><div style="height:120px;border-radius:12px;background:var(--surface-2)"></div></div></div>
+    <div class="modal"><form class="box" aria-labelledby="rm0"><h2 id="rm0">Deactivate Anna Nilsson</h2>
+      <p>Anna Nilsson owns no open work and takes part in nothing.</p>
+      <p style="color:var(--muted)">Nothing changes until you confirm. Then every session ends and the history stays.</p>
+      <p class="hint" style="color:var(--muted);font-size:.82rem">Deactivating asks for your passkey.</p>
+      <div class="bar" style="justify-content:flex-end"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Deactivate</button></div>
+    </form></div>
+
+    <h2 class="k">Deactivate: the refusals, rendered in the dialog with nothing changed</h2>
+    <div class="panel"><p class="err" role="alert">Johan Berg still owns open work: 3 obligations, 2 gaps and 2 cases. Choose a new owner for each kind.</p>
+      <div class="kinds"><div class="kind"><div><b>Gaps</b> <span class="n">2 open</span></div><select aria-label="New owner of the gaps" aria-invalid="true"><option>Choose a new owner</option></select></div></div></div>
+    <div class="panel"><p class="err" role="alert">Choose an active member other than Johan Berg, or a team.</p></div>
+    <div class="panel"><p class="err" role="alert">Nothing changed. Deactivating needs your passkey.</p></div>
+    <p class="ok" role="status" style="color:var(--green)">Johan Berg is deactivated. 14 items have new owners.</p>
+
+    <h2 class="k">The preview at 375 px, light and dark</h2>
+    <div class="phones">
+      <div class="theme light"><div class="modal" style="margin:0;padding:8px"><form class="box" aria-labelledby="rmp"><h2 id="rmp">Deactivate Johan Berg</h2>
+      <p>Johan Berg owns open work. Choose who takes it over, a person or a team, for each kind.</p>
+      <div class="kinds"><div class="kind"><div><b>Obligations</b> <span class="n">3 owned</span></div><select aria-label="New owner of the obligations"><option>Choose a new owner</option><optgroup label="Teams"><option>Retail compliance</option><option>Cards</option><option>Legal</option></optgroup><optgroup label="People"><option>Sara Lindqvist</option><option>Anna Nilsson</option><option>Erik Holm</option></optgroup></select></div><div class="kind"><div><b>Gaps</b> <span class="n">2 open</span></div><select aria-label="New owner of the gaps"><option>Choose a new owner</option><optgroup label="Teams"><option>Retail compliance</option><option>Cards</option><option>Legal</option></optgroup><optgroup label="People"><option>Sara Lindqvist</option><option>Anna Nilsson</option><option>Erik Holm</option></optgroup></select></div><div class="kind"><div><b>Cases</b> <span class="n">2 open</span></div><select aria-label="New owner of the cases"><option>Choose a new owner</option><optgroup label="Teams"><option>Retail compliance</option><option>Cards</option><option>Legal</option></optgroup><optgroup label="People"><option>Sara Lindqvist</option><option>Anna Nilsson</option><option>Erik Holm</option></optgroup></select></div></div>
+      <p style="margin-bottom:6px"><b>Takes part in 5 items.</b> That ends; the items keep their other participants.</p>
+      <p><b>Teams:</b> Retail compliance, Cards. Johan Berg leaves both; what the teams own stays with the teams.</p>
+      <p style="color:var(--muted)">Nothing changes until you confirm. Then every item moves, every session ends and the history stays.</p>
+      <p class="hint" style="color:var(--muted);font-size:.82rem">Deactivating asks for your passkey.</p>
+      <div class="bar" style="justify-content:flex-end"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Deactivate</button></div>
+    </form></div></div>
+      <div class="theme dark"><div class="modal" style="margin:0;padding:8px"><form class="box" aria-labelledby="rmp"><h2 id="rmp">Deactivate Johan Berg</h2>
+      <p>Johan Berg owns open work. Choose who takes it over, a person or a team, for each kind.</p>
+      <div class="kinds"><div class="kind"><div><b>Obligations</b> <span class="n">3 owned</span></div><select aria-label="New owner of the obligations"><option>Choose a new owner</option><optgroup label="Teams"><option>Retail compliance</option><option>Cards</option><option>Legal</option></optgroup><optgroup label="People"><option>Sara Lindqvist</option><option>Anna Nilsson</option><option>Erik Holm</option></optgroup></select></div><div class="kind"><div><b>Gaps</b> <span class="n">2 open</span></div><select aria-label="New owner of the gaps"><option>Choose a new owner</option><optgroup label="Teams"><option>Retail compliance</option><option>Cards</option><option>Legal</option></optgroup><optgroup label="People"><option>Sara Lindqvist</option><option>Anna Nilsson</option><option>Erik Holm</option></optgroup></select></div><div class="kind"><div><b>Cases</b> <span class="n">2 open</span></div><select aria-label="New owner of the cases"><option>Choose a new owner</option><optgroup label="Teams"><option>Retail compliance</option><option>Cards</option><option>Legal</option></optgroup><optgroup label="People"><option>Sara Lindqvist</option><option>Anna Nilsson</option><option>Erik Holm</option></optgroup></select></div></div>
+      <p style="margin-bottom:6px"><b>Takes part in 5 items.</b> That ends; the items keep their other participants.</p>
+      <p><b>Teams:</b> Retail compliance, Cards. Johan Berg leaves both; what the teams own stays with the teams.</p>
+      <p style="color:var(--muted)">Nothing changes until you confirm. Then every item moves, every session ends and the history stays.</p>
+      <p class="hint" style="color:var(--muted);font-size:.82rem">Deactivating asks for your passkey.</p>
+      <div class="bar" style="justify-content:flex-end"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Deactivate</button></div>
+    </form></div></div>
+    </div>
+
     <h2 class="k">Loading, error, denied, not found</h2>
     <div class="rows" aria-busy="true"><div style="height:96px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)"></div></div>
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load members</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
@@ -175,7 +239,7 @@ a.row:hover{border-color:var(--text)}
     <div class="restricted"><h1>Not found</h1><p>There is nothing at this address in your organisation.</p><a href="#">Back to Members</a></div>
     </div>
 
-    <p class="note">Members card. Role pills are information pills labelled from the role rows; "Awaiting enrolment" is a warning pill from the invited kind, "Deactivated" an information pill. Re-issue enrolment, role changes and deactivation ask for a passkey (auth-step-up.html); "last admin" answers the server's 409 in place. Another tenant's member URL renders "Not found", never Restricted. Two buttons share one row on phones, primary on the right. Teams (TEN-03, chunk 8) are shown on every row and set here, because team membership is members.manage while the teams themselves are vocab.manage and live under Organisation. Saving teams writes one audit event holding the team keys before and after, and a member of another tenant is refused the same way an unknown id is. Changing teams grants nothing and needs no step-up. Deactivating a member also ends their participations and their team memberships, and the removal preview that shows this is designed with TEN-05.</p>
+    <p class="note">Members card. Role pills are information pills labelled from the role rows; "Awaiting enrolment" is a warning pill from the invited kind, "Deactivated" an information pill. Re-issue enrolment, role changes and deactivation ask for a passkey (auth-step-up.html); "last admin" answers the server's 409 in place. Another tenant's member URL renders "Not found", never Restricted. Two buttons share one row on phones, primary on the right. Teams (TEN-03, chunk 8) are shown on every row and set here, because team membership is members.manage while the teams themselves are vocab.manage and live under Organisation. Saving teams writes one audit event holding the team keys before and after, and a member of another tenant is refused the same way an unknown id is. Changing teams grants nothing and needs no step-up. Deactivating a member also ends their participations and their team memberships. The removal preview (TEN-05, chunk 8) opens from Deactivate and reads GET /tenant/members/{id}/open-work: one line per kind the member owns, with its count, and a new owner for each, a person or a team, picked from the people and team rows. It then says how many items they take part in and which teams they leave, because both simply end, and that nothing changes until the admin confirms. Confirming sends the owner per kind on DELETE /tenant/members/{id} behind a passkey, and the server moves every item and deactivates the member in one transaction, one audit event per item. Sending no owner for a kind with open work answers 422 reassignment_required with the counts, rendered in the dialog from the code; an owner who is not an active member, or is the member being removed, answers 422 unknown_member. What a team owns never needs a new owner. The kinds drawn are chunk 8's (obligations, obligations per legal entity, gaps, recurring duty dates, internal items) with chunk 9's cases and actions; the kind names are labels from the catalog, the counts are the server's.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Search</button><button>More</button></nav>
