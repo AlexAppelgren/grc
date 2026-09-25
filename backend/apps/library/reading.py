@@ -23,6 +23,9 @@ and the diffs between two versions. Nothing here writes.
 - `tenant_tags()` is the caller's bank's own tags on a page of obligations, from one query
   (VOC-08); `tagged()` is the `tag` and `tenantTag` filters, each key resolved against its
   own list first so a key that names nothing is a 422, never an empty page.
+- The register overlay on a row and the card, and its filters, are `apps.register.overlay`:
+  one joined query per page over the bank's own entries (REG-01, REG-02). It never decides
+  which rows a page holds beyond its own filters; `in_view()` stays the one scope rule.
 - `active_obligation()` and `unknown_provision_keys()` are what a proposal points at and
   cites; they live here because the library fence keeps library models out of the
   proposals app (PRO-01). `instrument_refs()`, `shared_instrument()`, `live_duty_type()`
@@ -87,6 +90,7 @@ from apps.library.models import (
     SubjectType,
     Translation,
 )
+from apps.register import overlay
 from apps.library.schemas import (
     DiffSegment,
     FootprintFilter,
@@ -308,6 +312,16 @@ def refuse_bank_filters(tenant_id: uuid.UUID | None, query: ObligationQuery) -> 
     list."""
     if tenant_id is None and query.tenant_tag:
         raise ValidationError("tenantTag filters by a bank's own tags, and this caller belongs to no bank.", code="unknown_filter")
+    if tenant_id is None and any(value is not None for value in _overlay_filters(query)):
+        raise ValidationError(
+            "applicability, complianceStatus, owner and ownerTeam filter by a bank's own register, "
+            "and this caller belongs to no bank.",
+            code="unknown_filter",
+        )
+
+
+def _overlay_filters(query: ObligationQuery) -> overlay.OverlayFilters:
+    return overlay.OverlayFilters(query.applicability, query.compliance_status, query.owner, query.owner_team)
 
 
 def tagged(queryset: _Listed, tenant: Tenant, query: ObligationQuery) -> _Listed:
@@ -711,6 +725,7 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
         titled = ObligationTitle.objects.filter(obligation=OuterRef("pk"), text__icontains=query.q)
         queryset = queryset.filter(Q(ref_label__icontains=query.q) | Exists(titled))
     queryset = tagged(in_view(queryset, tenant, query.footprint), tenant, query)
+    queryset = overlay.filtered(queryset, tenant, _overlay_filters(query))
     total = queryset.count()
     page = list(
         queryset.order_by("stable_key").select_related("instrument__level", "instrument__jurisdiction", "duty_type", "verified_by").prefetch_related("titles", versions_with_confirmation())[
@@ -731,6 +746,7 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
     for obligation_id, tag_id in tag_pairs:
         tags_of.setdefault(obligation_id, []).append(tag_refs[tag_id])
     bank_tags = tenant_tags(tenant, ids, order)
+    judged = overlay.overlay(tenant, ids, order)
     dimensions = footprint_dimensions(order)
     rows: list[ObligationRow] = []
     for obligation in page:
@@ -738,6 +754,7 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
         carried, outside = scope_and_verdict(scope, dimensions, term_refs, footprint, restricting)
         versions = list(obligation.versions.all())
         instrument = obligation.instrument
+        bank = judged.get(obligation.id, overlay.EMPTY)
         rows.append(
             ObligationRow(
                 id=obligation.id,
@@ -760,7 +777,10 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
                 last_verified_at=obligation.last_verified_at,
                 verified_by=None if obligation.verified_by is None else PersonRef(id=obligation.verified_by.id, name=obligation.verified_by.name),
                 open_change_count=0,
-                compliance_status=None,
+                applicability=bank.applicability,
+                compliance_status=bank.compliance_status,
+                first_line_owner=bank.first_line_owner,
+                owner_team=bank.owner_team,
             )
         )
     return rows, total
@@ -880,6 +900,7 @@ def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID
     verifier = obligation.verified_by
     # The provenance repeats who confirmed the version in force; the row already says it.
     in_force_row = rows[current.version_number] if current is not None else None
+    bank = overlay.overlay(tenant, [obligation.id], order).get(obligation.id, overlay.EMPTY)
     return ObligationDetail(
         id=obligation.id,
         stable_key=obligation.stable_key,
@@ -927,6 +948,10 @@ def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID
             confirmed_by_agent=None if in_force_row is None else in_force_row.confirmed_by_agent,
             proposed_by_agent=None if in_force_row is None else in_force_row.proposed_by_agent,
         ),
+        applicability=bank.applicability,
+        compliance_status=bank.compliance_status,
+        first_line_owner=bank.first_line_owner,
+        owner_team=bank.owner_team,
     )
 
 

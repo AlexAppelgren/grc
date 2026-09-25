@@ -73,8 +73,9 @@ ALL_SERVICES = (
 # label query each for terms, tags, duty types, levels and, since tax-watched-inventory
 # (2026-09-23, FP-04), the instruments' jurisdictions a row now names (5); the dimensions
 # with their term counts and labels (2); since c10-tag-filters-and-limits (2026-09-25,
-# VOC-08), the bank's own tags on the page with their labels (1).
-LIST_QUERIES = 2 + 6 + 2 + 2 + 2 + 2 + 5 + 2 + 5 + 2 + 1
+# VOC-08), the bank's own tags on the page with their labels (1); since c8-inventory-overlay
+# (2026-09-25, REG-01, REG-02), the bank's register overlay on the page (1).
+LIST_QUERIES = 2 + 6 + 2 + 2 + 2 + 2 + 5 + 2 + 5 + 2 + 1 + 1
 # Queries per card read, measured 2026-09-19 and pinned the same way: the savepoint pair (2);
 # the session (6) and the caller's tenant and locale (2), as above; the obligation with its
 # instrument, level, duty type and verifier (1); its titles, its instrument's titles, its
@@ -82,8 +83,9 @@ LIST_QUERIES = 2 + 6 + 2 + 2 + 2 + 2 + 5 + 2 + 5 + 2 + 1
 # above); one label query each for terms, tags, duty types and levels (4); the dimensions
 # with their term counts and labels (2); the footprint and its restricting dimensions (2);
 # the relations, the titles of what they point at and the relation types' labels (3); the
-# bank's own tags on it with their labels (1, VOC-08).
-DETAIL_QUERIES = 2 + 6 + 2 + 1 + 6 + 5 + 4 + 2 + 2 + 3 + 1
+# bank's own tags on it with their labels (1, VOC-08); the bank's register overlay on it (1,
+# c8-inventory-overlay).
+DETAIL_QUERIES = 2 + 6 + 2 + 1 + 6 + 5 + 4 + 2 + 2 + 3 + 1 + 1
 # Who confirmed a version the library was seeded with: nobody, since nobody approved it.
 SEEDED = {"verifiedOrigin": "", "confirmedByAgent": None, "proposedByAgent": None}
 
