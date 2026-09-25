@@ -26,6 +26,7 @@ import re
 from collections import Counter
 from io import StringIO
 from pathlib import Path
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
@@ -1452,3 +1453,92 @@ class SeededCaseJourneys(SeededOnce):
         self.assertIn("cases.signoff", {permission for role in membership.roles.all() for permission in role.permissions})
         self.assertIn("CAS-S9", next(login for login in SEED_LOGINS if login.email == spec.requested_by).reserved_for)
 # --- end c9-e2e-seed ------------------------------------------------------------------------------
+
+
+# --- c9-evidence (CAS-05, CAS-S7, CAS-S16) --------------------------------------------------------
+class SeededCaseEvidence(SeededOnce):
+    """Every seeded piece of evidence on its bank's case in its scan state, a clean file's
+    bytes in storage and hashing to the row, none for an infected one, and a second seed
+    changing nothing."""
+
+    def _pieces(self) -> list[tuple[Any, Any]]:
+        from apps.cases.models import Evidence
+        from apps.shared.e2e_seed import EXPECTED_EVIDENCE
+
+        pieces = []
+        for plan in EXPECTED_EVIDENCE:
+            tenancy.activate(Tenant.objects.get(slug=plan.tenant_slug).id)
+            pieces.append((plan, Evidence.objects.get(case__change__stable_key=plan.stable_key, name=plan.name)))
+        return pieces
+
+    def test_each_piece_is_on_its_banks_case_in_its_scan_state(self) -> None:
+        import hashlib
+
+        from apps.shared.storage import get_storage
+
+        storage = get_storage()
+        states = set()
+        for plan, row in self._pieces():
+            with self.subTest(case=plan.stable_key, name=plan.name):
+                states.add(row.scan_state)
+                self.assertEqual(row.scan_state, plan.scan_state)
+                self.assertIsNone(row.removed_at)
+                if plan.url:
+                    self.assertEqual((row.kind, row.url, row.storage_key), ("link", plan.url, ""))
+                    continue
+                self.assertEqual(row.kind, "file")
+                self.assertTrue(row.storage_key.startswith(f"{row.tenant_id}/cases/{row.case_id}/evidence/"))
+                if plan.scan_state == "infected":
+                    self.assertFalse(storage.exists(row.storage_key), "an infected file's bytes do not exist")
+                else:
+                    content = storage.read(row.storage_key)
+                    self.assertEqual(row.content_hash, "sha256:" + hashlib.sha256(content).hexdigest())
+                    self.assertEqual(row.size_bytes, len(content))
+                self.assertEqual(row.scanned_at is None, plan.scan_state == "pending")
+        self.assertEqual(states, {"clean", "pending", "infected"})
+
+    def test_every_case_waiting_for_or_past_sign_off_has_clean_evidence_and_cas_s8_none(self) -> None:
+        from apps.cases import logic
+        from apps.shared.e2e_seed import EXPECTED_CASE_JOURNEYS
+
+        for spec in EXPECTED_CASE_JOURNEYS:
+            tenancy.activate(Tenant.objects.get(slug=spec.tenant_slug).id)
+            case = ChangeCase.objects.get(change__stable_key=spec.stable_key)
+            clean = logic.case_facts(case, actor=None).clean_evidence_count
+            with self.subTest(journey=spec.journey, status=spec.status.value):
+                if spec.status.value in ("signoff", "closed"):
+                    self.assertGreaterEqual(clean, 1, "a sign-off request needs clean evidence")
+                if spec.journey in ("CAS-S8", "CAS-S15"):
+                    self.assertEqual(clean, 0, "its journey attaches or misses evidence itself")
+
+    def test_both_banks_hold_evidence_on_one_change_and_neither_sees_the_others(self) -> None:
+        from apps.cases.models import Evidence
+
+        shared = "chg-e2e-c5-timeline"
+        seen = {}
+        for slug in (TENANT_A_SLUG, TENANT_B_SLUG):
+            tenancy.activate(Tenant.objects.get(slug=slug).id)
+            seen[slug] = set(Evidence.objects.filter(case__change__stable_key=shared).values_list("id", flat=True))
+            self.assertEqual(set(Evidence.objects.values_list("tenant_id", flat=True)), {Tenant.objects.get(slug=slug).id})
+        self.assertTrue(seen[TENANT_A_SLUG] and seen[TENANT_B_SLUG])
+        self.assertFalse(seen[TENANT_A_SLUG] & seen[TENANT_B_SLUG])
+
+    def test_a_second_seed_changes_nothing_and_restores_lost_bytes(self) -> None:
+        from apps.shared.storage import get_storage
+
+        before = [(row.id, row.content_hash, row.uploaded_at) for _plan, row in self._pieces()]
+        audit: dict[str, int] = {}
+        for slug in (TENANT_A_SLUG, TENANT_B_SLUG):
+            tenancy.activate(Tenant.objects.get(slug=slug).id)
+            audit[slug] = AuditEvent.objects.filter(action="case.evidence_attached").count()
+        lost = next(row for plan, row in self._pieces() if plan.scan_state == "clean" and not plan.url)
+        get_storage().delete(lost.storage_key)
+
+        seed_e2e()
+
+        self.assertEqual([(row.id, row.content_hash, row.uploaded_at) for _plan, row in self._pieces()], before)
+        for slug, count in audit.items():
+            tenancy.activate(Tenant.objects.get(slug=slug).id)
+            self.assertEqual(AuditEvent.objects.filter(action="case.evidence_attached").count(), count)
+        self.assertTrue(get_storage().exists(lost.storage_key), "a lost clean file is written back under its own key")
+# --- end c9-evidence ------------------------------------------------------------------------------

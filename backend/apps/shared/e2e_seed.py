@@ -1803,6 +1803,8 @@ def seed_e2e() -> dict[str, int]:
         chunk5_cases = seed_chunk5_cases(tenants)
         # c9-e2e-seed: one case per journey that moves one, after the logins it names.
         case_journeys = seed_case_journeys(tenants)
+        # c9-evidence: after the case journeys and chunk 5's cases it attaches to.
+        case_evidence = seed_case_evidence(tenants)
         seed_watched_market_change()
         seed_standard_change()
 
@@ -1822,6 +1824,7 @@ def seed_e2e() -> dict[str, int]:
         "home_cases": home_cases,
         "chunk5_cases": chunk5_cases,
         "case_journeys": case_journeys,
+        "case_evidence": case_evidence,
         "machine_confirmed": machine_confirmed,
         "eval_questions": eval_questions,
         **library,
@@ -2221,3 +2224,107 @@ def _seed_record(case: ChangeCase, action: str, after: dict[str, Any], before: d
         after=after,
     )
 # --- end c9-e2e-seed ----------------------------------------------------------------------------
+
+
+# --- c9-evidence (CAS-05, CAS-S7, CAS-S16) ------------------------------------------------------
+# Evidence on the cases the journeys read: every scan state on CAS-S7's implementing case, a
+# clean file on each case waiting for sign-off (a request needs one) and on the closed case,
+# and a clean file on each bank's case for chunk 5's shared change, so CAS-S16 finds evidence
+# of both banks on one change. CAS-S8's case keeps none: its journey is the refusal without
+# evidence. A clean file's bytes are written here, through storage, into the slot's media
+# root and never committed; an infected one's never exist, as the scan deletes them, and a
+# pending one is never queued, so it stays pending.
+
+
+@dataclass(frozen=True)
+class SeedEvidence:
+    """One piece of evidence on the case for `stable_key` in `tenant_slug`. A file carries
+    `scan_state`; a link carries `url` and reads clean."""
+
+    stable_key: str
+    name: str
+    scan_state: str = "clean"
+    url: str = ""
+    tenant_slug: str = TENANT_A_SLUG
+
+
+EXPECTED_EVIDENCE: tuple[SeedEvidence, ...] = (
+    SeedEvidence("chg-e2e-case-evidence", "AMLR gap analysis.pdf"),
+    SeedEvidence("chg-e2e-case-evidence", "Customer due diligence checklist.pdf", scan_state="pending"),
+    SeedEvidence("chg-e2e-case-evidence", "Vendor questionnaire.pdf", scan_state="infected"),
+    SeedEvidence("chg-e2e-case-actions-locked", "Inducements policy 2026.pdf"),
+    SeedEvidence("chg-e2e-case-self-signoff", "Client categorisation procedure.pdf"),
+    SeedEvidence("chg-e2e-case-signoff", "Product governance review.pdf"),
+    SeedEvidence("chg-e2e-case-file", "Best execution report 2026.pdf"),
+    SeedEvidence("chg-e2e-case-file", "FI decision memo", url="https://intranet.example-bank.test/memo/42"),
+    SeedEvidence("chg-e2e-c5-timeline", "Research payment criteria.pdf"),
+    SeedEvidence("chg-e2e-c5-timeline", "Research payment criteria (DK).pdf", tenant_slug=TENANT_B_SLUG),
+)
+# The day after the case's first sighting each piece was attached: after the actions were
+# done and before the sign-off request (`_DONE_DAY`, `_MOVE_DAY`). Chunk 5's shared change
+# is sighted this week, so its pieces are attached at the sighting instead.
+_EVIDENCE_DAY = 11
+
+
+def seed_evidence_pdf(name: str) -> bytes:
+    """The bytes of a seeded clean file: a small, well-formed PDF, the same on every run."""
+    return f"%PDF-1.4\n% Seeded evidence: {name}\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n".encode()
+
+
+def seed_case_evidence(tenants: list[Tenant]) -> int:
+    """c9-evidence: each piece of `EXPECTED_EVIDENCE`, once per case and name. A second run
+    writes no row and no audit row; it only writes a clean file's bytes back when the media
+    root lost them, under the key the row already names."""
+    import hashlib
+
+    from apps.cases.models import Evidence, EvidenceKind
+    from apps.shared.storage import get_storage
+
+    by_slug = {tenant.slug: tenant for tenant in tenants}
+    storage = get_storage()
+    uploader = {TENANT_A_SLUG: OWNER_A, TENANT_B_SLUG: "compliance_officer@second-bank.test"}
+    for plan in EXPECTED_EVIDENCE:
+        tenant = by_slug[plan.tenant_slug]
+        tenancy.activate(tenant.id)
+        case = ChangeCase.objects.select_related("change").get(change__stable_key=plan.stable_key)
+        content = seed_evidence_pdf(plan.name)
+        row = Evidence.objects.filter(case=case, name=plan.name).first()  # ordering: Meta.ordering, one per (case, name)
+        if row is None:
+            # Eleven days after the sighting, or at the sighting for a change seen this week.
+            at = case.change.first_seen_at + datetime.timedelta(days=_EVIDENCE_DAY)
+            if at > case_anchor(tenant.timezone):
+                at = case.change.first_seen_at
+            kind = EvidenceKind.LINK if plan.url else EvidenceKind.FILE
+            row = Evidence(
+                tenant=tenant,
+                case=case,
+                kind=kind.value,
+                name=plan.name,
+                url=plan.url,
+                uploaded_by=User.objects.get(email=uploader[plan.tenant_slug]),
+                uploaded_at=at,
+                scan_state=plan.scan_state,
+                scanned_at=None if plan.scan_state == "pending" else at,
+            )
+            if kind is EvidenceKind.FILE:
+                row.storage_key = f"{tenant.id}/cases/{case.id}/evidence/{uuid.uuid4().hex}"
+                row.content_hash = "sha256:" + hashlib.sha256(content).hexdigest()
+                row.size_bytes = len(content)
+                row.mime_type = "application/pdf"
+            # The fixture path (`raw`), as for actions, so "attached on" is the anchored moment.
+            row.save_base(raw=True)
+            record(
+                action="case.evidence_attached",
+                actor=SEED_ACTOR,
+                subject_type="evidence",
+                subject_id=row.id,
+                subject_title=case.change.title,
+                summary="Seeded for E2E journeys.",
+                tenant_id=tenant.id,
+                after={"evidenceId": str(row.id), "caseId": str(case.id), "kind": row.kind, "scanState": row.scan_state},
+            )
+        if row.storage_key and row.scan_state != "infected" and not storage.exists(row.storage_key):
+            storage.write(row.storage_key, content, row.mime_type)
+    tenancy.clear_tenant()
+    return len(EXPECTED_EVIDENCE)
+# --- end c9-evidence ----------------------------------------------------------------------------
