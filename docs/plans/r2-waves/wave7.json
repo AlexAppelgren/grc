@@ -1,0 +1,230 @@
+[
+ {
+  "package": "security-review-c11",
+  "title": "Security review of chunk 11: agents, security policy, credentials and batches",
+  "goal": "Chunk 11's agent, identity and proposal diff is reviewed and medium-or-higher findings fixed.",
+  "requirement_ids": [
+   "AGT-03",
+   "AGT-04",
+   "AGT-05",
+   "AGT-06",
+   "PRO-04",
+   "ID-07",
+   "ID-08"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "docs/reviews/CHUNK11_REVIEW.md"
+  ],
+  "shared_files": [
+   "docs/plans/briefs/HARDENING.md",
+   "docs/TODO_FOR_alex.md"
+  ],
+  "depends_on": [
+   "c11-tenant-controls-cap",
+   "c11-research-requests",
+   "c11-e2e-console",
+   "c11-fe-signin-compliance",
+   "c10-fe-prefs-and-ooo"
+  ],
+  "wave": 7,
+  "size": "M",
+  "acceptance": "The fence at database, route and scheduler; no platform run reads a tenant row; no tenant text in logs, model inputs or platform surfaces; SSRF on check_url; runner events validated; the cap's two points; attestation verification not trusting the library; the BE flag; the lockout guard; session limits; batch four eyes and apply; proof the diff touches none of tests_library_fence's allowlists or the boot guard beyond what packages declared; the authenticator list reviewed if merged; fixes test-first; lower findings as HARDENING rows.",
+  "brief": "Read R2_CROSS_CUTTING.md. Run the guard suites. c11-device-allowlist carries its own review, so this one does not wait for Alex's answer on it."
+ },
+ {
+  "package": "security-review-c11-access-d89",
+  "title": "Security review of agent access and the bank's own records",
+  "goal": "The ACC and OWN diffs are reviewed and medium-or-higher findings fixed.",
+  "requirement_ids": [
+   "ACC-01",
+   "ACC-02",
+   "ACC-03",
+   "ACC-04",
+   "ACC-05",
+   "ACC-06",
+   "ACC-07",
+   "ACC-08",
+   "ACC-09",
+   "INV-07",
+   "OWN-01",
+   "OWN-02",
+   "OWN-03",
+   "OWN-04"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "docs/reviews/CHUNK11_ACCESS_OWN_REVIEW.md"
+  ],
+  "shared_files": [
+   "docs/plans/briefs/HARDENING.md",
+   "docs/TODO_FOR_alex.md"
+  ],
+  "depends_on": [
+   "acc-summary-j11",
+   "acc-mcp-tools",
+   "acc-fe-personal-grants",
+   "d89-private-records",
+   "d89-agent-research",
+   "d89-fe-scope-items",
+   "r2-j8-isolation"
+  ],
+  "wave": 7,
+  "size": "M",
+  "acceptance": "Credential resolution and death with the person; read-only guard over every route; 404 parity out of scope; reach gate and overlay withholding; access-log content; MCP parsing of untrusted JSON-RPC; rate limit; proposal ownership and RLS; child policies; apply zone crossing; the tenant-run channel (runner events only, no key path, injection, dedup, idempotency); the wrapper refusal; person-only four eyes on scope items and no agent path to the footprint; fixes test-first; lower findings as HARDENING rows. d89-controls carries its own review.",
+  "brief": "Read R2_CROSS_CUTTING.md, AGENT_ACCESS.md, ADR 0050, ADR 0059."
+ },
+ {
+  "package": "r2-perf",
+  "title": "R2 performance: every new route measured and the new screens timed",
+  "goal": "Every R2 operation has a perf row, the baseline is recorded, and the heavy reads are measured at scale.",
+  "requirement_ids": [
+   "NFR-02",
+   "HOM-05",
+   "REG-02",
+   "ACC-06"
+  ],
+  "scenario_ids": [
+   "NFR-S7"
+  ],
+  "files_owned": [
+   "backend/perf/routes.py",
+   "backend/perf/baseline.json"
+  ],
+  "shared_files": [
+   "docs/plans/UI_Implementation_Plan.md",
+   "backend/apps/shared/app.md",
+   "docs/plans/IMPLEMENTATION_STATUS.md",
+   "docs/plans/briefs/HARDENING.md"
+  ],
+  "depends_on": [
+   "security-review-c8",
+   "security-review-c9",
+   "security-review-c10",
+   "acc-summary-j11",
+   "acc-mcp-tools",
+   "c11-tenant-controls-cap",
+   "c11-research-requests",
+   "d89-private-records",
+   "c11-fe-signin-compliance"
+  ],
+  "wave": 7,
+  "size": "M",
+  "acceptance": "Blocks '# --- r2-perf: chunk 8/9-10/11' cover every R2 operation as the principal that calls it (step-up where required; applicability at REGISTER_BULK_MAX; /me/work as a head; obligations with overlay; case operations incl. mock-scanner upload and export; inbox at 5,000 rows; tagging preview at cap; agents, batches, policies; ACC routes and MCP calls with a key and a token; what_applies within WHAT_APPLIES_SUMMARY_DEADLINE_MS; the bank's own queue); perf_report.py --record run; scaled slot (about 3,000 obligations, three entities, 200 gaps, a 30-person department) measures obligations, /me/work, roadmap and search; over-budget fixed or reported; R2 screens' medians in the UI plan; NFR-02 note, an 'R2 performance pass' section and H9 updated.",
+  "brief": "Read R2_CROSS_CUTTING.md and IMPLEMENTATION_STATUS's R1 performance pass. Measure against next start. Raise per-caller limits only through env overrides as r1-perf did; never lower a budget."
+ },
+ {
+  "package": "r2-gallery-coldstart-demo",
+  "title": "Pill gallery, cold start and the demo cover R2",
+  "goal": "Every R2 record type is in the pill gallery, the never-seeded bank shows R2 empty states, and the demo walk stays presentable.",
+  "requirement_ids": [
+   "NFR-03",
+   "ADM-01",
+   "ADM-02"
+  ],
+  "scenario_ids": [
+   "NFR-S8",
+   "ADM-S8"
+  ],
+  "files_owned": [
+   "frontend/src/app/dev/pills/page.tsx",
+   "frontend/src/app/dev/pills/samples.ts",
+   "frontend/tests/e2e/pills.gallery.spec.ts",
+   "design/system/pills-and-labels.html",
+   "frontend/tests/e2e/coldstart.journey.spec.ts",
+   "frontend/tests/e2e/demo.journey.spec.ts"
+  ],
+  "shared_files": [
+   "design/system/pills-and-labels.md",
+   "backend/apps/governance/app.md",
+   "frontend/src/messages/public/en.json",
+   "frontend/src/messages/public/sv.json"
+  ],
+  "depends_on": [
+   "security-review-c8",
+   "security-review-c9",
+   "security-review-c10",
+   "acc-fe-personal-grants",
+   "d89-fe-scope-items",
+   "c11-fe-signin-compliance",
+   "r2-j8-isolation"
+  ],
+  "wave": 7,
+  "size": "M",
+  "acceptance": "Gallery sections and pinned text for applicability, case status with sub-status, register entry slot order, participant 'You', notification kinds, tenant agent run states, agent access entry and reach, support grant, certificate 'Our deadline', 'Private to us' and 'Proposed by our agent'; ADM-S8 opens My work, Gaps, entities, inbox, Agents and the console definitions on a never-seeded bank; the demo reader's walk shows no '(E2E)' marks and the public catalog claims no cut feature; the integrator regenerates gallery baselines and demo recordings.",
+  "brief": "Read R2_CROSS_CUTTING.md. Never commit recordings.json or recorded-at.json."
+ },
+ {
+  "package": "d89-controls",
+  "title": "The bank's agent proposes controls as linked internal items",
+  "goal": "An owned control kind whose approval creates a REG-05 control item linked to the private obligation.",
+  "requirement_ids": [
+   "OWN-05",
+   "REG-05",
+   "INV-07"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/proposals/models.py",
+   "backend/apps/proposals/migrations/0011_control_kind.py",
+   "backend/apps/proposals/schemas.py",
+   "backend/apps/proposals/logic.py",
+   "backend/apps/proposals/private_controls.py",
+   "backend/apps/proposals/tests_private_controls.py"
+  ],
+  "shared_files": [
+   "backend/apps/proposals/app.md",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "d89-agent-research",
+   "d89-private-records",
+   "c8-reg-links-history"
+  ],
+  "wave": 7,
+  "size": "M",
+  "acceptance": "Approval creates an InternalItem of the control kind linked to the private obligation through record() in the tenant zone, under the same private approval with four eyes and step-up; the agent's runner-event channel accepts it beside the obligation; the migration takes the next free proposals number; security review of the diff before finishing.",
+  "brief": "Blocked: starts only when Alex has answered what a control inventory is. If his answer differs from the default (a REG-05 internal item of the control kind), follow the answer or stop and report. Read R2_CROSS_CUTTING.md. If still unanswered at R2 close, OWN-05 is named held and R2 closes without it."
+ },
+ {
+  "package": "d89-e2e-journey",
+  "title": "J-12: a scope item becomes the bank's own record",
+  "goal": "The OWN journeys run end to end against the real stack.",
+  "requirement_ids": [
+   "INV-07",
+   "PRO-03",
+   "FP-02",
+   "AGT-04",
+   "OWN-01",
+   "OWN-02",
+   "OWN-03",
+   "OWN-04"
+  ],
+  "scenario_ids": [
+   "FP-S18",
+   "FP-S19",
+   "PRO-S15",
+   "INV-S15"
+  ],
+  "files_owned": [],
+  "shared_files": [
+   "backend/apps/shared/e2e_seed.py",
+   "backend/apps/shared/tests_seed_integrity.py",
+   "frontend/tests/e2e/taxonomy.journey.spec.ts",
+   "frontend/tests/e2e/proposals.journey.spec.ts",
+   "frontend/tests/e2e/library.journey.spec.ts"
+  ],
+  "depends_on": [
+   "d89-agent-research",
+   "d89-private-records",
+   "d89-fe-scope-items",
+   "d89-fe-private",
+   "acc-e2e-seed"
+  ],
+  "wave": 7,
+  "size": "M",
+  "acceptance": "Seed: the scope-researcher enabled for tenant A and a deterministic mock-runner finding; FP-S18, FP-S19 (J-12 @smoke: officer adds a scope item, second person approves with passkey, the mock run files private proposals, an approver approves one with passkey, it reads 'Private to us' in the inventory, B's URL 404 declared), PRO-S15 and INV-S15 un-fixmed; teardown on failure.",
+  "brief": "Built under D-89. Read R2_CROSS_CUTTING.md and CLAUDE.md section 11 in full."
+ }
+]

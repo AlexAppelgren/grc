@@ -1,0 +1,61 @@
+[
+ {
+  "question": "May text a bank types for its own agents reach a model? D-07 lets only the Ask question (and, since PRD 0.5, an agent-access description) reach a model. D-32 says tenant text never reaches the tenant runner, and asks for confirmation with D-07 before chunk 11. Two features involve text a bank writes: AGT-05's 'research a topic', and a D-89 scope item's name, official reference and source addresses.",
+  "recommended_default": "Yes, as a second named exception beside Ask. The text is limited to length-capped structured fields plus jurisdiction and regime keys. It is screened as untrusted and sent only through the logged wrapper to an approved EU endpoint. The bank's AI switch and budget cap stop it, it is never logged, and it never reaches a platform run. An ADR records the exception. Until you answer, c11-research-requests, d89-researcher-definition and d89-agent-research build and ship a keys-only path. The free-text path is a small follow-on that is not in this plan.",
+  "blocks": []
+ },
+ {
+  "question": "D-89 says the bank's agents fill its 'regulation and control inventories'. What is a control inventory in data terms?",
+  "recommended_default": "A control is a REG-05 linked internal item of the control kind. The agent proposes it against the private obligation it serves, and the same private approval creates it, so no new table is needed. If you meant a standard's controls (REG-08 units), say so. REG-08 keeps everything under a standard away from models. If this is unanswered at R2 close, OWN-05 is named as held.",
+  "blocks": [
+   "d89-controls"
+  ]
+ },
+ {
+  "question": "D-25, COL-S10 and HOM-S11 say a WAT-04 link 'confirmed by a person' reaches My work and notifies the people involved. Since D-74, links are confirmed by an independent agent, and no tenant role can confirm one. Does an agent-confirmed link count?",
+  "recommended_default": "Yes, any confirmed link counts, because the change page already names both agents. An unconfirmed suggestion never counts. This is recorded as D-97, answered by default, and c8-mywork-service, c8-mywork-routes and c10-producers build it that way.",
+  "blocks": []
+ },
+ {
+  "question": "Who decides a re-tag batch (PRO-04)? Today's four-eyes check compares only the proposer and the reviewer. With no editor staffed (D-62), an agent may approve only kinds whose record names its confirming agent, and obligation_term does not. As built now, a batch waits for a person.",
+  "recommended_default": "c11-proposal-batches-decide builds the person path now: a second person with proposals.review and a passkey, never the proposer and never the person who asked for the re-tag. The follow-on adds machine-confirmed provenance columns to obligation_term so an independent agent may decide batch rows. That agent path is not in this plan.",
+  "blocks": []
+ },
+ {
+  "question": "Which source may ID-07's committed authenticator allow-list be built from? ADR 0048 says the FIDO Metadata Service. Its relying-party terms (Verification_Log row 47) forbid copying, displaying or deriving from MDS data without a written agreement, and this list is committed and shown to banks.",
+  "recommended_default": "Build it by hand from vendors' own published attestation roots (for example Yubico's), with model names we write and no MDS data. Sign FIDO's agreement only if a bank needs a model whose vendor publishes no roots. Until then the list is absent, and a device-bound policy is refused with empty_authenticator_list.",
+  "blocks": [
+   "c11-device-allowlist"
+  ]
+ },
+ {
+  "question": "D-26 and D-73 make the order of a chunk's list yours to change. The plan moves TEN-04 (out of office with a delegate) from the bottom of chunk 8 to chunk 10. After D-75 no chunk 8 approval is addressed to a named person, so a delegate built in chunk 8 would receive nothing.",
+  "recommended_default": "Move it (D-95, answered by default). c10-out-of-office and c10-fe-prefs-and-ooo build it next to delegation. Only the chunk label changes.",
+  "blocks": []
+ },
+ {
+  "question": "D-69 (banking groups): when should it be built, and does it belong in R2? TODO_FOR_alex asks you to schedule its planning pass.",
+  "recommended_default": "The planning brief is written now as its own package (r2-banking-groups-brief, D-96), against chunk 8's real organisation tables, so that per-entity narrowing and a membership entity scope can be added without rework. The build comes after R2 unless you promote it.",
+  "blocks": []
+ },
+ {
+  "question": "D-10 asks you to confirm the search scope 'at R2'. Is any tenant content (register decisions, cases, comments) indexed for search or Ask in R2?",
+  "recommended_default": "No. Search and Ask stay library-only through R2, as AC-REG2, ADR 0057 and acc-scoped-reads assume. Agent access ranks its rows in memory.",
+  "blocks": []
+ },
+ {
+  "question": "ADM-02 promises console 'languages and jurisdictions' in R2. Can the five content languages stay a read-only seeded list? That would narrow a PRD requirement.",
+  "recommended_default": "Yes. Jurisdictions become editable by proposal with machine-confirmed provenance (x-jurisdictions-by-proposal, D-94). Languages stay seeded, because a sixth needs catalogs, sources and authorities first (I18N-01, D-33). This is recorded as a named narrowing of ADM-02.",
+  "blocks": []
+ },
+ {
+  "question": "Chunk 9 has one open confirmation, which departs from INPUT_DELTAS: evidence files are uploaded multipart through the API, not by a presigned PUT to the bucket. It also needs one action from you: a self-hosted ClamAV (clamd) service in Railway EU West, with SCANNER_PROVIDER=clamd on api and worker.",
+  "recommended_default": "Yes to multipart. Until clamd exists, a deployed environment refuses evidence files with 503 scanner_unavailable; links and references still work. That means J-3 cannot be verified on the deployed test environment until you provision it.",
+  "blocks": []
+ },
+ {
+  "question": "D-89 put a bank's own regulations in R2 and handed their PRD text to the R2 plan. r2-spec-d89 writes it as PRD 0.7's OWN group, recorded as D-91 and answered by default. What it contains: a scope item added through the regulatory scope request (people only, four eyes, passkey, no term widened, no agent path). The bank's own tenant-scoped agent researches the item on the mock runner until a real one exists. The results arrive as the bank's private proposals, delivered only by runner events and never through an API key. People approve them under private_records.approve with a passkey. They never reach the console, the index or a model, and the agent never reads them back. Do you confirm it as written?",
+  "recommended_default": "Confirm as written. It follows your D-89 words and ADR 0050's private door, and it keeps every section 5 invariant. The D-89 packages build it now, and any change you ask for later is a follow-on.",
+  "blocks": []
+ }
+]

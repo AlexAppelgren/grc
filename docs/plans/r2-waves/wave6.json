@@ -1,0 +1,413 @@
+[
+ {
+  "package": "acc-summary-j11",
+  "title": "What applies gets its labelled summary, and J-11 runs end to end",
+  "goal": "The model drafts a labelled summary above the untouched list, and J-11, ACC-S1 and ACC-S6 journeys pass.",
+  "requirement_ids": [
+   "ACC-06",
+   "ACC-09",
+   "J-11",
+   "ACC-01",
+   "ACC-07"
+  ],
+  "scenario_ids": [
+   "ACC-S5",
+   "ACC-S8",
+   "ACC-S1",
+   "ACC-S6",
+   "ACC-S13"
+  ],
+  "files_owned": [
+   "backend/apps/agents/what_applies_summary.py",
+   "backend/apps/agents/what_applies.py",
+   "backend/apps/governance/models.py",
+   "backend/apps/governance/migrations/0006_ai_purpose_what_applies.py",
+   "backend/apps/agents/tests_what_applies_summary.py",
+   "frontend/tests/e2e/support/agent-access.ts"
+  ],
+  "shared_files": [
+   "backend/config/settings.py",
+   ".env.example",
+   "docs/runbooks/RAILWAY_VARIABLES.md",
+   "backend/apps/agents/tests_scenarios.py",
+   "backend/apps/integrations/tests_scenarios.py",
+   "backend/apps/agents/app.md",
+   "backend/apps/integrations/app.md",
+   "frontend/tests/e2e/agents.journey.spec.ts",
+   "frontend/tests/e2e/support/agent-key.ts"
+  ],
+  "depends_on": [
+   "acc-what-applies",
+   "acc-fe-admin",
+   "acc-e2e-seed",
+   "acc-scoped-reads",
+   "c11-tenant-agents-budget-scope",
+   "d89-no-ai-index",
+   "r2-plan-docs"
+  ],
+  "wave": 6,
+  "size": "M",
+  "acceptance": "AiPurpose what_applies; summary through the wrapper labelled AI-drafted with the fixed sentence, citations as stable keys, model and version logged; prompt holds the description (like Ask's question) and in-scope library facts only, never register content and never a bank's own record; fallbacks model_failed, timeout, ai_off, budget_cap keep the list; cost counted against the monthly cap; WHAT_APPLIES_SUMMARY_DEADLINE_MS (2000); ACC-S5 and ACC-S8 un-skipped; ACC-S1, ACC-S6 and ACC-S13 (J-11 @smoke through the UI and the real API with the issued key; card obligation 404, write 403 read_only_credential, revoke then 401; teardown on failure) un-fixmed; ACC-06 and ACC-09 cells.",
+  "brief": "Read R2_CROSS_CUTTING.md, D-07, ADR 0057 and CLAUDE.md section 11 in full."
+ },
+ {
+  "package": "acc-mcp-tools",
+  "title": "The six MCP tools, the same gates and bodies as REST",
+  "goal": "tools/call serves search, list_obligations, get_obligation, list_upcoming_changes, list_register_entries and what_applies.",
+  "requirement_ids": [
+   "ACC-05"
+  ],
+  "scenario_ids": [
+   "ACC-S7"
+  ],
+  "files_owned": [
+   "backend/apps/integrations/mcp_tools.py",
+   "backend/apps/integrations/tests_mcp_tools.py"
+  ],
+  "shared_files": [
+   "backend/apps/integrations/tests_scenarios.py",
+   "backend/apps/integrations/app.md"
+  ],
+  "depends_on": [
+   "acc-mcp-transport",
+   "acc-what-applies",
+   "acc-register-read",
+   "acc-entries-and-log",
+   "acc-scoped-reads"
+  ],
+  "wave": 6,
+  "size": "M",
+  "acceptance": "Each tool calls the REST route's gate and logic with its pagination; problem codes map to tool errors keeping the code; parity test REST body equals structured content; a mutating route answers 403 read_only_credential over both; the access log records the tool name; ACC-S7 un-skipped; ACC-05 cell.",
+  "brief": "Read R2_CROSS_CUTTING.md, AGENT_ACCESS.md."
+ },
+ {
+  "package": "acc-fe-personal-grants",
+  "title": "The personal tokens screen, the credential list, and the token and reach journeys",
+  "goal": "Members mint and revoke tokens, admins see every credential, and ACC-S3 and ACC-S11 run end to end.",
+  "requirement_ids": [
+   "ACC-03",
+   "ACC-08"
+  ],
+  "scenario_ids": [
+   "ACC-S3",
+   "ACC-S11"
+  ],
+  "files_owned": [
+   "frontend/src/features/personal-tokens/",
+   "frontend/src/app/(tenant)/me/tokens/page.tsx",
+   "frontend/src/features/tenant-admin/api-keys/"
+  ],
+  "shared_files": [
+   "frontend/src/messages/me/en.json",
+   "frontend/src/messages/me/sv.json",
+   "frontend/src/shared/navigation/registry.ts",
+   "frontend/tests/e2e/identity.journey.spec.ts",
+   "frontend/tests/e2e/governance.journey.spec.ts"
+  ],
+  "depends_on": [
+   "acc-personal-grants",
+   "acc-cards",
+   "acc-fe-admin",
+   "acc-e2e-seed"
+  ],
+  "wave": 6,
+  "size": "M",
+  "acceptance": "Mint with scopes, optional entry and bounded expiry behind step-up, shown once, list, revoke, restricted without tokens.create; API keys lists every key and token with kind and entry or person and revokes each; ACC-S3 and ACC-S11 (self-approval refused, second person approves with passkey, switch off makes register calls 403 tenant_reach_off) un-fixmed.",
+  "brief": "Read R2_CROSS_CUTTING.md and CLAUDE.md section 11."
+ },
+ {
+  "package": "c11-fe-signin-compliance",
+  "title": "Who a stricter passkey policy would refuse (ADR 0048 tranche 3)",
+  "goal": "Admins see members without a compliant passkey before saving a stricter policy, and members see their own.",
+  "requirement_ids": [
+   "ID-07"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/identity/schemas.py",
+   "backend/apps/identity/me_logic.py",
+   "backend/apps/identity/members_logic.py",
+   "backend/apps/identity/tests_credential_reads.py",
+   "frontend/src/components/admin/MembersScreen.tsx",
+   "frontend/src/features/identity/api.ts"
+  ],
+  "shared_files": [
+   "frontend/src/messages/tenant-admin/en.json",
+   "frontend/src/messages/tenant-admin/sv.json",
+   "backend/apps/identity/app.md",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "c11-signin-policy-use",
+   "c11-fe-admin-security",
+   "acc-personal-grants",
+   "c8-ten-reassignment"
+  ],
+  "wave": 6,
+  "size": "M",
+  "acceptance": "meetsPolicy on passkey reads; a members filter 'without a compliant passkey'; shown on admin members and my passkeys; a shell notice before the notice date; ID-07 built (or in_progress naming c11-device-allowlist if the list is still absent).",
+  "brief": "Read R2_CROSS_CUTTING.md, ADR 0048. Default keeps this in R2 so ID-07 can close built."
+ },
+ {
+  "package": "r2-j8-isolation",
+  "title": "J-8 covers R2: comments, notifications, participants and configuration",
+  "goal": "TEN-S7 proves tenant B sees nothing of A's R2 records or configuration.",
+  "requirement_ids": [
+   "NFR-01",
+   "TEN-02",
+   "TEN-03",
+   "COL-01",
+   "COL-02",
+   "COL-04",
+   "AGT-04",
+   "ACC-01",
+   "ID-07",
+   "ID-08"
+  ],
+  "scenario_ids": [
+   "TEN-S7"
+  ],
+  "files_owned": [],
+  "shared_files": [
+   "frontend/tests/e2e/tenants.journey.spec.ts",
+   "backend/apps/shared/e2e_seed.py",
+   "backend/apps/tenants/app.md"
+  ],
+  "depends_on": [
+   "c10-e2e-seed-comments",
+   "c10-fe-comments-panel",
+   "c10-fe-notifications",
+   "c8-ui-departments-teams-removal",
+   "c8-ui-links-history-participants",
+   "c8-ui-support-console",
+   "c11-fe-admin-agents",
+   "c11-fe-admin-security",
+   "acc-fe-admin",
+   "c9-e2e-signoff-j3",
+   "r2-e2e-login-roster"
+  ],
+  "wave": 6,
+  "size": "M",
+  "acceptance": "TEN-S7 @smoke extended: B sees none of A's comments on the shared change's case and obligation, GET /comments on A's case 404 declared, B's inbox holds nothing of A's, only B's participants show, and by URL B gets not-found (never 403) for A's entities, departments, teams, products, support grants, tenant agents and settings, agent access entries and credentials and security policy; B's lists show only B's rows; one A-only row of each seeded (A_ONLY constants); TEN-S7's Gherkin matches step for step.",
+  "brief": "Read R2_CROSS_CUTTING.md and CLAUDE.md section 11 in full."
+ },
+ {
+  "package": "d89-private-records",
+  "title": "The bank's own records applied and approved inside the bank",
+  "goal": "Owned proposals apply into owned records and are approved in the bank's own queue; the register accepts them.",
+  "requirement_ids": [
+   "INV-07",
+   "PRO-02",
+   "PRO-03",
+   "OWN-03",
+   "OWN-04",
+   "REG-01",
+   "REG-02"
+  ],
+  "scenario_ids": [
+   "PRO-S12",
+   "PRO-S15",
+   "INV-S9",
+   "INV-S15",
+   "REG-S17"
+  ],
+  "files_owned": [
+   "backend/apps/proposals/apply.py",
+   "backend/apps/proposals/logic.py",
+   "backend/apps/proposals/private_approval.py",
+   "backend/apps/library/reading.py",
+   "backend/apps/proposals/tests_apply_private.py",
+   "backend/apps/proposals/tests_private_approval.py",
+   "backend/apps/library/tests_private_reads.py",
+   "backend/apps/register/tests_private_obligations.py",
+   "backend/apps/register/applicability.py"
+  ],
+  "shared_files": [
+   "backend/apps/proposals/tests_scenarios.py",
+   "backend/apps/library/tests_scenarios.py",
+   "backend/apps/register/tests_scenarios.py",
+   "backend/apps/proposals/app.md",
+   "backend/apps/library/app.md"
+  ],
+  "depends_on": [
+   "d89-child-rls",
+   "acc-scoped-reads",
+   "c8-recurring-duty-proposal",
+   "c8-support-session-guard",
+   "c8-reg-applicability",
+   "c8-duty-occurrences"
+  ],
+  "wave": 6,
+  "size": "M",
+  "acceptance": "Owned kinds apply with owner_tenant from the proposal inside the proposal door; owned-target lookups in reading.py; a provision under a private instrument 422 private_provisions_not_supported; shared-to-owned and back refused; machine-proposed provenance naming the agent, verified by the approving person; list/approve/reject under private_records.approve with step-up, proposer 409 through the unchanged four-eyes CHECK, reject needs a reason, audit and outbox in the tenant zone with the assertion and no note text; console or support session 404; register sets applicability and status on an owned obligation, B 404, agent access never sees it; PRO-S12, PRO-S15, INV-S9 (support-grant line), INV-S15, REG-S17 un-skipped; the fence allowlist unchanged; INV-07 cell.",
+  "brief": "Built under D-89. Read R2_CROSS_CUTTING.md, D-57, ADR 0050, ADR 0059. You own proposals/logic.py this wave to let approve and reject serve a bank's own proposal for a person holding private_records.approve in that bank; the shared queue's rules do not change."
+ },
+ {
+  "package": "d89-agent-research",
+  "title": "A bank's agent researches an approved scope item and files the bank's own proposals",
+  "goal": "An approved scope item opens a research request for the bank's scope-researcher, and its findings arrive as owned proposals through runner events only.",
+  "requirement_ids": [
+   "AGT-04",
+   "AGT-05",
+   "INV-07",
+   "PRO-01",
+   "OWN-02"
+  ],
+  "scenario_ids": [
+   "AGT-S14",
+   "AGT-S16"
+  ],
+  "files_owned": [
+   "backend/apps/agents/scope_research.py",
+   "backend/apps/agents/models.py",
+   "backend/apps/agents/migrations/0007_research_scope_item.py",
+   "backend/apps/agents/runner_events.py",
+   "backend/apps/agents/apps.py",
+   "backend/apps/proposals/tenant_agent.py",
+   "backend/apps/agents/tests_scope_research.py",
+   "backend/apps/proposals/tests_tenant_agent.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/kinds.py",
+   "backend/apps/agents/tests_scenarios.py",
+   "docs/adr/0059-a-bank-researches-what-the-library-does-not-cover.md"
+  ],
+  "depends_on": [
+   "d89-scope-items-logic",
+   "d89-researcher-definition",
+   "c11-research-requests",
+   "c11-tenant-controls-cap",
+   "d89-proposal-owner"
+  ],
+  "wave": 6,
+  "size": "M",
+  "acceptance": "On scope_item.added (an outbox handler in agents/apps.py) a research request of kind scope_item opens for the bank's scope-researcher ('waiting for your agent' otherwise), keys and ids only; honours cap and AI off; runner events file owned proposals through proposals/tenant_agent.py with owner_tenant forced to the run's bank; shared targets, non-private kinds and re-tags refused; text screened (AGT-07); idempotent per run and event; a duplicate by official reference or stable key 409 already_in_our_library by a database lookup, never by giving the model the bank's records; each proposal names the agent, its version and the reported model and reads 'Proposed by our agent'; a test proves a bank key still opens no run and files nothing (refuse_tenant_key and key scopes unchanged); a guard proves no run writes a scope item, footprint term or scope request; AGT-S14 and AGT-S16 un-skipped; security review.",
+  "brief": "Built under D-89; free-text fields wait for Alex's tenant-text answer. Read R2_CROSS_CUTTING.md, D-32, D-57, D-89, ADR 0059 and SCOPE_ITEMS.md. The channel is ADR 0059's; do not add an API-key path."
+ },
+ {
+  "package": "d89-fe-scope-items",
+  "title": "The scope-item panel on the regulatory scope page",
+  "goal": "Admins propose and approve scope items and see research status.",
+  "requirement_ids": [
+   "OWN-01",
+   "FP-02"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "frontend/src/components/admin/FootprintScreen.tsx",
+   "frontend/src/features/footprint/"
+  ],
+  "shared_files": [
+   "frontend/src/messages/footprint/en.json",
+   "frontend/src/messages/footprint/sv.json"
+  ],
+  "depends_on": [
+   "d89-cards",
+   "d89-scope-items-logic"
+  ],
+  "wave": 6,
+  "size": "M",
+  "acceptance": "Propose an add or remove with its fields; items in the pending request and preview; approve with step-up; four-eyes refusal from its code; research status per item; unit tests; FP journeys unaffected.",
+  "brief": "Built under D-89. Read R2_CROSS_CUTTING.md."
+ },
+ {
+  "package": "security-review-c8",
+  "title": "Security review of chunk 8, with fixes",
+  "goal": "Chunk 8's diff is reviewed with the guard suites and every medium-or-higher finding is fixed test-first.",
+  "requirement_ids": [
+   "NFR-01",
+   "REG-01",
+   "REG-03",
+   "REG-08",
+   "TEN-06",
+   "COL-04",
+   "HOM-05"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "docs/reviews/CHUNK8_REVIEW.md"
+  ],
+  "shared_files": [
+   "docs/plans/briefs/HARDENING.md",
+   "docs/TODO_FOR_alex.md"
+  ],
+  "depends_on": [
+   "c8-ui-soa-j10",
+   "c8-ui-departments-teams-removal",
+   "c8-ui-support-console",
+   "c8-ui-inventory-overlay",
+   "c8-ui-home-register",
+   "c8-ui-mywork",
+   "c8-vocab-register-usage",
+   "c8-recurring-duty-proposal",
+   "x-roadmap-case-deadlines",
+   "c9-owner-team-and-reassign"
+  ],
+  "wave": 6,
+  "size": "M",
+  "acceptance": "Guard suites (rls, tenant isolation, library fence, route permissions, audit on write, four eyes) green; report written; critical, high and medium fixed test-first with the review rerun clean; lower findings as HARDENING rows; a fix touching an invariant stops and goes to Alex.",
+  "brief": "Read R2_CROSS_CUTTING.md and R1's docs/reviews/CHUNK7_REVIEW_2026-09-23.md for shape. Check tenancy and composite keys; support access adds no tenant-table policy beyond ADR 0042's one, keeps its allow-list and logs each read; four eyes on risk acceptance and support grants and none on applicability (D-75); recurring_duty's fence; soft removal of links and units; no interpretation, note, gap text or comment in an audit after value, log, outbox or model input; paste, bulk, RRULE and key validation; My work and SoA permission filtering. Do not edit files a wave-6 build package owns; record such fixes as HARDENING rows for the integrator."
+ },
+ {
+  "package": "security-review-c9",
+  "title": "Security review of chunk 9, with fixes",
+  "goal": "The case workflow's diff is reviewed and medium-or-higher findings fixed.",
+  "requirement_ids": [
+   "NFR-01",
+   "CAS-05",
+   "CAS-06"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "docs/reviews/CHUNK9_REVIEW.md"
+  ],
+  "shared_files": [
+   "docs/plans/briefs/HARDENING.md",
+   "docs/TODO_FOR_alex.md"
+  ],
+  "depends_on": [
+   "c9-e2e-triage-work",
+   "c9-e2e-signoff-j3",
+   "c9-fe-case-participants",
+   "c9-mywork-cases",
+   "c9-owner-team-and-reassign",
+   "x-roadmap-case-deadlines"
+  ],
+  "wave": 6,
+  "size": "M",
+  "acceptance": "Six guard suites green; findings fixed test-first until nothing medium or above; lower ones as HARDENING rows with a package named.",
+  "brief": "Read R2_CROSS_CUTTING.md. Evidence: any download before a clean scan, server-measured hash and size, no filename in logs, storage key, infected bytes. Four eyes and step-up: every path by which a requester could sign off; the one-person close paths (a contributor cannot close through applies = no; a signed-off close cannot reopen); no third door into closed. Actions and evidence removed softly only. Tenancy on every route, library fence across sign-off, permissions, one audit per write and download, transitions only in state.py. Do not edit files a wave-6 build package owns."
+ },
+ {
+  "package": "security-review-c10",
+  "title": "Security review of chunk 10, with fixes",
+  "goal": "Collaboration's diff is reviewed and medium-or-higher findings fixed.",
+  "requirement_ids": [
+   "COL-01",
+   "COL-02",
+   "VOC-08"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "docs/reviews/CHUNK10_REVIEW.md"
+  ],
+  "shared_files": [
+   "docs/plans/briefs/HARDENING.md",
+   "docs/TODO_FOR_alex.md"
+  ],
+  "depends_on": [
+   "c10-digest-beat-and-journeys",
+   "c10-producers",
+   "c10-fe-prefs-and-ooo",
+   "c10-fe-bulk-tagging",
+   "c10-fe-workflow-policy",
+   "c8-ui-mywork",
+   "x-briefing-mail"
+  ],
+  "wave": 6,
+  "size": "M",
+  "acceptance": "A planted string reaches no sink (log, Sentry, audit, outbox, notification title, mail, URL); one recipient check; the delegation hop cannot loop or grant; forced RLS and the append-only trigger on the five tables; per-tenant fan-out; route gates and UNGATED entries; workflow route permission; library fence (tag filter, outbox producers); mail hosts; fixes test-first; lower findings as HARDENING rows.",
+  "brief": "Read R2_CROSS_CUTTING.md. Do not edit files a wave-6 build package owns."
+ }
+]

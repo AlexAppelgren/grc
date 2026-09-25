@@ -1,0 +1,1319 @@
+[
+ {
+  "package": "c8-reg-applicability",
+  "title": "Set whether an obligation applies, per entity and per unit, one confirmed call at a time or many",
+  "goal": "PUT /obligations/{id}/applicability and POST /applicability store the answer with one audit event per row and no step-up (D-75).",
+  "requirement_ids": [
+   "REG-01",
+   "REG-02"
+  ],
+  "scenario_ids": [
+   "REG-S1",
+   "REG-S2",
+   "REG-S12"
+  ],
+  "files_owned": [
+   "backend/apps/register/applicability.py",
+   "backend/apps/register/tests_applicability.py"
+  ],
+  "shared_files": [
+   "backend/apps/register/tests_scenarios.py",
+   "backend/apps/register/app.md",
+   "backend/apps/shared/routes.py",
+   "backend/apps/shared/factories.py",
+   "backend/config/settings.py",
+   ".env.example",
+   "docs/runbooks/RAILWAY_VARIABLES.md"
+  ],
+  "depends_on": [
+   "c8-register-models",
+   "c8-register-contract",
+   "c8-retire-applicability-request"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "REG-S1 (dialog steps are the journey's; say so in app.md), REG-S2, REG-S12 un-skipped; a read writes no row (counted); bulk is all or nothing with one audit per row and a pinned query count; over REGISTER_BULK_MAX answers 422 and stores nothing; register suite green.",
+  "brief": "Read R2_CROSS_CUTTING.md, D-42, D-75. Span: legal-entity org units whose entity term matches the obligation's terms, opt-in dimensions left out; a conformance obligation spans every entity. Single set (obligation, entity or unit): value, reason, decided_at, decided_by, one record() naming the person, before, after, reason; If-Match; no step-up; a scope row is created only in the write's transaction through ensure_register_entry(). Bulk: rows may target obligations, entities or units (paste reuses this; unit rows resolve once c8-reg-units lands the table in this wave, so test unit rows in c8-units-paste-soa), REGISTER_BULK_MAX (100, env override). Never touches status or gaps. Register TENANT_SCOPED_ROUTES entries for id routes that are tenant-scoped (a unit id). Keep: 'applies' and 'we comply' separate."
+ },
+ {
+  "package": "c8-reg-status",
+  "title": "Where we stand: status, owners, process and review per obligation and per entity",
+  "goal": "Register reads and writes status per entry and per scope row, and the worst-of pill ranks by category kind.",
+  "requirement_ids": [
+   "REG-02",
+   "TEN-03"
+  ],
+  "scenario_ids": [
+   "REG-S11",
+   "REG-S3"
+  ],
+  "files_owned": [
+   "backend/apps/register/status_logic.py",
+   "backend/apps/register/tests_status.py"
+  ],
+  "shared_files": [
+   "backend/apps/register/tests_scenarios.py",
+   "backend/apps/register/app.md",
+   "backend/apps/shared/routes.py",
+   "backend/apps/shared/factories.py"
+  ],
+  "depends_on": [
+   "c8-register-models",
+   "c8-register-contract",
+   "c8-teams-model"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "A read creates nothing (defaults at version 0); writes go through ensure_register_entry() and record() with before and after (keys, ids and dates; no status note text, rule m); 409 stale_write, 422 unknown_member, 422 unknown_key with valid keys; a status other than not_assessed while not 'applies' answers 409 (a test per value); one ComplianceAssessment per status change; worst-of unit-tested for each pair; query counts do not grow with entities; tenant B 404 on the entity route; REG-S11 and REG-S3 un-skipped.",
+  "brief": "Read R2_CROSS_CUTTING.md. Implement the stubs for GET and PATCH /obligations/{id}/register and PATCH .../entities/{orgUnitId}: status, note, risk, first-line owner, contact, owner team, process, system, evidence location, next review; per scope row its own status, note, owner or team, next review with If-Match. One function ranks worst-of by category kind, never label. REG-S4 (applicability toggle) is c8-inventory-overlay's."
+ },
+ {
+  "package": "c8-reg-gaps-risk",
+  "title": "Gaps from open to closed, and risk acceptance behind four eyes",
+  "goal": "Gaps are recorded, amended, moved and listed, and risk acceptance needs a second person with a passkey.",
+  "requirement_ids": [
+   "REG-03",
+   "HOM-01"
+  ],
+  "scenario_ids": [
+   "REG-S5",
+   "REG-S6"
+  ],
+  "files_owned": [
+   "backend/apps/register/gaps.py",
+   "backend/apps/register/tests_gaps.py"
+  ],
+  "shared_files": [
+   "backend/apps/register/tests_scenarios.py",
+   "backend/apps/register/app.md",
+   "backend/apps/shared/routes.py",
+   "backend/apps/shared/factories.py"
+  ],
+  "depends_on": [
+   "c8-register-models",
+   "c8-register-contract",
+   "c8-retire-applicability-request"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "REG-S5 un-skipped up to its roadmap line (named for c8-home-standing-roadmap in app.md); REG-S6 amended (requester a compliance officer, approver a different holder of risk.accept.approve) and un-skipped; requester approving answers 409 four_eyes_violation before any write, backed by the CHECK, with a race test; GET /gaps filtered, paged, ordered by target date then id, pinned query count; REG-03 built.",
+  "brief": "Read R2_CROSS_CUTTING.md. Record a gap on an entry (optionally one entity) under gaps.edit through ensure_register_entry(); a gap on a unit is c8-units-paste-soa's; amend with If-Match; open -> remediating -> closed audited; a gap on an obligation that does not apply answers 409; unknown keys 422 unknown_key, unknown owner 422 unknown_member; owner person or team; gaps.edit plus register.read suffices. accept-risk (reason key, note) shows 'Waiting for approval' without moving status; approve (risk.accept.approve + step-up) moves to risk_accepted, stores reason, approver, time, one record() carrying both people and the assertion id and no note text; reopen audited. The riskAcceptances count is x-decide-now-counts'."
+ },
+ {
+  "package": "c8-reg-links-history",
+  "title": "Linked internal items, assessment history and how we read this rule",
+  "goal": "Obligations link internal items (picked or created in one call), and interpretation versions and assessment history are readable.",
+  "requirement_ids": [
+   "REG-04",
+   "REG-05"
+  ],
+  "scenario_ids": [
+   "REG-S7",
+   "REG-S8"
+  ],
+  "files_owned": [
+   "backend/apps/register/links.py",
+   "backend/apps/register/history.py",
+   "backend/apps/register/tests_links.py",
+   "backend/apps/register/tests_history.py"
+  ],
+  "shared_files": [
+   "backend/apps/register/tests_scenarios.py",
+   "backend/apps/register/app.md",
+   "backend/apps/shared/routes.py",
+   "backend/apps/shared/factories.py"
+  ],
+  "depends_on": [
+   "c8-register-models",
+   "c8-register-contract",
+   "c8-teams-model"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "REG-S7 and REG-S8 un-skipped; picking or creating an item writes one item, one link, one audit event each; DELETE sets removed_at and leaves the link row and the item; 409 already_linked, 422 unknown_key, another tenant's item 404; interpretation PUT supersedes with If-Match and the old version stays readable; a test proves the body never reaches an audit after value, a log or the outbox; pinned query counts; REG-04 and REG-05 set.",
+  "brief": "Read R2_CROSS_CUTTING.md. Links: kind as a link_kind row, name, reference, url (rendered later through externalHref), owner person or team, org unit, external system and reference, review dates; ad-hoc links carry label and external reference; removal is soft (rule l); GET shaped for an outside GRC system and lists live links only. History: assessments newest first, paged; no approval step on interpretations."
+ },
+ {
+  "package": "c8-reg-units",
+  "title": "Units of a standard: the table, add, rename, remove, and a paste dry run",
+  "goal": "A standard's conformance row per entity holds the bank's own units in register 0003 with their guards, and paste previews without storing.",
+  "requirement_ids": [
+   "REG-08"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/register/models.py",
+   "backend/apps/register/migrations/0003_soa_unit.py",
+   "backend/apps/register/units.py",
+   "backend/apps/register/tests_units.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/routes.py",
+   "backend/apps/shared/factories.py",
+   "backend/apps/shared/tests_rls.py"
+  ],
+  "depends_on": [
+   "c8-register-models",
+   "c8-register-contract",
+   "r2-plan-docs"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "migrate_from_zero passes; SoaUnit under forced RLS with its unique live reference; 422 units_only_under_standards, 422 scope_not_applicable, 409 unit_has_history each unit-tested; add, list per entity, rename (If-Match) and remove (soft) audited; SoaUnit.delete() raises; paste dryRun lists rows to create and refuses duplicates, over-long lines and unknown values, storing nothing; register suite green.",
+  "brief": "Read R2_CROSS_CUTTING.md, D-41, AC-REG1, AC-REG2. Register migration 0003 in register/models.py (yours this wave): SoaUnit (composite FK to the entity scope row, reference, title, applicability, reason, decided_at/by, compliance_status row, status_note, version, removed_at/removed_by; partial unique live (scope row, reference); forced RLS, tests_rls entry), and Gap gains a nullable composite FK to a unit. Logic in units.py: add, list per entity, rename (words and reference fixed once the unit has history), remove by removed_at only before history (rule l). Paste commit (with decisions through applicability's bulk path), a gap on a unit and the SoA read are c8-units-paste-soa's. Nothing written under a standard is indexed or sent to a model."
+ },
+ {
+  "package": "c8-participants",
+  "title": "People and teams take part in a register entry, and can leave",
+  "goal": "Participants are added, listed and removed on obligations with refusals from their codes; participation grants no access.",
+  "requirement_ids": [
+   "COL-04"
+  ],
+  "scenario_ids": [
+   "COL-S6",
+   "COL-S7",
+   "COL-S8"
+  ],
+  "files_owned": [
+   "backend/apps/collab/models.py",
+   "backend/apps/collab/migrations/0002_participant.py",
+   "backend/apps/collab/participants.py",
+   "backend/apps/collab/api.py",
+   "backend/apps/collab/schemas.py",
+   "backend/apps/collab/tests_participants.py"
+  ],
+  "shared_files": [
+   "backend/apps/collab/tests_scenarios.py",
+   "backend/apps/collab/app.md",
+   "backend/apps/shared/tests_rls.py",
+   "backend/apps/shared/routes.py",
+   "backend/apps/shared/factories.py",
+   "backend/apps/shared/permissions.py",
+   "backend/config/settings.py",
+   ".env.example",
+   "docs/runbooks/RAILWAY_VARIABLES.md",
+   "backend/scripts/contract_drift_pending.txt",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "c8-register-models",
+   "c8-teams-model",
+   "c10-collab-contract",
+   "c9-case-models"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "COL-S6, S7, S8 un-skipped; refusals participant_cannot_read, unknown_member (one answer for foreign, deactivated or unknown), unknown_key for a team, 409 already_participant, too_many_participants over MAX_PARTICIPANTS_PER_RECORD (50); record() with ids only; COL-04 built for register entries, case half named for c9-case-participants.",
+  "brief": "Read R2_CROSS_CUTTING.md, D-18, D-19, MY_WORK_AND_MARKETS 3.2. Participant: composite FKs to tenant_obligation, nullable change_case, team and membership; num_nonnulls checks; partial unique while not removed; soft removal; forced RLS. participants.py: add, remove, leave, loading the subject under RLS and creating the entry through ensure_register_entry(). Routes: GET and POST /obligations/{id}/participants (register.read / register.edit), DELETE .../{participantId} (LOGIC_GATE: register.edit or the person's own row, reason recorded). Leave collab/logic.py (notify) alone."
+ },
+ {
+  "package": "c8-ten-organisation",
+  "title": "Legal entities, licences, certificates and products, written by admins",
+  "goal": "The organisation and product routes answer with If-Match and audit.",
+  "requirement_ids": [
+   "TEN-02",
+   "ADM-01"
+  ],
+  "scenario_ids": [
+   "TEN-S10",
+   "TEN-S2"
+  ],
+  "files_owned": [
+   "backend/apps/tenants/organisation.py",
+   "backend/apps/tenants/products.py",
+   "backend/apps/tenants/tests_org_units.py",
+   "backend/apps/tenants/tests_products.py"
+  ],
+  "shared_files": [
+   "backend/apps/tenants/tests_scenarios.py",
+   "backend/apps/tenants/app.md",
+   "backend/apps/shared/routes.py",
+   "backend/apps/shared/factories.py"
+  ],
+  "depends_on": [
+   "c8-tenants-contract",
+   "c8-teams-model"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "TEN-S10 and TEN-S2 un-skipped; writes need vocab.manage and If-Match, answer 422 unknown_key or unknown_member, audit before and after; units deactivate, never delete; withdrawn licences stay readable; budget asserted on the seeded tree.",
+  "brief": "Read R2_CROSS_CUTTING.md, D-43. Org units: tree, kinds, legal-entity term (dimension read from the registry), org number, LEI, country, head as an active member. Products carry status, launch date, owner, entity and scope terms from the dimensions obligations use; a product decides no applicability in R2."
+ },
+ {
+  "package": "c8-ten-teams-people",
+  "title": "Teams, their members, the people picker and a head's departments",
+  "goal": "Teams and their members are readable and settable, /reference/people lists active members (optionally by permission), and /me names the departments a person heads.",
+  "requirement_ids": [
+   "TEN-02",
+   "TEN-03",
+   "HOM-05",
+   "COL-04",
+   "CAS-02",
+   "CAS-04"
+  ],
+  "scenario_ids": [
+   "TEN-S8"
+  ],
+  "files_owned": [
+   "backend/apps/tenants/teams.py",
+   "backend/apps/tenants/people.py",
+   "backend/apps/tenants/tests_teams.py",
+   "backend/apps/tenants/tests_reference_people.py",
+   "backend/apps/identity/api.py",
+   "backend/apps/identity/schemas.py",
+   "backend/apps/identity/me_logic.py",
+   "backend/apps/identity/members_logic.py"
+  ],
+  "shared_files": [
+   "backend/apps/tenants/tests_scenarios.py",
+   "backend/apps/tenants/app.md",
+   "backend/apps/shared/routes.py",
+   "backend/apps/shared/factories.py",
+   "backend/apps/shared/permissions.py",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "c8-tenants-contract",
+   "c8-teams-model",
+   "c10-notify-and-prefs"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "TEN-S8 un-skipped; PUT /tenant/members/{userId}/teams writes one audit with keys before and after (foreign user 422 unknown_member, without members.manage 403); member rows show team keys; /reference/people returns id and name only, never tenant B or deactivated members, and permission=<key> narrows to holders as build_principal computes (unknown 422 unknown_key, none 200 []); GET /me gains headOf.",
+  "brief": "Read R2_CROSS_CUTTING.md. Declare and build PUT /tenant/members/{userId}/teams in identity/api.py; implement GET /tenant/teams (labels, member counts), GET /tenant/teams/{key}/members and GET /reference/people from the tenants contract stubs."
+ },
+ {
+  "package": "c8-ten-support-grants",
+  "title": "Support access grants: requested by the platform, approved by the bank, time-boxed",
+  "goal": "A grant is requested, approved with a passkey, declined or revoked, and the database refuses self-approval and edits to frozen columns.",
+  "requirement_ids": [
+   "TEN-06"
+  ],
+  "scenario_ids": [
+   "TEN-S6"
+  ],
+  "files_owned": [
+   "backend/apps/tenants/models.py",
+   "backend/apps/tenants/migrations/0004_support_grants.py",
+   "backend/apps/tenants/support_access.py",
+   "backend/apps/tenants/mail.py",
+   "backend/apps/tenants/tests_support_access.py"
+  ],
+  "shared_files": [
+   "backend/apps/tenants/tests_scenarios.py",
+   "backend/apps/tenants/app.md",
+   "backend/apps/shared/kinds.py",
+   "backend/apps/shared/tests_rls.py",
+   "backend/config/settings.py",
+   ".env.example",
+   "docs/runbooks/RAILWAY_VARIABLES.md"
+  ],
+  "depends_on": [
+   "c8-tenants-contract",
+   "c8-teams-model"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "TEN-S6's request, approve, decline and revoke halves un-skipped; recovery rows keep working (regression test); CHECK approved_by <> platform_user_id and the guard trigger proven; one SELECT-only policy on app.platform_user_id listed in OTHER_POLICIES (ADR 0042's named exception, no other policy added); settings SUPPORT_ACCESS_MAX_HOURS (4) and SUPPORT_ACCESS_REQUEST_TTL_HOURS (24).",
+  "brief": "Read R2_CROSS_CUTTING.md, D-49, ADR 0042. Columns: status (tier-one requested|approved|declined|revoked|expired), requested_at, request_expires_at, expires_at, approval step-up assertion id, started_at nullable. Request writes only the grant and one audit row and mails security.manage holders; approve with step-up; decline; revoke; tenant list. Entering and read-only enforcement are c8-support-session-guard's."
+ },
+ {
+  "package": "c8-mywork-service",
+  "title": "My work's service and its response classes: everything a person or their teams own, bucketed",
+  "goal": "home/my_work.py returns a person's (or a department's) live items bucketed overdue, due soon, aware and open, permission-filtered, in response classes declared once.",
+  "requirement_ids": [
+   "HOM-05",
+   "TEN-03"
+  ],
+  "scenario_ids": [
+   "HOM-S8",
+   "HOM-S10",
+   "HOM-S11"
+  ],
+  "files_owned": [
+   "backend/apps/home/my_work.py",
+   "backend/apps/home/tests_my_work.py",
+   "backend/apps/home/schemas.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/kinds.py",
+   "backend/config/settings.py",
+   ".env.example",
+   "docs/runbooks/RAILWAY_VARIABLES.md"
+  ],
+  "depends_on": [
+   "c8-register-models",
+   "c8-teams-model"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Unit tests per source and bucket; each item once; rows and counts from the permission-filtered set with permissionLimited; footprint ignored (D-24); department scope expands to a unit's teams and units below, active members only; WorkItem and page classes appended at the end of home/schemas.py with no existing class edited; MY_WORK_DUE_SOON_DAYS (30), MY_WORK_AWARE_DAYS (14).",
+  "brief": "Read R2_CROSS_CUTTING.md, D-23, D-24, D-97, MY_WORK_AND_MARKETS. One ORM service under RLS; kinds WorkReason, WorkBucket, WorkDateKind. Declare the response classes (WorkItem with keys, kinds, dates and names; the page with counts and permissionLimited) at the end of home/schemas.py, which you own this wave; c8-mywork-routes returns them and adds none. Sources: entries as first-line owner or contact, owned entity rows, gaps, internal items, team ownership. Hidden: entries that do not apply, inactive items, closed gaps. Next date compared with the tenant-local today. 'Changes on your items': confirmed links (a person's or an independent agent's, D-97) and versions within MY_WORK_AWARE_DAYS, never the caller's own acts, never an unconfirmed suggestion. Participations, comments and the route are c8-mywork-routes's; case sources are c9-mywork-cases'. HOM-S8, S10, S11 are un-skipped by c8-mywork-routes through the route."
+ },
+ {
+  "package": "c8-seed-org-register",
+  "title": "Seeded organisation and register for the chunk 8 journeys",
+  "goal": "seed_e2e holds tenant A's entities, licences, products, departments, teams and a realistic register, and tenant B's small one.",
+  "requirement_ids": [
+   "TEN-02",
+   "TEN-03",
+   "TEN-05",
+   "TEN-06",
+   "HOM-05",
+   "REG-01",
+   "REG-02",
+   "REG-03",
+   "REG-04",
+   "REG-05"
+  ],
+  "scenario_ids": [
+   "TEN-S2",
+   "TEN-S5",
+   "TEN-S8",
+   "HOM-S9",
+   "HOM-S13",
+   "REG-S3",
+   "REG-S5",
+   "REG-S6",
+   "REG-S7",
+   "REG-S8"
+  ],
+  "files_owned": [],
+  "shared_files": [
+   "backend/apps/shared/e2e_seed.py",
+   "backend/apps/shared/tests_seed_integrity.py"
+  ],
+  "depends_on": [
+   "c8-register-models",
+   "c8-teams-model",
+   "r2-e2e-login-roster"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Idempotent (second run changes nothing); dates anchored to the tenant-local date; seed-integrity names each row the journeys use; shared suite green.",
+  "brief": "Read R2_CROSS_CUTTING.md and the prototype fixture. Tenant A: a group and Example Bank AB, Example Fonder AB, Example Liv Försäkring AB with licences; four products with terms; departments Retail Banking, Cards and payments, Risk control with roster heads; teams Retail compliance, Cards, Legal with members. Register over seeded obligations: one applying and compliant; one with a gap; one not applying with its earlier status kept; one spanning Bank AB and Fonder AB with different statuses; gaps of each severity; internal items with links; an interpretation over two assessments; an overdue review for the J-9 owner; an obligation with a confirmed change link for J-9; the member to be removed owns work. Tenant B: one entity, one team, a small register. Participants are seeded by c8-ui-links-history-participants. Written through record()."
+ },
+ {
+  "package": "c9-triage",
+  "title": "Triage, dismissal, no action and restore",
+  "goal": "A case is triaged with urgency and owner, dismissed with a reason, closed without action by one person, and restored.",
+  "requirement_ids": [
+   "CAS-02",
+   "CAS-08",
+   "VOC-06"
+  ],
+  "scenario_ids": [
+   "CAS-S2",
+   "CAS-S3",
+   "CAS-S19",
+   "VOC-S10"
+  ],
+  "files_owned": [
+   "backend/apps/cases/triage.py",
+   "backend/apps/cases/tests_triage.py",
+   "backend/apps/cases/tests_close_paths.py",
+   "docs/adr/0060-one-person-closes-a-case-that-needs-no-work.md"
+  ],
+  "shared_files": [
+   "backend/apps/cases/tests_scenarios.py",
+   "backend/apps/taxonomy/tests_scenarios.py",
+   "backend/apps/cases/app.md",
+   "backend/apps/taxonomy/app.md",
+   "backend/scripts/contract_drift_pending.txt",
+   "frontend/tests/e2e/cases.journey.spec.ts",
+   "docs/DECISIONS.md",
+   "docs/inputs/INPUT_DELTAS.md",
+   "backend/apps/shared/routes.py",
+   "backend/apps/shared/factories.py"
+  ],
+  "depends_on": [
+   "c9-case-contract",
+   "c10-notify-and-prefs"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "CAS-S2, CAS-S3, VOC-S10 (dismissal and unknown key) and new CAS-S19 (Gherkin, test, fixme journey) green; every answer is the full Case with allowedTransitions; If-Match and stale_write; another tenant's change 404; D-92 and ADR 0060 written; security review of the close path before finishing.",
+  "brief": "Read R2_CROSS_CUTTING.md and CHUNK9_TASKS (Option B, Alex item 15: 'One person, audited'). triageChange: urgency and ownerId required (422 naming the field), optional subStatus from the target category, sets triaged_by/at and urgency_confirmed, moves via transition(), notifies the owner via notify(). dismissChange: reason key (unknown 422 unknown_key with valid keys). closeWithoutAction (cases.work): assigned or assessing -> closed with a no_action-kind close_reason and optional note (the note stays on the case, not in the audit value), record() and a case_transition naming the actor. restoreChange: dismissed -> new, and one-person closed -> new; state.py decides; a signed-off close stays final. VOC-06 built. Delete this package's drift lines; CAS-02 cell."
+ },
+ {
+  "package": "c9-assessment",
+  "title": "The impact assessment, and applies = no closes the case",
+  "goal": "An assessment starts, saves with If-Match, and a 'does not apply' verdict closes the case for a holder of cases.work.",
+  "requirement_ids": [
+   "CAS-03",
+   "CAS-08",
+   "CAS-02"
+  ],
+  "scenario_ids": [
+   "CAS-S4",
+   "CAS-S5",
+   "CAS-S13"
+  ],
+  "files_owned": [
+   "backend/apps/cases/assessment.py",
+   "backend/apps/cases/tests_assessment.py"
+  ],
+  "shared_files": [
+   "backend/apps/cases/tests_scenarios.py",
+   "backend/apps/cases/app.md",
+   "backend/scripts/contract_drift_pending.txt"
+  ],
+  "depends_on": [
+   "c9-case-contract"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "CAS-S4 (reworded without the contributor-teams clause), CAS-S5, CAS-S13 un-skipped; missing why 422 plus the DB CHECK; stale save 409 with current version and no merge; foreign sub-status 422; applies=no by a caller without cases.work answers 403 requiredPermission cases.work; saveAssessment never changes category otherwise; no assessment text in an audit value (rule m).",
+  "brief": "Read R2_CROSS_CUTTING.md. startAssessment: assigned -> assessing, impact_assessment at version 1. saveAssessment: applies (yes, partly, no), why, what must change, internal deadline (plain date), effort key, optional subStatus. applies = no closes with a not_applicable-kind reason through transition() (restorable by c9-triage's restore). addAction owns assessing -> implementing. CAS-03 cell."
+ },
+ {
+  "package": "c9-actions",
+  "title": "Actions with owner and due date, locked during sign-off, removed softly",
+  "goal": "Actions are listed, added, edited, completed, reopened and removed, and the first action moves the case to implementing.",
+  "requirement_ids": [
+   "CAS-04",
+   "CAS-08"
+  ],
+  "scenario_ids": [
+   "CAS-S6"
+  ],
+  "files_owned": [
+   "backend/apps/cases/actions.py",
+   "backend/apps/cases/tests_actions.py"
+  ],
+  "shared_files": [
+   "backend/apps/cases/tests_scenarios.py",
+   "backend/apps/cases/app.md",
+   "backend/config/settings.py",
+   ".env.example",
+   "docs/runbooks/RAILWAY_VARIABLES.md",
+   "backend/scripts/contract_drift_pending.txt",
+   "backend/apps/shared/routes.py",
+   "backend/apps/shared/factories.py"
+  ],
+  "depends_on": [
+   "c9-case-contract"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "CAS-S6 reworded (no tickets; lock by category; a remove line) and un-skipped; title required (422); owner defaults to the case owner, non-member 422 unknown_member; CASE_ACTIONS_MAX gives 409 too_many_actions; signoff category gives 409 actions_locked; each action has its own version under If-Match; deleteAction sets removed_at and removed_by and the row stays for the case file; another tenant's action 404; CAS-04 stays in_progress (tickets are chunk 13).",
+  "brief": "Read R2_CROSS_CUTTING.md. listActions (cases.read, live actions), addAction (cases.work; the first moves assessing -> implementing, guarded by a saved why), updateAction (cases.contribute: edit, complete, reopen), deleteAction (cases.work; soft removal, rule l; audited; lowers openActionCount)."
+ },
+ {
+  "package": "c9-evidence",
+  "title": "Evidence as file, link or reference: scanned, hashed, streamed, soft-removed; and its seed",
+  "goal": "Evidence is attached through multipart, scanned before download, removed softly, and seeded for the journeys.",
+  "requirement_ids": [
+   "CAS-05",
+   "NFR-01"
+  ],
+  "scenario_ids": [
+   "CAS-S7"
+  ],
+  "files_owned": [
+   "backend/apps/cases/evidence.py",
+   "backend/apps/cases/tasks.py",
+   "backend/apps/cases/tests_evidence.py",
+   "backend/apps/cases/tests_evidence_remove.py"
+  ],
+  "shared_files": [
+   "backend/apps/cases/tests_scenarios.py",
+   "backend/apps/cases/app.md",
+   "backend/config/settings.py",
+   ".env.example",
+   "docs/runbooks/RAILWAY_VARIABLES.md",
+   "backend/scripts/contract_drift_pending.txt",
+   "backend/apps/shared/e2e_seed.py",
+   "backend/apps/shared/tests_seed_integrity.py",
+   "backend/apps/shared/routes.py",
+   "backend/apps/shared/factories.py"
+  ],
+  "depends_on": [
+   "c9-case-contract",
+   "c9-scanner-adapter",
+   "c9-e2e-seed"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "CAS-S7 un-skipped; server computes SHA-256 and size and sniffs MIME; disallowed type or size 422 before any byte is stored; storage key from tenant, case and random part; infected bytes deleted, row and hash kept; download: 409 scan_pending, 422 scan_failed, 404 removed or foreign, one record() per download, none per refusal; deployed with mock scanner 503 scanner_unavailable; log-capture test proves no filename logged; removal sets removed_at only; EVIDENCE_SCAN_RETRIES, CASE_EVIDENCE_MAX; seed clean, pending and infected rows idempotently; security review before finishing.",
+  "brief": "Read R2_CROSS_CUTTING.md and CHUNK9_TASKS. addEvidence (cases.contribute; multipart; link stores an https URL and fetches nothing; reference stores a name), scan_evidence as a @tenant_task, listEvidence, downloadEvidence (attachment, no-store, stored MIME, never text/html), removeEvidence (cases.work). Settings EVIDENCE_ALLOWED_TYPES (PDF, DOCX, XLSX, PPTX, PNG, JPEG, TXT, CSV) and EVIDENCE_MAX_BYTES (25 MB). Seed evidence on the implementing, signoff and closed cases and on tenant B's case on a change A also has (CAS-S16); clean bytes through storage into the slot's media root, never committed."
+ },
+ {
+  "package": "c9-signoff",
+  "title": "Request sign-off, sign off with a second person and a passkey, or send back",
+  "goal": "Sign-off requires no open action and clean evidence, refuses the requester, and send-back reopens the actions.",
+  "requirement_ids": [
+   "CAS-06",
+   "CAS-08"
+  ],
+  "scenario_ids": [
+   "CAS-S8",
+   "CAS-S9",
+   "CAS-S10",
+   "CAS-S12",
+   "CAS-S18"
+  ],
+  "files_owned": [
+   "backend/apps/cases/signoff.py",
+   "backend/apps/cases/tests_signoff.py"
+  ],
+  "shared_files": [
+   "backend/apps/cases/tests_scenarios.py",
+   "backend/apps/cases/app.md",
+   "backend/scripts/contract_drift_pending.txt"
+  ],
+  "depends_on": [
+   "c9-case-contract",
+   "c10-notify-and-prefs"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "CAS-S8, S9, S10 un-skipped; CAS-S12 reworded (approve from assessing gives invalid_transition); CAS-S18 added for send-back; open action 409 open_actions with count; no clean evidence 409 evidence_missing; canRequestSignoff equals the guard on every seeded case; requester approving 409 four_eyes_violation before any write, CHECK as second line; audit carries the assertion; a snapshot proves no library or register row changes; security review before finishing.",
+  "brief": "Read R2_CROSS_CUTTING.md. requestSignoff (cases.work) implementing -> signoff, sets requester and time, notifies cases.signoff holders via notify(); guards read case_facts(). approveSignoff (cases.signoff + step-up) -> closed with signed_off reason, signed_off_by, closed_at. sendBackSignoff (cases.signoff) -> implementing with a note kept on the case, clearing request columns. CAS-06 and CAS-08 cells."
+ },
+ {
+  "package": "c9-case-file-export",
+  "title": "A case file that stands alone, as text and as an export",
+  "goal": "GET the case file as text in the reader's language, and export it byte-identical through the export jobs.",
+  "requirement_ids": [
+   "CAS-07",
+   "NFR-01"
+  ],
+  "scenario_ids": [
+   "CAS-S16",
+   "CAS-S11"
+  ],
+  "files_owned": [
+   "backend/apps/cases/case_file.py",
+   "backend/apps/cases/tests_case_file.py",
+   "backend/apps/reports/exporters/case_file.py",
+   "backend/apps/reports/exporters/__init__.py",
+   "backend/apps/reports/tests_export_case_file.py"
+  ],
+  "shared_files": [
+   "backend/apps/cases/tests_scenarios.py",
+   "backend/apps/cases/app.md",
+   "backend/scripts/contract_drift_pending.txt"
+  ],
+  "depends_on": [
+   "c9-case-contract",
+   "x-exports-contract"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "CAS-S16 (reworded: a case is addressed by its change; B gets its own file with none of A's content; A's evidence, actions 404 for B; no refusal writes audit) and CAS-S11 un-skipped; fixed pinned query count; within 250 ms at both caps; no requirement id, column or permission name in the text; export identical to GET, permission-checked download with audit.",
+  "brief": "Read R2_CROSS_CUTTING.md and home/mail.py's module-held en and sv pattern. Sections: change facts; So what (labelled if an unconfirmed AI draft); assessment; actions with completion, removed actions marked; evidence with hash and scan state incl. removed; sign-off with both names and step-up reference; dismissal or close reason; every move dated in the tenant's timezone. Tests build rows through factories. Register kind case_file in reports/exporters/__init__.py with one exporter calling this builder. No PDF library."
+ },
+ {
+  "package": "c9-fe-cases-shell",
+  "title": "The change page's case frame: client, presentation, and every panel mounted once",
+  "goal": "features/cases holds every case call and presentation, and ChangeScreen mounts the case panels and the comments slot from their own files.",
+  "requirement_ids": [
+   "CAS-02",
+   "CAS-03",
+   "CAS-04",
+   "CAS-05",
+   "CAS-06",
+   "CAS-07",
+   "CAS-08",
+   "COL-04",
+   "COL-01"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "frontend/src/features/cases/",
+   "frontend/src/features/watch/change-presentation.ts",
+   "frontend/src/components/cases/",
+   "frontend/src/components/watch/ChangeScreen.tsx",
+   "frontend/src/components/watch/ChangeScreen.test.tsx",
+   "frontend/src/components/watch/ChangeCommentsPanel.tsx"
+  ],
+  "shared_files": [
+   "frontend/src/features/shared/tone-by-kind.ts",
+   "frontend/src/shared/i18n/messages.ts",
+   "frontend/src/messages/cases/",
+   "frontend/src/messages/case-triage/",
+   "frontend/src/messages/case-assessment/",
+   "frontend/src/messages/case-actions/",
+   "frontend/src/messages/case-evidence/",
+   "frontend/src/messages/case-signoff/",
+   "frontend/src/messages/case-file/",
+   "frontend/src/messages/case-participants/"
+  ],
+  "depends_on": [
+   "c9-case-contract",
+   "c9-card-case-panels-b",
+   "x-hardening-external-href"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "All 18 operations typed with If-Match on writes; case-presentation unit-tested (status with sub-status label, urgency by row tone, scan-state pill, days left, close reason); stubs render nothing; WAT journeys unaffected; frontend gates pass.",
+  "brief": "Read R2_CROSS_CUTTING.md. Write features/cases/{types, api, hooks, case-presentation}.ts; change-presentation prefers subStatus.label. Components: CaseWorkPanels branching on category and close-reason kind (dismissed and one-person closes to Triage, signed off to Signoff) plus stubs TriagePanel, AssessmentPanel, ActionsPanel, EvidencePanel, SignoffPanel, CaseFilePanel, CaseParticipantsPanel; mount once in ChangeScreen with ChangeCommentsPanel (stub, filled by c10-fe-comments-panel, hidden when the change has no case). Create and register the eight catalogs each with a heading."
+ },
+ {
+  "package": "c10-inbox-and-my-comments",
+  "title": "The notification inbox and a person's own comments and mentions",
+  "goal": "The inbox lists and marks the caller's notifications, and /me/comments lists what they wrote or were mentioned in.",
+  "requirement_ids": [
+   "COL-01",
+   "COL-02",
+   "HOM-05"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/collab/inbox.py",
+   "backend/apps/collab/tests_inbox.py",
+   "backend/apps/collab/me_comments.py",
+   "backend/apps/collab/tests_me_comments.py"
+  ],
+  "shared_files": [
+   "backend/scripts/contract_drift_pending.txt"
+  ],
+  "depends_on": [
+   "c10-collab-contract",
+   "c10-notify-and-prefs"
+  ],
+  "wave": 3,
+  "size": "S",
+  "acceptance": "Inbox newest first, paged, unread filter; mark one idempotent 204, foreign id 404; mark-all one UPDATE; notification.read audit with ids; a row whose record is no longer readable keeps its stored title; query counts pinned for 20 and the budget measured once at 5,000 rows; my comments filtered through the subject registry with permissionLimitedKinds naming kinds; tests build a role without cases.read; drift lines deleted.",
+  "brief": "Read R2_CROSS_CUTTING.md. Implement the inbox.py and me_comments.py stubs. COL-S12 is un-skipped by c8-mywork-routes and c8-ui-mywork."
+ },
+ {
+  "package": "c10-comments-mentions",
+  "title": "Comments on records, and mentions that notify",
+  "goal": "People comment on registered subjects with a short edit window, and mentioned members are notified in the comment's transaction.",
+  "requirement_ids": [
+   "COL-01",
+   "COL-02"
+  ],
+  "scenario_ids": [
+   "COL-S5",
+   "COL-S1"
+  ],
+  "files_owned": [
+   "backend/apps/collab/comments.py",
+   "backend/apps/collab/tests_comments.py"
+  ],
+  "shared_files": [
+   "backend/apps/collab/tests_scenarios.py",
+   "backend/config/settings.py",
+   ".env.example",
+   "docs/runbooks/RAILWAY_VARIABLES.md",
+   "backend/scripts/contract_drift_pending.txt"
+  ],
+  "depends_on": [
+   "c10-collab-contract",
+   "c10-notify-and-prefs"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "test_col_s5 (log, audit, outbox and Sentry before_send swept; a planted lint failure) and test_col_s1 on a ChangeCase un-skipped; COMMENT_MAX_CHARS (4000), COMMENT_EDIT_MINUTES (15); 403 not_author, 409 edit_window_closed; revisions in the same transaction; soft delete idempotent 204; undeliveredMentions by name, no reason; foreign member 422 unknown_member; forced notify failure rolls back the comment; pinned query counts.",
+  "brief": "Read R2_CROSS_CUTTING.md. List checks the registry's read permission (422 unsupported_subject, 404 unreadable), oldest first, deleted rows show a marker. Add stores mention rows and notifies via notify(kind=mention), author never notified, repeats one row. record() with the record's title as subject_title and ids only in after."
+ },
+ {
+  "package": "c10-reminders-core",
+  "title": "Hourly beat: triage reminders and the delegation hop",
+  "goal": "Tenants reaching their send hour get triage-due reminders once, and away recipients' notices go to their delegate.",
+  "requirement_ids": [
+   "COL-02",
+   "TEN-04"
+  ],
+  "scenario_ids": [
+   "COL-S3"
+  ],
+  "files_owned": [
+   "backend/apps/collab/reminders.py",
+   "backend/apps/collab/tasks.py",
+   "backend/apps/collab/tests_reminders.py",
+   "backend/apps/collab/logic.py",
+   "backend/apps/collab/tests_delegation.py"
+  ],
+  "shared_files": [
+   "backend/apps/collab/tests_scenarios.py",
+   "backend/apps/collab/app.md",
+   "backend/config/settings.py",
+   ".env.example",
+   "docs/runbooks/RAILWAY_VARIABLES.md",
+   "backend/apps/shared/tests_celery_registration.py"
+  ],
+  "depends_on": [
+   "c10-mail-catalog",
+   "c10-case-triage-due",
+   "c10-notify-and-prefs",
+   "c10-workflow-policy"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "COL-S3 reworded to this beat and un-skipped with Europe/Helsinki across daylight saving both ways; second run silent via email_message; emailed_at in the same transaction; muted reminders honoured; per-tenant query count pinned; delegation hop: reminder, escalation, assignment and sign-off kinds only, one hop, a cycle terminates, delegate must pass the same check, on_behalf_of set, grants no permission; security review of the hop.",
+  "brief": "Read R2_CROSS_CUTTING.md. Hourly beat entry (settings.py block) picks tenants whose local wall time reached REMINDER_SEND_HOUR and fans out one @tenant_task each. Triage branch: 'new' cases whose triage_due_at falls due at each lead day get due_soon (cases.triage holders), past it overdue. Delegation (membership.out_of_office_until and delegate exist on main): replace an away recipient by the delegate; mentions and digest stay with the absent person."
+ },
+ {
+  "package": "c10-lint-record-content",
+  "title": "The lint refuses tenant content in audit values and outbox payloads",
+  "goal": "compliance_check.py flags record() before/after/payload keys named like tenant content, and today's tree passes.",
+  "requirement_ids": [
+   "COL-01"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/scripts/compliance_check.py",
+   "backend/apps/shared/tests_compliance_lint.py",
+   "backend/apps/taxonomy/footprint_logic.py",
+   "backend/apps/taxonomy/tenant_lists_logic.py",
+   "backend/apps/watch/registration.py"
+  ],
+  "shared_files": [],
+  "depends_on": [
+   "x-hardening-proposals",
+   "x-jurisdictions-by-proposal",
+   "c8-vocab-lists-rules"
+  ],
+  "wave": 3,
+  "size": "S",
+  "acceptance": "A planted record(after={'body': ...}) fails and the tree is restored; the footprint request note leaves the audit value; the tenant list label and the change summary are suppressed each with a reason; record()'s own summary= argument is exempt; compliance_check --all green.",
+  "brief": "Read R2_CROSS_CUTTING.md (rule m) and CHUNK10_TASKS rule 13. Widen compliance_check.py: a record(...) whose before, after or payload carries a key named body, text, comment, note, summary, assessment or question is a finding with its own suppression id. Today's hits outside proposals (x-hardening-proposals fixed those in wave 1): taxonomy/footprint_logic.py's request note (fix: it stays on the request row, out of the audit value); taxonomy/tenant_lists_logic.py's label text (suppress: a list row's own label is the value audited, AUD-01); watch/registration.py's change summary (suppress: platform zone, public text). You own those three files this wave for these lines only. Plant a finding, prove the failure, restore."
+ },
+ {
+  "package": "c10-fe-collab-layer",
+  "title": "The collab client and presentation",
+  "goal": "features/collab holds every collab call and presentation so notification and comment screens only import.",
+  "requirement_ids": [
+   "COL-01",
+   "COL-02"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "frontend/src/features/collab/types.ts",
+   "frontend/src/features/collab/api.ts",
+   "frontend/src/features/collab/hooks.ts",
+   "frontend/src/features/collab/collab-presentation.ts",
+   "frontend/src/features/collab/collab-presentation.test.ts",
+   "frontend/src/messages/collab/en.json",
+   "frontend/src/messages/collab/sv.json"
+  ],
+  "shared_files": [
+   "frontend/src/features/shared/tone-by-kind.ts",
+   "frontend/src/shared/i18n/messages.ts"
+  ],
+  "depends_on": [
+   "c10-collab-contract",
+   "c10-notify-and-prefs",
+   "c10-cards-notifications-workflow"
+  ],
+  "wave": 3,
+  "size": "S",
+  "acceptance": "Eight operations, PATCH /me prefs and GET /me unreadNotifications typed; mark-read optimistic with rollback; every NotificationKind toned with a test failing on an untoned kind; frontend gates pass.",
+  "brief": "Read R2_CROSS_CUTTING.md. One presentation per record type (notification kind to tone and catalog key; comment author, time, 'edited'). The integrator regenerates the pill gallery baseline."
+ },
+ {
+  "package": "c10-fe-obligation-tags",
+  "title": "The bank's tags on an obligation: add, remove, suggest",
+  "goal": "The obligation's tags panel shows tenant tags and lets vocab.manage holders add and remove them; VOC-S6 walks create and suggest.",
+  "requirement_ids": [
+   "VOC-03",
+   "VOC-08"
+  ],
+  "scenario_ids": [
+   "VOC-S6"
+  ],
+  "files_owned": [
+   "frontend/src/components/inventory/ObligationTagsPanel.tsx",
+   "frontend/src/components/inventory/ObligationTagsPanel.test.tsx",
+   "frontend/src/features/library/api.ts",
+   "frontend/src/features/library/hooks.ts"
+  ],
+  "shared_files": [
+   "frontend/src/messages/obligation-tags/",
+   "frontend/tests/e2e/taxonomy.journey.spec.ts",
+   "backend/apps/taxonomy/app.md"
+  ],
+  "depends_on": [
+   "c8-fe-obligation-shell",
+   "c10-cards-tagging",
+   "c10-tag-filters-and-limits",
+   "c10-tagging-routes",
+   "c10-fe-vocab-suggest"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Outlined Pills with remove for vocab.manage; VocabularyPicker (tenant_tag) adds through the tagging routes; others read-only; VOC-S6 un-fixmed (Create with vocab.manage, Suggest without, the admin finds the suggestion); VOC-03 built; frontend gates pass.",
+  "brief": "Read R2_CROSS_CUTTING.md and CLAUDE.md section 11 (passkey sign-in, api-guard, no mocks). Fill the stub panel only."
+ },
+ {
+  "package": "x-briefing-mail",
+  "title": "The weekly briefing mails after its snapshot commits, and a missed week is sent",
+  "goal": "H21 closes: briefing mails leave through the worker on commit.",
+  "requirement_ids": [
+   "HOM-02",
+   "COL-02"
+  ],
+  "scenario_ids": [
+   "HOM-S3"
+  ],
+  "files_owned": [
+   "backend/apps/home/mail.py",
+   "backend/apps/home/tasks.py",
+   "backend/apps/home/tests_briefing_delivery.py"
+  ],
+  "shared_files": [
+   "docs/plans/briefs/HARDENING.md"
+  ],
+  "depends_on": [
+   "c10-mail-catalog",
+   "c10-notify-and-prefs"
+  ],
+  "wave": 3,
+  "size": "S",
+  "acceptance": "Snapshot commits first, mail sent on commit through collab's delivery task; send_weekly_briefings picks up a bank's last unsent week; weeklyBriefing respected; H21 updated; home suite green.",
+  "brief": "Read R2_CROSS_CUTTING.md and H21. You own home/tasks.py this wave for the send path only; leave _recipients as c10-notify-and-prefs left it."
+ },
+ {
+  "package": "c11-definitions-platform",
+  "title": "Publish and retire agent versions, platform settings, platform runs, and runs pinned to their version",
+  "goal": "The console publishes versions from shipped folders, sets platform agent settings, lists platform runs, and banks stop receiving platform run rows.",
+  "requirement_ids": [
+   "AGT-03",
+   "ADM-02",
+   "AGT-06"
+  ],
+  "scenario_ids": [
+   "AGT-S4"
+  ],
+  "files_owned": [
+   "backend/apps/agents/definitions.py",
+   "backend/apps/agents/platform.py",
+   "backend/apps/agents/runs.py",
+   "backend/apps/agents/tests_definitions.py",
+   "backend/apps/agents/tests_platform.py"
+  ],
+  "shared_files": [
+   "backend/apps/agents/tests_scenarios.py",
+   "backend/apps/agents/app.md"
+  ],
+  "depends_on": [
+   "c11-agents-contract",
+   "c11-runner-and-definitions"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "AGT-S4 reworded (a tenant request to a definition answers 403) and un-skipped (publish v4 from a fixture folder; later runs name v4, earlier v3); 409 version_exists, 422 unreadable folder, 409 last_version; settings validated against live jurisdictions (422 unknown_key with valid list) with step-up and one record() with tenant_id None and the assertion id; no tenant row read (two tenants seeded); listPlatformRuns newest first with counts and source-check counts in one query per page, no tenant field, under 250 ms at 200 runs; list_runs gives a tenant session no platform rows; AGT-03 cell.",
+  "brief": "Read R2_CROSS_CUTTING.md, ADR 0053. Publish only through the seed's reader, never a pasted body. runs.open_run writes agent_version_id once, at open. Leave refuse_tenant_key unchanged."
+ },
+ {
+  "package": "c11-tenant-agents-budget-scope",
+  "title": "The bank's own agents, their monthly cap and their default scope",
+  "goal": "A bank adds and configures its own agents, sets a cap, and a run's default scope follows its markets.",
+  "requirement_ids": [
+   "AGT-04",
+   "FP-04"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/agents/tenant_agents.py",
+   "backend/apps/agents/budget.py",
+   "backend/apps/agents/scope.py",
+   "backend/apps/agents/tests_tenant_agents.py",
+   "backend/apps/agents/tests_budget.py",
+   "backend/apps/agents/tests_scope.py"
+  ],
+  "shared_files": [
+   "backend/config/settings.py",
+   ".env.example",
+   "docs/runbooks/RAILWAY_VARIABLES.md"
+  ],
+  "depends_on": [
+   "c11-agents-contract"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Create only against tenant-scoped definitions (refuse_platform_agent; nothing written); cadence against AGENT_MIN_CADENCE (422 above_plan_limit); scope keys checked (422 unknown_key with valid list); next_run_at from tenant-local date and fixed wall time; record() on every write; B gets 404; budget cap row created on first write; spend sums the tenant's own runs in the tenant-local month, never a platform run; a cap below spend pauses the bank's agents through tenant_agents' pause helper; scope.py: operating then watched markets then reaching EU jurisdictions, keys only, retired keys dropped and noted, snapshot stored on the run; the scope reads the footprint and never writes it.",
+  "brief": "Read R2_CROSS_CUTTING.md, D-32, D-61, D-89. Settings (defaults, until plans exist in R3): AGENT_MIN_CADENCE weekly, AGENTS_PER_TENANT_MAX 3, a cap required before switch-on, EUR. Expose spend(tenant), at_cap(tenant) and pause(tenant_agent, reason) for the scheduler, controls and requests. An agent's scope is set by a person holding agents.manage; no agent sets its own scope or the bank's regulatory scope (D-89)."
+ },
+ {
+  "package": "c11-run-history",
+  "title": "A bank's own run history, and what bleqq watches, read-only",
+  "goal": "GET /agent-runs gives a bank its own runs with cost, and GET /agents/platform shows bleqq's agents' next run and last status only.",
+  "requirement_ids": [
+   "AGT-03",
+   "AGT-04"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/agents/runs_read.py",
+   "backend/apps/agents/platform_read.py",
+   "backend/apps/agents/tests_runs_read.py",
+   "backend/apps/agents/tests_platform_read.py"
+  ],
+  "shared_files": [],
+  "depends_on": [
+   "c11-agents-contract"
+  ],
+  "wave": 3,
+  "size": "S",
+  "acceptance": "Own runs newest first with trigger, requestedBy, status, findings, cost, tenantAgentId filter; platform runs never carry cost, tokens or model to a bank; platform watch exactly the pinned fields; paging 20/100; Server-Timing asserted.",
+  "brief": "Read R2_CROSS_CUTTING.md and the TODO default on what a bank sees of bleqq's watch (no prompts, tools, budgets, run rows or costs)."
+ },
+ {
+  "package": "c11-security-policy-routes",
+  "title": "Read and set the bank's credential and session policy",
+  "goal": "security.manage holders set passkey policy and session limits with a passkey, never locking themselves out.",
+  "requirement_ids": [
+   "ID-07",
+   "ID-08",
+   "ADM-01"
+  ],
+  "scenario_ids": [
+   "ID-S17"
+  ],
+  "files_owned": [
+   "backend/apps/tenants/api.py",
+   "backend/apps/tenants/schemas.py",
+   "backend/apps/tenants/security_policy.py",
+   "backend/apps/tenants/tests_security_policy.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/permissions.py",
+   "backend/apps/identity/tests_scenarios.py",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "c8-tenants-contract",
+   "c11-session-policy"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "getSecurityPolicy, putSecurityPolicy (security.manage + step-up), GET /reference/authenticators (committed file, empty when absent; tests use a fixture) documented; 422 above_platform_maximum and empty_authenticator_list; tightening takes the default notice date, a past date refused, loosening immediate; 409 would_lock_out_actor through a named stub for credential policy; one audit with before, after and assertion id; outbox event to other security.manage holders; B gets 404; ID-S17's 422 line added.",
+  "brief": "Read R2_CROSS_CUTTING.md, ADR 0048. security_policy.py makes no passkey decision; c11-signin-policy-use wires the lockout check."
+ },
+ {
+  "package": "c11-signin-policy-enrol",
+  "title": "Device-bound tenants accept only attested, verified authenticators at registration",
+  "goal": "Registration in a device_bound tenant verifies attestation against the claimed model's roots and records the result.",
+  "requirement_ids": [
+   "ID-07"
+  ],
+  "scenario_ids": [
+   "ID-S16"
+  ],
+  "files_owned": [
+   "backend/apps/identity/credential_policy.py",
+   "backend/apps/identity/models.py",
+   "backend/apps/identity/migrations/0008_credential_attestation.py",
+   "backend/apps/identity/passkey_logic.py",
+   "backend/apps/identity/tests_credential_policy.py"
+  ],
+  "shared_files": [
+   "backend/apps/identity/tests_scenarios.py"
+  ],
+  "depends_on": [
+   "c11-backup-eligible-flag",
+   "c8-org-models",
+   "acc-foundation"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "ID-S16 un-skipped; direct attestation requested; only packed or tpm accepted with a chain verified against the claimed model's roots only; empty roots, AAGUID mismatch, missing extension for a shared root, set BE, apple/android-key/android-safetynet each refused 422 credential_policy with a security-log row and nothing stored; attestation_format and attestation_verified stored; loader reads identity/data/authenticators.json (empty until c11-device-allowlist); tests use a fixture root; security review of your diff.",
+  "brief": "Read R2_CROSS_CUTTING.md, ADR 0048. passkey_is_compliant(passkey, policy) does not trust the library's result alone. Registration path only; sign-in is c11-signin-policy-use's. Keep: no passwords, no fallback."
+ },
+ {
+  "package": "c11-fe-console-agents",
+  "title": "The agents client, and the console's definitions, settings and platform runs",
+  "goal": "features/agents types every agent operation, and platform admins publish versions, set platform settings and read platform runs.",
+  "requirement_ids": [
+   "AGT-03",
+   "ADM-02"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "frontend/src/features/agents/",
+   "frontend/src/components/console/AgentDefinitionsScreen.tsx",
+   "frontend/src/components/console/AgentDefinitionScreen.tsx",
+   "frontend/src/components/console/PlatformAgentSettings.tsx",
+   "frontend/src/components/console/PlatformRunsPanel.tsx",
+   "frontend/src/app/(console)/console/agents/page.tsx",
+   "frontend/src/app/(console)/console/agents/[agentKey]/page.tsx",
+   "frontend/src/messages/console-agents/en.json",
+   "frontend/src/messages/console-agents/sv.json"
+  ],
+  "shared_files": [
+   "frontend/src/shared/i18n/messages.ts",
+   "frontend/src/shared/navigation/registry.ts",
+   "frontend/src/features/shared/tone-by-kind.ts"
+  ],
+  "depends_on": [
+   "c11-agents-contract",
+   "c11-cards-agents-security"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "All console and tenant agent operations, budget and research requests typed in features/agents with presentations for every status; list, versions with publish (change note, UI step-up) and retire, settings with the 'for every bank' notice behind step-up, runs panel linking to Sources; loading, empty, error and denied states; frontend gates pass.",
+  "brief": "Read R2_CROSS_CUTTING.md. Journeys AGT-S4 and ADM-S4 are c11-e2e-console's."
+ },
+ {
+  "package": "c11-proposal-batches-decide",
+  "title": "Decide a batch row by row, apply the scope changes",
+  "goal": "A second person approves or rejects batch rows with a passkey and approved rows rewrite obligation terms in one transaction.",
+  "requirement_ids": [
+   "PRO-04"
+  ],
+  "scenario_ids": [
+   "PRO-S8"
+  ],
+  "files_owned": [
+   "backend/apps/proposals/batch.py",
+   "backend/apps/proposals/apply.py",
+   "backend/apps/proposals/tests_batch_decide.py"
+  ],
+  "shared_files": [
+   "backend/apps/proposals/tests_scenarios.py",
+   "backend/apps/proposals/app.md"
+  ],
+  "depends_on": [
+   "c11-proposal-batches-create",
+   "x-jurisdictions-by-proposal"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "PRO-S8 un-skipped (twelve rows previewed, two rejected, ten changed, one batch event); a rejection needs a reason row; the proposer (and the person who asked for a re-tag) gets 409 four_eyes_violation; one audit per row and one naming each row's outcome, all in one transaction with reindex; any agent key deciding answers 409 person_review_required; PRO-04 cell.",
+  "brief": "Read R2_CROSS_CUTTING.md. Fill batch.decide and add apply()'s obligation_scope branch (terms before and after in its audit row), inside the proposal door. Person decisions only, with a passkey; the four-eyes CHECK stays the database's word, and the re-tag requester refusal sits in batch.decide. The agent path waits for Alex's answer on who decides a re-tag batch and is not in this plan; nothing here waits for it."
+ },
+ {
+  "package": "c11-e2e-seed",
+  "title": "Seeded agents, runs, budget and a batch for the chunk 11 journeys",
+  "goal": "Journeys find a second sweeper version, tenant A's own agent with runs and a near cap, and an open twelve-row batch.",
+  "requirement_ids": [
+   "AGT-03",
+   "AGT-04",
+   "AGT-05",
+   "PRO-04"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/agents/tests_seed.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/e2e_seed.py",
+   "backend/apps/shared/tests_seed_integrity.py"
+  ],
+  "depends_on": [
+   "c11-runner-and-definitions",
+   "c11-proposal-batches-create",
+   "c11-agent-models",
+   "r2-e2e-login-roster"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Rerun changes nothing; a month boundary leaves the spend figure alone; tenant B has no agent and no budget; the batch comes from batch.create_batch().",
+  "brief": "Read R2_CROSS_CUTTING.md. A fixture folder or second sweeper version for AGT-S4; tenant A's tenant-source-watch agent weekly with a scope, runs over recent weeks with costs near a seeded cap; platform runs; anchored to the seed clock."
+ },
+ {
+  "package": "c11-fe-console-batch-retag",
+  "title": "Batch review and 'Ask for a re-tag' in the console",
+  "goal": "Editors review a batch row by row with a passkey and ask for a re-tag.",
+  "requirement_ids": [
+   "PRO-04",
+   "AGT-05",
+   "ADM-02"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "frontend/src/features/proposals/api.ts",
+   "frontend/src/features/proposals/hooks.ts",
+   "frontend/src/features/proposals/types.ts",
+   "frontend/src/components/console/BatchReviewScreen.tsx",
+   "frontend/src/components/console/BatchPreviewTable.tsx",
+   "frontend/src/components/console/QueueScreen.tsx",
+   "frontend/src/components/console/RetagRequestForm.tsx",
+   "frontend/src/app/(console)/console/queue/batches/[batchId]/page.tsx"
+  ],
+  "shared_files": [
+   "frontend/src/messages/console/en.json",
+   "frontend/src/messages/console/sv.json"
+  ],
+  "depends_on": [
+   "c11-cards-agents-security",
+   "c11-proposal-batches-create",
+   "c11-agents-contract"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "A batch is one queue entry; preview with row approve/reject and a reason; Approve the rest and Reject all behind step-up; four_eyes_violation state; result with counts and audit link; readable at 375 px; re-tag form follows its request to the batch; frontend gates pass.",
+  "brief": "Read R2_CROSS_CUTTING.md. PRO-S8's journey is c11-e2e-console's."
+ },
+ {
+  "package": "acc-principal-guard",
+  "title": "Agent-access credentials resolve to an entry or a person, read only, rate-limited",
+  "goal": "Principals carry credential kind, entry and acting person; every agent-access credential is read-only and refused step-up.",
+  "requirement_ids": [
+   "ACC-01",
+   "ACC-03",
+   "ACC-05",
+   "ACC-09"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/shared/authentication.py",
+   "backend/apps/identity/api_keys_logic.py",
+   "backend/apps/shared/audit.py",
+   "backend/apps/shared/agent_access_guard.py",
+   "backend/apps/identity/tests_credential_resolution.py",
+   "backend/apps/shared/tests_authentication.py",
+   "backend/apps/shared/tests_agent_access_guard.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/routes.py"
+  ],
+  "depends_on": [
+   "acc-foundation",
+   "x-hardening-agent-runs"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "A revoked or inactive entry's key refused on the next request; a personal token dies with its person, membership or backing permission and holds only scopes its permissions back; unbound tenant keys grant nothing through tenant:read; SessionAuth never accepts a token; every mutating route 403 read_only_credential except allow-listed POST /search, /agent-access/what-applies, /mcp; step-up routes give tokens 403 step_up_required; per-credential rate limit 429 with a security-log row; a walk over every operation fails on a new unguarded route; audit rows name entry or person; the D-78 zone guard still passes; security review of your diff.",
+  "brief": "Read R2_CROSS_CUTTING.md, AGENT_ACCESS.md, ADRs 0055-0057, D-78. Scope mapping: library:read -> library.read, search:read -> search.use, upcoming:read -> roadmap.read, tenant:read -> register.read. No agent-access credential reaches a library write, a footprint write or a proposal route. Stop and report on any invariant question."
+ },
+ {
+  "package": "acc-scope-and-reach",
+  "title": "An entry's scope from its departments and products, and tenant reach behind two people",
+  "goal": "Entry scope is derived per request and only narrows; tenant reach needs a request and a second person's passkey.",
+  "requirement_ids": [
+   "ACC-02",
+   "ACC-08"
+  ],
+  "scenario_ids": [
+   "ACC-S2"
+  ],
+  "files_owned": [
+   "backend/apps/taxonomy/entry_scope.py",
+   "backend/apps/taxonomy/migrations/0011_entry_scope_function.py",
+   "backend/apps/taxonomy/tests_entry_scope.py",
+   "backend/apps/governance/models.py",
+   "backend/apps/governance/migrations/0004_tenant_reach.py",
+   "backend/apps/governance/reach.py",
+   "backend/apps/governance/api.py",
+   "backend/apps/governance/schemas.py",
+   "backend/apps/governance/tests_reach.py"
+  ],
+  "shared_files": [
+   "backend/apps/taxonomy/tests_scenarios.py",
+   "backend/apps/taxonomy/app.md",
+   "backend/apps/shared/tests_four_eyes.py",
+   "backend/apps/shared/tests_rls.py",
+   "backend/apps/shared/routes.py",
+   "backend/apps/shared/permissions.py",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "acc-foundation",
+   "c8-org-models",
+   "c8-teams-model"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "ACC-S2 un-skipped; the SQL predicate over a term map matches the pure answer and keeps FP-01's empty-dimension and opt-in rules; naming nothing narrows nothing; naming departments or products that derive no terms reads nothing with a reason; reach tables under forced RLS; reach request, approve (requester 409 four_eyes_violation, backed by CHECK decided_by <> requested_by), reject and switch-off each need security.manage and a step-up; switch-off immediate; tenant_reach_on(tenant) exposed; audit rows name each person with the assertion; ACC-02 cell.",
+  "brief": "Read R2_CROSS_CUTTING.md, D-70, D-77. Entry terms: the named products' terms plus products under each named department and its sub-units, intersected with the footprint, never stored and never taken from the caller. TenantReachRequest with CHECK decided_by <> requested_by, one pending per tenant, joins FOUR_EYES_TABLES; a one-row reach state, default off; both forced RLS."
+ },
+ {
+  "package": "d89-proposal-owner",
+  "title": "Proposals owned by a bank, and the bank's own queue declared",
+  "goal": "A proposal can belong to one bank, set by the server, under split RLS that keeps owned rows out of the console, and the private queue routes exist at 501.",
+  "requirement_ids": [
+   "INV-07",
+   "PRO-03",
+   "OWN-03"
+  ],
+  "scenario_ids": [
+   "PRO-S12"
+  ],
+  "files_owned": [
+   "backend/apps/proposals/models.py",
+   "backend/apps/proposals/migrations/0009_proposal_owner.py",
+   "backend/apps/proposals/api.py",
+   "backend/apps/proposals/schemas.py",
+   "backend/apps/proposals/logic.py",
+   "backend/apps/proposals/private_approval.py",
+   "backend/apps/proposals/tests_private_contract.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/permissions.py",
+   "backend/apps/shared/tests_rls.py",
+   "backend/apps/shared/tests_four_eyes.py",
+   "backend/apps/shared/tests_library_fence.py",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "r2-spec-d89",
+   "c11-proposal-batches-create",
+   "c11-proposal-batches-model",
+   "x-jurisdictions-by-proposal"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "owner_tenant_id set by logic.create from the target, the filing session's bank for a private-record kind, or a worker run's bank, never the body; forced RLS in the split shape proven as cw_app, so a console session reads no owned row; PRIVATE_RECORDS_APPROVE for Compliance officer and Approver only, never a platform role or key scope; GET /private-proposals, POST /private-proposals/{id}/approve (step-up) and /reject answer 501 after loading under RLS (another bank 404); the door guard names the approve route; the four-eyes CHECK is unchanged.",
+  "brief": "Built under D-89 (Alex, 2026-09-24); PRD 0.7's OWN group is the spec. Read R2_CROSS_CUTTING.md, D-57, ADR 0050, ADR 0059, CHUNK13_TASKS c13-private-contract. You own proposals/logic.py this wave for owner resolution in create() only; approve and reject reuse is d89-private-records'. The console queue excludes owned rows by the database policy, not by a filter. No API key scope gains anything."
+ },
+ {
+  "package": "d89-researcher-definition",
+  "title": "The scope-researcher agent definition",
+  "goal": "A tenant-scoped definition researches one approved scope item from public sources into the bank's own proposals.",
+  "requirement_ids": [
+   "AGT-03",
+   "AGT-04",
+   "OWN-02"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/agents/scope-researcher/v1/definition.yaml",
+   "backend/agents/scope-researcher/v1/prompt.md",
+   "backend/agents/scope-researcher/v1/eval.yaml"
+  ],
+  "shared_files": [
+   "backend/agents/README.md",
+   "backend/apps/agents/seeds/definition.py"
+  ],
+  "depends_on": [
+   "r2-spec-d89",
+   "c11-runner-and-definitions"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Definition scope tenant, tenant_configurable true, writes_to tenant, a tool list with no library-writing, footprint-writing or key-scoped write operation; inputs are the item's jurisdiction and regime keys and id only; every field sourced; AGT-08 sector-scope and standards rules; fetched content screened as untrusted; evaluation rows and gate follow the sweeper's pattern; seed loader and README entries.",
+  "brief": "Built under D-89; the item's free-text fields reach it only after Alex answers the tenant-text question. Read R2_CROSS_CUTTING.md, AGT-07, AGT-08, D-32, ADR 0059."
+ },
+ {
+  "package": "x-console-jurisdictions-fe",
+  "title": "Rename and retire jurisdictions from the console",
+  "goal": "Editors propose jurisdiction relabels, retirements and restores on the console vocabulary screen; languages stay read-only.",
+  "requirement_ids": [
+   "ADM-02"
+  ],
+  "scenario_ids": [
+   "ADM-S18",
+   "ADM-S4"
+  ],
+  "files_owned": [
+   "frontend/src/components/admin/VocabularyScreen.tsx",
+   "frontend/src/features/vocabularies/vocabulary-presentation.ts",
+   "frontend/src/messages/vocabularies/en.json",
+   "frontend/src/messages/vocabularies/sv.json"
+  ],
+  "shared_files": [
+   "frontend/tests/e2e/governance.journey.spec.ts",
+   "backend/apps/governance/app.md"
+  ],
+  "depends_on": [
+   "x-jurisdictions-by-proposal",
+   "c11-cards-agents-security",
+   "c10-fe-vocab-suggest"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "ADM-S18 journey un-fixmed (an editor proposes a Danish label change, a second editor approves with step-up, the regulatory scope screen shows the new label); ADM-S4's note updated; frontend gates pass.",
+  "brief": "Read R2_CROSS_CUTTING.md and CLAUDE.md section 11."
+ }
+]

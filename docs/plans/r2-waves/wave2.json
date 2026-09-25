@@ -1,0 +1,876 @@
+[
+ {
+  "package": "c8-register-models",
+  "title": "The register's tables: entries, entity rows, assessments, gaps, interpretations and links",
+  "goal": "Register migrations 0001-0002 create the chunk 8 register tables under forced RLS with the four-eyes CHECK on risk acceptance.",
+  "requirement_ids": [
+   "REG-01",
+   "REG-02",
+   "REG-03",
+   "REG-04",
+   "REG-05",
+   "TEN-03"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/register/models.py",
+   "backend/apps/register/migrations/0001_register.py",
+   "backend/apps/register/migrations/0002_gaps_history_links.py",
+   "backend/apps/register/logic.py",
+   "backend/apps/register/tests_models.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/kinds.py",
+   "backend/apps/shared/tests_rls.py",
+   "backend/apps/shared/tests_append_only.py",
+   "backend/apps/shared/tests_four_eyes.py"
+  ],
+  "depends_on": [
+   "c8-org-models",
+   "c8-vocab-lists-rules",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "migrate_from_zero passes; cw_app isolation tests; gap four-eyes CHECK and reason CHECK proven; ComplianceAssessment append-only; InternalLink.delete() raises; an AST guard proves ensure_register_entry() is the only creator; register and shared suites green.",
+  "brief": "Read R2_CROSS_CUTTING.md, register/app.md, D-41, D-42, D-75. 0001: Applicability kind (applies, does_not_apply, not_assessed). TenantObligation: obligation; applicability, reason, decided_at, decided_by; compliance_status and risk_rating rows; status_note; first_line_owner and compliance_contact (composite FKs to membership); owner_team (composite FK to team); process, system, evidence_location, next_review_date, version, updated_at; UNIQUE(tenant, obligation), UNIQUE(tenant_id, id); keyed on obligation id so a bank-private obligation joins unchanged later. TenantObligationScope: composite FKs to entry, org_unit, nullable product; applicability, reason, decided_at/by; compliance_status, note, owner or owner_team, next_review_date, version; UNIQUE NULLS NOT DISTINCT(entry, org_unit, product); CHECK one owner kind. ComplianceAssessment: append-only with trigger (method, status, risk, rationale, next review, scope row, author, time). No ApplicabilityRequest table; nothing joins FOUR_EYES_TABLES except gap. ensure_register_entry() in register/logic.py writes register.entry_created through record() in the same transaction. 0002: Gap (entry, nullable org_unit, title, description, severity/source/status rows, identified_by/at, owner or owner_team, target_date, remediation, acceptance_reason, acceptance_note, acceptance_requested_by/at, accepted_by/at, closed_by/at, version; CHECK accepted_by <> acceptance_requested_by; CHECK reason and requester when accepted); gap joins FOUR_EYES_TABLES. Interpretation (entry, version_no, body, author, created_at, superseded_at; unique (entry, version_no)). InternalLink (entry, nullable composite FK internal_item, label, url, external_ref, created_by/at, removed_at/removed_by; partial unique live (entry, item); delete() raises). SoaUnit and a gap's unit are c8-reg-units' (register 0003). No routes. Shared files: own entries only."
+ },
+ {
+  "package": "c8-teams-model",
+  "title": "Team members, team owners on licences and items, and a team's department",
+  "goal": "TeamMember exists, licences and internal items take a team owner, and a team belongs to an org unit.",
+  "requirement_ids": [
+   "TEN-02",
+   "TEN-03"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/tenants/models.py",
+   "backend/apps/tenants/migrations/0003_team_member.py",
+   "backend/apps/taxonomy/models.py",
+   "backend/apps/taxonomy/migrations/0010_team_org_unit.py",
+   "backend/apps/tenants/tests_team_models.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/tests_rls.py",
+   "backend/apps/shared/tests_seed_integrity.py"
+  ],
+  "depends_on": [
+   "c8-org-models",
+   "c8-vocab-lists-rules",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "S",
+  "acceptance": "Composite keys refuse cross-tenant team, member and unit; RLS entry for team_member; tenants and taxonomy suites green.",
+  "brief": "Read R2_CROSS_CUTTING.md. Tenants 0003: TeamMember (composite FKs to team and membership, no is_lead, unique pair, forced RLS); owner_team (composite FK to team) on Licence and InternalItem with a CHECK that person and team owners are not both set. Taxonomy 0010: team.org_unit as a composite FK to tenants.org_unit (nullable). No routes (c8-ten-teams-people builds them). Shared files: own entries only."
+ },
+ {
+  "package": "c8-tenants-contract",
+  "title": "Organisation, teams, people, member removal and support access routes, declared and gated",
+  "goal": "tenants/api.py declares every chunk 8 tenants operation behind its real gate, answering 501 after loading its record.",
+  "requirement_ids": [
+   "TEN-02",
+   "TEN-03",
+   "TEN-05",
+   "TEN-06",
+   "COL-04",
+   "HOM-05",
+   "ADM-01"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/tenants/api.py",
+   "backend/apps/tenants/schemas.py",
+   "backend/apps/tenants/tests_api_contract.py",
+   "backend/apps/tenants/organisation.py",
+   "backend/apps/tenants/products.py",
+   "backend/apps/tenants/teams.py",
+   "backend/apps/tenants/people.py",
+   "backend/apps/tenants/reassignment.py",
+   "backend/apps/tenants/support_access.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/routes.py",
+   "backend/apps/shared/factories.py",
+   "backend/apps/shared/permissions.py",
+   "backend/scripts/contract_drift_pending.txt",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "c8-org-models",
+   "c8-vocab-lists-rules",
+   "c10-workflow-policy",
+   "x-hardening-inputs-ask",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "tests_api_contract proves 401, 403 with requiredPermission, step_up_required and 501; /tenant/ id routes answer 404 to another tenant (registered in TENANT_SCOPED_ROUTES); api docs gate passes; permission descriptions for support_access.grant and security.manage match PRD 0.4.",
+  "brief": "Read R2_CROSS_CUTTING.md, tenants/app.md, D-49, ADR 0042. Declare, each calling a stub in its module that loads its record under RLS then raises 501 not_built: organisation: GET and POST /tenant/org-units, PATCH /tenant/org-units/{id}, GET and POST /tenant/org-units/{id}/licences, PATCH /tenant/licences/{id}; products: GET and POST /tenant/products, PATCH /tenant/products/{id} (writes vocab.manage + If-Match, reads any member). Teams and people: GET /tenant/teams, GET /tenant/teams/{key}/members (any member); GET /reference/people with optional permission=<key> (UNGATED_BY_DESIGN CAPABILITY with its reason: a member session only, enrolment refused; unknown permission 422 unknown_key; ids and names only). Removal: GET /tenant/members/{userId}/open-work and POST /tenant/members/{userId}/remove (members.manage + step-up; body: a target owner per kind). Support: console POST /console/tenants/{id}/support-access (support_access.grant), GET /console/support-access, POST /console/support-access/{id}/enter (support_access.grant + step-up); tenant GET /tenant/support-access (any member), POST /tenant/support-access/{id}/approve (security.manage + step-up), /decline and /revoke (security.manage). Apply the shared single-line name type to the tenant name and every new name field. Update the two permission descriptions. PUT /tenant/members/{userId}/teams lives in identity and is c8-ten-teams-people's. Shared files: own lines only."
+ },
+ {
+  "package": "c8-fe-obligation-shell",
+  "title": "The obligation page's R2 frame: every panel mounted once as a stub",
+  "goal": "ObligationScreen mounts each R2 panel from its own file and features/register holds every register client call, so panel packages never touch the page.",
+  "requirement_ids": [
+   "REG-01",
+   "REG-02",
+   "REG-03",
+   "REG-04",
+   "REG-05",
+   "REG-08",
+   "COL-01",
+   "COL-04",
+   "VOC-08"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "frontend/src/components/inventory/ObligationScreen.tsx",
+   "frontend/src/components/inventory/ObligationApplicabilityPanel.tsx",
+   "frontend/src/components/inventory/ObligationStatusPanel.tsx",
+   "frontend/src/components/inventory/ObligationGapsPanel.tsx",
+   "frontend/src/components/inventory/ObligationLinksPanel.tsx",
+   "frontend/src/components/inventory/ObligationParticipantsPanel.tsx",
+   "frontend/src/components/inventory/ObligationUnitsPanel.tsx",
+   "frontend/src/components/inventory/ObligationHistoryPanel.tsx",
+   "frontend/src/components/inventory/ObligationTagsPanel.tsx",
+   "frontend/src/components/inventory/ObligationCommentsPanel.tsx",
+   "frontend/src/features/register/"
+  ],
+  "shared_files": [
+   "frontend/src/shared/i18n/messages.ts",
+   "frontend/src/features/shared/tone-by-kind.ts",
+   "frontend/src/messages/obligation-applicability/",
+   "frontend/src/messages/obligation-status/",
+   "frontend/src/messages/obligation-gaps/",
+   "frontend/src/messages/obligation-links/",
+   "frontend/src/messages/obligation-participants/",
+   "frontend/src/messages/obligation-units/",
+   "frontend/src/messages/obligation-history/",
+   "frontend/src/messages/obligation-tags/"
+  ],
+  "depends_on": [
+   "c8-register-contract",
+   "c8-cards-register",
+   "x-hardening-external-href",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "Every stub renders nothing and the page renders; presentation tests pass; frontend gates pass; library journeys unaffected.",
+  "brief": "Read R2_CROSS_CUTTING.md and design/screens/tenant-obligation.html. git mv features/register/gap-presentation.ts to register-presentation.ts (keep its test, renamed) and extend it with applicability, compliance (worst-of header naming its entity) and risk; add riskTone to tone-by-kind.ts (the only new tone map, tone by kind). Write features/register/api.ts and hooks.ts for every register operation (typed from api.generated.ts; writes send If-Match; stale_write offers reload, never merges). Create the nine panel components as stubs and mount each once in ObligationScreen in the card's order (units only on a standard's conformance obligation); replace the placeholder. Create the eight message namespaces with a heading key in en and sv and register them. Panel content belongs to later packages; ObligationCommentsPanel is filled by c10-fe-comments-panel, ObligationTagsPanel by c10-fe-obligation-tags; the page header's 'Private to us' marker is d89-fe-private's."
+ },
+ {
+  "package": "c9-card-case-panels-b",
+  "title": "Screen card: evidence, sign-off, closed states and the case file",
+  "goal": "The second half of the case panels is drawn and the card row reads designed.",
+  "requirement_ids": [
+   "CAS-05",
+   "CAS-06",
+   "CAS-07"
+  ],
+  "scenario_ids": [
+   "CAS-S7",
+   "CAS-S8",
+   "CAS-S9",
+   "CAS-S10",
+   "CAS-S11"
+  ],
+  "files_owned": [
+   "design/screens/tenant-change.html"
+  ],
+  "shared_files": [
+   "docs/plans/UI_Implementation_Plan.md"
+  ],
+  "depends_on": [
+   "c9-card-case-panels-a"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "Evidence, sign-off, closed, dismissed and case-file states drawn in both themes at 375 px; the UI plan row reads designed.",
+  "brief": "Design only. Evidence: list with kind, name, size, who, when and a scan-state pill; attach dialog for file, link and reference; 'Being checked' while scanning; a refused file names the allow-list and cap from the server's answer; remove with confirm. Sign-off: 'Request sign-off' with its two refusals (open actions, no evidence), waiting state naming the requester, 'Sign off and close' with the step-up prompt, the self-sign-off refusal in words, 'Send back' with a note. Closed: signed off shows both names; closed without action shows reason, who, and 'Move back to triage'; dismissed shows reason and 'Move back to triage'. 'Show case file' view. Every state, both widths and themes."
+ },
+ {
+  "package": "c10-cards-tagging",
+  "title": "Screen card blocks: bulk tagging on the inventory and the tags facet on an obligation",
+  "goal": "Row selection, preview and commit on the inventory and the tags facet on the obligation are drawn.",
+  "requirement_ids": [
+   "VOC-03",
+   "VOC-08"
+  ],
+  "scenario_ids": [
+   "VOC-S6",
+   "VOC-S12"
+  ],
+  "files_owned": [
+   "design/screens/tenant-inventory.html",
+   "design/screens/tenant-obligation.html"
+  ],
+  "shared_files": [
+   "docs/plans/UI_Implementation_Plan.md"
+  ],
+  "depends_on": [
+   "c8-cards-register"
+  ],
+  "wave": 2,
+  "size": "S",
+  "acceptance": "Numbered blocks drawn in both themes with every pill tone named.",
+  "brief": "Design only; add numbered blocks without touching chunk 8's register column. tenant-inventory.html: row checkboxes, page select-all, a Tag control for vocab.manage, preview counts (would gain, already carry, skipped), commit result, cap refusal, tenant tags on each row, a tenant-tag filter. tenant-obligation.html: the tags facet with the picker to add and a remove control for vocab.manage, read-only for others."
+ },
+ {
+  "package": "acc-cards",
+  "title": "Screen cards: agent access entries, personal tokens, tenant reach and the credential list",
+  "goal": "Every agent-access screen is drawn in every state.",
+  "requirement_ids": [
+   "ACC-01",
+   "ACC-03",
+   "ACC-07",
+   "ACC-08",
+   "J-11"
+  ],
+  "scenario_ids": [
+   "ACC-S1",
+   "ACC-S3",
+   "ACC-S6",
+   "ACC-S11",
+   "ACC-S12"
+  ],
+  "files_owned": [
+   "design/screens/admin-agent-access.html",
+   "design/screens/me-tokens.html",
+   "design/screens/admin-security.html",
+   "design/screens/admin-api-keys.html"
+  ],
+  "shared_files": [
+   "design/system/pills-and-labels.md",
+   "docs/plans/UI_Implementation_Plan.md"
+  ],
+  "depends_on": [
+   "c11-cards-agents-security",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "All cards drawn in states.html states, both themes, 375 px; pill rows for entry Active/Revoked, reach On/Off, credential Service/Personal with tones by kind; UI plan rows for every ACC operation with permission and step-up columns.",
+  "brief": "Read AGENT_ACCESS.md and PRD ACC. admin-agent-access.html (second tab of Agents): header line that these agents only read; entry list with scope summary (departments, products, reach); register and edit dialog (name, purpose, owning team, department and product pickers) with step-up notice; revoke with confirm; entry page with credentials (service key, expiry at most 90 days, shown-once dialog, last use, revoke), per-entry reach toggle disabled with its reason while the tenant switch is off, and the access log table (credential, person, tool, record count, scope, timing, no content). me-tokens.html: mint with scopes, optional entry, required expiry behind a step-up; shown once; list with expiry and last use; revoke; restricted state without tokens.create. admin-security.html: add the tenant reach panel (state, request with step-up, pending banner naming the requester, approve with passkey, four-eyes refusal as a state, reject, switch off). admin-api-keys.html: the tenant-wide list of every key and token (kind, entry or person, revoke)."
+ },
+ {
+  "package": "d89-cards",
+  "title": "Screen cards: the bank's own queue, the scope-item panel and the private marker",
+  "goal": "The OWN screens are drawn so the D-89 UI packages copy them.",
+  "requirement_ids": [
+   "OWN-01",
+   "OWN-03",
+   "OWN-04",
+   "INV-07",
+   "FP-02"
+  ],
+  "scenario_ids": [
+   "FP-S18",
+   "PRO-S15",
+   "INV-S15"
+  ],
+  "files_owned": [
+   "design/screens/tenant-private-records.html",
+   "design/screens/admin-footprint.html"
+  ],
+  "shared_files": [
+   "design/system/pills-and-labels.md",
+   "docs/plans/UI_Implementation_Plan.md"
+  ],
+  "depends_on": [
+   "r2-spec-d89"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "Cards drawn in every state and both themes; 'Private to us' and 'Proposed by our agent' pill rows with tone and slot chosen by kind; UI plan rows added.",
+  "brief": "Built under D-89 (Alex, 2026-09-24), which puts this in R2; PRD 0.7's OWN group from r2-spec-d89 is the spec. Read PRD OWN and SCOPE_ITEMS.md. tenant-private-records.html: the bank's own queue with the agent-drafted label and its source, approve with step-up, reject with reason, four-eyes refusal, empty and denied states; nothing offers a platform reviewer. admin-footprint.html: a scope-item panel (name, jurisdiction, regime, reference, source addresses), the pending request with the item in its preview, and research status per item ('our agent is researching', 'waiting for your agent', proposals waiting). No control lets an agent add or change a scope item."
+ },
+ {
+  "package": "c9-case-contract",
+  "title": "All eighteen case operations declared, the case loader, facts and transition(), and the change detail's workflow block",
+  "goal": "cases/api.py declares every chunk 9 operation behind its gate answering 501, logic.py holds the loader, If-Match, case_facts() and transition(), and the change detail embeds the workflow block.",
+  "requirement_ids": [
+   "CAS-02",
+   "CAS-03",
+   "CAS-04",
+   "CAS-05",
+   "CAS-06",
+   "CAS-07",
+   "CAS-08"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/cases/api.py",
+   "backend/apps/cases/schemas.py",
+   "backend/apps/cases/logic.py",
+   "backend/apps/cases/triage.py",
+   "backend/apps/cases/assessment.py",
+   "backend/apps/cases/actions.py",
+   "backend/apps/cases/evidence.py",
+   "backend/apps/cases/signoff.py",
+   "backend/apps/cases/case_file.py",
+   "backend/apps/cases/tests_contract.py",
+   "backend/apps/watch/schemas.py",
+   "backend/apps/watch/reading.py",
+   "backend/apps/watch/api.py",
+   "backend/apps/watch/tests_case_block.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/permissions.py",
+   "backend/apps/shared/routes.py",
+   "backend/apps/shared/factories.py",
+   "backend/scripts/contract_drift_pending.txt",
+   "docs/inputs/INPUT_DELTAS.md",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "c9-case-models",
+   "c9-state-machine",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "Each operation answers 401, 403 with requiredPermission, step_up_required where declared, then 501; no API key reaches any; transition() writes case_transition and record() in one transaction and bumps version; the feed list stays at a fixed query count; api docs gate passes.",
+  "brief": "Read R2_CROSS_CUTTING.md and CHUNK9_TASKS.md. Operations: triage, dismiss, restore (cases.triage); assessment/start and closeWithoutAction (cases.work, both in triage.py); PUT assessment (cases.contribute); list actions (cases.read), add (cases.work), PATCH /actions/{id} (cases.contribute), DELETE /actions/{id} (cases.work; documented as a soft removal); list evidence (cases.read), add (cases.contribute, multipart for a file), GET /evidence/{id}/download (cases.read), DELETE /evidence/{id} (cases.work, soft); signoff request (cases.work), approve (cases.signoff + @requires_step_up), send-back (cases.signoff); case file (cases.read, text/plain). Stubs raise 501 not_built. Schemas: CasesCase (subStatus, allowedTransitions, canRequestSignoff, openActionCount, version), Assessment without contributors, Action, ActionInput, ActionPatch, Evidence (scanState, contentHash), EvidenceCreated without uploadUrl, reasons as keys. logic.py: case loader under RLS (404 across tenants and where the bank has no case), If-Match (409 stale_write with current version), case_facts(case) building state.CaseFacts from live open actions and live clean evidence in fixed queries (every guard and the watch block read it), and transition(). Document all 18 including every error code now. Document that saveSoWhat and confirmSoWhat bump version without If-Match. Watch: the detail read embeds the workflow block (owner, triage, dismissal and sign-off names and dates, closeReason, openActionCount, canRequestSignoff, allowedTransitions from state.py via case_facts, version) in fixed queries; feed rows gain only subStatus {key, kind, label}; update stale 'every case is new' descriptions; a test that no transition table exists outside state.py. INPUT_DELTAS rows for rulings 3, 4, 5, 8. The support read allow-list is c8-support-session-guard's."
+ },
+ {
+  "package": "c9-scanner-adapter",
+  "title": "Evidence scanning through a clamd adapter, with a deterministic mock",
+  "goal": "adapters/scanner.py answers a ScanResult for bytes and never says clean on error.",
+  "requirement_ids": [
+   "CAS-05"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/shared/adapters/scanner.py",
+   "backend/apps/shared/tests_scanner.py"
+  ],
+  "shared_files": [
+   "backend/config/settings.py",
+   ".env.example",
+   "docs/runbooks/RAILWAY_VARIABLES.md",
+   "docs/plans/briefs/HARDENING.md",
+   "docs/plans/Verification_Log.md",
+   "docs/inputs/INPUT_DELTAS.md"
+  ],
+  "depends_on": [
+   "c9-case-models",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "MockScanner flags EICAR and marker names deterministically; ClamdScanner maps timeout, refused connection or unparsable reply to error; get_scanner refuses unknown providers and mock on a deployed environment; a log-capture test proves no filename, path or byte is logged; Verification_Log row for INSTREAM fetched, not recalled.",
+  "brief": "Read R2_CROSS_CUTTING.md; ScanState already lives in this module. Add ScanResult (state, signature, scanned_at), MockScanner, ClamdScanner (INSTREAM over SCANNER_HOST, SCANNER_PORT, SCANNER_TIMEOUT_SECONDS) and get_scanner() reading SCANNER_PROVIDER. Fetch the clamd INSTREAM protocol docs and log them. Settings banner, env and runbook lines, a HARDENING row asking the EU data-location package to add the boot refusal. Security review of your own diff before finishing."
+ },
+ {
+  "package": "c9-e2e-seed",
+  "title": "One seeded case per mutating case journey",
+  "goal": "Each case journey has its own seeded case so parallel Playwright workers never share one.",
+  "requirement_ids": [
+   "CAS-02",
+   "CAS-03",
+   "CAS-04",
+   "CAS-06",
+   "J-2",
+   "J-3"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/cases/tests_seed_cases.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/e2e_seed.py",
+   "backend/apps/shared/tests_seed_integrity.py"
+  ],
+  "depends_on": [
+   "c9-case-models",
+   "r2-e2e-login-roster",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "A second seed run changes nothing (proved); every date comes from the anchor; seed-integrity names each case and its journey; shared and cases suites green.",
+  "brief": "Read R2_CROSS_CUTTING.md and cases/app.md. One seed function giving each mutating journey its own change and case, written through record(): CAS-S2 and CAS-S3 new cases; CAS-S4 and CAS-S19 assigned; CAS-S6 an assessing case with a saved assessment plus a signoff case with actions; CAS-S7 implementing; CAS-S8 implementing with one open action and no evidence; CAS-S9 signoff requested by the roster's owner-plus-approver; CAS-S10 signoff requested by the owner; CAS-S11 closed with its full trail and case_transition rows; CAS-S15 assigned, owned by the owner-plus-approver; one dismissed case; tenant B's lead (its So what unconfirmed) for the tenant B compliance officer (J-2) so HOM-S1's tenant A lead is never disturbed. Use roster logins only. Evidence rows are c9-evidence's."
+ },
+ {
+  "package": "c10-notify-and-prefs",
+  "title": "notify(): the one writer of notifications, and each person's preferences and unread count",
+  "goal": "Every producer calls one notify() that checks membership, read permission and preferences, and /me carries preferences and an unread count.",
+  "requirement_ids": [
+   "COL-02",
+   "COL-04"
+  ],
+  "scenario_ids": [
+   "COL-S13"
+  ],
+  "files_owned": [
+   "backend/apps/collab/logic.py",
+   "backend/apps/collab/subjects.py",
+   "backend/apps/collab/tests_notify.py",
+   "backend/apps/identity/schemas.py",
+   "backend/apps/identity/me_logic.py",
+   "backend/apps/identity/api.py",
+   "backend/apps/identity/tests_policies.py",
+   "backend/apps/identity/tests_me_counts.py",
+   "backend/apps/home/tasks.py",
+   "backend/apps/home/tests_briefing.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/tests_hardening.py",
+   "backend/apps/collab/app.md",
+   "backend/apps/collab/tests_scenarios.py",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "c10-collab-models",
+   "c8-retire-applicability-request",
+   "x-hardening-inputs-ask",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "notify() raises NotInTransaction outside a transaction, writes one row per person per event, only for active members who can read the subject, never muting escalation; a registry test fails on a row missing permission, lookup or title; COL-S13 written and un-skipped; unreadNotifications pinned as one query; one-writer guard in tests_hardening.",
+  "brief": "Read R2_CROSS_CUTTING.md and CHUNK10_TASKS.md. notify(tenant, kind, subject kind and id, candidates with reasons) in collab/logic.py: active membership, the subject's read permission from collab/subjects.py, one row per person per event, preferences read per recipient (absent key means on; escalation never muted), title resolved per recipient locale from the registry (a record title, never tenant free text), rows written in the caller's transaction; ids only in logs. subjects.py rows: obligation (library.read), change_case (cases.read, titled by the change's library title). MembershipNotificationPrefs {weeklyDigest, reminders, mentions, assignments, weeklyBriefing}, booleans default true, unknown key 422; GET /me returns notificationPrefs; PATCH /me accepts a partial object with one audit event; MeCounts.unreadNotifications. home/tasks._recipients honours weeklyBriefing. Write COL-S13 (heading, Gherkin, test) and un-skip it with escalation proven through notify(kind=escalation). Must merge before chunk 9 triage and sign-off."
+ },
+ {
+  "package": "c10-collab-contract",
+  "title": "The eight collab operations declared, gated and documented",
+  "goal": "collab/api.py declares notifications, comments and my comments answering 501 behind their gates.",
+  "requirement_ids": [
+   "COL-01",
+   "COL-02",
+   "HOM-05"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/collab/api.py",
+   "backend/apps/collab/schemas.py",
+   "backend/apps/collab/inbox.py",
+   "backend/apps/collab/comments.py",
+   "backend/apps/collab/me_comments.py",
+   "backend/apps/collab/tests_contract.py"
+  ],
+  "shared_files": [
+   "backend/config/api.py",
+   "backend/apps/shared/permissions.py",
+   "docs/inputs/INPUT_DELTAS.md",
+   "backend/scripts/contract_drift_pending.txt",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "c10-collab-models",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "Router mounted; 401, 403 for an enrolment session, 403 with requiredPermission before the 501, 422 for a bad 'about'; api docs gate passes.",
+  "brief": "Read R2_CROSS_CUTTING.md. listNotifications, markNotificationRead, markAllNotificationsRead, listComments, addComment (response carries undeliveredMentions[{id, name}]), editComment, deleteComment, listMyComments (about=written|mentioned, permissionLimitedKinds). Shared pagination. UNGATED_BY_DESIGN: SELF for the notification routes and GET /me/comments; LOGIC_GATE for GET and POST /comments; PATCH and DELETE carry comments.write. INPUT_DELTAS section 7 rows (page shape, canEdit/canDelete, undeliveredMentions, 422 unsupported_subject); a drift line for GET /me/comments. Participant routes are c8-participants'."
+ },
+ {
+  "package": "c10-mail-catalog",
+  "title": "Collab mail in English and Swedish, sent once per day per template",
+  "goal": "collab/mail.py composes typed mails and the delivery task records each send so a second run is silent.",
+  "requirement_ids": [
+   "COL-02"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/collab/mail.py",
+   "backend/apps/collab/mail_strings/__init__.py",
+   "backend/apps/collab/mail_strings/en.py",
+   "backend/apps/collab/mail_strings/sv.py",
+   "backend/apps/collab/tasks.py",
+   "backend/apps/collab/tests_mail.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/tests_celery_registration.py"
+  ],
+  "depends_on": [
+   "c10-collab-models",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "en and sv share one key set; context is typed (title, date, count, name, link); the English fallback logs the key only; a second send the same day does nothing; a failed send keeps its status; no address, subject or body logged.",
+  "brief": "Read R2_CROSS_CUTTING.md, home/mail.py and identity/mail.py's on_commit pattern and D-54's host guard. Templates due_soon, overdue, review_due, escalation, weekly_digest plus header and footer. The delivery task writes email_message (template, subject, tenant-local sent_on) in the send's transaction. Only reminders, escalation and the digest go by mail (CHUNK10 default)."
+ },
+ {
+  "package": "c10-case-triage-due",
+  "title": "A new case knows when triage is due",
+  "goal": "change_case.triage_due_at is set at creation from the tenant's triage target and backfilled for open new cases.",
+  "requirement_ids": [
+   "COL-02"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/cases/models.py",
+   "backend/apps/cases/migrations/0004_triage_due_at.py",
+   "backend/apps/cases/creation.py",
+   "backend/apps/cases/tests_creation.py"
+  ],
+  "shared_files": [],
+  "depends_on": [
+   "c10-workflow-policy",
+   "c9-case-models",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "S",
+  "acceptance": "Creation sets triage_due_at from triage_target_hours; the migration backfills open 'new' cases; cases suite green.",
+  "brief": "Read R2_CROSS_CUTTING.md. Add nullable change_case.triage_due_at; set it in cases/creation.py; backfill in the migration. Reminders read it only while the case is new (c10-reminders-core)."
+ },
+ {
+  "package": "c10-tag-filters-and-limits",
+  "title": "The obligation row's R2 fields: the bank's tags and filters, 'private to us', no pending marker; every string filter bounded",
+  "goal": "Obligations carry tenantTags and privateToUs and filter by library and tenant tags, D-75's void pendingApplicability is gone from API and frontend, and string filters have a length limit (H27).",
+  "requirement_ids": [
+   "VOC-08",
+   "INV-02",
+   "INV-03",
+   "FP-03",
+   "REG-01",
+   "INV-07"
+  ],
+  "scenario_ids": [
+   "INV-S3"
+  ],
+  "files_owned": [
+   "backend/apps/library/api.py",
+   "backend/apps/library/reading.py",
+   "backend/apps/library/schemas.py",
+   "backend/apps/library/tests_tag_filters.py",
+   "backend/apps/library/tests_reading.py",
+   "frontend/src/features/library/api.ts",
+   "frontend/src/features/library/api.test.ts",
+   "frontend/src/features/library/types.ts",
+   "frontend/src/features/library/obligation-presentation.ts",
+   "frontend/src/features/library/obligation-presentation.test.ts",
+   "frontend/src/components/inventory/ObligationRow.tsx",
+   "frontend/src/components/inventory/InventoryScreen.test.tsx",
+   "frontend/src/components/inventory/InstrumentScreen.test.tsx",
+   "frontend/src/app/dev/pills/samples.ts"
+  ],
+  "shared_files": [
+   "docs/inputs/INPUT_DELTAS.md",
+   "docs/plans/briefs/HARDENING.md",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts",
+   "frontend/src/messages/library/en.json",
+   "frontend/src/messages/library/sv.json"
+  ],
+  "depends_on": [
+   "c10-tagging-routes",
+   "x-hardening-inputs-ask",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "tenantTags read in one query per page (pinned for 20); 'tag' and 'tenantTag' filters answer 422 unknown_key per missing key; an API key with no tenant gets no tenantTags, privateToUs false and 422 unknown_filter; tenant A's tags never reach B as cw_app; max_length=80 on every string filter with a 422 test; pendingApplicability and 'Change waiting for approval' appear nowhere in backend/apps or frontend/src; library fence green; frontend lint, typecheck, test:coverage, check:messages and build pass.",
+  "brief": "Read R2_CROSS_CUTTING.md (rule k). Backend: add tenantTags[{key, kind, label}] to the obligation list row and detail; filters tag (library) and tenantTag (tenant) as lists; add privateToUs to obligation and instrument rows and details (true when owner_tenant is the caller's bank, else false; false for a key with no tenant; always false until OWN records exist); remove pendingApplicability from the obligation schema, its sample and reading (D-75 voids it). H27: max_length=80 on instrument, dutyType, regime and each term[] item on GET /obligations and GET /instruments, stated in descriptions. Close the INPUT_DELTAS tag-filter row and update H27. Frontend, compile only and no new screen: drop pendingApplicability and changeWaitingForApproval from features/library types.ts, api.ts and its test, obligation-presentation.ts and its test, ObligationRow.tsx's factsOf, InventoryScreen.test.tsx, InstrumentScreen.test.tsx and app/dev/pills/samples.ts, and remove the pill.changeWaitingForApproval message keys; add tenantTags and privateToUs to the types and to factsOf as data only (rendering is c10-fe-bulk-tagging's and d89-fe-private's). The integrator regenerates the pill gallery baseline. The register overlay is c8-inventory-overlay's (W4). Run the library suite and the frontend gates (D-67)."
+ },
+ {
+  "package": "c10-fe-workflow-policy",
+  "title": "The workflow policy page for admins",
+  "goal": "/admin/workflow shows and saves the bank's workflow policy.",
+  "requirement_ids": [
+   "COL-02",
+   "TEN-01"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "frontend/src/app/(tenant)/admin/workflow/page.tsx",
+   "frontend/src/features/workflow-policy/",
+   "frontend/src/messages/workflow/en.json",
+   "frontend/src/messages/workflow/sv.json"
+  ],
+  "shared_files": [
+   "frontend/src/shared/navigation/registry.ts",
+   "frontend/src/shared/i18n/messages.ts"
+  ],
+  "depends_on": [
+   "c10-workflow-policy",
+   "c10-cards-notifications-workflow",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "Each field shows unit and platform default and saves through PATCH /tenant/workflow; a 422 renders per field from its code; without workflow.manage the page is restricted and has no nav entry; frontend gates pass.",
+  "brief": "Read R2_CROSS_CUTTING.md and admin-workflow.html. Build the page in its own features/workflow-policy directory (api, hooks, types, WorkflowPolicyScreen with tests), registry entry under Admin, catalogs registered."
+ },
+ {
+  "package": "c11-agents-contract",
+  "title": "Every chunk 11 agent operation declared: console definitions and settings, the bank's own agents, budget, requests",
+  "goal": "agents/api.py declares all console and tenant agent operations behind their gates; the platform fence function is real.",
+  "requirement_ids": [
+   "AGT-03",
+   "AGT-04",
+   "AGT-05",
+   "ADM-02"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/agents/api.py",
+   "backend/apps/agents/schemas.py",
+   "backend/apps/agents/definitions.py",
+   "backend/apps/agents/platform.py",
+   "backend/apps/agents/tenant_agents.py",
+   "backend/apps/agents/control.py",
+   "backend/apps/agents/budget.py",
+   "backend/apps/agents/requests.py",
+   "backend/apps/agents/platform_read.py",
+   "backend/apps/agents/runs_read.py",
+   "backend/apps/agents/tests_contract.py"
+  ],
+  "shared_files": [
+   "backend/apps/agents/app.md",
+   "backend/apps/shared/permissions.py",
+   "backend/apps/governance/tests_scenarios.py",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "c11-agent-models",
+   "x-hardening-agent-runs",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "Per route: 401 anonymous, 403 with requiredPermission, 403 for every API key and (console) every tenant session, step_up_required before the 501; PlatformWatchItem field set pinned; /tenant/ id routes 404 across tenants; api docs gate passes.",
+  "brief": "Read R2_CROSS_CUTTING.md, agents/app.md, ADR 0053. Console (agent_definitions.manage): extend the existing GET /agent-definitions with scope and version fields (no second list), getAgentDefinition, publishAgentVersion and retireAgentVersion (step-up), get/updatePlatformAgentSettings (update step-up), listPlatformRuns; add them to governance's PLATFORM_ROUTE_REQUESTS. Tenant (agents.manage, SessionAuth only): listTenantAgents, createTenantAgent, updateTenantAgent, runTenantAgentNow, pauseTenantAgent, resumeTenantAgent, interruptAgentRun, getAgentBudget, putAgentBudget, listResearchRequests, createResearchRequest, getResearchRequest; listPlatformWatch (watch.read; exactly key, name, purpose, jurisdictions, cadence, nextRunAt, lastRun{finishedAt, status}); createRetagRequest (POST /console/research-requests, proposals.review). GET /agent-runs gains tenantAgentId, mine and cost/trigger/requestedBy/interruptedAt fields. Stubs raise 501; /tenant/ id stubs load under RLS first. platform.py: implement refuse_platform_agent(agent) now (403 naming agent_definitions.manage for a platform agent) so tenant logic can call it. Reword AGT-S5, AGT-S6, AGT-S11 in app.md to the split (the bank's own agent; bleqq's watch unaffected; a platform run reads no tenant row)."
+ },
+ {
+  "package": "c11-runner-and-definitions",
+  "title": "The runner seam speaks in validated events, and the bank-addable definition ships",
+  "goal": "Runners report only RunnerEvents applied through record(), and tenant-source-watch v1 plus scoped platform definitions are seeded.",
+  "requirement_ids": [
+   "AGT-03",
+   "AGT-04",
+   "AGT-06"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/shared/adapters/agent_runner.py",
+   "backend/apps/agents/runner_events.py",
+   "backend/apps/agents/tests_runner_events.py",
+   "backend/agents/watch-sweeper/v1/definition.yaml",
+   "backend/agents/library-confirmer/v2/definition.yaml",
+   "backend/agents/tenant-source-watch/v1/",
+   "backend/agents/README.md",
+   "backend/apps/agents/seeds/__init__.py",
+   "backend/apps/agents/seeds/definition.py",
+   "backend/apps/agents/tests_definition_files.py"
+  ],
+  "shared_files": [],
+  "depends_on": [
+   "c11-agent-models",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "RunHandle carries a RunStatus kind (with interrupted); poll() and RunnerEvent exist; an event for a finished run or the wrong zone is refused; error text stored, never logged; MockAgentRunner deterministic by run id; ManagedAgentsRunner still raises with D-54/ADR 0047 pinned; boot refuses AGENT_RUNNER=mock outside test (test); the tenant definition's tools reach no library-writing key scope; a second seed changes nothing.",
+  "brief": "Read R2_CROSS_CUTTING.md, ADR 0047, D-54. Runner: one function in runner_events.py applies an event in one transaction through record(); an event carries the run id and the zone is the run's, never the event's. Definitions: add scope, tenant_configurable, model and change_note to shipped platform definitions (sweeper still draft: edit v1), extend the reader and its PyYAML cross-check; ship backend/agents/tenant-source-watch/v1 (scope tenant, tenant_configurable true, writes_to tenant, a tool list with no library-writing operation, prompt.md, evals/README.md). The seed writes an AgentVersion row for an agent's first version only; later folders arrive through publish. New Agent columns seeded inside library_write() with an audit event each. No config change."
+ },
+ {
+  "package": "c11-proposal-batches-create",
+  "title": "File and read a batch proposal; decide is declared",
+  "goal": "createProposalBatch and getProposalBatch work and decideProposalBatch is declared at 501.",
+  "requirement_ids": [
+   "PRO-04",
+   "AGT-05"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/proposals/api.py",
+   "backend/apps/proposals/schemas.py",
+   "backend/apps/proposals/batch.py",
+   "backend/apps/proposals/tests_batch.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/permissions.py",
+   "backend/apps/governance/tests_scenarios.py",
+   "backend/config/settings.py",
+   ".env.example",
+   "docs/runbooks/RAILWAY_VARIABLES.md",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "c11-proposal-batches-model",
+   "x-hardening-proposals",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "A batch is one proposal with rows whose before comes from live obligation_term; payload validated (live terms, no mirrored jurisdiction term, the standards rule); PROPOSAL_BATCH_MAX_ROWS enforced; the queue shows a batch as one entry; decide answers 501 behind proposals.review + step-up; api docs gate passes.",
+  "brief": "Read R2_CROSS_CUTTING.md. POST /proposal-batches (a proposals.review session, or a platform key with proposals:write naming its open run), GET /proposal-batches/{id}, POST /proposal-batches/{id}/decide (stub 501, c11-proposal-batches-decide fills batch.py's decide). ObligationScopePayload named schema; Proposal schema gains isBatch and rowCount. Expose batch.create_batch() as the one writer (retag and the seed use it). Route lists and PLATFORM_ROUTE_REQUESTS entries. No tenant session or tenant key reaches either write."
+ },
+ {
+  "package": "c11-session-policy",
+  "title": "A bank's session limits apply to its sessions",
+  "goal": "Idle and absolute session limits come from the bank's security policy, capped by platform maximums.",
+  "requirement_ids": [
+   "ID-08"
+  ],
+  "scenario_ids": [
+   "ID-S17"
+  ],
+  "files_owned": [
+   "backend/apps/identity/session_logic.py",
+   "backend/apps/identity/tests_session_policy.py"
+  ],
+  "shared_files": [
+   "backend/apps/identity/tests_scenarios.py",
+   "backend/apps/identity/app.md"
+  ],
+  "depends_on": [
+   "c8-org-models",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "S",
+  "acceptance": "create_session, refresh and cookie max_age (session_logic.py) read the policy (defaults without a row); a lowered limit applies at the next refresh; ID-S17 un-skipped except its 422 line (c11-security-policy-routes adds it); ID-08 cell in_progress.",
+  "brief": "Read R2_CROSS_CUTTING.md. Read SecurityPolicy (tenants 0002) for idle minutes and absolute hours, never above SESSION_*_MAX. Keep: no passwords; session security unchanged otherwise."
+ },
+ {
+  "package": "acc-foundation",
+  "title": "Agent access entries and credential kinds as data",
+  "goal": "AgentAccess and its scope joins exist, api_key knows service and personal credentials, and the new permissions and scopes are code.",
+  "requirement_ids": [
+   "ACC-01",
+   "ACC-02",
+   "ACC-03",
+   "ACC-09"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/agents/models.py",
+   "backend/apps/agents/migrations/0006_agent_access.py",
+   "backend/apps/agents/tests_agent_access_models.py",
+   "backend/apps/identity/models.py",
+   "backend/apps/identity/migrations/0007_credential_kinds.py",
+   "backend/apps/identity/tests_credential_model.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/permissions.py",
+   "backend/apps/shared/kinds.py",
+   "backend/apps/shared/tests_rls.py",
+   "backend/apps/shared/tests_seed_integrity.py",
+   "backend/config/settings.py",
+   ".env.example",
+   "docs/runbooks/RAILWAY_VARIABLES.md"
+  ],
+  "depends_on": [
+   "c8-org-models",
+   "c8-vocab-lists-rules",
+   "c11-agent-models",
+   "c8-retire-applicability-request",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "cw_app tests: tenant B sees no entry; cross-tenant org unit or product refused; CHECKs on personal tokens and entry-bound keys proven; existing keys migrate to service; ensure_system_roles grants the new permissions; agents, identity and shared suites green.",
+  "brief": "Read R2_CROSS_CUTTING.md, AGENT_ACCESS.md, D-70 to D-77, ADRs 0055-0057. AgentAccess(TenantModel): name, purpose, owner_team (composite FK to team), tenant_reach default false, active, revoked_at/by, created_by, version, ordering [name, id]; AgentAccessDepartment and AgentAccessProduct joins with composite FKs, unique; forced RLS. api_key: kind (tier-one CredentialKind service|personal; existing rows service), agent_access (nullable composite FK), acts_as_user; CHECKs: a personal token needs tenant, user and expiry and no agent; an entry-bound key needs a tenant. LoginMethod personal_token; events token_created, token_used, token_revoked, credential_rate_limited. permissions.py: AGENT_ACCESS_MANAGE (Admin), TOKENS_CREATE (Admin, Compliance officer, Owner) with descriptions in TENANT_PERMISSIONS and SYSTEM_ROLES; AGENT_ACCESS_SCOPES = library:read, search:read, upcoming:read, tenant:read (none writes). Settings AGENT_ACCESS_KEY_MAX_DAYS=90, PERSONAL_TOKEN_MAX_DAYS=90, AGENT_ACCESS_RATE_PER_MINUTE with env overrides."
+ },
+ {
+  "package": "x-jurisdictions-by-proposal",
+  "title": "Jurisdictions change by proposal, with the mirrored scope term following (ADM-02)",
+  "goal": "Jurisdiction rows gain versions and machine-confirmed provenance and are relabelled, retired or restored through proposals; H28 closes.",
+  "requirement_ids": [
+   "ADM-02",
+   "VOC-07",
+   "FP-04",
+   "I18N-01"
+  ],
+  "scenario_ids": [
+   "ADM-S18"
+  ],
+  "files_owned": [
+   "backend/apps/library/models.py",
+   "backend/apps/library/migrations/0011_jurisdiction_provenance.py",
+   "backend/apps/shared/migrations/0010_jurisdiction_proposal_door.py",
+   "backend/apps/taxonomy/registry.py",
+   "backend/apps/proposals/apply.py",
+   "backend/apps/proposals/logic.py",
+   "backend/apps/shared/tests_library_db_guard.py",
+   "backend/apps/proposals/tests_apply.py"
+  ],
+  "shared_files": [
+   "backend/apps/taxonomy/tests_vocabulary.py",
+   "backend/apps/governance/app.md",
+   "backend/apps/governance/tests_scenarios.py",
+   "frontend/tests/e2e/governance.journey.spec.ts",
+   "docs/DECISIONS.md",
+   "docs/plans/briefs/HARDENING.md"
+  ],
+  "depends_on": [
+   "x-hardening-proposals",
+   "c8-recurring-duty-library",
+   "c10-workflow-policy",
+   "c8-vocab-lists-rules",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "jurisdiction is proposable through vocabulary_relabel, retire and restore; apply updates the mirrored term in the same transaction; a jurisdiction's key never changes; H28 refusals tested (mirrored term_dimension 422 at propose and apply; merge with usage but no links refused; retired merge target 409 invalid_transition); ADM-S18 written, test un-skipped, journey test.fixme; D-94 written; security review of the door change.",
+  "brief": "Read R2_CROSS_CUTTING.md, D-79, D-83, ADR 0058. Give Jurisdiction LibraryVocabulary's version and provenance columns (an agent's confirmation names both agents and never reads as a person's); open the proposal door on jurisdiction and jurisdiction_label (D-94 amends D-83; the seed door stays); stable keys never change, only labels, retirement and restoration; languages stay a read-only seeded list (default, pending Alex). Add ADM-S18 `@integration` `@e2e` to governance/app.md. x-console-jurisdictions-fe builds the screen and un-fixmes the journey."
+ },
+ {
+  "package": "d89-no-ai-index",
+  "title": "A bank's own record never reaches the index or a model",
+  "goal": "The indexer and the model wrapper refuse owned records, proven before R2 adds any.",
+  "requirement_ids": [
+   "INV-07",
+   "OWN-04"
+  ],
+  "scenario_ids": [
+   "INV-S13"
+  ],
+  "files_owned": [
+   "backend/apps/search/indexing.py",
+   "backend/apps/shared/ai.py",
+   "backend/apps/search/tests_private_index.py",
+   "backend/apps/shared/tests_ai_private.py"
+  ],
+  "shared_files": [
+   "backend/apps/library/tests_scenarios.py",
+   "backend/apps/library/app.md"
+  ],
+  "depends_on": [
+   "r2-spec-d89"
+  ],
+  "wave": 2,
+  "size": "S",
+  "acceptance": "The indexer skips owned rows and their children; shared/ai.py refuses a call whose subject is owned; find-similar is shared-only; INV-S13 un-skipped without its exit clause; library and search suites green.",
+  "brief": "Read R2_CROSS_CUTTING.md, D-57, ADR 0050. Owned instruments and obligations exist since R1 (owner_tenant, 'shared or mine'). Prove and enforce the three refusals; a private record gets no AI-drafted text. Hardening of an existing invariant, valid whatever Alex says on OWN."
+ },
+ {
+  "package": "r2-banking-groups-brief",
+  "title": "The banking-group planning brief (D-69), design only",
+  "goal": "D-69 has its own planning brief, written against chunk 8's real organisation tables so its later build is additive.",
+  "requirement_ids": [
+   "TEN-02"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "docs/plans/briefs/BANKING_GROUPS.md"
+  ],
+  "shared_files": [
+   "docs/DECISIONS.md",
+   "docs/TODO_FOR_alex.md"
+  ],
+  "depends_on": [
+   "c8-org-models",
+   "r2-plan-docs"
+  ],
+  "wave": 2,
+  "size": "M",
+  "acceptance": "BANKING_GROUPS.md covers every item below and lists every footprint_of caller by file; D-96 exists; any change the brief finds chunk 8 must make now is a TODO or HARDENING row, not a code edit; no code changed.",
+  "brief": "Docs only; D-69 asks for a planning pass of its own, not a slice of another package. Read D-69, D-70, AGENT_ACCESS.md (the model for a brief), the merged tenants models from c8-org-models and taxonomy's footprint_of. Write: per-entity narrowing (narrowing only, never widening); the membership entity-scope axis; what each footprint_of caller and each ACC scope does with an entity; whether narrowing needs FP-02's four eyes and step-up; the entity switcher; what OrgUnit and Membership must carry so the build is additive; the task list. Record D-96: the brief now, the build after R2 unless Alex promotes it (pending his answer)."
+ }
+]
