@@ -105,8 +105,7 @@ class RoadmapContents(TestCase):
         cls.passed = cases_build.case(cls.tenant, a_change(key_date=GONE, title="Yesterday"))
         cls.undated = cases_build.case(cls.tenant, a_change(key_date=None, title="No date yet"))
         for case, status in ((cls.closed, CaseStatusCategory.CLOSED), (cls.dismissed, CaseStatusCategory.DISMISSED)):
-            tenancy.activate(cls.tenant.id)
-            ChangeCase.objects.filter(pk=case.pk).update(status=status.value)
+            cases_build.in_category(case, status)
 
     def read(self, **filters: Any) -> Any:
         """The roadmap as this bank reads it at the frozen instant."""
