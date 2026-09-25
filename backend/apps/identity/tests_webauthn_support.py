@@ -52,6 +52,10 @@ class SoftwareAuthenticator:
         self.credential_id = secrets.token_bytes(16)
         self.user_handle: bytes | None = None
         self.sign_count = 0
+        # The backup flags it reports, a synced passkey by default; a test flips them to
+        # play an authenticator whose eligibility or backup state changed.
+        self.backup_eligible = True
+        self.backed_up = True
 
     # --- pieces ---------------------------------------------------------------------------
     @property
@@ -65,6 +69,9 @@ class SoftwareAuthenticator:
     def _client_data(self, kind: str, challenge_b64: str) -> bytes:
         return json.dumps({"type": kind, "challenge": challenge_b64, "origin": self.origin, "crossOrigin": False}).encode()
 
+    def _backup_flags(self) -> int:
+        return (FLAG_BE if self.backup_eligible else 0) | (FLAG_BS if self.backed_up else 0)
+
     def _rp_hash(self) -> bytes:
         return hashlib.sha256(self.rp_id.encode()).digest()
 
@@ -72,7 +79,7 @@ class SoftwareAuthenticator:
     def register(self, options: dict[str, Any]) -> dict[str, Any]:
         """Answer `navigator.credentials.create()` for the given creation options."""
         self.user_handle = b64url_decode(options["user"]["id"])
-        flags = FLAG_UP | FLAG_UV | FLAG_BE | FLAG_BS | FLAG_AT
+        flags = FLAG_UP | FLAG_UV | FLAG_AT | self._backup_flags()
         auth_data = (
             self._rp_hash()
             + bytes([flags])
@@ -100,7 +107,7 @@ class SoftwareAuthenticator:
     def assert_(self, options: dict[str, Any], *, wrong_key: bool = False) -> dict[str, Any]:
         """Answer `navigator.credentials.get()` for the given request options."""
         self.sign_count += 1
-        flags = FLAG_UP | FLAG_UV | FLAG_BE | FLAG_BS
+        flags = FLAG_UP | FLAG_UV | self._backup_flags()
         auth_data = self._rp_hash() + bytes([flags]) + self.sign_count.to_bytes(4, "big")
         client_data = self._client_data("webauthn.get", options["challenge"])
         signer = ec.generate_private_key(ec.SECP256R1()) if wrong_key else self.key

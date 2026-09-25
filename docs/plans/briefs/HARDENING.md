@@ -109,3 +109,20 @@ merge's too), in the same transaction.
 Tests: a library merge with one twin names the moved ids and the dropped twin's id in its
 audit row; the same for a tenant tag merge. Gates: `apps.proposals apps.watch apps.taxonomy`
 with the guard suites, ruff, mypy, compliance lint. Security review before merge.
+
+## c11-backup-eligible-flag: the backup-eligibility check for every bank (ADR 0048 tranche 1, ID-07)
+
+**Built 2026-09-25** in `passkey_logic._verify_assertion`, which both sign-in and step-up go
+through. Backup eligibility (BE) is fixed when a passkey is created, so an assertion whose BE
+flag differs from `webauthn_credential.backup_eligible` is refused (WebAuthn Level 3 section
+6.1.3): sign-in answers 401 `signin_failed` and step-up 400 `step_up_failed`, each with a
+security-log row whose reason is `backup_eligibility_changed`, for every bank, since the check
+reads no tenant setting. A refused step-up records no assertion, so the action that asked for it
+still answers `step_up_required` and does nothing. Backup state (BS) may change over a passkey's
+life and is stored from each verified assertion. An assertion with BS set and BE unset used to
+raise py_webauthn's `InvalidBackupFlags` uncaught (500); it is now a refused assertion with the
+reason `invalid_backup_flags`. No assertion blob reaches a log line, a security-log row or the
+audit trail. `factories.passkey` now stores BE and BS set, as registration does for the
+multi-device passkey it describes. Tests: `apps/identity/tests_backup_flag.py`, red before the
+fix. Left to `c11-credential-policy`: the tenant credential policy itself, and its tests of this
+refusal "in a tenant of either policy" once the policy field exists.
