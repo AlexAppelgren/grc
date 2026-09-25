@@ -270,7 +270,7 @@ class SeededTreeBudget(OrganisationCase):
         super().setUpTestData()
         head = factories.member_user(cls.tenant)
         group = factories.department(cls.tenant)
-        entity = factories.legal_entity(cls.tenant, parent=group, head=head)
+        entity = factories.seeded_legal_entity(cls.tenant, parent=group, head=head)
         for _ in range(settings.API_PAGE_SIZE_MAX):
             factories.department(cls.tenant, parent=entity, head=head)
 

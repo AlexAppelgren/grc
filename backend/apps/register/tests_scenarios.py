@@ -94,24 +94,67 @@ class StatusWorld:
         self.case.assertEqual(response.status_code, 200, response.content)
         return response.json()
 
+from apps.library import testing as library_build
+from apps.register.applicability import APPLICABILITY_SET, entities_spanned
+from apps.register.models import TenantObligation, TenantObligationScope
+from apps.register.tests_applicability import Bank, banks_duty, seed_library
+from apps.shared import tenancy
+from apps.shared.models import AuditEvent
+from apps.shared.testing import sign_in
+from apps.taxonomy.models import ComplianceStatus, FootprintTerm
+
 
 class RegisterScenarioTests(TestCase):
     """Scenario tests for apps.register, one method per @integration scenario."""
 
-    @skip("pending: REG-S1")
     def test_reg_s1(self) -> None:
         """REG-S1
 
         One compliance person sets applicability after confirming it (REG-01).
         Operations: `setApplicability`.
-        """
 
-    @skip("pending: REG-S2")
+        The dialog, its confirm and its cancel are the screen's, proved by the journey; here
+        the confirmed call stores the answer at once, with no step-up, and one audit event.
+        """
+        seed_library()
+        a = Bank("reg-s1")
+        duty = banks_duty()
+        before = AuditEvent.objects.filter(action=APPLICABILITY_SET).count()
+        response = self.client.put(
+            f"/api/v1/obligations/{duty.id}/applicability",
+            data={"orgUnitId": str(a.bank_ab.id), "applicability": "not_applicable", "reason": "No client money held"},
+            content_type="application/json",
+            **sign_in(a.officer, tenant=a.tenant),
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual((response.json()["applicability"], response.json()["reason"]), ("not_applicable", "No client money held"))
+        tenancy.activate(a.tenant.id)
+        scope = TenantObligationScope.objects.get(tenant_obligation__obligation=duty, org_unit=a.bank_ab)
+        self.assertEqual((scope.applicability, scope.applicability_reason), ("does_not_apply", "No client money held"))
+        [event] = AuditEvent.objects.filter(action=APPLICABILITY_SET)[before:]
+        self.assertEqual((event.actor_id, event.actor_label, event.step_up_assertion_id), (a.officer.id, "Sara Lind", None))
+        self.assertEqual(event.before["applicability"], "under_assessment")
+        self.assertEqual((event.after["applicability"], event.after["reason"]), ("not_applicable", "No client money held"))
+
     def test_reg_s2(self) -> None:
         """REG-S2
 
         Only a holder of applicability.approve sets applicability (REG-01).
         """
+        seed_library()
+        a = Bank("reg-s2")
+        duty = banks_duty()
+        response = self.client.put(
+            f"/api/v1/obligations/{duty.id}/applicability",
+            data={"applicability": "applies", "reason": "Client money"},
+            content_type="application/json",
+            **sign_in(a.owner, tenant=a.tenant),
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["requiredPermission"], "applicability.approve")
+        tenancy.activate(a.tenant.id)
+        self.assertFalse(TenantObligation.objects.exists())
+        self.assertFalse(AuditEvent.objects.filter(action=APPLICABILITY_SET).exists())
 
     def test_reg_s3(self) -> None:
         """REG-S3
@@ -270,13 +313,51 @@ class RegisterScenarioTests(TestCase):
         Yearly attestation and waivers (REG-06).
         """
 
-    @skip("pending: REG-S10")
     def test_reg_s10(self) -> None:
         """REG-S10
 
         Recurring duties appear on the roadmap from recurrence rules (REG-07).
-        Operations: `completeDutyOccurrence`.
+        Operations: `listDuties`, `completeDutyOccurrence`.
+
+        Green up to its roadmap line: the roadmap's duty branch is c8-home-register-feeds',
+        which asserts that step. Here the quarterly duty's occurrence due 2026-12-31 reads back
+        through the duties route, and completing it generates exactly 2027-03-31.
         """
+        import datetime
+
+        from apps.register import duties
+        from apps.register.logic import ensure_register_entry
+        from apps.register.models import DutyOccurrence
+        from apps.shared import factories
+
+        seed_library()
+        a = Bank("reg-s10")
+        law = banks_duty()
+        library_build.recurring_duty(law, title="Quarterly client asset report", rule="FREQ=MONTHLY;BYMONTH=3,6,9,12;BYMONTHDAY=-1")
+        actor = factories.user_actor(label="Sara Lind", user_id=a.officer.id)
+        tenancy.activate(a.tenant.id)
+        entry = ensure_register_entry(tenant_id=a.tenant.id, obligation_id=law.id, actor=actor)
+        # The obligation began to apply at 22:30 UTC on 30 September, 1 October in Stockholm.
+        at = datetime.datetime(2026, 9, 30, 22, 30, tzinfo=datetime.UTC)
+        duties.schedule_first(tenant=a.tenant, actor=actor, targets=[(entry, None)], at=at)
+
+        headers = sign_in(a.officer, tenant=a.tenant)
+        [item] = self.client.get(f"/api/v1/obligations/{law.id}/duties", **headers).json()["items"]
+        occurrence = item["nextOccurrence"]
+        self.assertEqual((item["title"], occurrence["dueDate"], occurrence["status"]), ("Quarterly client asset report", "2026-12-31", "upcoming"))
+        # When the roadmap for Q4 2026 is read, the duty appears with "Our deadline":
+        # asserted by c8-home-register-feeds, which builds the roadmap's duty branch.
+
+        response = self.client.post(
+            f"/api/v1/duty-occurrences/{occurrence['id']}/complete", data={}, content_type="application/json", **headers
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual((response.json()["completed"]["status"], response.json()["next"]["dueDate"]), ("done", "2027-03-31"))
+        tenancy.activate(a.tenant.id)
+        self.assertEqual(
+            sorted((row.due_date.isoformat(), row.status) for row in DutyOccurrence.objects.all()),
+            [("2026-12-31", "done"), ("2027-03-31", "upcoming")],
+        )
 
     def test_reg_s11(self) -> None:
         """REG-S11
@@ -299,12 +380,41 @@ class RegisterScenarioTests(TestCase):
         self.assertEqual(read["statusNote"], "First owner's note.")
         self.assertIsNone(read["system"])
 
-    @skip("pending: REG-S12 (REG-01, chunk 8)")
     def test_reg_s12(self) -> None:
         """REG-S12
 
         A legal entity follows a standard when its applicability is set to "Applies" (REG-01, REG-02).
+
+        The obligation row's worse-of pill is `c8-reg-status`'s read; here the entity
+        statuses it ranks are left as they were.
         """
+        seed_library()
+        a = Bank("reg-s12")
+        standard = library_build.standard()
+        tenancy.activate(a.tenant.id)
+        FootprintTerm.objects.create(tenant=a.tenant, term=library_build.term("standard:iso_iec_27001"))
+        spanned = entities_spanned([standard.id])[standard.id]
+        self.assertEqual({row.name for row in spanned}, {"Example Bank AB", "Example Fonder AB", "Example Liv Försäkring AB"})
+        self.assertFalse(TenantObligationScope.objects.exists(), "reading the span writes no scope row")
+        for entity, value, reason in ((a.bank_ab, "applies", "Certified"), (a.liv, "not_applicable", "Not in the certificate's scope")):
+            response = self.client.put(
+                f"/api/v1/obligations/{standard.id}/applicability",
+                data={"orgUnitId": str(entity.id), "applicability": value, "reason": reason},
+                content_type="application/json",
+                **sign_in(a.officer, tenant=a.tenant),
+            )
+            self.assertEqual(response.status_code, 200, response.content)
+        tenancy.activate(a.tenant.id)
+        rows = {row.org_unit_id: row for row in TenantObligationScope.objects.filter(tenant_obligation__obligation=standard)}
+        self.assertEqual(set(rows), {a.bank_ab.id, a.liv.id}, "Fonder was not answered, so it has no row")
+        bank, liv = rows[a.bank_ab.id], rows[a.liv.id]
+        self.assertEqual((bank.applicability, bank.applicability_reason), ("applies", "Certified"))
+        self.assertIsNotNone(bank.applicability_decided_at)
+        self.assertEqual(liv.applicability, "does_not_apply")
+        default = ComplianceStatus.objects.get(is_default=True)
+        self.assertEqual({row.compliance_status_id for row in rows.values()}, {default.id})
+        entry = TenantObligation.objects.get(obligation=standard)
+        self.assertEqual((entry.applicability, entry.version), ("not_assessed", 1), "the entity answers leave the entry's own answer alone")
 
     @skip("pending: REG-S13 (REG-08, chunk 8)")
     def test_reg_s13(self) -> None:

@@ -92,4 +92,9 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("DELETE", "/actions/{action_id}", "cases.Action", "case_action"),
     ("GET", "/evidence/{evidence_id}/download", "cases.Evidence", "case_evidence"),
     ("DELETE", "/evidence/{evidence_id}", "cases.Evidence", "case_evidence"),
+    # c8-reg-units (REG-08): a Statement of Applicability unit, addressed by its id.
+    ("PATCH", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
+    ("DELETE", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
+    # c8-duty-occurrences (REG-07): a dated duty occurrence, addressed by its id.
+    ("POST", "/duty-occurrences/{occurrence_id}/complete", "register.DutyOccurrence", "duty_occurrence"),
 ]

@@ -320,4 +320,9 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "HOM-05: what produced a row's date - a review, a gap target, a duty, an internal deadline, an action, "
         "a key date, a confirmed link, an applied version or a comment; the date phrase branches on it",
     ),
+    # c8-duty-occurrences (register 0004, REG-07).
+    "DutyStatus": (
+        "duty_status",
+        "REG-07: where a dated duty occurrence stands; completion, the roadmap and Today branch on it",
+    ),
 }
