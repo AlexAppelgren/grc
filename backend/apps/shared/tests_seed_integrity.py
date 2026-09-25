@@ -26,6 +26,7 @@ import re
 from collections import Counter
 from io import StringIO
 from pathlib import Path
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
@@ -1452,3 +1453,159 @@ class SeededCaseJourneys(SeededOnce):
         self.assertIn("cases.signoff", {permission for role in membership.roles.all() for permission in role.permissions})
         self.assertIn("CAS-S9", next(login for login in SEED_LOGINS if login.email == spec.requested_by).reserved_for)
 # --- end c9-e2e-seed ------------------------------------------------------------------------------
+
+
+# --- c10-e2e-seed-comments ------------------------------------------------------------------------
+class SeededComments(SeededOnce):
+    """The comments panel, the inbox, My work and J-8 find seeded comments, an edited and a
+    deleted one, mentions and read and unread notifications, each in the bank of its record
+    (c10-e2e-seed-comments; COL-01, COL-02)."""
+
+    def _activate(self, slug: str) -> Tenant:
+        tenant = Tenant.objects.get(slug=slug)
+        tenancy.activate(tenant.id)
+        return tenant
+
+    def _subject_id(self, spec: Any) -> Any:
+        if spec.subject_type == "change_case":
+            return ChangeCase.objects.get(change__stable_key=spec.subject_key).id
+        return Obligation.objects.get(stable_key=spec.subject_key).id
+
+    def test_each_comment_sits_on_a_record_of_its_own_bank_by_a_person_of_that_bank(self) -> None:
+        from apps.collab import subjects
+        from apps.collab.models import Comment
+        from apps.shared.e2e_seed import EXPECTED_COMMENTS
+
+        roster = {login.email: login for login in SEED_LOGINS}
+        self.assertEqual(len({spec.id for spec in EXPECTED_COMMENTS}), len(EXPECTED_COMMENTS))
+        for spec in EXPECTED_COMMENTS:
+            with self.subTest(comment=spec.id):
+                tenant = self._activate(spec.tenant_slug)
+                comment = Comment.objects.get(pk=spec.id)
+                self.assertEqual((comment.tenant_id, comment.subject_type, comment.subject_id), (tenant.id, spec.subject_type, self._subject_id(spec)))
+                self.assertIsNotNone(subjects.subject(spec.subject_type).lookup(comment.subject_id), "the record is readable in the comment's own bank")
+                self.assertEqual(comment.author.email, spec.author)
+                for email in (spec.author, *spec.mentions):
+                    self.assertEqual(roster[email].tenant_slug, spec.tenant_slug, "every person on a comment is a login of its bank")
+                other = TENANT_B_SLUG if spec.tenant_slug == TENANT_A_SLUG else TENANT_A_SLUG
+                self._activate(other)
+                self.assertFalse(Comment.objects.filter(pk=spec.id).exists(), "another bank never sees the comment")
+
+    def test_the_brief_is_covered(self) -> None:
+        """A case and an obligation in tenant A, a mention of the reader, an edit, a delete,
+        and tenant B's comment on an obligation tenant A also discusses (J-8)."""
+        from apps.shared.e2e_seed import EXPECTED_COMMENTS
+
+        tenant_a = [spec for spec in EXPECTED_COMMENTS if spec.tenant_slug == TENANT_A_SLUG]
+        self.assertEqual({spec.subject_type for spec in tenant_a}, {"change_case", "obligation"})
+        self.assertTrue(any("reader@example-bank.test" in spec.mentions for spec in tenant_a))
+        self.assertTrue(any(spec.edited_from for spec in tenant_a))
+        self.assertTrue(any(spec.deleted for spec in tenant_a))
+        (tenant_b,) = [spec for spec in EXPECTED_COMMENTS if spec.tenant_slug == TENANT_B_SLUG]
+        self.assertEqual(tenant_b.subject_type, "obligation")
+        self.assertIn(tenant_b.subject_key, {spec.subject_key for spec in tenant_a if spec.subject_type == "obligation"})
+
+    def test_the_edit_keeps_the_text_it_replaced_and_the_delete_keeps_the_row(self) -> None:
+        from apps.collab.models import Comment, CommentRevision
+        from apps.shared.e2e_seed import EXPECTED_COMMENTS
+
+        for spec in EXPECTED_COMMENTS:
+            with self.subTest(comment=spec.id):
+                self._activate(spec.tenant_slug)
+                comment = Comment.objects.get(pk=spec.id)
+                self.assertEqual(comment.body, spec.body)
+                revisions = list(CommentRevision.objects.filter(comment=comment))
+                if spec.edited_from:
+                    (revision,) = revisions
+                    self.assertEqual((revision.body, revision.edited_by_id, revision.tenant_id), (spec.edited_from, comment.author_id, comment.tenant_id))
+                    self.assertIsNotNone(comment.edited_at)
+                else:
+                    self.assertEqual(revisions, [])
+                    self.assertIsNone(comment.edited_at)
+                self.assertEqual(comment.deleted_at is not None, spec.deleted)
+
+    def test_mentions_notify_who_may_read_the_record_once_read_or_unread(self) -> None:
+        """The reader holds an unread mention on the case and a read one on the obligation; the
+        login whose role reads no case is mentioned on the case and told nothing about any case."""
+        from apps.collab.models import CommentMention, Notification
+        from apps.shared.e2e_seed import EXPECTED_COMMENTS
+
+        seen: dict[str, set[bool]] = {}
+        for spec in EXPECTED_COMMENTS:
+            with self.subTest(comment=spec.id):
+                tenant = self._activate(spec.tenant_slug)
+                subject_id = self._subject_id(spec)
+                mentioned = set(CommentMention.objects.filter(comment_id=spec.id).values_list("user__email", flat=True))
+                self.assertEqual(mentioned, set(spec.mentions))
+                for email in spec.mentions:
+                    permissions = {p for role in Membership.objects.get(tenant=tenant, user__email=email).roles.all() for p in role.permissions}
+                    rows = list(Notification.objects.filter(user__email=email, subject_type=spec.subject_type, subject_id=subject_id, kind="mention"))
+                    reads = "cases.read" if spec.subject_type == "change_case" else "library.read"
+                    if reads not in permissions:
+                        self.assertEqual(rows, [], f"{email} cannot read the record and is told nothing")
+                        continue
+                    (row,) = rows
+                    self.assertEqual(row.tenant_id, tenant.id)
+                    self.assertEqual(row.read_at is not None, email in spec.read_by)
+                    seen.setdefault(email, set()).add(row.read_at is not None)
+        self.assertEqual(seen.get("reader@example-bank.test"), {True, False}, "the reader has a read and an unread mention")
+        self._activate(TENANT_A_SLUG)
+        self.assertTrue(any("library-only@example-bank.test" in spec.mentions and spec.subject_type == "change_case" for spec in EXPECTED_COMMENTS))
+        self.assertFalse(Notification.objects.filter(user__email="library-only@example-bank.test", subject_type="change_case").exists())
+
+    def test_every_moment_is_the_anchor_plus_a_fixed_offset(self) -> None:
+        from apps.collab.models import Comment, CommentRevision, Notification
+        from apps.shared.e2e_seed import COMMENT_DELETED_AFTER, COMMENT_EDITED_AFTER, COMMENT_READ_AFTER, EXPECTED_COMMENTS, case_anchor, comment_moment
+
+        for spec in EXPECTED_COMMENTS:
+            with self.subTest(comment=spec.id):
+                tenant = self._activate(spec.tenant_slug)
+                at = comment_moment(spec, case_anchor(tenant.timezone))
+                comment = Comment.objects.get(pk=spec.id)
+                self.assertEqual(comment.created_at, at)
+                self.assertEqual(comment.edited_at, at + COMMENT_EDITED_AFTER if spec.edited_from else None)
+                self.assertEqual(comment.deleted_at, at + COMMENT_DELETED_AFTER if spec.deleted else None)
+                for revision in CommentRevision.objects.filter(comment=comment):
+                    self.assertEqual(revision.created_at, at + COMMENT_EDITED_AFTER)
+                for row in Notification.objects.filter(subject_id=self._subject_id(spec), user__email__in=spec.mentions, kind="mention"):
+                    self.assertEqual(row.created_at, at)
+                    self.assertEqual(row.read_at, at + COMMENT_READ_AFTER if row.read_at else None)
+                self.assertLess(comment.created_at, case_anchor(tenant.timezone), "a seeded comment is in the past")
+
+    def test_the_seed_block_names_no_literal_date(self) -> None:
+        source = Path(settings.BASE_DIR, "apps", "shared", "e2e_seed.py").read_text(encoding="utf-8")
+        block = source.split("# --- c10-e2e-seed-comments", 1)[1].split("# --- end c10-e2e-seed-comments", 1)[0]
+        self.assertNotRegex(block, r"\d{4}-\d{2}-\d{2}|datetime\.(date|datetime)\(|timezone\.now\(|\.now\(")
+
+    def test_the_trail_is_written_through_record_and_holds_ids_never_text(self) -> None:
+        from apps.shared.e2e_seed import EXPECTED_COMMENTS
+
+        for spec in EXPECTED_COMMENTS:
+            with self.subTest(comment=spec.id):
+                tenant = self._activate(spec.tenant_slug)
+                events = AuditEvent.objects.filter(tenant=tenant, after__commentId=str(spec.id))
+                expected = ["comment.added", *(["comment.edited"] if spec.edited_from else []), *(["comment.deleted"] if spec.deleted else [])]
+                self.assertEqual(sorted(event.action for event in events), sorted(expected))
+                for event in events:
+                    self.assertEqual(event.subject_id, self._subject_id(spec))
+                    self.assertEqual(event.actor_label, "seed_e2e")
+                    for text in filter(None, (spec.body, spec.edited_from)):
+                        self.assertNotIn(text, repr((event.summary, event.subject_title, event.before, event.after)))
+
+    def test_a_reseed_changes_nothing(self) -> None:
+        from apps.collab.models import Comment, CommentMention, CommentRevision, Notification
+
+        def snapshot() -> dict[str, Any]:
+            rows: dict[str, Any] = {}
+            for tenant in Tenant.objects.order_by("slug"):
+                tenancy.activate(tenant.id)
+                rows[tenant.slug] = [
+                    list(model.objects.order_by("id").values()) for model in (Comment, CommentMention, CommentRevision, Notification)
+                ] + [list(AuditEvent.objects.filter(action__startswith="comment.").order_by("id").values("id"))]
+            return rows
+
+        before = snapshot()
+        self.assertTrue(before[TENANT_A_SLUG][0] and before[TENANT_B_SLUG][0])
+        seed_e2e()
+        self.assertEqual(snapshot(), before)
+# --- end c10-e2e-seed-comments --------------------------------------------------------------------
