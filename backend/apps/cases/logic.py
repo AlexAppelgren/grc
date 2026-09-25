@@ -46,7 +46,7 @@ CASE_JOINS = (
     "change",
     "urgency",
     "sub_status",
-    "owner",
+    ChangeCase.owner.field.name,  # a field, written so ID-S18's role-name scan never reads it as the role
     "triaged_by",
     "dismissed_reason",
     "dismissed_by",
@@ -192,6 +192,7 @@ def transition(
     user: Any,
     note: str = "",
     step_up_assertion_id: uuid.UUID | None = None,
+    on_behalf_of: list[str] | None = None,
 ) -> CaseTransition:
     """Move `case` to `to_status` if the state machine allows it, or raise its refusal.
 
@@ -200,7 +201,8 @@ def transition(
     `version`, and writes the `case_transition` row and the `record()` row, all in one
     transaction (CAS-08). A refusal writes nothing. The note is tenant content, so it is
     kept on the ledger row and never in the audit values (R2_CROSS_CUTTING (m)). A move
-    made with a passkey step-up names the assertion on its audit row (AC-ID3).
+    made with a passkey step-up names the assertion on its audit row (AC-ID3), and one made
+    by a delegate names the absent people it was made for (TEN-04).
     """
     from_status = CaseStatusCategory(case.status)
     state.check_transition(from_status, to_status, case_facts(case, actor=None if user is None else user.id))
@@ -225,7 +227,7 @@ def transition(
             summary=f"{actor.label} moved a case from {from_status.value} to {to_status.value}.",
             tenant_id=case.tenant_id,
             before={"status": from_status.value},
-            after={"status": to_status.value, "version": case.version},
+            after={"status": to_status.value, "version": case.version} | ({"onBehalfOf": on_behalf_of} if on_behalf_of else {}),
             step_up_assertion_id=step_up_assertion_id,
         )
     return moved

@@ -22,10 +22,20 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import Principal, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, caller_tenant, if_match
+from apps.taxonomy.http import actor_for, caller_tenant, caller_user, if_match
 from apps.taxonomy.reading import language_order
 from apps.taxonomy.schemas import PersonRef
-from apps.tenants import logic, organisation, people, products, reassignment, security_policy, support_access, teams
+from apps.tenants import (
+    logic,
+    organisation,
+    out_of_office,
+    people,
+    products,
+    reassignment,
+    security_policy,
+    support_access,
+    teams,
+)
 from apps.tenants.schemas import (
     ConsoleReissueBody,
     ConsoleSupportAccessBody,
@@ -34,6 +44,8 @@ from apps.tenants.schemas import (
     ConsoleTenantCreateBody,
     ConsoleTenantPage,
     ConsoleTenantRow,
+    MeOutOfOffice,
+    MeOutOfOfficeBody,
     SecurityPolicyBody,
     SecurityPolicyOut,
     SupportAccessGrant,
@@ -1133,5 +1145,76 @@ def put_security_policy(request: HttpRequest, body: SecurityPolicyBody) -> Secur
             idle_minutes=body.session_idle_minutes,
             absolute_hours=body.session_absolute_hours,
             step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+        )
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# c10-out-of-office: a member's own absence with a delegate (TEN-04, COL-02)
+# ---------------------------------------------------------------------------------------
+@router.get(
+    "/me/out-of-office",
+    response=MeOutOfOffice,
+    auth=SessionAuth(),
+    operation_id="getMyOutOfOffice",
+    by_alias=True,
+    summary="Read your own absence and delegate",
+)
+def get_my_out_of_office(request: HttpRequest) -> MeOutOfOffice:
+    """Returns the caller's own absence in the bank their session belongs to: the last day
+    they are away, the delegate who receives their work meanwhile, and whether the absence
+    is open today on the bank's calendar. Call it when the caller's out-of-office settings
+    open. Nulls and `away: false` mean no absence is set.
+
+    Any signed-in member may read their own; the route names nobody, so no other person's
+    absence can be asked for. It changes nothing and writes nothing to the audit log.
+
+    Errors: `not_found` (404) for a session that belongs to no bank; `unauthenticated` (401)
+    without a session.
+    """
+    return MeOutOfOffice.model_validate(
+        out_of_office.get_out_of_office(tenant=caller_tenant(request), user=caller_user(request))
+    )
+
+
+@router.put(
+    "/me/out-of-office",
+    response=MeOutOfOffice,
+    auth=SessionAuth(),
+    operation_id="putMyOutOfOffice",
+    by_alias=True,
+    summary="Go out of office with a delegate, or come back early",
+)
+def put_my_out_of_office(request: HttpRequest, body: MeOutOfOfficeBody) -> MeOutOfOffice:
+    """Starts the caller's absence, or ends it early, and returns it as it now stands. Send
+    the last day away (today or later, on the bank's calendar) and a delegate to start one;
+    send both as null to end it. From the day the absence starts until its last day, the
+    caller's reminders, escalations, new assignments and sign-off requests go to the
+    delegate instead, marked as sent on the caller's behalf; mentions and the weekly digest
+    stay with the caller. From the next day notices reach the caller again.
+
+    The delegate acts under their own roles and gains no permission: they must be another
+    active member of the bank already holding every approve permission the caller holds,
+    and four eyes still refuses them anything they asked for themself. A person has one
+    absence at a time; to change its dates or delegate, end it first. Any signed-in member
+    may set their own, with no step-up. The change is recorded in the audit log as
+    `out_of_office.set` or `out_of_office.ended`, naming the caller and the delegate, with
+    the date and delegate before and after, in the same transaction as the write.
+
+    Errors: `already_delegated` (409) when an absence is already open;
+    `delegate_cannot_approve` (422) for a delegate whose roles lack an approve permission
+    the caller holds; `validation_error` (422) for a past day, a delegate who is the caller
+    or not an active member of the bank, only one of the two fields, or any other field,
+    naming the field in `errors`; `not_found` (404) for a session that belongs to no bank;
+    `unauthenticated` (401) without a session.
+    """
+    user = caller_user(request)
+    return MeOutOfOffice.model_validate(
+        out_of_office.set_out_of_office(
+            tenant=caller_tenant(request),
+            actor=actor_for(request, user),
+            user=user,
+            until=body.until_date,
+            delegate_id=body.delegate_id,
         )
     )

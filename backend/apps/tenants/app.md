@@ -44,7 +44,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | TEN-01 | Tenant profile, timezone, default languages, onboarding checklist | M | R1 | built |
 | TEN-02 | Legal entities with licences and certificates (issuer, reference, scope, validity, next audit, owner), departments with a head and the teams in them, and products described the way obligations are scoped | M | R2 | pending |
 | TEN-03 | Teams as owners and participants, so ownership survives a person leaving | M | R2 | pending |
-| TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | pending |
+| TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | in_progress |
 | TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | pending |
 | TEN-06 | Support access grants: requested by the platform, approved by a tenant admin with a passkey, read-only, visible to the tenant, time-boxed, revocable and logged in the bank (D-49) | M | R2 | pending |
 | ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
@@ -120,15 +120,26 @@ Then the obligation and the case still list the team as owner
 And nothing needs reassignment
 ```
 
-### TEN-S4 — An out-of-office delegate receives approvals and reminders `@integration` `@e2e` (TEN-04)
+### TEN-S4 — An out-of-office delegate receives approvals and reminders `@integration` `@e2e` (TEN-04, COL-02)
 ```gherkin
 Given an approver who set out-of-office until next Friday with a delegate
 When a sign-off request names that approver
-Then the delegate is notified and may sign off
+Then the delegate is notified and the approver is not
+And the approver's triage reminders reach the delegate on the approver's behalf
+And the delegate may sign off under their own cases.signoff
 And the audit event records the delegate as actor and the absent approver as delegated
 When the window closes
 Then the approver receives requests again
 ```
+
+Reworded (`c10-out-of-office`, D-95): the approval is a case sign-off and the reminder a
+triage reminder, the two that exist in R2. The absence is `GET`/`PUT /me/out-of-office`
+over the membership's `out_of_office_until` and `delegate`; `collab/logic.notify()` routes
+the notices. The delegate gains no permission: they must hold every approve permission the
+absent person holds (422 `delegate_cannot_approve`), a second open absence is 409
+`already_delegated`, and four eyes still refuses a delegate who asked for sign-off. A
+delegate who holds `cases.signoff` is told about a sign-off request once, on their own
+account. TEN-04 is `built` when the out-of-office screen lands with the journey.
 
 ### TEN-S5 — Removing a member with open work offers bulk reassignment `@integration` `@e2e` (TEN-05)
 ```gherkin

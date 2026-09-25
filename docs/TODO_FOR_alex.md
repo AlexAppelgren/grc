@@ -1456,3 +1456,22 @@ Built by default; nothing waits on you. Say if any should change.
       the case is in `signoff`, which mirrors the actions lock; or (b) the
       `signoff → closed` edge also carries the `no_open_action` and `clean_evidence`
       guards. The first keeps the state machine as designed; say which.
+
+## c10-out-of-office: a member's absence with a delegate, defaults taken (2026-09-25, TEN-04, COL-02)
+
+Built by default; nothing waits on you. Say if any should change.
+
+- [ ] **Which approve permission the delegate needs.** Every four-eyes approve permission
+      (`footprint.approve`, `cases.signoff`, `risk.accept.approve`) the absent person holds;
+      a person who holds none may name any active member. Default: so.
+- [ ] **One absence at a time, changed by ending it.** A new absence while one is open
+      answers 409 `already_delegated`, so moving the last day or the delegate means ending
+      the absence first (both fields null) and setting a new one. Default: so.
+- [ ] **A delegate's sign-off names whom it was for.** The approval's audit row gains
+      `onBehalfOf`, the absent approvers holding `cases.signoff` who name that delegate
+      through the bank's today, the requester left out. The delegate still approves under
+      their own `cases.signoff`; nothing is granted. Default: so.
+- [ ] **A delegate who holds `cases.signoff` is told once, unstamped.** Since the delegate
+      must hold the absent approver's approve permissions, a sign-off request already reaches
+      them on their own account, and `c10-reminders-core`'s rule gives them one row without
+      "on behalf of". Reminders for kinds the delegate is not a candidate for carry the stamp.

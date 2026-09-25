@@ -1329,3 +1329,69 @@ class SecurityPolicyBody(WriteBody):
             "with `validation_error`."
         ),
     )
+
+
+# ---------------------------------------------------------------------------------------
+# c10-out-of-office: a member's own absence with a delegate (TEN-04)
+# ---------------------------------------------------------------------------------------
+_EXAMPLE_DELEGATE: dict[str, JsonValue] = {"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Maria Svensson"}
+
+
+class MeOutOfOffice(CamelSchema):
+    """The caller's own absence in their current bank: the last day they are away and the
+    member who receives their reminders, escalations, assignments and sign-off requests
+    meanwhile. Nulls when they are not away. The delegate acts under their own roles and
+    gains no permission."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"untilDate": "2026-10-09", "delegate": _EXAMPLE_DELEGATE, "away": True}]}
+    )
+
+    until_date: date | None = Field(
+        description=(
+            "The last day the caller is away, inclusive, a plain date on the bank's own calendar "
+            "(its timezone), or null when they have set no absence."
+        )
+    )
+    delegate: PersonRef | None = Field(
+        description="The member who receives the caller's work while they are away, by id and name, or null."
+    )
+    away: bool = Field(
+        description=(
+            "True while the absence is open, that is the bank's today is on or before `untilDate`; "
+            "false before one is set and from the day after the last day, when notices reach the "
+            "caller again."
+        )
+    )
+
+
+class MeOutOfOfficeBody(WriteBody):
+    """The caller's new absence: both fields to start one, or both null to end the current
+    one early. Both are required; any other field is refused."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"untilDate": "2026-10-09", "delegateId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60"},
+                {"untilDate": None, "delegateId": None},
+            ]
+        }
+    )
+
+    until_date: date | None = Field(
+        description=(
+            "The last day away, inclusive, as an ISO 8601 date (`YYYY-MM-DD`) on the bank's own "
+            "calendar: today or later, or null to end the absence. A past day is refused with "
+            "`validation_error`."
+        ),
+        examples=["2026-10-09"],
+    )
+    delegate_id: uuid.UUID | None = Field(
+        description=(
+            "The user id (a UUID) of the delegate: another active member of the caller's bank whose roles "
+            "hold every approve permission the caller's roles hold (`footprint.approve`, "
+            "`cases.signoff`, `risk.accept.approve`), or null to end the absence. Anyone else is "
+            "refused, with `validation_error` or `delegate_cannot_approve`."
+        ),
+        examples=["8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60"],
+    )

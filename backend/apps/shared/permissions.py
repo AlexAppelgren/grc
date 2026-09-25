@@ -501,6 +501,10 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
         "pickers need the bank's active members, as ids and names only; `GET /tenant/members` "
         "stays under members.manage (COL-04, TEN-03).",
     ),
+    # c10-out-of-office (TEN-04): the caller's own absence on their own membership. The
+    # delegate check inside is the gate on what it may name (delegate_cannot_approve).
+    ("GET", "/me/out-of-office"): Ungated(UngatedReason.SELF, _SELF_ME),
+    ("PUT", "/me/out-of-office"): Ungated(UngatedReason.SELF, _SELF_ME),
 }
 
 
