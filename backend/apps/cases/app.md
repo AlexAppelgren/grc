@@ -44,7 +44,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | CAS-02 | Triage needs urgency and owner; dismissal needs a reason and can be restored | M | R2 | pending |
 | CAS-03 | Impact assessment: applies, why, what must change, internal deadline, effort, and contributor teams, recorded as the case's team participants | M | R2 | pending |
 | CAS-04 | Actions with owner and due date, locked while sign-off is pending, exportable as tickets. Chunk 9 builds the actions; the ticket export is `c13-tickets-export` (INT-S3) | M | R2 | in_progress |
-| CAS-05 | Evidence as file, link or reference, scanned, hashed, streamed through permission checks | M | R2 | pending |
+| CAS-05 | Evidence as file, link or reference, scanned, hashed, streamed through permission checks | M | R2 | built |
 | CAS-06 | Sign-off only with no open action and at least one piece of evidence, only by a second person, with step-up | M | R2 | pending |
 | CAS-07 | A case file that stands alone, as text and as an export | M | R2 | pending |
 | CAS-08 | Every response lists allowed transitions; concurrent edits are refused, never merged silently | M | R2 | pending |

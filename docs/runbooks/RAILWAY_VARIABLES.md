@@ -42,6 +42,14 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `STORAGE_*` (`STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `STORAGE_REGION`) | api, worker | unset | unset | the private bucket's values | Only read when `STORAGE_BACKEND=s3` |
 | `MAIL_PROVIDER` | api, worker | `mock` | `mock` | `smtp` | A mock mailer is refused when deployed except in `test` |
 | `MAIL_*` (`MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`) | api, worker | unset | unset | the EU transactional sender | SPF and DKIM on the sending domain |
+| `SCANNER_PROVIDER` | api, worker | `mock` | `mock` | `clamd` | `mock` or `clamd` (CAS-05, D-101). The mock is refused at the first scan on every deployed environment, `test` included, so evidence upload answers 503 until clamd is set |
+| `SCANNER_HOST` | api, worker | `localhost` | `localhost` | the clamd service's private host (`clamav.railway.internal`) | Private network only; clamd has no authentication |
+| `SCANNER_PORT` | api, worker | `3310` | `3310` | `3310` | clamd's TCP port in the official image |
+| `SCANNER_TIMEOUT_SECONDS` | api, worker | `60.0` | `60.0` | `60.0` | Per connect and send, and for the scan with its whole reply; a timeout is a failed scan, never a clean one |
+| `EVIDENCE_ALLOWED_TYPES` | api | the eight types | the eight types | the eight types | Comma-separated MIME types evidence may be (CAS-05): PDF, DOCX, XLSX, PPTX, PNG, JPEG, TXT and CSV. The header, the extension and the bytes must agree; anything else is refused with 422 before it is stored |
+| `EVIDENCE_MAX_BYTES` | api | `26214400` | `26214400` | `26214400` | The largest evidence file in bytes, 25 MB (CAS-05); a larger one is refused with 422 before it is stored |
+| `EVIDENCE_SCAN_RETRIES` | worker | `2` | `2` | `2` | How many more times a failed malware scan is tried before the file stays `error` and cannot be downloaded (CAS-05) |
+| `CASE_EVIDENCE_MAX` | api | `200` | `200` | `200` | Live evidence one case may hold, so one case cannot push its case file past the response budget (CAS-05) |
 | `LLM_PROVIDER` | api, worker | `mock` | `mock` | `anthropic` | `mock`, `anthropic`, `bedrock` (D-07, ADR 0007) |
 | `ANTHROPIC_API_KEY` | api, worker | unset | unset | Railway secret | Only read when `LLM_PROVIDER=anthropic` |
 | `LLM_MODEL` | api, worker | `claude-opus-5` | `claude-opus-5` | `claude-opus-5` | The Messages API model id (E3) |

@@ -15,6 +15,7 @@ closeWithoutAction, CAS-S6 addAction, updateAction and deleteAction, CAS-S7 addE
 removeEvidence, CAS-S8 requestSignoff, CAS-S10 approveSignoff, CAS-S18 sendBackSignoff.
 """
 
+from typing import Any
 from unittest import skip
 
 from django.test import TestCase
@@ -179,12 +180,70 @@ class CasesScenarioTests(TestCase):
         self.assertEqual((row.removed_by_id, row.removed_at is not None), (owner.id, True), "the row stays for the case file")
         self.assertTrue(AuditEvent.objects.filter(action="case.action_removed", subject_id=row.id, actor_id=owner.id).exists())
 
-    @skip("pending: CAS-S7")
     def test_cas_s7(self) -> None:
         """CAS-S7
 
         Evidence is scanned, hashed and streamed through permission checks (CAS-05).
         """
+        # --- c9-evidence: CAS-S7 ---
+        import hashlib
+        import tempfile
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.db import transaction
+        from django.test import override_settings
+
+        from apps.cases import evidence as evidence_logic
+        from apps.cases.tests_evidence import AS_SESSION, PDF, bank_with_case
+        from apps.shared import permissions as perms
+        from apps.shared import tenancy
+        from apps.shared.models import AuditEvent
+        from apps.shared.testing import AuditAssertingClient, stub_session, user_principal
+
+        media = tempfile.TemporaryDirectory()
+        self.addCleanup(media.cleanup)
+        self.enterContext(override_settings(MEDIA_ROOT=media.name, STORAGE_BACKEND="local", SCANNER_PROVIDER="mock"))
+        client = AuditAssertingClient()
+        bank = bank_with_case(CaseStatusCategory.IMPLEMENTING)
+        url = f"/api/v1/changes/{bank.change_id}/evidence"
+
+        # The owner attaches a PDF, a link and a reference; the PDF waits for its scan.
+        with stub_session(bank.principal), self.captureOnCommitCallbacks(execute=False) as queued:
+            pdf = client.post(url, data={"kind": "file", "name": "Research criteria", "file": SimpleUploadedFile("criteria.pdf", PDF, content_type="application/pdf")}, **AS_SESSION)
+        with stub_session(bank.principal):
+            link = client.post(url, data={"kind": "link", "name": "FI decision memo", "url": "https://intranet.example.com/memo/42"}, **AS_SESSION)
+            reference = client.post(url, data={"kind": "reference", "name": "Credit policy, section 4"}, **AS_SESSION)
+        self.assertEqual((pdf.status_code, link.status_code, reference.status_code), (201, 201, 201))
+        stored = pdf.json()["evidence"]
+        self.assertEqual(stored["contentHash"], "sha256:" + hashlib.sha256(PDF).hexdigest())
+        self.assertEqual(stored["scanState"], "pending")
+
+        def download(principal: Any) -> Any:
+            with stub_session(principal):
+                return client.get(f"/api/v1/evidence/{stored['id']}/download", **AS_SESSION)
+
+        self.assertEqual(download(bank.principal).status_code, 409, "invisible until the scan passes")
+
+        # A file outside the size or type allow-list answers 422 and stores nothing.
+        with stub_session(bank.principal), override_settings(EVIDENCE_MAX_BYTES=len(PDF) - 1):
+            too_large = client.post(url, data={"kind": "file", "name": "Big", "file": SimpleUploadedFile("big.pdf", PDF, content_type="application/pdf")}, **AS_SESSION)
+        with stub_session(bank.principal):
+            wrong_type = client.post(url, data={"kind": "file", "name": "Page", "file": SimpleUploadedFile("page.html", b"<html></html>", content_type="text/html")}, **AS_SESSION)
+        self.assertEqual((too_large.status_code, wrong_type.status_code), (422, 422))
+
+        # The scan passes; a reader downloads through the API, checked and audited.
+        for run in queued:
+            run()
+        reader = user_principal(subject_id=bank.person.id, tenant_id=bank.tenant.id, permissions={perms.CASES_READ})
+        downloaded = download(reader)
+        self.assertEqual(downloaded.status_code, 200)
+        self.assertEqual(downloaded.content, PDF)
+        with transaction.atomic():
+            tenancy.activate(bank.tenant.id)
+            self.assertEqual(AuditEvent.objects.filter(action=evidence_logic.DOWNLOADED, subject_id=stored["id"]).count(), 1)
+        without_read = user_principal(subject_id=bank.person.id, tenant_id=bank.tenant.id, permissions={perms.CASES_CONTRIBUTE})
+        self.assertEqual(download(without_read).status_code, 403, "the permission is checked on every download")
+        # --- end c9-evidence: CAS-S7 ---
 
     @skip("pending: CAS-S8")
     def test_cas_s8(self) -> None:
@@ -241,3 +300,4 @@ class CasesScenarioTests(TestCase):
 
         Contributor teams are the case's team participants (CAS-03, COL-04).
         """
+

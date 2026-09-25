@@ -219,6 +219,10 @@ BUILT = {
     "addAction",  # c9-actions
     "updateAction",  # c9-actions
     "deleteAction",  # c9-actions
+    "listEvidence",  # c9-evidence: apps/cases/tests_evidence*.py
+    "addEvidence",  # c9-evidence
+    "downloadEvidence",  # c9-evidence
+    "removeEvidence",  # c9-evidence
 }
 
 
