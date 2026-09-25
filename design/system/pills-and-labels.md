@@ -71,3 +71,19 @@ Agents read key, label and usage note at run start, submit keys only, and
 their classifications show as suggestions until a person confirms. A new
 term is a proposal. A re-tag request applies a new value to existing records
 as one batch proposal.
+
+## Notification kinds (chunk 10)
+
+A notification's pill takes its tone from its kind, a fixed code list
+(`notification.kind`), never from the record it points at. Drawn in
+`screens/tenant-notifications.html`.
+
+| Kind | Tone | Label |
+|---|---|---|
+| `mention`, `assigned`, `participant_added` | `information` | "Mention", "Assigned to you", "Added to" |
+| `signoff_requested`, `approval_requested`, `due_soon`, `review_due`, `proposal_waiting` | `warning` | "Sign-off requested", "Approval requested", "Due soon", "Review due", "Proposal waiting" |
+| `overdue`, `escalation` | `negative` | "Overdue", "Escalated" |
+| `involved_item_changed`, `saved_search_hit` | `notice` | "Change on your item", "New search match" |
+
+The comments panel (`comments-and-mentions.md`), the workflow settings and the
+out-of-office page add no pill.
