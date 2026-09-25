@@ -3,7 +3,7 @@ bank, time-boxed, and guarded in the database. Entering a bank under a grant is
 `c8-support-access-mechanism`'s and proven there.
 
 Operations exercised (the audit-on-write guard reads these names): requestConsoleSupportAccess,
-approveSupportAccess, declineSupportAccess, revokeSupportAccess.
+approveSupportAccess, declineSupportAccess, revokeSupportAccess, listConsoleSupportAccess.
 """
 
 from __future__ import annotations
@@ -388,3 +388,83 @@ class TheDatabaseGuardsTheGrant(TransactionTestCase):
             self.assertEqual(cursor.fetchall(), [(self.grant.id,)])
             cursor.execute("UPDATE support_access SET status = 'declined' WHERE id = %s", [str(self.grant.id)])
             self.assertEqual(cursor.rowcount, 0)
+
+
+class ConsoleList(SupportGrantCase):
+    """`GET /console/support-access` (c8-ui-support-console, the brief's
+    c8-support-access-console-list): the caller's own requests across banks, read through the
+    own-grants policy with no bank active, naming the bank and never a member."""
+
+    def list(self, user: User | None = None, query: str = "") -> Any:
+        return self.client.get(f"/api/v1/console/support-access{query}", **sign_in(user or self.platform, tenant=None))
+
+    def test_a_platform_person_who_never_asked_reads_an_empty_page(self) -> None:
+        response = self.list()
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json(), {"items": [], "total": 0})
+
+    def test_the_caller_reads_their_own_requests_across_banks_newest_first(self) -> None:
+        declined = self.pending()
+        self.assertEqual(self.decide(declined, "decline").status_code, 200)
+        approved = self.pending()
+        self.assertEqual(self.decide(approved, "approve", step_up=True).status_code, 200)
+        elsewhere = factories.tenant(slug="elsewhere", name="Nordkyst Sparebank")
+        asked = self.client.post(
+            f"/api/v1/console/tenants/{elsewhere.id}/support-access",
+            data={"purpose": PURPOSE, "hours": 1},
+            content_type="application/json",
+            **sign_in(self.platform, tenant=None),
+        )
+        self.assertEqual(asked.status_code, 201, asked.content)
+        body = self.list().json()
+        self.assertEqual(body["total"], 3)
+        self.assertEqual([item["id"] for item in body["items"]], [asked.json()["id"], str(approved), str(declined)])
+        self.assertEqual([item["state"] for item in body["items"]], ["pending", "active", "declined"])
+        self.assertEqual([item["tenantName"] for item in body["items"]], ["Nordkyst Sparebank", self.tenant.name, self.tenant.name])
+        active = body["items"][1]
+        grant = self.grant(approved)
+        self.assertEqual((active["tenantId"], active["purpose"], active["ticketRef"], active["hours"]), (str(self.tenant.id), PURPOSE, "SUP-2511", 2))
+        assert grant.started_at is not None and grant.expires_at is not None  # approved above
+        self.assertEqual(datetime.datetime.fromisoformat(active["decidedAt"]), grant.started_at.replace(microsecond=grant.started_at.microsecond // 1000 * 1000))
+        self.assertEqual(datetime.datetime.fromisoformat(active["endsAt"]), grant.expires_at.replace(microsecond=grant.expires_at.microsecond // 1000 * 1000))
+
+    def test_no_member_of_the_bank_is_named_anywhere_in_the_answer(self) -> None:
+        revoked = self.pending()
+        self.decide(revoked, "approve", step_up=True)
+        self.decide(revoked, "revoke")
+        response = self.list()
+        self.assertEqual(response.json()["items"][0]["state"], "revoked")
+        payload = response.content.decode()
+        for member in (self.admin, self.reader):
+            self.assertNotIn(member.name, payload)
+            self.assertNotIn(str(member.id), payload)
+            self.assertNotIn(member.email, payload)
+
+    def test_another_platform_persons_requests_never_appear(self) -> None:
+        self.pending()
+        other = factories.platform_user()
+        self.assertEqual(self.list(other).json(), {"items": [], "total": 0})
+        self.assertEqual(self.list().json()["total"], 1)
+
+    def test_the_page_is_bounded(self) -> None:
+        older = self.pending()
+        self.pending()
+        page = self.list(query="?limit=1&offset=1").json()
+        self.assertEqual((page["total"], [item["id"] for item in page["items"]]), (2, [str(older)]))
+        self.assertEqual(self.list(query="?limit=101").status_code, 422)
+
+    def test_a_bank_member_and_a_person_without_the_permission_are_refused(self) -> None:
+        self.assertEqual(self.client.get("/api/v1/console/support-access", **sign_in(self.admin, tenant=self.tenant)).status_code, 403)
+        self.assertEqual(self.list(factories.platform_user(roles=("library_editor",))).status_code, 403)
+
+    def test_reading_writes_nothing(self) -> None:
+        self.pending()
+
+        def written() -> tuple[int, int]:
+            self.activate(self.tenant)
+            return AuditEvent.objects.count(), OutboxEvent.objects.count()
+
+        headers = sign_in(self.platform, tenant=None)
+        before = written()
+        self.assertEqual(self.client.get("/api/v1/console/support-access", **headers).status_code, 200)
+        self.assertEqual(written(), before)

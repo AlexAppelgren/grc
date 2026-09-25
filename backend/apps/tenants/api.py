@@ -1020,10 +1020,13 @@ def list_console_support_access(request: HttpRequest, page: PageQuery = Query(..
     audit event. A caller who never asked is a 200 with `total` 0.
 
     Errors: `validation_error` (422) for a page size above 100; `permission_denied` (403)
-    without `support_access.grant`; `unauthenticated` (401). Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    without `support_access.grant`; `unauthenticated` (401).
     """
-    return support_access.my_grants(actor=actor_for(request), limit=page.limit, offset=page.offset)
+    return support_access.my_grants(
+        principal=request.auth,  # type: ignore[attr-defined]
+        limit=page.limit,
+        offset=page.offset,
+    )
 
 
 @router.post(

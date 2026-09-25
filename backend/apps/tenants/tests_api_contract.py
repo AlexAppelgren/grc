@@ -62,6 +62,8 @@ BUILT_SINCE = {
     "revokeSupportAccess",
     # c8-support-session-guard (TEN-06): apps/shared/tests_support_session.py.
     "enterConsoleSupportAccess",
+    # c8-ui-support-console (TEN-06): tests_support_access.py, ConsoleList.
+    "listConsoleSupportAccess",
 }
 
 ORG_UNIT_BODY = {"kind": "business_area", "name": "Retail Banking"}

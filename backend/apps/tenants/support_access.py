@@ -6,8 +6,8 @@ the request in the caller's bank, so another bank's id answers 404.
 This module is the request, the decision and the grant a support session stands on: entering
 a bank under a grant (`enter`), the per-request check that the grant is still open
 (`live_grant`) and the `support_access.read` row each request writes (`record_read`). It is
-the one module that loads a grant (apps/shared/tests_support_session.py pins it). The
-console's own list is `c8-support-access-console-list`'s and still answers 501 `not_built`.
+the one module that loads a grant (apps/shared/tests_support_session.py pins it), and the
+console's own list of the caller's grants (`my_grants`) reads through the same own-grants policy.
 
 A pending request and an open window lapse on read, with no job: `state_of()` is the one
 place that reads the clock against a row.
@@ -17,8 +17,6 @@ from __future__ import annotations
 
 import datetime
 import uuid
-from typing import NoReturn
-
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
@@ -39,6 +37,7 @@ from apps.tenants.models import SupportAccess, SupportAccessLevel, SupportAccess
 from apps.tenants.schemas import (
     ConsoleSupportAccessBody,
     ConsoleSupportAccessGrant,
+    ConsoleSupportAccessPage,
     SupportAccessGrant,
     SupportAccessPage,
     SupportAccessState,
@@ -166,23 +165,38 @@ def request_access(
             ticket_ref=grant.ticket_ref,
             hours=grant.hours,
         )
+    return _console_out(grant, tenant, now)
+
+
+def _console_out(grant: SupportAccess, tenant: Tenant, now: datetime.datetime) -> ConsoleSupportAccessGrant:
+    """A grant as the console shows it: the bank by its name, a decision by its time, and
+    never the member who took it."""
     return ConsoleSupportAccessGrant(
         id=grant.id,
         tenant_id=tenant.id,
         tenant_name=tenant.name,
-        state=PENDING,
+        state=state_of(grant, now),
         purpose=grant.reason,
         ticket_ref=grant.ticket_ref,
         hours=grant.hours,
         requested_at=grant.requested_at,
-        decided_at=None,
-        ends_at=None,
+        decided_at=_decided_at(grant),
+        ends_at=_ends_at(grant),
     )
 
 
-def my_grants(*, actor: Actor, limit: int, offset: int) -> NoReturn:
-    """`GET /console/support-access`: the caller's own requests only."""
-    raise ProblemError(status=501, code="not_built", detail="Listing your support access is not built yet.")
+def my_grants(*, principal: Principal, limit: int, offset: int) -> ConsoleSupportAccessPage:
+    """`GET /console/support-access`: the caller's own requests across banks, newest first.
+    No bank is active: the `support_access_own_grants` policy shows the rows naming the
+    caller and nothing else, and the filter says the same thing again."""
+    from apps.identity import session_logic
+
+    now = timezone.now()
+    with session_logic.own_grants(principal):
+        rows = SupportAccess.objects.filter(platform_user_id=principal.subject_id).select_related("tenant")
+        total = rows.count()
+        page = list(rows.order_by("-requested_at", "-id")[offset : offset + limit])
+    return ConsoleSupportAccessPage(items=[_console_out(grant, grant.tenant, now) for grant in page], total=total)
 
 
 def live_grant(*, tenant_id: uuid.UUID, grant_id: uuid.UUID) -> SupportAccess | None:
