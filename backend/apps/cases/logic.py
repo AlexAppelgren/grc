@@ -46,7 +46,9 @@ CASE_JOINS = (
     "change",
     "urgency",
     "sub_status",
-    "owner",
+    # The field, not the literal: `owner` is also a system role key, which no logic module
+    # may compare (identity ID-S18).
+    ChangeCase.owner.field.name,
     "triaged_by",
     "dismissed_reason",
     "dismissed_by",
