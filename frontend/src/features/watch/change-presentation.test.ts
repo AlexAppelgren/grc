@@ -237,6 +237,11 @@ describe('factsOfChange', () => {
     expect(facts.workflowStatus).toEqual({ key: 'signoff', label: 'Waiting for sign-off' });
   });
 
+  it('a bank’s sub-status reads in its own words, keyed by the category (CAS-S13)', () => {
+    const facts = factsOfChange(withCase({ category: 'assessing', subStatus: { key: 'waiting_for_legal', kind: 'assessing', label: 'Waiting for legal' } }), t);
+    expect(facts.workflowStatus).toEqual({ key: 'assessing', label: 'Waiting for legal' });
+  });
+
   it('a change this bank has no case for shows no status', () => {
     expect(factsOfChange(row, t).workflowStatus).toBeUndefined();
   });

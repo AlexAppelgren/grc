@@ -1,0 +1,13 @@
+{
+  "cases.heading": "Case",
+  "cases.scan.pending": "Being checked",
+  "cases.scan.clean": "Checked",
+  "cases.scan.error": "Could not be checked",
+  "cases.scan.infected": "Refused, malware found",
+  "cases.due.overdue": "Overdue",
+  "cases.due.today": "Due today",
+  "cases.due.daysLeft": "{count, plural, one {# day left} other {# days left}}",
+  "cases.due.daysLate": "{count, plural, one {# day late} other {# days late}}",
+  "cases.staleWrite.body": "Someone else saved this while you were working. Nothing of yours was saved or merged. Reload to see their version, then apply your change again.",
+  "cases.staleWrite.reload": "Reload their version"
+}
