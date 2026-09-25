@@ -233,12 +233,21 @@ def _record_replay(run: AgentRun, who: Principal, summary: str) -> None:
 # PATCH /agent-runs/{runId}
 # ---------------------------------------------------------------------------------------
 def _own_run(api_key_id: uuid.UUID | None, run_id: uuid.UUID) -> AgentRun:
-    """The run this key opened. Another key's run, and one that never existed, answer the
-    same 404: which run ids exist is not something a key may probe for. No key at all (a
-    person naming a run) finds nothing, because every run was opened by a key."""
-    run = AgentRun.objects.select_related("agent").filter(
-        pk=run_id, api_key_id=api_key_id
-    ).first()  # ordering: pk lookup inside one key, at most one row
+    """The run this key opened, locked until the caller's transaction ends (H36). Another
+    key's run, and one that never existed, answer the same 404: which run ids exist is not
+    something a key may probe for. No key at all (a person naming a run) finds nothing,
+    because every run was opened by a key.
+
+    Every caller writes: a close, or a filing that names the run. The lock is what makes the
+    run's status true for the whole write, so a close waits for a filing in flight and counts
+    it, and a filing that waited on a close reads the run closed. Only the run's own row is
+    locked (`of=("self",)`), never the agent it is read with."""
+    run = (
+        AgentRun.objects.select_related("agent")
+        .select_for_update(of=("self",))
+        .filter(pk=run_id, api_key_id=api_key_id)
+        .first()  # ordering: pk lookup inside one key, at most one row
+    )
     if run is None:
         raise ProblemError(status=404, code="not_found", detail="Not found.")
     return run
@@ -253,7 +262,13 @@ def finish_run(*, who: Principal, run_id: uuid.UUID, body: AgentRunFinish) -> Ag
     is never quietly reopened or rewritten. A bank's key is refused first, as on opening one.
     """
     refuse_tenant_key(who)
-    run = _own_run(who.subject_id, run_id)
+    with transaction.atomic():
+        return _close(who, _own_run(who.subject_id, run_id), body)
+
+
+def _close(who: Principal, run: AgentRun, body: AgentRunFinish) -> AgentRunOut:
+    """`finish_run` once the run's row is locked (H36): a second close waits here and reads
+    the first one's status, and the counts include every filing that committed first."""
     stats = _counted(run, _stats(body.stats, run.stats))
     output_ref = body.output_ref or ""
     error = body.error or ""
@@ -269,24 +284,23 @@ def finish_run(*, who: Principal, run_id: uuid.UUID, body: AgentRunFinish) -> Ag
             )
         _record_replay(run, who, "A retried close answered the run it already closed.")
         return row(run)
-    with transaction.atomic():
-        run.status = body.status
-        run.stats = stats
-        run.output_ref = output_ref
-        run.error = error
-        run.finished_at = timezone.now()
-        run.save(update_fields=["status", "stats", "output_ref", "error", "finished_at"])
-        record(
-            action="agent_run.closed",
-            actor=_actor(who),
-            subject_type=SUBJECT_TYPE,
-            subject_id=run.id,
-            subject_title=run.agent.key,
-            summary=f"{run.agent.key} closed a run: {run.status}.",
-            tenant_id=None,
-            before={"status": RunStatus.RUNNING.value},
-            after={"status": run.status, "stats": run.stats},
-        )
+    run.status = body.status
+    run.stats = stats
+    run.output_ref = output_ref
+    run.error = error
+    run.finished_at = timezone.now()
+    run.save(update_fields=["status", "stats", "output_ref", "error", "finished_at"])
+    record(
+        action="agent_run.closed",
+        actor=_actor(who),
+        subject_type=SUBJECT_TYPE,
+        subject_id=run.id,
+        subject_title=run.agent.key,
+        summary=f"{run.agent.key} closed a run: {run.status}.",
+        tenant_id=None,
+        before={"status": RunStatus.RUNNING.value},
+        after={"status": run.status, "stats": run.stats},
+    )
     return row(run)
 
 
@@ -304,8 +318,10 @@ def require_open_run_of_key(api_key_id: uuid.UUID | None, run_id: uuid.UUID | No
     """The open run of the key `api_key_id`, named as `run_id`; for a proposal, whose
     proposer carries the key rather than the principal.
 
-    Naming no run answers 422 `run_not_open`, and so does a run of this key that is already
-    closed, because the caller fixes both the same way, by opening a run and naming it —
+    The run's row stays locked until the write's transaction ends (H36), so the write is
+    counted by the close that follows it and never lands in a run another request is
+    closing. Naming no run answers 422 `run_not_open`, and so does a run of this key that is
+    already closed, because the caller fixes both the same way, by opening a run and naming it —
     and because a closed run is a finished account of a night's work that nothing may be
     added to afterwards. A run of another key answers 404, exactly as closing one does.
     """
