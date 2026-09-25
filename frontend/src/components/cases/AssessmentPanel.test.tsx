@@ -227,3 +227,56 @@ describe('read-only', () => {
     expect(container).toBeEmptyDOMElement();
   });
 });
+
+// c9-fe-case-participants (CAS-03, D-20): the contributor teams are the case's
+// team participants, and each change is one add or one remove call of its own.
+describe('contributor teams', () => {
+  const SARA = { id: 'u-sara', name: 'Sara Lindqvist' };
+  const LEGAL = { id: 'p-legal', person: null, team: { key: 'legal', kind: null, label: 'Legal' }, addedBy: SARA, addedAt: '2026-09-17T08:00:00Z' };
+  const ERIK = { id: 'p-erik', person: { id: 'u-erik', name: 'Erik Holm' }, team: null, addedBy: SARA, addedAt: '2026-09-18T08:00:00Z' };
+  const TEAMS = [
+    { key: 'legal', label: 'Legal', active: true, email: '', memberCount: 2, orgUnitId: null },
+    { key: 'retail_compliance', label: 'Retail compliance', active: true, email: '', memberCount: 4, orgUnitId: null },
+  ];
+
+  function serveTeams(write: Answer = { status: 204 }): Sent[] {
+    return installAdapter((sent) => {
+      if (sent.method !== 'get') return sent.method === 'post' ? { status: 201, data: LEGAL } : write;
+      if (sent.path === '/api/v1/changes/c-1/participants') return { status: 200, data: { items: [ERIK, LEGAL], total: 2 } };
+      if (sent.path === '/api/v1/tenant/teams') return { status: 200, data: { items: TEAMS, total: TEAMS.length } };
+      const list = sent.path.replace('/api/v1/vocab/', '');
+      if (list in LISTS) return { status: 200, data: { items: LISTS[list], total: LISTS[list]!.length } };
+      return { status: 200, data: { user: { locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, permissions: [] } };
+    });
+  }
+
+  it('shows the team participants only, and removes one with one call and no save', async () => {
+    const sent = serveTeams();
+    renderPanel(workflowOf(), CONTRIBUTOR);
+    const teams = document.querySelector<HTMLElement>('[data-contributor-teams]')!;
+    fireEvent.click(await within(teams).findByRole('button', { name: 'Remove Legal' }));
+    await waitFor(() => expect(writes(sent)).toHaveLength(1));
+    expect(within(teams).queryByText('Erik Holm')).not.toBeInTheDocument();
+    expect(writes(sent).map((s) => [s.method, s.path])).toEqual([['delete', '/api/v1/changes/c-1/participants/p-legal']]);
+  });
+
+  it('adds a team from a picker of teams alone, with one call that never saves the assessment', async () => {
+    const sent = serveTeams();
+    renderPanel(workflowOf(), CONTRIBUTOR);
+    fireEvent.click(screen.getByRole('button', { name: 'Add a team' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Add a contributor team' });
+    fireEvent.click(await within(dialog).findByRole('radio', { name: /Retail compliance/ }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(writes(sent).map((s) => [s.method, s.path, s.body])).toEqual([['post', '/api/v1/changes/c-1/participants', { teamKey: 'retail_compliance' }]]);
+    expect(sent.some((s) => s.path === '/api/v1/reference/people')).toBe(false);
+  });
+
+  it('reads the teams in the read-only assessment', async () => {
+    serveTeams();
+    renderPanel(workflowOf({ category: 'signoff' }), CONTRIBUTOR);
+    expect(await screen.findByText('Legal')).toBeInTheDocument();
+    expect(screen.getByText('Contributor teams')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add a team' })).not.toBeInTheDocument();
+  });
+});

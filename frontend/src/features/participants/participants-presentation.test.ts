@@ -2,7 +2,18 @@ import { describe, expect, it } from 'vitest';
 
 import type { Translate } from '@/shared/i18n';
 
-import { addRefusals, isOwnRow, participantName, pickerOptions, presentParticipant, rowAction } from './participants-presentation';
+import {
+  addRefusals,
+  CASE_PARTICIPANTS_EDIT_PERMISSION,
+  caseAddRefusals,
+  contributorTeams,
+  isOwnRow,
+  participantName,
+  pickerOptions,
+  presentContributorTeam,
+  presentParticipant,
+  rowAction,
+} from './participants-presentation';
 import type { Participant, Team } from './types';
 
 // The panel offers Leave on your own row, Remove only with register.edit, and
@@ -55,5 +66,22 @@ describe('participants presentation', () => {
     const refusals = addRefusals('Erik Holm', t);
     expect(Object.keys(refusals).sort()).toEqual(['already_participant', 'participant_cannot_read', 'too_many_participants', 'unknown_key', 'unknown_member']);
     expect(refusals.already_participant).toBe('obligationParticipants.alreadyParticipant {"name":"Erik Holm"}');
+  });
+
+  it('on a case, offers Remove with cases.contribute and never with register.edit alone', () => {
+    expect(rowAction(person, 'u-erik', [], CASE_PARTICIPANTS_EDIT_PERMISSION)).toBe('leave');
+    expect(rowAction(person, 'u-anna', ['cases.contribute'], CASE_PARTICIPANTS_EDIT_PERMISSION)).toBe('remove');
+    expect(rowAction(team, 'u-anna', ['register.edit', 'cases.read'], CASE_PARTICIPANTS_EDIT_PERMISSION)).toBeNull();
+  });
+
+  it('reads a case’s contributor teams as its team participants', () => {
+    expect(contributorTeams([person, team]).map((row) => row.id)).toEqual(['p2']);
+    expect(presentContributorTeam(team)).toEqual({ key: 'p2', label: 'Legal', tone: 'information', order: 0, outlined: true });
+  });
+
+  it('says a closed case takes no participants, by its code', () => {
+    const refusals = caseAddRefusals('Erik Holm', t);
+    expect(refusals.invalid_transition).toBe('caseParticipants.closed');
+    expect(refusals.already_participant).toBe('caseParticipants.alreadyParticipant {"name":"Erik Holm"}');
   });
 });

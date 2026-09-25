@@ -1,3 +1,18 @@
 {
-  "caseParticipants.heading": "Participants"
+  "caseParticipants.heading": "Participants",
+  "caseParticipants.empty": "Nobody takes part yet.",
+  "caseParticipants.errorTitle": "Participants could not be loaded",
+  "caseParticipants.owner": "Owner",
+  "caseParticipants.grantsNothing": "Taking part lists the change on a person's My work and notifies them. It grants no access. The teams here are the assessment's contributors.",
+  "caseParticipants.alreadyParticipant": "{name} already takes part in this case.",
+  "caseParticipants.cannotRead": "{name}'s roles cannot open cases, so adding them would tell them nothing.",
+  "caseParticipants.tooMany": "This case already has as many participants as it may. Remove one before adding another.",
+  "caseParticipants.closed": "This case is closed, so its participants no longer change.",
+  "caseParticipants.contributorTeams": "Contributor teams",
+  "caseParticipants.contributorTeamsNone": "No team yet",
+  "caseParticipants.contributorTeamsHint": "Each team is added or removed on its own and shows under Participants.",
+  "caseParticipants.addTeam": "Add a team",
+  "caseParticipants.addTeamTitle": "Add a contributor team",
+  "caseParticipants.findTeam": "Team",
+  "caseParticipants.removeTeam": "Remove {name}"
 }

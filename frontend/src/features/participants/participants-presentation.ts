@@ -27,9 +27,14 @@ export function presentParticipant(participant: Participant, meId: string | null
 }
 
 /** What the row offers: Leave on one's own row, Remove on another's with the permission, else nothing. */
-export function rowAction(participant: Participant, meId: string | null, permissions: readonly string[]): 'leave' | 'remove' | null {
+export function rowAction(
+  participant: Participant,
+  meId: string | null,
+  permissions: readonly string[],
+  editPermission: string = PARTICIPANTS_EDIT_PERMISSION,
+): 'leave' | 'remove' | null {
   if (isOwnRow(participant, meId)) return 'leave';
-  return permissions.includes(PARTICIPANTS_EDIT_PERMISSION) ? 'remove' : null;
+  return permissions.includes(editPermission) ? 'remove' : null;
 }
 
 export interface PickerOption {
@@ -55,6 +60,37 @@ export function addRefusals(name: string, t: Translate): Record<string, string> 
     already_participant: t('obligationParticipants.alreadyParticipant', { name }),
     participant_cannot_read: t('obligationParticipants.cannotRead', { name }),
     too_many_participants: t('obligationParticipants.tooMany'),
+    unknown_member: t('obligationParticipants.unknownMember'),
+    unknown_key: t('obligationParticipants.unknownTeam'),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// c9-fe-case-participants: the bank's case for a change (COL-04, CAS-03)
+// ---------------------------------------------------------------------------
+
+/** Adding anyone to a case, removing anyone else and changing its contributor teams. */
+export const CASE_PARTICIPANTS_EDIT_PERMISSION = 'cases.contribute';
+/** Only members who can open cases are offered. */
+export const CASE_PARTICIPANT_READ_PERMISSION = 'cases.read';
+
+/** The case's team participants, which are its assessment's contributor teams (D-20). */
+export function contributorTeams(participants: readonly Participant[]): Participant[] {
+  return participants.filter((participant) => participant.team !== null);
+}
+
+/** A contributor team as its pill: a row of the bank's own team list, so outlined in the tenant tag's tone. */
+export function presentContributorTeam(participant: Participant): PresentedPill {
+  return { key: participant.id, label: participantName(participant), tone: slotTone.tenantTag, order: 0, outlined: true };
+}
+
+/** The server's refusals of a case add, in the case's words, by `code`. */
+export function caseAddRefusals(name: string, t: Translate): Record<string, string> {
+  return {
+    already_participant: t('caseParticipants.alreadyParticipant', { name }),
+    participant_cannot_read: t('caseParticipants.cannotRead', { name }),
+    too_many_participants: t('caseParticipants.tooMany'),
+    invalid_transition: t('caseParticipants.closed'),
     unknown_member: t('obligationParticipants.unknownMember'),
     unknown_key: t('obligationParticipants.unknownTeam'),
   };

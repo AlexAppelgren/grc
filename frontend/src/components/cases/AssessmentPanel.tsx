@@ -6,9 +6,13 @@ import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextArea, TextInput } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { Meta, Panel } from '@/components/ui/Panel';
+import { Pill } from '@/components/ui/Pill';
+import { ProblemAlert } from '@/components/ui/States';
 import { CASES_CONTRIBUTE, refusedFieldsOf, useSaveAssessment } from '@/features/cases/hooks';
 import type { AssessmentBody, CaseAssessment, CasePanelProps, CaseWorkflow } from '@/features/cases/types';
 import { useFormatContext } from '@/features/identity/hooks';
+import { useCaseParticipants, useRemoveCaseParticipant } from '@/features/participants/hooks';
+import { contributorTeams, participantName, presentContributorTeam } from '@/features/participants/participants-presentation';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { CASES_WORK } from '@/features/watch/hooks';
 import type { MessageKey } from '@/shared/i18n';
@@ -16,12 +20,15 @@ import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { formatDate, formatDateTime } from '@/shared/utils/format';
 
+import { AddCaseParticipantDialog } from './CaseParticipantsPanel';
 import { Refusal, shownAll } from './TriagePanel';
 
 // The impact assessment (design/screens/tenant-change.html, case panels
 // part A; CAS-03, CAS-08, D-92): whether the change applies, why, what must
 // change, the bank's own deadline, the effort and the case's status inside
-// its category. Contributor teams are the participants panel's.
+// its category. The contributor teams are the case's team participants
+// (D-20): each change here is one add or one remove call of its own, never
+// part of the save, so a form loaded earlier cannot undo someone else's team.
 //
 // A holder of `cases.contribute` edits it while the case is assessed or
 // implemented; everyone else, and everyone from waiting for sign-off on,
@@ -57,7 +64,7 @@ function Assessment({ changeId, workflow, assessment }: { changeId: string; work
   // again from the version now on screen.
   const [generation, setGeneration] = useState(0);
   if (!permissions.includes(CASES_CONTRIBUTE) || !EDITABLE.has(workflow.category)) {
-    return assessment === null ? null : <AssessmentRead assessment={assessment} />;
+    return assessment === null ? null : <AssessmentRead changeId={changeId} assessment={assessment} />;
   }
   return (
     <AssessmentForm
@@ -75,15 +82,17 @@ function Assessment({ changeId, workflow, assessment }: { changeId: string; work
 // Read-only
 // ---------------------------------------------------------------------------
 
-function AssessmentRead({ assessment }: { assessment: CaseAssessment }) {
+function AssessmentRead({ changeId, assessment }: { changeId: string; assessment: CaseAssessment }) {
   const t = useT();
   const ctx = useFormatContext();
+  const teams = contributorTeams(useCaseParticipants(changeId).data?.items ?? []);
   const rows: [string, string | null][] = [
     [t('caseAssessment.appliesTerm'), t(APPLIES_KEY[assessment.applies])],
     [t('caseAssessment.why'), assessment.why],
     [t('caseAssessment.whatMustChange'), assessment.whatMustChange],
     [t('caseAssessment.deadline'), assessment.internalDeadline === null ? null : formatDate(assessment.internalDeadline, ctx)],
     [t('caseAssessment.effort'), assessment.effort?.label ?? null],
+    [t('caseParticipants.contributorTeams'), teams.length === 0 ? null : teams.map(participantName).join(', ')],
     [t('caseAssessment.savedTerm'), savedLine(assessment, t, ctx)],
   ];
   return (
@@ -250,6 +259,7 @@ function AssessmentForm({
               ))}
           </Select>
         </Field>
+        <ContributorTeams changeId={changeId} />
         <Refusal error={save.error} changeId={changeId} handled={shownAll(refused, SHOWN_FIELDS)} onReloaded={onReloaded} />
         {savedVersion !== null && save.isSuccess ? (
           <p role="status" className="mt-2.5 text-meta text-positive">
@@ -273,5 +283,60 @@ function AssessmentForm({
         </ButtonBar>
       </Modal>
     </Panel>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Contributor teams (c9-fe-case-participants; CAS-03, D-20)
+// ---------------------------------------------------------------------------
+
+const REMOVE_GLYPH = '×';
+
+function ContributorTeams({ changeId }: { changeId: string }) {
+  const t = useT();
+  const participants = useCaseParticipants(changeId);
+  const remove = useRemoveCaseParticipant(changeId);
+  const [adding, setAdding] = useState(false);
+  const teams = contributorTeams(participants.data?.items ?? []);
+
+  return (
+    <div className="mb-3.5 grid gap-1.5" data-contributor-teams="">
+      <span id="assessment-teams" className="font-semibold text-meta">
+        {t('caseParticipants.contributorTeams')}
+      </span>
+      <ul aria-labelledby="assessment-teams" aria-describedby="assessment-teams-hint" className="m-0 flex list-none flex-wrap items-center gap-1.5 p-0">
+        {teams.map((team) => {
+          const pill = presentContributorTeam(team);
+          return (
+            <li key={team.id} className="inline-flex items-center gap-0.5" data-contributor-team={team.team?.key}>
+              <Pill tone={pill.tone} outlined={pill.outlined}>
+                {pill.label}
+              </Pill>
+              <button
+                type="button"
+                className="rounded-full px-1 text-muted hover:text-fg"
+                aria-label={t('caseParticipants.removeTeam', { name: pill.label })}
+                disabled={remove.isPending}
+                onClick={() => remove.mutate(team.id)}
+              >
+                {REMOVE_GLYPH}
+              </button>
+            </li>
+          );
+        })}
+        {participants.isSuccess && teams.length === 0 ? <li className="text-meta text-muted">{t('caseParticipants.contributorTeamsNone')}</li> : null}
+        <li>
+          <Button variant="ghost" size="small" onClick={() => setAdding(true)}>
+            {t('caseParticipants.addTeam')}
+          </Button>
+        </li>
+      </ul>
+      <span id="assessment-teams-hint" className="text-meta text-muted">
+        {t('caseParticipants.contributorTeamsHint')}
+      </span>
+      {participants.isError ? <ProblemAlert error={participants.error} /> : null}
+      {remove.isError ? <ProblemAlert error={remove.error} /> : null}
+      {adding ? <AddCaseParticipantDialog changeId={changeId} teamsOnly onOpenChange={setAdding} /> : null}
+    </div>
   );
 }
