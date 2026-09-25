@@ -2,8 +2,8 @@
 an HttpOnly cookie scoped to the auth path, a `user_session` row behind every refresh so
 a person or an admin revokes at once. Idle and absolute limits are enforced on refresh;
 they are the bank's security policy (ID-08), the platform defaults where it sets none, and
-never above the SESSION_*_MAX settings. A replay inside the grace window answers like the original, a replay after it revokes
-the whole session (ID-S9).
+never above the SESSION_*_MAX settings. A replay inside the grace window answers like the
+original, a replay after it revokes the whole session (ID-S9).
 
 `resolve_access_token` is what the three auth classes call. It reads the session row
 in identity-lookup mode (the tenant is not known yet), then activates the session's
