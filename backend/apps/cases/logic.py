@@ -192,6 +192,7 @@ def transition(
     user: Any,
     note: str = "",
     step_up_assertion_id: uuid.UUID | None = None,
+    audit: dict[str, str] | None = None,
 ) -> CaseTransition:
     """Move `case` to `to_status` if the state machine allows it, or raise its refusal.
 
@@ -199,8 +200,9 @@ def transition(
     sign-off names); this saves those fields with the new category and a raised
     `version`, and writes the `case_transition` row and the `record()` row, all in one
     transaction (CAS-08). A refusal writes nothing. The note is tenant content, so it is
-    kept on the ledger row and never in the audit values (R2_CROSS_CUTTING (m)). A move
-    made with a passkey step-up names the assertion on its audit row (AC-ID3).
+    kept on the ledger row and never in the audit values (R2_CROSS_CUTTING (m)); `audit`
+    adds the ids and keys the move names (an owner, a reason's key) to the audit row's after.
+    A move made with a passkey step-up names the assertion on its audit row (AC-ID3).
     """
     from_status = CaseStatusCategory(case.status)
     state.check_transition(from_status, to_status, case_facts(case, actor=None if user is None else user.id))
@@ -225,7 +227,7 @@ def transition(
             summary=f"{actor.label} moved a case from {from_status.value} to {to_status.value}.",
             tenant_id=case.tenant_id,
             before={"status": from_status.value},
-            after={"status": to_status.value, "version": case.version},
+            after={"status": to_status.value, "version": case.version, **(audit or {})},
             step_up_assertion_id=step_up_assertion_id,
         )
     return moved

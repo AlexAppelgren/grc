@@ -49,4 +49,9 @@ test.describe('cases journeys', () => {
   test.fixme("CAS-S15 J-3 @smoke: assessment to sign-off and the case file", async () => {
     // pending: CAS-S15 (CAS-03, CAS-04, CAS-05, CAS-06, CAS-07, AC-CAS1, J-3)
   });
+
+  // c9-triage: the API is built; the panel is c9-fe-triage-panel's and the walk c9-e2e-triage-journeys'.
+  test.fixme("CAS-S19: One person closes a case that needs no work, audited, and can restore it", async () => {
+    // pending: CAS-S19 (CAS-02)
+  });
 });

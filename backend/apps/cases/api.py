@@ -58,7 +58,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, if_match
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, if_match, principal
 from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Cases"])
@@ -347,9 +347,11 @@ def _stated_in_language(request: HttpRequest) -> dict[str, Any]:
         No library row moves. An optional `subStatus` places the case inside `assigned`.
         """ + _IF_MATCH + """
 
-        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `owner_required` when no
-        owner is named; `unknown_key` for an urgency or sub-status key the lists do not hold;
-        `validation_error` for a body the schema refuses. """ + _AHEAD
+        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `owner_required` when the
+        owner named is not an active member of this bank whose roles hold `cases.work`;
+        `unknown_key` for an urgency or sub-status key the lists do not hold, with the valid
+        keys in `validKeys`; `validation_error` for a body the schema refuses, including a
+        missing `ownerId`, which the error names."""
     ),
     summary="Decide how urgent a change is for your bank and who owns it",
 )
@@ -376,8 +378,8 @@ def triage_change(request: HttpRequest, body: CasesTriageBody, change_id: uuid.U
         which is a separate fact in the register. """ + _IF_MATCH + """
 
         Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `reason_required` when no
-        reason is given; `unknown_key` for a reason key the list does not hold;
-        `validation_error` for a body the schema refuses. """ + _AHEAD
+        reason is given; `unknown_key` for a reason key the list does not hold, with the valid
+        keys in `validKeys`; `validation_error` for a body the schema refuses."""
     ),
     summary="Set a change aside as not relevant to your bank, with a reason",
 )
@@ -403,7 +405,7 @@ def dismiss_change(request: HttpRequest, body: CasesReasonBody, change_id: uuid.
         earlier decision stays in the case's history. """ + _IF_MATCH + """
 
         Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """, including a case that was
-        signed off. """ + _AHEAD
+        signed off."""
     ),
     summary="Bring a dismissed change back to triage",
 )
@@ -431,14 +433,14 @@ def restore_change(request: HttpRequest, change_id: uuid.UUID = Path(..., descri
         that bank's case and its assessment, one row in the case's transition ledger and one audit row naming
         the person. """ + _IF_MATCH + """
 
-        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """. """ + _AHEAD
+        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """."""
     ),
     summary="Start working out what a change means for your bank",
 )
 @requires_permission(perms.CASES_WORK)
 @answers_problems
 def start_assessment(request: HttpRequest, change_id: uuid.UUID = Path(..., description=_CHANGE_ID)) -> Any:
-    return triage.start_assessment(**_stated_in_language(request), change_id=change_id)
+    return assessment.start_assessment(**_stated_in_language(request), change_id=change_id)
 
 
 @router.put(
@@ -455,22 +457,29 @@ def start_assessment(request: HttpRequest, change_id: uuid.UUID = Path(..., desc
 
         A person's session holding `cases.contribute` in their own bank. It writes that bank's
         assessment and one audit row naming the person, never the texts, which are tenant
-        content and never reach a log or a model. `applies: no` records the verdict; closing on
-        it is `POST /changes/{changeId}/close`. An optional `subStatus` places the case inside
-        its category. """ + _IF_MATCH + """
+        content and never reach a log or a model. `applies: no` closes a case being assessed on
+        this one person's word, with the bank's close reason of the "not_applicable" kind, and
+        only for a person who also holds `cases.work` (D-92); the close writes one row in the
+        case's transition ledger and can be undone with `POST /changes/{changeId}/restore`. An
+        optional `subStatus` places the case inside the category it is in after the save.
+        """ + _IF_MATCH + """
 
-        Errors: """ + _CASE_ERRORS + """; `invalid_transition` when the case is not being
-        assessed or implemented; `stale_write` for a missing or old `If-Match`, which is what the
-        second of two people saving the same version gets; `unknown_key` for an effort or
-        sub-status key the lists do not hold; `validation_error` for a body the schema refuses,
-        including an empty `why`. """ + _AHEAD
+        Errors: """ + _CASE_ERRORS + """; `permission_denied` naming `cases.work` in
+        `requiredPermission` for `applies: no` without it; `invalid_transition` when the case is
+        not being assessed or implemented, or for `applies: no` on a case being implemented;
+        `stale_write` for a missing or old `If-Match`, which is what the second of two people
+        saving the same version gets, and nothing is merged; `unknown_key` for an effort or
+        sub-status key the lists do not hold, or a sub-status of another category, with the
+        valid keys in `validKeys`; `validation_error` for a body the schema refuses, including
+        an empty `why`."""
     ),
     summary="Save whether a change applies to your bank, why, and what must change",
 )
 @requires_permission(perms.CASES_CONTRIBUTE)
 @answers_problems
 def save_assessment(request: HttpRequest, body: CasesAssessmentBody, change_id: uuid.UUID = Path(..., description=_CHANGE_ID)) -> Any:
-    return assessment.save_assessment(**_stated_in_language(request), change_id=change_id, body=body)
+    may_close = principal(request).has_permission(perms.CASES_WORK)
+    return assessment.save_assessment(**_stated_in_language(request), change_id=change_id, body=body, may_close=may_close)
 
 
 @router.post(
@@ -490,10 +499,11 @@ def save_assessment(request: HttpRequest, body: CasesAssessmentBody, change_id: 
         reason's key, never the note. The close can be undone with
         `POST /changes/{changeId}/restore`. """ + _IF_MATCH + """
 
-        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `four_eyes_violation` for a
-        reason of the "signed_off" kind, which needs a second person; `reason_required` when no
-        reason is given; `unknown_key` for a reason key the list does not hold;
-        `validation_error` for a body the schema refuses. """ + _AHEAD
+        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """, including a case waiting for
+        sign-off, which only a second person closes; `four_eyes_violation` for a reason of the
+        "signed_off" kind, which needs a second person; `reason_required` when no reason is
+        given; `unknown_key` for a reason key the list does not hold, with the valid keys in
+        `validKeys`; `validation_error` for a body the schema refuses."""
     ),
     summary="Close a case that needs no work, with a reason",
 )

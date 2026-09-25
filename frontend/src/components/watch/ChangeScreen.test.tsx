@@ -109,6 +109,8 @@ const change: ChangeDetail = {
     canRequestSignoff: false,
     closeReason: null,
     closedAt: null,
+    closedNote: null,
+    assessment: null,
     dismissedAt: null,
     dismissedBy: null,
     dismissedReason: null,
@@ -492,7 +494,7 @@ describe('the change screen', () => {
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
-  it('mounts the case’s panels once for a case in every category', async () => {
+  it('mounts the case’s panels once for a case in every category, each panel at most once', async () => {
     for (const category of ['new', 'assigned', 'assessing', 'implementing', 'signoff', 'closed', 'dismissed'] as const) {
       serve({ status: 200, data: { ...change, case: { ...change.case!, category } } });
       const { container } = render(shell(<ChangeScreen changeId="c-1" />));
@@ -500,6 +502,8 @@ describe('the change screen', () => {
       const panels = container.querySelectorAll('[data-case-panels]');
       expect(panels).toHaveLength(1);
       expect(panels[0]).toHaveAttribute('data-case-panels', category);
+      const shown = [...panels[0]!.querySelectorAll('[data-case-panel]')].map((panel) => panel.getAttribute('data-case-panel'));
+      expect(new Set(shown).size).toBe(shown.length);
       cleanup();
     }
   });

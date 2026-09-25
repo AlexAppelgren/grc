@@ -212,12 +212,26 @@ WORKFLOW = [
 ]
 
 
-# The operations whose module has landed, each proved by its own tests, not by a 501.
-BUILT: set[str] = set()
-# c9-signoff (apps/cases/tests_signoff.py).
-BUILT |= {"requestSignoff", "approveSignoff", "sendBackSignoff"}
-# c9-case-file-export (apps/cases/tests_case_file.py).
-BUILT |= {"getCaseFile"}
+# The operations whose module has landed: each answers for real past its gate, and its own
+# tests prove what it does.
+BUILT = frozenset(
+    {
+        # c9-triage: tests_triage.py and tests_close_paths.py
+        "triageChange",
+        "dismissChange",
+        "restoreChange",
+        "closeWithoutAction",
+        # c9-assessment: tests_assessment.py
+        "startAssessment",
+        "saveAssessment",
+        # c9-signoff: tests_signoff.py
+        "requestSignoff",
+        "approveSignoff",
+        "sendBackSignoff",
+        # c9-case-file-export: tests_case_file.py
+        "getCaseFile",
+    }
+)
 
 
 def _send(client: Any, route: Route, url: str, headers: dict[str, Any]) -> Any:
