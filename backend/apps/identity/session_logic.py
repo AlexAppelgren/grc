@@ -1,8 +1,9 @@
 """Sessions (D-06, ADR 0006): a short-lived HMAC access token, a rotating refresh token in
 an HttpOnly cookie scoped to the auth path, a `user_session` row behind every refresh so
 a person or an admin revokes at once. Idle and absolute limits are enforced on refresh;
-a replay inside the grace window answers like the original, a replay after it revokes
-the whole session (ID-S9).
+they are the bank's security policy (ID-08), the platform defaults where it sets none, and
+never above the SESSION_*_MAX settings. A replay inside the grace window answers like the
+original, a replay after it revokes the whole session (ID-S9).
 
 `resolve_access_token` is what the three auth classes call. It reads the session row
 in identity-lookup mode (the tenant is not known yet), then activates the session's
@@ -36,6 +37,7 @@ from apps.shared import permissions as perms
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.authentication import Principal, PrincipalKind
+from apps.tenants.models import SecurityPolicy
 
 
 @dataclass(frozen=True)
@@ -51,13 +53,37 @@ def actor_of(user: User) -> Actor:
 
 
 # ---------------------------------------------------------------------------------------
+# Limits (ID-08)
+# ---------------------------------------------------------------------------------------
+def limits(tenant_id: uuid.UUID | None) -> tuple[timedelta, timedelta]:
+    """The idle and absolute limits of a session in `tenant_id`: its bank's policy, the
+    platform default where the bank sets none (or for a platform session), and never above
+    the platform maximum, even for a row written around the policy route's check. Activates
+    the tenant, as every session in it runs there."""
+    idle, absolute = settings.SESSION_IDLE_MINUTES_DEFAULT, settings.SESSION_ABSOLUTE_HOURS_DEFAULT
+    if tenant_id is not None:
+        tenancy.activate(tenant_id)
+        policy = SecurityPolicy.objects.filter(tenant_id=tenant_id).first()  # ordering: tenant is unique, at most one row
+        if policy is not None:
+            idle = policy.session_idle_minutes or idle
+            absolute = policy.session_absolute_hours or absolute
+    return (
+        timedelta(minutes=min(idle, settings.SESSION_IDLE_MINUTES_MAX)),
+        timedelta(hours=min(absolute, settings.SESSION_ABSOLUTE_HOURS_MAX)),
+    )
+
+
+# ---------------------------------------------------------------------------------------
 # Cookies
 # ---------------------------------------------------------------------------------------
 def set_refresh_cookie(response: HttpResponse, value: str) -> None:
+    """The cookie lives as long as its session may: until the session's absolute end."""
+    session, _ = _load_by_refresh(value)
+    remaining = session.expires_at - timezone.now() if session is not None else timedelta(0)
     response.set_cookie(
         settings.REFRESH_COOKIE_NAME,
         value,
-        max_age=settings.SESSION_ABSOLUTE_HOURS_DEFAULT * 3600,
+        max_age=max(0, int(remaining.total_seconds())),
         httponly=True,
         secure=settings.REFRESH_COOKIE_SECURE,
         samesite="Strict",
@@ -89,12 +115,13 @@ def create_session(
     *, user: User, kind: SessionKind, tenant_id: uuid.UUID | None, request: HttpRequest | None, now: datetime | None = None
 ) -> SessionBundle:
     now = now or timezone.now()
+    _, absolute = limits(tenant_id)
     session = UserSession(
         user=user,
         tenant_id=tenant_id,
         kind=kind.value,
         last_seen_at=now,
-        expires_at=now + timedelta(hours=settings.SESSION_ABSOLUTE_HOURS_DEFAULT),
+        expires_at=now + absolute,
         ip=client_ip(request),
         user_agent=user_agent(request),
     )
@@ -231,8 +258,7 @@ def refresh(value: str | None, request: HttpRequest | None) -> tuple[str, int, s
     session, presented_hash = _load_by_refresh(value)
     if session is None or presented_hash is None or not _live(session, now):
         raise ValidationError("Sign in again.", code="unauthenticated")
-    if session.tenant_id is not None:
-        tenancy.activate(session.tenant_id)
+    idle_limit, absolute_limit = limits(session.tenant_id)
     current = tokens.constant_equal(presented_hash, session.refresh_token_hash)
     previous = session.previous_refresh_hash is not None and tokens.constant_equal(
         presented_hash, session.previous_refresh_hash
@@ -264,16 +290,21 @@ def refresh(value: str | None, request: HttpRequest | None) -> tuple[str, int, s
         raise ValidationError("Sign in again.", code="unauthenticated")
     if not current:
         raise ValidationError("Sign in again.", code="unauthenticated")
-    idle_limit = timedelta(minutes=settings.SESSION_IDLE_MINUTES_DEFAULT)
+    # A limit the bank lowered since sign-in applies now; a raised one never extends.
+    deadline = min(session.expires_at, session.created_at + absolute_limit)
+    if now >= deadline:
+        revoke_session(session, reason="absolute", actor=actor_of(session.user), request=request)
+        raise ValidationError("Sign in again.", code="unauthenticated")
     if now - session.last_seen_at > idle_limit:
         revoke_session(session, reason="idle", actor=actor_of(session.user), request=request)
         raise ValidationError("Sign in again.", code="unauthenticated")
+    session.expires_at = deadline
     new_value, new_hash = tokens.new_refresh_token(session.id)
     session.previous_refresh_hash = session.refresh_token_hash
     session.refresh_token_hash = new_hash
     session.rotated_at = now
     session.last_seen_at = now
-    session.save(update_fields=["previous_refresh_hash", "refresh_token_hash", "rotated_at", "last_seen_at"])
+    session.save(update_fields=["previous_refresh_hash", "refresh_token_hash", "rotated_at", "last_seen_at", "expires_at"])
     access_token, expires_in = tokens.issue_access_token(session.id, session.kind, now)
     record(
         action="session.refreshed",
