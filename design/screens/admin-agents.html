@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Screen card: agents (/admin/agents)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Noto+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Serves AGT-03, AGT-04 and ADM-01 (chunk 11; AGT-S5, AGT-S13). Cut from
+   design/prototype/index.html vAgents() and redrawn at the foundations' proportions.
+
+   Two halves, and the card keeps them apart by what each offers, never by a sentence
+   of policy: "What bleqq watches" is bleqq's general watch, read-only for every bank
+   (name, purpose, jurisdictions, cadence, next run and the last run's status, nothing
+   else: no prompt, tool, model, version, budget, cost, findings or setting), and "Our
+   agents" are the agents this bank added for itself, each with its controls. There is
+   no control anywhere on the card that reaches one of bleqq's agents.
+
+   Departures from the prototype, each with its reason:
+   - Its "Only an administrator or the compliance officer can change agents" line is
+     not copied: agents.manage alone decides (CHUNK11_TASKS ruling 5), and screens name
+     permissions, never roles.
+   - One monthly cap for the bank, not one per agent (ruling 3), and "Spend this month"
+     sums the bank's own runs only; a line says bleqq's watch runs at bleqq's cost so the
+     figure is not misread.
+   - "Our private sources" is chunk 13 (WAT-06) and is not drawn.
+   - A run lists findings, never proposals: a bank's own agent writes only its own zone
+     and never files a library proposal (ruling 2).
+   - The AI switch is the organisation's one switch (admin-organisation.html). This card
+     shows its state in a sentence and links there; it never draws a second switch.
+   - Research requests (AGT-05) are drawn by their own task; they sit under "Our agents".
+
+   Values follow design/system/foundations.md and design/system/pills-and-labels.md; the
+   build maps them to Green tokens. Names, figures and dates are sample data. */
+/* Values: design/system/foundations.md (14px base, 36px buttons at a 6px radius,
+   hairline cards at 8px, dialogs at 12px) and design/system/pills-and-labels.md.
+   Every colour is a Green token from green-tokens 3.1.8, with the brand pair as
+   frontend/src/styles/brand.css overrides it, never SEB's values. */
+:root{
+  --page:#ffffff;            /* l1-neutral-01 */
+  --surface:#ffffff;         /* l2-neutral-02 */
+  --subtle:#f4f5f5;          /* l1-neutral-02 */
+  --accent:#eaebeb;          /* l3-neutral-02 */
+  --hover:rgba(0,0,0,.06);   /* state-neutral-05 */
+  --line:#dfe1e1;            /* border-neutral-02 */
+  --line-control:#dfe1e1;    /* border-neutral-02 */
+  --line-strong:#777e7c;     /* border-neutral-01 */
+  --text:#0a0b0b;            /* content-neutral-01 */
+  --muted:#636967;           /* content-neutral-02 */
+  --primary:#0a0b0b;         /* l3-neutral-03 */
+  --on-primary:#ffffff;      /* content-neutral-03 */
+  --focus:#005fb3;           /* content-notice-01 */
+  --notice:#005fb3;--notice-pill:#e6f3ff;          /* content-notice-01 on l3-notice-02 */
+  --positive:#026436;--positive-pill:#dcefdc;      /* content-positive-03 on l3-positive-02 */
+  --warning:#8f530a;--warning-pill:#fce8cf;--warning-soft:#fce8cf;  /* l3-warning-02 */
+  --negative:#b92f13;--negative-pill:#fdebe8;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --brand:#6a5730;--brand-pill:#ece5d6;--meter:#0a3a2a;            /* brand.css content-brand-02 on l3-brand-02 */
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+}
+/* Dark: the four status tones take Green's -03 step on pills; a warn or bad
+   banner keeps the -02 step and puts every word in the text colour. */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --notice:#66b8ff;--notice-pill:#003666;
+  --positive:#8ae58d;--positive-pill:#003d26;
+  --warning:#f5b970;--warning-pill:#5f3707;--warning-soft:#774508;
+  --negative:#f08975;--negative-pill:#5c170a;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --brand:#d9cba9;--brand-pill:#33291a;--meter:#d9cba9;
+}}
+/* Fixed-theme frames, so one card shows a state in light AND dark whatever the
+   viewer's system is set to. They carry the same aliases, so nothing inside
+   needs to know which theme it is in. */
+.theme{border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--page);color:var(--text)}
+.theme.light{
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --notice:#005fb3;--notice-pill:#e6f3ff;--positive:#026436;--positive-pill:#dcefdc;
+  --warning:#8f530a;--warning-pill:#fce8cf;--warning-soft:#fce8cf;
+  --negative:#b92f13;--negative-pill:#fdebe8;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --brand:#6a5730;--brand-pill:#ece5d6;--meter:#0a3a2a;
+}
+.theme.dark{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --notice:#66b8ff;--notice-pill:#003666;--positive:#8ae58d;--positive-pill:#003d26;
+  --warning:#f5b970;--warning-pill:#5f3707;--warning-soft:#774508;
+  --negative:#f08975;--negative-pill:#5c170a;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --brand:#d9cba9;--brand-pill:#33291a;--meter:#d9cba9;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px;font-weight:500}
+p{margin:0 0 8px}
+b{font-weight:600}
+a{color:inherit;text-underline-offset:3px}
+main{padding:24px max(32px,env(safe-area-inset-right)) 64px max(32px,env(safe-area-inset-left));max-width:1200px;width:100%;margin:0 auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.meta{color:var(--muted);font-size:13px;line-height:18px}
+.mono{font-family:var(--mono);font-size:13px}
+.microlabel{font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+/* State labels. They belong to the card, not to the screen. */
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-of-type{margin-top:24px}
+.cap{color:var(--muted);font-size:13px;line-height:18px;margin:0 0 10px}
+
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 16px;margin-bottom:20px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+.head .acts{margin-left:auto}
+.back{background:none;border:0;padding:0;margin:0 0 8px;color:var(--muted);font-size:13px;line-height:18px;text-decoration:underline;text-underline-offset:3px}
+.status{margin:0 0 12px;font-weight:500}
+.status:empty{display:none}
+
+/* Notice (banner): a tone fill, no coloured edge, 6px radius. Every word inside
+   a warn or bad notice is the text colour (foundations.md). */
+.notice{background:var(--subtle);color:var(--text);border-radius:6px;padding:10px 12px;margin:0 0 16px}
+.notice.warn{background:var(--warning-soft)}
+.notice.bad{background:var(--negative-soft)}
+.notice p:last-child{margin-bottom:0}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+.panel>h2{margin-bottom:12px}
+.panel>.cap{margin-top:-6px}
+.cols{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.cols>*{min-width:0}
+@media (min-width:768px){.cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Pill: fully rounded, 20px, 13px at 500, no border. Tone comes from the slot
+   or the kind, never from a person (pills-and-labels.md). */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+.pill.notice{background:var(--notice-pill);color:var(--notice)}
+.pill.positive{background:var(--positive-pill);color:var(--positive)}
+.pill.warning{background:var(--warning-pill);color:var(--warning)}
+.pill.negative{background:var(--negative-pill);color:var(--negative)}
+.pill.brand{background:var(--brand-pill);color:var(--brand)}
+.pill .x{margin-left:6px;font-weight:400}
+.pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pills.line{gap:6px 10px}
+
+/* Button: 36px, 6px radius, body at 500. Primary is neutral; danger is an
+   outline button with negative text. */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.ghost{background:transparent;color:var(--text);border-color:transparent}
+.btn.danger{background:var(--surface);color:var(--negative);border-color:var(--line-control)}
+.btn.small{height:32px;padding:0 12px}
+.btn.outline:hover,.btn.ghost:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.btn.danger:hover{background:var(--negative-hover)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* Actions right, two per row on a phone, the primary last and so on the right. */
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+.bar.left{justify-content:flex-start}
+.bar .btn{min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* List rows: 12 by 16px, a hairline card at 8px. */
+.rows{display:grid;gap:8px}
+.row{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;text-decoration:none;color:inherit}
+a.row:hover,button.row:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.row h3{margin:6px 0 4px;font-weight:600}
+.row .meta{display:flex;flex-wrap:wrap;gap:4px 12px}
+
+.field{display:grid;gap:4px;margin-bottom:12px}
+.field label{font-weight:500}
+.field input,.field select,.field textarea{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;color:var(--text)}
+.field textarea{height:auto;min-height:76px;padding:8px 10px;resize:vertical}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted);font-style:italic}
+.field input[aria-invalid="true"],.field select[aria-invalid="true"]{border-color:var(--negative)}
+.field .hint,.field .err{font-size:13px;line-height:18px}
+.field .hint{color:var(--muted)}
+.field .err{color:var(--negative)}
+.pair{display:grid;gap:0 16px;grid-template-columns:minmax(0,1fr)}
+.pair>*{min-width:0}
+@media (min-width:768px){.pair{grid-template-columns:repeat(2,minmax(0,1fr))}}
+fieldset{border:0;margin:0;padding:0}
+legend{padding:0;font-weight:500}
+.check{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{width:16px;height:16px;height:16px;margin:2px 0 0;accent-color:var(--primary);flex:none}
+.check small{display:block;color:var(--muted);font-size:13px;line-height:18px}
+
+/* Dialog: 12px radius, at most 560px, over the scrim. */
+.modal{display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,11,11,.6);border-radius:8px;margin-bottom:16px}
+.modal .box{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.modal .box>h2{margin-bottom:12px}
+
+.skeleton{height:72px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.empty,.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.empty h2,.errorstate h2{color:var(--text)}
+.empty p,.errorstate p{margin:8px auto 16px;max-width:60ch}
+.restricted{max-width:60ch;margin:0 auto;padding:48px 0;text-align:center}
+.restricted p{margin:12px 0 0;color:var(--muted)}
+/* Grid items must be allowed to shrink, or the 375px phone frame inside one
+   widens its track and the page scrolls sideways. */
+.statebox{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.statebox>*{min-width:0}
+@media (min-width:768px){.statebox{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* A 375px frame, so the narrow layout can be read on a wide screen. */
+.phone{width:375px;max-width:100%;padding:12px;background:var(--page);border:1px solid var(--line);border-radius:8px}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
+}
+
+/* The plain key, shown once: monospace, wrapping, on the subtle surface. */
+.secret{font-family:var(--mono);font-size:13px;line-height:20px;word-break:break-all;background:var(--subtle);border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin:0 0 8px}
+/* Key facts under a row title: label, then value. */
+.kv{display:grid;grid-template-columns:1fr;gap:2px 16px;margin:8px 0 0}
+@media (min-width:768px){.kv{grid-template-columns:132px minmax(0,1fr)}}
+.kv dt{color:var(--muted);font-size:13px;line-height:18px}
+.kv dd{margin:0 0 6px}
+@media (min-width:768px){.kv dd{margin-bottom:2px}}
+
+/* Shared by the chunk 11 cards. */
+.kv{grid-template-columns:1fr}
+@media (min-width:768px){.kv.wide{grid-template-columns:132px minmax(0,1fr)}}
+/* Meter: brand green is for meters and the timeline alone (design/README.md). */
+.meter{height:8px;border-radius:999px;background:var(--accent);overflow:hidden;margin:8px 0}
+.meter i{display:block;height:100%;background:var(--meter)}
+.figure{font-size:24px;line-height:32px;font-weight:600;letter-spacing:-.02em;margin:0}
+.figure small{font-size:14px;font-weight:400;color:var(--muted);letter-spacing:0}
+/* A run or a version line: facts left, figure right, wrapping on a phone. */
+.lines{margin:8px 0 0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.lines li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.lines li:last-child{border-bottom:0}
+.lines .grow{flex:1 1 180px;min-width:0}
+.lines .fig{margin-left:auto;font-variant-numeric:tabular-nums}
+.inline{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.inline .field{margin:0;flex:0 1 200px;min-width:0}
+.sub{margin:16px 0 4px;font-size:14px;font-weight:600}
+/* A select shrinks with its column; a long option never widens the page. */
+.field select,.kv select{max-width:100%;min-width:0}
+.agent h2{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin-bottom:4px}
+.agent>.meta{margin-bottom:8px}
+.agent .kv select{height:32px;padding:0 8px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px}
+.watch .row h3{margin:0 0 4px}
+</style>
+</head>
+<body>
+<main>
+
+<h2 class="k">1 · The page (an admin holding agents manage)</h2>
+<button class="back">Admin</button>
+<div class="head">
+  <div>
+    <h1>Agents</h1>
+    <p class="lede">What bleqq watches for every bank, and the agents we run for ourselves: when they run, what they cover and what they may spend.</p>
+  </div>
+</div>
+<p class="status" role="status" tabindex="-1"></p>
+<p class="meta">AI features are on for Example Bank AB. <a href="admin-organisation.html">Change it under Organisation</a></p>
+
+<section class="panel watch" aria-labelledby="bw">
+  <h2 id="bw">What bleqq watches</h2>
+  <p class="cap">Every bank has these. They read public sources and feed the shared library.</p>
+  <div class="rows">
+    <div class="row">
+      <h3>Regulatory watch</h3>
+      <p class="meta">Checks the authorities' sources for new and changed rules in the regulated financial sector.</p>
+      <dl class="kv wide">
+        <dt>Jurisdictions</dt><dd><div class="pills"><span class="pill brand">EU</span><span class="pill brand">Sweden</span><span class="pill brand">Denmark</span><span class="pill brand">Norway</span><span class="pill brand">Finland</span></div></dd>
+        <dt>Runs</dt><dd>Daily</dd>
+        <dt>Next run</dt><dd>26 Sep 2026 06:00</dd>
+        <dt>Last run</dt><dd><div class="pills line"><span>25 Sep 2026 06:00</span><span class="pill positive">Done</span></div></dd>
+      </dl>
+    </div>
+    <div class="row">
+      <h3>Library check</h3>
+      <p class="meta">Checks each proposed library change against the source it cites before it is published.</p>
+      <dl class="kv wide">
+        <dt>Jurisdictions</dt><dd><div class="pills"><span class="pill brand">EU</span><span class="pill brand">Sweden</span><span class="pill brand">Denmark</span><span class="pill brand">Norway</span><span class="pill brand">Finland</span></div></dd>
+        <dt>Runs</dt><dd>Weekly</dd>
+        <dt>Next run</dt><dd>28 Sep 2026 07:00</dd>
+        <dt>Last run</dt><dd><div class="pills line"><span>25 Sep 2026 07:12</span><span class="pill notice">Running</span></div></dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="panel" aria-labelledby="sp">
+  <h2 id="sp">Spend this month</h2>
+  <p class="figure">€7.35 <small>of €40.00</small></p>
+  <div class="meter" role="img" aria-label="18 percent of the monthly cap used"><i style="width:18%"></i></div>
+  <p class="meta">Our own agents only. bleqq's watch runs at bleqq's cost and is not counted here.</p>
+  <p class="meta">When the cap is reached, scheduled runs wait until next month and Run now is off.</p>
+  <form class="inline" aria-label="Monthly cap">
+    <div class="field"><label for="cap">Monthly cap in euro</label><input id="cap" type="number" min="1" step="1" value="40"></div>
+    <button class="btn outline" type="submit">Set cap</button>
+  </form>
+</section>
+
+<h2 class="sub" id="ours">Our agents</h2>
+<div class="rows" aria-labelledby="ours">
+  <section class="panel agent">
+    <h2>Pension transfer watch <span class="pill positive">On</span><span class="pill brand">Version 1</span></h2>
+    <p class="meta">Source checker · checks the sources we pick for changes that touch pension transfers.</p>
+    <dl class="kv wide">
+      <dt><label for="cad1">Runs</label></dt><dd><select id="cad1"><option>Daily</option><option selected>Weekly</option><option>Monthly</option><option>Only when we ask</option></select></dd>
+      <dt>Next run</dt><dd>29 Sep 2026 06:00</dd>
+      <dt>Covers</dt><dd><div class="pills"><span class="pill brand">Sweden</span><span class="pill brand">Finland</span></div></dd>
+      <dt>Writes to</dt><dd>Our own records</dd>
+    </dl>
+    <div class="bar"><button class="btn outline small">Switch off</button><button class="btn outline small">Pause</button><button class="btn small">Run now</button></div>
+    <h3 class="sub">Recent runs</h3>
+    <ul class="lines">
+      <li><span class="grow"><b>22 Sep 2026 06:02</b> · Scheduled · 14 min · 3 findings</span><span class="pill positive">Done</span><span class="fig">€2.10</span></li>
+      <li><span class="grow"><b>18 Sep 2026 10:41</b> · Run now by Erik Holm · 9 min · 1 finding</span><span class="pill positive">Done</span><span class="fig">€1.25</span></li>
+      <li><span class="grow"><b>15 Sep 2026 06:01</b> · Scheduled · stopped by Erik Holm after 4 min</span><span class="pill warning">Stopped</span><span class="fig">€0.40</span></li>
+      <li><span class="grow"><b>8 Sep 2026 06:01</b> · Scheduled · a source did not answer</span><span class="pill negative">Failed</span><span class="fig">€0.15</span></li>
+    </ul>
+  </section>
+
+  <section class="panel agent">
+    <h2>Consumer credit research <span class="pill positive">On</span><span class="pill brand">Version 2</span></h2>
+    <p class="meta">Topic research · researches consumer credit rules in the markets we pick.</p>
+    <dl class="kv wide">
+      <dt><label for="cad2">Runs</label></dt><dd><select id="cad2"><option>Daily</option><option>Weekly</option><option selected>Monthly</option><option>Only when we ask</option></select></dd>
+      <dt>Next run</dt><dd>Running now</dd>
+      <dt>Covers</dt><dd><div class="pills"><span class="pill brand">Sweden</span><span class="pill brand">Norway</span><span class="pill brand">Denmark</span></div></dd>
+      <dt>Writes to</dt><dd>Our own records</dd>
+    </dl>
+    <div class="bar"><button class="btn outline small">Switch off</button><button class="btn outline small">Pause</button><button class="btn danger small">Stop run</button></div>
+    <h3 class="sub">Recent runs</h3>
+    <ul class="lines">
+      <li><span class="grow"><b>25 Sep 2026 07:30</b> · Run now by Erik Holm · started 6 min ago</span><span class="pill notice">Running</span><span class="fig">—</span></li>
+      <li><span class="grow"><b>1 Sep 2026 06:00</b> · Scheduled · 21 min · 2 findings</span><span class="pill positive">Done</span><span class="fig">€3.05</span></li>
+    </ul>
+  </section>
+
+  <section class="panel agent">
+    <h2>Insurance distribution watch <span class="pill warning">Paused</span><span class="pill brand">Version 1</span></h2>
+    <p class="meta">Source checker · checks the sources we pick for insurance distribution changes.</p>
+    <dl class="kv wide">
+      <dt><label for="cad3">Runs</label></dt><dd><select id="cad3"><option>Daily</option><option selected>Weekly</option><option>Monthly</option><option>Only when we ask</option></select></dd>
+      <dt>Next run</dt><dd>Paused</dd>
+      <dt>Covers</dt><dd><div class="pills"><span class="pill brand">Sweden</span></div></dd>
+      <dt>Writes to</dt><dd>Our own records</dd>
+    </dl>
+    <div class="bar"><button class="btn outline small">Switch off</button><button class="btn outline small">Resume</button><button class="btn small" disabled>Run now</button></div>
+    <h3 class="sub">Recent runs</h3>
+    <ul class="lines">
+      <li><span class="grow"><b>11 Sep 2026 06:01</b> · Scheduled · 7 min · no findings</span><span class="pill positive">Done</span><span class="fig">€0.60</span></li>
+    </ul>
+  </section>
+
+  <section class="panel agent">
+    <h2>Sanctions list check <span class="pill">Off</span><span class="pill brand">Version 1</span></h2>
+    <p class="meta">Source checker · checks the sanctions sources we pick.</p>
+    <dl class="kv wide">
+      <dt>Runs</dt><dd>Weekly</dd>
+      <dt>Next run</dt><dd>Switched off</dd>
+      <dt>Covers</dt><dd><div class="pills"><span class="pill brand">EU</span></div></dd>
+      <dt>Writes to</dt><dd>Our own records</dd>
+    </dl>
+    <div class="bar"><button class="btn small">Switch on</button></div>
+    <h3 class="sub">Recent runs</h3>
+    <p class="meta">No runs yet.</p>
+  </section>
+</div>
+<div class="bar"><button class="btn outline">Add an agent</button></div>
+
+<h2 class="k">2 · A cadence above the plan's limit (422 above_plan_limit, rendered in place)</h2>
+<div class="panel agent">
+  <dl class="kv wide">
+    <dt><label for="cad4">Runs</label></dt>
+    <dd><select id="cad4" aria-invalid="true" aria-describedby="cad4e" style="border-color:var(--negative)"><option selected>Daily</option><option>Weekly</option></select>
+      <p class="meta" id="cad4e" role="alert" style="color:var(--negative);margin:4px 0 0">Our plan runs an agent at most weekly. The cadence stays weekly.</p></dd>
+  </dl>
+</div>
+
+<h2 class="k">3 · Run now, and the line that answers it</h2>
+<p class="status" role="status" tabindex="-1">Run started. It is at the top of Recent runs.</p>
+
+<h2 class="k">4 · Stop run</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="st" aria-describedby="std">
+    <h2 id="st">Stop this run?</h2>
+    <p id="std">Consumer credit research stops now. What it found so far is kept, and the run shows as stopped with what it cost.</p>
+    <div class="bar"><button class="btn outline">Keep running</button><button class="btn danger">Stop the run</button></div>
+  </div>
+</div>
+<p class="status" role="status" tabindex="-1">Stopped. The run shows as stopped under Recent runs.</p>
+
+<h2 class="k">5 · The cap is reached</h2>
+<div class="notice warn" role="status"><p><b>This month's cap is reached.</b> Scheduled runs wait until 1 Oct 2026, and Run now is off until then or until the cap is raised.</p></div>
+<section class="panel">
+  <h2>Spend this month</h2>
+  <p class="figure">€40.00 <small>of €40.00</small></p>
+  <div class="meter" role="img" aria-label="100 percent of the monthly cap used"><i style="width:100%"></i></div>
+  <p class="meta">Our own agents only. bleqq's watch runs at bleqq's cost and is not counted here.</p>
+</section>
+<div class="panel agent" style="margin-top:0">
+  <h2>Pension transfer watch <span class="pill positive">On</span><span class="pill brand">Version 1</span></h2>
+  <dl class="kv wide"><dt>Next run</dt><dd>Waiting, monthly cap reached</dd></dl>
+  <div class="bar"><button class="btn outline small">Switch off</button><button class="btn outline small">Pause</button><button class="btn small" disabled>Run now</button></div>
+</div>
+
+<h2 class="k">6 · AI features are off for the organisation</h2>
+<p class="cap">The state and the link replace the "on" line above. There is no switch here; the organisation's one switch is on Organisation.</p>
+<div class="notice" role="status"><p>AI features are off for Example Bank AB, so our own agents do not run. What bleqq watches keeps running. <a href="admin-organisation.html">Change it under Organisation</a></p></div>
+<div class="panel agent">
+  <h2>Pension transfer watch <span class="pill positive">On</span><span class="pill brand">Version 1</span></h2>
+  <dl class="kv wide"><dt>Next run</dt><dd>Waiting, AI features are off</dd></dl>
+  <div class="bar"><button class="btn outline small">Switch off</button><button class="btn outline small">Pause</button><button class="btn small" disabled>Run now</button></div>
+</div>
+
+<h2 class="k">7 · A bank with no agent of its own</h2>
+<p class="cap">"What bleqq watches" and "Spend this month" stay above it, unchanged; the empty state takes the place of the agent list.</p>
+<div class="empty">
+  <h2>No agents of our own yet</h2>
+  <p>Add one to check sources or research topics that matter to us, beyond what bleqq watches. It runs under our monthly cap and writes only to our own records.</p>
+  <button class="btn">Add an agent</button>
+</div>
+
+<h2 class="k">8 · Add an agent</h2>
+<div class="modal">
+  <form class="box" aria-labelledby="add">
+    <h2 id="add">Add an agent</h2>
+    <div class="field"><label for="ak">What it does</label><select id="ak"><option selected>Source checker: checks the sources we pick</option><option>Topic research: researches a topic we name</option></select></div>
+    <div class="field"><label for="an">Name</label><input id="an" placeholder="e.g. Pension transfer watch"><span class="hint">Ours to recognise it by.</span></div>
+    <div class="field"><label for="ac">Runs</label><select id="ac"><option>Weekly</option><option>Monthly</option><option>Only when we ask</option></select></div>
+    <fieldset class="field">
+      <legend>Covers</legend>
+      <span class="hint">Our operating markets come first, then the ones we watch.</span>
+      <label class="check" for="c1"><input type="checkbox" id="c1" checked><span>Sweden<small>Operating market</small></span></label>
+      <label class="check" for="c2"><input type="checkbox" id="c2" checked><span>Finland<small>Operating market</small></span></label>
+      <label class="check" for="c3"><input type="checkbox" id="c3"><span>Norway<small>Watched market</small></span></label>
+    </fieldset>
+    <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Add the agent</button></div>
+    <p class="meta" style="margin:8px 0 0">It starts switched off, so nothing runs until you switch it on.</p>
+  </form>
+</div>
+
+<h2 class="k">9 · A member who may read but not change agents</h2>
+<p class="cap">Everything above, with no control on it: no cadence picker, no buttons, no cap field.</p>
+<div class="panel agent">
+  <h2>Pension transfer watch <span class="pill positive">On</span><span class="pill brand">Version 1</span></h2>
+  <dl class="kv wide"><dt>Runs</dt><dd>Weekly</dd><dt>Next run</dt><dd>29 Sep 2026 06:00</dd></dl>
+  <p class="meta" style="margin:8px 0 0">Changing agents needs agents manage.</p>
+</div>
+
+<h2 class="k">10 · Empty, loading, error and denied, in both themes</h2>
+<p class="cap">The same markup with the light and the dark aliases fixed. Denied is what a member without watch read sees at this address.</p>
+<div class="statebox">
+  <div class="theme light">
+    <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Light</p>
+    <div class="empty"><h2>No agents of our own yet</h2><p>Add one to check sources or research topics that matter to us, beyond what bleqq watches.</p><button class="btn outline small">Add an agent</button></div>
+    <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:16px 0"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+    <div class="errorstate" role="alert"><h2>Could not load the agents</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+    <div class="restricted" role="alert" style="padding:24px 0"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p class="meta">Needs watch read</p></div>
+  </div>
+  <div class="theme dark">
+    <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Dark</p>
+    <div class="empty"><h2>No agents of our own yet</h2><p>Add one to check sources or research topics that matter to us, beyond what bleqq watches.</p><button class="btn outline small">Add an agent</button></div>
+    <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:16px 0"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+    <div class="errorstate" role="alert"><h2>Could not load the agents</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+    <div class="restricted" role="alert" style="padding:24px 0"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p class="meta">Needs watch read</p></div>
+  </div>
+</div>
+
+<h2 class="k">11 · At 375 px, light and dark: bleqq's watch, the spend and one of our agents</h2>
+<div class="statebox">
+  <div class="theme light" style="padding:0;border:0">
+    <div class="phone">
+      <div class="row watch"><h3>Regulatory watch</h3><dl class="kv"><dt>Runs</dt><dd>Daily</dd><dt>Next run</dt><dd>26 Sep 2026 06:00</dd><dt>Last run</dt><dd><div class="pills line"><span>25 Sep 2026 06:00</span><span class="pill positive">Done</span></div></dd></dl></div>
+      <div class="panel" style="margin:12px 0"><h2>Spend this month</h2><p class="figure">€7.35 <small>of €40.00</small></p><div class="meter" role="img" aria-label="18 percent of the monthly cap used"><i style="width:18%"></i></div><p class="meta">Our own agents only. bleqq's watch runs at bleqq's cost and is not counted here.</p></div>
+      <div class="panel agent" style="margin:0"><h2>Pension transfer watch <span class="pill positive">On</span><span class="pill brand">Version 1</span></h2><dl class="kv"><dt>Next run</dt><dd>29 Sep 2026 06:00</dd></dl><div class="bar"><button class="btn outline small">Pause</button><button class="btn small">Run now</button></div><ul class="lines"><li><span class="grow"><b>22 Sep 2026 06:02</b> · Scheduled · 3 findings</span><span class="pill positive">Done</span><span class="fig">€2.10</span></li></ul></div>
+    </div>
+  </div>
+  <div class="theme dark" style="padding:0;border:0">
+    <div class="phone">
+      <div class="row watch"><h3>Regulatory watch</h3><dl class="kv"><dt>Runs</dt><dd>Daily</dd><dt>Next run</dt><dd>26 Sep 2026 06:00</dd><dt>Last run</dt><dd><div class="pills line"><span>25 Sep 2026 06:00</span><span class="pill positive">Done</span></div></dd></dl></div>
+      <div class="panel" style="margin:12px 0"><h2>Spend this month</h2><p class="figure">€7.35 <small>of €40.00</small></p><div class="meter" role="img" aria-label="18 percent of the monthly cap used"><i style="width:18%"></i></div><p class="meta">Our own agents only. bleqq's watch runs at bleqq's cost and is not counted here.</p></div>
+      <div class="panel agent" style="margin:0"><h2>Pension transfer watch <span class="pill positive">On</span><span class="pill brand">Version 1</span></h2><dl class="kv"><dt>Next run</dt><dd>29 Sep 2026 06:00</dd></dl><div class="bar"><button class="btn outline small">Pause</button><button class="btn small">Run now</button></div><ul class="lines"><li><span class="grow"><b>22 Sep 2026 06:02</b> · Scheduled · 3 findings</span><span class="pill positive">Done</span><span class="fig">€2.10</span></li></ul></div>
+    </div>
+  </div>
+</div>
+
+<p class="note">Agents card (/admin/agents). The page reads what bleqq watches under watch read,
+which every member holds, and draws every control only for agents manage. bleqq's agents are
+listed read-only with the five facts a bank may see and the last run's status as a pill; there
+is nothing to press on them, so a request that would switch one off, pause it, re-scope it or
+run it now has no button to come from, and the server's 403 is its guard. The bank's own agents
+each carry a status pill from the agent's state (On positive, Paused warning, Off information)
+and a version pill in brand; a run's status comes from the run (Done positive, Running notice,
+Stopped warning, Failed negative). Cadence is a picker inside the plan's limit, and a cadence
+above it renders the server's 422 in place with the old value kept. Stop run confirms once and
+keeps what was found. There is one monthly cap for the bank: the meter is the brand green, the
+figure sums our own runs, and when the cap is reached scheduled runs wait and Run now is off.
+The AI line is the organisation switch's state with a link to Organisation, never a second
+switch; when it is off our agents wait and bleqq's keep running. A new agent starts switched off
+and covers our operating markets first, then the watched ones. Research requests (AGT-05) are drawn by their own task and sit
+between the spend and our agents. Two buttons per row on a phone, the primary on the right.</p>
+
+</main>
+</body>
+</html>
