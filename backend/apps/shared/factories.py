@@ -33,7 +33,8 @@ from types import SimpleNamespace
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, ComplianceStatus, FootprintChangeRequest, VocabularySuggestion
+from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -52,10 +53,14 @@ from apps.identity.models import (
     WebAuthnCredential,
 )
 from apps.library.models import Language
-from apps.library.seeds import LANGUAGES
+from apps.library import testing as library_testing
+from apps.library.seeds import LANGUAGES, seed_jurisdictions, seed_languages
+from apps.register.logic import ensure_register_entry
+from apps.register.models import Applicability, SoaUnit, TenantObligationScope
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
+from apps.tenants.models import OrgUnit, OrgUnitKind
 
 _counter = itertools.count(1)
 
@@ -199,3 +204,37 @@ def user_actor(*, label: str = "Test Person", user_id: uuid.UUID | None = None) 
 
 def agent_actor(*, label: str = "Test Agent", agent_id: uuid.UUID | None = None) -> Actor:
     return Actor(kind=ActorType.AGENT, id=agent_id or uuid.uuid4(), label=label)
+
+
+# c8-reg-units (REG-08, D-41): the tenant-isolation guard's record for unit routes.
+def soa_unit(tenant: Tenant) -> SoaUnit:
+    """A live Statement of Applicability unit of `tenant`: under a fresh standard's
+    conformance duty (built by apps/library/testing.py), for a legal entity whose
+    conformance row applies, so the only thing between another tenant and it is tenancy."""
+    n = next(_counter)
+    with transaction.atomic():
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_taxonomy_terms()
+        edition = library_testing.instrument(
+            key=f"unit-standard-{n}", jurisdiction="intl", regime="regime:ai_ict", level="standard", binding=False
+        )
+        duty = library_testing.obligation(edition, key=f"unit-standard-{n}-conformance", duty_type="governance")
+    officer = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=duty.id, actor=user_actor(user_id=officer.id))
+        status = ComplianceStatus.objects.get(is_default=True, active=True)
+        entity = OrgUnit.objects.create(tenant=tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name=f"Entity {n} AB")
+        scope = TenantObligationScope.objects.create(
+            tenant=tenant,
+            tenant_obligation=entry,
+            org_unit=entity,
+            applicability=Applicability.APPLIES.value,
+            applicability_reason="Certified",
+            applicability_decided_at=timezone.now(),
+            applicability_decided_by=officer,
+            compliance_status=status,
+        )
+        return SoaUnit.objects.create(tenant=tenant, scope=scope, reference=f"X.{n}", title="Our own words", compliance_status=status)

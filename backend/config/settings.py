@@ -710,6 +710,10 @@ SESSION_IDLE_MINUTES_DEFAULT = env_int("SESSION_IDLE_MINUTES_DEFAULT", 30)
 SESSION_ABSOLUTE_HOURS_DEFAULT = env_int("SESSION_ABSOLUTE_HOURS_DEFAULT", 12)
 SESSION_IDLE_MINUTES_MAX = env_int("SESSION_IDLE_MINUTES_MAX", 8 * 60)
 SESSION_ABSOLUTE_HOURS_MAX = env_int("SESSION_ABSOLUTE_HOURS_MAX", 24)
+# ===== c8-org-models: ID-07 credential policy (ADR 0048) =====
+# How many days ahead a tightened credential policy takes effect by default, so members can
+# enrol a device-bound passkey before theirs stop working (tenants.SecurityPolicy).
+CREDENTIAL_POLICY_NOTICE_DAYS = env_int("CREDENTIAL_POLICY_NOTICE_DAYS", 14)
 ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 10)
 REFRESH_REPLAY_GRACE_SECONDS = env_int("REFRESH_REPLAY_GRACE_SECONDS", 30)
 STEP_UP_FRESHNESS_MINUTES = env_int("STEP_UP_FRESHNESS_MINUTES", 5)
