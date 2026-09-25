@@ -1384,3 +1384,17 @@ Built by default; nothing waits on you. Say if any should change.
       "on behalf of", so they are not told twice about one record. Default: so.
 - [ ] **The mail does not yet say on whose behalf it came.** The notification
       row names the absent person; the mail wording is the mail catalog's to add.
+- [ ] **A missed beat hour skips that day.** If the worker's beat is down for
+      the whole hour a bank's clock reads `REMINDER_SEND_HOUR`, that day's
+      reminders are not sent, and an overdue triage that fell in that window is
+      not reminded (escalation still follows). Also keep the hour off 02 to 03,
+      which a daylight saving change skips or repeats. Default: accepted for R2;
+      a "reminded through" stamp per bank would close it.
+- [ ] **A mail the relay refused is not retried by the next day's run.** Its
+      `email_message` row stays `failed`, and the notification is in the inbox.
+      Default: so.
+- [ ] **Several absent people sharing one delegate give the delegate one notice**
+      per record, naming the first of them. Default: so.
+- [ ] **The 403 proof uses a case write, not the sign-off route.** Chunk 9's
+      approve route does not exist on this base yet; `c10-out-of-office` or the
+      sign-off package should repeat the proof there.

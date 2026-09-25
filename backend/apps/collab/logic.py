@@ -59,6 +59,7 @@ def notify(
     subject_type: str,
     subject_id: uuid.UUID,
     candidates: Iterable[tuple[uuid.UUID, str]],
+    actor_id: uuid.UUID | None = None,
 ) -> list[Notification]:
     """Tell the candidates about one record, and return the rows written.
 
@@ -67,7 +68,8 @@ def notify(
     bank whose roles hold the subject's read permission are told, and only when their
     preference for the kind is on, read afresh on every call. Work waiting on someone away
     (`DELEGATED_KINDS`) goes to their delegate instead, with `on_behalf_of` naming them
-    (`_delegated`). Each row's title is the record's own title in that recipient's
+    (`_delegated`); `actor_id`, the person whose write caused the notice, is never that
+    delegate, so a sign-off request cannot land with the person who asked. Each row's title is the record's own title in that recipient's
     language. The rows are written in the caller's transaction, so they commit with the
     write that caused them or not at all.
     """
@@ -88,7 +90,7 @@ def notify(
         for membership in _readers(tenant_id, wanted, subject.read_permission)
         if switch is None or getattr(MembershipNotificationPrefs.model_validate(membership.notification_prefs), switch)
     ]
-    recipients = _delegated(tenant, passing, subject.read_permission) if kind in DELEGATED_KINDS else {
+    recipients = _delegated(tenant, passing, subject.read_permission, actor_id) if kind in DELEGATED_KINDS else {
         membership.user_id: (membership, None) for membership in passing
     }
     rows = [
@@ -134,15 +136,16 @@ def _readers(tenant_id: uuid.UUID, user_ids: Iterable[uuid.UUID], read_permissio
 
 
 def _delegated(
-    tenant: Tenant, passing: list[Membership], read_permission: str
+    tenant: Tenant, passing: list[Membership], read_permission: str, actor_id: uuid.UUID | None
 ) -> dict[uuid.UUID, tuple[Membership, uuid.UUID | None]]:
     """The delegation hop (TEN-04), the one place that knows about out of office: each
     recipient, keyed by user id, with the absent person they are told for, if any.
 
     A recipient away through the bank's local today, with a delegate, is replaced by that
-    delegate, who must pass the same recipient check; a delegate who does not is skipped
-    and the absent person keeps the notice, so it is never dropped. One hop only: the
-    delegate's own absence is not followed, so a cycle ends after one step. The absent
+    delegate, who must pass the same recipient check; a delegate who does not, or who
+    caused the notice (`actor_id`), is skipped and the absent person keeps the notice, so
+    it is never dropped. One hop only: the delegate's own absence is not followed, so a
+    cycle ends after one step. The absent
     person's preference decides, because it is their notice; the delegate gains no
     permission, and a delegate told on their own account gets one row, without the stamp.
     """
@@ -151,7 +154,7 @@ def _delegated(
         membership.user_id: membership.delegate_id
         for membership in passing
         if membership.delegate_id is not None
-        and membership.delegate_id != membership.user_id
+        and membership.delegate_id not in (membership.user_id, actor_id)
         and membership.out_of_office_until is not None
         and membership.out_of_office_until >= today
     }

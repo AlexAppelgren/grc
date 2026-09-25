@@ -156,6 +156,23 @@ class TheDelegatePassesTheSameCheck(DelegationTestCase):
         self.assertFalse(Notification.objects.filter(user=stranger).exists())
 
 
+class TheActorIsNeverTheDelegate(DelegationTestCase):
+    def test_a_request_from_the_delegate_stays_with_the_absent_person(self) -> None:
+        """Erik asks Anna, who is away with Erik as her delegate, to sign off: the request
+        cannot land with the person who asked, so Anna keeps it."""
+        self.away(self.anna, self.erik)
+        tenancy.activate(self.tenant.id)
+        rows = logic.notify(
+            tenant_id=self.tenant.id,
+            kind=NotificationKind.SIGNOFF_REQUESTED,
+            subject_type="change_case",
+            subject_id=self.case.id,
+            candidates=[(self.anna.id, "approver")],
+            actor_id=self.erik.id,
+        )
+        self.assertEqual([(row.user_id, row.on_behalf_of_id) for row in rows], [(self.anna.id, None)])
+
+
 class OneHop(DelegationTestCase):
     def test_a_chain_writes_one_row_for_the_first_delegate(self) -> None:
         self.away(self.anna, self.erik)

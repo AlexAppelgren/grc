@@ -123,6 +123,17 @@ class LeadDays(ReminderTestCase):
         self.assertEqual(len(self.told(case)), 2, "the second run the same day writes no row")
         self.assertEqual(len(MockMailer.sent), 2, "and sends no mail")
 
+    def test_a_second_run_is_silent_while_the_first_runs_mail_is_still_queued(self) -> None:
+        """In the worker the mail's row is written after commit; today's notification
+        already counts, so a redelivered run in between writes nothing."""
+        case = self.case(at(self.day(3), 12))
+        with mock.patch("apps.collab.mail.send") as queued:
+            self.run_on(0)
+            self.run_on(0)
+        self.assertEqual(queued.call_count, 2)
+        self.assertEqual(len(self.told(case)), 2)
+        self.assertFalse(EmailMessage.objects.exists())
+
     def test_the_mail_names_the_change_its_due_date_and_links_to_the_case(self) -> None:
         case = self.case(at(self.day(3), 12))
         self.run_on(0)
@@ -229,14 +240,14 @@ class QueryCount(ReminderTestCase):
         five = self.queries(1, 2, 3, 7, 30)
         self.assertEqual(one, three)
         self.assertEqual(one, five)
-        self.assertEqual(one, 29)
+        self.assertEqual(one, 31)
 
-    def test_a_day_with_nothing_due_costs_three_queries(self) -> None:
+    def test_a_day_with_nothing_due_costs_four_queries(self) -> None:
         with CaptureQueriesContext(connection) as captured:
             with frozen(at(self.day(0), settings.REMINDER_SEND_HOUR)):
                 tasks.send_tenant_reminders(str(self.tenant.id))
-        # The tenant's activation, the tenant row and the one case query.
-        self.assertEqual(statements(captured), 3)
+        # The tenant's activation, the tenant row, the bank's lock and the one case query.
+        self.assertEqual(statements(captured), 4)
 
 
 class OneBankPerTask(ReminderTestCase):
