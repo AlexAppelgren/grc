@@ -1491,3 +1491,23 @@ Nothing waits for these; each has the default the build took.
       draws them against the published contract; `c11-tenant-controls-cap` and
       `c11-research-requests` (wave 5) fill the routes. The research panel shows only once the
       bank has an agent of its own.
+
+## c11-tenant-controls-cap: run now, pause, resume, stop, and the cap mid-run (2026-09-25, AGT-04, AGT-06)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **Run now with AI off answers 422 `feature_off`, not 403.** The chunk 11 brief named 403
+      for the control and 422 for the scheduler's opener; run now opens through that one
+      opener (`tasks.open_tenant_run`), so it answers what the opener answers. Ask keeps its
+      403. Say if the control should answer 403.
+- [ ] **Resuming is allowed while the month's cap is reached.** The agent is paused again by
+      the cap, with a notification, when its next run is due, rather than refused on resume.
+      Default: keep it, so a person can always undo their own pause.
+- [ ] **The cap stops a run mid-way only when the spend passes it.** A runner event that takes
+      the month's spend above the cap stops the run and pauses the agent; one that reaches it
+      exactly does not, the same line `at_cap` draws for a new run. A run whose final event
+      passes the cap is not reopened to be stopped; the next due run finds the cap reached.
+- [ ] **The AGT-S6 journey switches tenant B's AI off, not tenant A's.** A bank's switch is the
+      whole bank's, and tenant A's Ask journeys run in parallel. The cap half stays tenant A's.
+      The AGT-S5 journey narrows the scope to Sweden, because the screen offers only the bank's
+      own markets (Sweden and Denmark in the seed); the integration test narrows to SE and FI.
