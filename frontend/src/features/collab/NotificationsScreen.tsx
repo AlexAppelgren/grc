@@ -14,6 +14,7 @@ import { cn } from '@/shared/utils/cn';
 
 import { formatCollabTime, presentNotification } from './collab-presentation';
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from './hooks';
+import { NotificationPreferences } from './NotificationPreferences';
 import { useUnreadCount } from './NotificationBell';
 import type { Notification } from './types';
 
@@ -25,7 +26,8 @@ import type { Notification } from './types';
 // row read too. Both marks are optimistic and roll back on a failure
 // (hooks.ts). A record the reader can no longer open still lists, and its
 // link lands on that record's own not-found screen, because the read answers
-// 404.
+// 404. The person's own switches sit below the inbox
+// (NotificationPreferences.tsx), whatever state the inbox is in.
 
 // Where a notification's record lives, by the subject kind the API names.
 // A case is addressed by its change (CHUNK9 ruling 1) but the notification
@@ -130,6 +132,7 @@ export function NotificationsScreen() {
           ) : null}
         </>
       )}
+      <NotificationPreferences />
     </>
   );
 }
