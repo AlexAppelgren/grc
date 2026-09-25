@@ -27,6 +27,7 @@ const KIND_LABEL: Readonly<Record<ProposalKind, MessageKey>> = {
   vocabulary_merge: 'console.queue.kind.vocabulary',
   term_create: 'console.queue.kind.vocabulary',
   term_update: 'console.queue.kind.vocabulary',
+  obligation_scope: 'console.queue.kind.retag',
 };
 
 const STATUS_LABEL: Readonly<Record<ProposalStatus, MessageKey>> = {

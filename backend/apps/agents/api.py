@@ -461,6 +461,38 @@ def create_retag_request(request: HttpRequest, body: RetagRequestInput) -> Any:
     return requests.create_retag(who=principal(request), body=body)
 
 
+@router.get(
+    "/console/research-requests/{request_id}",
+    response=ResearchRequestOut,
+    auth=SESSION,
+    operation_id="getRetagRequest",
+    by_alias=True,
+    summary="See where a re-tag request stands, and the batch it produced",
+)
+@requires_permission(perms.PROPOSALS_REVIEW)
+@answers_problems
+def get_retag_request(
+    request: HttpRequest,
+    request_id: uuid.UUID = Path(
+        ...,
+        description="The re-tag request, as the UUID `POST /console/research-requests` returned. A bank's own request answers 404.",
+    ),
+) -> Any:
+    """Returns one re-tag request with its status, for the console's re-tag form following
+    it until its run has filed the batch: `batchProposalId` then names the batch to open
+    and decide in the queue. Poll it while `status` is `queued` or `running`.
+
+    A person's session in the platform console holding `proposals.review`; a bank reads its
+    own requests with `GET /research-requests/{requestId}`. It reads and writes nothing to
+    the audit log.
+
+    Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`;
+    `not_found` (404) for a request that is not a re-tag. Published ahead of the logic that
+    will fill it, and answering 501 `not_built` until that ships.
+    """
+    return requests.get_retag(request_id=request_id)
+
+
 # ---------------------------------------------------------------------------------------
 # A bank's own agents (AGT-04, AGT-05, ADR 0053): a person's session in the bank holding
 # `agents.manage`, never a key. What bleqq watches is every member's read (`watch.read`).

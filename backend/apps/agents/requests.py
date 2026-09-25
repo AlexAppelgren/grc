@@ -40,3 +40,8 @@ def get_request(*, tenant: Tenant, request_id: uuid.UUID) -> NoReturn:
 def create_retag(*, who: Principal, body: RetagRequestInput) -> NoReturn:
     """`POST /console/research-requests`. Built by `c11-research-requests`."""
     raise ProblemError(status=501, code="not_built", detail="Asking for a re-tag is not built yet.")
+
+
+def get_retag(*, request_id: uuid.UUID) -> NoReturn:
+    """`GET /console/research-requests/{requestId}`. Built by `c11-research-requests`."""
+    raise ProblemError(status=501, code="not_built", detail="Reading a re-tag request is not built yet.")

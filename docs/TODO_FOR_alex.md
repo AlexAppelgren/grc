@@ -1447,3 +1447,24 @@ Nothing waits for these; each has the default the build took.
       draws them against the published contract; `c11-tenant-controls-cap` and
       `c11-research-requests` (wave 5) fill the routes. The research panel shows only once the
       bank has an agent of its own.
+
+## c11-fe-console-batch-retag: the batch review screen and the console re-tag (2026-09-25, PRO-04, AGT-05)
+
+- [ ] **The batch result links to no audit entry.** The card draws "Open the audit entry" on
+      a decided batch, but the only audit read, `GET /audit-events`, is a bank's: a platform
+      session reads nothing there, and no console audit screen exists. Default taken: the
+      result shows how many records changed and how many did not, who decided and when, and
+      no link. Say if the console should get a read of the library zone's audit rows (a
+      platform route and screen, not a chunk 11 package today); the link then points at the
+      batch's entry.
+- [ ] **A re-tag request is sent as one sentence.** `POST /console/research-requests` takes a
+      free-text `topic`, so the form joins the change, the term (label and `dimension:key`),
+      which obligations and why into one sentence for bleqq's agent, and does not send the
+      card's "Source" field, which the request has no place for. Default if you say
+      nothing: it stays; structured fields would be a contract change in
+      `c11-research-requests`.
+- [ ] **The console follows its re-tag through a new status read.** The brief named
+      `GET /research-requests/{requestId}`, a bank's route behind `agents.manage` and a
+      tenant, which a console session can never reach. `GET /console/research-requests/{requestId}`
+      behind `proposals.review` is declared instead, with `batchProposalId` on every
+      research request; it answers 501 until `c11-research-requests` fills it.
