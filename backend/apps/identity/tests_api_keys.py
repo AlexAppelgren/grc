@@ -134,6 +134,9 @@ class AgentKeyRoutes(ScenarioTestCase):
                 "description": self.sweeper.description,
                 "currentVersion": self.sweeper.current_version,
                 "active": self.sweeper.active,
+                "scope": self.sweeper.scope,
+                "tenantConfigurable": self.sweeper.tenant_configurable,
+                "publishedAt": None,
             },
         )
         keys = [item["key"] for item in page.json()["items"]]

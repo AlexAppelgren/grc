@@ -131,11 +131,11 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | built |
 | AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | pending |
 | AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. Such an agent writes only in its own tenant's zone (D-61); what it files for a scope item is OWN-02 | M | R2 | pending |
-| AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console (D-61); an approved scope item opens a research request (OWN-02) | S | R2 | pending |
+| AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console (D-61); an approved scope item opens a research request (OWN-02) | S | R2 | in_progress |
 | AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | pending |
 | AGT-07 | Fetched content screened for embedded instructions | M | R1 | built |
 | AGT-08 | Agents stay inside the sector scope: an out-of-scope document is a counted source check and nothing else; a standard's text is never fetched, quoted, summarised, translated or restated; a blocked page is a failed check; a law that cites a standard never carries its term | M | R1 | built |
-| ACC-01 | A tenant registers each agent it runs itself: name, purpose, owning team, and the departments and products it serves. `agent_access.manage` and a step-up; revoking stops every credential under it on the next request | M | R2 | in_progress |
+| ACC-01 | A tenant registers each agent it runs itself: name, purpose, owning team, and the departments and products it serves. `agent_access.manage` and a step-up; revoking stops every credential under it on the next request | M | R2 | built |
 | ACC-06 | One call takes a description of what is being built and returns a labelled, logged summary above the deterministic full list of register entries and obligations in scope; the model never shortens the list and the list survives the model failing or AI being switched off | M | R2 | pending |
 | ACC-07 | A narrowed entry never narrows silently: every answer states the scope it was answered in, and an answer touching the footprint outside that scope names the dimensions and terms it could not see, from labels and never from records | M | R2 | pending |
 | ACC-10 | An entry records that a named application or system touches a register entry and how, as a linked internal item under REG-05 | C | R3 | pending |
@@ -204,22 +204,26 @@ And "nordic-watch" is one of bleqq's agents, so a bank sees it read-only with it
 
 ### AGT-S5 — A tenant controls its agents without touching their instructions `@integration` `@e2e` (AGT-04)
 ```gherkin
-Given a tenant admin with agents.manage and an agent the bank added for itself
+Given a tenant admin with agents.manage and an agent the bank added for itself from a tenant-scoped definition
 When they switch it on, set a weekly cadence within the plan limit, restrict scope to SE and FI, and choose "Run now"
 Then a run is queued with those settings and "Recent runs" lists it with findings and cost
 When they choose "Stop run"
 Then the run is interrupted and its status says so
 When they set a cadence above the plan limit
 Then the request answers 422 with code "above_plan_limit"
+When they send the same calls against one of bleqq's agents
+Then each answers 403 naming agent_definitions.manage and nothing about that agent changes
 ```
 
 ### AGT-S6 — The budget cap pauses runs and the AI off switch stops every model call `@integration` `@e2e` (AGT-04)
 ```gherkin
-Given a monthly cap set with "Set cap" and "Spend this month" close to it
-When a run would exceed the cap
+Given a monthly cap on the bank's own agents set with "Set cap" and "Spend this month" close to it
+When a run of one of the bank's own agents would exceed the cap
 Then it is not started and the admin is notified
+And "Spend this month" counts the bank's own runs only, never a run of bleqq's agents
 When the admin switches all AI features off
-Then no run starts, Ask answers 403 "feature_off" and the LLM adapter records no call for the tenant
+Then none of the bank's own agents starts a run, Ask answers 403 "feature_off" and the LLM adapter records no call for the tenant
+And bleqq's watch is unaffected: its agents keep their schedule, because they read public sources only
 ```
 
 ### AGT-S7 — Research requests ask an agent to check, research or re-tag `@integration` `@e2e` (AGT-05)
@@ -264,14 +268,14 @@ than a number, so a retry proves the same thing.
 
 ### AGT-S11 — A tenant agent's default scope is the operating markets first, then the watched ones `@integration` (AGT-04)
 ```gherkin
-Given a tenant operating in Sweden and watching Norway, and a tenant agent with no scope of its own
+Given a tenant operating in Sweden and watching Norway, and an agent the bank added for itself with no scope of its own
 When a run starts
 Then the run's stored scope lists Sweden as operating, Norway as watching and the EU as reaching them, in that order
 And later market changes do not alter that run's scope
 When an admin with agents.manage restricts the agent's scope to Sweden and Finland
 Then the next run's scope is Sweden and Finland only
 When a platform library run starts
-Then its scope contains no tenant's markets and every covered jurisdiction is swept
+Then it reads no tenant row and sweeps every covered jurisdiction
 ```
 
 ### AGT-S12 — Out-of-scope documents are counted and never registered, and the eval set gates it `@integration` (AGT-08, SRC-05, AC-AGT1)

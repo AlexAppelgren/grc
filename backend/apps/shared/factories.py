@@ -34,6 +34,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, VocabularySuggestion
+from apps.governance.models import TenantReachRequest
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -236,6 +237,14 @@ def entry_key(tenant: Tenant, entry: SimpleNamespace, *, scopes: Iterable[str] =
     return SimpleNamespace(id=row.id, row=row, plain_key=plain)
 
 
+def agent_access_key(tenant: Tenant) -> SimpleNamespace:
+    """A live entry of `tenant` with one service key, addressed as the key's revoke route
+    names them (acc-entries-and-log)."""
+    entry = agent_access_entry(tenant)
+    key = entry_key(tenant, entry)
+    return SimpleNamespace(id=key.id, entry=entry, key=key, params={"uuidstr:entry_id": entry.id, "uuidstr:key_id": key.id})
+
+
 def personal_token(
     tenant: Tenant, person: User, *, scopes: Iterable[str] = ("library:read",), entry: SimpleNamespace | None = None
 ) -> SimpleNamespace:
@@ -255,3 +264,18 @@ def personal_token(
             expires_at=timezone.now() + timedelta(days=90),
         )
     return SimpleNamespace(id=row.id, row=row, plain_key=plain)
+
+
+# acc-scope-and-reach (ACC-08): the tenant-isolation guard's record for tenant reach routes.
+def tenant_reach_request(tenant: Tenant) -> TenantReachRequest:
+    """The tenant's pending request for tenant reach, reused when one waits, because a
+    second cannot."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        waiting = TenantReachRequest.objects.filter(tenant=tenant, status=ApprovalStatus.PENDING.value).first()  # ordering: at most one pending row per tenant, by constraint
+    if waiting is not None:
+        return waiting
+    requester = member_user(tenant, roles=("admin",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantReachRequest.objects.create(tenant=tenant, requested_by=requester)

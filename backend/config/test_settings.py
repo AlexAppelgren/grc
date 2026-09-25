@@ -86,10 +86,12 @@ MAIL_PROVIDER = "mock"
 
 # (9) Stripped middleware: no CORS, no CSP, no HTTPS redirect. The security middleware is
 #     unit-tested directly in tests_middleware.py; the request ID and Server-Timing
-#     middleware stay because the audit and timing guards read their headers.
+#     middleware stay because the audit and timing guards read their headers, and the
+#     access log's because it is behaviour, not transport (ACC-08, acc-entries-and-log).
 MIDDLEWARE = [
     "apps.shared.middleware.RequestIdMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "apps.governance.access_log.AccessLogMiddleware",
     "apps.shared.middleware.ServerTimingMiddleware",
 ]
 SECURE_SSL_REDIRECT = False
