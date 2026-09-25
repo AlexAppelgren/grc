@@ -201,6 +201,10 @@ class Compose(TestCase):
             sent = mail.compose(self.recipient(None), "review_due", context())
         self.assertEqual(sent.subject, f"Review due 2026-10-01: {TITLE}")
 
+    def test_a_template_missing_its_context_is_refused_rather_than_printing_none(self) -> None:
+        with self.assertRaises(KeyError):
+            mail.compose(self.recipient("en"), "weekly_digest", mail.MailContext(count=3, link=link()))
+
     def test_an_unknown_template_is_refused(self) -> None:
         with self.assertRaises(ValueError):
             mail.compose(self.recipient("en"), "comment_added", context())  # type: ignore[arg-type]

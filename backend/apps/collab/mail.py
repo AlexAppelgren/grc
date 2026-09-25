@@ -128,7 +128,6 @@ def compose(membership: Membership, template: Template, context: MailContext) ->
     user = membership.user
     language = user.locale.key if user.locale else FALLBACK_LANGUAGE
     values = {key: value for key, value in dataclasses.asdict(context).items() if value is not None}
-    values["date"] = context.date.isoformat() if context.date else None
     values["recipient"] = user.name
     values["product"] = settings.PRODUCT_NAME
     parts = [
