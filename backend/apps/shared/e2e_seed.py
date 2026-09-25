@@ -1807,6 +1807,8 @@ def seed_e2e() -> dict[str, int]:
         case_journeys = seed_case_journeys(tenants)
         # c9-evidence: after the case journeys and chunk 5's cases it attaches to.
         case_evidence = seed_case_evidence(tenants)
+        # c9-e2e-signoff-j3: after the case journeys, whose CAS-S10 change it links.
+        seed_signoff_spot_check_link()
         seed_watched_market_change()
         seed_standard_change()
 
@@ -2330,3 +2332,29 @@ def seed_case_evidence(tenants: list[Tenant]) -> int:
     tenancy.clear_tenant()
     return len(EXPECTED_EVIDENCE)
 # --- end c9-evidence ----------------------------------------------------------------------------
+
+
+# --- c9-e2e-signoff-j3 (CAS-S10) -----------------------------------------------------------------
+# CAS-S10 proves a sign-off changes no library or register row by reading one obligation before
+# and after it: the one its change links to. The ISK control statements duty is read by SRC-S3
+# and changed by no journey or seed, so what the journey reads twice can only move if the
+# sign-off moved it.
+SIGNOFF_SPOT_CHECK_OBLIGATION = "obl-isk-control-statements"
+
+
+def seed_signoff_spot_check_link() -> None:
+    """The CAS-S10 change's link to `SIGNOFF_SPOT_CHECK_OBLIGATION`, the sweeper's suggestion
+    confirmed by the library confirmer's own key, as every confirmation here is (D-74). A link
+    is library-zone, so no tenant is active; a second run upserts the same row."""
+    tenancy.clear_tenant()
+    sweeper, _agent_row = _sweeper_key()
+    change = django_apps.get_model("watch", "RegulatoryChange").objects.get(stable_key="chg-e2e-case-signoff")
+    watch_e2e_seed.seed_obligation_link(
+        change,
+        _obligation(SIGNOFF_SPOT_CHECK_OBLIGATION),
+        confidence=0.87,
+        suggester=sweeper,
+        confirmer=_confirmer_key(),
+        confirmed_at=change.first_seen_at + datetime.timedelta(days=1),
+    )
+# --- end c9-e2e-signoff-j3 -----------------------------------------------------------------------
