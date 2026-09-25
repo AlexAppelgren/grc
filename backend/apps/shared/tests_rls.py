@@ -178,6 +178,9 @@ TENANT_ONLY_TABLES = [
     "gap",
     "interpretation",
     "internal_link",
+    # c8-teams-model (tenants 0003, TEN-03): a person in a team. Both keys are composite
+    # (apps/tenants/tests_team_models.py proves the database refuses a cross-tenant one).
+    "team_member",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also
