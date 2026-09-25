@@ -103,9 +103,11 @@ def get_register_entry(request: HttpRequest, obligation_id: uuid.UUID = Path(...
     writes nothing, not even an empty entry, so an obligation nobody has answered for reads as
     "under assessment" with version 0.
 
+    Where legal entities the obligation applies to have rows, `complianceStatus` is the worst
+    of theirs by category: gap, then partly, then not assessed, then compliant.
+
     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
-    `register.read`; `not_found` (404) for an obligation the bank cannot see. Published ahead
-    of the logic that will fill it, and answering 501 `not_built` until that ships.
+    `register.read`; `not_found` (404) for an obligation the bank cannot see.
     """
     tenant = caller_tenant(request)
     return status_logic.read_register(tenant=tenant, order=language_order(request, tenant=tenant), obligation_id=obligation_id)
@@ -126,19 +128,24 @@ def update_register(
 ) -> Any:
     """Changes the fields the body sends on the bank's register entry: compliance status,
     status note, risk, first-line owner, compliance contact, process, system, evidence
-    location and next review. Applicability is not here; it has its own route. A status
-    change also writes an assessment row with the rationale, so the history has it.
+    location, owner team and next review. Applicability is not here; it has its own route. A
+    status outside the not assessed category needs applicability `applies` first. A
+    status change also writes an assessment row with the rationale, so the history has it.
+    The first write creates the entry.
 
-    A person's session holding `register.edit`. Send `If-Match` with the `version` last read;
-    a row changed in between is refused and nothing is merged. Records one audit event naming
-    the person with the fields before and after. No step-up.
+    A person's session holding `register.edit`. `If-Match` is required: the `version` last
+    read, 0 for an entry nobody has written; a row changed in between is refused and nothing
+    is merged. Records one audit event naming the person with keys, ids and dates before and
+    after, and the names of the text fields that changed, never their words. No step-up.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
     `not_found` (404) for an obligation the bank cannot see; `stale_write` (409) when
-    `If-Match` is not the current version; `unknown_key` (422) for a status or risk key that is
-    not an active row of the bank's list; `validation_error` (422) for an `If-Match` that is
-    not a version or a body the schema refuses. Published ahead of the logic that will fill
-    it, and answering 501 `not_built` until that ships.
+    `If-Match` is not the current version; `invalid_transition` (409) for a status outside the not
+    assessed category while the obligation does not apply or is still under assessment;
+    `unknown_key` (422) for a status, risk or team key that is not an active row of the bank's
+    list, with `validKeys` listing those that are; `unknown_member` (422) for an owner or
+    contact who is not an active member of the bank; `validation_error` (422) for a missing
+    `If-Match`, one that is not a version, or a body the schema refuses.
     """
     tenant = caller_tenant(request)
     return status_logic.update_register(
@@ -168,19 +175,25 @@ def update_register_entity(
     org_unit_id: uuid.UUID = Path(..., description=_ORG_UNIT_ID),
 ) -> Any:
     """Changes the fields the body sends on one legal entity's row under an obligation that
-    spans several: status, note, risk, owner, process, system, evidence location and next
-    review. The entity's row is created in the same transaction when it does not exist yet;
-    the obligation's own status then reads the worse of its entities.
+    spans several: status, note, risk, owner or owner team, process, system, evidence location
+    and next review. The entity's row is created in the same transaction when it does not
+    exist yet; the obligation's own status then reads the worst of the entities it applies to.
+    A person or a team owns the row, never both: setting one clears the other. A status other
+    than the not assessed category needs the entity's applicability `applies` first.
 
-    A person's session holding `register.edit`. Send `If-Match` with the row's `version`, 0
-    for a row not written yet. Records one audit event naming the person with the fields
-    before and after. No step-up.
+    A person's session holding `register.edit`. `If-Match` is required: the row's `version`,
+    0 for a row not written yet. Records one audit event naming the person with keys, ids and
+    dates before and after, and the names of the text fields that changed, never their words.
+    No step-up.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-    `not_found` (404) for an obligation or entity the bank cannot see; `stale_write` (409);
-    `unknown_key` (422) for a status or risk key the bank's list does not hold;
-    `validation_error` (422). Published ahead of the logic that will fill it, and answering
-    501 `not_built` until that ships.
+    `not_found` (404) for an obligation the bank cannot see, or an org unit that is not one of
+    its active legal entities; `stale_write` (409); `invalid_transition` (409) for a status
+    outside the not assessed category while the entity's applicability is not `applies`;
+    `unknown_key` (422) for a status, risk or team key the bank's list does not hold, with
+    `validKeys`; `unknown_member` (422) for an owner who is not an active member;
+    `validation_error` (422) for a missing `If-Match`, an owner and a team sent together, or a
+    body the schema refuses.
     """
     tenant = caller_tenant(request)
     return status_logic.update_entity_status(

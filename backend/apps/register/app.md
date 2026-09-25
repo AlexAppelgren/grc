@@ -52,7 +52,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason, set by one person holding `applicability.approve` after a confirmation dialog, with an audit event and no second approver or step-up (D-75); many rows set in one call, one audit event per row | M | R2 | in_progress |
-| REG-02 | Compliance status, status note, risk, owners, process, system, evidence location, next review, per legal entity where the obligation spans several | M | R2 | in_progress |
+| REG-02 | Compliance status, status note, risk, owners, process, system, evidence location, next review, per legal entity where the obligation spans several | M | R2 | built |
 | REG-03 | Gaps with owner, severity, target date, remediation, and risk acceptance behind four eyes | M | R2 | in_progress |
 | REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 | in_progress |
 | REG-05 | Linked internal items (policy, procedure, control, process, system) with external references | M | R2 | in_progress |
