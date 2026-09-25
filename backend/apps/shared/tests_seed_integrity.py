@@ -392,6 +392,20 @@ class SeededTenantsAndLogins(SeededOnce):
                 self.assertTrue(in_footprint(scope, footprint, restricting=restricting))
                 self.assertEqual(in_footprint(scope, with_country, restricting=restricting), jurisdiction != "se")
 
+    # acc-foundation (ACC-01, ACC-03): ensure_system_roles hands every seeded bank's system
+    # roles the two permissions PRD 0.5 adds, and only to the roles its matrix names.
+    def test_each_banks_system_roles_hold_the_agent_access_and_token_permissions(self) -> None:
+        from apps.identity.models import TenantRole
+        from apps.shared import permissions as perms
+
+        holders = {perms.AGENT_ACCESS_MANAGE: {"admin"}, perms.TOKENS_CREATE: {"admin", "compliance_officer", "owner"}}
+        for expected in EXPECTED_TENANTS:
+            tenancy.activate(expected.id)
+            roles = {role.key: set(role.permissions) for role in TenantRole.objects.filter(tenant_id=expected.id, is_system=True)}
+            for permission, keys in holders.items():
+                with self.subTest(tenant=expected.slug, permission=permission):
+                    self.assertEqual({key for key, granted in roles.items() if permission in granted}, keys)
+
 
 class SeededLibraryAndSearch(SeededOnce):
     """The shared library, its verifications and what Ask answers from it, read from one seed."""
