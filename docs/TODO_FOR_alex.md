@@ -1411,3 +1411,46 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       changed value in", an agent's correction without one answers 422 `source_missing`
       and applies nothing (fails safe; it can still approve as proposed or reject).
       Default if you say nothing: v3 carries that line when the confirmer next changes.
+## acc-principal-guard: how an agent access credential is fenced (2026-09-25, ACC-03, ACC-09)
+
+Built on these defaults; each stays yours to overrule.
+
+- [ ] **A token whose person loses a permission is refused, not revoked.** A personal
+      access token stops on the next request when its person is deactivated, leaves
+      the bank, or loses the permission behind any one of its scopes (`library.read`,
+      `search.use`, `roadmap.read`, `register.read`); it is refused whole rather than
+      narrowed. It is a check on every request, so if the person gets the permission
+      back the token works again until it expires. Default: so. The alternative is to
+      stamp the token revoked the first time the check fails.
+- [ ] **A session-only route answers a key or token with the fence's 403.** A key of
+      an agent access entry or a token that reaches a write or a step-up route which
+      takes only a person's session is answered 403 `read_only_credential` or
+      `step_up_required`, not 401, so every such route answers the same way whichever
+      auth it takes. A read it cannot use still answers 401.
+- [ ] **The rate-limit log.** Over `AGENT_ACCESS_RATE_PER_MINUTE` a credential gets 429,
+      and the first refusal of each minute writes one `credential_rate_limited` row in
+      the security log, not one per refused request, so a runaway agent cannot flood
+      the log.
+
+## acc-mcp-transport: the MCP server's transport (2026-09-25, ACC-05)
+
+Built on these defaults; each stays yours to overrule.
+
+- [ ] **Both protocol eras, statelessly.** The plan named `initialize` and `ping`, which
+      the current MCP revision (2026-07-28, fetched today) removed along with sessions:
+      every request now carries its version in `params._meta`, and `server/discover`
+      replaces the handshake. `POST /mcp` serves both: 2026-07-28 (`server/discover`,
+      `tools/list`) and 2025-11-25 and 2025-06-18 (`initialize`, `ping`, `tools/list`),
+      never minting a session in either. Default: so, because most agent clients still
+      speak 2025-11-25. The alternative is to drop the earlier revisions.
+- [ ] **The register tool follows the entry's half of reach only, for now.** It is
+      offered to a credential holding `tenant:read` whose entry has tenant reach on. The
+      bank's own switch (`tenant_reach_on`, acc-scope-and-reach) was not on this branch's
+      base, so the tool list does not read it yet; the register route checks both on
+      every call (acc-register-read), so a listed tool still answers 403
+      `tenant_reach_off` with the switch off. The integrator adds the switch to
+      `apps/integrations/mcp.py:reaches_register` once both are merged.
+- [ ] **Only agent access credentials.** A bank's other keys and bleqq's own agent keys
+      answer 403 `agent_access_only` on `/mcp`; they keep the REST API.
+- [ ] **No caching of the tool list.** `ttlMs` is 0 and `cacheScope` `private`, because
+      reach can be switched off at any moment and the list must follow it at once.

@@ -64,6 +64,9 @@ VOCAB_MANAGE = "vocab.manage"  # admin, compliance officer
 WORKFLOW_MANAGE = "workflow.manage"  # admin, compliance officer
 AGENTS_MANAGE = "agents.manage"  # admin
 INTEGRATIONS_MANAGE = "integrations.manage"  # admin
+# acc-foundation (PRD 0.5, ACC-01, ACC-03, D-77): a bank's own agents and personal tokens.
+AGENT_ACCESS_MANAGE = "agent_access.manage"  # admin
+TOKENS_CREATE = "tokens.create"  # admin, compliance officer, owner
 
 # ---------------------------------------------------------------------------------------
 # Platform permissions (PRD §6): library_editor and platform_admin.
@@ -109,6 +112,8 @@ TENANT_PERMISSIONS: frozenset[str] = frozenset(
         WORKFLOW_MANAGE,
         AGENTS_MANAGE,
         INTEGRATIONS_MANAGE,
+        AGENT_ACCESS_MANAGE,
+        TOKENS_CREATE,
     }
 )
 PLATFORM_PERMISSIONS: frozenset[str] = frozenset(
@@ -163,6 +168,8 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         WORKFLOW_MANAGE,
         AGENTS_MANAGE,
         INTEGRATIONS_MANAGE,
+        AGENT_ACCESS_MANAGE,
+        TOKENS_CREATE,
     },
     "compliance_officer": _EVERYONE
     | {
@@ -180,9 +187,10 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         AI_LOG_READ,
         VOCAB_MANAGE,
         WORKFLOW_MANAGE,
+        TOKENS_CREATE,
     },
     "owner": _EVERYONE
-    | {CASES_WORK, CASES_CONTRIBUTE, REGISTER_EDIT, GAPS_EDIT},
+    | {CASES_WORK, CASES_CONTRIBUTE, REGISTER_EDIT, GAPS_EDIT, TOKENS_CREATE},
     "approver": _EVERYONE
     | {
         FOOTPRINT_APPROVE,
@@ -249,6 +257,13 @@ PLATFORM_ONLY_SCOPES: frozenset[str] = frozenset(
 # What a bank's own key may be given: reads, and filing a proposal, which changes nothing
 # until someone independent approves it (AC-PRO1).
 TENANT_KEY_SCOPES: frozenset[str] = ALL_SCOPES - PLATFORM_ONLY_SCOPES
+# What a credential of an agent access entry, and every personal access token, may hold
+# (acc-foundation, ACC-03, ADR 0055): reads, none of which writes. `tenant:read` reaches the
+# bank's register decisions and only with tenant reach on (D-72, D-76). A CHECK on api_key
+# (identity 0007) holds the same set.
+AGENT_ACCESS_SCOPES: frozenset[str] = frozenset(
+    {SCOPE_LIBRARY_READ, SCOPE_SEARCH_READ, SCOPE_UPCOMING_READ, SCOPE_TENANT_READ}
+)
 
 # ---------------------------------------------------------------------------------------
 # The permission catalogue for the role editor (`GET /reference/permissions`, ID-09):
@@ -285,6 +300,8 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     WORKFLOW_MANAGE: "Manage workflow policy.",
     AGENTS_MANAGE: "Switch agents on and off and set their cadence and budget.",
     INTEGRATIONS_MANAGE: "Manage integrations and API keys.",
+    AGENT_ACCESS_MANAGE: "Register, change and revoke the agents the bank runs itself, issue their keys and set their tenant reach.",
+    TOKENS_CREATE: "Mint a personal access token for yourself, which acts as you and never exceeds your own permissions.",
     PROPOSALS_REVIEW: "Review proposals in the platform console.",
     LIBRARY_VOCAB_MANAGE: "Manage the library vocabularies.",
     SOURCES_MANAGE: "Manage sources.",
@@ -479,6 +496,13 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # query string, so the exception stays one route wide.
     ("GET", "/upcoming"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_UPCOMING_READER),
     ("GET", "/calendar/feed.ics"): Ungated(UngatedReason.PUBLIC_TOKEN, _PUBLIC_CALENDAR_TOKEN),
+    # acc-mcp-transport (ACC-05): one endpoint for every tool, so no single scope fits it.
+    ("POST", "/mcp"): Ungated(
+        UngatedReason.LOGIC_GATE,
+        "Only the key of an agent access entry or a personal access token, through ApiKeyAuth; any other key "
+        "answers 403 agent_access_only. The gate is apps/integrations/mcp.py:handle, and the tool list offers a "
+        "tool only when the credential holds the scope its route needs, the register tool only with reach too.",
+    ),
 }
 
 
