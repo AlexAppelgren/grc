@@ -61,6 +61,9 @@ APPEND_ONLY_TRIGGERS = {
     # What a week's briefing told a bank, which nothing may rewrite afterwards: a later
     # change to the feed leaves a sent briefing exactly as it was sent (HOM-02, HOM-S3).
     "briefing_item": "cw_append_only_guard",
+    # Every move of a case between categories, so the time it spent in each stage cannot
+    # be rewritten afterwards (CAS-08, c9-case-models).
+    "case_transition": "cw_append_only_guard",
     "footprint_history": "cw_append_only_guard",
     "login_event": "cw_append_only_guard",
     "obligation_summary": "cw_append_only_guard",

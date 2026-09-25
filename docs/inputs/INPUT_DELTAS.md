@@ -345,7 +345,8 @@ here names it with its backticked `METHOD /path`.
   steps[{key,done}]}}`; the patch takes `{name?, timezone?, defaultLanguage?,
   contentLanguages?}` as keys. Reminder, escalation, digest-day and triage settings land
   with the workflow policy (chunk 10, `c10-workflow-policy`, section 18) as columns of their
-  own; retention is chunk 12's.
+  own, not chunk 9 (CHUNK9_TASKS ruling 6), which also adds `change_case.triage_due_at`;
+  retention is chunk 12's.
 - `GET /tenant/members` answers a page `{items, total}` (playbook 10: every list
   paginates) of `{userId, email, name, status, roles[{key,kind,label}], title,
   lastSeenAt, passkeyCount, activeSessions}` rather than a bare array of the designed
@@ -1399,3 +1400,107 @@ third column the R2 plan names (`acts_as_user`), are built with these departures
   database's rule as well as the code's.
 - `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
   `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
+
+## 20. Chunk 9's case workflow tables (2026-09-25, c9-case-models)
+
+`change_case` gains the designed workflow columns §8 left out — `triaged_by`, `triaged_at`,
+`dismissed_by`, `dismissed_at`, `signoff_requested_by`, `signoff_requested_at`,
+`signed_off_by`, `closed_note`, `closed_at` — with these departures:
+
+- `dismissed_reason` and `close_reason` are foreign keys to the bank's own
+  `dismissal_reason` and `close_reason` rows (§1, VOC-06), not free text and not the
+  `close_reason` enum; the close category is the row's fixed kind. `sub_status` is a
+  nullable key to the bank's `case_sub_status` row inside the fixed category (D-13), and
+  `version` is what every case write's `If-Match` compares (§4, CAS-08).
+- The designed CHECKs are kept, with the four-eyes one tightened: a sign-off needs a
+  request, so `signed_off_by` is empty or both set and different
+  (`change_case_four_eyes`, enumerated by `apps/shared/tests_four_eyes.py`). The owner
+  CHECK covers `assigned` to `signoff`, so one person may close a case from triage
+  (q-case-close, Option B, audited).
+- No `closed_by`: whoever closed the case is `by_user` on its last `case_transition` row.
+- `UNIQUE (tenant_id, id)`, and every person on the case — the R1 owner and the So what's
+  confirmer included — is also a composite key `(tenant_id, user)` into `membership`, so
+  the database refuses a person who is not the bank's member. `case_obligation_link`
+  gains the same keys on its case and its decider.
+- Not built: `triage_due_at` (`c10-workflow-policy`, ruling 6) and `owner_team`
+  (`c9-owner-team-and-reassign`).
+
+`impact_assessment`, `action`, `case_transition` and `evidence` are tenant tables under
+forced row-level security, each child's case a composite key `(tenant_id, case_id)` into
+`change_case` and each person a composite key into `membership`:
+
+- `impact_assessment` has **no `contributors` column** (ruling 2, D-20): the contributor
+  teams are the case's team participants (`f03-T76`). `effort` is a nullable key to the
+  bank's `effort_size` row rather than a NOT NULL enum defaulting to `M`, and `why` is
+  text that a saved assessment may not leave empty. It gains `version` (§4).
+- `action` has **no ticket columns** (`ticket_provider`, `ticket_key`, `ticket_url`;
+  ruling 3): `c13-tickets-export` adds them with the export. `due_date` is required
+  (CAS-04). It gains `version`, and `removed_at` and `removed_by` instead of a hard
+  delete: nothing is overwritten, and the case file shows what was planned. The partial
+  index covers open actions that are not removed.
+- `case_transition` is append-only by the shared trigger, so the time a case spent in
+  each stage cannot be rewritten (CAS-08). Its id is a uuid like every other table's.
+- `evidence` belongs to a case: `case_id` is NOT NULL and `tenant_obligation_id` is not
+  built, because no R2 route writes evidence on a register entry; the chunk that does adds
+  the column and the designed either-or CHECK. It gains `scan_state` (`pending`, `clean`,
+  `infected`, `error`, the `scan_state` kind; a new row is `pending`) and `scanned_at`,
+  because a file must be invisible until the malware scan passes (CAS-05) and the design
+  has nowhere to record it. A CHECK per kind: only a file carries a storage key, and it
+  carries its hash, size and type with it; a link carries a url.
+
+## 19. Chunk 9's case contract (2026-09-25, c9-case-contract)
+
+The eighteen workflow operations of `openapi.yaml`'s "Case workflow" tag, less the ticket
+export, are declared in `apps/cases/api.py` behind their final gates and answer 501
+`not_built` until each logic task builds them. What they answer differs from the design:
+
+- **Ruling 3, no ticket export.** `POST /changes/{changeId}/actions/export-tickets`
+  (`exportActionsAsTickets`) is not declared: `c13-tickets-export` adds the route with the
+  export itself, so no 501 route waits two releases. Its pending line stays, chunk 13.
+- **Ruling 4, evidence arrives in the request.** `addEvidence` takes
+  `multipart/form-data` — the fields `kind`, `name`, `url` and, for a file, the `file`
+  part — rather than a JSON `EvidenceInput` with a client-sent `mimeType`, `sizeBytes` and
+  `contentHash`: the server identifies, sizes and hashes the bytes it received. A presigned
+  PUT would put the object in the bucket before any check, so `EvidenceCreated` has no
+  `uploadUrl` and answers `{evidence}`. Closed by `c9-evidence`.
+- **Ruling 5, downloads stream.** `GET /evidence/{evidenceId}/download` answers the bytes
+  (`application/octet-stream` in the contract, the stored type on the wire, as an
+  attachment, `no-store`) behind `cases.read`, one audit row per download; `DownloadLink`
+  is not declared. Closed by `c9-evidence`.
+- **Ruling 8, sub-statuses have no route.** `triageChange` and `saveAssessment` take an
+  optional `subStatus` key of the bank's `case_sub_status` list; every case read answers
+  it as `{key, kind, label}`. Closed by `c9-triage` and `c9-assessment`.
+- **The case the moves answer is `CasesCase`**, not the designed `Case`: it adds
+  `changeId`, `subStatus`, `urgencyConfirmed`, `dismissedAt` and `version`; `urgency` is
+  the `{key, kind, label}` reference and the reasons are the bank's own list rows,
+  `dismissedReason` and `closeReason` as `{key, kind, label}` and never a phrase (the
+  close reason's kind is the designed `signed_off`, `not_applicable`, `no_action`). It
+  carries no `actions`, `evidence` or `soWhat`: the actions and the evidence are read from
+  their own lists, and the "So what?" from `GET /changes/{changeId}`, so a move answers the
+  case without re-reading every child. `saveSoWhat` and `confirmSoWhat` keep `CasesSoWhat`
+  (section 8) and now raise the case's `version` without taking `If-Match`.
+- **Reasons are keys.** `dismissChange` and `closeWithoutAction` send `reasonKey` from the
+  bank's `dismissal_reason` and `close_reason` lists where the design sent free text; only
+  a close reason of kind `no_action` or `not_applicable` closes on one person's word
+  (D-92). The approval and the send-back send an optional `note`.
+- **`Assessment` has no `contributors`** (ruling 2, section 18) and gains `version`;
+  `effort` is the bank's `effort_size` row, `{key, kind, label}` on a read and a key on a
+  write, rather than the enum `S`, `M`, `L`.
+- **`Action`** has no `changeTitle` or ticket fields, a required `dueDate`, and gains
+  `doneBy` and `version`; `updateAction` and `deleteAction` read the action's own
+  `If-Match`, and every move of the case reads the case's. `deleteAction` and
+  `removeEvidence` set `removed_at` and answer 204; nothing is deleted.
+- **`Evidence`** gains `contentHash` and `scanState`; a link and a reference have no bytes
+  and are recorded `clean`.
+- **The two lists page.** `listActions` and `listEvidence` answer `{items, total}` with
+  the shared `limit` and `offset` rather than a bare array (playbook 10).
+- **The change page carries the workflow block.** `GET /changes/{changeId}`'s `case` is
+  `WatchCaseWorkflow`: the feed's case plus the owner, triage, dismissal and sign-off
+  people and dates, the close reason, `openActionCount`, `canRequestSignoff`,
+  `allowedTransitions` for the reader and `version`, all from `apps/cases/state.py`
+  through `logic.case_facts()`. A feed row's case gains only `subStatus` and no longer
+  carries `allowedTransitions`, which was always empty there.
+- **`getCaseFile`** answers `text/plain` as designed, `deleteAction` and `removeEvidence`
+  answer 204 as designed; all three are published ahead of `c9-case-file`, `c9-actions`
+  and `c9-evidence` and answer 501 `not_built` until those land, so their pending lines
+  are gone while the logic is still to come.

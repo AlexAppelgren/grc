@@ -303,3 +303,58 @@ def personal_token(
             expires_at=timezone.now() + timedelta(days=90),
         )
     return SimpleNamespace(id=row.id, row=row, plain_key=plain)
+
+
+# ---------------------------------------------------------------------------------------
+# c9-case-contract: the tenant-isolation guard's records for the case workflow routes.
+# A case names a library change, so the case itself is built by `apps/cases/testing.py`
+# (the fence exempts it); the children are this bank's own rows and are built here.
+# ---------------------------------------------------------------------------------------
+def case_change(tenant: Tenant) -> SimpleNamespace:
+    """A change with a case of `tenant`, addressed by the change's id as every workflow
+    route addresses it. Another bank has no case for it, so tenancy alone answers 404."""
+    from apps.cases import testing as case_build
+
+    row = case_build.case_on_a_new_change(tenant)
+    return SimpleNamespace(id=row.change_id, case=row)
+
+
+def case_action(tenant: Tenant) -> SimpleNamespace:
+    """A live action on a case of `tenant`, addressed by its own id."""
+    from apps.cases.models import Action
+
+    row = case_change(tenant).case
+    owner = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        action = Action.objects.create(
+            tenant=tenant,
+            case=row,
+            title="Document the research criteria",
+            owner=owner,
+            due_date=timezone.localdate(),
+            created_by=owner,
+        )
+    return SimpleNamespace(id=action.id, case=row)
+
+
+def case_evidence(tenant: Tenant) -> SimpleNamespace:
+    """A live piece of evidence (a link, so no bytes) on a case of `tenant`, by its own id."""
+    from apps.cases.models import Evidence, EvidenceKind
+
+    row = case_change(tenant).case
+    uploader = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        evidence = Evidence.objects.create(
+            tenant=tenant,
+            case=row,
+            kind=EvidenceKind.LINK.value,
+            name="FI decision memo",
+            url="https://intranet.example.com/memo/42",
+            uploaded_by=uploader,
+            # A link has no bytes to scan, so it is recorded clean (CasesEvidence.scanState).
+            scan_state="clean",
+            scanned_at=timezone.now(),
+        )
+    return SimpleNamespace(id=evidence.id, case=row)
