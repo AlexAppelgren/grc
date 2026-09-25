@@ -763,10 +763,13 @@ class IdentityScenarioTests(ScenarioTestCase):
 
         # The platform half: a key bound to an agent, minted in the console behind a passkey.
         from apps.agents import testing as agents_testing
+        from apps.agents.models import AgentKind
         from apps.identity.models import StepUpAssertion
 
         tenancy.clear_tenant()
-        sweeper = agents_testing.agent()
+        # A review agent, so its key may hold the review scope: a key's scopes follow its
+        # agent's kind (H43, D-93).
+        confirmer = agents_testing.agent(kind=AgentKind.REVIEW)
         platform_admin = factories.platform_user(roles=("platform_admin",))
         console = sign_in(platform_admin, step_up=True)
         # The admin picks the agent from the platform's definitions, listed by key.
@@ -774,17 +777,17 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(definitions.status_code, 200, definitions.content)
         listed_keys = [item["key"] for item in definitions.json()["items"]]
         self.assertEqual(listed_keys, sorted(listed_keys))
-        picked = next(item for item in definitions.json()["items"] if item["key"] == sweeper.key)
-        self.assertEqual((picked["id"], picked["currentVersion"], picked["active"]), (str(sweeper.id), sweeper.current_version, sweeper.active))
-        agent_scopes = [perms.SCOPE_AGENT_RUNS_WRITE, perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_REVIEW]
-        minted = self._post("/agent-keys", {"name": "Watch sweeper, nightly", "agentId": picked["id"], "scopes": agent_scopes}, **console)
+        picked = next(item for item in definitions.json()["items"] if item["key"] == confirmer.key)
+        self.assertEqual((picked["id"], picked["currentVersion"], picked["active"]), (str(confirmer.id), confirmer.current_version, confirmer.active))
+        agent_scopes = [perms.SCOPE_AGENT_RUNS_WRITE, perms.SCOPE_LIBRARY_READ, perms.SCOPE_PROPOSALS_REVIEW]
+        minted = self._post("/agent-keys", {"name": "Library confirmer, nightly", "agentId": picked["id"], "scopes": agent_scopes}, **console)
         self.assertEqual(minted.status_code, 201, minted.content)
         agent_plain = minted.json()["plainKey"]
         self.assertTrue(agent_plain.startswith(f"cw_{minted.json()['keyPrefix']}_"))
         self.assertNotIn(agent_plain, minted.content.decode().replace(agent_plain, "", 1), "the plain key appears once")
         tenancy.clear_tenant()
         agent_row = ApiKey.objects.get(pk=minted.json()["id"])
-        self.assertEqual((agent_row.tenant_id, agent_row.agent_id, agent_row.created_by_id), (None, sweeper.id, platform_admin.id))
+        self.assertEqual((agent_row.tenant_id, agent_row.agent_id, agent_row.created_by_id), (None, confirmer.id, platform_admin.id))
         self.assertEqual(agent_row.key_hash, tokens.hash_token(agent_plain.split("_", 2)[2]))
         self.assertEqual(sorted(agent_row.scopes), sorted(agent_scopes))
         audit = AuditEvent.objects.get(action="agent_key.created", subject_id=agent_row.id)
@@ -795,11 +798,11 @@ class IdentityScenarioTests(ScenarioTestCase):
         on_list = self.client.get("/api/v1/agent-keys", **console).json()["items"]
         listed_key = next(item for item in on_list if item["id"] == str(agent_row.id))
         self.assertNotIn("plainKey", listed_key)
-        self.assertEqual(listed_key["agent"]["key"], sweeper.key)
+        self.assertEqual(listed_key["agent"]["key"], confirmer.key)
         # Used: it keeps every scope it was given, the review scope included (D-62).
         used = api_keys_logic.resolve_api_key(agent_plain)
         assert used is not None
-        self.assertEqual((used.tenant_id, used.agent_id, used.scopes), (None, sweeper.id, frozenset(agent_scopes)))
+        self.assertEqual((used.tenant_id, used.agent_id, used.scopes), (None, confirmer.id, frozenset(agent_scopes)))
         self.assertTrue(LoginEvent.objects.filter(api_key=agent_row, event=LoginEventKind.KEY_USED.value, tenant__isnull=True).exists())
         # Revoked: the next call answers 401.
         stopped = self._post(f"/agent-keys/{agent_row.id}/revoke", **console)
@@ -811,7 +814,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertTrue(AuditEvent.objects.filter(action="agent_key.revoked", subject_id=agent_row.id, tenant__isnull=True).exists())
         # Minting one needs the passkey too.
         self.assertEqual(
-            self._post("/agent-keys", {"name": "x", "agentId": str(sweeper.id), "scopes": agent_scopes}, **sign_in(platform_admin)).json()["code"],
+            self._post("/agent-keys", {"name": "x", "agentId": str(confirmer.id), "scopes": agent_scopes}, **sign_in(platform_admin)).json()["code"],
             "step_up_required",
         )
 
