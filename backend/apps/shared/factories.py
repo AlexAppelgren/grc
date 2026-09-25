@@ -207,7 +207,6 @@ def register_entity(tenant: Tenant) -> SimpleNamespace:
     """A legal entity of `tenant`. The route reads the entity under row-level security before
     it looks at the obligation, so another bank asking for it is refused as if it never
     existed; apps/register/tests_status.py proves the same under a real shared obligation."""
-
     with transaction.atomic():
         tenancy.activate(tenant.id)
         entity = OrgUnit.objects.create(tenant=tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name=f"Example Entity {next(_counter)} AB")

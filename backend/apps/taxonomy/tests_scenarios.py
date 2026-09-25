@@ -11,7 +11,7 @@ Operations exercised (the audit-on-write guard reads these names): createVocabul
 updateVocabularyRow, reorderVocabulary, retireVocabularyRow, restoreVocabularyRow, mergeVocabularyRow,
 suggestVocabularyRow, declineVocabularySuggestion, createTerm, updateTerm,
 createFootprintRequest, approveFootprintRequest, rejectFootprintRequest,
-withdrawFootprintRequest.
+withdrawFootprintRequest, tagRecord, untagRecord, previewTagging, tagRecords.
 
 Prefixes hosted: ACC, FP, I18N, VOC.
 """
@@ -544,12 +544,47 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         officer = self._post("/taxonomy/terms", {**body, "labels": {"en": "Lending"}}, sign_in(self.officer, tenant=self.tenant))
         self.assertEqual(officer.status_code, 202, officer.content)
 
-    @skip("pending: VOC-S12 (VOC-08, R2)")
     def test_voc_s12(self) -> None:
         """VOC-S12
 
         Bulk tagging from a list previews and writes one audit entry (VOC-08).
         """
+        custody = self._tag("Custody", key="custody")
+        instrument = library_build.instrument(key="voc-s12-lvm", regime="regime:securities")
+        rows = [library_build.obligation(instrument, key=f"obl-voc-s12-{n}") for n in range(6)]
+        ids = [str(row.id) for row in rows]
+        self.activate(self.tenant)
+        for row in rows[:2]:
+            Tagging.objects.create(tenant=self.tenant, tag=custody, subject_type="obligation", subject_id=row.id)
+        headers = sign_in(self.officer, tenant=self.tenant)
+        body = {"tagKey": "custody", "subjectType": "obligation", "subjectIds": ids}
+        # The preview lists the six and which already carry the tag, and writes nothing.
+        audit_before = set(AuditEvent.objects.values_list("id", flat=True))
+        preview = self._preview("/taggings/preview", body, headers)
+        self.assertEqual(preview.status_code, 200, preview.content)
+        shown = preview.json()
+        self.assertEqual(set(shown["gained"]["ids"]) | set(shown["alreadyTagged"]["ids"]), set(ids))
+        self.assertEqual(set(shown["alreadyTagged"]["ids"]), set(ids[:2]))
+        self.assertEqual(shown["skipped"], {"count": 0})
+        self.activate(self.tenant)
+        self.assertFalse(AuditEvent.objects.exclude(id__in=audit_before).filter(action__startswith="taggings.").exists())
+        # The commit links the tag to each and one audit event records the batch with the six ids.
+        committed = self._post("/taggings/batch", body, headers)
+        self.assertEqual(committed.status_code, 200, committed.content)
+        self.activate(self.tenant)
+        self.assertEqual(
+            set(Tagging.objects.filter(tag=custody, subject_type="obligation").values_list("subject_id", flat=True)),
+            {row.id for row in rows},
+        )
+        events = list(AuditEvent.objects.exclude(id__in=audit_before).filter(action__startswith="taggings."))
+        self.assertEqual([event.action for event in events], ["taggings.batch_added"])
+        self.assertEqual((events[0].after["tag"], set(events[0].after["ids"])), ("custody", set(ids)))
+        # One record at a time answers the record's tags, and a tag comes off the same way.
+        single = {"tagKey": "custody", "subjectType": "obligation", "subjectId": ids[0]}
+        removed = self._post("/taggings/remove", single, headers)
+        self.assertEqual((removed.status_code, removed.json()["tags"]), (200, []))
+        added = self._post("/taggings", single, headers)
+        self.assertEqual([tag["key"] for tag in added.json()["tags"]], ["custody"])
 
     @skip("pending: VOC-S13 (VOC-09, R3)")
     def test_voc_s13(self) -> None:

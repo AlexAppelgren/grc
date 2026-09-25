@@ -98,7 +98,6 @@ export const obligations: readonly ObligationSample[] = [
       binding: false,
       applicability: { key: 'applies', kind: 'applies', label: 'Applies' },
       complianceStatus: gap,
-      changeWaitingForApproval: true,
       libraryTags: [{ key: 'appropriateness', label: 'Appropriateness' }],
       tenantTags: [{ key: 'digital-investing', label: 'Digital investing' }],
     },
