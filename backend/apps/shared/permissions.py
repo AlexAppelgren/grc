@@ -508,6 +508,7 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}"): Ungated(
         UngatedReason.LOGIC_GATE, _LOGIC_PARTICIPANT_REMOVAL
     ),
+
     # c8-tenants-contract (TEN-02, TEN-03, TEN-06, COL-04). The bank's organisation, its teams
     # and who from the platform may look in are read by every member: the pickers, the
     # department view and the Support access panel need them. Writes keep their permission.

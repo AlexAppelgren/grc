@@ -1,3 +1,25 @@
 {
-  "obligationHistory.heading": "Hur vi läser regeln"
+  "obligationHistory.heading": "Hur vi läser regeln",
+  "obligationHistory.readingEmpty": "Ingen tolkning är nedskriven. Skriv ner hur vi läser regeln där texten lämnar utrymme, så att nästa person inte börjar om.",
+  "obligationHistory.readingError": "Hur vi läser regeln kunde inte hämtas",
+  "obligationHistory.readingBy": "Version {version}, skriven av {name}, {date}",
+  "obligationHistory.writeFirst": "Skriv hur vi läser den",
+  "obligationHistory.writeNew": "Skriv en ny version",
+  "obligationHistory.earlier": "{count, plural, one {Tidigare version av hur vi läser regeln, #} other {Tidigare versioner av hur vi läser regeln, #}}",
+  "obligationHistory.editorLabel": "Vår tolkning",
+  "obligationHistory.editorHint": "Sparas som version {version} i ditt namn. Tidigare versioner går fortfarande att läsa.",
+  "obligationHistory.save": "Spara version",
+  "obligationHistory.stale": "Någon sparade en ny version medan du skrev. Ladda om för att läsa den; det du skrev här sparas inte.",
+  "obligationHistory.reload": "Ladda om",
+  "obligationHistory.historyTitle": "Bedömningshistorik",
+  "obligationHistory.historyEmpty": "Ingen bedömning ännu. Den första statusen startar historiken.",
+  "obligationHistory.historyError": "Bedömningshistoriken kunde inte hämtas",
+  "obligationHistory.newer": "Nyare",
+  "obligationHistory.older": "Äldre",
+  "obligationHistory.range": "{from} till {to} av {total}",
+  "obligationHistory.method.selfAssessment": "Självutvärdering",
+  "obligationHistory.method.secondLineReview": "Granskning i andra linjen",
+  "obligationHistory.method.internalAudit": "Internrevision",
+  "obligationHistory.method.externalAudit": "Extern revision",
+  "obligationHistory.method.regulator": "Tillsynsmyndighet"
 }

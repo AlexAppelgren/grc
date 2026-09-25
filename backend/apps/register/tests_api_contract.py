@@ -74,6 +74,7 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("listInternalLinks", "get", f"/api/v1/obligations/{OBLIGATION}/internal-links", None, perms.REGISTER_READ, False),
     ("addInternalLink", "post", f"/api/v1/obligations/{OBLIGATION}/internal-links", LINK_BODY, perms.REGISTER_EDIT, False),
     ("removeInternalLink", "delete", f"/api/v1/internal-links/{RECORD}", None, perms.REGISTER_EDIT, False),
+    ("listInternalItems", "get", "/api/v1/internal-items", None, perms.REGISTER_READ, False),
     ("listUnits", "get", f"/api/v1/obligations/{OBLIGATION}/units?entity={ENTITY}", None, perms.REGISTER_READ, False),
     ("createUnit", "post", f"/api/v1/obligations/{OBLIGATION}/units", UNIT_BODY, perms.REGISTER_EDIT, False),
     ("updateUnit", "patch", f"/api/v1/units/{RECORD}", UNIT_PATCH, perms.REGISTER_EDIT, False),
@@ -83,6 +84,20 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("listDuties", "get", f"/api/v1/obligations/{OBLIGATION}/duties", None, perms.REGISTER_READ, False),
     ("completeDutyOccurrence", "post", f"/api/v1/duty-occurrences/{RECORD}/complete", COMPLETE_BODY, perms.REGISTER_EDIT, False),
 ]
+
+# Operations whose logic has landed, so they no longer answer 501 (one line each, so the
+# packages that build them in parallel merge mechanically). Each is proved in its own module.
+BUILT: set[str] = {
+    # c8-reg-links-history: tests_history.py, tests_links.py
+    "listAssessments",
+    "getInterpretation",
+    "saveInterpretation",
+    "listInternalLinks",
+    "addInternalLink",
+    "removeInternalLink",
+    # c8-ui-links-history-participants: tests_links.py
+    "listInternalItems",
+}
 
 
 def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
@@ -218,6 +233,8 @@ class RegisterRouteStubs(TestCase):
         shape, with nothing of the server in it. Replaced row by row as each logic lands."""
         with stub_session(self._everything()):
             for name, method, url, body, _permission, _step_up in REGISTER_ROUTES:
+                if name in BUILT:
+                    continue
                 headers = {**AS_SESSION, "HTTP_IF_MATCH": '"3"'} if method in {"patch", "put", "delete"} else AS_SESSION
                 with self.subTest(operation=name):
                     response = _call(self.client, method, url, body, headers)

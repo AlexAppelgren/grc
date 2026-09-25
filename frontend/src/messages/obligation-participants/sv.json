@@ -1,3 +1,25 @@
 {
-  "obligationParticipants.heading": "Deltagare"
+  "obligationParticipants.heading": "Deltagare",
+  "obligationParticipants.empty": "Ingen deltar ännu.",
+  "obligationParticipants.errorTitle": "Deltagarna kunde inte hämtas",
+  "obligationParticipants.firstLineOwner": "Ägare i första linjen",
+  "obligationParticipants.complianceContact": "Kontakt på compliance",
+  "obligationParticipants.you": "Du",
+  "obligationParticipants.team": "Team",
+  "obligationParticipants.person": "Person",
+  "obligationParticipants.addedBy": "Tillagd {date} av {name}",
+  "obligationParticipants.leave": "Lämna",
+  "obligationParticipants.remove": "Ta bort",
+  "obligationParticipants.grantsNothing": "Att delta listar ärendet under personens Mitt arbete och ger aviseringar. Det ger ingen behörighet.",
+  "obligationParticipants.add": "Lägg till en deltagare",
+  "obligationParticipants.addTitle": "Lägg till en deltagare",
+  "obligationParticipants.find": "Person eller team",
+  "obligationParticipants.findHint": "Ett team når sina aktiva medlemmar. Alla behåller den behörighet de redan hade.",
+  "obligationParticipants.noMatch": "Ingen i er organisation matchar.",
+  "obligationParticipants.addConfirm": "Lägg till",
+  "obligationParticipants.alreadyParticipant": "{name} deltar redan i den här skyldigheten.",
+  "obligationParticipants.cannotRead": "{name}s roller kan inte öppna den här skyldigheten, så att lägga till personen skulle inte säga den något.",
+  "obligationParticipants.tooMany": "Den här skyldigheten har redan så många deltagare som tillåts. Ta bort en innan du lägger till en till.",
+  "obligationParticipants.unknownMember": "Personen är inte längre en aktiv medlem i er organisation.",
+  "obligationParticipants.unknownTeam": "Teamet finns inte längre i er organisations lista."
 }
