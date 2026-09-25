@@ -126,6 +126,38 @@ SEED_LOGINS: tuple[SeedLogin, ...] = (
     # footprint.approve and not footprint.request, so it never files the request it decides.
     SeedLogin(_id(17), "approver@second-bank.test", "Freja Madsen", TENANT_B_SLUG, ("approver",), title="Approver, head of compliance"),
     # --- end tax-market-journeys -------------------------------------------------------------
+    # --- r2-e2e-login-roster: every login the R2 journeys need, allocated once --------------
+    # One numbered block, so the parallel R2 seed packages never collide on `_id(n)`. Each
+    # login is reserved for the journeys that sign in as it or act on it, because each one
+    # changes something about the person that the next run must find as seeded (their
+    # teams, their absence, their work, their tokens). Department heads and team membership
+    # are data the chunk 8 seed writes; this roster only makes the people.
+    # Tenant A's head of Retail Banking (design/screens/admin-organisation.html): TEN-S8
+    # makes them head, J-9 reads their department view.
+    SeedLogin(_id(18), "head@example-bank.test", "Karin Ek", TENANT_A_SLUG, ("owner",), title="Head of Retail Banking", reserved_for=("HOM-S13", "TEN-S8")),
+    # J-9's contributor: added as a participant, then leaves.
+    SeedLogin(_id(19), "participant@example-bank.test", "Viktor Hedlund", TENANT_A_SLUG, ("contributor",), title="Product specialist, savings", reserved_for=("HOM-S13",)),
+    # TEN-S5 removes this member, who owns obligations and open cases, and reassigns the work.
+    SeedLogin(_id(20), "leaver@example-bank.test", "Gustav Sjöberg", TENANT_A_SLUG, ("owner",), title="Obligation owner, savings", reserved_for=("TEN-S5",)),
+    # TEN-S8 puts this member in a team.
+    SeedLogin(_id(21), "teams@example-bank.test", "Linnea Forsberg", TENANT_A_SLUG, ("contributor",), title="Product specialist, lending", reserved_for=("TEN-S8",)),
+    # TEN-S4: the approver who goes out of office with a delegate. The shared approver is the
+    # delegate, so nothing about their own absence leaks into another journey.
+    SeedLogin(_id(22), "away@example-bank.test", "Henrik Wallin", TENANT_A_SLUG, ("approver",), title="Approver, deputy head of compliance", reserved_for=("TEN-S4",)),
+    # CAS-S9 and J-3: the owner who also holds cases.signoff, refused on their own case.
+    SeedLogin(_id(23), "owner-approver@example-bank.test", "Emma Lindberg", TENANT_A_SLUG, ("owner", "approver"), title="Obligation owner and approver, payments", reserved_for=("CAS-S9", "CAS-S15")),
+    # COL-S2: the Swedish-speaking team member whose reminders arrive in sv.
+    SeedLogin(_id(24), "sv-member@example-bank.test", "Ingrid Bergström", TENANT_A_SLUG, ("owner",), title="Obligation owner, pensions", locale="sv", reserved_for=("COL-S2",)),
+    # ACC-S11: the second member holding security.manage, so tenant reach keeps four eyes.
+    SeedLogin(_id(25), "security@example-bank.test", "Magnus Öberg", TENANT_A_SLUG, ("admin",), title="Administrator, information security", reserved_for=("ACC-S11",)),
+    # ACC-S3: the compliance officer who mints a personal access token.
+    SeedLogin(_id(26), "tokens@example-bank.test", "Elsa Hansson", TENANT_A_SLUG, ("compliance_officer",), title="Compliance officer, reporting", reserved_for=("ACC-S3",)),
+    # HOM-S10, COL-S12 and COL-S8: a member whose one role reads neither the register nor
+    # cases (NO_RECORD_READ_ROLE, a tenant role e2e_seed.py creates before the logins).
+    SeedLogin(_id(27), "library-only@example-bank.test", "Axel Norén", TENANT_A_SLUG, ("library_only",), title="Trainee, compliance", reserved_for=("HOM-S10", "COL-S12", "COL-S8")),
+    # Tenant B's compliance officer: J-2 triages tenant B's own lead, and J-8 signs in as them.
+    SeedLogin(_id(28), "compliance_officer@second-bank.test", "Søren Kristensen", TENANT_B_SLUG, ("compliance_officer",), title="Compliance officer", reserved_for=("CAS-S14", "TEN-S7")),
+    # --- end r2-e2e-login-roster -------------------------------------------------------------
 )
 
 # The login ADM-S2 spends (above). Named here so the guard and the journey read one value.
@@ -133,3 +165,11 @@ REISSUE_LOGIN_EMAIL = "reissue@example-bank.test"
 
 # The platform role a proposal decision needs on two people at once (four eyes, PRO-02).
 LIBRARY_EDITOR_ROLE = "library_editor"
+
+# --- r2-e2e-login-roster ---------------------------------------------------------------------
+# The first and last `_id(n)` of the R2 journey roster above, and the tenant role (not a system
+# role) the no-record-read login holds: every permission everyone has except register.read and
+# cases.read.
+R2_ROSTER_IDS = range(18, 29)
+NO_RECORD_READ_ROLE = "library_only"
+# --- end r2-e2e-login-roster -----------------------------------------------------------------
