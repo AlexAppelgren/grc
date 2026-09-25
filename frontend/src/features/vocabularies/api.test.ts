@@ -74,11 +74,29 @@ describe('vocabularies api', () => {
     expect(await vocab.mergeValue('flag', 'ai', 'ml')).toMatchObject({ outcome: 'proposed' });
   });
 
-  it('suggests a value and reads the proposal back, tolerating an empty body', async () => {
-    const sent = installAdapter((s) => ({ status: 201, data: s.path.endsWith('/suggest') ? { proposal: { id: 'p3', kind: 'term_create', status: 'open', title: 'T+1' } } : null }));
-    expect(await vocab.suggestValue('flag', { labels: { en: 'T+1' } })).toEqual({ id: 'p3', kind: 'term_create', status: 'open', title: 'T+1' });
-    expect(sent[0]?.body).toEqual({ labels: { en: 'T+1' } });
+  it('suggests on a tenant list as a waiting suggestion (201), on a library list as a proposal (202)', async () => {
+    const pending = { id: 's1', list: 'tenant_tag', key: 'pension_transfers', labels: { en: 'Pension transfers' }, usageNote: 'Moves', suggestedBy: { id: 'u1', name: 'Johan Berg' }, status: 'pending', createdAt: '2026-09-17T08:00:00Z' };
+    const suggestion = { id: 's1', key: 'pension_transfers', labels: { en: 'Pension transfers' }, usageNote: 'Moves', suggestedBy: 'Johan Berg', createdAt: '2026-09-17T08:00:00Z' };
+    let sent = installAdapter(() => ({ status: 201, data: pending }));
+    expect(await vocab.suggestValue('tenant_tag', { labels: { en: 'Pension transfers' }, usageNote: 'Moves' })).toEqual({ outcome: 'suggested', suggestion });
+    expect(sent[0]?.path).toBe('/api/v1/vocab/tenant_tag/suggest');
+    expect(sent[0]?.body).toEqual({ labels: { en: 'Pension transfers' }, usageNote: 'Moves' });
+
+    sent = installAdapter(() => ({ status: 202, data: { proposal: { id: 'p3', kind: 'term_create', status: 'open', title: 'T+1' } } }));
+    expect(await vocab.suggestValue('flag', { labels: { en: 'T+1' } })).toEqual({ outcome: 'proposed', proposal: { id: 'p3', kind: 'term_create', status: 'open', title: 'T+1' } });
     installAdapter(() => ({ status: 202, data: 'accepted' }));
     expect(await vocab.createValue('flag', { labels: { en: 'X' } })).toEqual({ outcome: 'proposed', proposal: { id: '', kind: '', status: '', title: '' } });
+  });
+
+  it('reads the inbox of a tenant list and declines one suggestion', async () => {
+    const pending = { id: 's 1', list: 'tenant_tag', key: 'escrow', suggestedBy: null, status: 'pending', createdAt: '2026-09-17T08:00:00Z' };
+    const sent = installAdapter((s) => ({ status: 200, data: s.method === 'get' ? { items: [pending], total: 1 } : { ...pending, status: 'declined' } }));
+    const read = { id: 's 1', key: 'escrow', labels: {}, usageNote: '', suggestedBy: '', createdAt: '2026-09-17T08:00:00Z' };
+    expect(await vocab.listSuggestions('tenant_tag')).toEqual({ items: [read], total: 1 });
+    expect(await vocab.declineSuggestion('tenant_tag', 's 1')).toEqual(read);
+    expect(sent.map((s) => [s.method, s.path])).toEqual([
+      ['get', '/api/v1/vocab/tenant_tag/suggestions'],
+      ['post', '/api/v1/vocab/tenant_tag/suggestions/s%201/decline'],
+    ]);
   });
 });
