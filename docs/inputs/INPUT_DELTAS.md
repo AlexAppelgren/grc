@@ -868,6 +868,43 @@ Chunk 6 (home, the briefing, the roadmap and the calendar feed), 2026-09-21:
   behind a calendar address that answers for months. Revoking asks for nothing of the kind:
   a person whose address has leaked must be able to stop it at once.
 
+**Chunk 10 (2026-09-25, c10-collab-contract).** The eight collab operations are declared
+behind their real gates and answer 501 `not_built` until `collab/inbox.py`,
+`collab/comments.py` and `collab/me_comments.py` land. They depart from the design here:
+
+- `listComments` (`GET /comments`) answers a page `{items, total}` on the shared `limit`
+  and `offset`, oldest first, instead of the designed bare array of `Comment`: a busy case
+  would otherwise return every comment ever written (playbook 10). `listNotifications`
+  (`GET /notifications`) answers `{items, total}` on `limit` and `offset` instead of the
+  designed `NotificationPage` with `nextCursor`, like every other list, and keeps `unread`.
+- `Comment` gains `canEdit` and `canDelete`, computed for the caller: only the author may
+  edit, within `COMMENT_EDIT_MINUTES`, and only the author may delete; no role grants either
+  (CHUNK10_TASKS). It also gains `deletedAt`, and `body` is null on a deleted comment, which
+  keeps its place in the thread without its text. `editComment` (`PATCH /comments/{commentId}`)
+  answers this `Comment`.
+- `addComment` (`POST /comments`) answers `Comment` plus `undeliveredMentions[{id, name}]`:
+  the mentioned people who were not notified because they cannot read the record, named so
+  the composer can say so, never why (COL-S12). The body is `{subjectType, subjectId, body,
+  mentionUserIds[]}` as designed, and refuses a field it does not name.
+- `subjectType` is a string of at most 64 characters, not the designed `SubjectType` enum
+  of every table. Comments are taken on the kinds the subject registry
+  (`collab/subjects.py`) holds — `obligation`, `tenant_obligation`, `change_case` and
+  `action`, and not `change`, because a bank's change page is its case (R2_CROSS_CUTTING
+  (j)) — and any other kind answers 422 `unsupported_subject` from the logic that owns the
+  registry (CHUNK10_TASKS ruling 3). The kind and the id ride in the query string of
+  `GET /comments`; a comment's text rides only in a body (ruling 9).
+- `listMyComments` (`GET /me/comments`) is new, as the chunk 8 row above says: `about` is
+  `written` or `mentioned` and anything else answers 422 at the boundary; the page is
+  `{items, total, permissionLimitedKinds[]}`, each item a `Comment` plus `subjectTitle`. It
+  has no designed counterpart, so the drift check has nothing to compare it with and no
+  pending line can name it.
+- No API key reaches any of the eight: a notification is one person's and a comment is one
+  bank's own text. `GET /notifications`, the two mark-read routes and `GET /me/comments` are
+  `UNGATED_BY_DESIGN` `self`; `GET` and `POST /comments` are `logic-gate`, with
+  `comments.write` checked by the route on the write; `PATCH` and `DELETE` carry
+  `@requires_permission("comments.write")` and leave the author check to the logic. A
+  platform session belongs to no bank and gets 404.
+
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
 **`change_case` (`c5-contract-models-cases`).** Built with R1 columns only:
