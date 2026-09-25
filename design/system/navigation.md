@@ -87,13 +87,13 @@ What today's registry produces:
 
 | Who | Tabs | In More |
 |---|---|---|
-| Every system role. All hold `library.read`, `watch.read`, `roadmap.read` and `search.use` (`backend/apps/shared/permissions.py`) | Today, Watch, Inventory, Search | Roadmap. Admin, for a role holding any tenant admin permission. The account |
+| Every system role. All hold `library.read`, `watch.read`, `roadmap.read` and `search.use` (`backend/apps/shared/permissions.py`) | Today, Watch, Inventory, Ask | Roadmap. Admin, for a role holding any tenant admin permission. The account |
 | A custom role holding none of those four | Today | The account |
 | Console, holding every platform permission | Queue, Vocabularies, Sources | The account |
 
 **Tab labels.**
 - A new optional registry field, `shortLabelKey`, holds a tab's label. Without it, the tab uses `labelKey`.
-- Search needs one. Its label, "Search and ask", is three words. The tab shows `nav.search.short`: "Search" in English, "Sök" in Swedish. That is also the prototype's own tab label.
+- No tab needs one today. Search needed one while its label was "Search and ask"; since D-9x search lives in the inventory and the destination is "Ask" ("Fråga" in Swedish), one word in the rail, the More sheet and the bar alike.
 - The rail and the More sheet keep the full labels.
 - Why: Apple asks for single-word labels. Material asks for one or two words, and says never to truncate or shrink them.
 

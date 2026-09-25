@@ -122,10 +122,37 @@ input border would not pass). Placeholder in `content-neutral-02`, italic.
 Textarea 76 px minimum. Label `body` at 500, hint and error `meta`. Was:
 44 px, 8 px radius.
 
-**Toggle** (filter chips, the Search / Ask switch). 32 px, 12 px
+**Toggle** (the values in a Filters sheet). 32 px, 12 px
 padding, 6 px radius, `body` at 500. Off: `l2-neutral-02`, `border-neutral-02`,
 `content-neutral-02` text. On: `l3-neutral-02`, `border-neutral-01`,
 `content-neutral-01` text. Was: fully rounded, solid black when on.
+
+**Segmented control** (the scope quick filter, D-9x). Toggles joined in one
+frame: `l2-neutral-02`, a 1 px `border-neutral-02`, 2 px padding, 8 px radius.
+Segments are 28 px, 12 px padding, 6 px radius, `meta` at 500; the chosen one
+takes the toggle's on colours, the others `content-neutral-02` with no border.
+Exactly one segment is chosen. It sits at the end of the tab row when it
+applies to every tab; on a phone it takes the full width under the tabs and the
+segments share it equally.
+
+**Search field** (a list's own search, D-9x). An input with a 16 px search icon
+inside at the start and a Clear button (28 px, ghost, icon only, labelled) once
+there is text. 36 px, 44 px on a touch screen; up to 560 px wide beside its
+Filters button, full width on a phone. Enter runs the search. What is typed is
+the bank's own words, so it stays in the component and never reaches the
+address bar.
+
+**Filters sheet** (D-9x). An outline Filters button with a 16 px sliders icon
+opens it: from the right edge on a desktop (440 px, `l2-neutral-02`, a hairline
+on its open side), from the bottom on a phone (the More sheet's rules), over
+`Modal`'s scrim. A `title` heading with a Close button, then one `microlabel`
+per filter. Short value lists are toggles, one on at most, and pressing the on
+one clears it; a long list (instruments) is a search field over rows that carry
+a count in `meta`. A change applies at once, so the footer's Done (primary)
+only closes, beside Clear all (outline). Every set filter shows beside the
+Filters button as a chip: a toggle in its on colours, 28 px, `meta` at 500,
+with a 26 px Remove button labelled with the filter and its value, then a
+"Clear filters" text button. A date keeps its banner instead of a chip.
 
 **Tabs.** Underline tabs, 14 px at 500, muted until selected; the selected tab
 gets the text colour and a 2 px underline.

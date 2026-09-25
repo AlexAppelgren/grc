@@ -3,14 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Screen card: ask a question (/search?mode=ask)</title>
+<title>Screen card: ask a question (/ask)</title>
 <style>
 /* Serves SRC-03, AC-SRC2, AUD-02, J-7, D-07 (chunk 7). Cut from
    design/prototype/index.html, renderResults() in ask mode: the answer panel
    with numbered citations and the "Change pending" pill. Designed where
    silent: the label that names what the answer is built from, the "no answer"
    state, feedback (helpful or wrong, with a reason), the "Ask is switched
-   off" state, and the pending-change flag per statement. */
+   off" state, and the pending-change flag per statement.
+   Revised 2026-09-25 (D-9x): Ask is its own page at /ask and the nav item reads
+   "Ask"; search moved into the inventory (tenant-inventory.html), so the Search /
+   Ask switch is gone and "Search the inventory" opens it. */
 :root{
   --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;--sand-3:#e7ddcb;
   --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
@@ -260,7 +263,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="mbrand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
 <div class="head"><div><h1>Search and ask</h1><p>Answers quote the inventory and cite every statement</p></div></div>
     <div class="states">
-    <div class="filters"><button class="chip" aria-pressed="false">Search</button><button class="chip" aria-pressed="true">Ask a question</button><label class="meta" for="asof">As of</label><input type="date" id="asof" aria-label="As of date"></div>
+    <div class="filters"><label class="meta" for="asof">As of</label><input type="date" id="asof" aria-label="As of date"></div>
     <div class="search"><input id="q" type="search" value="What are our obligations on research payments?" aria-label="Question" placeholder="e.g. What are our obligations on research payments?"><button class="btn">Ask</button></div>
 
     <h2 class="k">Cited answer with a pending change flagged</h2>
@@ -276,11 +279,11 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <p class="ok" role="status">Thank you. Your feedback is logged with the answer.</p>
 
     <h2 class="k">No answer (nothing in the inventory supports one)</h2>
-    <div class="answer"><h2 style="margin-bottom:6px">No answer in the inventory</h2><p>Nothing in the obligations supports an answer to "Do we need a licence for crypto custody?". Nothing was guessed.</p><div class="bar left" style="justify-content:flex-start"><a class="btn ghost small" href="#">Search instead</a><button class="btn ghost small">Ask a narrower question</button></div></div>
+    <div class="answer"><h2 style="margin-bottom:6px">No answer in the inventory</h2><p>Nothing in the obligations supports an answer to "Do we need a licence for crypto custody?". Nothing was guessed.</p><div class="bar left" style="justify-content:flex-start"><a class="btn ghost small" href="#">Search the inventory</a><button class="btn ghost small">Ask a narrower question</button></div></div>
 
     <h2 class="k">"As of" answer, Ask switched off, loading, error, denied</h2>
     <div class="answer"><div class="sowhat" style="margin-top:0"><span class="ai">Answer drafted by AI from inventory records only, as of 1 June 2026</span></div><p><b>Pay for third-party research only under the permitted models.</b> Research from third parties may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution.<sup>1</sup></p><ol><li><a href="#">FFFS 2017:2, 9 kap. 6 §, version 1</a></li></ol></div>
-    <div class="notice">Ask is switched off for your organisation. Search still works. <a href="#">Search instead</a></div>
+    <div class="notice">Ask is switched off for your organisation. Search in the inventory still works. <a href="#">Search the inventory</a></div>
     <div class="rows" aria-busy="true" style="margin-top:10px"><div class="skeleton" style="height:160px"></div></div>
     <div class="empty" role="alert" style="margin-top:10px"><h2>Ask is not answering</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     <div class="restricted" role="alert"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p style="font-size:.85rem">Needs search use</p></div>

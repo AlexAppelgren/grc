@@ -12,7 +12,11 @@
    "N open changes". Applicability and compliance status are the register overlay
    (chunk 8); in chunk 3 those slots are empty. Added where the prototype was
    silent: the Instruments tab, "Show outside our scope" (FP-03), an "as of" date,
-   and the library-updates link. */
+   and the library-updates link.
+   Revised 2026-09-25 (D-9x, Alex): the row of selects became a search bar and a
+   Filters sheet, search moved here from /search (SRC-01, SRC-02), and scope became
+   the quick filter "My scope" / "Markets we watch" / "Show all items" on the tab
+   row. The states marked R2 need teams (TEN-03) and the register (chunk 8). */
 :root{
   --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;--sand-3:#e7ddcb;
   --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
@@ -222,6 +226,25 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
 .box h2{margin-bottom:12px}
 .toast{display:inline-block;background:#0a0b0b;color:#fff;padding:12px 18px;border-radius:999px;font-size:.92rem;border:1px solid rgba(255,255,255,.2)}
 .note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
+.tabrow{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:16px}
+.tabrow .tabs{border-bottom:0;margin-bottom:0}
+.seg{display:flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.seg button{background:none;border:1px solid transparent;border-radius:6px;padding:4px 12px;font-size:.82rem;font-weight:500;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--surface-2);border-color:var(--line-strong);color:var(--text)}
+.searchbar{display:flex;align-items:center;gap:8px;flex:1 1 320px;max-width:560px;min-height:36px;padding:0 4px 0 10px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--muted)}
+.searchbar svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.75;flex-shrink:0}
+.searchbar input{flex:1;min-width:0;border:0;background:none;outline:0;padding:8px 0}
+.searchbar input::placeholder{color:var(--muted);font-style:italic}
+.searchbar button{background:none;border:0;width:28px;height:28px;color:var(--muted)}
+.token{display:inline-flex;align-items:center;gap:2px;min-height:28px;padding:0 0 0 10px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface-2);font-size:.85rem;font-weight:500}
+.token button{background:none;border:0;width:26px;height:26px;color:var(--muted)}
+.sheet{max-width:440px;margin-left:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 24px;display:grid;gap:18px}
+.sheet .micro{font-size:.72rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.sheet .opts{display:grid;gap:2px;margin-top:6px}
+.sheet .opts button{display:flex;justify-content:space-between;background:none;border:0;border-radius:6px;padding:8px 10px;text-align:left}
+.sheet .opts button[aria-pressed="true"]{background:var(--surface-2);font-weight:500}
+.hit mark{background:var(--sand-3);color:var(--text);border-radius:3px;padding:0 2px}
+.hit p{margin:6px 0 8px;font-size:.92rem}
 .tabbar{display:none}
 @media (max-width:820px){
   .app{grid-template-columns:1fr}.side{display:none}
@@ -262,15 +285,42 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="mbrand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
 <div class="head"><div><h1>Inventory</h1><p>15 obligations across 12 instruments</p></div><a class="btn ghost" href="#">4 library updates</a></div>
     <div class="states">
-    <div class="tabs" role="tablist"><button role="tab" aria-selected="true">Obligations</button><button role="tab" aria-selected="false">Instruments</button></div>
-    <div class="filters">
-      <select aria-label="Instrument"><option>All instruments</option><option>LVM (2)</option><option>FFFS 2017:2 (4)</option><option>ESMA guidelines (1)</option></select>
-      <select aria-label="Regime"><option>All regimes</option><option>Securities</option><option>Insurance</option><option>Tax</option></select>
-      <select aria-label="Service"><option>Any service</option><option>Advice</option><option>Custody</option></select>
-      <select aria-label="Duty type"><option>Any duty type</option><option>Conduct</option><option>Disclosure</option></select>
-      <label class="meta" for="asof">As of</label><input type="date" id="asof" aria-label="As of date">
-      <select aria-label="Scope"><option>In our scope</option><option>Markets we watch</option><option>Show outside our scope</option></select>
+    <div class="tabrow">
+      <div class="tabs" role="tablist"><button role="tab" aria-selected="true">Obligations</button><button role="tab" aria-selected="false">Instruments</button></div>
+      <div class="seg" role="group" aria-label="Scope"><button aria-pressed="true">My scope</button><button aria-pressed="false">Markets we watch</button><button aria-pressed="false">Show all items</button></div>
     </div>
+    <div class="filters">
+      <label class="searchbar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input aria-label="Search the inventory" placeholder="Search by reference or idea, like FFFS 2017:2 or nudging in onboarding"></label>
+      <button class="btn ghost small" aria-haspopup="dialog">Filters</button>
+    </div>
+
+    <h2 class="k">Filters sheet (from the right on a desktop, from the bottom on a phone)</h2>
+    <div class="sheet" role="dialog" aria-label="Filters">
+      <div class="barwrap" style="justify-content:space-between"><h2>Filters</h2><button class="btn ghost small" aria-label="Close filters">Close</button></div>
+      <p class="meta" style="margin:0">Only values in your scope are offered. Choose Show all items to see everything.</p>
+      <div><p class="micro">Instrument</p><label class="searchbar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input aria-label="Find an instrument" placeholder="Find an instrument"></label>
+        <div class="opts"><button aria-pressed="true">All instruments</button><button aria-pressed="false">FFFS 2017:2 <span class="meta">4</span></button><button aria-pressed="false">LVM <span class="meta">2</span></button><button aria-pressed="false">ESMA guidelines <span class="meta">1</span></button></div></div>
+      <div><p class="micro">Regime</p><div class="filters" style="margin:0"><button class="chip" aria-pressed="true">Securities</button><button class="chip" aria-pressed="false">AML</button></div></div>
+      <div><p class="micro">Service</p><div class="filters" style="margin:0"><button class="chip" aria-pressed="false">Advice</button><button class="chip" aria-pressed="false">Execution only</button><button class="chip" aria-pressed="false">Portfolio management</button><button class="chip" aria-pressed="false">Custody</button></div></div>
+      <div><p class="micro">Duty type</p><div class="filters" style="margin:0"><button class="chip" aria-pressed="false">Conduct</button><button class="chip" aria-pressed="false">Disclosure</button><button class="chip" aria-pressed="false">Record keeping</button><button class="chip" aria-pressed="false">Reporting</button><button class="chip" aria-pressed="false">Governance</button><button class="chip" aria-pressed="false">Technical</button></div></div>
+      <div><p class="micro"><label for="asof">As of</label></p><div class="filters" style="margin:0"><input type="date" id="asof"></div></div>
+      <div class="bar"><button class="btn ghost small">Clear all</button><button class="btn small">Done</button></div>
+    </div>
+
+    <h2 class="k">Searching: hits inside the scope and the set filters, each opens its record</h2>
+    <div class="filters">
+      <label class="searchbar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input aria-label="Search the inventory" value="appropriateness warnings"><button aria-label="Clear the search">×</button></label>
+      <button class="btn ghost small" aria-haspopup="dialog">Filters</button>
+      <span class="token">Securities<button aria-label="Remove the regime filter, Securities">×</button></span>
+      <button class="back" style="margin:0;font-weight:400">Clear filters</button>
+    </div>
+    <p class="meta">3 results</p>
+    <div class="rows">
+      <a class="row hit" href="#"><div class="meta"><span class="pill brand">ESMA guidelines</span><span class="pill">Guidance</span><span class="pill">Concept match</span></div><h3>Make appropriateness warnings prominent and do not encourage clients to ignore them</h3><p><mark>Warnings</mark> given after an <mark>appropriateness</mark> assessment are clear, prominent and not misleading.</p><div class="meta"><span>Version 1</span><span>English</span></div></a>
+      <a class="row hit" href="#"><div class="meta"><span class="pill brand">LVM</span><span class="pill">Keyword and concept</span></div><h3>Assess appropriateness before non-advised trades in complex instruments</h3><p>Before providing a non-advised service in a complex financial instrument, the institution asks about the client's knowledge and experience …</p><div class="meta"><span>Version 1</span><span>English</span></div></a>
+      <a class="row hit" href="#"><div class="meta"><span class="pill brand">LVM</span><span class="pill">Provision</span><span class="pill">Keyword match</span></div><h3>9 kap. Protection of clients</h3><p>… the institution shall <mark>warn</mark> the client if it considers that the service or the instrument is not <mark>appropriate</mark> …</p><div class="meta"><span>Svenska</span></div></a>
+    </div>
+    <div class="empty" style="margin-top:10px"><h2>No match in the inventory</h2><p>Try a broader word or another language, clear a filter, or show all items.</p><a href="#">Show all items</a></div>
 
     <h2 class="k">Rows (fixed slot order, each opens tenant-obligation.html)</h2>
     <div class="rows">
@@ -282,6 +332,11 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
       <a class="row outside" href="#"><div class="meta"><span class="pill brand">LFD</span></div><h3>Establish demands and needs and assess suitability for insurance-based investment products</h3><div class="meta"><span class="mono">Conduct rules</span><span>Insurance distribution, Advice</span><span>KF, Pension</span><span>Outside our scope: Advice</span></div></a>
     </div>
 
+    <h2 class="k">Show all items (R2): a record outside my teams' scope shows only whether it applies</h2>
+    <div class="rows">
+      <a class="row" href="#"><div class="meta"><span class="pill brand">GDPR</span><span class="pill positive">Applies</span></div><h3>Apply safeguards to solely automated decisions with significant effects</h3><div class="meta"><span class="mono">Article 22</span><span>All services</span><span>Outside your teams' scope</span></div></a>
+    </div>
+
     <h2 class="k">Chunk 3 row (library only, before the register overlay lands)</h2>
     <div class="rows"><a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill notice">1 open change</span></div><h3>Pay for third-party research only under the permitted models</h3><div class="meta"><span class="mono">Third-party payments</span><span>Advice, Portfolio management</span><span>Version 2 from 1 Oct 2026</span><span>Verified 30 Jun 2026</span></div></a></div>
 
@@ -290,7 +345,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
       <a class="row" href="#"><div class="meta"><span class="pill brand">Kapitalmarkedsloven</span></div><h3>Keep client financial instruments in segregated accounts and reconcile them daily</h3><div class="meta"><span class="mono">Client assets</span><span>Custody</span><span>Market we watch: Denmark</span></div></a>
     </div>
 
-    <h2 class="k">Instruments tab (each opens tenant-instrument.html)</h2>
+    <h2 class="k">Instruments tab (each opens tenant-instrument.html; the same bar finds instruments by reference or name, and its Filters sheet holds Regime)</h2>
     <div class="rows">
       <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill">FI regulation</span><span class="pill">Binding</span><span class="pill brand">Sweden</span></div><h3>FFFS 2017:2 om värdepappersrörelse</h3><div class="meta"><span>Finansinspektionen</span><span>In force 3 Jan 2018</span><span>Implements MiFID II delegated directive (EU) 2017/593</span><span>4 obligations</span></div></a>
       <a class="row" href="#"><div class="meta"><span class="pill brand">ESMA guidelines</span><span class="pill">EU guidance, level 3</span><span class="pill warning">Guidance, comply or explain</span><span class="pill brand">EU</span></div><h3>ESMA guidelines on appropriateness and execution-only</h3><div class="meta"><span>ESMA</span><span>Applies from 12 Oct 2022</span><span>1 obligation</span></div></a>
@@ -298,27 +353,40 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
 
     <h2 class="k">"As of" banner, empty, loading, error, denied</h2>
     <div class="notice">Showing the versions in force on 1 June 2026. <a href="#">Back to today</a></div>
-    <div class="empty"><h2>No obligations match</h2><p>Clear a filter, or show what is outside our scope.</p><a href="#">Show outside our scope</a></div>
+    <div class="empty"><h2>No obligations match</h2><p>Clear a filter, or show all items.</p><a href="#">Show all items</a></div>
     <div class="empty" style="margin-top:10px"><h2>The markets we watch add nothing here</h2><p>Denmark and Norway bring no obligation that the other filters allow. EU rules already show, because they reach the markets we operate in.</p></div>
     <div class="empty" style="margin-top:10px"><h2>The library has nothing in our scope yet</h2><p>Sources are checked daily; obligations appear as proposals are approved.</p><a href="#">Check the regulatory scope under Admin</a></div>
     <div class="rows" aria-busy="true" style="margin-top:10px"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the inventory</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     <div class="restricted" role="alert"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p style="font-size:.85rem">Needs library read</p></div>
     </div>
-    <p class="note">Inventory card. Filters come from vocabularies (instrument, regime, service, duty type) and store keys. Rows outside our scope render dashed with the reason in the meta, only when "Show outside our scope" is on. The instrument pill is brand, Guidance is information from the binding kind, applicability and compliance status take their tone from the ordinal, "Change waiting for approval" is a computed warning pill and "N open changes" a computed notice pill; the API sends facts, never a phrase. "As of" re-reads every row's version. Every role reads this screen; nothing on it writes.
-    Scope is one filter with one value, not a pair of toggles, so no contradictory pair can be
-    sent: "In our scope" (the default), "Markets we watch" and "Show outside our scope" are the
-    three values of the single regulatory scope filter, and the chunk 3 route takes in, watched or all.
-    "Markets we watch" lists only what watching adds: a record that matches the scope plus the
-    watched markets but not the scope alone, so EU rules never appear there, they already reach
-    the markets we operate in, and a Danish obligation scoped to a service we do not provide stays
-    out, because every other dimension still applies. The reason rides as meta text, "Market we
-    watch: Denmark", from the row's own jurisdiction; there is no new pill and no dashed border,
-    which stays with "Show outside our scope", where a row is the exception rather than the whole
-    list. Catalog keys, added by f03-T37: library.scope.label "Scope", library.scope.in "In our
-    scope", library.scope.watched "Markets we watch", library.scope.all "Show outside our scope",
-    library.watchedMarket "Market we watch: {jurisdiction}", library.empty.watched for the empty
-    state. Instrument and obligation titles here are sample data.</p>
+    <p class="note">Inventory card. One search bar and a Filters button replace the row of
+    selects (D-9x). The bar runs the hybrid search (SRC-01) over obligations and provisions,
+    never watch changes, inside the scope and every filter that is set; what is typed stays
+    in the component and never reaches the address bar, and Enter runs it. Clearing it
+    returns the list. On the Instruments tab the bar finds instruments by reference or name.
+    The sheet holds Instrument, Regime, Service, Duty type and As of on the Obligations tab,
+    and Regime on the Instruments tab. Each value is a key; a change applies at once, so Done
+    only closes the sheet. A set filter shows beside the button as a chip with its own Remove,
+    followed by "Clear filters"; As of keeps its banner and "Back to today" instead of a chip.
+    The values follow the scope: Instrument lists the instruments with obligations inside it,
+    Regime and Service list the terms the bank's regulatory scope chose (every term when a
+    dimension is not restricted, and under Show all items), and Duty type lists every duty
+    type, since a duty type is a kind of duty and not part of the scope.
+    Scope is one value of three on the tab row, because it applies to both tabs: "My scope"
+    (the default), "Markets we watch" and "Show all items". My scope is the bank's regulatory
+    scope narrowed to the slices of the person's teams (R2, TEN-03); until teams exist it is
+    the bank's scope. Markets we watch lists only what watching adds, exactly as before. Show
+    all items lifts the scope: a row outside the bank's scope renders dashed with the reason
+    in the meta; in R2 a row inside the bank's scope but outside the person's teams shows
+    only its applicability, never the bank's reading, compliance status, gaps or evidence,
+    which the server withholds.
+    The instrument pill is brand, Guidance is information from the binding kind,
+    applicability and compliance status take their tone from the ordinal, "Change waiting
+    for approval" is a computed warning pill, "N open changes" a computed notice pill, and a
+    hit's match kind and "Provision" are information pills; the API sends facts, never a
+    phrase. "As of" re-reads every row's version. Every role reads this screen; nothing on it
+    writes. Instrument and obligation titles, counts and legal text here are sample data.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Today</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>Watch<span class="dot">3</span></button><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8"/></svg>Inventory</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>Search</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>
