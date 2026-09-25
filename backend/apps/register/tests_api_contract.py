@@ -84,19 +84,6 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("completeDutyOccurrence", "post", f"/api/v1/duty-occurrences/{RECORD}/complete", COMPLETE_BODY, perms.REGISTER_EDIT, False),
 ]
 
-# Operations whose logic has landed, so they no longer answer 501 (one line each, so the
-# packages that build them in parallel merge mechanically). Each is proved in its own module.
-BUILT: set[str] = {
-    # c8-reg-links-history: tests_history.py, tests_links.py
-    "listAssessments",
-    "getInterpretation",
-    "saveInterpretation",
-    "listInternalLinks",
-    "addInternalLink",
-    "removeInternalLink",
-}
-
-
 def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
     if body is None:
         return getattr(client, method)(url, **headers)
@@ -208,12 +195,13 @@ BUILT_ROUTES = {
     "createUnit",  # c8-reg-units
     "updateUnit",  # c8-reg-units
     "removeUnit",  # c8-reg-units
-    "pasteUnits",  # c8-reg-units (the dry run; its commit is c8-units-paste-soa's)
+    "pasteUnits",  # c8-reg-units (the dry run) and c8-units-paste-soa (the commit)
 }
 
 
-# The operations whose logic has landed, each proved in its package's own tests.
-BUILT = {
+# The operations whose logic has landed, each proved in its package's own tests (one line
+# each, so the packages that build them in parallel merge mechanically).
+BUILT: set[str] = {
     "setApplicability", "setApplicabilityMany",  # c8-reg-applicability, tests_applicability.py
     # c8-reg-status (apps/register/tests_status.py)
     "getRegisterEntry",
@@ -227,6 +215,15 @@ BUILT = {
     "requestRiskAcceptance",
     "approveRiskAcceptance",
     "reopenGap",
+    # c8-reg-links-history: tests_history.py, tests_links.py
+    "listAssessments",
+    "getInterpretation",
+    "saveInterpretation",
+    "listInternalLinks",
+    "addInternalLink",
+    "removeInternalLink",
+    # c8-units-paste-soa (REG-08): tests_soa.py
+    "getStatementOfApplicability",
 }
 
 

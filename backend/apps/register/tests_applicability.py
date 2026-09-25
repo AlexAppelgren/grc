@@ -231,11 +231,12 @@ class SettingOneAnswer(ApplicabilityTestCase):
         self.assertEqual((entry.applicability, entry.compliance_status_id, entry.status_note), ("does_not_apply", gap_status.id, "Weekly, not daily"))
         self.assertEqual(list(Gap.objects.filter(tenant_obligation=entry).values_list("title", "status__key")), [("Reconciliation is weekly", "open")])
 
-    def test_a_unit_answer_waits_for_the_units_and_stores_nothing(self) -> None:
+    def test_a_unit_the_bank_does_not_have_is_404_and_stores_nothing(self) -> None:
+        """c8-units-paste-soa: a unit's own answers are proved in tests_units.py."""
         before = self.counts()
         response = self.put(self.standard, {"unitId": str(uuid.uuid4()), "applicability": "applies", "reason": "In scope"})
-        self.assertEqual(response.status_code, 501)
-        self.assertEqual(response.json()["code"], "not_built")
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()["code"], "not_found")
         self.assertEqual(self.counts(), before)
 
 

@@ -16,14 +16,18 @@ from django.db import transaction
 from django.test import TestCase
 from django.utils import timezone
 
+from apps.library import testing as library_build
 from apps.library import testing as library_testing
 from apps.library.seeds import seed_jurisdictions, seed_languages
-from apps.shared import factories, tenancy
-from apps.shared import permissions as perms
+from apps.register.applicability import APPLICABILITY_SET, entities_spanned
 from apps.register.logic import ensure_register_entry
 from apps.register.models import Applicability, TenantObligation, TenantObligationScope
-from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, stub_session, user_principal
-from apps.taxonomy.models import ComplianceStatus
+from apps.register.tests_applicability import Bank, banks_duty, seed_library
+from apps.shared import factories, tenancy
+from apps.shared import permissions as perms
+from apps.shared.models import AuditEvent
+from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, sign_in, stub_session, user_principal
+from apps.taxonomy.models import ComplianceStatus, FootprintTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.tenants.models import OrgUnit, OrgUnitKind
 
@@ -93,17 +97,6 @@ class StatusWorld:
             )
         self.case.assertEqual(response.status_code, 200, response.content)
         return response.json()
-
-from apps.library import testing as library_build
-from apps.register.applicability import APPLICABILITY_SET, entities_spanned
-from apps.register.models import TenantObligation, TenantObligationScope
-from apps.register.tests_applicability import Bank, banks_duty, seed_library
-from apps.shared import tenancy
-from apps.shared.models import AuditEvent
-from apps.shared.testing import sign_in
-from apps.taxonomy.models import ComplianceStatus, FootprintTerm
-
-from apps.shared.testing import sign_in
 
 
 class RegisterScenarioTests(TestCase):
@@ -432,28 +425,133 @@ class RegisterScenarioTests(TestCase):
         entry = TenantObligation.objects.get(obligation=standard)
         self.assertEqual((entry.applicability, entry.version), ("not_assessed", 1), "the entity answers leave the entry's own answer alone")
 
-    @skip("pending: REG-S13 (REG-08, chunk 8)")
     def test_reg_s13(self) -> None:
         """REG-S13
 
         A tenant lists its clauses and controls as units in its own words (REG-08).
         Operations: `createUnit`, `updateUnit`, `removeUnit`, `pasteUnits`.
         """
+        # c8-units-paste-soa
+        from apps.register import units as unit_logic
+        from apps.register.models import SoaUnit
+        from apps.register.tests_units import SoaWorld
 
-    @skip("pending: REG-S14 (REG-08, chunk 8)")
+        w = SoaWorld(self, "reg-s13")
+        # Given Bank AB's conformance row applies, and the officer pastes 12 invented lines
+        lines = [{"reference": f"X.{n}", "title": f"Our own words for control {n}"} for n in range(1, 13)]
+        # Then a dry run lists the rows it will create and refuses duplicate references and over-long lines
+        dry = w.expect(w.paste([*lines, {"reference": "X.1", "title": "Again"}, {"reference": "X.99", "title": "T" * 301}], dry_run=True), 200)
+        self.assertEqual([row["outcome"] for row in dry["rows"]], ["will_create"] * 12 + ["refused", "refused"])
+        self.assertEqual([row["problem"] for row in dry["rows"][12:]], ["duplicate_reference", "title_too_long"])
+        self.assertEqual(w.units(), [])
+        # When they commit, then 12 units exist for Bank AB, each with one audit event
+        committed = w.expect(w.paste(lines, dry_run=False), 200)
+        self.assertEqual(committed["created"], 12)
+        created = w.units()
+        self.assertEqual({unit.scope.org_unit_id for unit in created}, {w.bank.bank_ab.id})
+        self.assertEqual(sorted(e.subject_id for e in w.events(unit_logic.UNIT_CREATED)), sorted(unit.id for unit in created))
+        # And the form offers no field for the standard's text and asks for their own words
+        path = f"/obligations/{w.standard.id}/units"
+        w.expect(w.call("POST", path, {"orgUnitId": str(w.bank.bank_ab.id), "reference": "X.20", "title": "Ours", "standardText": "Theirs"}), 422, "validation_error")
+        # When they add a unit for Liv, whose conformance row does not apply: 422
+        w.expect(w.call("POST", path, {"orgUnitId": str(w.bank.liv.id), "reference": "X.1", "title": "Ours"}), 422, "scope_not_applicable")
+        # When they add a unit under an obligation whose instrument is not a standard: 422
+        duty = banks_duty()
+        w.expect(
+            w.call("POST", f"/obligations/{duty.id}/units", {"orgUnitId": str(w.bank.bank_ab.id), "reference": "X.1", "title": "Ours"}),
+            422,
+            "units_only_under_standards",
+        )
+        # When they rename a unit that has an applicability decision: 409, and it is unchanged
+        decided, fresh = created[0], created[1]
+        w.expect(w.call("PUT", f"/obligations/{w.standard.id}/applicability", {"unitId": str(decided.id), "applicability": "applies", "reason": "Certified"}, version=1), 200)
+        w.expect(w.call("PATCH", f"/units/{decided.id}", {"title": "Moved"}, version=2), 409, "unit_has_history")
+        self.assertEqual(SoaUnit.objects.get(pk=decided.pk).title, decided.title)
+        # And a unit with no history can be renamed with If-Match or removed, each audited
+        w.expect(w.call("PATCH", f"/units/{fresh.id}", {"title": "Our better words"}, version=1), 200)
+        w.expect(w.call("DELETE", f"/units/{fresh.id}", version=2), 204)
+        self.assertEqual([e.subject_id for e in w.events(unit_logic.UNIT_RENAMED)], [fresh.id])
+        self.assertEqual([e.subject_id for e in w.events(unit_logic.UNIT_REMOVED)], [fresh.id])
+
     def test_reg_s14(self) -> None:
         """REG-S14
 
         Unit decisions are set from the paste in one confirmed call (REG-01, REG-08).
-        Operations: `setApplicabilityMany`.
+        Operations: `pasteUnits`, `setApplicabilityMany`.
         """
+        # c8-units-paste-soa
+        from django.test import override_settings
 
-    @skip("pending: REG-S15 (REG-08, chunk 8)")
+        from apps.register.tests_units import SoaWorld
+
+        w = SoaWorld(self, "reg-s14")
+        # Given the officer pastes 93 invented units for Bank AB, each with an answer and a reason
+        lines = [
+            {"reference": f"A.{n}", "title": f"Our control {n}", "applicability": "applies" if n % 3 else "not_applicable", "reason": f"Reason {n}"}
+            for n in range(1, 94)
+        ]
+        # Then the dry run behind the dialog shows the 93 decisions and stores nothing
+        dry = w.expect(w.paste(lines, dry_run=True), 200)
+        self.assertEqual((dry["dryRun"], [row["outcome"] for row in dry["rows"]]), (True, ["will_create"] * 93))
+        self.assertEqual((w.units(), w.events(APPLICABILITY_SET)), ([], []))
+        # When they confirm, then each unit carries its own decision, reason and time
+        w.expect(w.paste(lines, dry_run=False), 200)
+        stored = {unit.reference: unit for unit in w.units()}
+        for line in lines:
+            unit = stored[line["reference"]]
+            want = "applies" if line["applicability"] == "applies" else "does_not_apply"
+            self.assertEqual((unit.applicability, unit.applicability_reason, unit.applicability_decided_by_id), (want, line["reason"], w.officer.id))
+            self.assertIsNotNone(unit.applicability_decided_at)
+        # And 93 audit events name the officer, each with the value before and after and its reason
+        events = w.events(APPLICABILITY_SET)
+        self.assertEqual(sorted(e.subject_id for e in events), sorted(unit.id for unit in stored.values()))
+        self.assertEqual({e.actor_id for e in events}, {w.officer.id})
+        self.assertTrue(all(e.before["applicability"] == "under_assessment" and e.after["reason"] for e in events))
+        # And a call with more rows than the configured cap is refused and stores nothing
+        more = [{**line, "reference": f"B.{n}"} for n, line in enumerate(lines[:3])]
+        with override_settings(REGISTER_BULK_MAX=2):
+            w.expect(w.paste(more, dry_run=False), 422, "validation_error")
+            rows = [{"obligationId": str(w.standard.id), "unitId": str(unit.id), "applicability": "applies", "reason": "Again"} for unit in list(stored.values())[:3]]
+            w.expect(w.call("POST", "/applicability", {"rows": rows}), 422, "validation_error")
+        self.assertEqual(len(w.units()), 93)
+        self.assertEqual(len(w.events(APPLICABILITY_SET)), 93)
+
     def test_reg_s15(self) -> None:
         """REG-S15
 
         The register filtered by standard and entity is the Statement of Applicability (REG-08).
+        Operations: `getStatementOfApplicability`.
+
+        "Today's standing counts the standard as one obligation" is x-roadmap-case-deadlines'.
         """
+        # c8-units-paste-soa
+        from apps.register.tests_units import SoaWorld
+
+        w = SoaWorld(self, "reg-s15")
+        # Given Bank AB's decided units under the standard
+        lines = [
+            {"reference": "X.2", "title": "Our backups", "applicability": "not_applicable", "reason": "No own data centre"},
+            {"reference": "X.1", "title": "Our access rules", "applicability": "applies", "reason": "In the certificate"},
+        ]
+        w.expect(w.paste(lines, dry_run=False), 200)
+        # When the officer filters the register by that standard and by Bank AB
+        statement = w.expect(w.call("GET", f"/obligations/{w.standard.id}/statement-of-applicability?entity={w.bank.bank_ab.id}"), 200)
+        # Then each unit shows its reference, own title, answer, reason, status, who and when
+        self.assertEqual(
+            [(u["reference"], u["title"], u["applicability"], u["applicabilityReason"], u["complianceStatus"]["kind"], u["applicabilityDecidedBy"]["name"]) for u in statement["units"]],
+            [("X.1", "Our access rules", "applies", "In the certificate", "not_assessed", "Sara Lind"), ("X.2", "Our backups", "not_applicable", "No own data centre", "not_assessed", "Sara Lind")],
+        )
+        self.assertTrue(all(u["applicabilityDecidedAt"] for u in statement["units"]))
+        # And each unit's history lists its applicability decisions with who and when
+        self.assertEqual(
+            [[(h["applicability"], h["decidedBy"]["id"]) for h in u["history"]] for u in statement["units"]],
+            [[("applies", str(w.officer.id))], [("not_applicable", str(w.officer.id))]],
+        )
+        self.assertTrue(all(h["decidedAt"] for u in statement["units"] for h in u["history"]))
+        # And the conformance row shows its own assessed status, and none is computed from the units
+        conformance = statement["conformance"]
+        self.assertEqual((conformance["orgUnitId"], conformance["applicability"]), (str(w.bank.bank_ab.id), "applies"))
+        self.assertEqual(conformance["complianceStatus"]["key"], ComplianceStatus.objects.get(is_default=True).key)
 
     @skip("pending: ACC-S4 (ACC-04, chunk 11)")
     def test_acc_s4(self) -> None:

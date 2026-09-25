@@ -50,7 +50,10 @@ Applicability = Literal["applies", "not_applicable", "under_assessment"]
 AssessmentMethod = Literal["self_assessment", "second_line_review", "internal_audit", "external_audit", "regulator"]
 DutyStatus = Literal["upcoming", "in_progress", "done", "missed", "not_applicable"]
 PasteOutcome = Literal["will_create", "created", "refused"]
-PasteProblem = Literal["duplicate_reference", "reference_exists", "reference_too_long", "title_too_long", "empty_line"]
+PasteProblem = Literal[
+    "duplicate_reference", "reference_exists", "reference_too_long", "title_too_long", "empty_line", "reason_missing"
+]
+PastedAnswer = Literal["applies", "not_applicable"]
 
 _APPLICABILITY = (
     "Whether the obligation applies to the bank here: `applies` when it binds this bank, "
@@ -1078,6 +1081,24 @@ class RegisterUnitPasteLine(WriteBody):
             "One longer than a unit's title may be is reported on its row."
         ),
     )
+    applicability: PastedAnswer | None = Field(
+        default=None,
+        description=(
+            "The unit's answer, when the line carries one: `applies`, or `not_applicable` when "
+            "the bank decided it does not. Absent leaves the new unit undecided. A commit sets "
+            "it through the same path as `POST /applicability`, so it needs "
+            "`applicability.approve`; the line needs a reason with it."
+        ),
+    )
+    reason: str | None = Field(
+        default=None,
+        max_length=REASON_MAX,
+        description=(
+            f"Why, in the bank's own words, at most {REASON_MAX} characters, such as `Certified`. "
+            "Sent with `applicability` and only with it; a line with one and not the other is "
+            "refused on its row as `reason_missing`. Tenant content that never leaves the bank."
+        ),
+    )
 
 
 class RegisterUnitPasteBody(WriteBody):
@@ -1088,7 +1109,10 @@ class RegisterUnitPasteBody(WriteBody):
             "examples": [
                 {
                     "orgUnitId": "55555555-5555-4555-8555-555555555555",
-                    "lines": [{"reference": "A.5.1", "title": "Our information security policies"}],
+                    "lines": [
+                        {"reference": "A.5.1", "title": "Our information security policies", "applicability": "applies", "reason": "Certified"},
+                        {"reference": "A.5.2", "title": "Our security roles"},
+                    ],
                     "dryRun": True,
                 }
             ]
@@ -1100,14 +1124,16 @@ class RegisterUnitPasteBody(WriteBody):
         min_length=1,
         description=(
             "The pasted lines, at least 1, in the order pasted. A call holds at most the "
-            "configured `REGISTER_BULK_MAX` lines, 100 by default."
+            "configured `REGISTER_BULK_MAX` lines, 100 by default; a longer paste is refused "
+            "whole and stores nothing."
         ),
     )
     dry_run: bool = Field(
         default=True,
         description=(
             "True, the default, answers what would be created and stores nothing; false creates "
-            "the units, only when no line is refused, with one audit event per unit."
+            "the units, only when no line is refused, with one audit event per unit, and sets "
+            "the answers the lines carry in the same transaction, one audit event per answer."
         ),
     )
 
@@ -1129,7 +1155,8 @@ class RegisterUnitPasteRow(CamelSchema):
             "Why a line is refused: `duplicate_reference` when the paste repeats a reference, "
             "`reference_exists` when the entity already has a unit with it, "
             "`reference_too_long` or `title_too_long` past the unit limits, `empty_line` for a "
-            "line with no reference or title. Null when the line is not refused."
+            "line with no reference or title, `reason_missing` for an answer without a reason or "
+            "a reason without an answer. Null when the line is not refused."
         )
     )
     unit_id: uuid.UUID | None = Field(description="The created unit's UUID, null on a dry run and for a refused line.")
@@ -1150,9 +1177,46 @@ class RegisterUnitPaste(CamelSchema):
         }
     )
 
-    dry_run: bool = Field(description="True when nothing was stored, as asked; false when the units were created.")
+    dry_run: bool = Field(
+        description=(
+            "True when nothing was stored: a dry run, or a commit with any line refused; false "
+            "when the units, and the answers the lines carried, were stored."
+        )
+    )
     rows: list[RegisterUnitPasteRow] = Field(description="One row per pasted line, in the order pasted.")
     created: int = Field(description="How many units were created, 0 on a dry run and whenever any line was refused.")
+
+
+_STATEMENT_UNIT_EXAMPLE: dict[str, Any] = {
+    **_UNIT_EXAMPLE,
+    "history": [
+        {
+            "applicability": "applies",
+            "reason": "Required by our certification scope",
+            "decidedAt": "2026-09-24T09:12:00Z",
+            "decidedBy": _PERSON_EXAMPLE,
+        }
+    ],
+}
+
+
+class RegisterUnitDecision(CamelSchema):
+    """One applicability answer a unit was given, as its audit event recorded it."""
+
+    applicability: Applicability = Field(description=_APPLICABILITY)
+    reason: str = Field(description="Why, in the bank's own words, as the person gave it. Tenant content that never leaves the bank.")
+    decided_at: datetime.datetime = Field(description="The UTC timestamp at which the answer was stored.")
+    decided_by: RegisterPersonRef = Field(description="The person who set the answer after confirming it.")
+
+
+class RegisterStatementUnit(RegisterUnit):
+    """A unit as the Statement of Applicability shows it: the unit and its decisions."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_STATEMENT_UNIT_EXAMPLE]})
+
+    history: list[RegisterUnitDecision] = Field(
+        description="Every applicability answer the unit was given, oldest first, each with who set it and when; empty while it is undecided."
+    )
 
 
 class RegisterStatementOfApplicability(CamelSchema):
@@ -1165,7 +1229,7 @@ class RegisterStatementOfApplicability(CamelSchema):
                 {
                     "obligationId": "44444444-4444-4444-8444-444444444444",
                     "conformance": _ENTITY_EXAMPLE,
-                    "units": [_UNIT_EXAMPLE],
+                    "units": [_STATEMENT_UNIT_EXAMPLE],
                     "total": 1,
                 }
             ]
@@ -1176,7 +1240,7 @@ class RegisterStatementOfApplicability(CamelSchema):
     conformance: RegisterEntityStatus = Field(
         description="The entity's conformance row with its own assessed status, never computed from the units."
     )
-    units: list[RegisterUnit] = Field(description="The entity's units on this page, by reference.")
+    units: list[RegisterStatementUnit] = Field(description="The entity's live units on this page, by reference, each with its history of decisions.")
     total: int = Field(description="How many units the entity has under the standard, not how many are on this page.")
 
 
