@@ -21,6 +21,7 @@ from django.conf import settings
 from django.db.models import Exists, OuterRef
 from django.utils import timezone
 
+from apps.cases.models import ChangeCase
 from apps.collab import subjects
 from apps.collab.models import Comment, CommentMention
 from apps.identity import roles_logic
@@ -54,12 +55,15 @@ def list_my_comments(
         mentioned[mention.comment_id].append(_person(mention.user))
     order = roles_logic.language_order(user, tenant)
     titles: dict[tuple[str, Any], str | None] = {}
+    change_ids: dict[tuple[str, Any], Any] = {}
     for comment in page:
         key = (comment.subject_type, comment.subject_id)
         if key not in titles:
             subject = subjects.subject(comment.subject_type)
             found = subject.lookup(comment.subject_id)
             titles[key] = subject.title(found, order) if found is not None else None
+            # A case's page is its change's page, so the row carries the change for the link.
+            change_ids[key] = found.change_id if isinstance(found, ChangeCase) else None
 
     edit_until = timezone.now() - datetime.timedelta(minutes=settings.COMMENT_EDIT_MINUTES)
     items = [
@@ -68,6 +72,7 @@ def list_my_comments(
             "subject_type": comment.subject_type,
             "subject_id": comment.subject_id,
             "subject_title": titles[(comment.subject_type, comment.subject_id)],
+            "change_id": change_ids[(comment.subject_type, comment.subject_id)],
             "body": comment.body,
             "mentions": mentioned[comment.id],
             "author": _person(comment.author),
