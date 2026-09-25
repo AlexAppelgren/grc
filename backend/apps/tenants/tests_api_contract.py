@@ -51,6 +51,17 @@ BUILT_BEFORE = {
     "createConsoleTenant",
 }
 
+# Routes of the table whose logic has landed: past every gate they answer with the real
+# thing, which their own module proves, so the 501 rows below leave them out.
+BUILT_SINCE = {
+    # c8-ten-support-grants (TEN-06): tests_support_access.py.
+    "requestConsoleSupportAccess",
+    "listTenantSupportAccess",
+    "approveSupportAccess",
+    "declineSupportAccess",
+    "revokeSupportAccess",
+}
+
 ORG_UNIT_BODY = {"kind": "business_area", "name": "Retail Banking"}
 ORG_UNIT_PATCH = {"name": "Retail and Private Banking"}
 LICENCE_BODY = {"licenceType": "credit_institution", "reference": "FI 12-3456"}
@@ -340,6 +351,8 @@ class TenantsRouteStubs(TenantsContractCase):
         calls = [(route, self.everything()) for route in self.records.routes()]
         calls += [(route, self.console()) for route in self.records.console_routes()]
         for (name, method, url, body, _permission, _step_up), who in calls:
+            if name in BUILT_SINCE:
+                continue
             headers = {**AS_SESSION, "HTTP_IF_MATCH": '"1"'} if method == "patch" else AS_SESSION
             with self.subTest(operation=name), stub_session(who):
                 response = _call(self.client, method, url, body, headers)
@@ -356,7 +369,8 @@ class TenantsRouteStubs(TenantsContractCase):
                 if permission is not None:
                     continue
                 with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, 501)
+                    expected = 200 if name in BUILT_SINCE else 501
+                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, expected)
 
     def test_a_known_permission_on_the_people_picker_reaches_the_stub(self) -> None:
         with stub_session(self.everything(permissions=frozenset())):
