@@ -22,6 +22,7 @@ class CollabScenarioTests(TestCase):
         """COL-S1
 
         A comment with a mention notifies the mentioned person (COL-01).
+        Operations: `addComment`, `markNotificationRead`, `markAllNotificationsRead`.
         """
 
     @skip("pending: COL-S2")
@@ -50,6 +51,7 @@ class CollabScenarioTests(TestCase):
         """COL-S5
 
         Comment text never reaches a log (COL-01).
+        Operations: `addComment`, `editComment`, `deleteComment`.
         """
 
     @skip("pending: COL-S6 (COL-04, chunk 8)")

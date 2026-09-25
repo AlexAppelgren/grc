@@ -191,6 +191,37 @@ writes, never an OpenAPI `enum`.
 
 Retiring the last active row under a fixed kind answers 409 `category_empty` (VOC-04).
 
+**Chunk 10 (2026-09-25, c10-collab-models).** The comment, notification and mail tables
+(`schema.sql` §8, §10, §21), built in collab 0001:
+
+- `comment.mentions uuid[]` becomes `comment_mention` rows, one per person, unique per
+  comment. An array cannot carry a composite foreign key, and every other array of ids in
+  the schema is already rows (above), so only a row makes the database refuse a mention of
+  someone who is not a member of the comment's bank (COL-01, D-18).
+- `comment_revision` is new: the text an edit replaced, append-only with its trigger.
+  `schema.sql` has only `comment.edited_at`, and dropping the replaced text would
+  overwrite tenant work (CLAUDE.md §5, CHUNK10_TASKS ruling 10). No route returns it.
+- Every person column of the five tables (`comment.author_id`, `comment_mention.user_id`,
+  `comment_revision.edited_by_id`, `notification.user_id`, `notification.on_behalf_of_id`,
+  `email_message.user_id`) is also a composite `(tenant_id, user_id)` foreign key to
+  `membership`, and a mention or a revision points at its comment through
+  `(tenant_id, comment_id)`, for which `comment` gains `UNIQUE (tenant_id, id)`. A
+  foreign-key check does not pass through row-level security, so only these refuse another
+  bank's person or comment (D-18).
+- `comment.subject_type` and `notification.subject_type` are strings of at most 64
+  characters, as on `tagging`, rather than the `subject_type` Postgres enum: which kinds
+  may be named, and who may read each, is the subject registry's (ruling 3).
+- `notification_kind` is the `NotificationKind` kind (the `CHECK` constraint's nine
+  values plus the three PRD 0.3 added above), and `notification` gains a nullable
+  `on_behalf_of_id`, the absent person a delegate is told in place of (TEN-04).
+  `proposal_waiting` has no R2 producer (D-23) and `saved_search_hit` is chunk 13's.
+- `email_status` is the `EmailStatus` kind on a text column with choices.
+  `email_message` gains `sent_on`, the bank's local date of the send, and
+  `UNIQUE (tenant_id, user_id, template, subject_type, subject_id, sent_on)` with nulls
+  not distinct, so a retried worker cannot send the same mail twice in a day, the digest
+  (which names no record) included. It keeps no body column: the proof of a send is the
+  template key and the record, never the text.
+
 ## 2. Identity (PRD ID, playbook 4.2)
 
 - Drop `app_user.external_subject` as the primary identity, `mfa_enrolled`,
@@ -869,6 +900,43 @@ Chunk 6 (home, the briefing, the roadmap and the calendar feed), 2026-09-21:
   outlives the session that asked for it, so without this a stolen access token would leave
   behind a calendar address that answers for months. Revoking asks for nothing of the kind:
   a person whose address has leaked must be able to stop it at once.
+
+**Chunk 10 (2026-09-25, c10-collab-contract).** The eight collab operations are declared
+behind their real gates and answer 501 `not_built` until `collab/inbox.py`,
+`collab/comments.py` and `collab/me_comments.py` land. They depart from the design here:
+
+- `listComments` (`GET /comments`) answers a page `{items, total}` on the shared `limit`
+  and `offset`, oldest first, instead of the designed bare array of `Comment`: a busy case
+  would otherwise return every comment ever written (playbook 10). `listNotifications`
+  (`GET /notifications`) answers `{items, total}` on `limit` and `offset` instead of the
+  designed `NotificationPage` with `nextCursor`, like every other list, and keeps `unread`.
+- `Comment` gains `canEdit` and `canDelete`, computed for the caller: only the author may
+  edit, within `COMMENT_EDIT_MINUTES`, and only the author may delete; no role grants either
+  (CHUNK10_TASKS). It also gains `deletedAt`, and `body` is null on a deleted comment, which
+  keeps its place in the thread without its text. `editComment` (`PATCH /comments/{commentId}`)
+  answers this `Comment`.
+- `addComment` (`POST /comments`) answers `Comment` plus `undeliveredMentions[{id, name}]`:
+  the mentioned people who were not notified because they cannot read the record, named so
+  the composer can say so, never why (COL-S12). The body is `{subjectType, subjectId, body,
+  mentionUserIds[]}` as designed, and refuses a field it does not name.
+- `subjectType` is a string of at most 64 characters, not the designed `SubjectType` enum
+  of every table. Comments are taken on the kinds the subject registry
+  (`collab/subjects.py`) holds — `obligation`, `tenant_obligation`, `change_case` and
+  `action`, and not `change`, because a bank's change page is its case (R2_CROSS_CUTTING
+  (j)) — and any other kind answers 422 `unsupported_subject` from the logic that owns the
+  registry (CHUNK10_TASKS ruling 3). The kind and the id ride in the query string of
+  `GET /comments`; a comment's text rides only in a body (ruling 9).
+- `listMyComments` (`GET /me/comments`) is new, as the chunk 8 row above says: `about` is
+  `written` or `mentioned` and anything else answers 422 at the boundary; the page is
+  `{items, total, permissionLimitedKinds[]}`, each item a `Comment` plus `subjectTitle`. It
+  has no designed counterpart, so the drift check has nothing to compare it with and no
+  pending line can name it.
+- No API key reaches any of the eight: a notification is one person's and a comment is one
+  bank's own text. `GET /notifications`, the two mark-read routes and `GET /me/comments` are
+  `UNGATED_BY_DESIGN` `self`; `GET` and `POST /comments` are `logic-gate`, with
+  `comments.write` checked by the route on the write; `PATCH` and `DELETE` carry
+  `@requires_permission("comments.write")` and leave the author check to the logic. A
+  platform session belongs to no bank and gets 404.
 
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 

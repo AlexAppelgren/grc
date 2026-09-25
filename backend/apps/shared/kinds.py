@@ -209,4 +209,21 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
         "reporting branches on",
     ),
+    # Chunk 10 (c10-collab-models): the notification and the mail it may send.
+    "NotificationKind": (
+        "notification_kind",
+        "COL-02: what a notification is about; the inbox, the preferences, delegation and the "
+        "mail composer branch on it. schema.sql's nine values plus participant_added, "
+        "involved_item_changed and review_due (COL-04, D-34), which chunk 10 produces with "
+        "mention, due_soon, overdue and escalation. assigned, signoff_requested and "
+        "approval_requested are produced by chunk 9 (c9-triage, c9-signoff); saved_search_hit "
+        "by chunk 13 (c13-saved-search-notify); proposal_waiting by no R2 chunk, because "
+        "'Decide now' counts waiting proposals on GET /me (D-23), and it is declared so the "
+        "kind list stays schema.sql's",
+    ),
+    "EmailStatus": (
+        "email_status",
+        "COL-02: queued, sent, delivered, bounced or failed; the delivery task and the "
+        "provider's callback branch on it, and no admin adds a delivery state",
+    ),
 }
