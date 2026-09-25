@@ -259,6 +259,10 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/proposals/apply.py record('taxonomy_term') tenant_id=None actor=actor title=f'{payload.dimension}:{payload.key}'": (
         "The same door, for a taxonomy term: an approved key is public library vocabulary."
     ),
+    "apps/proposals/apply.py record('taxonomy_term') tenant_id=None actor=actor title=f'{term.dimension.key}:{term.key}'": (
+        "The same door, for the term that mirrors an approved jurisdiction (D-94): the title is "
+        "the dimension's and the term's stable keys, both seeded library vocabulary."
+    ),
     "apps/proposals/apply.py record(SubjectType.OBLIGATION.value) tenant_id=None actor=actor title=obligation.stable_key": (
         "The re-verification stamp, the one write to the library that is not a proposal, and "
         "a new obligation applied from an approved proposal: the actor is platform staff or "
