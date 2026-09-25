@@ -184,6 +184,7 @@ class TenantOut(CamelSchema):
                     "contentLanguages": [_EXAMPLE_LANGUAGE_SV, _EXAMPLE_LANGUAGE_EN],
                     "aiEnabled": True,
                     "workflow": _EXAMPLE_WORKFLOW,
+                    "workflowDefaults": {**_EXAMPLE_WORKFLOW, "reminderDaysBefore": [3], "escalateAfterDays": 5},
                     "onboarding": {
                         "stepsDone": 3,
                         "steps": [
@@ -280,6 +281,14 @@ class TenantOut(CamelSchema):
             "to which role, the digest's weekday and the triage target. Every member may read "
             "it; only `PATCH /tenant/workflow`, with `workflow.manage`, changes it, and the "
             "profile edit ignores it."
+        )
+    )
+    workflow_defaults: TenantWorkflow = Field(
+        description=(
+            "The platform defaults a bank's workflow policy starts at, in the same shape as "
+            "`workflow`, so the bank can see what it is changing from and go back to it. They "
+            "are the platform's settings, not the bank's: nothing here changes them, and "
+            "changing them later moves no bank's own policy."
         )
     )
     onboarding: Onboarding = Field(
