@@ -1325,3 +1325,48 @@ of range answers 422 `validation_error` and an unknown role or weekday 422 `unkn
 naming the field in `errors`. The change is recorded as `tenant.workflow_updated` with every
 value before and after. `review_reminder_days_before` is not in the chunk 10 brief's five
 columns; the wave plan added it for the review reminder COL-02 names.
+
+## c8-register-models. The register as tables (2026-09-25, register 0001 and 0002)
+
+Sections 7 and 19 of `schema.sql` (`tenant_obligation`, `tenant_obligation_scope`,
+`compliance_assessment`, `gap`, `interpretation`, `internal_link`) are built with these
+departures:
+
+- `applicability` is the tier-one kind `Applicability` with `applies`, `does_not_apply`
+  and `not_assessed` (the designed `not_applicable` and `under_assessment` renamed to the
+  register spec's words), default `not_assessed`. Who decided it is
+  `applicability_decided_by_id`, beside the reason and the time, on the entry and on each
+  scope row. There is no `applicability_request` table (D-75).
+- The designed `CHECK (compliance_status = 'not_assessed' OR applicability = 'applies')` is
+  left out: a status survives a "does not apply" and reads again when it applies (REG-S4).
+- `compliance_status`, `risk_rating`, a gap's `severity` (a `risk_rating` row), `source`
+  and `status`, and its `acceptance_reason` are the tenant's list rows, not enums. The
+  entry and scope row start on the bank's default compliance status. `compliance_status`,
+  `risk_rating`, `gap_status`, `gap_source` and `risk_acceptance_reason` gain
+  `UNIQUE (tenant_id, id)` as the targets of composite keys.
+- Every reference to another tenant row is a composite `(tenant_id, …)` key, and every
+  person (owner, contact, decider, author, identifier, requester, approver, closer,
+  remover) is a key into `membership (tenant_id, user_id)`. The entry and scope row carry
+  `owner_team_id` (TEN-03); a scope row and a gap are owned by a person or a team, never
+  both.
+- `tenant_obligation_scope` names one org unit and optionally one product (the designed
+  CHECK of "one of the two" becomes a required org unit), and carries REG-S3's own risk,
+  process, system, evidence location, next review, `version` and `updated_at` per entity.
+  The entry carries `version`.
+- `compliance_assessment` is append-only by trigger, with `method` the tier-one kind
+  `AssessmentMethod` (the designed `assessment_method` values). `likelihood`, `impact` and
+  `approved_by` are left out: nothing in REG-04 reads them.
+- `gap` records risk acceptance as `acceptance_reason_id`, `acceptance_note`,
+  `acceptance_requested_by_id`/`_at` and `accepted_by_id`/`_at`. Four eyes is
+  `gap_four_eyes`, `accepted_by <> acceptance_requested_by` (the designed check compared
+  with the identifier); `gap_acceptance_complete` makes an acceptance name its reason and
+  requester; and a trigger refuses a status of the `risk_accepted` category without an
+  acceptance, since a CHECK cannot read the status row. `requirement_id` and `case_id`
+  are left out until a package needs them; the SoA unit is register 0003's.
+- `interpretation` has `superseded_at` in place of the designed draft, approve and
+  supersede status: "How we read this rule" has no approver in REG-04. Its `version_no` is
+  `version_number`, as on the library's versions, because the I18N guard reads a `_no`
+  suffix as a Norwegian text column.
+- `internal_link` points at an `internal_item` (nullable, a composite key) rather than
+  carrying the designed `kind`: the item carries the kind. It is removed by stamping
+  `removed_at` and `removed_by`, never deleted, with one live link per entry and item.
