@@ -1368,3 +1368,28 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 - [ ] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. It
       follows the app's existing terms (skyldighet, förslag, godkännande), but
       a native read of the headline and the questions is worth five minutes.
+
+## c11-definitions-platform: publishing bleqq's agent versions, their settings and runs (2026-09-25, AGT-03, ADM-02, AGT-06)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **The console writes agent definitions through the seed's door.** `agent` and
+      `agent_version` are library rows, and the library fence lets only `agents/seeds/`
+      write them (no chunk 11 task edits its allowlists, ruling 2). So publishing a
+      version, retiring one and a platform agent's settings are written by
+      `backend/apps/agents/seeds/console.py`, beside the seed, with the database's `seed`
+      door; permissions, step-up, validation and the audit row stay in `definitions.py` and
+      `platform.py`. Default: keep it so. The alternative is a named `agents/console.py`
+      entry in the fence's allowlist, which is a fence change for you to approve.
+- [ ] **A bank's run log no longer lists bleqq's runs.** `GET /agent-runs` from a bank's
+      session returns its own runs only; the console reads bleqq's with
+      `GET /console/agent-runs` (the default "no prompts, tools, budgets, run rows or costs"
+      under "What may a bank see of bleqq's watch?"). What a bank sees of bleqq's watch is
+      `GET /agents/platform`. Row-level security still lets a bank read a library run; the
+      narrowing is the read's.
+- [ ] **Versions publish in order.** The next number is one above the highest published
+      (422 `version_not_next` otherwise), and a folder that changes the agent's id, kind,
+      scope, `tenant_configurable` or zone is refused as `definition_unreadable`.
+- [ ] **A run opens on the newest version still published.** Retiring the current version
+      sends new runs to the one before it; when every version is retired a run is refused
+      with 409 `no_published_version`.
