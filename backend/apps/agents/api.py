@@ -193,22 +193,17 @@ def finish_agent_run(
 def list_agent_runs(request: HttpRequest, query: Query[TenantRunQuery]) -> Any:
     """Returns the agent runs the caller may see, oldest first, one page at a time: when
     each ran, which agent, which version and which model, what started it and who asked,
-    how it ended, what it counted and what it cost. Call it to show a bank that its watch is
-    alive — that its sources were swept last night, and what came of it — to show the
-    history of one of the bank's own agents with `tenantAgentId`, the runs a person asked for
+    how it ended, what it counted and what it cost. Call it to show a bank what its own
+    agents did, the history of one of them with `tenantAgentId`, the runs a person asked for
     with `mine`, and to investigate a run whose findings are being questioned.
 
     A person's session only; an API key cannot read this, so an agent cannot read its own
     history. Inside a bank it needs `agents.manage`, in the platform console
-    `system.health`; a member with neither is refused. A bank sees the platform's own
-    library runs, because those are what feed the shared inventory it relies on, and its
-    own runs. It never sees another bank's runs, and no run of any bank is visible to
-    another; the two filters only narrow that, and naming another bank's agent matches no
-    run rather than answering an error.
-
-    bleqq's own agents are part of the base package: a bank reads their history here but
-    cannot switch one off, pause it, or change its cadence, scope or budget. A bank's own
-    agents, which it does control, appear in the same list. It changes nothing and writes
+    `system.health`; a member with neither is refused. A bank sees its own runs only; the
+    console sees the runs of bleqq's own agents. No bank sees another bank's runs or the
+    runs of bleqq's agents, which are part of the base package and listed in the console;
+    what bleqq watches is `GET /agents/platform`. The two filters only narrow that, and
+    naming another bank's agent matches no run rather than answering an error. It changes nothing and writes
     nothing to the audit log. An empty list is a 200 with `total` 0 and means nothing has
     run yet, not that something is wrong.
 
@@ -282,8 +277,6 @@ def get_agent_definition(request: HttpRequest, agent_key: str = Path(..., descri
 
     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
     `agent_definitions.manage`; `not_found` (404) for a key no definition has.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until
-    that ships.
     """
     return definitions.get_definition(agent_key=agent_key)
 
@@ -303,9 +296,12 @@ def publish_agent_version(
     request: HttpRequest, body: AgentVersionInput, agent_key: str = Path(..., description=_AGENT_KEY)
 ) -> Any:
     """Publishes the version folder this build ships for the definition, with a note of
-    what changed. Runs opened from now on run it; a run already open keeps the version it
-    opened with, and every earlier run still names the version it used. The prompt, tools
-    and model come from the shipped folder and never from this request.
+    what changed, and makes it the definition's current version. Runs opened from now on
+    run it; a run already open keeps the version it opened with, and every earlier run
+    still names the version it used. The prompt, tools and model come from the shipped
+    folder, read exactly as the deploy's seed reads it, and never from this request; the
+    folder must be the definition's own and keep its kind, its scope and the zone it writes
+    to. Publish the versions in order: the next number is one above the highest published.
 
     A person's session in the platform console holding `agent_definitions.manage`, with a
     fresh passkey step-up, because a new version changes what runs for every bank at once.
@@ -314,9 +310,12 @@ def publish_agent_version(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-    `not_found` (404) for a key no definition has; `validation_error` (422) for a version
-    number the build does not ship or a missing note. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a key no definition has; `version_exists` (409) for a number
+    already published; `version_not_next` (422) for a number that is not one above the
+    highest published; `definition_unreadable` (422) when this build ships no such folder,
+    its definition file cannot be read, its prompt is missing, or it names another agent,
+    number, kind, scope or zone, with the folder named and nothing created;
+    `validation_error` (422) for a missing or overlong note.
     """
     return definitions.publish_version(who=principal(request), agent_key=agent_key, body=body)
 
@@ -338,7 +337,9 @@ def retire_agent_version(
     version_no: int = Path(..., description="The number of the version to retire, counting from 1 within its definition."),
 ) -> Any:
     """Retires one published version: no new run starts on it, and every run that used it
-    keeps pointing at it, because a published version is never rewritten or deleted.
+    keeps pointing at it, because a published version is never rewritten or deleted. A new
+    run opens on the newest version still published. Retiring a version already retired
+    answers it as it is and records nothing.
 
     A person's session in the platform console holding `agent_definitions.manage`, with a
     fresh passkey step-up. Records one audit event naming the person, the version and the
@@ -346,8 +347,9 @@ def retire_agent_version(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-    `not_found` (404) for a definition or version that does not exist. Published ahead of
-    the logic that will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a definition or version that does not exist; `last_version`
+    (409) for the last version still published of an active agent, which would leave it
+    nothing to run.
     """
     return definitions.retire_version(who=principal(request), agent_key=agent_key, version_no=version_no)
 
@@ -371,9 +373,9 @@ def get_platform_agent_settings(request: HttpRequest, agent_key: str = Path(...,
     reads and writes nothing to the audit log.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
-    `agent_definitions.manage`; `not_found` (404) for a key no platform agent has.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until
-    that ships.
+    `agent_definitions.manage`; `not_found` (404) for a key no platform agent has,
+    including a definition a bank adds for itself, which has no platform settings. An
+    empty `jurisdictions` list means none has been set.
     """
     return platform.get_settings(agent_key=agent_key)
 
@@ -393,7 +395,9 @@ def update_platform_agent_settings(
     request: HttpRequest, body: PlatformAgentSettingsInput, agent_key: str = Path(..., description=_AGENT_KEY)
 ) -> Any:
     """Replaces the cadence, jurisdictions and monthly budget of one of bleqq's own agents.
-    The change applies to every bank at once, which is why no bank can make it.
+    The change applies to every bank at once, which is why no bank can make it. The
+    jurisdictions are checked against the live jurisdiction list, where a retired one is
+    not valid, and a key sent twice is stored once. It reads no bank's data.
 
     A person's session in the platform console holding `agent_definitions.manage`, with a
     fresh passkey step-up. Records one audit event with the settings before and after, the
@@ -402,9 +406,9 @@ def update_platform_agent_settings(
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
     `not_found` (404) for a key no platform agent has; `unknown_key` (422) for a
-    jurisdiction the vocabulary does not hold, with the valid keys; `validation_error`
-    (422). Published ahead of the logic that will fill it, and answering 501 `not_built`
-    until that ships.
+    jurisdiction the vocabulary does not hold or has retired, with the valid keys in
+    `validKeys`; `validation_error` (422) for an empty or overlong list or a negative
+    budget.
     """
     return platform.update_settings(who=principal(request), agent_key=agent_key, body=body)
 
@@ -420,17 +424,20 @@ def update_platform_agent_settings(
 @requires_permission(perms.AGENT_DEFINITIONS_MANAGE)
 @answers_problems
 def list_platform_runs(request: HttpRequest, page: Query[PageQuery]) -> Any:
-    """Returns the runs of bleqq's own agents, oldest first, one page at a time, with the
-    version each ran, what it cost and how it ended, for the console's agent pages. A
-    platform run reads no bank's row, so no bank's name or figure is in it.
+    """Returns the runs of bleqq's own agents, newest first, one page at a time, with the
+    version each ran, what it cost, how it ended and what it filed: the sources it swept
+    and the records it re-checked, counted from the coverage log, and the changes and
+    proposals it filed, counted from those records rather than from the run's own report.
+    A platform run reads no bank's row, so no bank's run, name or figure is in it, and
+    `tenantAgentId` is always null here. Link a run's sources to the console's Sources
+    page.
 
     A person's session in the platform console holding `agent_definitions.manage`. It reads
     and writes nothing to the audit log. An empty list is a 200 with `total` 0.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `validation_error` (422) when `limit` is above 100 or
-    `offset` beyond the accepted depth. Published ahead of the logic that will fill it, and
-    answering 501 `not_built` until that ships.
+    `offset` beyond the accepted depth.
     """
     return platform.list_runs(limit=page.limit, offset=page.offset)
 

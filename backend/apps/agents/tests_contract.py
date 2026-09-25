@@ -345,7 +345,18 @@ class ConsoleAgentRouteGates(TestCase):
                 self.assertEqual(response.json()["code"], "step_up_required")
 
     def test_behind_the_gate_each_answers_not_built(self) -> None:
+        # Served since `c11-definitions-platform`: tests_definitions.py and tests_platform.py.
+        built = {
+            "getAgentDefinition",
+            "publishAgentVersion",
+            "retireAgentVersion",
+            "getPlatformAgentSettings",
+            "updatePlatformAgentSettings",
+            "listPlatformRuns",
+        }
         for name, method, url, body, permission, _ in CONSOLE_ROUTES:
+            if name in built:
+                continue
             with self.subTest(operation=name), stub_session(user_principal(permissions={permission}, step_up_at=timezone.now())):
                 response = _call(self.client, method, url, body, AS_SESSION)
                 self.assertEqual(response.status_code, 501, response.content)
@@ -575,9 +586,9 @@ class RunListGainsChunk11(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         return [row["id"] for row in response.json()["items"]]
 
-    def test_without_a_filter_the_bank_reads_the_librarys_runs_and_its_own(self) -> None:
+    def test_without_a_filter_the_bank_reads_its_own_runs_and_no_library_run(self) -> None:
         ids = self._ids("")
-        self.assertIn(str(self.library.id), ids)
+        self.assertNotIn(str(self.library.id), ids, "bleqq's runs are the console's (ADR 0053)")
         self.assertIn(str(self.bank.run.id), ids)
         self.assertNotIn(str(self.other.run.id), ids)
 
