@@ -110,7 +110,10 @@ destination of its own in the registry.
 | participants panel on `tenant-obligation.html` and `tenant-change.html` | `/inventory/obligations/[id]`, `/watch/[changeId]` | tenant | 8, 9 | designed (COL-04, f03-T60) |  |
 | units list, paste dialog and the Statement of Applicability view on `tenant-obligation.html` | `/inventory/obligations/[id]` | tenant | 8 | card pending (REG-08) |  |
 | case panels on `tenant-change.html` | `/watch/[changeId]` | tenant | 9 | card pending; prototype `vChange()` work panels are the cut |  |
-| `tenant-notifications.html`, comments panel | who panel, every record | tenant | 10 | card pending |  |
+| `tenant-notifications.html` | `/notifications`, and the bell (a dot on the account row and on More, Notifications in the account menu) | tenant | 10 | designed (COL-02): the bell, the inbox with read and unread rows, mark one and mark all read, every state, and the per-person settings with escalations always on |  |
+| comments panel (`design/system/comments-and-mentions.md`) | on `tenant-change.html` (the bank's case), `tenant-obligation.html` and `tenant-my-work.html` | tenant | 10 | designed (COL-01, HOM-05): the list, the composer with its visibility line, mentions, Edit and Delete on one's own comments, the deleted marker, every state |  |
+| `admin-workflow.html` | `/admin/workflow` | tenant | 10 | designed (COL-02, TEN-01): the six workflow fields with unit and platform default, saved, refused and restricted (CHUNK10_TASKS.md ruling 8: not a section of `admin-organisation.html`) |  |
+| `me-out-of-office.html` | `/me/out-of-office` | tenant | 10 (moved from 8, D-95) | designed (TEN-04, TEN-S4): the last day away, the delegate picker, End now, `already_delegated`, the delegate's view |  |
 | `admin-agents.html`, `console-agent-definitions.html` | `/admin/agents`, `/console/agents` | both | 11 | card pending; prototype `vAgents()` is the cut |  |
 | `console-tenants.html`, `console-health.html` | `/console/tenants`, `/console/health` | console | 4; health 14 | tenants shipped without a card (the list, and a tenant created with its first administrator invited, ADM-S6; support access is TEN-06, chunk 8); health chunk 14 (ADM-S5), card pending | tenants 51 / 56 |
 | `tenant-reports.html`, `admin-data.html` | `/reports`, `/admin/data` | tenant | 12 | card pending; prototype `vReports()` is the cut |  |
@@ -140,10 +143,10 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 | `POST /auth/refresh` | none, `api-client.ts` | both | refresh cookie | no | none | ID-S9 | shipped |
 | `POST /auth/sign-out` | who panel (`tenant-shell.html`, `console-shell.html`) | both | any signed-in | no | anyone | ID-S25 | shipped |
 | `GET /me` | shell (who panel, registry permissions, queue counts) | both | any signed-in or enrolment | no | anyone | ID-S4, ID-S26 | shipped |
-| `PATCH /me` | who panel language switch (chunk 1); notification preferences on `tenant-notifications.html` (chunk 10) | both | any signed-in | no | anyone | ID-S18 | shipped (locale); later chunk 10 (preferences), card pending |
-| `GET /me` queue counts (applicability added) | `tenant-today.html` Decide now | tenant | any signed-in | no | All 7; counts differ by permission | HOM-S1, CAS-S14 | shipped: `counts{triage, proposals, assignedToMe}` feed Decide now (HOM-S1); the sign-off and applicability counts come with chunks 9 and 8 |
+| `PATCH /me` | who panel language switch (chunk 1); notification preferences on `tenant-notifications.html` (chunk 10) | both | any signed-in | no | anyone | ID-S18 | shipped (locale); later chunk 10 (preferences), card designed (`tenant-notifications.html` block 10) |
+| `GET /me` queue counts (applicability added) | `tenant-today.html` Decide now | tenant | any signed-in | no | All 7; counts differ by permission | HOM-S1, CAS-S14 | shipped: `counts{triage, proposals, assignedToMe}` feed Decide now (HOM-S1); the sign-off and applicability counts come with chunks 9 and 8; `unreadNotifications` (chunk 10) feeds the bell on `tenant-notifications.html` |
 | `GET /me/work` (reshaped, INPUT_DELTAS §7) | `tenant-my-work.html` | tenant | any member; each row needs its own read permission | no | All 7; rows and counts filtered, unreadable kinds shown as permission-limited | HOM-S7, HOM-S9, HOM-S13 | later chunk 8, card designed (`tenant-my-work.html`) |
-| `GET /me/comments?about=written\|mentioned` | `tenant-my-work.html` Comments and mentions | tenant | any member; filtered by the subject's read permission | no | All 7 | COL-S12 | later chunk 10, card pending |
+| `GET /me/comments?about=written\|mentioned` | `tenant-my-work.html` Comments and mentions | tenant | any member; filtered by the subject's read permission | no | All 7 | COL-S12 | later chunk 10, card designed (`tenant-my-work.html` §6, `design/system/comments-and-mentions.md`) |
 | `GET /library-updates`, `POST /me/visit` (in place of the designed `GET /me/whats-new`, 622ce06; INPUT_DELTAS) | `tenant-library-updates.html`, count on `tenant-today.html` | tenant | `library.read` (list); any member session, for its own bookmark (visit) | no | All 7 | PRO-S7, AGT-S10 | shipped on `/inventory/updates` (PRO-S7, AGT-S10); Today shows no count of them in R1 |
 | `GET /me/passkeys`, `PATCH /me/passkeys/{id}`, `DELETE /me/passkeys/{id}` | `me-passkeys.html` | both | any signed-in | no | anyone; last passkey cannot go | ID-S10 | shipped |
 | `GET /me/sessions`, `DELETE /me/sessions/{id}` | `me-sessions.html` | both | any signed-in | no | anyone | ID-S11 | shipped |
@@ -153,7 +156,7 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
 | `GET /tenant` | `admin-organisation.html` | tenant | any member (reads); edit needs `members.manage` | no | All 7 read; A edits | TEN-S1 | shipped |
-| `PATCH /tenant` | `admin-organisation.html` (name, timezone, languages); reminders, escalation, retention on `admin-security.html`/`admin-data.html` | tenant | `members.manage` (profile), `workflow.manage` (reminders), `security.manage` (retention) | no | A; CO for workflow | TEN-S1, COL-S2, AUD-S6 | shipped (profile); later chunks 10, 12 |
+| `PATCH /tenant` | `admin-organisation.html` (name, timezone, languages); retention on `admin-data.html` | tenant | `members.manage` (profile), `security.manage` (retention) | no | A | TEN-S1, AUD-S6 | shipped (profile); later chunk 12 (retention). The workflow fields moved to `PATCH /tenant/workflow` on `admin-workflow.html` (chunk 10) |
 | `GET /tenant/members`, `GET /tenant/members/{id}/sessions` | `admin-members.html` | tenant | `members.manage` | no | A | ADM-S2, ADM-S1 | shipped |
 | `POST /tenant/members` (invite) | `admin-members.html` | tenant | `members.manage` | no | A | ID-S1, ADM-S2 | shipped |
 | `PATCH /tenant/members/{id}` (roles, title) | `admin-members.html` | tenant | `members.manage` | yes (roles) | A; last-admin 409 rendered | ID-S19, ADM-S2 | shipped |
@@ -312,8 +315,10 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
-| `GET/POST /comments`, `PATCH/DELETE /comments/{id}` | comments panel on `tenant-change.html`, `tenant-obligation.html` | tenant | `comments.write` | no | All 7; own comments only for edit and delete | COL-S1, COL-S5 | later chunk 10, card pending |
-| `GET /notifications`, `POST /notifications/{id}/read`, `POST /notifications/read-all` | `tenant-notifications.html` from the who panel | tenant | any member | no | All 7 | COL-S2 | later chunk 10, card pending |
+| `GET/POST /comments`, `PATCH/DELETE /comments/{id}` | comments panel (`design/system/comments-and-mentions.md`) on `tenant-change.html` (the bank's case), `tenant-obligation.html` and, through `GET /me/comments`, `tenant-my-work.html` | tenant | `GET /comments` gated by the subject's read permission (404 otherwise); writes also need `comments.write` | no | All 7; Edit and Delete from `canEdit`/`canDelete`, the author's own comments only | COL-S1, COL-S5 | later chunk 10, card designed |
+| `GET /notifications`, `POST /notifications/{id}/read`, `POST /notifications/read-all` | `tenant-notifications.html` from the account menu and the More sheet; the bell's dot and count come from `GET /me` counts (`unreadNotifications`), not from this list | tenant | any member, own notifications only | no | All 7 | COL-S2 | later chunk 10, card designed |
+| `PATCH /tenant/workflow` (and the `workflow` object on `GET /tenant`) | `admin-workflow.html` | tenant | `workflow.manage` | no | CO, A; everyone else the Restricted screen | COL-S2, COL-S11 | later chunk 10, card designed |
+| `GET/PUT /me/out-of-office` | `me-out-of-office.html` | tenant | any member, own window; the delegate must hold the approve permission (422 `delegate_cannot_approve`) | no | All 7; one window at a time (409 `already_delegated`) | TEN-S4 | later chunk 10 (D-95), card designed |
 
 ### Integrations (chunk 13, R3)
 

@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Screen card: notifications (/notifications)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Serves COL-02 (notifications, and a person's own notification preferences)
+   and J-8's tenant B half (chunk 10). New card: the prototype has no inbox.
+   Written from docs/plans/briefs/CHUNK10_TASKS.md (c10-collab-design-a,
+   c10-notifications-api-b, c10-notification-prefs), the R2 wave 1 package
+   c10-cards-notifications-workflow, backend/apps/collab/app.md (COL-S2,
+   COL-S10, COL-S11, COL-S13) and docs/inputs/schema.sql's notification kinds.
+   The bell lives in the shell (tenant-shell.html), drawn here in blocks 1 and 2;
+   the rest is the page.
+
+   Values follow design/system/foundations.md and design/system/pills-and-labels.md
+   (14px base, 24px title, hairline cards at 8px, 36px buttons at 6px); the build
+   maps them to Green tokens through tokens.generated.css and brand.css, and
+   the colours below are those tokens' values in light and dark, never literals
+   in the markup. Every pill names its tone and the kind it comes from in the
+   table at the foot. Names, titles and dates are sample data. */
+:root{
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --negative:#b92f13;--negative-soft:#fdebe8;
+  --warning:#8f530a;--warning-soft:#fce8cf;
+  --positive:#026436;--positive-soft:#dcefdc;
+  --notice:#005fb3;--notice-soft:#e6f3ff;
+  --bronze:#6a5730;--brass-bg:#ece5d6;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --negative:#f08975;--negative-soft:#5c170a;
+  --warning:#f5b970;--warning-soft:#5f3707;
+  --positive:#8ae58d;--positive-soft:#003d26;
+  --notice:#66b8ff;--notice-soft:#003666;
+  --bronze:#d9cba9;--brass-bg:#33291a;
+}}
+:root[data-theme="dark"]{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --negative:#f08975;--negative-soft:#5c170a;
+  --warning:#f5b970;--warning-soft:#5f3707;
+  --positive:#8ae58d;--positive-soft:#003d26;
+  --notice:#66b8ff;--notice-soft:#003666;
+  --bronze:#d9cba9;--brass-bg:#33291a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+a{color:var(--text);text-underline-offset:3px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px}
+p{margin:0 0 8px}
+ul{margin:0;padding:0;list-style:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+main{padding:24px 32px 64px;max-width:1200px;width:100%;margin:0 auto}
+/* The state label above each rendering. Not part of the screen. */
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-child{margin-top:0}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:8px 16px;flex-wrap:wrap;margin-bottom:16px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+.meta{color:var(--muted);font-size:13px;line-height:18px;display:flex;gap:4px 8px;flex-wrap:wrap;align-items:baseline}
+.meta b{color:var(--text);font-weight:500}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+.panel>h2{margin-bottom:4px}
+.panel+.panel{margin-top:16px}
+/* Pill: fully rounded, 20px, 13px at 500, no border. The six tones only. */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+.pill.notice{background:var(--notice-soft);color:var(--notice)}
+.pill.positive{background:var(--positive-soft);color:var(--positive)}
+.pill.warning{background:var(--warning-soft);color:var(--warning)}
+.pill.negative{background:var(--negative-soft);color:var(--negative)}
+.pill.brand{background:var(--brass-bg);color:var(--bronze)}
+/* Button: 36px, 6px radius, 14px at 500. */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap;text-decoration:none}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.ghost{background:transparent;color:var(--text);border-color:transparent}
+.btn.danger{background:var(--surface);color:var(--negative);border-color:var(--negative)}
+.btn.small{height:32px;padding:0 12px}
+.btn[disabled]{opacity:.45;cursor:default}
+@media (hover:hover){.btn.outline:hover,.btn.ghost:hover{background-image:linear-gradient(var(--hover),var(--hover))}}
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+/* Input and select: 36px, 10px side padding, 6px radius, the input border. */
+.field{display:grid;gap:4px;margin-top:16px}
+.field:first-child{margin-top:0}
+.field label,.field .label{font-weight:500}
+.field input,.field select,.field textarea{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px}
+.field textarea{height:auto;min-height:76px;padding:8px 10px;resize:vertical}
+.field .hint{color:var(--muted);font-size:13px;line-height:18px}
+.field .error{color:var(--negative);font-size:13px;line-height:18px}
+.field [aria-invalid="true"]{border-color:var(--negative)}
+.ok{color:var(--positive);font-size:13px;line-height:18px;margin:0}
+.err{color:var(--negative);font-size:13px;line-height:18px;margin:0}
+.skeleton{height:64px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.skeletons{display:grid;gap:8px}
+.emptystate,.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.emptystate h2,.errorstate h2{color:var(--text)}
+.emptystate p,.errorstate p{margin:8px auto 16px;max-width:60ch}
+.restricted{text-align:center;padding:48px 16px;max-width:60ch;margin:0 auto}
+.restricted p{color:var(--muted)}
+/* A 375px frame, to draw the phone width beside the desktop rendering. */
+.phone{width:375px;max-width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 16px 16px;background:var(--page)}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+.note p{margin:0 0 8px}
+table.tones{width:100%;table-layout:fixed;border-collapse:collapse;margin-top:8px;font-size:13px;line-height:18px}
+table.tones th,table.tones td{overflow-wrap:anywhere;text-align:left;padding:4px 12px 4px 0;border-bottom:1px solid var(--line);vertical-align:top}
+table.tones th{font-weight:500;color:var(--text)}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
+}
+/* The account row, its menu and the More sheet, cut from tenant-shell.html. */
+.shellbits{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+.railfoot{width:240px;background:var(--subtle);border:1px solid var(--line);border-radius:8px;padding:8px}
+.row{display:flex;align-items:center;gap:8px;width:100%;background-color:transparent;border:0;text-align:left;padding:6px 8px;border-radius:6px}
+.row[aria-expanded="true"]{background-color:var(--accent)}
+.who b{display:block;font-weight:500}
+.who small{display:block;color:var(--muted);font-size:13px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.ic{position:relative;display:inline-flex;flex:none}
+/* The unread dot: 8px, notice blue, a ring in the surface colour so it reads on any fill. */
+.dot{width:8px;height:8px;border-radius:50%;background:var(--notice);flex:none}
+.ic .dot{position:absolute;top:-2px;right:-3px;box-shadow:0 0 0 2px var(--subtle)}
+.dot.off{background:transparent}
+.menu{min-width:224px;background:var(--subtle);border:1px solid var(--line);border-radius:6px;padding:4px}
+.mrow{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:0;border-radius:6px;background:transparent;text-decoration:none;color:var(--text);text-align:left}
+.mrow:first-child{background:var(--accent)}
+.mrow .gap{width:16px;flex:none}
+.count{margin-left:auto;color:var(--muted);font-size:13px;line-height:18px;font-variant-numeric:tabular-nums}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 8px 16px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:8px}
+.close{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:0;border-radius:6px}
+.sheet .grp{margin-top:16px}
+.srow{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:8px;background:transparent;border:0;border-radius:6px;color:var(--text);text-align:left;text-decoration:none}
+.acct{border-top:1px solid var(--line);margin-top:16px;padding-top:8px}
+.acct p{margin:0;padding:6px 8px}
+.acct b{display:block;font-weight:500}
+.acct small{display:block;color:var(--muted);font-size:13px;line-height:18px}
+.tabbar{display:grid;grid-template-columns:repeat(5,1fr);margin-top:12px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:52px;background:transparent;border:0;border-radius:6px;color:var(--muted);font-size:13px;line-height:18px;text-decoration:none}
+.tab .ic .dot{box-shadow:0 0 0 2px var(--surface)}
+.tab svg.i{width:20px;height:20px}
+/* The inbox. */
+.inbox{display:grid;gap:8px}
+.note-row{display:grid;grid-template-columns:8px 1fr auto;gap:4px 12px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.note-row>.dot{margin-top:6px}
+.note-row.unread{background:var(--subtle)}
+.note-row h3{font-weight:500;margin-top:6px}
+.note-row.unread h3{font-weight:600}
+.note-row h3 a{text-decoration:none}
+.note-row h3 a:hover{text-decoration:underline}
+.note-row .meta{margin:4px 0 0}
+.facets{display:flex;gap:6px;flex-wrap:wrap}
+.facets.wrap{gap:8px}
+/* Settings. */
+.prefs li{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 0;border-bottom:1px solid var(--line)}
+.prefs li:last-child{border-bottom:0}
+.prefs .label{display:block;font-weight:500}
+.prefs .hint{display:block;color:var(--muted);font-size:13px;line-height:18px;max-width:60ch}
+.switch{position:relative;width:36px;height:20px;flex:none;border-radius:6px;border:1px solid var(--line-strong);background:var(--surface);padding:0}
+.switch::after{content:"";position:absolute;top:1px;left:1px;width:16px;height:16px;border-radius:4px;background:var(--line-strong);transition:left .15s}
+.switch[aria-checked="true"]{background:var(--primary);border-color:var(--primary)}
+.switch[aria-checked="true"]::after{left:17px;background:var(--on-primary)}
+.switch[disabled]{opacity:.45}
+.held{display:inline-flex;align-items:center;gap:6px;flex:none;color:var(--text)}
+.held svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:767px){
+  .note-row{grid-template-columns:8px 1fr}
+  .note-row>.btn{grid-column:2;justify-self:end}
+}
+.phone .note-row{grid-template-columns:8px 1fr}
+.phone .note-row>.btn{grid-column:2;justify-self:end}
+.phone .head{align-items:center}
+</style>
+</head>
+<body>
+<main>
+
+<h2 class="k">1 · The bell: an unread dot on the account row, and Notifications in its menu (from 1024px)</h2>
+<div class="shellbits">
+  <div class="railfoot" aria-label="Rail footer, sample">
+    <button class="row who" type="button" aria-label="Sara Lindqvist, account menu, 3 unread notifications" aria-expanded="true">
+      <span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5"/></svg><span class="dot" aria-hidden="true"></span></span>
+      <span><b>Sara Lindqvist</b><small>Example Bank AB · Compliance officer</small></span>
+    </button>
+  </div>
+  <div class="menu" role="menu" aria-label="Account">
+    <a class="mrow" role="menuitem" href="#"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg><span>Notifications</span><span class="count">3</span></a>
+    <a class="mrow" role="menuitem" href="#"><span class="gap"></span><span>Out of office</span></a>
+    <a class="mrow" role="menuitem" href="#"><span class="gap"></span><span>My passkeys</span></a>
+    <a class="mrow" role="menuitem" href="#"><span class="gap"></span><span>My sessions</span></a>
+    <a class="mrow" role="menuitem" href="#"><span class="gap"></span><span>Calendar feeds</span></a>
+    <button class="mrow" role="menuitem" type="button"><span class="gap"></span><span>Sign out</span></button>
+  </div>
+</div>
+
+<h2 class="k">2 · The bell at 375px: the dot on More, and Notifications first in the sheet's account group</h2>
+<div class="phone">
+  <div class="sheet" role="dialog" aria-labelledby="more-title">
+    <div class="sheet-head"><h2 id="more-title">More</h2><button class="close" type="button" aria-label="Close"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <ul><li><a class="srow" href="#">Roadmap</a></li><li><a class="srow" href="#">My work</a></li><li class="grp"><a class="srow" href="#">Admin</a></li></ul>
+    <div class="acct" role="group" aria-label="Account">
+      <p><b>Sara Lindqvist</b><small>Example Bank AB · Compliance officer</small></p>
+      <a class="srow" href="#"><span>Notifications</span><span class="count">3</span></a>
+      <a class="srow" href="#">Out of office</a>
+      <a class="srow" href="#">My passkeys</a>
+      <a class="srow" href="#">My sessions</a>
+      <button class="srow" type="button">Sign out</button>
+    </div>
+  </div>
+  <nav class="tabbar" aria-label="Main">
+    <a class="tab" href="#">Today</a><a class="tab" href="#">Watch</a><a class="tab" href="#">Inventory</a><a class="tab" href="#">Search</a>
+    <button class="tab" type="button" aria-label="More, 3 unread notifications"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg><span class="dot" aria-hidden="true"></span></span><span>More</span></button>
+  </nav>
+</div>
+
+<h2 class="k">3 · The inbox (/notifications): three unread above two read, newest first</h2>
+<div class="head">
+  <div><h1>Notifications</h1><p class="lede">What needs you, and what changed on the things you look after.</p></div>
+  <button class="btn outline small" type="button">Mark all as read</button>
+</div>
+<ul class="inbox">
+  <li class="note-row unread">
+    <span class="dot" aria-hidden="true"></span>
+    <div class="body">
+      <div class="facets"><span class="pill negative">Escalated</span></div>
+      <h3><a href="#">Assessment criteria for research quality are not documented</a></h3>
+      <p class="meta"><span>Action 6 days overdue</span><span>·</span><span>Today 08:00</span><span class="sr">Unread</span></p>
+    </div>
+    <button class="btn ghost small" type="button">Mark as read</button>
+  </li>
+  <li class="note-row unread">
+    <span class="dot" aria-hidden="true"></span>
+    <div class="body">
+      <div class="facets"><span class="pill">Mention</span></div>
+      <h3><a href="#">FI adopts amended rules on paying for investment research</a></h3>
+      <p class="meta"><span>Erik Holm mentioned you</span><span>·</span><span>Yesterday 14:20</span><span class="sr">Unread</span></p>
+    </div>
+    <button class="btn ghost small" type="button">Mark as read</button>
+  </li>
+  <li class="note-row unread">
+    <span class="dot" aria-hidden="true"></span>
+    <div class="body">
+      <div class="facets"><span class="pill warning">Approval requested</span></div>
+      <h3><a href="#">Keep a register of information on ICT third-party arrangements</a></h3>
+      <p class="meta"><span>For Anna Nilsson, who is away</span><span>·</span><span>Yesterday 09:12</span><span class="sr">Unread</span></p>
+    </div>
+    <button class="btn ghost small" type="button">Mark as read</button>
+  </li>
+  <li class="note-row">
+    <span class="dot off" aria-hidden="true"></span>
+    <div class="body">
+      <div class="facets"><span class="pill warning">Review due</span></div>
+      <h3><a href="#">Pay for third-party research only under the permitted models</a></h3>
+      <p class="meta"><span>Review in 30 days</span><span>·</span><span>21 Sep 2026 08:00</span></p>
+    </div>
+  </li>
+  <li class="note-row">
+    <span class="dot off" aria-hidden="true"></span>
+    <div class="body">
+      <div class="facets"><span class="pill notice">Change on your item</span></div>
+      <h3><a href="#">Disclose all costs and charges before and after the service</a></h3>
+      <p class="meta"><span>Version 3 applied</span><span>·</span><span>15 Sep 2026 10:41</span></p>
+    </div>
+  </li>
+</ul>
+<div class="bar" style="justify-content:center"><button class="btn outline small" type="button">Show more</button></div>
+
+<h2 class="k">4 · Every kind, as its pill: tone by kind, never by a person</h2>
+<div class="panel">
+  <div class="facets wrap">
+    <span class="pill">Mention</span><span class="pill">Assigned to you</span><span class="pill">Added to</span>
+    <span class="pill warning">Sign-off requested</span><span class="pill warning">Approval requested</span><span class="pill warning">Due soon</span><span class="pill warning">Review due</span>
+    <span class="pill negative">Overdue</span><span class="pill negative">Escalated</span>
+    <span class="pill notice">Change on your item</span>
+  </div>
+</div>
+
+<h2 class="k">5 · The inbox at 375px: the action moves under the row, Mark all as read stays on the right</h2>
+<div class="phone">
+  <div class="head"><h1>Notifications</h1><button class="btn outline small" type="button">Mark all as read</button></div>
+  <ul class="inbox">
+    <li class="note-row unread">
+      <span class="dot" aria-hidden="true"></span>
+      <div class="body">
+        <div class="facets"><span class="pill negative">Escalated</span></div>
+        <h3><a href="#">Assessment criteria for research quality are not documented</a></h3>
+        <p class="meta"><span>Action 6 days overdue</span><span>·</span><span>Today 08:00</span></p>
+      </div>
+      <button class="btn ghost small" type="button">Mark as read</button>
+    </li>
+    <li class="note-row">
+      <span class="dot off" aria-hidden="true"></span>
+      <div class="body">
+        <div class="facets"><span class="pill warning">Review due</span></div>
+        <h3><a href="#">Pay for third-party research only under the permitted models</a></h3>
+        <p class="meta"><span>Review in 30 days</span><span>·</span><span>21 Sep 2026 08:00</span></p>
+      </div>
+    </li>
+  </ul>
+</div>
+
+<h2 class="k">6 · Mark one read, in place: the dot and the weight go, the button goes, the row stays where it is</h2>
+<ul class="inbox">
+  <li class="note-row">
+    <span class="dot off" aria-hidden="true"></span>
+    <div class="body">
+      <div class="facets"><span class="pill">Mention</span></div>
+      <h3><a href="#">FI adopts amended rules on paying for investment research</a></h3>
+      <p class="meta"><span>Erik Holm mentioned you</span><span>·</span><span>Yesterday 14:20</span></p>
+    </div>
+  </li>
+</ul>
+<p class="err" role="alert" style="margin-top:8px">Could not mark it as read. Check your connection and try again.</p>
+
+<h2 class="k">7 · Nothing waiting (no notification at all, or all read and nothing older to show)</h2>
+<div class="head"><div><h1>Notifications</h1><p class="lede">What needs you, and what changed on the things you look after.</p></div></div>
+<div class="emptystate">
+  <h2>Nothing waiting for you</h2>
+  <p>Mentions, requests, reminders and changes on the things you look after appear here.</p>
+  <a class="btn outline small" href="#">Open My work</a>
+</div>
+
+<h2 class="k">8 · Loading, and the error with Try again</h2>
+<div class="skeletons" aria-busy="true" role="status"><span class="sr">Loading</span><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+<div class="errorstate" role="alert" style="margin-top:12px">
+  <h2>Could not load your notifications</h2>
+  <p>Check your connection and try again.</p>
+  <button class="btn outline small" type="button">Try again</button>
+</div>
+
+<h2 class="k">9 · Following a notification to a record you can no longer open (the shared Not found)</h2>
+<div class="restricted"><h1>Not found</h1><p>There is nothing at this address in your organisation.</p><a href="#">Back to Notifications</a></div>
+
+<h2 class="k">10 · Settings, below the inbox: one switch per kind you can turn off, escalations always on</h2>
+<section class="panel" aria-labelledby="prefs">
+  <h2 id="prefs">What reaches you</h2>
+  <p class="meta" style="margin-bottom:8px">Turning a kind off stops its notifications and emails for you. The records themselves do not change.</p>
+  <ul class="prefs">
+    <li><div><span class="label" id="p1">Mentions</span><span class="hint">When someone mentions you in a comment.</span></div><button class="switch" role="switch" aria-checked="true" aria-labelledby="p1" type="button"></button></li>
+    <li><div><span class="label" id="p2">Assignments</span><span class="hint">When a case, an action or an item is given to you.</span></div><button class="switch" role="switch" aria-checked="true" aria-labelledby="p2" type="button"></button></li>
+    <li><div><span class="label" id="p3">Reminders</span><span class="hint">Before a due date or a review, by email too.</span></div><button class="switch" role="switch" aria-checked="false" aria-labelledby="p3" type="button"></button></li>
+    <li><div><span class="label" id="p4">Weekly digest</span><span class="hint">Your open items, by email once a week.</span></div><button class="switch" role="switch" aria-checked="true" aria-labelledby="p4" type="button"></button></li>
+    <li><div><span class="label" id="p5">Weekly briefing</span><span class="hint">The week's regulatory briefing, by email.</span></div><button class="switch" role="switch" aria-checked="true" aria-labelledby="p5" type="button"></button></li>
+    <li class="fixed"><div><span class="label">Escalations</span><span class="hint">When work you are responsible for is overdue past your organisation's limit. Your organisation decides these, so they always reach you.</span></div><span class="held"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.3 2.3 4.7-4.9"/></svg><span>Always on</span></span></li>
+  </ul>
+</section>
+
+<h2 class="k">11 · Settings: saved, saving, and refused</h2>
+<section class="panel">
+  <ul class="prefs">
+    <li><div><span class="label" id="q3">Reminders</span><span class="hint">Before a due date or a review, by email too.</span></div><button class="switch" role="switch" aria-checked="true" aria-labelledby="q3" type="button"></button></li>
+  </ul>
+  <p class="ok" role="status" style="margin-top:8px">Saved.</p>
+</section>
+<section class="panel">
+  <ul class="prefs">
+    <li><div><span class="label" id="q4">Weekly digest</span><span class="hint">Your open items, by email once a week.</span></div><button class="switch" role="switch" aria-checked="false" aria-labelledby="q4" type="button" disabled></button></li>
+  </ul>
+  <p class="meta" role="status" style="margin-top:8px">Saving…</p>
+</section>
+<section class="panel">
+  <ul class="prefs">
+    <li><div><span class="label" id="q5">Mentions</span><span class="hint">When someone mentions you in a comment.</span></div><button class="switch" role="switch" aria-checked="true" aria-labelledby="q5" type="button"></button></li>
+  </ul>
+  <p class="err" role="alert" style="margin-top:8px">Could not save. The switch is back where it was. Check your connection and try again.</p>
+</section>
+
+<div class="note">
+<p>Notifications card (COL-02, and the preferences on PATCH /me; chunk 10). Route <b>/notifications</b>, an account destination beside My passkeys and My sessions (the registry's ACCOUNT parent), reached from the account row's menu from 1024px and from the account group of the More sheet below it. Any member; no permission gate and no step-up. The page is the person's own inbox, so there is no department or team view.</p>
+<p>The bell is not a new rail row and not a fifth dock item: it is a dot on the account row's icon (and on More below 1024px) while anything is unread, and a "Notifications" item first in the account menu with the unread count as a quiet muted number at the end of the row. The count and the dot come from GET /me's counts (unreadNotifications), which the shell already reads, so no second request per page; marking read refreshes GET /me. Nothing unread: no dot and no number. The accessible name of the account row and of More says the count.</p>
+<p>A row: the kind's pill, the record's title as the link (the stored title the notification was written with: a library or record title, never a comment, a note or any other text a person typed), then one line of meta: why (a catalog phrase with a person's name, a date or a count at most), then the time in the tenant's timezone ("Today 08:00", "Yesterday 14:20", then the date). Unread: a 8px notice-blue dot before the row, the title at 600 and the row on the subtle fill; read: no dot (its space kept, so titles align), the title at 500 on the surface. Opening the link marks the row read. "Mark as read" is a ghost button on unread rows only; "Mark all as read" sits in the header on the right and is disabled while nothing is unread. A row that arrived for someone who is away names them: "For Anna Nilsson, who is away" (the notification's onBehalfOf).</p>
+<p>Newest first, 20 a page, "Show more" loads the next page. A record the reader can no longer open still lists with the title it was stored with; following it lands on the shared Not found (states.html), because the link answers 404.</p>
+<p>Settings (MembershipNotificationPrefs on GET and PATCH /me): one switch per kind a person may turn off, saved at once on change with no Save button, each change its own PATCH of that one key. The switch is 36 by 20px with a 6px radius and a 16px thumb at 4px, because the fully rounded shape is the pill's alone (foundations.md); on is the primary colour, off the control border. Escalations are shown as held with Green's read-only glyph (foundations.md), never as a greyed switch, because the tenant sets them on /admin/workflow and a person cannot mute them. A refused save puts the switch back and says so.</p>
+<table class="tones" aria-label="Kind, tone and label">
+<tr><th>Kind (notification.kind)</th><th>Tone</th><th>Label</th><th>Built by</th></tr>
+<tr><td>mention</td><td>information</td><td>Mention</td><td>chunk 10</td></tr>
+<tr><td>assigned</td><td>information</td><td>Assigned to you</td><td>chunk 9</td></tr>
+<tr><td>participant_added</td><td>information</td><td>Added to</td><td>chunk 10 (COL-S10)</td></tr>
+<tr><td>signoff_requested</td><td>warning</td><td>Sign-off requested</td><td>chunk 9</td></tr>
+<tr><td>approval_requested</td><td>warning</td><td>Approval requested</td><td>chunk 8 to 10</td></tr>
+<tr><td>due_soon</td><td>warning</td><td>Due soon</td><td>chunk 10</td></tr>
+<tr><td>review_due</td><td>warning</td><td>Review due</td><td>chunk 10 (COL-S11)</td></tr>
+<tr><td>overdue</td><td>negative</td><td>Overdue</td><td>chunk 10</td></tr>
+<tr><td>escalation</td><td>negative</td><td>Escalated</td><td>chunk 10</td></tr>
+<tr><td>involved_item_changed</td><td>notice</td><td>Change on your item</td><td>chunk 10 (COL-S10)</td></tr>
+<tr><td>proposal_waiting</td><td>warning</td><td>Proposal waiting</td><td>not produced in R2</td></tr>
+<tr><td>saved_search_hit</td><td>notice</td><td>New search match</td><td>chunk 13</td></tr>
+</table>
+<p style="margin-top:8px">The tone follows the kind's slot in pills-and-labels.md: information for a neutral fact, warning for something waiting on the reader, negative for the overdue end of the severity scale, notice for what kind of change this is. Labels are catalog phrases; the API sends the kind key. Names, titles, dates and counts are sample data.</p>
+</div>
+
+</main>
+</body>
+</html>
