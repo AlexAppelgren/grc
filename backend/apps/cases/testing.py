@@ -21,12 +21,12 @@ from types import SimpleNamespace
 
 from django.db import transaction
 
-from apps.cases.models import CaseLinkDecision, CaseObligationLink, ChangeCase
+from apps.cases.models import OWNED_CATEGORIES, CaseLinkDecision, CaseObligationLink, ChangeCase
 from apps.identity.models import User
 from apps.library.models import Obligation
 from apps.shared import factories, tenancy
 from apps.shared.models import Tenant
-from apps.taxonomy.models import FootprintTerm, Urgency
+from apps.taxonomy.models import CaseStatusCategory, DismissalReason, FootprintTerm, Urgency
 from apps.watch import testing as watch_build
 from apps.watch.models import RegulatoryChange
 
@@ -58,6 +58,20 @@ def case(
             so_what_text=so_what_text,
         )
 
+
+def in_category(row: ChangeCase, category: CaseStatusCategory) -> None:
+    """Put a case straight into `category` for a test that reads cases by category, with
+    what the database's CHECKs demand there: an owner between triage and the close, and a
+    reason when dismissed (c9-case-models). The state machine is not run; a test of a move
+    goes through the move itself."""
+    fields: dict[str, object] = {"status": category.value}
+    with transaction.atomic():
+        tenancy.activate(row.tenant_id)
+        if category in OWNED_CATEGORIES and row.owner_id is None:
+            fields["owner"] = factories.member_user(row.tenant, roles=("compliance_officer",))
+        if category is CaseStatusCategory.DISMISSED:
+            fields["dismissed_reason"] = DismissalReason.objects.get(key="out_of_scope")
+        ChangeCase.objects.filter(pk=row.pk).update(**fields)
 
 def link_decision(
     row: ChangeCase,
@@ -94,3 +108,11 @@ def two_tenants_with_different_footprints(
             tenancy.activate(tenant.id)
             FootprintTerm.objects.create(tenant=tenant, term=watch_build.term(ref))
     return SimpleNamespace(inside=matching, outside=other)
+
+
+def case_on_a_new_change(tenant: Tenant) -> ChangeCase:
+    """A fresh library change with a case of `tenant` and of nobody else, the reference rows
+    seeded first. The tenant-isolation guard's subject for the workflow routes
+    (`apps/shared/factories.py:case_change`)."""
+    watch_build.seed_watch_reference()
+    return case(tenant, watch_build.change())
