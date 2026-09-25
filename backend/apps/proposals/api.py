@@ -327,7 +327,8 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     library does not hold yet, with its regime); "new_obligation" (a duty the library does
     not hold yet, under an instrument it does, with its first summary and scope);
     "new_provision" (a node of a law's text, with its first verbatim text);
-    "new_provision_version" (a provision's text in force from a date); "vocabulary_create", "vocabulary_relabel", "vocabulary_retire", "vocabulary_restore" or
+    "new_provision_version" (a provision's text in force from a date); "new_recurring_duty"
+    (a schedule an obligation in force falls due on, as an RFC 5545 rule); "vocabulary_create", "vocabulary_relabel", "vocabulary_retire", "vocabulary_restore" or
     "vocabulary_merge" (a row of a shared list); or "term_create" or "term_update" (a
     taxonomy term).
 
@@ -347,7 +348,11 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     has no provision of its own yet, and gives `sourceUrl`, the link the new record keeps
     as its own source. An instrument's `regime` is a term of the regime dimension, written
     `regime:<key>`. A new provision is sourced like a new record, and a provision version
-    like an obligation version. A standard's text is licensed, so nothing of it enters: no
+    like an obligation version. A recurring duty names its obligation as `targetType`
+    `obligation` and `targetId`, is sourced like an obligation version, field by field, and
+    carries one RRULE line at a day or coarser without DTSTART, which must fall due at least
+    once and at most `RECURRENCE_MAX_OCCURRENCES` times (120 unless the platform sets another
+    number) in the next ten years; a key bound to no agent cannot propose one. A standard's text is licensed, so nothing of it enters: no
     provision under a standard, and only https links as sources on a standard's one
     conformance obligation, which carries exactly one standard term. The proposal is
     linked to the bank it was filed in, and
@@ -378,6 +383,8 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     term of the regime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes
     an obligation with a term of a dimension that mirrors the jurisdiction list;
     `duplicate_key` (409) when a new record's key is already a record's;
+    `invalid_recurrence` (422) when a recurring duty's rule does not parse, is finer than a
+    day, never falls due, or falls due more often than the cap in ten years;
     `validation_error` (422) for a body the schema or the kind's payload refuses, a
     `sourceUrl` that is not an https link on any kind, or a summary or text longer than
     `PROPOSAL_TEXT_MAX_CHARS` (50000 unless the platform sets another number);
@@ -549,7 +556,9 @@ def approve_proposal(
     adds or renames a term of a dimension that mirrors the jurisdiction list, or scopes an
     obligation with one, which a proposal filed before that rule may still ask for;
     `standard_term_only_on_standards` (422) when the payload, as proposed or as corrected,
-    puts a standard's term on an obligation whose instrument is not a standard.
+    puts a standard's term on an obligation whose instrument is not a standard;
+    `invalid_recurrence` (422) when a recurring duty's rule, as proposed or as corrected, no
+    longer falls due between once and the cap in the ten years from today.
     """
     reviewer = require_reviewer(request)
     step_up_assertion_id = enforce_step_up(request) if reviewer.user is not None else None

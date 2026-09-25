@@ -321,6 +321,14 @@ def instrument_refs(*, level: str, jurisdiction: str, authority: str | None) -> 
     )
 
 
+def authority_of(key: str) -> Authority:
+    """The authority `key`, which a recurring duty is sent to (REG-07), or 422 `unknown_key`."""
+    found = Authority.objects.filter(key=key).first()  # ordering: a unique key
+    if found is None:
+        raise ValidationError(f"{key!r} is not an authority the library holds.", code="unknown_key")
+    return found
+
+
 def shared_instrument(key: str) -> Instrument:
     """The active shared instrument `key`, which a new obligation is broken out of, or 422
     `unknown_key`. A bank's private instrument is never one (INV-07)."""

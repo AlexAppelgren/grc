@@ -74,10 +74,19 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 | pending |
 | REG-05 | Linked internal items (policy, procedure, control, process, system) with external references | M | R2 | pending |
 | REG-06 | Yearly attestation by the owner, and waivers | C | R3 | pending |
-| REG-07 | Recurring duties on the roadmap from recurrence rules | S | R2 | pending |
+| REG-07 | Recurring duties on the roadmap from recurrence rules | S | R2 | in_progress |
 | REG-08 | Statement of Applicability: units per following legal entity, by reference and in the tenant's own words, entered one by one or pasted with a dry run, each with applicability, a reason, a status and gaps, fixed once it has history; nothing written under a standard is indexed, sent to a model or shown to another tenant | M | R2 | pending |
 | ACC-04 | An agent access credential holding `tenant:read`, under an entry with tenant reach on, reads the register decisions on the obligations in its scope. Never gaps, cases, comments, evidence, the audit log or a private record | M | R2 | pending |
 | OWN-05 | The bank's own agent may propose a private obligation's controls as linked internal items of the control kind (REG-05), approved in the bank's own queue; waits for Alex's answer on what a control inventory is (D-91) | S | R2 | pending |
+
+REG-07 is `in_progress` (c8-recurring-duty-proposal, 2026-09-25): the library half is built. A
+recurring duty is a shared library row (library 0010) whose only door is the
+`new_recurring_duty` proposal, sourced field by field at creation and over a reviewer's
+correction, applied with its audit row and the obligation's re-index in one transaction, and
+stamped with both agents when an agent confirms it. Its RRULE goes through
+`apps/library/recurrence.py`, which refuses a rule it cannot parse, one finer than a day, one
+that never falls due, and one over `RECURRENCE_MAX_OCCURRENCES` in ten years (422
+`invalid_recurrence`). The tenant occurrences and REG-S10 are `c8-reg-duty-occurrences`'.
 
 ## 3. Acceptance criteria (from PRD, condensed)
 

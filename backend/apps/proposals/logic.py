@@ -56,11 +56,13 @@ from apps.agents.models import AgentRun
 from apps.agents.screen import screen_all
 from apps.governance import ai_log
 from apps.governance.models import AiPurpose
+from apps.library import recurrence
 from apps.library.models import DatePrecision, SubjectType
 from apps.library.reading import (
     InstrumentRefs,
     active_obligation,
     active_provision,
+    authority_of,
     instrument_refs,
     live_duty_type,
     live_provision_kind,
@@ -80,6 +82,7 @@ from apps.proposals.schemas import (
     ProposalObligationVersionPayload,
     ProposalProvisionPayload,
     ProposalProvisionVersionPayload,
+    ProposalRecurringDutyPayload,
     ProposalRow,
     ProposalTermCreatePayload,
     ProposalTermUpdatePayload,
@@ -116,6 +119,7 @@ PAYLOAD_SCHEMAS: dict[str, type[pydantic.BaseModel]] = {
     ProposalKind.NEW_OBLIGATION.value: ProposalObligationPayload,
     ProposalKind.NEW_PROVISION.value: ProposalProvisionPayload,
     ProposalKind.NEW_PROVISION_VERSION.value: ProposalProvisionVersionPayload,
+    ProposalKind.NEW_RECURRING_DUTY.value: ProposalRecurringDutyPayload,
 }
 VOCABULARY_KINDS = frozenset(
     kind.value
@@ -133,6 +137,9 @@ VERSION_TARGETS = {
     ProposalKind.NEW_OBLIGATION_VERSION.value: OBLIGATION_TARGET,
     ProposalKind.NEW_PROVISION_VERSION.value: PROVISION_TARGET,
 }
+# The kinds that name the record they are for, by its target type: every version, and a
+# recurring duty, which is added to an obligation in force (REG-07).
+RECORD_TARGETS = {**VERSION_TARGETS, ProposalKind.NEW_RECURRING_DUTY.value: OBLIGATION_TARGET}
 # The kinds that bring a new record into the library. They name no target, since the record
 # does not exist yet, and every fact they carry is sourced by an https link: a new record
 # has no provision of its own to cite (PRO-01).
@@ -147,7 +154,7 @@ PRIVATE_RECORD_KINDS = frozenset({ProposalKind.NEW_INSTRUMENT.value, ProposalKin
 IDEMPOTENCY_CONSTRAINTS = frozenset({"proposal_idempotency_per_user", "proposal_idempotency_per_key"})
 # The kinds a reviewer may correct: each carries sourced facts from an authority, which a
 # reviewer checks against the same source (PRO-02).
-CORRECTABLE_KINDS = frozenset(VERSION_TARGETS) | NEW_RECORD_KINDS
+CORRECTABLE_KINDS = frozenset(RECORD_TARGETS) | NEW_RECORD_KINDS
 # The dimension an instrument's regime is a term of (D-39).
 REGIME_DIMENSION = "regime"
 # The fields of a new record's payload that say how it is written rather than what the
@@ -158,7 +165,8 @@ UNSOURCED_FIELDS = frozenset(
 TERM_KINDS = frozenset({ProposalKind.TERM_CREATE.value, ProposalKind.TERM_UPDATE.value})
 # The kinds whose applied record can say an agent confirmed it (`verified_origin` and
 # `verified_by_agent`): an obligation version, every library list row and taxonomy term
-# (taxonomy 0007), a new instrument, and a new obligation with its first version. Only these
+# (taxonomy 0007), a new instrument, a new obligation with its first version, and a
+# recurring duty (library 0010), which names its proposing agent too. Only these
 # may an independent agent approve (INV-05, D-62, D-79). A provision and its versions have no
 # such column, so `new_provision` and `new_provision_version` wait for a person, as does any
 # kind added later without that provenance.
@@ -166,7 +174,7 @@ AGENT_CONFIRMABLE_KINDS = (
     OBLIGATION_KINDS
     | VOCABULARY_KINDS
     | TERM_KINDS
-    | frozenset({ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value})
+    | frozenset({ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value, ProposalKind.NEW_RECURRING_DUTY.value})
 )
 # The payloads that name a row by key and carry labels: the key must be its own slug and
 # the labels real languages, as the vocabulary routes make them.
@@ -293,6 +301,8 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
         validated_provision(payload)
     elif isinstance(payload, ProposalProvisionVersionPayload):
         _validate_text_payload(payload)
+    elif isinstance(payload, ProposalRecurringDutyPayload):
+        validated_recurring_duty(payload)
     else:
         from apps.taxonomy.terms_logic import dimension_by_key, refuse_mirrored
 
@@ -496,6 +506,18 @@ def validated_provision(payload: ProposalProvisionPayload) -> tuple[Any, Any, An
     return instrument, parent, live_provision_kind(payload.provision_kind)
 
 
+def validated_recurring_duty(payload: ProposalRecurringDutyPayload) -> Any:
+    """A recurring duty (REG-07): a title, a rule `apps.library.recurrence` accepts from
+    today, stored in its one spelling (422 `invalid_recurrence` otherwise), and a recipient
+    authority the library holds. Returns that authority, or None, for the apply, which runs
+    this again against the library and the calendar as they are then."""
+    payload.title = payload.title.strip()
+    if not payload.title:
+        raise ValidationError("Give the duty a title.", code="validation_error")
+    payload.recurrence_rule = recurrence.validated(payload.recurrence_rule, timezone.localdate())
+    return authority_of(payload.recipient_authority) if payload.recipient_authority else None
+
+
 def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUID | None) -> uuid.UUID | None:
     """A version proposal says which obligation or provision it versions, and that record
     is here and in force. A proposal nobody could ever apply never enters the queue. A new
@@ -507,12 +529,12 @@ def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUI
         raise ValidationError(
             "A new record names no target: leave targetType and targetId out.", code="validation_error"
         )
-    expected = VERSION_TARGETS.get(kind)
+    expected = RECORD_TARGETS.get(kind)
     if expected is None:
         return None
     if target_type != expected or target_id is None:
         raise ValidationError(
-            f"Say which {expected} this version belongs to: targetType {expected!r} and its id.",
+            f"Say which {expected} this proposal is for: targetType {expected!r} and its id.",
             code="validation_error",
         )
     if expected == OBLIGATION_TARGET:
@@ -545,7 +567,7 @@ def sourced_fields(payload: pydantic.BaseModel) -> list[str]:
     terms. A vocabulary payload carries a label a person writes, not a sourced fact from an
     authority, so it names none (its chunk 2 rules are unchanged). A new record's are every
     fact it sets, its texts one per language, and never how it is written
-    (`UNSOURCED_FIELDS`)."""
+    (`UNSOURCED_FIELDS`). A recurring duty's are every field it sets (REG-07)."""
     if isinstance(payload, NEW_RECORD_PAYLOADS):
         fields: list[str] = []
         for name, value in payload.model_dump(by_alias=True, exclude_none=True, exclude_defaults=True).items():
@@ -553,6 +575,8 @@ def sourced_fields(payload: pydantic.BaseModel) -> list[str]:
                 continue
             fields += [f"{name}.{language}" for language in sorted(value)] if isinstance(value, dict) else [name]
         return fields
+    if isinstance(payload, ProposalRecurringDutyPayload):
+        return list(payload.model_dump(by_alias=True, exclude_none=True, exclude_defaults=True))
     if isinstance(payload, ProposalProvisionVersionPayload):
         fields = [f"texts.{language}" for language in sorted(payload.texts)]
     elif isinstance(payload, ProposalObligationVersionPayload):
@@ -571,7 +595,7 @@ def sourceable_fields(payload: pydantic.BaseModel) -> list[str]:
     are exactly the fields that need a source; for a vocabulary payload, whose wording a
     person writes, they are the payload's own fields and none of them is required. A key
     naming anything else is a source for nothing, so it is refused rather than stored."""
-    if isinstance(payload, (ProposalObligationVersionPayload, ProposalProvisionVersionPayload, *NEW_RECORD_PAYLOADS)):
+    if isinstance(payload, (ProposalObligationVersionPayload, ProposalProvisionVersionPayload, ProposalRecurringDutyPayload, *NEW_RECORD_PAYLOADS)):
         return sourced_fields(payload)
     return sorted(payload.model_dump(by_alias=True, exclude_none=True))
 
@@ -721,6 +745,13 @@ def create(
     if proposer.agent_id is not None or agent_run_id is not None:
         run = runs.require_open_run_of_key(proposer.api_key_id, agent_run_id)
     validated_kind(kind)
+    if kind == ProposalKind.NEW_RECURRING_DUTY.value and proposer.user is None and proposer.agent_id is None:
+        # A recurring duty names the agent that proposed it (library 0010), and a bank's own
+        # key is bound to none.
+        raise ValidationError(
+            "A recurring duty is proposed by a person or an agent, never by a key bound to no agent.",
+            code="validation_error",
+        )
     parsed = validated_payload(kind, payload)
     target_owner = _validate_obligation_target(kind, target_type, target_id)
     sources = {field: value.strip() for field, value in (field_sources or {}).items()}
