@@ -16,13 +16,20 @@ and each of them is a product invariant rather than a style choice:
 
 The link points at the snapshot, not at the running week, so opening it in a month shows
 what the mail said rather than what the feed has become.
+
+`send()` hands one queued mail to `tasks.deliver_briefing` once the caller's transaction
+commits, the path `identity/mail.py` and `collab/mail.py` use, so the week's snapshot is
+stored before any mail leaves and a relay that refuses cannot take the snapshot with it
+(HARDENING H21).
 """
 
 from __future__ import annotations
 
 import datetime
+import uuid
 
 from django.conf import settings
+from django.db import transaction
 
 from apps.shared.adapters.mailer import OutgoingMail
 
@@ -89,3 +96,15 @@ def weekly_briefing(
         lines.append(texts["quiet"])
     lines.extend(["", texts["closing"].format(url=briefing_url(week_start))])
     return OutgoingMail(to=to, subject=texts["subject"].format(**dates), body="\n".join(lines))
+
+
+def send(tenant_id: uuid.UUID, message_id: uuid.UUID) -> None:
+    """Deliver one queued briefing mail once the caller's transaction commits."""
+    from apps.home import tasks
+
+    args = (str(tenant_id), str(message_id))
+    if settings.CELERY_TASK_ALWAYS_EAGER:
+        # Tests: inline, now. `on_commit` never fires inside a TestCase transaction.
+        tasks.deliver_briefing.apply(args=args)
+        return
+    transaction.on_commit(lambda: tasks.deliver_briefing.delay(*args))

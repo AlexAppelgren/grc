@@ -31,6 +31,7 @@ from django.apps import apps as django_apps
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
+from django.test.utils import override_settings
 
 from apps.agents.models import AgentRun, RunStatus
 from apps.agents.seeds import seed_agent_definitions
@@ -959,8 +960,11 @@ def seed_home_cases(tenants: list[Tenant], home: SeedHome) -> int:
     _seed_case(tenant_a, by_key[home.last_week_change], urgency="monitor", footprint_match=True, so_what_confirmed_by=officer)
 
     # Last week's briefing: sent for real, from the real production job, so the snapshot
-    # it writes is exactly what a bank was mailed (c6-briefing-screen, HOM-S3).
-    home_tasks.send_weekly_briefing(tenant_a.id)
+    # it writes is exactly what a bank was mailed (c6-briefing-screen, HOM-S3). Its mails
+    # are delivered inline rather than on commit, so the week reads as sent the moment the
+    # seed ends rather than whenever the E2E worker gets to it (H21).
+    with override_settings(CELERY_TASK_ALWAYS_EAGER=True):
+        home_tasks.send_weekly_briefing(tenant_a.id)
 
     # Tenant B's own two dates (J-8): different keys, different titles, so an isolation
     # journey has something of tenant B's that must never reach tenant A's screens.
