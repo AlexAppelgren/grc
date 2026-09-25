@@ -307,7 +307,9 @@ class SessionTokens(CamelSchema):
             "before it runs out. The session itself lasts longer: it ends after "
             f"{settings.SESSION_IDLE_MINUTES_DEFAULT} minutes without a refresh or "
             f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after sign-in, whichever comes "
-            "first."
+            "first. Those are the defaults; a bank's security policy may set its own limits, "
+            f"never above {settings.SESSION_IDLE_MINUTES_MAX} minutes and "
+            f"{settings.SESSION_ABSOLUTE_HOURS_MAX} hours."
         )
     )
 
@@ -332,7 +334,8 @@ class RefreshResult(CamelSchema):
             f"{settings.ACCESS_TOKEN_TTL_MINUTES * 60} by default (a setting). It never "
             "outlives the session, which still ends after "
             f"{settings.SESSION_IDLE_MINUTES_DEFAULT} idle minutes or "
-            f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after sign-in."
+            f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after sign-in by default, or "
+            "at the limits of the bank's security policy, which apply at the next refresh."
         )
     )
 
@@ -1271,8 +1274,9 @@ class SessionOut(CamelSchema):
     created_at: datetime = Field(
         description=(
             "When the person signed in on this device, as a UTC timestamp. The session ends "
-            f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after it at the latest (a "
-            "setting)."
+            f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after it at the latest by default "
+            "(a setting), or at the bank's own limit, never later than "
+            f"{settings.SESSION_ABSOLUTE_HOURS_MAX} hours."
         )
     )
     last_seen_at: datetime = Field(
@@ -1281,7 +1285,8 @@ class SessionOut(CamelSchema):
             "recent use that lags real activity by up to the access token's "
             f"{settings.ACCESS_TOKEN_TTL_MINUTES}-minute lifetime. After "
             f"{settings.SESSION_IDLE_MINUTES_DEFAULT} minutes without a refresh the session "
-            "ends."
+            "ends, or after the bank's own idle limit, never longer than "
+            f"{settings.SESSION_IDLE_MINUTES_MAX} minutes."
         )
     )
     ip: str | None = Field(
