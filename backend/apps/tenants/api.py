@@ -12,7 +12,7 @@ which RFC 9457 `code` to branch on. The standard is
 import uuid
 from typing import Any, cast
 
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from ninja import Path, Query, Router
 
 from apps.identity.models import User
@@ -1038,26 +1038,30 @@ def list_console_support_access(request: HttpRequest, page: PageQuery = Query(..
 @requires_step_up
 def enter_console_support_access(
     request: HttpRequest,
+    response: HttpResponse,
     grant_id: uuid.UUID = Path(
         ..., description="One of the caller's own approved grants, as a UUID; anybody else's, or one that is not active, answers 404."
     ),
 ) -> Any:
     """Replaces the caller's console session with a support session in the bank that approved
-    the grant, and answers with its access token. The session reads under the bank's own
-    row-level security, never writes, and ends with the grant's window or the bank's
+    the grant, and answers with its access token; the refresh token arrives as a cookie in the
+    same response, and the console session is signed out. The session reads under the bank's
+    own row-level security, never writes, and ends with the grant's window or the bank's
     revocation; every request under it is written to the bank's audit log as
-    `support_access.read`.
+    `support_access.read`. A route it may not read answers 403 `support_read_only`, and once
+    the grant has ended every request answers 401 `support_access_ended`.
 
     Needs the platform permission `support_access.grant` and a fresh passkey step-up.
     Recorded in the bank's audit log as `support_access.entered` with the step-up assertion.
 
     Errors: `not_found` (404) for a grant that is not the caller's own or not active;
     `step_up_required` (403) without a fresh passkey assertion; `permission_denied` (403)
-    without `support_access.grant`; `unauthenticated` (401). Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    without `support_access.grant`; `unauthenticated` (401).
     """
     return support_access.enter(
-        actor=actor_for(request),
+        principal=request.auth,  # type: ignore[attr-defined]
         grant_id=grant_id,
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+        request=request,
+        response=response,
     )

@@ -6,17 +6,24 @@ updating app.md.
 Operations exercised (the audit-on-write guard reads these names): updateTenant,
 setTenantAi (its branches in tests_organisation.py),
 consoleReissueEnrolment (proven in identity ID-S13), requestConsoleSupportAccess,
-approveSupportAccess, declineSupportAccess, revokeSupportAccess.
+approveSupportAccess, declineSupportAccess, revokeSupportAccess, enterConsoleSupportAccess.
 
 Prefixes hosted: ADM, TEN.
 """
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
-from unittest import skip
+from unittest import mock, skip
+
+from django.db import IntegrityError, transaction
+from django.test import override_settings
+from django.utils import timezone
 
 from apps.identity.models import TenantRole
+from apps.shared.models import AuditEvent
+from apps.tenants.models import SupportAccess
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, permissions as perms
 from apps.shared.adapters.mailer import MockMailer
@@ -127,10 +134,9 @@ class TenantsScenarioTests(ScenarioTestCase):
 
         Support access is requested by the platform, approved by the bank and time-boxed (TEN-06).
         Operations: `requestConsoleSupportAccess`, `approveSupportAccess`, `declineSupportAccess`,
-        `revokeSupportAccess`. The request, approve, decline and revoke halves are proven here;
-        entering (`enterConsoleSupportAccess`), the logged reads, the 403 on a write and the 401
-        after a revoke or the end of the window are pending: c8-support-access-mechanism adds
-        them to this method.
+        `revokeSupportAccess`, `enterConsoleSupportAccess`: the request and the decisions
+        (c8-ten-support-grants), then entering, the logged reads, the 403 on a write and the
+        401 after a revoke and after the window (c8-support-session-guard).
         """
         MockMailer.reset()
         platform = factories.platform_user()
@@ -158,14 +164,38 @@ class TenantsScenarioTests(ScenarioTestCase):
         self.assertEqual(panel["platformPerson"]["id"], str(platform.id))
         self.assertIsNotNone(panel["endsAt"])
 
-        # pending: c8-support-access-mechanism enters here, proves each read lands in the
-        # bank's audit log as support_access.read and that a write answers 403.
+        # The platform person enters with a fresh step-up; every read lands in the bank's audit
+        # log as support_access.read, with the route and the platform user.
+        support = self._enter(platform, grant)
+        self.assertEqual(self.client.get("/api/v1/changes", **support).status_code, 200)
+        self.activate(self.tenant)
+        read = AuditEvent.objects.filter(action="support_access.read").get()
+        self.assertEqual((read.actor_id, read.after["route"], read.after["platformUserId"]), (platform.id, "/changes", str(platform.id)))
+        # A write under it answers 403 support_read_only.
+        refused = self.client.patch("/api/v1/tenant/workflow", data={"escalateAfterDays": 7}, content_type="application/json", **support)
+        self.assertEqual((refused.status_code, refused.json()["code"]), (403, "support_read_only"))
 
         # The tenant admin revokes it.
         revoked = self.client.post(f"/api/v1/tenant/support-access/{grant}/revoke", **bank)
         self.assertEqual(revoked.status_code, 200, revoked.content)
         self.assertEqual(revoked.json()["state"], "revoked")
-        # pending: c8-support-access-mechanism, the next request 401, the ones after it 404.
+        # The next request answers 401, and the platform person's reads are 404 again.
+        ended = self.client.get("/api/v1/changes", **support)
+        self.assertEqual((ended.status_code, ended.json()["code"]), (401, "support_access_ended"))
+        console = sign_in(platform, tenant=None)
+        self.assertEqual(self.client.get("/api/v1/tenant/support-access", **console).status_code, 404)
+
+        # A grant nobody revokes ends the same way when its two hours pass.
+        third = self.client.post(url, data=body, content_type="application/json", **console).json()["id"]
+        self.assertEqual(self.client.post(f"/api/v1/tenant/support-access/{third}/approve", **bank).status_code, 200)
+        with override_settings(ACCESS_TOKEN_TTL_MINUTES=6 * 60):
+            support = self._enter(platform, third)
+        self.assertEqual(self.client.get("/api/v1/changes", **support).status_code, 200)
+        with mock.patch("django.utils.timezone.now", return_value=timezone.now() + timedelta(hours=2, minutes=1)):
+            ended = self.client.get("/api/v1/changes", **support)
+        self.assertEqual((ended.status_code, ended.json()["code"]), (401, "support_access_ended"))
+        console = sign_in(platform, tenant=None)
+        self.assertEqual(self.client.get("/api/v1/tenant/support-access", **console).status_code, 404)
 
         # And a second request the bank does not want is declined, granting nothing.
         second = self.client.post(url, data=body, content_type="application/json", **console).json()["id"]
@@ -255,12 +285,56 @@ class TenantsScenarioTests(ScenarioTestCase):
         Operations: `createLicence`, `updateLicence`.
         """
 
-    @skip("pending: TEN-S11 (TEN-06, chunk 8)")
+    def _enter(self, platform: Any, grant: str) -> dict[str, Any]:
+        """Headers of the support session `platform` opens under `grant`, with a fresh step-up."""
+        entered = self.client.post(f"/api/v1/console/support-access/{grant}/enter", **sign_in(platform, tenant=None, step_up=True))
+        self.assertEqual(entered.status_code, 200, entered.content)
+        self.assertEqual(entered.json()["sessionKind"], "support")
+        return {"HTTP_AUTHORIZATION": f"Bearer {entered.json()['accessToken']}"}
+
     def test_ten_s11(self) -> None:
         """TEN-S11
 
         A support session reads and never writes, and never approves itself (TEN-06).
+        Operations: `enterConsoleSupportAccess`; the refusals are proven over every route in
+        apps/shared/tests_support_routes.py.
         """
+        platform = factories.platform_user()
+        console = sign_in(platform, tenant=None)
+        bank = sign_in(self.admin, tenant=self.tenant, step_up=True)
+        body = {"purpose": "The bank's briefing did not arrive.", "hours": 1}
+        grant = self.client.post(
+            f"/api/v1/console/tenants/{self.tenant.id}/support-access", data=body, content_type="application/json", **console
+        ).json()["id"]
+        self.assertEqual(self.client.post(f"/api/v1/tenant/support-access/{grant}/approve", **bank).status_code, 200)
+        support = self._enter(platform, grant)
+        self.activate(self.tenant)
+        written = AuditEvent.objects.count()
+
+        # Any write, an evidence download or an export: 403 support_read_only, nothing written.
+        refusals = [
+            ("POST", f"/api/v1/tenant/support-access/{grant}/revoke"),
+            ("PATCH", "/api/v1/tenant"),
+            ("DELETE", f"/api/v1/tenant/members/{self.admin.id}"),
+            ("GET", f"/api/v1/evidence/{grant}/download"),
+            # Search and Ask would spend the bank's AI budget.
+            ("POST", "/api/v1/search"),
+            ("POST", "/api/v1/ask"),
+        ]
+        for method, path in refusals:
+            with self.subTest(route=f"{method} {path}"):
+                response = self.client.generic(method, path, data="{}", content_type="application/json", **support)
+                self.assertEqual((response.status_code, response.json()["code"]), (403, "support_read_only"))
+        self.activate(self.tenant)
+        self.assertEqual(AuditEvent.objects.count(), written, "a refused request writes nothing")
+
+        # The platform person who asked can never approve the grant: the database refuses it.
+        requested = SupportAccess.objects.create(
+            tenant=self.tenant, platform_user=platform, reason="Check the feed.", hours=1, status="requested"
+        )
+        requested.approved_by = platform
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            requested.save(update_fields=["approved_by"])
 
     @skip("pending: TEN-S12 (REP-04, chunk 12)")
     def test_ten_s12(self) -> None:

@@ -61,6 +61,10 @@ class PasskeyDeviceType(enum.StrEnum):
 class SessionKind(enum.StrEnum):
     ENROLMENT = "enrolment"
     FULL = "full"
+    # A platform person reading one bank under a grant it approved (TEN-06, ADR 0042): only
+    # `identity/session_logic.py` mints one, and its token names the kind, so the read-only
+    # guard refuses a route off the allow-list before anything else runs.
+    SUPPORT = "support"
 
 
 class LoginMethod(enum.StrEnum):
@@ -368,7 +372,11 @@ class WebAuthnCredential(models.Model):
 # ---------------------------------------------------------------------------------------
 class UserSession(models.Model):
     """One signed-in device (D-06, ADR 0006). A row behind every refresh so a person or an
-    admin can revoke at once. `tenant` is null for a platform session."""
+    admin can revoke at once. `tenant` is null for a platform session.
+
+    A support session (TEN-06, ADR 0042) names the bank in `tenant` and the grant it stands
+    on in `support_access`, and expires with the grant's window; a CHECK keeps the two
+    columns and the kind together."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sessions")
@@ -384,10 +392,23 @@ class UserSession(models.Model):
     revoked_reason = models.CharField(max_length=64, blank=True)
     ip = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.CharField(max_length=500, blank=True)
+    support_access = models.ForeignKey(
+        "tenants.SupportAccess", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
 
     class Meta:
         db_table = "user_session"
         ordering = ["created_at", "id"]
+        constraints = [
+            # A support session, and only one, stands on a grant in a bank (identity 0009).
+            models.CheckConstraint(
+                condition=(
+                    models.Q(kind=SessionKind.SUPPORT.value, support_access__isnull=False, tenant__isnull=False)
+                    | (~models.Q(kind=SessionKind.SUPPORT.value) & models.Q(support_access__isnull=True))
+                ),
+                name="user_session_support_stands_on_a_grant",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.kind} {self.id}"

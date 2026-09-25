@@ -297,7 +297,9 @@ class SessionTokens(CamelSchema):
             "other route answers 403 `enrolment_only` until a passkey is registered, and that "
             "registration replaces it with a full session. `full`: a normal signed-in session "
             "with the person's own permissions in their bank, or on the platform for platform "
-            "staff."
+            "staff. `support`: platform support reading one bank under a grant the bank approved; it "
+            "reaches the reads the grant allows and nothing else, answering 403 "
+            "`support_read_only` anywhere else and 401 `support_access_ended` once the grant ends."
         )
     )
     expires_in: int = Field(

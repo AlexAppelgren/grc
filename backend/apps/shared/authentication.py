@@ -61,6 +61,8 @@ class Principal:
     bound to; `acting_user_id` and `acting_user_label` name the person a personal access
     token acts as (ACC-03). Either makes the principal an agent access credential, which
     reads and nothing else and can never step up (`is_agent_access`).
+    `support_access_id` names the grant a support session stands on (TEN-06, ADR 0042):
+    platform support reading one bank, with the seven reads and nothing else.
     """
 
     kind: PrincipalKind
@@ -79,6 +81,7 @@ class Principal:
     agent_access_label: str = ""
     acting_user_id: uuid.UUID | None = None
     acting_user_label: str = ""
+    support_access_id: uuid.UUID | None = None
 
     @property
     def is_agent_access(self) -> bool:
@@ -176,7 +179,28 @@ class SessionAuth(HttpBearer):
         principal = resolve_session_token(token)
         if principal is None or principal.kind is not PrincipalKind.USER:
             return None
+        if principal.support_access_id is not None:
+            _log_support_read(request, principal)
         return principal
+
+
+def _log_support_read(request: HttpRequest, principal: Principal) -> None:
+    """One `support_access.read` audit row in the bank for each request a support session
+    makes (TEN-06, ADR 0042), written here, once the grant is proven live, in the request's
+    transaction: the route template and its path ids, never the query string or the body.
+    The read-only guard (apps/shared/middleware.py) has already refused a route off the
+    allow-list, so every row names a route on it."""
+    from apps.shared.agent_access_guard import operation_of
+    from apps.tenants import support_access
+
+    operation = operation_of(request)
+    match = getattr(request, "resolver_match", None)
+    support_access.record_read(
+        principal=principal,
+        method=request.method or "",
+        route=operation.path if operation is not None else "",
+        path_ids={name: str(value) for name, value in (match.kwargs if match is not None else {}).items()},
+    )
 
 
 class ApiKeyAuth(APIKeyHeader):

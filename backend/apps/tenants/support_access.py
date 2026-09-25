@@ -3,9 +3,11 @@
 revokes it, and support then reads under it and never writes. Each tenant-side function loads
 the request in the caller's bank, so another bank's id answers 404.
 
-This module is the request and the decision; it makes nothing readable. Entering a bank under
-a grant is `c8-support-access-mechanism`'s and the console's own list is
-`c8-support-access-console-list`'s, and both still answer 501 `not_built`.
+This module is the request, the decision and the grant a support session stands on: entering
+a bank under a grant (`enter`), the per-request check that the grant is still open
+(`live_grant`) and the `support_access.read` row each request writes (`record_read`). It is
+the one module that loads a grant (apps/shared/tests_support_session.py pins it). The
+console's own list is `c8-support-access-console-list`'s and still answers 501 `not_built`.
 
 A pending request and an open window lapse on read, with no job: `state_of()` is the one
 place that reads the clock against a row.
@@ -19,13 +21,16 @@ from typing import NoReturn
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 
 from apps.identity import roles_logic
 from apps.identity.models import Membership, User
+from apps.identity.schemas import SessionTokens
 from apps.shared import permissions as perms
 from apps.shared import tenancy
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor, ActorType, record
+from apps.shared.authentication import Principal
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy.schemas import PersonRef
@@ -180,10 +185,67 @@ def my_grants(*, actor: Actor, limit: int, offset: int) -> NoReturn:
     raise ProblemError(status=501, code="not_built", detail="Listing your support access is not built yet.")
 
 
-def enter(*, actor: Actor, grant_id: uuid.UUID, step_up_assertion_id: uuid.UUID) -> NoReturn:
-    """`POST /console/support-access/{grantId}/enter`. The grant is read through the policy
-    keyed on the caller's own platform user id, which `c8-support-access-mechanism` sets."""
-    raise ProblemError(status=501, code="not_built", detail="Entering a bank under support access is not built yet.")
+def live_grant(*, tenant_id: uuid.UUID, grant_id: uuid.UUID) -> SupportAccess | None:
+    """The grant, when it is an open read-level window of the active bank; None when it is
+    missing, another bank's, not approved, revoked or past its window. Read under the bank's
+    own policies, so the caller activates `tenant_id` first and no read crosses a bank."""
+    grant = SupportAccess.objects.filter(tenant_id=tenant_id, pk=grant_id).first()  # ordering: pk lookup, at most one row
+    if grant is None or state_of(grant, timezone.now()) != ACTIVE:
+        return None
+    return grant
+
+
+def enter(
+    *, principal: Principal, grant_id: uuid.UUID, step_up_assertion_id: uuid.UUID, request: HttpRequest, response: HttpResponse
+) -> SessionTokens:
+    """`POST /console/support-access/{grantId}/enter`: replace the caller's console session
+    with a support session in the bank that approved the grant.
+
+    The grant is found through the `support_access_own_grants` policy, which shows the
+    caller the rows naming them and nothing else, so another person's grant is 404 exactly as
+    a missing one is, and so is a grant that is not open. The session is then written in the
+    grant's bank, whose composite key refuses any other bank, and every request under it
+    re-reads the grant under that bank's own policies (`live_grant`)."""
+    from apps.identity import session_logic
+
+    with session_logic.own_grants(principal):
+        grant = SupportAccess.objects.filter(pk=grant_id, platform_user_id=principal.subject_id).first()  # ordering: pk lookup, at most one row
+    if grant is None or state_of(grant, timezone.now()) != ACTIVE:
+        raise ProblemError(status=404, code="not_found", detail="Not found.")
+    user = User.objects.get(pk=principal.subject_id)
+    assert principal.session_id is not None  # a person's session always names itself
+    bundle = session_logic.create_support_session(user=user, grant=grant, replacing=principal.session_id, request=request)
+    record(
+        action="support_access.entered",
+        actor=Actor(kind=ActorType.USER, id=user.id, label=user.name),
+        subject_type="support_access",
+        subject_id=grant.id,
+        subject_title=user.name,
+        summary="Platform support entered the bank read-only under its grant.",
+        tenant_id=grant.tenant_id,
+        after={"platformUserId": str(user.id), "sessionId": str(bundle.session.id), "endsAt": bundle.session.expires_at.isoformat()},
+        step_up_assertion_id=step_up_assertion_id,
+    )
+    session_logic.set_refresh_cookie(response, bundle.refresh_value)
+    return SessionTokens(access_token=bundle.access_token, session_kind=bundle.session.kind, expires_in=bundle.expires_in)
+
+
+def record_read(*, principal: Principal, method: str, route: str, path_ids: dict[str, str]) -> None:
+    """One `support_access.read` row in the bank for a request under a grant: who, which
+    grant, the method, the route template and its path ids. Never a query string, a body or
+    anything the bank wrote."""
+    assert principal.support_access_id is not None and principal.tenant_id is not None  # a support principal
+    user = User.objects.get(pk=principal.subject_id)
+    record(
+        action="support_access.read",
+        actor=Actor(kind=ActorType.USER, id=user.id, label=user.name),
+        subject_type="support_access",
+        subject_id=principal.support_access_id,
+        subject_title=user.name,
+        summary="Platform support read the bank under its grant.",
+        tenant_id=principal.tenant_id,
+        after={"method": method, "route": route, "pathIds": path_ids, "platformUserId": str(user.id)},
+    )
 
 
 def list_for_tenant(*, tenant: Tenant, limit: int, offset: int) -> SupportAccessPage:
