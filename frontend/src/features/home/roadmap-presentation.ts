@@ -62,6 +62,12 @@ export function roadmapOwner(owner: RoadmapItem['owner'], t: Translate): string 
   return names.length === 0 ? t('roadmap.owner.nobody') : names.join(', ');
 }
 
+/** The card's line under its title: "Regulatory date", or "Our deadline · Next review · Johan Berg". */
+export function roadmapCardLine(item: Pick<RoadmapItem, 'kind' | 'itemType' | 'owner'>, t: Translate): string {
+  if (item.kind !== 'internal') return t('roadmap.regulatoryDate');
+  return [t('pill.ourDeadline'), roadmapWhat(item.itemType, t), roadmapOwner(item.owner, t)].join(' · ');
+}
+
 /** A review or a gap target opens its obligation, whose page holds its gaps; a certificate has no page of its own here. */
 export function roadmapSubjectHref(subject: RoadmapItem['subject']): string | null {
   return subject?.obligationId ? `/inventory/obligations/${subject.obligationId}` : null;

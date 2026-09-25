@@ -6,7 +6,7 @@ import { defaultFormatContext } from '@/shared/utils/format';
 
 import type { RoadmapItem } from './types';
 
-import { presentRoadmapItem, roadmapOwner, roadmapSubjectHref, roadmapWhat, roadmapWhen } from './roadmap-presentation';
+import { presentRoadmapItem, roadmapCardLine, roadmapOwner, roadmapSubjectHref, roadmapWhat, roadmapWhen } from './roadmap-presentation';
 
 const t = createT('en');
 
@@ -72,6 +72,11 @@ describe('our own deadlines', () => {
     expect(roadmapOwner({ person, team: null }, t)).toBe('Johan Berg');
     expect(roadmapOwner({ person: null, team }, t)).toBe('Retail compliance');
     expect(roadmapOwner({ person, team }, t)).toBe('Johan Berg, Retail compliance');
+  });
+
+  it("a card's line says whose deadline it is, or that the date is a regulatory one", () => {
+    expect(roadmapCardLine({ kind: 'internal', itemType: 'gap_target', owner: { person, team: null } }, t)).toBe('Our deadline · Gap target date · Johan Berg');
+    expect(roadmapCardLine({ kind: 'regulatory', itemType: 'change_date', owner: null }, t)).toBe('Regulatory date');
   });
 
   it('says so when nobody owns the date yet', () => {

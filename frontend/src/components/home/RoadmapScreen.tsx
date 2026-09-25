@@ -12,7 +12,7 @@ import { ErrorState, LoadingState } from '@/components/ui/States';
 import { ToneDot } from '@/components/ui/ToneDot';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useRoadmap } from '@/features/home/hooks';
-import { presentRoadmapItem, roadmapOwner, roadmapSubjectHref, roadmapWhat, roadmapWhen } from '@/features/home/roadmap-presentation';
+import { presentRoadmapItem, roadmapCardLine, roadmapOwner, roadmapSubjectHref, roadmapWhat, roadmapWhen } from '@/features/home/roadmap-presentation';
 import type { Roadmap, RoadmapItem, RoadmapQuery } from '@/features/home/types';
 import { urgencyOf } from '@/features/watch/change-presentation';
 import type { Translate } from '@/shared/i18n';
@@ -85,9 +85,7 @@ function RoadmapCard({
       <span className="min-w-0">
         <span className="block font-medium tabular-nums">{roadmapWhen(item, ctx, new Date()).date}</span>
         <span className="block text-meta">{item.title}</span>
-        <span className="block text-meta text-muted">
-          {item.kind === 'internal' ? [t('pill.ourDeadline'), roadmapWhat(item.itemType, t), roadmapOwner(item.owner, t)].join(' · ') : t('roadmap.regulatoryDate')}
-        </span>
+        <span className="block text-meta text-muted">{roadmapCardLine(item, t)}</span>
       </span>
     </button>
   );

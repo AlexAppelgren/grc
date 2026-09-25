@@ -45,7 +45,7 @@ const ME_PATH = '/api/v1/me';
 const LANGUAGES_PATH = '/api/v1/reference/languages';
 const VOCAB_PATH = '/api/v1/vocab';
 const HOME_PATH = '/api/v1/home';
-const EMPTY_HOME = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
+const EMPTY_HOME = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null, standing: null };
 /** What the library editor holds (PRD section 6). */
 const EDITOR_PERMISSIONS = ['proposals.review', 'library_vocab.manage', 'sources.manage', 'eval.manage'];
 /** What every tenant system role holds, plus an admin's grants. */
