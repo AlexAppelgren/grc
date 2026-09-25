@@ -62,6 +62,33 @@ export interface PersonRef {
 /** Request status is a kind: pending, approved, rejected or withdrawn. */
 export type FootprintRequestStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
 
+/** A regulation the shared library does not cover, in our regulatory scope for our own agent to research (OWN-01, D-89). */
+export interface ScopeItem {
+  /** Null only in a dry run's preview, where nothing is stored. */
+  id: string | null;
+  key: string;
+  name: string;
+  description: string;
+  jurisdiction: TermRef;
+  regimeTerm: TaxonomyTerm;
+  officialReference: string;
+  sourceUrl: string;
+  /** A kind: requested, in_scope, declined or removed. */
+  status: string;
+  /** A kind the server computes, such as waiting_for_agent; null while the item is not in scope. */
+  research: string | null;
+}
+
+/** A scope item as the request body asks for it: the jurisdiction and regime term by key. */
+export interface ScopeItemInput {
+  name: string;
+  description: string;
+  jurisdiction: string;
+  regimeTerm: string;
+  officialReference: string;
+  sourceUrl: string;
+}
+
 export interface FootprintChangeRequest {
   id: string;
   status: FootprintRequestStatus;
@@ -69,6 +96,8 @@ export interface FootprintChangeRequest {
   requestedAt: string;
   adds: TaxonomyTerm[];
   removes: TaxonomyTerm[];
+  scopeItemAdds: ScopeItem[];
+  scopeItemRemoves: ScopeItem[];
   preview: FootprintPreview;
   decidedBy: PersonRef | null;
   decidedAt: string | null;
@@ -94,11 +123,15 @@ export interface Footprint {
   dimensions: FootprintDimension[];
   pendingRequest: FootprintChangeRequest | null;
   markets: Market[];
+  scopeItems: ScopeItem[];
 }
 
 export interface FootprintRequestCreate {
   adds: TermChange[];
   removes: TermChange[];
+  scopeItemAdds?: ScopeItemInput[];
+  /** The keys of scope items in scope now. */
+  scopeItemRemoves?: string[];
 }
 
 export interface FootprintRejectBody {

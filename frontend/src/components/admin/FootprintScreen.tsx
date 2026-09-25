@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { BackLink } from '@/components/admin/AdminGate';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
-import { CheckGroup, CheckRow, Field, TextArea } from '@/components/ui/Field';
+import { CheckGroup, CheckRow, Field, Select, TextArea, TextInput } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { Notice } from '@/components/ui/Notice';
 import { PageHead } from '@/components/ui/PageHead';
@@ -16,6 +16,8 @@ import {
   FOOTPRINT_REQUEST,
   FOUR_EYES_CODE,
   REQUEST_PENDING_CODE,
+  SOURCE_NOT_PUBLIC_CODE,
+  approvedMessage,
   canApprove,
   canWithdraw,
   diffFootprint,
@@ -29,15 +31,19 @@ import {
   pendingRemovals,
   pendingTermPill,
   presentRequestStatus,
+  presentResearch,
   previewLines,
   previewSummary,
   reachLines,
   requestTitle,
   scopeGroups,
+  scopeItemConsequence,
+  scopeItemLines,
   toggleTerm,
   type FootprintDraft,
   type PreviewLine,
   type ScopeGroup,
+  type ScopeItemLine,
 } from '@/features/footprint/footprint-presentation';
 import {
   useApproveFootprintRequest,
@@ -52,10 +58,22 @@ import {
   useWatchMarket,
   useWithdrawFootprintRequest,
 } from '@/features/footprint/hooks';
-import type { FootprintChangeRequest, FootprintDimension, FootprintPreview, Market, TaxonomyTerm, TermChange } from '@/features/footprint/types';
+import type {
+  FootprintChangeRequest,
+  FootprintDimension,
+  FootprintPreview,
+  FootprintRequestCreate,
+  JurisdictionRef,
+  Market,
+  ScopeItem,
+  ScopeItemInput,
+  TaxonomyTerm,
+  TermChange,
+} from '@/features/footprint/types';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { humanisePermission, usePermissions } from '@/shared/navigation/require-permission';
+import { externalHref } from '@/shared/utils/external-href';
 import { formatDate } from '@/shared/utils/format';
 import { hasProblemCode } from '@/shared/utils/problem';
 
@@ -70,6 +88,11 @@ import { hasProblemCode } from '@/shared/utils/problem';
 // The markets panel (states 17 to 19; FP-04, D-27, D-30) lists every country with its
 // computed level: an operating market changes only through a request above, and a
 // Watching toggle saves at once, with no second person, because watching hides nothing.
+// The scope items (states 21 to 27; OWN-01, FP-02, D-89) ride on the same draft and the
+// same request: "Add a regulation" opens the form and Remove marks an item, both inside the
+// draft "Propose a change" opens, so one request waits at a time and a second person
+// approves it with a passkey. Each item shows its research status as the server computes it;
+// nothing here lets an agent add, change or remove one.
 
 type ApproveMutation = ReturnType<typeof useApproveFootprintRequest>;
 type RejectMutation = ReturnType<typeof useRejectFootprintRequest>;
@@ -77,20 +100,24 @@ type CreateMutation = ReturnType<typeof useCreateFootprintRequest>;
 type WithdrawMutation = ReturnType<typeof useWithdrawFootprintRequest>;
 
 /** Where the focus goes after the next render: a fresh object each time, so the same target can be asked for twice. */
-type FocusRequest = { target: 'status' | 'propose' | 'first-checkbox' | 'banner' };
+type FocusRequest = { target: 'status' | 'propose' | 'first-checkbox' | 'banner' | 'item-form' };
 
 const FOCUS_SELECTOR: Record<Exclude<FocusRequest['target'], 'status'>, string> = {
   propose: '[data-propose]',
   'first-checkbox': '[data-footprint-dimensions] input[type="checkbox"]',
   banner: '[data-pending-request]',
+  'item-form': '[data-scope-item-form] input',
 };
 
-/** A draft and the stored scope it was taken from: the diff means what the person chose only against that scope. */
-type Draft = { base: string; held: FootprintDraft };
+/** A draft and the stored scope it was taken from: the diff means what the person chose only against that scope.
+ * `item` is the regulation being added (the open form), `itemRemoves` the keys of items to take out. */
+type Draft = { base: string; held: FootprintDraft; item: ScopeItemInput | null; itemRemoves: ReadonlySet<string> };
 
-function scopeSignature(dimensions: readonly FootprintDimension[]): string {
-  return JSON.stringify(dimensions.map((d) => [d.dimension.key, d.terms.map((term) => term.key)]));
+function scopeSignature(dimensions: readonly FootprintDimension[], items: readonly ScopeItem[]): string {
+  return JSON.stringify([dimensions.map((d) => [d.dimension.key, d.terms.map((term) => term.key)]), items.map((item) => item.key)]);
 }
+
+const REGIME_DIMENSION = 'regime';
 
 const REJECT_REASON = 'reject-reason';
 
@@ -243,6 +270,7 @@ function ChangePanel({
   dimensions,
   groups,
   draft,
+  items,
   create,
   onCancel,
   onSent,
@@ -250,20 +278,35 @@ function ChangePanel({
 }: {
   dimensions: readonly FootprintDimension[];
   groups: readonly ScopeGroup[];
-  draft: FootprintDraft;
+  draft: Draft;
+  items: readonly ScopeItem[];
   create: CreateMutation;
   onCancel: () => void;
   onSent: () => void;
   onRequestPending: () => void;
 }) {
   const t = useT();
-  const changes = diffFootprint(dimensions, draft);
-  const changed = changes.adds.length + changes.removes.length > 0;
-  const title = changed ? t('footprint.preview.title', { title: requestTitle({ adds: withLabels(changes.adds, groups), removes: withLabels(changes.removes, groups) }, t) }) : t('footprint.preview.untitled');
+  const changes = diffFootprint(dimensions, draft.held);
+  const termsChanged = changes.adds.length + changes.removes.length > 0;
+  const removedItems = items.filter((item) => draft.itemRemoves.has(item.key));
+  const changed = termsChanged || draft.item !== null || removedItems.length > 0;
+  // The item lists ride only when they carry something, so a change of terms sends what it always sent.
+  const body: FootprintRequestCreate = {
+    ...changes,
+    ...(draft.item === null ? {} : { scopeItemAdds: [draft.item] }),
+    ...(removedItems.length === 0 ? {} : { scopeItemRemoves: removedItems.map((item) => item.key) }),
+  };
+  const title = changed
+    ? t('footprint.preview.title', {
+        title: requestTitle({ adds: withLabels(changes.adds, groups), removes: withLabels(changes.removes, groups), scopeItemAdds: body.scopeItemAdds, scopeItemRemoves: removedItems }, t),
+      })
+    : t('footprint.preview.untitled');
   return (
     <Panel title={title} data-draft-preview="">
-      {changed ? <DraftPreview changes={changes} narrowed={narrowedGroups(dimensions, draft)} /> : <p>{t('footprint.draft.nothing')}</p>}
-      {create.isError ? <ProblemAlert error={create.error} codes={{ [REQUEST_PENDING_CODE]: t('footprint.requestPending') }} /> : null}
+      {/* A scope item moves no count, so only a change of terms is dry-run; an item alone reads "Nothing." on both sides. */}
+      {termsChanged ? <DraftPreview changes={changes} narrowed={narrowedGroups(dimensions, draft.held)} /> : changed ? <PreviewColumns preview={null} pending={false} /> : <p>{t('footprint.draft.nothing')}</p>}
+      {draft.item !== null ? <p className="mt-3 text-meta text-muted">{t('footprint.items.startsOnApproval')}</p> : null}
+      {create.isError && !hasProblemCode(create.error, SOURCE_NOT_PUBLIC_CODE) ? <ProblemAlert error={create.error} codes={{ [REQUEST_PENDING_CODE]: t('footprint.requestPending') }} /> : null}
       <ButtonBar>
         <Button variant="outline" onClick={onCancel} disabled={create.isPending}>
           {t('common.cancel')}
@@ -272,7 +315,7 @@ function ChangePanel({
           <Button
             disabled={create.isPending}
             onClick={() =>
-              create.mutate(changes, {
+              create.mutate(body, {
                 onSuccess: onSent,
                 onError: (error) => {
                   if (hasProblemCode(error, REQUEST_PENDING_CODE)) onRequestPending();
@@ -284,6 +327,181 @@ function ChangePanel({
           </Button>
         ) : null}
       </ButtonBar>
+    </Panel>
+  );
+}
+
+// ——— regulations we research ourselves ——————————————————————————————
+
+/** One scope item: its name, facts, address and research status, or Remove while a draft is open. */
+function ScopeItemRow({ line, removing, onToggleRemove }: { line: ScopeItemLine; removing: boolean | null; onToggleRemove: () => void }) {
+  const t = useT();
+  const { item } = line;
+  const mark = removing === true ? 'remove' : line.mark;
+  const research = mark === null ? presentResearch(item.research, t) : null;
+  const href = externalHref(item.sourceUrl);
+  return (
+    <li data-scope-item={item.key} className="flex min-w-0 items-start justify-between gap-3 border-b border-line py-2.5 last:border-b-0">
+      <div className="min-w-0">
+        <h3 className="font-medium">
+          {item.name}
+          {mark !== null ? (
+            <>
+              {' '}
+              <span className="inline-flex align-top">
+                <PillRow pills={[pendingTermPill(mark, t)]} />
+              </span>
+            </>
+          ) : null}
+        </h3>
+        <p className="flex flex-wrap gap-x-3 text-meta text-muted">
+          <span>{item.jurisdiction.label}</span>
+          <span>{item.regimeTerm.label}</span>
+          {item.officialReference.length > 0 ? <span className="font-mono">{item.officialReference}</span> : <span>{t('footprint.items.noReference')}</span>}
+        </p>
+        <p className="text-meta break-all">
+          {href === null ? (
+            item.sourceUrl
+          ) : (
+            <a href={href} rel="noopener noreferrer" target="_blank" className="underline">
+              {item.sourceUrl}
+            </a>
+          )}
+        </p>
+        {item.description.length > 0 ? <p className="text-meta text-muted">{item.description}</p> : null}
+        {research !== null ? <PillRow pills={[research]} /> : null}
+      </div>
+      {removing !== null ? (
+        <Button variant="ghost" size="small" onClick={onToggleRemove}>
+          {removing ? t('footprint.items.keep') : t('footprint.items.remove')}{' '}
+          <span className="sr-only">{item.name}</span>
+        </Button>
+      ) : null}
+    </li>
+  );
+}
+
+const ITEM_FIELD = { name: 'si-name', jurisdiction: 'si-jurisdiction', regime: 'si-regime', reference: 'si-reference', address: 'si-address', description: 'si-description' } as const;
+
+/** The regulation being added. It holds no rule of its own: the server checks every field, and an address it refuses comes back under its input. */
+function ScopeItemForm({
+  item,
+  jurisdictions,
+  regimes,
+  disabled,
+  addressRefused,
+  onChange,
+}: {
+  item: ScopeItemInput;
+  jurisdictions: readonly JurisdictionRef[];
+  regimes: readonly TaxonomyTerm[];
+  disabled: boolean;
+  addressRefused: boolean;
+  onChange: (item: ScopeItemInput) => void;
+}) {
+  const t = useT();
+  const optional = (label: string) => `${label} (${t('footprint.items.optional')})`;
+  const set = (field: keyof ScopeItemInput) => (event: { target: { value: string } }) => onChange({ ...item, [field]: event.target.value });
+  return (
+    <div className="mb-4 grid gap-3 border-b border-line pb-4" data-scope-item-form="">
+      <h3 className="font-medium">{t('footprint.items.add')}</h3>
+      <Field id={ITEM_FIELD.name} label={t('footprint.items.name')} hint={t('footprint.items.nameHint')}>
+        <TextInput id={ITEM_FIELD.name} value={item.name} disabled={disabled} aria-describedby={`${ITEM_FIELD.name}-hint`} onChange={set('name')} />
+      </Field>
+      <div className="grid gap-3 md:grid-cols-2">
+        <Field id={ITEM_FIELD.jurisdiction} label={t('footprint.items.jurisdiction')}>
+          <Select id={ITEM_FIELD.jurisdiction} value={item.jurisdiction} disabled={disabled} onChange={set('jurisdiction')}>
+            {jurisdictions.map((jurisdiction) => (
+              <option key={jurisdiction.key} value={jurisdiction.key}>
+                {jurisdiction.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field id={ITEM_FIELD.regime} label={t('footprint.items.regime')}>
+          <Select id={ITEM_FIELD.regime} value={item.regimeTerm} disabled={disabled} onChange={set('regimeTerm')}>
+            {regimes.map((term) => (
+              <option key={term.key} value={term.key}>
+                {term.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+      <Field id={ITEM_FIELD.reference} label={optional(t('footprint.items.reference'))} hint={t('footprint.items.referenceHint')}>
+        <TextInput id={ITEM_FIELD.reference} value={item.officialReference} disabled={disabled} aria-describedby={`${ITEM_FIELD.reference}-hint`} onChange={set('officialReference')} />
+      </Field>
+      <Field id={ITEM_FIELD.address} label={t('footprint.items.address')} hint={t('footprint.items.addressHint')} error={addressRefused ? t('footprint.items.addressInvalid') : undefined}>
+        <TextInput
+          id={ITEM_FIELD.address}
+          type="url"
+          value={item.sourceUrl}
+          disabled={disabled}
+          aria-invalid={addressRefused}
+          aria-describedby={addressRefused ? `${ITEM_FIELD.address}-hint ${ITEM_FIELD.address}-error` : `${ITEM_FIELD.address}-hint`}
+          onChange={set('sourceUrl')}
+        />
+      </Field>
+      <Field id={ITEM_FIELD.description} label={optional(t('footprint.items.description'))} hint={t('footprint.items.descriptionHint')}>
+        <TextArea id={ITEM_FIELD.description} value={item.description} disabled={disabled} aria-describedby={`${ITEM_FIELD.description}-hint`} onChange={set('description')} />
+      </Field>
+    </div>
+  );
+}
+
+function ScopeItemsPanel({
+  lines,
+  canAdd,
+  itemRemoves,
+  form,
+  onAdd,
+  onToggleRemove,
+}: {
+  lines: readonly ScopeItemLine[];
+  /** "Add a regulation" shows: the person can request, nothing waits and no form is open. */
+  canAdd: boolean;
+  /** The keys a draft takes out; null in the read state, when no item offers Remove. */
+  itemRemoves: ReadonlySet<string> | null;
+  form: ReactNode;
+  onAdd: () => void;
+  onToggleRemove: (key: string) => void;
+}) {
+  const t = useT();
+  const add = canAdd ? (
+    <Button variant="outline" size="small" onClick={onAdd} data-add-scope-item="">
+      {t('footprint.items.add')}
+    </Button>
+  ) : null;
+  return (
+    <Panel data-scope-items="">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2>{t('footprint.items.title')}</h2>
+          <p className="text-meta text-muted">{t('footprint.items.intro')}</p>
+        </div>
+        {lines.length > 0 ? add : null}
+      </div>
+      {form}
+      {lines.length === 0 ? (
+        form === null ? (
+          <div className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-empty-state="">
+            <h3 className="text-fg">{t('footprint.items.emptyTitle')}</h3>
+            <p className="mx-auto mt-2 mb-3 max-w-[60ch]">{t('footprint.items.emptyBody')}</p>
+            {add}
+          </div>
+        ) : null
+      ) : (
+        <ul className="m-0 list-none p-0">
+          {lines.map((line) => (
+            <ScopeItemRow
+              key={`${line.mark ?? 'held'}:${line.item.key}`}
+              line={line}
+              removing={itemRemoves === null || line.mark === 'add' ? null : itemRemoves.has(line.item.key)}
+              onToggleRemove={() => onToggleRemove(line.item.key)}
+            />
+          ))}
+        </ul>
+      )}
     </Panel>
   );
 }
@@ -327,7 +545,7 @@ function PendingBanner({
           <PillRow pills={[presentRequestStatus(request.status, t)]} />
           <b>{requestTitle(request, t)}</b>
         </p>
-        <p>{mine ? t('footprint.banner.youRequested', { date }) : `${t('footprint.banner.requestedBy', { name: request.requestedBy.name, date })} ${previewSummary(request.preview, t)}`}</p>
+        <p>{mine ? t('footprint.banner.youRequested', { date }) : [t('footprint.banner.requestedBy', { name: request.requestedBy.name, date }), previewSummary(request.preview, t), scopeItemConsequence(request, t)].filter((part) => part.length > 0).join(' ')}</p>
         {permissions.includes(FOOTPRINT_REQUEST) ? <p>{t('footprint.banner.blocks')}</p> : null}
         <Button variant="ghost" size="small" className="justify-self-start" aria-expanded={previewShown} aria-controls={previewId} onClick={onTogglePreview}>
           {t('footprint.banner.seePreview')}
@@ -377,7 +595,7 @@ function ApproveDialog({
         if (!next && !approve.isPending) onClose();
       }}
       title={t('footprint.approve.title', { title: requestTitle(request, t) })}
-      description={previewSummary(request.preview, t)}
+      description={[previewSummary(request.preview, t), scopeItemConsequence(request, t)].filter((part) => part.length > 0).join(' ')}
     >
       {narrowed.length > 0 || hidesSomething(request.preview) ? <ConsequenceNotice narrowed={narrowed} /> : null}
       {fourEyes ? (
@@ -559,6 +777,7 @@ export function FootprintScreen() {
   const footprint = useFootprint();
   const terms = useTerms();
   const requests = useFootprintRequests();
+  const jurisdictions = useJurisdictions();
   // Held here, not in the panel, banner or dialog that triggers them: each success
   // unmounts its trigger, and the confirmation must still reach the status line.
   const create = useCreateFootprintRequest();
@@ -589,7 +808,9 @@ export function FootprintScreen() {
 
   const dimensions = useMemo(() => footprint.data?.dimensions ?? [], [footprint.data]);
   const groups = useMemo(() => scopeGroups(dimensions, terms.data ?? []), [dimensions, terms.data]);
-  const base = useMemo(() => scopeSignature(dimensions), [dimensions]);
+  const scopeItems = useMemo(() => footprint.data?.scopeItems ?? [], [footprint.data]);
+  const base = useMemo(() => scopeSignature(dimensions, scopeItems), [dimensions, scopeItems]);
+  const regimes = useMemo(() => (terms.data ?? []).filter((term) => term.dimension === REGIME_DIMENSION && term.active !== false), [terms.data]);
   const pending = footprint.data?.pendingRequest ?? null;
   const canRequest = permissions.includes(FOOTPRINT_REQUEST);
   // A request that starts waiting, or a scope that changed under the draft, ends the edit
@@ -601,7 +822,14 @@ export function FootprintScreen() {
     setFocus({ target: pending !== null ? 'banner' : 'propose' });
   }
   // The draft being edited; null in the read state.
-  const editing = draft !== null && !stale ? draft.held : null;
+  const editing = draft !== null && !stale ? draft : null;
+
+  const blankItem = (): ScopeItemInput => ({ name: '', description: '', jurisdiction: jurisdictions.data?.[0]?.key ?? '', regimeTerm: regimes[0]?.key ?? '', officialReference: '', sourceUrl: '' });
+  const startDraft = (item: ScopeItemInput | null) => {
+    create.reset();
+    setStatus(null);
+    setDraft({ base, held: draftOf(dimensions), item, itemRemoves: new Set() });
+  };
 
   const announce = (message: string) => {
     create.reset();
@@ -649,9 +877,7 @@ export function FootprintScreen() {
             variant="danger"
             data-propose=""
             onClick={() => {
-              create.reset();
-              setStatus(null);
-              setDraft({ base, held: draftOf(dimensions) });
+              startDraft(null);
               setFocus({ target: 'first-checkbox' });
             }}
           >
@@ -704,7 +930,7 @@ export function FootprintScreen() {
               <EditGroup
                 key={group.dimension.key}
                 group={group}
-                draft={editing}
+                draft={editing.held}
                 disabled={create.isPending}
                 onToggle={(key) => setDraft((current) => current && { ...current, held: toggleTerm(current.held, group.dimension.key, key) })}
               />
@@ -715,11 +941,43 @@ export function FootprintScreen() {
         </div>
       </Panel>
 
+      <ScopeItemsPanel
+        lines={scopeItemLines(scopeItems, pending)}
+        canAdd={canRequest && pending === null && (editing?.item ?? null) === null}
+        itemRemoves={editing?.itemRemoves ?? null}
+        form={
+          editing !== null && editing.item !== null ? (
+            <ScopeItemForm
+              item={editing.item}
+              jurisdictions={jurisdictions.data ?? []}
+              regimes={regimes}
+              disabled={create.isPending}
+              addressRefused={hasProblemCode(create.error, SOURCE_NOT_PUBLIC_CODE)}
+              onChange={(item) => setDraft((current) => current && { ...current, item })}
+            />
+          ) : null
+        }
+        onAdd={() => {
+          if (editing === null) startDraft(blankItem());
+          else setDraft((current) => current && { ...current, item: blankItem() });
+          setFocus({ target: 'item-form' });
+        }}
+        onToggleRemove={(key) =>
+          setDraft((current) => {
+            if (current === null) return current;
+            const itemRemoves = new Set(current.itemRemoves);
+            if (!itemRemoves.delete(key)) itemRemoves.add(key);
+            return { ...current, itemRemoves };
+          })
+        }
+      />
+
       {editing !== null ? (
         <ChangePanel
           dimensions={dimensions}
           groups={groups}
           draft={editing}
+          items={scopeItems}
           create={create}
           onCancel={() => {
             create.reset();
@@ -755,7 +1013,7 @@ export function FootprintScreen() {
           onClose={() => setDialog(null)}
           onDone={() => {
             setDialog(null);
-            announce(t('footprint.approvedDone'));
+            announce(approvedMessage(pending, t));
           }}
         />
       ) : null}

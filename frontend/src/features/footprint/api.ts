@@ -14,6 +14,7 @@ import type {
   Page,
   PageQuery,
   PersonRef,
+  ScopeItem,
   TaxonomyDimension,
   TaxonomyTerm,
   TermSuggest,
@@ -63,6 +64,21 @@ function termOf(term: Schemas['FootprintTermRef']): TaxonomyTerm {
   return { dimension: term.dimension, key: term.key, kind: term.kind ?? null, label: term.label };
 }
 
+export function scopeItemOf(raw: Schemas['ScopeItemRow']): ScopeItem {
+  return {
+    id: raw.id ?? null,
+    key: raw.key,
+    name: raw.name,
+    description: raw.description,
+    jurisdiction: { key: raw.jurisdiction.key, kind: raw.jurisdiction.kind ?? null, label: raw.jurisdiction.label },
+    regimeTerm: termOf(raw.regimeTerm),
+    officialReference: raw.officialReference,
+    sourceUrl: raw.sourceUrl,
+    status: raw.status,
+    research: raw.research ?? null,
+  };
+}
+
 /** A person the server no longer names (a removed member) reads as nobody, never as the viewer. */
 const NOBODY: PersonRef = { id: '', name: '' };
 
@@ -74,6 +90,8 @@ export function requestOf(raw: Schemas['FootprintRequestRow']): FootprintChangeR
     requestedAt: raw.requestedAt,
     adds: (raw.adds ?? []).map(termOf),
     removes: (raw.removes ?? []).map(termOf),
+    scopeItemAdds: (raw.scopeItemAdds ?? []).map(scopeItemOf),
+    scopeItemRemoves: (raw.scopeItemRemoves ?? []).map(scopeItemOf),
     preview: previewOf(raw.preview),
     decidedBy: raw.decidedBy ?? null,
     decidedAt: raw.decidedAt ?? null,
@@ -96,6 +114,7 @@ export function footprintOf(raw: Schemas['FootprintView']): Footprint {
     })),
     pendingRequest: raw.pendingRequest === null || raw.pendingRequest === undefined ? null : requestOf(raw.pendingRequest),
     markets: (raw.markets ?? []).map(marketOf),
+    scopeItems: (raw.scopeItems ?? []).map(scopeItemOf),
   };
 }
 

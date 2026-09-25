@@ -34,7 +34,7 @@ describe('footprint hooks', () => {
     const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('/footprint') ? { dimensions: [], pendingRequest: null } : s.path.endsWith('/jurisdictions') ? [] : { items: [], total: 0 } }));
     const { wrapper } = queryWrapper();
     const fp = renderHook(() => useFootprint(), { wrapper });
-    await waitFor(() => expect(fp.result.current.data).toEqual({ dimensions: [], pendingRequest: null, markets: [] }));
+    await waitFor(() => expect(fp.result.current.data).toEqual({ dimensions: [], pendingRequest: null, markets: [], scopeItems: [] }));
     const requests = renderHook(() => useFootprintRequests(), { wrapper });
     await waitFor(() => expect(requests.result.current.data?.pages).toEqual([{ items: [], total: 0 }]));
     expect(requests.result.current.hasNextPage).toBe(false);

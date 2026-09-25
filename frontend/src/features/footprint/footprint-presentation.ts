@@ -1,7 +1,7 @@
 import type { PillTone } from '@/components/ui/pill-tones';
 import type { PresentedPill } from '@/features/shared/presentation-types';
 import { slotTone } from '@/features/shared/tone-by-kind';
-import type { Translate } from '@/shared/i18n';
+import type { MessageKey, Translate } from '@/shared/i18n';
 import type { FormatContext } from '@/shared/utils/format';
 import { formatDateTime } from '@/shared/utils/format';
 
@@ -14,6 +14,7 @@ import type {
   JurisdictionRef,
   Market,
   MarketLevel,
+  ScopeItem,
   TaxonomyTerm,
   TermChange,
   TermRef,
@@ -27,6 +28,8 @@ import type {
 
 export const FOUR_EYES_CODE = 'four_eyes_violation';
 export const REQUEST_PENDING_CODE = 'request_pending';
+/** A scope item's address that is not a public https page (422). */
+export const SOURCE_NOT_PUBLIC_CODE = 'source_not_public';
 
 export interface ScopeGroupRow {
   term: TermRef;
@@ -106,13 +109,31 @@ function labels(terms: readonly Pick<TermRef, 'label'>[], t: Translate): string 
   return joined(terms.map((term) => term.label), t);
 }
 
-/** "Remove Advice", "Add Fund company", or both: the request's title, built from its terms. */
-export function requestTitle(request: Pick<FootprintChangeRequest, 'adds' | 'removes'>, t: Translate): string {
-  const adds = labels(request.adds, t);
-  const removes = labels(request.removes, t);
+/** What a title is built from: the terms, and the names of the scope items a request adds and removes. */
+export type TitleParts = Pick<FootprintChangeRequest, 'adds' | 'removes'> & {
+  scopeItemAdds?: readonly Pick<ScopeItem, 'name'>[];
+  scopeItemRemoves?: readonly Pick<ScopeItem, 'name'>[];
+};
+
+function termTitle(adds: string, removes: string, t: Translate): string {
   if (adds.length > 0 && removes.length > 0) return t('footprint.request.addAndRemove', { adds, removes });
   if (adds.length > 0) return t('footprint.request.add', { adds });
   return t('footprint.request.remove', { removes });
+}
+
+/** "Remove Advice", "Add Fund company", "Add the regulation Betaltjänstlagen", or several joined:
+ * the request's title, built from its terms and its scope items. */
+export function requestTitle(request: TitleParts, t: Translate): string {
+  const adds = labels(request.adds, t);
+  const removes = labels(request.removes, t);
+  const itemAdds = joined((request.scopeItemAdds ?? []).map((item) => item.name), t);
+  const itemRemoves = joined((request.scopeItemRemoves ?? []).map((item) => item.name), t);
+  const parts = [
+    ...(adds.length > 0 || removes.length > 0 ? [termTitle(adds, removes, t)] : []),
+    ...(itemAdds.length > 0 ? [t('footprint.change.addItem', { name: itemAdds })] : []),
+    ...(itemRemoves.length > 0 ? [t('footprint.change.removeItem', { name: itemRemoves })] : []),
+  ];
+  return parts.length === 0 ? termTitle('', '', t) : parts.join(t('footprint.request.separator'));
 }
 
 export interface PreviewLine {
@@ -263,4 +284,60 @@ export function reachLines(markets: readonly Market[], jurisdictions: readonly J
     reached.set(parent.key, line);
   }
   return [...reached.values()].map((line) => t('footprint.markets.reach', { parent: line.parent, markets: joined(line.markets, t) }));
+}
+
+// ——— scope items (OWN-01, FP-02; D-89) ——————————————————————————————————
+
+/** How our own agent's research of a scope item stands: a kind the server computes, never chosen by a person. */
+export type ResearchKind = 'waiting_for_agent' | 'researching' | 'researched';
+
+// Waiting needs attention, a running agent is notice, a finished run is positive
+// (design/system/pills-and-labels.md, "The bank's own records and scope items").
+export const researchTone: Record<ResearchKind, PillTone> = {
+  waiting_for_agent: 'warning',
+  researching: 'notice',
+  researched: 'positive',
+};
+
+const RESEARCH_LABEL = {
+  waiting_for_agent: 'footprint.research.waitingForAgent',
+  researching: 'footprint.research.researching',
+  researched: 'footprint.research.researched',
+} as const satisfies Record<ResearchKind, MessageKey>;
+
+/** The research pill, or null for an item nothing researches (not in scope) or a kind this screen does not know yet. */
+export function presentResearch(research: string | null, t: Translate): PresentedPill | null {
+  if (research === null || !(research in researchTone)) return null;
+  const kind = research as ResearchKind;
+  return { key: `research:${kind}`, label: t(RESEARCH_LABEL[kind]), tone: researchTone[kind], order: 0 };
+}
+
+export interface ScopeItemLine {
+  item: ScopeItem;
+  /** What the waiting request does to it: "Added when approved" or "Removed when approved". */
+  mark: 'add' | 'remove' | null;
+}
+
+/** The items in scope and those a waiting request adds, by name; each marked with what the request does to it. */
+export function scopeItemLines(items: readonly ScopeItem[], pending: Pick<FootprintChangeRequest, 'scopeItemAdds' | 'scopeItemRemoves'> | null): ScopeItemLine[] {
+  const removed = new Set((pending?.scopeItemRemoves ?? []).map((item) => item.key));
+  const lines: ScopeItemLine[] = [
+    ...items.map((item) => ({ item, mark: removed.has(item.key) ? ('remove' as const) : null })),
+    ...(pending?.scopeItemAdds ?? []).map((item) => ({ item, mark: 'add' as const })),
+  ];
+  return lines.sort((a, b) => a.item.name.localeCompare(b.item.name));
+}
+
+/** What approving does to the scope items, said after the counts: research starts, or stops. */
+export function scopeItemConsequence(request: Pick<FootprintChangeRequest, 'scopeItemAdds' | 'scopeItemRemoves'>, t: Translate): string {
+  return [
+    ...(request.scopeItemAdds.length > 0 ? [t('footprint.items.approveBody')] : []),
+    ...(request.scopeItemRemoves.length > 0 ? [t('footprint.items.removeBody')] : []),
+  ].join(' ');
+}
+
+/** The status line after an approval: one that only adds regulations names them. */
+export function approvedMessage(request: Pick<FootprintChangeRequest, 'adds' | 'removes' | 'scopeItemAdds' | 'scopeItemRemoves'>, t: Translate): string {
+  const onlyItemAdds = request.adds.length + request.removes.length + request.scopeItemRemoves.length === 0 && request.scopeItemAdds.length > 0;
+  return onlyItemAdds ? t('footprint.items.approved', { name: joined(request.scopeItemAdds.map((item) => item.name), t) }) : t('footprint.approvedDone');
 }
