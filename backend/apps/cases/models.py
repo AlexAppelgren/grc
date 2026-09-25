@@ -87,6 +87,23 @@ class _RemovedNotDeletedQuerySet(models.QuerySet):
         raise RemovedNotDeleted(f"{self.model.__name__} rows are removed with removed_at, never deleted")
 
 
+# What a workflow read and write joins beside the case, so naming the people and the
+# reasons costs no query of its own. Field names, kept beside the model they name (a logic
+# module may hold no string that reads as a role key, ID-S18).
+CASE_JOINS = (
+    "change",
+    "urgency",
+    "sub_status",
+    "owner",
+    "triaged_by",
+    "dismissed_reason",
+    "dismissed_by",
+    "signoff_requested_by",
+    "signed_off_by",
+    "close_reason",
+)
+
+
 class ChangeCase(TenantModel):
     """One bank's case for one regulatory change (CAS-01).
 

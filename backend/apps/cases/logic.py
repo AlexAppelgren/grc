@@ -30,7 +30,7 @@ from django.db.models import Count, Exists, IntegerField, OuterRef, Subquery, Va
 from django.db.models.functions import Coalesce
 
 from apps.cases import state
-from apps.cases.models import Action, CaseTransition, ChangeCase, Evidence, ImpactAssessment
+from apps.cases.models import CASE_JOINS, Action, CaseTransition, ChangeCase, Evidence, ImpactAssessment
 from apps.shared.adapters.scanner import ScanState
 from apps.shared.audit import Actor, record
 from apps.shared.errors import ProblemError
@@ -39,21 +39,6 @@ from apps.shared.models import Tenant
 
 SUBJECT_TYPE = "change_case"
 MOVED = "case.moved"
-
-# What a workflow read and write joins beside the case, so naming the people and the
-# reasons costs no query of its own.
-CASE_JOINS = (
-    "change",
-    "urgency",
-    "sub_status",
-    "owner",
-    "triaged_by",
-    "dismissed_reason",
-    "dismissed_by",
-    "signoff_requested_by",
-    "signed_off_by",
-    "close_reason",
-)
 
 
 def _not_found() -> ProblemError:
