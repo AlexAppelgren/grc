@@ -57,4 +57,16 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/footprint/requests/{request_id}/reject", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/tenant/footprint/requests/{request_id}/withdraw", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/vocab/{list_name}/suggestions/{suggestion_id}/decline", "taxonomy.VocabularySuggestion", "vocabulary_suggestion"),
+    # c8-tenants-contract (TEN-02, TEN-03, TEN-05, TEN-06). The licence create is proved in
+    # apps/tenants/tests_api_contract.py: it refuses this guard's empty body before it loads.
+    ("PATCH", "/tenant/org-units/{org_unit_id}", "tenants.OrgUnit", "org_unit"),
+    ("GET", "/tenant/org-units/{org_unit_id}/licences", "tenants.OrgUnit", "org_unit"),
+    ("PATCH", "/tenant/licences/{licence_id}", "tenants.Licence", "licence"),
+    ("PATCH", "/tenant/products/{product_id}", "tenants.TenantProduct", "tenant_product"),
+    ("GET", "/tenant/teams/{key}/members", "taxonomy.Team", "team_key"),
+    ("GET", "/tenant/members/{user_id}/open-work", "identity.Membership", "member_user"),
+    ("POST", "/tenant/members/{user_id}/remove", "identity.Membership", "member_user"),
+    ("POST", "/tenant/support-access/{grant_id}/approve", "tenants.SupportAccess", "support_access"),
+    ("POST", "/tenant/support-access/{grant_id}/decline", "tenants.SupportAccess", "support_access"),
+    ("POST", "/tenant/support-access/{grant_id}/revoke", "tenants.SupportAccess", "support_access"),
 ]
