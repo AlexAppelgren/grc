@@ -1466,3 +1466,20 @@ Built on these defaults; each stays yours to overrule.
 - [ ] Default taken: a key sent with no expiry lives `AGENT_ACCESS_KEY_MAX_DAYS` (90); a
       later one is refused (`expiry_too_late`). Revoking an entry twice answers 409
       `invalid_transition`; revoking one key twice is a safe retry.
+
+## acc-what-applies: what applies and what a narrowed entry could not see, answered by default (2026-09-25, ACC-06, ACC-07)
+
+- [ ] Default taken: every answer to an agent access credential, errors included, states its
+      scope in the `Agent-Access-Scope` header (entry, departments, products, as of);
+      `what-applies` carries it in its body too. Say if the other agent reads should carry it in
+      their bodies as well.
+- [ ] Default taken: a description touches a term outside an entry's scope when every word of
+      one of the term's labels is in it, or when the term's usage note shares
+      `AGENT_ACCESS_NOTE_MATCH_WORDS` (2) words with it. A word match, not pg_trgm, so it is
+      deterministic and works with AI off. A false "ask compliance" is the safe failure.
+- [ ] Default taken: what-applies answers a credential without `tenant:read`, or with reach off,
+      with the library list alone (`registerRead` says why) rather than a 403, so the list an
+      agent builds from is never withheld.
+- [ ] Default taken: the bank's own private obligations are counted (`ownRecordsLeftOut`) and never
+      listed (D-57).
+

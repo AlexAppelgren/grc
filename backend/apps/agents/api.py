@@ -20,7 +20,7 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Header, Path, Query, Router
 
-from apps.agents import agent_access, budget, control, definitions, platform, platform_read, requests, runs, runs_read, tenant_agents
+from apps.agents import agent_access, budget, control, definitions, platform, platform_read, requests, runs, runs_read, tenant_agents, what_applies
 from apps.agents.schemas import (
     AgentAccessInput,
     AgentAccessKeyCreated,
@@ -53,11 +53,14 @@ from apps.agents.schemas import (
     TenantAgentPage,
     TenantAgentUpdate,
     TenantRunQuery,
+    WhatAppliesAnswer,
+    WhatAppliesInput,
 )
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_scope, requires_step_up
 from apps.shared.schemas import PageQuery
+from apps.governance import access_log
 from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, if_match, principal, require_any
 from apps.taxonomy.reading import language_order
 
@@ -1152,3 +1155,63 @@ def revoke_agent_access_key(
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
     )
     return agent_access.key_out(key)
+
+
+# ---------------------------------------------------------------------------------------
+# acc-what-applies (ACC-06, ACC-07): what applies to what a bank's own agent is building.
+# ---------------------------------------------------------------------------------------
+@router.post(
+    "/agent-access/what-applies",
+    response=WhatAppliesAnswer,
+    auth=KEY,
+    operation_id="whatApplies",
+    by_alias=True,
+    summary="Ask what applies to what your agent is building, buying or reviewing",
+    description=(
+        "Takes a description of what the agent is building, buying or reviewing and answers the "
+        "full list of what applies to it, one page at a time: every shared obligation in the "
+        "bank's footprint and in the entry's scope, each with its citation and the version in "
+        "force today, and with the bank's own register decision on it when the credential "
+        "holds `tenant:read` and tenant reach is on for the bank and the entry. The list is "
+        "deterministic and ranked by how many of the description's words each obligation's "
+        "library text holds, then by stable key; nothing but paging shortens it. The bank's own "
+        "private records are never in it, and `ownRecordsLeftOut` counts them.\n\n"
+        "Every answer states the scope it was given in (`scope`: the entry, its departments and "
+        "products, and the date), and a narrowed entry never narrows silently: `outsideScope` "
+        "names, by label, each footprint term outside the entry's scope that the description "
+        "touches, compared against the terms' labels and usage notes and never against records, "
+        "and its `advice` tells the agent to send its user to compliance about them. This needs no "
+        "model, so it answers with AI switched off. "
+        "The `summary` slot says whether it holds a model-drafted summary; for now it holds "
+        "none, and the list is the answer.\n\n"
+        "A key of an agent access entry, or a personal access token, holding `library:read`; a "
+        "person's session and any other key are refused. A read that takes a body: it writes "
+        "nothing, and the access log records the call with the description's name alone, never "
+        "its text. Pages with `limit` and `offset`, 20 by default and 100 at most.\n\n"
+        "Errors: `description_required` (422) for a description of spaces alone; "
+        "`description_too_long` (422) beyond `AGENT_ACCESS_DESCRIPTION_MAX_CHARS` characters; "
+        "`validation_error` (422) for a body the schema refuses or a page out of range; "
+        "`permission_denied` (403) for a key that is not an agent access credential or one "
+        "without `library:read`; `rate_limited` (429) over the credential's rate; "
+        "`unauthenticated` (401) without a live key or token."
+    ),
+    openapi_extra={
+        "requestBody": {
+            "content": {"application/json": {"example": {"description": "A new order-routing service for professional clients"}}}
+        }
+    },
+)
+@requires_scope(perms.SCOPE_LIBRARY_READ)
+@answers_problems
+def what_applies_route(request: HttpRequest, body: WhatAppliesInput, page: PageQuery = Query(...)) -> Any:
+    tenant = caller_tenant(request)
+    result = what_applies.answer(
+        tenant=tenant,
+        principal=principal(request),
+        description=body.description,
+        order=language_order(request, tenant=tenant),
+        limit=page.limit,
+        offset=page.offset,
+    )
+    access_log.note(request, filters={"description": []}, record_count=len(result.items))
+    return result

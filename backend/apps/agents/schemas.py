@@ -17,7 +17,7 @@ cadence, and a bank's own agents write only in that bank's zone.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
@@ -26,6 +26,8 @@ from pydantic import ConfigDict, JsonValue
 
 from django.conf import settings
 
+from apps.library.schemas import LocalizedText, ObligationInstrumentRef, ObligationVersionRef
+from apps.register.schemas import RegisterDecision
 from apps.shared.schemas import CamelSchema, PageQuery, SingleLineName, WriteBody
 from apps.taxonomy.schemas import PersonRef
 
@@ -37,6 +39,7 @@ __all__ = [
     "AgentAccessOut",
     "AgentAccessPage",
     "AgentAccessReachInput",
+    "AgentAccessScopeStatement",
     "AgentAccessTeamRef",
     "AgentAccessUnitRef",
     "AgentAccessUpdate",
@@ -69,6 +72,13 @@ __all__ = [
     "TenantAgentScope",
     "TenantAgentUpdate",
     "TenantRunQuery",
+    "WhatAppliesAnswer",
+    "WhatAppliesInput",
+    "WhatAppliesItem",
+    "WhatAppliesOutsideScope",
+    "WhatAppliesOutsideTerm",
+    "WhatAppliesSummary",
+    "WhatAppliesVocabRef",
 ]
 
 # The examples are one night's sweep by the shipped `watch-sweeper` definition over Nordic
@@ -1315,3 +1325,202 @@ class AgentAccessKeyInput(WriteBody):
             "`expiry_in_past` (422) and a later one with `expiry_too_late` (422)."
         ),
     )
+
+
+# ---------------------------------------------------------------------------------------
+# acc-what-applies (ACC-06, ACC-07): what applies to what a bank's own agent is building,
+# the scope it was answered in, and what it could not see.
+# ---------------------------------------------------------------------------------------
+_SCOPE_EXAMPLE: dict[str, JsonValue] = {
+    "entry": {"id": "5b0e7a52-8d61-4c1e-9f3a-2a6d1c4e8b90", "name": "Trading platform coding agent"},
+    "departments": [{"id": "0f6c2d8e-3b1a-4e7f-a5c9-7d2e8b1f4a63", "name": "Trading"}],
+    "products": [],
+    "narrowed": True,
+    "asOf": "2026-09-25",
+}
+
+
+class AgentAccessScopeStatement(CamelSchema):
+    """The scope an answer to an agent access credential was given in (ACC-07). Every answer
+    to such a credential carries it as the JSON of its `Agent-Access-Scope` header, errors
+    included; what applies carries it in its body as well."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_SCOPE_EXAMPLE]})
+
+    entry: AgentAccessUnitRef | None = Field(
+        description="The agent access entry the credential reads as, by id and name; null for a personal access token that names no entry and reads as its person."
+    )
+    departments: list[AgentAccessUnitRef] = Field(
+        description="The departments the entry serves, by name; its scope is the terms of their products and of every unit below them, within the bank's footprint."
+    )
+    products: list[AgentAccessUnitRef] = Field(description="The products the entry serves, by name, narrowing as the departments do.")
+    narrowed: bool = Field(
+        description=(
+            "True when the departments or products narrow what the credential reads to their terms; "
+            "false when it reads the bank's whole footprint. A narrowed answer names what it could "
+            "not see rather than stay silent about it."
+        ),
+        examples=[True],
+    )
+    as_of: date = Field(
+        description="The date the answer is true on, `YYYY-MM-DD`, today where the bank is: the library's versions in force and the register as it stands that day.",
+        examples=["2026-09-25"],
+    )
+
+
+class WhatAppliesInput(WriteBody):
+    """`POST /agent-access/what-applies`: what the agent is building, buying or reviewing."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"description": "A new order-routing service for professional clients"}]}
+    )
+
+    description: str = Field(
+        description=(
+            "What is being built, bought or reviewed, in the agent's own words and any language, "
+            "such as `A new order-routing service for professional clients`. At most "
+            f"`AGENT_ACCESS_DESCRIPTION_MAX_CHARS` characters ({settings.AGENT_ACCESS_DESCRIPTION_MAX_CHARS} unless the operator sets it), "
+            "refused beyond that with `description_too_long` (422); one of spaces alone is refused "
+            "with `description_required` (422). It ranks the list and finds what lies outside the "
+            "scope, and is then dropped: never stored, and never in the access log."
+        ),
+    )
+
+
+class WhatAppliesVocabRef(CamelSchema):
+    """A footprint dimension or term, by key and label."""
+
+    key: str = Field(
+        description="The dimension's or term's stable key in the shared taxonomy; store and compare the key, never the label.",
+        examples=["card_issuing"],
+    )
+    label: str = Field(description="Its label in the reader's language, for display only.", examples=["Card issuing"])
+
+
+class WhatAppliesOutsideTerm(CamelSchema):
+    """One term of the bank's footprint that the description touches and the entry's scope
+    leaves out, named by label and never by any record carrying it."""
+
+    dimension: WhatAppliesVocabRef = Field(description="The dimension the term sits in, such as `licensed_activity`, Licensed activity.")
+    term: WhatAppliesVocabRef = Field(description="The term itself, such as `card_issuing`, Card issuing.")
+
+
+class WhatAppliesOutsideScope(CamelSchema):
+    """What the description touches outside the entry's scope (ACC-07). Compared against the
+    labels and usage notes of the bank's footprint terms outside that scope, never against
+    records, so it works with AI switched off and leaks nothing the entry may not read."""
+
+    terms: list[WhatAppliesOutsideTerm] = Field(
+        description=(
+            "Every footprint term outside the entry's scope that the description touches, in the "
+            "footprint's order. Empty when it touches none, and always empty for a credential that "
+            "is not narrowed. A term here means rules may apply that this answer cannot show."
+        )
+    )
+    advice: Literal["ask_compliance"] | None = Field(
+        description=(
+            "`ask_compliance` whenever `terms` is not empty: the agent should tell its user to ask "
+            "the bank's compliance function about those terms, because this answer cannot see them. "
+            "Null when there is nothing outside the scope to ask about."
+        ),
+        examples=["ask_compliance"],
+    )
+
+
+class WhatAppliesSummary(CamelSchema):
+    """The slot for the short summary a model drafts above the list (ACC-06). The list below it
+    is the answer; a summary is guidance and the bank's confirmed applicability is the decision."""
+
+    status: Literal["drafted", "not_drafted"] = Field(
+        description=(
+            "`drafted` when `text` holds a summary a model drafted; `not_drafted` when there is "
+            "none, which leaves the list whole and unchanged. Every answer is `not_drafted` for now."
+        ),
+        examples=["not_drafted"],
+    )
+    text: str | None = Field(description="The drafted summary, labelled as AI-drafted wherever it is shown; null when not drafted.")
+
+
+class WhatAppliesItem(CamelSchema):
+    """One obligation in scope, with the bank's decision on it when the register is read."""
+
+    obligation_id: uuid.UUID = Field(description="The obligation's identifier in the shared library, a UUID that never changes.")
+    stable_key: str = Field(
+        description="The obligation's stable key, issued once and never changed; `GET /obligations/{obligationId}` reads the whole record.",
+        examples=["mifid2-best-execution"],
+    )
+    ref_label: str = Field(description="Where the duty sits in its instrument, such as `Art. 27(1)`, printed beside the instrument's short name as its citation.", examples=["Art. 27(1)"])
+    title: LocalizedText | None = Field(description="The duty's title in the reader's language order, with whether a machine translated it; null when it has none.")
+    instrument: ObligationInstrumentRef = Field(description="The instrument the duty was broken out of, by key and short name, the rest of its citation.")
+    version: ObligationVersionRef | None = Field(
+        description=(
+            "The version in force on the answer's `asOf` date, with who confirmed it, so a version "
+            "an independent agent confirmed never reads as a person's verification. Null when every "
+            "version starts later."
+        )
+    )
+    decision: RegisterDecision | None = Field(
+        description=(
+            "The bank's own decision on this obligation, exactly as `GET /register-entries` answers "
+            "it: applicability and its reason, compliance status and note, how the bank reads the "
+            "rule, owner and the rest. Null when the register is not read (see `registerRead`), when "
+            "nobody has decided on it yet, and always for an obligation under a standard."
+        )
+    )
+
+
+class WhatAppliesAnswer(CamelSchema):
+    """What applies to what the agent described (ACC-06, ACC-07): the scope it was answered
+    in, the summary slot, the full list one page at a time, and what lies outside the scope."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "scope": _SCOPE_EXAMPLE,
+                    "summary": {"status": "not_drafted", "text": None},
+                    "items": [],
+                    "total": 0,
+                    "registerRead": "included",
+                    "ownRecordsLeftOut": 0,
+                    "outsideScope": {
+                        "terms": [
+                            {
+                                "dimension": {"key": "licensed_activity", "label": "Licensed activity"},
+                                "term": {"key": "card_issuing", "label": "Card issuing"},
+                            }
+                        ],
+                        "advice": "ask_compliance",
+                    },
+                }
+            ]
+        }
+    )
+
+    scope: AgentAccessScopeStatement = Field(description="The scope this answer was given in: the entry, its departments and products, and the date.")
+    summary: WhatAppliesSummary = Field(description="The slot for a model-drafted summary above the list, and whether it holds one.")
+    items: list[WhatAppliesItem] = Field(
+        description=(
+            "This page of the full list: every shared obligation in the bank's footprint and the "
+            "entry's scope, those whose library text holds more of the description's words first, "
+            "then by stable key. Nothing but paging shortens it, so read every page."
+        )
+    )
+    total: int = Field(description="How many obligations the whole list holds, not how many are on this page.")
+    register_read: Literal["included", "tenant_reach_off", "not_granted"] = Field(
+        description=(
+            "Whether `decision` carries the bank's register: `included` when it does; "
+            "`tenant_reach_off` when the credential holds `tenant:read` but the bank's tenant reach "
+            "or the entry's own toggle is off; `not_granted` when the credential does not hold "
+            "`tenant:read` or names no entry."
+        ),
+        examples=["included"],
+    )
+    own_records_left_out: int = Field(
+        description=(
+            "How many of the bank's own private obligations exist and are left out of this answer, "
+            "because a bank's own records never reach an agent. Ask compliance about them."
+        ),
+        examples=[0],
+    )
+    outside_scope: WhatAppliesOutsideScope = Field(description="What the description touches outside the entry's scope, by label, and the advice to ask compliance.")
