@@ -189,5 +189,10 @@
   "admin.vocabulary.pendingTitle": "Your suggestions waiting for review",
   "admin.vocabulary.pendingEmpty": "Nothing you suggested on this list is waiting for review.",
   "admin.vocabulary.pendingError": "Your suggestions waiting for review could not be loaded.",
-  "admin.vocabulary.pendingSent": "Sent {date}"
+  "admin.vocabulary.pendingSent": "Sent {date}",
+  "admin.vocabularies.decline": "Decline",
+  "admin.vocabularies.suggestedBy": "Suggested by {name}, {date}",
+  "admin.vocabularies.noSuggestionsTitle": "Nothing is waiting",
+  "admin.vocabularies.noSuggestionsBody": "Values people suggest from a picker wait here for you to add or decline.",
+  "admin.vocabularies.suggestionsError": "Could not load the suggestions"
 }

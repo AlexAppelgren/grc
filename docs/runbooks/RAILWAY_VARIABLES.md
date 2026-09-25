@@ -126,6 +126,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 |---|---|---|---|---|---|
 | `NEXT_PUBLIC_API_URL` | web | `http://localhost:8000` | `http://localhost:8000` | the api's public URL | Baked at build time by Next; a change needs a rebuild |
 | `NEXT_PUBLIC_SUPPORT_CONTACT` | web | empty | empty | the address that answers access requests | An email address. The public page's "Write to us" opens a mail to it; empty hides the link. Baked at build time |
+| `NEXT_PUBLIC_BULK_TAGGING_MAX_RECORDS` | web | `200` | `200` | the api's `BULK_TAGGING_MAX_RECORDS` | How many obligations the inventory lets one bulk tagging name before it refuses without calling (VOC-08). Keep it equal to the api's cap, which still refuses above its own number. Baked at build time |
 
 ## Rules
 

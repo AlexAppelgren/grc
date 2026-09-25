@@ -531,15 +531,16 @@ describe('the diff sentence', () => {
   });
 });
 
-// The panels whose packages have filled them, one line each; their own tests read them.
-const FILLED: readonly string[] = [
+// The panels their packages have filled; each is tested in its own file.
+const FILLED: ReadonlySet<string> = new Set([
   'Applicability', // c8-ui-applicability-status
   'Status', // c8-ui-applicability-status
-];
+  'Tags', // c10-fe-bulk-tagging
+]);
 
 describe('the panel stubs', () => {
   it('render nothing until their packages fill them', async () => {
-    for (const name of PANELS.filter((panel) => !FILLED.includes(panel))) {
+    for (const name of PANELS.filter((panel) => !FILLED.has(panel))) {
       const actual = await vi.importActual<Record<string, (props: { obligationId: string }) => ReactNode>>(`./Obligation${name}Panel`);
       const Panel = actual[`Obligation${name}Panel`] as (props: { obligationId: string }) => ReactNode;
       const { container, unmount } = render(<Panel obligationId="ob-1" />);

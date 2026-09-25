@@ -13,6 +13,8 @@ import type {
   VocabularyRetireResult,
   VocabularyRow,
   VocabularySuggest,
+  VocabularySuggestResult,
+  VocabularySuggestion,
   VocabularyTier,
   VocabularyUpdate,
   VocabularyWrite,
@@ -108,6 +110,24 @@ export async function mergeValue(list: string, key: string, into: string): Promi
   return write.outcome === 'applied' ? { outcome: 'applied', result: mergedOf(write.result) } : write;
 }
 
-export async function suggestValue(list: string, body: VocabularySuggest): Promise<ProposalRef> {
-  return proposalOf((await api.post<unknown>(`${VOCAB}/${id(list)}/suggest`, body)).data);
+export function suggestionOf(raw: Schemas['VocabularySuggestionRow']): VocabularySuggestion {
+  return { id: raw.id, key: raw.key, labels: raw.labels ?? {}, usageNote: raw.usageNote ?? '', suggestedBy: raw.suggestedBy?.name ?? '', createdAt: raw.createdAt };
+}
+
+/** A tenant list answers 201 with the waiting suggestion; a library list 202 with a proposal. */
+export async function suggestValue(list: string, body: VocabularySuggest): Promise<VocabularySuggestResult> {
+  const response = await api.post<Schemas['VocabularySuggestionRow']>(`${VOCAB}/${id(list)}/suggest`, body);
+  if (response.status === 202) return { outcome: 'proposed', proposal: proposalOf(response.data) };
+  return { outcome: 'suggested', suggestion: suggestionOf(response.data) };
+}
+
+/** The suggestions still waiting on one of the bank's own lists, oldest first (the admin's inbox). */
+export async function listSuggestions(list: string): Promise<{ items: VocabularySuggestion[]; total: number }> {
+  const page = (await api.get<Schemas['VocabularySuggestionPage']>(`${VOCAB}/${id(list)}/suggestions`)).data;
+  return { items: page.items.map(suggestionOf), total: page.total };
+}
+
+/** Saying yes is `createValue` with the suggestion's key, which answers every suggestion for it. */
+export async function declineSuggestion(list: string, suggestionId: string): Promise<VocabularySuggestion> {
+  return suggestionOf((await api.post<Schemas['VocabularySuggestionRow']>(`${VOCAB}/${id(list)}/suggestions/${id(suggestionId)}/decline`, {})).data);
 }

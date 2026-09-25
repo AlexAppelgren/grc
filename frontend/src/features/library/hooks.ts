@@ -1,12 +1,15 @@
 'use client';
 
-import { useMutation, useQuery, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
+
+import { vocabularyKeys } from '@/features/vocabularies/hooks';
 
 import * as library from './api';
 import type {
   Instrument,
   InstrumentDetail,
   InstrumentQuery,
+  LibraryRef,
   Obligation,
   ObligationDetail,
   ObligationQuery,
@@ -70,6 +73,77 @@ export function useObligationDiff(obligationId: string, lang: string, enabled: b
  */
 export function useReportObligationProblem(obligationId: string): UseMutationResult<ProblemReportCreated, unknown, ProblemReportBody> {
   return useMutation({ mutationFn: (body) => library.reportObligationProblem(obligationId, body) });
+}
+
+/** One of the bank's tags going on (`on`) or coming off the obligation. */
+export interface ObligationTagChange {
+  tagKey: string;
+  on: boolean;
+}
+
+/**
+ * Tag or untag the obligation (VOC-08). The answer is the record's tags as they
+ * now stand, written into every cached read of this obligation (any "as of":
+ * the bank's tags carry no version); the inventory lists re-read, since their
+ * rows and the tag filter show the same tags.
+ */
+export function useChangeObligationTag(obligationId: string): UseMutationResult<LibraryRef[], unknown, ObligationTagChange> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tagKey, on }) => (on ? library.tagObligation(obligationId, tagKey) : library.untagObligation(obligationId, tagKey)),
+    onSuccess: async (tenantTags) => {
+      queryClient.setQueriesData<ObligationDetail>({ queryKey: ['library', 'obligation', obligationId] }, (old) =>
+        old !== undefined && 'tenantTags' in old ? { ...old, tenantTags } : old,
+      );
+      await queryClient.invalidateQueries({ queryKey: ['library', 'obligations'] });
+    },
+  });
+}
+
+/** The bank's own tags, whose usage counts a batch changes. */
+const TENANT_TAG = 'tenant_tag';
+
+/** The server's default for BULK_TAGGING_MAX_RECORDS; an operator who changes it there sets the same number here. */
+const DEFAULT_BULK_TAGGING_MAX_RECORDS = 200;
+
+/**
+ * How many obligations one bulk tagging may name, so the screen refuses a larger
+ * selection before it calls. The server keeps its own cap and answers 422
+ * `too_many_records` above it whatever this says.
+ */
+export function bulkTaggingCap(): number {
+  const configured = Number(process.env.NEXT_PUBLIC_BULK_TAGGING_MAX_RECORDS);
+  return Number.isInteger(configured) && configured > 0 ? configured : DEFAULT_BULK_TAGGING_MAX_RECORDS;
+}
+
+/** One tag and the obligations a bulk tagging names. */
+export interface ObligationBatch {
+  tagKey: string;
+  obligationIds: readonly string[];
+}
+
+/** VOC-08's preview: a POST that writes nothing, so it is a mutation the screen calls once per Preview, never a cached read. */
+export function usePreviewObligationTagging(): UseMutationResult<library.TaggingBatch, unknown, ObligationBatch> {
+  return useMutation({ mutationFn: ({ tagKey, obligationIds }) => library.previewObligationTagging(tagKey, obligationIds) });
+}
+
+/**
+ * VOC-08's commit: one call for the whole batch, never a write per row. The lists and
+ * cards re-read, since their rows show the bank's tags, and so do the tag list's usage
+ * counts.
+ */
+export function useTagObligations(): UseMutationResult<library.TaggingBatch, unknown, ObligationBatch> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tagKey, obligationIds }) => library.tagObligations(tagKey, obligationIds),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['library', 'obligations'] }),
+        queryClient.invalidateQueries({ queryKey: ['library', 'obligation'] }),
+        queryClient.invalidateQueries({ queryKey: vocabularyKeys.list(TENANT_TAG) }),
+      ]);
+    },
+  });
 }
 
 /** Playbook 10: the Instruments tab's own page size, like the obligations list. */

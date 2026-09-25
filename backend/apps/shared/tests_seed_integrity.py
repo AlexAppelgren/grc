@@ -65,6 +65,7 @@ from apps.shared.e2e_seed import (
     E2E_STANDARD_INSTRUMENT,
     E2E_STANDARD_OBLIGATION,
     EXPECTED_ASK,
+    EXPECTED_BULK_TAGGING,
     EXPECTED_CHUNK5_WATCH,
     EXPECTED_FOOTPRINTS,
     EXPECTED_HOME,
@@ -1040,8 +1041,13 @@ class ReseedTenantsAndScope(SeededOnce):
         for tenant in Tenant.objects.all():
             tenancy.activate(tenant.id)
             created = AuditEvent.objects.filter(tenant=tenant, action="vocabulary.created")
-            # TEN-S7's one tenant-A tag is the seed's work too, but not a system row.
-            system = created.exclude(subject_title=f"{EXPECTED_TENANT_A_ONLY.tag_list}:{EXPECTED_TENANT_A_ONLY.tag_key}")
+            # TEN-S7's and VOC-S12's tenant-A tags are the seed's work too, but not system rows.
+            system = created.exclude(
+                subject_title__in=[
+                    f"{EXPECTED_TENANT_A_ONLY.tag_list}:{EXPECTED_TENANT_A_ONLY.tag_key}",
+                    f"tenant_tag:{EXPECTED_BULK_TAGGING.tag_key}",
+                ]
+            )
             # c8-seed-org-register: each bank's own teams are the seed's work too, not system rows.
             system = system.exclude(subject_title__in=[f"team:{team.key}" for spec in EXPECTED_ORG_REGISTER for team in spec.teams])
             self.assertEqual(system.count(), sum(len(rows) for _, rows in TENANT_SYSTEM_ROWS.values()))
@@ -1136,6 +1142,28 @@ class ReseedTenantsAndScope(SeededOnce):
                 expected = 1 if tenant.slug == spec.tenant_slug else 0
                 self.assertEqual(TenantRole.objects.filter(tenant=tenant, key=spec.role_key).count(), expected)
                 self.assertEqual(tags.filter(tenant=tenant, key=spec.tag_key).count(), expected)
+
+
+    # --- c10-fe-bulk-tagging (VOC-S12) -------------------------------------------------------
+    def test_voc_s12_has_six_obligations_and_a_tag_two_of_them_carry(self) -> None:
+        """VOC-S12: the six obligations are in the library, tenant A's tag is on exactly the
+        two the preview must show as already carrying it, tenant B has neither, and a reseed
+        writes no tag and no tagging again."""
+        from apps.taxonomy.models import Tagging, TenantTag
+
+        spec = EXPECTED_BULK_TAGGING
+        self.assertEqual(Obligation.objects.filter(stable_key__in=spec.obligations).values("stable_key").distinct().count(), 6)
+        self.assertLess(set(spec.already_tagged), set(spec.obligations))
+        seed_e2e()
+        for tenant in Tenant.objects.all():
+            with self.subTest(tenant=tenant.slug):
+                tenancy.activate(tenant.id)
+                mine = tenant.slug == spec.tenant_slug
+                self.assertEqual(TenantTag.objects.filter(tenant=tenant, key=spec.tag_key).count(), 1 if mine else 0)
+                tagged = Tagging.objects.filter(tenant=tenant, tag__key=spec.tag_key, subject_type="obligation").values_list("subject_id", flat=True)
+                expected = set(Obligation.objects.filter(stable_key__in=spec.already_tagged).values_list("id", flat=True)) if mine else set()
+                self.assertEqual(sorted(tagged), sorted(expected))
+    # --- end c10-fe-bulk-tagging ---------------------------------------------------------------
 
 
 class ReseedLibraryAndWatch(SeededOnce):

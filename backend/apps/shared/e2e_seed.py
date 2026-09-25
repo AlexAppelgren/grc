@@ -1509,6 +1509,65 @@ def seed_no_record_read_role(tenants: list[Tenant]) -> None:
 # --- end r2-e2e-login-roster --------------------------------------------------------------
 
 
+# --- c10-fe-bulk-tagging (VOC-S12) -------------------------------------------------------------
+@dataclass(frozen=True)
+class SeedBulkTagging:
+    tenant_slug: str
+    tag_key: str
+    tag_labels: dict[str, str]
+    obligations: tuple[str, ...]
+    already_tagged: tuple[str, ...]
+
+
+# VOC-S12 selects these six obligations of tenant A on the inventory and tags them with the
+# bank's own tag below, which two of them already carry, so the preview has both halves to
+# show. Library rows every scope reaches, none advice-only; a tag is the bank's marker and
+# never a library version, so the journeys that version these duties are unaffected. The
+# label is far from every label a vocabulary journey adds ("Custody" among them, VOC-S2), so
+# no near-duplicate check trips. The journey takes back what it added, so a reseed finds the
+# two taggings below and writes nothing.
+EXPECTED_BULK_TAGGING = SeedBulkTagging(
+    tenant_slug=TENANT_A_SLUG,
+    tag_key="asset_safeguarding",
+    tag_labels={"en": "Asset safeguarding", "sv": "Skydd av tillgångar"},
+    obligations=(
+        "obl-isk-control-statements",
+        "obl-priips-kid",
+        "obl-client-assets",
+        "obl-switch-documentation",
+        "obl-isk-approved-assets",
+        "obl-esma-warnings",
+    ),
+    already_tagged=("obl-isk-control-statements", "obl-priips-kid"),
+)
+
+
+def seed_bulk_tagging(tenants: list[Tenant]) -> None:
+    """Through the logic the screens call, so the tag and each tagging leave their audit
+    event, on behalf of tenant A's compliance officer, who holds vocab.manage."""
+    from apps.shared import permissions as perms
+    from apps.shared.authentication import Principal, PrincipalKind
+    from apps.taxonomy import tagging_logic
+    from apps.taxonomy.models import Tagging
+
+    spec = EXPECTED_BULK_TAGGING
+    tenant = next(t for t in tenants if t.slug == spec.tenant_slug)
+    tenancy.activate(tenant.id)
+    tags = tenant_lists_logic.entry_for("tenant_tag").model._default_manager
+    if not tags.filter(tenant=tenant, key=spec.tag_key).exists():
+        tenant_lists_logic.create_row(list_name="tenant_tag", tenant=tenant, actor=SEED_ACTOR, labels=spec.tag_labels, key=spec.tag_key)
+    officer = User.objects.get(email="compliance_officer@example-bank.test")
+    who = Principal(kind=PrincipalKind.USER, subject_id=officer.id, tenant_id=tenant.id, permissions=frozenset({perms.LIBRARY_READ}))
+    # Read by label, like the other library reads here: the seed never names a library model it could write.
+    obligations = django_apps.get_model("library", "Obligation").objects.filter(stable_key__in=spec.already_tagged)
+    for obligation in obligations.order_by("stable_key"):
+        if not Tagging.objects.filter(tenant=tenant, tag__key=spec.tag_key, subject_type="obligation", subject_id=obligation.id).exists():
+            tagging_logic.tag(
+                tenant=tenant, who=who, actor=SEED_ACTOR, tag_key=spec.tag_key, subject_type="obligation", subject_id=obligation.id
+            )
+# --- end c10-fe-bulk-tagging -------------------------------------------------------------------
+
+
 # The journey cannot narrow the scope itself: FP-S5 (J-6) changes tenant A's scope, and
 # every home and watch journey reads it in parallel. So tenant A holds the prototype's scope
 # less pension accounts, which leaves exactly one library obligation outside it (the
@@ -1794,6 +1853,7 @@ def seed_e2e() -> dict[str, int]:
         seed_pending_footprint_request(tenants)
         seed_watched_markets(tenants)
         seed_tenant_only_rows(tenants)
+        seed_bulk_tagging(tenants)
         proposals = seed_proposals()
         problem_reports = seed_problem_report(tenants)
         home_cases = seed_home_cases(tenants, home)

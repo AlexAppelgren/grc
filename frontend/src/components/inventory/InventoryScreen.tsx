@@ -2,31 +2,53 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
 import { InstrumentFilterBar, InventoryFilterBar, REGIME, SCOPE_VALUES, SERVICE, type InstrumentFilters, type InventoryFilters } from '@/components/inventory/InventoryFilters';
 import { InstrumentRow } from '@/components/inventory/InstrumentRow';
 import { ObligationRow } from '@/components/inventory/ObligationRow';
-import { Button } from '@/components/ui/Button';
+import { Button, ButtonBar } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Select } from '@/components/ui/Field';
+import { Modal } from '@/components/ui/Modal';
 import { Notice } from '@/components/ui/Notice';
 import { PageHead } from '@/components/ui/PageHead';
-import { ErrorState, LoadingState } from '@/components/ui/States';
+import { Pill } from '@/components/ui/Pill';
+import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
 import { TabPanel, Tabs } from '@/components/ui/Tabs';
+import { VocabularyPicker } from '@/components/vocabularies/VocabularyPicker';
 import { useFormatContext } from '@/features/identity/hooks';
-import { useInstruments, useObligations } from '@/features/library/hooks';
-import type { InstrumentQuery, ObligationQuery, ScopeFilter } from '@/features/library/types';
+import type { TaggingBatch } from '@/features/library/api';
+import { bulkTaggingCap, useInstruments, useObligations, usePreviewObligationTagging, useTagObligations } from '@/features/library/hooks';
+import type { InstrumentQuery, Obligation, ObligationQuery, ScopeFilter } from '@/features/library/types';
+import { useVocabularyValues } from '@/features/vocabularies/hooks';
+import { presentVocabularyValue } from '@/features/vocabularies/vocabulary-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { findDestination, unlocks } from '@/shared/navigation/registry';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { formatDate } from '@/shared/utils/format';
+import { problemFrom } from '@/shared/utils/problem';
 
 // /inventory (design/screens/tenant-inventory.html; INV-01, INV-03, INV-04,
 // FP-03, J-6). The filters live in the URL as keys and a plain date, so a
-// view is linkable and "as of" is never today by accident. Nothing on this
-// screen writes. Obligations and Instruments are two tabs of the one screen,
-// switched by the `tab` query parameter so a link to either is bookmarkable.
+// view is linkable and "as of" is never today by accident. Obligations and
+// Instruments are two tabs of the one screen, switched by the `tab` query
+// parameter so a link to either is bookmarkable.
+//
+// The one write is bulk tagging (VOC-08, blocks 1 to 12 of the card): a holder
+// of vocab.manage selects rows on the page, picks one of the bank's tags, sees
+// the server's preview and commits the ids that preview showed, as one call the
+// server audits once. The selection holds while a filter changes, but only rows
+// still in view count, and it clears when the page (the tab) changes, so Tag
+// never acts on a row the person is no longer looking at.
 
 export type InventoryTab = 'obligations' | 'instruments';
+
+/** The inventory's filters plus the obligations' own "Our tags" filter: one of the bank's tag keys, or empty. */
+export type ScreenFilters = InventoryFilters & { tenantTag?: string };
+
+const TENANT_TAG = 'tenant_tag';
+const VOCAB_MANAGE = 'vocab.manage';
 
 /** The URL's tab; anything but "instruments" reads as the default. */
 export function tabFrom(params: { get(name: string): string | null }): InventoryTab {
@@ -39,7 +61,7 @@ function scopeFrom(value: string | null): ScopeFilter {
 }
 
 /** The URL's filters. Unknown or missing parameters read as "not filtered". */
-export function filtersFrom(params: { get(name: string): string | null }): InventoryFilters {
+export function filtersFrom(params: { get(name: string): string | null }): ScreenFilters {
   return {
     instrument: params.get('instrument') ?? '',
     regime: params.get('regime') ?? '',
@@ -47,11 +69,12 @@ export function filtersFrom(params: { get(name: string): string | null }): Inven
     dutyType: params.get('dutyType') ?? '',
     asOf: params.get('asOf') ?? '',
     scope: scopeFrom(params.get('scope')),
+    tenantTag: params.get('tenantTag') ?? '',
   };
 }
 
 /** The filters back into a query string: keys only, and nothing for a filter that is not set. */
-export function searchOf(tab: InventoryTab, filters: InventoryFilters): string {
+export function searchOf(tab: InventoryTab, filters: ScreenFilters): string {
   const search = new URLSearchParams();
   if (tab === 'instruments') search.set('tab', 'instruments');
   if (filters.instrument !== '') search.set('instrument', filters.instrument);
@@ -60,11 +83,12 @@ export function searchOf(tab: InventoryTab, filters: InventoryFilters): string {
   if (filters.dutyType !== '') search.set('dutyType', filters.dutyType);
   if (filters.asOf !== '') search.set('asOf', filters.asOf);
   if (filters.scope !== 'in') search.set('scope', filters.scope);
+  if (filters.tenantTag !== undefined && filters.tenantTag !== '') search.set('tenantTag', filters.tenantTag);
   return search.toString();
 }
 
 /** The obligations read's query: a scope filter is a `dimension:key` term, the way the route reads it. */
-export function queryOf(filters: InventoryFilters): ObligationQuery {
+export function queryOf(filters: ScreenFilters): ObligationQuery {
   const term = [
     ...(filters.regime === '' ? [] : [`${REGIME}:${filters.regime}`]),
     ...(filters.service === '' ? [] : [`${SERVICE}:${filters.service}`]),
@@ -75,6 +99,7 @@ export function queryOf(filters: InventoryFilters): ObligationQuery {
   if (filters.dutyType !== '') query.dutyType = filters.dutyType;
   if (filters.asOf !== '') query.asOf = filters.asOf;
   if (filters.scope !== 'in') query.footprint = filters.scope;
+  if (filters.tenantTag !== undefined && filters.tenantTag !== '') query.tenantTag = [filters.tenantTag];
   return query;
 }
 
@@ -87,11 +112,188 @@ export function instrumentQueryOf(filters: InstrumentFilters): InstrumentQuery {
 }
 
 /** Whether the reader narrowed the list, which decides which empty state answers them. */
-export function isNarrowed(filters: InventoryFilters): boolean {
-  return filters.instrument !== '' || filters.regime !== '' || filters.service !== '' || filters.dutyType !== '' || filters.asOf !== '';
+export function isNarrowed(filters: ScreenFilters): boolean {
+  return filters.instrument !== '' || filters.regime !== '' || filters.service !== '' || filters.dutyType !== '' || filters.asOf !== '' || (filters.tenantTag ?? '') !== '';
 }
 
-function ObligationsTab({ filters, apply, pathname }: { filters: InventoryFilters; apply: (patch: Partial<InventoryFilters>) => void; pathname: string }) {
+/** The ids of the selection that are on the page now: the only ones Tag may name. */
+export function selectedInView(selected: ReadonlySet<string>, items: readonly Obligation[]): Obligation[] {
+  return items.filter((obligation) => selected.has(obligation.id));
+}
+
+/** "Our tags": the bank's own tags as a filter every role reads; it sends the key, never the label. */
+function TenantTagSelect({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+  const t = useT();
+  const tags = useVocabularyValues(TENANT_TAG);
+  const rows = tags.data ?? [];
+  if (tags.isSuccess && rows.length === 0 && value === '') {
+    return (
+      <Select className="w-auto" aria-label={t('inventory.filter.tenantTag')} value="" disabled>
+        <option value="">{t('inventory.filter.noTenantTags')}</option>
+      </Select>
+    );
+  }
+  return (
+    <Select className="w-auto" aria-label={t('inventory.filter.tenantTag')} value={value} onChange={(event) => onChange(event.target.value)}>
+      <option value="">{t('inventory.filter.anyTenantTag')}</option>
+      {value !== '' && !rows.some((row) => row.key === value) ? <option value={value}>{value}</option> : null}
+      {rows.map((row) => (
+        <option key={row.key} value={row.key}>
+          {row.label}
+        </option>
+      ))}
+    </Select>
+  );
+}
+
+/** The select-all for the page: checked when every row is, mixed when some are. */
+function SelectAll({ count, selectedCount, onChange }: { count: number; selectedCount: number; onChange: (checked: boolean) => void }) {
+  const t = useT();
+  const box = useRef<HTMLInputElement>(null);
+  const mixed = selectedCount > 0 && selectedCount < count;
+  useEffect(() => {
+    if (box.current !== null) box.current.indeterminate = mixed;
+  }, [mixed]);
+  return (
+    <label className="mb-2.5 ml-4 flex items-center gap-2.5 font-semibold">
+      <input ref={box} type="checkbox" className="size-5 accent-button" checked={count > 0 && selectedCount === count} onChange={(event) => onChange(event.target.checked)} data-select-all="" />
+      {t('inventory.bulk.selectAll', { count })}
+    </label>
+  );
+}
+
+/** The refusals said in the dialog's own words; anything else offers Try again. */
+const KNOWN_REFUSALS: ReadonlySet<string> = new Set(['too_many_records', 'unknown_key', 'permission_denied']);
+
+/**
+ * Tag, then Preview, then the commit. The preview and the commit are two calls, and
+ * the commit names the ids the preview showed (would gain, already carry), not the
+ * selection as it may since have become. Every count is the server's.
+ */
+function BulkTagDialog({ rows, onClose, onDone }: { rows: readonly Obligation[]; onClose: () => void; onDone: (result: TaggingBatch) => void }) {
+  const t = useT();
+  const [tagKey, setTagKey] = useState('');
+  const values = useVocabularyValues(TENANT_TAG);
+  const preview = usePreviewObligationTagging();
+  const commit = useTagObligations();
+  const shown = preview.data;
+  const titles = new Map(rows.map((row) => [row.id, row.title === null ? row.refLabel : row.title.text]));
+  const tagLabel = shown?.tag.label ?? values.data?.find((row) => row.key === tagKey)?.label ?? tagKey;
+  const failed = commit.isError ? commit : preview.isError ? preview : null;
+
+  let title = t('inventory.bulk.chooseTitle', { count: rows.length });
+  if (shown !== undefined) title = shown.gained.count === 0 ? t('inventory.bulk.nothingTitle') : t('inventory.bulk.previewTitle', { tag: shown.tag.label, count: rows.length });
+
+  const back = () => {
+    preview.reset();
+    commit.reset();
+  };
+  const run = () => {
+    if (tagKey === '') return;
+    commit.reset();
+    preview.mutate({ tagKey, obligationIds: rows.map((row) => row.id) });
+  };
+  const send = () => {
+    if (shown === undefined) return;
+    commit.mutate({ tagKey: shown.tag.key, obligationIds: [...shown.gained.ids, ...shown.alreadyTagged.ids] }, { onSuccess: onDone });
+  };
+  const tagPill = shown === undefined ? null : presentVocabularyValue(TENANT_TAG, { key: shown.tag.key, kind: shown.tag.kind, label: shown.tag.label, extra: {} });
+
+  return (
+    <Modal open onOpenChange={(open) => (open ? undefined : onClose())} title={title}>
+      <div data-bulk-tag="" aria-busy={preview.isPending || commit.isPending}>
+        {shown === undefined ? (
+          <>
+            <VocabularyPicker list={TENANT_TAG} tier="tenant" label={t('inventory.bulk.tagField')} value={tagKey === '' ? [] : [tagKey]} onChange={(keys) => setTagKey(keys[keys.length - 1] ?? '')} />
+            <p className="mt-1.5 text-meta text-muted">{t('inventory.bulk.chooseHint')}</p>
+            {preview.isPending ? <LoadingState rows={1} /> : null}
+          </>
+        ) : (
+          <>
+            <dl className="m-0 mb-3.5 grid grid-cols-3 gap-2.5" data-bulk-counts="">
+              {[
+                ['gained', shown.gained.count, t('inventory.bulk.wouldGain')] as const,
+                ['already', shown.alreadyTagged.count, t('inventory.bulk.alreadyCarry')] as const,
+                ['skipped', shown.skipped, t('inventory.bulk.skipped')] as const,
+              ].map(([key, count, label]) => (
+                <div key={key} className="rounded-card border border-line p-3" data-bulk-count={key}>
+                  <dd className="m-0 text-title font-semibold">{count}</dd>
+                  <dt className="text-meta text-muted">{label}</dt>
+                </div>
+              ))}
+            </dl>
+            {shown.gained.count === 0 && shown.skipped === 0 ? (
+              <p className="text-meta text-muted">{t('inventory.bulk.allCarry', { count: shown.alreadyTagged.count, tag: shown.tag.label })}</p>
+            ) : null}
+            <ul className="m-0 grid list-none gap-2 p-0" data-bulk-preview="">
+              {shown.gained.ids.map((id) => (
+                <li key={id} data-bulk-preview-row="gains" data-obligation-id={id}>
+                  <span className="block">{titles.get(id) ?? id}</span>
+                  <span className="text-meta text-muted">{t('inventory.bulk.wouldGain')}</span>
+                </li>
+              ))}
+              {shown.alreadyTagged.ids.map((id) => (
+                <li key={id} data-bulk-preview-row="carries" data-obligation-id={id}>
+                  <span className="block">{titles.get(id) ?? id}</span>
+                  <span className="flex items-center gap-1.5 text-meta text-muted">
+                    {tagPill === null ? null : (
+                      <Pill tone={tagPill.tone} outlined={tagPill.outlined}>
+                        {tagPill.label}
+                      </Pill>
+                    )}
+                    {t('inventory.bulk.alreadyCarries')}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {shown.skipped > 0 ? <p className="mt-2.5 text-meta text-muted">{t('inventory.bulk.skippedNote', { count: shown.skipped })}</p> : null}
+            {shown.gained.count > 0 ? <p className="mt-2.5 text-meta text-muted">{t('inventory.bulk.auditNote')}</p> : null}
+          </>
+        )}
+
+        {failed === null ? null : KNOWN_REFUSALS.has(problemFrom(failed.error)?.code ?? '') ? (
+          <ProblemAlert
+            error={failed.error}
+            codes={{ too_many_records: t('inventory.bulk.tooMany'), unknown_key: t('inventory.bulk.retired', { tag: tagLabel }), permission_denied: t('inventory.bulk.denied') }}
+          />
+        ) : (
+          <div role="alert" className="mt-2.5 flex flex-wrap items-center gap-2" data-bulk-tag-failed="">
+            <span className="text-meta text-negative">{t('inventory.bulk.failed')}</span>
+            <Button variant="outline" size="small" onClick={failed === commit ? send : run}>
+              {t('common.tryAgain')}
+            </Button>
+          </div>
+        )}
+
+        <ButtonBar className="mt-4">
+          {shown === undefined ? (
+            <>
+              <Button variant="ghost" onClick={onClose}>
+                {t('common.cancel')}
+              </Button>
+              <Button onClick={run} disabled={tagKey === '' || preview.isPending}>
+                {t('inventory.bulk.preview')}
+              </Button>
+            </>
+          ) : shown.gained.count === 0 ? (
+            <Button onClick={onClose}>{t('inventory.bulk.close')}</Button>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={back} disabled={commit.isPending}>
+                {t('common.back')}
+              </Button>
+              <Button onClick={send} disabled={commit.isPending}>
+                {t('inventory.bulk.commit', { count: shown.gained.count })}
+              </Button>
+            </>
+          )}
+        </ButtonBar>
+      </div>
+    </Modal>
+  );
+}
+
+function ObligationsTab({ filters, apply, pathname }: { filters: ScreenFilters; apply: (patch: Partial<ScreenFilters>) => void; pathname: string }) {
   const t = useT();
   const ctx = useFormatContext();
   const permissions = usePermissions();
@@ -99,6 +301,29 @@ function ObligationsTab({ filters, apply, pathname }: { filters: InventoryFilter
   const items = obligations.data?.items ?? [];
   const total = obligations.data?.total ?? 0;
   const outsideHref = `${pathname}?${searchOf('obligations', { ...filters, scope: 'all' })}`;
+  const untagged = searchOf('obligations', { ...filters, tenantTag: '' });
+  const untaggedHref = untagged === '' ? pathname : `${pathname}?${untagged}`;
+  const manages = permissions?.includes(VOCAB_MANAGE) === true;
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [tagging, setTagging] = useState(false);
+  const [done, setDone] = useState<TaggingBatch | null>(null);
+  const inView = selectedInView(selected, items);
+  const cap = bulkTaggingCap();
+  const overCap = inView.length > cap;
+
+  const toggle = (id: string, checked: boolean) => {
+    const next = new Set(selected);
+    if (checked) next.add(id);
+    else next.delete(id);
+    setSelected(next);
+  };
+  const toggleAll = (checked: boolean) => setSelected(checked ? new Set(items.map((obligation) => obligation.id)) : new Set());
+  const openTag = () => {
+    // Refused here, before any call, above the cap; the server refuses the same.
+    if (overCap || inView.length === 0) return;
+    setDone(null);
+    setTagging(true);
+  };
   // The way to the regulatory scope shows only to someone the scope page opens for.
   const scopePage = findDestination('admin-footprint');
   const scopeAction =
@@ -107,6 +332,9 @@ function ObligationsTab({ filters, apply, pathname }: { filters: InventoryFilter
   return (
     <>
       <InventoryFilterBar filters={filters} onChange={apply} />
+      <div className="-mt-2 mb-4 flex flex-wrap items-center gap-2">
+        <TenantTagSelect value={filters.tenantTag ?? ''} onChange={(tenantTag) => apply({ tenantTag })} />
+      </div>
 
       {filters.asOf === '' ? null : (
         <Notice className="flex flex-wrap items-center gap-2" data-as-of={filters.asOf}>
@@ -117,6 +345,35 @@ function ObligationsTab({ filters, apply, pathname }: { filters: InventoryFilter
         </Notice>
       )}
 
+      {done === null ? null : (
+        <div className="mb-3" data-bulk-tag-done="">
+          <StatusLine tone="positive">
+            {done.alreadyTagged.count > 0
+              ? `${t('inventory.bulk.done', { tag: done.tag.label, count: done.gained.count })} ${t('inventory.bulk.doneAlready', { count: done.alreadyTagged.count })}`
+              : t('inventory.bulk.done', { tag: done.tag.label, count: done.gained.count })}
+          </StatusLine>
+        </div>
+      )}
+
+      {manages && inView.length > 0 ? (
+        <div role="region" aria-label={t('inventory.bulk.selection')} className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-card border border-fg bg-surface px-3.5 py-2.5" data-bulk-selection="">
+          <b>{t('inventory.bulk.selected', { count: inView.length })}</b>
+          <ButtonBar className="mt-0">
+            <Button variant="ghost" size="small" onClick={() => setSelected(new Set())}>
+              {t('inventory.bulk.clear')}
+            </Button>
+            <Button size="small" onClick={openTag} disabled={overCap} aria-describedby={overCap ? 'bulk-tag-cap' : undefined}>
+              {t('inventory.bulk.tag')}
+            </Button>
+          </ButtonBar>
+          {overCap ? (
+            <p id="bulk-tag-cap" className="w-full text-meta text-negative">
+              {t('inventory.bulk.overCap', { cap })}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       {obligations.isPending ? (
         <LoadingState rows={3} />
       ) : obligations.isError ? (
@@ -124,6 +381,8 @@ function ObligationsTab({ filters, apply, pathname }: { filters: InventoryFilter
       ) : items.length === 0 ? (
         filters.scope === 'watched' ? (
           <EmptyState title={t('library.empty.watched.title')} body={t('library.empty.watched.body')} />
+        ) : (filters.tenantTag ?? '') !== '' ? (
+          <EmptyState title={t('inventory.empty.noTagMatch.title')} body={t('inventory.empty.noTagMatch.body')} action={{ label: t('inventory.empty.noTagMatch.action'), href: untaggedHref }} />
         ) : isNarrowed(filters) ? (
           <EmptyState
             title={t('inventory.empty.noMatch.title')}
@@ -134,19 +393,39 @@ function ObligationsTab({ filters, apply, pathname }: { filters: InventoryFilter
           <EmptyState title={t('inventory.empty.inScope.title')} body={t('inventory.empty.inScope.body')} action={scopeAction} />
         )
       ) : (
-        <div className="grid gap-2" data-obligation-rows="">
-          {items.map((obligation) => (
-            <ObligationRow key={obligation.id} obligation={obligation} watched={filters.scope === 'watched'} />
-          ))}
-        </div>
+        <>
+          {manages ? <SelectAll count={items.length} selectedCount={inView.length} onChange={toggleAll} /> : null}
+          <div className="grid gap-2" data-obligation-rows="">
+            {items.map((obligation) => (
+              <ObligationRow
+                key={obligation.id}
+                obligation={obligation}
+                watched={filters.scope === 'watched'}
+                selection={manages ? { checked: selected.has(obligation.id), onChange: (checked) => toggle(obligation.id, checked) } : undefined}
+              />
+            ))}
+          </div>
+        </>
       )}
+
+      {tagging ? (
+        <BulkTagDialog
+          rows={inView}
+          onClose={() => setTagging(false)}
+          onDone={(result) => {
+            setTagging(false);
+            setSelected(new Set());
+            setDone(result);
+          }}
+        />
+      ) : null}
 
       {items.length < total ? <p className="mt-3 text-meta text-muted">{t('inventory.showingFirst', { shown: items.length, total })}</p> : null}
     </>
   );
 }
 
-function InstrumentsTab({ filters, apply, pathname }: { filters: InventoryFilters; apply: (patch: Partial<InventoryFilters>) => void; pathname: string }) {
+function InstrumentsTab({ filters, apply, pathname }: { filters: ScreenFilters; apply: (patch: Partial<ScreenFilters>) => void; pathname: string }) {
   const t = useT();
   const instruments = useInstruments(instrumentQueryOf(filters));
   const items = instruments.data?.items ?? [];
@@ -194,7 +473,7 @@ export function InventoryScreen() {
   // obligations tab never asks for it beside its own rows (NFR-02).
   const instrumentCount = useInstruments(instrumentQueryOf(filters), undefined, tab === 'instruments');
 
-  const apply = (patch: Partial<InventoryFilters>) => {
+  const apply = (patch: Partial<ScreenFilters>) => {
     const search = searchOf(tab, { ...filters, ...patch });
     router.replace(search === '' ? pathname : `${pathname}?${search}`);
   };

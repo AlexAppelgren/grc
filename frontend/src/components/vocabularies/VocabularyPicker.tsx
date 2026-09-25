@@ -5,10 +5,19 @@ import { useId, useState, type KeyboardEvent } from 'react';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, TextArea, TextInput, controlClass } from '@/components/ui/Field';
 import { Pill } from '@/components/ui/Pill';
+import { PillRow } from '@/components/ui/PillRow';
 import { ProblemAlert, StatusLine } from '@/components/ui/States';
 import { useCreateValue, useSuggestValue, useVocabularyValues } from '@/features/vocabularies/hooks';
 import type { VocabularyRow } from '@/features/vocabularies/types';
-import { exactDuplicateFrom, listLabel, nearDuplicateFrom, nearMatches, presentVocabularyValue, usageText } from '@/features/vocabularies/vocabulary-presentation';
+import {
+  exactDuplicateFrom,
+  listLabel,
+  nearDuplicateFrom,
+  nearMatches,
+  presentSuggestedValue,
+  presentVocabularyValue,
+  usageText,
+} from '@/features/vocabularies/vocabulary-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { cn } from '@/shared/utils/cn';
@@ -18,24 +27,28 @@ import { cn } from '@/shared/utils/cn';
 // else, then one last option by the list's tier:
 //
 //   - a TENANT list, for a holder of `vocab.manage`: Create, expanded in place
-//     for the usage note (VOC-01). The server's near_duplicate refusal renders
-//     in place with the match as a button (AC-VOC3).
+//     for the usage note (VOC-01).
+//   - a TENANT list, for everyone else: Suggest, expanded the same way (VOC-03).
+//     The suggestion waits in the admin's Suggested tab and is not picked; the
+//     field marks it until the picker is used again.
 //   - a LIBRARY list, for a holder of `proposals.create`: Propose, which
 //     becomes a proposal the platform console reviews (VOC-07). The value is
 //     used once approved.
 //
-// A tenant list for someone WITHOUT `vocab.manage` gets no last option. The
-// card's "Suggest" for that case is VOC-03 ("create where you use it"), which
-// is R2: when it lands, it is the third branch of `lastOption` below.
+// The server refuses a create or a suggestion two ways, rendered in place by
+// code with the value to use (AC-VOC3): 409 duplicate_key, the value exists;
+// 422 near_duplicate, "Did you mean …?". Nothing is offered until the
+// permission list is known.
 
 const VOCAB_MANAGE = 'vocab.manage';
 const PROPOSALS_CREATE = 'proposals.create';
 
-type LastOption = 'create' | 'propose' | null;
+type LastOption = 'create' | 'suggest' | 'propose' | null;
 
-export function lastOption(tier: 'tenant' | 'library', permissions: readonly string[]): LastOption {
+export function lastOption(tier: 'tenant' | 'library', permissions: readonly string[] | null): LastOption {
+  if (permissions === null) return null;
   if (tier === 'library') return permissions.includes(PROPOSALS_CREATE) ? 'propose' : null;
-  return permissions.includes(VOCAB_MANAGE) ? 'create' : null;
+  return permissions.includes(VOCAB_MANAGE) ? 'create' : 'suggest';
 }
 
 export interface VocabularyPickerProps {
@@ -46,23 +59,33 @@ export interface VocabularyPickerProps {
   /** Selected keys, in the order they were picked. */
   value: readonly string[];
   onChange: (keys: string[]) => void;
+  /** False when the host draws the selected values itself (a record's own tags). */
+  showSelected?: boolean;
+  /**
+   * False when the caller may not put an existing value on the record: the
+   * matches are listed so the value is seen to exist, but none can be chosen,
+   * and only the last option (Suggest) acts.
+   */
+  canPick?: boolean;
 }
 
-export function VocabularyPicker({ list, tier, label, value, onChange }: VocabularyPickerProps) {
+export function VocabularyPicker({ list, tier, label, value, onChange, showSelected = true, canPick = true }: VocabularyPickerProps) {
   const t = useT();
   const id = useId();
-  const permissions = usePermissions() ?? [];
+  const permissions = usePermissions();
   const values = useVocabularyValues(list);
   const create = useCreateValue(list);
-  const propose = useSuggestValue(list);
+  // One route for both: a suggestion on a tenant list, a proposal on a library list.
+  const suggest = useSuggestValue(list);
 
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState<'create' | 'suggest' | null>(null);
   const [draftLabel, setDraftLabel] = useState('');
   const [usageNote, setUsageNote] = useState('');
   const [proposed, setProposed] = useState<string | null>(null);
+  const [suggested, setSuggested] = useState<string | null>(null);
 
   const rows = values.data ?? [];
   const byKey = new Map(rows.map((row) => [row.key, row]));
@@ -72,16 +95,20 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
   const optionCount = matches.length + (last === null ? 0 : 1);
   const listboxId = `${id}-listbox`;
   const inputId = `${id}-input`;
-  const refused = nearDuplicateFrom(create.error) ?? exactDuplicateFrom(create.error);
+  const write = expanded === 'suggest' ? suggest : create;
+  // The refusal's code decides the words; either way the value already there is offered.
+  const exactRefusal = exactDuplicateFrom(write.error)?.[0];
+  const refused = exactRefusal ?? nearDuplicateFrom(write.error)?.[0];
 
   const reset = () => {
     setQuery('');
     setOpen(false);
     setActive(0);
-    setExpanded(false);
+    setExpanded(null);
     setDraftLabel('');
     setUsageNote('');
     create.reset();
+    suggest.reset();
   };
 
   const pick = (row: Pick<VocabularyRow, 'key'>) => {
@@ -92,20 +119,20 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
   const choose = (index: number) => {
     const row = matches[index];
     if (row !== undefined) {
-      pick(row);
+      if (canPick) pick(row);
       return;
     }
-    if (last === 'create') {
+    if (last === 'create' || last === 'suggest') {
       setDraftLabel(query.trim());
-      setExpanded(true);
+      setExpanded(last);
       setOpen(false);
     }
     if (last === 'propose') {
-      propose.mutate(
+      suggest.mutate(
         { labels: { en: query.trim() } },
         {
-          onSuccess: (proposal) => {
-            setProposed(proposal.title.length > 0 ? proposal.title : query.trim());
+          onSuccess: (result) => {
+            if (result.outcome === 'proposed') setProposed(result.proposal.title.length > 0 ? result.proposal.title : query.trim());
             reset();
           },
         },
@@ -129,16 +156,24 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
     }
   };
 
-  const submitCreate = () => {
-    if (draftLabel.trim() === '') return;
-    create.mutate(
-      { labels: { en: draftLabel.trim() }, usageNote: usageNote.trim() },
-      {
-        onSuccess: (write) => {
-          if (write.outcome === 'applied') pick(write.result);
+  const submit = () => {
+    const label = draftLabel.trim();
+    if (label === '') return;
+    const body = { labels: { en: label }, usageNote: usageNote.trim() };
+    if (expanded === 'suggest') {
+      suggest.mutate(body, {
+        onSuccess: () => {
+          setSuggested(label);
+          reset();
         },
+      });
+      return;
+    }
+    create.mutate(body, {
+      onSuccess: (result) => {
+        if (result.outcome === 'applied') pick(result.result);
       },
-    );
+    });
   };
 
   return (
@@ -147,7 +182,7 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
         {label}
       </label>
 
-      {value.length > 0 ? (
+      {showSelected && value.length > 0 ? (
         <ul className="m-0 flex list-none flex-wrap items-center gap-1.5 p-0" data-picker-selected="">
           {value.map((key) => {
             const row = byKey.get(key);
@@ -192,6 +227,7 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
               setOpen(true);
               setActive(0);
               setProposed(null);
+              setSuggested(null);
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={onKeyDown}
@@ -204,7 +240,8 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
                   id={`${id}-option-${index}`}
                   role="option"
                   aria-selected={index === active}
-                  className={cn('cursor-pointer rounded-control px-2 py-1.5', index === active && 'bg-neutral-soft')}
+                  aria-disabled={canPick ? undefined : true}
+                  className={cn('rounded-control px-2 py-1.5', canPick && 'cursor-pointer', index === active && 'bg-neutral-soft')}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => choose(index)}
                   data-picker-option={row.key}
@@ -224,8 +261,8 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
                   onClick={() => choose(matches.length)}
                   data-picker-last={last}
                 >
-                  <span className="font-semibold">{last === 'create' ? t('picker.create', { label: query.trim() }) : t('picker.propose', { label: query.trim() })}</span>
-                  <small className="block text-meta text-muted">{last === 'create' ? t('picker.createHint', { list: listLabel(list, t) }) : t('picker.proposeHint')}</small>
+                  <span className="font-semibold">{t(LAST_TITLE[last], { label: query.trim() })}</span>
+                  <small className="block text-meta text-muted">{last === 'create' ? t('picker.createHint', { list: listLabel(list, t) }) : t(LAST_HINT[last])}</small>
                 </li>
               ) : null}
             </ul>
@@ -233,7 +270,7 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
         </div>
       )}
 
-      {expanded ? (
+      {expanded !== null ? (
         <div className="rounded-card border border-line bg-surface p-4" data-picker-create="">
           <Field id={`${id}-create-label`} label={t('admin.vocabularies.label')}>
             <TextInput id={`${id}-create-label`} value={draftLabel} autoFocus onChange={(e) => setDraftLabel(e.target.value)} />
@@ -241,32 +278,41 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
           <Field id={`${id}-create-note`} label={t('admin.vocabularies.usageNote')} hint={t('admin.vocabularies.usageNoteHint')}>
             <TextArea id={`${id}-create-note`} placeholder={t('admin.vocabularies.usageNotePlaceholder')} value={usageNote} onChange={(e) => setUsageNote(e.target.value)} />
           </Field>
-          {refused !== null && refused[0] !== undefined ? (
+          {refused !== undefined ? (
             <div role="alert" className="flex flex-wrap items-center gap-2" data-near-duplicate="">
-              <span className="text-meta text-negative">{t('picker.alreadyExists', { label: refused[0].label })}</span>
-              <Button variant="outline" size="small" onClick={() => pick(refused[0] as { key: string })}>
-                {t('picker.useExisting', { label: refused[0].label })}
+              <span className="text-meta text-negative">{exactRefusal !== undefined ? t('picker.alreadyExists', { label: refused.label }) : t('admin.vocabularies.didYouMean', { label: refused.label })}</span>
+              <Button variant="outline" size="small" onClick={() => pick(refused)}>
+                {t('picker.useExisting', { label: refused.label })}
               </Button>
             </div>
-          ) : create.isError ? (
-            <ProblemAlert error={create.error} />
+          ) : write.isError ? (
+            <ProblemAlert error={write.error} />
           ) : null}
           <ButtonBar>
-            <Button variant="outline" size="small" onClick={reset} disabled={create.isPending}>
+            <Button variant="outline" size="small" onClick={reset} disabled={write.isPending}>
               {t('common.cancel')}
             </Button>
-            <Button size="small" onClick={submitCreate} disabled={create.isPending || draftLabel.trim() === ''}>
-              {t('picker.createAndSelect')}
+            <Button size="small" onClick={submit} disabled={write.isPending || draftLabel.trim() === ''}>
+              {expanded === 'suggest' ? t('picker.sendSuggestion') : t('picker.createAndSelect')}
             </Button>
           </ButtonBar>
         </div>
       ) : null}
 
-      {propose.isError ? <ProblemAlert error={propose.error} /> : null}
+      {expanded === null && suggest.isError ? <ProblemAlert error={suggest.error} /> : null}
       {proposed !== null ? <StatusLine tone="positive">{t('admin.vocabularies.proposed', { title: proposed })}</StatusLine> : null}
+      {suggested !== null ? (
+        <div role="status" className="grid gap-1" data-picker-suggested="">
+          <PillRow pills={presentSuggestedValue(suggested, t)} />
+          <small className="text-meta text-muted">{t('picker.suggestedNote')}</small>
+        </div>
+      ) : null}
     </div>
   );
 }
+
+const LAST_TITLE = { create: 'picker.create', suggest: 'picker.suggest', propose: 'picker.propose' } as const;
+const LAST_HINT = { suggest: 'picker.suggestHint', propose: 'picker.proposeHint' } as const;
 
 /** The remove affordance's glyph: an icon, not copy; its name comes from the catalog. */
 const REMOVE_GLYPH = '×';
