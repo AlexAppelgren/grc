@@ -158,6 +158,19 @@ or has differently:
 In the API every such field is `{key, kind, label}` on reads and `key` on
 writes, never an OpenAPI `enum`.
 
+**Chunk 8 organisation (c8-org-models, tenants 0002, 2026-09-25).** Three tier-one kinds:
+
+- `org_unit_kind` (`group`, `legal_entity`, `business_area`, `business_unit`, `function`),
+  the designed Postgres enum as `OrgUnitKind`: only a legal entity carries the
+  `legal_entity` term and holds licences, and a department is a unit of the last three kinds
+  (TEN-02, D-21).
+- `product_status` (`planned`, `live`, `retired`) stays a kind, `ProductStatusKind`, not a
+  tenant list: `schema.sql` has it as a `CHECK` on a text column, and code branches on it,
+  because retired is how a product is withdrawn rather than deleted and a retired product
+  scopes nothing (TEN-02, D-70).
+- `credential_policy` (`any_passkey`, `device_bound`), `CredentialPolicyKind`: sign-in and
+  enrolment branch on it (ID-07, ADR 0048).
+
 ## 2. Identity (PRD ID, playbook 4.2)
 
 - Drop `app_user.external_subject` as the primary identity, `mfa_enrolled`,
@@ -1239,3 +1252,34 @@ The shapes depart from the design on purpose:
 - `POST /eval/runs` (`startEvalRun`) waits for chunk 14's job runner
   (`backend/scripts/contract_drift_pending.txt`): a run builds the sample corpus in a
   database of its own and takes minutes, which no request should hold open.
+
+## c8-org-models. The bank's organisation as tables (2026-09-25, tenants 0002)
+
+Section 17 of `schema.sql` (`org_unit`, `licence`, `tenant_product`, `tenant_product_term`,
+`internal_item`) and the ID-07/ID-08 security policy are built with these departures:
+
+- Every reference to another tenant row is also a composite `(tenant_id, …)` foreign key,
+  written as SQL in the migration, because PostgreSQL checks a foreign key without
+  row-level security. `org_unit`, `licence`, `tenant_product` and `internal_item` carry
+  `UNIQUE (tenant_id, id)`, and so does `link_kind`, which `internal_item.kind` points at. A
+  head or owner (`head_user_id`, `owner_user_id`, `updated_by_id`) is a key into
+  `membership (tenant_id, user_id)`, so it is always a member of the same bank; the
+  designed `owner_id` is `owner_user_id`, beside the `owner_team_id` tenants 0003 adds.
+- `org_unit.entity_term_id` must be a term of the `legal_entity` dimension (a trigger, since
+  a CHECK cannot read another table) and only a legal entity may carry one (a CHECK).
+  `org_unit` gains `version` for `If-Match`.
+- `licence.licence_type` is a taxonomy term (`licence_type_id`), not the designed free
+  text: a type is a key, never a phrase. `service_term_ids uuid[]` is the
+  `licence_service_term` table, so each term is a real foreign key. D-43's certificate
+  columns are `issuer`, `number`, `scope_statement`, `issued_on`, `valid_until`,
+  `next_audit_on` and `owner_user_id`; none of them is a term.
+- `tenant_product_term` has its own `id` rather than the designed composite primary key,
+  like every other `TenantModel`, with `UNIQUE (product_id, term_id)`.
+- Units, licences, products and items are deactivated, withdrawn or retired, never
+  deleted: each model's `delete()` refuses, and every reference is `PROTECT`.
+- `security_policy` is one row per tenant: `credential_policy`, `allowed_authenticators`
+  (a list of AAGUIDs, schema `AllowedAuthenticators`), `device_bound_from` (a date),
+  `session_idle_minutes` and `session_absolute_hours` (null means the platform default,
+  both above zero and capped by `SESSION_IDLE_MINUTES_MAX` and `SESSION_ABSOLUTE_HOURS_MAX`
+  in the write), `updated_by_id`, `updated_at`. No row means the platform defaults.
+  `CREDENTIAL_POLICY_NOTICE_DAYS` (14) is the default notice a tightening gives.
