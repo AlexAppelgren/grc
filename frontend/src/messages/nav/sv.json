@@ -39,5 +39,6 @@
   "sidebar.expand": "Visa menyn",
   "nav.admin.vocabularies": "Vokabulärer",
   "nav.admin.footprint": "Regulatorisk omfattning",
-  "nav.notifications": "Aviseringar"
+  "nav.notifications": "Aviseringar",
+  "nav.me.outOfOffice": "Frånvaro"
 }

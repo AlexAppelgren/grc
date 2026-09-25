@@ -80,6 +80,8 @@ export const destinations: readonly Destination[] = [
   // The person's own notification inbox (COL-02), first in the account group; its unread count
   // comes from GET /me (c10-fe-notifications).
   { id: 'notifications', href: '/notifications', labelKey: 'nav.notifications', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
+  // A person's own absence with a delegate (TEN-04, c10-fe-prefs-and-ooo).
+  { id: 'me-out-of-office', href: '/me/out-of-office', labelKey: 'nav.me.outOfOffice', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-passkeys', href: '/me/passkeys', labelKey: 'nav.me.passkeys', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-sessions', href: '/me/sessions', labelKey: 'nav.me.sessions', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   // A person's own calendar feeds (HOM-04): the grant the roadmap itself

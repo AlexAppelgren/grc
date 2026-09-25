@@ -39,5 +39,6 @@
   "sidebar.expand": "Expand menu",
   "nav.admin.vocabularies": "Vocabularies",
   "nav.admin.footprint": "Regulatory scope",
-  "nav.notifications": "Notifications"
+  "nav.notifications": "Notifications",
+  "nav.me.outOfOffice": "Out of office"
 }

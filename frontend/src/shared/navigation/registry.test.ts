@@ -155,10 +155,10 @@ describe('navigation registry (playbook 6.2)', () => {
     // An approver who holds nothing else still reaches /admin to find it.
     expect(visibleDestinations('tenant', ['footprint.approve']).map((d) => d.id)).toEqual(['today', 'admin']);
     // Notifications (COL-02) is any member's own inbox, first in the account group.
-    expect(childDestinations(ACCOUNT_PARENT, []).map((d) => d.href)).toEqual(['/notifications', '/me/passkeys', '/me/sessions']);
+    expect(childDestinations(ACCOUNT_PARENT, []).map((d) => d.href)).toEqual(['/notifications', '/me/out-of-office', '/me/passkeys', '/me/sessions']);
     // Calendar feeds needs the grant the roadmap needs (HOM-04), so it joins the
     // account links only for a reader who holds it, and never unlocks anything else.
-    expect(childDestinations(ACCOUNT_PARENT, ['roadmap.read']).map((d) => d.href)).toEqual(['/notifications', '/me/passkeys', '/me/sessions', '/me/calendar-feeds']);
+    expect(childDestinations(ACCOUNT_PARENT, ['roadmap.read']).map((d) => d.href)).toEqual(['/notifications', '/me/out-of-office', '/me/passkeys', '/me/sessions', '/me/calendar-feeds']);
     expect(visibleDestinations('tenant', ['roadmap.read']).map((d) => d.id)).toEqual(['today', 'roadmap']);
     // Children never reach the rail or the dock.
     const all = destinations.flatMap((d) => d.anyOfPermissions);
