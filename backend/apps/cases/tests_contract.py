@@ -221,6 +221,7 @@ BUILT = {
     "closeWithoutAction",  # c9-triage: apps/cases/tests_close_paths.py
     "startAssessment",  # c9-assessment: apps/cases/tests_assessment.py
     "saveAssessment",  # c9-assessment: apps/cases/tests_assessment.py
+    "getCaseFile",  # c9-case-file-export: apps/cases/tests_case_file.py
 }
 
 
