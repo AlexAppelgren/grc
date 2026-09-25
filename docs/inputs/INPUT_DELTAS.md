@@ -1416,6 +1416,7 @@ of range answers 422 `validation_error` and an unknown role or weekday 422 `unkn
 naming the field in `errors`. The change is recorded as `tenant.workflow_updated` with every
 value before and after. `review_reminder_days_before` is not in the chunk 10 brief's five
 columns; the wave plan added it for the review reminder COL-02 names.
+
 ## c8-register-models. The register as tables (2026-09-25, register 0001 and 0002)
 
 Sections 7 and 19 of `schema.sql` (`tenant_obligation`, `tenant_obligation_scope`,

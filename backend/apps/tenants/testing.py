@@ -16,3 +16,8 @@ def licence_type_term() -> TaxonomyTerm:
         )
         term, _ = TaxonomyTerm.objects.get_or_create(dimension=dimension, key="credit_institution")
     return term
+
+
+def entity_term() -> TaxonomyTerm:
+    """The seeded `legal_entity:bank` term a legal entity carries; needs the taxonomy seeds."""
+    return TaxonomyTerm.objects.get(dimension__key="legal_entity", key="bank")

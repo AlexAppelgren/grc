@@ -433,8 +433,7 @@ def list_org_units(request: HttpRequest, page: PageQuery = Query(...)) -> Any:
 
     Errors: `unauthenticated` (401) without a session; `not_found` (404) for a session that
     belongs to no bank, which is what a console session gets; `validation_error` (422) for a
-    page size above 100. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    page size above 100.
     """
     # Ungated by design: capability (any member of the tenant).
     tenant = caller_tenant(request)
@@ -459,15 +458,17 @@ def create_org_unit(request: HttpRequest, body: TenantOrgUnitBody) -> Any:
     administration (ADM-03). No step-up. Recorded in the audit log as `org_unit.created` with
     the new unit, in the same transaction as the write.
 
-    Errors: `validation_error` (422) for a blank or multi-line name, an unknown kind or a field
-    the body does not name; `unknown_key` (422) for a term that is not a legal-entity term,
-    and `not_found` (404) for a parent or head that is not the bank's own;
-    `permission_denied` (403) without `vocab.manage`, naming it in `requiredPermission`;
-    `unauthenticated` (401) without a session. Published ahead of the logic that will fill
-    it, and answering 501 `not_built` until that ships.
+    Errors: `validation_error` (422) for a blank or multi-line name, an unknown kind, a field
+    the body does not name, an LEI that is not 20 letters and digits, a country that is not
+    two letters, or a registration number, LEI, country or term on a unit that is not a
+    legal entity; `unknown_key` (422) for a term that is not a legal-entity term;
+    `unknown_member` (422) for a head who is not an active member of the bank; `not_found`
+    (404) for a parent that is not the bank's own; `permission_denied` (403) without
+    `vocab.manage`, naming it in `requiredPermission`; `unauthenticated` (401) without a
+    session.
     """
     tenant = caller_tenant(request)
-    return organisation.create_org_unit(tenant=tenant, actor=actor_for(request), order=language_order(request, tenant=tenant), body=body)
+    return 201, organisation.create_org_unit(tenant=tenant, actor=actor_for(request), order=language_order(request, tenant=tenant), body=body)
 
 
 @router.patch(
@@ -490,12 +491,13 @@ def update_org_unit(
     between is refused and nothing is merged. Recorded in the audit log as `org_unit.updated`
     with every changed field before and after. No step-up.
 
-    Errors: `not_found` (404) for a unit, parent or head that is not the bank's own;
+    Errors: `not_found` (404) for a unit or parent that is not the bank's own;
     `stale_write` (409) when `If-Match` is not the current version; `validation_error` (422)
-    for an `If-Match` that is not a version or a body the schema refuses; `unknown_key` (422)
-    for an unknown term; `permission_denied` (403) without `vocab.manage`; `unauthenticated`
-    (401). Published ahead of the logic that will fill it, and answering 501 `not_built`
-    until that ships.
+    for an `If-Match` that is not a version, a body the schema refuses, a parent that is the
+    unit itself or sits under it, or a legal entity's field on another kind of unit;
+    `unknown_key` (422) for an unknown term; `unknown_member` (422) for a head who is not an
+    active member of the bank; `permission_denied` (403) without `vocab.manage`;
+    `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return organisation.update_org_unit(
@@ -529,8 +531,7 @@ def list_licences(
     that holds none is a 200 with `total` 0.
 
     Errors: `not_found` (404) for a unit that is not the bank's own; `validation_error` (422)
-    for a page size above 100; `unauthenticated` (401). Published ahead of the logic that will
-    fill it, and answering 501 `not_built` until that ships.
+    for a page size above 100; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     tenant = caller_tenant(request)
@@ -557,17 +558,18 @@ def create_licence(
     applicability changes.
 
     Needs `vocab.manage`. No step-up. Recorded in the audit log as `licence.created` with the
-    new row, in the same transaction as the write.
+    new row, in the same transaction as the write; the scope note and statement a person
+    typed are named in `rewritten`, never copied.
 
-    Errors: `not_found` (404) for a unit or owner that is not the bank's own;
-    `validation_error` (422) for a unit that is not a legal entity, a missing type or a field
-    the body does not name; `unknown_key` (422) for a type or service term the library does
-    not hold; `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401).
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    Errors: `not_found` (404) for a unit that is not the bank's own; `validation_error` (422)
+    for a unit that is not a legal entity, a missing type, a field the body does not name, or
+    a withdrawal or validity end before the date it starts from; `unknown_key` (422) for a
+    type or service term that is not a term obligations are scoped with; `unknown_member`
+    (422) for an owner who is not an active member of the bank; `permission_denied` (403)
+    without `vocab.manage`; `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
-    return organisation.create_licence(
+    return 201, organisation.create_licence(
         tenant=tenant, actor=actor_for(request), order=language_order(request, tenant=tenant), org_unit_id=org_unit_id, body=body
     )
 
@@ -590,14 +592,15 @@ def update_licence(
 
     Needs `vocab.manage`. Send `If-Match` with the `version` last read; a row changed in
     between is refused. Recorded in the audit log as `licence.updated` with every changed
-    field before and after. No step-up.
+    field before and after, the scope note and statement named in `rewritten`, never copied.
+    No step-up.
 
-    Errors: `not_found` (404) for a licence or owner that is not the bank's own;
-    `stale_write` (409) when `If-Match` is not the current version; `validation_error` (422)
-    for an `If-Match` that is not a version or a body the schema refuses; `unknown_key` (422)
-    for an unknown term; `permission_denied` (403) without `vocab.manage`; `unauthenticated`
-    (401). Published ahead of the logic that will fill it, and answering 501 `not_built`
-    until that ships.
+    Errors: `not_found` (404) for a licence that is not the bank's own; `stale_write` (409)
+    when `If-Match` is not the current version; `validation_error` (422) for an `If-Match`
+    that is not a version, a body the schema refuses, or an end date before its start;
+    `unknown_key` (422) for an unknown term; `unknown_member` (422) for an owner who is not
+    an active member of the bank; `permission_denied` (403) without `vocab.manage`;
+    `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return organisation.update_licence(
@@ -627,8 +630,7 @@ def list_products(request: HttpRequest, page: PageQuery = Query(...)) -> Any:
     with no product is a 200 with `total` 0.
 
     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a session
-    that belongs to no bank; `unauthenticated` (401). Published ahead of the logic that will
-    fill it, and answering 501 `not_built` until that ships.
+    that belongs to no bank; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     tenant = caller_tenant(request)
@@ -650,16 +652,17 @@ def create_product(request: HttpRequest, body: TenantProductBody) -> Any:
     be scoped before it launches.
 
     Needs `vocab.manage`. No step-up. Recorded in the audit log as `product.created` with the
-    new row, in the same transaction as the write.
+    new row, in the same transaction as the write; the description is named in `rewritten`,
+    never copied.
 
     Errors: `validation_error` (422) for a blank or multi-line name, a name the bank already
     uses, an unknown status or a field the body does not name; `unknown_key` (422) for a term
-    the library does not hold; `not_found` (404) for a unit or owner that is not the bank's
-    own; `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401). Published
-    ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+    that is not a term obligations are scoped with; `unknown_member` (422) for an owner who
+    is not an active member of the bank; `not_found` (404) for a unit that is not the bank's
+    own; `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
-    return products.create_product(tenant=tenant, actor=actor_for(request), order=language_order(request, tenant=tenant), body=body)
+    return 201, products.create_product(tenant=tenant, actor=actor_for(request), order=language_order(request, tenant=tenant), body=body)
 
 
 @router.patch(
@@ -680,14 +683,14 @@ def update_product(
 
     Needs `vocab.manage`. Send `If-Match` with the `version` last read; a product changed in
     between is refused. Recorded in the audit log as `product.updated` with every changed
-    field before and after. No step-up.
+    field before and after, the description named in `rewritten`, never copied. No step-up.
 
-    Errors: `not_found` (404) for a product, unit or owner that is not the bank's own;
+    Errors: `not_found` (404) for a product or unit that is not the bank's own;
     `stale_write` (409) when `If-Match` is not the current version; `validation_error` (422)
-    for an `If-Match` that is not a version or a body the schema refuses; `unknown_key` (422)
-    for an unknown term; `permission_denied` (403) without `vocab.manage`; `unauthenticated`
-    (401). Published ahead of the logic that will fill it, and answering 501 `not_built`
-    until that ships.
+    for an `If-Match` that is not a version, a body the schema refuses or a name the bank
+    already uses; `unknown_key` (422) for an unknown term; `unknown_member` (422) for an
+    owner who is not an active member of the bank; `permission_denied` (403) without
+    `vocab.manage`; `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return products.update_product(

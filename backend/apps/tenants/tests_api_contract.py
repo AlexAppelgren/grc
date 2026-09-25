@@ -322,8 +322,20 @@ class TenantsRoutesHideAnotherBanksRecords(TenantsContractCase):
 
 class TenantsRouteStubs(TenantsContractCase):
     VERSIONED = {"updateOrgUnit", "updateLicence", "updateProduct"}
+    # c8-ten-organisation: real logic, proved in tests_org_units.py and tests_products.py.
+    BUILT = {
+        "listOrgUnits",
+        "createOrgUnit",
+        "updateOrgUnit",
+        "listLicences",
+        "createLicence",
+        "updateLicence",
+        "listProducts",
+        "createProduct",
+        "updateProduct",
+    }
     # c8-ten-teams-people: built, and proven in tests_teams.py and tests_reference_people.py.
-    BUILT = {"listTeams", "listTeamMembers", "listPeople"}
+    BUILT |= {"listTeams", "listTeamMembers", "listPeople"}
     # c8-ten-reassignment: built, and proven in tests_reassignment.py.
     BUILT |= {"getMemberOpenWork", "removeMember"}
 
@@ -344,6 +356,8 @@ class TenantsRouteStubs(TenantsContractCase):
         calls = [(route, self.everything()) for route in self.records.routes() if route[0] not in self.BUILT]
         calls += [(route, self.console()) for route in self.records.console_routes()]
         for (name, method, url, body, _permission, _step_up), who in calls:
+            if name in self.BUILT:
+                continue
             headers = {**AS_SESSION, "HTTP_IF_MATCH": '"1"'} if method == "patch" else AS_SESSION
             with self.subTest(operation=name), stub_session(who):
                 response = _call(self.client, method, url, body, headers)

@@ -4,6 +4,10 @@ import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 
 import { BackLink } from '@/components/admin/AdminGate';
+import { DepartmentsSection } from '@/components/admin/DepartmentsSection';
+import { EntitiesSection } from '@/components/admin/EntitiesSection';
+import { ProductsSection } from '@/components/admin/ProductsSection';
+import { TeamsSection } from '@/components/admin/TeamsSection';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { CheckGroup, CheckRow, Field, Select, TextInput } from '@/components/ui/Field';
 import { PageHead } from '@/components/ui/PageHead';
@@ -21,6 +25,8 @@ import { findDestination } from '@/shared/navigation/registry';
 // needs security.manage and the server's 403 renders in place. The switch over
 // this organisation's Ask and AI drafts (D-07) is its own security change: the
 // api client opens the passkey prompt on the server's step_up_required.
+// Below them, one mount point per section of the organisation (TEN-02): each
+// section reads and writes on its own, under vocab.manage.
 
 const NORDIC_ZONES = ['Europe/Stockholm', 'Europe/Helsinki', 'Europe/Oslo', 'Europe/Copenhagen', 'Europe/Brussels'];
 
@@ -219,6 +225,10 @@ export function OrganisationScreen() {
           <Checklist tenant={tenant.data} />
         </div>
       )}
+      <DepartmentsSection />
+      <TeamsSection />
+      <EntitiesSection />
+      <ProductsSection />
     </>
   );
 }
