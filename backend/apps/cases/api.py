@@ -633,7 +633,7 @@ def delete_action(request: HttpRequest, action_id: uuid.UUID = Path(..., descrip
         with its hash. A case with no evidence answers 200 with an empty page.
 
         Errors: """ + _CASE_ERRORS + """; `validation_error` for a page size or offset outside
-        its limits. """ + _AHEAD
+        its limits."""
     ),
     summary="See the evidence attached to a case, and whether each file passed the scan",
 )
@@ -663,9 +663,11 @@ def list_evidence(request: HttpRequest, page: Query[PageQuery], change_id: uuid.
 
         Errors: """ + _CASE_ERRORS + """; `validation_error` for fields the schema refuses, a
         file part missing for `file` or sent for another kind, a file type outside the allowed
-        list or a file over the size limit — each refused before anything is stored. When the
-        malware scanner is unavailable the request is refused with 503 and nothing is stored.
-        """ + _AHEAD
+        list or a file over the size limit — each refused before anything is stored; a link must
+        be a full https address. `evidence_limit_reached` (409) when the case already holds as
+        many live pieces as a case may; `case_closed` (409) when the case is closed or dismissed.
+        `scanner_unavailable` (503) when the malware scanner is unavailable, and nothing is
+        stored."""
     ),
     summary="Attach a file, a link or a reference to a case as evidence",
     openapi_extra=_EVIDENCE_FORM_EXAMPLE,
@@ -698,9 +700,12 @@ def add_evidence(
         reader and an auditor download like everyone else. Every download writes one audit row
         naming the person and the evidence. A file whose scan is still running is refused with
         409, one that failed the scan with 422, and a link or a reference has no bytes to download.
+        A refusal writes no audit row.
 
-        Errors: `not_found` when no live evidence of this bank has that id; `permission_denied`
-        without `cases.read`; `unauthenticated` without a session, including any API key. """ + _AHEAD
+        Errors: `not_found` when no live evidence of this bank has that id, or it is a link or a
+        reference; `scan_pending` (409) while the malware scan runs; `scan_failed` (422) when the
+        file was found infected or could not be scanned; `permission_denied` without
+        `cases.read`; `unauthenticated` without a session, including any API key."""
     ),
     summary="Download a file attached to a case as evidence",
     openapi_extra=_DOWNLOAD_EXAMPLE,
@@ -727,8 +732,9 @@ def download_evidence(request: HttpRequest, evidence_id: uuid.UUID = Path(..., d
         A person's session holding `cases.work` in their own bank. No request body. It writes the
         evidence row and one audit row naming the person, and answers 204 with no content.
 
-        Errors: `not_found` when no live evidence of this bank has that id; `permission_denied`
-        without `cases.work`; `unauthenticated` without a session, including any API key. """ + _AHEAD
+        Errors: `not_found` when no live evidence of this bank has that id; `case_closed` (409)
+        when the case is closed or dismissed, whose evidence stays as it was; `permission_denied`
+        without `cases.work`; `unauthenticated` without a session, including any API key."""
     ),
     summary="Remove a piece of evidence from a case",
 )

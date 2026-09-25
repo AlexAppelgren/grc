@@ -684,6 +684,25 @@ SCANNER_PORT = env_int("SCANNER_PORT", 3310)  # clamd's TCPSocket in the officia
 # stream before it answers, so this must cover scanning the largest evidence file.
 SCANNER_TIMEOUT_SECONDS = float(env_str("SCANNER_TIMEOUT_SECONDS", "60.0"))
 
+# ===== CAS-05 evidence on a case (apps/cases/evidence.py, tasks.py, c9-evidence) =========
+# A file is refused with 422 before a byte is stored when its type is outside this list or
+# it is larger than the cap (parallel plan §7.2). The type is what the header claims, the
+# name's extension and the bytes themselves all agree on; a type listed here that the
+# server cannot recognise in the bytes is refused rather than trusted.
+EVIDENCE_ALLOWED_TYPES = env_list(
+    "EVIDENCE_ALLOWED_TYPES",
+    "application/pdf,"
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document,"
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,"
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation,"
+    "image/png,image/jpeg,text/plain,text/csv",
+)
+EVIDENCE_MAX_BYTES = env_int("EVIDENCE_MAX_BYTES", 25 * 1024 * 1024)
+# How many more times a scan that failed is tried before the file stays `error`.
+EVIDENCE_SCAN_RETRIES = env_int("EVIDENCE_SCAN_RETRIES", 2)
+# Live evidence one case may hold, so one case cannot push its case file past the budget.
+CASE_EVIDENCE_MAX = env_int("CASE_EVIDENCE_MAX", 200)
+
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.

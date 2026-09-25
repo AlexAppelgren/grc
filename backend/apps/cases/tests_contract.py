@@ -172,6 +172,8 @@ ASSESSMENT_BODY = {"applies": "yes", "why": "Both advice services pay for extern
 ACTION_BODY = {"title": "Document the criteria", "ownerId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "dueDate": "2026-10-10"}
 EVIDENCE_FORM = {"kind": "link", "name": "FI decision memo", "url": "https://intranet.example.com/memo/42"}
 MULTIPART = "multipart"
+# Operations whose module is built and so no longer answer 501 (each proved in its own tests).
+BUILT = {"listEvidence", "addEvidence", "downloadEvidence", "removeEvidence"}  # c9-evidence: tests_evidence*.py
 
 
 class Route:
@@ -308,6 +310,8 @@ class WorkflowContract(TestCase):
         bank = _bank_with_work()
         with stub_session(bank.principal):
             for route in WORKFLOW:
+                if route.operation_id in BUILT:
+                    continue
                 with self.subTest(operation=route.operation_id):
                     response = _send(self.client, route, route.url(bank.change_id, bank.action_id, bank.evidence_id), AS_SESSION)
                     self.assertEqual(response.status_code, 501)
