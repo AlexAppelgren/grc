@@ -25,6 +25,8 @@ export const AUDIT_SUBJECT_TYPES: readonly string[] = [
   'authority',
   'auth_challenge',
   'case',
+  'change_case',
+  'evidence',
   'footprint',
   'footprint_change_request',
   'instrument',
