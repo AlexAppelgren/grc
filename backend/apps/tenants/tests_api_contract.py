@@ -333,6 +333,8 @@ class TenantsRoutesHideAnotherBanksRecords(TenantsContractCase):
 
 class TenantsRouteStubs(TenantsContractCase):
     VERSIONED = {"updateOrgUnit", "updateLicence", "updateProduct"}
+    # c8-ten-teams-people: built, and proven in tests_teams.py and tests_reference_people.py.
+    BUILT = {"listTeams", "listTeamMembers", "listPeople"}
 
     def test_an_if_match_that_is_not_a_version_is_422_on_every_versioned_write(self) -> None:
         with stub_session(self.everything()):
@@ -348,7 +350,7 @@ class TenantsRouteStubs(TenantsContractCase):
         """Past every gate, in a real bank as a real member, or in the console: 501 `not_built`,
         in the one problem shape, with nothing of the server in it. Replaced row by row as
         each logic lands."""
-        calls = [(route, self.everything()) for route in self.records.routes()]
+        calls = [(route, self.everything()) for route in self.records.routes() if route[0] not in self.BUILT]
         calls += [(route, self.console()) for route in self.records.console_routes()]
         for (name, method, url, body, _permission, _step_up), who in calls:
             if name in BUILT_SINCE:
@@ -369,13 +371,13 @@ class TenantsRouteStubs(TenantsContractCase):
                 if permission is not None:
                     continue
                 with self.subTest(operation=name):
-                    expected = 200 if name in BUILT_SINCE else 501
+                    expected = 200 if name in BUILT_SINCE or name in self.BUILT else 501
                     self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, expected)
 
-    def test_a_known_permission_on_the_people_picker_reaches_the_stub(self) -> None:
+    def test_a_known_permission_on_the_people_picker_is_answered(self) -> None:
         with stub_session(self.everything(permissions=frozenset())):
             response = self.client.get(f"/api/v1/reference/people?permission={perms.CASES_SIGNOFF}", **AS_SESSION)
-        self.assertEqual(response.status_code, 501)
+        self.assertEqual(response.status_code, 200)
 
 
 class PermissionDescriptions(TestCase):
