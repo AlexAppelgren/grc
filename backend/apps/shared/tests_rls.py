@@ -181,6 +181,14 @@ TENANT_ONLY_TABLES = [
     # c8-teams-model (tenants 0003, TEN-03): a person in a team. Both keys are composite
     # (apps/tenants/tests_team_models.py proves the database refuses a cross-tenant one).
     "team_member",
+    # Chunk 10's (c10-collab-models): a comment, the people it mentions, the text an edit
+    # replaced, a person's notifications and the proof a mail went out. All one bank's own;
+    # comments and revisions hold tenant text (COL-01, COL-02).
+    "comment",
+    "comment_mention",
+    "comment_revision",
+    "notification",
+    "email_message",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also

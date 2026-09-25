@@ -67,6 +67,29 @@ export const LOGINS = {
   readerSv: 'reader-sv@example-bank.test',
   /** Reserved for I18N-S3: it switches this member's own interface language, which every session of theirs follows. */
   language: 'language@example-bank.test',
+  // r2-e2e-login-roster: every login the R2 journeys need, each reserved for the journeys named.
+  /** Reserved for HOM-S13 and TEN-S8: the head of Retail Banking. */
+  departmentHead: 'head@example-bank.test',
+  /** Reserved for HOM-S13 (J-9): added as a participant, then leaves. */
+  participant: 'participant@example-bank.test',
+  /** Reserved for TEN-S5: removed while owning work, which is reassigned. */
+  leaver: 'leaver@example-bank.test',
+  /** Reserved for TEN-S8: put in a team. */
+  teamMember: 'teams@example-bank.test',
+  /** Reserved for TEN-S4: the approver out of office with a delegate. */
+  awayApprover: 'away@example-bank.test',
+  /** Reserved for CAS-S9 and CAS-S15 (J-3): an owner who also holds cases.signoff. */
+  ownerApprover: 'owner-approver@example-bank.test',
+  /** Reserved for COL-S2: a Swedish-speaking team member. */
+  svMember: 'sv-member@example-bank.test',
+  /** Reserved for ACC-S11: the second member holding security.manage. */
+  securityAdmin: 'security@example-bank.test',
+  /** Reserved for ACC-S3: the compliance officer who mints a personal access token. */
+  tokens: 'tokens@example-bank.test',
+  /** Reserved for HOM-S10, COL-S12 and COL-S8: a role without register.read or cases.read. */
+  libraryOnly: 'library-only@example-bank.test',
+  /** Reserved for CAS-S14 (J-2) and TEN-S7 (J-8): tenant B's compliance officer. */
+  secondBankComplianceOfficer: 'compliance_officer@second-bank.test',
 } as const;
 
 export const ANNA_INVITE_TOKEN = 'e2e-invite-anna';

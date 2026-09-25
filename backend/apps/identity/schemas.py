@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
 from django.conf import settings
-from pydantic import ConfigDict, Field, JsonValue
+from pydantic import ConfigDict, Field, JsonValue, ModelWrapValidatorHandler, ValidationInfo, model_validator
 
 from apps.shared import permissions as perms
 from apps.shared.schemas import CamelSchema, WriteBody
@@ -1045,6 +1045,14 @@ class MeTenant(CamelSchema):
     )
 
 
+class MeDepartment(CamelSchema):
+    """A department the caller heads (TEN-02, HOM-05, D-21): a business area, business unit or
+    function of the bank whose head is the caller."""
+
+    id: uuid.UUID = Field(description="The department's identifier, a UUID of this bank's organisation, as `GET /tenant/org-units` lists it.")
+    name: str = Field(description="The department's name as the bank wrote it, such as `Retail Banking`, for display only.")
+
+
 class MeCounts(CamelSchema):
     """The queue counts behind Today's "Decide now" panel: three independent reads, each
     filtered by the caller's own permissions rather than refused, so a reader without a
@@ -1076,6 +1084,93 @@ class MeCounts(CamelSchema):
             "negative. Every member sees their own, so this is 0 only when they own none."
         ),
         examples=[1],
+    )
+    unread_notifications: int = Field(
+        ge=0,
+        description=(
+            "How many of the caller's own notifications in this bank are still unread, 0 or "
+            "more. Every member reads their own, so no permission is needed."
+        ),
+        examples=[4],
+    )
+
+
+class MembershipNotificationPrefs(CamelSchema):
+    """What one person has chosen to be told about in this bank (COL-02). Each switch is on
+    unless the person turned it off, and a switch never hides the record itself. An
+    escalation is the bank's control and not the person's, so no switch mutes it."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"weeklyDigest": True, "reminders": False, "mentions": True, "assignments": True, "weeklyBriefing": True}
+            ]
+        }
+    )
+
+    weekly_digest: bool = Field(
+        default=True,
+        description="True to receive the weekly digest mail of your open work; true unless you turned it off.",
+    )
+    reminders: bool = Field(
+        default=True,
+        description=(
+            "True to be told when work you are responsible for is due soon or overdue; true "
+            "unless you turned it off. It never mutes an escalation."
+        ),
+    )
+    mentions: bool = Field(
+        default=True,
+        description=(
+            "True to be told when a colleague mentions you in a comment; true unless you turned "
+            "it off. The comment still lists you either way."
+        ),
+    )
+    assignments: bool = Field(
+        default=True,
+        description="True to be told when work is assigned to you; true unless you turned it off.",
+    )
+    weekly_briefing: bool = Field(
+        default=True,
+        description="True to receive the weekly regulatory briefing mail; true unless you turned it off.",
+    )
+
+
+class MembershipNotificationPrefsPatch(CamelSchema):
+    """The notification switches to change. Send only the ones that change; the others stay
+    as they are. A key that is not one of the five switches is refused with `unknown_key`
+    and nothing is saved."""
+
+    # Open on purpose: an unknown key reaches the logic, which refuses it by name (422
+    # `unknown_key`) rather than dropping it unseen.
+    model_config = ConfigDict(extra="allow", json_schema_extra={"examples": [{"mentions": False}]})
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _run_root_validator(cls, values: Any, handler: ModelWrapValidatorHandler[Any], info: ValidationInfo) -> Any:
+        # Replaces ninja.Schema's validator of the same name, whose attribute getter would
+        # drop the unknown keys before the logic could refuse them.
+        return handler(values)
+
+    weekly_digest: bool | None = Field(
+        default=None,
+        description="True or false to switch the weekly digest mail on or off; omit or send null to leave it.",
+    )
+    reminders: bool | None = Field(
+        default=None,
+        description="True or false to switch due-soon and overdue reminders on or off; omit or send null to leave it.",
+    )
+    mentions: bool | None = Field(
+        default=None,
+        description="True or false to switch mention notifications on or off; omit or send null to leave it.",
+    )
+    assignments: bool | None = Field(
+        default=None,
+        description="True or false to switch assignment notifications on or off; omit or send null to leave it.",
+    )
+    weekly_briefing: bool | None = Field(
+        default=None,
+        description="True or false to switch the weekly briefing mail on or off; omit or send null to leave it.",
     )
 
 
@@ -1130,8 +1225,16 @@ class Me(CamelSchema):
                     "enrolmentPending": False,
                     "passkeyCount": 2,
                     "stepUpValidUntil": None,
-                    "counts": {"triage": 3, "proposals": 2, "assignedToMe": 1},
+                    "counts": {"triage": 3, "proposals": 2, "assignedToMe": 1, "unreadNotifications": 4},
                     "lastVisitAt": "2026-09-18T07:00:00Z",
+                    "notificationPrefs": {
+                        "weeklyDigest": True,
+                        "reminders": True,
+                        "mentions": False,
+                        "assignments": True,
+                        "weeklyBriefing": True,
+                    },
+                    "headOf": [{"id": "5b1d7c2e-8f3a-4d6b-9c0e-2a4f6b8d0c1e", "name": "Retail Banking"}],
                 }
             ]
         }
@@ -1222,12 +1325,31 @@ class Me(CamelSchema):
         ),
         examples=["2026-09-18T07:00:00Z"],
     )
+    notification_prefs: MembershipNotificationPrefs | None = Field(
+        description=(
+            "What the person has chosen to be told about in this bank, each switch on unless "
+            "they turned it off, or null for a platform session, which belongs to no bank. "
+            "`PATCH /me` changes it."
+        )
+    )
+    head_of: list[MeDepartment] = Field(
+        description=(
+            "The active departments of this bank the caller is the head of, by name: the business "
+            "areas, business units and functions an administrator named them head of on the "
+            "organisation screen. A legal entity or a group is never a department. My work offers "
+            "a department view for each. Empty for someone who heads none, for a platform session "
+            "and for an enrolment session."
+        )
+    )
 
 
 class MePatch(CamelSchema):
-    """Changing your own name or reading language. Send only what changes."""
+    """Changing your own name, reading language or notification switches. Send only what
+    changes."""
 
-    model_config = ConfigDict(json_schema_extra={"examples": [{"name": "Sara Lindqvist", "locale": "sv"}]})
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"name": "Sara Lindqvist", "locale": "sv", "notificationPrefs": {"mentions": False}}]}
+    )
 
     name: str | None = Field(
         default=None,
@@ -1246,6 +1368,15 @@ class MePatch(CamelSchema):
             "most 8 characters. Omit it or send null to leave it as it is; a key that is not an "
             "active language is refused with `unknown_key`. `GET /reference/languages` lists "
             "the keys on offer."
+        ),
+    )
+    notification_prefs: MembershipNotificationPrefsPatch | None = Field(
+        default=None,
+        description=(
+            "The notification switches to change in the bank this session is signed in to, "
+            "only the ones that change. Omit it or send null to leave them all as they are. A "
+            "key that is not a switch is refused with `unknown_key`; a platform session has "
+            "no bank and is refused with `not_found`."
         ),
     )
 
@@ -1338,6 +1469,7 @@ _EXAMPLE_MEMBER: dict[str, JsonValue] = {
     "lastSeenAt": "2026-09-22T06:58:04Z",
     "passkeyCount": 2,
     "activeSessions": 1,
+    "teams": ["compliance"],
 }
 _EXAMPLE_INVITATION: dict[str, JsonValue] = {
     "id": "7d2e9b14-6a3c-4f58-b1d0-3e8c5a7f2b96",
@@ -1495,6 +1627,16 @@ class MemberOut(CamelSchema):
             "`GET /tenant/members/{user_id}/sessions`."
         )
     )
+    teams: list[str] = Field(
+        description=(
+            "The keys of the bank's teams the person is in, in the team list's order, such as "
+            "`compliance`; empty when they are in none. Each is a row of the bank's own `team` "
+            "vocabulary, which an administrator may extend, so read the labels from "
+            "`GET /vocab/team` and never match on a label. A deactivated member keeps the teams "
+            "they were in until their removal ends them. `PUT /tenant/members/{user_id}/teams` "
+            "sets them."
+        )
+    )
 
 
 class MembersPage(CamelSchema):
@@ -1569,6 +1711,24 @@ class MemberPatch(CamelSchema):
             "The member's new job title in this bank, at most 200 characters, surrounding spaces "
             "trimmed; an empty string clears it. Leave it out, or send null (the default), to keep "
             "it as it is. Changing only the title needs no step-up."
+        ),
+    )
+
+
+class MemberTeamsBody(WriteBody):
+    """`PUT /tenant/members/{user_id}/teams`: the whole set of teams a member is in."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"teams": ["compliance", "retail-compliance"]}]})
+
+    teams: list[Annotated[str, Field(max_length=80)]] = Field(
+        max_length=50,
+        description=(
+            "The keys of every team the member is to be in, at most 50 keys of at most 80 "
+            "characters each, such as `compliance`; the set replaces the old one, a key named "
+            "twice counts once and an empty list takes the member out of every team. Each is a "
+            "key of the bank's own `team` vocabulary (`GET /vocab/team`), which an administrator "
+            "may extend. A key the bank does not have, or a retired team the member is not "
+            "already in, is refused with `unknown_key`; a retired team they are in may be kept."
         ),
     )
 

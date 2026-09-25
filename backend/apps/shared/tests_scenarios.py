@@ -154,6 +154,11 @@ BOUNDED_BY_DESIGN = {
     "listTerms": "One vocabulary's rows (the taxonomy's terms), managed by an admin and read whole by pickers.",
     "listVocabularies": "The fixed set of vocabulary lists in code.",
     "listVocabularyRows": "One vocabulary's rows, managed by an admin and read whole by pickers.",
+    # c8-tenants-contract (TEN-05, COL-04).
+    "getMemberOpenWork": "One row per kind of work a member holds: nine kinds at most.",
+    "listPeople": "One bank's active members as ids and names, read whole by every people picker (INPUT_DELTAS section 1).",
+    # c8-ui-applicability-status (REG-01, D-42).
+    "listSpannedEntities": "One bank's active legal entities that an obligation spans: a banking group's handful, read whole by the applicability panel.",
 }
 # The walk proves it finds what it is meant to find on a contract with one unpaged list.
 PLANTED_LISTS: dict[str, Any] = {

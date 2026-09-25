@@ -338,3 +338,53 @@ ROW_QUERIES = 5
 # entities (1) and the scope rule (5), and the locking reads of the entries and the scope
 # rows (2). Pinned so a lookup that turns per-row shows up here.
 BATCH_QUERIES = 10
+
+
+# c8-ui-applicability-status: the legal entities an answer can be given for, read before any
+# row exists, so the obligation page offers each one (REG-01, REG-S12, D-42).
+class SpannedEntities(ApplicabilityTestCase):
+    def get_span(self, obligation: Any, *, who: Any = None, tenant: Tenant | None = None) -> Any:
+        return self.client.get(
+            f"{V1}/obligations/{getattr(obligation, 'id', obligation)}/register/entities",
+            **sign_in(who or self.a.officer, tenant=tenant or self.a.tenant),
+        )
+
+    def test_a_standard_spans_every_entity_by_name_and_reading_it_writes_nothing(self) -> None:
+        before = self.counts()
+        response = self.get_span(self.standard)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(
+            response.json(),
+            [{"orgUnitId": str(entity.id), "orgUnitName": entity.name} for entity in (self.a.bank_ab, self.a.fonder, self.a.liv)],
+        )
+        self.assertEqual(self.counts(), before)
+
+    def test_a_bank_duty_spans_the_bank_alone_and_the_span_is_the_one_the_write_checks(self) -> None:
+        names = [row["orgUnitName"] for row in self.get_span(self.duty).json()]
+        self.assertEqual(names, ["Example Bank AB"])
+        self.assertEqual(names, [entity.name for entity in entities_spanned([self.duty.id])[self.duty.id]])
+
+    def test_any_member_who_reads_the_register_sees_it_and_only_their_own_bank(self) -> None:
+        self.assertEqual(self.get_span(self.duty, who=self.a.owner).status_code, 200)
+        ids = {row["orgUnitId"] for row in self.get_span(self.standard, who=self.b.officer, tenant=self.b.tenant).json()}
+        self.assertEqual(ids, {str(entity.id) for entity in (self.b.bank_ab, self.b.fonder, self.b.liv)})
+
+    def test_an_obligation_the_bank_cannot_see_is_404(self) -> None:
+        private = library_build.obligation(
+            library_build.instrument(key="b-span", regime="regime:securities", owner_tenant=self.b.tenant),
+            key="b-span-duty",
+            owner_tenant=self.b.tenant,
+        )
+        for obligation_id in (private.id, uuid.uuid4()):
+            with self.subTest(obligation=obligation_id):
+                response = self.get_span(obligation_id)
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json()["code"], "not_found")
+
+    def test_the_read_is_a_fixed_handful_of_queries(self) -> None:
+        with CaptureQueriesContext(connection) as one:
+            self.get_span(self.duty)
+        factories.legal_entity(self.a.tenant, name="Example Kort AB", entity_term_id=library_build.term("legal_entity:bank").id)
+        with CaptureQueriesContext(connection) as two:
+            self.assertEqual(len(self.get_span(self.duty).json()), 2)
+        self.assertEqual(len(one), len(two))
