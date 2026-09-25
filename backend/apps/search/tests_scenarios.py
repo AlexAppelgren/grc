@@ -215,12 +215,152 @@ class SearchScenarioTests(TestCase):
             "a source type outside the library would be a way in for a tenant's own words",
         )
 
-    @skip("pending: SRC-S13 (REG-08, chunk 8)")
+# --- c8-units-paste-soa: SRC-S13 ------------------------------------------------------
+class UnderAStandardScenarioTests(CorpusMixin, TestCase):
+    """SRC-S13, against the indexed corpus: a bank's own words under a standard, in every
+    text column of every row it writes there, never reach the index or a model."""
+
+    reader: ClassVar[User]
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.build_corpus()
+        cls.reader = factories.member_user(cls.tenant, roles=("compliance_officer",))
+
     def test_src_s13(self) -> None:
         """SRC-S13
 
         Nothing a tenant writes under a standard reaches the index or a model (REG-08, SRC-01).
+
+        Given tenant A lists the invented units X.1 and X.2 for Example Bank AB under a
+        standard, with a status note, a gap, an assessment, an interpretation and an internal
+        link on that conformance obligation, when the index is rebuilt and embedded and a user
+        of tenant A asks a question the model answers, then no chunk, no embedding input, no
+        reranker input and no generation input holds a word of any of those rows; and tenant B
+        finds none of it by search and receives 404 for the rows.
+
+        Per row and per column: every text column of every such row carries its own marker,
+        read off the model, so a column added to the rows later is covered by the same
+        assertion, and one that an indexer, embedder or prompt starts to read fails it.
         """
+        from django.db.models import CharField, TextField
+
+        from apps.library import testing as library_build
+        from apps.register.logic import ensure_register_entry
+        from apps.register.models import (
+            Applicability,
+            ComplianceAssessment,
+            Gap,
+            Interpretation,
+            InternalLink,
+            SoaUnit,
+            TenantObligation,
+            TenantObligationScope,
+        )
+        from apps.shared.adapters import embedder
+        from apps.taxonomy.models import ComplianceStatus, GapSource, GapStatus, LinkKind, RiskRating
+        from apps.taxonomy.seeds import seed_taxonomy_terms
+        from apps.tenants.models import InternalItem, OrgUnit, OrgUnitKind
+
+        markers: dict[str, str] = {}  # marker -> "table.column"
+
+        def written(model: Any, **fields: Any) -> dict[str, Any]:
+            """Every text column of `model` a person could type into, each its own marker."""
+            for column in model._meta.concrete_fields:
+                if isinstance(column, CharField | TextField) and not column.choices and column.name not in fields:
+                    marker = f"qzv{len(markers):03d}kx"
+                    markers[marker] = f"{model._meta.db_table}.{column.name}"
+                    fields[column.name] = marker
+            return fields
+
+        # Given tenant A's rows under the standard, as cw_app writes them in its own zone
+        seed_taxonomy_terms()
+        standard = library_build.standard()
+        tenancy.activate(self.tenant.id)
+        officer = self.reader
+        entity = OrgUnit.objects.create(tenant=self.tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name="Example Bank AB")
+        entry = ensure_register_entry(tenant_id=self.tenant.id, obligation_id=standard.id, actor=factories.user_actor(user_id=officer.id))
+        TenantObligation.objects.filter(pk=entry.pk).update(**written(TenantObligation))
+        status = ComplianceStatus.objects.get(is_default=True)
+        scope = TenantObligationScope.objects.create(
+            tenant=self.tenant, tenant_obligation=entry, org_unit=entity, applicability=Applicability.APPLIES.value, compliance_status=status,
+            **written(TenantObligationScope),
+        )
+        units = [
+            SoaUnit.objects.create(tenant=self.tenant, scope=scope, compliance_status=status, **written(SoaUnit, reference=f"X.{n}"))
+            for n in (1, 2)
+        ]
+        markers.update({unit.reference: "soa_unit.reference" for unit in units})
+        gap = Gap.objects.create(
+            tenant=self.tenant, tenant_obligation=entry, org_unit=entity, unit=units[0], identified_by=officer,
+            severity=RiskRating.objects.get(key="high"), source=GapSource.objects.get(key="audit"), status=GapStatus.objects.get(key="open"),
+            **written(Gap),
+        )
+        ComplianceAssessment.objects.create(tenant=self.tenant, tenant_obligation=entry, scope=scope, status=status, assessed_by=officer, **written(ComplianceAssessment))
+        Interpretation.objects.create(tenant=self.tenant, tenant_obligation=entry, version_number=1, author=officer, **written(Interpretation))
+        item = InternalItem.objects.create(tenant=self.tenant, kind=LinkKind.objects.get(key="control"), **written(InternalItem))
+        link = InternalLink.objects.create(tenant=self.tenant, tenant_obligation=entry, internal_item=item, created_by=officer, **written(InternalLink))
+        self.assertGreaterEqual(len(set(markers.values())), 12, "every row the scenario names carries its markers")
+
+        # When the index is rebuilt and every chunk embedded again, and a user of tenant A asks
+        embedded: list[str] = []
+        reranked: list[str] = []
+        prompts: list[str] = []
+        with tenancy.platform_zone(), index_write("SRC-S13: every chunk owes its embedding again"):
+            SearchChunk.objects.update(embedding=None)
+        real_embed = embedder.MockEmbedder.embed
+
+        def embed(adapter: Any, texts: list[str]) -> list[list[float]]:
+            embedded.extend(texts)
+            return real_embed(adapter, texts)
+
+        with (
+            mock.patch.object(embedder.MockEmbedder, "embed", autospec=True, side_effect=embed),
+            mock.patch.object(reranker.MockReranker, "rerank", autospec=True, side_effect=reranker.MockReranker.rerank) as rerank,
+            mock.patch.object(llm.MockLlm, "stream", autospec=True, side_effect=llm.MockLlm.stream) as model,
+        ):
+            indexing.reindex_all()
+            indexing.embed_backlog()
+            headers = sign_in(officer, tenant=self.tenant)
+            asked: Any = Client().post(
+                ASK, data={"question": "capital adequacy reporting to the supervisor", "asOf": "2026-09-15", "lang": "en"},
+                content_type="application/json", **headers,
+            )
+            self.assertEqual(asked.status_code, 200, getattr(asked, "content", b""))
+            b"".join(asked.streaming_content)
+        for call in rerank.call_args_list:
+            reranked.extend(call.kwargs["documents"])
+        for call in model.call_args_list:
+            prompts.extend((call.kwargs["system"], call.kwargs["prompt"]))
+        self.assertTrue(embedded and reranked and prompts, "the index was embedded and the model was asked, so nothing is missing by accident")
+
+        # Then no chunk, embedding input, reranker input or generation input holds any of it
+        with tenancy.platform_zone():
+            chunks = [f"{title}\n{body}" for title, body in SearchChunk.objects.values_list("title", "body")]
+        generated = list(AiGeneration.objects.values_list("output", flat=True))
+        for marker, column in markers.items():
+            with self.subTest(column=column, marker=marker):
+                for place, texts in (("a chunk", chunks), ("an embedding input", embedded), ("a reranker input", reranked), ("a generation input", prompts), ("a model's output", generated)):
+                    self.assertFalse(any(marker in text for text in texts), f"{column} reached {place}")
+
+        # And a user of tenant B finds none of it and receives 404 for the rows
+        other = factories.tenant(slug="src-s13-b")
+        stranger = factories.member_user(other, roles=("compliance_officer",))
+        b = sign_in(stranger, tenant=other)
+        for marker in (units[0].title, units[1].title, gap.title, link.label):
+            found = Client().post(SEARCH, data={"q": marker, "lang": "en"}, content_type="application/json", **b)
+            self.assertEqual((found.status_code, found.json()["items"]), (200, []))
+        refused = {
+            "the unit": Client().patch(f"/api/v1/units/{units[0].id}", data={"title": "Theirs"}, content_type="application/json", HTTP_IF_MATCH='"1"', **b),
+            "the gap": Client().patch(f"/api/v1/gaps/{gap.id}", data={"title": "Theirs"}, content_type="application/json", HTTP_IF_MATCH='"1"', **b),
+            "the link": Client().delete(f"/api/v1/internal-links/{link.id}", **b),
+            "the statement": Client().get(f"/api/v1/obligations/{standard.id}/statement-of-applicability", {"entity": str(entity.id)}, **b),
+        }
+        for name, response in refused.items():
+            with self.subTest(row=name):
+                self.assertEqual((response.status_code, response.json()["code"]), (404, "not_found"))
+        listed = Client().get(f"/api/v1/obligations/{standard.id}/units", **b)
+        self.assertEqual(listed.json(), {"items": [], "total": 0})
 
 
 class HybridSearchScenarioTests(CorpusMixin, TestCase):
