@@ -126,7 +126,7 @@ destination of its own in the registry.
 | `console-tenants.html`, `console-health.html` | `/console/tenants`, `/console/health` | console | 4; health 14 | tenants shipped without a card (the list, and a tenant created with its first administrator invited, ADM-S6; support access is TEN-06, chunk 8, drawn on `console-support-access.html`); health chunk 14 (ADM-S5), card pending | tenants 51 / 56 |
 | `tenant-reports.html`, `admin-data.html` | `/reports`, `/admin/data` | tenant | 12 | card pending; prototype `vReports()` is the cut |  |
 | `admin-integrations.html` | `/admin/integrations` | tenant | 13 | card pending |  |
-| `admin-security.html` | `/admin/security` | tenant | 11 (moved from 13, CHUNK11_TASKS ruling 7); IP allow-list and SSO 13, retention 12 | designed (c11-cards-agents-security): passkeys we accept with the allow-list and notice date, the 409 lock-out state, session limits within the platform maximums, step-up on save (ID-S16, ID-S17); the Tenant reach panel is the agent access card's |  |
+| `admin-security.html` | `/admin/security` | tenant | 11 (moved from 13, CHUNK11_TASKS ruling 7); IP allow-list and SSO 13, retention 12 | designed (c11-cards-agents-security): session limits within the platform maximums, step-up on save (ID-S17); the passkey-policy section left the card when the device-bound policy moved out of R2 (D-100); the Tenant reach panel is the agent access card's |  |
 
 ## Operations
 

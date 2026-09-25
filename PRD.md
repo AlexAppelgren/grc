@@ -117,7 +117,7 @@ and never write, and what they may read is a credential and a scope, not a seat.
 | ID-04 | Users manage their passkeys (add, rename, remove, never the last one) and see and revoke their sessions | M | R1 |
 | ID-05 | Recovery: a tenant admin re-issues enrolment behind step-up, audited, with notices. The last admin recovers through platform support with an out-of-band check | M | R1 |
 | ID-06 | Step-up by fresh passkey assertion on the sensitive actions listed in playbook 4.2, recorded on the audit event | M | R1 |
-| ID-07 | Tenant credential policy: allow synced passkeys or require attested device-bound authenticators | S | R2 |
+| ID-07 | Tenant credential policy: allow synced passkeys or require attested device-bound authenticators | S | after R2 (D-100) |
 | ID-08 | Tenant session policy: idle and absolute limits within platform maximums | S | R2 |
 | ID-09 | Permissions are code, roles are rows: seeded system roles plus tenant-defined roles. A tenant always keeps one admin | M | R1 |
 | ID-10 | Scoped API keys for agents and integrations, shown once, stored hashed, revocable, with last use | M | R1 |
