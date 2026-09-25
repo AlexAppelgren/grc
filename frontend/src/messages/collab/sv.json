@@ -77,5 +77,6 @@
   "collab.comments.limited.action": "Åtgärder visas inte här, eftersom din roll inte kan öppna dem",
   "collab.comments.limited.other": "Vissa poster visas inte här, eftersom din roll inte kan öppna dem",
   "collab.time.today": "Idag {time}",
-  "collab.time.yesterday": "Igår {time}"
+  "collab.time.yesterday": "Igår {time}",
+  "collab.mentions.options": "Personer att nämna"
 }

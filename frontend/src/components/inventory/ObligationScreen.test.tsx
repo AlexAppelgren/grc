@@ -531,7 +531,8 @@ describe('the diff sentence', () => {
 
 describe('the panel stubs', () => {
   it('render nothing until their packages fill them', async () => {
-    for (const name of PANELS) {
+    // Comments is filled (c10-fe-comments-panel) and tested in features/collab/CommentsPanel.test.tsx.
+    for (const name of PANELS.filter((panel) => panel !== 'Comments')) {
       const actual = await vi.importActual<Record<string, (props: { obligationId: string }) => ReactNode>>(`./Obligation${name}Panel`);
       const Panel = actual[`Obligation${name}Panel`] as (props: { obligationId: string }) => ReactNode;
       const { container, unmount } = render(<Panel obligationId="ob-1" />);
