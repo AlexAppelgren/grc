@@ -15,6 +15,7 @@ Take the docs/DECISIONS.md default. D-74, D-75 and D-89 are Alex's decisions; D-
 ## Gates (all green before you finish)
 - Everything your brief lists.
 - ruff and mypy; the backend test modules of every app you touched: `cd backend && ./run.sh run python manage.py test apps.<app> --settings=config.test_settings --noinput --parallel 4`; migration drift and `migrate_from_zero` if you touched a model.
+- Always also run `apps.shared` (`./run.sh run python manage.py test apps.shared --settings=config.test_settings --noinput --parallel 4`): it holds the cross-app guards (the library fence, RLS, audit on every write, the fence on agents and keys), and a package that never ran them has pushed a done marker over a red fence. A guard that fails on code you merged from a dependency is still red: fix it in your package if the fix is small and yours to make, otherwise report it and do not push the done marker.
 - `python backend/scripts/compliance_check.py --all`, `python backend/scripts/requirements_coverage.py`, `python backend/scripts/api_docs_gate.py` (0 outside the ledger, 0 stale; the ledger only shrinks), `python backend/scripts/contract_drift.py`.
 - Frontend: lint, typecheck, `npx vitest run` for your test files, `npm run check:messages`, `npm run check:copy-drift`.
 - E2E for every journey your package owns or touches: `cd frontend && npm run test:e2e -- --grep "<scenario IDs>"`. You have a full stack, so run them.
