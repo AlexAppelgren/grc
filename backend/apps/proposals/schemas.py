@@ -1271,7 +1271,9 @@ class ProposalCreateBody(WriteBody):
             "`provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` per language, "
             "`originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. "
             "`new_provision_version`: `texts`, `originalLanguage`, `isMachine`, `effectiveFrom` and "
-            "`effectiveFromPrecision`. The vocabulary and term kinds name a "
+            "`effectiveFromPrecision`. Each summary and each text is at most "
+            f"{settings.PROPOSAL_TEXT_MAX_CHARS} characters per language, else 422 `validation_error`. "
+            "The vocabulary and term kinds name a "
             "`list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and "
             "term keys are library rows that change only through proposals; `GET /vocabularies` and "
             "`GET /taxonomy/terms` return the live sets."
@@ -1348,7 +1350,9 @@ class ProposalCreateBody(WriteBody):
         description=(
             "The source in words, as a reviewer and a reader see it beside a link, at most 500 "
             "characters, for example the authority and the decision. A new obligation keeps it as its "
-            "own source label; left empty, it reads the instrument's reference and the duty's."
+            "own source label; left empty, it reads the instrument's reference and the duty's. Under a "
+            "standard it is the standard's official reference or empty, never a clause or quoted text, "
+            "else 422 `licensed_text`."
         ),
         examples=["Finansinspektionen, board decision 15 September 2026"],
     )
@@ -1359,7 +1363,9 @@ class ProposalCreateBody(WriteBody):
             "The authority's page the proposal was read from, at most 2000 characters. Required for a "
             "new instrument, obligation or provision, as an https link (a new instrument or obligation "
             "keeps it as its own source): "
-            "without one it answers 422 `source_missing`. Optional on the other kinds."
+            "without one it answers 422 `source_missing`. Optional on the other kinds, but when given it "
+            "is an https link on every kind, since the queue shows it as the proposal's source: any "
+            "other scheme answers 422 `validation_error`."
         ),
         examples=["https://www.fi.se/en/published/news/2026/research-payments/"],
     )
@@ -1463,10 +1469,27 @@ class ProposalApproveBody(WriteBody):
             f"`dimension:key`, at most {settings.PROPOSAL_SCOPE_MAX_TERMS}, which replace the "
             "obligation's scope). The merged payload must still carry a source for every field it "
             "changes, so a correction that introduces a field the proposal never sourced answers 422 "
-            "`source_missing` and applies nothing. What is applied is kept beside what was proposed, as "
+            "`source_missing` and applies nothing, and a value changed from what was proposed needs its "
+            "fresh source in `fieldSources`. Each summary is at most "
+            f"{settings.PROPOSAL_TEXT_MAX_CHARS} characters per language. What is applied is kept beside what was proposed, as "
             "the reviewer's own correction: a reader must not take the proposal's payload as the text "
             "the library now holds."
         ),
+    )
+    field_sources: dict[str, str] | None = Field(  # schema: ProposalFieldSources
+        default=None,
+        description=(
+            "The fresh source of every value `payloadOverrides` changes from what was proposed, keyed as "
+            "the queue names the field (`summaries.sv`, `effectiveFrom`, `terms`), because the "
+            "proposer's source vouches only for the value it was given for. Each is checked as a "
+            f"proposal's own are: at most {settings.PROPOSAL_SOURCE_MAX_CHARS} characters, an https link "
+            "or the stable key of a provision the library holds, and an https link only on a new record "
+            "or a standard's obligation. A changed value without one answers 422 `source_missing`; a "
+            "source for a field the correction leaves as proposed answers 422 `validation_error`. The "
+            "proposal keeps these sources for the corrected fields from then on. Optional, and left out "
+            "when nothing is corrected."
+        ),
+        examples=[{"summaries.sv": "https://www.fi.se/sv/publicerat/nyheter/2026/analysbetalningar/"}],
     )
     decision: AgentDecision | None = Field(default=None, description=_DECISION_DESCRIPTION)
     agent_run_id: UUID | None = Field(default=None, description=_RUN_DESCRIPTION, examples=[_RUN_EXAMPLE])
@@ -1482,6 +1505,10 @@ class ProposalApproveBody(WriteBody):
                             "en": "Research from third parties may be received only if it is paid from the institution's own resources or from a research payment account.",
                         },
                         "effectiveFrom": "2026-10-01",
+                    },
+                    "fieldSources": {
+                        "summaries.sv": "https://www.fi.se/sv/publicerat/nyheter/2026/analysbetalningar/",
+                        "summaries.en": "https://www.fi.se/en/published/news/2026/research-payments/",
                     },
                 },
                 {"note": "Confirmed against the board decision.", "decision": _DECISION_EXAMPLE, "agentRunId": _RUN_EXAMPLE},

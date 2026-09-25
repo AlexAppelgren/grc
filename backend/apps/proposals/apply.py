@@ -279,8 +279,10 @@ def _new_obligation(
     locked first, so two approvals under one standard cannot both find it empty.
     """
     instrument, terms = validated_obligation(payload)
-    Instrument.objects.select_for_update().filter(pk=instrument.pk).exists()
-    standards.check(proposal.kind, instrument, [term.id for term in terms], proposal.field_sources, payload.ref_label)
+    instrument = Instrument.objects.select_for_update().get(pk=instrument.pk)
+    standards.check(
+        proposal.kind, instrument, [term.id for term in terms], proposal.field_sources, payload.ref_label, proposal.source_label
+    )
     verified_origin = _verified_origin(reviewer)
     obligation = Obligation.objects.create(
         stable_key=payload.key,
@@ -400,7 +402,7 @@ def _obligation_version(
     # A payload without `terms` leaves the scope alone, so it asks nothing of the standard
     # term rule; an empty list clears the scope, and is checked as one.
     scope = None if payload.terms is None else [term.id for term in terms]
-    standards.check(proposal.kind, obligation.instrument, scope, proposal.field_sources)
+    standards.check(proposal.kind, obligation.instrument, scope, proposal.field_sources, source_label=proposal.source_label)
     highest = (
         ObligationVersion.objects.filter(obligation=obligation)
         .order_by("-version_number")
@@ -486,10 +488,16 @@ def _new_provision(
     Checked again by the function creation ran (`logic.validated_provision`) and by the
     standards check: a standard's text is licensed (422 `licensed_text`), and the trigger
     `provision_not_under_standard` refuses the row on its own if this is ever bypassed. The
-    index moves in this transaction, so a failed re-index writes nothing.
+    instrument is locked first, so a level merge re-pointing it waits for this insert, or
+    this insert reads the level the merge left (H25). The index moves in this transaction,
+    so a failed re-index writes nothing.
     """
     instrument, parent, kind = validated_provision(payload)
-    standards.check(proposal.kind, instrument, None, proposal.field_sources)
+    # Locked and read again before the check: a level merge moving this instrument onto a
+    # standard holds the row, and `provision_not_under_standard` would otherwise read the
+    # level as it was before that merge committed (H25).
+    instrument = Instrument.objects.select_for_update().get(pk=instrument.pk)
+    standards.check(proposal.kind, instrument, None, proposal.field_sources, source_label=proposal.source_label)
     provision = Provision.objects.create(
         stable_key=payload.key,
         instrument=instrument,
@@ -538,7 +546,7 @@ def _provision_version(
     assert proposal.target_id is not None
     Provision.objects.select_for_update().filter(pk=proposal.target_id).exists()
     provision = active_provision(proposal.target_id)
-    standards.check(proposal.kind, provision.instrument, None, proposal.field_sources)
+    standards.check(proposal.kind, provision.instrument, None, proposal.field_sources, source_label=proposal.source_label)
     highest = (
         ProvisionVersion.objects.filter(provision=provision)
         .order_by("-version_number")
@@ -586,7 +594,10 @@ def _entry(name: str) -> VocabularyList:
 
 
 def _row(entry: VocabularyList, key: str) -> Any:
-    row = entry.model._default_manager.filter(key=key).order_by("sort_order", "key").first()
+    """The row `key` names, locked: an approval reads it and saves it whole, so a second
+    approval on the same row waits and then reads what the first wrote, rather than writing
+    back over its stamp and its version bump (H34)."""
+    row = entry.model._default_manager.select_for_update().filter(key=key).order_by("sort_order", "key").first()
     if row is None:
         raise ValidationError(f"{key!r} is not a row of {entry.name!r}.", code="not_found")
     return row
@@ -758,7 +769,7 @@ def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Propo
 
 def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
     entry = _entry(payload.list)
-    source, target = merge_pair(entry, payload.key, payload.into)
+    source, target = merge_pair(entry, payload.key, payload.into, lock=True)
     if source.is_system:
         raise ValidationError(f"{payload.key} is a system value: it can be relabelled but not merged away.", code="system_row")
     # Every current row holding the source moves to the target in this transaction; the
@@ -878,7 +889,8 @@ def _term_update(
 ) -> None:
     dimension = _dimension(payload.dimension)
     refuse_mirrored([dimension.id])
-    term = TaxonomyTerm.objects.filter(dimension=dimension, key=payload.key).order_by("sort_order", "key").first()
+    # Locked, as a list row is in `_row` (H34).
+    term = TaxonomyTerm.objects.select_for_update().filter(dimension=dimension, key=payload.key).order_by("sort_order", "key").first()
     if term is None:
         raise ValidationError(f"{payload.key!r} is not a term of {payload.dimension!r}.", code="not_found")
     before = {label.language: label.text for label in TaxonomyTermLabel.objects.filter(term=term)}
