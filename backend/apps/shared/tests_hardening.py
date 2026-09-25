@@ -305,6 +305,12 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "A bank's own tag going on or off one record: `tenant.id` is a bank's id and never "
         "None, so the row stays in that bank's zone even when the record is a library one."
     ),
+    # c8-ten-reassignment (TEN-05): the subject type is one of four tenant tables, picked per kind.
+    "apps/tenants/reassignment.py record(_SUBJECT_TYPE[kind]) tenant_id=tenant.id actor=actor title=_title(kind, row, headings)": (
+        "A member's removal moving a register entry, an entity's row, a gap or an internal item: "
+        "the subject is one of those four tenant tables, never a library one, and the row is "
+        "written in the removing bank's zone under its own tenant id, by the bank's administrator."
+    ),
 }
 
 

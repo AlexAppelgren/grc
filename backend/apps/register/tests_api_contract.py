@@ -46,7 +46,7 @@ APPLICABILITY_BODY = {"applicability": "applies", "reason": "Certified", "orgUni
 MANY_BODY = {"rows": [{"obligationId": OBLIGATION, "unitId": RECORD, "applicability": "not_applicable", "reason": "No cloud services"}]}
 GAP_BODY = {"title": "Evidence of reconciliation is manual", "severity": "high", "source": "assessment", "targetDate": "2026-12-31"}
 GAP_PATCH = {"remediation": "Automate the daily reconciliation report."}
-ACCEPT_BODY = {"reason": "cost_exceeds_benefit"}
+ACCEPT_BODY = {"reason": "compensating_control"}
 INTERPRETATION_BODY = {"text": "We read this as covering every client account the bank holds, custody included."}
 LINK_BODY = {"kind": "policy", "label": "Client asset policy", "externalRef": "POL-014"}
 UNIT_BODY = {"orgUnitId": ENTITY, "reference": "A.5.1", "title": "Our information security policies"}
@@ -83,6 +83,30 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("listDuties", "get", f"/api/v1/obligations/{OBLIGATION}/duties", None, perms.REGISTER_READ, False),
     ("completeDutyOccurrence", "post", f"/api/v1/duty-occurrences/{RECORD}/complete", COMPLETE_BODY, perms.REGISTER_EDIT, False),
 ]
+
+# Operations whose logic has landed, so they no longer answer 501 (one line each, so the
+# packages that build them in parallel merge mechanically). Each is proved in its own module.
+BUILT: set[str] = {
+    # c8-reg-links-history: tests_history.py, tests_links.py
+    "listAssessments",
+    "getInterpretation",
+    "saveInterpretation",
+    "listInternalLinks",
+    "addInternalLink",
+    "removeInternalLink",
+    # c8-reg-status (apps/register/tests_status.py)
+    "getRegisterEntry",
+    "updateRegister",
+    "updateRegisterEntity",
+    # c8-reg-gaps-risk (apps/register/tests_gaps.py)
+    "listObligationGaps",
+    "createGap",
+    "listRegisterGaps",
+    "updateGap",
+    "requestRiskAcceptance",
+    "approveRiskAcceptance",
+    "reopenGap",
+}
 
 
 def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
@@ -158,7 +182,7 @@ class RegisterRouteGates(TestCase):
             ("setApplicability", "put", applicability, {"applicability": "applies", "reason": ""}, {}),
             ("setApplicability", "put", applicability, {**APPLICABILITY_BODY, "unitId": RECORD}, {}),
             ("setApplicabilityMany", "post", "/api/v1/applicability", {"rows": []}, {}),
-            ("createGap", "post", f"/api/v1/obligations/{OBLIGATION}/gaps", {**GAP_BODY, "source": "rumour"}, {}),
+            ("createGap", "post", f"/api/v1/obligations/{OBLIGATION}/gaps", {**GAP_BODY, "source": "x" * 65}, {}),
             ("createGap", "post", f"/api/v1/obligations/{OBLIGATION}/gaps", {"severity": "high", "source": "audit"}, {}),
             ("listRegisterGaps", "get", "/api/v1/gaps?limit=101", None, {}),
             ("listRegisterGaps", "get", "/api/v1/gaps?targetFrom=someday", None, {}),
@@ -187,6 +211,7 @@ IF_MATCH_ROUTES = {
     "updateUnit",
     "removeUnit",
 }
+
 
 
 class RegisterRouteStubs(TestCase):
@@ -218,6 +243,8 @@ class RegisterRouteStubs(TestCase):
         shape, with nothing of the server in it. Replaced row by row as each logic lands."""
         with stub_session(self._everything()):
             for name, method, url, body, _permission, _step_up in REGISTER_ROUTES:
+                if name in BUILT:
+                    continue
                 headers = {**AS_SESSION, "HTTP_IF_MATCH": '"3"'} if method in {"patch", "put", "delete"} else AS_SESSION
                 with self.subTest(operation=name):
                     response = _call(self.client, method, url, body, headers)
