@@ -254,6 +254,7 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
                 f"{name!r} is not a library list a proposal can change. Valid lists: {', '.join(valid)}.",
                 code="unknown_key",
             )
+        refuse_vocabulary_change(entry, kind, [getattr(payload, "key", ""), getattr(payload, "into", "")])
         if isinstance(payload, ProposalVocabularyCreatePayload):
             lists.validated_kind(entry, payload.kind)
         if isinstance(payload, ProposalVocabularyMergePayload):
@@ -291,6 +292,27 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
         )
 
 
+def refuse_vocabulary_change(entry: Any, kind: str, keys: list[str]) -> None:
+    """The two rules a change to a library list's rows obeys beyond its payload's shape,
+    checked when it is proposed and again when it is applied, for the list as it is then.
+
+    A list of fixed keys (the jurisdictions, D-94) is filed by the reference seed with the
+    facts only the seed knows, a kind, a parent and a legal language, so no proposal adds a
+    value to it or merges one away: 422 `validation_error`. A proposal on a dimension row
+    whose terms mirror the jurisdiction list (FP-04, hardening H28) would change what the
+    mirror is, its footprint rule or its existence, which no deploy puts back: 422
+    `jurisdiction_term_mirrored`, as a proposal on one of its terms is."""
+    from apps.taxonomy.terms_logic import refuse_mirrored_row
+
+    if entry.fixed_keys and kind in (ProposalKind.VOCABULARY_CREATE.value, ProposalKind.VOCABULARY_MERGE.value):
+        raise ValidationError(
+            f"The keys of {entry.name!r} are fixed: a proposal relabels, retires or restores a value, and never adds "
+            "one or merges one away.",
+            code="validation_error",
+        )
+    refuse_mirrored_row(entry.model, keys)
+
+
 def merge_pair(entry: Any, key: str, into: str, *, lock: bool = False) -> tuple[Any, Any]:
     """The two rows a merge joins, checked against the list as it is now, when the merge is
     proposed and again when it is applied (VOC-02, INV-08, D-36). A value merges only into
@@ -317,6 +339,14 @@ def merge_pair(entry: Any, key: str, into: str, *, lock: bool = False) -> tuple[
     if (getattr(source, "kind", None) or "") != (getattr(target, "kind", None) or ""):
         raise ValidationError(
             f"{key} and {into} are values of different kinds, so the records carrying {key} cannot take {into}.",
+            code="invalid_transition",
+        )
+    # A merge moves only what the list's links name. A list that counts its uses some other
+    # way (a dimension's terms) would retire a value still in use and move none of it (H28).
+    in_use = entry.usage(entry.model._default_manager.filter(pk=source.pk)).values_list("usage_count", flat=True).first()  # ordering: pk lookup, at most one row
+    if in_use and not entry.links:
+        raise ValidationError(
+            f"{key} is in use and a merge on {entry.name!r} moves none of what uses it: move or retire those first.",
             code="invalid_transition",
         )
     return source, target
