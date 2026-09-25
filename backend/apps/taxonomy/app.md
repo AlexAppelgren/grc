@@ -146,6 +146,26 @@ And the picker and the filter no longer offer it
 And the row still exists with active false
 ```
 
+> **Note — what a tenant list counts and what its merge moves (c8-vocab-register-usage).**
+> A tenant list names its `links` in `registry.py` like a library list: `tenant_tag`
+> (taggings), `compliance_status` (register entries and their entity rows), `risk_rating`
+> (entries, entity rows and a gap's severity), `gap_status`, `gap_source` and
+> `risk_acceptance_reason` (gaps), `link_kind` (internal items) and `team` (the owner of an
+> entry, an entity row, a gap, a licence or an internal item; a member's team; a live
+> participant). The count is one query per list and the merge a fixed number of statements
+> per table in the request's transaction, with one `vocabulary.merged` audit row naming the
+> ids moved and dropped. A record already carrying the kept value keeps one link: a tagging
+> or a team membership so doubled is dropped, a participant is stamped removed, and two
+> internal items that would share a name refuse the merge (409 `duplicate_key`). A merge
+> between two fixed categories (a compliance category, a risk level, a gap state) is 422,
+> because it would move a status without the step that moves one. The assessment ledger is
+> history and keeps the value it named. A team that owns open work (an entry or entity row,
+> a gap not closed, a licence not withdrawn, an active internal item) is not retired, even
+> with `confirm`: 409 `open_work` with the counts in `openWork`. A tenant list holds at most
+> `TENANT_LIST_MAX_ROWS` rows (422 `list_full`). A register entry (`tenant_obligation`)
+> takes a tag like an obligation, read under `register.read`. Tests:
+> `tests_vocabulary.RegisterUsage`.
+
 ### VOC-S5 — Merging re-points duplicates in one audited transaction `@integration` `@e2e` (VOC-02)
 ```gherkin
 Given the tags "Custody" and "Custody svcs" both in use

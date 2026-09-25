@@ -18,13 +18,18 @@ from unittest import mock
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.db import connection, transaction
+from django.test import Client
 from django.test.utils import CaptureQueriesContext
+from django.utils import timezone
 
 from apps.cases import testing as cases_build
+from apps.collab.models import Participant
 from apps.identity.models import User
 from apps.library import testing as library_build
 from apps.library.models import Jurisdiction, Language, Obligation
 from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.register import logic as register_logic
+from apps.register.models import ComplianceAssessment, Gap, TenantObligation, TenantObligationScope
 from apps.shared import factories
 from apps.shared.audit import Actor
 from apps.shared.models import AuditEvent
@@ -44,6 +49,7 @@ from apps.taxonomy.models import (
     RejectionReason,
     RelationType,
     RiskRating,
+    Tagging,
     TaxonomyTerm,
     TaxonomyTermLabel,
     TenantTag,
@@ -59,9 +65,11 @@ from apps.taxonomy.seeds import (
     taxonomy_term_specs,
 )
 from apps.taxonomy.registry import REGISTRY, VocabularyList
+from apps.taxonomy import tenant_lists_logic as lists_logic
 from apps.taxonomy.tenant_lists_logic import KEY_MAX_CHARS, LABEL_MAX_CHARS
 from apps.taxonomy import repoint
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS, SystemRow, ensure_tenant_vocabularies
+from apps.tenants.models import InternalItem, Licence, TeamMember
 from apps.watch import testing as watch_build
 from apps.watch import write as watch_door
 from config.api import api
@@ -782,6 +790,20 @@ JURISDICTIONS_BY_PROPOSAL: dict[str, tuple[Any, ...]] = {
     "jurisdiction": (2, "Jurisdiction", "JurisdictionLabel", "jurisdiction_kind", ("supranational", "country", "international"), True, (), True, (), ()),
 }
 
+# c8-vocab-register-usage (VOC-02, TEN-03, H32): the tenant lists something references name
+# their links, so the usage count and the merge read the same columns.
+_TEAM_LINKS = (("TenantObligation", "owner_team"), ("TenantObligationScope", "owner_team"), ("Gap", "owner_team"), ("Licence", "owner_team"), ("InternalItem", "owner_team"), ("TeamMember", "team"), ("Participant", "team"))
+REGISTER_USAGE: dict[str, tuple[Any, ...]] = {
+    "tenant_tag": (3, "TenantTag", "TenantTagLabel", None, (), False, (), True, (), (("Tagging", "tag"),)),
+    "link_kind": (3, "LinkKind", "LinkKindLabel", None, (), False, (), True, (), (("InternalItem", "kind"),)),
+    "compliance_status": (3, "ComplianceStatus", "ComplianceStatusLabel", "compliance_category", ("compliant", "partly", "gap", "not_assessed"), True, ("ordinal",), True, (), (("TenantObligation", "compliance_status"), ("TenantObligationScope", "compliance_status"))),
+    "risk_rating": (3, "RiskRating", "RiskRatingLabel", "risk_level", ("low", "medium", "high"), True, ("ordinal",), True, (), (("TenantObligation", "risk_rating"), ("TenantObligationScope", "risk_rating"), ("Gap", "severity"))),
+    "gap_status": (3, "GapStatus", "GapStatusLabel", "gap_category", ("open", "remediating", "risk_accepted", "closed"), True, (), True, (), (("Gap", "status"),)),
+    "gap_source": (3, "GapSource", "GapSourceLabel", None, (), False, (), True, (), (("Gap", "source"),)),
+    "risk_acceptance_reason": (3, "RiskAcceptanceReason", "RiskAcceptanceReasonLabel", None, (), False, (), True, (), (("Gap", "acceptance_reason"),)),
+    "team": (3, "Team", "TeamLabel", None, (), False, ("email",), True, (), _TEAM_LINKS),
+}
+
 # One category of each categorised tenant list and the system row that holds it (VOC-04).
 CATEGORY_ROWS = {
     "compliance_status": ("partly", "partly_compliant"),
@@ -815,7 +837,8 @@ class RegisterLists(ScenarioTestCase):
 
     def test_the_registry_gained_exactly_the_five_changes(self) -> None:
         self.assertEqual(
-            {name: _shape(entry) for name, entry in REGISTRY.items()}, REGISTRY_BEFORE_CHUNK_8 | CHUNK_8_CHANGES | JURISDICTIONS_BY_PROPOSAL
+            {name: _shape(entry) for name, entry in REGISTRY.items()},
+            REGISTRY_BEFORE_CHUNK_8 | CHUNK_8_CHANGES | JURISDICTIONS_BY_PROPOSAL | REGISTER_USAGE,
         )
         self.assertEqual({name for name, entry in REGISTRY.items() if entry.fixed_keys}, {"jurisdiction"})
         self.assertEqual(set(REGISTRY) - set(REGISTRY_BEFORE_CHUNK_8), {"gap_status", "gap_source", "risk_acceptance_reason", "team"})
@@ -906,3 +929,347 @@ class RegisterLists(ScenarioTestCase):
         keyed = self._post("/vocab/tenant_tag", {"labels": {"en": "Leasing"}, "key": "k" * (KEY_MAX_CHARS + 1)})
         self.assertEqual(keyed.status_code, 422, keyed.content)
         self.assertIn("key", keyed.json()["detail"])
+
+
+class RegisterUsage(ScenarioTestCase):
+    """c8-vocab-register-usage (VOC-02, VOC-04 to VOC-06, VOC-08, TEN-03, NFR-02, H32): the
+    register's, the organisation's and collaboration's rows count in a tenant list's usage
+    and move on its merge, in statements that do not grow with the rows; a team that owns
+    open work is not retired; a tenant list is capped; a register entry takes a tag."""
+
+    def setUp(self) -> None:
+        with transaction.atomic():
+            seed_languages()
+            seed_jurisdictions()
+            seed_library_vocabularies()
+            seed_taxonomy_terms()
+        self.tenant = factories.tenant(slug="usage-bank")
+        self.activate(self.tenant)
+        ensure_tenant_vocabularies(self.tenant, actor=SEED)
+        self.person = factories.member(self.tenant, roles=("admin",)).user
+        self.colleague = factories.member(self.tenant).user
+        self.admin = sign_in(self.person, tenant=self.tenant)
+        act = library_build.instrument(key="usage-act", regime="regime:securities")
+        self.obligations = [library_build.obligation(act, key=f"usage-duty-{n}") for n in range(3)]
+        self.activate(self.tenant)
+        actor = factories.user_actor(user_id=self.person.id)
+        self.entries = [
+            register_logic.ensure_register_entry(tenant_id=self.tenant.id, obligation_id=duty.id, actor=actor) for duty in self.obligations
+        ]
+        self.unit = factories.org_unit(self.tenant)
+        self.activate(self.tenant)
+
+    # --- helpers ------------------------------------------------------------------------
+    def _post(self, path: str, body: dict[str, Any]) -> Any:
+        # A dry run answers 200 and writes nothing, not even an audit row, so it goes through
+        # a plain client; the scenario client fails any other 2xx write without one.
+        client = Client() if "dryRun=true" in path else self.client
+        response = client.post(f"{V1}{path}", data=body, content_type="application/json", **self.admin)
+        self.activate(self.tenant)
+        return response
+
+    def _own(self, list_name: str, label: str, kind: str | None = None) -> Any:
+        """A value of the bank's own on `list_name`, beside the system rows."""
+        body: dict[str, Any] = {"labels": {"en": label}, "force": True}
+        if kind is not None:
+            body["kind"] = kind
+        created = self._post(f"/vocab/{list_name}", body)
+        self.assertEqual(created.status_code, 201, created.content)
+        return REGISTRY[list_name].model.objects.get(tenant=self.tenant, key=created.json()["key"])
+
+    def _system(self, list_name: str, key: str) -> Any:
+        return REGISTRY[list_name].model.objects.get(tenant=self.tenant, key=key)
+
+    def _counts(self, list_name: str) -> dict[str, int]:
+        response = self.client.get(f"{V1}/vocab/{list_name}?includeRetired=true", **self.admin)
+        self.activate(self.tenant)
+        self.assertEqual(response.status_code, 200, response.content)
+        return {row["key"]: row["usageCount"] for row in response.json()["items"]}
+
+    def _scope(self, entry: Any, **columns: Any) -> TenantObligationScope:
+        fields = {"compliance_status": self._system("compliance_status", "not_assessed")} | columns
+        return TenantObligationScope.objects.create(tenant=self.tenant, tenant_obligation=entry, org_unit=self.unit, **fields)
+
+    def _gap(self, entry: Any, **columns: Any) -> Gap:
+        fields = {
+            "severity": self._system("risk_rating", "high"),
+            "source": self._system("gap_source", "audit"),
+            "status": self._system("gap_status", "open"),
+        } | columns
+        return Gap.objects.create(tenant=self.tenant, tenant_obligation=entry, title="Weekly, not daily", identified_by=self.person, **fields)
+
+    def _item(self, kind: Any, name: str, **columns: Any) -> InternalItem:
+        return InternalItem.objects.create(tenant=self.tenant, kind=kind, name=name, **columns)
+
+    def _entry(self, entry: Any, **columns: Any) -> int:
+        return TenantObligation.objects.filter(pk=entry.pk).update(**columns)
+
+    # --- usage --------------------------------------------------------------------------
+    def test_every_register_list_counts_the_current_rows_that_carry_a_value(self) -> None:
+        status = self._own("compliance_status", "Mostly there", kind="partly")
+        risk = self._own("risk_rating", "Severe", kind="high")
+        gap_status = self._own("gap_status", "Being fixed", kind="remediating")
+        source = self._own("gap_source", "Whistleblower")
+        reason = self._own("risk_acceptance_reason", "Legacy system")
+        kind = self._own("link_kind", "Runbook")
+        team = self._own("team", "Custody ops")
+        first, second, third = self.entries
+        self._entry(first, compliance_status=status, risk_rating=risk, owner_team=team)
+        self._scope(first, compliance_status=status, risk_rating=risk, owner_team=team)
+        self._gap(first, severity=risk, source=source, status=gap_status, acceptance_reason=reason, owner_team=team)
+        self._item(kind, "Reconciliation runbook", owner_team=team)
+        Licence.objects.filter(pk=factories.licence(self.tenant).pk).update(owner_team=team)
+        self.activate(self.tenant)
+        TeamMember.objects.create(tenant=self.tenant, team=team, user=self.colleague)
+        Participant.objects.create(tenant=self.tenant, tenant_obligation=second, team=team, added_by=self.person)
+        # History and removed rows are not counted: the assessment ledger keeps what it named,
+        # and a participant removed from a record no longer takes part in it.
+        ComplianceAssessment.objects.create(
+            tenant=self.tenant, tenant_obligation=third, status=status, risk_rating=risk, rationale="Checked.", assessed_by=self.person
+        )
+        Participant.objects.create(
+            tenant=self.tenant, tenant_obligation=third, team=team, added_by=self.person, removed_by=self.person, removed_at=timezone.now()
+        )
+        expected = {
+            "compliance_status": (status.key, 2),
+            "risk_rating": (risk.key, 3),
+            "gap_status": (gap_status.key, 1),
+            "gap_source": (source.key, 1),
+            "risk_acceptance_reason": (reason.key, 1),
+            "link_kind": (kind.key, 1),
+            "team": (team.key, 7),
+        }
+        for list_name, (key, count) in expected.items():
+            with self.subTest(list=list_name):
+                self.assertEqual(self._counts(list_name)[key], count)
+                entry = REGISTRY[list_name]
+                with CaptureQueriesContext(connection) as queries:
+                    rows = {row.key: row.usage_count for row in entry.usage(entry.model.objects.filter(tenant=self.tenant))}
+                self.assertEqual(len(queries), 1, "a list's usage is one query however many tables it reads")
+                self.assertEqual(rows[key], count)
+
+    def test_a_retired_value_keeps_its_records_and_their_label(self) -> None:
+        """VOC-S4 on a register list: the count comes before the confirm."""
+        source = self._own("gap_source", "Whistleblower")
+        gap = self._gap(self.entries[0], source=source)
+        refused = self._post(f"/vocab/gap_source/{source.key}/retire", {"confirm": False})
+        self.assertEqual((refused.status_code, refused.json()["code"], refused.json()["usageCount"]), (409, "in_use", 1))
+        retired = self._post(f"/vocab/gap_source/{source.key}/retire", {"confirm": True})
+        self.assertEqual(retired.status_code, 200, retired.content)
+        gap.refresh_from_db()
+        self.assertEqual(gap.source_id, source.id)
+        self.assertNotIn(source.key, {row["key"] for row in self.client.get(f"{V1}/vocab/gap_source", **self.admin).json()["items"]})
+        self.activate(self.tenant)
+        self.assertEqual(self._counts("gap_source")[source.key], 1)
+
+    # --- merge --------------------------------------------------------------------------
+    def test_a_merge_moves_every_register_row_in_one_audited_transaction(self) -> None:
+        cases = {
+            "compliance_status": ("partly", "partly_compliant", lambda v: (self._entry(self.entries[0], compliance_status=v), self._scope(self.entries[0], compliance_status=v))),
+            "risk_rating": ("high", "high", lambda v: (self._entry(self.entries[1], risk_rating=v), self._scope(self.entries[1], risk_rating=v), self._gap(self.entries[1], severity=v))),
+            "gap_status": ("open", "open", lambda v: self._gap(self.entries[0], status=v)),
+            "gap_source": (None, "audit", lambda v: self._gap(self.entries[0], source=v)),
+            "risk_acceptance_reason": (None, "other", lambda v: self._gap(self.entries[0], acceptance_reason=v)),
+            "link_kind": (None, "policy", lambda v: self._item(v, "Runbook for custody")),
+            "team": (None, "compliance", lambda v: (self._entry(self.entries[0], owner_team=v), self._gap(self.entries[0], owner_team=v), TeamMember.objects.create(tenant=self.tenant, team=v, user=self.colleague))),
+        }
+        for list_name, (kind, target_key, use) in cases.items():
+            with self.subTest(list=list_name):
+                self.activate(self.tenant)
+                source = self._own(list_name, f"Duplicate {list_name}", kind=kind)
+                use(source)
+                entry = REGISTRY[list_name]
+                carried = {link.table: set(link.rows().filter(**{link.field: source}).values_list("pk", flat=True)) for link in entry.links}
+                moved = sum(len(ids) for ids in carried.values())
+                self.assertGreater(moved, 0)
+                preview = self._post(f"/vocab/{list_name}/{source.key}/merge?dryRun=true", {"into": target_key})
+                self.assertEqual((preview.status_code, preview.json()["repointed"], preview.json()["usageCount"]), (200, moved, moved), preview.content)
+                self.assertEqual(sum(len(ids) for ids in carried.values()), moved, "a preview moves nothing")
+                merged = self._post(f"/vocab/{list_name}/{source.key}/merge", {"into": target_key})
+                self.assertEqual((merged.status_code, merged.json()["repointed"]), (200, moved), merged.content)
+                target = self._system(list_name, target_key)
+                for link in entry.links:
+                    self.assertFalse(link.rows().filter(**{link.field: source}).exists(), link.table)
+                    self.assertTrue(carried[link.table] <= set(link.rows().filter(**{link.field: target}).values_list("pk", flat=True)), link.table)
+                source.refresh_from_db()
+                self.assertFalse(source.active)
+                event = AuditEvent.objects.get(action="vocabulary.merged", subject_id=source.id)
+                self.assertEqual((event.before["from"], event.after["into"], event.after["repointed"]), (source.key, target_key, moved))
+                self.assertEqual(
+                    {table: set(rows["moved"]) for table, rows in event.after["rows"].items() if rows["moved"]},
+                    {table: {str(pk) for pk in ids} for table, ids in carried.items() if ids},
+                )
+
+    def test_a_merge_steps_the_version_of_every_versioned_row_it_moves(self) -> None:
+        source = self._own("risk_rating", "Severe", kind="high")
+        self._entry(self.entries[0], risk_rating=source)
+        gap = self._gap(self.entries[0], severity=source)
+        self.assertEqual(self._post(f"/vocab/risk_rating/{source.key}/merge", {"into": "high"}).status_code, 200)
+        self.entries[0].refresh_from_db()
+        gap.refresh_from_db()
+        self.assertEqual((self.entries[0].version, gap.version), (2, 2))
+
+    def test_a_team_merge_keeps_one_membership_and_stamps_a_doubled_participant_removed(self) -> None:
+        source = self._own("team", "Compliance desk")
+        target = self._system("team", "compliance")
+        both = TeamMember.objects.create(tenant=self.tenant, team=source, user=self.colleague)
+        TeamMember.objects.create(tenant=self.tenant, team=target, user=self.colleague)
+        only = TeamMember.objects.create(tenant=self.tenant, team=source, user=self.person)
+        doubled = Participant.objects.create(tenant=self.tenant, tenant_obligation=self.entries[0], team=source, added_by=self.person)
+        Participant.objects.create(tenant=self.tenant, tenant_obligation=self.entries[0], team=target, added_by=self.person)
+        single = Participant.objects.create(tenant=self.tenant, tenant_obligation=self.entries[1], team=source, added_by=self.person)
+        merged = self._post(f"/vocab/team/{source.key}/merge", {"into": "compliance"})
+        self.assertEqual((merged.status_code, merged.json()["repointed"]), (200, 2), merged.content)
+        self.assertEqual(set(TeamMember.objects.filter(tenant=self.tenant, user=self.colleague).values_list("team__key", flat=True)), {"compliance"})
+        self.assertFalse(TeamMember.objects.filter(pk=both.pk).exists())
+        self.assertEqual(TeamMember.objects.get(pk=only.pk).team_id, target.id)
+        doubled.refresh_from_db()
+        single.refresh_from_db()
+        self.assertEqual((doubled.team_id, doubled.removed_by_id), (source.id, self.person.id), "the doubled participant is stamped, never deleted")
+        self.assertIsNotNone(doubled.removed_at)
+        self.assertEqual((single.team_id, single.removed_at), (target.id, None))
+        rows = AuditEvent.objects.get(action="vocabulary.merged", subject_id=source.id).after["rows"]
+        self.assertEqual((rows["team_member"]["dropped"], rows["participant"]["dropped"]), ([str(both.pk)], [str(doubled.pk)]))
+
+    def test_a_merge_across_categories_is_refused_and_moves_nothing(self) -> None:
+        source = self._own("compliance_status", "Nearly", kind="partly")
+        self._entry(self.entries[0], compliance_status=source)
+        events = AuditEvent.objects.filter(action="vocabulary.merged").count()
+        for dry_run in ("?dryRun=true", ""):
+            refused = self._post(f"/vocab/compliance_status/{source.key}/merge{dry_run}", {"into": "compliant"})
+            self.assertEqual((refused.status_code, refused.json()["code"]), (422, "validation_error"), refused.content)
+            self.assertIn("compliance_category", refused.json()["detail"])
+        self.entries[0].refresh_from_db()
+        self.assertEqual(self.entries[0].compliance_status_id, source.id)
+        self.assertEqual(AuditEvent.objects.filter(action="vocabulary.merged").count(), events)
+
+    def test_a_link_kind_merge_that_would_give_two_items_one_name_is_refused(self) -> None:
+        source = self._own("link_kind", "Policy document")
+        kept = self._item(source, "AML policy")
+        self._item(self._system("link_kind", "policy"), "AML policy")
+        for dry_run in ("?dryRun=true", ""):
+            refused = self._post(f"/vocab/link_kind/{source.key}/merge{dry_run}", {"into": "policy"})
+            self.assertEqual((refused.status_code, refused.json()["code"]), (409, "duplicate_key"), refused.content)
+        kept.refresh_from_db()
+        source.refresh_from_db()
+        self.assertEqual((kept.kind_id, source.active), (source.id, True))
+
+    def test_a_failure_halfway_through_a_merge_leaves_nothing_changed(self) -> None:
+        """VOC-S5: the first table moved, the second fails, and the first is undone."""
+        source = self._own("risk_rating", "Severe", kind="high")
+        self._entry(self.entries[0], risk_rating=source)
+        gap = self._gap(self.entries[0], severity=source)
+        real = repoint._move_tenant
+        calls: list[str] = []
+
+        def fail_on_the_gap(link: Any, *args: Any) -> None:
+            calls.append(link.table)
+            if link.table == "gap":
+                raise RuntimeError("the database refused the gap")
+            real(link, *args)
+
+        actor = factories.user_actor(user_id=self.person.id)
+        with mock.patch.object(repoint, "_move_tenant", fail_on_the_gap), self.assertRaises(RuntimeError), transaction.atomic():
+            lists_logic.merge(list_name="risk_rating", tenant=self.tenant, actor=actor, key=source.key, into="high", dry_run=False)
+        self.assertEqual(calls[-1], "gap")
+        self.assertIn("tenant_obligation", calls)
+        self.entries[0].refresh_from_db()
+        gap.refresh_from_db()
+        source.refresh_from_db()
+        self.assertEqual((self.entries[0].risk_rating_id, gap.severity_id, source.active), (source.id, source.id, True))
+        self.assertFalse(AuditEvent.objects.filter(action="vocabulary.merged", subject_id=source.id).exists())
+
+    def test_a_tag_merge_runs_the_same_statements_for_one_tagging_as_for_many(self) -> None:
+        """H32: the tag re-point bulk-updates after excluding twins; it ran one statement per
+        tagging before."""
+        def statements(taggings: int) -> int:
+            self.activate(self.tenant)
+            source, target = self._own("tenant_tag", f"Tag {taggings}"), self._own("tenant_tag", f"Other {taggings}")
+            for duty in self.obligations[:taggings]:
+                Tagging.objects.create(tenant=self.tenant, tag=source, subject_type="obligation", subject_id=duty.id)
+            Tagging.objects.create(tenant=self.tenant, tag=target, subject_type="obligation", subject_id=self.obligations[0].id)
+            with CaptureQueriesContext(connection) as queries:
+                moves = REGISTRY["tenant_tag"].repoint(source, target, dry_run=False, by=self.person.id)
+            self.assertEqual((len(moves["tagging"].moved), len(moves["tagging"].dropped)), (taggings - 1, 1))
+            self.assertFalse(Tagging.objects.filter(tag=source).exists())
+            self.assertEqual(Tagging.objects.filter(tag=target).count(), taggings)
+            return len(queries)
+
+        self.assertEqual(statements(2), statements(3))
+
+    # --- retiring a team ------------------------------------------------------------------
+    def test_a_team_that_owns_open_work_is_not_retired_even_with_confirm(self) -> None:
+        team = self._own("team", "Custody ops")
+        gap = self._gap(self.entries[0], owner_team=team)
+        item = self._item(self._system("link_kind", "policy"), "Custody policy", owner_team=team)
+        events = AuditEvent.objects.filter(action="vocabulary.retired").count()
+        refused = self._post(f"/vocab/team/{team.key}/retire", {"confirm": True})
+        self.assertEqual((refused.status_code, refused.json()["code"]), (409, "open_work"), refused.content)
+        self.assertEqual(refused.json()["openWork"], {"gap": 1, "internal_item": 1})
+        team.refresh_from_db()
+        self.assertTrue(team.active)
+        self.assertEqual(AuditEvent.objects.filter(action="vocabulary.retired").count(), events, "a refusal records nothing")
+        # Closed and deactivated work is not open: the team retires, keeping it.
+        Gap.objects.filter(pk=gap.pk).update(status=self._system("gap_status", "closed"))
+        InternalItem.objects.filter(pk=item.pk).update(active=False)
+        retired = self._post(f"/vocab/team/{team.key}/retire", {"confirm": True})
+        self.assertEqual((retired.status_code, retired.json()["usageCount"]), (200, 2), retired.content)
+        self.assertEqual(Gap.objects.get(pk=gap.pk).owner_team_id, team.id)
+
+    def test_a_register_entry_or_a_licence_owned_by_a_team_is_open_work(self) -> None:
+        team = self._own("team", "Custody ops")
+        self._entry(self.entries[0], owner_team=team)
+        self._scope(self.entries[1], owner_team=team)
+        licence = factories.licence(self.tenant)
+        self.activate(self.tenant)
+        Licence.objects.filter(pk=licence.pk).update(owner_team=team)
+        refused = self._post(f"/vocab/team/{team.key}/retire", {"confirm": True})
+        self.assertEqual(refused.json()["openWork"], {"tenant_obligation": 1, "tenant_obligation_scope": 1, "licence": 1})
+
+    # --- the list itself ------------------------------------------------------------------
+    def test_the_list_of_lists_is_one_aggregate_per_list(self) -> None:
+        self._own("tenant_tag", "Custody")
+        retired = self._own("tenant_tag", "Leasing")
+        self.assertEqual(self._post(f"/vocab/tenant_tag/{retired.key}/retire", {"confirm": True}).status_code, 200)
+        with CaptureQueriesContext(connection) as queries:
+            entries = {entry.list: entry for entry in lists_logic.list_of_lists(self.tenant.id)}
+        self.assertEqual(len(queries), len(REGISTRY))
+        self.assertEqual(set(entries), set(REGISTRY))
+        tags = TenantTag.objects.filter(tenant=self.tenant)
+        self.assertEqual(
+            (entries["tenant_tag"].count, entries["tenant_tag"].retired_count),
+            (tags.filter(active=True).count(), tags.filter(active=False).count()),
+        )
+        self.assertEqual(entries["tenant_tag"].retired_count, 1)
+
+    def test_a_full_tenant_list_refuses_another_value_and_writes_nothing(self) -> None:
+        held = Team.objects.filter(tenant=self.tenant).count()
+        events = AuditEvent.objects.filter(action="vocabulary.created").count()
+        with self.settings(TENANT_LIST_MAX_ROWS=held):
+            refused = self._post("/vocab/team", {"labels": {"en": "One too many"}})
+        self.assertEqual((refused.status_code, refused.json()["code"]), (422, "list_full"), refused.content)
+        self.assertEqual(Team.objects.filter(tenant=self.tenant).count(), held)
+        self.assertEqual(AuditEvent.objects.filter(action="vocabulary.created").count(), events)
+        with self.settings(TENANT_LIST_MAX_ROWS=held + 1):
+            self.assertEqual(self._post("/vocab/team", {"labels": {"en": "Room for one"}}).status_code, 201)
+
+    # --- tagging a register entry -----------------------------------------------------------
+    def test_a_register_entry_takes_a_tag_and_another_banks_entry_is_not_found(self) -> None:
+        tag = self._own("tenant_tag", "Custody")
+        entry = self.entries[0]
+        tagged = self._post("/taggings", {"tagKey": tag.key, "subjectType": "tenant_obligation", "subjectId": str(entry.id)})
+        self.assertEqual(tagged.status_code, 200, tagged.content)
+        self.assertEqual([row["key"] for row in tagged.json()["tags"]], [tag.key])
+        event = AuditEvent.objects.get(action="taggings.added", subject_id=entry.id)
+        self.assertEqual((event.subject_type, event.subject_title), ("tenant_obligation", self.obligations[0].stable_key))
+        other = factories.tenant(slug="usage-other")
+        self.activate(other)
+        ensure_tenant_vocabularies(other, actor=SEED)
+        theirs = register_logic.ensure_register_entry(tenant_id=other.id, obligation_id=self.obligations[0].id, actor=SEED)
+        self.activate(self.tenant)
+        refused = self._post("/taggings", {"tagKey": tag.key, "subjectType": "tenant_obligation", "subjectId": str(theirs.id)})
+        self.assertEqual((refused.status_code, refused.json()["code"]), (404, "not_found"), refused.content)
+        batch = self._post("/taggings/batch", {"tagKey": tag.key, "subjectType": "tenant_obligation", "subjectIds": [str(entry.id), str(theirs.id), str(self.entries[1].id)]})
+        self.assertEqual(batch.status_code, 200, batch.content)
+        self.assertEqual((batch.json()["gained"]["count"], batch.json()["alreadyTagged"]["count"], batch.json()["skipped"]["count"]), (1, 1, 1))
+        self.assertFalse(Tagging.objects.filter(subject_id=theirs.id).exists())

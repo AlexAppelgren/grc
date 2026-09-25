@@ -741,6 +741,18 @@ CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THRO
 BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200)
 
 # ---------------------------------------------------------------------------------------
+# ===== Tenant list cap (c8-vocab-register-usage, H32) ====================================
+# How many rows, retired ones included, one of a bank's own vocabulary lists may hold.
+# `GET /vocab/{list}` answers a whole list with its usage counts, so the list must stay a
+# size one read can serve inside the API budget. Adding past it answers 422 `list_full`.
+# `apps/taxonomy/tenant_lists_logic.py` reads it. There is no value that means "no limit",
+# so the process refuses to boot below 1.
+# ---------------------------------------------------------------------------------------
+TENANT_LIST_MAX_ROWS = env_int("TENANT_LIST_MAX_ROWS", 500)
+if TENANT_LIST_MAX_ROWS < 1:
+    raise ImproperlyConfigured("TENANT_LIST_MAX_ROWS must be at least 1.")
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------

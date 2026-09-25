@@ -13,6 +13,12 @@ that may write it (`move()`): a watch table to apps/watch/write.py, every other 
 table to the approved proposal's own writer in apps/proposals/apply.py. The merged-away
 value itself is never touched here: it stays, retired, so a version, an audit row or an
 old label that names it still resolves.
+
+Every tenant table is moved in a fixed number of statements however many rows it holds
+(H32): the rows are read once, locked, split from their twins in Python (so a nullable
+column of a unique key compares as the database's `NULLS NOT DISTINCT` does), and moved
+with one bulk update, which also steps a versioned row's `version` so an `If-Match` read
+before the merge cannot write the merged-away value back.
 """
 
 from __future__ import annotations
@@ -21,9 +27,10 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from django.db.models import Exists, OuterRef, QuerySet
+from django.core.exceptions import ValidationError
+from django.db.models import Exists, F, OuterRef, QuerySet
+from django.utils import timezone
 
-from apps.taxonomy.models import Tagging
 from apps.watch import write as watch_door
 from apps.watch.models import WATCH_MODELS
 
@@ -67,13 +74,24 @@ class Link:
     model: type[Any]
     field: str
     unique_with: tuple[str, ...] = ()
+    # Tenant links only. `removable`: the rows are removed by stamping `removed_at` and
+    # `removed_by`, so only live rows count and move, and a twin is stamped removed rather
+    # than deleted. `drop_twins` False: the rows are never deleted, so a twin refuses the
+    # merge until a person resolves it.
+    removable: bool = False
+    drop_twins: bool = True
 
     @property
     def table(self) -> str:
         return str(self.model._meta.db_table)
 
+    def rows(self) -> QuerySet[Any]:
+        """The rows that carry a value: every row, or only the live ones of a removable link."""
+        manager = self.model._default_manager
+        return manager.filter(removed_at__isnull=True) if self.removable else manager.all()
 
-def nothing_to_repoint(source: Any, target: Any, *, dry_run: bool = False) -> Moves:
+
+def nothing_to_repoint(source: Any, target: Any, *, dry_run: bool = False, by: Any = None) -> Moves:
     """No table references this list; a merge only retires the source."""
     return {}
 
@@ -123,21 +141,50 @@ def move(links: tuple[Link, ...], source: Any, target: Any, *, library: Mover) -
     return moves
 
 
-def tenant_tag(source: Any, target: Any, *, dry_run: bool = False) -> Moves:
-    """Move every tagging from `source` to `target`; a record that already carries the
-    target keeps one tagging (the unique constraint), so the duplicate is dropped and not
-    counted as moved."""
-    already = set(Tagging.objects.filter(tag=target).values_list("subject_type", "subject_id"))
-    taggings = Tagging.objects.filter(tag=source).order_by("created_at", "id")
-    rows = Moved([], [])
-    for tagging in taggings:
-        twin = (tagging.subject_type, tagging.subject_id) in already
-        (rows.dropped if twin else rows.moved).append(str(tagging.id))
-        if dry_run:
-            continue
-        if twin:
-            tagging.delete()
-            continue
-        tagging.tag = target
-        tagging.save(update_fields=["tag"])
-    return {Tagging._meta.db_table: rows}
+def tenant_links(links: tuple[Link, ...]) -> Callable[..., Moves]:
+    """The merge of a tenant list: every link's rows move from `source` to `target` inside
+    the request's transaction, so a refusal or a failure in a later table undoes the
+    earlier ones. `by` is the person merging, who stamps a removable twin removed."""
+
+    def merge(source: Any, target: Any, *, dry_run: bool = False, by: Any = None) -> Moves:
+        moves: Moves = {}
+        for link in links:
+            moving, twins = _split_tenant(link, source, target, lock=not dry_run)
+            if twins and not link.drop_twins:
+                raise ValidationError(
+                    f"{len(twins)} {link.table} rows already exist under the value merged into; rename or retire them first.",
+                    code="duplicate_key",
+                )
+            if not dry_run:
+                _move_tenant(link, moving, twins, target, by)
+            moves[link.table] = Moved(moving, twins)
+        return moves
+
+    return merge
+
+
+def _split_tenant(link: Link, source: Any, target: Any, *, lock: bool) -> tuple[list[str], list[str]]:
+    """The ids of `link`'s rows holding `source` that move, and of the twins that do not,
+    in two reads however many rows: the target's unique keys, then the source's rows."""
+    held = link.rows().filter(**{link.field: target})
+    taken = set(held.values_list(*link.unique_with)) if link.unique_with else set()
+    rows = link.rows().filter(**{link.field: source}).order_by("pk")
+    if lock:
+        rows = rows.select_for_update()
+    moving: list[str] = []
+    twins: list[str] = []
+    for pk, *key in rows.values_list("pk", *link.unique_with):
+        (twins if link.unique_with and tuple(key) in taken else moving).append(str(pk))
+    return moving, twins
+
+
+def _move_tenant(link: Link, moving: list[str], twins: list[str], target: Any, by: Any) -> None:
+    manager = link.model._default_manager
+    if twins and link.removable:
+        manager.filter(pk__in=twins).update(removed_at=timezone.now(), removed_by_id=by)
+    elif twins:
+        manager.filter(pk__in=twins).delete()
+    columns: dict[str, Any] = {link.field: target}
+    if any(field.name == "version" for field in link.model._meta.concrete_fields):
+        columns["version"] = F("version") + 1
+    manager.filter(pk__in=moving).update(**columns)

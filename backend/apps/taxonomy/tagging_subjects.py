@@ -4,8 +4,8 @@ tagging_logic.py so the module that writes rows never names a library model (the
 fence, apps/shared/tests_library_fence.py).
 
 A record is readable when row-level security shows it to the caller's tenant (a shared
-library record or the bank's own, a case of its own) and the caller's roles read its kind.
-`tenant_obligation` joins when the register's own obligation rows do.
+library record or the bank's own, a case or a register entry of its own) and the caller's
+roles read its kind.
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ from django.db.models import Model
 
 from apps.cases.models import ChangeCase
 from apps.library.models import Obligation
+from apps.register.models import TenantObligation
 from apps.shared import permissions as perms
 from apps.shared.authentication import Principal
 from apps.watch.models import RegulatoryChange
@@ -27,6 +28,7 @@ SUBJECTS: Final[dict[str, tuple[type[Model], str]]] = {
     "obligation": (Obligation, perms.LIBRARY_READ),
     "change": (RegulatoryChange, perms.WATCH_READ),
     "change_case": (ChangeCase, perms.CASES_READ),
+    "tenant_obligation": (TenantObligation, perms.REGISTER_READ),
 }
 NOT_FOUND = "There is nothing at this address in your organisation."
 
@@ -35,7 +37,8 @@ def kind_of(subject_type: str) -> tuple[type[Model], str]:
     found = SUBJECTS.get(subject_type)
     if found is None:
         raise ValidationError(
-            f"{subject_type!r} records cannot be tagged; tag an obligation, a change or a case.", code="unsupported_subject"
+            f"{subject_type!r} records cannot be tagged; tag an obligation, a change, a case or a register entry.",
+            code="unsupported_subject",
         )
     return found
 
@@ -47,11 +50,15 @@ def title_of(who: Principal, subject_type: str, subject_id: uuid.UUID) -> str:
     row: Any = None
     if who.has_permission(permission):
         query = model._default_manager.filter(pk=subject_id)
-        row = (query.select_related("change") if model is ChangeCase else query).first()  # ordering: pk lookup, at most one row
+        joins: dict[type[Model], str] = {ChangeCase: "change", TenantObligation: "obligation"}
+        related = joins.get(model)
+        row = (query.select_related(related) if related else query).first()  # ordering: pk lookup, at most one row
     if row is None:
         raise ValidationError(NOT_FOUND, code="not_found")
     if isinstance(row, Obligation):
         return row.stable_key
+    if isinstance(row, TenantObligation):
+        return row.obligation.stable_key
     if isinstance(row, ChangeCase):
         return row.change.title
     return str(row.title)

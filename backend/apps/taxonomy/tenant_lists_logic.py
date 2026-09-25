@@ -31,7 +31,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from django.core.exceptions import ValidationError
-from django.db.models import Max
+from django.conf import settings
+from django.db.models import Count, Max, Q
 from django.utils.text import slugify
 
 from apps.shared.audit import Actor, record
@@ -124,7 +125,8 @@ def _queryset(entry: VocabularyList, tenant_id: uuid.UUID | None) -> Any:
 # ---------------------------------------------------------------------------------------
 def list_of_lists(tenant_id: uuid.UUID | None) -> list[VocabularyListEntry]:
     """`GET /vocab`: the list of lists, with how many rows each holds and how many are
-    retired, so the admin screen's index needs no call per list."""
+    retired, so the admin screen's index needs no call per list. One aggregate per list
+    counts both (H32)."""
     entries: list[VocabularyListEntry] = []
     for name, entry in REGISTRY.items():
         if not entry.is_library and tenant_id is None:
@@ -132,16 +134,15 @@ def list_of_lists(tenant_id: uuid.UUID | None) -> list[VocabularyListEntry]:
         rows = entry.model._default_manager.all()
         if not entry.is_library:
             rows = rows.filter(tenant_id=tenant_id)
-        total = rows.count()
-        retired = rows.filter(active=False).count()
+        counts = rows.aggregate(total=Count("pk"), retired=Count("pk", filter=Q(active=False)))
         entries.append(
             VocabularyListEntry(
                 list=name,
                 tier=entry.tier,
                 kind=entry.kind_name,
                 kinds=list(entry.kinds),
-                count=total - retired,
-                retired_count=retired,
+                count=counts["total"] - counts["retired"],
+                retired_count=counts["retired"],
                 proposable=entry.proposable,
             )
         )
@@ -431,6 +432,17 @@ def _write_labels(entry: VocabularyList, row: Any, labels: dict[str, str], tenan
         entry.label_model._default_manager.create(**fields)
 
 
+def _refuse_full_list(entry: VocabularyList, tenant_id: uuid.UUID) -> None:
+    """A tenant list holds at most TENANT_LIST_MAX_ROWS rows, retired ones included, so
+    `GET /vocab/{list}`, which answers a whole list, stays bounded (H32)."""
+    cap = settings.TENANT_LIST_MAX_ROWS
+    if entry.model._default_manager.filter(tenant_id=tenant_id).count() >= cap:
+        raise ValidationError(
+            f"{entry.name} already holds {cap} values, the most a list may hold; merge or reuse one instead.",
+            code="list_full",
+        )
+
+
 def create_row(
     *,
     list_name: str,
@@ -448,6 +460,7 @@ def create_row(
     entry = entry_for(list_name)
     cleaned = validated_labels(labels)
     row_key = key_for(cleaned, key)
+    _refuse_full_list(entry, tenant.id)
     check_duplicate(entry, tenant.id, row_key)
     check_near_duplicate(entry, tenant.id, cleaned, force=force)
     fields: dict[str, Any] = {
@@ -582,14 +595,29 @@ def _refuse_emptying_category(entry: VocabularyList, row: Any, tenant_id: uuid.U
         )
 
 
+def _refuse_open_work(entry: VocabularyList, row: Any) -> None:
+    """TEN-03: a team that owns open work is not retired, even with `confirm`, because
+    nobody would be left to pick the work up. The 409 carries the counts per table so the
+    screen can say what to move first."""
+    open_work = entry.open_work(row) if entry.open_work is not None and row.active else {}
+    if open_work:
+        raise VocabularyProblem(
+            f"{row.key} still owns {sum(open_work.values())} open records; move them to another owner first.",
+            code="open_work",
+            extra={"openWork": open_work},
+        )
+
+
 def retire(
     *, list_name: str, tenant: Tenant, actor: Actor, key: str, confirm: bool
 ) -> VocabularyRetired:
     """Retire, never delete (playbook 15, AC-VOC2). The records that carry the value keep
     it and still render its label; the picker stops offering it."""
+    entry = entry_for(list_name)
     [row] = row_for_write(list_name, [key], tenant.id)
-    _refuse_emptying_category(entry_for(list_name), row, tenant.id)
+    _refuse_emptying_category(entry, row, tenant.id)
     _refuse_system_row(row, "retired")
+    _refuse_open_work(entry, row)
     count = int(getattr(row, "usage_count", 0))
     if count and not confirm:
         raise VocabularyProblem(
@@ -650,6 +678,13 @@ def merge(
     if source.pk == target.pk:
         raise ValidationError("Choose a different value to merge into.", code="validation_error")
     _refuse_system_row(source, "merged away")
+    if entry.kind_required and source.kind != target.kind:
+        # A merge across categories would move a status, a level or a state without the
+        # assessment, acceptance or step that moves one (VOC-04, VOC-05).
+        raise ValidationError(
+            f"{key} is under {source.kind} and {into} under {target.kind}: merge only values of the same {entry.kind_name}.",
+            code="validation_error",
+        )
     count = int(getattr(source, "usage_count", 0))
     if dry_run:
         # A preview changes nothing and is not a write, so it leaves no audit row: the
@@ -657,7 +692,7 @@ def merge(
         return VocabularyMerged(
             **{"from": key}, into=into, usage_count=count, repointed=repoint.count(entry.repoint(source, target, dry_run=True)), dry_run=True
         )
-    moves = entry.repoint(source, target, dry_run=False)
+    moves = entry.repoint(source, target, dry_run=False, by=actor.id)
     repointed = repoint.count(moves)
     source.active = False
     source.version = getattr(source, "version", 1) + 1
