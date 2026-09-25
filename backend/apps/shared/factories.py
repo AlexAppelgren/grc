@@ -56,7 +56,7 @@ from apps.library.models import Language
 from apps.library import testing as library_testing
 from apps.library.seeds import LANGUAGES, seed_jurisdictions, seed_languages
 from apps.register.logic import ensure_register_entry
-from apps.register.models import Applicability, SoaUnit, TenantObligationScope
+from apps.register.models import Applicability, DutyOccurrence, SoaUnit, TenantObligationScope
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
@@ -249,3 +249,23 @@ def soa_unit(tenant: Tenant) -> SoaUnit:
             compliance_status=status,
         )
         return SoaUnit.objects.create(tenant=tenant, scope=scope, reference=f"X.{n}", title="Our own words", compliance_status=status)
+
+
+# c8-duty-occurrences (REG-07): the tenant-isolation guard's record for the completion route.
+def duty_occurrence(tenant: Tenant) -> DutyOccurrence:
+    """An upcoming occurrence of a fresh obligation's quarterly duty (both built by
+    apps/library/testing.py) on `tenant`'s register entry, so the only thing between another
+    tenant and it is tenancy."""
+    n = next(_counter)
+    with transaction.atomic():
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_taxonomy_terms()
+        law = library_testing.instrument(key=f"duty-law-{n}", regime="regime:securities")
+        duty = library_testing.recurring_duty(library_testing.obligation(law, key=f"duty-law-{n}-report"))
+    officer = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=duty.obligation_id, actor=user_actor(user_id=officer.id))
+        return DutyOccurrence.objects.create(tenant=tenant, recurring_duty=duty, tenant_obligation=entry, due_date=timezone.localdate())

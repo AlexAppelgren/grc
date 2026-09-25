@@ -80,6 +80,7 @@ from apps.library.models import (
     ProvisionText,
     ProvisionVersion,
     RecordStatus,
+    RecurringDuty,
     Translation,
 )
 from apps.library.schemas import (
@@ -1237,3 +1238,21 @@ def get_record_sources(obligation_id: uuid.UUID, on: datetime.date) -> LibraryRe
             for field, url, label in cited
         ],
     )
+
+
+# c8-duty-occurrences (REG-07): what the register's occurrences are dated from.
+class DutyRule(NamedTuple):
+    """A library recurring duty as the register reads it: its title, its RFC 5545 rule and
+    the note on how its due date is set."""
+
+    id: uuid.UUID
+    obligation_id: uuid.UUID
+    title: str
+    rule: str
+    note: str
+
+
+def recurring_duties(obligation_ids: Collection[uuid.UUID]) -> list[DutyRule]:
+    """The active recurring duties of these obligations, in one query, in the library's order."""
+    rows = RecurringDuty.objects.filter(obligation_id__in=obligation_ids, status=RecordStatus.ACTIVE.value)
+    return [DutyRule(row.id, row.obligation_id, row.title, row.recurrence_rule, row.due_rule_note) for row in rows]

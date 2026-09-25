@@ -192,6 +192,7 @@ IF_MATCH_ROUTES = {
 # The operations whose logic has landed, each proved in its package's own tests.
 BUILT = {
     "setApplicability", "setApplicabilityMany",  # c8-reg-applicability, tests_applicability.py
+    "listDuties", "completeDutyOccurrence",  # c8-duty-occurrences, tests_duties.py
 }
 
 

@@ -937,8 +937,8 @@ def list_duties(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
-    page out of range. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    page out of range. A read writes nothing: a duty whose obligation does not yet apply to
+    the bank has a null next occurrence.
     """
     tenant = caller_tenant(request)
     return duties.list_duties(
@@ -972,8 +972,7 @@ def complete_duty_occurrence(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
     `not_found` (404) for an occurrence the bank does not have; `validation_error` (422) for a
-    note over the limit. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    note over the limit.
     """
     return duties.complete_occurrence(
         tenant=caller_tenant(request), actor=actor_for(request), occurrence_id=occurrence_id, body=body

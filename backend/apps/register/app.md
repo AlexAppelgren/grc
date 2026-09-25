@@ -187,6 +187,11 @@ Then the duty appears with "Our deadline"
 When it is completed
 Then the next occurrence 2027-03-31 is generated in the tenant's timezone
 ```
+`@integration` is green up to its roadmap line (c8-duty-occurrences): the occurrence due
+2026-12-31 reads back through `listDuties`, and completing it generates exactly 2027-03-31 in
+the tenant's timezone. The roadmap line ("the duty appears with 'Our deadline'") is the
+roadmap's duty branch, which `c8-home-register-feeds` builds and asserts in this test. The
+first occurrence is written when applicability becomes "applies", never on a read.
 
 ### REG-S11 — A stale write on a register row is refused `@integration` (REG-02)
 ```gherkin

@@ -30,6 +30,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.library.reading import RecordHeading, obligation_headings, obligation_scopes
+from apps.register import duties
 from apps.register.logic import ensure_register_entry
 from apps.register.models import Applicability, TenantObligation, TenantObligationScope
 from apps.register.schemas import (
@@ -162,9 +163,11 @@ def _store(
     decided_at = timezone.now()
     default_status: ComplianceStatus | None = None
     stored = []
+    applied: list[tuple[TenantObligation, TenantObligationScope | None]] = []
     for answer in answers:
         entry = entries[answer.obligation_id]
         row: TenantObligation | TenantObligationScope = entry
+        scope = None
         if answer.org_unit_id is not None:
             scope = scopes.get((entry.id, answer.org_unit_id))
             if scope is None:
@@ -172,6 +175,12 @@ def _store(
                 scope = _new_scope(tenant, entry, answer.org_unit_id, default_status)
             row = scope
         stored.append(_write(tenant, person, actor, entry, row, answer, headings[answer.obligation_id], names, decided_at))
+        if answer.applicability == "applies":
+            applied.append((entry, scope))
+    if applied:
+        # REG-07 (c8-duty-occurrences): an answer "applies" writes the first occurrence of
+        # each recurring duty that has none, in this transaction.
+        duties.schedule_first(tenant=tenant, actor=actor, targets=applied, at=decided_at)
     return stored
 
 
