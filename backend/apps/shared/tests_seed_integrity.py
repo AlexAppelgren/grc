@@ -103,6 +103,9 @@ from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
 # c8-ui-links-history-participants
 from apps.collab.models import Participant
 from apps.shared.e2e_seed import NO_ENTRY_OBLIGATION, PARTICIPANT, PARTICIPANT_ADDED_BY, PARTICIPATION_OBLIGATION
+# c9-fe-case-participants
+from apps.cases.models import ImpactAssessment
+from apps.shared.e2e_seed import CASE_PARTICIPANTS, CASE_PARTICIPATION_CHANGE, CASE_PARTICIPATION_OWNER, CASE_PARTICIPATION_TEAM
 # c8-seed-org-register
 from apps.register.models import ComplianceAssessment, Gap, InternalLink, Interpretation, TenantObligation, TenantObligationScope
 from apps.shared.e2e_seed import (
@@ -1615,7 +1618,7 @@ class SeededParticipant(SeededOnce):
     def test_the_reader_takes_part_in_one_entry_added_by_the_compliance_officer_and_recorded(self) -> None:
         tenant = Tenant.objects.get(slug=TENANT_A_SLUG)
         tenancy.activate(tenant.id)
-        [row] = Participant.objects.filter(removed_at__isnull=True).values_list(
+        [row] = Participant.objects.filter(tenant_obligation__isnull=False, removed_at__isnull=True).values_list(
             "id", "user__email", "added_by__email", "tenant_obligation__obligation__stable_key", "team_id"
         )
         self.assertEqual(row[1:], (PARTICIPANT, PARTICIPANT_ADDED_BY, PARTICIPATION_OBLIGATION, None))
@@ -1635,10 +1638,49 @@ class SeededParticipant(SeededOnce):
         audited = AuditEvent.objects.filter(tenant=tenant).count()
         seed_e2e()
         tenancy.activate(tenant.id)
-        self.assertEqual((Participant.objects.count(), AuditEvent.objects.filter(tenant=tenant).count()), (1, audited))
-        Participant.objects.update(removed_at=timezone.now(), removed_by=F("user"))
+        on_entries = Participant.objects.filter(tenant_obligation__isnull=False)
+        self.assertEqual((on_entries.count(), AuditEvent.objects.filter(tenant=tenant).count()), (1, audited))
+        on_entries.update(removed_at=timezone.now(), removed_by=F("user"))
         seed_e2e()
         tenancy.activate(tenant.id)
-        self.assertEqual(Participant.objects.filter(removed_at__isnull=True).count(), 1)
-        self.assertEqual(Participant.objects.count(), 2)
+        self.assertEqual(on_entries.filter(removed_at__isnull=True).count(), 1)
+        self.assertEqual(on_entries.count(), 2)
 # --- end c8-ui-links-history-participants -------------------------------------------------------
+
+
+# --- c9-fe-case-participants --------------------------------------------------------------------
+class SeededCaseParticipants(SeededOnce):
+    """COL-S9's case: assessed by its owner, with the team Legal and two people taking part
+    (COL-04, CAS-03)."""
+
+    def test_the_case_is_being_assessed_by_the_compliance_officer_through_the_real_moves(self) -> None:
+        tenancy.activate(Tenant.objects.get(slug=TENANT_A_SLUG).id)
+        case = ChangeCase.objects.select_related("owner").get(change__stable_key=CASE_PARTICIPATION_CHANGE)
+        self.assertEqual((case.status, case.owner and case.owner.email, case.urgency_confirmed), ("assessing", CASE_PARTICIPATION_OWNER, True))
+        self.assertTrue(ImpactAssessment.objects.filter(case=case).exists())
+        moves = AuditEvent.objects.filter(action="case.moved", subject_id=case.id).values_list("after__status", flat=True)
+        self.assertEqual(sorted(moves), ["assessing", "assigned"])
+
+    def test_legal_and_two_people_take_part_each_added_by_the_owner_and_recorded(self) -> None:
+        tenancy.activate(Tenant.objects.get(slug=TENANT_A_SLUG).id)
+        live = Participant.objects.filter(case__change__stable_key=CASE_PARTICIPATION_CHANGE, removed_at__isnull=True)
+        self.assertEqual(set(live.values_list("team__key", flat=True)) - {None}, {CASE_PARTICIPATION_TEAM})
+        self.assertEqual(set(live.values_list("user__email", flat=True)) - {None}, set(CASE_PARTICIPANTS))
+        self.assertEqual(set(live.values_list("added_by__email", flat=True)), {CASE_PARTICIPATION_OWNER})
+        for row in live:
+            self.assertTrue(AuditEvent.objects.filter(action="participant.seeded", subject_id=row.id, actor_label="seed_e2e").exists())
+
+    def test_a_reseed_moves_nothing_and_puts_back_a_participation_the_journey_ended(self) -> None:
+        tenant = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant.id)
+        on_case = Participant.objects.filter(case__change__stable_key=CASE_PARTICIPATION_CHANGE)
+        audited = AuditEvent.objects.filter(tenant=tenant).count()
+        seed_e2e()
+        tenancy.activate(tenant.id)
+        self.assertEqual(AuditEvent.objects.filter(tenant=tenant).count(), audited)
+        on_case.filter(user__email=CASE_PARTICIPANTS[0]).update(removed_at=timezone.now(), removed_by=F("added_by"))
+        seed_e2e()
+        tenancy.activate(tenant.id)
+        self.assertEqual(on_case.filter(user__email=CASE_PARTICIPANTS[0], removed_at__isnull=True).count(), 1)
+        self.assertEqual(ChangeCase.objects.get(change__stable_key=CASE_PARTICIPATION_CHANGE).status, "assessing")
+# --- end c9-fe-case-participants ----------------------------------------------------------------

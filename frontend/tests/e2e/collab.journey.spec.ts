@@ -26,6 +26,23 @@ test.describe('collab journeys', () => {
 // c8-ui-links-history-participants: the obligations of COL-S6 and COL-S7, as the seed names them.
 const NO_ENTRY_OBLIGATION = 'obl-idd-demands-needs';
 const PARTICIPATION_OBLIGATION = 'obl-costs-charges';
+// c9-fe-case-participants: COL-S9's case, as the seed names it (CASE_PARTICIPATION_CHANGE).
+const CASE_PARTICIPATION_CHANGE = 'chg-e2e-sft-reporting';
+const CASE_PARTICIPATION_TITLE = 'Amended reporting of securities financing transactions';
+
+/**
+ * Opens COL-S9's case from its card on the roadmap and returns the change's id. The feed's
+ * in-progress tab lists `assigned` cases only until chunk 9 widens it, so a case being
+ * assessed is reached from its regulatory date instead.
+ */
+async function openCase(page: Page): Promise<string> {
+  await page.goto('/roadmap');
+  await page.getByRole('button', { name: new RegExp(CASE_PARTICIPATION_TITLE) }).click();
+  await page.locator('[data-roadmap-detail]').getByRole('link', { name: 'Open change' }).click();
+  await expect(page).toHaveURL(/\/watch\/[0-9a-f-]{36}$/);
+  await expect(page.locator(`[data-change="${CASE_PARTICIPATION_CHANGE}"] [data-participants-panel]`)).toBeVisible();
+  return new URL(page.url()).pathname.split('/').at(-1) ?? '';
+}
 
 /** Adds one person or team through the picker and returns the new participant's id. */
 async function addParticipant(page: Page, panel: Locator, search: string, name: RegExp): Promise<string> {
@@ -138,8 +155,106 @@ test.describe('participants, comments and mentions', () => {
     }
   });
 
-  test.fixme("COL-S9: Case participants are managed by those who contribute, and refused across tenants", async () => {
-    // pending: COL-S9 (COL-04, AC-COL1, NFR-01)
+  // c9-fe-case-participants: tenant A's case for the securities financing change, being
+  // assessed, with the team Legal, Johan Berg and the Reader taking part, each added by the
+  // compliance officer (CASE_PARTICIPATION_* in apps/shared/e2e_seed.py). The contributor holds
+  // cases.contribute but not register.edit. Another bank's reach is proven by the scenario's
+  // integration test (apps/collab/tests_case_participants.py); here, tenant B's page for the
+  // same change shows none of tenant A's people.
+  test("COL-S9: Case participants are managed by those who contribute, and refused across tenants", async ({ page, apiGuard, browser }, testInfo) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.contributor);
+    const changeId = await openCase(page);
+    const panel = page.locator('[data-participants-panel]');
+    const named = (name: string) => panel.locator('[data-participant-id]').filter({ has: page.getByRole('heading', { name, exact: true }) });
+    const writes: string[] = [];
+    page.on('request', (r) => {
+      if (/\/changes\/[^/]+\/participants/.test(r.url()) && r.method() !== 'GET') writes.push(r.method());
+    });
+    let added: string | null = null;
+    let johanRemoved = false;
+    let readerLeft = false;
+    let teamAdded = false;
+
+    try {
+      // The owner sits read-only above the list; each row names who added it.
+      await expect(panel.locator('[data-participant-owners]')).toContainText('Sara Lindqvist');
+      await expect(panel.locator('[data-participant-owners]').getByRole('button')).toHaveCount(0);
+      await expect(named('Legal').getByText('Team', { exact: true })).toBeVisible();
+      await expect(named('Legal')).toContainText(/Added .+ by Sara Lindqvist/);
+
+      // When the contributor adds Maria Ek, the answer is 201.
+      added = await addParticipant(page, panel, 'Maria', /^Maria Ek/);
+      await expect(panel.locator(`[data-participant-id="${added}"]`)).toContainText(/Added .+ by Karin Nyström/);
+
+      // When they remove Johan Berg, the answer is 204.
+      const removing = page.waitForResponse((r) => r.url().includes('/participants/') && r.request().method() === 'DELETE');
+      await named('Johan Berg').getByRole('button', { name: 'Remove' }).click();
+      expect((await removing).status()).toBe(204);
+      johanRemoved = true;
+      await expect(named('Johan Berg')).toHaveCount(0);
+
+      // The assessment's contributor teams are the team participants, one call per change.
+      const teams = page.locator('[data-contributor-teams]');
+      await expect(teams.getByText('Legal', { exact: true })).toBeVisible();
+      writes.length = 0;
+      await teams.getByRole('button', { name: 'Add a team' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Add a contributor team' });
+      await dialog.getByRole('radio', { name: /^Retail compliance/ }).click();
+      const teamAdd = page.waitForResponse((r) => r.url().endsWith('/participants') && r.request().method() === 'POST');
+      await dialog.getByRole('button', { name: 'Add' }).click();
+      expect((await teamAdd).status()).toBe(201);
+      teamAdded = true;
+      await expect(dialog).toBeHidden();
+      await expect(named('Retail compliance')).toHaveCount(1);
+      const teamRemove = page.waitForResponse((r) => r.url().includes('/participants/') && r.request().method() === 'DELETE');
+      await teams.getByRole('button', { name: 'Remove Retail compliance' }).click();
+      expect((await teamRemove).status()).toBe(204);
+      teamAdded = false;
+      await expect(named('Retail compliance')).toHaveCount(0);
+      expect(writes).toEqual(['POST', 'DELETE']);
+
+      // A Reader who takes part may only leave their own row.
+      const reader = await signInElsewhere(browser, testInfo.project.use.baseURL, apiGuard, LOGINS.reader);
+        await reader.goto(`/watch/${changeId}`);
+      const theirs = reader.locator('[data-participants-panel]');
+      const own = theirs.locator('[data-participant-id]').filter({ has: reader.getByRole('heading', { name: 'Oskar Lund', exact: true }) });
+      await expect(own.getByText('You', { exact: true })).toBeVisible();
+      await expect(theirs.getByRole('button', { name: 'Add a participant' })).toHaveCount(0);
+      await expect(theirs.getByRole('button', { name: 'Remove' })).toHaveCount(0);
+      const leaving = reader.waitForResponse((r) => r.url().includes('/participants/') && r.request().method() === 'DELETE');
+      await own.getByRole('button', { name: 'Leave' }).click();
+      expect((await leaving).status()).toBe(204);
+      readerLeft = true;
+      await expect(own).toHaveCount(0);
+      await reader.context().close();
+
+      // Tenant B's page for the same change shows none of tenant A's people.
+      const other = await signInElsewhere(browser, testInfo.project.use.baseURL, apiGuard, LOGINS.secondBankAdmin);
+      apiGuard.allow(new RegExp(`/api/v1/changes/${changeId}$`), 404, 'tenant B cannot open a change outside its own scope');
+      await other.goto(`/watch/${changeId}`);
+      await expect(other.locator('[data-change-classification]').or(other.locator('[data-empty-state]')).or(other.getByRole('alert')).first()).toBeVisible();
+      await expect(other.getByText('Sara Lindqvist')).toHaveCount(0);
+      await expect(other.getByText('Maria Ek')).toHaveCount(0);
+      await other.context().close();
+    } finally {
+      // The compliance officer puts the case's participants back, as the seed had them.
+      if (added !== null || johanRemoved || readerLeft || teamAdded) {
+        const officer = await signInElsewhere(browser, testInfo.project.use.baseURL, apiGuard, LOGINS.complianceOfficer);
+            await officer.goto(`/watch/${changeId}`);
+        const theirs = officer.locator('[data-participants-panel]');
+        await expect(theirs.locator('[data-participant-id]').first()).toBeVisible();
+        for (const name of ['Maria Ek', 'Retail compliance']) {
+          const row = theirs.locator('[data-participant-id]').filter({ has: officer.getByRole('heading', { name, exact: true }) });
+          if ((await row.count()) === 0) continue;
+          await row.getByRole('button', { name: 'Remove' }).click();
+          await expect(row).toHaveCount(0);
+        }
+        if (johanRemoved) await addParticipant(officer, theirs, 'Johan', /^Johan Berg/);
+        if (readerLeft) await addParticipant(officer, theirs, 'Oskar', /^Oskar Lund/);
+        await officer.context().close();
+      }
+    }
   });
 
   test.fixme("COL-S12: My comments and mentions are found on My work, limited to what I can read, and never logged", async () => {
