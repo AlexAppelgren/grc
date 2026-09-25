@@ -201,7 +201,7 @@ def change_chunks(change_id: uuid.UUID) -> RecordChunks:
 
     The scope terms are the change's own, a flag excluded (a flag says what the reform is
     about, not who it reaches, WAT-03), and the reader's regulatory scope is applied to
-    them by `hybrid._in_footprint` through the watch feed's own rule. A change belongs to
+    them by `hybrid._scope` through the watch feed's own rule. A change belongs to
     no bank: it is registered by the platform's runs and its events carry no tenant, which
     `tasks.index_change` checks before it calls this.
     """

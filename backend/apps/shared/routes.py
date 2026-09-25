@@ -70,4 +70,8 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/agent-access/{uuidstr:entry_id}/revoke", "agents.AgentAccess", "agent_access_entry"),
     ("POST", "/agent-access/{uuidstr:entry_id}/keys/{uuidstr:key_id}/revoke", "identity.ApiKey", "agent_access_key"),
     ("GET", "/agent-access/{uuidstr:entry_id}/calls", "agents.AgentAccess", "agent_access_entry"),
+    # c8-reg-status: a legal entity's register row (REG-02).
+    ("PATCH", "/obligations/{obligation_id}/register/entities/{org_unit_id}", "register.TenantObligationScope", "register_entity"),
+    # c8-reg-links-history (REG-05): a link is removed by id.
+    ("DELETE", "/internal-links/{link_id}", "register.InternalLink", "internal_link"),
 ]

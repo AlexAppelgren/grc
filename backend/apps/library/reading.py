@@ -20,11 +20,24 @@ and the diffs between two versions. Nothing here writes.
   `scope_and_verdict()` builds both for a row of the list and for a record's own card.
 - `terms_of()` is the one parser of `dimension:key`, for the obligations filter and for
   an obligation proposal's scope.
+- `tenant_tags()` is the caller's bank's own tags on a page of obligations, from one query
+  (VOC-08); `tagged()` is the `tag` and `tenantTag` filters, each key resolved against its
+  own list first so a key that names nothing is a 422, never an empty page.
+- The register overlay on a row and the card, and its filters, are `apps.register.overlay`:
+  one joined query per page over the bank's own entries (REG-01, REG-02). It never decides
+  which rows a page holds beyond its own filters; `in_view()` stays the one scope rule.
 - `active_obligation()` and `unknown_provision_keys()` are what a proposal points at and
   cites; they live here because the library fence keeps library models out of the
   proposals app (PRO-01). `instrument_refs()`, `shared_instrument()`, `live_duty_type()`
   and `stable_key_taken()` are what a new instrument or obligation names, for the same
   reason.
+- `Reader` is how far past the shared library's facts one caller reads (ACC-02, ACC-04,
+  ACC-07, D-57, D-76). A person reads as `OPEN`. A bank's own agent, an agent access
+  credential, is confined to shared records inside the footprint and inside its entry's
+  scope on every list and every addressed read, each record beyond them the same 404
+  another bank gets, and it reads the bank's overlay and tags only through the register's
+  gate (`overlay.shown_to()`). `entry_admits()` is the entry's second pass, which search and
+  the upcoming list apply too.
 - "As of" a date is `logic.in_force()` and nothing else (AC-INV1). A version's end date is
   never stored: `version_rows()` derives it from the version that follows (INV-04).
 - `confirmation_of()` is who confirmed each version's approval and which agent proposed it
@@ -59,7 +72,8 @@ from django.contrib.postgres.expressions import ArraySubquery
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.lookups import DataContains
 from django.core.exceptions import ValidationError
-from django.db.models import Count, Exists, F, Func, Model, OuterRef, Prefetch, Q, QuerySet, UUIDField, Value
+from django.db.models import BooleanField, Count, Exists, F, Func, Model, OuterRef, Prefetch, Q, QuerySet, UUIDField, Value
+from django.db.models.functions import JSONObject
 from django.utils import timezone
 
 from apps.library.logic import in_force, version_diff
@@ -80,8 +94,10 @@ from apps.library.models import (
     ProvisionText,
     ProvisionVersion,
     RecordStatus,
+    SubjectType,
     Translation,
 )
+from apps.register import overlay
 from apps.library.schemas import (
     DiffSegment,
     FootprintFilter,
@@ -117,21 +133,27 @@ from apps.library.schemas import (
     VersionDiff,
     VersionDiffQuery,
 )
+from apps.shared.authentication import Principal
+from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy import matching, terms_logic
 from apps.taxonomy.models import (
     DutyTypeLabel,
+    InstrumentLevelKind,
     InstrumentLevelLabel,
     LibraryTag,
     LibraryTagLabel,
     ProvisionKindLabel,
     RelationTypeLabel,
+    Tagging,
     TaxonomyTerm,
     TaxonomyTermLabel,
+    TenantTag,
+    TenantTagLabel,
     WatchedMarket,
 )
 from apps.taxonomy.reading import Labels, agent_ref, label_of, proposing_agent
-from apps.taxonomy.schemas import PersonRef
+from apps.taxonomy.schemas import PersonRef, TaggingTagRef
 
 
 # ---------------------------------------------------------------------------------------
@@ -255,6 +277,80 @@ def terms_of(refs: list[str]) -> list[TaxonomyTerm]:
 
 
 # ---------------------------------------------------------------------------------------
+# The tags on an obligation: the library's own and the bank's own (VOC-08)
+# ---------------------------------------------------------------------------------------
+_Listed = TypeVar("_Listed", bound=QuerySet[Any])
+
+
+def tenant_tags(tenant: Tenant, obligation_ids: Collection[uuid.UUID], order: list[str]) -> dict[uuid.UUID, list[TaggingTagRef]]:
+    """The caller's bank's own tags on each obligation, in the tag list's order, from one
+    query whatever the page size: the taggings with their tags and every label of each tag.
+    Read by the bank's id as well as under row-level security, so another bank's tag on the
+    same shared record never reaches this one."""
+    labels = ArraySubquery(
+        TenantTagLabel.objects.filter(vocabulary_id=OuterRef("tag_id"))
+        .order_by("language")
+        .values(row=JSONObject(language="language", text="text", original="is_original"))
+    )
+    rows = (
+        Tagging.objects.filter(tenant_id=tenant.id, subject_type=SubjectType.OBLIGATION, subject_id__in=obligation_ids)
+        .annotate(tag_labels=labels)
+        .order_by("tag__sort_order", "tag__key")
+        .values_list("subject_id", "tag__key", "tag_labels")
+    )
+    found: dict[uuid.UUID, list[TaggingTagRef]] = {}
+    for subject_id, key, tag_labels in rows:
+        texts = {label["language"]: label["text"] for label in tag_labels}
+        original = next((label["language"] for label in tag_labels if label["original"]), None)
+        found.setdefault(subject_id, []).append(TaggingTagRef(key=key, kind=None, label=label_of(texts, order, original=original, key=key)))
+    return found
+
+
+def _tag_ids(tags: QuerySet[Any], keys: list[str], unknown_detail: str) -> list[uuid.UUID]:
+    """The ids of the tags `keys` names in one query; 422 `unknown_key` naming every key
+    that is not one."""
+    found = dict(tags.filter(key__in=keys).values_list("key", "id"))
+    unknown = [key for key in dict.fromkeys(keys) if key not in found]
+    if unknown:
+        raise ValidationError(unknown_detail.format(keys=", ".join(unknown)), code="unknown_key")
+    return [found[key] for key in dict.fromkeys(keys)]
+
+
+def refuse_bank_filters(tenant_id: uuid.UUID | None, query: ObligationQuery) -> None:
+    """A caller that belongs to no bank, a platform key or session, has no tags of its own
+    (VOC-08), so its `tenantTag` is refused by name rather than read against nobody's
+    list."""
+    if tenant_id is None and query.tenant_tag:
+        raise ValidationError("tenantTag filters by a bank's own tags, and this caller belongs to no bank.", code="unknown_filter")
+    if tenant_id is None and any(value is not None for value in _overlay_filters(query)):
+        raise ValidationError(
+            "applicability, complianceStatus, owner and ownerTeam filter by a bank's own register, "
+            "and this caller belongs to no bank.",
+            code="unknown_filter",
+        )
+
+
+def _overlay_filters(query: ObligationQuery) -> overlay.OverlayFilters:
+    return overlay.OverlayFilters(query.applicability, query.compliance_status, query.owner, query.owner_team)
+
+
+def tagged(queryset: _Listed, tenant: Tenant, query: ObligationQuery) -> _Listed:
+    """The `tag` and `tenantTag` filters: every tag named must be on the obligation."""
+    if query.tag:
+        detail = "Not a library tag: {keys}. GET /vocab/library_tag lists the library's tags."
+        for tag_id in _tag_ids(LibraryTag.objects.all(), query.tag, detail):
+            queryset = queryset.filter(Exists(ObligationTag.objects.filter(obligation=OuterRef("pk"), tag_id=tag_id)))
+    if query.tenant_tag:
+        detail = "Not one of your organisation's tags: {keys}. GET /vocab/tenant_tag lists them."
+        for tag_id in _tag_ids(TenantTag.objects.filter(tenant_id=tenant.id), query.tenant_tag, detail):
+            bank_tagged = Tagging.objects.filter(
+                tenant_id=tenant.id, tag_id=tag_id, subject_type=SubjectType.OBLIGATION, subject_id=OuterRef("pk")
+            )
+            queryset = queryset.filter(Exists(bank_tagged))
+    return queryset
+
+
+# ---------------------------------------------------------------------------------------
 # What a proposal points at (PRO-01). These live here, not in the proposals app, because
 # the library fence refuses a module that names a library model beside a write call
 # (apps/shared/tests_library_fence.py); both are pure reads.
@@ -342,8 +438,6 @@ def live_duty_type(key: str) -> Any:
 def stable_key_taken(subject: str, key: str) -> bool:
     """Whether an instrument, provision or obligation (`subject`) already carries `key`,
     whoever owns it: a stable key is unique across the library and is never reused."""
-    from apps.library.models import SubjectType
-
     models: dict[str, Any] = {SubjectType.INSTRUMENT.value: Instrument, SubjectType.PROVISION.value: Provision}
     return bool(models.get(subject, Obligation).objects.filter(stable_key__iexact=key).exists())
 
@@ -510,9 +604,6 @@ def _matches(tenant: Tenant, term_ids: Func | ArraySubquery) -> Func:
     return matching.in_footprint_expression(tenant.id, term_ids)
 
 
-_Listed = TypeVar("_Listed", bound=QuerySet[Any])
-
-
 def in_view(queryset: _Listed, tenant: Tenant, footprint: FootprintFilter) -> _Listed:
     """The lists' one footprint filter (FP-03, FP-04). `in` is the working inventory and
     `all` lifts it. `watched` is only what the watched markets add: a record the footprint
@@ -529,6 +620,118 @@ def in_view(queryset: _Listed, tenant: Tenant, footprint: FootprintFilter) -> _L
     watched = WatchedMarket.objects.filter(tenant_id=tenant.id).values("jurisdiction_id")
     reaches_watched = TaxonomyTerm.objects.filter(_reach("instrument__" if of_obligations else ""), jurisdiction__in=watched)
     return queryset.exclude(_matches(tenant, scope())).filter(_matches(tenant, scope(reach=False)), Exists(reaches_watched))
+
+
+# ---------------------------------------------------------------------------------------
+# Who reads (ACC-02, ACC-04, ACC-07, D-57, D-76): a person, or a bank's own agent
+# ---------------------------------------------------------------------------------------
+class Reader(NamedTuple):
+    """How far past the shared library's facts one caller reads.
+
+    A person's session, and any key that is not an agent access credential, reads as `OPEN`:
+    row-level security decides, the footprint is a filter it may lift, and the bank's own
+    layer (its register overlay, its tags and its own private records) is its own. An agent
+    access credential is `confined`: shared records only, because a bank's own agent is a
+    model and a private record never reaches one (D-57); inside the footprint only; and
+    inside its entry's scope when it reads as an entry (ACC-02). A record beyond any of the
+    three is the same 404 another bank gets, never a filtered 200 (ACC-07). It reads the
+    bank's overlay and tags only while `bank_layer`, the register's own gate (tenant reach on
+    for the bank and the entry, ACC-04, ACC-08), and never on a record under a standard,
+    whose register rows never reach a model (REG-08, AC-REG2)."""
+
+    confined: bool = False
+    tenant_id: uuid.UUID | None = None
+    entry_id: uuid.UUID | None = None
+    bank_layer: bool = True
+
+
+OPEN = Reader()
+
+# The entry's guard for the second pass (taxonomy 0011's `taxonomy_entry_admits`, taken apart
+# so each piece is an uncorrelated subquery PostgreSQL runs once per query, not once per row).
+_ENTRY_GUARD = (
+    "(SELECT g.terms FROM taxonomy_entry_scope(%(expressions)s) AS s, taxonomy_term_map_guard(s.terms) AS g)",
+    "(SELECT g.dimensions FROM taxonomy_entry_scope(%(expressions)s) AS s, taxonomy_term_map_guard(s.terms) AS g)",
+    "(SELECT g.allowed FROM taxonomy_entry_scope(%(expressions)s) AS s, taxonomy_term_map_guard(s.terms) AS g)",
+)
+# An entry naming departments or products that derive no term reads nothing at all.
+_ENTRY_NOT_EMPTY = "NOT (SELECT s.narrowed AND cardinality(s.terms) = 0 FROM taxonomy_entry_scope(%(expressions)s) AS s)"
+
+
+def reader_of(principal: Principal) -> Reader:
+    """The reader a request's principal is. Only an agent access credential is confined."""
+    if not principal.is_agent_access:
+        return OPEN
+    return Reader(
+        confined=True, tenant_id=principal.tenant_id, entry_id=principal.agent_access_id, bank_layer=overlay.shown_to(principal)
+    )
+
+
+def entry_admits(tenant_id: uuid.UUID, entry_id: uuid.UUID, term_ids: Func | ArraySubquery) -> list[Func]:
+    """The entry's second pass over a row's scope term ids (ACC-02): FP-01's rule again,
+    against the entry's derived terms, as filters to hand a queryset. The footprint's own
+    pass is the caller's; this only narrows it."""
+    arguments = (Value(tenant_id, output_field=UUIDField()), Value(entry_id, output_field=UUIDField()))
+    guard = [Func(*arguments, template=template, output_field=ArrayField(UUIDField())) for template in _ENTRY_GUARD]
+    return [
+        Func(*arguments, template=_ENTRY_NOT_EMPTY, output_field=BooleanField()),
+        Func(term_ids, *guard, function="taxonomy_scope_admits", output_field=BooleanField()),
+    ]
+
+
+def in_reach(reader: Reader, term_ids: Func | ArraySubquery) -> list[Any]:
+    """The filters that keep a confined reader inside its bank's footprint and its entry's
+    scope, over a row's scope term ids `term_ids`; none for an open reader. A confined
+    reader always belongs to a bank, and one that did not would read nothing."""
+    if not reader.confined:
+        return []
+    if reader.tenant_id is None:
+        return [Q(pk__in=[])]
+    filters: list[Any] = [matching.in_footprint_expression(reader.tenant_id, term_ids)]
+    if reader.entry_id is not None:
+        filters.extend(entry_admits(reader.tenant_id, reader.entry_id, term_ids))
+    return filters
+
+
+def confined(queryset: _Listed, reader: Reader, term_ids: Func | ArraySubquery) -> _Listed:
+    """What `reader` may address among the obligations or instruments of `queryset`, whose
+    scope term ids `term_ids` is: everything for an open reader; for a confined one the shared
+    records inside the footprint and inside its entry's scope."""
+    if not reader.confined:
+        return queryset
+    return queryset.filter(owner_tenant__isnull=True).filter(*in_reach(reader, term_ids))
+
+
+def readable_obligations(reader: Reader) -> QuerySet[Obligation]:
+    return confined(Obligation.objects.all(), reader, scope_term_ids())
+
+
+def readable_instruments(reader: Reader) -> QuerySet[Instrument]:
+    return confined(Instrument.objects.all(), reader, instrument_scope_term_ids())
+
+
+def refuse_beyond(reader: Reader, footprint: FootprintFilter, *, bank_filters: bool) -> None:
+    """A confined reader reads inside the footprint, so `all` and `watched` are refused by
+    name rather than answered narrower than asked; and it filters by the bank's own layer
+    only where it may read that layer, else the register's own 403."""
+    if not reader.confined:
+        return
+    if footprint != "in":
+        raise ValidationError(
+            "An agent access credential reads inside the bank's regulatory scope only, so footprint is in.", code="unknown_filter"
+        )
+    if bank_filters and not reader.bank_layer:
+        raise ProblemError(status=403, code="tenant_reach_off", detail="Tenant reach is off for this agent, so it reads the library alone.")
+
+
+def layered(reader: Reader, obligations: Iterable[Obligation]) -> list[uuid.UUID]:
+    """The obligations whose bank layer (overlay and tags) this reader may be answered. The
+    obligations carry their instrument's level."""
+    if not reader.confined:
+        return [obligation.id for obligation in obligations]
+    if not reader.bank_layer:
+        return []
+    return [obligation.id for obligation in obligations if obligation.instrument.level.kind != InstrumentLevelKind.STANDARD.value]
 
 
 def outside_reasons(
@@ -624,10 +827,15 @@ def upcoming(versions: Iterable[ObligationVersion], on: datetime.date) -> Obliga
     return min(later, key=lambda v: (v.effective_from, v.version_number), default=None)
 
 
-def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *, limit: int, offset: int) -> tuple[list[ObligationRow], int]:
+def obligation_page(
+    tenant: Tenant, order: list[str], query: ObligationQuery, *, limit: int, offset: int, reader: Reader = OPEN
+) -> tuple[list[ObligationRow], int]:
     """The obligations the tenant sees (INV-03), filtered, as of a date (INV-04), inside
     its footprint unless `footprint` asks for everything or for what the watched markets
-    add (FP-03, FP-04). The same number of queries whatever the page size (NFR-02)."""
+    add (FP-03, FP-04), and inside what `reader` may address (ACC-02). The same number of
+    queries whatever the page size (NFR-02)."""
+    bank_filters = bool(query.tenant_tag) or any(value is not None for value in _overlay_filters(query))
+    refuse_beyond(reader, query.footprint, bank_filters=bank_filters)
     as_of = query.as_of or today_for(tenant)
     footprint = matching.footprint_of(tenant.id)
     restricting = matching.restricting_dimensions()
@@ -643,7 +851,11 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
     if query.q:
         titled = ObligationTitle.objects.filter(obligation=OuterRef("pk"), text__icontains=query.q)
         queryset = queryset.filter(Q(ref_label__icontains=query.q) | Exists(titled))
-    queryset = in_view(queryset, tenant, query.footprint)
+    queryset = tagged(in_view(queryset, tenant, query.footprint), tenant, query)
+    queryset = confined(overlay.filtered(queryset, tenant, _overlay_filters(query)), reader, scope_ids)
+    if reader.confined and bank_filters:
+        # A filter over the bank's layer never tells an agent what the bank decided under a standard.
+        queryset = queryset.exclude(instrument__level__kind=InstrumentLevelKind.STANDARD.value)
     total = queryset.count()
     page = list(
         queryset.order_by("stable_key").select_related("instrument__level", "instrument__jurisdiction", "duty_type", "verified_by").prefetch_related("titles", versions_with_confirmation())[
@@ -663,6 +875,9 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
     tags_of: dict[uuid.UUID, list[LibraryRef]] = {}
     for obligation_id, tag_id in tag_pairs:
         tags_of.setdefault(obligation_id, []).append(tag_refs[tag_id])
+    shown = layered(reader, page)
+    bank_tags = tenant_tags(tenant, shown, order)
+    judged = overlay.overlay(tenant, shown, order)
     dimensions = footprint_dimensions(order)
     rows: list[ObligationRow] = []
     for obligation in page:
@@ -670,6 +885,7 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
         carried, outside = scope_and_verdict(scope, dimensions, term_refs, footprint, restricting)
         versions = list(obligation.versions.all())
         instrument = obligation.instrument
+        bank = judged.get(obligation.id, overlay.EMPTY)
         rows.append(
             ObligationRow(
                 id=obligation.id,
@@ -681,6 +897,8 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
                 binding=instrument.binding,
                 duty_type=duty_refs[obligation.duty_type_id],
                 tags=tags_of.get(obligation.id, []),
+                tenant_tags=bank_tags.get(obligation.id, []),
+                private_to_us=obligation.owner_tenant_id == tenant.id,
                 scope=carried,
                 version=_version_ref(in_force(versions, as_of)),
                 upcoming_version=_version_ref(upcoming(versions, as_of)),
@@ -690,8 +908,10 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
                 last_verified_at=obligation.last_verified_at,
                 verified_by=None if obligation.verified_by is None else PersonRef(id=obligation.verified_by.id, name=obligation.verified_by.name),
                 open_change_count=0,
-                pending_applicability=None,
-                compliance_status=None,
+                applicability=bank.applicability,
+                compliance_status=bank.compliance_status,
+                first_line_owner=bank.first_line_owner,
+                owner_team=bank.owner_team,
             )
         )
     return rows, total
@@ -705,11 +925,16 @@ NOT_FOUND = "There is nothing at this address in your organisation."
 _Record = TypeVar("_Record", bound=Model)
 
 
-def _visible(queryset: QuerySet[_Record], record_id: uuid.UUID) -> _Record:
+def _visible(queryset: QuerySet[_Record], record_id: uuid.UUID | str) -> _Record:
     """The record as row-level security lets the caller see it: a shared one or their own
     (INPUT_DELTAS §5). A record they cannot see is not there, so another tenant's private
-    obligation and an id that never existed answer the same 404 (INV-07)."""
-    record = queryset.filter(pk=record_id).first()  # ordering: pk lookup, at most one row
+    obligation and an id that never existed answer the same 404 (INV-07). A text that is
+    not a UUID is read as the record's stable key, which is unique across the library."""
+    try:
+        wanted = Q(pk=record_id if isinstance(record_id, uuid.UUID) else uuid.UUID(record_id))
+    except ValueError:
+        wanted = Q(stable_key=record_id)
+    record = queryset.filter(wanted).first()  # ordering: pk or unique key lookup, at most one row
     if record is None:
         raise ValidationError(NOT_FOUND, code="not_found")
     return record
@@ -757,12 +982,15 @@ def version_rows(versions: list[ObligationVersion]) -> dict[int, ObligationVersi
     return rows
 
 
-def _related_obligations(obligation: Obligation, order: list[str]) -> list[RelatedObligation]:
+def _related_obligations(obligation: Obligation, order: list[str], reader: Reader) -> list[RelatedObligation]:
     """The obligations a reader should see beside this one (INV-03). The join to the related
     record runs under the same row-level security, so a relation to a record the caller
-    cannot see brings back nothing and is never reported."""
+    cannot see brings back nothing and is never reported; nor, for a confined reader, one
+    to a record it may not address."""
     relations = list(
-        ObligationRelation.objects.filter(from_obligation=obligation).select_related("to_obligation__instrument", "relation_type")
+        ObligationRelation.objects.filter(from_obligation=obligation, to_obligation__in=readable_obligations(reader)).select_related(
+            "to_obligation__instrument", "relation_type"
+        )
     )
     titles: dict[uuid.UUID, list[ObligationTitle]] = {}
     for title in ObligationTitle.objects.filter(obligation_id__in=[relation.to_obligation_id for relation in relations]):
@@ -782,13 +1010,15 @@ def _related_obligations(obligation: Obligation, order: list[str]) -> list[Relat
     ]
 
 
-def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID, query: ObligationAsOfQuery) -> ObligationDetail:
+def obligation_detail(
+    tenant: Tenant, order: list[str], obligation_id: uuid.UUID | str, query: ObligationAsOfQuery, reader: Reader = OPEN
+) -> ObligationDetail:
     """One obligation as of a date (INV-03, INV-04) in the caller's language order (INV-05),
-    with the footprint verdict the list gives it (FP-03) and its provenance (INV-06). The
-    queries fan out: their number does not grow with the versions, terms, tags, provisions
-    or related obligations the record carries."""
+    with the footprint verdict the list gives it (FP-03) and its provenance (INV-06),
+    addressed by its id or its stable key. The queries fan out: their number does not grow
+    with the versions, terms, tags, provisions or related obligations the record carries."""
     obligation = _visible(
-        Obligation.objects.select_related("instrument__level", "duty_type", "verified_by").prefetch_related(
+        readable_obligations(reader).select_related("instrument__level", "duty_type", "verified_by").prefetch_related(
             "titles", "instrument__titles", versions_with_confirmation(), "versions__summaries", "tags", "provisions"
         ),
         obligation_id,
@@ -811,6 +1041,8 @@ def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID
     verifier = obligation.verified_by
     # The provenance repeats who confirmed the version in force; the row already says it.
     in_force_row = rows[current.version_number] if current is not None else None
+    shown = layered(reader, [obligation])
+    bank = overlay.overlay(tenant, shown, order).get(obligation.id, overlay.EMPTY)
     return ObligationDetail(
         id=obligation.id,
         stable_key=obligation.stable_key,
@@ -832,6 +1064,8 @@ def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID
         sanction_exposure=obligation.sanction_exposure,
         product_scope=obligation.product_scope,
         tags=[tag_refs[tag.id] for tag in tags],
+        tenant_tags=tenant_tags(tenant, shown, order).get(obligation.id, []),
+        private_to_us=obligation.owner_tenant_id == tenant.id,
         scope=carried,
         in_footprint=not outside,
         outside_reason=outside,
@@ -843,7 +1077,7 @@ def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID
             ObligationProvisionRef(id=provision.id, ref_label=provision.ref_label, path=provision.path)
             for provision in obligation.provisions.all()
         ],
-        related=_related_obligations(obligation, order),
+        related=_related_obligations(obligation, order, reader),
         provenance=ObligationProvenance(
             created_origin=obligation.created_origin,
             created_model=obligation.created_model,
@@ -856,6 +1090,10 @@ def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID
             confirmed_by_agent=None if in_force_row is None else in_force_row.confirmed_by_agent,
             proposed_by_agent=None if in_force_row is None else in_force_row.proposed_by_agent,
         ),
+        applicability=bank.applicability,
+        compliance_status=bank.compliance_status,
+        first_line_owner=bank.first_line_owner,
+        owner_team=bank.owner_team,
     )
 
 
@@ -867,11 +1105,11 @@ def _numbered(versions: list[ObligationVersion], number: int) -> ObligationVersi
     return found
 
 
-def obligation_diff(order: list[str], obligation_id: uuid.UUID, query: VersionDiffQuery) -> VersionDiff:
+def obligation_diff(order: list[str], obligation_id: uuid.UUID, query: VersionDiffQuery, reader: Reader = OPEN) -> VersionDiff:
     """"Show what changed" between two versions of one obligation (INV-04, AC-INV1), by
     default the latest against the one before it. The comparison itself is `version_diff`,
     which is pure and writes nothing to a log: the summaries are the library's content."""
-    obligation = _visible(Obligation.objects.prefetch_related(versions_with_confirmation(), "versions__summaries"), obligation_id)
+    obligation = _visible(readable_obligations(reader).prefetch_related(versions_with_confirmation(), "versions__summaries"), obligation_id)
     versions = list(obligation.versions.all())
     if len(versions) < 2 and (query.from_version is None or query.to_version is None):
         raise ValidationError("There are not two versions of this obligation to compare.")
@@ -903,10 +1141,14 @@ def _authority_ref(authority: Authority | None) -> InstrumentAuthorityRef | None
     return InstrumentAuthorityRef(key=authority.key, name=authority.name, short_name=authority.short_name, url=authority.url)
 
 
-def instrument_page(tenant: Tenant, order: list[str], query: InstrumentQuery, *, limit: int, offset: int) -> tuple[list[InstrumentRow], int]:
+def instrument_page(
+    tenant: Tenant, order: list[str], query: InstrumentQuery, *, limit: int, offset: int, reader: Reader = OPEN
+) -> tuple[list[InstrumentRow], int]:
     """The instruments the tenant sees (INV-01), inside its footprint unless `footprint`
-    asks for everything or for what the watched markets add (FP-03, FP-04). The same number
-    of queries whatever the page size (NFR-02)."""
+    asks for everything or for what the watched markets add (FP-03, FP-04), and inside what
+    `reader` may address (ACC-02). The same number of queries whatever the page size
+    (NFR-02)."""
+    refuse_beyond(reader, query.footprint, bank_filters=False)
     footprint = matching.footprint_of(tenant.id)
     restricting = matching.restricting_dimensions()
     queryset = Instrument.objects.all()
@@ -915,7 +1157,7 @@ def instrument_page(tenant: Tenant, order: list[str], query: InstrumentQuery, *,
     if query.q:
         titled = InstrumentTitle.objects.filter(instrument=OuterRef("pk"), text__icontains=query.q)
         queryset = queryset.filter(Q(official_ref__icontains=query.q) | Q(short_name__icontains=query.q) | Exists(titled))
-    queryset = in_view(queryset, tenant, query.footprint)
+    queryset = confined(in_view(queryset, tenant, query.footprint), reader, instrument_scope_term_ids())
     total = queryset.count()
     page = list(queryset.order_by("stable_key").select_related("level", "authority", "jurisdiction").prefetch_related("titles")[offset : offset + limit])
     ids = [instrument.id for instrument in page]
@@ -926,7 +1168,7 @@ def instrument_page(tenant: Tenant, order: list[str], query: InstrumentQuery, *,
     level_refs = vocabulary_refs(InstrumentLevelLabel, (instrument.level for instrument in page), order)
     jurisdiction_refs = vocabulary_refs(JurisdictionLabel, (instrument.jurisdiction for instrument in page), order)
     dimensions = footprint_dimensions(order)
-    obligation_counts = _obligation_counts(ids, tenant, query.footprint)
+    obligation_counts = _obligation_counts(ids, tenant, query.footprint, reader)
     rows: list[InstrumentRow] = []
     for instrument in page:
         scope = scopes.get(instrument.id, {})
@@ -948,6 +1190,7 @@ def instrument_page(tenant: Tenant, order: list[str], query: InstrumentQuery, *,
                 implements_note=instrument.implements_note,
                 obligation_count=obligation_counts.get(instrument.id, 0),
                 in_footprint=not outside,
+                private_to_us=instrument.owner_tenant_id == tenant.id,
                 last_verified_at=instrument.last_verified_at,
                 source_url=instrument.source_url,
             )
@@ -955,16 +1198,18 @@ def instrument_page(tenant: Tenant, order: list[str], query: InstrumentQuery, *,
     return rows, total
 
 
-def _obligation_counts(instrument_ids: Collection[uuid.UUID], tenant: Tenant, footprint: FootprintFilter) -> dict[uuid.UUID, int]:
+def _obligation_counts(
+    instrument_ids: Collection[uuid.UUID], tenant: Tenant, footprint: FootprintFilter, reader: Reader
+) -> dict[uuid.UUID, int]:
     """How many obligations of each instrument this read would show: one query, whatever
-    the page size (INV-01), under the same `footprint` value, matching what
+    the page size (INV-01), under the same `footprint` value and reader, matching what
     `GET /obligations` itself would list."""
-    queryset = in_view(Obligation.objects.filter(instrument_id__in=instrument_ids), tenant, footprint)
+    queryset = confined(in_view(Obligation.objects.filter(instrument_id__in=instrument_ids), tenant, footprint), reader, scope_term_ids())
     counted = queryset.order_by().values("instrument_id").annotate(n=Count("id"))
     return {row["instrument_id"]: row["n"] for row in counted}
 
 
-def _lineage(instrument: Instrument, order: list[str]) -> list[InstrumentLineageRef]:
+def _lineage(instrument: Instrument, order: list[str], reader: Reader) -> list[InstrumentLineageRef]:
     """What this instrument implements or elaborates, and what implements, elaborates or
     amends it in turn (INV-01): both directions of `InstrumentRelation`, so the designed
     `GET /instruments/{instrumentId}/relations` is served here instead. Row-level security
@@ -973,9 +1218,15 @@ def _lineage(instrument: Instrument, order: list[str]) -> list[InstrumentLineage
 
     `from_ref` and `to_ref` keep the relation's own meaning from either side, as the designed
     `InstrumentRelation` has them: the place in the instrument relating and the place in
-    the one related to, so an incoming reference to this instrument's own text is kept."""
-    outgoing = list(InstrumentRelation.objects.filter(from_instrument=instrument).select_related("to_instrument", "relation_type"))
-    incoming = list(InstrumentRelation.objects.filter(to_instrument=instrument).select_related("from_instrument", "relation_type"))
+    the one related to, so an incoming reference to this instrument's own text is kept. A
+    confined reader sees only relations to instruments it may address itself."""
+    readable = readable_instruments(reader)
+    outgoing = list(
+        InstrumentRelation.objects.filter(from_instrument=instrument, to_instrument__in=readable).select_related("to_instrument", "relation_type")
+    )
+    incoming = list(
+        InstrumentRelation.objects.filter(to_instrument=instrument, from_instrument__in=readable).select_related("from_instrument", "relation_type")
+    )
     relation_refs = vocabulary_refs(RelationTypeLabel, (relation.relation_type for relation in (*outgoing, *incoming)), order)
     lineage = [
         InstrumentLineageRef(
@@ -1002,13 +1253,13 @@ def _lineage(instrument: Instrument, order: list[str]) -> list[InstrumentLineage
     return lineage
 
 
-def instrument_detail(order: list[str], instrument_id: uuid.UUID) -> InstrumentDetail:
+def instrument_detail(tenant: Tenant, order: list[str], instrument_id: uuid.UUID, reader: Reader = OPEN) -> InstrumentDetail:
     """One instrument as the card reads it (INV-01, INV-06): its identity, dates, lineage
     and re-verification stamp. The card carries no footprint verdict of its own (the
     Instruments tab and its filter read that from the row); the queries fan out, so their
     number does not grow with the lineage the record carries."""
     instrument = _visible(
-        Instrument.objects.select_related("level", "authority", "jurisdiction", "regime__dimension", "verified_by").prefetch_related("titles"),
+        readable_instruments(reader).select_related("level", "authority", "jurisdiction", "regime__dimension", "verified_by").prefetch_related("titles"),
         instrument_id,
     )
     regime_refs = vocabulary_refs(TaxonomyTermLabel, [instrument.regime], order, field="term")
@@ -1033,7 +1284,8 @@ def instrument_detail(order: list[str], instrument_id: uuid.UUID) -> InstrumentD
         source_url=instrument.source_url,
         last_verified_at=instrument.last_verified_at,
         verified_by=None if verifier is None else PersonRef(id=verifier.id, name=verifier.name),
-        lineage=_lineage(instrument, order),
+        private_to_us=instrument.owner_tenant_id == tenant.id,
+        lineage=_lineage(instrument, order, reader),
     )
 
 
@@ -1066,12 +1318,15 @@ def _provision_version_rows(versions: list[ProvisionVersion], texts: Mapping[uui
     return rows
 
 
-def provision_tree(tenant: Tenant, instrument_id: uuid.UUID, order: list[str], query: InstrumentProvisionsQuery) -> list[ProvisionNode]:
+def provision_tree(
+    tenant: Tenant, instrument_id: uuid.UUID, order: list[str], query: InstrumentProvisionsQuery, reader: Reader = OPEN
+) -> list[ProvisionNode]:
     """The provision tree of one instrument (INV-02), as of a date (AC-INV1): a bounded
     number of queries however many provisions, versions or citing obligations the
     instrument carries, because every table is read once for the whole tree rather than
-    once per node. An instrument the caller cannot see answers 404 (INV-07)."""
-    instrument = _visible(Instrument.objects.all(), instrument_id)
+    once per node. An instrument the caller cannot see answers 404 (INV-07), and a citing
+    obligation it may not address is not named."""
+    instrument = _visible(readable_instruments(reader), instrument_id)
     as_of = query.as_of or today_for(tenant)
     provisions = list(Provision.objects.filter(instrument=instrument).select_related("kind").order_by("sort_order", "stable_key"))
     kind_refs = vocabulary_refs(ProvisionKindLabel, (provision.kind for provision in provisions), order)
@@ -1083,7 +1338,9 @@ def provision_tree(tenant: Tenant, instrument_id: uuid.UUID, order: list[str], q
     texts_by_version: dict[uuid.UUID, list[ProvisionText]] = {version.id: [] for version in all_versions}
     for text in ProvisionText.objects.filter(version_id__in=texts_by_version):
         texts_by_version[text.version_id].append(text)
-    links = list(ObligationProvision.objects.filter(provision_id__in=provision_ids).select_related("obligation"))
+    links = list(
+        ObligationProvision.objects.filter(provision_id__in=provision_ids, obligation__in=readable_obligations(reader)).select_related("obligation")
+    )
     obligation_ids = {link.obligation_id for link in links}
     titles_by_obligation: dict[uuid.UUID, list[ObligationTitle]] = {obligation_id: [] for obligation_id in obligation_ids}
     for title in ObligationTitle.objects.filter(obligation_id__in=obligation_ids):
@@ -1121,12 +1378,14 @@ def provision_tree(tenant: Tenant, instrument_id: uuid.UUID, order: list[str], q
     return [node(root) for root in children_of.get(None, [])]
 
 
-def provision_diff(order: list[str], provision_id: uuid.UUID, query: VersionDiffQuery) -> VersionDiff:
+def provision_diff(order: list[str], provision_id: uuid.UUID, query: VersionDiffQuery, reader: Reader = OPEN) -> VersionDiff:
     """"Show what changed" between two versions of one provision (INV-02, INV-04,
     AC-INV1), by default the latest against the one before it. Serialises `logic.
     version_diff` exactly as `obligation_diff()` does, because a provision's text and an
     obligation's summary are compared the same way."""
-    provision = _visible(Provision.objects.prefetch_related("versions__texts"), provision_id)
+    provision = _visible(
+        Provision.objects.filter(instrument__in=readable_instruments(reader)).prefetch_related("versions__texts"), provision_id
+    )
     versions = list(provision.versions.all())
     if len(versions) < 2 and (query.from_version is None or query.to_version is None):
         raise ValidationError("There are not two versions of this provision to compare.")
@@ -1194,7 +1453,7 @@ def today_of(tenant_id: uuid.UUID | None) -> datetime.date:
     return timezone.localdate() if tenant is None else today_for(tenant)
 
 
-def get_record_sources(obligation_id: uuid.UUID, on: datetime.date) -> LibraryRecordSources:
+def get_record_sources(obligation_id: uuid.UUID, on: datetime.date, reader: Reader = OPEN) -> LibraryRecordSources:
     """`GET /obligations/{obligationId}/sources`, the citations a re-check compares against
     (INV-06, AGT-01 item 3): one per field the approved proposal behind the version in force
     on `on` sourced, or the record's own source as one `summary` citation for a version no
@@ -1207,7 +1466,9 @@ def get_record_sources(obligation_id: uuid.UUID, on: datetime.date) -> LibraryRe
     second lookup would be a second chance to leak which of the two it was (INV-07).
     """
     obligation = _visible(
-        Obligation.objects.prefetch_related(Prefetch("versions", queryset=ObligationVersion.objects.select_related("applied_by_proposal"))),
+        readable_obligations(reader).prefetch_related(
+            Prefetch("versions", queryset=ObligationVersion.objects.select_related("applied_by_proposal"))
+        ),
         obligation_id,
     )
     versions = list(obligation.versions.all())

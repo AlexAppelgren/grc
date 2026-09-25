@@ -50,7 +50,6 @@ Obligation row
   information: Guidance
   positive: Applies
   negative: Gap
-  warning: Change waiting for approval
   brand: Appropriateness
   information outlined: Digital investing
 Obligation header

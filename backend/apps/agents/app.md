@@ -101,6 +101,14 @@ screen gains a second tab for them, and each tab says in one line what that kind
 agent does, because a reader who confuses the two will assume a bank's coding agent
 can change the register. The full design is `docs/plans/briefs/AGENT_ACCESS.md`.
 
+What an entry's credentials read is narrowed where it is read (acc-scoped-reads): every
+library list and addressed read, `POST /search` and `GET /upcoming` keep an agent access
+credential to shared records inside the bank's footprint and inside its entry's scope
+(`apps/library/reading.py`, `Reader`), and a record beyond them is the 404 another bank
+gets. `footprint` cannot be lifted, the card answers by stable key, and the bank's overlay
+and tags ride the register's tenant reach gate. ACC-S1 runs as an integration scenario; its
+journey arrives with J-11.
+
 PRD 0.7 (D-89, Alex 2026-09-24; details answered by default in D-91, ADR 0059,
 `docs/plans/briefs/SCOPE_ITEMS.md`) adds group OWN, the bank's own regulations. Alex's
 words:

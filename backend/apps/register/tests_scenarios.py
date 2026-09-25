@@ -23,11 +23,11 @@ from apps.shared import factories, tenancy
 from apps.shared import permissions as perms
 from apps.register.applicability import APPLICABILITY_SET, entities_spanned
 from apps.register.logic import ensure_register_entry
-from apps.register.models import Applicability, TenantObligation, TenantObligationScope
+from apps.register.models import Applicability, ComplianceAssessment, Gap, TenantObligation, TenantObligationScope
 from apps.register.tests_applicability import Bank, banks_duty, seed_library
 from apps.shared.models import AuditEvent
 from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, sign_in, stub_session, user_principal
-from apps.taxonomy.models import ComplianceStatus, FootprintTerm
+from apps.taxonomy.models import ComplianceStatus, FootprintTerm, GapSource, GapStatus, RiskRating
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.tenants.models import OrgUnit, OrgUnitKind
 
@@ -215,12 +215,74 @@ class RegisterScenarioTests(TestCase):
         self.assertEqual(read["complianceStatus"]["key"], "partly_compliant")
         self.assertEqual(read["complianceStatus"]["kind"], "partly")
 
-    @skip("pending: REG-S4")
     def test_reg_s4(self) -> None:
         """REG-S4
 
         "Applies" and "we comply" are separate facts (REG-01, REG-02).
+        Operations: `setApplicability`, `updateRegister`, `getObligation`, `getRegisterEntry`.
         """
+        # c8-inventory-overlay: "does not apply" hides the status on the obligation and
+        # deletes nothing; "applies" again shows the same status and the same gap.
+        seed_library()
+        a = Bank("reg-s4")
+        duty = banks_duty()
+        officer = sign_in(a.officer, tenant=a.tenant)
+
+        def answer(value: str, version: int) -> None:
+            response = self.client.put(
+                f"/api/v1/obligations/{duty.id}/applicability",
+                data={"applicability": value, "reason": f"Reviewed: {value}"},
+                content_type="application/json",
+                HTTP_IF_MATCH=f'"{version}"',
+                **officer,
+            )
+            self.assertEqual(response.status_code, 200, response.content)
+
+        def card() -> Any:
+            response = self.client.get(f"/api/v1/obligations/{duty.id}", **officer)
+            self.assertEqual(response.status_code, 200, response.content)
+            return response.json()
+
+        def kept() -> tuple[Any, ...]:
+            tenancy.activate(a.tenant.id)
+            entry = TenantObligation.objects.select_related("compliance_status").get(obligation=duty)
+            gaps = list(Gap.objects.filter(tenant_obligation=entry).values_list("id", "title", "status__key", "version"))
+            assessments = list(ComplianceAssessment.objects.filter(tenant_obligation=entry).values_list("id", "status__key", "rationale"))
+            return entry.compliance_status.key, entry.status_note, gaps, assessments
+
+        answer("applies", 0)
+        recorded = self.client.patch(
+            f"/api/v1/obligations/{duty.id}/register",
+            data={"complianceStatus": "gap", "statusNote": "Reconciliation is weekly", "rationale": "Audit finding"},
+            content_type="application/json",
+            HTTP_IF_MATCH='"2"',
+            **officer,
+        )
+        self.assertEqual(recorded.status_code, 200, recorded.content)
+        tenancy.activate(a.tenant.id)
+        Gap.objects.create(
+            tenant=a.tenant,
+            tenant_obligation=TenantObligation.objects.get(obligation=duty),
+            title="Reconciliation is weekly",
+            severity=RiskRating.objects.get(key="high"),
+            source=GapSource.objects.get(key="audit"),
+            status=GapStatus.objects.get(key="open"),
+            identified_by=a.officer,
+        )
+        self.assertEqual((card()["applicability"], card()["complianceStatus"]["key"]), ("applies", "gap"))
+        before = kept()
+        self.assertEqual(len(before[2]), 1)
+        self.assertEqual([row[1:] for row in before[3]], [("gap", "Audit finding")])
+
+        answer("not_applicable", 3)
+        self.assertEqual((card()["applicability"], card()["complianceStatus"]), ("not_applicable", None))
+        self.assertEqual(kept(), before, "the status, its note, its gap and its history are untouched")
+        register = self.client.get(f"/api/v1/obligations/{duty.id}/register", **officer).json()
+        self.assertEqual((register["complianceStatus"]["key"], register["statusNote"]), ("gap", "Reconciliation is weekly"))
+
+        answer("applies", 4)
+        self.assertEqual((card()["applicability"], card()["complianceStatus"]["key"]), ("applies", "gap"))
+        self.assertEqual(kept(), before, "nothing was deleted or rewritten")
 
     @skip("pending: REG-S5")
     def test_reg_s5(self) -> None:

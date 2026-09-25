@@ -72,16 +72,20 @@ ALL_SERVICES = (
 # two more queries than the union it replaced); the tags of the page and their rows (2); one
 # label query each for terms, tags, duty types, levels and, since tax-watched-inventory
 # (2026-09-23, FP-04), the instruments' jurisdictions a row now names (5); the dimensions
-# with their term counts and labels (2).
-LIST_QUERIES = 2 + 6 + 2 + 2 + 2 + 2 + 5 + 2 + 5 + 2
+# with their term counts and labels (2); since c10-tag-filters-and-limits (2026-09-25,
+# VOC-08), the bank's own tags on the page with their labels (1); since c8-inventory-overlay
+# (2026-09-25, REG-01, REG-02), the bank's register overlay on the page (1).
+LIST_QUERIES = 2 + 6 + 2 + 2 + 2 + 2 + 5 + 2 + 5 + 2 + 1 + 1
 # Queries per card read, measured 2026-09-19 and pinned the same way: the savepoint pair (2);
 # the session (6) and the caller's tenant and locale (2), as above; the obligation with its
 # instrument, level, duty type and verifier (1); its titles, its instrument's titles, its
 # versions, their summaries, its tags and the provisions it cites (6); the scope (5, as
 # above); one label query each for terms, tags, duty types and levels (4); the dimensions
 # with their term counts and labels (2); the footprint and its restricting dimensions (2);
-# the relations, the titles of what they point at and the relation types' labels (3).
-DETAIL_QUERIES = 2 + 6 + 2 + 1 + 6 + 5 + 4 + 2 + 2 + 3
+# the relations, the titles of what they point at and the relation types' labels (3); the
+# bank's own tags on it with their labels (1, VOC-08); the bank's register overlay on it (1,
+# c8-inventory-overlay).
+DETAIL_QUERIES = 2 + 6 + 2 + 1 + 6 + 5 + 4 + 2 + 2 + 3 + 1 + 1
 # Who confirmed a version the library was seeded with: nobody, since nobody approved it.
 SEEDED = {"verifiedOrigin": "", "confirmedByAgent": None, "proposedByAgent": None}
 
@@ -196,7 +200,9 @@ class ObligationListTests(TestCase):
         self.assertIsNone(row["upcomingVersion"])
         self.assertEqual((row["inFootprint"], row["outsideReason"]), (True, []))
         self.assertEqual(row["lastVerifiedAt"], "2026-06-30T08:00:00Z")
-        self.assertEqual((row["openChangeCount"], row["pendingApplicability"], row["complianceStatus"]), (0, None, None))
+        self.assertEqual((row["openChangeCount"], row["complianceStatus"]), (0, None))
+        self.assertNotIn("pendingApplicability", row, "D-75: no applicability request waits on a row")
+        self.assertEqual((row["tenantTags"], row["privateToUs"]), ([], False))
         self.assertTrue({"tone", "pill", "color", "colour"}.isdisjoint(field_names(self.get({}).json())))
 
     def test_all_selected_is_true_when_every_term_of_a_dimension_is_carried(self) -> None:
@@ -647,8 +653,12 @@ class ObligationDetailTests(TestCase):
         self.assertEqual((missing.status_code, missing.json()["code"]), (404, "not_found"))
         self.assertEqual(missing.json()["detail"], reading.NOT_FOUND)
         self.assertEqual(missing.headers["Content-Type"], "application/problem+json")
-        malformed = self.client.get(f"{URL}/not-a-uuid", **sign_in(self.reader, tenant=self.tenant))
-        self.assertEqual(malformed.status_code, 422)
+        # A slug that is no UUID is read as a stable key (acc-scoped-reads), and names nothing.
+        no_such_key = self.client.get(f"{URL}/not-a-uuid", **sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual((no_such_key.status_code, no_such_key.json()["code"]), (404, "not_found"))
+        for malformed in ("not a key!", "k" * 121):
+            with self.subTest(malformed=malformed):
+                self.assertEqual(self.client.get(f"{URL}/{malformed}", **sign_in(self.reader, tenant=self.tenant)).status_code, 422)
 
     def test_a_malformed_value_fails_the_read_instead_of_reaching_the_caller(self) -> None:
         # The card is validated as it is built, natively by pydantic. A value the database or
