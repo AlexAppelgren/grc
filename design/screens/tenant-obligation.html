@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Screen card: obligation (/inventory/obligations/[obligationId])</title>
+<script>
+/* Card only: ?theme=light|dark fixes the theme, ?frame=1 hides the card bar
+   (the 375 px frames load this same file with both). Not part of the screen. */
+(function(){var q=new URLSearchParams(location.search),t=q.get('theme');
+if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);
+if(q.has('frame'))document.documentElement.classList.add('framed');})();
+</script>
 <style>
 /* Serves INV-03, INV-04, INV-05, INV-06, AC-INV1, D-12 (chunk 3). Cut from
    design/prototype/index.html, vObligation(): header pills, language and
@@ -13,8 +20,19 @@
    approved each version, the machine-translated label, library tags after the
    flags and tenant tags outlined, provenance from the proposal, and the
    "This looks wrong" report form, and the "Reported problems" section under
-   provenance with its close form (AUD-03, D-50). The register panels of the prototype
-   (applies, where we stand, gaps, history, interpretation) are chunk 8. */
+   provenance with its close form (AUD-03, D-50). Chunk 8 adds the register panels, cut from vObligation(),
+   entityPanel(), gapsPanel(), historyPanel() and interpPanel() (REG-01 to REG-05,
+   REG-S1, REG-S3, REG-S4, REG-S7, REG-S8, REG-S12): Does it apply to us per legal
+   entity, set by one person after a confirmation dialog with no "Waiting for
+   approval" and no step-up (D-75); Where we stand per legal entity with the
+   worst of them on the header, naming its entity; How we handle it; Gaps;
+   Linked internal items; How we read this rule with the assessment history
+   beneath it; and, on a standard's conformance obligation, the Units panel that
+   opens tenant-obligation-units.html. The gap screens are tenant-gaps.html. The
+   applicability pill takes its tone from the kind (applies positive, does not
+   apply and not assessed information), the compliance pill from its category
+   (compliant positive, partly warning, gap negative, not assessed information).
+   No new pill slot, no new tone. */
 :root{
   --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;--sand-3:#e7ddcb;
   --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
@@ -70,7 +88,7 @@ p{margin:0 0 .75rem}
 .who{margin:18px 4px 0;padding:12px;border:1px solid rgba(255,255,255,.25);border-radius:12px;font-size:.85rem;color:rgba(255,255,255,.75)}
 .who b{display:block;color:#fff;font-weight:600}
 
-main{padding:32px 36px 96px;max-width:1100px;width:100%}
+main{padding:32px 36px 96px;max-width:1100px;width:100%;min-width:0}
 .head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
 .head p{color:var(--muted);margin:6px 0 0;max-width:70ch}
 .back{background:none;border:0;color:var(--text);padding:0;margin-bottom:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px}
@@ -178,7 +196,7 @@ button.row:hover,a.row:hover{border-color:var(--text)}
 .kv dt{color:var(--muted)}.kv dd{margin:0}
 .facets{display:flex;gap:6px;flex-wrap:wrap}
 
-.field{display:grid;gap:5px;margin-bottom:14px}
+.field{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-bottom:14px}
 .field label{font-weight:600;font-size:.9rem}
 .field textarea{min-height:76px;resize:vertical}
 .field .hint{color:var(--muted);font-size:.82rem}
@@ -251,6 +269,11 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
   .tabbar .dot{position:absolute;top:6px;right:calc(50% - 20px);background:#efe9dc;color:#003824;border-radius:999px;font-size:.65rem;font-weight:700;padding:0 6px}
 }
 @media (max-width:380px){.bar .btn{padding:10px 12px;font-size:.9rem}.bar .btn.small{padding:6px 10px}}
+/* Card only: the theme links and the 375 px frames. */
+.cardbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:8px 12px;border:1px dashed var(--line-strong);border-radius:12px;color:var(--muted);font-size:.85rem;margin-bottom:20px}
+.framed .cardbar,.framed .note{display:none}
+.frames{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 24px}
+.frames iframe{width:377px;height:760px;border:1px solid var(--line-strong);border-radius:12px;background:var(--bg)}
 </style>
 </head>
 <body>
@@ -261,9 +284,11 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="who">Signed in as<b>Sara Lindqvist</b>Compliance officer</div>
   </aside>
   <main id="main" tabindex="-1">
+    <div class="cardbar"><span>Card view:</span><a href="?theme=light">Light</a><a href="?theme=dark">Dark</a><a href="?">Follow the system</a><button class="btn ghost small" type="button" id="phones" aria-expanded="false">Show both themes at 375 px</button></div>
+    <div class="frames" id="frames" hidden></div>
     <div class="mbrand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
 <button class="back">← Inventory</button>
-    <div class="meta" style="margin-bottom:6px"><span class="pill brand">FFFS 2017:2</span><span class="pill">Securities</span><span class="pill">Binding</span></div>
+    <div class="meta" style="margin-bottom:6px"><span class="pill brand">FFFS 2017:2</span><span class="pill">Securities</span><span class="pill">Binding</span><span class="pill warning">Partly compliant</span><span>at Example Finans AB, the weakest legal entity</span></div>
     <h1 style="margin-bottom:14px">Pay for third-party research only under the permitted models</h1>
     <div class="filters">
       <button class="chip" aria-pressed="true">English</button><button class="chip" aria-pressed="false">Svenska, original</button><button class="chip" aria-pressed="false">Dansk</button>
@@ -286,7 +311,46 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
       <div class="panel"><h2>Versions</h2>
         <div class="log"><div><time>Version 2, in force from 1 Oct 2026</time>Approved 17 Sep 2026 by a library editor from a proposal by Research agent 0.4. Source: Finansinspektionen, board decision 15 Sep 2026.</div><div><time>Version 1, in force until 30 Sep 2026</time>Approved 12 Mar 2026. Source: Finansinspektionen, FFFS 2017:2 consolidated text.</div></div></div>
       <div class="panel"><h2>Related obligations</h2><p><a href="#">Disclose all costs and charges before and after the service</a><br><span class="meta">FFFS 2017:2, binding</span></p></div>
+      <div class="panel"><h2>Linked internal items</h2>
+        <div class="rows">
+          <div class="row"><div class="meta"><span>Policy</span><span class="mono">POL-014</span></div><h3><a href="#" rel="noopener">Research and inducements policy</a></h3><div class="bar"><button class="btn ghost small">Remove</button></div></div>
+          <div class="row"><div class="meta"><span>Control</span><span class="mono">CTL-208</span></div><h3>Yearly research value assessment</h3><div class="bar"><button class="btn ghost small">Remove</button></div></div>
+        </div>
+        <div class="bar"><button class="btn small">Link an item</button></div></div>
+      <div class="panel"><h2>How we read this rule</h2>
+        <p>"Research" covers written analysis and access to analysts. Free short market comments stay outside, as FI's Q&amp;A of 2018 allows.</p>
+        <p class="meta" style="display:block">Version 3, written by Sara Lindqvist, 12 Sep 2026</p>
+        <div class="bar"><button class="btn ghost small">Write a new version</button></div>
+        <h3 style="margin:16px 0 8px">Assessment history</h3>
+        <div class="log">
+          <div><div class="meta"><span class="pill warning">Partly compliant</span><span>2 Sep 2026</span><span>Sara Lindqvist</span><span>Self-assessment</span><span>Example Finans AB</span></div>Criteria agreed; the first yearly assessment is not done yet.</div>
+          <div><div class="meta"><span class="pill positive">Compliant</span><span>1 Sep 2026</span><span>Anna Nilsson</span><span>Control test</span><span>Example Bank AB</span></div>Assessment criteria adopted and the 2026 review recorded.</div>
+          <div><div class="meta"><span class="pill negative">Gap</span><span>14 Oct 2025</span><span>Johan Berg</span><span>Internal audit</span><span>Example Bank AB</span></div>No yearly assessment existed.</div>
+        </div>
+        <p class="meta" style="display:block;margin-top:8px"><a href="#">Earlier versions of how we read this rule, 2</a></p></div>
     </div><div class="grid" style="align-content:start">
+      <!-- Register panels (chunk 8). Tone by kind: applicability applies positive, does not apply and not assessed information; compliance compliant positive, partly warning, gap negative, not assessed information. -->
+      <div class="panel"><h2>Does it apply to us?</h2>
+        <div class="rows">
+          <div class="row"><h3>Example Bank AB</h3><div class="meta"><span class="pill positive">Applies</span><span>Set by Sara Lindqvist, 18 Sep 2026</span></div><p style="margin:6px 0 0">We give advice and manage portfolios, both paid partly with research.</p><div class="bar"><button class="btn ghost small">Change</button></div></div>
+          <div class="row"><h3>Example Finans AB</h3><div class="meta"><span class="pill positive">Applies</span><span>Set by Sara Lindqvist, 18 Sep 2026</span></div><p style="margin:6px 0 0">The finance company advises on its own savings products and buys research for it.</p><div class="bar"><button class="btn ghost small">Change</button></div></div>
+        </div>
+        <p class="meta" style="display:block;margin-top:10px">Whether a rule applies and whether we comply are two separate facts, recorded separately.</p></div>
+      <div class="panel"><h2>Where we stand</h2>
+        <div class="meta" style="margin-bottom:10px"><span class="pill warning">Partly compliant</span><span>The weakest legal entity, Example Finans AB, sets it</span></div>
+        <div class="rows">
+          <div class="row"><div class="meta"><span class="pill positive">Compliant</span></div><h3>Example Bank AB</h3>
+            <dl class="kv"><dt>Status note</dt><dd>Assessment criteria adopted 1 Sep 2026.</dd><dt>Risk if we fail</dt><dd>Medium</dd><dt>First-line owner</dt><dd>Anna Nilsson</dd><dt>Compliance contact</dt><dd>Sara Lindqvist</dd><dt>Next review</dt><dd>1 Sep 2027, in 341 days</dd></dl>
+            <div class="bar"><button class="btn ghost small">Edit</button></div></div>
+          <div class="row"><div class="meta"><span class="pill warning">Partly compliant</span></div><h3>Example Finans AB</h3>
+            <dl class="kv"><dt>Status note</dt><dd>Criteria agreed; the first yearly assessment is not done yet.</dd><dt>Risk if we fail</dt><dd>High</dd><dt>First-line owner</dt><dd>Retail compliance, a team</dd><dt>Compliance contact</dt><dd>Sara Lindqvist</dd><dt>Next review</dt><dd>30 Nov 2026, in 66 days</dd></dl>
+            <div class="bar"><button class="btn ghost small">Edit</button></div></div>
+        </div></div>
+      <div class="panel"><h2>How we handle it</h2><dl class="kv"><dt>Process</dt><dd>Research budget and yearly review (PRC-22)</dd><dt>System</dt><dd>Research payment account ledger</dd><dt>Evidence kept</dt><dd><a href="#" rel="noopener">Compliance share, /Research/Assessments</a></dd></dl>
+        <div class="bar"><button class="btn ghost small">Edit</button></div></div>
+      <div class="panel"><h2>Gaps</h2>
+        <p><a href="tenant-gaps.html#g1">No annual assessment of the research we pay for</a><br><span class="meta"><span class="pill negative">Open</span><span class="pill negative">High</span><span>Example Finans AB</span><span>Anna Nilsson</span><span>Target 30 Nov 2026</span></span></p>
+        <div class="bar"><button class="btn ghost small">Record a gap</button></div></div>
       <div class="panel"><h2>Where it comes from</h2><dl class="kv"><dt>Instrument</dt><dd><a href="#">FFFS 2017:2 om värdepappersrörelse</a></dd><dt>Official reference</dt><dd class="mono">FFFS 2017:2, 9 kap. 6 §</dd><dt>Level</dt><dd>FI regulation</dd><dt>Implements</dt><dd>MiFID II delegated directive (EU) 2017/593, art. 13</dd><dt>Source</dt><dd><a href="#" rel="noopener">fi.se, consolidated text</a></dd><dt>Last verified</dt><dd>30 Jun 2026 by Sara Lindqvist</dd><dt>Created</dt><dd>12 Mar 2026 by Research agent 0.3, through proposal review</dd></dl>
         <div class="bar"><button class="btn ghost small">This looks wrong</button></div></div>
       <div class="panel"><h2>Reported problems</h2>
@@ -305,10 +369,89 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
         </div>
         <p class="meta" style="display:block;margin-top:10px">Taking part lists the item on a person's My work and notifies them. It grants no access.</p>
         <div class="bar"><button class="btn small">Add a participant</button></div></div>
-      <div class="panel" style="border-style:dashed"><h2 style="color:var(--muted)">Does it apply to us, where we stand, gaps</h2><p class="meta" style="display:block">The register overlay arrives with chunk 8.</p></div>
     </div></div>
 
     <div class="states">
+    <!-- Register panel states (chunk 8). -->
+    <h2 class="k">Does it apply to us: one legal entity, not decided yet, seen by a holder of applicability approve</h2>
+    <div class="panel"><h2>Does it apply to us?</h2><div class="meta"><span class="pill">Not assessed</span></div><p style="margin:8px 0 0">Nobody has decided yet.</p><div class="bar"><button class="btn small">Decide</button></div></div>
+
+    <h2 class="k">Answer, then confirm (stored at once on confirm; no second person, no passkey)</h2>
+    <div class="modal"><form class="box" aria-labelledby="da"><h2 id="da">Does it apply to Example Bank AB?</h2>
+      <div class="field"><label for="dav">Decision</label><select id="dav"><option>Applies</option><option selected>Does not apply</option><option>Not assessed</option></select></div>
+      <div class="field"><label for="dar">Reason</label><textarea id="dar">We sell no investment services from Example Bank AB since the 2026 transfer.</textarea><span class="hint">A reasoned "does not apply" is worth as much to an auditor as an "applies".</span></div>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Continue</button></div></form></div>
+    <div class="modal"><div class="box" role="dialog" aria-labelledby="dc" aria-describedby="dcd"><h2 id="dc">Set "Does not apply" for Example Bank AB?</h2>
+      <p id="dcd">It is stored at once in your name, with your reason, and kept in the audit log. It was "Applies". The compliance status and gaps stay as they are and return if it applies again.</p>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="button">Set applicability</button></div></div></div>
+    <p class="ok" role="status">Saved: does not apply.</p>
+
+    <h2 class="k">Does not apply: Where we stand keeps its last status in the history</h2>
+    <div class="panel"><h2>Does it apply to us?</h2><div class="meta"><span class="pill">Does not apply</span><span>Set by Sara Lindqvist, 25 Sep 2026</span></div><p style="margin:6px 0 0">We sell no investment services from Example Bank AB since the 2026 transfer.</p></div>
+    <div class="panel" style="margin-top:10px"><h2>Where we stand</h2><p class="meta" style="display:block">No status is asked while it does not apply. The last one, Partly compliant on 2 Sep 2026, stays in the history and its gaps stay on record.</p></div>
+
+    <h2 class="k">Read only, for a member without applicability approve or register edit</h2>
+    <div class="panel"><h2>Does it apply to us?</h2><div class="meta"><span class="pill positive">Applies</span><span>Set by Sara Lindqvist, 18 Sep 2026</span></div><p style="margin:6px 0 0">We give advice and manage portfolios, both paid partly with research.</p></div>
+
+    <h2 class="k">Where we stand: editing one legal entity, and the stale write</h2>
+    <div class="modal"><form class="box" aria-labelledby="ws"><h2 id="ws">Where we stand at Example Finans AB</h2>
+      <div class="field"><label for="wss">Compliance status</label><select id="wss"><option>Compliant</option><option selected>Partly compliant</option><option>Gap</option><option>Not assessed</option></select><span class="hint">Changing it asks for the basis, so the history explains itself.</span></div>
+      <div class="field"><label for="wsm">How you assessed it</label><select id="wsm"><option>Self-assessment</option><option>Control test</option><option>Internal audit</option><option>External audit</option></select></div>
+      <div class="field"><label for="wsn">Status note</label><textarea id="wsn">Criteria agreed; the first yearly assessment is not done yet.</textarea></div>
+      <div class="field"><label for="wsr">Risk if we fail</label><select id="wsr"><option>Low</option><option>Medium</option><option selected>High</option></select></div>
+      <div class="field"><label for="wso">First-line owner</label><input id="wso" value="Retail compliance"><span class="hint">A person or a team.</span></div>
+      <div class="field"><label for="wsc">Compliance contact</label><input id="wsc" value="Sara Lindqvist"></div>
+      <div class="field"><label for="wsd">Next review</label><input id="wsd" type="date" value="2026-11-30"></div>
+      <div class="notice bad" role="alert">Someone changed this entry while you were editing. Reload to see their version, then make your change again.<div class="bar left"><button class="btn ghost small" type="button">Reload</button></div></div>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Save</button></div></form></div>
+
+    <h2 class="k">How we handle it, nothing mapped yet</h2>
+    <div class="panel"><h2>How we handle it</h2><dl class="kv"><dt>Process</dt><dd>Not mapped</dd><dt>System</dt><dd>Not mapped</dd><dt>Evidence kept</dt><dd>Not mapped</dd></dl><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+
+    <h2 class="k">Gaps: the status says something is missing and no gap is recorded; none recorded</h2>
+    <div class="panel"><h2>Gaps</h2><p class="meta" style="display:block">The status says something is missing, but no gap is recorded. Record it so it gets an owner and a date.</p><div class="bar"><button class="btn small">Record a gap</button></div></div>
+    <div class="panel" style="margin-top:10px"><h2>Gaps</h2><p class="meta" style="display:block">No gaps recorded.</p><div class="bar"><button class="btn ghost small">Record a gap</button></div></div>
+    <p class="meta" style="display:block;margin-top:8px">Record a gap opens the form drawn in <a href="tenant-gaps.html">tenant-gaps.html</a>, state 13, with this obligation fixed.</p>
+
+    <h2 class="k">Link an item: pick one the bank already has, or create it</h2>
+    <div class="modal"><form class="box" aria-labelledby="li"><h2 id="li">Link an internal item</h2>
+      <div class="field"><label for="lis">Find an item</label><input id="lis" value="reconc">
+        <div class="rows" style="margin-top:8px">
+          <div class="row sel"><div class="meta"><span>Control</span><span class="mono">CTL-031</span></div><h3>Daily reconciliation of client assets</h3></div>
+          <div class="row"><div class="meta"><span>Process</span><span class="mono">PRC-07</span></div><h3>Month-end reconciliation</h3></div>
+        </div></div>
+      <div class="bar left"><button class="btn ghost small" type="button">Create a new item instead</button></div>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Link</button></div></form></div>
+    <div class="modal"><form class="box" aria-labelledby="lc"><h2 id="lc">Create and link an item</h2>
+      <div class="field"><label for="lck">Kind</label><select id="lck"><option>Policy</option><option>Procedure</option><option selected>Control</option><option>Process</option><option>System</option></select></div>
+      <div class="field"><label for="lcn">Name</label><input id="lcn" value="Daily reconciliation"></div>
+      <div class="field"><label for="lcr">Your reference</label><input id="lcr" value="CTL-031" aria-invalid="true"><span class="err" role="alert">An item with this reference already exists. Pick it instead.</span></div>
+      <div class="field"><label for="lcu">Link to where it lives</label><input id="lcu" type="url" placeholder="https://"><span class="hint">Optional. Opens in the bank's own system.</span></div>
+      <div class="bar"><button class="btn ghost" type="button">Back</button><button class="btn" type="submit">Create and link</button></div></form></div>
+    <div class="modal"><div class="box" role="dialog" aria-labelledby="lr"><h2 id="lr">Remove the link to "Research and inducements policy"?</h2><p>The item itself stays, with its other links.</p>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="button">Remove link</button></div></div></div>
+    <div class="panel" style="margin-top:10px"><h2>Linked internal items</h2><p class="meta" style="display:block">Nothing linked yet. Link the policy, procedure, control, process or system that carries this obligation.</p><div class="bar"><button class="btn small">Link an item</button></div></div>
+
+    <h2 class="k">How we read this rule: a new version, and nothing written yet</h2>
+    <div class="modal"><form class="box" aria-labelledby="ir"><h2 id="ir">How we read this rule</h2>
+      <div class="field"><label for="irt">Our reading</label><textarea id="irt" style="min-height:120px">"Research" covers written analysis and access to analysts. Free short market comments stay outside, as FI's Q&amp;A of 2018 allows.</textarea><span class="hint">Saved as version 4 in your name. Earlier versions stay readable.</span></div>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Save version</button></div></form></div>
+    <div class="panel" style="margin-top:10px"><h2>How we read this rule</h2><p class="meta" style="display:block">No reading recorded. Write down how we read the rule where the text leaves room, so the next person does not start over.</p><div class="bar"><button class="btn ghost small">Write how we read it</button></div>
+      <h3 style="margin:16px 0 8px">Assessment history</h3><p class="meta" style="display:block">No assessment yet. The first status starts the history.</p></div>
+
+    <h2 class="k">A standard's conformance obligation: the Units panel</h2>
+    <div class="panel"><h2>Units</h2>
+      <div class="rows">
+        <a class="row" href="tenant-obligation-units.html"><h3>Example Bank AB</h3><div class="meta"><span>48 units</span><span>41 apply, 7 do not apply</span></div></a>
+        <a class="row" href="tenant-obligation-units.html"><h3>Example Finans AB</h3><div class="meta"><span>No units yet</span></div></a>
+      </div>
+      <p class="meta" style="display:block;margin-top:10px">Units are listed for the legal entities where this standard applies.</p>
+      <div class="bar"><a class="btn ghost small" href="tenant-obligation-units.html">Open units and the Statement of Applicability</a></div></div>
+
+    <h2 class="k">Register panels: loading and error</h2>
+    <div class="rows" aria-busy="true"><div class="skeleton" style="height:120px"></div></div>
+    <div class="empty" role="alert" style="margin-top:10px"><h2>Where we stand could not be loaded</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
+
     <h2 class="k">Participants, seen by Erik, who takes part and cannot edit the register</h2>
     <div class="panel"><h2>Participants</h2>
       <dl class="kv" style="grid-template-columns:150px 1fr;margin-bottom:12px"><dt>First-line owner</dt><dd>Anna Nilsson</dd><dt>Compliance contact</dt><dd>Sara Lindqvist</dd><dt>Owner team</dt><dd>Retail compliance</dd></dl>
@@ -367,9 +510,15 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load this obligation</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     <div class="restricted"><h1>Not found</h1><p>There is nothing at this address in your organisation.</p><a href="#">Back to Inventory</a></div>
     </div>
-    <p class="note">Obligation card. Header slots: instrument (brand), regime (information), binding level (information "Binding" or warning "Guidance, comply or explain"), then compliance status once chunk 8 lands. The legal text block shows one version in one language; "Show what changed" marks sentences added and removed against the previous version; "As of" picks the version in force on that date. Translations are rows: the original carries no label, a machine translation carries the label above the text. Scope terms are brand pills, "All services" when every term is selected, "Not client-specific" when the list is empty. Library tags follow as brand pills, tenant tags outlined. Nothing here edits the library: re-verification and corrections happen in the console; a member reports. Reported problems (AUD-03, D-50) sits under provenance on the obligation and the instrument card: the reports this bank filed on the record, newest first, each with its reporter, time, words, the version and language on screen, and a status pill by kind (open warning, fixed positive, answered and rejected information). A colleague holding proposals.create reads and closes every one; anyone else reads and closes their own. Closing takes an outcome and a required note, needs no step-up, and never changes the library; a report closed by someone else first answers in place. Nobody outside the bank, bleqq included, sees a report, and the console has no surface for one. Participants (COL-04, chunk 8) hang on the register entry, which is created on its first write, not on the library record: the owners sit read-only above the list, each participant names who added them, adding needs register edit and anyone may leave their own row. A person or a team is one picker over the people reference and the team list; a team reaches its active members. Participation lists and notifies and grants nothing, so it needs no step-up and no second person; the server's refusals (already a participant, cannot open the record, the participant cap, the missing permission) render in place.</p>
+    <p class="note">Obligation card. Header slots: instrument (brand), regime (information), binding level (information "Binding" or warning "Guidance, comply or explain"), then compliance status: the worst of the legal entities it applies to, with the entity named beside it. The legal text block shows one version in one language; "Show what changed" marks sentences added and removed against the previous version; "As of" picks the version in force on that date. Translations are rows: the original carries no label, a machine translation carries the label above the text. Scope terms are brand pills, "All services" when every term is selected, "Not client-specific" when the list is empty. Library tags follow as brand pills, tenant tags outlined. Nothing here edits the library: re-verification and corrections happen in the console; a member reports. Reported problems (AUD-03, D-50) sits under provenance on the obligation and the instrument card: the reports this bank filed on the record, newest first, each with its reporter, time, words, the version and language on screen, and a status pill by kind (open warning, fixed positive, answered and rejected information). A colleague holding proposals.create reads and closes every one; anyone else reads and closes their own. Closing takes an outcome and a required note, needs no step-up, and never changes the library; a report closed by someone else first answers in place. Nobody outside the bank, bleqq included, sees a report, and the console has no surface for one. Participants (COL-04, chunk 8) hang on the register entry, which is created on its first write, not on the library record: the owners sit read-only above the list, each participant names who added them, adding needs register edit and anyone may leave their own row. A person or a team is one picker over the people reference and the team list; a team reaches its active members. Participation lists and notifies and grants nothing, so it needs no step-up and no second person; the server's refusals (already a participant, cannot open the record, the participant cap, the missing permission) render in place. The register panels (chunk 8) are the bank's own judgement over the library record. Does it apply to us holds one row per legal entity the obligation spans, each with its pill, reason, who and when; a holder of applicability approve answers, then confirms in a dialog, and the answer is stored at once with one audit event, no second person and no passkey. A member without it reads. Where we stand holds, per legal entity, the compliance pill, status note, risk, first-line owner (a person or a team), compliance contact and next review; the header shows the worst entity and names it. A change asks how it was assessed, so the history explains itself, and a stale write answers in place with Reload. Does not apply hides no fact: the last status and its gaps stay on record and return if it applies again. Gaps lists the obligation's gaps with their status, severity and owner and opens Record a gap. Linked internal items picks an item the bank has or creates one, and removing a link keeps the item. How we read this rule is a version with its author and date, with no approval step, and the assessment history sits beneath it, append-only. On a standard, the Units panel lists the following entities and opens the units page. Every string goes to the register catalogs in en and sv.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Today</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>Watch<span class="dot">3</span></button><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8"/></svg>Inventory</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>Search</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>
+<script>
+/* Card only: two frames of this file at 375 px, light and dark. */
+(function(){var b=document.getElementById('phones');if(!b)return;b.addEventListener('click',function(){var f=document.getElementById('frames');
+if(!f.childElementCount){['light','dark'].forEach(function(t){var i=document.createElement('iframe');i.src=location.pathname+'?frame=1&theme='+t;i.title='This card at 375 px, '+t;f.appendChild(i);});}
+f.hidden=!f.hidden;b.setAttribute('aria-expanded',String(!f.hidden));});})();
+</script>
 </body>
 </html>

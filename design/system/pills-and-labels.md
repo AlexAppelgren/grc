@@ -37,7 +37,7 @@ There is no seventh tone and no component accepts a colour.
 |---|---|
 | Slot | Change type is `notice`. Scope facets, instrument, flags and library tags are `brand`. Regime and workflow status are `information` |
 | Kind with severity | The fixed ordinal decides: urgency (act now `negative`, within 3 months `warning`, 6+ months `notice`, monitor `information`, no action `positive`), compliance category (compliant `positive`, partly `warning`, gap `negative`, not assessed `information`), gap category (open `negative`, remediating `warning`, risk accepted `information`, closed `positive`), severity (high `negative`, medium `warning`, low `information`) |
-| Computed | "Waiting for approval" and "Change waiting for approval" `warning`, "N open changes" `notice`, "Change pending: …" `warning`, "Added when approved" and "Removed when approved" `warning`, "You" `positive` |
+| Computed | "Waiting for approval" `warning` (a request someone else decides, such as a risk acceptance; never applicability, which one person sets, D-75), "N open changes" `notice`, "Change pending: …" `warning`, "Added when approved" and "Removed when approved" `warning`, "You" `positive` |
 
 An admin adds a value by typing a label, its translations and a usage note.
 A new compliance sub-status inherits the tone of its category.
@@ -47,7 +47,7 @@ A new compliance sub-status inherits the tone of its category.
 | Record | Order |
 |---|---|
 | Change row and header | Change type, urgency, flags, then workflow status (header only), then authority and date as plain meta text |
-| Obligation row | Instrument, "Guidance" if not binding ("Standard" when the binding level's kind is `standard`), applicability, compliance status if it applies, "Change waiting for approval", "N open changes" |
+| Obligation row | Instrument, "Guidance" if not binding ("Standard" when the binding level's kind is `standard`), applicability, compliance status if it applies, "N open changes" |
 | Obligation header | Instrument, regime, binding level ("Standard" when its kind is `standard`), compliance status |
 | Instrument header and row | Short name, level, binding level ("Standard" when the level's kind is `standard`), jurisdiction, regime |
 | Scope block | One `brand` pill per term. "All services" when every term is selected. Plain text "Not client-specific" when the list is empty, because empty means no restriction |

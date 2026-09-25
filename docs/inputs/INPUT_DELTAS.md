@@ -876,6 +876,28 @@ Chunk 10 (the obligation row's R2 fields, c10-tag-filters-and-limits), 2026-09-2
 - Every string filter of `GET /obligations` and `GET /instruments` is at most 80 characters
   (`instrument`, `dutyType`, `regime`, each `term`, `tag` and `tenantTag` item), as the key
   columns are; a longer one answers 422 `validation_error` (hardening H27).
+Chunk 8 (the register contract, `c8-register-contract`), 2026-09-25:
+
+- Applicability has no request (D-75, which supersedes D-44 and ADR 0038). The designed
+  `GET /applicability-requests` (`listApplicabilityRequests`),
+  `POST /obligations/{obligationId}/applicability-requests` (`requestApplicability`),
+  `POST /applicability-requests/{requestId}/approve` (`approveApplicability`) and
+  `POST /applicability-requests/{requestId}/reject` (`rejectApplicability`) are not built,
+  and neither is the withdraw route the chunk 8 plan once added. They are replaced by
+  `setApplicability`, `PUT /obligations/{obligationId}/applicability`, which stores one
+  confirmed answer for the obligation, one legal entity or one unit, and
+  `setApplicabilityMany`, `POST /applicability`, which stores many confirmed rows in one
+  call capped by `REGISTER_BULK_MAX`. Both take `applicability.approve`, no step-up and
+  no second approver, and write one audit event per row naming the person, the value
+  before and after, and the reason. There is no `applicability_request` table and no
+  "Waiting for approval" state for applicability; the designed `Note` body and
+  `ApplicabilityRequest` shapes go with them.
+- `PATCH /obligations/{obligationId}/register` (`updateRegister`) keeps its designed fields
+  and adds `rationale`, stored on the assessment row a status change writes (REG-04), and
+  takes the status, risk and people as keys and ids. It answers `RegisterEntry`, which
+  adds `applicabilityDecidedBy`, `entities` (one row per legal entity, D-42) and `version`
+  for `If-Match` (section 4) to the designed `Register`, and returns the status and risk
+  as `{key, kind, label}` rows of the bank's own lists (section 1).
 
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
