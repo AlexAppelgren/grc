@@ -221,4 +221,8 @@ test.describe('agents journeys', () => {
   test.fixme("ACC-S6: A narrowed entry never narrows silently", async () => {
     // pending: ACC-S6 (ACC-07, AC-ACC1, chunk 11)
   });
+
+  test.fixme("ACC-S13 J-11 @smoke: a bank's coding agent reads what applies to it", async () => {
+    // pending: ACC-S13 (ACC-01 to ACC-08, AC-ACC1, AC-ACC2, AC-ACC4, J-11, chunk 11)
+  });
 });
