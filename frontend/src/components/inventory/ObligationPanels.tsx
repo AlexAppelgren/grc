@@ -214,13 +214,3 @@ export function ProvenancePanel({ obligation, actions }: { obligation: Obligatio
   );
 }
 
-/** What the card will hold and does not yet: the register overlay. */
-export function PendingPanels() {
-  const t = useT();
-  return (
-    <Panel className="border-dashed" data-pending-panel="register">
-      <h2 className="mb-3 text-muted">{t('inventory.obligation.registerTitle')}</h2>
-      <p className="text-meta text-muted">{t('inventory.obligation.registerBody')}</p>
-    </Panel>
-  );
-}

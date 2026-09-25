@@ -280,7 +280,10 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     AI_LOG_READ: "Read the AI generation log.",
     MEMBERS_MANAGE: "Invite, change and deactivate members; re-issue enrolment; revoke sessions.",
     ROLES_MANAGE: "Create and change the tenant's roles.",
-    SECURITY_MANAGE: "Change the security policy and read the security log.",
+    SECURITY_MANAGE: (
+        "Change the security policy and read the security log; includes approving, declining and "
+        "revoking support access, and requesting or approving tenant exit, never both by the same person."
+    ),
     VOCAB_MANAGE: "Manage the tenant's vocabularies.",
     WORKFLOW_MANAGE: "Manage workflow policy.",
     AGENTS_MANAGE: "Switch agents on and off and set their cadence and budget.",
@@ -291,7 +294,7 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     EVAL_MANAGE: "Manage evaluation sets.",
     TENANTS_MANAGE: "Manage tenants and plans.",
     AGENT_DEFINITIONS_MANAGE: "Manage agent definitions.",
-    SUPPORT_ACCESS_GRANT: "Enter a tenant under a logged support access grant.",
+    SUPPORT_ACCESS_GRANT: "Request support access to a bank and enter it read-only once a tenant admin approves.",
     SYSTEM_HEALTH: "Read system health.",
     SCOPE_PROPOSALS_REVIEW: "Read the proposal queue and approve, correct or reject a proposal, as an independent agent (platform-only).",
 }
@@ -337,6 +340,11 @@ _LOGIC_LIBRARY_RECORDS = "library.read in the caller's tenant, or an agent's key
 _LOGIC_UPCOMING_READER = "roadmap.read in the caller's tenant, or an agent's key with upcoming:read, because the newsletter run has to know which dates are already public (HOM-04, AGT-02). The list holds library facts only — no case, no footprint verdict, no owner, no 'So what?' — which is what makes a key safe on it, and it is the one route of the home app a key reaches. The gate is apps/home/api.py:require_upcoming_reader, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
 _LOGIC_PROPOSALS_REVIEW = "The queue read, the detail read, approve and reject accept a session holding `proposals.review` or a platform key bound to an agent and holding the scope `proposals:review`, because `Principal.has_permission`/`has_scope` are kind-exclusive and one decorator cannot express 'a session or a key' (PRO-01, PRO-S13, PRO-S14, D-62, ADR 0054). The gate is apps/proposals/api.py:require_reviewer, which branches on the principal kind, refuses a tenant-carrying key even if its scopes list somehow names the scope, refuses a key bound to no agent definition (`agent_not_bound`), and never applies a step-up to a key, which holds no passkey assertion; approve calls `enforce_step_up` for a person in its body."
 _PUBLIC_CALENDAR_TOKEN = "The revocable token in the calendar address is the whole grant: a calendar client sends no header, follows no sign-in and cannot be asked for a passkey, so the URL is the only credential it can carry (HOM-04, D-52, ADR 0045). The mitigations are the ones that decision weighed. The token is `<prefix>.<secret>` with 256 bits of secret, kept as a lookup prefix beside the secret's SHA-256, shown once and never again. It rides in the query string, not the path, because our own access log prints the route and drops the query while a hosting edge writes whole request lines, which makes this the one named exception to CONVENTIONS 3.6 and is pinned by a guard test that no other route reads a token from the query string. A person may hold only CALENDAR_FEEDS_PER_USER addresses and mints one only from a recent sign-in or a step-up, so a stolen access token cannot leave a lasting one behind. Every fetch re-checks that the owner is still a member holding roadmap.read and has not been enrolled again, revoking the subscription when a check fails; an idle one expires after CALENDAR_FEED_IDLE_DAYS; unknown, revoked and expired answer one 404. What is left is the residual risk the decision accepted and the dialog states: whoever holds the address can see which public regulatory dates, stated to the day, the bank has open work on, and nothing else - no internal deadline, owner, urgency or 'So what?' reaches a calendar. The behaviour is apps/home/feed.py's and apps/home/tests_feed.py proves each of these mitigations."  # noqa: S105 a reviewer's note, not a credential
+
+# c10-collab-contract.
+_SELF_NOTIFICATIONS = "Acts only on the caller's own notification rows; no parameter reaches another person's (COL-02)."
+_SELF_MY_COMMENTS = "Returns the caller's own comments and mentions, filtered afterwards by each subject's read permission (COL-01)."
+_LOGIC_COMMENT_SUBJECT = "The gate is the read permission of the subject's kind, which `collab/subjects.py` decides per record; the write also needs `comments.write` (COL-01)."
 
 # (METHOD, path as Ninja registers it under /api/v1) -> why it needs no permission gate.
 UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
@@ -479,6 +487,35 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # query string, so the exception stays one route wide.
     ("GET", "/upcoming"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_UPCOMING_READER),
     ("GET", "/calendar/feed.ics"): Ungated(UngatedReason.PUBLIC_TOKEN, _PUBLIC_CALENDAR_TOKEN),
+
+    # c10-collab-contract (chunk 10, COL-01, COL-02, HOM-05). The three inbox routes and
+    # GET /me/comments act on the caller's own rows; the comment reads and writes are gated
+    # per record by the subject registry (collab/subjects.py). PATCH and DELETE
+    # /comments/{comment_id} carry comments.write and are not listed here.
+    ("GET", "/notifications"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
+    ("POST", "/notifications/{notification_id}/read"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
+    ("POST", "/notifications/read-all"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
+    ("GET", "/me/comments"): Ungated(UngatedReason.SELF, _SELF_MY_COMMENTS),
+    ("GET", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
+    ("POST", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
+    # c8-tenants-contract (TEN-02, TEN-03, TEN-06, COL-04). The bank's organisation, its teams
+    # and who from the platform may look in are read by every member: the pickers, the
+    # department view and the Support access panel need them. Writes keep their permission.
+    ("GET", "/tenant/org-units"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/org-units/{org_unit_id}/licences"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/products"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/teams"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/teams/{key}/members"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/support-access"): Ungated(
+        UngatedReason.CAPABILITY,
+        "Every member may see who from the platform asked to look in, and who was let in (TEN-06, D-49).",
+    ),
+    ("GET", "/reference/people"): Ungated(
+        UngatedReason.CAPABILITY,
+        "A member's session is the grant, never an enrolment session: the owner and participant "
+        "pickers need the bank's active members, as ids and names only; `GET /tenant/members` "
+        "stays under members.manage (COL-04, TEN-03).",
+    ),
 }
 
 
