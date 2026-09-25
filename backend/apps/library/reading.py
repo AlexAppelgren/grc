@@ -121,6 +121,7 @@ from apps.shared.models import Tenant
 from apps.taxonomy import matching, terms_logic
 from apps.taxonomy.models import (
     DutyTypeLabel,
+    InstrumentLevelKind,
     InstrumentLevelLabel,
     LibraryTag,
     LibraryTagLabel,
@@ -201,6 +202,16 @@ def obligation_headings(obligation_ids: Collection[uuid.UUID], order: list[str])
             instrument_short_name=row.instrument.short_name,
         )
     return headings
+
+
+def under_standard(obligation_id: uuid.UUID) -> bool | None:
+    """Whether a duty sits under a standard-level instrument (D-41), in one query: the only
+    place a Statement of Applicability unit may exist. None for a duty the caller cannot
+    see, exactly as for an id that never existed."""
+    kinds = list(Obligation.objects.filter(pk=obligation_id).values_list("instrument__level__kind", flat=True))
+    if not kinds:
+        return None
+    return kinds[0] == InstrumentLevelKind.STANDARD.value
 
 
 def instrument_headings(instrument_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, RecordHeading]:
