@@ -192,6 +192,10 @@ IF_MATCH_ROUTES = {
 # The operations whose logic has landed, each proved by its own package's tests rather than
 # by the 501 below. c8-reg-gaps-risk (REG-03): apps/register/tests_gaps.py.
 BUILT = {
+    # c8-reg-status (apps/register/tests_status.py)
+    "getRegisterEntry",
+    "updateRegister",
+    "updateRegisterEntity",
     "listObligationGaps",
     "createGap",
     "listRegisterGaps",

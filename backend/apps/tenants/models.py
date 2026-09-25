@@ -13,6 +13,9 @@ PostgreSQL checks a foreign key without row-level security: a plain key would le
 point at another's row. A unit, licence, product or item is deactivated or withdrawn, never
 deleted.
 
+The organisation package (tenants 0005) gives a licence and a product the `version` a unit
+already had, so a change to either sends `If-Match` like every other versioned record.
+
 Chunk 8's teams model (TEN-03, tenants 0003) adds `TeamMember`, a person in one of the bank's
 teams (the `team` tenant list, taxonomy 0009), and lets a team own a licence or an internal
 item in place of a person, so the ownership survives the person leaving. Both keys of a team
@@ -206,6 +209,7 @@ class Licence(NeverDeleted):
     next_audit_on = models.DateField(null=True, blank=True)
     owner_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     owner_team = models.ForeignKey("taxonomy.Team", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    version = models.PositiveIntegerField(default=1)
 
     class Meta:
         db_table = "licence"
@@ -241,6 +245,7 @@ class TenantProduct(NeverDeleted):
     status = models.CharField(max_length=8, choices=_choices(ProductStatusKind), default=ProductStatusKind.LIVE.value)
     launch_date = models.DateField(null=True, blank=True)
     owner_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    version = models.PositiveIntegerField(default=1)
 
     class Meta:
         db_table = "tenant_product"

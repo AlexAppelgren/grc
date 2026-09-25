@@ -10,6 +10,7 @@ Prefixes hosted: HOM.
 """
 
 import datetime
+from typing import Any
 from unittest import mock, skip
 from urllib.parse import parse_qs, urlsplit
 
@@ -17,6 +18,12 @@ from django.test import TestCase
 
 from apps.cases import testing as cases_build
 from apps.home import tasks
+from apps.home.tests_home import roadmap_only_reader
+from apps.home.tests_my_work import Bank, obligation
+from apps.shared.tenancy import library_write
+from apps.taxonomy.models import ComplianceStatus, TaxonomyTerm, TaxonomyTermLabel
+from apps.tenants.models import Licence, OrgUnit
+from apps.tenants.testing import licence_type_term
 from apps.shared import factories, permissions as perms
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.models import AuditEvent
@@ -43,6 +50,16 @@ THIS_QUARTER = datetime.date(2026, 10, 15)
 NEXT_QUARTER = datetime.date(2027, 1, 20)
 
 
+def certificate_term() -> TaxonomyTerm:
+    """The licence type the scenario names, labelled as a bank reads it: a taxonomy term,
+    so a row of the shared library written through its builder's door."""
+    dimension = licence_type_term().dimension
+    with library_write("test builder"):
+        term, _ = TaxonomyTerm.objects.get_or_create(dimension=dimension, key="iso_iec_27001_certificate")
+        TaxonomyTermLabel.objects.get_or_create(term=term, language="en", defaults={"text": "ISO/IEC 27001:2022 certificate", "is_original": True})
+    return term
+
+
 class HomeScenarioTests(TestCase):
     """Scenario tests for apps.home, one method per @integration scenario."""
 
@@ -54,15 +71,13 @@ class HomeScenarioTests(TestCase):
 
         The pills and the panels are the journey's half. What is proved here is what the
         screen draws them from: the next dates in the roadmap's own order with this bank's
-        urgency on each, the week's lead change, how the source watching is going, and that
-        a reader who may not see a panel still gets the page.
+        urgency on each, the week's lead change, how the source watching is going, where
+        the bank stands, and that a reader who may not see a panel still gets the page.
 
-        Two notes on the steps that are not asserted here. Where the bank stands arrives
-        with the register in chunk 8 (the note under HOM-S1 in app.md), so `Home` carries no
-        such field and this test pins its absence rather than a zero. What needs a decision
-        is the `counts` object on `GET /me` (D-23), which `f03-T48` builds and proves in
-        `apps/identity/tests_me_counts.py`; the half that belongs to this route is that
-        `Home` does not answer it a second time.
+        What needs a decision is the `counts` object on `GET /me` (D-23), which `f03-T48`
+        builds and proves in `apps/identity/tests_me_counts.py`; the half that belongs to
+        this route is that `Home` does not answer it a second time. The standing's rules,
+        each on its own, are `apps/home/tests_home.py`'s `HomeStandingPanel`.
         """
         watch_build.seed_watch_reference()
         # The registry before any bank: a source is a library row, and the only session its
@@ -88,9 +103,17 @@ class HomeScenarioTests(TestCase):
         )
         cases_build.case(tenant, lead)
         cases_build.case(tenant, later, urgency="six_months_plus")
+        # Where we stand: two obligations apply, one compliant and one with an open gap.
+        with mock.patch("django.utils.timezone.now", return_value=INSTANT):
+            standing = Bank("hom-s1-register")
+            standing.entry(obligation("Complies"), compliance_status=standing.compliant)
+            behind = standing.entry(obligation("Behind"), compliance_status=ComplianceStatus.objects.get(key="gap"))
+            standing.gap(behind)
 
         with mock.patch("django.utils.timezone.now", return_value=INSTANT):
             response = self.client.get("/api/v1/home", **sign_in(reader, tenant=tenant))
+            register_bank = self.client.get("/api/v1/home", **sign_in(standing.anna, tenant=standing.tenant)).json()
+            limited = self.client.get("/api/v1/home", **sign_in(roadmap_only_reader(tenant), tenant=tenant))
 
         self.assertEqual(response.status_code, 200)
         body = response.json()
@@ -105,9 +128,18 @@ class HomeScenarioTests(TestCase):
         # Source coverage: one source checked, one failure named.
         self.assertEqual((body["sources"]["checked"], body["sources"]["total"]), (1, 2))
         self.assertEqual([row["source"]["name"] for row in body["sources"]["failed"]], [broken.name])
-        # Neither panel that belongs to another chunk is answered here.
+        # Where we stand, from the register: an empty register stands at zero, and a bank
+        # with one reads its own counts.
+        self.assertEqual(body["standing"], {"applying": 0, "compliant": 0, "partly": 0, "gap": 0, "notAssessed": 0, "openGaps": 0})
+        self.assertEqual(
+            register_bank["standing"], {"applying": 2, "compliant": 1, "partly": 0, "gap": 1, "notAssessed": 0, "openGaps": 1}
+        )
+        # A reader without watch.read gets the page, with no lead and no source panel.
+        self.assertEqual(limited.status_code, 200)
+        self.assertEqual((limited.json()["lead"], limited.json()["sources"]), (None, None))
+        self.assertEqual(len(limited.json()["comingUp"]), 2)
+        # What needs a decision is answered on `GET /me`, not here.
         self.assertNotIn("decideNow", body)
-        self.assertNotIn("standing", body)
         # One fan-out of independent calls: the four reads cost a fixed number of queries
         # and none of them is the input to another (apps/home/tests_home.py pins the number
         # at two sizes; here the point is that the route answers from one call at all).
@@ -352,9 +384,61 @@ class HomeScenarioTests(TestCase):
         Case work reaches My work (HOM-05).
         """
 
-    @skip("pending: HOM-S15 (HOM-03, TEN-02, chunk 8)")
     def test_hom_s15(self) -> None:
         """HOM-S15
 
         A certificate's expiry and next audit are our deadlines, never in the calendar feed (HOM-03, HOM-04, TEN-02, AC-TEN1).
+        Operations: `getRoadmap`, `createCalendarFeed`, `getCalendarIcs`, `updateLicence`.
+
+        The scenario's own dates under one frozen clock, at which the bank's day is
+        1 October 2026 (playbook 8.3). The certificate is withdrawn through its own route.
         """
+        watch_build.seed_watch_reference()
+        with mock.patch("django.utils.timezone.now", return_value=INSTANT):
+            bank = Bank("hom-s15")
+            bank.activate()
+            entity = OrgUnit.objects.get(pk=bank.bank_ab.pk)
+            OrgUnit.objects.filter(pk=entity.pk).update(name="Example Bank AB")
+            certificate = Licence.objects.create(
+                tenant=bank.tenant,
+                org_unit=entity,
+                licence_type=certificate_term(),
+                valid_until=datetime.date(2028, 11, 30),
+                next_audit_on=datetime.date(2027, 3, 15),
+                owner_user=bank.anna,
+            )
+            # A regulatory date, so the feed has something of its own to carry.
+            change = watch_build.change(title="FI adopts amended rules", key_date=THIS_QUARTER, key_date_label="In force")
+            cases_build.case(bank.tenant, change)
+            officer = factories.member_user(bank.tenant, roles=("compliance_officer",))
+            headers = sign_in(officer, tenant=bank.tenant)
+
+            def ours(start: str, end: str) -> list[dict[str, Any]]:
+                answer = self.client.get("/api/v1/roadmap", {"from": start, "to": end}, **headers)
+                self.assertEqual(answer.status_code, 200)
+                return [item for item in answer.json()["items"] if item["kind"] == "internal"]
+
+            [audit] = ours("2027-01-01", "2027-03-31")
+            self.assertEqual((audit["itemType"], audit["date"], audit["title"]), ("certificate_audit", "2027-03-15", "ISO/IEC 27001:2022 certificate"))
+            self.assertEqual(audit["owner"]["person"], {"id": str(bank.anna.id), "name": "Anna Berg"})
+            self.assertEqual(audit["subject"]["licenceId"], str(certificate.id))
+            self.assertEqual(audit["subject"]["entity"]["name"], "Example Bank AB")
+            [expiry] = ours("2028-10-01", "2028-12-31")
+            self.assertEqual((expiry["itemType"], expiry["date"]), ("certificate_expiry", "2028-11-30"))
+
+            created = self.client.post("/api/v1/calendar-feeds", data={}, content_type="application/json", **headers)
+            token = parse_qs(urlsplit(created.json()["url"]).query)["token"][0]
+            body = self.client.get("/api/v1/calendar/feed.ics", {"token": token}).content.decode()
+            self.assertIn("DTSTART;VALUE=DATE:20261015", body)
+            for absent in ("20270315", "20281130", "ISO/IEC 27001:2022 certificate", "Anna Berg"):
+                self.assertNotIn(absent, body)
+
+            withdrawn = self.client.patch(
+                f"/api/v1/tenant/licences/{certificate.id}",
+                data={"withdrawnOn": "2026-10-01"},
+                content_type="application/json",
+                HTTP_IF_MATCH=str(certificate.version),
+                **headers,
+            )
+            self.assertEqual(withdrawn.status_code, 200, withdrawn.content)
+            self.assertEqual(ours("2026-10-01", "2028-12-31"), [])

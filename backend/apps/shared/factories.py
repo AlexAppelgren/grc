@@ -59,7 +59,7 @@ from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
 from apps.tenants.models import Licence, OrgUnit, OrgUnitKind, SupportAccess, TeamMember, TenantProduct
-from apps.tenants.testing import licence_type_term
+from apps.tenants.testing import entity_term, licence_type_term
 
 _counter = itertools.count(1)
 
@@ -205,6 +205,57 @@ def user_actor(*, label: str = "Test Person", user_id: uuid.UUID | None = None) 
 
 def agent_actor(*, label: str = "Test Agent", agent_id: uuid.UUID | None = None) -> Actor:
     return Actor(kind=ActorType.AGENT, id=agent_id or uuid.uuid4(), label=label)
+
+
+# c8-reg-status: the tenant-isolation guard's record for a legal entity's register row.
+def register_entity(tenant: Tenant) -> SimpleNamespace:
+    """A legal entity of `tenant`. The route reads the entity under row-level security before
+    it looks at the obligation, so another bank asking for it is refused as if it never
+    existed; apps/register/tests_status.py proves the same under a real shared obligation."""
+    from apps.tenants.models import OrgUnit, OrgUnitKind
+
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entity = OrgUnit.objects.create(tenant=tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name=f"Example Entity {next(_counter)} AB")
+    return SimpleNamespace(id=entity.id, params={"obligation_id": uuid.uuid4()})
+
+
+# --- c8-reg-gaps-risk (REG-03) ----------------------------------------------------------
+def gap(tenant: Tenant) -> Any:
+    """The tenant-isolation guard's record for gap routes: an open gap of `tenant`, with a
+    waiting risk acceptance so the approval has something to decide, on a library obligation
+    built for it by the library's own builders (this file writes no library model)."""
+    from apps.library import testing as library_testing
+    from apps.library.seeds import seed_jurisdictions, seed_languages
+    from apps.register.models import Gap
+    from apps.register.logic import ensure_register_entry
+    from apps.taxonomy.models import GapSource, GapStatus, RiskAcceptanceReason, RiskRating
+    from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+
+    n = next(_counter)
+    with transaction.atomic():
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_taxonomy_terms()
+        act = library_testing.instrument(key=f"gap-act-{n}", regime="regime:securities")
+        duty = library_testing.obligation(act, key=f"gap-duty-{n}")
+    person = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=duty.id, actor=user_actor(user_id=person.id))
+        return Gap.objects.create(
+            tenant=tenant,
+            tenant_obligation=entry,
+            title=f"Gap {n}",
+            severity=RiskRating.objects.get(key="high"),
+            source=GapSource.objects.get(key="audit"),
+            status=GapStatus.objects.get(key="open"),
+            identified_by=person,
+            acceptance_reason=RiskAcceptanceReason.objects.get(key="other"),
+            acceptance_requested_by=person,
+            acceptance_requested_at=timezone.now(),
+        )
 
 
 # ---------------------------------------------------------------------------------------
@@ -372,7 +423,24 @@ def team(tenant: Tenant, *, key: str, label: str, org_unit: OrgUnit | None = Non
     return row
 
 
-def department(tenant: Tenant, *, name: str, head: User | None, kind: OrgUnitKind = OrgUnitKind.BUSINESS_AREA) -> OrgUnit:
+# ---------------------------------------------------------------------------------------
+# c8-ten-organisation (TEN-02): a seeded organisation tree. `legal_entity` reads the seeded
+# `legal_entity:bank` term, so it needs seed_term_dimensions() and seed_taxonomy_terms().
+# ---------------------------------------------------------------------------------------
+def legal_entity(tenant: Tenant, *, parent: OrgUnit | None = None, head: User | None = None) -> OrgUnit:
+    """A legal entity of `tenant` carrying the seeded `bank` term."""
+    term = entity_term()
     with transaction.atomic():
         tenancy.activate(tenant.id)
-        return OrgUnit.objects.create(tenant=tenant, kind=kind.value, name=name, head_user=head)
+        return OrgUnit.objects.create(
+            tenant=tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name=f"Entity {next(_counter)}", parent=parent, head_user=head, entity_term=term
+        )
+
+
+def department(
+    tenant: Tenant, *, name: str | None = None, parent: OrgUnit | None = None, head: User | None = None, kind: OrgUnitKind = OrgUnitKind.BUSINESS_AREA
+) -> OrgUnit:
+    """A department of `tenant` with a head, under `parent` (c8-ten-organisation, c8-ten-teams-people)."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return OrgUnit.objects.create(tenant=tenant, kind=kind.value, name=name or f"Unit {next(_counter)}", parent=parent, head_user=head)

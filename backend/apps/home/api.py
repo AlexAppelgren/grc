@@ -175,14 +175,13 @@ def get_home(request: HttpRequest) -> Any:
     A read: it changes nothing and writes no audit row. A person's session holding
     `roadmap.read`, which every system role holds. Each panel is filtered by the reader's own
     permissions rather than the page being refused: a reader without `watch.read` gets a 200
-    with `lead` and `sources` null and sees the rest. What is dated and what leads are
-    filtered by the bank's regulatory scope (FP-03); the library half of every row is the same
-    for every bank and the case half never leaves this one.
+    with `lead` and `sources` null, and one without `register.read` with `standing` null and
+    no register deadline in `comingUp`, and sees the rest. What is dated, what leads and what
+    is counted in `standing` are filtered by the bank's regulatory scope (FP-03); the library
+    half of every row is the same for every bank and the bank's half never leaves this one.
 
-    Two panels of the design are answered elsewhere on purpose. What needs a decision is the
-    `counts` object on `GET /me` (D-23), so one number has one source. The compliance standing
-    arrives with the obligation register in a later chunk, because "0 gaps" before a register
-    exists is a false statement about the bank.
+    What needs a decision is answered elsewhere on purpose: it is the `counts` object on
+    `GET /me` (D-23), so one number has one source.
 
     `comingUp` is the first rows of `GET /roadmap` with no filter and `roadmapCount` is how
     many that read holds in all, both from the one roadmap query, so the panel can never name
@@ -200,6 +199,7 @@ def get_home(request: HttpRequest) -> Any:
         tenant,
         language_order(request, tenant=tenant),
         watch_reader=who.has_permission(perms.WATCH_READ),
+        register_reader=who.has_permission(perms.REGISTER_READ),
     )
 
 
@@ -297,9 +297,9 @@ def get_briefing(request: HttpRequest, week_start: datetime.date = Path(..., des
 @requires_permission(perms.ROADMAP_READ)
 @answers_problems
 def get_roadmap(request: HttpRequest, query: Query[HomeRoadmapQuery]) -> Any:
-    """The bank's calendar of regulation: every dated change it has open work on, earliest
-    first, with the quarter keys the screen draws its roster from. Call it for the roadmap
-    page, and with `from` and `to` to look at one window.
+    """The bank's calendar of regulation: every dated change it has open work on and every
+    deadline of its own, earliest first, with the quarter keys the screen draws its roster
+    from. Call it for the roadmap page, and with `from` and `to` to look at one window.
 
     A read: it changes nothing and writes no audit row. A person's session holding
     `roadmap.read`, which every system role holds. What is listed respects the bank's
@@ -307,16 +307,19 @@ def get_roadmap(request: HttpRequest, query: Query[HomeRoadmapQuery]) -> Any:
     person looks outside the scope. Each row carries library facts beside this bank's own case
     status, so two banks reading the same reform see the same date and different work.
 
-    An item is here while all three are true: the bank's case for the change is open (a
-    `closed` or `dismissed` case has left), the change is inside the bank's regulatory scope,
-    and its date is today or later in the bank's own time zone. A date that has gone leaves
+    A regulatory item is here while all three are true: the bank's case for the change is
+    open (a `closed` or `dismissed` case has left), the change is inside the bank's regulatory
+    scope, and its date is today or later in the bank's own time zone. The bank's own
+    deadlines, each with its owner, are the next reviews of register entries and entity rows
+    that are not marked as not applying and the target dates of open or remediating gaps, on
+    obligations inside the regulatory scope and only for a reader holding `register.read`, and
+    a certificate's expiry and next audit until its licence row is withdrawn. A date that has gone leaves
     the roadmap and stays on the change itself, so a `from` earlier than the bank's today
     widens nothing. The quarter key on every item is computed in that same time zone, which
     is why two banks an hour apart can open the same day in two quarters.
 
     A window with nothing in it is a 200 with an empty `items` and an empty `quarters`, never
-    a 404, and `kind=internal` answers the same way in this release because the branches that
-    produce the bank's own deadlines have not shipped yet.
+    a 404.
 
     The whole window is answered at once rather than paged, because the screen draws a roster
     of every quarter ahead; narrow it with `from` and `to` rather than by paging.
@@ -328,7 +331,12 @@ def get_roadmap(request: HttpRequest, query: Query[HomeRoadmapQuery]) -> Any:
     `kind`, `from` and `to` when it seems to have no effect.
     """
     tenant = caller_tenant(request)
-    return roadmap.roadmap_items(tenant, language_order(request, tenant=tenant), query)
+    return roadmap.roadmap_items(
+        tenant,
+        language_order(request, tenant=tenant),
+        query,
+        register_reader=principal(request).has_permission(perms.REGISTER_READ),
+    )
 
 
 # ---------------------------------------------------------------------------------------

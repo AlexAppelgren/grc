@@ -10,7 +10,10 @@ What is proved here, one class per question:
   running ISO week in the bank's own time zone. A change from last week, a finished case and
   a change outside the scope each fail to lead, and each for its own reason.
 - **What a reader may see.** A person without `watch.read` gets Today with `lead` and
-  `sources` null and a 200, never a 403 that would take the whole page away.
+  `sources` null, and one without `register.read` with `standing` null, and a 200, never a
+  403 that would take the whole page away.
+- **Where the bank stands.** Obligations that apply, each counted once in the worst
+  category of the entities it applies to, and the open gaps, inside the regulatory scope.
 - **What it costs.** The same queries for one date and for thirty, pinned at two sizes so an
   N+1 shows up as a number, and the route inside the API budget on a real bank's Today.
 
@@ -29,6 +32,7 @@ from unittest import mock
 from django.conf import settings
 from django.db import transaction
 from django.test import TestCase
+from django.utils import timezone
 
 from apps.cases import testing as cases_build
 from apps.cases.models import ChangeCase
@@ -39,6 +43,11 @@ from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.models import Tenant
 from apps.shared.testing import sign_in
 from apps.taxonomy.models import CaseStatusCategory
+from apps.home.tests_my_work import Bank, obligation
+from apps.library import testing as library_build
+from apps.register.models import Applicability, Gap, TenantObligation, TenantObligationScope
+from apps.tenants.models import OrgUnit
+from apps.taxonomy.models import ComplianceStatus, FootprintTerm, GapStatus, RiskAcceptanceReason
 from apps.watch import testing as watch_build
 from apps.watch.models import CheckFrequency, CheckStatus, RegulatoryChange
 
@@ -59,19 +68,25 @@ LAST_WEEK = datetime.datetime(2026, 9, 22, 9, 0, tzinfo=datetime.UTC)
 THIS_QUARTER = D(2026, 10, 15)
 NEXT_QUARTER = D(2027, 1, 20)
 
-# Seventeen queries on this file's fixture, measured 2026-09-21 and pinned so an N+1 shows up
-# as a number (playbook 10). What the test below demands is not the number itself but that
+# Twenty-one queries on this file's fixture, measured 2026-09-25 and pinned so an N+1 shows
+# up as a number (playbook 10). What the test below demands is not the number itself but that
 # it does not move between one case and thirty, which is why it asks at both sizes:
-#   the roadmap's first items and its count (5): the page of cases with their change and
+#   the roadmap's first items and its count (9): the page of cases with their change and
 #     urgency, the urgency rows and their labels, the confirmed obligation links, and the
-#     count over the whole roadmap. A sixth — those obligations' titles — is not sent, because
-#     this bank has no confirmed link and a query whose `IN` clause is empty never executes.
+#     count over the whole roadmap; then a page and a count for each of the two certificate
+#     branches, which every member reads. A tenth — those obligations' titles — is not sent,
+#     because this bank has no confirmed link and a query whose `IN` clause is empty never
+#     executes.
 #   the lead (10): the week's cases ordered by urgency (1), then the feed's own row for the one
 #     change it chose (9) — the change with this bank's case joined, its classification in
 #     three, the urgency rows and their labels, the change type's labels, this bank's
 #     obligation-link decisions and the jurisdiction terms its authority reaches (FP-04).
 #   source health (2): every source with the last line of its log, and those sources' labels.
-HOME_QUERIES = 17
+HOME_QUERIES = 21
+# What a `register.read` holder adds on the register cost fixture below, measured 2026-09-25:
+# a page and a count for each of the three register branches (6), the reviewed obligations'
+# titles (2) and the owning teams' labels (1), and the standing panel's three counts (3).
+REGISTER_QUERIES = 12
 
 
 def a_change(
@@ -278,25 +293,32 @@ class HomeIsFilteredByPermission(TestCase):
         self.assertIsNone(body["sources"])
         self.assertEqual([item["title"] for item in body["comingUp"]], ["Research payments"])
 
+    def test_a_reader_without_register_read_gets_the_page_with_standing_null(self) -> None:
+        """Never a 403 (AC-HOM1): the panel is null and the screen hides it, rather than a
+        zero that would read as a claim about the bank's compliance."""
+        response = self.get(self.limited)
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.json()["standing"])
+        self.assertIsNotNone(self.get(self.reader).json()["standing"])
+
     def test_the_panels_a_reader_may_not_see_are_not_even_read(self) -> None:
         """Null is decided by the permission before the query, not by emptying a result:
-        the reader without `watch.read` pays for neither the lead nor the coverage log.
+        the reader without `watch.read` and `register.read` pays for neither the lead, the
+        coverage log, the standing nor the register's deadlines.
 
-        Five queries, which is the roadmap read and its count and nothing else: eleven fewer
-        than the sixteen above, and every one of the eleven belongs to a panel this reader
-        may not see.
+        Nine queries, which is the roadmap read and its count and the two certificate
+        branches' pages and counts, and nothing else: twelve fewer than the twenty-one
+        above, and every one of the twelve belongs to a panel this reader may not see.
         """
         with mock.patch("django.utils.timezone.now", return_value=INSTANT):
             tenancy.activate(self.tenant.id)
-            with self.assertNumQueries(5):
+            with self.assertNumQueries(9):
                 logic.home_today(self.tenant, ["en"], watch_reader=False)
 
-    def test_the_answer_carries_no_decide_now_and_no_standing(self) -> None:
-        """Ruling 1 and ruling 2: what needs a decision has one source, the `counts` object
-        on `GET /me`, and the standing panel arrives with the register in chunk 8 rather than
-        reading zeros here."""
+    def test_the_answer_carries_no_decide_now(self) -> None:
+        """Ruling 1: what needs a decision has one source, the `counts` object on `GET /me`."""
         self.assertEqual(
-            sorted(self.get(self.reader).json()), ["comingUp", "date", "lead", "roadmapCount", "sources"]
+            sorted(self.get(self.reader).json()), ["comingUp", "date", "lead", "roadmapCount", "sources", "standing"]
         )
 
 
@@ -394,3 +416,124 @@ class HomeRoute(TestCase):
             body = self.client.get(URL, **sign_in(newcomer, tenant=empty)).json()
         self.assertEqual((body["comingUp"], body["roadmapCount"], body["lead"]), ([], 0, None))
         self.assertEqual(body["sources"], {"checked": 0, "total": 0, "failed": []})
+
+
+def entity_row(bank: Bank, entry: TenantObligation, unit: OrgUnit, **fields: Any) -> TenantObligationScope:
+    """One legal entity's register row, with the status the fixture names."""
+    bank.activate()
+    return TenantObligationScope.objects.create(tenant=bank.tenant, tenant_obligation=entry, org_unit=unit, **fields)
+
+
+class HomeStandingPanel(TestCase):
+    """Where the bank stands (HOM-01, REG-02, REG-03, FP-03): each obligation that applies
+    counted once, in the worst category of the entities it applies to, and the gaps still
+    open, all inside the regulatory scope."""
+
+    bank: Bank
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        watch_build.seed_watch_reference()
+        cls.bank = bank = Bank("home-standing")
+        partly = ComplianceStatus.objects.get(key="partly_compliant")
+        gap = ComplianceStatus.objects.get(key="gap")
+        applies, does_not_apply = Applicability.APPLIES.value, Applicability.DOES_NOT_APPLY.value
+        # Compliant as a whole; a product's own row under an entity is not a second answer.
+        complies = bank.entry(obligation("Complies"), compliance_status=bank.compliant)
+        entity_row(bank, complies, bank.bank_ab, product=factories.tenant_product(bank.tenant), applicability=applies, compliance_status=gap)
+        # A standard's one conformance obligation, followed by two entities: counted once, in
+        # the worst category of the two (D-42).
+        conformance = bank.entry(library_build.standard(), applicability=Applicability.NOT_ASSESSED.value, compliance_status=bank.compliant)
+        entity_row(bank, conformance, bank.bank_ab, applicability=applies, compliance_status=bank.compliant)
+        entity_row(bank, conformance, bank.fund_ab, applicability=applies, compliance_status=gap)
+        # Partly compliant; the entity that does not apply is not part of the verdict.
+        mostly = bank.entry(obligation("Mostly"), compliance_status=partly)
+        entity_row(bank, mostly, bank.fund_ab, applicability=does_not_apply, compliance_status=gap)
+        # Applies and nobody has assessed whether the bank complies.
+        bank.entry(obligation("Not yet assessed"))
+        # Neither of these applies, so neither is counted in any category.
+        dropped = bank.entry(obligation("Does not apply"), applicability=does_not_apply, compliance_status=gap)
+        bank.entry(obligation("Unanswered"), applicability=Applicability.NOT_ASSESSED.value, compliance_status=bank.compliant)
+        # Outside the regulatory scope, which offers custody and not advice (FP-03).
+        outside = bank.entry(obligation("Advice", terms=["service_type:advice"]), compliance_status=gap)
+        bank.activate()
+        FootprintTerm.objects.create(tenant=bank.tenant, term=library_build.term("service_type:custody"))
+        FootprintTerm.objects.create(tenant=bank.tenant, term=library_build.term("standard:iso_iec_27001"))
+        # Open gaps: two on a compliant obligation, one on an obligation that does not apply,
+        # because a gap never hides behind an applicability answer. Not counted: a closed
+        # gap, one whose risk was accepted, and one outside the scope.
+        bank.gap(complies)
+        bank.gap(complies, status="remediating")
+        bank.gap(dropped)
+        bank.gap(complies, status="closed")
+        bank.gap(
+            complies,
+            status="risk_accepted",
+            acceptance_reason=RiskAcceptanceReason.objects.get(key="other"),
+            acceptance_requested_by=bank.anna,
+            acceptance_requested_at=timezone.now(),
+            accepted_by=bank.officer,
+            accepted_at=timezone.now(),
+        )
+        bank.gap(outside)
+
+    def test_each_obligation_that_applies_is_counted_once_in_its_worst_category(self) -> None:
+        self.bank.activate()
+        self.assertEqual(
+            logic.standing(self.bank.tenant).model_dump(),
+            {"applying": 4, "compliant": 1, "partly": 1, "gap": 1, "not_assessed": 1, "open_gaps": 3},
+        )
+
+    def test_the_count_is_three_queries_however_large_the_register(self) -> None:
+        self.bank.activate()
+        with self.assertNumQueries(3):
+            logic.standing(self.bank.tenant)
+
+    def test_another_bank_sees_none_of_it(self) -> None:
+        """Row-level security, not a filter in Python: a bank with an empty register reads
+        zeros from the same query."""
+        other = factories.tenant(slug="home-standing-other")
+        tenancy.activate(other.id)
+        self.assertEqual(logic.standing(other).applying + logic.standing(other).open_gaps, 0)
+
+
+class HomeRegisterCost(TestCase):
+    """NFR-02 for a `register.read` holder: the register's deadlines and the standing panel
+    add a fixed number of queries whatever the size of the register."""
+
+    bank: Bank
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        watch_build.seed_watch_reference()
+        # The registry first: a source is written with no tenant activated (WAT-06, H15).
+        watch_build.source_check(watch_build.source(name="fi.se register cost"), status=CheckStatus.OK, checked_at=INSTANT)
+        cls.bank = bank = Bank("home-register-cost")
+        cases_build.case(bank.tenant, a_change(title="Research payments"))
+        for number in range(10):
+            entry = bank.entry(
+                obligation(f"Duty {number}"),
+                first_line_owner=bank.anna,
+                owner_team=bank.retail_team,
+                next_review_date=STOCKHOLM_TODAY + datetime.timedelta(days=10 + number),
+            )
+            bank.scope(entry, bank.fund_ab, owner=bank.erik, next_review_date=STOCKHOLM_TODAY + datetime.timedelta(days=20 + number))
+            bank.gap(entry, owner_team=bank.cards, target_date=STOCKHOLM_TODAY + datetime.timedelta(days=30 + number))
+
+    def test_the_query_count_does_not_grow_with_the_register(self) -> None:
+        """Asked at two sizes: ten of each register deadline, then one."""
+        for expected in (10, 1):
+            with mock.patch("django.utils.timezone.now", return_value=INSTANT):
+                self.bank.activate()
+                with self.subTest(rows=expected), self.assertNumQueries(HOME_QUERIES + REGISTER_QUERIES):
+                    answer = logic.home_today(self.bank.tenant, ["en"], watch_reader=True, register_reader=True)
+            self.assertEqual(answer.roadmap_count, 1 + 3 * expected)
+            assert answer.standing is not None
+            self.assertEqual((answer.standing.applying, answer.standing.open_gaps), (expected, expected))
+            if expected == 10:
+                self.bank.activate()
+                keep = TenantObligation.objects.order_by("next_review_date").values_list("pk", flat=True)[:1]
+                TenantObligation.objects.exclude(pk__in=list(keep)).update(
+                    applicability=Applicability.DOES_NOT_APPLY.value, next_review_date=None
+                )
+                Gap.objects.exclude(tenant_obligation_id__in=list(keep)).update(target_date=None, status=GapStatus.objects.get(key="closed"))

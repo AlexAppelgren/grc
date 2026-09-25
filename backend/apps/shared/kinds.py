@@ -208,7 +208,8 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "RoadmapItemType": (
         "roadmap_item_type",
         "HOM-03, HOM-04: what produced the date - a change's key date, an internal deadline, "
-        "an action due or a review due; the card and the calendar builder branch on it",
+        "an action due, a review due, a gap target, or a certificate's expiry or audit; the card "
+        "and the calendar builder branch on it",
     ),
     # Chunk 8 organisation and chunk 11 security policy (c8-org-models, tenants 0002).
     "OrgUnitKind": (
@@ -309,5 +310,21 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "credential_kind",
         "ACC-03: a service key or a personal access token on one api_key table; authentication, "
         "the step-up fence and the api_key CHECKs branch on it",
+    ),
+    # My work (c8-mywork-service, HOM-05, D-23). Literals in apps/home/schemas.py, because My
+    # work is computed and has no table of its own.
+    "WorkReason": (
+        "work_reason",
+        "HOM-05: owner or participant; the row's reason phrase branches on it with the person or team it names",
+    ),
+    "WorkBucket": (
+        "work_bucket",
+        "HOM-05: overdue, due soon, changes on your items (aware) or open; the service assigns each item to "
+        "the first it qualifies for and the screen draws a section per value",
+    ),
+    "WorkDateKind": (
+        "work_date_kind",
+        "HOM-05: what produced a row's date - a review, a gap target, a duty, an internal deadline, an action, "
+        "a key date, a confirmed link, an applied version or a comment; the date phrase branches on it",
     ),
 }

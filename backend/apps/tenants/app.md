@@ -42,7 +42,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | TEN-01 | Tenant profile, timezone, default languages, onboarding checklist | M | R1 | built |
-| TEN-02 | Legal entities with licences and certificates (issuer, reference, scope, validity, next audit, owner), departments with a head and the teams in them, and products described the way obligations are scoped | M | R2 | pending |
+| TEN-02 | Legal entities with licences and certificates (issuer, reference, scope, validity, next audit, owner), departments with a head and the teams in them, and products described the way obligations are scoped | M | R2 | in_progress |
 | TEN-03 | Teams as owners and participants, so ownership survives a person leaving | M | R2 | in_progress |
 | TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | pending |
 | TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | pending |
@@ -56,7 +56,7 @@ roles, and each admin screen gated by its own permission (ADM-S1 to ADM-S3); an 
 passkey re-enrolment of a member and the sessions a person sees and revokes (ID-S12,
 ID-S11); the bank's own API keys; the security log; the audit log; the regulatory scope with
 its change requests and its markets panel (FP-S10); and the vocabularies. What remains, each
-with the Build_Plan.md chunk that delivers it: departments with a head, teams, and team membership on the member row (TEN-02, TEN-03, chunk 8); the
+with the Build_Plan.md chunk that delivers it: teams and team membership on the member row (TEN-03, chunk 8; departments with a head and the rest of the organisation came with c8-ten-organisation); the
 workflow policy's reminders and escalation (COL-02, chunk 10); the agents a bank adds for
 itself (AGT-04, chunk 11); data, meaning exports, import, retention and tenant exit (REP-02
 to REP-04, AUD-04, chunk 12); and integrations beyond the API keys, with the security
@@ -111,6 +111,19 @@ Then both carry taxonomy terms from the same dimensions obligations use
 And a licence row may also hold a certificate with its validity, next audit and owner, carrying no term
 And the register can hold a compliance status for "Bank AB" separately from another entity
 ```
+
+> **c8-ten-organisation (TEN-02, ADM-01).** The organisation and product routes answer for
+> real: units with their tree, kind, legal-entity term, registration number, LEI, country and
+> head; licences and certificates per legal entity; products with status, launch date, owner,
+> unit and scope terms. Writes need `vocab.manage`, check `If-Match` against the row's
+> `version`, answer 422 `unknown_key` for a term outside the dimensions obligations are scoped
+> with (read from the dimension rows by kind, never listed) and 422 `unknown_member` for a
+> head or owner who is not an active member, and are audited with the fields they changed
+> before and after; a scope note, statement or description is named in `rewritten`, never
+> copied. Units deactivate and licences withdraw; nothing is deleted. TEN-S2's register line
+> (a compliance status per entity) is the register's to prove, with `c8-reg-entity-status`;
+> the teams inside a department come with the teams packages, and the certificate's two
+> roadmap branches (AC-TEN1) with the roadmap, which is why TEN-02 stays `in_progress`.
 
 ### TEN-S3 — A team can own work and the ownership survives a member leaving `@integration` (TEN-03)
 ```gherkin

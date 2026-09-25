@@ -36,6 +36,8 @@ const soon: Roadmap['items'][number] = {
   urgency: { key: 'act_now', kind: null, label: 'Act now' },
   sourceLabel: 'Finansinspektionen',
   changeId: 'c-1',
+  owner: null,
+  subject: null,
   obligations: [],
 };
 
