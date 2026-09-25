@@ -34,6 +34,7 @@ describe('register api', () => {
     await register.listAssessments('ob1');
     await register.getInterpretation('ob1');
     await register.listInternalLinks('ob1');
+    await register.listInternalItems('reconc');
     await register.listUnits('ob1');
     await register.listUnits('ob1', 'e1', { limit: 100 });
     await register.getStatementOfApplicability('ob1', 'e1');
@@ -45,6 +46,7 @@ describe('register api', () => {
       ['get', '/api/v1/obligations/ob1/assessments', {}],
       ['get', '/api/v1/obligations/ob1/interpretation', null],
       ['get', '/api/v1/obligations/ob1/internal-links', {}],
+      ['get', '/api/v1/internal-items', { q: 'reconc' }],
       ['get', '/api/v1/obligations/ob1/units', {}],
       ['get', '/api/v1/obligations/ob1/units', { entity: 'e1', limit: 100 }],
       ['get', '/api/v1/obligations/ob1/statement-of-applicability', { entity: 'e1' }],
