@@ -1,0 +1,18 @@
+{
+  "nav.admin.security": "Security",
+  "admin.security.title": "Security",
+  "admin.security.lede": "How long a session lasts for the members of your organisation.",
+  "admin.security.errorTitle": "Could not load the security policy",
+  "admin.security.sessions.title": "Sessions",
+  "admin.security.sessions.idle": "Sign out after this long without activity, in minutes",
+  "admin.security.sessions.idleHint": "At most {max} minutes. Leave it empty for the platform default of {default}.",
+  "admin.security.sessions.idleAbove": "At most {max} minutes. Choose {max} or fewer.",
+  "admin.security.sessions.absolute": "Sign out after this long in all, in hours",
+  "admin.security.sessions.absoluteHint": "At most {max} hours. Leave it empty for the platform default of {default}.",
+  "admin.security.sessions.absoluteAbove": "At most {max} hours. Choose {max} or fewer.",
+  "admin.security.sessions.invalid": "Enter a whole number of at least 1, or leave it empty.",
+  "admin.security.sessions.applies": "New limits apply to sessions from their next refresh.",
+  "admin.security.saveHint": "Saving asks for your passkey.",
+  "admin.security.saved": "Saved. New limits apply to sessions from their next refresh.",
+  "admin.security.stepUpCancelled": "Nothing was saved. Saving needs your passkey."
+}
