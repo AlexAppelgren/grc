@@ -831,7 +831,8 @@ class IdentityScenarioTests(ScenarioTestCase):
         tenancy.clear_tenant()
         platform = agents_testing.agent_key(scopes=tuple(sorted(perms.ALL_SCOPES)))
         bank = factories.api_key(self.tenant, scopes=tuple(sorted(perms.TENANT_KEY_SCOPES)))
-        for probe, holds in ((platform, perms.ALL_SCOPES), (bank, perms.TENANT_KEY_SCOPES)):
+        # A bank's key bound to no agent access entry holds `tenant:read` to no effect (ACC-04).
+        for probe, holds in ((platform, perms.ALL_SCOPES), (bank, perms.TENANT_KEY_SCOPES - {perms.SCOPE_TENANT_READ})):
             resolved = api_keys_logic.resolve_api_key(probe.plain_key)
             assert resolved is not None
             self.assertEqual(resolved.scopes, holds)
