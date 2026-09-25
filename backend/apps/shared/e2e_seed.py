@@ -36,7 +36,7 @@ from apps.agents.models import AgentRun, RunStatus
 from apps.agents.seeds import seed_agent_definitions
 from apps.cases import matching as case_matching
 from apps.cases.creation import CHANGE_REGISTERED
-from apps.cases.models import ChangeCase
+from apps.cases.models import Action, AssessmentApplies, CaseTransition, ChangeCase, ImpactAssessment
 from apps.home import tasks as home_tasks
 from apps.identity import invitation_logic, roles_logic, tokens
 from apps.identity.models import (
@@ -1803,6 +1803,10 @@ def seed_e2e() -> dict[str, int]:
         seed_chunk5_changes(closed_run)
         seed_ask_pending_link()
         chunk5_cases = seed_chunk5_cases(tenants)
+        # c9-e2e-seed: one case per journey that moves one, after the logins it names.
+        case_journeys = seed_case_journeys(tenants)
+        # c9-evidence: after the case journeys and chunk 5's cases it attaches to.
+        case_evidence = seed_case_evidence(tenants)
         seed_watched_market_change()
         seed_standard_change()
 
@@ -1821,6 +1825,8 @@ def seed_e2e() -> dict[str, int]:
         "problem_reports": problem_reports,
         "home_cases": home_cases,
         "chunk5_cases": chunk5_cases,
+        "case_journeys": case_journeys,
+        "case_evidence": case_evidence,
         "machine_confirmed": machine_confirmed,
         "eval_questions": eval_questions,
         **library,
@@ -1912,3 +1918,415 @@ def follow_the_standard(follow: bool) -> None:
         switch = footprint_logic.seed_terms if follow else footprint_logic.unseed_terms
         switch(tenant=tenant, actor=SEED_ACTOR, terms=[term])
         case_matching._recompute(tenant.id, change_id=change.id)
+
+
+# --- c9-e2e-seed (CAS-02, CAS-03, CAS-04, CAS-06, J-2, J-3) -------------------------------------
+# One seeded change and one case per journey that moves a case, so parallel Playwright workers
+# never share one. Every case is tenant A's alone except CAS-S14's (J-2), which is tenant B's
+# lead, so HOM-S1's tenant A lead is never touched. Evidence rows are c9-evidence's.
+OFFICER_A = "compliance_officer@example-bank.test"
+OWNER_A = "owner@example-bank.test"
+APPROVER_A = "approver@example-bank.test"
+CONTRIBUTOR_A = "contributor@example-bank.test"
+OWNER_APPROVER_A = "owner-approver@example-bank.test"
+
+
+@dataclass(frozen=True)
+class SeedCaseAction:
+    """One action on a seeded case. An open action is due `due_in_days` after the anchor's
+    date (negative is overdue in every month); a done one was due and done in the case's past."""
+
+    title: str
+    owner: str
+    done: bool
+    due_in_days: int = 0
+
+
+@dataclass(frozen=True)
+class SeedCaseJourney:
+    """The case one journey spends: its own change, the category it starts in and the people
+    on it, every one a login of `SEED_LOGINS`. `requested_by` asked for the sign-off; a closed
+    case was signed off by `APPROVER_A`, a dismissed one dismissed by its bank's officer."""
+
+    journey: str
+    stable_key: str
+    title: str
+    status: CaseStatusCategory
+    urgency: str
+    owner: str | None = None
+    requested_by: str | None = None
+    actions: tuple[SeedCaseAction, ...] = ()
+    tenant_slug: str = TENANT_A_SLUG
+
+
+_TWO_DONE = (
+    SeedCaseAction("Map current KYC data against AMLR requirements", OWNER_A, done=True),
+    SeedCaseAction("Brief the onboarding team", CONTRIBUTOR_A, done=True),
+)
+
+EXPECTED_CASE_JOURNEYS: tuple[SeedCaseJourney, ...] = (
+    SeedCaseJourney("CAS-S2", "chg-e2e-case-triage", "ESMA proposes shorter pre-settlement timeframes ahead of T+1", CaseStatusCategory.NEW, "within_3_months"),
+    SeedCaseJourney("CAS-S3", "chg-e2e-case-dismiss", "FI updates its guidance on complaints handling in investment services", CaseStatusCategory.NEW, "monitor"),
+    SeedCaseJourney("CAS-S4", "chg-e2e-case-assess", "Retail Investment Strategy moves towards publication", CaseStatusCategory.ASSIGNED, "within_3_months", owner=OWNER_A),
+    SeedCaseJourney("CAS-S19", "chg-e2e-case-assigned", "FI amends the rules on reporting large exposures", CaseStatusCategory.ASSIGNED, "six_months_plus", owner=OWNER_A),
+    SeedCaseJourney("CAS-S6", "chg-e2e-case-actions", "EU moves to T+1 settlement", CaseStatusCategory.ASSESSING, "within_3_months", owner=OWNER_A),
+    SeedCaseJourney(
+        "CAS-S6", "chg-e2e-case-actions-locked", "FI tightens the rules on inducements in portfolio management",
+        CaseStatusCategory.SIGNOFF, "within_3_months", owner=OWNER_A, requested_by=OWNER_A, actions=_TWO_DONE,
+    ),
+    SeedCaseJourney(
+        "CAS-S7", "chg-e2e-case-evidence", "AMLR applies directly across the EU", CaseStatusCategory.IMPLEMENTING, "act_now", owner=OWNER_A,
+        actions=(
+            SeedCaseAction("Map current KYC data against AMLR requirements", OWNER_A, done=True),
+            SeedCaseAction("Brief the onboarding team", CONTRIBUTOR_A, done=False, due_in_days=40),
+        ),
+    ),
+    SeedCaseJourney(
+        "CAS-S8", "chg-e2e-case-signoff-guards", "Riksgälden fixes the government borrowing rate used for ISK and KF tax",
+        CaseStatusCategory.IMPLEMENTING, "act_now", owner=OWNER_A,
+        actions=(SeedCaseAction("Update the ISK and KF tax rate in the statements", OWNER_A, done=False, due_in_days=-1),),
+    ),
+    SeedCaseJourney(
+        "CAS-S9", "chg-e2e-case-self-signoff", "FI amends the rules on client categorisation",
+        CaseStatusCategory.SIGNOFF, "within_3_months", owner=OWNER_APPROVER_A, requested_by=OWNER_APPROVER_A,
+        actions=(
+            SeedCaseAction("Redesign the warning so it cannot be passed with one tap", OWNER_APPROVER_A, done=True),
+            SeedCaseAction("Log the client's choice", CONTRIBUTOR_A, done=True),
+        ),
+    ),
+    SeedCaseJourney(
+        "CAS-S10", "chg-e2e-case-signoff", "ESMA updates its guidelines on product governance",
+        CaseStatusCategory.SIGNOFF, "within_3_months", owner=OWNER_A, requested_by=OWNER_A, actions=_TWO_DONE,
+    ),
+    SeedCaseJourney(
+        "CAS-S11", "chg-e2e-case-file", "FI adopts new rules on reporting best execution",
+        CaseStatusCategory.CLOSED, "within_3_months", owner=OWNER_A, requested_by=OWNER_A,
+        actions=(
+            SeedCaseAction("Sample test 40 switch cases", OWNER_A, done=True),
+            SeedCaseAction("Brief the onboarding team", CONTRIBUTOR_A, done=True),
+        ),
+    ),
+    SeedCaseJourney("CAS-S15", "chg-e2e-case-j3", "FI consults on sustainability preferences in the suitability assessment", CaseStatusCategory.ASSIGNED, "within_3_months", owner=OWNER_APPROVER_A),
+    # The seventh category, so a list, a filter and a restore each find a dismissed case.
+    SeedCaseJourney("dismissed", "chg-e2e-case-dismissed", "ESMA publishes questions and answers on crypto-asset white papers", CaseStatusCategory.DISMISSED, "monitor"),
+    # J-2 (CAS-S14): tenant B's week lead, its So what still the library's draft, for tenant
+    # B's own compliance officer.
+    SeedCaseJourney(
+        "CAS-S14", "chg-e2e-second-bank-lead", "Finanstilsynet shortens the deadline for suspicious transaction reports",
+        CaseStatusCategory.NEW, "act_now", tenant_slug=TENANT_B_SLUG,
+    ),
+)
+
+# The path every worked case walks, and the day after its first sighting each move was made.
+_CASE_PATH = (
+    CaseStatusCategory.NEW,
+    CaseStatusCategory.ASSIGNED,
+    CaseStatusCategory.ASSESSING,
+    CaseStatusCategory.IMPLEMENTING,
+    CaseStatusCategory.SIGNOFF,
+    CaseStatusCategory.CLOSED,
+)
+_MOVE_DAY = {
+    CaseStatusCategory.ASSIGNED: 1,
+    CaseStatusCategory.ASSESSING: 2,
+    CaseStatusCategory.IMPLEMENTING: 4,
+    CaseStatusCategory.SIGNOFF: 12,
+    CaseStatusCategory.CLOSED: 14,
+    CaseStatusCategory.DISMISSED: 1,
+}
+_MOVE_ACTION = {
+    CaseStatusCategory.ASSIGNED: "case.triaged",
+    CaseStatusCategory.ASSESSING: "case.assessment_started",
+    CaseStatusCategory.IMPLEMENTING: "case.implementation_started",
+    CaseStatusCategory.SIGNOFF: "case.signoff_requested",
+    CaseStatusCategory.CLOSED: "case.signed_off",
+    CaseStatusCategory.DISMISSED: "case.dismissed",
+}
+# Who publishes each bank's journey changes, and the regime its scope holds them by.
+_CASE_PUBLISHER = {
+    TENANT_A_SLUG: ("fi", "Finansinspektionen", "https://www.fi.se/", "regime:securities"),
+    TENANT_B_SLUG: ("finanstilsynet-dk", "Finanstilsynet (DK)", "https://www.dfsa.dk/", "regime:aml"),
+}
+_SAVED_DAY, _ACTIONS_DAY, _DONE_DAY, _DONE_DUE_DAY, _KEY_DATE_DAY = 3, 4, 10, 12, 20
+
+
+def case_anchor(tz: str) -> datetime.datetime:
+    """The seed's clock for cases: the bank's own today at 09:00 in its own zone (CLAUDE.md
+    §11). Every case date is this plus a fixed offset, never the wall clock."""
+    today = datetime.datetime.now(ZoneInfo(tz)).date()
+    return datetime.datetime.combine(today, datetime.time(9), tzinfo=ZoneInfo(tz))
+
+
+def case_first_seen(spec: SeedCaseJourney, anchor: datetime.datetime) -> datetime.datetime:
+    """When the library first saw the journey's change. Tenant B's lead is sighted this week,
+    so it leads tenant B's Today; tenant A's are sighted six weeks or more ago, each a day
+    apart, with key dates already past, so none reaches tenant A's briefing, roadmap or
+    "Coming up" and HOM-S1 to HOM-S6 read what they always read."""
+    if spec.tenant_slug == TENANT_B_SLUG:
+        # The Tuesday of the anchor's ISO week, as `timezone_now_this_week()` has it.
+        return anchor - datetime.timedelta(days=anchor.weekday() - 1)
+    return anchor - datetime.timedelta(days=42 + EXPECTED_CASE_JOURNEYS.index(spec))
+
+
+def case_moment(spec: SeedCaseJourney, anchor: datetime.datetime, day: int) -> datetime.datetime:
+    return case_first_seen(spec, anchor) + datetime.timedelta(days=day)
+
+
+def _case_path(status: CaseStatusCategory) -> list[CaseStatusCategory]:
+    if status == CaseStatusCategory.DISMISSED:
+        return [CaseStatusCategory.NEW, CaseStatusCategory.DISMISSED]
+    return list(_CASE_PATH[: _CASE_PATH.index(status) + 1])
+
+
+def seed_case_journeys(tenants: list[Tenant]) -> int:
+    """c9-e2e-seed: each journey's change in the library, then its bank's case walked to the
+    journey's starting category, every move a `case_transition` row and an audit row through
+    record(), in the same transaction as the rest of the seed.
+
+    Written once: a case that exists is left exactly as it is, because its transitions and
+    audit rows are append-only and cannot be rewound, so a second run changes nothing (proved
+    in apps/cases/tests_seed_cases.py). Its change is merged on its stable key, as every
+    seeded change is."""
+    by_slug = {tenant.slug: tenant for tenant in tenants}
+    users = {user.email: user for user in User.objects.filter(email__in={login.email for login in SEED_LOGINS})}
+    for spec in EXPECTED_CASE_JOURNEYS:
+        tenant = by_slug[spec.tenant_slug]
+        anchor = case_anchor(tenant.timezone)
+        first_seen = case_first_seen(spec, anchor)
+        authority, authority_label, source_url, regime = _CASE_PUBLISHER[spec.tenant_slug]
+        tenancy.clear_tenant()
+        change = watch_e2e_seed.seed_change(
+            stable_key=spec.stable_key,
+            title=spec.title,
+            published_on=first_seen.date() - datetime.timedelta(days=2),
+            key_date=first_seen.date() + datetime.timedelta(days=_KEY_DATE_DAY),
+            key_date_label="In force",
+            urgency=spec.urgency,
+            first_seen_at=first_seen,
+            authority=authority,
+            authority_label=authority_label,
+            source_url=source_url,
+        )
+        # A regime each bank's scope holds, so the case's cached verdict is the rule's (D-39).
+        watch_e2e_seed.seed_scope_term_link(change, term_ref=regime)
+        tenancy.activate(tenant.id)
+        if not ChangeCase.objects.filter(change=change).exists():
+            _seed_journey_case(tenant, change, spec, anchor, users)
+    tenancy.clear_tenant()
+    return len(EXPECTED_CASE_JOURNEYS)
+
+
+def _seed_journey_case(tenant: Tenant, change: Any, spec: SeedCaseJourney, anchor: datetime.datetime, users: dict[str, User]) -> None:
+    officer = users[OFFICER_A if spec.tenant_slug == TENANT_A_SLUG else "compliance_officer@second-bank.test"]
+    owner = users[spec.owner] if spec.owner else None
+    path = _case_path(spec.status)
+    triaged = CaseStatusCategory.ASSIGNED in path
+    closed = spec.status == CaseStatusCategory.CLOSED
+    dismissed = spec.status == CaseStatusCategory.DISMISSED
+    triaged_at = case_moment(spec, anchor, _MOVE_DAY[CaseStatusCategory.ASSIGNED])
+    requested_at = case_moment(spec, anchor, _MOVE_DAY[CaseStatusCategory.SIGNOFF])
+    closed_at = case_moment(spec, anchor, _MOVE_DAY[CaseStatusCategory.CLOSED])
+    dismissed_at = case_moment(spec, anchor, _MOVE_DAY[CaseStatusCategory.DISMISSED])
+    vocab = django_apps.get_model
+    case = ChangeCase.objects.create(
+        tenant=tenant,
+        change=change,
+        status=spec.status.value,
+        urgency=vocab("taxonomy", "Urgency").objects.get(key=spec.urgency),
+        urgency_confirmed=triaged,
+        footprint_match=True,
+        owner=owner,
+        so_what_text=change.so_what_draft,
+        # A person confirmed the wording when they triaged; an untriaged case keeps the draft.
+        so_what_confirmed=triaged,
+        so_what_confirmed_by=officer if triaged else None,
+        so_what_confirmed_at=triaged_at if triaged else None,
+        triaged_by=officer if triaged else None,
+        triaged_at=triaged_at if triaged else None,
+        dismissed_reason=vocab("taxonomy", "DismissalReason").objects.get(key="out_of_scope") if dismissed else None,
+        dismissed_by=officer if dismissed else None,
+        dismissed_at=dismissed_at if dismissed else None,
+        signoff_requested_by=users[spec.requested_by] if spec.requested_by else None,
+        signoff_requested_at=requested_at if spec.requested_by else None,
+        signed_off_by=users[APPROVER_A] if closed else None,
+        close_reason=vocab("taxonomy", "ClosureReason").objects.get(key="signed_off") if closed else None,
+        closed_at=closed_at if closed else None,
+    )
+    _seed_record(case, "case.created", {"status": CaseStatusCategory.NEW.value, "footprintMatch": True})
+    for previous, status in zip(path, path[1:], strict=False):
+        by = {
+            CaseStatusCategory.ASSIGNED: officer,
+            CaseStatusCategory.DISMISSED: officer,
+            CaseStatusCategory.CLOSED: users[APPROVER_A],
+            CaseStatusCategory.SIGNOFF: users[spec.requested_by] if spec.requested_by else None,
+        }.get(status, owner)
+        moved_at = case_moment(spec, anchor, _MOVE_DAY[status])
+        # The fixture path (loaddata's `raw` save) keeps the anchored moment in the
+        # append-only ledger rather than the seed's wall clock.
+        CaseTransition(tenant=tenant, case=case, from_status=previous.value, to_status=status.value, at=moved_at, by_user=by).save_base(raw=True)
+        _seed_record(case, _MOVE_ACTION[status], {"status": status.value, "byUserId": str(by.id) if by else None, "at": moved_at.isoformat()}, before={"status": previous.value})
+    if CaseStatusCategory.ASSESSING in path:
+        _seed_assessment(case, spec, anchor, owner)
+    for action in spec.actions:
+        _seed_action(case, spec, anchor, action, owner, users)
+
+
+def _seed_assessment(case: ChangeCase, spec: SeedCaseJourney, anchor: datetime.datetime, owner: User | None) -> None:
+    """The saved impact assessment of a case in assessing or later (CAS-03). Its text is the
+    bank's own and stays out of the audit row (R2_CROSS_CUTTING (m))."""
+    deadline = case_moment(spec, anchor, 25).date() if spec.status == CaseStatusCategory.CLOSED else anchor.date() + datetime.timedelta(days=30)
+    assessment = ImpactAssessment.objects.create(
+        tenant=case.tenant,
+        case=case,
+        applies=AssessmentApplies.YES.value,
+        why="We offer the affected services to retail clients from the Swedish bank.",
+        what_must_change="Update the process and the client documentation, and brief the teams who run it.",
+        internal_deadline=deadline,
+        effort=django_apps.get_model("taxonomy", "EffortSize").objects.get(key="m"),
+        saved=True,
+        saved_by=owner,
+        saved_at=case_moment(spec, anchor, _SAVED_DAY),
+    )
+    _seed_record(case, "case.assessment_saved", {"applies": assessment.applies, "effort": "m", "internalDeadline": deadline.isoformat()})
+
+
+def _seed_action(case: ChangeCase, spec: SeedCaseJourney, anchor: datetime.datetime, plan: SeedCaseAction, owner: User | None, users: dict[str, User]) -> None:
+    """One action (CAS-04), added by the case owner and, when done, done by its own owner."""
+    assert owner is not None, "an action sits on a worked case, which has an owner"
+    due = case_moment(spec, anchor, _DONE_DUE_DAY).date() if plan.done else anchor.date() + datetime.timedelta(days=plan.due_in_days)
+    done_at = case_moment(spec, anchor, _DONE_DAY) if plan.done else None
+    action = Action(
+        tenant=case.tenant,
+        case=case,
+        title=plan.title,
+        owner=users[plan.owner],
+        due_date=due,
+        done_at=done_at,
+        done_by=users[plan.owner] if plan.done else None,
+        created_by=owner,
+        created_at=case_moment(spec, anchor, _ACTIONS_DAY),
+    )
+    # The same raw save as the ledger above, so "added on" is the anchored moment too.
+    action.save_base(raw=True)
+    _seed_record(case, "case.action_added", {"actionId": str(action.id), "ownerId": str(action.owner_id), "dueDate": due.isoformat()})
+    if done_at is not None:
+        _seed_record(case, "case.action_completed", {"actionId": str(action.id), "at": done_at.isoformat()})
+
+
+def _seed_record(case: ChangeCase, action: str, after: dict[str, Any], before: dict[str, Any] | None = None) -> None:
+    record(
+        action=action,
+        actor=SEED_ACTOR,
+        subject_type="change_case",
+        subject_id=case.id,
+        subject_title=case.change.title,
+        summary="Seeded for E2E journeys.",
+        tenant_id=case.tenant_id,
+        before=before,
+        after=after,
+    )
+# --- end c9-e2e-seed ----------------------------------------------------------------------------
+
+
+# --- c9-evidence (CAS-05, CAS-S7, CAS-S16) ------------------------------------------------------
+# Evidence on the cases the journeys read: every scan state on CAS-S7's implementing case, a
+# clean file on each case waiting for sign-off (a request needs one) and on the closed case,
+# and a clean file on each bank's case for chunk 5's shared change, so CAS-S16 finds evidence
+# of both banks on one change. CAS-S8's case keeps none: its journey is the refusal without
+# evidence. A clean file's bytes are written here, through storage, into the slot's media
+# root and never committed; an infected one's never exist, as the scan deletes them, and a
+# pending one is never queued, so it stays pending.
+
+
+@dataclass(frozen=True)
+class SeedEvidence:
+    """One piece of evidence on the case for `stable_key` in `tenant_slug`. A file carries
+    `scan_state`; a link carries `url` and reads clean."""
+
+    stable_key: str
+    name: str
+    scan_state: str = "clean"
+    url: str = ""
+    tenant_slug: str = TENANT_A_SLUG
+
+
+EXPECTED_EVIDENCE: tuple[SeedEvidence, ...] = (
+    SeedEvidence("chg-e2e-case-evidence", "AMLR gap analysis.pdf"),
+    SeedEvidence("chg-e2e-case-evidence", "Customer due diligence checklist.pdf", scan_state="pending"),
+    SeedEvidence("chg-e2e-case-evidence", "Vendor questionnaire.pdf", scan_state="infected"),
+    SeedEvidence("chg-e2e-case-actions-locked", "Inducements policy 2026.pdf"),
+    SeedEvidence("chg-e2e-case-self-signoff", "Client categorisation procedure.pdf"),
+    SeedEvidence("chg-e2e-case-signoff", "Product governance review.pdf"),
+    SeedEvidence("chg-e2e-case-file", "Best execution report 2026.pdf"),
+    SeedEvidence("chg-e2e-case-file", "FI decision memo", url="https://intranet.example-bank.test/memo/42"),
+    SeedEvidence("chg-e2e-c5-timeline", "Research payment criteria.pdf"),
+    SeedEvidence("chg-e2e-c5-timeline", "Research payment criteria (DK).pdf", tenant_slug=TENANT_B_SLUG),
+)
+# The day after the case's first sighting each piece was attached: after the actions were
+# done and before the sign-off request (`_DONE_DAY`, `_MOVE_DAY`). Chunk 5's shared change
+# is sighted this week, so its pieces are attached at the sighting instead.
+_EVIDENCE_DAY = 11
+
+
+def seed_evidence_pdf(name: str) -> bytes:
+    """The bytes of a seeded clean file: a small, well-formed PDF, the same on every run."""
+    return f"%PDF-1.4\n% Seeded evidence: {name}\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n".encode()
+
+
+def seed_case_evidence(tenants: list[Tenant]) -> int:
+    """c9-evidence: each piece of `EXPECTED_EVIDENCE`, once per case and name. A second run
+    writes no row and no audit row; it only writes a clean file's bytes back when the media
+    root lost them, under the key the row already names."""
+    import hashlib
+
+    from apps.cases.models import Evidence, EvidenceKind
+    from apps.shared.storage import get_storage
+
+    by_slug = {tenant.slug: tenant for tenant in tenants}
+    storage = get_storage()
+    uploader = {TENANT_A_SLUG: OWNER_A, TENANT_B_SLUG: "compliance_officer@second-bank.test"}
+    for plan in EXPECTED_EVIDENCE:
+        tenant = by_slug[plan.tenant_slug]
+        tenancy.activate(tenant.id)
+        case = ChangeCase.objects.select_related("change").get(change__stable_key=plan.stable_key)
+        content = seed_evidence_pdf(plan.name)
+        row = Evidence.objects.filter(case=case, name=plan.name).first()  # ordering: Meta.ordering, one per (case, name)
+        if row is None:
+            # Eleven days after the sighting, or at the sighting for a change seen this week.
+            at = case.change.first_seen_at + datetime.timedelta(days=_EVIDENCE_DAY)
+            if at > case_anchor(tenant.timezone):
+                at = case.change.first_seen_at
+            kind = EvidenceKind.LINK if plan.url else EvidenceKind.FILE
+            row = Evidence(
+                tenant=tenant,
+                case=case,
+                kind=kind.value,
+                name=plan.name,
+                url=plan.url,
+                uploaded_by=User.objects.get(email=uploader[plan.tenant_slug]),
+                uploaded_at=at,
+                scan_state=plan.scan_state,
+                scanned_at=None if plan.scan_state == "pending" else at,
+            )
+            if kind is EvidenceKind.FILE:
+                row.storage_key = f"{tenant.id}/cases/{case.id}/evidence/{uuid.uuid4().hex}"
+                row.content_hash = "sha256:" + hashlib.sha256(content).hexdigest()
+                row.size_bytes = len(content)
+                row.mime_type = "application/pdf"
+            # The fixture path (`raw`), as for actions, so "attached on" is the anchored moment.
+            row.save_base(raw=True)
+            record(
+                action="case.evidence_attached",
+                actor=SEED_ACTOR,
+                subject_type="evidence",
+                subject_id=row.id,
+                subject_title=case.change.title,
+                summary="Seeded for E2E journeys.",
+                tenant_id=tenant.id,
+                after={"evidenceId": str(row.id), "caseId": str(case.id), "kind": row.kind, "scanState": row.scan_state},
+            )
+        if row.storage_key and row.scan_state != "infected" and not storage.exists(row.storage_key):
+            storage.write(row.storage_key, content, row.mime_type)
+    tenancy.clear_tenant()
+    return len(EXPECTED_EVIDENCE)
+# --- end c9-evidence ----------------------------------------------------------------------------
