@@ -58,6 +58,11 @@ from apps.taxonomy.models import (
     EffortSizeLabel,
     Flag,
     FlagLabel,
+    GapCategory,
+    GapSource,
+    GapSourceLabel,
+    GapStatus,
+    GapStatusLabel,
     InstrumentLevel,
     InstrumentLevelKind,
     InstrumentLevelLabel,
@@ -73,6 +78,9 @@ from apps.taxonomy.models import (
     RejectionReasonLabel,
     RelationType,
     RelationTypeLabel,
+    RiskAcceptanceReason,
+    RiskAcceptanceReasonLabel,
+    RiskLevel,
     RiskRating,
     RiskRatingLabel,
     SourceKind,
@@ -82,6 +90,8 @@ from apps.taxonomy.models import (
     TermDimension,
     TermDimensionKind,
     TermDimensionLabel,
+    Team,
+    TeamLabel,
     Urgency,
     UrgencyLabel,
 )
@@ -179,10 +189,16 @@ REGISTRY: dict[str, VocabularyList] = {
         VocabularyList("link_kind", TENANT_TIER, LinkKind, LinkKindLabel),
         VocabularyList("effort_size", TENANT_TIER, EffortSize, EffortSizeLabel),
         VocabularyList("compliance_status", TENANT_TIER, ComplianceStatus, ComplianceStatusLabel, "compliance_category", _values(ComplianceCategory), True, ("ordinal",)),
-        VocabularyList("risk_rating", TENANT_TIER, RiskRating, RiskRatingLabel, extra_fields=("ordinal",)),
+        # The tone reads the fixed level, never the editable ordinal (VOC-05).
+        VocabularyList("risk_rating", TENANT_TIER, RiskRating, RiskRatingLabel, "risk_level", _values(RiskLevel), True, ("ordinal",)),
         VocabularyList("case_sub_status", TENANT_TIER, CaseSubStatus, CaseSubStatusLabel, "case_status", _values(CaseStatusCategory), True),
         VocabularyList("dismissal_reason", TENANT_TIER, DismissalReason, DismissalReasonLabel),
         VocabularyList("close_reason", TENANT_TIER, ClosureReason, ClosureReasonLabel, "close_reason", _values(CloseReason), True),
+        # Chunk 8's register lists (REG-03, VOC-04, VOC-06, TEN-03).
+        VocabularyList("gap_status", TENANT_TIER, GapStatus, GapStatusLabel, "gap_category", _values(GapCategory), True),
+        VocabularyList("gap_source", TENANT_TIER, GapSource, GapSourceLabel),
+        VocabularyList("risk_acceptance_reason", TENANT_TIER, RiskAcceptanceReason, RiskAcceptanceReasonLabel),
+        VocabularyList("team", TENANT_TIER, Team, TeamLabel, extra_fields=("email",)),
     )
 }
 
