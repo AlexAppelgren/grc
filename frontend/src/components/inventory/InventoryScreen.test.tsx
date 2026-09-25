@@ -9,7 +9,7 @@ import { tokenStore } from '@/shared/utils/api-client';
 
 import { InstrumentRow } from './InstrumentRow';
 import { InventoryScreen, filtersFrom, isNarrowed, queryOf, searchOf, selectedInView } from './InventoryScreen';
-import { ObligationRow, factsOf, metaOf } from './ObligationRow';
+import { ObligationRow, factsOf, metaOf, pillsOf } from './ObligationRow';
 import type { Instrument, Obligation } from '@/features/library/types';
 import { createT } from '@/shared/i18n';
 import { defaultFormatContext } from '@/shared/utils/format';
@@ -53,6 +53,9 @@ const research: Obligation = {
   tenantTags: [{ key: 'custody', kind: null, label: 'Custody' }],
   privateToUs: false,
   complianceStatus: null,
+  applicability: 'under_assessment',
+  firstLineOwner: null,
+  ownerTeam: null,
 };
 
 const adviceOnly: Obligation = {
@@ -138,8 +141,24 @@ describe('inventory filters in the URL', () => {
       asOf: '2026-09-16',
       scope: 'all',
       tenantTag: '',
+      applicability: '',
+      complianceStatus: '',
+      owner: '',
+      ownerTeam: '',
     });
-    expect(filtersFrom(new URLSearchParams(''))).toEqual({ instrument: '', regime: '', service: '', dutyType: '', asOf: '', scope: 'in', tenantTag: '' });
+    expect(filtersFrom(new URLSearchParams(''))).toEqual({
+      instrument: '',
+      regime: '',
+      service: '',
+      dutyType: '',
+      asOf: '',
+      scope: 'in',
+      tenantTag: '',
+      applicability: '',
+      complianceStatus: '',
+      owner: '',
+      ownerTeam: '',
+    });
     // Anything but one of the three values leaves the footprint filter on.
     expect(filtersFrom(new URLSearchParams('scope=outside')).scope).toBe('in');
     expect(filtersFrom(new URLSearchParams('scope=watched')).scope).toBe('watched');
@@ -183,13 +202,12 @@ describe('ObligationRow', () => {
       instrument: { key: 'fffs-2017-2', label: 'FFFS 2017:2' },
       binding: true,
       levelKind: null,
-      complianceStatus: undefined,
       openChangeCount: 1,
       libraryTags: [{ key: 'research', kind: null, label: 'Research' }],
       tenantTags: [{ key: 'custody', kind: null, label: 'Custody' }],
       privateToUs: false,
     });
-    expect(factsOf(adviceOnly)).toMatchObject({ binding: false, tenantTags: [], complianceStatus: { kind: 'gap' } });
+    expect(factsOf(adviceOnly)).toMatchObject({ binding: false, tenantTags: [] });
     expect(factsOf(adviceOnly)).not.toHaveProperty('changeWaitingForApproval');
   });
 
@@ -813,5 +831,119 @@ describe('bulk tagging on the inventory', () => {
 
   it('counts only the selected rows that are on the page', () => {
     expect(selectedInView(new Set(['ob-1', 'gone']), [research, adviceOnly]).map((o) => o.id)).toEqual(['ob-1']);
+  });
+});
+
+// c8-ui-inventory-overlay (REG-01, REG-02, INV-03): the bank's register overlay on the row,
+// through register-presentation, and as filters kept in the URL.
+describe('the register overlay on the inventory', () => {
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+    nav.search = '';
+    nav.replace.mockReset();
+  });
+
+  const owned: Obligation = {
+    ...research,
+    id: 'ob-owned',
+    applicability: 'applies',
+    complianceStatus: { key: 'partly_compliant', kind: 'partly', label: 'Partly compliant' },
+    firstLineOwner: { id: 'u-7', name: 'Johan Berg' },
+    ownerTeam: { key: 'retail_compliance', kind: null, label: 'Retail compliance' },
+  };
+  const pills = (obligation: Obligation) => pillsOf(obligation, t).map((pill) => [pill.label, pill.tone]);
+
+  it('puts applicability and compliance status in their slots, after the level and before the open changes, each toned by its kind', () => {
+    expect(pills(owned)).toEqual([
+      ['FFFS 2017:2', 'brand'],
+      ['Applies', 'positive'],
+      ['Partly compliant', 'warning'],
+      ['1 open change', 'notice'],
+      ['Research', 'brand'],
+      ['Custody', 'information'],
+    ]);
+    expect(pills({ ...owned, binding: false, complianceStatus: { key: 'gap', kind: 'gap', label: 'Gap' } }).slice(0, 4)).toEqual([
+      ['FFFS 2017:2', 'brand'],
+      ['Guidance', 'information'],
+      ['Applies', 'positive'],
+      ['Gap', 'negative'],
+    ]);
+  });
+
+  it('says a duty does not apply with no status beside it, and never marks a change waiting for approval', () => {
+    const labels = pillsOf({ ...owned, applicability: 'not_applicable', complianceStatus: null, openChangeCount: 0 }, t).map((pill) => pill.label);
+    expect(labels).toEqual(['FFFS 2017:2', 'Does not apply', 'Research', 'Custody']);
+    expect(labels.join(' ')).not.toMatch(/pending|approval/i);
+  });
+
+  it('leaves the columns empty for a duty the bank has not answered, as for a bank with no entries', () => {
+    expect(pillsOf(research, t).map((pill) => pill.key)).toEqual(['instrument:fffs-2017-2', 'open-changes', 'library-tag:research', 'tenant-tag:custody']);
+    expect(metaOf(research, t, defaultFormatContext)).toEqual(['Advice, Portfolio management', 'Version 2, from 1 Oct 2026', 'Verified 30 Jun 2026']);
+  });
+
+  it('ends the meta line with the first-line owner and the owning team', () => {
+    expect(metaOf(owned, t, defaultFormatContext).slice(-2)).toEqual(['Johan Berg', 'Retail compliance']);
+    expect(metaOf({ ...owned, firstLineOwner: null }, t, defaultFormatContext).at(-1)).toBe('Retail compliance');
+  });
+
+  it('keeps "Private to us" first and the bank\'s tags last beside the overlay', () => {
+    expect(pillsOf({ ...owned, privateToUs: true }, t).map((pill) => pill.label)).toEqual(['Private to us', 'FFFS 2017:2', 'Applies', 'Partly compliant', '1 open change', 'Research', 'Custody']);
+  });
+
+  it('reads the overlay filters from the URL as keys, refuses an applicability it does not know, and sends them to the read', () => {
+    const filters = filtersFrom(new URLSearchParams('applicability=applies&complianceStatus=gap&owner=u-7&ownerTeam=retail_compliance'));
+    expect(filters).toMatchObject({ applicability: 'applies', complianceStatus: 'gap', owner: 'u-7', ownerTeam: 'retail_compliance' });
+    expect(filtersFrom(new URLSearchParams('applicability=pending')).applicability).toBe('');
+    expect(searchOf('obligations', filters)).toBe('applicability=applies&complianceStatus=gap&owner=u-7&ownerTeam=retail_compliance');
+    expect(queryOf(filters)).toEqual({ applicability: 'applies', complianceStatus: 'gap', owner: 'u-7', ownerTeam: 'retail_compliance' });
+    expect(isNarrowed(filtersFrom(new URLSearchParams('ownerTeam=cards')))).toBe(true);
+    expect(isNarrowed(filtersFrom(new URLSearchParams('')))).toBe(false);
+  });
+
+  it('offers the bank\'s own statuses, people and teams, and stores the key or the member id in the URL', async () => {
+    nav.search = 'asOf=2026-09-16';
+    const row = (key: string, kind: string | null, label: string) => ({ key, kind, label, labels: { en: label }, usageNote: '', sortOrder: 1, active: true, isSystem: true, isDefault: false, usageCount: 1, extra: {} });
+    const sent = installAdapter((request) => {
+      if (request.path === '/api/v1/obligations') return { status: 200, data: { items: [owned], total: 1 } };
+      if (request.path === '/api/v1/instruments') return { status: 200, data: { items: [fffs], total: 1 } };
+      if (request.path === '/api/v1/me') return { status: 200, data: { user: { id: 'u1', name: 'Sara', locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, permissions: [], enrolmentPending: false } };
+      if (request.path === '/api/v1/taxonomy/terms') return { status: 200, data: { items: [], total: 0 } };
+      if (request.path === '/api/v1/reference/people') return { status: 200, data: [{ id: 'u-7', name: 'Johan Berg' }] };
+      if (request.path === '/api/v1/vocab/compliance_status') return { status: 200, data: [row('gap', 'gap', 'Gap')] };
+      if (request.path === '/api/v1/vocab/team') return { status: 200, data: [row('retail_compliance', null, 'Retail compliance')] };
+      return { status: 200, data: [] };
+    });
+    renderIn(<InventoryScreen />);
+    const status = await screen.findByLabelText('Compliance status');
+    await waitFor(() => expect(within(status).getByRole('option', { name: 'Gap' })).toBeDefined());
+    fireEvent.change(status, { target: { value: 'gap' } });
+    expect(nav.replace).toHaveBeenLastCalledWith('/inventory?asOf=2026-09-16&complianceStatus=gap');
+    const owner = screen.getByLabelText('Owner');
+    await waitFor(() => expect(within(owner).getByRole('option', { name: 'Johan Berg' })).toBeDefined());
+    fireEvent.change(owner, { target: { value: 'u-7' } });
+    expect(nav.replace).toHaveBeenLastCalledWith('/inventory?asOf=2026-09-16&owner=u-7');
+    const team = screen.getByLabelText('Owning team');
+    await waitFor(() => expect(within(team).getByRole('option', { name: 'Retail compliance' })).toBeDefined());
+    fireEvent.change(team, { target: { value: 'retail_compliance' } });
+    expect(nav.replace).toHaveBeenLastCalledWith('/inventory?asOf=2026-09-16&ownerTeam=retail_compliance');
+    const applies = screen.getByLabelText('Applies to us');
+    expect(within(applies).getAllByRole('option').map((option) => option.textContent)).toEqual(['Applies or not', 'Applies', 'Does not apply', 'Not assessed']);
+    fireEvent.change(applies, { target: { value: 'not_applicable' } });
+    expect(nav.replace).toHaveBeenLastCalledWith('/inventory?asOf=2026-09-16&applicability=not_applicable');
+    // The row itself: the overlay's pills and its owner and team.
+    const link = document.querySelector('[data-obligation="obl-research-payments"]') as HTMLElement;
+    expect(within(link).getByText('Johan Berg')).toBeVisible();
+    expect(within(link).getByText('Partly compliant')).toHaveAttribute('data-pill', 'warning');
+    expect(sent.filter((request) => request.path === '/api/v1/obligations').at(-1)?.params).toEqual({ asOf: '2026-09-16', limit: 20, offset: 0 });
+  });
+
+  it('asks for the filtered view the URL names, and says nothing matches with the offer to look outside our scope', async () => {
+    nav.search = 'applicability=applies&ownerTeam=cards';
+    const sent = serve({ items: [], total: 0 });
+    renderIn(<InventoryScreen />);
+    expect(await screen.findByText('No obligations match')).toBeVisible();
+    expect(sent.find((request) => request.path === '/api/v1/obligations')?.params).toMatchObject({ applicability: 'applies', ownerTeam: 'cards' });
+    expect(screen.getByRole('link', { name: 'Show outside our scope' })).toHaveAttribute('href', '/inventory?scope=all&applicability=applies&ownerTeam=cards');
   });
 });

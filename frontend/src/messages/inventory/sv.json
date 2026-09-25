@@ -161,5 +161,13 @@
   "inventory.bulk.retired": "\"{tag}\" avvecklades medan du valde. Välj en annan tagg.",
   "inventory.bulk.denied": "Dina roller omfattar inte längre att hantera vokabulärer. Inget taggades.",
   "inventory.bulk.failed": "Det gick inte att tagga skyldigheterna. Inget ändrades.",
-  "inventory.bulk.close": "Stäng"
+  "inventory.bulk.close": "Stäng",
+  "inventory.filter.applicability": "Gäller oss",
+  "inventory.filter.anyApplicability": "Gäller eller inte",
+  "inventory.filter.complianceStatus": "Efterlevnadsstatus",
+  "inventory.filter.anyComplianceStatus": "Alla statusar",
+  "inventory.filter.owner": "Ägare",
+  "inventory.filter.anyOwner": "Alla ägare",
+  "inventory.filter.ownerTeam": "Ägande team",
+  "inventory.filter.anyOwnerTeam": "Alla team"
 }

@@ -161,5 +161,13 @@
   "inventory.bulk.retired": "\"{tag}\" was retired while you were choosing. Pick another tag.",
   "inventory.bulk.denied": "Your roles no longer include managing vocabularies. Nothing was tagged.",
   "inventory.bulk.failed": "Could not tag the obligations. Nothing was changed.",
-  "inventory.bulk.close": "Close"
+  "inventory.bulk.close": "Close",
+  "inventory.filter.applicability": "Applies to us",
+  "inventory.filter.anyApplicability": "Applies or not",
+  "inventory.filter.complianceStatus": "Compliance status",
+  "inventory.filter.anyComplianceStatus": "Any compliance status",
+  "inventory.filter.owner": "Owner",
+  "inventory.filter.anyOwner": "Any owner",
+  "inventory.filter.ownerTeam": "Owning team",
+  "inventory.filter.anyOwnerTeam": "Any team"
 }

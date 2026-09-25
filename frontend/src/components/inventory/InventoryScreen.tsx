@@ -4,7 +4,18 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-import { InstrumentFilterBar, InventoryFilterBar, REGIME, SCOPE_VALUES, SERVICE, type InstrumentFilters, type InventoryFilters } from '@/components/inventory/InventoryFilters';
+import {
+  APPLICABILITY_VALUES,
+  InstrumentFilterBar,
+  InventoryFilterBar,
+  OverlayFilterBar,
+  REGIME,
+  SCOPE_VALUES,
+  SERVICE,
+  type InstrumentFilters,
+  type InventoryFilters,
+  type OverlayFilters,
+} from '@/components/inventory/InventoryFilters';
 import { InstrumentRow } from '@/components/inventory/InstrumentRow';
 import { ObligationRow } from '@/components/inventory/ObligationRow';
 import { Button, ButtonBar } from '@/components/ui/Button';
@@ -41,11 +52,21 @@ import { problemFrom } from '@/shared/utils/problem';
 // server audits once. The selection holds while a filter changes, but only rows
 // still in view count, and it clears when the page (the tab) changes, so Tag
 // never acts on a row the person is no longer looking at.
+//
+// The bank's register overlay (REG-01, REG-02) filters beside "Our tags":
+// whether it applies, how the bank stands, the first-line owner and the owning
+// team, each a key (a member's id for the owner) in the URL like the rest.
 
 export type InventoryTab = 'obligations' | 'instruments';
 
-/** The inventory's filters plus the obligations' own "Our tags" filter: one of the bank's tag keys, or empty. */
-export type ScreenFilters = InventoryFilters & { tenantTag?: string };
+/**
+ * The inventory's filters plus the obligations' own: "Our tags", one of the bank's tag
+ * keys, and the register overlay's; each empty or absent means not filtered.
+ */
+export type ScreenFilters = InventoryFilters & { tenantTag?: string } & Partial<OverlayFilters>;
+
+/** The overlay filters in the order the URL carries them. */
+const OVERLAY_KEYS = ['applicability', 'complianceStatus', 'owner', 'ownerTeam'] as const;
 
 const TENANT_TAG = 'tenant_tag';
 const VOCAB_MANAGE = 'vocab.manage';
@@ -70,6 +91,10 @@ export function filtersFrom(params: { get(name: string): string | null }): Scree
     asOf: params.get('asOf') ?? '',
     scope: scopeFrom(params.get('scope')),
     tenantTag: params.get('tenantTag') ?? '',
+    applicability: APPLICABILITY_VALUES.find((value) => value === params.get('applicability')) ?? '',
+    complianceStatus: params.get('complianceStatus') ?? '',
+    owner: params.get('owner') ?? '',
+    ownerTeam: params.get('ownerTeam') ?? '',
   };
 }
 
@@ -84,6 +109,10 @@ export function searchOf(tab: InventoryTab, filters: ScreenFilters): string {
   if (filters.asOf !== '') search.set('asOf', filters.asOf);
   if (filters.scope !== 'in') search.set('scope', filters.scope);
   if (filters.tenantTag !== undefined && filters.tenantTag !== '') search.set('tenantTag', filters.tenantTag);
+  for (const key of OVERLAY_KEYS) {
+    const value = filters[key];
+    if (value !== undefined && value !== '') search.set(key, value);
+  }
   return search.toString();
 }
 
@@ -100,6 +129,10 @@ export function queryOf(filters: ScreenFilters): ObligationQuery {
   if (filters.asOf !== '') query.asOf = filters.asOf;
   if (filters.scope !== 'in') query.footprint = filters.scope;
   if (filters.tenantTag !== undefined && filters.tenantTag !== '') query.tenantTag = [filters.tenantTag];
+  if (filters.applicability !== undefined && filters.applicability !== '') query.applicability = filters.applicability;
+  if (filters.complianceStatus !== undefined && filters.complianceStatus !== '') query.complianceStatus = filters.complianceStatus;
+  if (filters.owner !== undefined && filters.owner !== '') query.owner = filters.owner;
+  if (filters.ownerTeam !== undefined && filters.ownerTeam !== '') query.ownerTeam = filters.ownerTeam;
   return query;
 }
 
@@ -113,7 +146,15 @@ export function instrumentQueryOf(filters: InstrumentFilters): InstrumentQuery {
 
 /** Whether the reader narrowed the list, which decides which empty state answers them. */
 export function isNarrowed(filters: ScreenFilters): boolean {
-  return filters.instrument !== '' || filters.regime !== '' || filters.service !== '' || filters.dutyType !== '' || filters.asOf !== '' || (filters.tenantTag ?? '') !== '';
+  return (
+    filters.instrument !== '' ||
+    filters.regime !== '' ||
+    filters.service !== '' ||
+    filters.dutyType !== '' ||
+    filters.asOf !== '' ||
+    (filters.tenantTag ?? '') !== '' ||
+    OVERLAY_KEYS.some((key) => (filters[key] ?? '') !== '')
+  );
 }
 
 /** The ids of the selection that are on the page now: the only ones Tag may name. */
@@ -334,6 +375,10 @@ function ObligationsTab({ filters, apply, pathname }: { filters: ScreenFilters; 
       <InventoryFilterBar filters={filters} onChange={apply} />
       <div className="-mt-2 mb-4 flex flex-wrap items-center gap-2">
         <TenantTagSelect value={filters.tenantTag ?? ''} onChange={(tenantTag) => apply({ tenantTag })} />
+        <OverlayFilterBar
+          filters={{ applicability: filters.applicability ?? '', complianceStatus: filters.complianceStatus ?? '', owner: filters.owner ?? '', ownerTeam: filters.ownerTeam ?? '' }}
+          onChange={apply}
+        />
       </div>
 
       {filters.asOf === '' ? null : (

@@ -4,7 +4,8 @@ import { Chip } from '@/components/ui/Chip';
 import { Select, TextInput } from '@/components/ui/Field';
 import { useTerms } from '@/features/footprint/hooks';
 import { INSTRUMENT_OPTIONS, useInstruments } from '@/features/library/hooks';
-import type { ScopeFilter } from '@/features/library/types';
+import type { Obligation, ScopeFilter } from '@/features/library/types';
+import { usePeople } from '@/features/register/hooks';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
@@ -141,5 +142,67 @@ export function InstrumentFilterBar({ filters, onChange }: { filters: Instrument
       </Select>
       <ScopeChips value={filters.scope} onChange={(scope) => onChange({ scope })} />
     </div>
+  );
+}
+
+// c8-ui-inventory-overlay: the bank's register overlay as filters (REG-01, REG-02). Each
+// sends a key, or a member's id for the owner, and never a label; the statuses and the
+// teams are the bank's own rows, read live, so a relabel never changes what a view means.
+
+export const COMPLIANCE_STATUS = 'compliance_status';
+export const TEAM = 'team';
+
+/** The overlay filters; empty means not filtered. */
+export interface OverlayFilters {
+  applicability: Obligation['applicability'] | '';
+  complianceStatus: string;
+  owner: string;
+  ownerTeam: string;
+}
+
+export const APPLICABILITY_VALUES: readonly Obligation['applicability'][] = ['applies', 'not_applicable', 'under_assessment'];
+
+const APPLICABILITY_LABEL = {
+  applies: 'obligationApplicability.applies',
+  not_applicable: 'obligationApplicability.notApplicable',
+  under_assessment: 'obligationApplicability.underAssessment',
+} as const;
+
+/** One option per row, and the key in the URL kept as an option of its own when no row names it. */
+function KeySelect({ label, any, value, rows, onChange }: { label: string; any: string; value: string; rows: readonly { key: string; label: string }[]; onChange: (next: string) => void }) {
+  return (
+    <Select className="w-auto" aria-label={label} value={value} onChange={(event) => onChange(event.target.value)}>
+      <option value="">{any}</option>
+      {value !== '' && !rows.some((row) => row.key === value) ? <option value={value}>{value}</option> : null}
+      {rows.map((row) => (
+        <option key={row.key} value={row.key}>
+          {row.label}
+        </option>
+      ))}
+    </Select>
+  );
+}
+
+export function OverlayFilterBar({ filters, onChange }: { filters: OverlayFilters; onChange: (next: Partial<OverlayFilters>) => void }) {
+  const t = useT();
+  const statuses = useVocabularyValues(COMPLIANCE_STATUS);
+  const teams = useVocabularyValues(TEAM);
+  const people = usePeople();
+  const applicability = APPLICABILITY_VALUES.map((key) => ({ key, label: t(APPLICABILITY_LABEL[key]) }));
+  const owners = (people.data ?? []).map((person) => ({ key: person.id, label: person.name }));
+
+  return (
+    <>
+      <KeySelect
+        label={t('inventory.filter.applicability')}
+        any={t('inventory.filter.anyApplicability')}
+        value={filters.applicability}
+        rows={applicability}
+        onChange={(next) => onChange({ applicability: APPLICABILITY_VALUES.find((key) => key === next) ?? '' })}
+      />
+      <KeySelect label={t('inventory.filter.complianceStatus')} any={t('inventory.filter.anyComplianceStatus')} value={filters.complianceStatus} rows={statuses.data ?? []} onChange={(complianceStatus) => onChange({ complianceStatus })} />
+      <KeySelect label={t('inventory.filter.owner')} any={t('inventory.filter.anyOwner')} value={filters.owner} rows={owners} onChange={(owner) => onChange({ owner })} />
+      <KeySelect label={t('inventory.filter.ownerTeam')} any={t('inventory.filter.anyOwnerTeam')} value={filters.ownerTeam} rows={teams.data ?? []} onChange={(ownerTeam) => onChange({ ownerTeam })} />
+    </>
   );
 }

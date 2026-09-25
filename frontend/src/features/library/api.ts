@@ -126,6 +126,9 @@ export function obligationOf(raw: Schemas['ObligationRow']): Obligation {
     verifiedBy: raw.verifiedBy === null || raw.verifiedBy === undefined ? null : { id: raw.verifiedBy.id, name: raw.verifiedBy.name },
     openChangeCount: raw.openChangeCount,
     complianceStatus: complianceOf(raw.complianceStatus),
+    applicability: raw.applicability,
+    firstLineOwner: raw.firstLineOwner === null ? null : { id: raw.firstLineOwner.id, name: raw.firstLineOwner.name },
+    ownerTeam: raw.ownerTeam === null ? null : refOf(raw.ownerTeam),
   };
 }
 

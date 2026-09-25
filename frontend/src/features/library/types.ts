@@ -79,6 +79,12 @@ export interface Obligation {
   verifiedBy: PersonRef | null;
   openChangeCount: number;
   complianceStatus: KindRef<ComplianceKind> | null;
+  // c8-ui-inventory-overlay: the rest of the bank's register overlay (REG-01, REG-02).
+  /** Whether the bank decided the duty applies; `under_assessment` for every duty nobody has answered. */
+  applicability: 'applies' | 'not_applicable' | 'under_assessment';
+  /** The member who owns the duty in the first line, and the team that owns it; null when nobody is named. */
+  firstLineOwner: PersonRef | null;
+  ownerTeam: LibraryRef | null;
 }
 
 /**
@@ -103,6 +109,11 @@ export interface ObligationQuery {
   q?: string;
   asOf?: string;
   footprint?: ScopeFilter;
+  // c8-ui-inventory-overlay: the bank's register overlay, each a key or a member's id.
+  applicability?: Obligation['applicability'];
+  complianceStatus?: string;
+  owner?: string;
+  ownerTeam?: string;
 }
 
 /** A person the library names, by id and name; never a member of a bank (INV-06). */
