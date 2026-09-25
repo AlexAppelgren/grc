@@ -24,14 +24,19 @@
    States 17 to 19 are the markets panel (ADR 0026, D-27 to D-33): the operating
    markets are the jurisdictions in the scope above and change only through the
    request flow of states 3 to 13, and watching is a direct, audited write on the
-   same screen. State 20 is the opt-in group of the standards a bank follows. The note at
-   the foot lists every new string with its catalog key. */
+   same screen. State 20 is the opt-in group of the standards a bank follows. States 21
+   to 29 are the scope items (OWN-01, FP-02, AC-OWN2, FP-S18; D-89, D-91, ADR 0059): a
+   regulation the shared library does not cover, added and removed through the same
+   request, second person and passkey, with its research status. No control on this card
+   lets an agent add or change one. The notes at the foot list every new string with its
+   catalog key. */
 :root{
   --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
   --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
   --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
   --negative:#b92f13;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
   --warning:#8f530a;--warning-soft:#fce8cf;--warning-pill:#fce8cf;
+  --notice:#005fb3;--notice-pill:#e6f3ff;--positive:#026436;--positive-pill:#dcefdc;
   --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
 }
 /* Dark: the four status tones take Green's -03 step on pills (pills-and-labels.md);
@@ -42,10 +47,19 @@
   --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
   --negative:#f08975;--negative-soft:#731d0c;--negative-hover:#5c170a;
   --warning:#f5b970;--warning-soft:#774508;--warning-pill:#5f3707;
+  --notice:#66b8ff;--notice-pill:#003666;--positive:#8ae58d;--positive-pill:#003d26;
 }}
+:root[data-theme="dark"]{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --negative:#f08975;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --warning:#f5b970;--warning-soft:#774508;--warning-pill:#5f3707;
+  --notice:#66b8ff;--notice-pill:#003666;--positive:#8ae58d;--positive-pill:#003d26;
+}
 *{box-sizing:border-box}
 body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
-button,input,textarea{font:inherit;color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 h1,h2,h3{margin:0;font-weight:600}
@@ -169,6 +183,33 @@ legend{padding:0;font-weight:500}
 .errorstate p{margin:8px auto 16px;max-width:60ch}
 .restricted{max-width:60ch;margin:0 auto;padding:64px 0;text-align:center}
 .restricted p{margin:12px 0 0;color:var(--muted)}
+/* Scope items (states 21 to 29): one row per item, a hairline between rows. The
+   addresses wrap anywhere, so a long one never scrolls the page sideways. */
+.items{list-style:none;margin:0;padding:0}
+.items li{padding:12px 0;border-bottom:1px solid var(--line);min-width:0}
+.items li:first-child{padding-top:0}
+.items li:last-child{border-bottom:0;padding-bottom:0}
+.items li.editing{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.items h3{margin-bottom:2px}
+.items p{margin:0 0 4px}
+.items p:last-child{margin-bottom:0}
+.facts{display:flex;flex-wrap:wrap;gap:2px 12px;color:var(--muted);font-size:13px;line-height:18px}
+.mono{font-family:"Noto Sans Mono",ui-monospace,Menlo,monospace;font-size:13px}
+.addr{display:grid;gap:2px;font-size:13px;line-height:18px}
+.addr a{color:var(--text);overflow-wrap:anywhere;text-underline-offset:3px}
+.research{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.research a{color:var(--text);font-size:13px;text-underline-offset:3px}
+/* .notice is also the banner class, so the pill resets its padding and margin. */
+.pill.notice{background:var(--notice-pill);color:var(--notice);padding:0 8px;margin:0;border-radius:999px}
+.pill.positive{background:var(--positive-pill);color:var(--positive)}
+.field input,.field select{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;min-width:0;width:100%}
+.field input[aria-invalid="true"]{border-color:var(--negative)}
+fieldset.field{display:grid;gap:8px}
+.formgrid{display:grid;gap:0 16px;grid-template-columns:1fr}
+@media (min-width:768px){.formgrid{grid-template-columns:1fr 1fr}}
+.empty{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.empty h2{color:var(--text)}
+.empty p{margin:8px auto 16px;max-width:60ch}
 /* A 375px frame, so the narrow layout can be read on a wide screen. */
 .phone{width:375px;max-width:100%;padding:12px;background:var(--page);border:1px solid var(--line);border-radius:8px}
 .note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
@@ -577,6 +618,176 @@ legend{padding:0;font-weight:500}
   <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Request approval</button></div>
 </div>
 
+<h2 class="k">21 · Regulations we research ourselves — a compliance officer (footprint request), each item with its research status</h2>
+<p class="cap">A panel under the scope groups and above the markets. Items sort by name. The status pill is the item's research state; its meta line says what that means for us.</p>
+<div class="panel" data-scope-items>
+  <div class="head" style="margin-bottom:12px">
+    <div>
+      <h2>Regulations we research ourselves</h2>
+      <p class="lede">Regulations the shared library does not cover yet. Our agent researches each one from its public sources, and what it finds waits in our own records for someone to decide.</p>
+    </div>
+    <div class="acts"><button class="btn outline">Add a regulation</button></div>
+  </div>
+  <ul class="items">
+    <li>
+      <h3>Betaltjänstlagen</h3>
+      <p class="facts"><span>Sweden</span><span>Payments</span><span class="mono">SFS 2010:751</span></p>
+      <p class="addr"><a href="#" rel="noopener noreferrer">riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2010751-om-betaltjanster_sfs-2010-751</a><a href="#" rel="noopener noreferrer">fi.se/sv/betalningar</a></p>
+      <p class="research"><span class="pill notice">3 proposals waiting</span> <span class="meta">Last run 25 Sep 2026 06:02.</span> <a href="#">Open our own records</a></p>
+    </li>
+    <li>
+      <h3>Nasdaq Stockholm Rulebook for Issuers of Shares</h3>
+      <p class="facts"><span>Sweden</span><span>Securities</span><span>No official reference</span></p>
+      <p class="addr"><a href="#" rel="noopener noreferrer">nasdaq.com/solutions/rules-regulations-stockholm</a></p>
+      <p class="research"><span class="pill notice">Our agent is researching</span> <span class="meta">Started 25 Sep 2026 06:00.</span></p>
+    </li>
+    <li>
+      <h3>Lov om betalinger</h3>
+      <p class="facts"><span>Denmark</span><span>Payments</span><span class="mono">LOV nr 652 af 2017</span></p>
+      <p class="addr"><a href="#" rel="noopener noreferrer">retsinformation.dk/eli/lta/2017/652</a></p>
+      <p class="research"><span class="pill warning">Waiting for your agent</span> <span class="meta">Switch on the scope researcher under Agents and it starts.</span></p>
+    </li>
+    <li>
+      <h3>Svenska Bankföreningens rekommendation om kontanthantering</h3>
+      <p class="facts"><span>Sweden</span><span>Banking</span><span>No official reference</span></p>
+      <p class="addr"><a href="#" rel="noopener noreferrer">swedishbankers.se/rekommendationer</a></p>
+      <p class="research"><span class="pill positive">Researched</span> <span class="meta">Last run 20 Sep 2026. Nothing waits for a decision.</span></p>
+    </li>
+  </ul>
+</div>
+
+<h2 class="k">22 · The same panel, read-only — someone who can only approve, and every other reason an item waits</h2>
+<p class="cap">No "Add a regulation" and no Remove; statuses and addresses read the same. "Waiting for your agent" names why it waits, in this order: AI switched off, the month's budget spent, the agent not switched on.</p>
+<div class="panel" data-scope-items>
+  <h2>Regulations we research ourselves</h2>
+  <ul class="items">
+    <li>
+      <h3>Lov om betalinger</h3>
+      <p class="facts"><span>Denmark</span><span>Payments</span><span class="mono">LOV nr 652 af 2017</span></p>
+      <p class="research"><span class="pill warning">Waiting for your agent</span> <span class="meta">AI is switched off for our organisation.</span></p>
+    </li>
+    <li>
+      <h3>Lov om betalinger</h3>
+      <p class="facts"><span>Denmark</span><span>Payments</span><span class="mono">LOV nr 652 af 2017</span></p>
+      <p class="research"><span class="pill warning">Waiting for your agent</span> <span class="meta">This month's agent budget is spent. It starts again on 1 Oct 2026.</span></p>
+    </li>
+  </ul>
+</div>
+
+<h2 class="k">23 · Empty — no regulations of our own yet</h2>
+<div class="panel" data-scope-items>
+  <h2>Regulations we research ourselves</h2>
+  <div class="empty">
+    <h2>No regulations of our own yet</h2>
+    <p>Add a regulation the library does not cover, and our agent researches it once someone else approves.</p>
+    <button class="btn outline small">Add a regulation</button>
+  </div>
+</div>
+
+<h2 class="k">24 · Add a regulation — the form, with an address that failed its check (422, from the server's code)</h2>
+<p class="cap">"Add a regulation" opens the form inside the panel, and "Propose a change" hides while it is open: one request at a time. Nothing is written until "Request approval".</p>
+<div class="panel" data-scope-item-form>
+  <h2>Add a regulation</h2>
+  <div class="field"><label for="si-name">Name</label><input id="si-name" value="Betaltjänstlagen" aria-describedby="si-name-h"><span class="hint" id="si-name-h">As the regulation is usually called.</span></div>
+  <div class="formgrid">
+    <div class="field"><label for="si-j">Jurisdiction</label><select id="si-j"><option>Sweden</option></select></div>
+    <div class="field"><label for="si-r">Regime</label><select id="si-r"><option>Payments</option></select></div>
+  </div>
+  <div class="field"><label for="si-ref">Official reference <span class="meta">optional</span></label><input id="si-ref" value="SFS 2010:751" aria-describedby="si-ref-h"><span class="hint" id="si-ref-h">Leave it empty if there is none.</span></div>
+  <fieldset class="field" aria-describedby="si-a-h">
+    <legend>Public addresses to research</legend>
+    <span class="hint" id="si-a-h">Pages anyone can open, starting with https://.</span>
+    <input aria-label="Address 1" value="https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2010751-om-betaltjanster_sfs-2010-751/">
+    <input aria-label="Address 2" value="http://intranet.bank.local/payments" aria-invalid="true" aria-describedby="si-a2-e">
+    <span class="err" id="si-a2-e" role="alert">Use a public https address.</span>
+    <button class="btn ghost small" type="button" style="justify-self:start">Add another address</button>
+  </fieldset>
+  <div class="field"><label for="si-note">Note for our agent <span class="meta">optional</span></label><textarea id="si-note" aria-describedby="si-note-h">Focus on the information duties before and after a payment.</textarea><span class="hint" id="si-note-h">Our agent reads the name, the reference, this note and the addresses. Leave out anything confidential. 61 of 500 characters.</span></div>
+</div>
+<div class="panel" data-draft-preview style="margin-top:16px">
+  <h2>Your change: Add the regulation Betaltjänstlagen</h2>
+  <div class="cols">
+    <div><h3>Hides</h3><p style="margin:0">Nothing.</p></div>
+    <div><h3>Reveals</h3><p style="margin:0">Nothing.</p></div>
+  </div>
+  <p class="meta" style="margin:12px 0 0">Our agent starts researching it once someone else approves.</p>
+  <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Request approval</button></div>
+</div>
+
+<h2 class="k">25 · Waiting — an approver's view, with the item in the preview</h2>
+<div class="notice warn" data-pending-request>
+  <p><span class="pill warning">Waiting for approval</span> <b>Add the regulation Betaltjänstlagen</b></p>
+  <p>Requested by Sara Lindqvist, 25 Sep 2026. Hides nothing and reveals nothing.</p>
+  <button class="btn ghost small disclose" aria-expanded="true">See the preview</button>
+  <div class="bar"><button class="btn outline">Reject</button><button class="btn">Approve</button></div>
+</div>
+<div class="panel" data-scope-items>
+  <h2>Regulations we research ourselves</h2>
+  <ul class="items">
+    <li>
+      <h3>Betaltjänstlagen <span class="pill warning">Added when approved</span></h3>
+      <p class="facts"><span>Sweden</span><span>Payments</span><span class="mono">SFS 2010:751</span></p>
+      <p class="addr"><a href="#" rel="noopener noreferrer">riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2010751-om-betaltjanster_sfs-2010-751</a></p>
+      <p class="meta" style="margin:0">Note for our agent: "Focus on the information duties before and after a payment."</p>
+    </li>
+  </ul>
+  <div class="cols" style="margin-top:16px">
+    <div><h3>Hides</h3><p style="margin:0">Nothing.</p></div>
+    <div><h3>Reveals</h3><p style="margin:0">Nothing.</p></div>
+  </div>
+</div>
+<p class="cap" style="margin-top:12px">The requester sees the same banner with "You requested this on 25 Sep 2026.", "No other change can be proposed until this one is decided." and Withdraw, as in state 7; someone who can request but not approve sees state 9's banner.</p>
+
+<h2 class="k">26 · Approve, behind the passkey step-up (the four-eyes refusal is state 12)</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="sap" aria-describedby="sapd">
+    <h2 id="sap">Approve "Add the regulation Betaltjänstlagen"?</h2>
+    <p id="sapd" class="meta">Hides nothing and reveals nothing. Our agent starts researching it, and what it finds waits in our own records.</p>
+    <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Approve with passkey</button></div>
+  </div>
+</div>
+<p class="status" role="status" tabindex="-1" style="margin-top:12px">Approved. Our agent will research Betaltjänstlagen.</p>
+
+<h2 class="k">27 · Remove a regulation — while editing, and then waiting</h2>
+<p class="cap">In the change draft each item has Remove; a removal goes through the same request and second person.</p>
+<div class="panel" data-scope-items>
+  <ul class="items">
+    <li class="editing">
+      <div><h3>Svenska Bankföreningens rekommendation om kontanthantering</h3><p class="facts"><span>Sweden</span><span>Banking</span></p></div>
+      <button class="btn ghost small">Remove<span class="sr"> Svenska Bankföreningens rekommendation om kontanthantering</span></button>
+    </li>
+  </ul>
+</div>
+<div class="notice warn" data-pending-request style="margin-top:16px">
+  <p><span class="pill warning">Waiting for approval</span> <b>Remove the regulation Svenska Bankföreningens rekommendation om kontanthantering</b></p>
+  <p>Requested by Sara Lindqvist, 25 Sep 2026. Our agent stops researching it. What we already approved stays in our inventory.</p>
+  <div class="bar"><button class="btn outline">Reject</button><button class="btn">Approve</button></div>
+</div>
+<div class="panel" data-scope-items>
+  <ul class="items">
+    <li><h3>Svenska Bankföreningens rekommendation om kontanthantering <span class="pill warning">Removed when approved</span></h3><p class="facts"><span>Sweden</span><span>Banking</span></p></li>
+  </ul>
+</div>
+
+<h2 class="k">28 · History rows for an item, among the term changes</h2>
+<div class="panel log" data-footprint-history>
+  <h2>History</h2>
+  <div><time>25 Sep 2026 09:02</time><b>Maria Ek</b> approved "Add the regulation Betaltjänstlagen" requested by Sara Lindqvist.</div>
+  <div><time>20 Sep 2026 11:15</time><b>Maria Ek</b> rejected "Add the regulation Kontanthanteringslagen" requested by Erik Holm: "The shared library covers it."</div>
+</div>
+
+<h2 class="k">29 · The panel in Swedish, 375 px wide</h2>
+<div class="phone" lang="sv">
+  <div class="panel" data-scope-items>
+    <div class="head" style="margin-bottom:12px"><div><h2>Regelverk vi själva bevakar</h2></div><div class="acts"><button class="btn outline small">Lägg till ett regelverk</button></div></div>
+    <ul class="items">
+      <li><h3>Betaltjänstlagen</h3><p class="facts"><span>Sverige</span><span>Betalningar</span><span class="mono">SFS 2010:751</span></p><p class="research"><span class="pill notice">3 förslag väntar</span> <a href="#">Öppna våra egna poster</a></p></li>
+      <li><h3>Nasdaq Stockholm Rulebook for Issuers of Shares</h3><p class="facts"><span>Sverige</span><span>Värdepapper</span></p><p class="research"><span class="pill notice">Vår agent undersöker</span></p></li>
+      <li><h3>Lov om betalinger</h3><p class="facts"><span>Danmark</span><span>Betalningar</span></p><p class="research"><span class="pill warning">Väntar på er agent</span></p></li>
+    </ul>
+  </div>
+</div>
+
 <p class="note">Regulatory scope card (/admin/footprint). The page is restricted to
 holders of footprint request or footprint approve; everyone else gets state 16, and
 FP-03 shows the scope to other members only where lists offer "Show outside our
@@ -666,6 +877,72 @@ Changing it needs {permission}; ask a compliance officer or an administrator.", 
 permission named as the restricted page names it, and market names are data, never strings. <b>footprint.markets.view</b> is the one sentence that is not true in
 every slice: it is added with the inventory view (f03-T37) and the same sentence names the
 watch feed only once chunk 5 carries it.</p>
+
+<p class="note">Scope items (states 21 to 29; OWN-01, FP-02, AC-OWN2, FP-S18, J-12; D-89, D-91,
+D-98, ADR 0059). A scope item names a regulation the shared library does not cover yet: a
+name, one jurisdiction term, one regime term, an official reference where one exists, one or
+more public https addresses, and an optional note for the bank's agent capped by a setting.
+It is a row of the regulatory scope request, not a new approval path: "Add a regulation" and
+Remove open the same draft as "Propose a change", so one request waits at a time, and the
+request carries terms, items or both. A second person holding footprint approve approves it
+with a passkey (state 26, then auth-step-up.html), the requester is refused with state 12
+and the server's 409 four_eyes_violation, and rejection needs a reason. Approving an item
+widens no term, so its preview always reads "Nothing." under Hides and Reveals, and the
+narrowing warning never shows for it. Every route takes a person's session and a
+permission: no API key and no agent reaches one, and nothing on this card offers an agent a
+way to add, change or remove an item. What an agent does with an approved item shows here
+only as its research status, one pill per item by the research kind: waiting_for_agent is
+warning "Waiting for your agent", with the reason as meta (AI switched off, the month's
+budget spent, or the scope researcher not switched on under Agents, checked in that order);
+researching is notice "Our agent is researching", a running agent; proposals_waiting is
+notice "N proposals waiting", a count, with a link to our own records
+(tenant-private-records.html) for holders of private records approve; researched is
+positive "Researched", a finished run with nothing left to decide. Nobody picks a tone. The
+addresses are the item's own, shown as links that open outside the app with
+rel="noopener noreferrer", wrapping anywhere at 375 px. The form holds no rule of its own:
+an address that is not https or not public comes back from the server as 422 and renders
+under its input.
+Under D-98 the name, reference, note and addresses reach our own agent, capped and screened,
+and the hint under the note says so in plain words; nothing else of ours does. Removing an
+item stops the research and changes no record we already approved. The panel is part of the
+page, so it is denied with it (state 16), and it reads the same to someone who can only
+approve, without Add and Remove (state 22).</p>
+
+<p class="note">Strings and their catalog keys, for frontend/src/messages/footprint/en.json and
+sv.json: <b>footprint.items.title</b> "Regulations we research ourselves" (sv "Regelverk vi
+själva bevakar"); <b>footprint.items.intro</b> "Regulations the shared library does not cover
+yet. Our agent researches each one from its public sources, and what it finds waits in our
+own records for someone to decide."; <b>footprint.items.add</b> "Add a regulation" (sv "Lägg
+till ett regelverk"); <b>footprint.items.remove</b> "Remove"; <b>footprint.items.noReference</b>
+"No official reference"; <b>footprint.items.emptyTitle</b> "No regulations of our own yet";
+<b>footprint.items.emptyBody</b> "Add a regulation the library does not cover, and our agent
+researches it once someone else approves."; <b>footprint.items.name</b> "Name",
+<b>.nameHint</b> "As the regulation is usually called."; <b>footprint.items.jurisdiction</b>
+"Jurisdiction"; <b>footprint.items.regime</b> "Regime"; <b>footprint.items.reference</b>
+"Official reference", <b>.referenceHint</b> "Leave it empty if there is none.";
+<b>footprint.items.addresses</b> "Public addresses to research", <b>.addressesHint</b> "Pages
+anyone can open, starting with https://.", <b>.addAddress</b> "Add another address",
+<b>.addressInvalid</b> "Use a public https address."; <b>footprint.items.note</b> "Note for our
+agent", <b>.noteHint</b> "Our agent reads the name, the reference, this note and the addresses.
+Leave out anything confidential."; <b>footprint.items.noteCount</b> "{count} of {max}
+characters"; <b>footprint.items.optional</b> "optional"; <b>footprint.items.startsOnApproval</b>
+"Our agent starts researching it once someone else approves.";
+<b>footprint.change.addItem</b> "Add the regulation {name}", <b>.removeItem</b> "Remove the
+regulation {name}"; <b>footprint.items.noteForAgent</b> "Note for our agent: "{note}"";
+<b>footprint.items.approveBody</b> "Our agent starts researching it, and what it finds waits in
+our own records."; <b>footprint.items.approved</b> "Approved. Our agent will research
+{name}."; <b>footprint.items.removeBody</b> "Our agent stops researching it. What we already
+approved stays in our inventory."; <b>footprint.research.waitingForAgent</b> "Waiting for your
+agent" (sv "Väntar på er agent"), <b>.researching</b> "Our agent is researching" (sv "Vår agent
+undersöker"), <b>.proposalsWaiting</b> "{count, plural, one {# proposal waiting} other {#
+proposals waiting}}" (sv "{count} förslag väntar"), <b>.researched</b> "Researched";
+<b>footprint.research.aiOff</b> "AI is switched off for our organisation.",
+<b>.budgetSpent</b> "This month's agent budget is spent. It starts again on {date}.",
+<b>.agentOff</b> "Switch on the scope researcher under Agents and it starts.",
+<b>.started</b> "Started {time}.", <b>.lastRun</b> "Last run {time}.", <b>.nothingWaits</b>
+"Nothing waits for a decision.", <b>.openOwnRecords</b> "Open our own records". Item names,
+references and addresses are data, never strings; the hides and reveals "Nothing." is the
+existing preview string.</p>
 
 </main>
 </body>

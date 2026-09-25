@@ -1309,3 +1309,21 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 - [ ] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. It
       follows the app's existing terms (skyldighet, förslag, godkännande), but
       a native read of the headline and the questions is worth five minutes.
+
+## r2-spec-d89: the bank's own regulations (PRD 0.7, 2026-09-25)
+
+- [ ] **D-89: confirm PRD 0.7's OWN group.** Non-blocking: chunk 11 builds it on the
+      defaults in D-91 and ADR 0059 (design: `docs/plans/briefs/SCOPE_ITEMS.md`). A scope
+      item is added through the regulatory scope request with four eyes and a passkey, and
+      no agent or key writes one. The bank's own agent files what it finds as proposals only
+      through its runner, and a person holding `private_records.approve` decides each one
+      with a passkey. Three details are yours to overrule:
+      1. **What reaches the model.** Default: only the item's jurisdiction and regime keys
+         and the public pages it fetches, never the name the bank typed (D-07 and D-32 stay
+         open). Say if the name may reach the bank's own agent.
+      2. **What a control inventory is (OWN-05).** Default: a linked internal item of the
+         control kind (REG-05) with the fields REG-05 gives it. Say if a control needs more
+         (an owner, a test, a frequency).
+      3. **Who confirms a bank's own record.** Default: a person, always; an agent never
+         confirms one, unlike the shared library (D-62). Say if a bank may switch on a
+         confirming agent for its own queue.

@@ -8,6 +8,7 @@
 | 0.4 | 2026-09-20 | The fourteen owner decisions Alex answered in chat on 2026-09-19 (`docs/plans/briefs/OWNER_RECOMMENDATIONS.md`). **Support access:** platform staff enter a bank read-only, for a stated purpose and a time limit a tenant admin approves with a passkey, and every read is logged in the bank. **Problem reports:** a report stays inside the bank that filed it; a library error is found instead by the watch agents, which re-check the records of the sources they check on every run and correct them through a proposal. **Retention:** a record is deleted ten years after its last use, through one database-guarded path. **Tenant exit:** two different people request and approve it, the tenant goes read-only while a final export is taken, and deletion removes every tenant row, the audit trail included, leaving a tombstone report. **Private records:** a bank's own instruments, obligations and sources are approved by a second person in the same bank under a new permission and never reach the platform, a model or the search index. **SSO:** the bank's identity provider proves who a person is, and the passkey stays the only way in. **Agents:** bleqq's general financial-regulation watch is part of the base package and no bank changes it; the tenant controls are for the agents a bank adds for itself **No editorial function:** bleqq staffs none, so a proposal is still the only door into the shared library and four eyes still refuses the same principal twice, but the second principal may be an independent agent — a different agent definition and API key from the proposer — reading the same queue with a review scope. A person approving still steps up with a passkey; an agent's approval, correction or rejection lands in the same audit trail with the agent named, and the record it applies carries machine-confirmed provenance instead of a person's verification. The console queue is still built: it is where the platform watches what the agents did and intervenes, and where a human approver is switched on later with no rework. A bank answers for its own interpretation of every library fact; the design defaults under that decision are `docs/DECISIONS.md` row D-62 and ADR 0054, reversible by staffing the `library_editor` role | Alex |
 | 0.5 | 2026-09-20 | **Agent access**, the agents a bank runs itself. A bank's own agents (a coding agent building a service, a product agent shaping an account type, a procurement agent reading a contract, an internal assistant) need to know which regulation applies to what they are building. The bank registers each one, narrows it to the departments and products it serves, and gives it a credential: a service key, or a personal access token a member mints from a passkey session that acts as that person and can never step up. The agent reads through an MCP server over the same API, under the same gates, and reads only: the library records in its scope, and, once two people holding `security.manage` have switched tenant reach on for the bank, the register decisions on them. Its scope can only narrow the bank's own regulatory scope, never widen it, and it is never allowed to narrow silently: every answer states the scope it was answered in and names what it could not see. This amends D-07, because a bank pulling its own register into its own agent is tenant-zone text reaching a model. The design defaults under it are `docs/DECISIONS.md` rows D-70 to D-73, D-76 and D-77 and ADRs 0055 to 0057, each reversible; the detail is `docs/plans/briefs/AGENT_ACCESS.md`. Decided in chat on 2026-09-20 and landed on 2026-09-23 on Alex's answer "Land the design now as decided"; the seven details it left open are answered by default in `docs/TODO_FOR_alex.md`, each still his to overrule | Alex |
 | 0.6 | 2026-09-23 | **One person decides what applies.** A compliance person holding `applicability.approve` sets whether an obligation applies, per legal entity and per unit of a standard, after confirming it in a dialog, and one audit event records who set it, the value before and after, and the reason. There is no request, no second approver and no step-up (REG-01, J-10, AC-REG1). Risk acceptance keeps its four eyes, and "applies" and "we comply" stay separate facts. Version 0.5 is agent access, decided on 2026-09-20 and landed after this row. The design default under it is `docs/DECISIONS.md` row D-75, which supersedes D-44 and ADR 0038 | Alex |
+| 0.7 | 2026-09-25 | **The bank's own regulations.** Alex decided on 2026-09-24 (D-89): "an agent can always add things to the library, and then another agent can verify it, its then up to the tenant to decide if they want to use it or not", and "The previously called 'footprint' can not be agent managed, only a tenant admin can add things that the agents should look out for or regulations that apply to them". Under that decision a bank's people may add to its regulatory scope a regulation or area the shared library does not yet cover; the bank's own agents research it and fill the bank's own library zone with its regulation and control inventories as proposals, which the bank's people approve or reject the way the shared queue works. The new group OWN (OWN-01 to OWN-05, AC-OWN1, AC-OWN2, J-12) states it: a scope item is requested by one person and approved by a second with a passkey, and no agent and no API key ever writes one; the bank's own agent files what it finds only as runner events the worker applies, never through a key; the bank's people decide those proposals under `private_records.approve`; and the records they approve read "Private to us", reach no index, model, console or other bank, and take applicability and status in the register like any obligation. INV-07 moves from R3 (Could) to R2 (Must) as OWN's minimum and no longer rests on a bank's own sources, which stay WAT-06 in R3; AGT-04, AGT-05 and PRO-03 point at OWN. Section 6 also takes in D-75 (0.6): the `applicability.request` row is gone and four eyes no longer names `applicability.approve`. The details are answered by default in `docs/DECISIONS.md` row D-91 and ADR 0059, each reversible; the design is `docs/plans/briefs/SCOPE_ITEMS.md` | Alex |
 
 Requirement IDs never appear on screen. Priority is MoSCoW (M, S, C).
 
@@ -168,7 +169,7 @@ and never write, and what they may read is a credential and a scope, not a seat.
 | INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 |
 | INV-05 | Text in the original language plus translations, machine translations labelled. A record whose proposal an agent confirmed is labelled machine-confirmed and names the proposing and the confirming agent; it never reads as verified by a person until a person verifies it | M | R1 |
 | INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 |
-| INV-07 | Tenant-private instruments and obligations from the tenant's own sources, proposed and approved inside that bank by a second person. Platform staff never see or approve them, and their text never reaches a model, the search index or another tenant | C | R3 |
+| INV-07 | Tenant-private instruments and obligations, proposed by the bank's own agents or its compliance officers and approved inside that bank by a second person. Platform staff never see or approve them, and their text never reaches a model, the search index or another tenant. This is the minimum of OWN; a bank's own private sources are WAT-06 (R3) | M | R2 |
 | INV-08 | Standards within the sector scope as instruments, one per edition. Each holds publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link, and exactly one conformance duty in our own words, which carries the standard's term. Only a standard's own records carry a standard term. There is no standard text, clause or control title, or paraphrase in the library, the search index, Ask or agent output | M | R1 |
 
 ### PRO: proposals
@@ -177,7 +178,7 @@ and never write, and what they may read is a credential and a scope, not a seat.
 |---|---|---|---|
 | PRO-01 | The review queue is the only way into the library, for agents and people, with a source per changed field. One queue serves both kinds of approver: a confirming agent reads the pending proposals through the same route as a person, with its key's review scope | M | R1 |
 | PRO-02 | Approval applies the payload, writes the version, the audit row and the re-index in one transaction. The reviewer can correct scope and wording first. Never the same principal: the approver is a second person, who steps up with a passkey, or an independent agent whose definition and key differ from the proposer's. The audit row names whoever decided | M | R1 |
-| PRO-03 | The queue lives in the platform console, where the platform watches what the agents decided and can take a proposal over. Tenants see library updates and can report a problem, and that report stays inside the bank that filed it. A bank's private records are proposed and approved inside the bank and never reach the console | M | R1 |
+| PRO-03 | The queue lives in the platform console, where the platform watches what the agents decided and can take a proposal over. Tenants see library updates and can report a problem, and that report stays inside the bank that filed it. A bank's private records are proposed and approved inside the bank and never reach the console (OWN-03) | M | R1 |
 | PRO-04 | Batch proposals (re-tag, backfill) with a preview, approved whole or row by row | S | R2 |
 
 ### WAT: watch
@@ -254,8 +255,8 @@ and never write, and what they may read is a credential and a scope, not a seat.
 | AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 |
 | AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 |
 | AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents, the general financial-regulation watch that feeds the shared library, are part of the base package: no tenant switches them off, pauses them, changes their cadence, scope or budget, or edits their definitions | M | R2 |
-| AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. A tenant's own agent writes only in that tenant's zone, never the shared library | M | R2 |
-| AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console | S | R2 |
+| AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. A tenant's own agent writes only in that tenant's zone, never the shared library; what it files for a scope item the library does not cover is OWN-02 | M | R2 |
+| AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console. An approved scope item opens a research request for the bank's own agent (OWN-02) | S | R2 |
 | AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 |
 | AGT-07 | Fetched content screened for embedded instructions | M | R1 |
 | AGT-08 | Agents stay inside the sector scope. An out-of-scope document is logged as a source check and counted, and nothing is registered or proposed. A standard's text is never fetched, quoted, summarised, translated or restated from memory. A blocked page is a failed check and is never worked around. A law that cites a standard never carries the standard's term | M | R1 |
@@ -274,6 +275,16 @@ and never write, and what they may read is a credential and a scope, not a seat.
 | ACC-08 | Tenant reach is off until two different people holding `security.manage` switch it on for the bank, each with a passkey; a tenant admin then enables it per entry. With the tenant switch off every entry is library-only whatever its own setting says. Every call is logged with the credential, the entry, the person where the credential is personal, the tool, the filters, the record count, the scope applied and the timing, and never the content or the question | M | R2 |
 | ACC-09 | Limits: pagination as everywhere, a rate limit per credential, and model calls counted against the tenant's monthly budget cap and stopped by its AI off switch | M | R2 |
 | ACC-10 | An entry records that a named application or system touches a register entry and how, as a linked internal item under REG-05, so the bank holds a map of which of its applications each obligation reaches | C | R3 |
+
+### OWN: the bank's own regulations
+
+| ID | Requirement | P | R |
+|---|---|---|---|
+| OWN-01 | A scope item names a regulation or area the shared library does not cover yet: a name, jurisdiction and regime terms, an official reference where one exists, and the public source addresses to research. It is added through the regulatory scope request: a person holding `footprint.request` asks, and a different person holding `footprint.approve` approves it with a passkey. No API key reaches it and no agent ever writes one. Approving an item widens no term of the regulatory scope | M | R2 |
+| OWN-02 | The bank's own agent, a bleqq-authored tenant-scoped definition the bank switched on under AGT-04, researches an approved scope item from public sources and files the bank's own instruments and obligations as proposals, with a source per field. Its findings reach the bank's queue only as runner events the worker applies, never through an API key. It never writes or re-tags the shared library, never writes the regulatory scope, and never reads the bank's own records back (D-57): a proposal duplicating, by official reference, a record the bank already holds answers 409 `already_in_our_library`, checked by the server | M | R2 |
+| OWN-03 | The bank's own queue: a person holding `private_records.approve` approves or rejects each proposal with a passkey, never the proposer, with a reason on a rejection, through the same apply code and four-eyes constraint as the shared queue. Platform staff never see it | M | R2 |
+| OWN-04 | The bank's own records read "Private to us" and only to that bank. They are never indexed, never a model input, never read by an agent access credential (whose answer says how many it left out), and never shown in a support session. The register sets applicability and compliance status on them as on a shared obligation. When the shared library later covers the same regulation, nothing changes automatically | M | R2 |
+| OWN-05 | The bank's own agent may propose the controls of one of the bank's own obligations as linked internal items of the control kind (REG-05), approved the same way | S | R2 |
 
 ### REP, INT: reporting and integration
 
@@ -341,6 +352,8 @@ and never write, and what they may read is a credential and a scope, not a seat.
 - **AC-ACC2** With the tenant reach switch off, every register route answers 403 `tenant_reach_off` to every agent access credential, whatever the entry's own setting says.
 - **AC-ACC3** A personal access token answers 403 `step_up_required` on every step-up action, with no path to an assertion, and stops working on the next request once the person is deactivated or loses the permission behind it.
 - **AC-ACC4** Every mutating route answers 403 `read_only_credential` to every agent access credential in R2, and no such credential holds a scope that writes.
+- **AC-OWN1** Nothing a bank writes as its own record, and no child of one, appears in a search chunk, an embedding input, a model input or the console queue; tenant B receives 404 for it on every route.
+- **AC-OWN2** The scope item request refuses its requester as approver with 409 `four_eyes_violation`, approves only with a fresh passkey assertion, and refuses every API key, a tenant's and the platform's alike.
 
 ## 5. Golden-path journeys (`@smoke`)
 
@@ -357,6 +370,7 @@ and never write, and what they may read is a credential and a scope, not a seat.
 | J-9 | Monday morning: the owner opens My work and sees an overdue review and a change linked to an obligation they are responsible for; they add a contributor as participant on that obligation; the contributor sees it on their own My work; the department head's view shows it with the owner named; the contributor leaves, and both events are in the audit log |
 | J-10 | The officer adds ISO/IEC 27001 to the regulatory scope and an approver approves it with step-up. The officer records the certificate on an entity and sets "applies" for that entity with the reason "Certified", confirming it. The officer pastes three units with applicability and confirms them in one call. The register filtered by standard and entity shows the decisions, and the next audit is on the roadmap |
 | J-11 | A tenant admin registers an agent access entry for the Trading team's coding agent, narrowed to that department's products, and issues it a key with a step-up. Two people holding `security.manage` switch tenant reach on, and the admin enables it on the entry. The agent asks what applies to a new order-routing service and receives the bank's confirmed applicability and reading with citations, the full list beneath a labelled summary, and a line naming card issuing as outside its scope. A card obligation's stable key answers 404, a write answers 403, and revoking the entry stops the next call |
+| J-12 | An officer adds a regulation the library does not cover to the regulatory scope and a second person approves it with a passkey. The bank's own agent, run on the mock runner, files the bank's own instrument and obligations as proposals. An approver approves one with a passkey, it reads "Private to us" in the inventory, and tenant B's address for it answers 404 |
 
 ## 6. Permissions and system roles
 
@@ -367,16 +381,15 @@ copy and adapt. `x` means granted.
 |---|---|---|---|---|---|---|---|
 | `library.read`, `watch.read`, `roadmap.read`, `search.use`, `comments.write`, `problems.report` | x | x | x | x | x | x | x |
 | `register.read`, `cases.read`, `reports.read`, `audit.read` | x | x | x | x | x | x | x |
-| `footprint.request` (ask for a footprint change, including the markets we operate in; set the markets we watch) | x | x | | | | | |
+| `footprint.request` (ask for a footprint change, including the markets we operate in and a scope item the library does not cover yet; set the markets we watch) | x | x | | | | | |
 | `footprint.approve` | x | x | | x | | | |
 | `cases.triage` | | x | | | | | |
 | `cases.work` (so what, assessment, actions, evidence, request sign-off) | | x | x | | | | |
 | `cases.contribute` (save assessment input, update actions, add evidence, add or remove case participants) | | x | x | | x | | |
 | `cases.signoff` | | | | x | | | |
 | `register.edit`, `gaps.edit` (`register.edit` includes adding or removing participants on a register entry, and adding, pasting, editing or removing a standard's units) | | x | x | | | | |
-| `applicability.request` | | x | x | | | | |
 | `applicability.approve`, `risk.accept.approve` | | x | | x | | | |
-| `private_records.approve` (approve a proposal for the bank's own instruments, obligations and sources; never a platform grant and never an API key scope) | | x | | x | | | |
+| `private_records.approve` (approve or reject a proposal in the bank's own queue: its own instruments, obligations and sources, including what its own agent filed for a scope item; never a platform grant and never an API key scope) | | x | | x | | | |
 | `proposals.create` | | x | | | | | |
 | `exports.create`, `ai_log.read` | x | x | | x | | | x |
 | `members.manage`, `roles.manage`, `security.manage` (`members.manage` includes team membership; `security.manage` includes approving, declining and revoking support access, and requesting or approving tenant exit, never both by the same person) | x | | | | | | |
@@ -389,7 +402,8 @@ Platform roles: `library_editor` (`proposals.review`, `library_vocab.manage`,
 `sources.manage`, `eval.manage`) and `platform_admin` (`tenants.manage`,
 `agent_definitions.manage`, `support_access.grant` (request support access to a
 bank and enter it read-only once a tenant admin approves), `system.health`). Four
-eyes applies to every approve permission: never the requester. 0.3 adds no
+eyes applies to every approve permission except `applicability.approve`, which one
+person uses alone (D-75): never the requester. 0.3 adds no
 permission constant and changes no grant; only the descriptions above grew. 0.4
 adds one constant, `private_records.approve`, and widens the descriptions of
 `security.manage` and `support_access.grant`.
@@ -411,6 +425,12 @@ the same person. It adds no platform permission and no platform scope. The key
 scope `tenant:read`, declared since chunk 1 and gated on no route, becomes the
 scope that reaches a tenant's register decisions and nothing else.
 
+0.6 retires `applicability.request` (D-75): one person holding `applicability.approve`
+sets applicability, with no request and no second approver. The constant leaves the code
+when chunk 8 builds REG-01. 0.7 adds no constant and changes no grant: a scope item is a
+regulatory scope change under `footprint.request` and `footprint.approve`, and the bank's
+own queue is `private_records.approve`'s. No API key scope reaches either.
+
 **Actions that need membership only:** viewing My work, your own or any
 department's (each item still needs its read permission, so the department
 view is a filter and not a grant), and leaving your own participation.
@@ -420,5 +440,5 @@ view is a filter and not a grant), and leaving your own participation.
 | Release | Outcome | Build plan chunks |
 |---|---|---|
 | R1 | Sign in with a passkey, set the footprint and the markets, follow a standard through the regulatory scope and watch its revisions, browse the inventory with versions and diffs, follow the watch feed fed by agents, search and ask, the timeline home, briefing and roadmap, vocabularies managed without a deploy, audit from day one | 0 to 7 |
-| R2 | The system of record: applicability, compliance status per entity, gaps, the full case workflow, legal entities that follow standards and hold certificates with a Statement of Applicability per entity, My work and participants, departments and teams, collaboration, tenant-controlled agents, and agent access so a bank's own agents read what applies to them | 8 to 11 |
+| R2 | The system of record: applicability, compliance status per entity, gaps, the full case workflow, legal entities that follow standards and hold certificates with a Statement of Applicability per entity, My work and participants, departments and teams, collaboration, tenant-controlled agents, agent access so a bank's own agents read what applies to them, and the bank's own regulations, which its own agents research and its people approve | 8 to 11 |
 | R3 | What large buyers require: reports and exports, import, integrations, SSO, retention, tenant exit, the assurance pack, billing | 12 to 14 |

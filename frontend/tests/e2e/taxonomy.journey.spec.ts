@@ -1079,3 +1079,16 @@ test.describe('regulatory scope, markets and standards', () => {
   });
 
 });
+
+// The bank's own regulations (PRD 0.7, D-89, D-91, ADR 0059): a scope item the library does
+// not cover, and J-12 from that item to a record that reads "Private to us". Each stays
+// test.fixme until chunk 11 builds it.
+test.describe("the bank's own regulations", () => {
+  test.fixme("FP-S18: A scope item the library does not cover is requested by one person and approved by another with a passkey", async () => {
+    // pending: FP-S18 (OWN-01, FP-02, AC-OWN2, chunk 11)
+  });
+
+  test.fixme("FP-S19 J-12 @smoke: the bank's own regulation, from scope item to Private to us", async () => {
+    // pending: FP-S19 (OWN-01, OWN-02, OWN-03, OWN-04, AC-OWN1, AC-OWN2, J-12, chunk 11)
+  });
+});
