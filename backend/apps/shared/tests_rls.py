@@ -156,6 +156,22 @@ TENANT_ONLY_TABLES = [
     "briefing",
     "briefing_item",
     "calendar_feed",
+    # c8-org-models (tenants 0002, TEN-02, REG-05, ID-07, ID-08): the bank's organisation and
+    # its security policy. Each reference to another tenant row is also a composite key
+    # (apps/tenants/tests_models.py proves the database refuses a cross-tenant one).
+    "org_unit",
+    "licence",
+    "licence_service_term",
+    "tenant_product",
+    "tenant_product_term",
+    "internal_item",
+    "security_policy",
+    # Chunk 8's team list (TEN-03, c8-vocab-lists-rules): a bank's teams and their labels.
+    "team",
+    "team_label",
+    # c8-teams-model (tenants 0003, TEN-03): a person in a team. Both keys are composite
+    # (apps/tenants/tests_team_models.py proves the database refuses a cross-tenant one).
+    "team_member",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also
@@ -166,6 +182,11 @@ TENANT_ONLY_TABLES = [
 OTHER_POLICIES = frozenset(
     [(table, LIBRARY_READ_POLICY) for table in MIXED_TABLES]
     + [(table, IDENTITY_LOOKUP_POLICY) for table in IDENTITY_LOOKUP_TABLES]
+    # c8-ten-support-grants (tenants 0004, ADR 0042's named exception): a platform person
+    # reads the support access rows that name them, keyed on `app.platform_user_id`, so the
+    # console can list and check their own grants before any bank is active. SELECT only,
+    # and inert while the setting is unset (tenants/tests_support_access.py proves both).
+    + [("support_access", "support_access_own_grants")]
 )
 
 # Platform-only tables (SRC-05, search 0002): no tenant column, so the enumeration above
@@ -636,3 +657,29 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
                 tenancy.activate(tenant_id, using="app")
             cursor.execute(f'SELECT id FROM "{table}" WHERE id = ANY(%s)', [probes])
             return {row[0] for row in cursor.fetchall()}
+
+
+class TeamRowsAreTenantOnly(TransactionTestCase):
+    """The team list as cw_app (TEN-03, c8-vocab-lists-rules): each bank reads only its own
+    teams and their labels, a session with no tenant reads none, and a bank cannot file a
+    team under another. Every tenant gets the system team from the tenant hook, so both
+    banks already hold one."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def test_a_bank_reads_and_writes_only_its_own_teams(self) -> None:
+        from apps.taxonomy.models import Team, TeamLabel
+
+        tenant_a = factories.tenant(slug="team-a")
+        tenant_b = factories.tenant(slug="team-b")
+        with transaction.atomic(using="app"):
+            tenancy.activate(tenant_a.id, using="app")
+            self.assertEqual(set(Team.objects.using("app").values_list("tenant_id", flat=True)), {tenant_a.id})
+            self.assertEqual(set(TeamLabel.objects.using("app").values_list("tenant_id", flat=True)), {tenant_a.id})
+        with transaction.atomic(using="app"):
+            self.assertFalse(Team.objects.using("app").exists(), "an unset tenant must match no team (fail closed)")
+            self.assertFalse(TeamLabel.objects.using("app").exists())
+        with self.assertRaises(ProgrammingError):
+            with transaction.atomic(using="app"):
+                tenancy.activate(tenant_a.id, using="app")
+                Team.objects.using("app").create(tenant_id=tenant_b.id, key="legal")
