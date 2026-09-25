@@ -60,7 +60,7 @@ from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.adapters.mailer import MockMailer, OutgoingMail
 from apps.shared.authentication import ApiKeyAuth, Principal, PrincipalKind
 from apps.shared.errors import ProblemError
-from apps.shared.models import AuditEvent
+from apps.shared.models import AuditEvent, Tenant
 from config.api import api
 from apps.shared.permissions import enforce_step_up
 from apps.shared.testing import sign_in, user_principal
@@ -1039,3 +1039,86 @@ class InvitationTokenNeverInAPath(TestCase):
     def test_a_token_longer_than_any_issued_is_refused_before_any_lookup(self) -> None:
         response = self.client.post("/api/v1/auth/invitations/open", data={"token": "x" * 129}, content_type="application/json")
         self.assertEqual(response.status_code, 422)
+
+
+class NotificationPreferences(TestCase):
+    """COL-02 (c10-notify-and-prefs): each person's own switches on `GET /me` and
+    `PATCH /me`, every one on until they turn it off, stored on their membership of the
+    bank the session is in and audited once with before and after."""
+
+    ALL_ON = {"weeklyDigest": True, "reminders": True, "mentions": True, "assignments": True, "weeklyBriefing": True}
+    tenant: Tenant
+    person: User
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.tenant = factories.tenant(slug="prefs-bank")
+        cls.person = factories.member_user(cls.tenant, roles=("reader",))
+
+    def setUp(self) -> None:
+        # Signed in before any test counts audit rows: signing in writes rows of its own.
+        self.headers = sign_in(self.person, tenant=self.tenant)
+
+    def patch(self, body: dict[str, Any]) -> Any:
+        return self.client.patch("/api/v1/me", data=body, content_type="application/json", **self.headers)
+
+    def stored(self) -> dict[str, Any]:
+        tenancy.activate(self.tenant.id)
+        return Membership.objects.get(tenant=self.tenant, user=self.person).notification_prefs
+
+    def test_a_member_who_never_chose_reads_every_switch_on(self) -> None:
+        body = self.client.get("/api/v1/me", **self.headers).json()
+        self.assertEqual(body["notificationPrefs"], self.ALL_ON)
+
+    def test_a_platform_session_has_no_switches(self) -> None:
+        editor = factories.platform_user(roles=("library_editor",), email="editor-prefs@bleqq.test")
+        self.assertIsNone(self.client.get("/api/v1/me", **sign_in(editor)).json()["notificationPrefs"])
+        refused = self.client.patch(
+            "/api/v1/me", data={"notificationPrefs": {"mentions": False}}, content_type="application/json", **sign_in(editor)
+        )
+        self.assertEqual((refused.status_code, refused.json()["code"]), (404, "not_found"))
+
+    def test_a_partial_patch_changes_its_switch_and_leaves_the_others_with_one_audit_event(self) -> None:
+        self.patch({"notificationPrefs": {"reminders": False}})
+        audit = AuditEvent.objects.count()
+
+        response = self.patch({"notificationPrefs": {"mentions": False}})
+
+        self.assertEqual(response.status_code, 200, response.content)
+        expected = {**self.ALL_ON, "reminders": False, "mentions": False}
+        self.assertEqual(response.json()["notificationPrefs"], expected)
+        self.assertEqual(self.stored(), expected)
+        self.assertEqual(AuditEvent.objects.count(), audit + 1)
+        event = AuditEvent.objects.filter(action="user.updated").order_by("-created").first()
+        assert event is not None
+        self.assertEqual(event.before["notificationPrefs"], {**self.ALL_ON, "reminders": False})
+        self.assertEqual(event.after["notificationPrefs"], expected)
+
+    def test_a_name_and_the_switches_together_are_one_audit_event(self) -> None:
+        audit = AuditEvent.objects.count()
+        response = self.patch({"name": "Anna Berg", "notificationPrefs": {"weeklyBriefing": False}})
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(AuditEvent.objects.count(), audit + 1)
+        self.assertEqual(response.json()["user"]["name"], "Anna Berg")
+        self.assertFalse(response.json()["notificationPrefs"]["weeklyBriefing"])
+
+    def test_an_unknown_switch_answers_422_and_writes_nothing(self) -> None:
+        audit = AuditEvent.objects.count()
+        name = User.objects.get(pk=self.person.pk).name
+
+        response = self.patch({"name": "Somebody Else", "notificationPrefs": {"mentions": False, "snooze": True}})
+
+        self.assertEqual((response.status_code, response.json()["code"]), (422, "unknown_key"))
+        self.assertEqual(self.stored(), {})
+        self.assertEqual(User.objects.get(pk=self.person.pk).name, name)
+        self.assertEqual(AuditEvent.objects.count(), audit)
+
+    def test_a_switch_that_is_not_a_boolean_is_refused(self) -> None:
+        response = self.patch({"notificationPrefs": {"mentions": "sometimes"}})
+        self.assertEqual((response.status_code, response.json()["code"]), (422, "validation_error"))
+        self.assertEqual(self.stored(), {})
+
+    def test_a_patch_without_switches_leaves_them_alone(self) -> None:
+        self.patch({"notificationPrefs": {"assignments": False}})
+        self.patch({"name": "Anna Berg"})
+        self.assertEqual(self.stored(), {**self.ALL_ON, "assignments": False})
