@@ -1915,6 +1915,13 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         with self.assertRaises(TypeError):
             matching.in_footprint(as_dict(iso), {}, restricting={"service_type", "standard"})
 
+    @skip("pending: FP-S18 (OWN-01, FP-02, AC-OWN2, chunk 11)")
+    def test_fp_s18(self) -> None:
+        """FP-S18
+
+        A scope item the library does not cover is requested by one person and approved by another with a passkey (OWN-01, FP-02, AC-OWN2).
+        """
+
     @skip("pending: ACC-S2 (ACC-02, AC-ACC1, chunk 11)")
     def test_acc_s2(self) -> None:
         """ACC-S2
