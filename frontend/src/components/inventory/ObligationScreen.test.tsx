@@ -294,6 +294,19 @@ describe('ObligationScreen', () => {
     await waitFor(() => expect(document.querySelector('[data-legal-text] [lang="sv"]')?.textContent).toBe(sv.text));
   });
 
+  it('leads the head of the bank\'s own record with "Private to us", its instrument outlined (OWN-04)', async () => {
+    serve({ ...research, privateToUs: true });
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1 });
+    const header = document.querySelectorAll('[data-header-pills] [data-pill]');
+    expect([...header].map((pill) => [pill.textContent, pill.getAttribute('data-pill'), pill.hasAttribute('data-outlined')])).toEqual([
+      ['Private to us', 'information', true],
+      ['FFFS 2017:2', 'information', true],
+      ['Securities', 'information', false],
+      ['Binding', 'information', false],
+    ]);
+  });
+
   it('reads "Standard" in the binding slot of a duty under a standard, never "Guidance, comply or explain"', async () => {
     serve({ ...research, bindingLevel: { key: 'standard', kind: 'standard', label: 'Standard edition' }, binding: false });
     renderIn(<ObligationScreen obligationId="ob-1" />);

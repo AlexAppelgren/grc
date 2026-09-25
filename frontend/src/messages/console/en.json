@@ -108,6 +108,8 @@
   "console.queue.correct.title": "Correct before approving",
   "console.queue.correct.hint": "Only fields this proposal already sources can be corrected.",
   "console.queue.correct.scopeHint": "Add or remove a term this proposal already sources.",
+  "console.queue.correct.source": "Source of your correction",
+  "console.queue.correct.sourceHint": "The https link, or the provision's key, where you read the corrected values.",
   "console.queue.correct.note": "Note for the record",
   "console.queue.correct.noteHint": "Optional. Kept with the version.",
   "console.queue.approve": "Approve and apply",

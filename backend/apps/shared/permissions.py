@@ -55,6 +55,9 @@ GAPS_EDIT = "gaps.edit"  # compliance officer, owner
 APPLICABILITY_APPROVE = "applicability.approve"  # compliance officer, approver
 RISK_ACCEPT_APPROVE = "risk.accept.approve"  # compliance officer, approver
 PROPOSALS_CREATE = "proposals.create"  # compliance officer
+# The bank's own queue (INV-07, OWN-03; D-57, ADR 0050): approve or reject a proposal of the
+# bank's own record. A tenant permission and never a platform grant or an API key scope.
+PRIVATE_RECORDS_APPROVE = "private_records.approve"  # compliance officer, approver
 EXPORTS_CREATE = "exports.create"  # admin, compliance officer, approver, auditor
 AI_LOG_READ = "ai_log.read"  # admin, compliance officer, approver, auditor
 MEMBERS_MANAGE = "members.manage"  # admin
@@ -100,6 +103,7 @@ TENANT_PERMISSIONS: frozenset[str] = frozenset(
         APPLICABILITY_APPROVE,
         RISK_ACCEPT_APPROVE,
         PROPOSALS_CREATE,
+        PRIVATE_RECORDS_APPROVE,
         EXPORTS_CREATE,
         AI_LOG_READ,
         MEMBERS_MANAGE,
@@ -128,7 +132,7 @@ ALL_PERMISSIONS: frozenset[str] = TENANT_PERMISSIONS | PLATFORM_PERMISSIONS
 # Four eyes applies to every approve permission: never the requester (PRD §6). Not to
 # `applicability.approve`: one person sets applicability after a confirmation (D-75).
 APPROVE_PERMISSIONS: frozenset[str] = frozenset(
-    {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW}
+    {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW, PRIVATE_RECORDS_APPROVE}
 )
 
 # ---------------------------------------------------------------------------------------
@@ -176,6 +180,7 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         APPLICABILITY_APPROVE,
         RISK_ACCEPT_APPROVE,
         PROPOSALS_CREATE,
+        PRIVATE_RECORDS_APPROVE,
         EXPORTS_CREATE,
         AI_LOG_READ,
         VOCAB_MANAGE,
@@ -189,6 +194,7 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         CASES_SIGNOFF,
         APPLICABILITY_APPROVE,
         RISK_ACCEPT_APPROVE,
+        PRIVATE_RECORDS_APPROVE,
         EXPORTS_CREATE,
         AI_LOG_READ,
     },
@@ -276,6 +282,7 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     APPLICABILITY_APPROVE: "Set whether an obligation applies, after confirming it.",
     RISK_ACCEPT_APPROVE: "Approve a risk acceptance requested by someone else.",
     PROPOSALS_CREATE: "Propose a change to the shared library.",
+    PRIVATE_RECORDS_APPROVE: "Approve or reject a proposal of the organisation's own records, filed by someone else.",
     EXPORTS_CREATE: "Create exports.",
     AI_LOG_READ: "Read the AI generation log.",
     MEMBERS_MANAGE: "Invite, change and deactivate members; re-issue enrolment; revoke sessions.",
@@ -418,6 +425,11 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/proposals/{proposal_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSALS_REVIEW),
     ("POST", "/proposals/{proposal_id}/approve"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSALS_REVIEW),
     ("POST", "/proposals/{proposal_id}/reject"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSALS_REVIEW),
+    # c11-proposal-batches-create (PRO-04, AGT-05).
+    ("POST", "/proposal-batches"): Ungated(
+        UngatedReason.LOGIC_GATE,
+        "proposals.review from a platform person, or the proposals:write scope from a platform key naming an open run of its own; no bank's session or key re-tags the library (PRO-04, AGT-05). The gate is apps/proposals/api.py:require_batch_proposer, which refuses a tenant-carrying principal and names the permission or scope it wanted.",
+    ),
     ("GET", "/tenant/footprint"): Ungated(
         UngatedReason.CAPABILITY, "Every member reads the footprint that filters every surface they see (FP-03)."
     ),

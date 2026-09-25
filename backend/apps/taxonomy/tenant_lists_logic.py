@@ -36,7 +36,7 @@ from django.utils.text import slugify
 
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
-from apps.shared.vocabulary import LibraryVocabulary, Vocabulary, VocabularyLabel
+from apps.shared.vocabulary import Vocabulary, VocabularyLabel
 from apps.taxonomy import repoint
 from apps.taxonomy.reading import CONFIRMATION_JOINS, Labels, confirmation_of, extra_of, label_of
 from apps.taxonomy.registry import REGISTRY, VocabularyList
@@ -107,13 +107,11 @@ def _queryset(entry: VocabularyList, tenant_id: uuid.UUID | None) -> Any:
     """The list's rows with their usage count, in the list's own order. The order is
     explicit because Django drops `Meta.ordering` from a GROUP BY query, and the usage
     count is one: without it a reordered list came back in whatever order Postgres chose
-    (found by VOC-S3, 2026-09-19). A library list whose rows carry who confirmed them (every
-    LibraryVocabulary) joins those facts in; the seeded jurisdiction list has no such
-    columns and reads as a seeded row does, empty (D-38)."""
+    (found by VOC-S3, 2026-09-19). Every library list's rows carry who confirmed them (each
+    LibraryVocabulary, and the jurisdictions since D-94), so those facts are joined in."""
     queryset = entry.usage(entry.model._default_manager.all()).order_by(*(entry.model._meta.ordering or ()))
     if entry.is_library:
-        if issubclass(entry.model, LibraryVocabulary):
-            queryset = queryset.select_related(*CONFIRMATION_JOINS)
+        queryset = queryset.select_related(*CONFIRMATION_JOINS)
     else:
         if tenant_id is None:
             raise ValidationError("This list belongs to a tenant; sign in to one.", code="not_found")

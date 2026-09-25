@@ -47,6 +47,24 @@ Deliberately simplified for R1: the provision tree is Should, and tenant-private
 instruments from a bank's own sources wait for R3. The R1 library is seeded from
 the prototype's sample data.
 
+PRD 0.7 (D-89, Alex 2026-09-24; details answered by default in D-91, ADR 0059,
+`docs/plans/briefs/SCOPE_ITEMS.md`) adds group OWN, the bank's own regulations. Alex's
+words:
+"an agent can always add things to the library, and then another agent can verify it, its then up to the tenant to decide if they want to use it or not",
+and
+"The previously called 'footprint' can not be agent managed, only a tenant admin can add things that the agents should look out for or regulations that apply to them".
+D-89 decides that a bank's people may add to its regulatory scope
+a regulation or area the shared library does not yet cover, that the bank's own agents
+research it and fill the bank's own library zone with regulation and control inventories
+as proposals, and that the bank's people approve or reject them the way the shared queue
+works. Here that means OWN-04 and INV-07, which moves from R3 (Could) to R2 (Must) as
+OWN's minimum and no longer rests on a bank's own sources (those stay WAT-06, R3): the
+bank's own instruments and obligations read "Private to us" and only to that bank, are
+never indexed, never a model input, never read by an agent access credential and never
+shown in a support session, and nothing changes automatically when the shared library
+later covers the same regulation. This supersedes the R1 note above that tenant-private
+instruments wait for R3.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -59,8 +77,9 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 | built |
 | INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 | built |
 | INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 | built |
-| INV-07 | Tenant-private instruments and obligations from the tenant's own sources, proposed and approved inside that bank by a second person; never seen by platform staff, a model, the search index or another tenant (D-57) | C | R3 | pending |
+| INV-07 | Tenant-private instruments and obligations, proposed by the bank's own agents or its compliance officers and approved inside that bank by a second person; never seen by platform staff, a model, the search index or another tenant (D-57). OWN's minimum; a bank's own private sources are WAT-06, R3 (D-89) | M | R2 | pending |
 | INV-08 | Standards as instruments, one per edition: publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link and exactly one conformance duty in our own words carrying the standard's term; no standard text, clause or control title, or paraphrase, anywhere. Built for tests and E2E: the first standard is seeded by `seed_e2e` only until the publishers' terms are cleared (TODO_FOR_alex, legal) | M | R1 | built |
+| OWN-04 | The bank's own records read "Private to us", only to that bank; never indexed, never a model input, never agent access (whose answer says how many it left out), never a support session; the register decides them as shared obligations; nothing changes automatically when the library later covers the item (D-89, D-91) | M | R2 | pending |
 
 > **Note — what the standard clauses still lack (2026-09-23).** Built: the `standard`
 > instrument level with its tier-one kind (D-37), the seeded International jurisdiction of
@@ -185,7 +204,7 @@ And the library fence guard fails on any other module that writes a LibraryModel
 
 ### INV-S9 — Tenant-private records are visible to their owner only `@integration` (INV-07)
 ```gherkin
-Given tenant A registered a private source and an obligation derived from it
+Given an obligation tenant A's own agent proposed and a second person in tenant A approved
 Then the obligation carries owner_tenant_id A
 And tenant A sees it beside the shared library
 And tenant B's reads never return it and a direct fetch answers 404
@@ -228,9 +247,12 @@ When the indexer runs and the worker dispatches its outbox events
 Then no chunk, embedding or rerank call carries their text
 When a member of tenant A asks for similar records, or opens a private change
 Then find-similar returns shared records only and the private change carries no AI-drafted "So what?"
-When tenant A's exit deletes the tenant
-Then its private instruments and obligations go with their append-only children
 ```
+
+> **Note — tenant exit is chunk 12's (PRD 0.7).** INV-S13 moves to R2 with OWN, and the
+> clause that tenant A's exit deletes its private instruments and obligations with their
+> append-only children is split out: it is proven by chunk 12's tenant-exit scenarios, which
+> delete every row of the tenant, and not by this R2 stub.
 
 ### INV-S14 — A record an agent confirmed reads as machine-confirmed `@integration` `@e2e` (INV-05, INV-06, PRO-02)
 ```gherkin
@@ -242,3 +264,15 @@ And the screen labels it machine-confirmed, in the same place a person's verific
 When a person later re-verifies the record against its source
 Then the stamp names that person and the machine-confirmed label gives way
 ```
+### INV-S15 — The bank's own records read "Private to us", and nothing changes when the library catches up `@integration` `@e2e` (OWN-04, INV-07, AC-OWN1)
+```gherkin
+Given an obligation tenant A's own agent proposed for an approved scope item and a second person in tenant A approved
+Then tenant A's inventory lists it beside the shared library, labelled "Private to us"
+And tenant B's inventory never lists it and its address answers 404
+And a support session into tenant A never returns it
+When an agent access entry of tenant A asks what applies
+Then the answer leaves it out and says how many of the bank's own records it left out
+When the shared library later approves an instrument with the same official reference
+Then tenant A's own record, its register rows and its label are unchanged, and nothing links or merges them automatically
+```
+

@@ -71,3 +71,35 @@ Agents read key, label and usage note at run start, submit keys only, and
 their classifications show as suggestions until a person confirms. A new
 term is a proposal. A re-tag request applies a new value to existing records
 as one batch proposal.
+
+## The bank's own records and scope items (D-89)
+
+Drawn on `design/screens/tenant-private-records.html` and `admin-footprint.html`
+(states 21 to 29); OWN-01, OWN-03, OWN-04, INV-07. Each tone comes from a kind
+the API sends, never from a person.
+
+| Kind | Value | Label | Tone |
+|---|---|---|---|
+| Record owner | `tenant` | "Private to us" | `information`, outlined, the tenant-tag shape: the bank's own, never `brand`, which means the shared library |
+| Record owner | `shared` | no pill | |
+| Proposer, on a bank's own proposal | `agent` | "Proposed by our agent" | `brand`, the tone of an agent version |
+| Proposer, on a bank's own proposal | `person` | no pill; "Proposed by {name}" or "Proposed by you" as meta text | |
+| Scope item research state | `waiting_for_agent` | "Waiting for your agent" | `warning`, needs attention (the reason is meta text) |
+| Scope item research state | `researching` | "Our agent is researching" | `notice`, a running agent |
+| Scope item research state | `proposals_waiting` | "N proposals waiting" | `notice`, a count |
+| Scope item research state | `researched` | "Researched" | `positive`, a finished run |
+
+A bank's own proposal takes the proposal kinds and statuses the shared queue
+has ("New control" is the kind of OWN-05's control, D-99). A scope item in a
+pending request wears "Added when approved" or "Removed when approved" as a
+term does.
+
+| Record | Order |
+|---|---|
+| A bank's own obligation row and header | "Private to us", then the instrument's short name outlined, then the slots of the shared record in their order |
+| A bank's own instrument header and row | "Private to us", short name outlined, then level, binding level, jurisdiction, regime |
+| A bank's own proposal row and header | Kind, status, "Proposed by our agent" when the proposer is an agent |
+| Scope item | Research state, then its meta line |
+
+The "Drafted by our agent" callout on a bank's own proposal is the AI-drafted
+callout (foundations.md), not a pill, and it stays until a person decides.

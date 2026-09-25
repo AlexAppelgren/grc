@@ -38,6 +38,23 @@ already pass to `taxonomy_in_footprint`. FP-01's rules hold inside it, so an
 empty dimension does not restrict and naming no department and no product narrows
 nothing (D-70).
 
+PRD 0.7 (D-89, Alex 2026-09-24; details answered by default in D-91, ADR 0059,
+`docs/plans/briefs/SCOPE_ITEMS.md`) adds group OWN, the bank's own regulations. Alex's
+words:
+"an agent can always add things to the library, and then another agent can verify it, its then up to the tenant to decide if they want to use it or not",
+and
+"The previously called 'footprint' can not be agent managed, only a tenant admin can add things that the agents should look out for or regulations that apply to them".
+D-89 decides that a bank's people may add to its regulatory scope
+a regulation or area the shared library does not yet cover, that the bank's own agents
+research it and fill the bank's own library zone with regulation and control inventories
+as proposals, and that the bank's people approve or reject them the way the shared queue
+works. Here that means the scope item (OWN-01): a name, jurisdiction and regime terms, an
+official reference where one exists and the public source addresses to research, asked
+for through the regulatory scope request under `footprint.request` and approved by a
+different person under `footprint.approve` with a passkey. No API key reaches it and no
+agent ever writes one, and approving an item widens no term of the scope: it is a thing
+the bank's agents look out for, not a term records are matched against.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -59,6 +76,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | built |
 | I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data | M | R1 | built |
 | ACC-02 | An agent access entry's scope is the terms of its departments and products intersected with the tenant footprint, computed per request. It can only narrow; an empty dimension does not restrict; a record outside it answers 404, never a filtered result | M | R2 | pending |
+| OWN-01 | A scope item (name, jurisdiction and regime terms, official reference, public source addresses) is added through the regulatory scope request: `footprint.request` asks, a different person with `footprint.approve` approves with a passkey; no API key reaches it, approving widens no term, and no agent ever writes one (D-89, D-91) | M | R2 | pending |
 ## 3. Acceptance criteria (from PRD, condensed)
 
 - **AC-VOC1** An admin adds a change type, a tag and a sub-status with no deploy:
@@ -525,6 +543,33 @@ And a record carrying no opt-in term is unaffected by the opt-in dimension
 When the opt-in dimension's restricts_footprint is false
 Then both still treat it as restricting, and the regulatory scope read says it restricts
 And calling in_footprint without restricting_dimensions()'s answer, which names the opt-in dimensions, raises a TypeError
+```
+
+### FP-S18 — A scope item the library does not cover is requested by one person and approved by another with a passkey `@integration` `@e2e` (OWN-01, FP-02, AC-OWN2)
+```gherkin
+Given a compliance officer in tenant A with footprint.request
+When they propose a scope item with a name, the jurisdiction "Sweden", a regime term, an official reference and a public https source address
+Then a regulatory scope change request is stored and shown as "Waiting for approval", and no term of the scope changes
+When the same officer approves it
+Then the request answers 409 with code "four_eyes_violation"
+When a second person with footprint.approve approves it without a fresh step-up
+Then the request answers 403 with code "step_up_required"
+When they approve it with a fresh passkey assertion
+Then the item is part of tenant A's regulatory scope, one audit event names the approver and the assertion, and the preview hid and revealed nothing
+When any API key, a tenant's or the platform's, asks for, approves or edits a scope item
+Then the request is refused and nothing is stored
+And tenant B's fetch of the item answers 404
+```
+
+### FP-S19 — J-12: the bank's own regulation, from scope item to "Private to us" `@e2e` (OWN-01, OWN-02, OWN-03, OWN-04, AC-OWN1, AC-OWN2, J-12)
+```gherkin
+Given a compliance officer and an approver in tenant A, each signed in with a passkey
+When the officer adds a regulation the library does not cover to the regulatory scope
+And the approver approves the request with a passkey
+Then the bank's own agent, run on the mock runner, files the bank's own instrument and obligations as proposals in tenant A's own queue
+When the approver approves one of them with a passkey
+Then the inventory lists the obligation labelled "Private to us"
+And a member of tenant B who opens its address gets "not found"
 ```
 
 ### I18N-S1 — Languages and jurisdictions are rows, never columns or branches `@integration` (I18N-01)

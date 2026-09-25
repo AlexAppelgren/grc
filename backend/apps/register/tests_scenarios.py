@@ -417,3 +417,10 @@ class RegisterScenarioTests(TestCase):
 
         With tenant reach on, an entry reads the register decisions in its scope and nothing else (ACC-04).
         """
+
+    @skip("pending: REG-S17 (OWN-04, OWN-05, REG-01, REG-02, REG-05, chunk 11)")
+    def test_reg_s17(self) -> None:
+        """REG-S17
+
+        The register decides the bank's own obligations as it decides shared ones, and links their controls (OWN-04, OWN-05, REG-01, REG-02, REG-05).
+        """

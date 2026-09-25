@@ -30,8 +30,10 @@ default the packages take, and each answer changes a task, not an invariant alre
       `r2-banking-groups-brief` sets it in D-96.)
 - [ ] **Search scope in R2 (D-10).** D-10 kept tenant content out of search in R1 and put the
       question at R2. (Default: still library only; no tenant text is embedded.)
-- [ ] **ADM-02's languages (D-94).** Which content languages the console's jurisdiction and
+- [x] **ADM-02's languages (D-94).** Which content languages the console's jurisdiction and
       translation surfaces carry. (Default: as `x-jurisdictions-by-proposal` sets it in D-94.)
+      Answered 2026-09-25, default taken: languages stay a read-only seeded list; jurisdictions
+      are relabelled, retired and restored by proposal (D-94).
 - [ ] **Evidence upload and the scanner.** That evidence arrives by multipart through the API
       rather than a presigned PUT (`CHUNK9_TASKS.md` ruling 4), and that the R2 deploy needs a
       `clamd` service (`PARALLEL_PLAN.md` §7.3). (Default: multipart; a deployed environment
@@ -1370,3 +1372,39 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 - [ ] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. It
       follows the app's existing terms (skyldighet, förslag, godkännande), but
       a native read of the headline and the questions is worth five minutes.
+
+## r2-spec-d89: the bank's own regulations (PRD 0.7, 2026-09-25)
+
+- [ ] **D-89: confirm PRD 0.7's OWN group.** Non-blocking: chunk 11 builds it on the
+      defaults in D-91 and ADR 0059 (design: `docs/plans/briefs/SCOPE_ITEMS.md`). A scope
+      item is added through the regulatory scope request with four eyes and a passkey, and
+      no agent or key writes one. The bank's own agent files what it finds as proposals only
+      through its runner, and a person holding `private_records.approve` decides each one
+      with a passkey. Three details are yours to overrule:
+      1. **What reaches the model.** Default: only the item's jurisdiction and regime keys
+         and the public pages it fetches, never the name the bank typed (D-07 and D-32 stay
+         open). Say if the name may reach the bank's own agent.
+      2. **What a control inventory is (OWN-05).** Default: a linked internal item of the
+         control kind (REG-05) with the fields REG-05 gives it. Say if a control needs more
+         (an owner, a test, a frequency).
+      3. **Who confirms a bank's own record.** Default: a person, always; an agent never
+         confirms one, unlike the shared library (D-62). Say if a bank may switch on a
+         confirming agent for its own queue.
+## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-9x)
+
+- [ ] **The console's correction form gained one field.** A reviewer who changes a
+      proposal's wording, date or scope before approving now gives "Source of your
+      correction", the link or provision they read the new value in; the server refuses a
+      changed value without one (security-review-c4 L5). The design card
+      (`design/screens/console-queue.html`) shows no such field, so it was added in the
+      form's existing style below the scope. Default if you say nothing: it stays. The
+      proposer's replaced source is kept in the approval's audit row, not beside the
+      reviewer's on the queue screen; say if the queue should show both (a column on
+      `proposal`, D-9x).
+- [ ] **The confirming agent's next version should name its correction's source.**
+      `backend/agents/library-confirmer/v2/prompt.md` says a correction goes through
+      `payloadOverrides` and does not mention `fieldSources`; a shipped version is never
+      edited, so it stays. Until a v3 says "name in `fieldSources` the page you read each
+      changed value in", an agent's correction without one answers 422 `source_missing`
+      and applies nothing (fails safe; it can still approve as proposed or reject).
+      Default if you say nothing: v3 carries that line when the confirmer next changes.

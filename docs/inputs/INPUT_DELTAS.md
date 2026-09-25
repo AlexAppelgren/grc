@@ -1437,6 +1437,35 @@ departures:
   carrying the designed `kind`: the item carries the kind. It is removed by stamping
   `removed_at` and `removed_by`, never deleted, with one live link per entry and item.
 
+
+## 18. A batch proposal and its rows (2026-09-25, c11-proposal-batches-model)
+
+Version 0.3 of the schema has no batch: PRD PRO-04 and AGT-05 ask for one proposal that
+changes many library records, previewed and approved whole or row by row. Proposals 0008
+builds it on the existing table rather than beside it:
+
+- `proposal` gains `is_batch` (default false) and `row_count` (default 0), held together by
+  the check `proposal_batch_row_count`: a batch counts at least one row, a single proposal
+  none. Four eyes, the rejection reason, the audit row and the apply path are the parent's,
+  unchanged; `proposal_four_eyes` refuses a batch's proposer as its reviewer as for any
+  proposal.
+- `proposal_batch_row` is new, in the library zone with no tenant column (like `proposal`):
+  `proposal_id`, `subject_type` and `subject_id` (the record, named as `target_type` and
+  `target_id` name one), `before` and `after` (the preview, `ProposalBatchRowPayload`),
+  `decision`, `rejection_reason_id` (a row of the `rejection_reason` list), `decided_by`,
+  `decided_at`, `created_at`; unique per `(proposal, subject_type, subject_id)`. It is a
+  plain model like `proposal`, not a `LibraryModel`: rows are filed and decided by the
+  proposal logic, and the library fence belongs to `apply.py`.
+- A row is written once and decided once. The trigger `proposal_batch_row_decision_guard`
+  lets only the four decision columns change, only from `pending` to `approved` or
+  `rejected`, never to the batch's own proposer, and refuses DELETE; the schema owner's
+  stated fix (`cw.maintenance`) passes as on every ledger. The check
+  `proposal_batch_row_decided` demands a date on a decision and a reason on a rejection and
+  only there. `decided_by` names a person; an agent's row decision is named by its audit row.
+- Two tier-one kinds (§1): `proposal_kind` gains `obligation_scope`, the re-tag, which chunk 4
+  cut (parallel-plan ruling 14); a backfill is a batch of an existing kind, not a kind. And
+  `proposal_batch_decision` (`pending`, `approved`, `rejected`) is new: the trigger and apply
+  branch on it and no admin adds one.
 ## 18. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
 
 The designed `tenant.settings` blob is six columns on `tenant` (shared 0009):
@@ -1457,3 +1486,27 @@ of range answers 422 `validation_error` and an unknown role or weekday 422 `unkn
 naming the field in `errors`. The change is recorded as `tenant.workflow_updated` with every
 value before and after. `review_reminder_days_before` is not in the chunk 10 brief's five
 columns; the wave plan added it for the review reminder COL-02 names.
+
+## 18. A proposal owned by a bank, and the bank's own queue declared (2026-09-25, d89-proposal-owner)
+
+§5's private-records row, built for INV-07 and OWN-03 (D-57, D-89, ADR 0050, ADR 0059):
+
+- `proposal` gains `owner_tenant_id` (proposals 0009), null for the shared library and every
+  existing row. `apps/proposals/logic.create` sets it and nothing else does: a version takes
+  its target's owner, and a new instrument or obligation the server files as the bank's own
+  (`private=True`) takes the bank the database is scoped to, the filing session's or, in the
+  worker, the run's. A request body naming it is refused (422 `validation_error`).
+- `proposal` is a mixed table under forced row-level security in the split shape (H15):
+  `tenant_isolation` FOR ALL on the session's own zone and `library_rows_visible` FOR SELECT
+  on the shared rows, so the console, with no tenant, reads no owned row. "Insert shared or
+  own" is one extra policy, FOR INSERT only: `shared_proposal_filed` lets a bank's session
+  insert a shared row filed inside a bank, single, open and undecided, and nothing else of
+  the shared zone. The RLS guard pins its text.
+- `private_records.approve` is a tenant permission of Compliance officer and Approver, in the
+  approve set, never a platform grant or an API key scope. `GET /private-proposals`
+  (`listPrivateProposals`), `POST /private-proposals/{proposalId}/approve`
+  (`approvePrivateProposal`, step-up) and `/reject` (`rejectPrivateProposal`) are declared
+  and answer 501 until d89-private-records; approve and reject load the proposal under
+  row-level security first, so another bank's answers 404. The library fence names
+  `approvePrivateProposal` as the third route that may reach `apply`. `proposal_four_eyes`
+  is unchanged.

@@ -11,12 +11,15 @@ with the proposal left open and nothing written.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
-from django.test import Client
+from django.db import DEFAULT_DB_ALIAS, IntegrityError, transaction
+from django.test import Client, TransactionTestCase
+
+from apps.agents import testing as agents_testing
 
 from apps.library import testing as library_build
 from apps.library.models import (
@@ -28,18 +31,34 @@ from apps.library.models import (
     ObligationTag,
     ObligationTerm,
     ObligationVersion,
+    Provision,
     SubjectType,
     Verification,
     VerificationOutcome,
 )
 from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.proposals import apply, logic
 from apps.proposals.models import Proposal, ProposalStatus
-from apps.shared import factories
+from apps.proposals.tests_decide import _actor, _agent_actor, _approval, _race, _seed
+from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
+from apps.shared.schemas import AgentDecision
 from apps.shared.tenancy import LibraryWriteRefused, library_write
-from apps.shared.testing import ScenarioTestCase, sign_in
-from apps.taxonomy.models import DutyType, Flag, InstrumentLevel, LibraryTag, ProvisionKind, RelationType, TaxonomyTerm, Urgency
+from apps.shared.testing import LANDED, ScenarioTestCase, sign_in
+from apps.taxonomy import repoint
+from apps.taxonomy.models import (
+    DutyType,
+    Flag,
+    InstrumentLevel,
+    LibraryTag,
+    ProvisionKind,
+    RelationType,
+    TaxonomyTerm,
+    TermDimension,
+    Urgency,
+)
+from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.watch import testing as watch_build
@@ -166,13 +185,14 @@ class ProposalApply(ScenarioTestCase):
         self.assertEqual(tenant_list.status_code, 422)
         self.assertEqual(tenant_list.json()["code"], "unknown_key")
         self.assertIn("flag", tenant_list.json()["detail"])
+        # A jurisdiction's keys are fixed (D-94): relabelled, retired and restored, never added.
         seeded = self._post("/proposals", {"kind": "vocabulary_create", "title": "Land", "payload": {"list": "jurisdiction", "key": "is", "labels": {"en": "Iceland"}}}, editor)
-        self.assertEqual(seeded.json()["code"], "unknown_key")
+        self.assertEqual(seeded.json()["code"], "validation_error")
         dimension = self._post("/proposals", {"kind": "term_create", "title": "T", "payload": {"dimension": "planet", "key": "x", "labels": {"en": "X"}}}, editor)
         self.assertEqual(dimension.json()["code"], "unknown_key")
         untitled = self._post("/proposals", {"kind": "vocabulary_retire", "title": "  ", "payload": {"list": "flag", "key": "ai"}}, editor)
         self.assertEqual(untitled.json()["code"], "validation_error")
-        # Jurisdictions are seeded reference data: the vocabulary routes refuse to queue them.
+        # And the vocabulary route refuses to queue one.
         self.assertEqual(self._post("/vocab/jurisdiction", {"labels": {"en": "Iceland"}}, editor).json()["code"], "validation_error")
 
     # --- a proposal made directly is checked like one made through the vocabulary routes ---------
@@ -233,6 +253,7 @@ class ProposalApply(ScenarioTestCase):
         self.assertEqual(made.json()["payload"]["labels"], {"en": "Client money"})
 
     def test_a_stored_payload_that_no_longer_parses_is_refused_at_approval_and_stays_open(self) -> None:
+        tenancy.clear_tenant()  # the console's zone, as its own request has in production (proposals 0009)
         stored = Proposal.objects.create(
             kind="vocabulary_create", title="Written before the payload schema closed", payload={"list": "flag", "key": "x"}, origin="user"
         )
@@ -395,6 +416,72 @@ class ApprovalCorrectionsAndTheAssertion(ScenarioTestCase):
                 # The decision and the library change it made, and nothing without an assertion.
                 self.assertGreaterEqual(len(rows), 2)
                 self.assertEqual([row.action for row in rows if row.step_up_assertion_id is None], [])
+
+
+    def test_a_decisions_note_stays_on_the_proposal_and_never_in_its_audit_value(self) -> None:
+        """From R2 a proposal can be a bank's own (D-89), and a reviewer's note is their own
+        words about it, so it is tenant content an audit value may not carry (CHUNK10 rule
+        13): the note is kept on the proposal row, which the proposer reads, and the audit
+        row says only what was decided."""
+        approved_note = "Checked against the board decision; the wording is the authority's."
+        rejected_note = "The flag list already has Client assets for this."
+        approving = self._version_proposal()
+        rejecting = self._flag_proposal()
+
+        approved = self._post(f"/proposals/{approving['id']}/approve", {"note": approved_note}, sign_in(self.reviewer, step_up=True))
+        rejected = self._post(
+            f"/proposals/{rejecting['id']}/reject", {"rejectionCode": "duplicate", "note": rejected_note}, sign_in(self.reviewer, step_up=True)
+        )
+
+        self.assertEqual((approved.status_code, rejected.status_code), (200, 200), (approved.content, rejected.content))
+        for proposal, action, note in ((approving, "proposal.approved", approved_note), (rejecting, "proposal.rejected", rejected_note)):
+            with self.subTest(action=action):
+                self.assertEqual(Proposal.objects.get(pk=proposal["id"]).review_note, note)
+                audit = AuditEvent.objects.get(action=action, subject_id=proposal["id"])
+                self.assertNotIn("note", audit.after)
+                self.assertNotIn(note, str(audit.before) + str(audit.after) + audit.summary)
+        self.assertEqual(AuditEvent.objects.get(action="proposal.rejected", subject_id=rejecting["id"]).after["rejectionCode"], "duplicate")
+
+    def test_a_correction_that_changes_a_sourced_value_names_a_fresh_source(self) -> None:
+        """A reviewer who changes what a sourced field says read the new value somewhere, and
+        the proposer's source vouches only for the value it was given for (H35, security-review
+        c4 L5): the changed field names its fresh source in `fieldSources`, checked as a
+        proposal's are, and the proposal then keeps that source for the field."""
+        proposal = self._version_proposal()
+        reviewer = sign_in(self.reviewer, step_up=True)
+        reworded = {"summaries": {"sv": "Institutet bedömer kunden noggrant innan rådgivning."}}
+        fresh = "https://www.fi.se/sv/publicerat/nyheter/2026/beslut/"
+
+        for body, code in (
+            ({"payloadOverrides": reworded}, "source_missing"),
+            ({"payloadOverrides": reworded, "fieldSources": {"summaries.sv": "see above"}}, "validation_error"),
+            # A source for a value the correction leaves as proposed is a source for nothing.
+            ({"payloadOverrides": reworded, "fieldSources": {"summaries.sv": fresh, "effectiveFrom": fresh}}, "validation_error"),
+            ({"fieldSources": {"summaries.sv": fresh}}, "validation_error"),
+        ):
+            with self.subTest(body=body):
+                refused = self._post(f"/proposals/{proposal['id']}/approve", body, reviewer)
+                self.assertEqual(refused.status_code, 422, refused.content)
+                self.assertEqual(refused.json()["code"], code)
+                row = Proposal.objects.get(pk=proposal["id"])
+                self.assertEqual((row.status, row.corrected_payload), (ProposalStatus.OPEN.value, None))
+
+        # Correcting a value to what was proposed changes nothing, so it needs no source.
+        unchanged = {"summaries": {"sv": "Institutet bedömer kunden innan rådgivning."}, "effectiveFrom": "2026-10-01"}
+        as_proposed = self._post(f"/proposals/{proposal['id']}/approve", {"payloadOverrides": unchanged}, reviewer)
+        self.assertEqual(as_proposed.status_code, 200, as_proposed.content)
+        self.assertEqual(Proposal.objects.get(pk=proposal["id"]).field_sources, {"summaries.sv": "https://www.fi.se/", "effectiveFrom": "https://www.fi.se/"})
+        self.assertNotIn("fieldSources", AuditEvent.objects.get(action="proposal.approved", subject_id=proposal["id"]).after)
+
+        second = self._version_proposal()
+        approved = self._post(f"/proposals/{second['id']}/approve", {"payloadOverrides": reworded, "fieldSources": {"summaries.sv": f" {fresh} "}}, reviewer)
+        self.assertEqual(approved.status_code, 200, approved.content)
+        row = Proposal.objects.get(pk=second["id"])
+        self.assertEqual((row.corrected_payload or {})["summaries"], reworded["summaries"])
+        self.assertEqual(row.field_sources, {"summaries.sv": fresh, "effectiveFrom": "https://www.fi.se/"})
+        # The proposer's source for the value it no longer vouches for stays in the log.
+        audit = AuditEvent.objects.get(action="proposal.approved", subject_id=second["id"])
+        self.assertEqual((audit.before["fieldSources"], audit.after["fieldSources"]), ({"summaries.sv": "https://www.fi.se/"}, {"summaries.sv": fresh}))
 
 
 class MirroredTermsAtApproval(ScenarioTestCase):
@@ -804,3 +891,355 @@ class LibraryMergeRepoints(ScenarioTestCase):
         retired = self._post("/vocab/flag/client_money/merge", {"into": "client_assets"}, sign_in(self.editor))
         self.assertEqual(retired.status_code, 409, retired.content)
         self.assertEqual(retired.json()["code"], "invalid_transition")
+
+
+class JurisdictionsByProposal(ScenarioTestCase):
+    """ADM-02, VOC-07, FP-04, D-94: a jurisdiction is relabelled, retired and restored through
+    an approved proposal like any library list row, never added and never merged away, and
+    its key never changes. The approval moves the term that mirrors it in the same
+    transaction, so the footprint's markets read as the jurisdiction list does; the reference
+    seed a deploy re-runs undoes none of it. An agent's confirmation names both agents on the
+    row and the term and never reads as a person's."""
+
+    def setUp(self) -> None:
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+        tenancy.clear_tenant()
+        self.editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
+        self.reviewer = factories.platform_user(roles=("library_editor",), email="reviewer@bleqq.test")
+
+    def _send(self, method: str, path: str, body: dict[str, Any], headers: dict[str, Any]) -> Any:
+        response = getattr(self.client, method)(f"{V1}{path}", data=body, content_type="application/json", **headers)
+        tenancy.clear_tenant()
+        return response
+
+    def _applied(self, method: str, path: str, body: dict[str, Any], **headers: Any) -> dict[str, Any]:  # compliance: allow-kwargs test helper forwarding request headers
+        proposed = self._send(method, path, body, {**sign_in(self.editor), **headers})
+        self.assertEqual(proposed.status_code, 202, proposed.content)
+        proposal: dict[str, Any] = proposed.json()["proposal"]
+        approved = self._send("post", f"/proposals/{proposal['id']}/approve", {}, sign_in(self.reviewer, step_up=True))
+        self.assertEqual(approved.status_code, 200, approved.content)
+        return proposal
+
+    def _term(self, key: str) -> TaxonomyTerm:
+        return TaxonomyTerm.objects.get(jurisdiction__key=key)
+
+    def test_a_relabel_is_a_proposal_and_the_mirrored_term_follows_in_the_same_approval(self) -> None:
+        term = self._term("se")
+        proposal = self._applied("patch", "/vocab/jurisdiction/se", {"labels": {"sv": "Konungariket Sverige"}, "sortOrder": 7}, HTTP_IF_MATCH="1")
+        self.assertEqual(proposal["kind"], "vocabulary_relabel")
+        row = Jurisdiction.objects.get(key="se")
+        self.assertEqual((row.version, row.sort_order, row.verified_origin, row.verified_by_agent_id), (2, 7, "user", None))
+        self.assertEqual(str(row.applied_by_proposal_id), proposal["id"])
+        self.assertEqual((row.labels.get(language="sv").text, row.labels.get(language="en").text), ("Konungariket Sverige", "Sweden"))
+        followed = TaxonomyTerm.objects.get(pk=term.pk)
+        self.assertEqual((followed.version, followed.sort_order, followed.active, followed.verified_origin), (term.version + 1, 7, True, "user"))
+        self.assertEqual(followed.labels.get(language="sv").text, "Konungariket Sverige")
+        self.assertFalse(followed.labels.get(language="sv").is_machine)
+        audit = AuditEvent.objects.filter(subject_id=term.id, action="taxonomy.term_updated").latest("created")
+        self.assertEqual((audit.before["labels"]["sv"], audit.after["labels"]["sv"]), ("Sverige", "Konungariket Sverige"))
+        self.assertIsNotNone(audit.step_up_assertion_id)
+        # A deploy's reference seeds put back neither the order nor the wording.
+        seed_jurisdictions()
+        seed_taxonomy_terms()
+        self.assertEqual(Jurisdiction.objects.get(key="se").sort_order, 7)
+        self.assertEqual((self._term("se").sort_order, self._term("se").labels.get(language="sv").text), (7, "Konungariket Sverige"))
+        # The list reads the stamp, and a proposal made from the old read is refused.
+        read = self._send("get", "/vocab/jurisdiction/se", {}, sign_in(self.editor)).json()
+        self.assertEqual((read["version"], read["verifiedOrigin"]), (2, "user"))
+        stale = self._send("patch", "/vocab/jurisdiction/se", {"labels": {"en": "Sweden"}}, {**sign_in(self.editor), "HTTP_IF_MATCH": "1"})
+        self.assertEqual((stale.status_code, stale.json()["code"]), (409, "stale_write"))
+
+    def test_retire_and_restore_take_the_mirrored_term_with_them(self) -> None:
+        self._applied("post", "/vocab/jurisdiction/dk/retire", {})
+        self.assertEqual((Jurisdiction.objects.get(key="dk").active, self._term("dk").active), (False, False))
+        # A deploy's reference seeds keep the decision: neither the row nor its term comes back.
+        seed_jurisdictions()
+        seed_taxonomy_terms()
+        self.assertEqual((Jurisdiction.objects.get(key="dk").active, self._term("dk").active), (False, False))
+        self._applied("post", "/vocab/jurisdiction/dk/restore", {})
+        self.assertEqual((Jurisdiction.objects.get(key="dk").active, self._term("dk").active), (True, True))
+        # International mirrors no term, so it retires alone.
+        self._applied("post", "/vocab/jurisdiction/intl/retire", {})
+        self.assertFalse(Jurisdiction.objects.get(key="intl").active)
+        self.assertFalse(TaxonomyTerm.objects.filter(jurisdiction__key="intl").exists())
+
+    def test_a_retirement_of_a_jurisdiction_records_are_filed_under_asks_first(self) -> None:
+        library_build.instrument(key="lag-2004-297", regime="regime:securities", jurisdiction="se")
+        asked = self._send("post", "/vocab/jurisdiction/se/retire", {}, sign_in(self.editor))
+        self.assertEqual((asked.status_code, asked.json()["code"], asked.json()["usageCount"]), (409, "in_use", 1))
+        self._applied("post", "/vocab/jurisdiction/se/retire", {"confirm": True})
+        self.assertFalse(Jurisdiction.objects.get(key="se").active)
+
+    def test_a_jurisdictions_key_never_changes_and_no_value_is_added_or_merged_away(self) -> None:
+        editor = sign_in(self.editor)
+        for method, path, body in (
+            ("post", "/vocab/jurisdiction", {"key": "is", "labels": {"en": "Iceland"}}),
+            ("post", "/vocab/jurisdiction/no/merge", {"into": "dk"}),
+            ("post", "/vocab/jurisdiction/no/merge?dryRun=true", {"into": "dk"}),
+            ("post", "/proposals", {"kind": "vocabulary_merge", "title": "Merge", "payload": {"list": "jurisdiction", "key": "no", "into": "dk"}}),
+        ):
+            with self.subTest(path=path):
+                refused = self._send(method, path, body, editor)
+                self.assertEqual((refused.status_code, refused.json()["code"]), (422, "validation_error"), refused.content)
+        # A merge filed before the rule is refused at approval and stays open.
+        stored = Proposal.objects.create(
+            kind="vocabulary_merge", title="Filed before the rule", payload={"list": "jurisdiction", "key": "no", "into": "dk"},
+            origin="user", proposed_by_user=self.editor,
+        )
+        refused = self._send("post", f"/proposals/{stored.id}/approve", {}, sign_in(self.reviewer, step_up=True))
+        self.assertEqual((refused.status_code, refused.json()["code"]), (422, "validation_error"))
+        self.assertEqual(Proposal.objects.get(pk=stored.pk).status, ProposalStatus.OPEN.value)
+        self.assertTrue(Jurisdiction.objects.get(key="no").active)
+        self.assertFalse(Jurisdiction.objects.filter(key="is").exists())
+        # The key itself is immutable on the row, whatever door is open.
+        row = Jurisdiction.objects.get(key="fi")
+        row.key = "suomi"
+        with self.assertRaises(ValidationError), library_write("test", door="proposal"):
+            row.save()
+
+    def test_an_agents_confirmation_names_both_agents_on_the_row_and_its_term(self) -> None:
+        proposing = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        run = agents_testing.platform_run(key=proposing)
+        confirming = agents_testing.reviewer_api_key()
+        agent = proposing.agent
+        proposal, _ = logic.create(
+            kind="vocabulary_relabel",
+            title="Relabel Finland",
+            payload={"list": "jurisdiction", "key": "fi", "labels": {"sv": "Republiken Finland"}},
+            proposer=logic.Proposer(actor=Actor(kind=ActorType.AGENT, id=agent.id, label=agent.key), api_key_id=proposing.id, agent_id=agent.id),
+            agent_run_id=run.id,
+        )
+        approved = self.client.post(
+            f"{V1}/proposals/{proposal.id}/approve", data=agents_testing.decision(confirming),
+            content_type="application/json", HTTP_X_API_KEY=confirming.plain_key,
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+        tenancy.clear_tenant()
+        row, term = Jurisdiction.objects.get(key="fi"), self._term("fi")
+        for stamped in (row, term):
+            with self.subTest(stamped=type(stamped).__name__):
+                self.assertEqual((stamped.verified_origin, stamped.verified_by_agent_id), ("agent", confirming.agent.id))
+                self.assertEqual(Proposal.objects.values_list("proposed_by_agent_id", flat=True).get(pk=proposal.id), agent.id)
+                self.assertEqual(stamped.applied_by_proposal_id, proposal.id)
+                self.assertTrue(stamped.labels.get(language="sv").is_machine, "an agent's wording is labelled machine-made")
+        read = self._send("get", "/vocab/jurisdiction/fi", {}, sign_in(self.editor)).json()
+        self.assertEqual(
+            (read["verifiedOrigin"], read["confirmedByAgent"]["key"], read["proposedByAgent"]["key"]),
+            ("agent", confirming.agent.key, agent.key),
+        )
+
+
+class MirroredDimensionRowAndMergesWithoutLinks(ScenarioTestCase):
+    """Hardening H28: the dimension row whose terms mirror the jurisdictions is as closed to
+    proposals as its terms, at propose and at apply, so no approval can turn off its footprint
+    rule, retire it or merge it; a merge on a list that counts its uses without links (a
+    dimension's terms) is refused while the value is in use, because it would retire the
+    value and move nothing; and a retired target is refused on either side of a merge (the
+    `LibraryMergeRepoints` test on flags proves that one for the route and the apply)."""
+
+    def setUp(self) -> None:
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+        tenancy.clear_tenant()
+        self.editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
+        self.reviewer = factories.platform_user(roles=("library_editor",), email="reviewer@bleqq.test")
+
+    def _send(self, path: str, body: dict[str, Any], headers: dict[str, Any], method: str = "post") -> Any:
+        response = getattr(self.client, method)(f"{V1}{path}", data=body, content_type="application/json", **headers)
+        tenancy.clear_tenant()
+        return response
+
+    def _stored(self, kind: str, payload: dict[str, Any]) -> Proposal:
+        """A proposal stored as one filed before these rules existed was."""
+        return Proposal.objects.create(kind=kind, title="Filed before H28", payload=payload, origin="user", proposed_by_user=self.editor)
+
+    def _refused_at_approval(self, proposal: Proposal, status: int, code: str) -> None:
+        reviewer = sign_in(self.reviewer, step_up=True)
+        written = AuditEvent.objects.count()
+        refused = self._send(f"/proposals/{proposal.id}/approve", {}, reviewer)
+        self.assertEqual((refused.status_code, refused.json()["code"]), (status, code), refused.content)
+        self.assertEqual(Proposal.objects.get(pk=proposal.pk).status, ProposalStatus.OPEN.value)
+        self.assertEqual(AuditEvent.objects.count(), written, "nothing was written, not even the decision")
+
+    def test_a_proposal_on_the_mirrored_dimension_row_is_refused_at_propose_and_at_apply(self) -> None:
+        dimension = TermDimension.objects.get(terms__jurisdiction__key="se")
+        editor = sign_in(self.editor)
+        change = {"extra": {"restrictsFootprint": False}}
+        refused = self._send(f"/vocab/term_dimension/{dimension.key}", change, {**editor, "HTTP_IF_MATCH": str(dimension.version)}, method="patch")
+        self.assertEqual((refused.status_code, refused.json()["code"]), (422, "jurisdiction_term_mirrored"), refused.content)
+        for kind, payload in (
+            ("vocabulary_relabel", {"list": "term_dimension", "key": dimension.key, **change}),
+            ("vocabulary_retire", {"list": "term_dimension", "key": dimension.key}),
+            ("vocabulary_merge", {"list": "term_dimension", "key": "service_type", "into": dimension.key}),
+        ):
+            with self.subTest(kind=kind):
+                direct = self._send("/proposals", {"kind": kind, "title": "Direct", "payload": payload}, editor)
+                self.assertEqual((direct.status_code, direct.json()["code"]), (422, "jurisdiction_term_mirrored"), direct.content)
+                self._refused_at_approval(self._stored(kind, payload), 422, "jurisdiction_term_mirrored")
+        kept = TermDimension.objects.get(pk=dimension.pk)
+        self.assertEqual((kept.restricts_footprint, kept.active, kept.version), (dimension.restricts_footprint, True, dimension.version))
+
+    def test_a_merge_that_would_move_none_of_the_uses_of_a_value_is_refused(self) -> None:
+        with library_write("test"):
+            desk = TermDimension.objects.create(key="desk", kind="classification")
+            TermDimension.objects.create(key="counter", kind="classification")
+            TaxonomyTerm.objects.create(dimension=desk, key="fx_desk")
+        payload = {"list": "term_dimension", "key": "desk", "into": "counter"}
+        proposed = self._send("/vocab/term_dimension/desk/merge", {"into": "counter"}, sign_in(self.editor))
+        self.assertEqual((proposed.status_code, proposed.json()["code"]), (409, "invalid_transition"), proposed.content)
+        self._refused_at_approval(self._stored("vocabulary_merge", payload), 409, "invalid_transition")
+        self.assertTrue(TermDimension.objects.get(key="desk").active)
+        self.assertEqual(TaxonomyTerm.objects.get(key="fx_desk").dimension_id, desk.id)
+        # With no use left, the same merge is only a retirement and goes through.
+        with library_write("test"):
+            TaxonomyTerm.objects.filter(key="fx_desk").update(dimension=TermDimension.objects.get(key="counter"))
+        merged = self._send("/vocab/term_dimension/desk/merge", {"into": "counter"}, sign_in(self.editor))
+        self.assertEqual(merged.status_code, 202, merged.content)
+
+
+class ApprovalsOnOneRowRace(TransactionTestCase):
+    """Two approvals of different proposals on one library row at once (PRO-02, INV-05, H34,
+    H25), each session on its own cw_app connection as two requests reach production (the
+    helpers in apps/proposals/tests_decide.py). The first applies and holds its transaction
+    open until PostgreSQL reports the second waiting on it.
+
+    A relabel reads the row and saves it whole, so without the row lock in `apply._row` a
+    person's relabel read the row before an agent's committed and wrote it back over it: one
+    version bump lost and the agent's stamp replaced by the person's while the agent's
+    machine label stayed. Proven to fail 2026-09-25 without that lock (version 2, not 3, and
+    `verified_origin` read `user`).
+
+    A provision's insert reads its instrument's level in `provision_not_under_standard`, and
+    a level merge re-points the instrument under a lock the insert's foreign-key check waits
+    on only after that trigger has passed, so a provision could land under an instrument the
+    merge had just moved onto a standard. `apply._new_provision` locks the instrument and
+    reads it again first. Proven to fail 2026-09-25 without that lock: the provision was
+    written under the standard."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def setUp(self) -> None:
+        with transaction.atomic():
+            _seed()
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.proposer = factories.platform_user(roles=("library_editor",), email="proposer@bleqq.test")
+            self.person = factories.platform_user(roles=("library_editor",), email="person@bleqq.test")
+            confirmer = agents_testing.reviewer_api_key()
+            self.review_run = agents_testing.platform_run(key=confirmer)
+            self.agent = logic.Reviewer(
+                actor=_agent_actor(confirmer), api_key_id=confirmer.id, agent_id=confirmer.agent.id, api_key_prefix=confirmer.row.key_prefix
+            )
+
+    def _proposed(self, kind: str, payload: dict[str, Any], **sourced: Any) -> uuid.UUID:  # compliance: allow-kwargs test helper forwarding create() arguments
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            proposal, _ = logic.create(
+                kind=kind, title=f"{kind} {uuid.uuid4().hex[:6]}", payload=payload, proposer=logic.Proposer(actor=_actor(self.proposer), user=self.proposer), **sourced
+            )
+            return proposal.id
+
+    def _by_agent(self, proposal_id: uuid.UUID) -> Callable[[], object]:
+        return lambda: logic.approve(
+            proposal=logic.by_id(proposal_id),
+            reviewer=self.agent,
+            actor=self.agent.actor,
+            note="",
+            step_up_assertion_id=None,
+            decision=AgentDecision.model_validate(agents_testing.DECISION),
+            agent_run_id=self.review_run.id,
+        )
+
+    def test_an_agents_and_a_persons_relabel_of_one_row_at_once_both_land_in_turn(self) -> None:
+        created = self._proposed("vocabulary_create", {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}})
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            _approval(created, self.person)()
+        by_agent = self._proposed("vocabulary_relabel", {"list": "flag", "key": "client_money", "labels": {"en": "Client funds"}})
+        by_person = self._proposed("vocabulary_relabel", {"list": "flag", "key": "client_money", "labels": {"sv": "Kundmedel"}})
+
+        self.assertEqual(_race(self._by_agent(by_agent), _approval(by_person, self.person)), (LANDED, LANDED))
+
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            flag = Flag.objects.get(key="client_money")
+            # Both bumps count, and the agent's machine label keeps the row naming the agent.
+            self.assertEqual(flag.version, 3)
+            self.assertEqual((flag.verified_origin, flag.verified_by_agent_id, flag.applied_by_proposal_id), ("agent", self.agent.agent_id, by_agent))
+            labels = {label.language: (label.text, label.is_machine) for label in flag.labels.all()}
+            self.assertEqual(labels, {"en": ("Client funds", True), "sv": ("Kundmedel", False)})
+
+    def _instrument_on_a_new_level(self) -> tuple[Instrument, InstrumentLevel]:
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            with library_write("test fixture"):
+                level = InstrumentLevel.objects.create(key="national_act", binding_default=True, rank=41, active=True)
+            return library_build.instrument(key="sfs-2026-1", regime="regime:securities", level="national_act"), level
+
+    def _merge_onto_the_standard(self, level: InstrumentLevel) -> Callable[[], object]:
+        """What a level merge writes (`apply._vocabulary_merge`): every instrument at `level`
+        re-pointed onto the standard level through `repoint.move`, and the database's refusal
+        answered by the code the trigger names. The merge route checks the two kinds match
+        first; this is the write beneath it, which the trigger has to hold on its own."""
+
+        def merge() -> None:
+            try:
+                with transaction.atomic(), library_write("test: a level merge"):
+                    repoint.move(REGISTRY["instrument_level"].links, level, InstrumentLevel.objects.get(key="standard"), library=apply._repoint_rows)
+            except IntegrityError as refused:
+                if "provision_not_under_standard" not in str(refused):
+                    raise
+                raise ValidationError("Refused by the database.", code="provision_not_under_standard") from refused
+
+        return merge
+
+    def _provision_proposal(self, instrument: Instrument) -> uuid.UUID:
+        return self._proposed(
+            "new_provision",
+            {
+                "key": "sfs-2026-1-1-kap",
+                "instrument": instrument.stable_key,
+                "provisionKind": "chapter",
+                "refLabel": "1 kap.",
+                "texts": {"sv": "Lagen gäller för banker."},
+                "originalLanguage": "sv",
+            },
+            field_sources={field: "https://www.riksdagen.se/" for field in ("instrument", "provisionKind", "refLabel", "texts.sv")},
+            source_url="https://www.riksdagen.se/",
+        )
+
+    def _no_provision_under_a_standard(self) -> None:
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.assertFalse(Provision.objects.filter(instrument__level__kind="standard").exists())
+
+    def test_a_level_merge_waiting_on_a_provision_insert_ends_in_provision_not_under_standard(self) -> None:
+        instrument, level = self._instrument_on_a_new_level()
+        provision = self._provision_proposal(instrument)
+
+        outcomes = _race(_approval(provision, self.person), self._merge_onto_the_standard(level))
+
+        self.assertEqual(outcomes, (LANDED, "provision_not_under_standard"))
+        self._no_provision_under_a_standard()
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.assertEqual(Instrument.objects.get(pk=instrument.pk).level_id, level.id)
+
+    def test_a_provision_insert_waiting_on_a_level_merge_is_refused_as_licensed_text(self) -> None:
+        instrument, level = self._instrument_on_a_new_level()
+        provision = self._provision_proposal(instrument)
+
+        outcomes = _race(self._merge_onto_the_standard(level), _approval(provision, self.person))
+
+        self.assertEqual(outcomes, (LANDED, "licensed_text"))
+        self._no_provision_under_a_standard()
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.assertEqual(Proposal.objects.get(pk=provision).status, ProposalStatus.OPEN.value)
