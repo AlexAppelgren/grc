@@ -79,6 +79,7 @@ describe('a notification kind', () => {
   it('shows a kind the screen does not know yet generically, rather than failing', () => {
     expect(notificationKindLabel('follow_hit', t)).toBe('Notification');
     expect(notificationTone('follow_hit')).toBe('information');
+    expect(notificationKindLabel('toString', t)).toBe('Notification');
   });
 });
 
@@ -161,6 +162,7 @@ describe('the composer and My work', () => {
       'Skyldigheter visas inte här, eftersom din roll inte kan öppna dem',
       'Din organisations skyldigheter visas inte här, eftersom din roll inte kan öppna dem',
     ]);
+    expect(permissionLimitedLines(['constructor'], t)).toEqual(['Some records are not shown here, because your role cannot open them']);
     expect(permissionLimitedLines(['reg_unit'], t)).toEqual(['Some records are not shown here, because your role cannot open them']);
     expect(permissionLimitedLines([], t)).toEqual([]);
   });

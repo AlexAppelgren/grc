@@ -29,7 +29,7 @@ export const NOTIFICATION_KIND_LABEL: Record<NotificationKind, MessageKey> = {
 
 // The API may add a kind before the screen knows it: it then reads generically.
 function isKind(value: string): value is NotificationKind {
-  return value in NOTIFICATION_KIND_LABEL;
+  return Object.hasOwn(NOTIFICATION_KIND_LABEL, value);
 }
 
 export function notificationKindLabel(kind: string, t: Translate): string {
@@ -86,16 +86,16 @@ export function notNotifiedLine(people: readonly PersonRef[], t: Translate): str
   return people.length === 0 ? null : t('collab.comments.notNotified', { names: people.map((p) => p.name).join(', ') });
 }
 
-const LIMITED_KIND: Record<string, MessageKey> = {
-  obligation: 'collab.comments.limited.obligation',
-  tenant_obligation: 'collab.comments.limited.tenantObligation',
-  change_case: 'collab.comments.limited.changeCase',
-  action: 'collab.comments.limited.action',
-};
+const LIMITED_KIND = new Map<string, MessageKey>([
+  ['obligation', 'collab.comments.limited.obligation'],
+  ['tenant_obligation', 'collab.comments.limited.tenantObligation'],
+  ['change_case', 'collab.comments.limited.changeCase'],
+  ['action', 'collab.comments.limited.action'],
+]);
 
 /** One line per kind of record My work held back, never naming a record. */
 export function permissionLimitedLines(kinds: readonly string[], t: Translate): string[] {
-  return kinds.map((kind) => t(LIMITED_KIND[kind] ?? 'collab.comments.limited.other'));
+  return kinds.map((kind) => t(LIMITED_KIND.get(kind) ?? 'collab.comments.limited.other'));
 }
 
 /** The switches a person may turn off, in the card's order. Escalations have none: the bank sets them. */
