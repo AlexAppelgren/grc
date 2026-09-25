@@ -78,6 +78,17 @@ _RISK_KEY = (
     "Seeded as `low`, `medium` and `high`, each with a fixed ordinal; the bank's admin may "
     "add or relabel rows, so read `GET /vocab/risk_rating` for the live set."
 )
+_TEAM_KEY = (
+    "The key of a row in the bank's own `team` vocabulary, at most 64 characters, such as "
+    "`compliance`; the bank's admin adds, renames and retires teams, so read `GET /vocab/team` "
+    "for the live set. A key that is not an active team of this bank is refused; null or "
+    "absent leaves the field as it is on a patch."
+)
+_TEAM_REF = (
+    "The team that owns the obligation here, as a row of the bank's own `team` vocabulary, "
+    "which its admin may extend; read `GET /vocab/team` for the live set. The key is stable "
+    "and the label is for showing. Null when no team owns it."
+)
 _PERSON_ID = (
     "A member of the bank, by their user UUID. Someone who is not an active member of "
     "this bank is refused; null or absent leaves the field as it is on a patch."
@@ -112,6 +123,7 @@ _APPLICABILITY_REASON = (
 _PERSON_EXAMPLE: dict[str, Any] = {"id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30", "name": "Sara Lind"}
 _STATUS_EXAMPLE: dict[str, Any] = {"key": "partly_compliant", "kind": "partly", "label": "Partly compliant"}
 _RISK_EXAMPLE: dict[str, Any] = {"key": "medium", "kind": None, "label": "Medium"}
+_TEAM_EXAMPLE: dict[str, Any] = {"key": "compliance", "kind": None, "label": "Compliance"}
 _GAP_STATUS_EXAMPLE: dict[str, Any] = {"key": "open", "kind": "open", "label": "Open"}
 _ENTITY_EXAMPLE: dict[str, Any] = {
     "orgUnitId": "55555555-5555-4555-8555-555555555555",
@@ -124,6 +136,7 @@ _ENTITY_EXAMPLE: dict[str, Any] = {
     "statusNote": "Reconciliation runs daily; the evidence log is still manual.",
     "riskRating": _RISK_EXAMPLE,
     "owner": _PERSON_EXAMPLE,
+    "ownerTeam": None,
     "process": "Client asset reconciliation",
     "system": "Custody ledger",
     "evidenceLocation": "Compliance share / Client assets / 2026",
@@ -203,7 +216,10 @@ class RegisterEntityStatus(CamelSchema):
             "set. Null until rated."
         )
     )
-    owner: RegisterPersonRef | None = Field(description="The member who owns the obligation for this entity; null when nobody does yet.")
+    owner: RegisterPersonRef | None = Field(
+        description="The member who owns the obligation for this entity; null when nobody does, or when a team owns it instead."
+    )
+    owner_team: RegisterVocabRef | None = Field(description=f"{_TEAM_REF} An entity's row is owned by a person or a team, never both.")
     process: str | None = Field(description="The bank's own business process the obligation is met in, by its name; null when not recorded.")
     system: str | None = Field(description="The bank's own system the obligation is met in, by its name; null when not recorded.")
     evidence_location: str | None = Field(
@@ -233,6 +249,7 @@ class RegisterEntry(CamelSchema):
                     "riskRating": _RISK_EXAMPLE,
                     "firstLineOwner": _PERSON_EXAMPLE,
                     "complianceContact": {"id": "2b9e4c71-5a3d-4f08-9c6e-7d1a0b3f5e82", "name": "Johan Berg"},
+                    "ownerTeam": _TEAM_EXAMPLE,
                     "process": "Client asset reconciliation",
                     "system": "Custody ledger",
                     "evidenceLocation": "Compliance share / Client assets / 2026",
@@ -254,9 +271,10 @@ class RegisterEntry(CamelSchema):
         description=(
             "How the bank complies, as a row of its own `compliance_status` vocabulary, which "
             "its admin may extend under fixed categories; read `GET /vocab/compliance_status` "
-            "for the live set. Where the obligation spans several legal entities it is the worse "
-            "of their statuses by the category's ordinal, computed by the server. The `gap` "
-            "category means a gap exists, which applicability never hides."
+            "for the live set. Where legal entities the obligation applies to have rows, it is the "
+            "worst of their statuses by category, computed by the server: `gap`, then `partly`, "
+            "then `not_assessed`, then `compliant`; the label and the bank's ordinal never decide. "
+            "The `gap` category means a gap exists, which applicability never hides."
         )
     )
     status_note: str | None = Field(description="The bank's note on the status, in its own words; null when none was written.")
@@ -269,6 +287,7 @@ class RegisterEntry(CamelSchema):
     )
     first_line_owner: RegisterPersonRef | None = Field(description="The first-line member who owns meeting the obligation; null when nobody does yet.")
     compliance_contact: RegisterPersonRef | None = Field(description="The compliance member who follows the obligation; null when nobody does yet.")
+    owner_team: RegisterVocabRef | None = Field(description=_TEAM_REF)
     process: str | None = Field(description="The bank's own business process the obligation is met in, by its name; null when not recorded.")
     system: str | None = Field(description="The bank's own system the obligation is met in, by its name; null when not recorded.")
     evidence_location: str | None = Field(
@@ -300,6 +319,7 @@ class RegisterStatusFields(WriteBody):
         description=f"The bank's note on the status, at most {NOTE_MAX} characters. Tenant content that never leaves the bank.",
     )
     risk_rating: str | None = Field(default=None, max_length=KEY_MAX, description=_RISK_KEY)
+    owner_team: str | None = Field(default=None, max_length=KEY_MAX, description=_TEAM_KEY)
     process: str | None = Field(
         default=None, max_length=NAME_MAX, description=f"The business process the obligation is met in, by name, at most {NAME_MAX} characters."
     )
@@ -353,7 +373,19 @@ class RegisterEntityPatch(RegisterStatusFields):
         }
     )
 
-    owner_id: uuid.UUID | None = Field(default=None, description=f"The entity's owner of the obligation. {_PERSON_ID}")
+    owner_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            f"The entity's owner of the obligation. {_PERSON_ID} A person and a team never own "
+            "the same row: setting one clears the other, and sending both is refused."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _one_owner_kind(self) -> RegisterEntityPatch:
+        if self.owner_id is not None and self.owner_team is not None:
+            raise ValueError("Send an owner or an owner team, not both.")
+        return self
 
 
 # ---------------------------------------------------------------------------------------
