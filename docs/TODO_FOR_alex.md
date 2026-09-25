@@ -1411,3 +1411,32 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       changed value in", an agent's correction without one answers 422 `source_missing`
       and applies nothing (fails safe; it can still approve as proposed or reject).
       Default if you say nothing: v3 carries that line when the confirmer next changes.
+## c10-reminders-core: triage reminders and the delegation hop, defaults taken (2026-09-25, COL-02, TEN-04)
+
+Built by default; nothing waits on you. Say if any should change.
+
+- [ ] **Who is reminded about a case awaiting triage.** Every active member whose
+      roles hold `cases.triage`, since a new case has no owner yet. Default: so.
+- [ ] **An overdue triage is reminded once.** The morning after its due time
+      passes, not every day after; escalation is what follows it. Default: so.
+- [ ] **The absent person's switch decides.** A reminder routed to a delegate
+      follows the absent person's own `reminders` switch, because it is their
+      notice; the delegate's switch is not read. Default: so.
+- [ ] **A delegate already told for themself gets one notice.** It carries no
+      "on behalf of", so they are not told twice about one record. Default: so.
+- [ ] **The mail does not yet say on whose behalf it came.** The notification
+      row names the absent person; the mail wording is the mail catalog's to add.
+- [ ] **A missed beat hour skips that day.** If the worker's beat is down for
+      the whole hour a bank's clock reads `REMINDER_SEND_HOUR`, that day's
+      reminders are not sent, and an overdue triage that fell in that window is
+      not reminded (escalation still follows). Also keep the hour off 02 to 03,
+      which a daylight saving change skips or repeats. Default: accepted for R2;
+      a "reminded through" stamp per bank would close it.
+- [ ] **A mail the relay refused is not retried by the next day's run.** Its
+      `email_message` row stays `failed`, and the notification is in the inbox.
+      Default: so.
+- [ ] **Several absent people sharing one delegate give the delegate one notice**
+      per record, naming the first of them. Default: so.
+- [ ] **The 403 proof uses a case write, not the sign-off route.** Chunk 9's
+      approve route does not exist on this base yet; `c10-out-of-office` or the
+      sign-off package should repeat the proof there.

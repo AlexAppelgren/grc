@@ -1697,3 +1697,14 @@ real, each with the whole `CasesCase` of section 19. Where they differ from `ope
   the status before and after and the new `version`; triage adds `ownerId` and the urgency
   key, a dismissal and a close add `reasonKey`. The close's note is on the case and its
   `case_transition` row, never in an audit value.
+
+## 21. A case knows when triage is due (2026-09-25, c10-case-triage-due)
+
+`change_case.triage_due_at` (`schema.sql` §13, "from the tenant's triage target") is a
+nullable timestamp, set when the case opens to its opening time plus the bank's
+`triage_target_hours` (section 18). Cases 0004 backfills it for every open `new` case, one
+bank's zone at a time because forced row-level security binds the schema owner too; a case
+that already left `new` keeps a null, since reminders read the column only while a case is
+`new` (`c10-reminders-core`). The backfill writes no audit row: the column is derived from
+two facts already on record, not a decision.
+
