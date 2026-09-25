@@ -59,7 +59,7 @@ default the packages take, and each answer changes a task, not an invariant alre
 - [x] **Search scope in R2 (D-10).** D-10 kept tenant content out of search in R1 and put the
       question at R2. (Default: still library only; no tenant text is embedded.) **Answered (Alex, 2026-09-25): default taken: library only through R2 (D-10).**
 - [x] **ADM-02's languages (D-94).** Which content languages the console's jurisdiction and
-      translation surfaces carry. (Default: as `x-jurisdictions-by-proposal` sets it in D-94.) **Answered (Alex, 2026-09-25): default taken (D-94).**
+      translation surfaces carry. (Default: as `x-jurisdictions-by-proposal` sets it in D-94.) **Answered (Alex, 2026-09-25): default taken (D-94).** Languages stay a read-only seeded list; jurisdictions are relabelled, retired and restored by proposal.
 - [x] **Evidence upload and the scanner.** That evidence arrives by multipart through the API
       rather than a presigned PUT (`CHUNK9_TASKS.md` ruling 4), and that the R2 deploy needs a
       `clamd` service (`PARALLEL_PLAN.md` §7.3). (Default: multipart; a deployed environment

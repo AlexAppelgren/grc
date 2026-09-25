@@ -3,14 +3,17 @@ adds `Jurisdiction` (I18N-01, playbook 17): the content languages and the jurisd
 are rows, never a column check. Chunk 3 adds instruments, provisions, obligations and
 their versions as LibraryModel subclasses (below).
 
-`Language` and `Jurisdiction` are reference configuration, not sourced public facts:
-they are written by `seed_reference` alone (apps/library/seeds/) and read by everything
-that labels, files or searches. They are therefore plain models rather than
-`LibraryModel`s, so the tenant profile and role logic can name them beside their own
-writes without tripping the library fence's AST heuristic
-(apps/shared/tests_library_fence.py). `Jurisdiction` is a `Vocabulary` so it carries
+`Language` and `Jurisdiction` are reference configuration, not sourced public facts: the
+reference seed (apps/library/seeds/) files them, and everything that labels, files or
+searches reads them. They are plain models rather than `LibraryModel`s, so the tenant
+profile and role logic can name them beside their own writes without tripping the library
+fence's AST heuristic (apps/shared/tests_library_fence.py); the database's door trigger
+holds them instead (shared 0008, 0010). `Jurisdiction` is a `Vocabulary` so it carries
 labels per language and the immutable-key rule; its `kind` (supranational, country or
-international) is the tier-one `JurisdictionKind`."""
+international) is the tier-one `JurisdictionKind`. Since D-94 a jurisdiction is also
+relabelled, retired and restored through an approved proposal (ADM-02, VOC-07), never
+added or merged, so it carries a `LibraryVocabulary`'s version and provenance; a language
+is still the seed's alone."""
 
 from __future__ import annotations
 
@@ -24,6 +27,10 @@ from django.utils import timezone
 from apps.proposals.models import OriginType
 from apps.shared.tenancy import LibraryModel
 from apps.shared.vocabulary import Vocabulary, VocabularyLabel
+
+
+def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
+    return [(member.value, member.value) for member in kind]
 
 
 class Language(models.Model):
@@ -66,12 +73,21 @@ class Jurisdiction(Vocabulary):
 
     `parent` is the jurisdiction whose rules reach this one (D-28, ADR 0026), not
     membership: Norway is outside the Union and still reached by EU financial rules
-    through the EEA Agreement."""
+    through the EEA Agreement.
+
+    `version` backs If-Match on a relabel proposal, and the three provenance columns are a
+    `LibraryVocabulary`'s (apps/shared/vocabulary.py, D-79, D-94): who confirmed the wording
+    the last approval wrote, the confirming agent when it was one, and the proposal, through
+    which the proposing agent is read. Blank and null on a seeded row."""
 
     KIND_CHOICES = [(kind.value, kind.value) for kind in JurisdictionKind]
 
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT, related_name="children")
     default_language = models.ForeignKey(Language, on_delete=models.PROTECT, related_name="+")
+    version = models.PositiveIntegerField(default=1)
+    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    applied_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
 
     class Meta:
         db_table = "jurisdiction"
@@ -98,10 +114,6 @@ class JurisdictionLabel(VocabularyLabel):
 # so the RLS shape is final now. Levels, relation types, provision kinds, duty types, tags
 # and terms are the chunk 2 vocabulary rows, referenced by foreign key; the enums here are
 # kinds only (apps/shared/kinds.py).
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
-
-
 class DatePrecision(enum.StrEnum):
     """A legal date is a plain date with a precision (playbook 4.3, INV-S10)."""
 
