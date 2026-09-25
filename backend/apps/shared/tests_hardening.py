@@ -27,15 +27,23 @@ apps/identity/tests_scenarios.py: the route answers 422 and writes no credential
 from __future__ import annotations
 
 import ast
+import os
+import subprocess
+import sys
 import uuid
+from datetime import timedelta
 from pathlib import Path
+from typing import Any
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.test import SimpleTestCase, TestCase
+from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
+from pydantic import TypeAdapter, ValidationError as PydanticValidationError
 
 from apps.governance.logic import LIBRARY_SUBJECT_TYPES
+from apps.governance.tests_problem_reports import NOTE, REPORTS, WORDS, ProblemReportsTestCase
 from apps.identity import invitation_logic, members_logic, roles_logic, session_logic
 from apps.identity.models import (
     Invitation,
@@ -46,12 +54,16 @@ from apps.identity.models import (
     TenantRole,
     User,
 )
+from apps.library import reports
+from apps.library.models import ProblemReport, ReportStatus, SubjectType
+from apps.library.schemas import PROBLEM_REPORT_VERSION_MAX, ProblemReportBody
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, tenancy, permissions as perms
 from apps.shared.audit import Actor
 from apps.shared.authentication import Principal
-from apps.shared.models import Tenant
-from apps.shared.testing import ScenarioTestCase, stub_session, user_principal
+from apps.shared.models import AuditEvent, OutboxEvent, Tenant
+from apps.shared.schemas import SingleLineName, WriteBody
+from apps.shared.testing import ScenarioTestCase, sign_in, stub_session, user_principal
 
 V1 = "/api/v1"
 
@@ -288,6 +300,11 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/taxonomy/tenant_lists_logic.py record('vocabulary') tenant_id=tenant.id actor=actor title=list_name": (
         "The same, for a reorder of one tenant's list."
     ),
+    # c10-tagging-routes (VOC-08).
+    "apps/taxonomy/tagging_logic.py record(subject_type) tenant_id=tenant.id actor=actor title=title": (
+        "A bank's own tag going on or off one record: `tenant.id` is a bank's id and never "
+        "None, so the row stays in that bank's zone even when the record is a library one."
+    ),
 }
 
 
@@ -396,3 +413,249 @@ class LibraryAuditRowsCarryNoTenantWords(SimpleTestCase):
         # And the calls whose tenant id is decided at runtime, which the guard used to walk
         # past: these are the shape of the call it exists for (review 2026-09-20).
         self.assertIn("apps/taxonomy/tenant_lists_logic.py", modules)
+
+
+# ---------------------------------------------------------------------------------------
+# x-hardening-inputs-ask: H38 and H39, before R2 adds many free-text bodies
+# ---------------------------------------------------------------------------------------
+class _NestedBody(WriteBody):
+    title: str
+    extra: dict[str, Any] = {}
+    notes: list[str] = []
+
+
+class WriteBodiesRefuseNul(SimpleTestCase):
+    """H39: PostgreSQL refuses a NUL in a text column, so one in any free-text field
+    answered 500. Every write body refuses it, wherever it sits, naming where and never
+    echoing the value."""
+
+    def refusal(self, body: dict[str, Any]) -> str:
+        with self.assertRaises(PydanticValidationError) as caught:
+            _NestedBody.model_validate(body)
+        return str(caught.exception.errors()[0]["msg"])
+
+    def test_a_nul_in_a_field_a_nested_value_or_a_key_is_refused_naming_where(self) -> None:
+        for body, where in (
+            ({"title": "Nordbank\x00"}, "title"),
+            ({"title": "ok", "notes": ["fine", "a\x00b"]}, "notes.1"),
+            ({"title": "ok", "extra": {"ordinal": {"deep": "\x00"}}}, "extra.ordinal.deep"),
+            ({"title": "ok", "extra": {"sla\x00": 3}}, "extra"),
+        ):
+            with self.subTest(where=where):
+                message = self.refusal(body)
+                self.assertIn(f"{where} cannot contain a NUL character", message)
+                self.assertNotIn("\x00", message)
+
+    def test_a_body_without_one_is_untouched(self) -> None:
+        body = _NestedBody.model_validate({"title": "Åland\tSparbank", "extra": {"slaDays": 3}, "notes": ["x"]})
+        self.assertEqual((body.title, body.extra, body.notes), ("Åland\tSparbank", {"slaDays": 3}, ["x"]))
+
+
+class SingleLineNamesRefuseControlAndFormatCharacters(SimpleTestCase):
+    """H38: a bank's name with a newline broke the invitation mail in the worker, and a bidi
+    override can make a name read as another. `SingleLineName` refuses Unicode Cc and Cf."""
+
+    names: TypeAdapter[str] = TypeAdapter(SingleLineName)
+
+    def test_every_control_and_format_character_is_refused(self) -> None:
+        for character in ("\n", "\r", "\t", "\x00", "\x7f", "\u0085", "‮", "⁦", "​", "‍", "﻿"):
+            with self.subTest(character=f"U+{ord(character):04X}"):
+                with self.assertRaises(PydanticValidationError) as caught:
+                    self.names.validate_python(f"Nord{character}bank")
+                self.assertIn("one line of visible text", str(caught.exception.errors()[0]["msg"]))
+
+    def test_an_ordinary_name_in_any_content_language_is_kept(self) -> None:
+        for name in ("Nordbank AB", "Åland Sparbank", "Søderberg & Partners", "Pohjola Pankki Oyj", "Ísbanki hf."):
+            with self.subTest(name=name):
+                self.assertEqual(self.names.validate_python(name), name)
+
+
+class ProblemReportsAreBounded(ProblemReportsTestCase):
+    """H39 through the real routes: a NUL and an oversized version answer 422 rather than
+    500, and filing and closing each have a per-person bucket (ACC-09)."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        # Signing in is itself an audited act, so the session opens before any count.
+        self.headers = sign_in(self.reader, tenant=self.tenant)
+
+    def post_report(self, body: dict[str, Any]) -> Any:
+        return Client().post(
+            f"{V1}/obligations/{self.obligation.id}/problem-reports",
+            data=body,
+            content_type="application/json",
+            **self.headers,
+        )
+
+    def reports(self) -> int:
+        self.activate(self.tenant)
+        return ProblemReport.objects.count()
+
+    def test_a_nul_in_the_description_answers_422_and_writes_nothing(self) -> None:
+        audit = AuditEvent.objects.count()
+
+        response = self.post_report({"description": "Five years\x00, not ten.", "language": "en"})
+
+        self.assertEqual(response.status_code, 422, response.content)
+        body = response.json()
+        self.assertEqual(body["code"], "validation_error")
+        self.assertIn("description cannot contain a NUL character", str(body["errors"]))
+        self.assertNotIn("Five years", response.content.decode())
+        self.assertEqual((self.reports(), AuditEvent.objects.count()), (0, audit))
+
+    def test_a_nul_in_a_closing_note_answers_422_and_leaves_the_report_open(self) -> None:
+        report_id = self.file(self.reader)
+
+        response = self.close(self.reader, report_id, {"status": "fixed", "resolutionNote": "Checked\x00."})
+
+        self.assertEqual(response.status_code, 422, response.content)
+        self.assertEqual(response.json()["code"], "validation_error")
+        self.assertEqual(self.row(report_id).status, ReportStatus.OPEN.value)
+
+    def test_the_version_number_is_bounded_by_the_column_and_says_so(self) -> None:
+        field = ProblemReportBody.model_json_schema(by_alias=True)["properties"]["versionNumber"]
+        self.assertIn(str(PROBLEM_REPORT_VERSION_MAX), field["description"])
+        self.assertIn(PROBLEM_REPORT_VERSION_MAX, [option.get("maximum") for option in field.get("anyOf", [field])])
+
+        refused = self.post_report({"description": WORDS, "versionNumber": PROBLEM_REPORT_VERSION_MAX + 1})
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "validation_error")
+        self.assertIn("versionNumber", str(refused.json()["errors"]))
+        self.assertEqual(self.reports(), 0)
+
+        kept = self.client.post(
+            f"{V1}/obligations/{self.obligation.id}/problem-reports",
+            data={"description": WORDS, "versionNumber": PROBLEM_REPORT_VERSION_MAX},
+            content_type="application/json",
+            **sign_in(self.reader, tenant=self.tenant),
+        )
+        self.assertEqual(kept.status_code, 201, kept.content)
+
+    def test_a_report_without_a_bank_is_refused_before_anything_is_written(self) -> None:
+        with self.assertRaises(ValidationError) as caught:
+            reports.create_report(
+                subject_type=SubjectType.OBLIGATION,
+                subject_id=self.obligation.id,
+                subject_title="fffs-2017-2-9-6",
+                tenant_id=None,  # type: ignore[arg-type]  # the caller the guard exists for ignores the hint
+                reporter=self.reader,
+                actor=session_logic.actor_of(self.reader),
+                description=WORDS,
+            )
+        self.assertEqual(caught.exception.code, "not_found")
+        self.assertEqual(self.reports(), 0)
+
+    @override_settings(RATE_LIMITING_ENABLED=True, E2E_MODE=False, PROBLEM_REPORTS_PER_USER_PER_HOUR=2)
+    def test_filing_past_the_hourly_bucket_answers_429_and_a_colleague_still_files(self) -> None:
+        cache.clear()
+        self.addCleanup(cache.clear)
+        for _ in range(settings.PROBLEM_REPORTS_PER_USER_PER_HOUR):
+            self.file(self.reader)
+        audit = AuditEvent.objects.count()
+
+        refused = self.post_report({"description": WORDS})
+
+        self.assertEqual(refused.status_code, 429, refused.content)
+        self.assertEqual(refused.json()["code"], "rate_limited")
+        self.assertEqual((self.reports(), AuditEvent.objects.count()), (settings.PROBLEM_REPORTS_PER_USER_PER_HOUR, audit))
+        self.file(self.colleague)
+
+    @override_settings(RATE_LIMITING_ENABLED=True, E2E_MODE=False, PROBLEM_REPORTS_PER_USER_PER_HOUR=1)
+    def test_closing_has_a_bucket_of_its_own(self) -> None:
+        cache.clear()
+        self.addCleanup(cache.clear)
+        first = self.file(self.reader)
+        self.assertEqual(self.close(self.officer, first).status_code, 200)
+        second = self.file(self.colleague)
+
+        refused = Client().patch(
+            f"{REPORTS}/{second}",
+            data={"status": "fixed", "resolutionNote": NOTE},
+            content_type="application/json",
+            **sign_in(self.officer, tenant=self.tenant),
+        )
+
+        self.assertEqual(refused.status_code, 429, refused.content)
+        self.assertEqual(refused.json()["code"], "rate_limited")
+        self.assertEqual(self.row(second).status, ReportStatus.OPEN.value)
+
+
+class VisitsInsideTheIntervalWriteNothing(ScenarioTestCase):
+    """H38: each visit writes an audit and an outbox row kept for ten years, so one within
+    `VISIT_MIN_INTERVAL_SECONDS` of the last answers 204 and writes nothing."""
+
+    def setUp(self) -> None:
+        seed_languages()
+        self.tenant = factories.tenant(slug="visit-interval")
+        self.reader = factories.member_user(self.tenant, roles=("reader",))
+        self.headers = sign_in(self.reader, tenant=self.tenant)
+
+    def visit(self) -> Any:
+        return Client().post(f"{V1}/me/visit", data={}, content_type="application/json", **self.headers)
+
+    def seen_at(self, when: Any) -> Membership:
+        self.activate(self.tenant)
+        membership = Membership.objects.get(tenant=self.tenant, user=self.reader)
+        membership.last_visit_at = when
+        membership.save(update_fields=["last_visit_at"])
+        return membership
+
+    def test_a_visit_inside_the_interval_writes_nothing(self) -> None:
+        recent = timezone.now() - timedelta(seconds=settings.VISIT_MIN_INTERVAL_SECONDS - 5)
+        membership = self.seen_at(recent)
+        counts = (AuditEvent.objects.count(), OutboxEvent.objects.count())
+
+        response = self.visit()
+
+        self.assertEqual(response.status_code, 204, response.content)
+        membership.refresh_from_db()
+        self.assertEqual(membership.last_visit_at, recent)
+        self.assertEqual((AuditEvent.objects.count(), OutboxEvent.objects.count()), counts)
+
+    def test_a_visit_past_the_interval_moves_the_bookmark_with_its_audit_row(self) -> None:
+        old = timezone.now() - timedelta(seconds=settings.VISIT_MIN_INTERVAL_SECONDS + 5)
+        membership = self.seen_at(old)
+        audit = AuditEvent.objects.count()
+
+        response = self.visit()
+
+        self.assertEqual(response.status_code, 204, response.content)
+        membership.refresh_from_db()
+        assert membership.last_visit_at is not None
+        self.assertGreater(membership.last_visit_at, old)
+        self.assertEqual(AuditEvent.objects.count(), audit + 1)
+
+    def test_two_visits_in_a_row_write_one_audit_row(self) -> None:
+        self.seen_at(None)
+        audit = AuditEvent.objects.count()
+
+        self.assertEqual((self.visit().status_code, self.visit().status_code), (204, 204))
+
+        self.assertEqual(AuditEvent.objects.count(), audit + 1)
+
+
+class HardeningSettingsRefuseToBootBelowOne(SimpleTestCase):
+    """H38, H39 and H47: none of the three limits has a value that means "no limit", so
+    below 1 the settings module refuses to load. Imported in a process of its own, as a
+    boot reads it."""
+
+    def boot(self, variable: str, value: int) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, "-c", "import config.settings"],
+            cwd=str(settings.BASE_DIR),
+            env={**os.environ, variable: str(value), "PYTHONIOENCODING": "utf-8"},
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+
+    def test_each_limit_below_one_refuses_to_boot_and_one_boots(self) -> None:
+        for variable in ("ASK_STREAMS_PER_USER", "PROBLEM_REPORTS_PER_USER_PER_HOUR", "VISIT_MIN_INTERVAL_SECONDS"):
+            with self.subTest(variable=variable):
+                refused = self.boot(variable, 0)
+                self.assertNotEqual(refused.returncode, 0, f"{variable}=0 booted")
+                self.assertIn("ImproperlyConfigured", refused.stderr)
+                self.assertIn(f"{variable} is 0", refused.stderr)
+                booted = self.boot(variable, 1)
+                self.assertEqual(booted.returncode, 0, booted.stderr[-800:])

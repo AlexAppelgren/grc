@@ -8,17 +8,23 @@ facts such as `binding`, `inFootprint` and `openChangeCount` into its own words.
 from __future__ import annotations
 
 import datetime
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from django.conf import settings
 from pydantic import ConfigDict, Field
 
+from apps.register.schemas import Applicability, RegisterPersonRef, RegisterVocabRef
 from apps.shared.schemas import CamelSchema, LibraryResponse, WriteBody
-from apps.taxonomy.schemas import AgentRef, PersonRef
+from apps.taxonomy.schemas import AgentRef, PersonRef, TaggingTagRef
 
 # The longest `q` a list accepts: a phrase to look for, never a document.
 MAX_QUERY_LENGTH = 200
+# A key filter is one vocabulary key, and a key column is 80 characters wide, so a longer
+# value can name nothing; it is refused at the boundary rather than sent to the database
+# (hardening H27).
+FILTER_KEY_MAX = 80
+FilterKey = Annotated[str, Field(max_length=FILTER_KEY_MAX)]
 # A language key is a BCP 47 primary tag (`Language.key`, a slug of at most 8 characters);
 # `?lang=` is looked up among the languages a version has, so a longer one is a 422.
 MAX_LANGUAGE_LENGTH = 8
@@ -378,6 +384,59 @@ _TAGS = (
     "`GET /vocab/library_tag` for the live set and match on the key. They describe the duty "
     "for a reader and never narrow the footprint: a tag is not a scope term."
 )
+_TENANT_TAGS = (
+    "The bank's own tags on this duty, as key, kind and label, in the tag list's own order: "
+    "what the bank's people put on the record to find it again, such as `custody`. They are "
+    "rows of this bank's own `tenant_tag` vocabulary, which its admin may extend, relabel or "
+    "retire without a deploy, so read `GET /vocab/tenant_tag` for the live set and match on "
+    "the key. Held in the bank's own zone: another bank never sees them, and they never "
+    "change the shared record. Empty when the bank has tagged nothing here. Kept apart from "
+    "`tags`, the library's own keywords, which are the same for every bank."
+)
+_PRIVATE_TO_US = (
+    "Whether this record is the bank's own rather than a shared library fact: true only when "
+    "the caller's bank owns it, proposed and approved inside that bank, so no other bank and "
+    "nobody at bleqq can read it. False on every shared record, which is every record until a "
+    "bank's own records arrive in a later release. A key that belongs to no bank reads no "
+    "record at all."
+)
+# ===== c8-inventory-overlay: the bank's register on the row and the card (REG-01, REG-02) ====
+_OVERLAY = (
+    " The bank's own judgement, held in its own zone and never shared with another bank or "
+    "changed by the shared record."
+)
+_APPLICABILITY = (
+    "Whether the bank has decided this duty applies to it: `applies`, `not_applicable` or "
+    "`under_assessment`, a fixed set. `applies` when the bank answered yes for the duty or for "
+    "any of its legal entities, so one entity's yes is never hidden by another's no; "
+    "`not_applicable` when it answered no and no entity says yes; `under_assessment` until "
+    "anyone answers, which is every duty the bank has not worked on. It is a different fact "
+    "from `complianceStatus`, and one person holding `applicability.approve` sets it through "
+    "`PUT /obligations/{obligationId}/applicability`; no request ever waits on it." + _OVERLAY
+)
+_COMPLIANCE_STATUS = (
+    "How the bank judges its compliance with this duty, as key, kind and label, and null "
+    "unless `applicability` is `applies`: a status is kept, never deleted, while the duty does "
+    "not apply, and shows again when it applies once more. Where the bank records a status per "
+    "legal entity it is the worst of the applying entities' statuses by their kind (`gap`, then "
+    "`partly`, then `not_assessed`, then `compliant`), else the duty's own. The statuses are "
+    "rows of the bank's own `compliance_status` vocabulary, which its admin may extend, relabel "
+    "or retire without a deploy, so read `GET /vocab/compliance_status` for the live set and "
+    "match on the key; `compliant`, `partly_compliant`, `gap` and `not_assessed` are seeded on "
+    "day one, each carrying its fixed category as its kind, which decides the pill's tone."
+    + _OVERLAY
+)
+_FIRST_LINE_OWNER = (
+    "The member of the bank who owns this duty in the first line, by id and name, or null "
+    "when nobody is named. `ownerTeam` may name a team as well." + _OVERLAY
+)
+_OWNER_TEAM = (
+    "The team that owns this duty, as key, kind and label, or null when no team is named. "
+    "Teams are rows of the bank's own `team` vocabulary, which its admin may extend, relabel "
+    "or retire without a deploy, so read `GET /vocab/team` for the live set and match on the "
+    "key." + _OVERLAY
+)
+# ===== end c8-inventory-overlay ============================================================
 _SCOPE = (
     "Which banks and which business the duty reaches, one entry per active dimension of the "
     "taxonomy. This is the record's own scope as the library states it: it is not the bank's "
@@ -431,9 +490,11 @@ _OUTSIDE_FOOTPRINT_RETIRED = (
 
 class ObligationRow(LibraryResponse):
     """One row of `GET /obligations` (INV-03). `version` is the one in force on the read's
-    date and `upcomingVersion` the next one after it. The register overlay arrives later:
-    `openChangeCount` with the watch feed (chunk 5), `pendingApplicability` and
-    `complianceStatus` with the register (chunk 8)."""
+    date and `upcomingVersion` the next one after it. `tenantTags` and `privateToUs` are the
+    caller's bank's own, and so is the register overlay: `applicability`,
+    `complianceStatus`, `firstLineOwner` and `ownerTeam` (REG-01, REG-02).
+    `openChangeCount` arrives with the watch feed. No request is waiting on a row: an
+    applicability change is decided by one person, so there is none to wait for (D-75)."""
 
     id: UUID = Field(description=_OBLIGATION_ID, examples=["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"])
     stable_key: str = Field(description=_OBLIGATION_STABLE_KEY, examples=["obl-research-payments"])
@@ -450,6 +511,8 @@ class ObligationRow(LibraryResponse):
     binding: bool = Field(description=_BINDING, examples=[True])
     duty_type: LibraryRef = Field(description=_DUTY_TYPE)
     tags: list[LibraryRef] = Field(description=_TAGS)
+    tenant_tags: list[TaggingTagRef] = Field(description=_TENANT_TAGS)
+    private_to_us: bool = Field(description=_PRIVATE_TO_US, examples=[False])
     scope: list[ScopeDimension] = Field(description=_SCOPE)
     version: ObligationVersionRef | None = Field(
         description=(
@@ -496,26 +559,10 @@ class ObligationRow(LibraryResponse):
         ),
         examples=[0],
     )
-    pending_applicability: bool | None = Field(
-        description=(
-            "Whether a change to this duty's applicability is waiting for a second person in "
-            "this bank to approve it. Null means the question is not answered on this row, "
-            "never that the answer is no: the applicability register arrives in a later "
-            "release and every row answers null until it does."
-        )
-    )
-    compliance_status: LibraryRef | None = Field(
-        description=(
-            "How the bank has judged its own compliance with this duty, as key, kind and "
-            "label. This is the bank's own judgement, held in its own zone and never shared "
-            "with another bank, and it is a different fact from whether the duty applies at "
-            "all. The statuses are vocabulary rows the bank's own admin may extend, relabel "
-            "or retire without a deploy, so read `GET /vocab/compliance_status` for the live "
-            "set and match on the key; `compliant`, `partly_compliant`, `gap` and "
-            "`not_assessed` are seeded on day one, each carrying its fixed category as its "
-            "kind. Null until the compliance register arrives in a later release."
-        )
-    )
+    applicability: Applicability = Field(description=_APPLICABILITY, examples=["applies"])
+    compliance_status: RegisterVocabRef | None = Field(description=_COMPLIANCE_STATUS)
+    first_line_owner: RegisterPersonRef | None = Field(description=_FIRST_LINE_OWNER)
+    owner_team: RegisterVocabRef | None = Field(description=_OWNER_TEAM)
 
     # A row is validated again when the page takes it, so a row built any other way than
     # through this constructor still never reaches the wire unchecked.
@@ -592,6 +639,8 @@ _SAMPLE_TAGS: list[Any] = [
     {"key": "third_party_payments", "kind": None, "label": "third-party payments"},
 ]
 
+_SAMPLE_TENANT_TAGS: list[Any] = [{"key": "custody", "kind": None, "label": "Custody"}]
+
 # Version 1 was seeded; version 2 was proposed by the watch agent and confirmed by an
 # independent agent, so it reads machine-confirmed wherever it appears (INV-05, D-62).
 _SAMPLE_SEEDED: dict[str, Any] = {"verifiedOrigin": "", "confirmedByAgent": None, "proposedByAgent": None}
@@ -611,6 +660,8 @@ _SAMPLE_ROW: dict[str, Any] = {
     "binding": True,
     "dutyType": {"key": "governance", "kind": None, "label": "Governance"},
     "tags": _SAMPLE_TAGS,
+    "tenantTags": _SAMPLE_TENANT_TAGS,
+    "privateToUs": False,
     "scope": _SAMPLE_SCOPE,
     "version": {**_SAMPLE_SEEDED, "versionNumber": 1, "effectiveFrom": None, "approvedAt": None},
     "upcomingVersion": {
@@ -625,8 +676,11 @@ _SAMPLE_ROW: dict[str, Any] = {
     "lastVerifiedAt": "2026-06-30T07:12:44Z",
     "verifiedBy": None,
     "openChangeCount": 0,
-    "pendingApplicability": None,
-    "complianceStatus": None,
+    # c8-inventory-overlay: the bank's register overlay (sample data).
+    "applicability": "applies",
+    "complianceStatus": {"key": "partly_compliant", "kind": "partly", "label": "Partly compliant"},
+    "firstLineOwner": {"id": "3f2a9c1e-8b7d-4e6f-a5c4-1d2e3f4a5b6c", "name": "Anna Berg"},
+    "ownerTeam": {"key": "compliance", "kind": None, "label": "Compliance"},
 }
 
 
@@ -943,6 +997,8 @@ _SAMPLE_DETAIL: dict[str, Any] = {
     "sanctionExposure": "FI remark, warning or sanction fee",
     "productScope": "Third-party research",
     "tags": _SAMPLE_TAGS,
+    "tenantTags": _SAMPLE_TENANT_TAGS,
+    "privateToUs": False,
     "scope": _SAMPLE_SCOPE,
     "inFootprint": True,
     "outsideReason": [],
@@ -1006,13 +1062,14 @@ _SAMPLE_DETAIL: dict[str, Any] = {
         # The version in force is version 1, which was seeded: no approval, so no one confirmed it.
         **_SAMPLE_SEEDED,
     },
+    **{key: _SAMPLE_ROW[key] for key in ("applicability", "complianceStatus", "firstLineOwner", "ownerTeam")},
 }
 
 
 class ObligationDetail(LibraryResponse):
     """`GET /obligations/{obligationId}` (INV-03..INV-06): the duty as of a date, with its
     facets, every version, the provisions it cites, the obligations beside it and its
-    provenance. The register overlay lands with chunk 8, the related changes with chunk 5."""
+    provenance, and the bank's register overlay as the row carries it (REG-01, REG-02)."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [_SAMPLE_DETAIL]})
 
@@ -1079,6 +1136,8 @@ class ObligationDetail(LibraryResponse):
         examples=["Third-party research"],
     )
     tags: list[LibraryRef] = Field(description=_TAGS)
+    tenant_tags: list[TaggingTagRef] = Field(description=_TENANT_TAGS)
+    private_to_us: bool = Field(description=_PRIVATE_TO_US, examples=[False])
     scope: list[ScopeDimension] = Field(description=_SCOPE)
     in_footprint: bool = Field(description=_IN_FOOTPRINT, examples=[True])
     outside_reason: list[OutsideReason] = Field(description=_OUTSIDE_REASON)
@@ -1131,6 +1190,10 @@ class ObligationDetail(LibraryResponse):
             "the sourcing a bank's own reviewer, and a vendor review, asks for."
         )
     )
+    applicability: Applicability = Field(description=_APPLICABILITY, examples=["applies"])
+    compliance_status: RegisterVocabRef | None = Field(description=_COMPLIANCE_STATUS)
+    first_line_owner: RegisterPersonRef | None = Field(description=_FIRST_LINE_OWNER)
+    owner_team: RegisterVocabRef | None = Field(description=_OWNER_TEAM)
 
 
 class DiffSegment(LibraryResponse):
@@ -1339,33 +1402,40 @@ class VersionDiffQuery(CamelSchema):
 
 class ObligationQuery(CamelSchema):
     """The filters of `GET /obligations`. `instrument` and `dutyType` are keys; `term` is
-    `dimension:key` and repeats, every term must be in the obligation's scope. `asOf`
+    `dimension:key` and repeats, every term must be in the obligation's scope; `tag` and
+    `tenantTag` repeat, every tag must be on the obligation. `applicability`,
+    `complianceStatus`, `owner` and `ownerTeam` filter on the bank's register overlay. Each
+    string is at most 80 characters (H27). `asOf`
     defaults to today in the tenant's time zone. `footprint` is one value: `in`, `all`, which
     lifts the footprint filter and reports why each hidden row would be hidden, or
     `watched`, which lists only what the watched markets add (FP-03, FP-04)."""
 
     instrument: str | None = Field(
         default=None,
+        max_length=FILTER_KEY_MAX,
         description=(
             "Only the duties broken out of this instrument, by the instrument's stable key: "
             "`fffs-2017-2` for FFFS 2017:2. A key no instrument has is not an error — it "
-            "matches nothing, and the call answers 200 with an empty page."
+            "matches nothing, and the call answers 200 with an empty page. At most 80 "
+            "characters; a longer one is refused with 422 `validation_error`."
         ),
         examples=["fffs-2017-2"],
     )
     duty_type: str | None = Field(
         default=None,
+        max_length=FILTER_KEY_MAX,
         description=(
             "Only the duties of this kind, by the duty type's key. `conduct`, `disclosure`, "
             "`record_keeping`, `reporting`, `governance` and `technical` are seeded on day "
             "one, and they are vocabulary rows rather than a closed set: a platform admin "
             "may extend, relabel or retire the list without a deploy. Read "
             "`GET /vocab/duty_type` for the live set and send the key, never the label. A "
-            "key no duty type has matches nothing and answers 200 with an empty page."
+            "key no duty type has matches nothing and answers 200 with an empty page. At "
+            "most 80 characters; a longer one is refused with 422 `validation_error`."
         ),
         examples=["governance"],
     )
-    term: list[str] = Field(
+    term: list[FilterKey] = Field(
         default_factory=list,
         max_length=settings.LIBRARY_TERM_FILTER_MAX,
         description=(
@@ -1374,11 +1444,45 @@ class ObligationQuery(CamelSchema):
             "with AND, and at most 20 are accepted "
             "(`LIBRARY_TERM_FILTER_MAX`). The terms are taxonomy vocabulary rows a platform "
             "admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for "
-            "the live set and match on the key. A value with no colon is refused with 422 "
-            "`validation_error`, and one that names no active term with 422 `unknown_key` "
-            "naming every term that was not found."
+            "the live set and match on the key. Each value is at most 80 characters. A "
+            "longer one, or one with no colon, is refused with 422 `validation_error`, and "
+            "one that names no active term with 422 `unknown_key` naming every term that "
+            "was not found."
         ),
         examples=[["service_type:advice", "account_type:isk"]],
+    )
+    tag: list[FilterKey] = Field(
+        default_factory=list,
+        max_length=settings.LIBRARY_TERM_FILTER_MAX,
+        description=(
+            "Only the duties carrying every one of these library tags, by key: the "
+            "library's own keywords a row shows in `tags`, the same for every bank. Repeat "
+            "the parameter for more than one; they are combined with AND, and at most 20 "
+            "are accepted (`LIBRARY_TERM_FILTER_MAX`, the cap every repeated filter here "
+            "shares). The tags are vocabulary rows a platform admin may extend, relabel or "
+            "retire without a deploy, so read `GET /vocab/library_tag` for the live set and "
+            "match on the key. Each value is at most 80 characters; a longer one is refused "
+            "with 422 `validation_error`, and a key no library tag has with 422 "
+            "`unknown_key` naming every one that was not found."
+        ),
+        examples=[["research"]],
+    )
+    tenant_tag: list[FilterKey] = Field(
+        default_factory=list,
+        max_length=settings.LIBRARY_TERM_FILTER_MAX,
+        description=(
+            "Only the duties carrying every one of these tags of the caller's own bank, by "
+            "key: what a row shows in `tenantTags`. Repeat the parameter for more than one; "
+            "they are combined with AND, and at most 20 are accepted "
+            "(`LIBRARY_TERM_FILTER_MAX`). The tags are rows of the bank's own `tenant_tag` "
+            "vocabulary, which its admin may extend, relabel or retire without a deploy, so "
+            "read `GET /vocab/tenant_tag` for the live set and match on the key; another "
+            "bank's tags are never matched. Each value is at most 80 characters; a longer "
+            "one is refused with 422 `validation_error`, a key the bank has no tag for with "
+            "422 `unknown_key` naming every one that was not found, and the filter itself "
+            "with 422 `unknown_filter` when the caller belongs to no bank, such as a platform key."
+        ),
+        examples=[["custody"]],
     )
     q: str | None = Field(
         default=None,
@@ -1401,12 +1505,67 @@ class ObligationQuery(CamelSchema):
         examples=["2026-06-30"],
     )
     footprint: FootprintFilter = Field(default="in", description=_FOOTPRINT_FILTER, examples=["in"])
+    # c8-inventory-overlay: the bank's register overlay (REG-01, REG-02).
+    applicability: Applicability | None = Field(
+        default=None,
+        description=(
+            "Only the duties the bank has answered this way: `applies`, `not_applicable` or "
+            "`under_assessment`, the values a row carries in `applicability`. "
+            "`under_assessment` includes every duty the bank has not worked on. Any other "
+            "value is refused with 422 `validation_error`, and the filter itself with 422 "
+            "`unknown_filter` when the caller belongs to no bank."
+        ),
+        examples=["applies"],
+    )
+    compliance_status: FilterKey | None = Field(
+        default=None,
+        description=(
+            "Only the duties that apply to the bank and show this compliance status, by the key "
+            "a row carries in `complianceStatus`: the worst of the applying legal entities' "
+            "statuses where the bank records one per entity. The statuses are rows of the "
+            "bank's own `compliance_status` vocabulary, which its admin may extend, relabel or "
+            "retire without a deploy, so read `GET /vocab/compliance_status` for the live set "
+            "and send the key, never the label. A key the bank has no status for matches "
+            "nothing and answers 200 with an empty page. At most 80 characters; a longer one "
+            "is refused with 422 `validation_error`, and the filter itself with 422 "
+            "`unknown_filter` when the caller belongs to no bank."
+        ),
+        examples=["gap"],
+    )
+    owner: UUID | None = Field(
+        default=None,
+        description=(
+            "Only the duties this member of the bank owns in the first line, by the user id a "
+            "row carries in `firstLineOwner`. An id no duty names matches nothing and answers "
+            "200 with an empty page. A value that is not a UUID is refused with 422 "
+            "`validation_error`, and the filter itself with 422 `unknown_filter` when the "
+            "caller belongs to no bank."
+        ),
+        examples=["3f2a9c1e-8b7d-4e6f-a5c4-1d2e3f4a5b6c"],
+    )
+    owner_team: FilterKey | None = Field(
+        default=None,
+        description=(
+            "Only the duties this team owns, by the key a row carries in `ownerTeam`. Teams are "
+            "rows of the bank's own `team` vocabulary, which its admin may extend, relabel or "
+            "retire without a deploy, so read `GET /vocab/team` for the live set and send the "
+            "key. A key no duty names matches nothing and answers 200 with an empty page. At "
+            "most 80 characters; a longer one is refused with 422 `validation_error`, and the "
+            "filter itself with 422 `unknown_filter` when the caller belongs to no bank."
+        ),
+        examples=["compliance"],
+    )
     outside_footprint: None = Field(default=None, deprecated=True, description=_OUTSIDE_FOOTPRINT_RETIRED, examples=[None])
 
 
 # ---------------------------------------------------------------------------------------
 # Writes on a record (INV-06)
 # ---------------------------------------------------------------------------------------
+# `problem_report.version_number` is a PostgreSQL integer: a larger number answered 500
+# rather than 422 (hardening H39).
+PROBLEM_REPORT_VERSION_MAX = 2**31 - 1
+
+
 class ProblemReportBody(WriteBody):
     """"This looks wrong" (INV-06). `description` is what the reader believes is wrong;
     `versionNumber` and `language` say which words were on their screen, so a colleague
@@ -1441,11 +1600,14 @@ class ProblemReportBody(WriteBody):
     version_number: int | None = Field(
         default=None,
         ge=1,
+        le=PROBLEM_REPORT_VERSION_MAX,
         description=(
             "Which version of the summary the reader had on screen, numbered from 1 in the order the "
-            "versions took effect, so a colleague opens the same words rather than today's. The "
-            "default is none, for a screen that showed no particular version. It records what was "
-            "read and is not checked against the record, so it never changes what the server stores."
+            "versions took effect, so a colleague opens the same words rather than today's: a whole "
+            f"number from 1 to {PROBLEM_REPORT_VERSION_MAX}, the largest the report's column holds, "
+            "and anything outside that range is refused with a 422 naming the field. The default is "
+            "none, for a screen that showed no particular version. It records what was read and is "
+            "not checked against the record, so it never changes what the server stores."
         ),
     )
     language: str | None = Field(
@@ -1715,6 +1877,7 @@ class InstrumentRow(LibraryResponse):
                     "implementsNote": "MiFID II delegated directive (EU) 2017/593",
                     "obligationCount": 2,
                     "inFootprint": True,
+                    "privateToUs": False,
                     "lastVerifiedAt": "2026-06-30T07:12:44Z",
                     "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
                 }
@@ -1766,6 +1929,7 @@ class InstrumentRow(LibraryResponse):
         ),
         examples=[True],
     )
+    private_to_us: bool = Field(description=_PRIVATE_TO_US, examples=[False])
     last_verified_at: datetime.datetime | None = Field(description=_INSTRUMENT_LAST_VERIFIED_AT, examples=["2026-06-30T07:12:44Z"])
     source_url: str = Field(
         description=_INSTRUMENT_SOURCE_URL, examples=["https://www.fi.se/en/published/regulations/2017/fffs-20172/"]
@@ -1797,6 +1961,7 @@ class InstrumentPage(LibraryResponse):
                             "implementsNote": "MiFID II delegated directive (EU) 2017/593",
                             "obligationCount": 2,
                             "inFootprint": True,
+                            "privateToUs": False,
                             "lastVerifiedAt": "2026-06-30T07:12:44Z",
                             "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
                         }
@@ -1831,11 +1996,13 @@ class InstrumentQuery(CamelSchema):
 
     regime: str | None = Field(
         default=None,
+        max_length=FILTER_KEY_MAX,
         description=(
             "Only the instruments of this regime, by the regime term's key: `securities`, "
             "`insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and "
             "`payments` are seeded on day one. A key no regime has matches nothing and "
-            "answers 200 with an empty page."
+            "answers 200 with an empty page. At most 80 characters; a longer one is refused "
+            "with 422 `validation_error`."
         ),
         examples=["securities"],
     )
@@ -1928,6 +2095,7 @@ _SAMPLE_INSTRUMENT_DETAIL: dict[str, Any] = {
     "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
     "lastVerifiedAt": "2026-06-30T07:12:44Z",
     "verifiedBy": None,
+    "privateToUs": False,
     "lineage": [
         {
             "relation": {"key": "amends", "kind": None, "label": "Amends"},
@@ -1989,6 +2157,7 @@ class InstrumentDetail(LibraryResponse):
             "re-verifying a shared fact is bleqq's own check."
         )
     )
+    private_to_us: bool = Field(description=_PRIVATE_TO_US, examples=[False])
     lineage: list[InstrumentLineageRef] = Field(
         description=(
             "What this instrument implements or elaborates, and what implements, "
