@@ -806,8 +806,12 @@ class CasesActionBody(WriteBody):
         description=f"What must be done, 1 to {ACTION_TITLE_MAX} characters. Tenant content.",
         examples=["Document the annual research quality criteria"],
     )
-    owner_id: uuid.UUID = Field(
-        description="Who must do it, as a UUID of a member of this bank; anyone else is refused.",
+    owner_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "Who must do it, as a UUID of an active member of this bank; anyone else is refused with 422 "
+            "`unknown_member`. Null or left out makes the case's owner the action's owner."
+        ),
         examples=["8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60"],
     )
     due_date: datetime.date = Field(description="When it is due, as a plain calendar date (`2026-10-10`).", examples=["2026-10-10"])
@@ -828,7 +832,10 @@ class CasesActionPatch(WriteBody):
     )
     owner_id: uuid.UUID | None = Field(
         default=None,
-        description="A new owner, as a UUID of a member of this bank, or left out to keep the owner.",
+        description=(
+            "A new owner, as a UUID of an active member of this bank (anyone else is refused with 422 "
+            "`unknown_member`), or left out to keep the owner."
+        ),
         examples=["8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60"],
     )
     due_date: datetime.date | None = Field(

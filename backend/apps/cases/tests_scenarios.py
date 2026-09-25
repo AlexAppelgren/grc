@@ -90,12 +90,94 @@ class CasesScenarioTests(TestCase):
         Two people saving the same assessment: the second receives stale_write (CAS-03, CAS-08, AC-CAS2).
         """
 
-    @skip("pending: CAS-S6")
     def test_cas_s6(self) -> None:
         """CAS-S6
 
-        Actions have an owner and due date, lock during sign-off and export as tickets (CAS-04).
+        Actions have an owner and a due date, are locked in sign-off and are removed softly
+        (CAS-04, CAS-08). The ticket export is chunk 13's (INT-S3). c9-actions.
         """
+        import datetime
+        from typing import Any
+
+        from django.utils import timezone
+
+        from apps.cases import logic
+        from apps.cases.models import Action, ChangeCase, Evidence, EvidenceKind
+        from apps.cases.tests_actions import assessing
+        from apps.shared import factories, tenancy
+        from apps.shared.audit import Actor, ActorType
+        from apps.shared.models import AuditEvent
+        from apps.shared.testing import sign_in
+        from apps.taxonomy.models import CaseSubStatus
+
+        tenant = factories.tenant()
+        owner = factories.member(tenant, roles=("compliance_officer",)).user
+        case = assessing(tenant, owner)
+        actions_url = f"/api/v1/changes/{case.change_id}/actions"
+        due = timezone.localdate() + datetime.timedelta(days=10)
+
+        def add(body: dict[str, object]) -> Any:
+            tenancy.activate(tenant.id)
+            version = ChangeCase.objects.get(pk=case.pk).version
+            return self.client.post(
+                actions_url, data=body, content_type="application/json", HTTP_IF_MATCH=str(version), **sign_in(owner, tenant=tenant)
+            )
+
+        def open_count() -> int:
+            tenancy.activate(tenant.id)
+            return logic.case_facts(ChangeCase.objects.get(pk=case.pk), actor=None).open_action_count
+
+        # "Add action" with a title and a due date and no owner.
+        first = add({"title": "Document the research quality criteria", "dueDate": due.isoformat()})
+        self.assertEqual(first.status_code, 201, first.content)
+        listed = self.client.get(actions_url, **sign_in(owner, tenant=tenant)).json()["items"]
+        self.assertEqual([(row["id"], row["dueDate"], row["owner"]["id"]) for row in listed], [(first.json()["id"], due.isoformat(), str(owner.id))])
+        tenancy.activate(tenant.id)
+        self.assertEqual(ChangeCase.objects.get(pk=case.pk).status, CaseStatusCategory.IMPLEMENTING.value)
+
+        # Without a title, or for someone outside the bank.
+        self.assertEqual(add({"title": "", "dueDate": due.isoformat()}).status_code, 422)
+        stranger = add({"title": "Train the desk", "dueDate": due.isoformat(), "ownerId": str(factories.user().id)})
+        self.assertEqual((stranger.status_code, stranger.json()["code"]), (422, "unknown_member"))
+        second = add({"title": "Train the desk", "dueDate": due.isoformat()}).json()
+
+        # The case moves to waiting for sign-off, through the real move, under a sub-status.
+        tenancy.activate(tenant.id)
+        Action.objects.filter(case=case).update(done_at=timezone.now(), done_by=owner)
+        Evidence.objects.create(
+            tenant=tenant, case=case, kind=EvidenceKind.LINK.value, name="Criteria memo",
+            url="https://intranet.example.com/memo/7", uploaded_by=owner, scan_state="clean", scanned_at=timezone.now(),
+        )
+        moving = logic.load_case(tenant, case.change_id, for_update=True)
+        moving.signoff_requested_by, moving.signoff_requested_at = owner, timezone.now()
+        who = Actor(kind=ActorType.USER, id=owner.id, label=owner.name)
+        logic.transition(moving, CaseStatusCategory.SIGNOFF, actor=who, user=owner)
+        ChangeCase.objects.filter(pk=case.pk).update(sub_status=CaseSubStatus.objects.get(tenant=tenant, key="signoff"))
+        headers = {**sign_in(owner, tenant=tenant), "HTTP_IF_MATCH": "1"}
+        for response in (
+            add({"title": "Late", "dueDate": due.isoformat()}),
+            self.client.patch(f"/api/v1/actions/{second['id']}", data={"done": False}, content_type="application/json", **headers),
+            self.client.delete(f"/api/v1/actions/{second['id']}", **headers),
+        ):
+            self.assertEqual((response.status_code, response.json()["code"]), (409, "actions_locked"))
+        self.assertEqual(self.client.get(actions_url, **sign_in(owner, tenant=tenant)).status_code, 200)
+
+        # Sent back, the owner reopens one action and removes it.
+        tenancy.activate(tenant.id)
+        back = logic.load_case(tenant, case.change_id, for_update=True)
+        logic.transition(back, CaseStatusCategory.IMPLEMENTING, actor=who, user=owner)
+        reopened = self.client.patch(f"/api/v1/actions/{second['id']}", data={"done": False}, content_type="application/json", **headers)
+        self.assertEqual(reopened.status_code, 200)
+        self.assertEqual(open_count(), 1)
+        removed = self.client.delete(f"/api/v1/actions/{second['id']}", **{**sign_in(owner, tenant=tenant), "HTTP_IF_MATCH": "2"})
+        self.assertEqual(removed.status_code, 204)
+        self.assertEqual(open_count(), 0)
+        listed = self.client.get(actions_url, **sign_in(owner, tenant=tenant)).json()
+        self.assertEqual([row["id"] for row in listed["items"]], [first.json()["id"]])
+        tenancy.activate(tenant.id)
+        row = Action.objects.get(pk=second["id"])
+        self.assertEqual((row.removed_by_id, row.removed_at is not None), (owner.id, True), "the row stays for the case file")
+        self.assertTrue(AuditEvent.objects.filter(action="case.action_removed", subject_id=row.id, actor_id=owner.id).exists())
 
     @skip("pending: CAS-S7")
     def test_cas_s7(self) -> None:

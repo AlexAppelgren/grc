@@ -212,6 +212,16 @@ WORKFLOW = [
 ]
 
 
+# The operations whose module is built and answers for real, one line per package; each
+# is proved in its own module's tests instead of the 501 below.
+BUILT = {
+    "listActions",  # c9-actions: apps/cases/tests_actions.py
+    "addAction",  # c9-actions
+    "updateAction",  # c9-actions
+    "deleteAction",  # c9-actions
+}
+
+
 def _send(client: Any, route: Route, url: str, headers: dict[str, Any]) -> Any:
     if route.body is MULTIPART:
         return client.post(url, data=EVIDENCE_FORM, **headers)
@@ -307,7 +317,7 @@ class WorkflowContract(TestCase):
     def test_past_every_gate_each_answers_501_not_built(self) -> None:
         bank = _bank_with_work()
         with stub_session(bank.principal):
-            for route in WORKFLOW:
+            for route in (route for route in WORKFLOW if route.operation_id not in BUILT):
                 with self.subTest(operation=route.operation_id):
                     response = _send(self.client, route, route.url(bank.change_id, bank.action_id, bank.evidence_id), AS_SESSION)
                     self.assertEqual(response.status_code, 501)

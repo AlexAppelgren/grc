@@ -607,6 +607,14 @@ CELERY_BEAT_SCHEDULE["outbox-deliver"] = {
 CASE_CREATION_BATCH = env_int("CASE_CREATION_BATCH", 100)
 
 # ---------------------------------------------------------------------------------------
+# ===== CAS-04 how many actions one case may carry (apps/cases/actions.py, c9-actions) ====
+# A case's live actions are read whole by the case file and the sign-off guard, so one case
+# cannot grow without bound and push those reads past the 250 ms budget. Adding one more
+# than this answers 409 `too_many_actions`; a removed action no longer counts.
+# ---------------------------------------------------------------------------------------
+CASE_ACTIONS_MAX = env_int("CASE_ACTIONS_MAX", 200)
+
+# ---------------------------------------------------------------------------------------
 # ===== WAT-01 when a watched source has gone stale (apps/watch/sources.py) ===============
 # The console's Source coverage says "we missed nothing" only as far as the coverage log
 # lets it. A source is stale when the last SOURCE_STALE_AFTER_CHECKS sweeps of it all

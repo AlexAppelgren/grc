@@ -9,7 +9,6 @@ DELETE /comments/{} chunk 10
 DELETE /evidence/{} chunk 9
 DELETE /saved-searches/{} chunk 13
 DELETE /webhooks/{} chunk 13
-GET /changes/{}/actions chunk 9
 GET /changes/{}/evidence chunk 9
 GET /comments chunk 10
 GET /imports/{} chunk 12
@@ -25,10 +24,8 @@ GET /reports/summary chunk 12
 GET /saved-searches chunk 13
 GET /webhooks chunk 13
 GET /webhooks/{}/deliveries chunk 13
-PATCH /actions/{} chunk 9
 PATCH /comments/{} chunk 10
 PATCH /webhooks/{} chunk 13
-POST /changes/{}/actions chunk 9
 POST /changes/{}/actions/export-tickets chunk 13 INT-02, ticket export, is R3
 POST /changes/{}/assessment/start chunk 9
 POST /changes/{}/close chunk 9
