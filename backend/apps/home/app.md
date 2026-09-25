@@ -38,7 +38,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | HOM-02 | Weekly briefing, reachable from home with part of it shown there, snapshotted when emailed | M | R1 | built |
 | HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place; from R2 a certificate's expiry and next audit are our deadlines and never reach the calendar feed. R1 builds the regulatory branch; our own deadlines join with the register and the cases (chunks 8 and 9), and certificates with TEN-02 (chunk 8, HOM-S15) | M | R1 | in_progress |
 | HOM-04 | Upcoming changes as public facts for agents and newsletters, and a revocable calendar feed | S | R1 | built |
-| HOM-05 | My work: what a person or their teams are responsible for or take part in, as overdue, due soon, changes on those items and the rest, with next reviews and a department head's view; permission-filtered rows and counts; the footprint never hides a person's own items | M | R2 | pending |
+| HOM-05 | My work: what a person or their teams are responsible for or take part in, as overdue, due soon, changes on those items and the rest, with next reviews and a department head's view; permission-filtered rows and counts; the footprint never hides a person's own items | M | R2 | in_progress |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -205,17 +205,17 @@ When Anna opens My work
 Then the obligation is listed like any other
 ```
 
-### HOM-S11 — Changes on your items are confirmed links and new versions only `@integration` (HOM-05)
+### HOM-S11 — Changes on your items are confirmed links, new versions and colleagues' comments only `@integration` (HOM-05)
 ```gherkin
 Given Anna owns an obligation
-And an agent suggested a link from a new change to it that no person has confirmed
+And an agent suggested a link from a new change to it that nobody has confirmed
 When Anna opens My work
 Then the change is not under "Changes on your items"
-When a compliance officer confirms the link
+When the link is confirmed, by a person or by an agent independent of the one that suggested it
 Then the change's open case is listed there, naming Anna's obligation
-When a new version of the obligation is applied
+When a new version of another of her obligations is applied, or a colleague comments on one
 Then it is listed there until 14 days have passed
-And nothing Anna did herself is listed there
+And nothing Anna did herself, neither an approval nor a comment, is listed there
 ```
 
 ### HOM-S12 — My work answers within budget for a fifty-member department `@integration` (HOM-05, NFR-02)
