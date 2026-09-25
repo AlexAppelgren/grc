@@ -18,6 +18,7 @@ from django.test import TestCase
 from apps.cases import testing as cases_build
 from apps.home import tasks
 from apps.home.tests_my_work_api import run_hom_s7, run_hom_s8, run_hom_s9, run_hom_s10, run_hom_s11, run_hom_s12
+from apps.home.tests_my_work_cases import run_hom_s14
 from apps.shared import factories, permissions as perms
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.models import AuditEvent
@@ -352,12 +353,12 @@ class HomeScenarioTests(TestCase):
         """
         run_hom_s12(self)
 
-    @skip("pending: HOM-S14 (HOM-05, chunk 9)")
     def test_hom_s14(self) -> None:
         """HOM-S14
 
         Case work reaches My work (HOM-05).
         """
+        run_hom_s14(self)
 
     @skip("pending: HOM-S15 (HOM-03, TEN-02, chunk 8)")
     def test_hom_s15(self) -> None:

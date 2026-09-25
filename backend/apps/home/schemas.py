@@ -776,9 +776,8 @@ class HomeCalendarFeedCreated(CamelSchema):
 # ---------------------------------------------------------------------------------------
 # Four tier-one kinds (apps/shared/kinds.py). The screen draws a section per bucket and a
 # phrase per reason and date kind, so each is a kind the code branches on, not a list an
-# admin curates. `commented`, `duty_due`, `internal_deadline` and `action_due` are declared
-# now, although this service fills none of them yet, so a client written today does not
-# change when comments (chunk 10), duties and cases (chunk 9) add their sources.
+# admin curates. Every value is filled: comments by chunk 10, duties, internal deadlines
+# and actions by c9-mywork-cases.
 WorkBucket = Literal["overdue", "due_soon", "aware", "open"]
 WorkReason = Literal["owner", "participant"]
 WorkDateKind = Literal[
@@ -950,9 +949,10 @@ class HomeWorkReason(CamelSchema):
     reason: WorkReason = Field(
         description=(
             "How `who` is involved, a fixed kind: `owner` (a first-line owner, the compliance "
-            "contact, the owner of one legal entity's row, of a gap or of an internal item, or "
-            "an owning team) or `participant` (takes part without owning). Neither grants "
-            "anything: a row still needs its own read permission."
+            "contact, the owner of one legal entity's row, of a gap, of a duty occurrence, of an "
+            "internal item, of a case or of one of its actions, or an owning team) or "
+            "`participant` (takes part in a register entry or a case without owning it). "
+            "Neither grants anything: a row still needs its own read permission."
         ),
         examples=["owner"],
     )

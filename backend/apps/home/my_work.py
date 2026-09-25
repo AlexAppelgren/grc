@@ -1,4 +1,4 @@
-"""My work (HOM-05, TEN-03, D-23, D-24, D-97): what a person or a department is responsible
+"""My work (HOM-05, TEN-03, CAS-04, REG-07, D-23, D-24, D-97): what a person or a department is responsible
 for or takes part in, bucketed overdue, due soon, changes on your items and the rest.
 
 One definition, read by the page and later by the reminders, the digest and the member
@@ -10,14 +10,18 @@ writes.
    organisation unit and of every unit below it, with their active members; a department
    view is a filter, never a grant.
 2. **What.** Register entries where the person is first-line owner or compliance contact,
-   or a team owns it; entity rows, gaps and internal items they or their teams own; entries
-   they or their teams take part in (COL-04). Hidden: entries and entity rows that do not
-   apply, closed gaps, inactive internal items and ended participations. Case ownership and
-   case participation are chunk 9's.
+   or a team owns it; entity rows, gaps, duty occurrences and internal items they or their
+   teams own; entries they or their teams take part in (COL-04). Open cases they own or
+   they or their teams take part in, and open cases holding a live action they own
+   (CAS-04), one row per case. Hidden: entries and entity rows that do not apply, closed
+   gaps, finished duty occurrences, inactive internal items, finished cases, done or
+   removed actions and ended participations.
 3. **When.** A person involved in the entry itself is dated by the earliest open date on
-   it (its review, every applying entity row's review, every open gap's target); one
-   involved only through an entity row or a gap by that child's own date. Compared with the
-   bank's own today.
+   it (its review, every applying entity row's review, every open gap's target, every open
+   duty occurrence); one involved only through an entity row, a gap or a duty occurrence by
+   that child's own date. Likewise a case's owner or participant is dated by its internal
+   deadline, every live action and its key date while ahead; an action's owner only by
+   their own action. Compared with the bank's own today.
 4. **Changes on your items.** Open cases whose change has a confirmed link to an obligation
    in the list (confirmed by a person or by an agent other than the suggesting one, D-97),
    new obligation versions applied within `MY_WORK_AWARE_DAYS`, and comments on a record in
@@ -25,7 +29,7 @@ writes.
    confirmation, approval or comment, never an unconfirmed suggestion, never a deleted
    comment or one on a kind of record the reader may not read.
 5. **Permissions.** Register and internal-item rows need `register.read`, case rows
-   `cases.read`, and a case reached through a link needs both. Rows and counts come from
+   `cases.read`, and a case reached only through a link needs both. Rows and counts come from
    the filtered set; a kind the reader may not read is named in `permission_limited`.
 6. **The footprint** is never applied (D-24).
 
@@ -44,10 +48,10 @@ from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Exists, F, OuterRef, Q
 from django.utils import timezone
 
-from apps.cases.models import ChangeCase
+from apps.cases.models import Action, ChangeCase
 from apps.collab.models import Comment, Participant
 from apps.collab.subjects import SUBJECTS
 from apps.home.schemas import (
@@ -69,7 +73,14 @@ from apps.home.schemas import (
 from apps.identity.models import Membership, User
 from apps.library.models import ObligationVersion
 from apps.library.reading import obligation_headings, today_for, vocabulary_refs
-from apps.register.models import Applicability, Gap, TenantObligation, TenantObligationScope
+from apps.register.duties import OPEN as OPEN_DUTIES
+from apps.register.models import (
+    Applicability,
+    DutyOccurrence,
+    Gap,
+    TenantObligation,
+    TenantObligationScope,
+)
 from apps.shared.authentication import Principal
 from apps.shared.models import Tenant
 from apps.shared.permissions import CASES_READ, REGISTER_READ
@@ -244,19 +255,21 @@ def _rows(
     tenant: Tenant, principal: Principal, order: list[str], who: _Who
 ) -> tuple[list[_Row], dict[uuid.UUID, str]]:
     """Every row the caller may read, and the titles of the obligations among them."""
-    if not principal.has_permission(REGISTER_READ):
-        return [], {}
-    register = _register(who)
-    titles = {
-        obligation_id: heading.title
-        for obligation_id, heading in obligation_headings(list(register), order).items()
-    }
-    for obligation_id, row in register.items():
-        row.title = titles[obligation_id]
-    _versions(tenant, principal, register)
-    rows = [*register.values(), *_internal_items(who)]
+    register: dict[uuid.UUID, _Row] = {}
+    titles: dict[uuid.UUID, str] = {}
+    rows: list[_Row] = []
+    if principal.has_permission(REGISTER_READ):
+        register = _register(who)
+        titles = {
+            obligation_id: heading.title
+            for obligation_id, heading in obligation_headings(list(register), order).items()
+        }
+        for obligation_id, row in register.items():
+            row.title = titles[obligation_id]
+        _versions(tenant, principal, register)
+        rows += [*register.values(), *_internal_items(who)]
     if principal.has_permission(CASES_READ):
-        rows += _linked_cases(tenant, principal, register)
+        rows += _cases(tenant, principal, who, register)
     _comments(tenant, principal, rows)
     return rows, titles
 
@@ -328,6 +341,17 @@ def _register(who: _Who) -> dict[uuid.UUID, _Row]:
         row.reasons |= owners
         if gap.target_date is not None and (owners or gap.tenant_obligation_id in whole):
             row.dates.add(_Date(gap.target_date, "gap_target", entity_id=gap.org_unit_id))
+
+    for duty in (
+        DutyOccurrence.objects.filter(entry_applies, status__in=OPEN_DUTIES)
+        .filter(_owned_by(who, "owner_id", "owner_team_id") | Q(tenant_obligation_id__in=whole))
+        .select_related("tenant_obligation")
+    ):
+        row = whole.get(duty.tenant_obligation_id) or row_of(duty.tenant_obligation)
+        owners = _named(who, duty.owner_id, duty.owner_team_id)
+        row.reasons |= owners
+        if owners or duty.tenant_obligation_id in whole:
+            row.dates.add(_Date(duty.due_date, "duty_due", entity_id=duty.org_unit_id))
     return rows
 
 
@@ -367,32 +391,37 @@ def _versions(tenant: Tenant, principal: Principal, register: dict[uuid.UUID, _R
         register[obligation_id].aware.add(_Date(_local_day(tenant, created_at), "version_applied"))
 
 
-def _linked_cases(
-    tenant: Tenant, principal: Principal, register: dict[uuid.UUID, _Row]
+def _cases(
+    tenant: Tenant, principal: Principal, who: _Who, register: dict[uuid.UUID, _Row]
 ) -> list[_Row]:
-    """The bank's open cases on changes with a confirmed link to an obligation on the list.
-    Every such case counts toward its obligation's `open_change_count`; only a link someone
-    other than the caller confirmed puts the case itself on the list."""
-    open_cases = ChangeCase.objects.filter(change_id=OuterRef("change_id")).exclude(
-        status__in=FINISHED
-    )
+    """The bank's open cases, one row each: those someone listed owns or takes part in,
+    those holding a live action someone listed owns, and those on changes with a confirmed
+    link to an obligation on the list. Every linked case counts toward its obligation's
+    `open_change_count`; a link only the caller confirmed puts no case on the list by itself.
+    Four queries whatever the number of cases."""
+    open_cases = ChangeCase.objects.exclude(status__in=FINISHED)
+    live = Q(done_at__isnull=True, removed_at__isnull=True)
     links = list(
         ChangeObligation.objects.filter(obligation_id__in=register, confirmed_at__isnull=False)
-        .filter(Exists(open_cases))
+        .filter(Exists(open_cases.filter(change_id=OuterRef("change_id"))))
         .values_list("change_id", "obligation_id", "confirmed_by_id", "confirmed_at")
     )
+    taking_part = Participant.objects.filter(case_id=OuterRef("pk"), removed_at__isnull=True)
+    acting = Action.objects.filter(live, case_id=OuterRef("pk"), owner_id__in=who.people)
     cases = {
-        case.change_id: case
-        for case in ChangeCase.objects.filter(change_id__in={link[0] for link in links})
-        .exclude(status__in=FINISHED)
+        case.id: case
+        for case in open_cases.filter(
+            Q(owner_id__in=who.people)
+            | Exists(taking_part.filter(_owned_by(who, "user_id", "team_id")))
+            | Exists(acting)
+            | Q(change_id__in={link[0] for link in links})
+        )
         .select_related("change", "urgency")
+        .annotate(internal_deadline=F("assessment__internal_deadline"))
     }
     rows: dict[uuid.UUID, _Row] = {}
-    for change_id, obligation_id, confirmed_by_id, confirmed_at in links:
-        case = cases[change_id]
-        register[obligation_id].open_change_count += 1
-        if confirmed_by_id == principal.subject_id:
-            continue
+
+    def row_of(case: ChangeCase) -> _Row:
         row = rows.get(case.id)
         if row is None:
             row = rows[case.id] = _Row(
@@ -403,16 +432,50 @@ def _linked_cases(
                 urgency_ordinal=case.urgency.ordinal,
                 case_id=case.id,
             )
-            key_date = case.change.key_date
-            if key_date is not None:
-                precision = cast(DatePrecision, case.change.key_date_precision or DAY)
-                row.dates.add(_Date(key_date, "key_date", precision))
+        return row
+
+    for case in cases.values():
+        if case.owner_id in who.people:
+            row_of(case).reasons.add(_Reason(OWNER, person_id=case.owner_id))
+    for case_id, user_id, team_id in (
+        Participant.objects.filter(case_id__in=cases, removed_at__isnull=True)
+        .filter(_owned_by(who, "user_id", "team_id"))
+        .values_list("case_id", "user_id", "team_id")
+    ):
+        row_of(cases[case_id]).reasons |= _named(who, user_id, team_id, PARTICIPANT)
+    # Someone on the case itself answers for all of it; an action's owner for that action.
+    whole = set(rows)
+    for case_id, owner_id, due_date in Action.objects.filter(live, case_id__in=cases).values_list(
+        "case_id", "owner_id", "due_date"
+    ):
+        if owner_id in who.people:
+            row_of(cases[case_id]).reasons.add(_Reason(OWNER, person_id=owner_id))
+        if owner_id in who.people or case_id in whole:
+            rows[case_id].dates.add(_Date(due_date, "action_due"))
+
+    by_change = {case.change_id: case for case in cases.values()}
+    linked = set()
+    for change_id, obligation_id, confirmed_by_id, confirmed_at in links:
+        case = by_change[change_id]
+        register[obligation_id].open_change_count += 1
+        if confirmed_by_id == principal.subject_id:
+            continue
+        linked.add(case.id)
+        row = row_of(case)
         # The query keeps confirmed links only, so the stamp is always there.
         row.aware.add(_Date(_local_day(tenant, cast(datetime.datetime, confirmed_at)), "linked"))
         for reason in register[obligation_id].reasons:
             row.reasons.add(
                 _Reason(reason.reason, reason.person_id, reason.team_id, via=obligation_id)
             )
+
+    for case_id in whole | linked:
+        case, row = cases[case_id], rows[case_id]
+        if case.change.key_date is not None:
+            precision = cast(DatePrecision, case.change.key_date_precision or DAY)
+            row.dates.add(_Date(case.change.key_date, "key_date", precision))
+        if case_id in whole and case.internal_deadline is not None:
+            row.dates.add(_Date(case.internal_deadline, "internal_deadline"))
     return list(rows.values())
 
 
