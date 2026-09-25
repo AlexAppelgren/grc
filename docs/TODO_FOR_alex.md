@@ -1524,3 +1524,22 @@ Defaults taken; nothing waits on them.
       seconds, over the 250 ms budget (a logged warning, not an error). Default if you say
       nothing: it stays in one transaction, as PRO-02 asks; a background job is the change if
       it is felt.
+
+## c11-e2e-console: the console's agent journeys (2026-09-25, AGT-03, AGT-04, PRO-04, ADM-02)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **The E2E stack reads its own copy of the agent definitions.** A version is published
+      only from a folder the build ships, and `backend/agents/` ships no watch-sweeper
+      folder the E2E seed has not already published, so AGT-S4's journey had nothing to
+      publish. `start-backend.sh` now copies `backend/agents/` to a scratch directory, adds
+      fixture folders v3 to v5 (v1's definition under the new number), and releases v1 in
+      the copy (`status: active`) so a bank's agents page lists bleqq's watch (AGT-S13). The
+      server reads the copy through `AGENT_DEFINITIONS_DIR`, which settings honour only
+      under `E2E_MODE` (refused when deployed). Default: keep it. Say if you would rather
+      ship a real sweeper v2 folder and release the sweeper in `backend/agents/` itself.
+- [ ] **Four journeys send requests the screen never offers.** AGT-S4, AGT-S13, PRO-S8
+      and ADM-S4 prove the server's own 403 or 409 with a direct request that reuses the
+      bearer the web app itself sent (the access token lives only in the app's memory);
+      nothing is minted, stored or set on the browser. Default: keep it, as the way a
+      journey proves a refusal the UI already prevents.
