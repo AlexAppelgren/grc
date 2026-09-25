@@ -123,6 +123,8 @@ life and is stored from each verified assertion. An assertion with BS set and BE
 raise py_webauthn's `InvalidBackupFlags` uncaught (500); it is now a refused assertion with the
 reason `invalid_backup_flags`. No assertion blob reaches a log line, a security-log row or the
 audit trail. `factories.passkey` now stores BE and BS set, as registration does for the
-multi-device passkey it describes. Tests: `apps/identity/tests_backup_flag.py`, red before the
+multi-device passkey it describes, and the E2E seed stores the flags Playwright's virtual
+authenticator reports (not eligible), which it used to contradict. Tests:
+`apps/identity/tests_backup_flag.py`, red before the
 fix. Left to `c11-credential-policy`: the tenant credential policy itself, and its tests of this
 refusal "in a tenant of either policy" once the policy field exists.
