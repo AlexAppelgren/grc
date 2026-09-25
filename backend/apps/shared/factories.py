@@ -18,7 +18,7 @@ need one live in the app's own `testing.py`, which the fence exempts:
 |---|---|
 | An instrument, a provision, an obligation | `apps/library/testing.py` |
 | A source, a source check, a change with its timeline, pages, flags, scope terms and obligation links | `apps/watch/testing.py` |
-| An agent, a platform key bound to it, a platform run | `apps/agents/testing.py` |
+| An agent, a platform key bound to it, a platform run, a definition a bank may add | `apps/agents/testing.py` |
 | A bank's case, its obligation-link decision, two banks with different footprints | `apps/cases/testing.py` |
 """
 
@@ -207,19 +207,10 @@ def agent_actor(*, label: str = "Test Agent", agent_id: uuid.UUID | None = None)
 def tenant_agent(tenant: Tenant) -> object:
     """The tenant-isolation guard's record for `PATCH /agents/{tenant_agent_id}`: one of the
     bank's own agents, on a tenant-scoped definition shared by every bank that asks."""
-    from apps.agents.models import Agent, AgentKind, AgentScopeKind, AgentWritesTo, TenantAgent
+    from apps.agents.models import TenantAgent
+    from apps.agents.testing import tenant_definition
 
-    with tenancy.library_write("test"):
-        definition, _ = Agent.objects.get_or_create(
-            key="isolation-bank-watch",
-            defaults={
-                "kind": AgentKind.RESEARCH.value,
-                "current_version": 1,
-                "scope": AgentScopeKind.TENANT.value,
-                "tenant_configurable": True,
-                "writes_to": AgentWritesTo.TENANT.value,
-            },
-        )
+    definition = tenant_definition("isolation-bank-watch")
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return TenantAgent.objects.create(tenant=tenant, agent=definition)

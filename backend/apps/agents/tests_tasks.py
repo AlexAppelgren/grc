@@ -21,7 +21,7 @@ from django.test import override_settings
 from django.utils import timezone
 
 from apps.agents import scope as run_scope
-from apps.agents import tasks
+from apps.agents import opener, tasks
 from apps.agents import testing as agent_build
 from apps.agents.models import (
     Agent,
@@ -42,6 +42,7 @@ from apps.shared.models import AuditEvent, Tenant
 from apps.shared.tenancy import is_tenant_task, library_write
 
 TASKS = Path(tasks.__file__)
+OPENER = Path(opener.__file__)
 # A Wednesday noon, UTC, well inside a week, a month and a day, so the clock is the test's.
 WEDNESDAY = datetime.datetime(2026, 10, 14, 12, 0, tzinfo=datetime.UTC)
 
@@ -49,7 +50,7 @@ WEDNESDAY = datetime.datetime(2026, 10, 14, 12, 0, tzinfo=datetime.UTC)
 def published(agent: Agent, version_no: int = 1, model: str = "claude-opus-5") -> AgentVersion:
     """A published version of `agent`, which a run pins."""
     with library_write("test"):
-        return AgentVersion.objects.create(agent=agent, version_no=version_no, model=model, prompt_path="prompt.md")
+        return AgentVersion.objects.create(agent=agent, version_number=version_no, model=model, prompt_path="prompt.md")
 
 
 def frozen(at: datetime.datetime) -> Any:
@@ -72,7 +73,7 @@ class Recorded(MockAgentRunner):
 
 
 def with_runner(runner: Recorded) -> Any:
-    return mock.patch.object(tasks, "get_agent_runner", return_value=runner)
+    return mock.patch.object(opener, "get_agent_runner", return_value=runner)
 
 
 def platform_runs() -> list[AgentRun]:
@@ -168,7 +169,7 @@ class BleqqsBeat(PlatformBeatCase):
         [run] = platform_runs()
         self.assertEqual(runner.seen, [(True, None)])
         self.assertEqual(run.status, RunStatus.FAILED.value)
-        self.assertEqual(run.error, tasks.START_FAILED)
+        self.assertEqual(run.error, opener.START_FAILED)
         self.assertIsNotNone(run.finished_at)
         self.assertTrue(AuditEvent.objects.filter(action="agent_run.start_failed", subject_id=run.id).exists())
         self.beat(WEDNESDAY + datetime.timedelta(hours=1))
@@ -206,14 +207,21 @@ class TheBeatOfBleqqsAgentsStaysOutOfEveryBank(PlatformBeatCase):
         scope module, the AI switch, the cap or the pause."""
         tree = ast.parse(TASKS.read_text())
         functions = {node.name: node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)}
-        platform_path = ("run_platform_agents", "open_platform_run", "_covered", "_due_platform_agents", "_claim", "_period_start")
+        platform_path = ("run_platform_agents", "open_platform_run", "_pinned", "_covered", "_due_platform_agents", "_claim", "_period_start")
         banned = {"run_scope", "ai", "budget", "pause", "ensure_enabled", "open_tenant_run"}
         for name in platform_path:
             used = {node.id for node in ast.walk(functions[name]) if isinstance(node, ast.Name)}
             self.assertEqual(used & banned, set(), f"{name} names a bank's setting or scope")
-        # `_open` is shared, and reaches scope.py only for a run of a bank's own agent.
-        [branch] = [node for node in ast.walk(functions["_open"]) if isinstance(node, ast.If) and "run_scope" in ast.unparse(node)]
+        # The opener is shared, and reaches scope.py only for a run of a bank's own agent.
+        opener_functions = {node.name: node for node in ast.walk(ast.parse(OPENER.read_text())) if isinstance(node, ast.FunctionDef)}
+        for name in ("_hand_over", "schedule_of"):
+            used = {node.id for node in ast.walk(opener_functions[name]) if isinstance(node, ast.Name)}
+            self.assertEqual(used & banned, set(), f"{name} names a bank's setting or scope")
+        [branch] = [
+            node for node in ast.walk(opener_functions["open_run"]) if isinstance(node, ast.If) and "run_scope" in ast.unparse(node)
+        ]
         self.assertEqual(ast.unparse(branch.test), "tenant_agent is not None")
+        self.assertEqual(sum("run_scope" in ast.unparse(node) for node in opener_functions["open_run"].body), 1)
 
 
 class BankBeatCase(TenantAgentCase):
@@ -330,7 +338,7 @@ class ABanksBeat(BankBeatCase):
         runner = self.beat(runner=Recorded(fail=True))
         [run] = self.runs()
         self.assertEqual(runner.seen, [(True, self.bank.id)])
-        self.assertEqual((run.status, run.error), (RunStatus.FAILED.value, tasks.START_FAILED))
+        self.assertEqual((run.status, run.error), (RunStatus.FAILED.value, opener.START_FAILED))
 
     def test_the_dispatcher_hands_on_every_active_bank_and_activates_none(self) -> None:
         refuse = mock.Mock(side_effect=AssertionError("the dispatcher entered a bank's zone"))

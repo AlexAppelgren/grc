@@ -228,6 +228,20 @@ def concrete_library_models() -> list[type[LibraryModel]]:
     return [m for m in production_models() if issubclass(m, LibraryModel) and not m._meta.abstract]
 
 
+def library_model_write(rel: str, source: str, library_names: set[str]) -> str | None:
+    """Why the production module at `rel` may be writing a library row outside the fence: it
+    names a library model and calls a write, anywhere in the module. None when it may not."""
+    if _is_allowed(rel) or rel.endswith("/models.py"):
+        return None
+    visitor = LibraryWriteCalls()
+    visitor.visit(ast.parse(source))
+    mentioned = library_names & visitor.names
+    if not (mentioned and visitor.write_calls):
+        return None
+    line, method = visitor.write_calls[0]
+    return f"apps/{rel}:{line} calls .{method}() and names {sorted(mentioned)}"
+
+
 class LibraryFenceGuard(SimpleTestCase):
     def test_library_write_is_called_only_from_allowlisted_modules(self) -> None:
         offenders: list[str] = []
@@ -248,18 +262,33 @@ class LibraryFenceGuard(SimpleTestCase):
 
     def test_no_module_outside_the_allowlist_writes_a_library_model(self) -> None:
         library_names = {model.__name__ for model in concrete_library_models()}
-        offenders: list[str] = []
-        for path in production_modules():
-            rel = path.relative_to(APPS_DIR).as_posix()
-            if _is_allowed(rel) or rel.endswith("/models.py"):
-                continue
-            visitor = LibraryWriteCalls()
-            visitor.visit(ast.parse(path.read_text(encoding="utf-8")))
-            mentioned = library_names & visitor.names
-            if mentioned and visitor.write_calls:
-                line, method = visitor.write_calls[0]
-                offenders.append(f"apps/{rel}:{line} calls .{method}() and names {sorted(mentioned)}")
+        offenders = [
+            offence
+            for path in production_modules()
+            if (offence := library_model_write(path.relative_to(APPS_DIR).as_posix(), path.read_text(encoding="utf-8"), library_names))
+        ]
         self.assertEqual(offenders, [], "possible library writes outside the fence:\n  " + "\n  ".join(offenders))
+
+    def test_a_bank_writer_that_names_a_library_model_is_still_named(self) -> None:
+        # c11-scheduler: the agents app's writers of a bank's rows (a run, its scope, a
+        # bank's agent and its next run) read the definitions and terms they need from
+        # `agents/logic.py` and name no library model. The rule did not move: a writer of a
+        # tenant row that names one again, even only to read it, is named, and so is a
+        # fixture in factories.py that builds a definition.
+        library_names = {model.__name__ for model in concrete_library_models()}
+        self.assertLessEqual({"Agent", "AgentVersion", "TaxonomyTerm"}, library_names)
+        planted = {
+            "agents/tenant_agents.py": "def plant(tenant):\n    Agent.objects.filter(key='x').first()\n    TenantAgent(tenant=tenant).save()\n",
+            "agents/scope.py": "def plant(run):\n    TaxonomyTerm.objects.filter(active=True)\n    run.save(update_fields=['scope'])\n",
+            "agents/opener.py": "def plant(version: AgentVersion):\n    AgentRun.objects.create(agent_version=version)\n",
+            "shared/factories.py": "def plant():\n    Agent.objects.get_or_create(key='x')\n",
+        }
+        for rel, source in planted.items():
+            with self.subTest(module=rel):
+                self.assertIsNotNone(library_model_write(rel, source, library_names))
+        # A reader that writes nothing, and a writer that names only tenant models, pass.
+        self.assertIsNone(library_model_write("agents/logic.py", "def f():\n    return Agent.objects.first()\n", library_names))
+        self.assertIsNone(library_model_write("agents/opener.py", "def f(run):\n    run.save()\n    TenantAgent.objects.create()\n", library_names))
 
     def test_enumeration_reports_the_library_models_it_guards(self) -> None:
         # Chunk 3's library records are guarded beside chunk 2's vocabularies and terms.
@@ -1009,6 +1038,7 @@ class RecurringDutyIsBehindTheFence(SimpleTestCase):
         self.assertFalse(_is_allowed("register/duties.py"))
 
 
+# ---------------------------------------------------------------------------------------
 # Platform configuration: the three console routes and nothing else (D-102, ADR 0059)
 # ---------------------------------------------------------------------------------------
 def configuration_overreach(source: str, library_names: set[str]) -> list[str]:

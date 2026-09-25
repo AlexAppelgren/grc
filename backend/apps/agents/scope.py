@@ -22,7 +22,8 @@ from pydantic import BaseModel, Field
 
 from apps.agents.models import AgentRun, TenantAgent
 from apps.library.models import Jurisdiction
-from apps.taxonomy.models import FootprintTerm, TaxonomyTerm, WatchedMarket
+from apps.agents.logic import live_term_keys
+from apps.taxonomy.models import FootprintTerm, WatchedMarket
 
 Level = Literal["operating", "watching", "reaching", "chosen"]
 
@@ -99,7 +100,7 @@ def for_run(tenant_agent: TenantAgent) -> AgentRunScope:
     else:
         scoped = _markets(tenant_agent.tenant_id)
         source = "markets"
-    live_terms = set(TaxonomyTerm.objects.filter(key__in=terms, active=True).values_list("key", flat=True))
+    live_terms = live_term_keys(terms)
     dropped += [DroppedKey(vocabulary="taxonomy_term", key=key) for key in terms if key not in live_terms]
     return AgentRunScope(
         source=source, jurisdictions=scoped, terms=[key for key in terms if key in live_terms], dropped=dropped

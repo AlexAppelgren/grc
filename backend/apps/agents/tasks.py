@@ -1,11 +1,12 @@
 """The app is the scheduler of record (AGT-03, AGT-04, AGT-06, D-61, ADR 0053).
 
 Every run the app starts opens through one opener: `open_platform_run` for one of bleqq's
-agents and `open_tenant_run` for one a bank added for itself, both ending in `_open`, which
-writes the run row (the version it pins, what started it, the scope it looks at and the
-most it may spend) and its audit row before the runner is asked anything. A runner that
-cannot start a run leaves it recorded as failed, never as a row that vanished or one still
-running.
+agents and `open_tenant_run` for one a bank added for itself, both ending in
+`opener.open_run`, which writes the run row (the version it pins, what started it, the
+scope it looks at and the most it may spend) and its audit row before the runner is asked
+anything. A runner that cannot start a run leaves it recorded as failed, never as a row
+that vanished or one still running. This module reads the definitions and decides; the
+opener writes, and names no library model (apps/shared/tests_library_fence.py).
 
 Two beats, because the two kinds of agent live in two zones:
 
@@ -40,7 +41,6 @@ number and the run id reach the runner, and the scope stored on the run is keys 
 from __future__ import annotations
 
 import datetime
-import logging
 import uuid
 from decimal import Decimal
 from typing import Any
@@ -52,18 +52,8 @@ from django.db import connection, transaction
 from django.db.models import Max, Q
 from django.utils import timezone
 
-from apps.agents import budget, definitions
-from apps.agents import scope as run_scope
-from apps.agents.models import (
-    Agent,
-    AgentCadence,
-    AgentRun,
-    AgentScopeKind,
-    AgentVersion,
-    RunStatus,
-    RunTrigger,
-    TenantAgent,
-)
+from apps.agents import budget, definitions, opener
+from apps.agents.models import Agent, AgentCadence, AgentRun, AgentScopeKind, AgentVersion, RunTrigger, TenantAgent
 from apps.agents.tenant_agents import lock_tenant, next_run_at, pause
 from apps.collab.logic import notify
 from apps.collab.models import NotificationKind
@@ -71,121 +61,28 @@ from apps.identity.models import Membership, User, UserStatus
 from apps.library.models import Jurisdiction
 from apps.shared import ai, tenancy
 from apps.shared import permissions as perms
-from apps.shared.adapters.agent_runner import get_agent_runner
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant, TenantStatus
 
-logger = logging.getLogger(__name__)
-
-SUBJECT_TYPE = "agent_run"
 SCHEDULER = Actor.system("agent scheduler")
-# What a run that the runner would not start says, for the people who operate the agents.
-START_FAILED = "The runner could not start this run."
 
 
 # ---------------------------------------------------------------------------------------
-# The one opener
+# What a run pins; `opener.open_run` records it
 # ---------------------------------------------------------------------------------------
-def _open(
-    *,
-    agent: Agent,
-    version: AgentVersion | None,
-    trigger: RunTrigger,
-    actor: Actor,
-    tenant_agent: TenantAgent | None = None,
-    requested_by: User | None = None,
-    budget_limit: Decimal | None = None,
-    scope: dict[str, Any] | None = None,
-) -> AgentRun:
-    """Record the run, then hand it to the runner. The row and its audit row are written
-    before the runner is called, in the caller's transaction."""
-    version_no = version.version_no if version is not None else agent.current_version
-    run = AgentRun.objects.create(
-        agent=agent,
-        agent_version=version,
-        tenant_agent=tenant_agent,
-        trigger=trigger.value,
-        requested_by=requested_by,
-        model=version.model if version is not None else "",
-        pipeline_version=str(version_no),
-        budget_limit=budget_limit,
-        scope=scope or {},
-    )
-    if tenant_agent is not None:
-        run_scope.snapshot(run)
-    record(
-        action="agent_run.opened",
-        actor=actor,
-        subject_type=SUBJECT_TYPE,
-        subject_id=run.id,
-        subject_title=agent.key,
-        summary=f"{agent.key} opened a run.",
-        tenant_id=run.tenant_id,
-        after={
-            "agent": agent.key,
-            "agentVersion": version_no,
-            "trigger": run.trigger,
-            "budgetLimit": None if budget_limit is None else str(budget_limit),
-            "scope": run.scope,
-            **_schedule_of(tenant_agent),
-        },
-    )
-    _hand_over(run, version_no, actor)
-    return run
-
-
-def _hand_over(run: AgentRun, version_no: int, actor: Actor) -> None:
-    """Start the recorded run through the runner. Whatever the runner raises, the run is
-    closed as failed with a fixed sentence, so no run is left reading as running."""
-    try:
-        handle = get_agent_runner().start(run_id=run.id, definition_key=run.agent.key, definition_version=version_no)
-    except Exception:  # compliance: allow-broad-except the runner is an external executor; any failure to start closes the recorded run as failed
-        logger.warning("agent run not started", extra={"run_id": str(run.id), "agent": run.agent.key})
-        run.status = RunStatus.FAILED.value
-        run.error = START_FAILED
-        run.finished_at = timezone.now()
-        run.save(update_fields=["status", "error", "finished_at"])
-        record(
-            action="agent_run.start_failed",
-            actor=actor,
-            subject_type=SUBJECT_TYPE,
-            subject_id=run.id,
-            subject_title=run.agent.key,
-            summary=f"The runner could not start {run.agent.key}'s run.",
-            tenant_id=run.tenant_id,
-            before={"status": RunStatus.RUNNING.value},
-            after={"status": run.status},
-        )
-        return
-    run.external_session_id = handle.external_id
-    run.save(update_fields=["external_session_id"])
-    record(
-        action="agent_run.started",
-        actor=actor,
-        subject_type=SUBJECT_TYPE,
-        subject_id=run.id,
-        subject_title=run.agent.key,
-        summary=f"The runner started {run.agent.key}'s run.",
-        tenant_id=run.tenant_id,
-        after={"externalSessionId": handle.external_id},
-    )
-
-
-def _version(agent: Agent) -> AgentVersion | None:
+def _pinned(agent: Agent) -> opener.Pinned:
     """The version a run of `agent` pins: its newest one still published (AGT-06). Every
     version retired raises 409 `no_published_version`."""
     version_id = definitions.version_to_run(agent.id)
-    return None if version_id is None else AgentVersion.objects.get(pk=version_id)
-
-
-def _schedule_of(tenant_agent: TenantAgent | None) -> dict[str, Any]:
-    """What the audit row of a bank's run carries of the agent's schedule, which the beat
-    moved just before: the agent and its next run, an id and a timestamp."""
-    if tenant_agent is None:
-        return {}
-    upcoming = tenant_agent.next_run_at
-    return {"tenantAgent": str(tenant_agent.id), "nextRunAt": upcoming.isoformat() if upcoming else None}
+    version = None if version_id is None else AgentVersion.objects.get(pk=version_id)
+    return opener.Pinned(
+        agent_id=agent.id,
+        key=agent.key,
+        version_id=version_id,
+        version_no=agent.current_version if version is None else version.version_number,
+        model="" if version is None else version.model,
+    )
 
 
 def _skipped(*, agent: Agent, reason: str, tenant_id: uuid.UUID | None, after: dict[str, Any]) -> None:
@@ -216,9 +113,8 @@ def _covered(agent: Agent) -> list[str]:
 
 def open_platform_run(agent: Agent) -> AgentRun:
     """Open a scheduled run of one of bleqq's agents, in no tenant's zone."""
-    return _open(
-        agent=agent,
-        version=_version(agent),
+    return opener.open_run(
+        pinned=_pinned(agent),
         trigger=RunTrigger.SCHEDULE,
         actor=SCHEDULER,
         scope={"jurisdictions": _covered(agent)},
@@ -324,13 +220,13 @@ def open_tenant_run(tenant_agent: TenantAgent, *, trigger: RunTrigger, requested
     tenant = Tenant.objects.get(pk=tenant_agent.tenant_id)
     try:
         ai.ensure_enabled()
-        version = _version(agent)
+        pinned = _pinned(agent)
     except ProblemError as refused:
         if not scheduled:
             if refused.code == "feature_off":
                 raise ValidationError(refused.detail, code="feature_off") from None
             raise
-        _skipped(agent=agent, reason=refused.code, tenant_id=tenant.id, after=_schedule_of(tenant_agent))
+        _skipped(agent=agent, reason=refused.code, tenant_id=tenant.id, after=opener.schedule_of(tenant_agent))
         return None
     limit = _run_budget_limit()
     if not _fits_the_cap(tenant, limit):
@@ -346,9 +242,8 @@ def open_tenant_run(tenant_agent: TenantAgent, *, trigger: RunTrigger, requested
         actor = SCHEDULER
     else:
         actor = Actor(kind=ActorType.USER, id=requested_by.id, label=requested_by.name)
-    return _open(
-        agent=agent,
-        version=version,
+    return opener.open_run(
+        pinned=pinned,
         trigger=trigger,
         actor=actor,
         tenant_agent=tenant_agent,
@@ -378,6 +273,5 @@ def run_due_tenant_agents(tenant_id: uuid.UUID) -> None:
         .order_by("next_run_at", "id")
     )
     for tenant_agent in due:
-        tenant_agent.next_run_at = next_run_at(tenant_agent, tenant)
-        tenant_agent.save(update_fields=["next_run_at", "updated_at"])
+        opener.take_slot(tenant_agent, next_run_at(tenant_agent, tenant))
         open_tenant_run(tenant_agent, trigger=RunTrigger.SCHEDULE)
