@@ -51,6 +51,10 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "CheckStatus": ("check_status", "Source check outcome; coverage reports branch on it"),
     "ProposalKind": ("proposal_kind", "PRO-01: what a proposal changes; apply() branches on it"),
     "ProposalStatus": ("proposal_status", "PRO-02: the queue's state machine"),
+    "BatchRowDecision": (
+        "proposal_batch_decision",
+        "PRO-04: a batch row is pending until decided once; apply and the trigger branch on it",
+    ),
     "ApprovalStatus": ("approval_status", "Four-eyes request lifecycle"),
     "Applicability": ("applicability", "REG-01: applies / does not apply / unknown"),
     "AssessmentApplies": ("assessment_applies", "CAS-03: the assessment's verdict"),

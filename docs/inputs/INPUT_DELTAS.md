@@ -1478,3 +1478,32 @@ Also departing from v0.3:
   never writes the library), `run_trigger`, `research_request_kind` and
   `research_request_status`. Like `agent_kind` they are kinds in code with no database
   constraint on their values.
+
+## 18. A batch proposal and its rows (2026-09-25, c11-proposal-batches-model)
+
+Version 0.3 of the schema has no batch: PRD PRO-04 and AGT-05 ask for one proposal that
+changes many library records, previewed and approved whole or row by row. Proposals 0008
+builds it on the existing table rather than beside it:
+
+- `proposal` gains `is_batch` (default false) and `row_count` (default 0), held together by
+  the check `proposal_batch_row_count`: a batch counts at least one row, a single proposal
+  none. Four eyes, the rejection reason, the audit row and the apply path are the parent's,
+  unchanged; `proposal_four_eyes` refuses a batch's proposer as its reviewer as for any
+  proposal.
+- `proposal_batch_row` is new, in the library zone with no tenant column (like `proposal`):
+  `proposal_id`, `subject_type` and `subject_id` (the record, named as `target_type` and
+  `target_id` name one), `before` and `after` (the preview, `ProposalBatchRowPayload`),
+  `decision`, `rejection_reason_id` (a row of the `rejection_reason` list), `decided_by`,
+  `decided_at`, `created_at`; unique per `(proposal, subject_type, subject_id)`. It is a
+  plain model like `proposal`, not a `LibraryModel`: rows are filed and decided by the
+  proposal logic, and the library fence belongs to `apply.py`.
+- A row is written once and decided once. The trigger `proposal_batch_row_decision_guard`
+  lets only the four decision columns change, only from `pending` to `approved` or
+  `rejected`, never to the batch's own proposer, and refuses DELETE; the schema owner's
+  stated fix (`cw.maintenance`) passes as on every ledger. The check
+  `proposal_batch_row_decided` demands a date on a decision and a reason on a rejection and
+  only there. `decided_by` names a person; an agent's row decision is named by its audit row.
+- Two tier-one kinds (§1): `proposal_kind` gains `obligation_scope`, the re-tag, which chunk 4
+  cut (parallel-plan ruling 14); a backfill is a batch of an existing kind, not a kind. And
+  `proposal_batch_decision` (`pending`, `approved`, `rejected`) is new: the trigger and apply
+  branch on it and no admin adds one.
