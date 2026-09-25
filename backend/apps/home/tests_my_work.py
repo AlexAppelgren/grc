@@ -667,7 +667,8 @@ class ChangesOnYourItems(TestCase):
     def test_a_finished_case_is_not_a_change_on_your_items(self) -> None:
         change, case = self.linked_case()
         self.confirm(change, confirmed_by=self.bank.officer)
-        ChangeCase.objects.filter(pk=case.pk).update(status=CaseStatusCategory.DISMISSED.value)
+        # With the reason the database's CHECK demands of a dismissed case (c9-case-models).
+        cases_build.in_category(case, CaseStatusCategory.DISMISSED)
         self.assertNotIn(change.id, ids(self.bank.read(self.bank.anna)))
         self.assertEqual(row(self.bank.read(self.bank.anna), self.duty.id).open_change_count, 0)
 
