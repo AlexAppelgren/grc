@@ -124,6 +124,8 @@ And one audit event records the person, the value before and after, and the reas
 When they cancel the dialog instead
 Then nothing is stored and no audit event is written
 ```
+`@integration` proves the confirmed call: stored at once, no step-up, one audit event. The
+dialog, its confirm and its cancel are the screen's steps, proved by the `@e2e` journey.
 
 ### REG-S2 — Only a holder of applicability.approve sets applicability `@integration` (REG-01)
 ```gherkin
@@ -203,6 +205,11 @@ Then the duty appears with "Our deadline"
 When it is completed
 Then the next occurrence 2027-03-31 is generated in the tenant's timezone
 ```
+`@integration` is green up to its roadmap line (c8-duty-occurrences): the occurrence due
+2026-12-31 reads back through `listDuties`, and completing it generates exactly 2027-03-31 in
+the tenant's timezone. The roadmap line ("the duty appears with 'Our deadline'") is the
+roadmap's duty branch, which `c8-home-register-feeds` builds and asserts in this test. The
+first occurrence is written when applicability becomes "applies", never on a read.
 
 ### REG-S11 — A stale write on a register row is refused `@integration` (REG-02)
 ```gherkin
@@ -222,6 +229,8 @@ Then each answer carries its entity's scope row, created in the same transaction
 And Bank AB's row reads "Applies" with its reason and decision time, and Liv's reads "Does not apply"
 And the obligation row shows the worse of its entity statuses as its pill
 ```
+`@integration` proves the span, the confirmed answers and their scope rows, with every entity
+status left as it was; the worse-of pill is the register read's (`c8-reg-status`).
 
 ### REG-S13 — A tenant lists its clauses and controls as units in its own words `@integration` `@e2e` (REG-08)
 ```gherkin

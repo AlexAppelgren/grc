@@ -319,4 +319,9 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "AGT-05: a request's lifecycle, queued to done, failed, rejected or cancelled; the "
         "worker and the request list branch on it",
     ),
+    # c8-duty-occurrences (register 0004, REG-07).
+    "DutyStatus": (
+        "duty_status",
+        "REG-07: where a dated duty occurrence stands; completion, the roadmap and Today branch on it",
+    ),
 }

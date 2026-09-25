@@ -33,7 +33,8 @@ from types import SimpleNamespace
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, ComplianceStatus, FootprintChangeRequest, VocabularySuggestion
+from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -52,10 +53,14 @@ from apps.identity.models import (
     WebAuthnCredential,
 )
 from apps.library.models import Language
-from apps.library.seeds import LANGUAGES
+from apps.library import testing as library_testing
+from apps.library.seeds import LANGUAGES, seed_jurisdictions, seed_languages
+from apps.register.logic import ensure_register_entry
+from apps.register.models import Applicability, DutyOccurrence, SoaUnit, TenantObligationScope
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
+from apps.tenants.models import OrgUnit, OrgUnitKind
 
 _counter = itertools.count(1)
 
@@ -384,3 +389,66 @@ def closed_case(tenant: Tenant, *, actions: int = 2, evidence: int = 3, so_what_
         )
     row.refresh_from_db()
     return SimpleNamespace(case=row, change_id=row.change_id, owner=owner, approver=approver, step_up=step_up)
+# --- c8-reg-applicability ---------------------------------------------------------------
+def legal_entity(tenant: Tenant, *, name: str = "Example Bank AB", entity_term_id: uuid.UUID | None = None, active: bool = True) -> OrgUnit:
+    """An org unit of the legal-entity kind in `tenant`, carrying the entity term whose id is
+    given (a `legal_entity` dimension term, by id so this file names no library model)."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return OrgUnit.objects.create(
+            tenant=tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name=name, entity_term_id=entity_term_id, active=active
+        )
+
+
+# c8-reg-units (REG-08, D-41): the tenant-isolation guard's record for unit routes.
+def soa_unit(tenant: Tenant) -> SoaUnit:
+    """A live Statement of Applicability unit of `tenant`: under a fresh standard's
+    conformance duty (built by apps/library/testing.py), for a legal entity whose
+    conformance row applies, so the only thing between another tenant and it is tenancy."""
+    n = next(_counter)
+    with transaction.atomic():
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_taxonomy_terms()
+        edition = library_testing.instrument(
+            key=f"unit-standard-{n}", jurisdiction="intl", regime="regime:ai_ict", level="standard", binding=False
+        )
+        duty = library_testing.obligation(edition, key=f"unit-standard-{n}-conformance", duty_type="governance")
+    officer = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=duty.id, actor=user_actor(user_id=officer.id))
+        status = ComplianceStatus.objects.get(is_default=True, active=True)
+        entity = OrgUnit.objects.create(tenant=tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name=f"Entity {n} AB")
+        scope = TenantObligationScope.objects.create(
+            tenant=tenant,
+            tenant_obligation=entry,
+            org_unit=entity,
+            applicability=Applicability.APPLIES.value,
+            applicability_reason="Certified",
+            applicability_decided_at=timezone.now(),
+            applicability_decided_by=officer,
+            compliance_status=status,
+        )
+        return SoaUnit.objects.create(tenant=tenant, scope=scope, reference=f"X.{n}", title="Our own words", compliance_status=status)
+
+
+# c8-duty-occurrences (REG-07): the tenant-isolation guard's record for the completion route.
+def duty_occurrence(tenant: Tenant) -> DutyOccurrence:
+    """An upcoming occurrence of a fresh obligation's quarterly duty (both built by
+    apps/library/testing.py) on `tenant`'s register entry, so the only thing between another
+    tenant and it is tenancy."""
+    n = next(_counter)
+    with transaction.atomic():
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_taxonomy_terms()
+        law = library_testing.instrument(key=f"duty-law-{n}", regime="regime:securities")
+        duty = library_testing.recurring_duty(library_testing.obligation(law, key=f"duty-law-{n}-report"))
+    officer = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=duty.obligation_id, actor=user_actor(user_id=officer.id))
+        return DutyOccurrence.objects.create(tenant=tenant, recurring_duty=duty, tenant_obligation=entry, due_date=timezone.localdate())

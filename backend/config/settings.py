@@ -747,7 +747,8 @@ CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
 CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
 
 # ---------------------------------------------------------------------------------------
-# ===== VOC-08 bulk tagging's cap (c10-tagging-routes) ====================================
+# ===== VOC-08 bulk tagging's cap (c10-tagging-routes) =============================
+# ---------------------------------------------------------------------------------------
 # How many distinct records one tagging preview or batch may name. A list page holds at
 # most 100 rows, so two pages' worth covers every selection a screen makes, and the one
 # audit event a batch writes stays a size a reviewer can read. Above it the preview and
@@ -776,6 +777,13 @@ MY_WORK_DUE_SOON_DAYS = env_int("MY_WORK_DUE_SOON_DAYS", 30)
 MY_WORK_AWARE_DAYS = env_int("MY_WORK_AWARE_DAYS", 14)
 if min(MY_WORK_DUE_SOON_DAYS, MY_WORK_AWARE_DAYS) < 1:
     raise ImproperlyConfigured("Refusing to boot: MY_WORK_DUE_SOON_DAYS and MY_WORK_AWARE_DAYS are each at least 1.")
+
+# ---------------------------------------------------------------------------------------
+# ===== c8-reg-applicability: REG-01, AC-REG1 many answers in one call (D-75) ============
+# The most applicability answers one confirmed call stores (POST /applicability). Each row
+# is a write and an audit event in one transaction, so the cap keeps a call inside the API
+# budget; a longer call is refused whole and stores nothing.
+REGISTER_BULK_MAX = env_int("REGISTER_BULK_MAX", 100)
 
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================

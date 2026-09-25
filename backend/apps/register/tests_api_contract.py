@@ -189,6 +189,24 @@ IF_MATCH_ROUTES = {
 }
 
 
+# The operations whose logic has landed, each proved in its package's own tests.
+BUILT = {
+    "setApplicability", "setApplicabilityMany",  # c8-reg-applicability, tests_applicability.py
+    "listDuties", "completeDutyOccurrence",  # c8-duty-occurrences, tests_duties.py
+}
+
+
+# Operations whose logic has landed, each with the package that built it. Past every gate they
+# answer from the logic: for this file's made-up ids, 404 `not_found` in the same problem shape.
+BUILT_ROUTES = {
+    "listUnits",  # c8-reg-units
+    "createUnit",  # c8-reg-units
+    "updateUnit",  # c8-reg-units
+    "removeUnit",  # c8-reg-units
+    "pasteUnits",  # c8-reg-units (the dry run; its commit is c8-units-paste-soa's)
+}
+
+
 class RegisterRouteStubs(TestCase):
     tenant: Any
     person: Any
@@ -218,11 +236,14 @@ class RegisterRouteStubs(TestCase):
         shape, with nothing of the server in it. Replaced row by row as each logic lands."""
         with stub_session(self._everything()):
             for name, method, url, body, _permission, _step_up in REGISTER_ROUTES:
+                if name in BUILT:
+                    continue
                 headers = {**AS_SESSION, "HTTP_IF_MATCH": '"3"'} if method in {"patch", "put", "delete"} else AS_SESSION
                 with self.subTest(operation=name):
                     response = _call(self.client, method, url, body, headers)
-                    self.assertEqual(response.status_code, 501)
+                    expected = (404, "not_found") if name in BUILT_ROUTES else (501, "not_built")
+                    self.assertEqual(response.status_code, expected[0])
                     problem = response.json()
-                    self.assertEqual(problem["code"], "not_built")
+                    self.assertEqual(problem["code"], expected[1])
                     self.assertEqual(response.headers["Content-Type"], "application/problem+json")
                     self.assertNotIn("traceback", response.content.decode().lower())
