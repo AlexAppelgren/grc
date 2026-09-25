@@ -10,17 +10,20 @@ writes.
    organisation unit and of every unit below it, with their active members; a department
    view is a filter, never a grant.
 2. **What.** Register entries where the person is first-line owner or compliance contact,
-   or a team owns it; entity rows, gaps and internal items they or their teams own. Hidden:
-   entries and entity rows that do not apply, closed gaps and inactive internal items.
-   Participations are the participant package's source, and case ownership chunk 9's.
+   or a team owns it; entity rows, gaps and internal items they or their teams own; entries
+   they or their teams take part in (COL-04). Hidden: entries and entity rows that do not
+   apply, closed gaps, inactive internal items and ended participations. Case ownership and
+   case participation are chunk 9's.
 3. **When.** A person involved in the entry itself is dated by the earliest open date on
    it (its review, every applying entity row's review, every open gap's target); one
    involved only through an entity row or a gap by that child's own date. Compared with the
    bank's own today.
 4. **Changes on your items.** Open cases whose change has a confirmed link to an obligation
    in the list (confirmed by a person or by an agent other than the suggesting one, D-97),
-   and new obligation versions applied within `MY_WORK_AWARE_DAYS`. Never the caller's own
-   confirmation or approval, never an unconfirmed suggestion.
+   new obligation versions applied within `MY_WORK_AWARE_DAYS`, and comments on a record in
+   the list written within the same window, mentions included (D-25). Never the caller's own
+   confirmation, approval or comment, never an unconfirmed suggestion, never a deleted
+   comment or one on a kind of record the reader may not read.
 5. **Permissions.** Register and internal-item rows need `register.read`, case rows
    `cases.read`, and a case reached through a link needs both. Rows and counts come from
    the filtered set; a kind the reader may not read is named in `permission_limited`.
@@ -45,6 +48,8 @@ from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 
 from apps.cases.models import ChangeCase
+from apps.collab.models import Comment, Participant
+from apps.collab.subjects import SUBJECTS
 from apps.home.schemas import (
     HomeWorkCounts,
     HomeWorkDate,
@@ -87,6 +92,7 @@ INTERNAL_ITEM: WorkItemKind = "internal_item"
 CASE: WorkItemKind = "change_case"
 BUCKETS: tuple[WorkBucket, ...] = ("overdue", "due_soon", "aware", "open")
 OWNER: WorkReason = "owner"
+PARTICIPANT: WorkReason = "participant"
 # The categories a bank has finished with (D-13), as on the roadmap.
 FINISHED = (CaseStatusCategory.CLOSED.value, CaseStatusCategory.DISMISSED.value)
 DAY: DatePrecision = "day"
@@ -125,6 +131,7 @@ class _Row:
     urgency_id: uuid.UUID | None = None
     urgency_ordinal: int = 0
     open_change_count: int = 0
+    case_id: uuid.UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -215,13 +222,18 @@ def _owned_by(who: _Who, person: str, team: str) -> Q:
     return Q(**{f"{person}__in": who.people}) | Q(**{f"{team}__in": who.teams})
 
 
-def _owner(who: _Who, person_id: uuid.UUID | None, team_id: uuid.UUID | None) -> set[_Reason]:
-    """The owner reasons one owner column pair gives, for the people and teams listed."""
+def _named(
+    who: _Who,
+    person_id: uuid.UUID | None,
+    team_id: uuid.UUID | None,
+    reason: WorkReason = OWNER,
+) -> set[_Reason]:
+    """The reasons one person and team column pair gives, for the people and teams listed."""
     reasons = set()
     if person_id in who.people:
-        reasons.add(_Reason(OWNER, person_id=person_id))
+        reasons.add(_Reason(reason, person_id=person_id))
     if team_id in who.teams:
-        reasons.add(_Reason(OWNER, team_id=team_id))
+        reasons.add(_Reason(reason, team_id=team_id))
     return reasons
 
 
@@ -245,6 +257,7 @@ def _rows(
     rows = [*register.values(), *_internal_items(who)]
     if principal.has_permission(CASES_READ):
         rows += _linked_cases(tenant, principal, register)
+    _comments(tenant, principal, rows)
     return rows, titles
 
 
@@ -271,8 +284,23 @@ def _register(who: _Who) -> dict[uuid.UUID, _Row]:
         | Q(compliance_contact_id__in=who.people)
     ):
         row = row_of(entry)
-        row.reasons |= _owner(who, entry.first_line_owner_id, entry.owner_team_id)
-        row.reasons |= _owner(who, entry.compliance_contact_id, None)
+        row.reasons |= _named(who, entry.first_line_owner_id, entry.owner_team_id)
+        row.reasons |= _named(who, entry.compliance_contact_id, None)
+        whole[entry.id] = row
+        if entry.next_review_date is not None:
+            row.dates.add(_Date(entry.next_review_date, "review"))
+
+    # Taking part is being involved in the entry itself, so a participant is dated like its
+    # first-line owner (COL-04).
+    for part in (
+        Participant.objects.filter(removed_at__isnull=True, tenant_obligation__isnull=False)
+        .filter(entry_applies)
+        .filter(_owned_by(who, "user_id", "team_id"))
+        .select_related("tenant_obligation")
+    ):
+        entry = cast(TenantObligation, part.tenant_obligation)
+        row = row_of(entry)
+        row.reasons |= _named(who, part.user_id, part.team_id, PARTICIPANT)
         whole[entry.id] = row
         if entry.next_review_date is not None:
             row.dates.add(_Date(entry.next_review_date, "review"))
@@ -285,7 +313,7 @@ def _register(who: _Who) -> dict[uuid.UUID, _Row]:
         .select_related("tenant_obligation")
     ):
         row = whole.get(scope.tenant_obligation_id) or row_of(scope.tenant_obligation)
-        owners = _owner(who, scope.owner_id, scope.owner_team_id)
+        owners = _named(who, scope.owner_id, scope.owner_team_id)
         row.reasons |= owners
         if scope.next_review_date is not None and (owners or scope.tenant_obligation_id in whole):
             row.dates.add(_Date(scope.next_review_date, "review", entity_id=scope.org_unit_id))
@@ -296,7 +324,7 @@ def _register(who: _Who) -> dict[uuid.UUID, _Row]:
         .select_related("tenant_obligation")
     ):
         row = whole.get(gap.tenant_obligation_id) or row_of(gap.tenant_obligation)
-        owners = _owner(who, gap.owner_id, gap.owner_team_id)
+        owners = _named(who, gap.owner_id, gap.owner_team_id)
         row.reasons |= owners
         if gap.target_date is not None and (owners or gap.tenant_obligation_id in whole):
             row.dates.add(_Date(gap.target_date, "gap_target", entity_id=gap.org_unit_id))
@@ -311,7 +339,7 @@ def _internal_items(who: _Who) -> list[_Row]:
         row = _Row(
             INTERNAL_ITEM,
             item.id,
-            reasons=_owner(who, item.owner_user_id, item.owner_team_id),
+            reasons=_named(who, item.owner_user_id, item.owner_team_id),
             title=item.name,
         )
         if item.next_review_on is not None:
@@ -373,6 +401,7 @@ def _linked_cases(
                 title=case.change.title,
                 urgency_id=case.urgency_id,
                 urgency_ordinal=case.urgency.ordinal,
+                case_id=case.id,
             )
             key_date = case.change.key_date
             if key_date is not None:
@@ -385,6 +414,32 @@ def _linked_cases(
                 _Reason(reason.reason, reason.person_id, reason.team_id, via=obligation_id)
             )
     return list(rows.values())
+
+
+def _comments(tenant: Tenant, principal: Principal, rows: list[_Row]) -> None:
+    """A comment someone other than the caller wrote on a record on the list, within the
+    window and not deleted, marks its row (D-25): one query for every row. A mention is a
+    comment too, so it marks the row it was written on. Only kinds of record whose comments
+    the reader may read count (the subject registry); an internal item takes no comments."""
+    subjects: dict[tuple[str, uuid.UUID], _Row] = {}
+    for row in rows:
+        if row.kind == OBLIGATION:
+            subjects["obligation", row.subject_id] = row
+        elif row.case_id is not None:
+            subjects["change_case", row.case_id] = row
+    wanted = Q(pk__in=[])
+    for kind, subject in SUBJECTS.items():
+        on = [subject_id for key, subject_id in subjects if key == kind]
+        if on and principal.has_permission(subject.read_permission):
+            wanted |= Q(subject_type=kind, subject_id__in=on)
+    since = timezone.now() - datetime.timedelta(days=settings.MY_WORK_AWARE_DAYS)
+    comments = (
+        Comment.objects.filter(wanted, deleted_at__isnull=True, created_at__gte=since)
+        .exclude(author_id=principal.subject_id)
+        .values_list("subject_type", "subject_id", "created_at")
+    )
+    for kind, subject_id, created_at in comments:
+        subjects[kind, subject_id].aware.add(_Date(_local_day(tenant, created_at), "commented"))
 
 
 # ---------------------------------------------------------------------------------------

@@ -17,7 +17,6 @@ GET /changes/{}/evidence chunk 9
 GET /exports/{} chunk 12
 GET /imports/{} chunk 12
 GET /integrations/tickets chunk 13
-GET /me/work chunk 8
 GET /obligations/{}/attestations chunk 13 REG-06, attestations and waivers, is R3
 GET /obligations/{}/internal-links chunk 8
 GET /obligations/{}/waivers chunk 13 REG-06, attestations and waivers, is R3

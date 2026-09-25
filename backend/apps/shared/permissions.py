@@ -342,6 +342,7 @@ _PUBLIC_CALENDAR_TOKEN = "The revocable token in the calendar address is the who
 _SELF_NOTIFICATIONS = "Acts only on the caller's own notification rows; no parameter reaches another person's (COL-02)."
 _SELF_MY_COMMENTS = "Returns the caller's own comments and mentions, filtered afterwards by each subject's read permission (COL-01)."
 _LOGIC_PARTICIPANT_REMOVAL = "A person may always leave their own participation; removing anyone else's needs register.edit, which the logic checks on the row (D-19, COL-04)."
+_LOGIC_MY_WORK = "Any member's session opens My work, their own or any department's; the service applies register.read to register entries and internal items and cases.read to cases, row by row and count by count, and names a kind it left out in permissionLimited rather than refusing the page (HOM-05, D-23). The department view is a filter and never a grant."
 _LOGIC_COMMENT_SUBJECT = "The gate is the read permission of the subject's kind, which `collab/subjects.py` decides per record; the write also needs `comments.write` (COL-01)."
 
 # (METHOD, path as Ninja registers it under /api/v1) -> why it needs no permission gate.
@@ -497,6 +498,8 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
     ("POST", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
 
+    # c8-mywork-routes (chunk 8, HOM-05).
+    ("GET", "/me/work"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_MY_WORK),
     # c8-participants (chunk 8, COL-04). Listing and adding carry register.read and
     # register.edit; removal is the one gated in logic, because leaving needs no permission.
     ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}"): Ungated(

@@ -1,11 +1,12 @@
 """Routes of the home app: auth class, permission or scope, step-up where playbook 4.2
 lists the action, no business logic (playbook 4.1).
 
-Nine operations, all nine declared here at once, each calling a named function in the module
+Nine operations were declared here at once, each calling a named function in the module
 that owns it. Declaring the whole contract first was deliberate: the four screens and the
 newsletter agent were built against it while the logic was still arriving, and a screen that
 calls a stub is better than a screen built against a shape nobody committed to. All nine are
-built now, so nothing here answers 501 any more.
+built now, so nothing here answers 501 any more. The tenth, `GET /me/work`, arrived in R2
+with the service it calls (`apps/home/my_work.py`, HOM-05, D-23).
 
 The four calendar-feed operations serve the shape D-52 and ADR 0045 decided: the address is
 `/api/v1/calendar/feed.ics?token=<prefix>.<secret>`, a person keeps at most
@@ -28,6 +29,11 @@ gates listed in `UNGATED_BY_DESIGN` and still answer the structured 403 with
   prints the route without the query while a hosting edge writes whole request lines
   (D-52, ADR 0045; the one named exception to CONVENTIONS 3.6). Unknown, malformed, revoked
   and expired tokens leave it by one refusal, so nothing about a token can be probed.
+
+`GET /me/work` is a third logic gate, of another shape: any member's session opens it, and
+the service applies each record's own read permission to every row and every count, naming
+the kinds left out in `permissionLimited`. A single permission would take a person's whole
+page away over one kind of record they may not read (D-23).
 
 `GET /upcoming` is served by `apps/home/calendar.py` and the four subscription
 operations by `apps/home/feed.py`: one reads library records and writes nothing, the other
@@ -55,7 +61,7 @@ from ninja import Path, Query, Router
 from apps.home import briefing as briefing_reads
 from apps.home import calendar as calendar_reads
 from apps.home import feed as feed_logic
-from apps.home import logic, roadmap
+from apps.home import logic, my_work, roadmap
 from apps.home.schemas import (
     FEED_TOKEN_MAX,
     UPCOMING_ITEM_EXAMPLE,
@@ -65,6 +71,8 @@ from apps.home.schemas import (
     HomeCalendarFeed,
     HomeCalendarFeedCreated,
     HomeCalendarFeedInput,
+    HomeWorkPage,
+    HomeWorkQuery,
     HomeRoadmap,
     HomeRoadmapQuery,
     HomeUpcomingItem,
@@ -329,6 +337,55 @@ def get_roadmap(request: HttpRequest, query: Query[HomeRoadmapQuery]) -> Any:
     """
     tenant = caller_tenant(request)
     return roadmap.roadmap_items(tenant, language_order(request, tenant=tenant), query)
+
+
+# ---------------------------------------------------------------------------------------
+# My work (HOM-05, COL-01, COL-04, D-23, D-24, D-25, D-97)
+# ---------------------------------------------------------------------------------------
+@router.get(
+    "/me/work",
+    response=HomeWorkPage,
+    auth=SESSION,
+    operation_id="getMyWork",
+    by_alias=True,
+    summary="See what you are responsible for or take part in",
+)
+@answers_problems
+def get_my_work(request: HttpRequest, query: Query[HomeWorkQuery]) -> Any:
+    """My work: every record the caller, or one of the caller's teams, is responsible for or
+    takes part in, in four sections: overdue, due soon, changes on your items and everything
+    else. With `scope=unit` it is the same list for a department: what the teams of that
+    organisation unit and of every unit below it, and those teams' active members, are
+    responsible for or take part in, each row naming who. Call it for the My work page.
+
+    A read: it changes nothing and writes no audit row. Any person's session in a bank; no API
+    key reaches it. The department view is a filter and never a grant: any member may open any
+    department. Every row and every count is filtered by the reader's own permissions, register
+    entries and internal items by `register.read` and cases by `cases.read`, and a kind left
+    out is named in `permissionLimited`, so the page never answers 403 as a whole. The bank's
+    regulatory scope hides nothing here: a person never loses sight of their own items when the
+    scope narrows (D-24). Decisions waiting for the caller are counted on `GET /me`, not here.
+
+    "Changes on your items" holds open cases on a change with a confirmed link to a record on
+    the list, confirmed by a person or by an agent independent of the one that suggested it
+    (D-97); new versions of an obligation on the list, and comments on a record on the list,
+    mentions included, from the last `MY_WORK_AWARE_DAYS` days (14 by default). The caller's
+    own confirmations, approvals and comments never appear there, and neither does a link
+    nobody confirmed. A comment is shown as the day it was written, never its text.
+
+    Pages with `limit` and `offset`, 20 rows by default and 100 at most; `bucket` keeps one
+    section, while `counts` always covers all four. Nothing to do is a 200 with an empty
+    `items` and zero counts.
+
+    Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+    finish enrolling, `not_found` for a platform session, which belongs to no bank, and for a
+    `unit` the bank does not have, and `validation_error` for `scope=unit` without a `unit`,
+    `scope=mine` with one, a `bucket` other than the four, or a `limit` outside 1 to 100.
+    """
+    # Ungated by design: logic-gate (each record kind's read permission, applied per row).
+    tenant = caller_tenant(request)
+    caller_user(request)
+    return my_work.page(tenant, principal(request), language_order(request, tenant=tenant), query)
 
 
 # ---------------------------------------------------------------------------------------
