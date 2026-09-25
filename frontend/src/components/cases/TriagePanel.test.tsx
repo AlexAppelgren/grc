@@ -126,6 +126,14 @@ describe('triage, needs triage', () => {
     expect(screen.getByRole('combobox', { name: 'Owner' })).toHaveAttribute('aria-invalid', 'true');
   });
 
+  it('a 422 naming a field the form does not show is said in the server’s words', async () => {
+    serve({ status: 422, data: { code: 'validation_error', detail: 'Some fields need attention.', errors: [{ field: 'body.ownerId' }, { field: 'body.subStatus' }] } });
+    renderPanel(workflowOf(), ['cases.triage']);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm and assign' }));
+    expect(await screen.findByText('Choose who owns this case.')).toBeInTheDocument();
+    expect(screen.getByText('Some fields need attention.')).toBeInTheDocument();
+  });
+
   it('a stale write offers a reload and keeps the choice made', async () => {
     serve({ status: 409, data: { code: 'stale_write', detail: 'Someone else saved first.', currentVersion: 4 } });
     renderPanel(workflowOf(), ['cases.triage']);

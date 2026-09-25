@@ -93,6 +93,7 @@ function TriageForm({ changeId, workflow, agent }: { changeId: string; workflow:
   const canDismiss = workflow.allowedTransitions.includes('dismissed');
   const refused = refusedFieldsOf(triage.error);
   const ownerRefused = refused.includes('ownerId') || hasProblemCode(triage.error, 'owner_required');
+  const suggested = workflow.urgency !== null && !workflow.urgencyConfirmed;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -107,7 +108,7 @@ function TriageForm({ changeId, workflow, agent }: { changeId: string; workflow:
           <Field
             id="triage-urgency"
             label={t('caseTriage.urgency')}
-            hint={workflow.urgencyConfirmed ? undefined : agent === null ? t('caseTriage.urgencySuggested') : t('caseTriage.urgencySuggestedBy', { agent })}
+            hint={!suggested ? undefined : agent === null ? t('caseTriage.urgencySuggested') : t('caseTriage.urgencySuggestedBy', { agent })}
             error={refused.includes('urgency') ? t('caseTriage.fieldInvalid') : undefined}
           >
             <Select id="triage-urgency" value={urgency} aria-invalid={refused.includes('urgency') || undefined} onChange={(event) => setUrgency(event.target.value)}>
@@ -136,7 +137,7 @@ function TriageForm({ changeId, workflow, agent }: { changeId: string; workflow:
             </Select>
           </Field>
         </div>
-        <Refusal error={triage.error} changeId={changeId} handled={ownerRefused || refused.length > 0} />
+        <Refusal error={triage.error} changeId={changeId} handled={hasProblemCode(triage.error, 'owner_required') || shownAll(refused, ['urgency', 'ownerId'])} />
         <ButtonBar>
           {canDismiss ? (
             <Button variant="danger" disabled={triage.isPending} onClick={() => setDismissing(true)}>
@@ -177,7 +178,7 @@ function DismissDialog({ changeId, version, onClose }: { changeId: string; versi
           onChange={setReasonKey}
           error={reasonRefused ? t('caseTriage.dismissReasonRequired') : undefined}
         />
-        <Refusal error={dismiss.error} changeId={changeId} handled={reasonRefused} />
+        <Refusal error={dismiss.error} changeId={changeId} handled={hasProblemCode(dismiss.error, 'reason_required') || shownAll(refusedFieldsOf(dismiss.error), ['reasonKey'])} />
         <ButtonBar>
           <Button variant="ghost" onClick={onClose}>
             {t('common.cancel')}
@@ -273,7 +274,7 @@ function NoActionDialog({ changeId, version, onClose }: { changeId: string; vers
             onChange={(event) => setNote(event.target.value)}
           />
         </Field>
-        <Refusal error={close.error} changeId={changeId} handled={reasonRefused || refused.length > 0} />
+        <Refusal error={close.error} changeId={changeId} handled={hasProblemCode(close.error, 'reason_required') || shownAll(refused, ['reasonKey', 'note'])} />
         <ButtonBar>
           <Button variant="ghost" onClick={onClose}>
             {t('common.cancel')}
@@ -340,6 +341,11 @@ function Term({ term, children }: { term: string; children: string }) {
       <dd className="m-0">{children}</dd>
     </>
   );
+}
+
+/** True when a 422 named fields and every one of them is shown under its own control here. */
+export function shownAll(refused: string[], shown: string[]): boolean {
+  return refused.length > 0 && refused.every((field) => shown.includes(field));
 }
 
 /** Active rows only: a retired reason or urgency is kept on old cases but never offered. */

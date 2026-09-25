@@ -16,7 +16,7 @@ import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { formatDate, formatDateTime } from '@/shared/utils/format';
 
-import { Refusal } from './TriagePanel';
+import { Refusal, shownAll } from './TriagePanel';
 
 // The impact assessment (design/screens/tenant-change.html, case panels
 // part A; CAS-03, CAS-08, D-92): whether the change applies, why, what must
@@ -32,6 +32,9 @@ import { Refusal } from './TriagePanel';
 // stays on screen, and a reload is offered, never a merge.
 
 type Applies = AssessmentBody['applies'];
+
+// The fields the form shows a 422 under; a refusal naming any other is shown in the server's words.
+const SHOWN_FIELDS = ['why', 'whatMustChange', 'internalDeadline', 'effort', 'subStatus'];
 
 const EDITABLE: ReadonlySet<CaseWorkflow['category']> = new Set(['assessing', 'implementing']);
 
@@ -137,6 +140,8 @@ function AssessmentForm({
   const refused = refusedFieldsOf(save.error);
   const invalid = (field: string) => refused.includes(field) || undefined;
   const offered: Applies[] = canClose ? ['yes', 'partly', 'no'] : ['yes', 'partly'];
+  // Only while assessing could "No" have been offered, so only then is the reader told whom to ask.
+  const askOwner = !canClose && workflow.category === 'assessing';
 
   const send = () => {
     setConfirmingClose(false);
@@ -174,7 +179,7 @@ function AssessmentForm({
             </span>
           </Meta>
         ) : null}
-        <fieldset className="mb-3.5 grid gap-0 rounded-control border border-line px-3.5 py-0.5" aria-describedby={canClose ? undefined : 'assessment-no-hint'}>
+        <fieldset className="mb-3.5 grid gap-0 rounded-control border border-line px-3.5 py-0.5" aria-describedby={askOwner ? 'assessment-no-hint' : undefined}>
           <legend className="px-1 font-medium">{t('caseAssessment.applies')}</legend>
           {offered.map((value) => (
             <label key={value} className="flex items-start gap-2.5 border-b border-line py-2 last:border-b-0">
@@ -185,7 +190,7 @@ function AssessmentForm({
               </span>
             </label>
           ))}
-          {canClose || workflow.category !== 'assessing' ? null : (
+          {!askOwner ? null : (
             <span id="assessment-no-hint" className="py-2 text-meta text-muted">
               {t('caseAssessment.noOwnerOnly')}
             </span>
@@ -245,7 +250,7 @@ function AssessmentForm({
               ))}
           </Select>
         </Field>
-        <Refusal error={save.error} changeId={changeId} handled={refused.length > 0} onReloaded={onReloaded} />
+        <Refusal error={save.error} changeId={changeId} handled={shownAll(refused, SHOWN_FIELDS)} onReloaded={onReloaded} />
         {savedVersion !== null && save.isSuccess ? (
           <p role="status" className="mt-2.5 text-meta text-positive">
             {t('caseAssessment.saved', { version: savedVersion })}
