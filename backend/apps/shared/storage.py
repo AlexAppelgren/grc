@@ -12,6 +12,7 @@ from __future__ import annotations
 import uuid
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import IO
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -33,6 +34,11 @@ class StorageBackend(ABC):
 
     @abstractmethod
     def read(self, key: str) -> bytes: ...
+
+    @abstractmethod
+    def open(self, key: str) -> IO[bytes]:
+        """A readable stream of the object, for a download to stream without holding the
+        whole file in memory."""
 
     @abstractmethod
     def exists(self, key: str) -> bool: ...
@@ -62,6 +68,9 @@ class LocalStorage(StorageBackend):
 
     def read(self, key: str) -> bytes:
         return self._path(key).read_bytes()
+
+    def open(self, key: str) -> IO[bytes]:
+        return self._path(key).open("rb")
 
     def exists(self, key: str) -> bool:
         return self._path(key).is_file()
@@ -97,6 +106,9 @@ class S3Storage(StorageBackend):
 
     def read(self, key: str) -> bytes:
         return self.client.get_object(Bucket=self.bucket, Key=key)["Body"].read()
+
+    def open(self, key: str) -> IO[bytes]:
+        return self.client.get_object(Bucket=self.bucket, Key=key)["Body"]
 
     def exists(self, key: str) -> bool:
         try:

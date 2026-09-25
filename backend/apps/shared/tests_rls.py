@@ -158,7 +158,8 @@ LIBRARY_OWNED_TABLES = frozenset({"instrument", "obligation"})
 # about a week, which cases that telling named, and the calendar addresses its people
 # subscribed with. None of the three ever holds a library row - a week that holds nothing
 # for one bank holds three reforms for another, because the footprint behind it is its own
-# (HOM-02, HOM-04).
+# (HOM-02, HOM-04). `export_job` is a bank's export and the file it produced (REP-02,
+# CAS-07); a job never holds a library row.
 TENANT_ONLY_TABLES = [
     "membership",
     "tenant_role",
@@ -201,6 +202,7 @@ TENANT_ONLY_TABLES = [
     # them. bleqq's own agents are library rows with no tenant column (ADR 0053).
     "tenant_agent",
     "tenant_agent_budget",
+    "export_job",
 ]
 
 # The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the
