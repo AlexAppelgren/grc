@@ -1425,7 +1425,7 @@ Section 17 of `schema.sql` (`org_unit`, `licence`, `tenant_product`, `tenant_pro
   confirmer included — is also a composite key `(tenant_id, user)` into `membership`, so
   the database refuses a person who is not the bank's member. `case_obligation_link`
   gains the same keys on its case and its decider.
-- Not built: `triage_due_at` (`c10-workflow-policy`, ruling 6) and `owner_team`
+- Not built here: `triage_due_at` (`c10-case-triage-due`, section 20) and `owner_team`
   (`c9-owner-team-and-reassign`).
 
 `impact_assessment`, `action`, `case_transition` and `evidence` are tenant tables under
@@ -1471,6 +1471,16 @@ of range answers 422 `validation_error` and an unknown role or weekday 422 `unkn
 naming the field in `errors`. The change is recorded as `tenant.workflow_updated` with every
 value before and after. `review_reminder_days_before` is not in the chunk 10 brief's five
 columns; the wave plan added it for the review reminder COL-02 names.
+
+## 20. A case knows when triage is due (2026-09-25, c10-case-triage-due)
+
+`change_case.triage_due_at` (`schema.sql` §13, "from the tenant's triage target") is a
+nullable timestamp, set when the case opens to its opening time plus the bank's
+`triage_target_hours` (section 19). Cases 0004 backfills it for every open `new` case, one
+bank's zone at a time because forced row-level security binds the schema owner too; a case
+that already left `new` keeps a null, since reminders read the column only while a case is
+`new` (`c10-reminders-core`). The backfill writes no audit row: the column is derived from
+two facts already on record, not a decision.
 
 ## 18. Chunk 11's agent tables (2026-09-25, c11-agent-models)
 
