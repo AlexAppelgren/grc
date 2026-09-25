@@ -58,6 +58,41 @@ default the packages take, and each answer changes a task, not an invariant alre
       `r2-spec-d89`.) The journey titles for J-9 (HOM-S13), J-10 (REG-S16) and J-11
       (ACC-S13) already carry `@smoke`.
 
+## `r2-banking-groups-brief`: a banking group's scope per legal entity (2026-09-25)
+
+The planning pass D-69 asked for is written: `docs/plans/briefs/BANKING_GROUPS.md`. Nothing
+is built. D-96 records the schedule, the build after R2, which you took as the plan's default
+on 2026-09-25; the item "When a banking group's scope is built" above and the 2026-09-22
+item "A banking group with several regulated companies" below are answered by it.
+
+**Your call** (default taken in brackets):
+- [ ] **Promote the build into R2?** (Default: no, after R2. Section 12 of the brief lists its
+      packages; it needs chunk 8 done, and chunk 11 for agent access.)
+- [ ] **A read wall between entities.** Should a member scoped to one company be unable to
+      read another company's register rows, gaps and evidence (an insurer kept apart from its
+      bank sister, say)? (Default: no wall. A member's entity scope narrows where their
+      permissions act and sets their default view; any member reads any entity, as D-21
+      treats a department. A wall later adds a filter, not a column.)
+- [ ] **"Whole group" in the switcher for everyone.** (Default: yes, because reads are not
+      walled. It goes if the wall comes.)
+
+**Chunk 8 rows, so the build stays additive** (the brief's section 11; each is chunk 8's own
+correctness too, and none needs you unless you disagree):
+- [ ] **(a) `c8-reg-applicability`:** the span ("which entities an obligation spans") is one
+      named function that also exposes the entity's terms as a dimension map, and every
+      reader of the span calls it.
+- [ ] **(b) `c8-ten-organisation`:** `PATCH /tenant/org-units/{id}` refuses changing `kind`
+      to or from `legal_entity` while a licence, a per-entity scope row, a gap or a duty
+      occurrence names the unit (409).
+- [ ] **(c) The writers of `TenantObligationScope`, `Gap.org_unit` and
+      `DutyOccurrence.org_unit`** (`c8-reg-applicability`, `c8-reg-status`,
+      `c8-reg-gaps-risk`, `c8-duty-occurrences`) check that the unit is an active legal
+      entity (422 `not_a_legal_entity`), with a test each.
+
+**Not a question:** a narrowing is a footprint change, so it keeps FP-02's request, second
+person and passkey, both ways (CLAUDE.md section 5, D-89). The brief says so to stop a
+lighter gate being proposed for entities.
+
 ## R1 is closed: what waits for you (2026-09-24, `r1-close-and-readiness`)
 
 R1's code is on `main` and its gates are green; what is left is yours. The four that block
