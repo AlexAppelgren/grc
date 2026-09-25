@@ -60,4 +60,6 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # acc-scope-and-reach (ACC-08): deciding a request for tenant reach.
     ("POST", "/tenant/reach/requests/{request_id}/approve", "governance.TenantReachRequest", "tenant_reach_request"),
     ("POST", "/tenant/reach/requests/{request_id}/reject", "governance.TenantReachRequest", "tenant_reach_request"),
+    # d89-scope-items-logic (OWN-01): one of the bank's own scope items.
+    ("GET", "/tenant/footprint/scope-items/{scope_item_id}", "taxonomy.ScopeItem", "scope_item"),
 ]

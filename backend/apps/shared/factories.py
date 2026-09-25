@@ -33,7 +33,7 @@ from types import SimpleNamespace
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, ScopeItem, VocabularySuggestion
 from apps.governance.models import TenantReachRequest
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
@@ -181,6 +181,30 @@ def footprint_request(tenant: Tenant) -> FootprintChangeRequest:
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return FootprintChangeRequest.objects.create(tenant=tenant, requested_by=requester)
+
+
+def scope_item(tenant: Tenant) -> ScopeItem:
+    """The tenant-isolation guard's record for the scope item route (d89-scope-items-logic,
+    OWN-01): one of the bank's own scope items, on the reference jurisdictions and terms,
+    which it seeds when they are missing (the seeds are idempotent)."""
+    from apps.library.models import Jurisdiction
+    from apps.library.seeds import seed_jurisdictions, seed_languages
+    from apps.taxonomy import terms_logic
+    from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+
+    for seed in (seed_languages, seed_jurisdictions, seed_library_vocabularies, seed_term_dimensions, seed_taxonomy_terms):
+        seed()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        item: ScopeItem = ScopeItem.objects.create(
+            tenant=tenant,
+            key=f"scope-item-{uuid.uuid4().hex[:8]}",
+            name="Local crypto-asset rules",
+            jurisdiction=Jurisdiction.objects.get(key="se"),
+            regime_term=terms_logic.term_by_ref("regime", "securities"),
+            source_url="https://www.fi.se/sv/vara-register/",
+        )
+    return item
 
 
 def vocabulary_suggestion(tenant: Tenant) -> SimpleNamespace:

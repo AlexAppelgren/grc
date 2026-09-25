@@ -496,6 +496,10 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # query string, so the exception stays one route wide.
     ("GET", "/upcoming"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_UPCOMING_READER),
     ("GET", "/calendar/feed.ics"): Ungated(UngatedReason.PUBLIC_TOKEN, _PUBLIC_CALENDAR_TOKEN),
+    # d89-scope-items-logic (OWN-01): one of the bank's own scope items, read as the scope is.
+    ("GET", "/tenant/footprint/scope-items/{scope_item_id}"): Ungated(
+        UngatedReason.CAPABILITY, "Every member reads the regulatory scope and the scope items in it (FP-03, OWN-01)."
+    ),
 }
 
 

@@ -1443,3 +1443,16 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       `requested`, so the approver sees exactly what they approve; it is `in_scope` only after
       the second person's passkey approval, and `declined` if the request is rejected or
       withdrawn. No key and no agent writes one either way.
+
+## d89-scope-items-logic: scope items on the regulatory scope request (2026-09-25, OWN-01, FP-02, D-91)
+
+- [ ] Default taken: a scope item's key is derived from its name when it is asked for and is
+      never reused, so asking again after a decline gives `…_2`. The screens show the name;
+      the key is what the outbox event and the research carry. Say if a person should type
+      the key instead.
+- [ ] Default taken: `FOOTPRINT_CHANGE_MAX_TERMS` is 50 per list (terms added, terms removed,
+      items added, items removed) and the decision note is capped at 2000 characters (H24).
+      Say if either should be different.
+- [ ] Default taken: `research` reads `waiting_for_agent` for every item in scope until the
+      bank's own agent's research (d89-agent-research) reports how it stands; removing an item
+      stops nothing that agent already filed, which stays in the bank's own queue.

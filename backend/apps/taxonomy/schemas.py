@@ -14,9 +14,10 @@ from datetime import datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
+from django.conf import settings
 from pydantic import ConfigDict, Field
 
-from apps.shared.schemas import CamelSchema, LibraryResponse, VocabularyExtra, WriteBody
+from apps.shared.schemas import CamelSchema, LibraryResponse, SingleLineName, VocabularyExtra, WriteBody
 
 __all__ = ["CamelSchema"]
 
@@ -1471,6 +1472,210 @@ class FootprintTermRef(TermRef):
     )
 
 
+# ---------------------------------------------------------------------------------------
+# Scope items on the regulatory scope request (OWN-01, FP-02, D-89, D-91;
+# d89-scope-items-logic). A person asks, a second person approves with a passkey; no key
+# and no agent reaches any of these shapes.
+# ---------------------------------------------------------------------------------------
+_MAX_TERMS = settings.FOOTPRINT_CHANGE_MAX_TERMS
+_SCOPE_ITEM_DESCRIPTION_MAX = settings.SCOPE_ITEM_DESCRIPTION_MAX_CHARS
+# H24: the note on a decision is capped at a fixed width, stated in its description.
+FOOTPRINT_NOTE_MAX_CHARS = 2000
+_SCOPE_ITEM_KEY = (
+    "The scope item's stable key, at most 80 characters of lower-case letters, digits and "
+    "underscores, such as `local_crypto_asset_rules`. The server derives it from the name when the "
+    "item is asked for, adding `_2`, `_3` and so on when the organisation already used it, and it "
+    "never changes or passes to another item, a declined or removed one included."
+)
+
+_SCOPE_ITEM_EXAMPLE: dict[str, Any] = {
+    "id": "0d9e3b52-7c41-4f8a-b6e2-5a1c9d0e7f34",
+    "key": "local_crypto_asset_rules",
+    "name": "Local crypto-asset rules",
+    "description": "Finansinspektionen's rules for crypto-asset service providers, before MiCA's library entry.",
+    "jurisdiction": {"key": "se", "kind": "country", "label": "Sweden"},
+    "regimeTerm": {"key": "securities", "kind": None, "label": "Securities", "dimension": "regime"},
+    "officialReference": "FFFS 2026:1",
+    "sourceUrl": "https://www.fi.se/sv/vara-register/",
+    "status": "in_scope",
+    "research": "waiting_for_agent",
+}
+
+
+class ScopeItemRow(CamelSchema):
+    """A regulation or area the shared library does not cover yet, which this organisation
+    put into its regulatory scope for its own agent to research (OWN-01, D-89, D-91). It is
+    the organisation's own, never shared with another, and never a term: it hides and
+    reveals nothing in any list. Only people ask for, approve and remove one."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_SCOPE_ITEM_EXAMPLE]})
+
+    id: UUID | None = Field(
+        default=None,
+        description=(
+            "The scope item's identifier, a UUID that never changes; `GET /tenant/footprint/scope-items/{scopeItemId}` "
+            "takes it. Null by default only in a dry run's preview, where nothing is stored yet."
+        ),
+        examples=["0d9e3b52-7c41-4f8a-b6e2-5a1c9d0e7f34"],
+    )
+    key: str = Field(description=_SCOPE_ITEM_KEY, examples=["local_crypto_asset_rules"])
+    name: str = Field(
+        description=(
+            "What the organisation calls the regulation or area, as the requester wrote it, at most 200 "
+            "characters on one line. The organisation's own text, never shared outside it and never sent to "
+            "a model."
+        ),
+        examples=["Local crypto-asset rules"],
+    )
+    description: str = Field(
+        default="",
+        description=(
+            f"What the requester wrote about it, at most {_SCOPE_ITEM_DESCRIPTION_MAX} characters; empty by "
+            "default. The organisation's own text, never shared outside it and never sent to a model."
+        ),
+        examples=["Finansinspektionen's rules for crypto-asset service providers, before MiCA's library entry."],
+    )
+    jurisdiction: TermRef = Field(
+        description=(
+            "Where the regulation comes from: a jurisdiction by key, kind and label. A row of the jurisdiction "
+            "vocabulary, whose kinds are `supranational` (the European Union), `country` (one national market) and "
+            "`international` (a standards body); the platform seeds it, an administrator may add more without a "
+            "deploy, and `GET /reference/jurisdictions` lists the live set."
+        )
+    )
+    regime_term: FootprintTermRef = Field(
+        description=(
+            "The regime the regulation belongs to: a term of the shared library's `regime` dimension, with its "
+            "label and dimension. Terms are rows of the shared library's taxonomy vocabulary, which an "
+            "administrator may extend through an approved proposal; `GET /taxonomy/terms?dimension=regime` lists "
+            "them. Naming it here puts no term into the regulatory scope."
+        )
+    )
+    official_reference: str = Field(
+        default="",
+        description=(
+            "The regulation's official reference where it has one, such as `FFFS 2026:1`, at most 200 "
+            "characters; empty by default, when it has none yet."
+        ),
+        examples=["FFFS 2026:1"],
+    )
+    source_url: str = Field(
+        description=(
+            "The public https page the organisation's agent researches, at most 2000 characters. Always an https "
+            "address on a public host; the server refused anything else when the item was asked for, and the "
+            "fetch checks the host again, because the page is untrusted content."
+        ),
+        examples=["https://www.fi.se/sv/vara-register/"],
+    )
+    status: str = Field(
+        description=(
+            "Where the item stands, one of four fixed values. `requested`: a regulatory scope request that adds it "
+            "waits for a second person, and it is not in scope yet. `in_scope`: a second person approved it with a "
+            "passkey, and the organisation's own agent may research it. `declined`: the request that asked for it "
+            "was rejected or withdrawn, so it never entered the scope. `removed`: an approved request took it out "
+            "again. A kind in code, never extended by an administrator. Being in scope says nothing about whether "
+            "the organisation complies with anything."
+        ),
+        examples=["in_scope"],
+    )
+    research: str | None = Field(
+        default=None,
+        description=(
+            "How the organisation's own agent's research of the item stands, computed by the server. "
+            "`waiting_for_agent`: the item is in scope and no research of it has started, because no agent of "
+            "the organisation is switched on for it yet. Null by default, when the item is not in scope and "
+            "nothing researches it. What an agent finds reaches the organisation's own queue as proposals a "
+            "person decides, never the item itself."
+        ),
+        examples=["waiting_for_agent"],
+    )
+
+
+class ScopeItemInput(WriteBody):
+    """A scope item to add to the regulatory scope: a regulation or area the shared library
+    does not cover, for the organisation's own agent to research once a second person
+    approves it (OWN-01, D-91)."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "Local crypto-asset rules",
+                    "description": "Finansinspektionen's rules for crypto-asset service providers, before MiCA's library entry.",
+                    "jurisdiction": "se",
+                    "regimeTerm": "securities",
+                    "officialReference": "FFFS 2026:1",
+                    "sourceUrl": "https://www.fi.se/sv/vara-register/",
+                }
+            ]
+        },
+    )
+
+    name: SingleLineName = Field(
+        min_length=1,
+        max_length=200,
+        description=(
+            "What the organisation calls the regulation or area, 1 to 200 characters on one line: a line break, "
+            "a tab or an invisible formatting character answers 422 `validation_error`. The item's key is derived "
+            "from it. The organisation's own text, never shared outside it and never sent to a model."
+        ),
+        examples=["Local crypto-asset rules"],
+    )
+    description: str = Field(
+        default="",
+        max_length=_SCOPE_ITEM_DESCRIPTION_MAX,
+        description=(
+            f"What the regulation covers and why it matters, at most {_SCOPE_ITEM_DESCRIPTION_MAX} characters "
+            "(a setting); empty by default. The organisation's own text, never shared outside it and never "
+            "sent to a model."
+        ),
+        examples=["Finansinspektionen's rules for crypto-asset service providers, before MiCA's library entry."],
+    )
+    jurisdiction: str = Field(
+        min_length=1,
+        max_length=80,
+        description=(
+            "The key of the jurisdiction the regulation comes from, at most 80 characters, such as `se` for "
+            "Sweden or `eu` for the European Union. A row of the jurisdiction vocabulary the platform seeds; "
+            "`GET /reference/jurisdictions` lists the live set. An unknown or retired key answers 422 "
+            "`unknown_key`."
+        ),
+        examples=["se"],
+    )
+    regime_term: str = Field(
+        min_length=1,
+        max_length=80,
+        description=(
+            "The key of the regime the regulation belongs to, at most 80 characters, such as `securities`: a "
+            "term of the shared library's `regime` dimension, which an administrator may extend through an "
+            "approved proposal; `GET /taxonomy/terms?dimension=regime` lists them. An unknown or retired term "
+            "answers 422 `unknown_key` with the valid keys. It puts no term into the regulatory scope."
+        ),
+        examples=["securities"],
+    )
+    official_reference: SingleLineName = Field(
+        default="",
+        max_length=200,
+        description=(
+            "The regulation's official reference where it has one, such as `FFFS 2026:1`, at most 200 "
+            "characters on one line; empty by default."
+        ),
+        examples=["FFFS 2026:1"],
+    )
+    source_url: str = Field(
+        min_length=1,
+        max_length=2000,
+        description=(
+            "The public page the organisation's agent should research, at most 2000 characters: an https "
+            "address on a public host. Another scheme, a user name or password, a port other than 443, a "
+            "private or local address, `localhost`, a one-label name or a private suffix such as `.internal` "
+            "answers 422 `source_not_public`."
+        ),
+        examples=["https://www.fi.se/sv/vara-register/"],
+    )
+
+
 _FOOTPRINT_REQUEST_EXAMPLE: dict[str, Any] = {
     "id": "5b0c7e1a-3f2d-4c8e-9a61-2d7f0e4b9c13",
     "status": "pending",
@@ -1478,6 +1683,8 @@ _FOOTPRINT_REQUEST_EXAMPLE: dict[str, Any] = {
     "requestedAt": "2026-09-18T07:40:00Z",
     "adds": [{"key": "insurance_distribution", "kind": None, "label": "Insurance distribution", "dimension": "service_type"}],
     "removes": [{"key": "advice", "kind": None, "label": "Advice", "dimension": "service_type"}],
+    "scopeItemAdds": [{**_SCOPE_ITEM_EXAMPLE, "status": "requested", "research": None}],
+    "scopeItemRemoves": [],
     "preview": {"obligations": {"hidden": 2, "revealed": 2, "available": True}, "cases": {"hidden": 0, "revealed": 1, "available": True}},
     "decidedBy": None,
     "decidedAt": None,
@@ -1536,6 +1743,23 @@ class FootprintRequestRow(CamelSchema):
             "The terms the change takes out of the regulatory scope, each with its dimension; empty by "
             "default, when it only adds. Terms are rows of the shared library's taxonomy vocabulary, which "
             "an administrator may extend through an approved proposal."
+        ),
+    )
+    scope_item_adds: list[ScopeItemRow] = Field(
+        default_factory=list,
+        description=(
+            "The scope items the change puts into the regulatory scope: regulations the shared library does not "
+            "cover, for the organisation's own agent to research. Empty by default. Each reads `requested` while "
+            "the change waits, `in_scope` once approved and `declined` when rejected or withdrawn. An item "
+            "hides and reveals nothing, so it never moves `preview`."
+        ),
+    )
+    scope_item_removes: list[ScopeItemRow] = Field(
+        default_factory=list,
+        description=(
+            "The scope items the change takes out of the regulatory scope; empty by default. Each stays "
+            "`in_scope` until the change is approved and reads `removed` after; its research stops, and what "
+            "its agent already filed stays in the organisation's own queue and library."
         ),
     )
     preview: FootprintPreview = Field(
@@ -1671,6 +1895,7 @@ class FootprintView(CamelSchema):
                         {"jurisdiction": {"key": "se", "kind": "country", "label": "Sweden"}, "level": "operating"},
                         {"jurisdiction": {"key": "no", "kind": "country", "label": "Norway"}, "level": "watching"},
                     ],
+                    "scopeItems": [_SCOPE_ITEM_EXAMPLE],
                 }
             ]
         }
@@ -1694,6 +1919,15 @@ class FootprintView(CamelSchema):
     markets: list[MarketRow] = Field(
         default_factory=list,
         description="Every active country's operating and watching level, one row per country, in jurisdiction sort order (FP-04).",
+    )
+    scope_items: list[ScopeItemRow] = Field(
+        default_factory=list,
+        description=(
+            "The scope items in the organisation's regulatory scope, oldest first, each with how its research "
+            "stands: the regulations the shared library does not cover that a second person approved. Empty by "
+            "default. An item asked for and still waiting is in `pendingRequest`, not here. Items narrow and "
+            "widen nothing above: they are researched, never matched."
+        ),
     )
 
 
@@ -1783,49 +2017,89 @@ class FootprintTermSelector(CamelSchema):
     )
 
 
-class FootprintRequestBody(CamelSchema):
-    """`POST /tenant/footprint/requests`: the terms to put into and take out of the
-    organisation's regulatory scope, previewed with `dryRun=true` or sent for approval."""
+class FootprintRequestBody(WriteBody):
+    """`POST /tenant/footprint/requests`: the terms and the scope items to put into and take
+    out of the organisation's regulatory scope, previewed with `dryRun=true` or sent for
+    approval. A field it does not name answers 422."""
 
     model_config = ConfigDict(
+        extra="forbid",
         json_schema_extra={
             "examples": [
                 {
                     "adds": [{"dimension": "service_type", "key": "insurance_distribution"}],
                     "removes": [{"dimension": "service_type", "key": "advice"}],
+                    "scopeItemAdds": [
+                        {
+                            "name": "Local crypto-asset rules",
+                            "jurisdiction": "se",
+                            "regimeTerm": "securities",
+                            "officialReference": "FFFS 2026:1",
+                            "sourceUrl": "https://www.fi.se/sv/vara-register/",
+                        }
+                    ],
+                    "scopeItemRemoves": [],
                 }
             ]
-        }
+        },
     )
 
     adds: list[FootprintTermSelector] = Field(
         default_factory=list,
+        max_length=_MAX_TERMS,
         description=(
-            "The terms to put into the regulatory scope; empty by default. A term already in the scope "
-            "changes nothing when approved. With `removes`, at least one term in all, and no term in both; "
-            "otherwise 422 `validation_error`."
+            f"The terms to put into the regulatory scope, at most {_MAX_TERMS} (a setting); empty by default. "
+            "A term already in the scope changes nothing when approved. With the other lists, at least one "
+            "term or scope item in all, and no term in both `adds` and `removes`; otherwise 422 "
+            "`validation_error`."
         ),
     )
     removes: list[FootprintTermSelector] = Field(
         default_factory=list,
+        max_length=_MAX_TERMS,
         description=(
-            "The terms to take out of the regulatory scope; empty by default. A term not in the scope "
-            "changes nothing when approved. With `adds`, at least one term in all, and no term in both; "
-            "otherwise 422 `validation_error`."
+            f"The terms to take out of the regulatory scope, at most {_MAX_TERMS} (a setting); empty by "
+            "default. A term not in the scope changes nothing when approved. With the other lists, at least "
+            "one term or scope item in all, and no term in both `adds` and `removes`; otherwise 422 "
+            "`validation_error`."
         ),
+    )
+    scope_item_adds: list[ScopeItemInput] = Field(
+        default_factory=list,
+        max_length=_MAX_TERMS,
+        description=(
+            f"Regulations the shared library does not cover, to put into the regulatory scope for the "
+            f"organisation's own agent to research, at most {_MAX_TERMS} (a setting); empty by default. Each "
+            "is stored with the request as `requested` and enters the scope only when a second person approves "
+            "it with a passkey. It changes no term and moves no count in the preview."
+        ),
+    )
+    scope_item_removes: list[Annotated[str, Field(min_length=1, max_length=80)]] = Field(
+        default_factory=list,
+        max_length=_MAX_TERMS,
+        description=(
+            f"The keys of scope items to take out of the regulatory scope, at most {_MAX_TERMS} (a setting), "
+            "each at most 80 characters; empty by default. Each must be an item in scope now (`scopeItems` of "
+            "`GET /tenant/footprint`); any other key answers 422 `unknown_key` with the keys that would work. "
+            "A key named twice answers 422 `validation_error`."
+        ),
+        examples=[["local_crypto_asset_rules"]],
     )
 
 
-class FootprintDecisionBody(CamelSchema):
-    """What the second person sends with an approval or a rejection."""
+class FootprintDecisionBody(WriteBody):
+    """What the second person sends with an approval or a rejection. A field it does not
+    name answers 422."""
 
-    model_config = ConfigDict(json_schema_extra={"examples": [{"note": "Matches the new insurance distribution licence."}]})
+    model_config = ConfigDict(extra="forbid", json_schema_extra={"examples": [{"note": "Matches the new insurance distribution licence."}]})
 
     note: str = Field(
         default="",
+        max_length=FOOTPRINT_NOTE_MAX_CHARS,
         description=(
-            "Why the change was approved or rejected, kept on the request and in its audit event for "
-            "whoever reads the history; empty by default. The organisation's own text, never shared outside it."
+            f"Why the change was approved or rejected, at most {FOOTPRINT_NOTE_MAX_CHARS} characters, kept on "
+            "the request for whoever reads the history; empty by default. The organisation's own text, never "
+            "shared outside it and never written into the audit log."
         ),
         examples=["Matches the new insurance distribution licence."],
     )
@@ -1843,6 +2117,8 @@ class FootprintDryRun(CamelSchema):
                 {
                     "adds": _FOOTPRINT_REQUEST_EXAMPLE["adds"],
                     "removes": _FOOTPRINT_REQUEST_EXAMPLE["removes"],
+                    "scopeItemAdds": [{**_SCOPE_ITEM_EXAMPLE, "id": None, "status": "requested", "research": None}],
+                    "scopeItemRemoves": [],
                     "preview": _FOOTPRINT_REQUEST_EXAMPLE["preview"],
                     "dryRun": True,
                 }
@@ -1865,6 +2141,17 @@ class FootprintDryRun(CamelSchema):
             "dimension; empty by default. Terms are rows of the shared library's taxonomy vocabulary, which "
             "an administrator may extend through an approved proposal."
         ),
+    )
+    scope_item_adds: list[ScopeItemRow] = Field(
+        default_factory=list,
+        description=(
+            "The scope items the change would put into the regulatory scope, as they would be stored: each "
+            "with the key it would get, `requested`, and a null `id`, since nothing is stored. Empty by default."
+        ),
+    )
+    scope_item_removes: list[ScopeItemRow] = Field(
+        default_factory=list,
+        description="The scope items in scope now that the change would take out, as they stand; empty by default.",
     )
     preview: FootprintPreview = Field(
         description=(

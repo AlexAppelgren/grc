@@ -91,8 +91,9 @@ URGENCY_READ_QUERIES = 10 + 1 + 2
 #   term counts (1) and their labels (1), the pending request (1); the markets (FP-04),
 #   four more however many countries there are: the jurisdictions whose mirrored term is in
 #   the footprint, read through the term's link (1), the watch rows (1), the countries (1)
-#   and their labels (1).
-FOOTPRINT_READ_QUERIES = 10 + 1 + 5 + 4
+#   and their labels (1). And the scope items in scope (1, d89-scope-items-logic), whose
+#   labels are read only when there is one.
+FOOTPRINT_READ_QUERIES = 10 + 1 + 5 + 4 + 1
 
 
 def _seed_library() -> None:
@@ -2004,12 +2005,70 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         with self.assertRaises(TypeError):
             matching.in_footprint(as_dict(iso), {}, restricting={"service_type", "standard"})
 
-    @skip("pending: FP-S18 (OWN-01, FP-02, AC-OWN2, chunk 11)")
     def test_fp_s18(self) -> None:
         """FP-S18
 
         A scope item the library does not cover is requested by one person and approved by another with a passkey (OWN-01, FP-02, AC-OWN2).
         """
+        # d89-scope-items-logic. The rest of the proofs (keys, declines, removal, H24's caps,
+        # the writer guard) are apps/taxonomy/tests_scope_items.py's.
+        from apps.agents import testing as agent_build
+        from apps.shared.models import OutboxEvent
+        from apps.taxonomy.models import ScopeItem
+
+        item = {
+            "name": "Local crypto-asset rules",
+            "jurisdiction": "se",
+            "regimeTerm": "securities",
+            "officialReference": "FFFS 2026:1",
+            "sourceUrl": "https://www.fi.se/sv/vara-register/",
+        }
+        officer = sign_in(self.officer, tenant=self.tenant)
+        scope_before = self._footprint(officer)["dimensions"]
+        created = self._post("/tenant/footprint/requests", {"scopeItemAdds": [item]}, officer)
+        self.assertEqual(created.status_code, 201, created.content)
+        request = created.json()
+        self.assertEqual(request["status"], "pending")
+        self.assertEqual(self._footprint(officer)["pendingRequest"]["id"], request["id"])
+        self.assertEqual(self._footprint(officer)["dimensions"], scope_before)
+        self.assertEqual(self._footprint(officer)["scopeItems"], [])
+        approve = f"/tenant/footprint/requests/{request['id']}/approve"
+        own = self._post(approve, {}, sign_in(self.officer, tenant=self.tenant, step_up=True))
+        self.assertEqual((own.status_code, own.json()["code"]), (409, "four_eyes_violation"))
+        bare = self._post(approve, {}, sign_in(self.approver, tenant=self.tenant))
+        self.assertEqual((bare.status_code, bare.json()["code"]), (403, "step_up_required"))
+        # Any key, a bank's or the platform's, is refused on every door and stores nothing.
+        self.activate(self.tenant)
+        bank_key = factories.api_key(self.tenant, scopes=("library:read",))
+        with tenancy.platform_zone():
+            platform_key = agent_build.agent_key(scopes=("proposals:write", "proposals:review"))
+        stored = (ScopeItem.objects.count(), AuditEvent.objects.count())
+        for key in (bank_key, platform_key):
+            for path, body in (("/tenant/footprint/requests", {"scopeItemAdds": [{**item, "name": "Another"}]}), (approve, {}), (f"/tenant/footprint/requests/{request['id']}/withdraw", {})):
+                answer = Client().post(f"{V1}{path}", data=body, content_type="application/json", HTTP_X_API_KEY=key.plain_key)
+                self.assertIn(answer.status_code, (401, 403), f"a key reached {path}")
+        self.activate(self.tenant)
+        self.assertEqual((ScopeItem.objects.count(), AuditEvent.objects.count()), stored)
+        approved = self._post(approve, {}, sign_in(self.approver, tenant=self.tenant, step_up=True))
+        self.assertEqual(approved.status_code, 200, approved.content)
+        [in_scope] = self._footprint(officer)["scopeItems"]
+        self.assertEqual((in_scope["key"], in_scope["status"], in_scope["jurisdiction"]["key"]), ("local_crypto_asset_rules", "in_scope", "se"))
+        # The preview hid and revealed nothing, and no term of the scope moved.
+        nothing = {"hidden": 0, "revealed": 0, "available": True}
+        self.assertEqual((approved.json()["preview"]["obligations"], approved.json()["preview"]["cases"]), (nothing, nothing))
+        self.assertEqual(self._footprint(officer)["dimensions"], scope_before)
+        # One audit event for the item, naming the approver and the assertion.
+        self.activate(self.tenant)
+        [added] = AuditEvent.objects.filter(tenant=self.tenant, action="scope_item.added")
+        self.assertEqual((added.actor_id, str(added.subject_id)), (self.approver.id, in_scope["id"]))
+        self.assertIsNotNone(added.step_up_assertion_id)
+        self.assertEqual(OutboxEvent.objects.get(audit_event=added).payload["key"], "local_crypto_asset_rules")
+        # Tenant B's fetch of the item answers 404.
+        other = factories.tenant(slug="bank-b")
+        member_of_b = sign_in(factories.member(other, roles=("admin",)).user, tenant=other)
+        fetched = self._get(f"/tenant/footprint/scope-items/{in_scope['id']}", member_of_b)
+        self.assertEqual((fetched.status_code, fetched.json()["code"]), (404, "not_found"))
+        self.assertEqual(self._footprint(member_of_b)["scopeItems"], [])
 
     @skip("pending: ACC-S2 (ACC-02, AC-ACC1, chunk 11)")
     def test_acc_s2(self) -> None:

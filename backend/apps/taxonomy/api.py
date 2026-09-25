@@ -52,6 +52,7 @@ from apps.taxonomy.schemas import (
     JurisdictionRow,
     MarketRow,
     MarketWatchBody,
+    ScopeItemRow,
     TaggingBatchBody,
     TaggingBatchOutcome,
     TaggingBody,
@@ -947,35 +948,57 @@ def list_footprint_requests(request: HttpRequest, page: Query[PageQuery]) -> Foo
 @requires_permission(perms.FOOTPRINT_REQUEST)
 @answers_problems
 def create_footprint_request(request: HttpRequest, body: FootprintRequestBody, query: Query[FootprintRequestQuery]) -> Any:
-    """Ask for terms to be put into or taken out of the organisation's regulatory scope.
-    Nothing in the scope changes here: the change waits for a second person, who approves it
-    with a passkey (`POST /tenant/footprint/requests/{requestId}/approve`) or rejects it.
+    """Ask for terms, and scope items, to be put into or taken out of the organisation's
+    regulatory scope. Nothing in the scope changes here: the change waits for a second
+    person, who approves it with a passkey (`POST /tenant/footprint/requests/{requestId}/approve`)
+    or rejects it.
+
+    A scope item is a regulation the shared library does not cover yet: a name, a
+    description, a jurisdiction, a regime term, an official reference where one exists and a
+    public https page, for the organisation's own agent to research once it is approved. It
+    is stored with the request as `requested`, with a key derived from its name; it changes
+    no term and moves no count in the preview. Only a person asks for, approves or removes
+    one: no API key and no agent reaches it.
 
     With `dryRun=true` it only previews: a 200 with what the change would hide and reveal
-    among the obligations and the open cases, with nothing stored, no audit event and no
-    approval started. Without it, a 201 with the new pending request, its preview counted
-    now, and one `footprint.change_requested` audit event naming every term added and
-    removed. An organisation has one pending request at a time; withdraw or decide it first.
+    among the obligations and the open cases, and the scope items as they would be stored,
+    with nothing stored, no audit event and no approval started. Without it, a 201 with the
+    new pending request, its preview counted now, and one `footprint.change_requested` audit
+    event naming every term and every scope item (by id and key) added and removed. An
+    organisation has one pending request at a time; withdraw or decide it first.
+
+    Each of the four lists holds at most the configured number of entries
+    (`FOOTPRINT_CHANGE_MAX_TERMS`, 50 by default); a longer one is refused with 422.
 
     Needs `footprint.request` in the caller's organisation and a person's session; an API
     key is refused. No passkey step-up: the approval carries it.
 
     Errors to branch on: `request_pending` (409) when a change already waits for a decision;
-    `unknown_key` (422) for a dimension or term that is not an active one, with the valid
-    keys in `detail`; `validation_error` (422) for a change with no term, a term both added
-    and removed, a term named twice, or a body the schema refuses; `permission_denied` (403) without
-    `footprint.request`; `unauthenticated` (401) without a session; `not_found` (404) for a
-    principal in no organisation.
+    `unknown_key` (422) for a dimension, term, jurisdiction or regime term that is not an
+    active one, or a scope item to remove that is not in scope, with the valid keys in
+    `detail`; `source_not_public` (422) for a scope item's address that is not a public https
+    page; `validation_error` (422) for a change with nothing in it, a term both added and
+    removed, a term or scope item named twice, a list over its cap, or a body the schema
+    refuses; `permission_denied` (403) without `footprint.request`; `unauthenticated` (401)
+    without a session; `not_found` (404) for a principal in no organisation.
     """
     tenant = caller_tenant(request)
     order = reading.language_order(request, tenant=tenant)
     adds = terms_logic.terms_by_selectors(body.adds)
     removes = terms_logic.terms_by_selectors(body.removes)
+    item_adds = footprint_logic.scope_item_drafts(tenant.id, body.scope_item_adds)
+    item_removes = footprint_logic.scope_items_in_scope(tenant.id, body.scope_item_removes)
     if query.dry_run:
-        return 200, footprint_logic.dry_run(tenant.id, adds, removes, order)
+        return 200, footprint_logic.dry_run(tenant.id, adds, removes, order, item_adds=item_adds, item_removes=item_removes)
     user = caller_user(request)
     created = footprint_logic.create_request(
-        tenant=tenant, requester=user, actor=actor_for(request, user), adds=adds, removes=removes
+        tenant=tenant,
+        requester=user,
+        actor=actor_for(request, user),
+        adds=adds,
+        removes=removes,
+        item_adds=item_adds,
+        item_removes=item_removes,
     )
     return 201, footprint_logic.request_row(created, order)
 
@@ -1006,7 +1029,9 @@ def _footprint_request(tenant: Any, request_id: str) -> FootprintChangeRequest:
 @answers_problems
 def approve_footprint_request(request: HttpRequest, request_id: _FootprintRequestId, body: FootprintDecisionBody) -> FootprintRequestRow:
     """Approve a pending change: its terms enter and leave the regulatory scope at once, and
-    every list, the watch feed and search follow from the next read. The approver must be
+    every list, the watch feed and search follow from the next read. Its scope items enter
+    or leave the scope at the same moment, and an item that entered waits for the
+    organisation's own agent to research it. The approver must be
     someone other than the requester, which the database enforces too. The answer is the
     request, now `approved`, with the counts it was approved against.
 
@@ -1015,19 +1040,21 @@ def approve_footprint_request(request: HttpRequest, request_id: _FootprintReques
     `POST /auth/step-up/verify`); an API key is refused. Send `If-Match` with the version
     last read to be told when the request moved on.
 
-    Writes one `footprint.change_approved` audit event with the note and the counts, and one
-    `footprint.term_added` or `footprint.term_removed` event per term that changed, each
-    carrying the step-up that authorised it.
+    Writes one `footprint.change_approved` audit event with the counts (the note stays on
+    the request), one `footprint.term_added` or `footprint.term_removed` event per term that
+    changed, and one `scope_item.added` or `scope_item.removed` event per scope item, whose
+    outbox row names the item by id and key only; each carries the step-up that authorised
+    it.
 
     Errors to branch on: `four_eyes_violation` (409) when the requester approves their own
     change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
     `stale_write` (409) when `If-Match` names an old version, or when a term the change
-    adds was retired while it waited, which the approver rejects so the requester can ask
-    again; `step_up_required` (403) without a fresh passkey step-up; `permission_denied`
-    (403) without `footprint.approve`;
+    adds, or a scope item's jurisdiction or regime term, was retired while it waited, which
+    the approver rejects so the requester can ask again; `step_up_required` (403) without a
+    fresh passkey step-up; `permission_denied` (403) without `footprint.approve`;
     `not_found` (404) for a request that is not here; `validation_error` (422) for an
-    `If-Match` that is not a version or a body the schema refuses; `unauthenticated` (401)
-    without a session.
+    `If-Match` that is not a version, a note longer than 2000 characters or a body the
+    schema refuses; `unauthenticated` (401) without a session.
     """
     tenant = caller_tenant(request)
     user = caller_user(request)
@@ -1061,15 +1088,18 @@ def reject_footprint_request(request: HttpRequest, request_id: _FootprintRequest
 
     Needs `footprint.approve` in the caller's organisation and a person's session; an API
     key is refused. No passkey step-up, because nothing in the scope changes. Send
-    `If-Match` with the version last read to be told when the request moved on. Writes one
-    `footprint.change_rejected` audit event with the note and the counts.
+    `If-Match` with the version last read to be told when the request moved on. The scope
+    items it asked for read `declined` and never enter the scope. Writes one
+    `footprint.change_rejected` audit event with the counts and the declined items' ids and
+    keys; the note stays on the request.
 
     Errors to branch on: `four_eyes_violation` (409) when the requester rejects their own
     change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
     `stale_write` (409) when `If-Match` names an old version; `permission_denied` (403)
     without `footprint.approve`; `not_found` (404) for a request that is not here;
-    `validation_error` (422) for an `If-Match` that is not a version or a body the schema
-    refuses; `unauthenticated` (401) without a session.
+    `validation_error` (422) for an `If-Match` that is not a version, a note longer than
+    2000 characters or a body the schema refuses; `unauthenticated` (401) without a
+    session.
     """
     tenant = caller_tenant(request)
     user = caller_user(request)
@@ -1102,7 +1132,8 @@ def withdraw_footprint_request(request: HttpRequest, request_id: _FootprintReque
 
     Needs `footprint.request` in the caller's organisation and a person's session; an API
     key is refused. Send `If-Match` with the version last read to be told when the request
-    moved on. Writes one `footprint.change_withdrawn` audit event.
+    moved on. The scope items it asked for read `declined`. Writes one
+    `footprint.change_withdrawn` audit event, naming the declined items by id and key.
 
     Errors to branch on: `permission_denied` (403) without `footprint.request`, and for a
     request someone else sent; `invalid_transition` (409) when it was already approved,
@@ -1120,6 +1151,59 @@ def withdraw_footprint_request(request: HttpRequest, request_id: _FootprintReque
         tenant=tenant, request=found, requester=user, actor=actor_for(request, user), expected_version=if_match(request)
     )
     return footprint_logic.request_row(withdrawn, reading.language_order(request, tenant=tenant))
+
+
+_ScopeItemId = Annotated[
+    str,
+    Path(
+        description=(
+            "The `id` of the scope item, a UUID as `GET /tenant/footprint` or a regulatory scope change request "
+            "returns it. One of another organisation, one that does not exist, or anything that is not a UUID "
+            "answers 404 `not_found`."
+        )
+    ),
+]
+
+
+@router.get(
+    "/tenant/footprint/scope-items/{scope_item_id}",
+    response=ScopeItemRow,
+    auth=SESSION,
+    operation_id="getScopeItem",
+    by_alias=True,
+    summary="See one regulation we added to our regulatory scope",
+    openapi_extra={"responses": {200: {"content": {"application/json": {"example": {
+        "id": "0d9e3b52-7c41-4f8a-b6e2-5a1c9d0e7f34",
+        "key": "local_crypto_asset_rules",
+        "name": "Local crypto-asset rules",
+        "description": "",
+        "jurisdiction": {"key": "se", "kind": "country", "label": "Sweden"},
+        "regimeTerm": {"key": "securities", "kind": None, "label": "Securities", "dimension": "regime"},
+        "officialReference": "FFFS 2026:1",
+        "sourceUrl": "https://www.fi.se/sv/vara-register/",
+        "status": "in_scope",
+        "research": "waiting_for_agent",
+    }}}}}},
+)
+@answers_problems
+def get_scope_item(request: HttpRequest, scope_item_id: _ScopeItemId) -> ScopeItemRow:
+    """One scope item of the organisation's own, whatever its status: a regulation the
+    shared library does not cover that someone asked to put into the regulatory scope, with
+    where its request stands and how its research stands. Call it to open an item from the
+    Regulatory scope screen or from a request in its history.
+
+    A read: it changes nothing and writes no audit event. Any member may call it, as any
+    member reads the regulatory scope; it needs a person's session and no permission beyond
+    membership, and an API key is refused. Another organisation's item answers 404, exactly
+    as one that does not exist.
+
+    Errors to branch on: `not_found` (404) for an item that is not this organisation's or
+    not an id; `unauthenticated` (401) without a session.
+    """
+    # Ungated by design: capability (any member reads the regulatory scope and its items, FP-03, OWN-01).
+    tenant = caller_tenant(request)
+    item = footprint_logic.scope_item(tenant.id, uuid_or_404(scope_item_id))
+    return footprint_logic.scope_item_rows([item], reading.language_order(request, tenant=tenant))[0]
 
 
 _MARKET_WATCH_EXAMPLE = {
