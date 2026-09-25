@@ -28,10 +28,10 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   inventory: { ready: '[data-obligation-rows] [data-obligation]' },
   roadmap: { ready: '[data-roadmap-card]' },
   briefing: { ready: `[data-lead-card], [data-brief-item]${OR_EMPTY}` },
-  // At rest the screen asks nothing of the search route (the query stays out
-  // of the URL); it is ready when the permission gate has read the session
-  // and the start panel is drawn. Ask is a mode of this screen, not a row.
-  search: { ready: '[data-search-start]' },
+  // At rest Ask asks nothing of the ask route (the question stays out of the
+  // URL); it is ready when the permission gate has read the session and the
+  // start panel is drawn. Search lives in the inventory's row (D-9x).
+  ask: { ready: '[data-ask-start]' },
   admin: { ready: '[data-admin-section]' },
   'admin-organisation': { ready: '[data-onboarding] [data-step]' },
   'admin-members': { ready: '[data-members-list] [data-member-id]' },
