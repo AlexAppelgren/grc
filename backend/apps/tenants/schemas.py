@@ -1241,3 +1241,91 @@ class ConsoleSupportAccessPage(CamelSchema):
 
     items: list[ConsoleSupportAccessGrant] = Field(description="The caller's requests on this page, newest first; an empty list is a 200.")
     total: int = Field(description="How many requests the caller has made in total, not how many are on this page.")
+
+
+# ---------------------------------------------------------------------------------------
+# c11-security-policy-routes: the bank's session policy (ID-08, ADM-01)
+# ---------------------------------------------------------------------------------------
+_EXAMPLE_SECURITY_POLICY: dict[str, JsonValue] = {
+    "sessionIdleMinutes": 15,
+    "sessionAbsoluteHours": 8,
+    "sessionIdleMinutesDefault": 30,
+    "sessionIdleMinutesMax": 480,
+    "sessionAbsoluteHoursDefault": 12,
+    "sessionAbsoluteHoursMax": 24,
+    "updatedAt": "2026-09-25T08:30:00Z",
+    "updatedBy": {"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Anna Lindqvist"},
+}
+
+
+class SecurityPolicyOut(CamelSchema):
+    """The bank's session limits beside the platform's own: how long a session may sit idle
+    and how long it may last at most before its holder signs in again with a passkey. A
+    limit the bank has not set reads null and the platform default applies. No limit is
+    ever above the platform maximum, which the platform sets and no bank can change."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_SECURITY_POLICY]})
+
+    session_idle_minutes: int | None = Field(
+        description=(
+            "How many whole minutes a session of the bank may go without being refreshed "
+            "before it ends, as the bank set it, or null when the bank has set none and "
+            "`sessionIdleMinutesDefault` applies. Never above `sessionIdleMinutesMax`."
+        )
+    )
+    session_absolute_hours: int | None = Field(
+        description=(
+            "How many whole hours a session of the bank may last from sign-in, however "
+            "active, as the bank set it, or null when the bank has set none and "
+            "`sessionAbsoluteHoursDefault` applies. Never above `sessionAbsoluteHoursMax`."
+        )
+    )
+    session_idle_minutes_default: int = Field(
+        description="The platform's idle limit in whole minutes, which applies while the bank sets none."
+    )
+    session_idle_minutes_max: int = Field(
+        description="The highest idle limit in whole minutes a bank may set; the platform sets it and a bank cannot change it."
+    )
+    session_absolute_hours_default: int = Field(
+        description="The platform's absolute limit in whole hours, which applies while the bank sets none."
+    )
+    session_absolute_hours_max: int = Field(
+        description="The highest absolute limit in whole hours a bank may set; the platform sets it and a bank cannot change it."
+    )
+    updated_at: datetime | None = Field(
+        description="When the bank last changed its limits, a UTC timestamp, or null when it never has."
+    )
+    updated_by: PersonRef | None = Field(
+        description="Who last changed the limits, by id and name, or null when the bank never has."
+    )
+
+
+class SecurityPolicyBody(WriteBody):
+    """The bank's complete new session limits. Both fields are required and together
+    replace the current limits; null returns a limit to the platform default. Any other
+    field is refused, a passkey policy included: this release sets session limits only."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"sessionIdleMinutes": 15, "sessionAbsoluteHours": 8}]})
+
+    session_idle_minutes: int | None = Field(
+        strict=True,
+        ge=1,
+        description=(
+            "How many whole minutes a session may go without being refreshed before it ends, "
+            "at least 1 and at most the platform maximum that `GET /tenant/security-policy` "
+            "returns as `sessionIdleMinutesMax`, or null for the platform default. A JSON "
+            "number, never a string. Above the maximum is refused with "
+            "`above_platform_maximum`; below 1 with `validation_error`."
+        ),
+    )
+    session_absolute_hours: int | None = Field(
+        strict=True,
+        ge=1,
+        description=(
+            "How many whole hours a session may last from sign-in, however active, at least 1 "
+            "and at most the platform maximum that `GET /tenant/security-policy` returns as "
+            "`sessionAbsoluteHoursMax`, or null for the platform default. A JSON number, never "
+            "a string. Above the maximum is refused with `above_platform_maximum`; below 1 "
+            "with `validation_error`."
+        ),
+    )
