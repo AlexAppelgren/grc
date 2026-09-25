@@ -143,8 +143,8 @@ And the roadmap lists the target date as "Our deadline"
 When remediation starts
 Then the gap status reads "Remediating" as warning
 ```
-`@integration` covers every step but the roadmap line, which `c8-home-standing-roadmap` makes
-true. A gap is owned by a person or a team; a gap on an obligation, or a legal entity, whose
+`@integration` covers every step, the roadmap line included since `c8-home-standing-roadmap`
+built the gap target branch. A gap is owned by a person or a team; a gap on an obligation, or a legal entity, whose
 answer is "does not apply" is refused with 409 `does_not_apply`, and a gap on a Statement of
 Applicability unit is `c8-units-paste-soa`'s (c8-reg-gaps-risk).
 
