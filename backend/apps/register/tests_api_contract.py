@@ -84,6 +84,18 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("completeDutyOccurrence", "post", f"/api/v1/duty-occurrences/{RECORD}/complete", COMPLETE_BODY, perms.REGISTER_EDIT, False),
 ]
 
+# Operations whose logic has landed, so they no longer answer 501 (one line each, so the
+# packages that build them in parallel merge mechanically). Each is proved in its own module.
+BUILT: set[str] = {
+    # c8-reg-links-history: tests_history.py, tests_links.py
+    "listAssessments",
+    "getInterpretation",
+    "saveInterpretation",
+    "listInternalLinks",
+    "addInternalLink",
+    "removeInternalLink",
+}
+
 
 def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
     if body is None:
@@ -218,6 +230,8 @@ class RegisterRouteStubs(TestCase):
         shape, with nothing of the server in it. Replaced row by row as each logic lands."""
         with stub_session(self._everything()):
             for name, method, url, body, _permission, _step_up in REGISTER_ROUTES:
+                if name in BUILT:
+                    continue
                 headers = {**AS_SESSION, "HTTP_IF_MATCH": '"3"'} if method in {"patch", "put", "delete"} else AS_SESSION
                 with self.subTest(operation=name):
                     response = _call(self.client, method, url, body, headers)

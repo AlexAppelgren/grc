@@ -57,4 +57,6 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/footprint/requests/{request_id}/reject", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/tenant/footprint/requests/{request_id}/withdraw", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/vocab/{list_name}/suggestions/{suggestion_id}/decline", "taxonomy.VocabularySuggestion", "vocabulary_suggestion"),
+    # c8-reg-links-history (REG-05): a link is removed by id.
+    ("DELETE", "/internal-links/{link_id}", "register.InternalLink", "internal_link"),
 ]
