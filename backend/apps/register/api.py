@@ -550,8 +550,7 @@ def list_assessments(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
-    page out of range. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    page out of range.
     """
     tenant = caller_tenant(request)
     return history.list_assessments(
@@ -581,8 +580,7 @@ def get_interpretation(request: HttpRequest, obligation_id: uuid.UUID = Path(...
     A person's session holding `register.read`. A read.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
-    `not_found` (404) for an obligation the bank cannot see. Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for an obligation the bank cannot see.
     """
     return history.read_interpretation(tenant=caller_tenant(request), obligation_id=obligation_id)
 
@@ -610,8 +608,6 @@ def save_interpretation(
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
     `not_found` (404) for an obligation the bank cannot see; `stale_write` (409) when somebody
     wrote a version in between; `validation_error` (422) for empty or over-long text.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     return history.save_interpretation(
         tenant=caller_tenant(request),
@@ -647,8 +643,7 @@ def list_internal_links(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
-    page out of range. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    page out of range.
     """
     tenant = caller_tenant(request)
     return links.list_links(
@@ -674,17 +669,21 @@ def add_internal_link(
     request: HttpRequest, body: RegisterInternalLinkBody, obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID)
 ) -> Any:
     """Links an item of the bank's own to an obligation: picked from its organisation's
-    internal items, or ad hoc with its kind, name, link and external reference. The url is
-    stored as given and never fetched.
+    internal items, or created from this same call with its kind, name, reference, link,
+    owner, part of the organisation, external system and reference, and review dates. The url
+    is an http or https address, stored as given and never fetched.
 
-    A person's session holding `register.edit`. No step-up. Records one audit event naming
-    the person. Answers 201 with the link.
+    A person's session holding `register.edit`. No step-up. Records one audit event for the
+    link, and one more for the item when the call creates it, each naming the person.
+    Answers 201 with the link.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-    `not_found` (404) for an obligation or internal item the bank cannot see; `unknown_key`
-    (422) for a kind that is not an active row of the bank's link kind list;
-    `validation_error` (422). Published ahead of the logic that will fill it, and answering
-    501 `not_built` until that ships.
+    `not_found` (404) for an obligation or internal item the bank cannot see; `already_linked`
+    (409) when the item is already linked to this obligation; `duplicate_key` (409) when a new
+    item's kind and name are taken, so pick that item instead; `unknown_key` (422) for a kind
+    that is not an active row of the bank's link kind list; `validation_error` (422) for a
+    url that is not a web address, a picked item of another kind, an item picked and
+    described at once, or an owner who is not a member.
     """
     tenant = caller_tenant(request)
     return 201, links.add_link(
@@ -715,8 +714,7 @@ def remove_internal_link(request: HttpRequest, link_id: uuid.UUID = Path(..., de
     the person.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-    `not_found` (404) for a link the bank does not have or one already removed. Published
-    ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a link the bank does not have or one already removed.
     """
     links.remove_link(tenant=caller_tenant(request), actor=actor_for(request), link_id=link_id)
 
