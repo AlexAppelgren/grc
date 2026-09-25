@@ -718,6 +718,21 @@ class GovernanceScenarioTests(ScenarioTestCase):
         self.assertEqual(after["defaultLanguage"]["key"], "da")
         self.assertTrue(next(step for step in after["onboarding"]["steps"] if step["key"] == "profile")["done"])
 
+    def test_adm_s18(self) -> None:
+        """ADM-S18
+
+        A jurisdiction is relabelled, retired and restored by proposal, and the market that
+        mirrors it follows (ADM-02, VOC-07, FP-04, I18N-01, D-94).
+
+        Proven by the proposal apply's own classes, through the real routes: a person's relabel
+        and an agent's, each moving the mirrored term in the same approval with its stamp, a
+        retire the reference seeds leave standing and a restore, no key added or merged away,
+        and the mirrored dimension row closed at propose and at apply (H28).
+        """
+        from apps.proposals import tests_apply
+
+        self._prove(tests_apply.JurisdictionsByProposal, tests_apply.MirroredDimensionRowAndMergesWithoutLinks)
+
     @skip("pending: AUD-S8 (AUD-04, chunk 12)")
     def test_aud_s8(self) -> None:
         """AUD-S8
@@ -780,7 +795,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         sent = agents_testing.decision(reviewer_key)
         decision = self._post(
             f"/proposals/{approved.json()['id']}/approve",
-            {"note": "Confirmed.", "payloadOverrides": {"summaries": {"en": corrected}}, **sent},
+            {"note": "Confirmed.", "payloadOverrides": {"summaries": {"en": corrected}}, "fieldSources": {"summaries.en": "https://www.fi.se/"}, **sent},
             {"HTTP_X_API_KEY": reviewer_key.plain_key},
         )
         self.assertEqual(decision.status_code, 200, decision.content)

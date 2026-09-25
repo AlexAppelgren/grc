@@ -415,7 +415,10 @@ class NewObligation(KindsTestCase):
         # A field the kind does not have cannot arrive by correction.
         self._refused(self._approve(proposal["id"], {"payloadOverrides": {"retention": "Ten years."}}), 422, "validation_error")
 
-        approved = self._approve(proposal["id"], {"payloadOverrides": {"summaries": {"sv": corrected, "en": "The institution keeps a current register."}}})
+        approved = self._approve(
+            proposal["id"],
+            {"payloadOverrides": {"summaries": {"sv": corrected, "en": "The institution keeps a current register."}}, "fieldSources": {"summaries.sv": SOURCE, "summaries.en": SOURCE}},
+        )
 
         self.assertEqual(approved.status_code, 200, approved.content)
         version = ObligationVersion.objects.get(obligation__stable_key=OBLIGATION_KEY)
@@ -632,7 +635,8 @@ class StandardsCheck(KindsTestCase):
 
     def _conformance(self, **payload: Any) -> dict[str, Any]:  # compliance: allow-kwargs test helper overriding payload fields
         fields = {"key": "obl-iso-iec-27001-2022-conformance", "refLabel": "ISO/IEC 27001:2022", "terms": [STANDARD_TERM], **payload}
-        return obligation_body(STANDARD_KEY, **fields)
+        # A standard's source label is its official reference alone (H35).
+        return {**obligation_body(STANDARD_KEY, **fields), "sourceLabel": "ISO/IEC 27001:2022"}
 
     def test_a_standards_conformance_obligation_enters_with_its_one_term(self) -> None:
         proposal = self._filed(self._conformance())

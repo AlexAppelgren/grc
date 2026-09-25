@@ -30,8 +30,10 @@ default the packages take, and each answer changes a task, not an invariant alre
       `r2-banking-groups-brief` sets it in D-96.)
 - [ ] **Search scope in R2 (D-10).** D-10 kept tenant content out of search in R1 and put the
       question at R2. (Default: still library only; no tenant text is embedded.)
-- [ ] **ADM-02's languages (D-94).** Which content languages the console's jurisdiction and
+- [x] **ADM-02's languages (D-94).** Which content languages the console's jurisdiction and
       translation surfaces carry. (Default: as `x-jurisdictions-by-proposal` sets it in D-94.)
+      Answered 2026-09-25, default taken: languages stay a read-only seeded list; jurisdictions
+      are relabelled, retired and restored by proposal (D-94).
 - [ ] **Evidence upload and the scanner.** That evidence arrives by multipart through the API
       rather than a presigned PUT (`CHUNK9_TASKS.md` ruling 4), and that the R2 deploy needs a
       `clamd` service (`PARALLEL_PLAN.md` §7.3). (Default: multipart; a deployed environment
@@ -1368,3 +1370,22 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 - [ ] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. It
       follows the app's existing terms (skyldighet, förslag, godkännande), but
       a native read of the headline and the questions is worth five minutes.
+
+## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-9x)
+
+- [ ] **The console's correction form gained one field.** A reviewer who changes a
+      proposal's wording, date or scope before approving now gives "Source of your
+      correction", the link or provision they read the new value in; the server refuses a
+      changed value without one (security-review-c4 L5). The design card
+      (`design/screens/console-queue.html`) shows no such field, so it was added in the
+      form's existing style below the scope. Default if you say nothing: it stays. The
+      proposer's replaced source is kept in the approval's audit row, not beside the
+      reviewer's on the queue screen; say if the queue should show both (a column on
+      `proposal`, D-9x).
+- [ ] **The confirming agent's next version should name its correction's source.**
+      `backend/agents/library-confirmer/v2/prompt.md` says a correction goes through
+      `payloadOverrides` and does not mention `fieldSources`; a shipped version is never
+      edited, so it stays. Until a v3 says "name in `fieldSources` the page you read each
+      changed value in", an agent's correction without one answers 422 `source_missing`
+      and applies nothing (fails safe; it can still approve as proposed or reject).
+      Default if you say nothing: v3 carries that line when the confirmer next changes.
