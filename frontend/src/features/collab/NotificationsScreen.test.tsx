@@ -40,6 +40,7 @@ function me(unreadNotifications: number): Me {
     roles: [{ key: 'compliance_officer', kind: null, label: 'Compliance officer' }],
     permissions: ['library.read'],
     platformRoles: [],
+    headOf: [],
     enrolmentPending: false,
     passkeyCount: 1,
     stepUpValidUntil: null,

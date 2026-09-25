@@ -49,6 +49,7 @@ function me(unreadNotifications: number | null): Me {
     roles: [{ key: 'officer', kind: null, label: 'Compliance officer' }],
     permissions: ['watch.read', 'library.read'],
     platformRoles: [],
+    headOf: [],
     enrolmentPending: false,
     passkeyCount: 1,
     stepUpValidUntil: null,
