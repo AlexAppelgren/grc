@@ -288,6 +288,11 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/taxonomy/tenant_lists_logic.py record('vocabulary') tenant_id=tenant.id actor=actor title=list_name": (
         "The same, for a reorder of one tenant's list."
     ),
+    # c10-tagging-routes (VOC-08).
+    "apps/taxonomy/tagging_logic.py record(subject_type) tenant_id=tenant.id actor=actor title=title": (
+        "A bank's own tag going on or off one record: `tenant.id` is a bank's id and never "
+        "None, so the row stays in that bank's zone even when the record is a library one."
+    ),
 }
 
 
