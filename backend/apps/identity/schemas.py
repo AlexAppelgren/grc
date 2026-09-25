@@ -1103,7 +1103,6 @@ class Me(CamelSchema):
                     "permissions": [
                         "ai_log.read",
                         "applicability.approve",
-                        "applicability.request",
                         "audit.read",
                         "cases.contribute",
                         "cases.read",
