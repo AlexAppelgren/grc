@@ -1,6 +1,7 @@
 """Scenario tests for the tenants app (playbook 4.1, Appendix B): one method per
 `@integration` scenario in app.md, each carrying its ID. Chunk 1 un-skips TEN-S1, ADM-S1
-and ADM-S3; TEN-S2 to S6 stay skipped (R2, chunk 8). Never delete a scenario without
+and ADM-S3; TEN-S3 to S6 stay skipped (R2, chunk 8), and c8-ten-organisation un-skips TEN-S2
+and TEN-S10. Never delete a scenario without
 updating app.md.
 
 Operations exercised (the audit-on-write guard reads these names): updateTenant,
@@ -12,15 +13,20 @@ Prefixes hosted: ADM, TEN.
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 from unittest import skip
 
 from apps.identity.models import TenantRole
+from apps.library.models import Obligation
+from apps.library.reading import today_for
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, permissions as perms
+from apps.shared.models import AuditEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy import tenant_lists_logic
-from apps.taxonomy.models import FootprintTerm
+from apps.taxonomy.models import FootprintTerm, TaxonomyTerm, TermDimensionKind
+from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 
 
@@ -90,12 +96,69 @@ class TenantsScenarioTests(ScenarioTestCase):
         self.assertTrue(steps["footprint"])
         self.assertFalse(steps["vocabularies"])
 
-    @skip("pending: TEN-S2 (TEN-02, chunk 8)")
+    def _seed_terms(self) -> None:
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+
     def test_ten_s2(self) -> None:
         """TEN-S2
 
         Legal entities and products are scoped like obligations (TEN-02).
+        Operations: `createOrgUnit`, `createLicence`, `createProduct`, `updateProduct`.
+
+        c8-ten-organisation. The register's line (a compliance status per entity) is the
+        register's to prove once it holds one; here the entity is a unit whose id a register
+        row points at, carrying its legal-entity term.
         """
+        self._seed_terms()
+        headers = self._member_with(perms.VOCAB_MANAGE)
+        owner = factories.member_user(self.tenant)
+        entity = self.client.post(
+            "/api/v1/tenant/org-units", data={"kind": "legal_entity", "name": "Bank AB", "entityTerm": "bank"}, content_type="application/json", **headers
+        )
+        self.assertEqual(entity.status_code, 201, entity.content)
+        unit_id = entity.json()["id"]
+        today = today_for(self.tenant)
+        licence = self.client.post(
+            f"/api/v1/tenant/org-units/{unit_id}/licences",
+            data={"licenceType": "bank", "reference": "FI 12-3456", "grantedOn": (today - timedelta(days=3650)).isoformat(), "serviceTerms": ["custody"]},
+            content_type="application/json",
+            **headers,
+        )
+        self.assertEqual(licence.status_code, 201, licence.content)
+        product = self.client.post(
+            "/api/v1/tenant/products", data={"name": "Custody", "orgUnitId": unit_id, "terms": ["custody", "retail"]}, content_type="application/json", **headers
+        )
+        self.assertEqual(product.status_code, 201, product.content)
+        # Both carry terms of the dimensions obligations are scoped with: the dimensions are
+        # read from the rows the registry serves, by kind, never from a list of keys here.
+        scope_dimensions = set(
+            REGISTRY["term_dimension"].model.objects.filter(kind__in=[TermDimensionKind.SCOPE.value, TermDimensionKind.OPT_IN.value]).values_list("key", flat=True)
+        )
+        carried = [entity.json()["entityTerm"]["key"], licence.json()["licenceType"]["key"]]
+        carried += [term["key"] for term in licence.json()["serviceTerms"] + product.json()["terms"]]
+        dimensions = set(TaxonomyTerm.objects.filter(key__in=carried).values_list("dimension__key", flat=True))
+        self.assertLessEqual(dimensions, scope_dimensions)
+        # A licence row may also hold a certificate with its validity, next audit and owner;
+        # those carry no term.
+        certificate = self.client.patch(
+            f"/api/v1/tenant/licences/{licence.json()['id']}",
+            data={"validUntil": (today + timedelta(days=365)).isoformat(), "nextAuditOn": (today + timedelta(days=90)).isoformat(), "ownerUserId": str(owner.id)},
+            content_type="application/json",
+            HTTP_IF_MATCH='"1"',
+            **headers,
+        )
+        self.assertEqual(certificate.status_code, 200, certificate.content)
+        self.assertEqual(certificate.json()["owner"]["id"], str(owner.id))
+        self.assertEqual([term["key"] for term in certificate.json()["serviceTerms"]], ["custody"])
+        # Retiring the product is a status; the row stays.
+        retired = self.client.patch(
+            f"/api/v1/tenant/products/{product.json()['id']}", data={"status": "retired"}, content_type="application/json", HTTP_IF_MATCH='"1"', **headers
+        )
+        self.assertEqual((retired.status_code, retired.json()["status"]), (200, "retired"))
+        self.assertEqual([row["id"] for row in self.client.get("/api/v1/tenant/products", **headers).json()["items"]], [product.json()["id"]])
 
     @skip("pending: TEN-S3 (TEN-03, chunk 8)")
     def test_ten_s3(self) -> None:
@@ -116,6 +179,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S5
 
         Removing a member with open work offers bulk reassignment (TEN-05).
+        Operations: `removeMember`.
         """
 
     @skip("pending: TEN-S6 (TEN-06, chunk 8)")
@@ -123,6 +187,8 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S6
 
         Support access is requested by the platform, approved by the bank and time-boxed (TEN-06).
+        Operations: `requestConsoleSupportAccess`, `approveSupportAccess`, `declineSupportAccess`,
+        `revokeSupportAccess`, `enterConsoleSupportAccess`.
         """
 
     def test_adm_s1(self) -> None:
@@ -189,6 +255,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S8
 
         A department has a head and teams, and team membership is set on the member row (TEN-02, TEN-03).
+        Operations: `createOrgUnit`, `updateOrgUnit`.
         """
 
     @skip("pending: TEN-S9 (TEN-05, COL-04, chunk 8)")
@@ -198,12 +265,67 @@ class TenantsScenarioTests(ScenarioTestCase):
         Removing a member ends their participations and team memberships (TEN-05, COL-04).
         """
 
-    @skip("pending: TEN-S10 (TEN-02, chunk 8)")
     def test_ten_s10(self) -> None:
         """TEN-S10
 
         A legal entity records a certificate it holds (TEN-02, AC-TEN1).
+        Operations: `createLicence`, `updateLicence`.
+
+        c8-ten-organisation. The entity screen's section is the organisation journey's; here
+        the list that screen reads carries the row with its validity and next audit.
         """
+        self._seed_terms()
+        headers = self._member_with(perms.VOCAB_MANAGE)
+        owner = factories.member_user(self.tenant)
+        entity = self.client.post(
+            "/api/v1/tenant/org-units", data={"kind": "legal_entity", "name": "Example Bank AB", "entityTerm": "bank"}, content_type="application/json", **headers
+        ).json()
+        self.activate(self.tenant)
+        footprint = list(FootprintTerm.objects.filter(tenant=self.tenant).values_list("term_id", flat=True))
+        obligations = Obligation.objects.count()
+        today = today_for(self.tenant)
+        dates = {
+            "issuedOn": (today - timedelta(days=200)).isoformat(),
+            "validUntil": (today + timedelta(days=895)).isoformat(),
+            "nextAuditOn": (today + timedelta(days=165)).isoformat(),
+        }
+        created = self.client.post(
+            f"/api/v1/tenant/org-units/{entity['id']}/licences",
+            data={
+                "licenceType": "iso_iec_27001",
+                "issuer": "Example Certification AB",
+                "number": "EC-2026-0142",
+                "scopeStatement": "Information security management for payment services.",
+                "ownerUserId": str(owner.id),
+                **dates,
+            },
+            content_type="application/json",
+            **headers,
+        )
+        self.assertEqual(created.status_code, 201, created.content)
+        listed = self.client.get(f"/api/v1/tenant/org-units/{entity['id']}/licences", **headers).json()
+        [row] = [row for row in listed["items"] if row["id"] == created.json()["id"]]
+        self.assertEqual({key: row[key] for key in dates}, dates)
+        self.assertEqual((row["issuer"], row["number"], row["owner"]["id"], row["withdrawnOn"]), ("Example Certification AB", "EC-2026-0142", str(owner.id), None))
+        # The write is audited with before and after values, and nothing else moved.
+        self.activate(self.tenant)
+        [event] = AuditEvent.objects.filter(tenant=self.tenant, subject_id=row["id"])
+        self.assertEqual((event.action, event.before), ("licence.created", {}))
+        self.assertEqual({key: event.after[key] for key in dates}, dates)
+        self.assertEqual(event.after["ownerUserId"], str(owner.id))
+        self.assertEqual(list(FootprintTerm.objects.filter(tenant=self.tenant).values_list("term_id", flat=True)), footprint)
+        self.assertEqual(Obligation.objects.count(), obligations)
+        # A withdrawal date: the row reads as withdrawn and stays in the history.
+        withdrawn_on = today.isoformat()
+        withdrawn = self.client.patch(
+            f"/api/v1/tenant/licences/{row['id']}", data={"withdrawnOn": withdrawn_on}, content_type="application/json", HTTP_IF_MATCH='"1"', **headers
+        )
+        self.assertEqual((withdrawn.status_code, withdrawn.json()["withdrawnOn"]), (200, withdrawn_on))
+        listed = self.client.get(f"/api/v1/tenant/org-units/{entity['id']}/licences", **headers).json()
+        self.assertEqual([(item["id"], item["withdrawnOn"]) for item in listed["items"]], [(row["id"], withdrawn_on)])
+        self.activate(self.tenant)
+        update = AuditEvent.objects.get(tenant=self.tenant, subject_id=row["id"], action="licence.updated")
+        self.assertEqual((update.before, update.after), ({"withdrawnOn": None}, {"withdrawnOn": withdrawn_on, "rewritten": []}))
 
     @skip("pending: TEN-S11 (TEN-06, chunk 8)")
     def test_ten_s11(self) -> None:

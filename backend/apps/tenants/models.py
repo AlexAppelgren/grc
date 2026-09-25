@@ -11,7 +11,16 @@ order. Every table is under forced row-level security, and every reference to an
 row is also a composite `(tenant_id, …)` foreign key written as SQL in the migration, because
 PostgreSQL checks a foreign key without row-level security: a plain key would let one bank
 point at another's row. A unit, licence, product or item is deactivated or withdrawn, never
-deleted; teams (`owner_team`) arrive with tenants 0003."""
+deleted.
+
+The organisation package (tenants 0005) gives a licence and a product the `version` a unit
+already had, so a change to either sends `If-Match` like every other versioned record.
+
+Chunk 8's teams model (TEN-03, tenants 0003) adds `TeamMember`, a person in one of the bank's
+teams (the `team` tenant list, taxonomy 0009), and lets a team own a licence or an internal
+item in place of a person, so the ownership survives the person leaving. Both keys of a team
+member are composite as above; the key to `membership` makes the person a member of the same
+bank. A team member has no lead flag: a department's head sits on its org unit (D-21)."""
 
 from __future__ import annotations
 
@@ -151,10 +160,17 @@ class Licence(NeverDeleted):
     valid_until = models.DateField(null=True, blank=True)
     next_audit_on = models.DateField(null=True, blank=True)
     owner_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    owner_team = models.ForeignKey("taxonomy.Team", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    version = models.PositiveIntegerField(default=1)
 
     class Meta:
         db_table = "licence"
         ordering = ["org_unit", "granted_on", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(owner_user__isnull=True) | models.Q(owner_team__isnull=True), name="licence_one_owner"
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.licence_type_id}@{self.org_unit_id}"
@@ -181,6 +197,7 @@ class TenantProduct(NeverDeleted):
     status = models.CharField(max_length=8, choices=_choices(ProductStatusKind), default=ProductStatusKind.LIVE.value)
     launch_date = models.DateField(null=True, blank=True)
     owner_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    version = models.PositiveIntegerField(default=1)
 
     class Meta:
         db_table = "tenant_product"
@@ -212,6 +229,7 @@ class InternalItem(NeverDeleted):
     reference = models.CharField(max_length=200, blank=True)
     url = models.URLField(max_length=2000, blank=True)
     owner_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    owner_team = models.ForeignKey("taxonomy.Team", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     org_unit = models.ForeignKey(OrgUnit, null=True, blank=True, on_delete=models.PROTECT, related_name="internal_items")
     external_system = models.CharField(max_length=100, blank=True)
     external_ref = models.CharField(max_length=200, blank=True)
@@ -222,7 +240,12 @@ class InternalItem(NeverDeleted):
     class Meta:
         db_table = "internal_item"
         ordering = ["name", "id"]
-        constraints = [models.UniqueConstraint(fields=["tenant", "kind", "name"], name="internal_item_kind_name_unique")]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "kind", "name"], name="internal_item_kind_name_unique"),
+            models.CheckConstraint(
+                condition=models.Q(owner_user__isnull=True) | models.Q(owner_team__isnull=True), name="internal_item_one_owner"
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.name
@@ -257,3 +280,19 @@ class SecurityPolicy(TenantModel):
                 name="security_policy_absolute_positive",
             ),
         ]
+
+
+class TeamMember(TenantModel):
+    """A person in one of the bank's teams (TEN-03). Team notices go to a team's active members
+    and a department's head sits on its org unit, so there is no lead flag (D-21, D-34)."""
+
+    team = models.ForeignKey("taxonomy.Team", on_delete=models.PROTECT, related_name="members")
+    user = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
+
+    class Meta:
+        db_table = "team_member"
+        ordering = ["team", "user"]
+        constraints = [models.UniqueConstraint(fields=["team", "user"], name="team_member_unique")]
+
+    def __str__(self) -> str:
+        return f"{self.user_id}@{self.team_id}"

@@ -12,8 +12,11 @@ What is proved here, one class per question:
   and every date is written out (playbook 8.3).
 - **Whose rows they are.** Another bank's case never reaches this bank's roadmap, which is
   row-level security doing its job rather than a filter in Python.
-- **What it costs.** The read runs the same four queries for one item and for thirty, and
+- **What it costs.** The read runs the same queries for one item and for thirty, and
   the route stays inside the API budget on a roadmap a real bank would have.
+- **Our own deadlines.** Next reviews, gap targets and a certificate's expiry and next
+  audit, each once with its owner and its record, each gone when its row closes, the
+  register's only for a `register.read` holder, and none of them on a calendar.
 
 `coming_up()` is proved against `roadmap_items()` rather than on its own: Today's panel and
 the roadmap page answer from one query (chunk 6 ruling 5), so the test that matters is that
@@ -35,14 +38,19 @@ from apps.agents import testing as agent_build
 from apps.cases import testing as cases_build
 from apps.cases.models import ChangeCase
 from apps.home import roadmap
-from apps.home.schemas import HomeRoadmapQuery
+from apps.home.schemas import HomeRoadmapItem, HomeRoadmapQuery
+from apps.home.tests_my_work import Bank, obligation
 from apps.identity.models import User
 from apps.library import testing as library_build
 from apps.library.models import DatePrecision, Obligation
+from apps.register import logic as register_logic
+from apps.register.models import Applicability, TenantObligation
 from apps.shared import factories, tenancy
 from apps.shared.models import Tenant
 from apps.shared.testing import sign_in
-from apps.taxonomy.models import CaseStatusCategory
+from apps.taxonomy.models import CaseStatusCategory, FootprintTerm, RiskAcceptanceReason
+from apps.tenants.models import Licence
+from apps.tenants.testing import licence_type_term
 from apps.watch import testing as watch_build
 from apps.watch.models import ChangeObligation, RegulatoryChange
 from apps.watch.write import watch_write
@@ -61,13 +69,18 @@ THIS_QUARTER = D(2026, 10, 15)  # 2026-Q4
 NEXT_QUARTER = D(2027, 1, 20)  # 2027-Q1
 GONE = D(2026, 9, 29)  # yesterday in both zones
 
-# Five queries, measured 2026-09-21 and pinned so an N+1 shows up as a number (playbook 10):
+# Seven queries, measured 2026-09-25 and pinned so an N+1 shows up as a number (playbook 10):
 # the cases with their change and urgency (1); the urgency rows on the page and their labels
 # (2, through the watch app's own rule, which is what keeps the pill tone out of the answer);
 # the confirmed obligation links of every change on the page with their obligation and
-# instrument (1); the titles of those obligations (1). None of them grows with the number of
-# items, which is what the test below demands.
-ROADMAP_QUERIES = 5
+# instrument (1); the titles of those obligations (1); the certificates whose expiry and whose
+# next audit fall in the window (2), which every member reads. None of them grows with the
+# number of items, which is what the test below demands.
+ROADMAP_QUERIES = 7
+# The bank's own deadlines for a `register.read` holder, measured 2026-09-25: the two
+# certificate branches, the entries', entity rows' and gaps' dates (5), the reviewed
+# obligations' titles (2), the owning teams' labels (1) and the certificates' type labels (1).
+INTERNAL_QUERIES = 9
 
 
 def a_change(*, key_date: datetime.date | None, title: str = "A reform", urgency: str = "act_now") -> RegulatoryChange:
@@ -175,10 +188,9 @@ class RoadmapContents(TestCase):
         self.assertEqual(self.titles(date_from=D(2020, 1, 1)), ["Research payments", "Reporting"], "yesterday stays gone")
         self.assertEqual(self.titles(date_to=D(2020, 1, 1)), [], "a window that holds nothing is empty, not an error")
 
-    def test_kind_internal_is_an_empty_roadmap_and_never_a_refusal(self) -> None:
-        """The filter is real and the branches behind it have not shipped: our own deadlines
-        arrive with the register (chunk 8) and the case workflow (chunk 9). An empty list is
-        the honest answer; a 422 would tell a client the filter does not exist."""
+    def test_a_bank_with_no_deadline_of_its_own_gets_an_empty_internal_roadmap(self) -> None:
+        """An empty list is the honest answer; a 422 would tell a client the filter does not
+        exist."""
         internal = self.read(kind="internal")
         self.assertEqual((internal.items, internal.quarters), ([], []))
         self.assertEqual(self.titles(kind="regulatory"), self.titles(kind="all"))
@@ -397,6 +409,22 @@ class RoadmapRoute(TestCase):
         self.assertEqual(item["urgency"]["key"], "act_now")
         self.assertEqual(item["datePrecision"], "day")
 
+    def test_a_reader_gets_the_banks_own_deadlines_too(self) -> None:
+        """The route passes the reader's `register.read`: a reader, who holds it, sees a
+        next review beside the regulatory date."""
+        tenancy.activate(self.tenant.id)
+        entry = register_logic.ensure_register_entry(
+            tenant_id=self.tenant.id, obligation_id=obligation("Reviewed").id, actor=factories.user_actor()
+        )
+        TenantObligation.objects.filter(pk=entry.pk).update(applicability="applies", next_review_date=NEXT_QUARTER)
+        items = self.get().json()["items"]
+        self.assertEqual([item["itemType"] for item in items], ["change_date", "review_due"])
+        self.assertEqual(
+            {key: items[1][key] for key in ("kind", "status", "urgency", "label", "sourceLabel", "changeId", "obligations")},
+            {"kind": "internal", "status": None, "urgency": None, "label": None, "sourceLabel": None, "changeId": None, "obligations": []},
+        )
+        self.assertEqual(items[1]["subject"]["obligationId"], str(entry.obligation_id))
+
     def test_an_empty_roadmap_is_a_200_and_never_a_404(self) -> None:
         self.assertEqual(self.get("?kind=internal").json(), {"items": [], "quarters": []})
 
@@ -412,3 +440,173 @@ class RoadmapRoute(TestCase):
             with self.subTest(query=query):
                 refused = self.get(query)
                 self.assertEqual((refused.status_code, refused.json()["code"]), (422, "validation_error"))
+
+
+class RoadmapOwnDeadlines(TestCase):
+    """The bank's own deadlines (HOM-03, REG-02, REG-03, TEN-02, D-43, AC-TEN1): each branch
+    once with its owner and its record, each gone when its row closes, and none on a
+    calendar. Every date is the bank's own today plus an offset (playbook 8.3)."""
+
+    bank: Bank
+    entry_review: TenantObligation
+    certificate: Licence
+    expected: dict[str, str]
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        watch_build.seed_watch_reference()
+        cls.bank = bank = Bank("roadmap-own")
+        today = bank.today()
+
+        def day(offset: int) -> datetime.date:
+            return today + datetime.timedelta(days=offset)
+
+        cases_build.case(bank.tenant, a_change(key_date=day(5), title="Research payments"))
+        # A compliant entry's own review, owned by a person and a team.
+        cls.entry_review = bank.entry(
+            obligation("Complies"), compliance_status=bank.compliant, first_line_owner=bank.anna, owner_team=bank.retail_team, next_review_date=day(20)
+        )
+        # One legal entity's review, owned by a team; the other entity does not apply.
+        spanning = bank.entry(obligation("Spans two entities"))
+        fund = bank.scope(spanning, bank.fund_ab, owner_team=bank.cards, next_review_date=day(30))
+        bank.scope(spanning, bank.bank_ab, applicability=Applicability.DOES_NOT_APPLY.value, next_review_date=day(31))
+        # Gaps: open and remediating have a target to meet; closed and accepted do not.
+        opened = bank.gap(cls.entry_review, owner=bank.erik, org_unit=bank.fund_ab, target_date=day(40))
+        remediating = bank.gap(cls.entry_review, status="remediating", owner_team=bank.cards, target_date=day(50))
+        bank.gap(cls.entry_review, status="closed", owner=bank.erik, target_date=day(45))
+        bank.gap(
+            cls.entry_review,
+            status="risk_accepted",
+            target_date=day(46),
+            acceptance_reason=RiskAcceptanceReason.objects.get(key="other"),
+            acceptance_requested_by=bank.anna,
+            acceptance_requested_at=INSTANT,
+            accepted_by=bank.officer,
+            accepted_at=INSTANT,
+        )
+        # Absent each for its own reason: an entry that does not apply, a review that has
+        # gone, and one outside the regulatory scope (FP-03).
+        bank.entry(obligation("Not ours"), applicability=Applicability.DOES_NOT_APPLY.value, next_review_date=day(10))
+        bank.entry(obligation("Overdue"), next_review_date=day(-1))
+        bank.entry(obligation("Advice", terms=["service_type:advice"]), next_review_date=day(15))
+        bank.activate()
+        FootprintTerm.objects.create(tenant=bank.tenant, term=library_build.term("service_type:custody"))
+        # A certificate with an expiry and a next audit, and a withdrawn one.
+        term = licence_type_term()
+        cls.certificate = Licence.objects.create(
+            tenant=bank.tenant, org_unit=bank.bank_ab, licence_type=term, valid_until=day(400), next_audit_on=day(100), owner_user=bank.anna
+        )
+        Licence.objects.create(
+            tenant=bank.tenant, org_unit=bank.fund_ab, licence_type=term, valid_until=day(200), next_audit_on=day(60), withdrawn_on=day(-3)
+        )
+        cls.expected = {
+            f"review_due:{cls.entry_review.id}": "review_due",
+            f"review_due:{fund.id}": "review_due",
+            f"gap_target:{opened.id}": "gap_target",
+            f"gap_target:{remediating.id}": "gap_target",
+            f"certificate_audit:{cls.certificate.id}": "certificate_audit",
+            f"certificate_expiry:{cls.certificate.id}": "certificate_expiry",
+        }
+
+    def read(self, *, register_reader: bool = True, **filters: Any) -> list[HomeRoadmapItem]:
+        self.bank.activate()
+        return roadmap.roadmap_items(self.bank.tenant, ["en"], HomeRoadmapQuery(**filters), register_reader=register_reader).items
+
+    def by_id(self) -> dict[str, HomeRoadmapItem]:
+        return {item.id: item for item in self.read(kind="internal")}
+
+    def test_each_deadline_is_listed_once_as_internal_in_date_order(self) -> None:
+        items = self.read(kind="internal")
+        self.assertEqual({item.id: item.item_type for item in items}, self.expected)
+        self.assertEqual(len(items), len(self.expected))
+        self.assertEqual(items, sorted(items, key=lambda item: (item.date, item.id)))
+        self.assertEqual({item.kind for item in items}, {"internal"})
+
+    def test_each_names_its_owner_and_its_record(self) -> None:
+        items = self.by_id()
+        review = items[f"review_due:{self.entry_review.id}"]
+        assert review.owner is not None and review.subject is not None
+        self.assertEqual((review.owner.person.id if review.owner.person else None, review.owner.team.key if review.owner.team else None), (self.bank.anna.id, "retail_compliance"))
+        self.assertEqual((review.title, review.subject.obligation_id, review.subject.entity), ("Complies", self.entry_review.obligation_id, None))
+        gap = next(item for key, item in items.items() if key.startswith("gap_target") and item.subject and item.subject.entity)
+        assert gap.owner is not None and gap.subject is not None and gap.subject.entity is not None
+        self.assertEqual((gap.title, gap.owner.person.name if gap.owner.person else None, gap.subject.entity.name), ("Reconciliation is weekly", "Erik Holm", "Fund AB"))
+        self.assertEqual(gap.subject.obligation_id, self.entry_review.obligation_id)
+        audit = items[f"certificate_audit:{self.certificate.id}"]
+        assert audit.owner is not None and audit.subject is not None and audit.subject.entity is not None
+        self.assertEqual((audit.subject.licence_id, audit.subject.entity.name), (self.certificate.id, "Bank AB"))
+        self.assertEqual(audit.owner.person.name if audit.owner.person else None, "Anna Berg")
+        self.assertEqual(audit.title, "credit_institution", "the type's label, which falls back to its key here")
+
+    def test_a_row_that_closes_leaves_the_roadmap(self) -> None:
+        self.bank.activate()
+        Licence.objects.filter(pk=self.certificate.pk).update(withdrawn_on=self.bank.today())
+        TenantObligation.objects.filter(pk=self.entry_review.pk).update(applicability=Applicability.DOES_NOT_APPLY.value)
+        self.assertEqual({item.item_type for item in self.read(kind="internal")}, {"review_due", "gap_target"})
+        self.assertNotIn(f"review_due:{self.entry_review.id}", self.by_id())
+
+    def test_the_registers_deadlines_need_register_read_and_a_certificate_does_not(self) -> None:
+        self.assertEqual(
+            {item.item_type for item in self.read(kind="internal", register_reader=False)},
+            {"certificate_audit", "certificate_expiry"},
+        )
+
+    def test_the_filters_split_the_branches_and_all_holds_both(self) -> None:
+        regulatory = self.read(kind="regulatory")
+        self.assertEqual([item.item_type for item in regulatory], ["change_date"])
+        whole = {item.id for item in self.read()}
+        self.assertEqual(whole, {regulatory[0].id, *self.expected})
+
+    def test_the_window_bounds_the_banks_own_deadlines_too(self) -> None:
+        today = self.bank.today()
+        items = self.read(kind="internal", date_from=today + datetime.timedelta(days=35), date_to=today + datetime.timedelta(days=100))
+        self.assertEqual([item.item_type for item in items], ["gap_target", "gap_target", "certificate_audit"])
+
+    def test_coming_up_answers_the_roadmaps_own_first_items_and_its_whole_count(self) -> None:
+        """Today's panel and the roadmap page share every branch."""
+        self.bank.activate()
+        items, count = roadmap.coming_up(self.bank.tenant, ["en"], 3, register_reader=True)
+        whole = self.read()
+        self.assertEqual([item.id for item in items], [item.id for item in whole[:3]])
+        self.assertEqual(count, len(whole))
+
+    def test_the_calendar_carries_the_regulatory_date_and_none_of_our_own(self) -> None:
+        """D-43, D-52: a calendar leaves the bank, so it carries public facts only; each of
+        the internal branches is absent from it."""
+        self.bank.activate()
+        on_the_calendar = [item for _key, item in roadmap.calendar_items(self.bank.tenant, ["en"])]
+        self.assertEqual([item.item_type for item in on_the_calendar], ["change_date"])
+        for key in self.expected:
+            with self.subTest(branch=key.split(":")[0]):
+                self.assertNotIn(key, {item.id for item in on_the_calendar})
+
+
+class RoadmapOwnDeadlinesCost(TestCase):
+    """NFR-02: one query per branch and a fixed few to name them, whatever the number of rows."""
+
+    bank: Bank
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        watch_build.seed_watch_reference()
+        cls.bank = bank = Bank("roadmap-own-cost")
+        today = bank.today()
+        term = licence_type_term()
+        for number in range(10):
+            entry = bank.entry(obligation(f"Duty {number}"), owner_team=bank.retail_team, next_review_date=today + datetime.timedelta(days=10 + number))
+            bank.scope(entry, bank.fund_ab, owner=bank.erik, next_review_date=today + datetime.timedelta(days=10 + number))
+            bank.gap(entry, owner_team=bank.cards, target_date=today + datetime.timedelta(days=10 + number))
+            bank.activate()
+            Licence.objects.create(
+                tenant=bank.tenant, org_unit=bank.bank_ab, licence_type=term, valid_until=today + datetime.timedelta(days=10 + number), next_audit_on=today + datetime.timedelta(days=10 + number)
+            )
+
+    def test_the_query_count_does_not_grow_with_the_number_of_deadlines(self) -> None:
+        today = self.bank.today()
+        for last, expected in ((10, 5), (19, 50)):
+            self.bank.activate()
+            with self.subTest(items=expected), self.assertNumQueries(INTERNAL_QUERIES):
+                items = roadmap.roadmap_items(
+                    self.bank.tenant, ["en"], HomeRoadmapQuery(kind="internal", to=today + datetime.timedelta(days=last)), register_reader=True
+                ).items
+            self.assertEqual(len(items), expected)

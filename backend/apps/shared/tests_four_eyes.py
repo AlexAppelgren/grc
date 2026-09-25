@@ -44,6 +44,9 @@ FOUR_EYES_TABLES: list[tuple[str, str]] = [
 # the batch's proposer. (table, trigger, the clause its function must hold.)
 FOUR_EYES_TRIGGERS: list[tuple[str, str, str]] = [
     ("proposal_batch_row", "proposal_batch_row_decision_guard", "proposed_by_user_id = NEW.decided_by_id"),
+    # c8-register-models (register 0002, REG-03): risk acceptance. The person who accepts a
+    # gap's risk is never the person who asked for it.
+    ("gap", "gap_four_eyes"),
 ]
 
 
