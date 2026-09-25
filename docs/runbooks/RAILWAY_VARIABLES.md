@@ -65,6 +65,9 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `SEARCH_SNIPPET_CHARS` | api | `240` | `240` | `240` | The most of a hit's text a snippet shows, cut around what matched (SRC-02) |
 | `SEARCH_RATE_PER_USER_PER_MINUTE` | api | `60` | `60` | `60` | What one caller may spend on `POST /search` and `POST /search/similar` in a minute: a person's session or an agent's key, each with a window of its own, 429 `rate_limited` over it. Below 1 the app refuses to boot, because there is no value of it that means "no limit" (NFR-02) |
 | `ASK_RATE_PER_USER_PER_MINUTE` | api | `10` | `10` | `10` | The same for `POST /ask`, tighter because every call that passes it is a model call the bank pays for. Below 1 the app refuses to boot (NFR-02, D-07) |
+| `AGENT_ACCESS_KEY_MAX_DAYS` | api | `90` | `90` | `90` | The longest a service key of an agent access entry may live, in days (ACC-03, ADR 0056). A key is minted with an expiry no later than this; at least 1 or the app refuses to boot |
+| `PERSONAL_TOKEN_MAX_DAYS` | api | `90` | `90` | `90` | The longest a personal access token may live, in days (ACC-03, ADR 0056). A token cannot be minted without an expiry, and never one later than this; at least 1 or the app refuses to boot |
+| `AGENT_ACCESS_RATE_PER_MINUTE` | api | `60` | `60` | `60` | Requests per minute one agent access credential, a service key of an entry or a personal token, may make before it answers 429 and writes `credential_rate_limited` to the security log (ACC-09); at least 1 or the app refuses to boot |
 | `ASK_RETRIEVAL_DEPTH` | api | `6` | `6` | `6` | How many passages of the reader's own ranking Ask gives the model, best first: the whole of what an answer may rest on, each one a numbered citation. From 1 to `AI_GENERATION_CITATIONS_MAX`, or the app refuses to boot (SRC-03) |
 | `ASK_MAX_TOKENS` | api | `1024` | `1024` | `1024` | The most one Ask answer may write, beneath the `LLM_MAX_TOKENS` ceiling: an answer is a few cited sentences. At least 1, or the app refuses to boot (SRC-03) |
 | `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |
@@ -107,6 +110,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `PROPOSAL_SOURCE_MAX_CHARS` | api | `2000` | `2000` | `2000` | The longest source a proposal may give for one changed field (PRO-01). An agent writes these and a reviewer reads them, so each one is an https link or the stable key of a provision the library holds; 2000 is what the library's own `source_url` column takes. Above it the proposal answers 422 |
 | `PROPOSAL_SCOPE_MAX_TERMS` | api | `20` | `20` | `20` | The most scope terms one obligation proposal may carry. They are resolved in one query and stored in the payload and its audit row, so the bound keeps a proposal from an agent small; above it the proposal answers 422 |
 | `LIBRARY_UPDATES_DEFAULT_DAYS` | api | `30` | `30` | `30` | How far back `GET /library-updates` looks for a reader who has never marked the library as seen (PRO-03). Once they have, their own bookmark is the start and this is not used. Raise it and a first visit reads further back; lower it and a reader returning from leave sees less than they were away |
+| `CREDENTIAL_POLICY_NOTICE_DAYS` | api | `14` | `14` | `14` | How many days ahead a tightened credential policy takes effect by default (ID-07, ADR 0048), so members can enrol a device-bound passkey before theirs stop working. The tenant's own `security_policy.device_bound_from` holds the date it chose |
 
 ## Web app
 

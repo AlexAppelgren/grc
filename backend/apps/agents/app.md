@@ -115,7 +115,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | pending |
 | AGT-07 | Fetched content screened for embedded instructions | M | R1 | built |
 | AGT-08 | Agents stay inside the sector scope: an out-of-scope document is a counted source check and nothing else; a standard's text is never fetched, quoted, summarised, translated or restated; a blocked page is a failed check; a law that cites a standard never carries its term | M | R1 | built |
-| ACC-01 | A tenant registers each agent it runs itself: name, purpose, owning team, and the departments and products it serves. `agent_access.manage` and a step-up; revoking stops every credential under it on the next request | M | R2 | pending |
+| ACC-01 | A tenant registers each agent it runs itself: name, purpose, owning team, and the departments and products it serves. `agent_access.manage` and a step-up; revoking stops every credential under it on the next request | M | R2 | in_progress |
 | ACC-06 | One call takes a description of what is being built and returns a labelled, logged summary above the deterministic full list of register entries and obligations in scope; the model never shortens the list and the list survives the model failing or AI being switched off | M | R2 | pending |
 | ACC-07 | A narrowed entry never narrows silently: every answer states the scope it was answered in, and an answer touching the footprint outside that scope names the dimensions and terms it could not see, from labels and never from records | M | R2 | pending |
 | ACC-10 | An entry records that a named application or system touches a register entry and how, as a linked internal item under REG-05 | C | R3 | pending |
@@ -337,4 +337,22 @@ When it records that the application "order-router" reads customer classificatio
 Then a linked internal item of the system kind is written through record() with the entry named as its actor
 And the register entry lists the application with what it does
 And the same record sent twice writes one item
+```
+
+### ACC-S13 — J-11: a bank's coding agent reads what applies to it `@e2e` (ACC-01 to ACC-08, AC-ACC1, AC-ACC2, AC-ACC4, J-11)
+```gherkin
+Given a tenant admin with agent_access.manage and a Trading department with its products
+When they register an agent access entry for the Trading team's coding agent, narrowed to that department's products, and issue it a key with a step-up
+And two different people holding security.manage switch tenant reach on
+And the admin enables reach on the entry
+When the agent asks what applies to "a new order-routing service"
+Then it receives the bank's confirmed applicability and reading with citations
+And the full list sits beneath a summary labelled as AI-drafted
+And a line names card issuing as outside its scope
+When the agent reads a card obligation by its stable key
+Then the request answers 404
+When the agent sends a write
+Then the request answers 403
+When the admin revokes the entry
+Then the agent's next call answers 401
 ```

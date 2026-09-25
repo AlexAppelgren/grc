@@ -7,10 +7,18 @@ Two kinds of key. A bank's own key carries its tenant and may hold only
 bound to one agent definition and is minted from the console under
 `agent_definitions.manage` (AGT-01, D-61, D-62): it is what bleqq's own agents run on, so
 it alone may hold the watch writes and the review scope.
+
+Two credential kinds share the table (ACC-03, ADR 0056). A service key bound to an agent
+access entry reads as that entry and stops the moment the entry is revoked. A personal
+access token acts as the member who minted it: it stops the moment the person, their
+membership or a permission one of its scopes stands on is gone (`SCOPE_BACKING`), checked
+on every request rather than by a sweep. `tenant:read` reaches a bank's register only
+through an entry, so a bank's credential bound to none is resolved without it.
 """
 
 from __future__ import annotations
 
+import functools
 import uuid
 from collections.abc import Iterable
 from datetime import datetime, timedelta
@@ -20,14 +28,81 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from apps.agents import logic as agents_logic
+from apps.agents.models import AgentKind
+from apps.agents.seeds.definition import DEFINITIONS, read_definition
 from apps.identity import tokens
-from apps.identity.models import ApiKey, LoginEventKind, LoginMethod, User
+from apps.identity.models import ApiKey, CredentialKind, LoginEventKind, LoginMethod, Membership, User, UserStatus
 from apps.identity.security_log import log_event
 from apps.shared import permissions as perms
 from apps.shared import tenancy
 from apps.shared.audit import Actor, record
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.models import Tenant
+
+# What an agent's kind may hold beyond the reads and `agent-runs:write` every agent needs
+# (H43, D-62). A review agent decides what another definition filed, so it holds
+# `proposals:review` and none of the filing scopes; every other kind files and never
+# decides, so no key of one can approve its own definition's work.
+FILING_SCOPES: frozenset[str] = frozenset({perms.SCOPE_SOURCES_WRITE, perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_WRITE})
+
+
+def _refused_for_kind(kind: str, scopes: Iterable[str]) -> list[str]:
+    barred = FILING_SCOPES if kind == AgentKind.REVIEW.value else frozenset({perms.SCOPE_PROPOSALS_REVIEW})
+    return sorted(set(scopes) & barred)
+
+
+@functools.cache
+def _declared_status(key: str, version: int) -> str:
+    """The `status` the definition file of this version declares (`draft`, `active` or
+    `retired`), or "" when the build ships no such file. The files are part of the image,
+    so one read per process is the truth for its life."""
+    path = DEFINITIONS / key / f"v{version}" / "definition.yaml"
+    return read_definition(path).status if path.is_file() else ""
+
+
+def _carries_keys(*, active: bool, key: str, version: int) -> bool:
+    """Whether a key bound to the definition `key` may be minted and may work (H43, D-93):
+    an active definition, or one whose file still declares it a draft, so its runner can be
+    evaluated and the journeys run before release. A retired definition, and one switched
+    off, carry none. Primitives rather than the row, because this module writes keys and the
+    library fence refuses a module naming a library model beside a write."""
+    return active or _declared_status(key, version) == "draft"
+
+
+# The permission a person must hold for their token to hold each scope (ACC-03): a token
+# never reads more than its person could read in their own session.
+SCOPE_BACKING: dict[str, str] = {
+    perms.SCOPE_LIBRARY_READ: perms.LIBRARY_READ,
+    perms.SCOPE_SEARCH_READ: perms.SEARCH_USE,
+    perms.SCOPE_UPCOMING_READ: perms.ROADMAP_READ,
+    perms.SCOPE_TENANT_READ: perms.REGISTER_READ,
+}
+
+
+def _person_permissions(tenant_id: uuid.UUID, user_id: uuid.UUID) -> frozenset[str] | None:
+    """What the person holds in their bank now, or None when they are deactivated or no
+    longer an active member of it. Read with the bank activated."""
+    if not User.objects.filter(pk=user_id, deactivated_at__isnull=True).exclude(status=UserStatus.DEACTIVATED.value).exists():
+        return None
+    rows = list(
+        Membership.objects.filter(tenant_id=tenant_id, user_id=user_id, deactivated_at__isnull=True).values_list(
+            "roles__permissions", flat=True
+        )
+    )
+    if not rows:
+        return None
+    return frozenset(permission for granted in rows for permission in granted or []) & perms.TENANT_PERMISSIONS
+
+
+def _backed(key: ApiKey) -> bool:
+    """A token lives while its person is an active member holding the permission behind
+    every scope it carries (ACC-03). Always true for a service key."""
+    if key.kind != CredentialKind.PERSONAL.value:
+        return True
+    if key.tenant_id is None or key.acts_as_user_id is None:  # a CHECK demands both on a token
+        return False
+    held = _person_permissions(key.tenant_id, key.acts_as_user_id)
+    return held is not None and all(SCOPE_BACKING.get(scope) in held for scope in key.scopes)
 
 
 def resolve_api_key(plain: str) -> Principal | None:
@@ -42,6 +117,8 @@ def resolve_api_key(plain: str) -> Principal | None:
         return None
     if key.revoked_at is not None or (key.expires_at is not None and key.expires_at <= now):
         return None
+    if key.agent is not None and not _carries_keys(active=key.agent.active, key=key.agent.key, version=key.agent.current_version):
+        return None
     if key.tenant_id is not None:
         tenancy.activate(key.tenant_id)
     else:
@@ -49,23 +126,44 @@ def resolve_api_key(plain: str) -> Principal | None:
         # active": a prior tenant-scoped request in the same connection must never leak its
         # context into this one (H15).
         tenancy.clear_tenant()
+    # The entry and the person are the bank's rows, read in its zone (forced RLS).
+    entry = key.agent_access
+    if entry is not None and not entry.active:
+        return None
+    if not _backed(key):
+        return None
     held = frozenset(key.scopes)
     # A bank's key created before the watch writes became platform-only may still list one;
-    # it works without it rather than breaking the integration (D-61).
+    # it works without it rather than breaking the integration (D-61). `tenant:read` reads a
+    # bank's register only as an entry whose reach it carries, so a bank's credential bound
+    # to no entry is resolved without it (ACC-04, D-72).
     withheld = held - perms.TENANT_KEY_SCOPES if key.tenant_id is not None else frozenset()
+    if key.tenant_id is not None and entry is None:
+        withheld |= held & {perms.SCOPE_TENANT_READ}
+    personal = key.kind == CredentialKind.PERSONAL.value
+    method = LoginMethod.PERSONAL_TOKEN if personal else LoginMethod.API_KEY
     throttle = timedelta(seconds=settings.API_KEY_LAST_USED_THROTTLE_SECONDS)
     if key.last_used_at is None or now - key.last_used_at > throttle:
         key.last_used_at = now
         key.save(update_fields=["last_used_at"])
-        log_event(event=LoginEventKind.KEY_USED, method=LoginMethod.API_KEY, success=True, request=None, tenant_id=key.tenant_id, api_key=key)
+        log_event(
+            event=LoginEventKind.TOKEN_USED if personal else LoginEventKind.KEY_USED,
+            method=method,
+            success=True,
+            request=None,
+            tenant_id=key.tenant_id,
+            api_key=key,
+            user=key.acts_as_user,
+        )
         if withheld:
             log_event(
                 event=LoginEventKind.KEY_SCOPES_WITHHELD,
-                method=LoginMethod.API_KEY,
+                method=method,
                 success=False,
                 request=None,
                 tenant_id=key.tenant_id,
                 api_key=key,
+                user=key.acts_as_user,
                 failure_reason=", ".join(sorted(withheld)),
             )
     return Principal(
@@ -75,6 +173,28 @@ def resolve_api_key(plain: str) -> Principal | None:
         scopes=held - withheld,
         agent_id=key.agent_id,
         agent_label=key.agent.key if key.agent is not None else "",
+        agent_access_id=entry.id if entry is not None else None,
+        agent_access_label=entry.name if entry is not None else "",
+        acting_user_id=key.acts_as_user_id,
+        acting_user_label=key.acts_as_user.name if key.acts_as_user is not None else "",
+    )
+
+
+def log_rate_limited(principal: Principal) -> None:
+    """The first refusal of a credential's rate window, in the security log (ACC-09). The
+    bank is already activated by the credential's own resolution."""
+    key = ApiKey.objects.select_related("acts_as_user").filter(pk=principal.subject_id).first()  # ordering: pk lookup, at most one row
+    if key is None:  # pragma: no cover - the key resolved on this same request
+        return
+    log_event(
+        event=LoginEventKind.CREDENTIAL_RATE_LIMITED,
+        method=LoginMethod.PERSONAL_TOKEN if key.kind == CredentialKind.PERSONAL.value else LoginMethod.API_KEY,
+        success=False,
+        request=None,
+        tenant_id=key.tenant_id,
+        api_key=key,
+        user=key.acts_as_user,
+        failure_reason=f"over {settings.AGENT_ACCESS_RATE_PER_MINUTE} a minute",
     )
 
 
@@ -163,8 +283,8 @@ def revoke_api_key(*, tenant: Tenant, actor: Actor, key_id: uuid.UUID) -> ApiKey
 # which no bank session can hold (session_logic.build_principal), so every caller is a
 # platform session. The two writes still assert the platform zone rather than inherit one:
 # the row belongs to no tenant, and the mixed table accepts it only from that zone (H15,
-# D-78). A key may hold any scope, `proposals:review` included (D-62); none reaches a
-# library row (AC-PRO1, ID-S21).
+# D-78). A key holds the scopes its agent's kind takes, `proposals:review` for a review
+# agent (D-62, H43); none reaches a library row (AC-PRO1, ID-S21).
 # ---------------------------------------------------------------------------------------
 def list_agent_keys(*, limit: int, offset: int) -> tuple[list[ApiKey], int]:
     """Every platform key, newest first, bound or not: an unbound one is listed so that it
@@ -191,6 +311,18 @@ def create_agent_key(
     agent = agents_logic.definition(agent_id)
     if agent is None:
         raise ValidationError("No agent definition has that id.", code="unknown_key")
+    if not _carries_keys(active=agent.active, key=agent.key, version=agent.current_version):
+        raise ValidationError(
+            f"{agent.key} is retired or switched off, so no key can be bound to it.",
+            code="agent_inactive",
+        )
+    barred = _refused_for_kind(agent.kind, granted)
+    if barred:
+        raise ValidationError(
+            f"A {agent.kind} agent may not hold {', '.join(barred)}. A review agent decides and never files; "
+            "every other agent files and never decides.",
+            code="scope_not_for_kind",
+        )
     plain, prefix, key_hash = tokens.new_api_key()
     key = ApiKey.objects.create(
         tenant=None, agent=agent, name=cleaned_name, key_prefix=prefix, key_hash=key_hash, scopes=granted, created_by=created_by, expires_at=expires_at

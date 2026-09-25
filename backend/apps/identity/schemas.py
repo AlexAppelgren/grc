@@ -1103,7 +1103,6 @@ class Me(CamelSchema):
                     "permissions": [
                         "ai_log.read",
                         "applicability.approve",
-                        "applicability.request",
                         "audit.read",
                         "cases.contribute",
                         "cases.read",
@@ -1808,8 +1807,8 @@ class PermissionOut(CamelSchema):
 _TENANT_KEY_SCOPES_TEXT = (
     "`library:read` reads the shared library's instruments, provisions and obligations; "
     "`search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; "
-    "`tenant:read` is set aside for reading the bank's own profile, and no route reads with it "
-    "yet; and `proposals:write` files a proposal to the shared library, which changes nothing "
+    "`tenant:read` reads the bank's register only as an agent access entry, so a key bound to "
+    "no entry holds it to no effect; and `proposals:write` files a proposal to the shared library, which changes nothing "
     "until someone independent approves it. No scope "
     "writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and "
     "`proposals:review` belong to the platform's own agents and are refused on a bank's key."
@@ -2105,7 +2104,8 @@ class AgentKeyCreate(WriteBody):
             "The identifier of the agent definition the key will act as, a UUID taken from "
             "`GET /agent-definitions`. Everything the key writes is recorded as that agent, and a "
             "key runs that one agent and no other. An identifier that names no definition is "
-            "refused with `unknown_key`."
+            "refused with `unknown_key`, and a definition that is retired or switched off, rather "
+            "than active or a draft being evaluated, with `agent_inactive`."
         )
     )
     scopes: list[str] = Field(
@@ -2115,6 +2115,9 @@ class AgentKeyCreate(WriteBody):
             f"What the key may do: at least one and at most {len(perms.ALL_SCOPES)} scope keys, "
             "each counted once. Give the key the least its agent needs. "
             + _AGENT_KEY_SCOPES_TEXT
+            + " A review agent's key may not hold `sources:write`, `changes:write` or `proposals:write`, "
+            "and no other agent's key may hold `proposals:review`; either is refused with "
+            "`scope_not_for_kind`, naming the scope."
             + " Any other value is refused with `unknown_key`, and the message lists the valid scopes."
         ),
     )
