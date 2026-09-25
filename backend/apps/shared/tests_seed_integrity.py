@@ -93,6 +93,8 @@ from apps.shared.e2e_seed import (
     seed_e2e,
 )
 from apps.shared.models import AuditEvent, Tenant
+from apps.library.reading import today_for
+from apps.shared.e2e_seed import EXPECTED_CASE_JOURNEYS, EXPECTED_COLLAB_WORK, run_collab_jobs
 from apps.watch.models import ChangeDocument, ChangeEvent, ChangeObligation, ChangeTerm, CheckStatus, RegulatoryChange, Source, SourceCheck, SourceCheckKind
 from apps.watch.models import ChangeStatus
 from apps.taxonomy.matching import footprint_of, in_footprint, in_footprint_sql, opt_in_dimensions, restricting_dimensions
@@ -1808,3 +1810,80 @@ class SeededOrgAndRegister(SeededOnce):
         for entry in TenantObligation.objects.all():
             self.assertTrue(AuditEvent.objects.filter(action="register.entry_created", subject_id=entry.id).exists())
 # --- end c8-seed-org-register -------------------------------------------------------------------
+
+
+# --- c10-digest-beat-and-journeys ----------------------------------------------------------------
+class SeededCollabWork(SeededOnce):
+    """COL-S2's dated work, the muted and the absent member and last week's digest, all anchored
+    to the bank's own today; and the reminder, escalation and digest jobs run on the seeded bank
+    send what COL-S2's journey reads, once (c10-digest-beat-and-journeys, COL-02)."""
+
+    def setUp(self) -> None:
+        MockMailer.reset()
+        self.addCleanup(MockMailer.reset)
+        self.tenant = Tenant.objects.get(slug=EXPECTED_COLLAB_WORK.tenant_slug)
+        tenancy.activate(self.tenant.id)
+        self.today = today_for(self.tenant)
+
+    def _journey(self, name: str) -> Any:
+        return next(spec for spec in EXPECTED_CASE_JOURNEYS if spec.journey == name)
+
+    def test_the_swedish_members_actions_are_due_in_three_days_and_five_days_overdue(self) -> None:
+        from apps.cases.models import Action
+
+        spec = self._journey("COL-S2")
+        owner = User.objects.get(email=spec.owner)
+        self.assertEqual(owner.locale.key if owner.locale else None, "sv")
+        actions = Action.objects.filter(case__change__stable_key=spec.stable_key, done_at__isnull=True)
+        self.assertEqual(
+            sorted((a.owner_id, a.due_date) for a in actions),
+            sorted([(owner.id, self.today + datetime.timedelta(days=3)), (owner.id, self.today - datetime.timedelta(days=5))]),
+        )
+        # The owner is in a team whose department has a head, so the escalation has one.
+        from apps.tenants.models import TeamMember
+
+        self.assertTrue(TeamMember.objects.filter(user=owner, team__org_unit__head_user__isnull=False).exists())
+
+    def test_the_muted_member_the_absent_member_and_last_weeks_digest(self) -> None:
+        from apps.collab.digest import week_of
+        from apps.collab.models import EmailMessage
+
+        spec = EXPECTED_COLLAB_WORK
+        muted = Membership.objects.get(user__email=spec.muted_mentions, tenant=self.tenant)
+        self.assertIs(muted.notification_prefs["mentions"], False)
+        away = Membership.objects.get(user__email=spec.away, tenant=self.tenant)
+        self.assertEqual(away.out_of_office_until, self.today + datetime.timedelta(days=spec.away_for_days))
+        assert away.delegate is not None
+        self.assertEqual(away.delegate.email, spec.delegate)
+        self.assertTrue(Membership.objects.filter(user=away.delegate, tenant=self.tenant, deactivated_at__isnull=True).exists())
+        (sent,) = EmailMessage.objects.filter(template="weekly_digest")
+        self.assertEqual(sent.user.email, spec.digest_of_last_week)
+        self.assertEqual(sent.sent_on, week_of(self.today) - datetime.timedelta(days=7))
+        self.assertTrue(Membership.objects.filter(user=sent.user, tenant_id=sent.tenant_id).exists())
+
+    def test_the_jobs_send_the_swedish_reminder_the_escalation_and_the_swedish_digest_once(self) -> None:
+        spec = self._journey("COL-S2")
+        officers = set(
+            Membership.objects.filter(tenant=self.tenant, roles__key="compliance_officer", user__status=UserStatus.ACTIVE.value).values_list("user__email", flat=True)
+        )
+        for _ in range(2):
+            run_collab_jobs()
+        mails = [(m.to, m.subject) for m in MockMailer.sent]
+        # Her reminder and her escalation about COL-S2's case, and her digest, each once and in sv.
+        to_ingrid = [subject for to, subject in mails if to == spec.owner]
+        about_the_case = sorted(subject.split(" ")[0] for subject in to_ingrid if subject.endswith(spec.title))
+        self.assertEqual(about_the_case, ["Eskalerad", "Förfaller"], mails)
+        self.assertEqual(sum(1 for subject in to_ingrid if subject.startswith("Dina öppna uppgifter")), 1, mails)
+        self.assertIn((spec.owner, f"Förfaller {(self.today + datetime.timedelta(days=3)).isoformat()}: {spec.title}"), mails)
+        escalated = {to for to, subject in mails if subject == f"Escalated to you: {spec.title}"}
+        self.assertIn("head@example-bank.test", escalated)
+        self.assertTrue(escalated & officers)
+        # The absent officer's escalation reaches their delegate, who is told once.
+        self.assertNotIn(EXPECTED_COLLAB_WORK.away, escalated)
+        self.assertEqual(sum(1 for to, subject in mails if to == EXPECTED_COLLAB_WORK.delegate and subject == f"Escalated to you: {spec.title}"), 1)
+
+    def test_no_literal_date_in_the_seed_block(self) -> None:
+        source = Path(__file__).with_name("e2e_seed.py").read_text(encoding="utf-8")
+        block = source[source.index("# --- c10-digest-beat-and-journeys"):source.index("# --- end c10-digest-beat-and-journeys")]
+        self.assertIsNone(re.search(r"date\(\s*\d|20\d\d-\d\d-\d\d", block))
+# --- end c10-digest-beat-and-journeys ------------------------------------------------------------

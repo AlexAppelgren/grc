@@ -39,7 +39,10 @@ from apps.cases.creation import CHANGE_REGISTERED
 from apps.cases.models import Action, AssessmentApplies, CaseTransition, ChangeCase, ImpactAssessment
 from apps.collab import logic as collab_logic
 from apps.collab import subjects as collab_subjects
-from apps.collab.models import Comment, CommentMention, CommentRevision, Notification, NotificationKind
+from apps.collab import tasks as collab_tasks
+from apps.collab.digest import TEMPLATE as DIGEST_TEMPLATE
+from apps.collab.digest import week_of
+from apps.collab.models import Comment, CommentMention, CommentRevision, EmailMessage, EmailStatus, Notification, NotificationKind
 from apps.home import tasks as home_tasks
 from apps.identity import invitation_logic, roles_logic, tokens
 from apps.identity.models import (
@@ -1819,6 +1822,8 @@ def seed_e2e() -> dict[str, int]:
         seed_standard_change()
         # c8-seed-org-register: after the logins and chunk 5's links.
         seed_org_register(tenants)
+        # c10-digest-beat-and-journeys: after the logins and the case journeys it names.
+        seed_collab_work(tenants)
 
         # INV-S14, after the logins: the re-verification names a seeded library editor.
         machine_confirmed = seed_machine_confirmed()
@@ -1939,6 +1944,7 @@ OWNER_A = "owner@example-bank.test"
 APPROVER_A = "approver@example-bank.test"
 CONTRIBUTOR_A = "contributor@example-bank.test"
 OWNER_APPROVER_A = "owner-approver@example-bank.test"
+SV_MEMBER_A = "sv-member@example-bank.test"
 
 
 @dataclass(frozen=True)
@@ -2024,6 +2030,18 @@ EXPECTED_CASE_JOURNEYS: tuple[SeedCaseJourney, ...] = (
     SeedCaseJourney(
         "CAS-S14", "chg-e2e-second-bank-lead", "Finanstilsynet shortens the deadline for suspicious transaction reports",
         CaseStatusCategory.NEW, "act_now", tenant_slug=TENANT_B_SLUG,
+    ),
+    # c10-digest-beat-and-journeys: COL-S1's case, where the journey comments and mentions,
+    # and COL-S2's, whose two open actions the Swedish-speaking member owns: one due in three
+    # days (the reminder) and one five days overdue (the escalation).
+    SeedCaseJourney("COL-S1", "chg-e2e-case-comment", "FI amends the custody rules for client assets", CaseStatusCategory.ASSIGNED, "within_3_months", owner=OWNER_A),
+    SeedCaseJourney(
+        "COL-S2", "chg-e2e-case-reminders", "FI amends the rules on pension transfers", CaseStatusCategory.ASSESSING, "within_3_months",
+        owner=SV_MEMBER_A,
+        actions=(
+            SeedCaseAction("Update the transfer form", SV_MEMBER_A, done=False, due_in_days=3),
+            SeedCaseAction("Brief the pensions desk", SV_MEMBER_A, done=False, due_in_days=-5),
+        ),
     ),
 )
 
@@ -2945,3 +2963,87 @@ def seed_org_register(tenants: list[Tenant]) -> None:
         _seed_register(tenant, spec, people, org)
     tenancy.clear_tenant()
 # --- end c8-seed-org-register -------------------------------------------------------------
+
+
+# --- c10-digest-beat-and-journeys (COL-02, COL-S2) ----------------------------------------------
+# What reminders, escalation and the digest have to work on beside COL-S2's case above: the
+# Swedish-speaking member has mentions switched off (reminders and the digest still reach
+# her), the compliance officer who holds the API-key journey is away with the shared officer
+# as delegate, and the Swedish member's digest of last week was sent, so this week's is new.
+# Every date is the bank's own today plus an offset.
+@dataclass(frozen=True)
+class SeedCollabWork:
+    tenant_slug: str
+    muted_mentions: str
+    away: str
+    delegate: str
+    away_for_days: int
+    digest_of_last_week: str
+
+
+EXPECTED_COLLAB_WORK = SeedCollabWork(
+    tenant_slug=TENANT_A_SLUG,
+    muted_mentions=SV_MEMBER_A,
+    away="tokens@example-bank.test",
+    delegate=OFFICER_A,
+    away_for_days=14,
+    digest_of_last_week=SV_MEMBER_A,
+)
+
+
+def seed_collab_work(tenants: list[Tenant]) -> None:
+    """The switch, the absence and last week's digest, each with its audit row through
+    record(). Written once: a reseed finds each already in place and writes nothing."""
+    spec = EXPECTED_COLLAB_WORK
+    tenant = next(t for t in tenants if t.slug == spec.tenant_slug)
+    tenancy.activate(tenant.id)
+    anchor = case_anchor(tenant.timezone)
+    members = {m.user.email: m for m in Membership.objects.select_related("user").filter(user__email__in=[spec.muted_mentions, spec.away, spec.delegate])}
+
+    muted = members[spec.muted_mentions]
+    if muted.notification_prefs.get("mentions") is not False:
+        before = dict(muted.notification_prefs)
+        muted.notification_prefs = {**before, "mentions": False}
+        muted.save(update_fields=["notification_prefs"])
+        record(
+            action="user.updated", actor=SEED_ACTOR, subject_type="user", subject_id=muted.user_id, subject_title=muted.user.name,
+            summary="Seeded for E2E journeys.", tenant_id=tenant.id,
+            before={"notificationPrefs": before}, after={"notificationPrefs": muted.notification_prefs},
+        )
+
+    away = members[spec.away]
+    if away.delegate_id is None:
+        away.out_of_office_until = anchor.date() + datetime.timedelta(days=spec.away_for_days)
+        away.delegate = members[spec.delegate].user
+        away.save(update_fields=["out_of_office_until", "delegate"])
+        record(
+            action="out_of_office.set", actor=SEED_ACTOR, subject_type="membership", subject_id=away.id, subject_title=away.user.name,
+            summary="Seeded for E2E journeys.", tenant_id=tenant.id,
+            after={"outOfOfficeUntil": away.out_of_office_until.isoformat(), "delegateId": str(away.delegate_id)},
+        )
+
+    reader = User.objects.get(email=spec.digest_of_last_week)
+    last_week = week_of(anchor.date()) - datetime.timedelta(days=7)
+    if not EmailMessage.objects.filter(user=reader, template=DIGEST_TEMPLATE, sent_on=last_week).exists():
+        sent = EmailMessage.objects.create(
+            tenant=tenant, user=reader, template=DIGEST_TEMPLATE, subject_type=None, subject_id=None, sent_on=last_week,
+            to_email=reader.email, subject=f"Dina öppna uppgifter, veckan från {last_week.isoformat()}",
+            status=EmailStatus.SENT.value, sent_at=datetime.datetime.combine(last_week, datetime.time(7), tzinfo=ZoneInfo(tenant.timezone)),
+        )
+        record(
+            action="mail.sent", actor=SEED_ACTOR, subject_type="email_message", subject_id=sent.id, subject_title=DIGEST_TEMPLATE,
+            summary="Seeded for E2E journeys.", tenant_id=tenant.id,
+            after={"template": DIGEST_TEMPLATE, "status": sent.status, "userId": str(reader.id), "sentOn": last_week.isoformat()},
+        )
+    tenancy.clear_tenant()
+
+
+def run_collab_jobs() -> None:
+    """`manage.py e2e_collab_jobs`: tenant A's reminders, escalations and weekly digests now,
+    as the worker's beat runs them at the bank's send hours, for COL-S2's journey. Each runs
+    in its own transaction here and queues its mail to the real worker. Refused when deployed."""
+    refuse_when_deployed("e2e_collab_jobs")
+    tenant_id = str(Tenant.objects.get(slug=EXPECTED_COLLAB_WORK.tenant_slug).id)
+    for task in (collab_tasks.send_tenant_reminders, collab_tasks.send_tenant_escalations, collab_tasks.send_tenant_digests):
+        task.apply(args=[tenant_id], throw=True)
+# --- end c10-digest-beat-and-journeys -----------------------------------------------------------
