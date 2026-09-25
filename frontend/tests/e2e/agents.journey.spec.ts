@@ -2,12 +2,12 @@ import type { APIResponse } from '@playwright/test';
 
 import {
   answered,
+  currentPill,
   openDefinition,
   publishVersion,
   sessionApi,
   SWEEPER_RUN_ON_V1,
   SWEEPER_RUN_ON_V2,
-  versionPill,
   versionRow,
 } from './support/agent-definitions';
 import { mintAgentKey, revokeAgentKey } from './support/agent-key';
@@ -85,10 +85,10 @@ test.describe('agents journeys', () => {
     // The list grows by the one version, which is now the current one, with its note.
     await expect(page.locator('[data-agent-versions] [data-agent-version]')).toHaveCount(before.length + 1);
     const row = versionRow(page, next);
-    await expect(versionPill(row, 'Current')).toBeVisible();
+    await expect(currentPill(row)).toBeVisible();
     await expect(row).toContainText(note);
     await expect(row).toContainText(`agents/watch-sweeper/v${next}`);
-    await expect(versionPill(versionRow(page, current), 'Current')).toHaveCount(0);
+    await expect(currentPill(versionRow(page, current))).toHaveCount(0);
 
     // Earlier runs still name the version they started under, by exact text: the second
     // fact of each run's line, after its start.

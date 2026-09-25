@@ -3,11 +3,11 @@ import type { APIResponse, Locator, Page } from '@playwright/test';
 import { expect } from './api-guard';
 import { BACKEND_URL } from './passkeys';
 
-// Helpers for c11-e2e-console (AGT-S4, AGT-S13, PRO-S8): the console's agent
-// definition screen, the passkey step-up it asks for, and the one direct call a
-// journey makes as the person signed in.
+// Helpers for c11-e2e-console (AGT-S4, AGT-S13, PRO-S8, ADM-S4): the console's
+// agent definition screen, the passkey step-up it asks for, and the direct
+// requests a journey sends as the person signed in.
 //
-// The direct call carries the session the page itself holds: the access token
+// A direct request carries the session the page itself holds: the access token
 // lives in the web app's memory only (D-06), so it is read off a request the app
 // sent, never minted, stored or set on the browser. It is how a journey proves
 // the server's own answer to a request the screen never offers to send.
@@ -55,9 +55,9 @@ export function versionRow(page: Page, versionNo: number): Locator {
   return page.locator(`[data-agent-versions] [data-agent-version="${versionNo}"]`);
 }
 
-/** The state pill of a version row: "Current", "Retired", or none. */
-export function versionPill(row: Locator, label: 'Current' | 'Retired'): Locator {
-  return row.locator('[data-pill]', { hasText: new RegExp(`^${label}$`) });
+/** The "Current" pill of a version row, the version new runs start on. */
+export function currentPill(row: Locator): Locator {
+  return row.locator('[data-pill]', { hasText: /^Current$/ });
 }
 
 /**
