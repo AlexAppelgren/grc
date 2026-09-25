@@ -33,6 +33,10 @@ import enum
 from django.db import models
 
 from apps.shared.audit import AppendOnlyModel
+# Defined in kinds.py so the pure case state machine (apps/cases/state.py) reads them
+# without importing a model; every caller that imports them from here keeps working.
+from apps.shared.kinds import CaseStatusCategory as CaseStatusCategory
+from apps.shared.kinds import CloseReason as CloseReason
 from apps.shared.tenancy import LibraryModel, TenantModel
 from apps.shared.vocabulary import (
     ORIGIN_CHOICES,
@@ -124,26 +128,6 @@ class RiskLevel(enum.StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
-
-
-class CaseStatusCategory(enum.StrEnum):
-    """The seven fixed categories the case state machine reads (D-13, VOC-04)."""
-
-    NEW = "new"
-    ASSIGNED = "assigned"
-    ASSESSING = "assessing"
-    IMPLEMENTING = "implementing"
-    SIGNOFF = "signoff"
-    CLOSED = "closed"
-    DISMISSED = "dismissed"
-
-
-class CloseReason(enum.StrEnum):
-    """The fixed close categories (CAS-02): a tenant's closure reasons sit inside one."""
-
-    SIGNED_OFF = "signed_off"
-    NOT_APPLICABLE = "not_applicable"
-    NO_ACTION = "no_action"
 
 
 class ApprovalStatus(enum.StrEnum):
