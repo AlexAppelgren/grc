@@ -25,23 +25,34 @@ Proven to fail 2026-09-21 against the declared contract: every test below answer
 from __future__ import annotations
 
 import datetime
+import threading
 import uuid
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
-from django.test import TestCase
+from django.db import DEFAULT_DB_ALIAS, connection, connections, transaction
+from django.test import TestCase, TransactionTestCase
 
 from apps.agents import runs, testing as agent_build
 from apps.agents.models import AgentRun, RunStatus
-from apps.agents.schemas import AgentRunInput
+from apps.agents.schemas import AgentRunFinish, AgentRunInput
 from apps.identity.api_keys_logic import resolve_api_key
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent, OutboxEvent
-from apps.shared.testing import ScenarioTestCase, stub_session, user_principal
+from apps.shared.testing import (
+    LANDED,
+    RACE_WAIT_SECONDS,
+    ScenarioTestCase,
+    backend_pid,
+    hold_until_waiting_on_me,
+    stub_session,
+    user_principal,
+)
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 
 RUNS = "/api/v1/agent-runs"
@@ -335,3 +346,88 @@ class ReadingTheRunLog(TestCase):
         response = self.read(user_principal(permissions={perms.SYSTEM_HEALTH}))
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json(), {"items": [], "total": 0})
+
+
+def _app_session(work: Callable[[], object]) -> str:
+    """Run `work` in one transaction on a fresh cw_app connection of this thread's own, in
+    the platform's zone as a key's request is. Answers "landed" when it committed, or the
+    refusal's code."""
+    connections[DEFAULT_DB_ALIAS] = connections.create_connection("app")
+    try:
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_user")
+                assert cursor.fetchone()[0] == connections.settings["app"]["USER"], "a racing session must be cw_app"
+            work()
+        return LANDED
+    except ValidationError as refusal:
+        return str(refusal.code)
+    finally:
+        connections[DEFAULT_DB_ALIAS].close()
+
+
+def _race(first: Callable[[], object], second: Callable[[], object]) -> tuple[str, str]:
+    """`first` acts and keeps its transaction open until `second` waits on it; a second
+    session that never waited fails the race, because it was never serialized."""
+    acted = threading.Event()
+    second_pid: list[int] = []
+
+    def lead() -> None:
+        first()
+        acted.set()
+        hold_until_waiting_on_me(second_pid)
+
+    def follow() -> None:
+        second_pid.append(backend_pid())
+        if not acted.wait(RACE_WAIT_SECONDS):
+            raise AssertionError("the first session never acted")
+        second()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        leading = pool.submit(_app_session, lead)
+        following = pool.submit(_app_session, follow)
+        return leading.result(), following.result()
+
+
+class ARunLocksOnWrite(TransactionTestCase):
+    """H36: a filing and a close of the same run are serialized on the run's row, so a
+    filing never lands in a run another request is closing and the close counts it, and
+    two closes never both land."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def setUp(self) -> None:
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.key = agent_build.agent_key()
+            who = resolve_api_key(self.key.plain_key)
+            assert who is not None
+            self.who: Principal = who
+            body = AgentRunInput.model_validate(open_body(self.key.agent.key))
+            self.run_id = runs.open_run(who=self.who, body=body, idempotency_key=None).id
+
+    def _file(self) -> None:
+        runs.require_open_run(self.who, self.run_id)
+
+    def _close(self, status: str) -> Callable[[], object]:
+        return lambda: runs.finish_run(who=self.who, run_id=self.run_id, body=AgentRunFinish.model_validate({"status": status}))
+
+    def _stored_status(self) -> str:
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            return AgentRun.objects.get(pk=self.run_id).status
+
+    def test_a_close_waits_for_a_filing_in_flight(self) -> None:
+        self.assertEqual(_race(self._file, self._close("succeeded")), (LANDED, LANDED))
+        self.assertEqual(self._stored_status(), RunStatus.SUCCEEDED.value)
+
+    def test_a_filing_that_waited_on_a_close_reads_the_run_closed(self) -> None:
+        self.assertEqual(_race(self._close("succeeded"), self._file), (LANDED, "run_not_open"))
+
+    def test_two_different_closes_at_once_land_one(self) -> None:
+        self.assertEqual(_race(self._close("succeeded"), self._close("failed")), (LANDED, "invalid_transition"))
+        self.assertEqual(self._stored_status(), RunStatus.SUCCEEDED.value)
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.assertEqual(AuditEvent.objects.filter(subject_id=self.run_id, action="agent_run.closed").count(), 1)
