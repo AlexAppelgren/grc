@@ -102,7 +102,7 @@ class MockScanner(ScannerAdapter):
 
 class ClamdScanner(ScannerAdapter):
     """INSTREAM over TCP to `SCANNER_HOST:SCANNER_PORT`; `SCANNER_TIMEOUT_SECONDS` bounds the
-    connect and every send and read."""
+    connect, every send, and the scan with its whole reply."""
 
     name = "clamd"
 
@@ -121,8 +121,15 @@ class ClamdScanner(ScannerAdapter):
                 chunk = content[start : start + CHUNK_BYTES]
                 conn.sendall(struct.pack("!I", len(chunk)) + chunk)
             conn.sendall(struct.pack("!I", 0))
+            # clamd scans, then answers: the scan and the whole reply share one deadline, so
+            # a server that answers a byte at a time cannot hold the worker.
+            deadline = time.monotonic() + settings.SCANNER_TIMEOUT_SECONDS
             reply = b""
             while b"\0" not in reply and len(reply) <= MAX_REPLY_BYTES:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError
+                conn.settimeout(remaining)
                 part = conn.recv(MAX_REPLY_BYTES + 1 - len(reply))
                 if not part:
                     break
@@ -131,12 +138,13 @@ class ClamdScanner(ScannerAdapter):
 
 
 def parse_reply(reply: bytes) -> tuple[ScanState, str | None]:
-    """The two good shapes, or `error`. A reply over the cap, not ASCII, or of any other
-    shape is `error`."""
-    if len(reply) > MAX_REPLY_BYTES:
+    """The two good shapes, or `error`. A `z` command's reply is one line ending in one NUL,
+    so a reply without it (truncated), with anything after it, over the cap, not ASCII, or
+    of any other shape is `error`."""
+    if len(reply) > MAX_REPLY_BYTES or not reply.endswith(b"\0") or reply.count(b"\0") != 1:
         return ScanState.ERROR, None
     try:
-        line = reply.split(b"\0", 1)[0].decode("ascii")
+        line = reply[:-1].decode("ascii")
     except UnicodeDecodeError:
         return ScanState.ERROR, None
     if line == "stream: OK":

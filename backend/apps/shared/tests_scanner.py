@@ -10,6 +10,7 @@ import logging
 import socket
 import struct
 import threading
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 
@@ -23,6 +24,8 @@ from apps.shared.adapters.scanner import ScanState
 EICAR = rb"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"
 SECRET_NAME = "board-minutes-q3-confidential.pdf"
 SECRET_BYTES = b"the bank's unique board minutes 7f3a91"
+# A stub reply sent one byte at a time, 0.2 s apart.
+DRIP = b"<drip>"
 
 
 def read_instream(conn: socket.socket) -> tuple[bytes, bytes]:
@@ -57,7 +60,8 @@ def answer(reply: bytes | None) -> Callable[[bytes], bytes | None]:
 
 class StubClamd:
     """A one-connection clamd on a loopback port. `reply` receives what was streamed and
-    returns the bytes to answer, or None to answer nothing and hold the socket open."""
+    returns the bytes to answer, None to answer nothing and hold the socket open, or DRIP to
+    answer `stream: OK` a byte at a time."""
 
     def __init__(self, reply: Callable[[bytes], bytes | None]) -> None:
         self.reply = reply
@@ -75,6 +79,11 @@ class StubClamd:
             answer = self.reply(self.received[1])
             if answer is None:
                 self.release.wait(5)
+            elif answer is DRIP:
+                for byte in b"stream: OK\0":
+                    if self.release.wait(0.2):
+                        break
+                    conn.sendall(bytes([byte]))
             else:
                 conn.sendall(answer)
 
@@ -155,9 +164,6 @@ class ClamdVerdicts(ScanWithStub):
         self.assertEqual(result.state, ScanState.INFECTED)
         self.assertEqual(result.signature, "Win.Test.EICAR_HDB-1")
 
-    def test_a_reply_without_the_nul_but_closed_is_still_read(self) -> None:
-        result = self.scan_against(lambda _: b"stream: OK")
-        self.assertEqual(result.state, ScanState.CLEAN)
 
 
 class ClamdNeverSaysCleanOnDoubt(ScanWithStub):
@@ -166,7 +172,18 @@ class ClamdNeverSaysCleanOnDoubt(ScanWithStub):
         self.assertIsNone(result.signature)
 
     def test_a_timeout_is_an_error(self) -> None:
+        # The stub holds the socket open for 5 s; answering within the 0.5 s timeout proves
+        # the timeout, not the stub's eventual close, decided.
+        started = time.monotonic()
         self.assert_error(self.scan_against(lambda _: None))
+        self.assertLess(time.monotonic() - started, 2)
+
+    def test_a_reply_dripped_past_the_deadline_is_an_error(self) -> None:
+        # One byte every 0.2 s never trips the 0.5 s timeout of a single read; the deadline
+        # over the whole reply does.
+        started = time.monotonic()
+        self.assert_error(self.scan_against(lambda _: DRIP))
+        self.assertLess(time.monotonic() - started, 2)
 
     def test_a_refused_connection_is_an_error(self) -> None:
         with socket.create_server(("127.0.0.1", 0)) as probe:
@@ -176,6 +193,7 @@ class ClamdNeverSaysCleanOnDoubt(ScanWithStub):
 
     def test_a_truncated_reply_is_an_error(self) -> None:
         self.assert_error(self.scan_against(lambda _: b"stream: O"))
+        self.assert_error(self.scan_against(lambda _: b"stream: OK"))  # closed before its NUL
 
     def test_an_empty_reply_is_an_error(self) -> None:
         self.assert_error(self.scan_against(lambda _: b""))
@@ -190,6 +208,7 @@ class ClamdNeverSaysCleanOnDoubt(ScanWithStub):
             b"stream: OK OK\0",
             b"OK\0",
             b"stream: OK\nstream: Eicar FOUND\0",
+            b"stream: OK\0stream: Eicar FOUND\0",
             b"stream: Eicar\x00FOUND\0",
             b"stream: \xff\xfe FOUND\0",
             b"stream: " + b"A" * 300 + b" FOUND\0",

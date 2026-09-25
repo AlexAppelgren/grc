@@ -680,7 +680,7 @@ CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THRO
 SCANNER_PROVIDER = env_str("SCANNER_PROVIDER", "mock")  # mock | clamd
 SCANNER_HOST = env_str("SCANNER_HOST", "localhost")
 SCANNER_PORT = env_int("SCANNER_PORT", 3310)  # clamd's TCPSocket in the official image
-# Bounds the connect and each send and read, not the whole scan. clamd reads the whole
+# Bounds the connect, each send, and the scan with its whole reply. clamd reads the whole
 # stream before it answers, so this must cover scanning the largest evidence file.
 SCANNER_TIMEOUT_SECONDS = float(env_str("SCANNER_TIMEOUT_SECONDS", "60.0"))
 

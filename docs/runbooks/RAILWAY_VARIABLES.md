@@ -45,7 +45,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `SCANNER_PROVIDER` | api, worker | `mock` | `mock` | `clamd` | `mock` or `clamd` (CAS-05, D-101). The mock is refused at the first scan on every deployed environment, `test` included, so evidence upload answers 503 until clamd is set |
 | `SCANNER_HOST` | api, worker | `localhost` | `localhost` | the clamd service's private host (`clamav.railway.internal`) | Private network only; clamd has no authentication |
 | `SCANNER_PORT` | api, worker | `3310` | `3310` | `3310` | clamd's TCP port in the official image |
-| `SCANNER_TIMEOUT_SECONDS` | api, worker | `60.0` | `60.0` | `60.0` | Per connect, send and read; a timeout is a failed scan, never a clean one |
+| `SCANNER_TIMEOUT_SECONDS` | api, worker | `60.0` | `60.0` | `60.0` | Per connect and send, and for the scan with its whole reply; a timeout is a failed scan, never a clean one |
 | `LLM_PROVIDER` | api, worker | `mock` | `mock` | `anthropic` | `mock`, `anthropic`, `bedrock` (D-07, ADR 0007) |
 | `ANTHROPIC_API_KEY` | api, worker | unset | unset | Railway secret | Only read when `LLM_PROVIDER=anthropic` |
 | `LLM_MODEL` | api, worker | `claude-opus-5` | `claude-opus-5` | `claude-opus-5` | The Messages API model id (E3) |
