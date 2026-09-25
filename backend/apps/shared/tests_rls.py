@@ -225,6 +225,9 @@ TENANT_ONLY_TABLES = [
     # one row of reach state. Each person and the approving request are composite keys.
     "tenant_reach_request",
     "tenant_reach",
+    # acc-entries-and-log (governance 0005, ACC-08): the access log of a bank's own agents,
+    # append-only; the entry and the person are composite keys.
+    "agent_access_call",
 ]
 
 # The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the

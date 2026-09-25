@@ -1431,6 +1431,7 @@ Built on these defaults; each stays yours to overrule.
       and the first refusal of each minute writes one `credential_rate_limited` row in
       the security log, not one per refused request, so a runaway agent cannot flood
       the log.
+
 ## acc-scope-and-reach: an entry's scope and tenant reach, answered by default (2026-09-25, ACC-02, ACC-08, D-70, D-72)
 
 - [ ] Default taken: an opt-in dimension keeps its rule inside an entry's scope too. The
@@ -1447,3 +1448,21 @@ Built on these defaults; each stays yours to overrule.
       and a reach request is never withdrawn (the requester's colleague rejects it).
       Switching reach off needs one person and a step-up; on again takes a new request and
       a second person. `GET /tenant/reach` is readable with `security.manage` alone.
+
+## acc-entries-and-log: entries, their keys and the access log, answered by default (2026-09-25, ACC-01, ACC-03, ACC-08)
+
+- [ ] Default taken: a call an agent access credential makes is logged whatever its answer,
+      a refused write or step-up with its 403 included, but a call refused for its rate is
+      not: the security log already keeps one `credential_rate_limited` row a minute for it,
+      and a runaway agent must not flood the access log. A call on a revoked or expired
+      credential is refused before it is anyone's call and is not logged either.
+- [ ] Default taken: a filter is logged as its name, and its value only when the value is a
+      key (a stable key, a vocabulary key, a UUID, a date, a number). `q`, `query`, `text`,
+      `description`, `topic` and `question` keep their name alone, so the log shows that an
+      agent searched, never for what.
+- [ ] Default taken: the log is read on the entry (`GET /agent-access/{entryId}/calls`) under
+      `agent_access.manage`, like the entry itself. Say if an auditor holding `audit.read`
+      should read it too.
+- [ ] Default taken: a key sent with no expiry lives `AGENT_ACCESS_KEY_MAX_DAYS` (90); a
+      later one is refused (`expiry_too_late`). Revoking an entry twice answers 409
+      `invalid_transition`; revoking one key twice is a safe retry.

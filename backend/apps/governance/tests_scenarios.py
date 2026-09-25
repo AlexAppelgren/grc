@@ -138,6 +138,20 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
     ),
     "listEvalRuns": ("GET", "/eval/runs", None),
     "getEvalBaseline": ("GET", "/eval/baseline", None),
+    # c11-agents-contract (AGT-03, AGT-05): bleqq's agents, their versions, settings and runs
+    # are the platform admin's; a re-tag of library records is the library editor's. The
+    # three writes that change every bank also ask for a passkey, a different refusal.
+    "getAgentDefinition": ("GET", "/agent-definitions/watch-sweeper", None),
+    "publishAgentVersion": ("POST", "/agent-definitions/watch-sweeper/versions", {"versionNo": 2, "changeNote": "Reads the new index."}),
+    "retireAgentVersion": ("POST", "/agent-definitions/watch-sweeper/versions/1/retire", {}),
+    "getPlatformAgentSettings": ("GET", "/agent-definitions/watch-sweeper/settings", None),
+    "updatePlatformAgentSettings": (
+        "PUT",
+        "/agent-definitions/watch-sweeper/settings",
+        {"cadence": "daily", "jurisdictions": ["se"], "monthlyBudget": "250.00"},
+    ),
+    "listPlatformRuns": ("GET", "/console/agent-runs", None),
+    "createRetagRequest": ("POST", "/console/research-requests", {"topic": "Re-tag custody records with Client money."}),
 }
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a
@@ -898,12 +912,79 @@ class GovernanceScenarioTests(ScenarioTestCase):
                 refused = world.get(self.client, path, key)
                 self.assertEqual((refused.status_code, refused.json()["code"]), (403, "tenant_reach_off"))
 
-    @skip("pending: ACC-S12 (ACC-08, chunk 11)")
+    # acc-entries-and-log. What applies and the register read land with their own packages;
+    # until then the entry's reads are the library list, whose free-text phrase stands in for
+    # the description, and a write it may not make. The entry is registered, changed, given
+    # reach and a key, and revoked through its own routes.
     def test_acc_s12(self) -> None:
         """ACC-S12
 
         The access log records the call and holds no content (ACC-08).
         """
+        import json
+        from types import SimpleNamespace
+
+        from apps.governance.models import AgentAccessCall
+
+        tenant = factories.tenant(slug="acc-s12")
+        admin_user = factories.member(tenant, roles=("admin",), user_row=factories.user(name="Erik Holm")).user
+
+        def admin(method: str, path: str, body: dict[str, Any] | None = None) -> Any:
+            response = self.client.generic(
+                method, f"{V1}/agent-access{path}", json.dumps(body or {}), content_type="application/json", **sign_in(admin_user, tenant=tenant, step_up=True)
+            )
+            self.assertLess(response.status_code, 300, response.content)
+            return response.json()
+
+        # registerAgentAccess, updateAgentAccess, setAgentAccessReach, createAgentAccessKey.
+        entry = admin("POST", "", {"name": "Coding agent", "purpose": "Builds the order router.", "ownerTeam": "compliance"})
+        admin("PATCH", f"/{entry['id']}", {"name": "Trading platform coding agent"})
+        admin("PUT", f"/{entry['id']}/tenant-reach", {"enabled": True})
+        key = admin("POST", f"/{entry['id']}/keys", {"name": "Order router CI", "scopes": ["library:read", "search:read"]})
+        person = factories.member(tenant, roles=("reader",), user_row=factories.user(name="Sara Lindqvist")).user
+        token = factories.personal_token(tenant, person, entry=SimpleNamespace(id=uuid.UUID(entry["id"])))
+
+        description = "a feature that issues virtual cards against a trading account"
+        listed = self.client.get(f"{V1}/obligations", {"q": description, "footprint": "in", "limit": "5"}, HTTP_X_API_KEY=key["plainKey"])
+        self.assertEqual(listed.status_code, 200, listed.content)
+        answered = len(listed.json()["items"])
+        by_token = self.client.get(f"{V1}/obligations", {"q": description}, HTTP_X_API_KEY=token.plain_key)
+        self.assertEqual(by_token.status_code, 200, by_token.content)
+        refused = self.client.post(f"{V1}/agent-access", "{}", content_type="application/json", HTTP_X_API_KEY=key["plainKey"])
+        self.assertEqual((refused.status_code, refused.json()["code"]), (403, "step_up_required"))
+
+        # listAgentAccessCalls: newest first.
+        page = self.client.get(f"{V1}/agent-access/{entry['id']}/calls", **sign_in(admin_user, tenant=tenant))
+        self.assertEqual(page.status_code, 200, page.content)
+        self.assertEqual(page.json()["total"], 3)
+        write, token_call, key_call = page.json()["items"]
+        self.assertEqual(key_call["credential"], {"id": key["id"], "keyPrefix": key["keyPrefix"], "kind": "service"})
+        self.assertIsNone(key_call["person"])
+        self.assertEqual(key_call["tool"], "listObligations")
+        self.assertEqual(key_call["filters"], {"q": [], "footprint": ["in"]})
+        self.assertEqual(key_call["recordCount"], answered)
+        self.assertEqual(key_call["scopes"], ["library:read", "search:read"])
+        self.assertEqual(key_call["scope"], {"narrowed": False, "terms": {}})
+        self.assertEqual(key_call["status"], 200)
+        self.assertGreaterEqual(key_call["durationMs"], 0)
+        self.assertEqual(token_call["credential"]["kind"], "personal")
+        self.assertEqual(token_call["person"], {"id": str(person.id), "name": "Sara Lindqvist"})
+        self.assertEqual((write["tool"], write["status"], write["recordCount"]), ("registerAgentAccess", 403, None))
+        # Neither the answer nor the database row holds the description or any record's text.
+        tenancy.activate(tenant.id)
+        stored = json.dumps([list(AgentAccessCall.objects.filter(tenant_id=tenant.id).values())], default=str)
+        for text in (page.content.decode(), stored):
+            self.assertNotIn("virtual cards", text)
+            self.assertNotIn("trading account", text)
+
+        # revokeAgentAccessKey, then revokeAgentAccess: a revoked credential is refused before
+        # it is anyone's call, so the log holds nothing more.
+        admin("POST", f"/{entry['id']}/keys/{key['id']}/revoke")
+        self.assertEqual(self.client.get(f"{V1}/obligations", HTTP_X_API_KEY=key["plainKey"]).status_code, 401)
+        self.assertFalse(admin("POST", f"/{entry['id']}/revoke")["active"])
+        self.assertEqual(self.client.get(f"{V1}/obligations", HTTP_X_API_KEY=token.plain_key).status_code, 401)
+        tenancy.activate(tenant.id)
+        self.assertEqual(AgentAccessCall.objects.filter(tenant_id=tenant.id).count(), 3)
 
     # acc-scope-and-reach: the reach switch alone, ahead of the register reads ACC-S11 needs.
     def test_acc_s14(self) -> None:

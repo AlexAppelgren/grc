@@ -1616,3 +1616,14 @@ departures:
 - `internal_link` points at an `internal_item` (nullable, a composite key) rather than
   carrying the designed `kind`: the item carries the kind. It is removed by stamping
   `removed_at` and `removed_by`, never deleted, with one live link per entry and item.
+
+## acc-entries-and-log. The access log of a bank's own agents (2026-09-25, governance 0005)
+
+`schema.sql` has no table for AGENT_ACCESS.md section 9's access log. `agent_access_call` is
+new: a tenant table under forced row-level security, append-only by the shared trigger, one
+row per call an agent access credential makes (`api_key_id`, `agent_access_id`,
+`acting_user_id`, `tool`, `filters`, `record_count`, `scopes`, `scope_narrowed`,
+`scope_terms`, `duration_ms`, `status`, `at`). The entry and the person are composite
+`(tenant_id, …)` keys; the credential is a plain key into the mixed `api_key` table. It holds
+no content column. A tenant ledger under D-53: the purge deletes a row whole ten years after
+it was written.
