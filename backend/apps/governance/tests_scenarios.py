@@ -156,6 +156,8 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
     ),
     "listPlatformRuns": ("GET", "/console/agent-runs", None),
     "createRetagRequest": ("POST", "/console/research-requests", {"topic": "Re-tag custody records with Client money."}),
+    # c11-fe-console-batch-retag: the re-tag form follows its request to the batch.
+    "getRetagRequest": ("GET", f"/console/research-requests/{_ANY_ID}", None),
 }
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a

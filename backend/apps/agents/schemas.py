@@ -943,6 +943,14 @@ class ResearchRequestOut(CamelSchema):
     completed_at: datetime | None = Field(
         description="When its run finished, as a UTC timestamp in ISO 8601, or null while it has not."
     )
+    batch_proposal_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "The batch proposal a `retag` produced, as the UUID `GET /proposal-batches/{batchId}` "
+            "takes, once its run has filed it. Null while the run is working, when it filed "
+            "nothing, and for every other kind."
+        ),
+    )
 
 
 class ResearchRequestPage(CamelSchema):
