@@ -23,6 +23,7 @@ from ninja.errors import ValidationError as NinjaValidationError
 
 from apps.agents.api import router as agents_router
 from apps.cases.api import router as cases_router
+from apps.collab.api import router as collab_router
 from apps.governance.api import router as governance_router
 from apps.home.api import router as home_router
 from apps.identity.api import router as identity_router
@@ -69,6 +70,7 @@ api.add_router("", cases_router)
 api.add_router("", home_router)
 api.add_router("", register_router)
 api.add_router("", reports_router)
+api.add_router("", collab_router)
 
 
 @api.exception_handler(ProblemError)

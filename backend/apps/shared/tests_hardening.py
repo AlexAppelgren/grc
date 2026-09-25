@@ -271,6 +271,10 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/proposals/apply.py record('taxonomy_term') tenant_id=None actor=actor title=f'{payload.dimension}:{payload.key}'": (
         "The same door, for a taxonomy term: an approved key is public library vocabulary."
     ),
+    "apps/proposals/apply.py record('taxonomy_term') tenant_id=None actor=actor title=f'{term.dimension.key}:{term.key}'": (
+        "The same door, for the term that mirrors an approved jurisdiction (D-94): the title is "
+        "the dimension's and the term's stable keys, both seeded library vocabulary."
+    ),
     "apps/proposals/apply.py record(SubjectType.OBLIGATION.value) tenant_id=None actor=actor title=obligation.stable_key": (
         "The re-verification stamp, the one write to the library that is not a proposal, and "
         "a new obligation applied from an approved proposal: the actor is platform staff or "
@@ -659,3 +663,55 @@ class HardeningSettingsRefuseToBootBelowOne(SimpleTestCase):
                 self.assertIn(f"{variable} is 0", refused.stderr)
                 booted = self.boot(variable, 1)
                 self.assertEqual(booted.returncode, 0, booted.stderr[-800:])
+
+
+# ---------------------------------------------------------------------------------------
+# c10-notify-and-prefs: notify() is the one writer of a notification (CHUNK10_TASKS ruling 1)
+# ---------------------------------------------------------------------------------------
+# Every write of a notification row in production code, as "module call". notify() is the
+# only door, because the recipient check inside it (an active member who can read the
+# record, told once, unless they switched the kind off) is what keeps a notification from
+# telling somebody a record exists that they may not read.
+NOTIFICATION_WRITERS = {
+    "apps/collab/logic.py Notification(",
+    "apps/collab/logic.py Notification.objects.bulk_create(",
+}
+_ROW_WRITES = {"create", "bulk_create", "get_or_create", "update_or_create"}
+
+
+def _root_name(node: ast.expr) -> str | None:
+    while isinstance(node, (ast.Attribute, ast.Call)):
+        node = node.func if isinstance(node, ast.Call) else node.value
+    return node.id if isinstance(node, ast.Name) else None
+
+
+def _notification_writes() -> set[str]:
+    found: set[str] = set()
+    for path in production_modules():
+        rel = f"apps/{path.relative_to(APPS_DIR).as_posix()}"
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and any(alias.name == "Notification" and alias.asname for alias in node.names):
+                found.add(f"{rel} import Notification as {{alias}}")
+            if not isinstance(node, ast.Call):
+                continue
+            called = node.func
+            if isinstance(called, ast.Name) and called.id == "Notification":
+                found.add(f"{rel} Notification(")
+            elif isinstance(called, ast.Attribute) and called.attr in _ROW_WRITES and _root_name(called) == "Notification":
+                found.add(f"{rel} {ast.unparse(called)}(")
+    return found
+
+
+class NotifyIsTheOneWriterOfANotification(SimpleTestCase):
+    """COL-02, D-34: a notification written anywhere but notify() skips the recipient check."""
+
+    def test_no_production_module_but_collab_logic_writes_a_notification(self) -> None:
+        self.assertEqual(
+            _notification_writes() - NOTIFICATION_WRITERS,
+            set(),
+            "write a notification only through apps.collab.logic.notify(), which checks who may be told",
+        )
+
+    def test_the_guard_sees_the_one_writer_it_allows(self) -> None:
+        self.assertEqual(_notification_writes() & NOTIFICATION_WRITERS, NOTIFICATION_WRITERS)
