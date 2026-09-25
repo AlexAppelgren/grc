@@ -246,3 +246,10 @@ description = "E2E passkey private key for the seeded user approver@second-bank.
 condition = "AND"
 regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgqp4keK1CVCmUqb6cuZmxD4PZsm4iHTiQkEIDgB8CBTmhRANCAAQItrG7COh7F-vyB9XMk6g-gn4Jp6BtV6O3663YP4y-LUtTEc-4zlyk0tFyDvnF9JlXLtLIOE8vHq82uz9Z-763$''']
 paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
+
+# --- R2: the R2 journeys' head of department (c10 packages) ---
+[[allowlists]]
+description = "E2E passkey private key for the seeded user head@example-bank.test: E2E virtual authenticator test keys, playbook 8.3. Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."
+condition = "AND"
+regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgqa9Ivpb5XXlmirMlbzbohNontuLf7D4Fl3XDlS6BYPyhRANCAAQJbOyzHVQEODjoP3JAx13yUasZ49sf0Qmlkp5b8dpf3vYH1z8w4DJHhqyL2fgC23fTxDnkiXCdtzijJOfIAIFx$''']
+paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
