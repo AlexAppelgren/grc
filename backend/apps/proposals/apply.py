@@ -24,6 +24,7 @@ retired row cannot be relabelled into life, and a system row is never retired.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
 from typing import Any
 
 from django.core.exceptions import ValidationError
@@ -35,6 +36,7 @@ from pydantic.alias_generators import to_camel
 from apps.library.models import (
     Instrument,
     InstrumentTitle,
+    Jurisdiction,
     Obligation,
     ObligationSummary,
     ObligationTerm,
@@ -47,19 +49,21 @@ from apps.library.models import (
     Verification,
     VerificationOutcome,
 )
-from apps.library.reading import active_obligation, active_provision, live_duty_type, terms_of
+from apps.library.reading import active_obligation, active_provision, active_shared_obligations, live_duty_type, obligation_scope_terms, terms_of
 from apps.proposals import standards
 from apps.proposals.logic import (
     Reviewer,
     as_reviewer,
     merge_pair,
     parsed_payload,
+    refuse_vocabulary_change,
     validated_instrument,
     validated_obligation,
     validated_provision,
 )
-from apps.proposals.models import OriginType, Proposal, ProposalKind
+from apps.proposals.models import OriginType, Proposal, ProposalBatchRow, ProposalKind
 from apps.proposals.schemas import (
+    ObligationScopePayload,
     ProposalInstrumentPayload,
     ProposalObligationPayload,
     ProposalObligationVersionPayload,
@@ -84,8 +88,19 @@ from apps.taxonomy.terms_logic import refuse_mirrored
 ORIGINAL_LANGUAGE = "en"
 
 
-def apply(proposal: Proposal, *, actor: Actor, reviewer: "Reviewer | Any", step_up: uuid.UUID | None) -> None:
+def apply(
+    proposal: Proposal,
+    *,
+    actor: Actor,
+    reviewer: "Reviewer | Any",
+    step_up: uuid.UUID | None,
+    rows: Sequence[ProposalBatchRow] = (),
+) -> None:
     """Write what the approved `proposal` asks for, as the reviewer corrected it.
+
+    A batch (PRO-04) is applied row by row: `rows` are the rows of `proposal` being approved
+    now, each checked and written on its own, and a batch's other rows are left as they are.
+    A single proposal takes none.
 
     `corrected_payload` is what the reviewer approved and what the library gets; the
     proposal's own `payload` stays as it arrived, so the queue keeps both. `step_up` is the
@@ -97,7 +112,11 @@ def apply(proposal: Proposal, *, actor: Actor, reviewer: "Reviewer | Any", step_
     older caller (including this app's own tests); `as_reviewer` normalizes either.
     """
     reviewer = as_reviewer(reviewer, actor)
-    payload = parsed_payload(proposal.kind, proposal.corrected_payload or proposal.payload)
+    stored = proposal.corrected_payload or proposal.payload
+    # A batch's payload is filed by apps/proposals/batch.py, never through the single
+    # proposal's kinds, so its schema is named here rather than in `PAYLOAD_SCHEMAS`.
+    batched = proposal.kind == ProposalKind.OBLIGATION_SCOPE.value
+    payload = ObligationScopePayload.model_validate(stored) if batched else parsed_payload(proposal.kind, stored)
     with library_write(f"proposal:{proposal.id}", door="proposal"):
         if proposal.kind == ProposalKind.VOCABULARY_CREATE.value:
             assert isinstance(payload, ProposalVocabularyCreatePayload)
@@ -135,6 +154,9 @@ def apply(proposal: Proposal, *, actor: Actor, reviewer: "Reviewer | Any", step_
         elif proposal.kind == ProposalKind.NEW_PROVISION_VERSION.value:
             assert isinstance(payload, ProposalProvisionVersionPayload)
             _provision_version(payload, proposal, actor, reviewer, step_up)
+        elif proposal.kind == ProposalKind.OBLIGATION_SCOPE.value:
+            assert isinstance(payload, ObligationScopePayload)
+            _obligation_scope(payload, rows, proposal, actor, step_up)
         else:
             # Reached by a kind that enters the queue before the apply that writes it
             # exists: an approval of one is refused where the reviewer can see it, never
@@ -469,6 +491,60 @@ def _obligation_version(
     )
 
 
+def _obligation_scope(
+    payload: ObligationScopePayload, rows: Sequence[ProposalBatchRow], proposal: Proposal, actor: Actor, step_up: uuid.UUID | None
+) -> None:
+    """Re-tag each obligation of the approved `rows` (PRO-04, AGT-05): its scope terms become
+    the row's `after`, and nothing else about it changes. A scope belongs to the obligation,
+    not to a version, so no version is filed; the audit row holds the terms before and after,
+    and the index moves in the same transaction.
+
+    Checked again under the obligations' locks, against the library as it is now: a record
+    retired, or whose scope moved since the batch previewed it, is 409 `stale_write`, and
+    the whole decision fails with it rather than writing a scope nobody previewed. A term
+    added is live and mirrors no jurisdiction, and a standard's obligation keeps exactly one
+    standard term with a link as its source (D-35), as when the batch was filed. Only the
+    links that change are written: a term the obligation keeps stays linked as it was."""
+    ids = [row.subject_id for row in rows]
+    list(Obligation.objects.select_for_update().filter(pk__in=ids).order_by("id").values_list("id", flat=True))
+    in_force = active_shared_obligations(ids)
+    live = obligation_scope_terms(ids)
+    wanted = sorted({ref for row in rows for ref in row.after["terms"] if ref not in live.get(row.subject_id, {})})
+    added = {f"{term.dimension.key}:{term.key}": term for term in (terms_of(wanted) if wanted else [])}
+    refuse_mirrored(term.dimension_id for term in added.values())
+    sources = {change.obligation_id: change.source for change in payload.changes}
+    for row in rows:
+        obligation = in_force.get(row.subject_id)
+        if obligation is None:
+            raise ValidationError("A record in this batch was retired after it was filed: reject its row.", code="stale_write")
+        before = live.get(obligation.id, {})
+        after: list[str] = row.after["terms"]
+        if sorted(before) != row.before["terms"]:
+            raise ValidationError(
+                f"The scope of {obligation.stable_key} changed after the batch was filed: reject its row and file it again.",
+                code="stale_write",
+            )
+        scope = [before[ref] if ref in before else added[ref].id for ref in after]
+        standards.check(proposal.kind, obligation.instrument, scope, {"terms": sources[obligation.id]}, source_label=proposal.source_label)
+        ObligationTerm.objects.filter(obligation=obligation, term_id__in=[term_id for ref, term_id in before.items() if ref not in after]).delete()
+        for ref in after:
+            if ref not in before:
+                ObligationTerm.objects.create(obligation=obligation, term=added[ref])
+        reindex(obligation.id)
+        record(
+            action="obligation.scope_changed",
+            actor=actor,
+            subject_type=SubjectType.OBLIGATION.value,
+            subject_id=obligation.id,
+            subject_title=obligation.stable_key,
+            summary=f"Re-tagged {obligation.stable_key} (proposal {proposal.id}).",
+            tenant_id=None,
+            before={"terms": sorted(before)},
+            after={"terms": after, "proposal": str(proposal.id), "batchRow": str(row.id), "decision": "approved"},
+            step_up_assertion_id=step_up,
+        )
+
+
 # ---------------------------------------------------------------------------------------
 # Provisions (INV-02, INV-08, PRO-02)
 # ---------------------------------------------------------------------------------------
@@ -586,10 +662,14 @@ def _provision_version(
 # ---------------------------------------------------------------------------------------
 # Vocabulary rows
 # ---------------------------------------------------------------------------------------
-def _entry(name: str) -> VocabularyList:
+def _entry(name: str, kind: str, keys: list[str]) -> VocabularyList:
+    """The library list a vocabulary proposal names, with the rules its change obeys checked
+    again for the list as it is now (`logic.refuse_vocabulary_change`): a proposal filed
+    before a rule existed may still wait in the queue."""
     entry = REGISTRY[name]
     if not entry.is_library:  # pragma: no cover - logic.validated_payload refused it
         raise ValidationError(f"{name!r} is a tenant list; its admin writes it.", code="unknown_key")
+    refuse_vocabulary_change(entry, kind, keys)
     return entry
 
 
@@ -665,7 +745,7 @@ def _write_labels(entry: VocabularyList, row: Any, labels: dict[str, str], revie
 def _vocabulary_create(
     payload: ProposalVocabularyCreatePayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
 ) -> None:
-    entry = _entry(payload.list)
+    entry = _entry(payload.list, proposal.kind, [payload.key])
     if entry.model._default_manager.filter(key__iexact=payload.key).exists():
         raise ValidationError(f"{payload.key!r} already exists on {payload.list!r}.", code="duplicate_key")
     highest = entry.model._default_manager.order_by("-sort_order").values_list("sort_order", flat=True).first()
@@ -698,7 +778,7 @@ def _vocabulary_create(
 def _vocabulary_relabel(
     payload: ProposalVocabularyRelabelPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
 ) -> None:
-    entry = _entry(payload.list)
+    entry = _entry(payload.list, proposal.kind, [payload.key])
     row = _row(entry, payload.key)
     before = {label.language: label.text for label in entry.label_model._default_manager.filter(vocabulary=row)}
     if payload.labels:
@@ -723,6 +803,8 @@ def _vocabulary_relabel(
         )
     row.version += 1
     row.save()
+    if isinstance(row, Jurisdiction):
+        _mirrored_term_follows(row, payload.labels, payload.sort_order, proposal, actor, reviewer, step_up)
     record(
         action="vocabulary.updated",
         actor=actor,
@@ -742,9 +824,11 @@ def _vocabulary_relabel(
 
 
 def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None, *, active: bool) -> None:
-    entry = _entry(payload.list)
+    entry = _entry(payload.list, proposal.kind, [payload.key])
     row = _row(entry, payload.key)
-    if not active and row.is_system:
+    # On a list of fixed keys every row is the seed's, so being seeded cannot be what keeps a
+    # row: retiring is how a market leaves (D-94).
+    if not active and row.is_system and not entry.fixed_keys:
         raise ValidationError(f"{payload.key} is a system value: it can be relabelled but not retired.", code="system_row")
     if row.active == active:
         raise ValidationError(
@@ -753,6 +837,8 @@ def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Propo
     row.active = active
     row.version += 1
     row.save(update_fields=["active", "version"])
+    if isinstance(row, Jurisdiction):
+        _mirrored_term_follows(row, {}, None, proposal, actor, None, step_up)
     record(
         action="vocabulary.restored" if active else "vocabulary.retired",
         actor=actor,
@@ -768,7 +854,7 @@ def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Propo
 
 
 def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
-    entry = _entry(payload.list)
+    entry = _entry(payload.list, proposal.kind, [payload.key, payload.into])
     source, target = merge_pair(entry, payload.key, payload.into, lock=True)
     if source.is_system:
         raise ValidationError(f"{payload.key} is a system value: it can be relabelled but not merged away.", code="system_row")
@@ -806,6 +892,50 @@ def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposa
         },
         step_up_assertion_id=step_up,
     )
+
+
+def _mirrored_term_follows(
+    row: Jurisdiction,
+    labels: dict[str, str],
+    sort_order: int | None,
+    proposal: Proposal,
+    actor: Actor,
+    reviewer: Reviewer | None,
+    step_up: uuid.UUID | None,
+) -> None:
+    """The term that mirrors a jurisdiction takes what the approval just wrote on the row, in
+    the same transaction (FP-04, D-28, D-94): the labels, marked and stamped as a term
+    update's are, the sort order, and whether it is active. No proposal may change a mirrored
+    term itself (FP-S12), so this is the one way its wording moves after the seed filed it;
+    the seed puts back only its link, its parent and `active` (apps/taxonomy/seeds). A
+    jurisdiction with no mirrored term (International, D-38) changes alone. `reviewer` is
+    needed only when there are labels to write."""
+    terms = TaxonomyTerm.objects.select_for_update(of=("self",)).select_related("dimension").filter(jurisdiction=row).order_by("id")
+    for term in terms:
+        if not labels and sort_order is None and term.active == row.active:
+            continue
+        before = {label.language: label.text for label in TaxonomyTermLabel.objects.filter(term=term)}
+        was_active = term.active
+        if labels and reviewer is not None:
+            _term_labels(term, labels, reviewer)
+            _restamp(term, proposal, reviewer, TaxonomyTermLabel.objects.filter(term=term), usage_note_written=False)
+        if sort_order is not None:
+            term.sort_order = sort_order
+        term.active = row.active
+        term.version += 1
+        term.save()
+        record(
+            action="taxonomy.term_updated",
+            actor=actor,
+            subject_type="taxonomy_term",
+            subject_id=term.id,
+            subject_title=f"{term.dimension.key}:{term.key}",
+            summary=f"The term {term.key} in {term.dimension.key} followed the jurisdiction {row.key} (proposal {proposal.id}).",
+            tenant_id=None,
+            before={"labels": before, "active": was_active},
+            after={"labels": {**before, **labels}, "active": term.active, "proposal": str(proposal.id)},
+            step_up_assertion_id=step_up,
+        )
 
 
 def _repoint_rows(moving: Any, twins: Any, field: str, target: Any) -> int:

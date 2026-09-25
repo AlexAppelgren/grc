@@ -430,6 +430,9 @@ LIBRARY_WRITE: Node = ("apps.shared.tenancy", "library_write")
 APPLY: Node = ("apps.proposals.apply", "apply")
 APPLY_REVERIFICATION: Node = ("apps.proposals.apply", "apply_reverification")
 APPROVE: Node = ("apps.proposals.logic", "approve")
+# A batch's decision, which checks four eyes and records every row in the same transaction
+# as the approval does (PRO-04; c11-proposal-batches-decide).
+DECIDE_BATCH: Node = ("apps.proposals.batch", "decide")
 WATCH_WRITE: Node = ("apps.watch.write", "watch_write")
 CHANGE_WRITER: Node = ("apps.watch.api", "require_change_writer")
 # The body-level gate on confirming a change's curated facts (D-74): an agent-bound platform
@@ -450,6 +453,8 @@ ENFORCE_STEP_UP: Node = ("apps.shared.permissions", "enforce_step_up")
 LIBRARY_WRITING_ROUTES: dict[str, Node] = {
     "approveProposal": APPLY,
     "reverifyObligation": APPLY_REVERIFICATION,
+    # A batch's approved rows, through the same apply() (PRO-04; c11-proposal-batches-decide).
+    "decideProposalBatch": APPLY,
 }
 # The watch door's routes (D-64, ruling H): an agent's key registers a change it sighted
 # and curates the facts that change carries (WAT-02, WAT-03, AGT-07), and the source
@@ -684,9 +689,10 @@ class ProposalDoorGuard(SimpleTestCase):
     def test_apply_is_named_only_by_the_approval(self) -> None:
         self.assertEqual(
             code_index().referrers(APPLY),
-            [APPROVE],
-            "apps/proposals/apply.py apply() may be named only by proposals.logic.approve, which checks "
-            "four eyes and records the decision in the same transaction (PRO-02, AC-PRO1).",
+            [DECIDE_BATCH, APPROVE],
+            "apps/proposals/apply.py apply() may be named only by proposals.logic.approve and "
+            "proposals.batch.decide, which check four eyes and record the decision in the same "
+            "transaction (PRO-02, PRO-04, AC-PRO1).",
         )
 
     def test_only_the_approval_the_stamp_and_the_watch_door_reach_a_library_write(self) -> None:
