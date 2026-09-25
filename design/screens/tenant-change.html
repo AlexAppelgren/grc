@@ -12,7 +12,13 @@
    with merged duplicates, suggested obligation links with confidence to confirm,
    the classification panel where agent suggestions are confirmed, and the
    scope block. The prototype's triage, assessment, actions, evidence and
-   sign-off panels are chunk 9. */
+   sign-off panels are chunk 9.
+   Case panels, part A (CAS-02, CAS-03, CAS-04, CAS-08): triage, next step, the
+   impact assessment and actions, cut from vChange() and drawn in every state of
+   states.html.
+   Case panels, part B (CAS-05, CAS-06, CAS-07): evidence, sign-off, closed
+   and dismissed, and the case file with its export, cut from vChange() and
+   caseFile() and drawn in the same states. */
 :root{
   --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;--sand-3:#e7ddcb;
   --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
@@ -248,6 +254,35 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
   .tabbar svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
   .tabbar .dot{position:absolute;top:6px;right:calc(50% - 20px);background:#efe9dc;color:#003824;border-radius:999px;font-size:.65rem;font-weight:700;padding:0 6px}
 }
+/* Case panels, part A */
+.num{font-variant-numeric:tabular-nums}
+.pill.notice{border-left:0;margin:0;border-radius:999px;padding:2px 10px;font-size:.78rem}
+.radios{min-width:0;display:grid;gap:0;border:1px solid var(--line);border-radius:12px;padding:2px 14px;margin:0 0 14px}
+.radios legend{font-weight:600;font-size:.9rem;padding:0 4px}
+.arow{display:grid;grid-template-columns:28px 1fr auto;gap:10px 12px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line)}
+.arow:last-of-type{border-bottom:0}
+.arow input[type=checkbox]{width:20px;height:20px;margin-top:3px;accent-color:var(--brand)}
+.arow .t{font-weight:600}.arow.done .t{text-decoration:line-through;color:var(--muted)}
+.addrow{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;align-items:end;margin-top:14px}
+.addrow .field{margin:0}
+.ops{width:100%;border-collapse:collapse;font-size:.88rem;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.ops th,.ops td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line)}
+.ops th{color:var(--muted);font-weight:600}
+.ops tr:last-child td{border-bottom:0}
+.ops code{font-family:var(--mono);font-size:.84rem}
+.opswrap{overflow-x:auto;max-width:100%}
+main{min-width:0}.field select{max-width:100%}
+/* Case panels, part B */
+.erow{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line)}
+.erow:last-of-type{border-bottom:0}
+.erow .t{font-weight:600;margin:0 0 4px;overflow-wrap:anywhere}
+.erow .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+p.hint{color:var(--muted);font-size:.82rem;margin:4px 0 0}
+.modal .box.wide{max-width:760px}
+.field input[type=file]{min-width:0;max-width:100%;width:100%}
+.modal .box pre{max-height:420px}
+@media (max-width:820px){.erow{grid-template-columns:1fr}.erow .acts{justify-content:flex-end}}
+@media (max-width:820px){.arow{grid-template-columns:28px 1fr}.arow .acts{grid-column:2}.addrow{grid-template-columns:1fr}}
 @media (max-width:380px){.bar .btn{padding:10px 12px;font-size:.9rem}.bar .btn.small{padding:6px 10px}}
 </style>
 </head>
@@ -278,7 +313,11 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
           <div class="row"><div class="meta"><span class="pill brand">LVM</span><span class="pill positive">Confirmed by Sara Lindqvist, 16 Sep</span></div><h3><a href="#">Assess suitability when giving investment advice</a></h3><div class="meta"><span class="mono">9 kap.</span></div></div>
         </div>
         <div class="bar left" style="justify-content:flex-start"><button class="btn ghost small">Link another obligation</button></div></div>
-      <div class="panel" style="border-style:dashed"><h2 style="color:var(--muted)">Triage</h2><p class="meta" style="display:block">Urgency, owner, dismissal with a reason, the assessment and sign-off arrive with chunk 9. Until then this case stays in Needs triage.</p></div>
+      <form class="panel" aria-labelledby="tr-h"><h2 id="tr-h">Triage</h2><p style="color:var(--muted)">Confirm that this is relevant, set urgency and give it an owner. Or dismiss it with a reason, which is kept with the case.</p>
+        <div class="grid g11" style="align-items:start"><div class="field"><label for="tr-urg">Urgency</label><select id="tr-urg"><option selected>Act now</option><option>Within 3 months</option><option>6+ months</option><option>Monitor</option><option>No action</option></select><span class="hint">Suggested by Research agent 0.4</span></div>
+        <div class="field"><label for="tr-own">Owner</label><select id="tr-own"><option value="">Choose owner</option><option>Sara Lindqvist</option><option>Johan Berg</option><option>Erik Holm</option></select><span class="hint">People who can work cases</span></div></div>
+        <div class="field"><label for="tr-team">Owner team <span class="meta" style="display:inline">optional</span></label><select id="tr-team"><option value="">No team</option><option>Retail compliance</option><option>Legal</option></select></div>
+        <div class="bar"><button class="btn danger" type="button">Dismiss</button><button class="btn" type="submit">Confirm and assign</button></div></form>
     </div><div class="grid" style="align-content:start">
       <div class="panel"><h2>Timeline</h2><ul class="timeline">
         <li class="done"><b>Consultation closed</b><br>1 Jun 2026</li>
@@ -326,6 +365,387 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
 
     <h2 class="k">Confirmed So what (label gone), and a reader's view (no actions)</h2>
     <div class="sowhat" style="margin:0"><b>So what?</b> Research paid from the firm's own account must be shown separately on the client statement. <span class="meta" style="display:inline">Confirmed by Sara Lindqvist, 16 Sep 2026</span></div>
+
+    <!-- Case panels, part A: triage, next step, impact assessment, actions -->
+    <h2 class="k">Case panels: what each one calls and what unlocks it</h2>
+    <div class="opswrap"><table class="ops">
+      <thead><tr><th scope="col">Panel</th><th scope="col">Shown while</th><th scope="col">Operation</th><th scope="col">Unlocked by</th></tr></thead>
+      <tbody>
+        <tr><td>Triage</td><td>Needs triage</td><td><code>triageChange</code> <code>POST /changes/{changeId}/triage</code>; owner list <code>GET /reference/people?permission=cases.work</code>; urgency from the urgency list</td><td><code>cases.triage</code></td></tr>
+        <tr><td>Triage, Dismiss dialog</td><td>Needs triage</td><td><code>dismissChange</code> <code>POST /changes/{changeId}/dismiss</code>; reasons from the dismissal reason list</td><td><code>cases.triage</code></td></tr>
+        <tr><td>Next step, Start assessment</td><td>Assigned</td><td><code>startAssessment</code> <code>POST /changes/{changeId}/assessment/start</code></td><td><code>cases.work</code></td></tr>
+        <tr><td>Next step, No action dialog</td><td>Assigned, Assessing</td><td><code>closeWithoutAction</code> <code>POST /changes/{changeId}/close</code>; reasons from the close reason list, kind <code>no_action</code></td><td><code>cases.work</code></td></tr>
+        <tr><td>Impact assessment</td><td>Assessing onwards; read-only from Waiting for sign-off</td><td><code>saveAssessment</code> <code>PUT /changes/{changeId}/assessment</code> with <code>If-Match</code>; effort from the effort size list; status from the sub-status list, filtered to the case's category</td><td><code>cases.contribute</code>; "No" needs <code>cases.work</code></td></tr>
+        <tr><td>Impact assessment, contributor teams</td><td>Assessing, Implementing</td><td><code>POST /changes/{changeId}/participants</code> and <code>DELETE …/participants/{participantId}</code>, one team per call</td><td><code>cases.contribute</code></td></tr>
+        <tr><td>Actions, list</td><td>Assessing onwards</td><td><code>listActions</code> <code>GET /changes/{changeId}/actions</code></td><td><code>cases.read</code></td></tr>
+        <tr><td>Actions, Add action</td><td>Assessing, Implementing</td><td><code>addAction</code> <code>POST /changes/{changeId}/actions</code>; owner list <code>GET /reference/people?permission=cases.work</code></td><td><code>cases.work</code></td></tr>
+        <tr><td>Actions, complete, reopen, edit</td><td>Assessing, Implementing</td><td><code>updateAction</code> <code>PATCH /actions/{actionId}</code> with <code>If-Match</code></td><td><code>cases.contribute</code></td></tr>
+        <tr><td>Actions, Remove</td><td>Assessing, Implementing</td><td><code>deleteAction</code> <code>DELETE /actions/{actionId}</code></td><td><code>cases.work</code></td></tr>
+      </tbody></table></div>
+    <p style="margin-top:8px;color:var(--muted);font-size:.86rem">Every panel reads the case from <code class="mono">GET /changes/{changeId}</code> and shows a control only when the case's <code class="mono">allowedTransitions</code> and the viewer's permissions both allow it. Each answer is the full case, so the panels redraw from it.</p>
+
+    <h2 class="k">Triage: header after Confirm and assign ("Within 3 months" by kind, the tenant's status label)</h2>
+    <div class="meta"><span class="pill notice">Adopted rule</span><span class="pill warning">Within 3 months</span><span class="pill brand">Inducements</span><span class="pill">Assigned</span></div>
+
+    <h2 class="k">Triage: Confirm and assign without an owner (422 names the owner field)</h2>
+    <form class="panel" aria-labelledby="tr2-h"><h2 id="tr2-h">Triage</h2>
+      <div class="grid g11" style="align-items:start"><div class="field"><label for="tr2-urg">Urgency</label><select id="tr2-urg"><option>Act now</option><option selected>Within 3 months</option></select></div>
+      <div class="field"><label for="tr2-own">Owner</label><select id="tr2-own" aria-invalid="true" aria-describedby="tr2-err"><option value="">Choose owner</option></select><p class="err" id="tr2-err" role="alert">Choose who owns this case.</p></div></div>
+      <div class="bar"><button class="btn danger" type="button">Dismiss</button><button class="btn" type="submit">Confirm and assign</button></div></form>
+
+    <h2 class="k">Dismiss dialog: the tenant's dismissal reasons, and the refusals</h2>
+    <div class="modal"><form class="box" role="dialog" aria-labelledby="dm-h"><h2 id="dm-h">Dismiss this change?</h2>
+      <p>It leaves the open list. The reason is kept with the case, and it can be moved back to triage.</p>
+      <fieldset class="radios" aria-describedby="dm-err"><legend>Reason</legend>
+        <label class="check"><input type="radio" name="dm"><span>Out of scope<small>The change does not touch anything we do.</small></span></label>
+        <label class="check"><input type="radio" name="dm"><span>Duplicate<small>Already handled in another case.</small></span></label>
+        <label class="check"><input type="radio" name="dm"><span>Already covered<small>Our existing controls already meet it.</small></span></label>
+      </fieldset>
+      <p class="err" id="dm-err" role="alert">Choose a reason for dismissing it.</p>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn danger" type="submit">Dismiss</button></div>
+    </form></div>
+    <p class="err" role="alert" style="margin-top:10px">"not_ours" is not a value of Dismissal reason. Reload the page to get the current list.</p>
+
+    <h2 class="k">Triage, seen without cases.triage (no controls, no request that could answer 403)</h2>
+    <div class="panel"><h2>Triage</h2><p style="margin:0">This change needs triage: an urgency and an owner. Someone who can triage changes will pick it up.</p></div>
+
+    <h2 class="k">Next step (Assigned): Start assessment and No action</h2>
+    <div class="panel"><h2>Next step</h2><p>Assigned to Sara Lindqvist by Sara Lindqvist on 18 Sep 2026, owner team Retail compliance. An impact assessment records whether this applies, what must change and by when.</p>
+      <div class="bar"><button class="btn ghost" type="button">No action</button><button class="btn" type="button">Start assessment</button></div></div>
+
+    <h2 class="k">No action dialog: one person closes, the reason is required, the case can be moved back to triage</h2>
+    <div class="modal"><form class="box" role="dialog" aria-labelledby="na-h"><h2 id="na-h">Close without action?</h2>
+      <p>The case closes now, under your name, with the reason you choose. It can be moved back to triage later.</p>
+      <fieldset class="radios" aria-describedby="na-err"><legend>Reason</legend>
+        <label class="check"><input type="radio" name="na"><span>No action needed<small>Applies, but nothing has to change.</small></span></label>
+      </fieldset>
+      <div class="field"><label for="na-note">Note <span class="meta" style="display:inline">optional</span></label><textarea id="na-note" placeholder="For example: our research is paid from client charges already reported"></textarea><span class="hint">The note stays on the case and in its case file.</span></div>
+      <p class="err" id="na-err" role="alert">Choose a reason for closing it.</p>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Close the case</button></div>
+    </form></div>
+
+    <h2 class="k">Next step, seen without cases.work</h2>
+    <div class="panel"><h2>Next step</h2><p style="margin:0">Assigned to Sara Lindqvist on 18 Sep 2026. The owner starts the impact assessment.</p></div>
+
+    <h2 class="k">Impact assessment (Assessing), with the tenant's sub-status "Waiting for legal" in the header</h2>
+    <div class="meta" style="margin-bottom:10px"><span class="pill notice">Adopted rule</span><span class="pill warning">Within 3 months</span><span class="pill brand">Inducements</span><span class="pill">Waiting for legal</span></div>
+    <form class="panel" aria-labelledby="ia-h"><h2 id="ia-h">Impact assessment</h2>
+      <p class="meta" style="margin-bottom:14px"><span>Version 2</span><span>Saved by Johan Berg, 19 Sep 2026 09:12</span></p>
+      <fieldset class="radios"><legend>Does it apply to us?</legend>
+        <label class="check"><input type="radio" name="ia" checked><span>Yes</span></label>
+        <label class="check"><input type="radio" name="ia"><span>Partly</span></label>
+        <label class="check"><input type="radio" name="ia"><span>No<small>Saving closes the case as not applicable</small></span></label>
+      </fieldset>
+      <div class="field"><label for="ia-why">Why</label><textarea id="ia-why">We pay two research providers from our own account for the discretionary portfolios.</textarea></div>
+      <div class="field"><label for="ia-chg">What must change</label><textarea id="ia-chg" placeholder="Processes, customer journeys, disclosures, data, systems">Written criteria for the annual quality assessment, and a yearly review minuted by the investment committee.</textarea></div>
+      <div class="grid g11" style="align-items:start"><div class="field"><label for="ia-dl">Internal deadline</label><input type="date" id="ia-dl" value="2026-09-30"></div>
+      <div class="field"><label for="ia-eff">Effort</label><select id="ia-eff"><option>S, days of work</option><option selected>M, weeks of work</option><option>L, months of work, or a project</option></select></div></div>
+      <div class="field"><label for="ia-sub">Status</label><select id="ia-sub"><option>Assessing</option><option selected>Waiting for legal</option></select><span class="hint">Your organisation's statuses for an assessment in progress</span></div>
+      <div class="field"><span style="font-weight:600;font-size:.9rem">Contributor teams</span>
+        <div class="facets"><span class="pill outlined">Legal <button class="x" type="button" aria-label="Remove Legal" style="background:none;border:0;padding:0;color:inherit">×</button></span><span class="pill outlined">Retail compliance <button class="x" type="button" aria-label="Remove Retail compliance" style="background:none;border:0;padding:0;color:inherit">×</button></span><button class="btn ghost small" type="button">Add a team</button></div>
+        <span class="hint">Each team is added or removed on its own and shows under Participants.</span></div>
+      <div class="bar"><button class="btn ghost" type="button">No action</button><button class="btn" type="submit">Save assessment and plan actions</button></div></form>
+
+    <h2 class="k">Impact assessment: saved without a why (422 on the field), and an unknown status (422 unknown_key)</h2>
+    <div class="panel"><div class="field"><label for="ia2-why">Why</label><textarea id="ia2-why" aria-invalid="true" aria-describedby="ia2-err"></textarea><p class="err" id="ia2-err" role="alert">Say why it applies, or why it does not.</p></div>
+      <p class="err" role="alert" style="margin:0">"waiting_for_board" is not a status of an assessment in progress. Reload the page to get the current list.</p></div>
+
+    <h2 class="k">Impact assessment: "No" asks before it closes the case</h2>
+    <div class="modal"><div class="box" role="dialog" aria-labelledby="nap-h"><h2 id="nap-h">Close as not applicable?</h2>
+      <p>Saving says this does not apply to us. The case closes now with the reason Not applicable, and it can be moved back to triage later.</p>
+      <div class="bar"><button class="btn ghost" type="button">Keep editing</button><button class="btn" type="button">Save and close</button></div></div></div>
+
+    <h2 class="k">Impact assessment: "No", for someone who can contribute but not work cases</h2>
+    <fieldset class="radios" style="background:var(--surface)"><legend>Does it apply to us?</legend>
+      <label class="check"><input type="radio" name="ia3" checked><span>Yes</span></label>
+      <label class="check"><input type="radio" name="ia3"><span>Partly</span></label>
+      <label class="check"><input type="radio" name="ia3" disabled><span>No<small>Saying it does not apply closes the case. Ask the case owner.</small></span></label>
+    </fieldset>
+
+    <h2 class="k">Impact assessment: someone else saved first (409 stale_write): reload, never merge, your text kept</h2>
+    <div class="panel"><h2>Impact assessment</h2>
+      <div class="notice warn" role="alert" style="margin-bottom:14px"><b>Erik Holm saved this at 10:42 while you were editing.</b> Nothing of yours was saved or merged. Reload to see their version, then apply your change again.<div class="bar left"><button class="btn small" type="button">Reload their version</button></div></div>
+      <div class="field"><span style="font-weight:600;font-size:.9rem">Your unsaved text, to copy</span>
+        <div class="quote">Why: We pay two research providers from our own account, and a third from next year.<br>What must change: Criteria for the annual assessment, reviewed by the investment committee.<cite>Kept on this screen until you reload or leave</cite></div></div></div>
+
+    <h2 class="k">Impact assessment, read-only (without cases.contribute, and for everyone from Waiting for sign-off)</h2>
+    <div class="panel"><h2>Impact assessment</h2>
+      <dl class="kv"><dt>Applies</dt><dd>Yes</dd><dt>Why</dt><dd>We pay two research providers from our own account for the discretionary portfolios.</dd><dt>What must change</dt><dd>Written criteria for the annual quality assessment, and a yearly review minuted by the investment committee.</dd><dt>Internal deadline</dt><dd>30 Sep 2026</dd><dt>Effort</dt><dd>M, weeks of work</dd><dt>Contributor teams</dt><dd>Legal, Retail compliance</dd><dt>Saved</dt><dd>Version 2, by Johan Berg, 19 Sep 2026 09:12</dd></dl></div>
+
+    <h2 class="k">Actions (Implementing): owner, due date, days left, the add row, completion, remove</h2>
+    <div class="panel" aria-labelledby="ac-h"><h2 id="ac-h">Actions</h2>
+      <div class="arow"><input type="checkbox" id="ac1" aria-describedby="ac1-m"><div><label class="t" for="ac1">Write the criteria for the annual research assessment</label><div class="meta" id="ac1-m"><span>Johan Berg</span><span class="num">Due 15 Sep 2026</span><span class="pill negative">Overdue</span><span class="num">4 days late</span></div></div><div class="acts"><button class="btn ghost small" type="button">Remove</button></div></div>
+      <div class="arow"><input type="checkbox" id="ac2" aria-describedby="ac2-m"><div><label class="t" for="ac2">Get the investment committee to adopt the criteria</label><div class="meta" id="ac2-m"><span>Sara Lindqvist</span><span class="num">Due 30 Sep 2026</span><span class="num">11 days left</span></div></div><div class="acts"><button class="btn ghost small" type="button">Remove</button></div></div>
+      <div class="arow done"><input type="checkbox" id="ac3" checked aria-describedby="ac3-m"><div><label class="t" for="ac3">List the research providers paid from our own account</label><div class="meta" id="ac3-m"><span>Johan Berg</span><span class="num">Due 17 Sep 2026</span><span>Done 17 Sep 2026 by Johan Berg</span></div></div><div class="acts"><button class="btn ghost small" type="button">Remove</button></div></div>
+      <div class="addrow"><div class="field"><label for="na-t">New action</label><input id="na-t" placeholder="What needs to be done"></div><div class="field"><label for="na-o">Owner</label><select id="na-o"><option>Sara Lindqvist</option><option>Johan Berg</option></select></div><div class="field"><label for="na-d">Due</label><input type="date" id="na-d"></div></div>
+      <div class="bar"><button class="btn" type="button">Add action</button></div>
+      <p class="meta" style="margin-top:6px">2 of 3 open</p></div>
+
+    <h2 class="k">Actions: none yet (Assessing, after the assessment is saved)</h2>
+    <div class="panel"><h2>Actions</h2>
+      <div class="empty" style="padding:18px"><h2>No actions yet</h2><p>Add what must be done, with an owner and a due date. The first action starts the implementation.</p></div>
+      <div class="addrow"><div class="field"><label for="na2-t">New action</label><input id="na2-t" placeholder="What needs to be done" aria-invalid="true" aria-describedby="na2-err"></div><div class="field"><label for="na2-o">Owner</label><select id="na2-o"><option>Sara Lindqvist</option></select></div><div class="field"><label for="na2-d">Due</label><input type="date" id="na2-d"></div></div>
+      <p class="err" id="na2-err" role="alert">Give the action a title.</p>
+      <div class="bar"><button class="btn" type="button">Add action</button></div></div>
+
+    <h2 class="k">Actions: the cap (409 too_many_actions, the number from the answer)</h2>
+    <p class="err" role="alert">This case already has 50 actions, the most one case can hold. Complete or remove one first.</p>
+
+    <h2 class="k">Actions: remove, with its confirm</h2>
+    <div class="modal"><div class="box" role="dialog" aria-labelledby="ar-h"><h2 id="ar-h">Remove "Get the investment committee to adopt the criteria"?</h2><p>It leaves the list and no longer counts as open. The case file still shows it was planned and removed.</p><div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn danger" type="button">Remove</button></div></div></div>
+
+    <h2 class="k">Actions: locked while the case waits for sign-off, and the 409 actions_locked from a stale tab</h2>
+    <div class="panel"><h2>Actions</h2>
+      <div class="notice" style="margin-bottom:8px">Actions are locked while this case waits for sign-off. Sending it back unlocks them.</div>
+      <div class="arow done"><input type="checkbox" checked disabled id="lk1" aria-describedby="lk1-m"><div><label class="t" for="lk1">Write the criteria for the annual research assessment</label><div class="meta" id="lk1-m"><span>Johan Berg</span><span class="num">Due 15 Sep 2026</span><span>Done 18 Sep 2026 by Johan Berg</span></div></div></div>
+      <div class="arow done"><input type="checkbox" checked disabled id="lk2" aria-describedby="lk2-m"><div><label class="t" for="lk2">Get the investment committee to adopt the criteria</label><div class="meta" id="lk2-m"><span>Sara Lindqvist</span><span class="num">Due 30 Sep 2026</span><span>Done 19 Sep 2026 by Sara Lindqvist</span></div></div></div>
+      <p class="err" role="alert" style="margin:10px 0 0">This case now waits for sign-off, so its actions can no longer change. <a href="#">Reload to see it</a>.</p></div>
+
+    <h2 class="k">Actions, seen by a contributor (complete and reopen only) and by a reader (list only)</h2>
+    <div class="grid g11">
+      <div class="panel"><h3>Actions</h3>
+        <div class="arow"><input type="checkbox" id="cv1" aria-describedby="cv1-m"><div><label class="t" for="cv1">Get the investment committee to adopt the criteria</label><div class="meta" id="cv1-m"><span>Sara Lindqvist</span><span class="num">Due 30 Sep 2026</span><span class="num">11 days left</span></div></div></div></div>
+      <div class="panel"><h3>Actions</h3>
+        <div class="arow"><input type="checkbox" disabled id="rv1" aria-describedby="rv1-m"><div><label class="t" for="rv1">Get the investment committee to adopt the criteria</label><div class="meta" id="rv1-m"><span>Sara Lindqvist</span><span class="num">Due 30 Sep 2026</span><span class="num">11 days left</span></div></div></div></div>
+    </div>
+
+    <h2 class="k">Case panels: loading and error, one per panel, in place</h2>
+    <div class="grid g11">
+      <div aria-busy="true" role="status"><span class="sr">Loading…</span><div class="skeleton" style="height:220px"></div></div>
+      <div class="empty" role="alert"><h2>Could not load the actions</h2><p>Check your connection and try again.</p><button class="btn ghost small" type="button">Try again</button></div>
+    </div>
+    <p class="err" role="alert" style="margin-top:12px">Could not save the assessment. Check your connection and try again.</p>
+    <p class="ok" role="status">Assessment saved. It is now version 3.</p>
+
+    <p class="note">Case panels, part A. One work panel shows at a time in the left column, chosen by the case's category: Triage for Needs triage, Next step for Assigned, Impact assessment from Assessing, with Actions under it once the assessment is saved. The status pill sits in the header's workflow status slot as information and reads the tenant's sub-status label ("Waiting for legal"); urgency takes its row's kind ("Within 3 months" warning, "Act now" negative). Urgency, owner, dismissal and close reasons, effort and status are the tenant's lists, sent as keys. Triage and dismissal need cases.triage; Start assessment, No action, Add action and Remove need cases.work; saving the assessment and completing, reopening or editing an action need cases.contribute; answering "No" needs cases.work because it closes the case. A viewer without the permission sees the panel's facts and no control, so no click can answer 403. No action and "No" close the case with one person's name on it and a reason from the close reason list; both can be moved back to triage, which part B draws with the closed state. The assessment and each action carry a version: a save sends If-Match, a 409 stale_write shows who saved and a reload, keeps the unsaved text on screen and never merges. While the case waits for sign-off, actions are locked and the assessment is read-only. An action is removed, never deleted: it leaves the list and stays in the case file. An open action past its due date shows "Overdue" as negative, computed from the tenant-local date; days left and days late are text in tabular numerals. Send as tickets is chunk 13 and is not on this card. Refusals render where the action was taken, from the server's answer.</p>
+    <!-- end of case panels, part A -->
+    <!-- Case panels, part B: evidence, sign-off, closed and dismissed, the case file -->
+    <h2 class="k">Case panels, part B: what each one calls and what unlocks it</h2>
+    <div class="opswrap"><table class="ops">
+      <thead><tr><th scope="col">Panel</th><th scope="col">Shown while</th><th scope="col">Operation</th><th scope="col">Unlocked by</th></tr></thead>
+      <tbody>
+        <tr><td>Evidence, list</td><td>Assessing onwards</td><td><code>listEvidence</code> <code>GET /changes/{changeId}/evidence</code></td><td><code>cases.read</code></td></tr>
+        <tr><td>Evidence, Download</td><td>A checked file only</td><td><code>downloadEvidence</code> <code>GET /evidence/{evidenceId}/download</code>, streamed as an attachment, one audit row per download</td><td><code>cases.read</code></td></tr>
+        <tr><td>Evidence, Attach evidence</td><td>Assessing, Implementing</td><td><code>addEvidence</code> <code>POST /changes/{changeId}/evidence</code>; a file as <code>multipart/form-data</code>, a link or a reference as JSON</td><td><code>cases.contribute</code></td></tr>
+        <tr><td>Evidence, Remove</td><td>Assessing, Implementing</td><td><code>removeEvidence</code> <code>DELETE /evidence/{evidenceId}</code>, a soft removal</td><td><code>cases.work</code></td></tr>
+        <tr><td>Sign-off, Request sign-off</td><td>Implementing</td><td><code>requestSignoff</code> <code>POST /changes/{changeId}/signoff/request</code>; the reason line reads <code>canRequestSignoff</code> and <code>openActionCount</code></td><td><code>cases.work</code></td></tr>
+        <tr><td>Sign-off, Sign off and close</td><td>Waiting for sign-off</td><td><code>approveSignoff</code> <code>POST /changes/{changeId}/signoff/approve</code> with an optional note; 403 <code>step_up_required</code> opens the passkey prompt and the request is sent again once</td><td><code>cases.signoff</code>, step-up</td></tr>
+        <tr><td>Sign-off, Send back</td><td>Waiting for sign-off</td><td><code>sendBackSignoff</code> <code>POST /changes/{changeId}/signoff/send-back</code> with a note</td><td><code>cases.signoff</code></td></tr>
+        <tr><td>Closed or Dismissed, Move back to triage</td><td>Dismissed; Closed without action or as not applicable. Never after a sign-off</td><td><code>restoreChange</code> <code>POST /changes/{changeId}/restore</code></td><td><code>cases.triage</code></td></tr>
+        <tr><td>Show case file</td><td>Every status</td><td><code>getCaseFile</code> <code>GET /changes/{changeId}/case-file</code>, plain text in the reader's language</td><td><code>cases.read</code></td></tr>
+        <tr><td>Case file, Export</td><td>Every status</td><td><code>createExport</code> <code>POST /exports</code> with kind <code>case_file</code>, then <code>getExport</code> for its status and <code>downloadExport</code> for the file</td><td><code>exports.create</code>, step-up</td></tr>
+      </tbody></table></div>
+
+    <h2 class="k">Evidence (Implementing): kind, name, size, who and when, and the scan state by kind</h2>
+    <div class="panel" aria-labelledby="ev-h"><h2 id="ev-h">Evidence</h2>
+      <div class="erow"><div><p class="t">research-assessment-criteria-v2.pdf</p><div class="meta"><span>File, PDF</span><span class="num">412 KB</span><span>Johan Berg, 18 Sep 2026</span><span class="pill positive">Checked</span></div></div><div class="acts"><button class="btn ghost small" type="button">Remove</button><button class="btn small" type="button">Download</button></div></div>
+      <div class="erow"><div><p class="t"><a href="#" rel="noopener noreferrer" target="_blank">Investment committee minutes, research budget<span class="sr"> (opens in a new tab)</span></a></p><div class="meta"><span>Link</span><span class="mono">intranet.bank.example/ic/2026-09</span><span>Sara Lindqvist, 18 Sep 2026</span></div></div><div class="acts"><button class="btn ghost small" type="button">Remove</button></div></div>
+      <div class="erow"><div><p class="t">Inducements policy, section 4, adopted 2025</p><div class="meta"><span>Reference</span><span>Sara Lindqvist, 18 Sep 2026</span></div></div><div class="acts"><button class="btn ghost small" type="button">Remove</button></div></div>
+      <div class="erow"><div><p class="t">provider-assessment-2026.xlsx</p><div class="meta"><span>File, XLSX</span><span class="num">88 KB</span><span>Johan Berg, 19 Sep 2026</span><span class="pill notice">Being checked</span></div><p class="hint">It can be opened once it has been checked for malware.</p></div><div class="acts"><button class="btn ghost small" type="button">Remove</button></div></div>
+      <div class="erow"><div><p class="t">minutes-scan.pdf</p><div class="meta"><span>File, PDF</span><span class="num">2.1 MB</span><span>Johan Berg, 19 Sep 2026</span><span class="pill negative">Refused, malware found</span></div><p class="hint">The file was deleted. Its name and fingerprint stay on the case.</p></div><div class="acts"><button class="btn ghost small" type="button">Remove</button></div></div>
+      <div class="erow"><div><p class="t">criteria-draft.docx</p><div class="meta"><span>File, DOCX</span><span class="num">54 KB</span><span>Johan Berg, 19 Sep 2026</span><span class="pill warning">Could not be checked</span></div><p class="hint">Nobody can open it. Remove it and attach the file again.</p></div><div class="acts"><button class="btn ghost small" type="button">Remove</button></div></div>
+      <div class="bar"><button class="btn" type="button">Attach evidence</button></div></div>
+
+    <h2 class="k">Evidence: none yet, and the view of a contributor (attach, no remove) and a reader (download only)</h2>
+    <div class="panel"><h2>Evidence</h2>
+      <div class="empty" style="padding:18px"><h2>No evidence yet</h2><p>Attach a file, a link or a reference to an internal document. Sign-off needs at least one piece of evidence that has been checked.</p></div>
+      <div class="bar"><button class="btn" type="button">Attach evidence</button></div></div>
+    <div class="grid g11" style="margin-top:12px">
+      <div class="panel"><h3>Evidence</h3>
+        <div class="erow"><div><p class="t">research-assessment-criteria-v2.pdf</p><div class="meta"><span>File, PDF</span><span class="num">412 KB</span><span>Johan Berg, 18 Sep 2026</span><span class="pill positive">Checked</span></div></div><div class="acts"><button class="btn small" type="button">Download</button></div></div>
+        <div class="bar"><button class="btn" type="button">Attach evidence</button></div></div>
+      <div class="panel"><h3>Evidence</h3>
+        <div class="erow"><div><p class="t">research-assessment-criteria-v2.pdf</p><div class="meta"><span>File, PDF</span><span class="num">412 KB</span><span>Johan Berg, 18 Sep 2026</span><span class="pill positive">Checked</span></div></div><div class="acts"><button class="btn small" type="button">Download</button></div></div></div>
+    </div>
+
+    <h2 class="k">Attach evidence: a file</h2>
+    <div class="modal"><form class="box" role="dialog" aria-labelledby="ae-h"><h2 id="ae-h">Attach evidence</h2>
+      <fieldset class="radios"><legend>What are you attaching?</legend>
+        <label class="check"><input type="radio" name="aek" checked><span>A file<small>Checked for malware before anyone can open it.</small></span></label>
+        <label class="check"><input type="radio" name="aek"><span>A link<small>A web address. Nothing is fetched from it.</small></span></label>
+        <label class="check"><input type="radio" name="aek"><span>A reference<small>The name of an internal document kept elsewhere.</small></span></label>
+      </fieldset>
+      <div class="field"><label for="ae-file">File</label><input type="file" id="ae-file"><span class="hint">research-assessment-criteria-v2.pdf, 412 KB</span></div>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Attach evidence</button></div>
+    </form></div>
+
+    <h2 class="k">Attach evidence: a link, and a reference</h2>
+    <div class="grid g11">
+      <div class="modal" style="margin-top:0"><form class="box" role="dialog" aria-labelledby="al-h"><h2 id="al-h">Attach evidence</h2>
+        <p class="meta" style="margin-bottom:12px"><span>A link</span></p>
+        <div class="field"><label for="al-t">Name</label><input id="al-t" value="Investment committee minutes, research budget"></div>
+        <div class="field"><label for="al-u">Web address</label><input id="al-u" type="url" value="intranet.bank.example/ic/2026-09" aria-invalid="true" aria-describedby="al-err"><p class="err" id="al-err" role="alert">Enter a web address that starts with https://.</p></div>
+        <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Attach evidence</button></div>
+      </form></div>
+      <div class="modal" style="margin-top:0"><form class="box" role="dialog" aria-labelledby="ar2-h"><h2 id="ar2-h">Attach evidence</h2>
+        <p class="meta" style="margin-bottom:12px"><span>A reference</span></p>
+        <div class="field"><label for="ar2-t">Document</label><input id="ar2-t" value="Inducements policy, section 4, adopted 2025"><span class="hint">Where it is kept and which version, so a reviewer can find it.</span></div>
+        <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Attach evidence</button></div>
+      </form></div>
+    </div>
+
+    <h2 class="k">Attach evidence: uploading, then attached and being checked</h2>
+    <div class="modal"><div class="box" role="dialog" aria-labelledby="au-h" aria-busy="true"><h2 id="au-h">Attach evidence</h2>
+      <p class="meta" style="margin-bottom:12px"><span>research-assessment-criteria-v2.pdf</span><span class="num">412 KB</span></p>
+      <p role="status">Uploading…</p>
+      <div class="bar"><button class="btn ghost" type="button" disabled>Cancel</button><button class="btn" type="submit" disabled>Attach evidence</button></div></div></div>
+    <p class="ok" role="status">Attached. It can be opened once it has been checked for malware.</p>
+
+    <h2 class="k">Attach evidence: a refused file (422, the allowed types and the size limit from the server's answer), and no scanner (503)</h2>
+    <div class="modal"><form class="box" role="dialog" aria-labelledby="af-h"><h2 id="af-h">Attach evidence</h2>
+      <div class="field"><label for="af-file">File</label><input type="file" id="af-file" aria-invalid="true" aria-describedby="af-err"><span class="hint">research-notes.zip, 31.4 MB</span>
+        <p class="err" id="af-err" role="alert">This file can't be attached. Attach a PDF, DOCX, XLSX, PPTX, PNG, JPEG, TXT or CSV file of at most 25 MB.</p></div>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Attach evidence</button></div>
+    </form></div>
+    <p class="err" role="alert">Files can't be checked for malware right now, so nothing was attached. Try again later.</p>
+
+    <h2 class="k">Evidence: remove, with its confirm; and a download refused from a stale list</h2>
+    <div class="modal"><div class="box" role="dialog" aria-labelledby="er-h"><h2 id="er-h">Remove "provider-assessment-2026.xlsx"?</h2><p>It leaves the list and no longer counts toward sign-off. The case file keeps its name, its fingerprint and the date it was removed.</p><div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn danger" type="button">Remove</button></div></div></div>
+    <p class="err" role="alert">This file is still being checked for malware. Try again in a minute.</p>
+    <p class="err" role="alert">This file can't be opened because it did not pass the malware check.</p>
+
+    <h2 class="k">Evidence, while the case waits for sign-off and after it closes: read-only</h2>
+    <div class="panel"><h2>Evidence</h2>
+      <p class="hint" style="margin:0 0 4px">Evidence can't be added or removed while the case waits for sign-off. Sending it back opens it again.</p>
+      <div class="erow"><div><p class="t">research-assessment-criteria-v2.pdf</p><div class="meta"><span>File, PDF</span><span class="num">412 KB</span><span>Johan Berg, 18 Sep 2026</span><span class="pill positive">Checked</span></div></div><div class="acts"><button class="btn small" type="button">Download</button></div></div>
+      <div class="erow"><div><p class="t"><a href="#" rel="noopener noreferrer" target="_blank">Investment committee minutes, research budget<span class="sr"> (opens in a new tab)</span></a></p><div class="meta"><span>Link</span><span>Sara Lindqvist, 18 Sep 2026</span></div></div></div></div>
+
+    <h2 class="k">Sign-off (Implementing): ready to request</h2>
+    <div class="panel" aria-labelledby="so-h"><h2 id="so-h">Sign-off</h2>
+      <p style="margin:0">Every action is done and there is evidence that has been checked. Someone else who can sign off then closes the case.</p>
+      <div class="bar"><button class="btn" type="button">Request sign-off</button></div></div>
+
+    <h2 class="k">Request sign-off: refused with an open action (409 open_actions, the count from the answer), then with no evidence (409 evidence_missing)</h2>
+    <div class="grid g11">
+      <div class="panel"><h2>Sign-off</h2>
+        <p class="hint" style="margin:0">1 action is still open.</p>
+        <div class="bar"><button class="btn" type="button" aria-describedby="so1-err">Request sign-off</button></div>
+        <p class="err" id="so1-err" role="alert">1 action is still open. Complete or remove it, then request sign-off.</p></div>
+      <div class="panel"><h2>Sign-off</h2>
+        <p class="hint" style="margin:0">No evidence has been checked yet.</p>
+        <div class="bar"><button class="btn" type="button" aria-describedby="so2-err">Request sign-off</button></div>
+        <p class="err" id="so2-err" role="alert">Attach at least one piece of evidence, and wait until a file has been checked, then request sign-off.</p></div>
+    </div>
+
+    <h2 class="k">Header while the case waits for sign-off (the tenant's status label, information slot)</h2>
+    <div class="meta"><span class="pill notice">Adopted rule</span><span class="pill warning">Within 3 months</span><span class="pill brand">Inducements</span><span class="pill">Waiting for sign-off</span></div>
+
+    <h2 class="k">Waiting for sign-off, seen by Maria, who can sign off: Sign off and close, Send back</h2>
+    <form class="panel" aria-labelledby="sa-h"><h2 id="sa-h">Sign-off</h2>
+      <p>Sara Lindqvist asked for sign-off on 19 Sep 2026. Read the assessment, the actions and the evidence above. Signing off closes the case under your name.</p>
+      <div class="field"><label for="sa-note">Note <span class="meta" style="display:inline">optional</span></label><textarea id="sa-note" placeholder="For example: criteria reviewed against the committee minutes"></textarea><span class="hint">The note stays on the case and in its case file.</span></div>
+      <div class="bar"><button class="btn ghost" type="button">Send back</button><button class="btn" type="submit">Sign off and close</button></div></form>
+
+    <h2 class="k">Sign off and close: the passkey prompt (403 step_up_required), the request sent again once it succeeds</h2>
+    <div class="modal"><div class="box" role="dialog" aria-modal="true" aria-labelledby="su-h"><h2 id="su-h">Confirm with your passkey</h2>
+      <p>This action needs a fresh confirmation from you. Your device will ask for a fingerprint, face or PIN.</p>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="button">Use passkey</button></div></div></div>
+    <p class="err" role="alert">The case was not signed off. Sign off and close needs your passkey.</p>
+
+    <h2 class="k">Waiting for sign-off, seen by Sara, who asked for it and can also sign off (409 four_eyes_violation)</h2>
+    <div class="panel"><h2>Sign-off</h2>
+      <p>You asked for sign-off on 19 Sep 2026. Someone else who can sign off has to give it.</p>
+      <div class="bar"><button class="btn ghost" type="button">Send back</button><button class="btn" type="button" aria-describedby="sv-err">Sign off and close</button></div>
+      <p class="err" id="sv-err" role="alert">You asked for this sign-off, so you can't give it. A second person has to sign off.</p></div>
+
+    <h2 class="k">Send back: the note is required</h2>
+    <div class="modal"><form class="box" role="dialog" aria-labelledby="sb-h"><h2 id="sb-h">Send back for more work?</h2>
+      <p>The case goes back to implementing and its actions can be changed again. Sara Lindqvist can ask for sign-off again when it is ready.</p>
+      <div class="field"><label for="sb-note">What needs to change</label><textarea id="sb-note" aria-invalid="true" aria-describedby="sb-err" placeholder="For example: attach the adopted criteria, not the draft"></textarea><p class="err" id="sb-err" role="alert">Say what needs to change.</p></div>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Send back</button></div>
+    </form></div>
+
+    <h2 class="k">Waiting for sign-off, seen without cases.signoff (no controls)</h2>
+    <div class="panel"><h2>Sign-off</h2><p style="margin:0">Sara Lindqvist asked for sign-off on 19 Sep 2026. Someone who can sign off will pick it up.</p></div>
+
+    <h2 class="k">Closed, signed off: both names, no way back</h2>
+    <div class="meta" style="margin-bottom:10px"><span class="pill notice">Adopted rule</span><span class="pill warning">Within 3 months</span><span class="pill brand">Inducements</span><span class="pill">Closed</span></div>
+    <div class="panel"><h2>Closed</h2>
+      <dl class="kv"><dt>Signed off by</dt><dd>Maria Ek, 22 Sep 2026</dd><dt>Asked for by</dt><dd>Sara Lindqvist, 19 Sep 2026</dd><dt>Note</dt><dd>Criteria reviewed against the committee minutes.</dd></dl>
+      <div class="bar"><button class="btn ghost" type="button">Show case file</button></div></div>
+
+    <h2 class="k">Closed without action, and closed as not applicable: reason, who, and Move back to triage</h2>
+    <div class="grid g11">
+      <div class="panel"><h2>Closed</h2>
+        <dl class="kv"><dt>Closed by</dt><dd>Sara Lindqvist, 18 Sep 2026</dd><dt>Reason</dt><dd>No action needed</dd><dt>Note</dt><dd>Our research is paid from client charges already reported.</dd></dl>
+        <div class="bar"><button class="btn ghost" type="button">Show case file</button><button class="btn" type="button">Move back to triage</button></div></div>
+      <div class="panel"><h2>Closed</h2>
+        <dl class="kv"><dt>Closed by</dt><dd>Johan Berg, 18 Sep 2026</dd><dt>Reason</dt><dd>Does not apply to us</dd><dt>Why</dt><dd>We buy no third-party research.</dd></dl>
+        <div class="bar"><button class="btn ghost" type="button">Show case file</button><button class="btn" type="button">Move back to triage</button></div></div>
+    </div>
+
+    <h2 class="k">Dismissed: reason, who, and Move back to triage; then the moved-back answer</h2>
+    <div class="meta" style="margin-bottom:10px"><span class="pill notice">Adopted rule</span><span class="pill brand">Inducements</span><span class="pill">Dismissed</span></div>
+    <div class="panel"><h2>Dismissed</h2>
+      <dl class="kv"><dt>Dismissed by</dt><dd>Sara Lindqvist, 17 Sep 2026</dd><dt>Reason</dt><dd>Outside our business</dd><dt>Note</dt><dd>We do not offer portfolio management.</dd></dl>
+      <div class="bar"><button class="btn ghost" type="button">Show case file</button><button class="btn" type="button">Move back to triage</button></div></div>
+    <p class="ok" role="status">Moved back to triage. It needs an urgency and an owner again.</p>
+
+    <h2 class="k">Closed or dismissed, seen without cases.triage (no Move back to triage)</h2>
+    <div class="panel"><h2>Dismissed</h2>
+      <dl class="kv"><dt>Dismissed by</dt><dd>Sara Lindqvist, 17 Sep 2026</dd><dt>Reason</dt><dd>Outside our business</dd></dl>
+      <div class="bar"><button class="btn ghost" type="button">Show case file</button></div></div>
+
+    <h2 class="k">Show case file: the whole case as text, with Export</h2>
+    <div class="modal"><div class="box wide" role="dialog" aria-labelledby="cf-h"><h2 id="cf-h">Case file</h2>
+      <pre tabindex="0" aria-label="Case file text">CASE FILE
+FI adopts amended rules on paying for investment research
+Finansinspektionen, published 15 Sep 2026
+Source: fi.se, press release
+
+WHAT HAPPENED
+FI's board decided on 15 September 2026 to amend three regulations in the securities area …
+
+SO WHAT
+Research paid from the firm's own account must be shown separately on the client statement …
+Confirmed by Sara Lindqvist, 18 Sep 2026 09:12 +02:00
+
+ASSESSMENT
+Applies: Yes
+Why: We pay two research providers from our own account for the discretionary portfolios.
+What must change: Written criteria for the annual quality assessment, and a yearly review minuted by the investment committee.
+Internal deadline: 30 Sep 2026
+Effort: M, weeks of work
+Saved by Johan Berg, 18 Sep 2026 14:40 +02:00
+
+ACTIONS
+[x] Write the criteria for the annual research assessment. Johan Berg, due 15 Sep 2026, done 18 Sep 2026
+[x] Get the investment committee to adopt the criteria. Sara Lindqvist, due 30 Sep 2026, done 19 Sep 2026
+
+EVIDENCE
+research-assessment-criteria-v2.pdf. File, PDF, 412 KB, checked. Johan Berg, 18 Sep 2026
+  SHA-256 3f9a0c6e1b27d48f5a90c2e7b4d13f86a2c95e0b7d41f3a6c8e29b05d7f1c21e
+Investment committee minutes, research budget. Link. Sara Lindqvist, 18 Sep 2026
+provider-assessment-2026.xlsx. File, XLSX, 88 KB, checked. Removed by Sara Lindqvist, 19 Sep 2026
+  SHA-256 b81d4e07c3a95f2e6d18a0c47b93e5f21d6c08a4e7b35f9c2a10d86e4b7c3f90
+
+SIGN-OFF
+Asked for by Sara Lindqvist, 19 Sep 2026 16:05 +02:00
+Signed off by Maria Ek, 22 Sep 2026 10:31 +02:00, confirmed with a passkey
+Note: Criteria reviewed against the committee minutes.</pre>
+      <div class="bar"><button class="btn ghost" type="button">Close</button><button class="btn" type="button">Export</button></div></div></div>
+
+    <h2 class="k">Case file: an unconfirmed So what keeps its label; the export being prepared, ready, and refused</h2>
+    <div class="modal"><div class="box wide" role="dialog" aria-labelledby="cf2-h"><h2 id="cf2-h">Case file</h2>
+      <pre tabindex="0" aria-label="Case file text">SO WHAT
+AI draft, not confirmed by us. Research agent 0.4, 16 Sep 2026
+Research paid from the firm's own account must be shown separately …</pre>
+      <p role="status">Preparing the file…</p>
+      <p class="ok" role="status">The file is ready. <a href="#">Download the case file</a></p>
+      <p class="err" role="alert">The file could not be prepared. Try again.</p>
+      <div class="bar"><button class="btn ghost" type="button">Close</button><button class="btn" type="button">Export</button></div></div></div>
+    <p class="hint" style="margin-top:8px">Export shows only to someone who can create exports; everyone else reads the text.</p>
+
+    <h2 class="k">Evidence, sign-off and case file: loading and error, in place</h2>
+    <div class="grid g11">
+      <div aria-busy="true" role="status"><span class="sr">Loading…</span><div class="skeleton" style="height:180px"></div></div>
+      <div class="empty" role="alert"><h2>Could not load the evidence</h2><p>Check your connection and try again.</p><button class="btn ghost small" type="button">Try again</button></div>
+    </div>
+    <div class="empty" role="alert" style="margin-top:12px"><h2>Could not load the case file</h2><p>Check your connection and try again.</p><button class="btn ghost small" type="button">Try again</button></div>
+    <p class="err" role="alert" style="margin-top:12px">Could not sign off. Check your connection and try again.</p>
+
+    <p class="note">Case panels, part B. Evidence sits under Actions from Assessing, and Sign-off under Evidence while the case is Implementing or Waiting for sign-off; a closed or dismissed case shows its Closed or Dismissed panel in their place. Each evidence row reads kind, name, size for a file, who attached it and when, and a scan-state pill by kind: "Being checked" notice, "Checked" positive, "Could not be checked" warning, "Refused, malware found" negative. A link and a reference have no scan state and no pill. Only a checked file offers Download, which streams the file as an attachment and writes one audit row; a row that is being checked or was refused stays listed, so a bank sees that a file was refused, but offers no download. A link opens in a new tab and nothing is fetched from it. The allowed types and the size limit are settings: the refusal quotes them from the server's answer and the dialog never states them on its own. Remove is a soft removal: the row leaves the list and the case file keeps its name, fingerprint and removal date. Attach evidence needs cases.contribute, Remove cases.work, Download cases.read. While the case waits for sign-off and after it closes, evidence and actions are read-only. Request sign-off needs cases.work, and the reason line under it reads the case's canRequestSignoff and openActionCount, so the screen and the server give the same reason; the button stays enabled and a 409 open_actions or evidence_missing renders under it with the count from the answer. Evidence that is still being checked, or was refused, does not count. Sign off and close needs cases.signoff and a fresh passkey: the api client opens the step-up prompt (auth-step-up.html) on 403 step_up_required and sends the request once more when it succeeds; Cancel leaves the case waiting. The person who asked for sign-off is refused with 409 four_eyes_violation and the screen says so in words. Send back needs cases.signoff and a note, returns the case to Implementing, unlocks its actions and its evidence, and the next request is a fresh one. A signed-off case shows both names and is final. A case closed without action or as not applicable, and a dismissed case, show the reason and who, and offer Move back to triage to someone with cases.triage. Status, close reasons and dismissal reasons are the tenant's lists, read by key and shown by label; the status pill stays in its information slot. Show case file opens the text every role can read, in the reader's language, with an unconfirmed So what still labelled as an AI draft; Export turns the same text into a file through the exports job, which needs exports.create and a passkey, and its download is permission-checked. No step here writes to the library or the register.</p>
+    <!-- end of case panels, part B -->
 
     <h2 class="k">Stale write, loading, error, not found</h2>
     <p class="err" role="alert">Someone saved this while you were editing. <a href="#">Reload to see their version</a>, then apply your change again.</p>
