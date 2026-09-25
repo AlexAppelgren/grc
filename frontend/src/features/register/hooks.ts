@@ -29,7 +29,9 @@ import type {
   RegisterInterpretationBody,
   RegisterPageQuery,
   RegisterPatch,
+  RegisterPerson,
   RegisterRiskAcceptanceBody,
+  RegisterSpannedEntity,
   RegisterStatementOfApplicability,
   RegisterUnit,
   RegisterUnitBody,
@@ -188,4 +190,15 @@ export function usePasteUnits(obligationId: string): UseMutationResult<RegisterU
 
 export function useCompleteDutyOccurrence(): UseMutationResult<RegisterDutyCompletion, unknown, { occurrenceId: string; body: RegisterDutyCompleteBody }> {
   return useRegisterWrite(({ occurrenceId, body }) => register.completeDutyOccurrence(occurrenceId, body));
+}
+
+// c8-ui-applicability-status: the entities an answer can be given for, and the people an
+// owner or contact picker offers. Neither changes with a register write.
+
+export function useSpannedEntities(obligationId: string): UseQueryResult<RegisterSpannedEntity[]> {
+  return useQuery({ queryKey: ['register-span', obligationId], queryFn: () => register.listSpannedEntities(obligationId) });
+}
+
+export function usePeople(enabled = true): UseQueryResult<RegisterPerson[]> {
+  return useQuery({ queryKey: ['reference', 'people'], queryFn: register.listPeople, enabled });
 }
