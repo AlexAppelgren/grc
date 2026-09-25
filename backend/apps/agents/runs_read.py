@@ -1,11 +1,13 @@
 """The run log as a person reads it (AGT-01, AGT-04, ruling 9): `GET /agent-runs`, with the
 chunk 11 filters and fields.
 
-Row-level security decides what may be seen, and a bank's session is narrowed further: it
-reads its own runs and no run of bleqq's agents (ADR 0053), a console session the library's,
-and no session another bank's. `tenantAgentId`
-narrows to one of the bank's agents and `mine` to the runs the caller asked for; neither
-can widen what security already allows.
+A caller reads the runs of its own zone and no other: a bank's session its own runs, a
+console session the library's. bleqq's runs reach a bank as watch items and proposals,
+never as run rows, so no platform cost, token count or model is on a bank's page (the
+TODO default on what a bank sees of bleqq's watch). Row-level security already keeps
+another bank's runs out; the zone filter narrows a bank's session further, past the library
+rows security lets it read. `tenantAgentId` narrows to one of the bank's agents and `mine`
+to the runs the caller asked for; neither can widen what the zone allows.
 """
 
 from __future__ import annotations
@@ -18,10 +20,12 @@ from apps.taxonomy.schemas import PersonRef
 
 
 def list_runs(*, who: Principal, query: TenantRunQuery) -> AgentRunListPage:
-    """The runs this caller may see, oldest first, one page at a time."""
-    queryset = AgentRun.objects.select_related("agent", "agent_version", "requested_by").order_by("started_at", "id")
-    if who.tenant_id is not None:
-        # A bank reads its own runs; bleqq's library runs are the console's (ADR 0053).
+    """The runs of the caller's own zone, newest first with a stable tiebreak on id, one page
+    at a time."""
+    queryset = AgentRun.objects.select_related("agent", "agent_version", "requested_by").order_by("-started_at", "-id")
+    if who.tenant_id is None:
+        queryset = queryset.filter(tenant__isnull=True)
+    else:
         queryset = queryset.filter(tenant_id=who.tenant_id)
     if query.tenant_agent_id is not None:
         queryset = queryset.filter(tenant_agent_id=query.tenant_agent_id)
@@ -38,7 +42,7 @@ def _item(run: AgentRun) -> AgentRunListItem:
         {
             **runs.row(run).model_dump(),
             "tenant_agent_id": run.tenant_agent_id,
-            "agent_version": run.agent_version.version_number if run.agent_version is not None else None,
+            "agent_version": run.agent_version.version_no if run.agent_version is not None else None,
             "trigger": run.trigger,
             "requested_by": PersonRef(id=requester.id, name=requester.name) if requester is not None else None,
             "cost": run.cost,

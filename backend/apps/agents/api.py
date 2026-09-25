@@ -191,19 +191,23 @@ def finish_agent_run(
 )
 @answers_problems
 def list_agent_runs(request: HttpRequest, query: Query[TenantRunQuery]) -> Any:
-    """Returns the agent runs the caller may see, oldest first, one page at a time: when
+    """Returns the agent runs the caller may see, newest first, one page at a time: when
     each ran, which agent, which version and which model, what started it and who asked,
     how it ended, what it counted and what it cost. Call it to show a bank what its own
-    agents did, the history of one of them with `tenantAgentId`, the runs a person asked for
-    with `mine`, and to investigate a run whose findings are being questioned.
+    agents have done and what that cost, the history of one of them with `tenantAgentId`,
+    the runs a person asked for with `mine`, and to investigate a run whose findings are
+    being questioned.
 
     A person's session only; an API key cannot read this, so an agent cannot read its own
     history. Inside a bank it needs `agents.manage`, in the platform console
-    `system.health`; a member with neither is refused. A bank sees its own runs only; the
-    console sees the runs of bleqq's own agents. No bank sees another bank's runs or the
-    runs of bleqq's agents, which are part of the base package and listed in the console;
-    what bleqq watches is `GET /agents/platform`. The two filters only narrow that, and
-    naming another bank's agent matches no run rather than answering an error. It changes nothing and writes
+    `system.health`; a member with neither is refused. A bank sees its own runs and nothing
+    else; the platform console sees the runs of bleqq's own agents. bleqq's runs reach a
+    bank as watch items and proposals rather than as run rows, so no platform cost, token
+    count or model is ever on a bank's page: `GET /agents/platform` shows what bleqq's
+    agents watch, when each next runs and how its last run ended. No bank sees another
+    bank's runs; the two filters only narrow that, and naming another bank's agent matches
+    no run rather than answering an error. Runs that started in the same instant keep one
+    stable order, so paging never skips or repeats one. It changes nothing and writes
     nothing to the audit log. An empty list is a 200 with `total` 0 and means nothing has
     run yet, not that something is wrong.
 
@@ -498,9 +502,12 @@ def list_platform_watch(request: HttpRequest, page: Query[PageQuery]) -> Any:
     A person's session in a bank holding `watch.read`, which every member has; no API key.
     It reads and writes nothing to the audit log.
 
+    Only active agents whose current version is not retired are listed, by key. `nextRunAt`
+    is a cadence after the last run started, or now when the agent has never run or is
+    overdue, and null for an agent that runs only when asked. An empty list is a 200.
+
     Errors: `unauthenticated` (401); `permission_denied` (403) without `watch.read`;
-    `validation_error` (422) when `limit` is above 100. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `validation_error` (422) when `limit` is above 100.
     """
     return platform_read.list_platform_watch(limit=page.limit, offset=page.offset)
 
