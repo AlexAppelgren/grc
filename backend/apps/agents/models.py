@@ -13,6 +13,10 @@ or one a bank may add for itself, and the database refuses a bank's `tenant_agen
 other (ruling 1, ADR 0053). A published `agent_version` is never rewritten: a run points at
 the version it opened with. A bank's agents, its research requests and its one monthly cap
 are tenant rows; a request with no tenant is the console's `retag`.
+
+Agent access (ACC-01, ACC-02, agents 0006) is not an agent we run: `AgentAccess` registers
+an agent a bank runs on its own infrastructure, which reads through a credential and
+nothing else, narrowed by the departments and products its join rows name.
 """
 
 from __future__ import annotations
@@ -21,6 +25,7 @@ import enum
 import uuid
 from typing import Any
 
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.shared.tenancy import LibraryModel, TenantModel
@@ -395,3 +400,73 @@ class AgentRun(models.Model):
         else:
             self.tenant_id = self.tenant_agent.tenant_id if self.tenant_agent is not None else None
         super().save(*args, **kwargs)
+
+
+# ---------------------------------------------------------------------------------------
+# Agent access (acc-foundation, agents 0006; ACC-01, ACC-02, D-70, ADR 0055)
+# ---------------------------------------------------------------------------------------
+class AgentAccess(TenantModel):
+    """An agent a bank runs on its own infrastructure, registered so it can read (ACC-01).
+
+    Not one of the agents we run: it holds no prompt, schedule or definition, and every
+    credential under it reads and nothing else. Its scope is the terms of the departments
+    and products it names intersected with the tenant footprint, computed per request and
+    never stored (ACC-02, D-70); naming none narrows nothing. `tenant_reach` is the entry's
+    half of D-72. Revoking sets `revoked_at` and clears `active`, which a CHECK keeps in
+    step, and stops every credential under it; an entry is revoked, never deleted. Every
+    reference is a composite `(tenant_id, …)` key (agents 0006), so an entry can name
+    neither another bank's team, unit or product nor a person outside its own bank."""
+
+    name = models.CharField(max_length=200)
+    purpose = models.TextField()
+    owner_team = models.ForeignKey("taxonomy.Team", on_delete=models.PROTECT, related_name="+")
+    tenant_reach = models.BooleanField(default=False)
+    active = models.BooleanField(default=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    revoked_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    created_by = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    version = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        db_table = "agent_access"
+        ordering = ["name", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(active=True, revoked_at__isnull=True, revoked_by__isnull=True)
+                | models.Q(active=False, revoked_at__isnull=False),
+                name="agent_access_revoked_is_inactive",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.name
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:  # compliance: allow-kwargs Django Model.delete signature
+        raise ValidationError("An agent access entry is revoked, never deleted.", code="revoke_not_delete")
+
+
+class AgentAccessDepartment(TenantModel):
+    """A department an entry serves (ACC-02): an org unit of the same bank."""
+
+    agent_access = models.ForeignKey(AgentAccess, on_delete=models.CASCADE, related_name="departments")
+    department = models.ForeignKey("tenants.OrgUnit", on_delete=models.PROTECT, related_name="+")
+
+    class Meta:
+        db_table = "agent_access_department"
+        ordering = ["agent_access", "department"]
+        constraints = [
+            models.UniqueConstraint(fields=["agent_access", "department"], name="agent_access_department_unique")
+        ]
+
+
+class AgentAccessProduct(TenantModel):
+    """A product an entry serves (ACC-02): a product of the same bank."""
+
+    agent_access = models.ForeignKey(AgentAccess, on_delete=models.CASCADE, related_name="products")
+    product = models.ForeignKey("tenants.TenantProduct", on_delete=models.PROTECT, related_name="+")
+
+    class Meta:
+        db_table = "agent_access_product"
+        ordering = ["agent_access", "product"]
+        constraints = [models.UniqueConstraint(fields=["agent_access", "product"], name="agent_access_product_unique")]

@@ -75,7 +75,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID-11 | Security log of sign-ins, failures, enrolments, recoveries and key use | M | R1 | built |
 | ID-12 | SSO (OIDC, SAML), verified domains and SCIM as a tenant option. SSO proves identity and never opens a session on its own; with enforcement on it is asked after the passkey at every sign-in (D-58) | C | R3 | pending |
 | ID-13 | Optional IP allow-list per tenant | C | R3 | pending |
-| ACC-03 | Two credential kinds on one table: a service key bound to an agent access entry, and a personal access token minted under `tokens.create` behind a step-up that acts as the person. Both shown once, hashed, expiring, revocable, with a last use and a security log row. A token cannot open a session or step up, and dies with the person | M | R2 | pending |
+| ACC-03 | Two credential kinds on one table: a service key bound to an agent access entry, and a personal access token minted under `tokens.create` behind a step-up that acts as the person. Both shown once, hashed, expiring, revocable, with a last use and a security log row. A token cannot open a session or step up, and dies with the person | M | R2 | in_progress |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
