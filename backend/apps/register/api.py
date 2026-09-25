@@ -7,7 +7,9 @@ named function in the module of the package that builds it (chunk 8 plan rule 3)
 that function answers 501 `not_built`. A logic package fills its own module and never this
 file.
 
-Every route takes a person's session in their own bank; no agent key reaches the register.
+Every route takes a person's session in their own bank, except the two agent reads at the
+end: a credential of an agent access entry with `tenant:read` and tenant reach on reads the
+settled decisions D-76 lists, and nothing else (acc-register-read, ACC-04).
 Reads take `register.read`; status, links, interpretations, units and duties take
 `register.edit`; gaps take `gaps.edit`. Setting applicability takes `applicability.approve`
 and nothing more: one person, a confirmation dialog, an audit event, no step-up (D-75).
@@ -21,13 +23,15 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.register import applicability, duties, gaps, history, links, soa, status_logic, units
+from apps.register import agent_read, applicability, duties, gaps, history, links, soa, status_logic, units
 from apps.register.schemas import (
     RegisterApplicability,
     RegisterApplicabilityBody,
     RegisterApplicabilityMany,
     RegisterApplicabilityManyBody,
     RegisterAssessmentPage,
+    RegisterDecision,
+    RegisterDecisionPage,
     RegisterDutyCompleteBody,
     RegisterDutyCompletion,
     RegisterDutyPage,
@@ -57,10 +61,10 @@ from apps.register.schemas import (
     RegisterUnitQuery,
 )
 from apps.shared import permissions as perms
-from apps.shared.authentication import SessionAuth
-from apps.shared.permissions import requires_permission, requires_step_up
+from apps.shared.authentication import ApiKeyAuth, SessionAuth
+from apps.shared.permissions import requires_permission, requires_scope, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, if_match
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, if_match, principal
 from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Register"])
@@ -988,4 +992,78 @@ def complete_duty_occurrence(
     """
     return duties.complete_occurrence(
         tenant=caller_tenant(request), actor=actor_for(request), occurrence_id=occurrence_id, body=body
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# acc-register-read: the register as the bank's own agents read it (ACC-04, ACC-08, D-76)
+# ---------------------------------------------------------------------------------------
+KEY = ApiKeyAuth()
+
+
+@router.get(
+    "/register-entries",
+    response=RegisterDecisionPage,
+    auth=KEY,
+    operation_id="listRegisterEntries",
+    by_alias=True,
+    summary="Read your bank's register decisions as its own agent",
+)
+@requires_scope(perms.SCOPE_TENANT_READ)
+def list_register_entries(request: HttpRequest, page: PageQuery = Query(...)) -> Any:
+    """The bank's settled decisions on every obligation in the entry's scope that it has a
+    register entry for, by the obligation's stable key: applicability and its reason,
+    compliance status and note, how the bank reads the rule, owner, process, system, next
+    review, a row per legal entity and the internal items linked now. Never a gap, case,
+    assessment, comment, evidence or its location, risk rating or audit row, and never the
+    bank's own private obligations or one under a standard.
+
+    A key of an agent access entry, or a personal access token naming one, holding
+    `tenant:read`, and only while both the bank's tenant reach and the entry's own toggle
+    are on. A person's session is not accepted here: a person reads
+    `GET /obligations/{obligationId}/register`. A read: it writes nothing. Pages with `limit`
+    and `offset`, 20 by default and 100 at most; an entry whose scope holds no decision is a
+    200 with an empty page.
+
+    Errors: `unauthenticated` (401) without a live key or token, or with a session;
+    `permission_denied` (403) for a credential without `tenant:read` or bound to no entry,
+    which never holds it; `tenant_reach_off` (403) while the bank's tenant reach or the
+    entry's own toggle is off; `read_only_credential` (403) for any write; `rate_limited`
+    (429) over the credential's rate; `validation_error` (422) for a page out of range.
+    """
+    tenant = caller_tenant(request)
+    return agent_read.list_decisions(
+        tenant=tenant, principal=principal(request), order=language_order(request, tenant=tenant), limit=page.limit, offset=page.offset
+    )
+
+
+@router.get(
+    "/register-entries/{obligation_id}",
+    response=RegisterDecision,
+    auth=KEY,
+    operation_id="readRegisterEntry",
+    by_alias=True,
+    summary="Read your bank's decisions on one obligation as its own agent",
+)
+@requires_scope(perms.SCOPE_TENANT_READ)
+def read_register_entry(request: HttpRequest, obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID)) -> Any:
+    """The bank's settled decisions on one obligation, in the same shape as a row of
+    `GET /register-entries`. An obligation in the entry's scope that nobody has decided on
+    reads as not yet decided, with no entities and no items.
+
+    A key of an agent access entry, or a personal access token naming one, holding
+    `tenant:read`, and only while both the bank's tenant reach and the entry's own toggle
+    are on. A person's session is not accepted here: a person reads
+    `GET /obligations/{obligationId}/register`. A read: it writes nothing.
+
+    Errors: `unauthenticated` (401) without a live key or token, or with a session;
+    `permission_denied` (403) for a credential without `tenant:read` or bound to no entry,
+    which never holds it; `tenant_reach_off` (403) while the bank's tenant reach or the
+    entry's own toggle is off; `read_only_credential` (403) for any write; `rate_limited`
+    (429) over the credential's rate; `not_found` (404) for an obligation outside the entry's
+    scope, a private obligation, one under a standard or one that does not exist, alike.
+    """
+    tenant = caller_tenant(request)
+    return agent_read.read_decision(
+        tenant=tenant, principal=principal(request), order=language_order(request, tenant=tenant), obligation_id=obligation_id
     )

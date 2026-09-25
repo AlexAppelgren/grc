@@ -406,12 +406,35 @@ class RegisterScenarioTests(TestCase):
         The register filtered by standard and entity is the Statement of Applicability (REG-08).
         """
 
-    @skip("pending: ACC-S4 (ACC-04, chunk 11)")
+    # acc-register-read: the entry's read of the register (apps/register/tests_agent_read.py).
     def test_acc_s4(self) -> None:
         """ACC-S4
 
         With tenant reach on, an entry reads the register decisions in its scope and nothing else (ACC-04).
         """
+        from apps.register.tests_agent_read import ENTRIES, ReadWorld, leaks
+
+        world = ReadWorld(slug="acc-s4")
+        # listRegisterEntries: the four decided obligations in scope, each with D-76's fields.
+        listed = world.get(self.client, ENTRIES, world.narrow_key)
+        self.assertEqual(listed.status_code, 200, listed.content)
+        rows = listed.json()["items"]
+        self.assertEqual({row["obligationId"] for row in rows}, {str(duty.id) for duty in world.in_scope})
+        for row in rows:
+            self.assertEqual(row["applicability"], "applies")
+            self.assertTrue(row["applicabilityReason"] and row["statusNote"] and row["interpretation"])
+            self.assertTrue(row["owner"] and row["process"] and row["system"] and row["nextReviewDate"])
+            self.assertEqual({entity["applicability"] for entity in row["entities"]}, {"applies"})
+            self.assertTrue(all(entity["applicabilityReason"] and entity["complianceStatus"] for entity in row["entities"]))
+            self.assertEqual([item["label"] for item in row["internalItems"]], ["Client asset policy"])
+        # No gap, case, assessment, comment, evidence or audit row, and no private record.
+        self.assertEqual(leaks(listed.content), [])
+        self.assertNotIn(str(world.private.id), listed.content.decode())
+        # readRegisterEntry: one in scope reads alone; outside the scope, or private, is 404.
+        one = world.get(self.client, f"{ENTRIES}/{world.in_scope[0].id}", world.narrow_key)
+        self.assertEqual((one.status_code, leaks(one.content)), (200, []))
+        for duty in (world.outside, world.private):
+            self.assertEqual(world.get(self.client, f"{ENTRIES}/{duty.id}", world.narrow_key).status_code, 404)
 
     @skip("pending: REG-S17 (OWN-04, OWN-05, REG-01, REG-02, REG-05, chunk 11)")
     def test_reg_s17(self) -> None:

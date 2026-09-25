@@ -76,7 +76,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | REG-06 | Yearly attestation by the owner, and waivers | C | R3 | pending |
 | REG-07 | Recurring duties on the roadmap from recurrence rules | S | R2 | in_progress |
 | REG-08 | Statement of Applicability: units per following legal entity, by reference and in the tenant's own words, entered one by one or pasted with a dry run, each with applicability, a reason, a status and gaps, fixed once it has history; nothing written under a standard is indexed, sent to a model or shown to another tenant | M | R2 | in_progress |
-| ACC-04 | An agent access credential holding `tenant:read`, under an entry with tenant reach on, reads the register decisions on the obligations in its scope. Never gaps, cases, comments, evidence, the audit log or a private record | M | R2 | pending |
+| ACC-04 | An agent access credential holding `tenant:read`, under an entry with tenant reach on, reads the register decisions on the obligations in its scope. Never gaps, cases, comments, evidence, the audit log or a private record | M | R2 | built |
 | OWN-05 | The bank's own agent may propose a private obligation's controls as linked internal items of the control kind (REG-05), approved in the bank's own queue; waits for Alex's answer on what a control inventory is (D-91) | S | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
@@ -313,3 +313,9 @@ And a private record of the bank appears in none of them
 When it reads a register entry for an obligation outside its scope
 Then the request answers 404
 ```
+
+> **Note — acc-register-read.** Built as `listRegisterEntries` (`GET /register-entries`) and
+> `readRegisterEntry` (`GET /register-entries/{obligationId}`), key-only, in
+> `apps/register/agent_read.py`; `tests_agent_read.py` holds the rule branches. Beside the
+> private record, an obligation under a standard is left out too (REG-08, AC-REG2), and an
+> obligation in scope nobody decided on reads as `under_assessment` (D-1xx, acc-register-read).
