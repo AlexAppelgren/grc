@@ -139,7 +139,7 @@ describe('the search URL', () => {
       asOf: '2026-06-30',
       lang: 'sv',
       types: ['obligation'],
-      filters: { jurisdiction: 'se', dutyType: 'reporting', binding: true, inFootprint: false },
+      filters: { jurisdiction: 'se', dutyType: 'reporting', binding: true, footprint: 'all' },
     });
   });
 });
@@ -238,7 +238,7 @@ describe('SearchScreen', () => {
     expect(screen.queryByRole('link', { name: 'Search outside our scope' })).toBeNull();
   });
 
-  it('sends a filter chosen from the row, and the outside-scope chip, as an inFootprint filter', async () => {
+  it('sends a filter chosen from the row, and the outside-scope chip, as the footprint "all"', async () => {
     nav.search = 'jurisdiction=se&dutyType=reporting&outside=true';
     const sent = serve(() => ({ status: 200, data: { items: [], asOf: '2026-09-20' } }));
     renderScreen();
@@ -248,7 +248,7 @@ describe('SearchScreen', () => {
     expect(sent.find((call) => call.path === '/api/v1/search')?.body).toEqual({
       q: 'report',
       limit: 20,
-      filters: { jurisdiction: 'se', dutyType: 'reporting', inFootprint: false },
+      filters: { jurisdiction: 'se', dutyType: 'reporting', footprint: 'all' },
     });
     expect(screen.getByRole('button', { name: 'Outside our scope' })).toHaveAttribute('aria-pressed', 'true');
   });

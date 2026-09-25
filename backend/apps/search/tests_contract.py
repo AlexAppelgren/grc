@@ -359,7 +359,7 @@ class ContractDocumentationTests(TestCase):
                 "`duty_type` vocabulary",
                 ["`conduct`", "`disclosure`", "`record_keeping`", "`reporting`", "`governance`", "`technical`"],
             ),
-            ("SearchFilters", "termIds"): ("taxonomy", ["`regime`", "`legal_entity`", "`lifecycle_stage`"]),
+            ("SearchFilters", "term"): ("taxonomy", ["`regime`", "`legal_entity`", "`lifecycle_stage`"]),
             ("SearchHit", "urgency"): (
                 "`urgency` vocabulary",
                 ["`act_now`", "`within_3_months`", "`six_months_plus`", "`monitor`", "`no_action`"],

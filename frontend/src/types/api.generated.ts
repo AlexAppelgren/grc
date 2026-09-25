@@ -14094,8 +14094,10 @@ export interface components {
          * @example {
          *       "binding": true,
          *       "dutyType": "disclosure",
-         *       "inFootprint": true,
-         *       "jurisdiction": "se"
+         *       "footprint": "in",
+         *       "term": [
+         *         "regime:securities"
+         *       ]
          *     }
          */
         SearchFilters: {
@@ -14110,25 +14112,33 @@ export interface components {
              */
             dutyType?: string | null;
             /**
-             * Infootprint
-             * @description True keeps only records inside the bank's own footprint, the licences, entities and services it declared; false keeps only those outside it. Absent applies the bank's standing regulatory scope, which is what the search screen does until a reader asks to look outside it. Source: the bank's own zone, compared against the shared library. Do not read `inFootprint` as `applies to us`: the footprint is a filter on what is worth reading, while whether an obligation applies is a judgement the bank records per entity (chunk 8).
+             * Footprint
+             * @description Which records to search against the bank's regulatory scope, the same single value `GET /obligations` takes, so the inventory's search and its list always agree: `in` (the default: only what matches the scope), `watched` (only what the markets the bank watches add, judged by the inventory's own rule; an obligation or a provision, never a change, which the watch feed lists by its own rule) or `all` (everything the library holds, the scope lifted). An agent's key belongs to no bank, so the value changes nothing for it. Source: the bank's own zone, compared against the shared library. Do not read a record found under `watched` or `all` as one that applies to the bank: the scope is a filter on what is worth reading, while whether an obligation applies is a judgement the bank records per entity (chunk 8).
+             * @default in
+             * @example in
+             * @enum {string}
              */
-            inFootprint?: boolean | null;
+            footprint: "in" | "all" | "watched";
             /**
-             * Instrumentid
-             * @description Narrow the search to one instrument, such as FFFS 2017:2, by the instrument's id, a UUID. Source: the shared library. Do not read a filtered result as everything the instrument requires of the bank: it is what matched the query inside that instrument, not the instrument's full obligation list.
+             * Instrument
+             * @description Narrow the search to one instrument, such as FFFS 2017:2, by the instrument's stable key, the same key `GET /obligations` takes: `fffs-2017-2`. A key no instrument has is not an error; it matches nothing. Source: the shared library. Do not read a filtered result as everything the instrument requires of the bank: it is what matched the query inside that instrument, not the instrument's full obligation list.
+             * @example fffs-2017-2
              */
-            instrumentId?: string | null;
+            instrument?: string | null;
             /**
              * Jurisdiction
              * @description Narrow the search to the law of one jurisdiction, by key. The keys are rows in the shared library's `jurisdiction` vocabulary; the platform seeds and maintains them (they are reference data, not proposable), and on day one they are `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland). Source: the shared library. Do not read `se` as excluding EU law that binds a Swedish bank: an EU regulation is filed under `eu` and still applies, so filtering to one jurisdiction hides law the bank must follow.
              */
             jurisdiction?: string | null;
             /**
-             * Termids
-             * @description Narrow the search to records tagged with all of these taxonomy terms, such as a regime or a legal entity kind, each by its term id, a UUID. Terms are rows in the shared library's taxonomy, which an administrator may extend through an approved proposal; the dimensions seeded on day one are `regime`, `account_type`, `legal_entity`, `service_type`, `client_category`, `channel` and `lifecycle_stage`. At most 20 terms in one call; more answers 422. Source: the shared library. Do not read the terms on a record as the bank's own scope: whether the record applies to this bank is a separate fact the bank decides.
+             * Term
+             * @description Narrow the search to records whose scope carries every one of these taxonomy terms, each written `dimension:key` as `GET /obligations` takes them, such as `regime:securities` or `service_type:advice`, combined with AND. A record's scope is the one the inventory judges it by: an obligation's own terms plus its instrument's regime and the jurisdictions its rules reach, and a provision's its instrument's alone, so a service term keeps no provision. Terms are rows in the shared library's taxonomy, which an administrator may extend through an approved proposal; the dimensions seeded on day one are `regime`, `account_type`, `legal_entity`, `service_type`, `client_category`, `channel` and `lifecycle_stage`. At most 20 terms in one call; more answers 422. A value with no colon answers 422 `validation_error`, and one that names no active term 422 `unknown_key` naming every such term. Source: the shared library. Do not read the terms on a record as the bank's own scope: whether the record applies to this bank is a separate fact the bank decides.
+             * @example [
+             *       "regime:securities",
+             *       "service_type:advice"
+             *     ]
              */
-            termIds?: string[];
+            term?: string[];
         };
         /**
          * SearchHit
@@ -14255,10 +14265,12 @@ export interface components {
          * @example {
          *       "asOf": "2026-09-20",
          *       "filters": {
-         *         "binding": true,
          *         "dutyType": "disclosure",
-         *         "inFootprint": true,
-         *         "jurisdiction": "se"
+         *         "footprint": "in",
+         *         "instrument": "fffs-2017-2",
+         *         "term": [
+         *           "regime:securities"
+         *         ]
          *       },
          *       "lang": "sv",
          *       "limit": 20,

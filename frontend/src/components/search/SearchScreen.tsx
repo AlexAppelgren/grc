@@ -130,7 +130,7 @@ export function requestOf(filters: SearchFiltersState, q: string): SearchRequest
       ...(filters.jurisdiction === '' ? {} : { jurisdiction: filters.jurisdiction }),
       ...(filters.dutyType === '' ? {} : { dutyType: filters.dutyType }),
       ...(filters.binding === '' ? {} : { binding: filters.binding === 'true' }),
-      ...(filters.outsideScope ? { inFootprint: false } : {}),
+      footprint: filters.outsideScope ? 'all' : 'in',
     };
   }
   return body;

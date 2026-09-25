@@ -35,6 +35,7 @@ from uuid import UUID
 from django.conf import settings
 from pydantic import ConfigDict, Field
 
+from apps.library.schemas import FootprintFilter
 from apps.shared.schemas import CamelSchema, WriteBody
 from apps.taxonomy.schemas import TermRef
 from apps.watch.schemas import DatePrecision
@@ -162,18 +163,21 @@ class SearchFilters(WriteBody):
 
     model_config = ConfigDict(
         json_schema_extra={
-            "examples": [{"jurisdiction": "se", "dutyType": "disclosure", "binding": True, "inFootprint": True}]
+            "examples": [{"term": ["regime:securities"], "dutyType": "disclosure", "binding": True, "footprint": "in"}]
         }
     )
 
-    instrument_id: UUID | None = Field(
+    instrument: str | None = Field(
         default=None,
         description=(
             "Narrow the search to one instrument, such as FFFS 2017:2, by the instrument's "
-            "id, a UUID. Source: the shared library. Do not read a filtered result as "
-            "everything the instrument requires of the bank: it is what matched the query "
-            "inside that instrument, not the instrument's full obligation list."
+            "stable key, the same key `GET /obligations` takes: `fffs-2017-2`. A key no "
+            "instrument has is not an error; it matches nothing. Source: the shared library. "
+            "Do not read a filtered result as everything the instrument requires of the bank: "
+            "it is what matched the query inside that instrument, not the instrument's full "
+            "obligation list."
         ),
+        examples=["fffs-2017-2"],
     )
     jurisdiction: str | None = Field(
         default=None,
@@ -199,20 +203,26 @@ class SearchFilters(WriteBody):
             "and who in the bank owns it is the bank's own judgement, recorded elsewhere."
         ),
     )
-    term_ids: list[UUID] = Field(
+    term: list[str] = Field(
         default_factory=list,
         max_length=settings.LIBRARY_TERM_FILTER_MAX,
         description=(
-            "Narrow the search to records tagged with all of these taxonomy terms, such as "
-            "a regime or a legal entity kind, each by its term id, a UUID. Terms are rows in the shared "
-            "library's taxonomy, which an administrator may extend through an approved "
+            "Narrow the search to records whose scope carries every one of these taxonomy "
+            "terms, each written `dimension:key` as `GET /obligations` takes them, such as "
+            "`regime:securities` or `service_type:advice`, combined with AND. A record's scope "
+            "is the one the inventory judges it by: an obligation's own terms plus its "
+            "instrument's regime and the jurisdictions its rules reach, and a provision's its "
+            "instrument's alone, so a service term keeps no provision. Terms are rows in the "
+            "shared library's taxonomy, which an administrator may extend through an approved "
             "proposal; the dimensions seeded on day one are `regime`, `account_type`, "
             f"`legal_entity`, `service_type`, `client_category`, `channel` and "
             f"`lifecycle_stage`. At most {settings.LIBRARY_TERM_FILTER_MAX} terms in one "
-            "call; more answers 422. Source: the shared library. Do not read the terms on "
-            "a record as the bank's own scope: whether the record applies to this bank is "
-            "a separate fact the bank decides."
+            "call; more answers 422. A value with no colon answers 422 `validation_error`, "
+            "and one that names no active term 422 `unknown_key` naming every such term. "
+            "Source: the shared library. Do not read the terms on a record as the bank's own "
+            "scope: whether the record applies to this bank is a separate fact the bank decides."
         ),
+        examples=[["regime:securities", "service_type:advice"]],
     )
     binding: bool | None = Field(
         default=None,
@@ -224,17 +234,22 @@ class SearchFilters(WriteBody):
             "departure explained, and the bank still answers for it."
         ),
     )
-    in_footprint: bool | None = Field(
-        default=None,
+    footprint: FootprintFilter = Field(
+        default="in",
         description=(
-            "True keeps only records inside the bank's own footprint, the licences, "
-            "entities and services it declared; false keeps only those outside it. Absent "
-            "applies the bank's standing regulatory scope, which is what the search screen "
-            "does until a reader asks to look outside it. Source: the bank's own zone, "
-            "compared against the shared library. Do not read `inFootprint` as `applies to "
-            "us`: the footprint is a filter on what is worth reading, while whether an "
-            "obligation applies is a judgement the bank records per entity (chunk 8)."
+            "Which records to search against the bank's regulatory scope, the same single "
+            "value `GET /obligations` takes, so the inventory's search and its list always "
+            "agree: `in` (the default: only what matches the scope), `watched` (only what the "
+            "markets the bank watches add, judged by the inventory's own rule; an obligation "
+            "or a provision, never a change, which the watch feed lists by its own rule) or "
+            "`all` (everything the library holds, the scope lifted). An agent's key belongs "
+            "to no bank, so the value changes nothing for it. Source: the bank's own zone, "
+            "compared against the shared library. Do not read a record found under `watched` "
+            "or `all` as one that applies to the bank: the scope is a filter on what is worth "
+            "reading, while whether an obligation applies is a judgement the bank records per "
+            "entity (chunk 8)."
         ),
+        examples=["in"],
     )
 
 
@@ -256,10 +271,10 @@ class SearchRequest(WriteBody):
                     "lang": "sv",
                     "types": ["obligation", "provision"],
                     "filters": {
-                        "jurisdiction": "se",
+                        "instrument": "fffs-2017-2",
+                        "term": ["regime:securities"],
                         "dutyType": "disclosure",
-                        "binding": True,
-                        "inFootprint": True,
+                        "footprint": "in",
                     },
                     "limit": 20,
                 }
