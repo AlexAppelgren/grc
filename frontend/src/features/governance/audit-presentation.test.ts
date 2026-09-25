@@ -19,6 +19,9 @@ describe('audit presentation', () => {
     expect(AUDIT_SUBJECT_TYPES).toContain('obligation');
     // FP-S10: watching a market is audited, so the log filters to it.
     expect(AUDIT_SUBJECT_TYPES).toContain('watched_market');
+    // A case's moves are written under the kind the backend names, `change_case`.
+    expect(AUDIT_SUBJECT_TYPES).toContain('change_case');
+    expect(AUDIT_SUBJECT_TYPES).not.toContain('case');
     expect(new Set(AUDIT_SUBJECT_TYPES).size).toBe(AUDIT_SUBJECT_TYPES.length);
   });
 
