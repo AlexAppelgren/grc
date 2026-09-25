@@ -706,6 +706,15 @@ CALENDAR_FEED_IDLE_DAYS = env_int("CALENDAR_FEED_IDLE_DAYS", 30)
 # stays short however many a person has replaced over the years, which is what lets it go
 # unpaged (the live ones are capped above).
 CALENDAR_FEED_REVOKED_SHOWN = env_int("CALENDAR_FEED_REVOKED_SHOWN", 5)
+
+# ---------------------------------------------------------------------------------------
+# Participants (COL-04, D-18, c8-participants)
+# How many people and teams may take part in one register entry or case at once. A record
+# that everyone takes part in tells nobody anything, and every participant is a recipient of
+# every notification about it, so the list is capped; adding past the cap answers 422
+# `too_many_participants`. `apps/collab/participants.py` reads it on every add.
+# ---------------------------------------------------------------------------------------
+MAX_PARTICIPANTS_PER_RECORD = env_int("MAX_PARTICIPANTS_PER_RECORD", 50)
 # How often one address may be fetched. A calendar client polls every few hours, so this
 # is generous for every real client and still bounds what someone who found an address
 # can pull from it. It is per token, so a flood on one address leaves the others answering.

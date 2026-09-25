@@ -341,6 +341,12 @@ _LOGIC_UPCOMING_READER = "roadmap.read in the caller's tenant, or an agent's key
 _LOGIC_PROPOSALS_REVIEW = "The queue read, the detail read, approve and reject accept a session holding `proposals.review` or a platform key bound to an agent and holding the scope `proposals:review`, because `Principal.has_permission`/`has_scope` are kind-exclusive and one decorator cannot express 'a session or a key' (PRO-01, PRO-S13, PRO-S14, D-62, ADR 0054). The gate is apps/proposals/api.py:require_reviewer, which branches on the principal kind, refuses a tenant-carrying key even if its scopes list somehow names the scope, refuses a key bound to no agent definition (`agent_not_bound`), and never applies a step-up to a key, which holds no passkey assertion; approve calls `enforce_step_up` for a person in its body."
 _PUBLIC_CALENDAR_TOKEN = "The revocable token in the calendar address is the whole grant: a calendar client sends no header, follows no sign-in and cannot be asked for a passkey, so the URL is the only credential it can carry (HOM-04, D-52, ADR 0045). The mitigations are the ones that decision weighed. The token is `<prefix>.<secret>` with 256 bits of secret, kept as a lookup prefix beside the secret's SHA-256, shown once and never again. It rides in the query string, not the path, because our own access log prints the route and drops the query while a hosting edge writes whole request lines, which makes this the one named exception to CONVENTIONS 3.6 and is pinned by a guard test that no other route reads a token from the query string. A person may hold only CALENDAR_FEEDS_PER_USER addresses and mints one only from a recent sign-in or a step-up, so a stolen access token cannot leave a lasting one behind. Every fetch re-checks that the owner is still a member holding roadmap.read and has not been enrolled again, revoking the subscription when a check fails; an idle one expires after CALENDAR_FEED_IDLE_DAYS; unknown, revoked and expired answer one 404. What is left is the residual risk the decision accepted and the dialog states: whoever holds the address can see which public regulatory dates, stated to the day, the bank has open work on, and nothing else - no internal deadline, owner, urgency or 'So what?' reaches a calendar. The behaviour is apps/home/feed.py's and apps/home/tests_feed.py proves each of these mitigations."  # noqa: S105 a reviewer's note, not a credential
 
+# c10-collab-contract.
+_SELF_NOTIFICATIONS = "Acts only on the caller's own notification rows; no parameter reaches another person's (COL-02)."
+_SELF_MY_COMMENTS = "Returns the caller's own comments and mentions, filtered afterwards by each subject's read permission (COL-01)."
+_LOGIC_PARTICIPANT_REMOVAL = "A person may always leave their own participation; removing anyone else's needs register.edit, which the logic checks on the row (D-19, COL-04)."
+_LOGIC_COMMENT_SUBJECT = "The gate is the read permission of the subject's kind, which `collab/subjects.py` decides per record; the write also needs `comments.write` (COL-01)."
+
 # (METHOD, path as Ninja registers it under /api/v1) -> why it needs no permission gate.
 UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/me"): Ungated(
@@ -500,6 +506,22 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
         "A member's session is the grant, never an enrolment session: the owner and participant "
         "pickers need the bank's active members, as ids and names only; `GET /tenant/members` "
         "stays under members.manage (COL-04, TEN-03).",
+    ),
+    # c10-collab-contract (chunk 10, COL-01, COL-02, HOM-05). The three inbox routes and
+    # GET /me/comments act on the caller's own rows; the comment reads and writes are gated
+    # per record by the subject registry (collab/subjects.py). PATCH and DELETE
+    # /comments/{comment_id} carry comments.write and are not listed here.
+    ("GET", "/notifications"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
+    ("POST", "/notifications/{notification_id}/read"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
+    ("POST", "/notifications/read-all"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
+    ("GET", "/me/comments"): Ungated(UngatedReason.SELF, _SELF_MY_COMMENTS),
+    ("GET", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
+    ("POST", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
+
+    # c8-participants (chunk 8, COL-04). Listing and adding carry register.read and
+    # register.edit; removal is the one gated in logic, because leaving needs no permission.
+    ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}"): Ungated(
+        UngatedReason.LOGIC_GATE, _LOGIC_PARTICIPANT_REMOVAL
     ),
 }
 
