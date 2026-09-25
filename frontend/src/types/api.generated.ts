@@ -74,9 +74,13 @@ export interface paths {
          *     Needs the platform permission `agent_definitions.manage` and a fresh passkey step-up
          *     on the session; an API key cannot create a key. The key belongs to no bank. Everything
          *     it writes is recorded as the agent it is bound to, and it runs that agent and no other.
-         *     It may hold any scope, `proposals:review` included, which makes the agent a second,
-         *     independent reviewer of proposals someone else filed; no scope writes a library
-         *     record. Give it the least its agent needs.
+         *     Its scopes follow its agent's kind: a review agent's key may hold `proposals:review`,
+         *     which makes it a second, independent reviewer of proposals someone else filed, and none
+         *     of the filing scopes `sources:write`, `changes:write` and `proposals:write`; every other
+         *     kind's key may hold those and never `proposals:review`. The agent must be active, or a
+         *     draft still being evaluated; a retired or switched-off agent takes no key, and a key of
+         *     an agent switched off later stops working. No scope writes a library record. Give it the
+         *     least its agent needs.
          *
          *     The creation is recorded in the audit log as `agent_key.created` with the prefix, the
          *     agent, the scopes and the expiry, never the secret, and with the step-up assertion
@@ -86,6 +90,8 @@ export interface paths {
          *     Errors: `step_up_required` without a fresh passkey assertion, which the console answers
          *     by opening the passkey prompt and retrying; `unknown_key` when `agentId` names no agent
          *     definition or a scope does not exist, the message naming the valid scopes;
+         *     `agent_inactive` (422) when the agent is retired or switched off; `scope_not_for_kind`
+         *     (422) for a scope the agent's kind does not take, the message naming it;
          *     `name_required` for a name of spaces alone; `expiry_in_past` for an expiry that is not
          *     in the future; `validation_error` for a field the schema refuses, a field it does not
          *     name among them; `permission_denied` without `agent_definitions.manage`;
@@ -377,7 +383,8 @@ export interface paths {
          *     — so the people who tune retrieval know where it fails (AUD-02, SRC-05).
          *
          *     Who may call it: a person with `search.use`, on their own session, about an answer
-         *     of their own bank. An answer of another bank answers 404.
+         *     they were given themselves. A colleague's answer, or another bank's, answers 404, so
+         *     nobody replaces the verdict of the person who asked.
          *
          *     What comes back: 204 and no body.
          *
@@ -391,13 +398,47 @@ export interface paths {
          *     audit row. A different verdict replaces the earlier one, and the audit trail keeps
          *     both. Neither the question nor the answer nor the note reaches the audit row.
          *
-         *     Errors: `not_found` (404) for an answer that is not one of the bank's own, or a
+         *     Errors: `not_found` (404) for an answer the caller was not given themselves, or a
          *     session that belongs to no bank; `validation_error` (422) for a verdict other than
          *     `helpful` or `wrong`, a note over the cap or a field the contract does not name;
          *     `permission_denied` (403) without `search.use`; `unauthenticated` (401) without a
          *     session.
          */
         post: operations["rateAnswer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applicability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set many applicability answers at once after confirming them
+         * @description Stores many confirmed answers in one call, such as the decisions of a pasted Statement
+         *     of Applicability: each row names an obligation and, optionally, a legal entity or a unit,
+         *     with its answer and reason (AC-REG1). Call it after the person confirmed every row in one
+         *     dialog. All rows are stored in one transaction or none is.
+         *
+         *     A person's session holding `applicability.approve`. No step-up and no `If-Match`: the
+         *     confirmation covers the rows as the dialog showed them. At most `REGISTER_BULK_MAX` rows,
+         *     100 by default. Records one audit event per row naming the person, the value before and
+         *     after, and the reason.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
+         *     `applicability.approve`; `not_found` (404) when any row names an obligation, entity or unit
+         *     the bank cannot see; `validation_error` (422) for an empty list, a list over the cap or a
+         *     row the schema refuses. Published ahead of the logic that will fill it, and answering 501
+         *     `not_built` until that ships.
+         */
+        post: operations["setApplicabilityMany"];
         delete?: never;
         options?: never;
         head?: never;
@@ -436,7 +477,8 @@ export interface paths {
          *     Limits and budgets: the question is at most 2000 characters
          *     (`ASK_QUESTION_MAX_CHARS`), and a longer one answers 422 before any stream opens. Each
          *     reader may ask 10 questions a minute (`ASK_RATE_PER_USER_PER_MINUTE`), counted per
-         *     person. The model is given at most 6 passages (`ASK_RETRIEVAL_DEPTH`) and may write at
+         *     person, and may have at most 2 answers streaming at once (`ASK_STREAMS_PER_USER`); an
+         *     answer stops counting the moment its stream closes. The model is given at most 6 passages (`ASK_RETRIEVAL_DEPTH`) and may write at
          *     most 1024 tokens (`ASK_MAX_TOKENS`). The first token arrives inside 2 s (NFR-02).
          *
          *     Shape of the call: a read of the library and a model call. It needs no idempotency
@@ -449,7 +491,8 @@ export interface paths {
          *     Errors, each a status with a problem body before any stream opens:
          *     `feature_off` (403) when the reader's bank has switched its AI features off, which is
          *     the bank's decision and not a fault to retry; `rate_limited` (429) when that reader has
-         *     asked more than the limit above in the last minute, to wait out and retry;
+         *     asked more than the limit above in the last minute, or already has as many answers
+         *     streaming as the cap above allows, to wait out and retry;
          *     `unknown_key` (422) for a `lang` that is not one of the library's language rows;
          *     `validation_error` (422) for a question over the cap or a field the contract does not
          *     name; `not_found` (404) when the session belongs to no bank; `permission_denied`
@@ -2018,6 +2061,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/duty-occurrences/{occurrence_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a dated duty done
+         * @description Marks an occurrence done with an optional note and generates only the next one, from
+         *     the duty's recurrence rule in the bank's time zone. Completing it again writes nothing
+         *     twice.
+         *
+         *     A person's session holding `register.edit`. No step-up. Records one audit event naming
+         *     the person.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
+         *     `not_found` (404) for an occurrence the bank does not have; `validation_error` (422) for a
+         *     note over the limit. Published ahead of the logic that will fill it, and answering 501
+         *     `not_built` until that ships.
+         */
+        post: operations["completeDutyOccurrence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/e2e/mail-outbox": {
         parameters: {
             query?: never;
@@ -2176,6 +2249,271 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See the bank's exports, newest first
+         * @description Returns the bank's export jobs one page at a time, newest first, each with its status,
+         *     its checksum once built and when it was first downloaded. Use it to show the exports
+         *     screen or to find an earlier export again.
+         *
+         *     A person's session holding `exports.create` in their own bank; only that bank's jobs are
+         *     ever listed. It only reads and writes nothing to the audit log. An empty list is a 200
+         *     with `total` 0.
+         *
+         *     Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
+         *     depth; `permission_denied` without `exports.create`; `unauthenticated` without a session.
+         */
+        get: operations["listExports"];
+        put?: never;
+        /**
+         * Ask for an export, built in the background
+         * @description Starts an export of one kind in one format and answers 202 at once with the queued
+         *     job; the file is built by the worker, never inside this request. Poll
+         *     `GET /exports/{exportId}` until the status is `succeeded`, then fetch the file from
+         *     `GET /exports/{exportId}/download`.
+         *
+         *     A person's session holding `exports.create` in their own bank, with a passkey step-up
+         *     confirmed within the last few minutes, because an export takes the bank's records out
+         *     of the screens that check who may see them. No API key reaches it. The request is
+         *     recorded in the audit log with the person, the kind, the format and the step-up; the
+         *     worker records the file's SHA-256 when it is built. The file is kept for a limited
+         *     number of days (`expiresAt`).
+         *
+         *     Errors: `step_up_required` without a fresh passkey confirmation; `permission_denied`
+         *     without `exports.create`; `unauthenticated` without a session; `not_built` (501) for a
+         *     kind whose file is not built yet, before any job is written; `format_not_offered` for a
+         *     format the kind does not come in; `validation_error` for a body that is not the shape
+         *     above, or a case file that names no case in `subjectId` or another kind that names one.
+         */
+        post: operations["createExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exports/{export_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check whether an export is ready
+         * @description Returns one export job as it stands: `queued` or `running` while the worker builds it,
+         *     `succeeded` with its checksum and expiry once the file is ready, `failed` with the
+         *     reason when it could not be built. Poll it after `POST /exports`.
+         *
+         *     A person's session holding `exports.create` in their own bank. It only reads and writes
+         *     nothing to the audit log.
+         *
+         *     Errors: `not_found` when no job of this bank has that id, which is also what another
+         *     bank's job answers; `permission_denied` without `exports.create`; `unauthenticated`
+         *     without a session.
+         */
+        get: operations["getExport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exports/{export_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download an export's file
+         * @description Streams the built file as an attachment, in the export's format, marked `no-store`
+         *     so no cache keeps it. There is no link to share: the file only ever leaves through this
+         *     call. Its SHA-256 is the job's `contentHash`.
+         *
+         *     A person's session holding `exports.create` in their own bank, checked again on every
+         *     download. No fresh step-up: the export was confirmed with a passkey when it was asked
+         *     for. Every download is recorded in the audit log with the person, the kind and the
+         *     format, and the first one is stamped as the job's `downloadedAt`.
+         *
+         *     Errors: `not_found` when no job of this bank has that id, which is also what another
+         *     bank's job answers; `export_not_ready` (409) while the job is queued, running or failed;
+         *     `export_expired` (409) once `expiresAt` has passed, when a new export is needed;
+         *     `permission_denied` without `exports.create`; `unauthenticated` without a session.
+         */
+        get: operations["downloadExport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gaps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See every gap across your register
+         * @description Every gap the bank has recorded, across all obligations, by target date then id, with
+         *     filters for status, severity, owner, legal entity and a target-date range, each combined
+         *     with AND. This is the gaps screen's list.
+         *
+         *     A person's session holding `register.read`. A read. Pages with `limit` and `offset`, 20 by
+         *     default and 100 at most; filters matching nothing are a 200 with an empty page. A query
+         *     parameter the list does not name is ignored.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
+         *     `validation_error` (422) for an owner or entity that is not a UUID, a date that is not a
+         *     date, a key longer than 64 characters or a page out of range. Published ahead of the logic
+         *     that will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["listRegisterGaps"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gaps/{gap_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Amend a gap or move it on
+         * @description Changes the fields the body sends on a gap: title, description, severity, owner, target
+         *     date, plan, or its status, such as from open to remediating to closed. Accepting a risk is
+         *     not a status change here; it has its own routes and its four eyes.
+         *
+         *     A person's session holding `gaps.edit`. Send `If-Match` with the gap's `version`. No
+         *     step-up. Records one audit event naming the person with the fields before and after.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
+         *     `not_found` (404) for a gap the bank does not have; `stale_write` (409);
+         *     `invalid_transition` (409) for a status the gap cannot move to; `unknown_key` (422) for a
+         *     key the bank's list does not hold; `validation_error` (422). Published ahead of the logic
+         *     that will fill it, and answering 501 `not_built` until that ships.
+         */
+        patch: operations["updateGap"];
+        trace?: never;
+    };
+    "/api/v1/gaps/{gap_id}/accept-risk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for a gap's risk to be accepted
+         * @description Asks for the gap's risk to be accepted, with a reason key from the bank's
+         *     risk-acceptance list and a note. The gap then shows "Waiting for approval" and its status
+         *     does not move until a second person approves.
+         *
+         *     A person's session holding `gaps.edit`. No step-up. Records one audit event naming the
+         *     person and the reason.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
+         *     `not_found` (404) for a gap the bank does not have; `invalid_transition` (409) for a gap
+         *     that is closed or already accepted; `unknown_key` (422) for a reason the bank's list does
+         *     not hold; `validation_error` (422). Published ahead of the logic that will fill it, and
+         *     answering 501 `not_built` until that ships.
+         */
+        post: operations["requestRiskAcceptance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gaps/{gap_id}/accept-risk/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve accepting a gap's risk as the second person
+         * @description Approves a waiting risk acceptance, which moves the gap to the gap status list's
+         *     risk-accepted row and stores the approver and the time. Four eyes: the approver is never
+         *     the person who identified the gap.
+         *
+         *     A person's session holding `risk.accept.approve`, with a passkey step-up younger than the
+         *     configured freshness window. No body. Records one audit event naming both people and the
+         *     step-up assertion.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
+         *     `risk.accept.approve`; `step_up_required` (403) without a fresh step-up, which the screen
+         *     answers by opening the passkey prompt and retrying; `not_found` (404) for a gap the bank
+         *     does not have; `four_eyes_violation` (409) when the caller identified the gap;
+         *     `invalid_transition` (409) when no acceptance is waiting. Published ahead of the logic
+         *     that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["approveRiskAcceptance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gaps/{gap_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reopen a closed or risk-accepted gap
+         * @description Moves a closed or risk-accepted gap back to the gap status list's open row and clears
+         *     its acceptance; the earlier acceptance stays readable in the audit log.
+         *
+         *     A person's session holding `gaps.edit`. No body and no step-up. Records one audit event
+         *     naming the person.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
+         *     `not_found` (404) for a gap the bank does not have; `invalid_transition` (409) for a gap
+         *     that is already open. Published ahead of the logic that will fill it, and answering 501
+         *     `not_built` until that ships.
+         */
+        post: operations["reopenGap"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/home": {
         parameters: {
             query?: never;
@@ -2324,7 +2662,7 @@ export interface paths {
          *
          *     Needs the `problems.report` permission, which every member of a bank holds and no platform role does. Answers 201 with the report's id, its status and when it was filed, and never reads the reader's own words back. Writes one audit event, library.problem_reported, carrying the record, the report's id and the version and language on screen, and never the text itself.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) without the permission, including for every platform role; `not_found` (404) when the instrument is not one this caller may read; `validation_error` (422) when the body is malformed, the text is longer than 4000 characters or the path segment is not a UUID; `description_required` (422) when the description is only whitespace; `unknown_key` (422) when the language is not an active content language.
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) without the permission, including for every platform role; `not_found` (404) when the instrument is not one this caller may read; `validation_error` (422) when the body is malformed, the text is longer than 4000 characters or holds a NUL character, or the path segment is not a UUID; `description_required` (422) when the description is only whitespace; `unknown_key` (422) when the language is not an active content language; `rate_limited` (429) when this person has filed 30 reports in the last hour (`PROBLEM_REPORTS_PER_USER_PER_HOUR`), to wait out and retry.
          */
         post: operations["reportInstrumentProblem"];
         delete?: never;
@@ -2371,6 +2709,35 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal-links/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Unlink an item from an obligation
+         * @description Removes a link between an obligation and one of the bank's items. A soft removal: the
+         *     link is marked removed and kept for the history, and the item itself survives. Answers 204
+         *     with no body.
+         *
+         *     A person's session holding `register.edit`. No step-up. Records one audit event naming
+         *     the person.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
+         *     `not_found` (404) for a link the bank does not have or one already removed. Published
+         *     ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        delete: operations["removeInternalLink"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2737,6 +3104,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/obligations/{obligation_id}/applicability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Say whether an obligation applies to your bank, a legal entity or a unit
+         * @description Stores the answer to "Does it apply to us?" at once, with its reason: for the
+         *     obligation as a whole, for one legal entity (`orgUnitId`) or for one unit of a standard
+         *     (`unitId`). Call it after the person confirmed the answer in a dialog; nothing is
+         *     requested and nobody else approves it (D-75). An entity's scope row is created in the same
+         *     transaction when it does not exist yet. The compliance status and the gaps are untouched:
+         *     "applies" and "we comply" are separate facts.
+         *
+         *     A person's session holding `applicability.approve`. No step-up. Send `If-Match` with the
+         *     row's `version`. Records one audit event naming the person, the value before and after,
+         *     and the reason.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
+         *     `applicability.approve`; `not_found` (404) for an obligation, entity or unit the bank
+         *     cannot see; `stale_write` (409); `validation_error` (422) for an unknown value, an empty
+         *     reason, or both `orgUnitId` and `unitId`. Published ahead of the logic that will fill it,
+         *     and answering 501 `not_built` until that ships.
+         */
+        put: operations["setApplicability"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/obligations/{obligation_id}/assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See every earlier assessment of an obligation, with who and when
+         * @description The bank's assessment history of one obligation, newest first: each status assessed,
+         *     with its author, time, method, risk, rationale and the legal entity it was about. The
+         *     history is append-only; nothing in it is ever edited.
+         *
+         *     A person's session holding `register.read`. A read. Pages with `limit` and `offset`, 20 by
+         *     default and 100 at most; no assessments is a 200 with an empty page.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
+         *     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
+         *     page out of range. Published ahead of the logic that will fill it, and answering 501
+         *     `not_built` until that ships.
+         */
+        get: operations["listAssessments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/obligations/{obligation_id}/changes": {
         parameters: {
             query?: never;
@@ -2819,6 +3251,170 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/obligations/{obligation_id}/duties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See the recurring duties of an obligation and when each is next due
+         * @description The duties the law repeats on one obligation, from the library, each with the bank's
+         *     next dated occurrence, its owner and its status. The occurrence dates appear on the
+         *     roadmap as our own deadlines.
+         *
+         *     A person's session holding `register.read`. Pages with `limit` and `offset`, 20 by
+         *     default and 100 at most; an obligation with no recurring duty is a 200 with an empty page.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
+         *     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
+         *     page out of range. Published ahead of the logic that will fill it, and answering 501
+         *     `not_built` until that ships.
+         */
+        get: operations["listDuties"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/obligations/{obligation_id}/gaps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See the gaps your bank has recorded on an obligation
+         * @description The bank's gaps on one obligation, open and closed, each with its owner, severity,
+         *     source, status, target date, plan and any risk acceptance. Gaps stay visible whatever the
+         *     obligation's applicability, because a gap is a fact about how the bank complies.
+         *
+         *     A person's session holding `register.read`. A read. Pages with `limit` and `offset`, 20 by
+         *     default and 100 at most; an obligation with no gaps is a 200 with an empty page.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
+         *     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
+         *     page out of range. Published ahead of the logic that will fill it, and answering 501
+         *     `not_built` until that ships.
+         */
+        get: operations["listObligationGaps"];
+        put?: never;
+        /**
+         * Record a gap with an owner, a severity, a target date and a plan
+         * @description Records how the bank falls short of an obligation, on the obligation as a whole, one
+         *     legal entity or one unit, with its title, severity, source, owner, target date and
+         *     remediation plan. The gap starts in the gap status list's open row, and its target date
+         *     appears on the roadmap as our own deadline.
+         *
+         *     A person's session holding `gaps.edit`. No step-up. Records one audit event naming the
+         *     person. Answers 201 with the gap.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
+         *     `not_found` (404) for an obligation, entity or unit the bank cannot see; `unknown_key`
+         *     (422) for a severity key the bank's list does not hold; `validation_error` (422) for a
+         *     body the schema refuses. Published ahead of the logic that will fill it, and answering 501
+         *     `not_built` until that ships.
+         */
+        post: operations["createGap"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/obligations/{obligation_id}/internal-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See the policies, procedures and controls linked to an obligation
+         * @description The bank's own items linked to one obligation, each with its kind, name, link and the
+         *     reference an outside GRC system knows it by, so that system can read the links. Removed
+         *     links are not listed.
+         *
+         *     A person's session holding `register.read`. A read. Pages with `limit` and `offset`, 20 by
+         *     default and 100 at most; no links is a 200 with an empty page.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
+         *     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
+         *     page out of range. Published ahead of the logic that will fill it, and answering 501
+         *     `not_built` until that ships.
+         */
+        get: operations["listInternalLinks"];
+        put?: never;
+        /**
+         * Link one of your policies, procedures or controls to an obligation
+         * @description Links an item of the bank's own to an obligation: picked from its organisation's
+         *     internal items, or ad hoc with its kind, name, link and external reference. The url is
+         *     stored as given and never fetched.
+         *
+         *     A person's session holding `register.edit`. No step-up. Records one audit event naming
+         *     the person. Answers 201 with the link.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
+         *     `not_found` (404) for an obligation or internal item the bank cannot see; `unknown_key`
+         *     (422) for a kind that is not an active row of the bank's link kind list;
+         *     `validation_error` (422). Published ahead of the logic that will fill it, and answering
+         *     501 `not_built` until that ships.
+         */
+        post: operations["addInternalLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/obligations/{obligation_id}/interpretation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read how your bank reads a rule, and how it read it before
+         * @description "How we read this rule": the bank's current reading of the obligation with its author
+         *     and date, and every earlier reading unchanged. Internal legal judgement that never leaves
+         *     the bank. An obligation with no reading is a 200 with `current` null.
+         *
+         *     A person's session holding `register.read`. A read.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
+         *     `not_found` (404) for an obligation the bank cannot see. Published ahead of the logic
+         *     that will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["getInterpretation"];
+        /**
+         * Write down how your bank reads a rule
+         * @description Writes a new version of the bank's reading of the rule. The previous version is kept,
+         *     marked as earlier, and stays readable; nothing is edited in place. A version has no
+         *     approval step.
+         *
+         *     A person's session holding `register.edit`. Send `If-Match` with the current `versionNo`,
+         *     0 when there is none. No step-up. Records one audit event naming the person.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
+         *     `not_found` (404) for an obligation the bank cannot see; `stale_write` (409) when somebody
+         *     wrote a version in between; `validation_error` (422) for empty or over-long text.
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        put: operations["saveInterpretation"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/obligations/{obligation_id}/problem-reports": {
         parameters: {
             query?: never;
@@ -2840,13 +3436,95 @@ export interface paths {
          *
          *     Needs the `problems.report` permission, which every member of a bank holds and no platform role does. Answers 201 with the report's id, its status and when it was filed, and never reads the reader's own words back. Writes one audit event, library.problem_reported, carrying the record, the report's id and the version and language on screen, and never the text itself.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) without the permission, including for every platform role; `not_found` (404) when the obligation is not one this caller may read; `validation_error` (422) when the body is malformed, the text is longer than 4000 characters or the path segment is not a UUID; `description_required` (422) when the description is only whitespace; `unknown_key` (422) when the language is not an active content language.
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) without the permission, including for every platform role; `not_found` (404) when the obligation is not one this caller may read; `validation_error` (422) when the body is malformed, the text is longer than 4000 characters or holds a NUL character, or the path segment is not a UUID; `description_required` (422) when the description is only whitespace; `unknown_key` (422) when the language is not an active content language; `rate_limited` (429) when this person has filed 30 reports in the last hour (`PROBLEM_REPORTS_PER_USER_PER_HOUR`), to wait out and retry.
          */
         post: operations["reportObligationProblem"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/obligations/{obligation_id}/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See whether an obligation applies to your bank and how you comply
+         * @description The bank's register entry for one obligation: its applicability with the reason, the
+         *     compliance status, note, risk, owners, process, system, evidence location and next review,
+         *     and a row per legal entity where the obligation spans several. Applicability and status
+         *     are separate facts and neither is derived from the other.
+         *
+         *     A person's session holding `register.read`, which every role of a bank carries. A read: it
+         *     writes nothing, not even an empty entry, so an obligation nobody has answered for reads as
+         *     "under assessment" with version 0.
+         *
+         *     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
+         *     `register.read`; `not_found` (404) for an obligation the bank cannot see. Published ahead
+         *     of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["getRegisterEntry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Record how your bank complies with an obligation
+         * @description Changes the fields the body sends on the bank's register entry: compliance status,
+         *     status note, risk, first-line owner, compliance contact, process, system, evidence
+         *     location and next review. Applicability is not here; it has its own route. A status
+         *     change also writes an assessment row with the rationale, so the history has it.
+         *
+         *     A person's session holding `register.edit`. Send `If-Match` with the `version` last read;
+         *     a row changed in between is refused and nothing is merged. Records one audit event naming
+         *     the person with the fields before and after. No step-up.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
+         *     `not_found` (404) for an obligation the bank cannot see; `stale_write` (409) when
+         *     `If-Match` is not the current version; `unknown_key` (422) for a status or risk key that is
+         *     not an active row of the bank's list; `validation_error` (422) for an `If-Match` that is
+         *     not a version or a body the schema refuses. Published ahead of the logic that will fill
+         *     it, and answering 501 `not_built` until that ships.
+         */
+        patch: operations["updateRegister"];
+        trace?: never;
+    };
+    "/api/v1/obligations/{obligation_id}/register/entities/{org_unit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Record how one of your legal entities complies with an obligation
+         * @description Changes the fields the body sends on one legal entity's row under an obligation that
+         *     spans several: status, note, risk, owner, process, system, evidence location and next
+         *     review. The entity's row is created in the same transaction when it does not exist yet;
+         *     the obligation's own status then reads the worse of its entities.
+         *
+         *     A person's session holding `register.edit`. Send `If-Match` with the row's `version`, 0
+         *     for a row not written yet. Records one audit event naming the person with the fields
+         *     before and after. No step-up.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
+         *     `not_found` (404) for an obligation or entity the bank cannot see; `stale_write` (409);
+         *     `unknown_key` (422) for a status or risk key the bank's list does not hold;
+         *     `validation_error` (422). Published ahead of the logic that will fill it, and answering
+         *     501 `not_built` until that ships.
+         */
+        patch: operations["updateRegisterEntity"];
         trace?: never;
     };
     "/api/v1/obligations/{obligation_id}/sources": {
@@ -2880,6 +3558,113 @@ export interface paths {
         get: operations["getRecordSources"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/obligations/{obligation_id}/statement-of-applicability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a legal entity's Statement of Applicability for a standard
+         * @description The register filtered by a standard and one legal entity: the entity's conformance row
+         *     with its own assessed status, and each unit with its reference, the bank's title, its
+         *     applicability and reason, its status, who set it and when. No status is computed from the
+         *     units.
+         *
+         *     A person's session holding `register.read`. A read. `entity` is required. Units page with
+         *     `limit` and `offset`, 20 by default and 100 at most.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
+         *     `not_found` (404) for an obligation or entity the bank cannot see; `validation_error`
+         *     (422) without `entity` or with a page out of range. Published ahead of the logic that
+         *     will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["getStatementOfApplicability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/obligations/{obligation_id}/units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See the clauses and controls a legal entity lists under a standard
+         * @description The units the bank lists under a standard's conformance obligation, by reference, each
+         *     with its own applicability, reason, status and whether it has history; `entity` narrows
+         *     them to one legal entity. Removed units are not listed. The units are the bank's own
+         *     words; nothing here is indexed or sent to a model.
+         *
+         *     A person's session holding `register.read`. A read. Pages with `limit` and `offset`, 20 by
+         *     default and 100 at most; no units is a 200 with an empty page.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
+         *     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for an
+         *     entity that is not a UUID or a page out of range. Published ahead of the logic that will
+         *     fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["listUnits"];
+        put?: never;
+        /**
+         * List one clause or control under a standard, in your own words
+         * @description Adds one unit for a legal entity under a standard's conformance obligation, by the
+         *     bank's own reference and title. A unit exists only under a standard the library admitted,
+         *     for an entity whose conformance row applies. It starts undecided.
+         *
+         *     A person's session holding `register.edit`. No step-up. Records one audit event naming
+         *     the person. Answers 201 with the unit.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
+         *     `not_found` (404) for an obligation or entity the bank cannot see; `validation_error`
+         *     (422) for an empty or over-long reference or title. Published ahead of the logic that
+         *     will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["createUnit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/obligations/{obligation_id}/units/paste": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Paste a legal entity's clauses and controls, checking them first
+         * @description Lists many units for one legal entity from pasted lines of reference and title. With
+         *     `dryRun` true, the default, it answers what each line would become and stores nothing;
+         *     with `dryRun` false it creates every unit in one transaction, only when no line is
+         *     refused. Set their applicability afterwards with `POST /applicability`.
+         *
+         *     A person's session holding `register.edit`. At most `REGISTER_BULK_MAX` lines, 100 by
+         *     default. No step-up. A commit records one audit event per unit naming the person.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
+         *     `not_found` (404) for an obligation or entity the bank cannot see; `validation_error`
+         *     (422) for no lines, too many lines or a line longer than the paste allows. Published ahead
+         *     of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["pasteUnits"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2961,7 +3746,7 @@ export interface paths {
          *
          *     Records `problem_report.closed` in the audit log, with the states before and after and never the words, and emits the outbox event of the same name. No passkey step-up and no second person: the close changes nothing outside the report. Answers the closed report.
          *
-         *     Errors: `unauthenticated` (401) without a session, an agent's key included; `permission_denied` (403) without `problems.report`, or on a colleague's report without `proposals.create`, with `requiredPermission` naming the one missing; `not_found` (404) for an id this bank has no report under; `already_closed` (409) for a report that is closed already; `validation_error` (422) for a status other than the three or a note that is missing or too long, and `note_required` (422) for a note that is only whitespace.
+         *     Errors: `unauthenticated` (401) without a session, an agent's key included; `permission_denied` (403) without `problems.report`, or on a colleague's report without `proposals.create`, with `requiredPermission` naming the one missing; `not_found` (404) for an id this bank has no report under; `already_closed` (409) for a report that is closed already; `validation_error` (422) for a status other than the three or a note that is missing, too long or holding a NUL character, and `note_required` (422) for a note that is only whitespace; `rate_limited` (429) when this person has closed 30 reports in the last hour (`PROBLEM_REPORTS_PER_USER_PER_HOUR`), to wait out and retry.
          */
         patch: operations["closeProblemReport"];
         trace?: never;
@@ -3073,12 +3858,15 @@ export interface paths {
          *     term of the regime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes
          *     an obligation with a term of a dimension that mirrors the jurisdiction list;
          *     `duplicate_key` (409) when a new record's key is already a record's;
-         *     `validation_error` (422) for a body the schema or the kind's payload refuses;
+         *     `validation_error` (422) for a body the schema or the kind's payload refuses, a
+         *     `sourceUrl` that is not an https link on any kind, or a summary or text longer than
+         *     `PROPOSAL_TEXT_MAX_CHARS` (50000 unless the platform sets another number);
          *     `standard_term_only_on_standards` (422) when the scope puts a standard's term on an
          *     obligation whose instrument is not a standard; `licensed_text` (422) for a provision or
          *     provision version under a standard, a source on a standard's obligation that is not
-         *     an https link, or a standard's new obligation whose `refLabel` is not the standard's
-         *     official reference; `one_conformance_obligation` (422) for a new obligation under a standard
+         *     an https link, a standard's new obligation whose `refLabel` is not the standard's
+         *     official reference, or a `sourceLabel` under a standard that is anything but that
+         *     reference; `one_conformance_obligation` (422) for a new obligation under a standard
          *     that already holds one; `standard_term_required` (422) when a standard's obligation
          *     would carry no standard term, or more than one; `idempotency_conflict` (409) when the
          *     same proposer's `Idempotency-Key` arrives with a different body or from another bank
@@ -3196,7 +3984,8 @@ export interface paths {
          *     waits for a person who reads the flag; `invalid_transition` when the proposal was
          *     already approved or rejected, which is also what a repeated or simultaneous second call
          *     answers, since nothing is ever applied twice; `source_missing` when a correction
-         *     introduces a field the proposal never sourced; `validation_error` when a key sends no
+         *     introduces a field the proposal never sourced, or changes a value without its fresh
+         *     source in `fieldSources`; `validation_error` when a key sends no
          *     `decision` or a person sends one or names a run, and when a correction is offered on a
          *     kind that cannot be corrected or does not fit its payload; `unknown_key` when the
          *     payload names a row the library does not hold; `not_a_regime` when a new instrument's
@@ -3718,6 +4507,134 @@ export interface paths {
          *     without `sources.manage`; `unauthenticated` (401) without a session.
          */
         patch: operations["updateSource"];
+        trace?: never;
+    };
+    "/api/v1/taggings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tag a record with one of our own tags
+         * @description Put one of the bank's own tags on one obligation, change or case (VOC-08) and answer
+         *     the record's tags as they now stand. The tag is a marker in the bank's own zone: the
+         *     library record it sits on does not change and no other bank sees it. Tagging a record
+         *     that already carries the tag changes nothing and answers the same 200. Every call writes
+         *     one audit event naming the record, the tag and whether anything changed.
+         *
+         *     Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
+         *     refused. The caller must also be able to read the record. Errors: `unsupported_subject`
+         *     (422) for a kind other than obligation, change or change_case; `unknown_key` (422)
+         *     for a tag the bank does not have or has retired; `not_found` (404) for a record that does
+         *     not exist, is another bank's or the caller may not read; `permission_denied` (403)
+         *     without `vocab.manage`; `unauthenticated` (401) without a session; `validation_error`
+         *     (422) for a body the schema rejects.
+         */
+        post: operations["tagRecord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/taggings/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tag the selected records at once
+         * @description Put one of the bank's own tags on every selected record of one kind at once (VOC-08),
+         *     in one transaction, and answer what happened in the preview's shape. Records that
+         *     already carry the tag are left as they are; records the caller may not read are
+         *     skipped, counted and never named. The whole batch writes exactly one audit event holding
+         *     the tag's key and the ids of the records it reached; a repeat of the same batch changes
+         *     nothing and writes its one event saying so.
+         *
+         *     Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
+         *     refused. At most `BULK_TAGGING_MAX_RECORDS` distinct ids, 200 unless the operator set
+         *     another number. Errors: `too_many_records` (422) above that cap, and nothing is tagged;
+         *     `unsupported_subject` (422) for a kind other than obligation, change or
+         *     change_case; `unknown_key` (422) for a tag the bank does not have or has retired;
+         *     `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401) without a
+         *     session; `validation_error` (422) for a body the schema rejects, such as an empty
+         *     selection.
+         */
+        post: operations["tagRecords"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/taggings/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * See what tagging the selected records would do
+         * @description Before tagging a selection from a list (VOC-08), see which records would gain the tag,
+         *     which already carry it and how many would be skipped because the caller may not read
+         *     them. Skipped records are counted and never named. A read with a body: it changes
+         *     nothing and writes no audit event.
+         *
+         *     Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
+         *     refused. At most `BULK_TAGGING_MAX_RECORDS` distinct ids, 200 unless the operator set
+         *     another number. Errors: `too_many_records` (422) above that cap; `unsupported_subject`
+         *     (422) for a kind other than obligation, change or change_case; `unknown_key`
+         *     (422) for a tag the bank does not have or has retired; `permission_denied` (403)
+         *     without `vocab.manage`; `unauthenticated` (401) without a session; `validation_error`
+         *     (422) for a body the schema rejects, such as an empty selection.
+         */
+        post: operations["previewTagging"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/taggings/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take one of our own tags off a record
+         * @description Take one of the bank's own tags off one obligation, change or case (VOC-08) and answer
+         *     the record's tags as they now stand; an empty list when none is left. A record that does
+         *     not carry the tag is left as it is and answers the same 200. A retired tag can still be
+         *     taken off. Every call writes one audit event naming the record, the tag and whether
+         *     anything changed.
+         *
+         *     Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
+         *     refused. Errors: `unsupported_subject` (422) for a kind other than obligation, change
+         *     or change_case; `unknown_key` (422) for a tag the bank does not have; `not_found` (404)
+         *     for a record that does not exist, is another bank's or the caller may not read;
+         *     `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401) without a
+         *     session; `validation_error` (422) for a body the schema rejects.
+         */
+        post: operations["untagRecord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/taxonomy/dimensions": {
@@ -4763,6 +5680,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tenant/workflow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change your bank's reminders, escalation, digest day or triage target
+         * @description Updates the bank's workflow policy and returns the whole profile as it now stands,
+         *     with the policy under `workflow`. Send only the fields you are changing: an omitted
+         *     field is left alone, and each list replaces the current one rather than adding to it.
+         *     Call it from the bank's workflow settings once an administrator has edited them.
+         *
+         *     The policy decides how many days before a due date or a review the owner is reminded,
+         *     how many days overdue work waits before it escalates and to which of the bank's roles,
+         *     the weekday the digest goes out and the triage target in hours. A new bank starts at
+         *     the platform defaults. It is separate from the profile edit, `PATCH /tenant`, which
+         *     needs `security.manage` and ignores these fields.
+         *
+         *     Needs the `workflow.manage` permission, which the bank's administrator and compliance
+         *     officer roles carry; a member without it is refused and nothing is written. No passkey
+         *     step-up is asked for: this is a workflow control, not a security one. The change is
+         *     recorded in the audit log as `tenant.workflow_updated` with every policy value before
+         *     and after, in the same transaction as the write.
+         *
+         *     Errors: `validation_error` (422) with the field named in `errors` for a number or a day
+         *     out of range, an empty or over-long list, or a field the body does not name;
+         *     `unknown_key` (422) with the field named in `errors` for a role that is not an active
+         *     role of this bank or a weekday that is not one of the seven; `permission_denied` (403)
+         *     without `workflow.manage`, naming it in `requiredPermission`; `unauthenticated` (401)
+         *     without a session.
+         */
+        patch: operations["updateTenantWorkflow"];
+        trace?: never;
+    };
+    "/api/v1/units/{unit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a unit that has no history yet
+         * @description Removes a unit from the entity's list. A soft removal: the unit is marked removed and
+         *     kept, never deleted, and a unit with history cannot be removed. Answers 204 with no body.
+         *
+         *     A person's session holding `register.edit`. Send `If-Match` with the unit's `version`. No
+         *     step-up. Records one audit event naming the person.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
+         *     `not_found` (404) for a unit the bank does not have; `stale_write` (409). Published ahead
+         *     of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        delete: operations["removeUnit"];
+        options?: never;
+        head?: never;
+        /**
+         * Rename a unit that has no history yet
+         * @description Changes a unit's reference or title. Once the unit has an applicability decision, a
+         *     status or a gap, both are fixed, so a decision can never be moved to another control by a
+         *     rename.
+         *
+         *     A person's session holding `register.edit`. Send `If-Match` with the unit's `version`. No
+         *     step-up. Records one audit event naming the person with the values before and after.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
+         *     `not_found` (404) for a unit the bank does not have; `stale_write` (409);
+         *     `validation_error` (422). Published ahead of the logic that will fill it, and answering
+         *     501 `not_built` until that ships.
+         */
+        patch: operations["updateUnit"];
+        trace?: never;
+    };
     "/api/v1/upcoming": {
         parameters: {
             query?: never;
@@ -5392,7 +6393,7 @@ export interface components {
             /**
              * Agentid
              * Format: uuid
-             * @description The identifier of the agent definition the key will act as, a UUID taken from `GET /agent-definitions`. Everything the key writes is recorded as that agent, and a key runs that one agent and no other. An identifier that names no definition is refused with `unknown_key`.
+             * @description The identifier of the agent definition the key will act as, a UUID taken from `GET /agent-definitions`. Everything the key writes is recorded as that agent, and a key runs that one agent and no other. An identifier that names no definition is refused with `unknown_key`, and a definition that is retired or switched off, rather than active or a draft being evaluated, with `agent_inactive`.
              */
             agentId: string;
             /**
@@ -5407,7 +6408,7 @@ export interface components {
             name: string;
             /**
              * Scopes
-             * @description What the key may do: at least one and at most 9 scope keys, each counted once. Give the key the least its agent needs. `agent-runs:write` opens and closes the agent's runs; `sources:write` logs which sources a run checked; `changes:write` registers a regulatory change and writes its facts on the watch feed; `proposals:write` files a proposal to the shared library; `proposals:review` reads the proposal queue and approves, corrects or rejects a proposal someone else filed, as the independent second pair of eyes; `search:read` searches the library; `library:read` reads its records and vocabularies; `upcoming:read` reads the public dates coming up; `tenant:read` is set aside for reading a bank's profile, no route reads with it yet, and a key that belongs to no bank has no profile to read. No scope writes a library record: a finding becomes a change or a proposal, never an edit. Any other value is refused with `unknown_key`, and the message lists the valid scopes.
+             * @description What the key may do: at least one and at most 9 scope keys, each counted once. Give the key the least its agent needs. `agent-runs:write` opens and closes the agent's runs; `sources:write` logs which sources a run checked; `changes:write` registers a regulatory change and writes its facts on the watch feed; `proposals:write` files a proposal to the shared library; `proposals:review` reads the proposal queue and approves, corrects or rejects a proposal someone else filed, as the independent second pair of eyes; `search:read` searches the library; `library:read` reads its records and vocabularies; `upcoming:read` reads the public dates coming up; `tenant:read` is set aside for reading a bank's profile, no route reads with it yet, and a key that belongs to no bank has no profile to read. No scope writes a library record: a finding becomes a change or a proposal, never an edit. A review agent's key may not hold `sources:write`, `changes:write` or `proposals:write`, and no other agent's key may hold `proposals:review`; either is refused with `scope_not_for_kind`, naming the scope. Any other value is refused with `unknown_key`, and the message lists the valid scopes.
              */
             scopes: string[];
         };
@@ -7779,6 +8780,192 @@ export interface components {
          * @enum {string}
          */
         EvalVia: "search" | "ask";
+        /**
+         * ExportFilters
+         * @description What narrows an export. Every field is optional and each exporter reads the ones that
+         *     mean something for its kind and ignores the rest; no filter ever widens an export past
+         *     the bank's own records and its regulatory scope.
+         * @example {
+         *       "entityId": "7d4e1f20-3a5b-4c6d-8e9f-0a1b2c3d4e5f",
+         *       "standardEdition": "iso-27001-2022"
+         *     }
+         */
+        ExportFilters: {
+            /**
+             * Entityid
+             * @description Only this legal entity of the bank, by its UUID. The Statement of Applicability is one standard's edition for one entity, so it needs both this and `standardEdition`.
+             */
+            entityId?: string | null;
+            /**
+             * From
+             * @description The first day included, as a plain date (YYYY-MM-DD) in the bank's own time zone. Left out, the export starts at the earliest record.
+             */
+            from?: string | null;
+            /**
+             * Instrumentkey
+             * @description Only records under this instrument, named by its stable key from the library, for example `eu-2019-2088`. At most 128 characters. A key that names no instrument gives an empty file, not an error.
+             */
+            instrumentKey?: string | null;
+            /**
+             * Standardedition
+             * @description Only the units of this edition of a standard, named by the edition's stable key from the library, for example `iso-27001-2022`. At most 128 characters.
+             */
+            standardEdition?: string | null;
+            /**
+             * Statuskeys
+             * @description Only records in these compliance statuses, by key. The values are rows of the bank's `compliance_status` vocabulary, whose kinds are `compliant`, `partly`, `gap` and `not_assessed`; an admin may extend the vocabulary, so read `GET /vocab/compliance_status` for the live set and never match on a label. At most 20 keys.
+             */
+            statusKeys?: string[] | null;
+            /**
+             * To
+             * @description The last day included, as a plain date (YYYY-MM-DD) in the bank's own time zone. Left out, the export runs to today.
+             */
+            to?: string | null;
+        };
+        /**
+         * ExportInput
+         * @description What a person asks to export.
+         * @example {
+         *       "format": "json",
+         *       "kind": "case_file",
+         *       "subjectId": "0c9a4a57-8a55-4c43-9c8e-6f1a2b3c4d5e"
+         *     }
+         */
+        ExportInput: {
+            /** @description What narrows the export. Left out, the export holds everything of its kind in the bank's scope. */
+            filters?: components["schemas"]["ExportFilters"] | null;
+            /**
+             * Format
+             * @description The file format. One of: `pdf` — a document to read or print; `txt` — plain text; `json` — structured data for another system; `xlsx` — a spreadsheet; `csv` — comma-separated rows. Each kind offers only some of these, and a format its kind does not offer is refused with 422.
+             * @enum {string}
+             */
+            format: "pdf" | "txt" | "json" | "xlsx" | "csv";
+            /**
+             * Kind
+             * @description What the export contains. One of: `case_file` — one case's whole record, from what happened to sign-off, named by `subjectId`; `cases` — the bank's cases as a list; `committee_pack` — the dashboard's figures, the roadmap, the coverage and the open cases for a committee; `inventory` — the obligations inventory with the bank's applicability and status, the dated Statement of Applicability when filtered by a standard's edition and a legal entity; `changes` — the regulatory changes in the bank's scope; `audit_log` — the bank's audit trail; `configuration` — the bank's lists, roles and policies as a snapshot; `tenant_export` — everything the bank holds, taken when it leaves. A kind whose file is not built yet is refused with 501 `not_built`.
+             * @enum {string}
+             */
+            kind: "case_file" | "cases" | "committee_pack" | "inventory" | "changes" | "audit_log" | "configuration" | "tenant_export";
+            /**
+             * Subjectid
+             * @description The UUID of the one record the export is about, for a kind that is about one record: the case for `case_file`. Left out for every other kind.
+             */
+            subjectId?: string | null;
+        };
+        /**
+         * ExportJobOut
+         * @description One export job and where it is. The file is not in here: it is fetched from
+         *     `GET /exports/{exportId}/download` once the status is `succeeded`.
+         * @example {
+         *       "completedAt": "2026-09-25T08:14:05Z",
+         *       "contentHash": "9f2c4b7a0d1e3f5a6b8c9d0e1f2a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c",
+         *       "createdAt": "2026-09-25T08:14:03Z",
+         *       "downloadedAt": null,
+         *       "error": null,
+         *       "expiresAt": "2026-10-02T08:14:05Z",
+         *       "format": "json",
+         *       "id": "5b0f7c1e-2f5a-4d7e-9a51-3c1f0d9e8a42",
+         *       "kind": "case_file",
+         *       "status": "succeeded",
+         *       "subjectId": "0c9a4a57-8a55-4c43-9c8e-6f1a2b3c4d5e"
+         *     }
+         */
+        ExportJobOut: {
+            /**
+             * Completedat
+             * @description When the worker finished, as a UTC timestamp, whether the file was built or not; null while queued or running.
+             */
+            completedAt: string | null;
+            /**
+             * Contenthash
+             * @description The SHA-256 of the file, as 64 lowercase hexadecimal characters, so whoever receives it can check it is the file the server built. Null until the job succeeds.
+             */
+            contentHash: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When the person asked for the export, as a UTC timestamp.
+             */
+            createdAt: string;
+            /**
+             * Downloadedat
+             * @description When the file was first downloaded, as a UTC timestamp. A later download does not move it. Null until someone downloads it.
+             */
+            downloadedAt: string | null;
+            /**
+             * Error
+             * @description Why the file could not be built, written for the person who asked, when the status is `failed`; null otherwise.
+             */
+            error: string | null;
+            /**
+             * Expiresat
+             * @description When the file stops being available, as a UTC timestamp: 7 days after it was built. After that a download answers 409 `export_expired` and a new export is needed. Null until the job succeeds.
+             */
+            expiresAt: string | null;
+            /**
+             * Format
+             * @description The file format. One of: `pdf` — a document to read or print; `txt` — plain text; `json` — structured data for another system; `xlsx` — a spreadsheet; `csv` — comma-separated rows. Each kind offers only some of these, and a format its kind does not offer is refused with 422.
+             * @enum {string}
+             */
+            format: "pdf" | "txt" | "json" | "xlsx" | "csv";
+            /**
+             * Id
+             * Format: uuid
+             * @description The job's identifier, for polling its status and downloading its file.
+             */
+            id: string;
+            /**
+             * Kind
+             * @description What the export contains. One of: `case_file` — one case's whole record, from what happened to sign-off, named by `subjectId`; `cases` — the bank's cases as a list; `committee_pack` — the dashboard's figures, the roadmap, the coverage and the open cases for a committee; `inventory` — the obligations inventory with the bank's applicability and status, the dated Statement of Applicability when filtered by a standard's edition and a legal entity; `changes` — the regulatory changes in the bank's scope; `audit_log` — the bank's audit trail; `configuration` — the bank's lists, roles and policies as a snapshot; `tenant_export` — everything the bank holds, taken when it leaves. A kind whose file is not built yet is refused with 501 `not_built`.
+             * @enum {string}
+             */
+            kind: "case_file" | "cases" | "committee_pack" | "inventory" | "changes" | "audit_log" | "configuration" | "tenant_export";
+            /**
+             * Status
+             * @description Where the job is. One of: `queued` — accepted and waiting for the worker; `running` — the worker is building the file; `succeeded` — the file is ready to download until `expiresAt`; `failed` — the file could not be built and `error` says why. Poll `GET /exports/{exportId}` until it is `succeeded` or `failed`; neither of those changes again.
+             * @enum {string}
+             */
+            status: "queued" | "running" | "succeeded" | "failed";
+            /**
+             * Subjectid
+             * @description The UUID of the one record the export is about, for a `case_file`; null for every other kind.
+             */
+            subjectId: string | null;
+        };
+        /**
+         * ExportJobPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "completedAt": "2026-09-25T08:14:05Z",
+         *           "contentHash": "9f2c4b7a0d1e3f5a6b8c9d0e1f2a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c",
+         *           "createdAt": "2026-09-25T08:14:03Z",
+         *           "downloadedAt": null,
+         *           "error": null,
+         *           "expiresAt": "2026-10-02T08:14:05Z",
+         *           "format": "json",
+         *           "id": "5b0f7c1e-2f5a-4d7e-9a51-3c1f0d9e8a42",
+         *           "kind": "case_file",
+         *           "status": "succeeded",
+         *           "subjectId": "0c9a4a57-8a55-4c43-9c8e-6f1a2b3c4d5e"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        ExportJobPage: {
+            /**
+             * Items
+             * @description The bank's export jobs on this page, newest first. Only the caller's own bank's jobs are ever listed. An empty list is a 200 and means nobody has exported yet.
+             */
+            items: components["schemas"]["ExportJobOut"][];
+            /**
+             * Total
+             * @description How many export jobs the bank has in total, not how many are on this page.
+             */
+            total: number;
+        };
         /**
          * FootprintDecisionBody
          * @description What the second person sends with an approval or a rejection.
@@ -10402,7 +11589,6 @@ export interface components {
          *       "permissions": [
          *         "ai_log.read",
          *         "applicability.approve",
-         *         "applicability.request",
          *         "audit.read",
          *         "cases.contribute",
          *         "cases.read",
@@ -12253,7 +13439,7 @@ export interface components {
             language?: string | null;
             /**
              * Versionnumber
-             * @description Which version of the summary the reader had on screen, numbered from 1 in the order the versions took effect, so a colleague opens the same words rather than today's. The default is none, for a screen that showed no particular version. It records what was read and is not checked against the record, so it never changes what the server stores.
+             * @description Which version of the summary the reader had on screen, numbered from 1 in the order the versions took effect, so a colleague opens the same words rather than today's: a whole number from 1 to 2147483647, the largest the report's column holds, and anything outside that range is refused with a 422 naming the field. The default is none, for a screen that showed no particular version. It records what was read and is not checked against the record, so it never changes what the server stores.
              */
             versionNumber?: number | null;
         };
@@ -12654,6 +13840,10 @@ export interface components {
          *     proposal came from, because a bank member's identity does not reach the console, and
          *     nothing a bank wrote about its own compliance is touched by an approval.
          * @example {
+         *       "fieldSources": {
+         *         "summaries.en": "https://www.fi.se/en/published/news/2026/research-payments/",
+         *         "summaries.sv": "https://www.fi.se/sv/publicerat/nyheter/2026/analysbetalningar/"
+         *       },
          *       "note": "Wording follows the board decision; scope narrowed to the retail categories the decision names.",
          *       "payloadOverrides": {
          *         "effectiveFrom": "2026-10-01",
@@ -12691,6 +13881,16 @@ export interface components {
             /** @description The model call behind an agent's decision, as the agent reports it: the model and its version, the prompt's name and hash, what it concluded and at least one public page the conclusion rests on. Required from a key, whose decision without it answers 422 `validation_error`: every model call is logged, and one nobody reported cannot be. It becomes one entry of the AI output log under the purpose `agent_review`, in the same transaction as the decision, marked as the agent's own report rather than bleqq's measurement and labelled as AI output, so a reader must not take it for a person's review. No bank reads that entry. A person's decision is not a model call, so a person's body never carries it and one that does answers 422 `validation_error`. */
             decision?: components["schemas"]["AgentDecision"] | null;
             /**
+             * Fieldsources
+             * @description The fresh source of every value `payloadOverrides` changes from what was proposed, keyed as the queue names the field (`summaries.sv`, `effectiveFrom`, `terms`), because the proposer's source vouches only for the value it was given for. Each is checked as a proposal's own are: at most 2000 characters, an https link or the stable key of a provision the library holds, and an https link only on a new record or a standard's obligation. A changed value without one answers 422 `source_missing`; a source for a field the correction leaves as proposed answers 422 `validation_error`. The proposal keeps these sources for the corrected fields from then on. Optional, and left out when nothing is corrected.
+             * @example {
+             *       "summaries.sv": "https://www.fi.se/sv/publicerat/nyheter/2026/analysbetalningar/"
+             *     }
+             */
+            fieldSources?: {
+                [key: string]: string;
+            } | null;
+            /**
              * Note
              * @description The reviewer's own sentence to the proposer, stored on the proposal and sent to them with the decision. Optional on an approval, unlike a rejection, which needs a reason and a note. It is the reviewer's comment on the request and never becomes part of the library record's text, so a reader must not quote it as what the authority said.
              * @default
@@ -12698,7 +13898,7 @@ export interface components {
             note: string;
             /**
              * Payloadoverrides
-             * @description The reviewer's corrections, merged field by field over the proposal's own payload before it is applied; the fields left out keep what was proposed. Accepted only for the `new_obligation_version`, `new_instrument` and `new_obligation` kinds, since the vocabulary kinds carry a label a person wrote rather than a sourced fact; on any other kind the call answers 422 `validation_error`. A new record's corrections are checked exactly as the proposal was, so a regime that is not a term of the regime dimension answers 422 `not_a_regime`. For an obligation version the fields a reviewer may correct are the ones that kind's payload names: `summaries` (the whole set of texts per language, which replaces the proposed set), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (one of `day`, `month`, `quarter` and `year`, which says how exactly the date is known) and `terms` (the scope facets as `dimension:key`, at most 20, which replace the obligation's scope). The merged payload must still carry a source for every field it changes, so a correction that introduces a field the proposal never sourced answers 422 `source_missing` and applies nothing. What is applied is kept beside what was proposed, as the reviewer's own correction: a reader must not take the proposal's payload as the text the library now holds.
+             * @description The reviewer's corrections, merged field by field over the proposal's own payload before it is applied; the fields left out keep what was proposed. Accepted only for the `new_obligation_version`, `new_instrument` and `new_obligation` kinds, since the vocabulary kinds carry a label a person wrote rather than a sourced fact; on any other kind the call answers 422 `validation_error`. A new record's corrections are checked exactly as the proposal was, so a regime that is not a term of the regime dimension answers 422 `not_a_regime`. For an obligation version the fields a reviewer may correct are the ones that kind's payload names: `summaries` (the whole set of texts per language, which replaces the proposed set), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (one of `day`, `month`, `quarter` and `year`, which says how exactly the date is known) and `terms` (the scope facets as `dimension:key`, at most 20, which replace the obligation's scope). The merged payload must still carry a source for every field it changes, so a correction that introduces a field the proposal never sourced answers 422 `source_missing` and applies nothing, and a value changed from what was proposed needs its fresh source in `fieldSources`. Each summary is at most 50000 characters per language. What is applied is kept beside what was proposed, as the reviewer's own correction: a reader must not take the proposal's payload as the text the library now holds.
              */
             payloadOverrides?: {
                 [key: string]: unknown;
@@ -12759,21 +13959,21 @@ export interface components {
             model: string;
             /**
              * Payload
-             * @description What the library should hold, in the shape `kind` names, with camelCase field names. A field the kind does not name, or a value it does not accept, answers 422 `validation_error` naming the fields to fix. `new_obligation_version`: `summaries` (text per content language), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (`day`, `month`, `quarter` or `year`) and `terms` (scope as `dimension:key`, at most 20). `new_instrument`: `key` (a stable key of lowercase words joined by hyphens, at most 120 characters, kept for ever), `titles` per language, `originalLanguage`, `isMachine`, `shortName`, `officialRef`, `eliUri`, `level`, `binding` (left out, the level's default), `jurisdiction`, `authority`, `regime` (a term of the regime dimension as `regime:<key>`, else 422 `not_a_regime`), `inForceFrom`, `inForceTo` and their precisions, and `implementsNote`. `new_obligation`: `key`, `instrument` (the stable key of a shared instrument in force), `titles` and `summaries` per language, `originalLanguage`, `isMachine`, `refLabel`, `dutyType`, `effectiveFrom`, `effectiveFromPrecision` and `terms`; under a standard it is the one conformance obligation, carrying exactly one standard term (else 422 `one_conformance_obligation` or `standard_term_required`), and a law's obligation carries none (422 `standard_term_only_on_standards`). `new_provision`: `key`, `instrument`, `parent` (the stable key of a provision of the same instrument, left out at the top), `provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` per language, `originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. `new_provision_version`: `texts`, `originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. The vocabulary and term kinds name a `list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and term keys are library rows that change only through proposals; `GET /vocabularies` and `GET /taxonomy/terms` return the live sets.
+             * @description What the library should hold, in the shape `kind` names, with camelCase field names. A field the kind does not name, or a value it does not accept, answers 422 `validation_error` naming the fields to fix. `new_obligation_version`: `summaries` (text per content language), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (`day`, `month`, `quarter` or `year`) and `terms` (scope as `dimension:key`, at most 20). `new_instrument`: `key` (a stable key of lowercase words joined by hyphens, at most 120 characters, kept for ever), `titles` per language, `originalLanguage`, `isMachine`, `shortName`, `officialRef`, `eliUri`, `level`, `binding` (left out, the level's default), `jurisdiction`, `authority`, `regime` (a term of the regime dimension as `regime:<key>`, else 422 `not_a_regime`), `inForceFrom`, `inForceTo` and their precisions, and `implementsNote`. `new_obligation`: `key`, `instrument` (the stable key of a shared instrument in force), `titles` and `summaries` per language, `originalLanguage`, `isMachine`, `refLabel`, `dutyType`, `effectiveFrom`, `effectiveFromPrecision` and `terms`; under a standard it is the one conformance obligation, carrying exactly one standard term (else 422 `one_conformance_obligation` or `standard_term_required`), and a law's obligation carries none (422 `standard_term_only_on_standards`). `new_provision`: `key`, `instrument`, `parent` (the stable key of a provision of the same instrument, left out at the top), `provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` per language, `originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. `new_provision_version`: `texts`, `originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. Each summary and each text is at most 50000 characters per language, else 422 `validation_error`. The vocabulary and term kinds name a `list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and term keys are library rows that change only through proposals; `GET /vocabularies` and `GET /taxonomy/terms` return the live sets.
              */
             payload?: {
                 [key: string]: unknown;
             };
             /**
              * Sourcelabel
-             * @description The source in words, as a reviewer and a reader see it beside a link, at most 500 characters, for example the authority and the decision. A new obligation keeps it as its own source label; left empty, it reads the instrument's reference and the duty's.
+             * @description The source in words, as a reviewer and a reader see it beside a link, at most 500 characters, for example the authority and the decision. A new obligation keeps it as its own source label; left empty, it reads the instrument's reference and the duty's. Under a standard it is the standard's official reference or empty, never a clause or quoted text, else 422 `licensed_text`.
              * @default
              * @example Finansinspektionen, board decision 15 September 2026
              */
             sourceLabel: string;
             /**
              * Sourceurl
-             * @description The authority's page the proposal was read from, at most 2000 characters. Required for a new instrument, obligation or provision, as an https link (a new instrument or obligation keeps it as its own source): without one it answers 422 `source_missing`. Optional on the other kinds.
+             * @description The authority's page the proposal was read from, at most 2000 characters. Required for a new instrument, obligation or provision, as an https link (a new instrument or obligation keeps it as its own source): without one it answers 422 `source_missing`. Optional on the other kinds, but when given it is an https link on every kind, since the queue shows it as the proposal's source: any other scheme answers 422 `validation_error`.
              * @default
              * @example https://www.fi.se/en/published/news/2026/research-payments/
              */
@@ -13855,6 +15055,1893 @@ export interface components {
             expiresIn: number;
         };
         /**
+         * RegisterApplicability
+         * @description An applicability answer as stored.
+         * @example {
+         *       "applicability": "applies",
+         *       "decidedAt": "2026-09-24T09:12:00Z",
+         *       "decidedBy": {
+         *         "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *         "name": "Sara Lind"
+         *       },
+         *       "obligationId": "44444444-4444-4444-8444-444444444444",
+         *       "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *       "reason": "Certified",
+         *       "unitId": null,
+         *       "version": 2
+         *     }
+         */
+        RegisterApplicability: {
+            /**
+             * Applicability
+             * @description Whether the obligation applies to the bank here: `applies` when it binds this bank, legal entity or unit; `not_applicable` when a compliance person decided it does not, with the reason beside it; `under_assessment` until anyone has decided. A fixed kind, not a list the bank edits. It says nothing about whether the bank complies, which is the separate compliance status.
+             * @enum {string}
+             */
+            applicability: "applies" | "not_applicable" | "under_assessment";
+            /**
+             * Decidedat
+             * Format: date-time
+             * @description The UTC timestamp at which the answer was stored, set by the server.
+             */
+            decidedAt: string;
+            /** @description The person who set the answer after confirming it, as the audit event names them. */
+            decidedBy: components["schemas"]["RegisterPersonRef"];
+            /**
+             * Obligationid
+             * Format: uuid
+             * @description The library obligation this register row is about, as a UUID. The obligation is a shared library fact; the register row is this bank's alone.
+             */
+            obligationId: string;
+            /**
+             * Orgunitid
+             * @description The bank's own legal entity this row is about, as a UUID from its organisation. Null when the row is about the obligation as a whole rather than one entity.
+             */
+            orgUnitId: string | null;
+            /**
+             * Reason
+             * @description Why, in the bank's own words, as the person gave it. Tenant content that never leaves the bank.
+             */
+            reason: string;
+            /**
+             * Unitid
+             * @description The Statement of Applicability unit answered for, as a UUID; null for an obligation or entity answer.
+             */
+            unitId: string | null;
+            /**
+             * Version
+             * @description The row's version, 0 for a row nobody has written yet and one higher after every write. Send it back as `If-Match` on the next write; a row changed in between is refused rather than overwritten.
+             */
+            version: number;
+        };
+        /**
+         * RegisterApplicabilityBody
+         * @description `PUT /obligations/{obligationId}/applicability`: one confirmed answer.
+         * @example {
+         *       "applicability": "applies",
+         *       "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *       "reason": "Certified"
+         *     }
+         */
+        RegisterApplicabilityBody: {
+            /**
+             * Applicability
+             * @description The answer to store: `applies`, `not_applicable`, or `under_assessment` to take a decision back to undecided. It is stored at once, after the person confirmed it in a dialog, with no second approver and no step-up (D-75), and it leaves the compliance status and the gaps untouched.
+             * @enum {string}
+             */
+            applicability: "applies" | "not_applicable" | "under_assessment";
+            /**
+             * Orgunitid
+             * @description The legal entity to answer for, as a UUID from the bank's organisation. Absent, together with `unitId`, answers for the obligation as a whole. Its scope row is created in the same transaction when it does not exist yet (D-42).
+             */
+            orgUnitId?: string | null;
+            /**
+             * Reason
+             * @description Why, in the bank's own words, 1 to 2000 characters, such as `Certified`. Stored beside the answer and in the audit event. Tenant content that never leaves the bank.
+             */
+            reason: string;
+            /**
+             * Unitid
+             * @description The Statement of Applicability unit to answer for, as a UUID from `GET /obligations/{obligationId}/units`. Sending it with `orgUnitId` is refused, because a unit already belongs to one entity.
+             */
+            unitId?: string | null;
+        };
+        /**
+         * RegisterApplicabilityMany
+         * @description What a confirmed batch stored, in the order sent.
+         * @example {
+         *       "items": [
+         *         {
+         *           "applicability": "not_applicable",
+         *           "decidedAt": "2026-09-24T09:12:00Z",
+         *           "decidedBy": {
+         *             "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *             "name": "Sara Lind"
+         *           },
+         *           "obligationId": "44444444-4444-4444-8444-444444444444",
+         *           "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *           "reason": "No outsourced cloud services",
+         *           "unitId": "66666666-6666-4666-8666-666666666666",
+         *           "version": 1
+         *         }
+         *       ]
+         *     }
+         */
+        RegisterApplicabilityMany: {
+            /**
+             * Items
+             * @description Each stored answer, one per row sent and in the same order.
+             */
+            items: components["schemas"]["RegisterApplicability"][];
+        };
+        /**
+         * RegisterApplicabilityManyBody
+         * @description `POST /applicability`: many confirmed answers in one call, such as a pasted Statement
+         *     of Applicability (AC-REG1).
+         * @example {
+         *       "rows": [
+         *         {
+         *           "applicability": "not_applicable",
+         *           "obligationId": "44444444-4444-4444-8444-444444444444",
+         *           "reason": "No outsourced cloud services",
+         *           "unitId": "66666666-6666-4666-8666-666666666666"
+         *         }
+         *       ]
+         *     }
+         */
+        RegisterApplicabilityManyBody: {
+            /**
+             * Rows
+             * @description The answers, at least 1, each stored with its own audit event naming the person, the value before and after and the reason. A call holds at most the configured `REGISTER_BULK_MAX` rows, 100 by default; a longer call, or one with any row refused, stores nothing.
+             */
+            rows: components["schemas"]["RegisterApplicabilityRow"][];
+        };
+        /**
+         * RegisterApplicabilityRow
+         * @description One row of a confirmed batch: the obligation it is about, then the same target and answer.
+         */
+        RegisterApplicabilityRow: {
+            /**
+             * Applicability
+             * @description The answer to store: `applies`, `not_applicable`, or `under_assessment` to take a decision back to undecided. It is stored at once, after the person confirmed it in a dialog, with no second approver and no step-up (D-75), and it leaves the compliance status and the gaps untouched.
+             * @enum {string}
+             */
+            applicability: "applies" | "not_applicable" | "under_assessment";
+            /**
+             * Obligationid
+             * Format: uuid
+             * @description The library obligation this register row is about, as a UUID. The obligation is a shared library fact; the register row is this bank's alone.
+             */
+            obligationId: string;
+            /**
+             * Orgunitid
+             * @description The legal entity to answer for, as a UUID from the bank's organisation. Absent, together with `unitId`, answers for the obligation as a whole. Its scope row is created in the same transaction when it does not exist yet (D-42).
+             */
+            orgUnitId?: string | null;
+            /**
+             * Reason
+             * @description Why, in the bank's own words, 1 to 2000 characters, such as `Certified`. Stored beside the answer and in the audit event. Tenant content that never leaves the bank.
+             */
+            reason: string;
+            /**
+             * Unitid
+             * @description The Statement of Applicability unit to answer for, as a UUID from `GET /obligations/{obligationId}/units`. Sending it with `orgUnitId` is refused, because a unit already belongs to one entity.
+             */
+            unitId?: string | null;
+        };
+        /**
+         * RegisterAssessment
+         * @description One status assessment, kept unchanged for ever (append-only).
+         * @example {
+         *       "assessedAt": "2026-09-18T13:05:00Z",
+         *       "assessedBy": {
+         *         "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *         "name": "Sara Lind"
+         *       },
+         *       "id": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c20",
+         *       "method": "second_line_review",
+         *       "nextReviewDate": "2027-03-31",
+         *       "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *       "orgUnitName": "Example Bank AB",
+         *       "rationale": "Second-line review of September found the manual log.",
+         *       "riskRating": {
+         *         "key": "medium",
+         *         "kind": null,
+         *         "label": "Medium"
+         *       },
+         *       "status": {
+         *         "key": "partly_compliant",
+         *         "kind": "partly",
+         *         "label": "Partly compliant"
+         *       }
+         *     }
+         */
+        RegisterAssessment: {
+            /**
+             * Assessedat
+             * Format: date-time
+             * @description The UTC timestamp of the assessment, set by the server.
+             */
+            assessedAt: string;
+            /** @description The person who assessed the status. */
+            assessedBy: components["schemas"]["RegisterPersonRef"];
+            /**
+             * Id
+             * Format: uuid
+             * @description The assessment's UUID in this bank.
+             */
+            id: string;
+            /**
+             * Method
+             * @description How the status was assessed: `self_assessment` by the first line, `second_line_review` by compliance, `internal_audit`, `external_audit`, or `regulator` in a supervisory review. A fixed kind.
+             * @enum {string}
+             */
+            method: "self_assessment" | "second_line_review" | "internal_audit" | "external_audit" | "regulator";
+            /**
+             * Nextreviewdate
+             * @description The plain date of the next review set at the time; null when none was set.
+             */
+            nextReviewDate: string | null;
+            /**
+             * Orgunitid
+             * @description The legal entity assessed, as a UUID; null for the obligation as a whole.
+             */
+            orgUnitId: string | null;
+            /**
+             * Orgunitname
+             * @description The legal entity's name for showing; null for the obligation as a whole.
+             */
+            orgUnitName: string | null;
+            /**
+             * Rationale
+             * @description Why the status was what it was, in the assessor's own words.
+             */
+            rationale: string;
+            /** @description The risk rated at the time, as a row of the bank's own `risk_rating` vocabulary, which its admin may extend; null when not rated. */
+            riskRating: components["schemas"]["RegisterVocabRef"] | null;
+            /** @description The status assessed, as a row of the bank's own `compliance_status` vocabulary, which its admin may extend; the label is read today, the key as it was then. */
+            status: components["schemas"]["RegisterVocabRef"];
+        };
+        /**
+         * RegisterAssessmentPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "assessedAt": "2026-09-18T13:05:00Z",
+         *           "assessedBy": {
+         *             "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *             "name": "Sara Lind"
+         *           },
+         *           "id": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c20",
+         *           "method": "second_line_review",
+         *           "nextReviewDate": "2027-03-31",
+         *           "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *           "orgUnitName": "Example Bank AB",
+         *           "rationale": "Second-line review of September found the manual log.",
+         *           "riskRating": {
+         *             "key": "medium",
+         *             "kind": null,
+         *             "label": "Medium"
+         *           },
+         *           "status": {
+         *             "key": "partly_compliant",
+         *             "kind": "partly",
+         *             "label": "Partly compliant"
+         *           }
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        RegisterAssessmentPage: {
+            /**
+             * Items
+             * @description The assessments on this page, newest first.
+             */
+            items: components["schemas"]["RegisterAssessment"][];
+            /**
+             * Total
+             * @description How many assessments the obligation has in total, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * RegisterDuty
+         * @description A duty the law repeats on this obligation, with its next occurrence.
+         * @example {
+         *       "id": "1f3a5c7e-9b0d-4e2a-8c4f-6a8b0d2e4f57",
+         *       "nextOccurrence": {
+         *         "completedAt": null,
+         *         "completedBy": null,
+         *         "dueDate": "2026-12-31",
+         *         "id": "9e1a3c5b-7d2f-4b8a-9c0e-4f6a8b0c2d35",
+         *         "note": null,
+         *         "orgUnitId": null,
+         *         "owner": {
+         *           "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *           "name": "Sara Lind"
+         *         },
+         *         "status": "upcoming"
+         *       },
+         *       "recurrenceNote": "Every quarter, on the last day of the quarter",
+         *       "title": "Quarterly client asset report"
+         *     }
+         */
+        RegisterDuty: {
+            /**
+             * Id
+             * Format: uuid
+             * @description The library's recurring duty, as a UUID. A shared library fact.
+             */
+            id: string;
+            /** @description The next occurrence in the bank's calendar, null when the obligation does not apply to the bank. */
+            nextOccurrence: components["schemas"]["RegisterDutyOccurrence"] | null;
+            /**
+             * Recurrencenote
+             * @description How often the duty recurs, in words, from the library; null when the library states none.
+             */
+            recurrenceNote: string | null;
+            /**
+             * Title
+             * @description The duty's title in the reader's language, from the library.
+             */
+            title: string;
+        };
+        /**
+         * RegisterDutyCompleteBody
+         * @description `POST /duty-occurrences/{occurrenceId}/complete`.
+         * @example {
+         *       "note": "Filed with the authority on 20 December."
+         *     }
+         */
+        RegisterDutyCompleteBody: {
+            /**
+             * Note
+             * @description A note on the completion, at most 2000 characters.
+             */
+            note?: string | null;
+        };
+        /**
+         * RegisterDutyCompletion
+         * @description The completed occurrence and the next one it generated.
+         * @example {
+         *       "completed": {
+         *         "completedAt": "2026-12-20T10:00:00Z",
+         *         "completedBy": {
+         *           "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *           "name": "Sara Lind"
+         *         },
+         *         "dueDate": "2026-12-31",
+         *         "id": "9e1a3c5b-7d2f-4b8a-9c0e-4f6a8b0c2d35",
+         *         "note": null,
+         *         "orgUnitId": null,
+         *         "owner": {
+         *           "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *           "name": "Sara Lind"
+         *         },
+         *         "status": "done"
+         *       },
+         *       "next": {
+         *         "completedAt": null,
+         *         "completedBy": null,
+         *         "dueDate": "2027-03-31",
+         *         "id": "0a2c4e6f-8b1d-4f3a-9c5e-7b9d1f3a5c68",
+         *         "note": null,
+         *         "orgUnitId": null,
+         *         "owner": {
+         *           "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *           "name": "Sara Lind"
+         *         },
+         *         "status": "upcoming"
+         *       }
+         *     }
+         */
+        RegisterDutyCompletion: {
+            /** @description The occurrence as completed. */
+            completed: components["schemas"]["RegisterDutyOccurrence"];
+            /** @description The next occurrence, generated from the recurrence rule in the bank's time zone; null when the duty does not recur again. */
+            next: components["schemas"]["RegisterDutyOccurrence"] | null;
+        };
+        /**
+         * RegisterDutyOccurrence
+         * @description One dated instance of a recurring duty in the bank's calendar.
+         * @example {
+         *       "completedAt": null,
+         *       "completedBy": null,
+         *       "dueDate": "2026-12-31",
+         *       "id": "9e1a3c5b-7d2f-4b8a-9c0e-4f6a8b0c2d35",
+         *       "note": null,
+         *       "orgUnitId": null,
+         *       "owner": {
+         *         "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *         "name": "Sara Lind"
+         *       },
+         *       "status": "upcoming"
+         *     }
+         */
+        RegisterDutyOccurrence: {
+            /**
+             * Completedat
+             * @description The UTC timestamp of completion, null until completed.
+             */
+            completedAt: string | null;
+            /** @description The person who completed it, null until completed. */
+            completedBy: components["schemas"]["RegisterPersonRef"] | null;
+            /**
+             * Duedate
+             * Format: date
+             * @description The plain date the duty is due, in the bank's own time zone; shown on the roadmap as our own deadline.
+             */
+            dueDate: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The occurrence's UUID in this bank.
+             */
+            id: string;
+            /**
+             * Note
+             * @description The completer's note in their own words; null when none was written.
+             */
+            note: string | null;
+            /**
+             * Orgunitid
+             * @description The legal entity the occurrence is for, as a UUID; null for the bank as a whole.
+             */
+            orgUnitId: string | null;
+            /** @description The member who owns the occurrence; null when nobody does yet. */
+            owner: components["schemas"]["RegisterPersonRef"] | null;
+            /**
+             * Status
+             * @description Where the occurrence stands: `upcoming` before work starts, `in_progress` while it is worked, `done` once completed, `missed` past its date without completion, `not_applicable` when the obligation no longer applies. A fixed kind.
+             * @enum {string}
+             */
+            status: "upcoming" | "in_progress" | "done" | "missed" | "not_applicable";
+        };
+        /**
+         * RegisterDutyPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "1f3a5c7e-9b0d-4e2a-8c4f-6a8b0d2e4f57",
+         *           "nextOccurrence": {
+         *             "completedAt": null,
+         *             "completedBy": null,
+         *             "dueDate": "2026-12-31",
+         *             "id": "9e1a3c5b-7d2f-4b8a-9c0e-4f6a8b0c2d35",
+         *             "note": null,
+         *             "orgUnitId": null,
+         *             "owner": {
+         *               "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *               "name": "Sara Lind"
+         *             },
+         *             "status": "upcoming"
+         *           },
+         *           "recurrenceNote": "Every quarter, on the last day of the quarter",
+         *           "title": "Quarterly client asset report"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        RegisterDutyPage: {
+            /**
+             * Items
+             * @description The obligation's recurring duties on this page, by next due date.
+             */
+            items: components["schemas"]["RegisterDuty"][];
+            /**
+             * Total
+             * @description How many recurring duties the obligation has in total, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * RegisterEntityPatch
+         * @description `PATCH /obligations/{obligationId}/register/entities/{orgUnitId}`: one legal entity's
+         *     own status and details (REG-02). Applicability is absent on purpose: it has its own route.
+         * @example {
+         *       "complianceStatus": "compliant",
+         *       "nextReviewDate": "2027-03-31",
+         *       "ownerId": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30"
+         *     }
+         */
+        RegisterEntityPatch: {
+            /**
+             * Compliancestatus
+             * @description The key of a row in the bank's own `compliance_status` vocabulary, at most 64 characters. Seeded as `compliant`, `partly_compliant`, `gap` and `not_assessed`; the bank's admin may add or relabel rows, each under one fixed category, so read `GET /vocab/compliance_status` for the live set. A status other than the `not_assessed` row needs applicability `applies` first.
+             */
+            complianceStatus?: string | null;
+            /**
+             * Evidencelocation
+             * @description Where the evidence is kept, at most 500 characters.
+             */
+            evidenceLocation?: string | null;
+            /**
+             * Nextreviewdate
+             * @description The plain date of the next review, shown on the roadmap as our own deadline.
+             */
+            nextReviewDate?: string | null;
+            /**
+             * Ownerid
+             * @description The entity's owner of the obligation. A member of the bank, by their user UUID. Someone who is not an active member of this bank is refused; null or absent leaves the field as it is on a patch.
+             */
+            ownerId?: string | null;
+            /**
+             * Process
+             * @description The business process the obligation is met in, by name, at most 500 characters.
+             */
+            process?: string | null;
+            /**
+             * Rationale
+             * @description Why the status is what it is, at most 4000 characters. Stored on the assessment row a status change writes, so the history says who assessed what and why.
+             */
+            rationale?: string | null;
+            /**
+             * Riskrating
+             * @description The key of a row in the bank's own `risk_rating` vocabulary, at most 64 characters. Seeded as `low`, `medium` and `high`, each with a fixed ordinal; the bank's admin may add or relabel rows, so read `GET /vocab/risk_rating` for the live set.
+             */
+            riskRating?: string | null;
+            /**
+             * Statusnote
+             * @description The bank's note on the status, at most 4000 characters. Tenant content that never leaves the bank.
+             */
+            statusNote?: string | null;
+            /**
+             * System
+             * @description The system the obligation is met in, by name, at most 500 characters.
+             */
+            system?: string | null;
+        };
+        /**
+         * RegisterEntityStatus
+         * @description One legal entity's row under an obligation that spans several: its own applicability
+         *     and reason, and its own compliance status and details (REG-01, REG-02, D-42).
+         * @example {
+         *       "applicability": "applies",
+         *       "applicabilityDecidedAt": "2026-09-14T08:30:00Z",
+         *       "applicabilityDecidedBy": {
+         *         "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *         "name": "Sara Lind"
+         *       },
+         *       "applicabilityReason": "Holds client assets under the securities licence",
+         *       "complianceStatus": {
+         *         "key": "partly_compliant",
+         *         "kind": "partly",
+         *         "label": "Partly compliant"
+         *       },
+         *       "evidenceLocation": "Compliance share / Client assets / 2026",
+         *       "nextReviewDate": "2027-03-31",
+         *       "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *       "orgUnitName": "Example Bank AB",
+         *       "owner": {
+         *         "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *         "name": "Sara Lind"
+         *       },
+         *       "process": "Client asset reconciliation",
+         *       "riskRating": {
+         *         "key": "medium",
+         *         "kind": null,
+         *         "label": "Medium"
+         *       },
+         *       "statusNote": "Reconciliation runs daily; the evidence log is still manual.",
+         *       "system": "Custody ledger",
+         *       "version": 4
+         *     }
+         */
+        RegisterEntityStatus: {
+            /**
+             * Applicability
+             * @description Whether the obligation applies to the bank here: `applies` when it binds this bank, legal entity or unit; `not_applicable` when a compliance person decided it does not, with the reason beside it; `under_assessment` until anyone has decided. A fixed kind, not a list the bank edits. It says nothing about whether the bank complies, which is the separate compliance status.
+             * @enum {string}
+             */
+            applicability: "applies" | "not_applicable" | "under_assessment";
+            /**
+             * Applicabilitydecidedat
+             * @description The UTC timestamp at which the applicability answer was last set, null while it is `under_assessment` and nobody has answered. Set by the server.
+             */
+            applicabilityDecidedAt: string | null;
+            /** @description The person who last set the applicability answer, named in the audit event with the value before and after. Null while nobody has answered. */
+            applicabilityDecidedBy: components["schemas"]["RegisterPersonRef"] | null;
+            /**
+             * Applicabilityreason
+             * @description Why the answer is what it is, in the bank's own words, such as `Certified` or `No client money held`. Tenant content that never leaves the bank. Null while nobody has answered.
+             */
+            applicabilityReason: string | null;
+            /** @description How this entity complies, as a row of the bank's own `compliance_status` vocabulary; its admin may add rows under the fixed categories, so read `GET /vocab/compliance_status` for the live set. Kept even while the entity's applicability is `not_applicable`, so nothing is lost when it applies again. */
+            complianceStatus: components["schemas"]["RegisterVocabRef"];
+            /**
+             * Evidencelocation
+             * @description Where the bank keeps the evidence for this entity, such as a folder or a document system path; null when not recorded.
+             */
+            evidenceLocation: string | null;
+            /**
+             * Nextreviewdate
+             * @description The plain date the bank next reviews this entity's status, shown on the roadmap as our own deadline; null when not set.
+             */
+            nextReviewDate: string | null;
+            /**
+             * Orgunitid
+             * Format: uuid
+             * @description The bank's legal entity this row is about, as a UUID from its organisation.
+             */
+            orgUnitId: string;
+            /**
+             * Orgunitname
+             * @description The legal entity's name as the bank's organisation holds it, for showing.
+             */
+            orgUnitName: string;
+            /** @description The member who owns the obligation for this entity; null when nobody does yet. */
+            owner: components["schemas"]["RegisterPersonRef"] | null;
+            /**
+             * Process
+             * @description The bank's own business process the obligation is met in, by its name; null when not recorded.
+             */
+            process: string | null;
+            /** @description The bank's risk rating for this entity, as a row of its own `risk_rating` vocabulary, which its admin may extend; read `GET /vocab/risk_rating` for the live set. Null until rated. */
+            riskRating: components["schemas"]["RegisterVocabRef"] | null;
+            /**
+             * Statusnote
+             * @description The bank's note on the status, in its own words; null when none was written.
+             */
+            statusNote: string | null;
+            /**
+             * System
+             * @description The bank's own system the obligation is met in, by its name; null when not recorded.
+             */
+            system: string | null;
+            /**
+             * Version
+             * @description The row's version, 0 for a row nobody has written yet and one higher after every write. Send it back as `If-Match` on the next write; a row changed in between is refused rather than overwritten.
+             */
+            version: number;
+        };
+        /**
+         * RegisterEntry
+         * @description The bank's register entry for one obligation: its applicability and its compliance
+         *     status, kept as separate facts, and a row per legal entity where it spans several.
+         * @example {
+         *       "applicability": "applies",
+         *       "applicabilityDecidedAt": "2026-09-14T08:30:00Z",
+         *       "applicabilityDecidedBy": {
+         *         "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *         "name": "Sara Lind"
+         *       },
+         *       "applicabilityReason": "Holds client assets under the securities licence",
+         *       "complianceContact": {
+         *         "id": "2b9e4c71-5a3d-4f08-9c6e-7d1a0b3f5e82",
+         *         "name": "Johan Berg"
+         *       },
+         *       "complianceStatus": {
+         *         "key": "partly_compliant",
+         *         "kind": "partly",
+         *         "label": "Partly compliant"
+         *       },
+         *       "entities": [
+         *         {
+         *           "applicability": "applies",
+         *           "applicabilityDecidedAt": "2026-09-14T08:30:00Z",
+         *           "applicabilityDecidedBy": {
+         *             "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *             "name": "Sara Lind"
+         *           },
+         *           "applicabilityReason": "Holds client assets under the securities licence",
+         *           "complianceStatus": {
+         *             "key": "partly_compliant",
+         *             "kind": "partly",
+         *             "label": "Partly compliant"
+         *           },
+         *           "evidenceLocation": "Compliance share / Client assets / 2026",
+         *           "nextReviewDate": "2027-03-31",
+         *           "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *           "orgUnitName": "Example Bank AB",
+         *           "owner": {
+         *             "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *             "name": "Sara Lind"
+         *           },
+         *           "process": "Client asset reconciliation",
+         *           "riskRating": {
+         *             "key": "medium",
+         *             "kind": null,
+         *             "label": "Medium"
+         *           },
+         *           "statusNote": "Reconciliation runs daily; the evidence log is still manual.",
+         *           "system": "Custody ledger",
+         *           "version": 4
+         *         }
+         *       ],
+         *       "evidenceLocation": "Compliance share / Client assets / 2026",
+         *       "firstLineOwner": {
+         *         "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *         "name": "Sara Lind"
+         *       },
+         *       "nextReviewDate": "2027-03-31",
+         *       "obligationId": "44444444-4444-4444-8444-444444444444",
+         *       "process": "Client asset reconciliation",
+         *       "riskRating": {
+         *         "key": "medium",
+         *         "kind": null,
+         *         "label": "Medium"
+         *       },
+         *       "statusNote": "Reconciliation runs daily; the evidence log is still manual.",
+         *       "system": "Custody ledger",
+         *       "updatedAt": "2026-09-18T13:05:00Z",
+         *       "version": 7
+         *     }
+         */
+        RegisterEntry: {
+            /**
+             * Applicability
+             * @description Whether the obligation applies to the bank here: `applies` when it binds this bank, legal entity or unit; `not_applicable` when a compliance person decided it does not, with the reason beside it; `under_assessment` until anyone has decided. A fixed kind, not a list the bank edits. It says nothing about whether the bank complies, which is the separate compliance status.
+             * @enum {string}
+             */
+            applicability: "applies" | "not_applicable" | "under_assessment";
+            /**
+             * Applicabilitydecidedat
+             * @description The UTC timestamp at which the applicability answer was last set, null while it is `under_assessment` and nobody has answered. Set by the server.
+             */
+            applicabilityDecidedAt: string | null;
+            /** @description The person who last set the applicability answer, named in the audit event with the value before and after. Null while nobody has answered. */
+            applicabilityDecidedBy: components["schemas"]["RegisterPersonRef"] | null;
+            /**
+             * Applicabilityreason
+             * @description Why the answer is what it is, in the bank's own words, such as `Certified` or `No client money held`. Tenant content that never leaves the bank. Null while nobody has answered.
+             */
+            applicabilityReason: string | null;
+            /** @description The compliance member who follows the obligation; null when nobody does yet. */
+            complianceContact: components["schemas"]["RegisterPersonRef"] | null;
+            /** @description How the bank complies, as a row of its own `compliance_status` vocabulary, which its admin may extend under fixed categories; read `GET /vocab/compliance_status` for the live set. Where the obligation spans several legal entities it is the worse of their statuses by the category's ordinal, computed by the server. The `gap` category means a gap exists, which applicability never hides. */
+            complianceStatus: components["schemas"]["RegisterVocabRef"];
+            /**
+             * Entities
+             * @description One row per legal entity the bank has answered for, in the order of its organisation. Empty for an obligation the bank treats as a whole. Reading never creates a row; a row appears with the first write that needs it.
+             */
+            entities: components["schemas"]["RegisterEntityStatus"][];
+            /**
+             * Evidencelocation
+             * @description Where the bank keeps the evidence, such as a folder or a document system path; null when not recorded.
+             */
+            evidenceLocation: string | null;
+            /** @description The first-line member who owns meeting the obligation; null when nobody does yet. */
+            firstLineOwner: components["schemas"]["RegisterPersonRef"] | null;
+            /**
+             * Nextreviewdate
+             * @description The plain date the bank next reviews the obligation, shown on the roadmap as our own deadline; null when not set.
+             */
+            nextReviewDate: string | null;
+            /**
+             * Obligationid
+             * Format: uuid
+             * @description The library obligation this register row is about, as a UUID. The obligation is a shared library fact; the register row is this bank's alone.
+             */
+            obligationId: string;
+            /**
+             * Process
+             * @description The bank's own business process the obligation is met in, by its name; null when not recorded.
+             */
+            process: string | null;
+            /** @description The bank's risk rating for the obligation, as a row of its own `risk_rating` vocabulary, which its admin may extend; read `GET /vocab/risk_rating` for the live set. Null until rated. */
+            riskRating: components["schemas"]["RegisterVocabRef"] | null;
+            /**
+             * Statusnote
+             * @description The bank's note on the status, in its own words; null when none was written.
+             */
+            statusNote: string | null;
+            /**
+             * System
+             * @description The bank's own system the obligation is met in, by its name; null when not recorded.
+             */
+            system: string | null;
+            /**
+             * Updatedat
+             * @description The UTC timestamp of the last write to the entry, null for an entry nobody has written yet.
+             */
+            updatedAt: string | null;
+            /**
+             * Version
+             * @description The row's version, 0 for a row nobody has written yet and one higher after every write. Send it back as `If-Match` on the next write; a row changed in between is refused rather than overwritten.
+             */
+            version: number;
+        };
+        /**
+         * RegisterGap
+         * @description A gap: how the bank falls short of an obligation, with an owner, a severity, a target
+         *     date and a plan (REG-03). A fact about how the bank complies, never about whether the rule
+         *     applies.
+         * @example {
+         *       "description": "The daily reconciliation is run, but its evidence is a hand-kept log.",
+         *       "id": "66666666-6666-4666-8666-666666666666",
+         *       "identifiedAt": "2026-09-18T13:05:00Z",
+         *       "identifiedBy": {
+         *         "id": "2b9e4c71-5a3d-4f08-9c6e-7d1a0b3f5e82",
+         *         "name": "Johan Berg"
+         *       },
+         *       "obligationId": "44444444-4444-4444-8444-444444444444",
+         *       "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *       "owner": {
+         *         "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *         "name": "Sara Lind"
+         *       },
+         *       "remediation": "Automate the daily reconciliation report.",
+         *       "riskAcceptance": {
+         *         "approvedAt": null,
+         *         "approvedBy": null,
+         *         "note": "Automation is planned with the ledger replacement in 2027.",
+         *         "reason": {
+         *           "key": "cost_exceeds_benefit",
+         *           "kind": null,
+         *           "label": "Cost exceeds benefit"
+         *         },
+         *         "requestedAt": "2026-09-20T10:00:00Z",
+         *         "requestedBy": {
+         *           "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *           "name": "Sara Lind"
+         *         }
+         *       },
+         *       "severity": {
+         *         "key": "high",
+         *         "kind": null,
+         *         "label": "High"
+         *       },
+         *       "source": "assessment",
+         *       "status": {
+         *         "key": "open",
+         *         "kind": "open",
+         *         "label": "Open"
+         *       },
+         *       "targetDate": "2026-12-31",
+         *       "title": "Evidence of reconciliation is manual",
+         *       "unitId": null,
+         *       "version": 3
+         *     }
+         */
+        RegisterGap: {
+            /**
+             * Description
+             * @description The longer account of the gap in the bank's own words; null when none was written.
+             */
+            description: string | null;
+            /**
+             * Id
+             * Format: uuid
+             * @description The gap's UUID in this bank.
+             */
+            id: string;
+            /**
+             * Identifiedat
+             * Format: date-time
+             * @description The UTC timestamp at which the gap was recorded, set by the server.
+             */
+            identifiedAt: string;
+            /** @description The person who recorded the gap; they can never approve its risk acceptance. */
+            identifiedBy: components["schemas"]["RegisterPersonRef"];
+            /**
+             * Obligationid
+             * Format: uuid
+             * @description The library obligation this register row is about, as a UUID. The obligation is a shared library fact; the register row is this bank's alone.
+             */
+            obligationId: string;
+            /**
+             * Orgunitid
+             * @description The legal entity the gap is in, as a UUID; null for a gap in the obligation as a whole.
+             */
+            orgUnitId: string | null;
+            /** @description The member who owns closing the gap; null when nobody does yet. */
+            owner: components["schemas"]["RegisterPersonRef"] | null;
+            /**
+             * Remediation
+             * @description The bank's plan for closing the gap, in its own words; null when none was written.
+             */
+            remediation: string | null;
+            /** @description The request to accept the gap's risk and its approval, null when nobody has asked. */
+            riskAcceptance: components["schemas"]["RegisterRiskAcceptance"] | null;
+            /** @description How serious the gap is, as a row of the bank's own `risk_rating` vocabulary, which its admin may extend; read `GET /vocab/risk_rating` for the live set. */
+            severity: components["schemas"]["RegisterVocabRef"];
+            /**
+             * Source
+             * @description Where the gap was found: `assessment` in the bank's own status assessment, `change_case` while working a regulatory change, `audit` by internal or external audit, `incident` after something went wrong, `regulator` raised by a supervisor. A fixed kind.
+             * @enum {string}
+             */
+            source: "assessment" | "change_case" | "audit" | "incident" | "regulator";
+            /** @description Where the gap stands, as a row of the bank's own `gap_status` vocabulary, which its admin may extend under the fixed categories; the kind is one of `open`, `remediating`, `risk_accepted` or `closed` and decides the pill's tone. */
+            status: components["schemas"]["RegisterVocabRef"];
+            /**
+             * Targetdate
+             * @description The plain date the bank means to close the gap by, shown on the roadmap as our own deadline; null when not set.
+             */
+            targetDate: string | null;
+            /**
+             * Title
+             * @description What falls short, in a line of the bank's own words.
+             */
+            title: string;
+            /**
+             * Unitid
+             * @description The Statement of Applicability unit the gap is in, as a UUID; null when it is not about one unit.
+             */
+            unitId: string | null;
+            /**
+             * Version
+             * @description The row's version, 0 for a row nobody has written yet and one higher after every write. Send it back as `If-Match` on the next write; a row changed in between is refused rather than overwritten.
+             */
+            version: number;
+        };
+        /**
+         * RegisterGapBody
+         * @description `POST /obligations/{obligationId}/gaps`: record a gap.
+         * @example {
+         *       "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *       "ownerId": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *       "remediation": "Automate the daily reconciliation report.",
+         *       "severity": "high",
+         *       "source": "assessment",
+         *       "targetDate": "2026-12-31",
+         *       "title": "Evidence of reconciliation is manual"
+         *     }
+         */
+        RegisterGapBody: {
+            /**
+             * Description
+             * @description The longer account, at most 4000 characters.
+             */
+            description?: string | null;
+            /**
+             * Orgunitid
+             * @description The legal entity the gap is in, as a UUID; absent for the obligation as a whole.
+             */
+            orgUnitId?: string | null;
+            /**
+             * Ownerid
+             * @description The gap's owner. A member of the bank, by their user UUID. Someone who is not an active member of this bank is refused; null or absent leaves the field as it is on a patch.
+             */
+            ownerId?: string | null;
+            /**
+             * Remediation
+             * @description The plan, at most 4000 characters.
+             */
+            remediation?: string | null;
+            /**
+             * Severity
+             * @description How serious the gap is. The key of a row in the bank's own `risk_rating` vocabulary, at most 64 characters. Seeded as `low`, `medium` and `high`, each with a fixed ordinal; the bank's admin may add or relabel rows, so read `GET /vocab/risk_rating` for the live set.
+             */
+            severity: string;
+            /**
+             * Source
+             * @description Where the gap was found: `assessment` in the bank's own status assessment, `change_case` while working a regulatory change, `audit` by internal or external audit, `incident` after something went wrong, `regulator` raised by a supervisor. A fixed kind.
+             * @enum {string}
+             */
+            source: "assessment" | "change_case" | "audit" | "incident" | "regulator";
+            /**
+             * Targetdate
+             * @description The plain date the bank means to close the gap by.
+             */
+            targetDate?: string | null;
+            /**
+             * Title
+             * @description What falls short, 1 to 300 characters.
+             */
+            title: string;
+            /**
+             * Unitid
+             * @description The Statement of Applicability unit the gap is in, as a UUID; absent when it is not about one unit.
+             */
+            unitId?: string | null;
+        };
+        /**
+         * RegisterGapPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "description": "The daily reconciliation is run, but its evidence is a hand-kept log.",
+         *           "id": "66666666-6666-4666-8666-666666666666",
+         *           "identifiedAt": "2026-09-18T13:05:00Z",
+         *           "identifiedBy": {
+         *             "id": "2b9e4c71-5a3d-4f08-9c6e-7d1a0b3f5e82",
+         *             "name": "Johan Berg"
+         *           },
+         *           "obligationId": "44444444-4444-4444-8444-444444444444",
+         *           "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *           "owner": {
+         *             "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *             "name": "Sara Lind"
+         *           },
+         *           "remediation": "Automate the daily reconciliation report.",
+         *           "riskAcceptance": {
+         *             "approvedAt": null,
+         *             "approvedBy": null,
+         *             "note": "Automation is planned with the ledger replacement in 2027.",
+         *             "reason": {
+         *               "key": "cost_exceeds_benefit",
+         *               "kind": null,
+         *               "label": "Cost exceeds benefit"
+         *             },
+         *             "requestedAt": "2026-09-20T10:00:00Z",
+         *             "requestedBy": {
+         *               "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *               "name": "Sara Lind"
+         *             }
+         *           },
+         *           "severity": {
+         *             "key": "high",
+         *             "kind": null,
+         *             "label": "High"
+         *           },
+         *           "source": "assessment",
+         *           "status": {
+         *             "key": "open",
+         *             "kind": "open",
+         *             "label": "Open"
+         *           },
+         *           "targetDate": "2026-12-31",
+         *           "title": "Evidence of reconciliation is manual",
+         *           "unitId": null,
+         *           "version": 3
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        RegisterGapPage: {
+            /**
+             * Items
+             * @description The gaps on this page, by target date then id; a gap with no target date comes last.
+             */
+            items: components["schemas"]["RegisterGap"][];
+            /**
+             * Total
+             * @description How many gaps match in total, not how many are on this page; use it to size a pager.
+             */
+            total: number;
+        };
+        /**
+         * RegisterGapPatch
+         * @description `PATCH /gaps/{gapId}`: amend a gap or move its status; only the fields sent change.
+         * @example {
+         *       "remediation": "Automate the daily reconciliation report.",
+         *       "status": "remediating"
+         *     }
+         */
+        RegisterGapPatch: {
+            /**
+             * Description
+             * @description The longer account, at most 4000 characters.
+             */
+            description?: string | null;
+            /**
+             * Ownerid
+             * @description The gap's owner. A member of the bank, by their user UUID. Someone who is not an active member of this bank is refused; null or absent leaves the field as it is on a patch.
+             */
+            ownerId?: string | null;
+            /**
+             * Remediation
+             * @description The plan, at most 4000 characters.
+             */
+            remediation?: string | null;
+            /**
+             * Severity
+             * @description How serious the gap is. The key of a row in the bank's own `risk_rating` vocabulary, at most 64 characters. Seeded as `low`, `medium` and `high`, each with a fixed ordinal; the bank's admin may add or relabel rows, so read `GET /vocab/risk_rating` for the live set.
+             */
+            severity?: string | null;
+            /**
+             * Status
+             * @description The key of a row in the bank's own `gap_status` vocabulary, at most 64 characters, under one of the fixed categories `open`, `remediating`, `risk_accepted` and `closed`. The bank's admin may add or relabel rows, so read `GET /vocab/gap_status` for the live set. A risk is accepted only through the acceptance routes, never by setting the status.
+             */
+            status?: string | null;
+            /**
+             * Targetdate
+             * @description The plain date the bank means to close the gap by.
+             */
+            targetDate?: string | null;
+            /**
+             * Title
+             * @description What falls short, 1 to 300 characters.
+             */
+            title?: string | null;
+        };
+        /**
+         * RegisterGapQuery
+         * @description Filters of the gaps list, each optional and combined with AND.
+         */
+        RegisterGapQuery: {
+            /**
+             * Entity
+             * @description Only gaps in this legal entity, by its UUID from the bank's organisation.
+             */
+            entity?: string | null;
+            /**
+             * Owner
+             * @description Only gaps this member owns, by their user UUID.
+             */
+            owner?: string | null;
+            /**
+             * Severity
+             * @description Only gaps of this severity. The key of a row in the bank's own `risk_rating` vocabulary, at most 64 characters. Seeded as `low`, `medium` and `high`, each with a fixed ordinal; the bank's admin may add or relabel rows, so read `GET /vocab/risk_rating` for the live set.
+             */
+            severity?: string | null;
+            /**
+             * Status
+             * @description Only gaps in this status. The key of a row in the bank's own `gap_status` vocabulary, at most 64 characters, under one of the fixed categories `open`, `remediating`, `risk_accepted` and `closed`. The bank's admin may add or relabel rows, so read `GET /vocab/gap_status` for the live set. A risk is accepted only through the acceptance routes, never by setting the status.
+             */
+            status?: string | null;
+            /**
+             * Targetfrom
+             * @description Only gaps whose target date is on or after this plain date.
+             */
+            targetFrom?: string | null;
+            /**
+             * Targetto
+             * @description Only gaps whose target date is on or before this plain date.
+             */
+            targetTo?: string | null;
+        };
+        /**
+         * RegisterInternalLink
+         * @description A policy, procedure, control, process or system of the bank's own linked to an
+         *     obligation, with the reference an outside GRC system knows it by.
+         * @example {
+         *       "createdAt": "2026-09-18T13:05:00Z",
+         *       "createdBy": {
+         *         "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *         "name": "Sara Lind"
+         *       },
+         *       "externalRef": "POL-014",
+         *       "id": "3d5f7a9b-1c2e-4a6b-8d0f-2e4a6c8b0d13",
+         *       "internalItemId": null,
+         *       "kind": {
+         *         "key": "policy",
+         *         "kind": null,
+         *         "label": "Policy"
+         *       },
+         *       "label": "Client asset policy",
+         *       "url": "https://intranet.example-bank.test/policies/client-assets"
+         *     }
+         */
+        RegisterInternalLink: {
+            /**
+             * Createdat
+             * Format: date-time
+             * @description The UTC timestamp at which the link was made, set by the server.
+             */
+            createdAt: string;
+            /** @description The person who made the link. */
+            createdBy: components["schemas"]["RegisterPersonRef"];
+            /**
+             * Externalref
+             * @description The item's reference in the bank's GRC or document system, such as `POL-014`; null when none was given.
+             */
+            externalRef: string | null;
+            /**
+             * Id
+             * Format: uuid
+             * @description The link's UUID in this bank.
+             */
+            id: string;
+            /**
+             * Internalitemid
+             * @description The bank's internal item this link points at, as a UUID, when it was picked from the organisation; null for an ad hoc link.
+             */
+            internalItemId: string | null;
+            /** @description What the linked item is, as a row of the bank's own `link_kind` vocabulary, seeded as `policy`, `procedure` and `control`; its admin may add rows such as a process or a system, so read `GET /vocab/link_kind` for the live set. */
+            kind: components["schemas"]["RegisterVocabRef"];
+            /**
+             * Label
+             * @description The item's name as the bank calls it, such as `Client asset policy`.
+             */
+            label: string;
+            /**
+             * Url
+             * @description Where the item lives in the bank's own systems; null when none was given. Never fetched by the server.
+             */
+            url: string | null;
+        };
+        /**
+         * RegisterInternalLinkBody
+         * @description `POST /obligations/{obligationId}/internal-links`: link an item of the bank's own.
+         * @example {
+         *       "externalRef": "POL-014",
+         *       "kind": "policy",
+         *       "label": "Client asset policy"
+         *     }
+         */
+        RegisterInternalLinkBody: {
+            /**
+             * Externalref
+             * @description The item's reference in the bank's GRC system, at most 200 characters.
+             */
+            externalRef?: string | null;
+            /**
+             * Internalitemid
+             * @description An internal item of the bank's organisation to link, as a UUID; absent for an ad hoc link.
+             */
+            internalItemId?: string | null;
+            /**
+             * Kind
+             * @description The key of a row in the bank's own `link_kind` vocabulary, at most 64 characters, seeded as `policy`, `procedure` and `control`. The bank's admin may add rows, so read `GET /vocab/link_kind` for the live set.
+             */
+            kind: string;
+            /**
+             * Label
+             * @description The item's name as the bank calls it, 1 to 300 characters.
+             */
+            label: string;
+            /**
+             * Url
+             * @description Where the item lives, a link of at most 2000 characters. Never fetched by the server.
+             */
+            url?: string | null;
+        };
+        /**
+         * RegisterInternalLinkPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "createdAt": "2026-09-18T13:05:00Z",
+         *           "createdBy": {
+         *             "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *             "name": "Sara Lind"
+         *           },
+         *           "externalRef": "POL-014",
+         *           "id": "3d5f7a9b-1c2e-4a6b-8d0f-2e4a6c8b0d13",
+         *           "internalItemId": null,
+         *           "kind": {
+         *             "key": "policy",
+         *             "kind": null,
+         *             "label": "Policy"
+         *           },
+         *           "label": "Client asset policy",
+         *           "url": "https://intranet.example-bank.test/policies/client-assets"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        RegisterInternalLinkPage: {
+            /**
+             * Items
+             * @description The links on this page, oldest first; removed links are not listed.
+             */
+            items: components["schemas"]["RegisterInternalLink"][];
+            /**
+             * Total
+             * @description How many links the obligation has in total, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * RegisterInterpretation
+         * @description "How we read this rule": the current reading and every earlier one (REG-04).
+         * @example {
+         *       "current": {
+         *         "author": {
+         *           "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *           "name": "Sara Lind"
+         *         },
+         *         "text": "We read this as covering every client account the bank holds, custody included.",
+         *         "versionNo": 2,
+         *         "writtenAt": "2026-09-18T13:05:00Z"
+         *       },
+         *       "earlier": [
+         *         {
+         *           "author": {
+         *             "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *             "name": "Sara Lind"
+         *           },
+         *           "text": "We read this as covering client accounts.",
+         *           "versionNo": 1,
+         *           "writtenAt": "2026-09-18T13:05:00Z"
+         *         }
+         *       ],
+         *       "obligationId": "44444444-4444-4444-8444-444444444444"
+         *     }
+         */
+        RegisterInterpretation: {
+            /** @description The reading in force, null when the bank has written none. Its `versionNo` is what the next save sends as `If-Match`, 0 when there is none. */
+            current: components["schemas"]["RegisterInterpretationVersion"] | null;
+            /**
+             * Earlier
+             * @description Every superseded reading, newest first, unchanged; empty when there is none.
+             */
+            earlier: components["schemas"]["RegisterInterpretationVersion"][];
+            /**
+             * Obligationid
+             * Format: uuid
+             * @description The library obligation this register row is about, as a UUID. The obligation is a shared library fact; the register row is this bank's alone.
+             */
+            obligationId: string;
+        };
+        /**
+         * RegisterInterpretationBody
+         * @description `PUT /obligations/{obligationId}/interpretation`: write a new version.
+         * @example {
+         *       "text": "We read this as covering every client account the bank holds, custody included."
+         *     }
+         */
+        RegisterInterpretationBody: {
+            /**
+             * Text
+             * @description How the bank reads the rule, 1 to 8000 characters. Stored as a new version; the previous one is kept and shown as earlier.
+             */
+            text: string;
+        };
+        /**
+         * RegisterInterpretationVersion
+         * @description One version of the bank's reading of a rule, never edited once written.
+         */
+        RegisterInterpretationVersion: {
+            /** @description The person who wrote this version. */
+            author: components["schemas"]["RegisterPersonRef"];
+            /**
+             * Text
+             * @description How the bank reads the rule, in its own words. Internal legal judgement that never leaves the bank.
+             */
+            text: string;
+            /**
+             * Versionno
+             * @description The version number, 1 for the first reading and one higher for every later one.
+             */
+            versionNo: number;
+            /**
+             * Writtenat
+             * Format: date-time
+             * @description The UTC timestamp at which this version was written, set by the server.
+             */
+            writtenAt: string;
+        };
+        /**
+         * RegisterPatch
+         * @description `PATCH /obligations/{obligationId}/register`: the bank's status and details on the
+         *     obligation as a whole. Applicability is absent on purpose: it has its own route (D-75).
+         * @example {
+         *       "complianceStatus": "partly_compliant",
+         *       "rationale": "Second-line review of September found the manual log.",
+         *       "riskRating": "medium",
+         *       "statusNote": "Reconciliation runs daily; the evidence log is still manual."
+         *     }
+         */
+        RegisterPatch: {
+            /**
+             * Compliancecontactid
+             * @description The compliance contact. A member of the bank, by their user UUID. Someone who is not an active member of this bank is refused; null or absent leaves the field as it is on a patch.
+             */
+            complianceContactId?: string | null;
+            /**
+             * Compliancestatus
+             * @description The key of a row in the bank's own `compliance_status` vocabulary, at most 64 characters. Seeded as `compliant`, `partly_compliant`, `gap` and `not_assessed`; the bank's admin may add or relabel rows, each under one fixed category, so read `GET /vocab/compliance_status` for the live set. A status other than the `not_assessed` row needs applicability `applies` first.
+             */
+            complianceStatus?: string | null;
+            /**
+             * Evidencelocation
+             * @description Where the evidence is kept, at most 500 characters.
+             */
+            evidenceLocation?: string | null;
+            /**
+             * Firstlineownerid
+             * @description The first-line owner. A member of the bank, by their user UUID. Someone who is not an active member of this bank is refused; null or absent leaves the field as it is on a patch.
+             */
+            firstLineOwnerId?: string | null;
+            /**
+             * Nextreviewdate
+             * @description The plain date of the next review, shown on the roadmap as our own deadline.
+             */
+            nextReviewDate?: string | null;
+            /**
+             * Process
+             * @description The business process the obligation is met in, by name, at most 500 characters.
+             */
+            process?: string | null;
+            /**
+             * Rationale
+             * @description Why the status is what it is, at most 4000 characters. Stored on the assessment row a status change writes, so the history says who assessed what and why.
+             */
+            rationale?: string | null;
+            /**
+             * Riskrating
+             * @description The key of a row in the bank's own `risk_rating` vocabulary, at most 64 characters. Seeded as `low`, `medium` and `high`, each with a fixed ordinal; the bank's admin may add or relabel rows, so read `GET /vocab/risk_rating` for the live set.
+             */
+            riskRating?: string | null;
+            /**
+             * Statusnote
+             * @description The bank's note on the status, at most 4000 characters. Tenant content that never leaves the bank.
+             */
+            statusNote?: string | null;
+            /**
+             * System
+             * @description The system the obligation is met in, by name, at most 500 characters.
+             */
+            system?: string | null;
+        };
+        /**
+         * RegisterPersonRef
+         * @description A member of the bank named on a register row.
+         */
+        RegisterPersonRef: {
+            /**
+             * Id
+             * Format: uuid
+             * @description The person's user UUID in this bank; stable for as long as they are a member.
+             */
+            id: string;
+            /**
+             * Name
+             * @description The person's display name, for showing beside the row. It may change; keep the id.
+             */
+            name: string;
+        };
+        /**
+         * RegisterRiskAcceptance
+         * @description A request to accept a gap's risk, and its approval by a second person with a step-up.
+         */
+        RegisterRiskAcceptance: {
+            /**
+             * Approvedat
+             * @description The UTC timestamp of the approval, null while waiting for approval.
+             */
+            approvedAt: string | null;
+            /** @description The second person who approved it with a passkey step-up, never the person who identified the gap. Null while the acceptance is waiting for approval. */
+            approvedBy: components["schemas"]["RegisterPersonRef"] | null;
+            /**
+             * Note
+             * @description The requester's note in their own words; null when none was written.
+             */
+            note: string | null;
+            /** @description Why the risk is accepted, as a row of the bank's own risk-acceptance reason vocabulary, which its admin may extend; read the vocabulary endpoint for the live set. */
+            reason: components["schemas"]["RegisterVocabRef"];
+            /**
+             * Requestedat
+             * Format: date-time
+             * @description The UTC timestamp of the request, set by the server.
+             */
+            requestedAt: string;
+            /** @description The person who asked for the risk to be accepted. */
+            requestedBy: components["schemas"]["RegisterPersonRef"];
+        };
+        /**
+         * RegisterRiskAcceptanceBody
+         * @description `POST /gaps/{gapId}/accept-risk`: ask for the gap's risk to be accepted.
+         * @example {
+         *       "note": "Automation comes with the 2027 ledger.",
+         *       "reason": "cost_exceeds_benefit"
+         *     }
+         */
+        RegisterRiskAcceptanceBody: {
+            /**
+             * Note
+             * @description A note in the requester's own words, at most 2000 characters.
+             */
+            note?: string | null;
+            /**
+             * Reason
+             * @description The key of a row in the bank's own risk-acceptance reason vocabulary, at most 64 characters. The bank's admin may add or relabel rows, so read the vocabulary endpoint for the live set.
+             */
+            reason: string;
+        };
+        /**
+         * RegisterStatementOfApplicability
+         * @description The register filtered by a standard and a legal entity: the conformance row and the
+         *     entity's units, each with its decision (REG-08, REG-S15).
+         * @example {
+         *       "conformance": {
+         *         "applicability": "applies",
+         *         "applicabilityDecidedAt": "2026-09-14T08:30:00Z",
+         *         "applicabilityDecidedBy": {
+         *           "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *           "name": "Sara Lind"
+         *         },
+         *         "applicabilityReason": "Holds client assets under the securities licence",
+         *         "complianceStatus": {
+         *           "key": "partly_compliant",
+         *           "kind": "partly",
+         *           "label": "Partly compliant"
+         *         },
+         *         "evidenceLocation": "Compliance share / Client assets / 2026",
+         *         "nextReviewDate": "2027-03-31",
+         *         "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *         "orgUnitName": "Example Bank AB",
+         *         "owner": {
+         *           "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *           "name": "Sara Lind"
+         *         },
+         *         "process": "Client asset reconciliation",
+         *         "riskRating": {
+         *           "key": "medium",
+         *           "kind": null,
+         *           "label": "Medium"
+         *         },
+         *         "statusNote": "Reconciliation runs daily; the evidence log is still manual.",
+         *         "system": "Custody ledger",
+         *         "version": 4
+         *       },
+         *       "obligationId": "44444444-4444-4444-8444-444444444444",
+         *       "total": 1,
+         *       "units": [
+         *         {
+         *           "applicability": "applies",
+         *           "applicabilityDecidedAt": "2026-09-24T09:12:00Z",
+         *           "applicabilityDecidedBy": {
+         *             "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *             "name": "Sara Lind"
+         *           },
+         *           "applicabilityReason": "Required by our certification scope",
+         *           "complianceStatus": {
+         *             "key": "compliant",
+         *             "kind": "compliant",
+         *             "label": "Compliant"
+         *           },
+         *           "hasHistory": true,
+         *           "id": "66666666-6666-4666-8666-666666666666",
+         *           "obligationId": "44444444-4444-4444-8444-444444444444",
+         *           "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *           "reference": "A.5.1",
+         *           "title": "Our information security policies",
+         *           "version": 2
+         *         }
+         *       ]
+         *     }
+         */
+        RegisterStatementOfApplicability: {
+            /** @description The entity's conformance row with its own assessed status, never computed from the units. */
+            conformance: components["schemas"]["RegisterEntityStatus"];
+            /**
+             * Obligationid
+             * Format: uuid
+             * @description The standard's conformance obligation, as a UUID.
+             */
+            obligationId: string;
+            /**
+             * Total
+             * @description How many units the entity has under the standard, not how many are on this page.
+             */
+            total: number;
+            /**
+             * Units
+             * @description The entity's units on this page, by reference.
+             */
+            units: components["schemas"]["RegisterUnit"][];
+        };
+        /**
+         * RegisterStatementQuery
+         * @description The one filter the Statement of Applicability needs.
+         */
+        RegisterStatementQuery: {
+            /**
+             * Entity
+             * Format: uuid
+             * @description The legal entity whose statement to read, by its UUID from the bank's organisation. Required.
+             */
+            entity: string;
+        };
+        /**
+         * RegisterUnit
+         * @description One clause or control of a standard a legal entity follows, listed by the bank in its
+         *     own words, with its own applicability and status (REG-08).
+         * @example {
+         *       "applicability": "applies",
+         *       "applicabilityDecidedAt": "2026-09-24T09:12:00Z",
+         *       "applicabilityDecidedBy": {
+         *         "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *         "name": "Sara Lind"
+         *       },
+         *       "applicabilityReason": "Required by our certification scope",
+         *       "complianceStatus": {
+         *         "key": "compliant",
+         *         "kind": "compliant",
+         *         "label": "Compliant"
+         *       },
+         *       "hasHistory": true,
+         *       "id": "66666666-6666-4666-8666-666666666666",
+         *       "obligationId": "44444444-4444-4444-8444-444444444444",
+         *       "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *       "reference": "A.5.1",
+         *       "title": "Our information security policies",
+         *       "version": 2
+         *     }
+         */
+        RegisterUnit: {
+            /**
+             * Applicability
+             * @description Whether the obligation applies to the bank here: `applies` when it binds this bank, legal entity or unit; `not_applicable` when a compliance person decided it does not, with the reason beside it; `under_assessment` until anyone has decided. A fixed kind, not a list the bank edits. It says nothing about whether the bank complies, which is the separate compliance status.
+             * @enum {string}
+             */
+            applicability: "applies" | "not_applicable" | "under_assessment";
+            /**
+             * Applicabilitydecidedat
+             * @description The UTC timestamp at which the applicability answer was last set, null while it is `under_assessment` and nobody has answered. Set by the server.
+             */
+            applicabilityDecidedAt: string | null;
+            /** @description The person who last set the applicability answer, named in the audit event with the value before and after. Null while nobody has answered. */
+            applicabilityDecidedBy: components["schemas"]["RegisterPersonRef"] | null;
+            /**
+             * Applicabilityreason
+             * @description Why the answer is what it is, in the bank's own words, such as `Certified` or `No client money held`. Tenant content that never leaves the bank. Null while nobody has answered.
+             */
+            applicabilityReason: string | null;
+            /** @description How the bank complies with the unit, as a row of its own `compliance_status` vocabulary, which its admin may extend. The conformance row's status is never computed from its units. */
+            complianceStatus: components["schemas"]["RegisterVocabRef"];
+            /**
+             * Hashistory
+             * @description True once the unit has an applicability decision, a status or a gap, after which its reference and title are fixed; false before.
+             */
+            hasHistory: boolean;
+            /**
+             * Id
+             * Format: uuid
+             * @description The unit's UUID in this bank.
+             */
+            id: string;
+            /**
+             * Obligationid
+             * Format: uuid
+             * @description The standard's conformance obligation the unit sits under, as a UUID.
+             */
+            obligationId: string;
+            /**
+             * Orgunitid
+             * Format: uuid
+             * @description The legal entity the unit belongs to, as a UUID from the bank's organisation.
+             */
+            orgUnitId: string;
+            /**
+             * Reference
+             * @description The bank's own reference for the clause or control, such as `A.5.1`.
+             */
+            reference: string;
+            /**
+             * Title
+             * @description The bank's own name for the clause or control, never the standard's text.
+             */
+            title: string;
+            /**
+             * Version
+             * @description The row's version, 0 for a row nobody has written yet and one higher after every write. Send it back as `If-Match` on the next write; a row changed in between is refused rather than overwritten.
+             */
+            version: number;
+        };
+        /**
+         * RegisterUnitBody
+         * @description `POST /obligations/{obligationId}/units`: list one unit.
+         * @example {
+         *       "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *       "reference": "A.5.1",
+         *       "title": "Our information security policies"
+         *     }
+         */
+        RegisterUnitBody: {
+            /**
+             * Orgunitid
+             * Format: uuid
+             * @description The legal entity the unit belongs to, as a UUID; its conformance row must apply.
+             */
+            orgUnitId: string;
+            /**
+             * Reference
+             * @description The bank's own reference for the clause or control, such as `A.5.1`, at most 64 characters, unique per legal entity. Fixed once the unit has history.
+             */
+            reference: string;
+            /**
+             * Title
+             * @description The bank's own name for the clause or control, in its own words and never the standard's text, at most 300 characters. Fixed once the unit has history.
+             */
+            title: string;
+        };
+        /**
+         * RegisterUnitPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "applicability": "applies",
+         *           "applicabilityDecidedAt": "2026-09-24T09:12:00Z",
+         *           "applicabilityDecidedBy": {
+         *             "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *             "name": "Sara Lind"
+         *           },
+         *           "applicabilityReason": "Required by our certification scope",
+         *           "complianceStatus": {
+         *             "key": "compliant",
+         *             "kind": "compliant",
+         *             "label": "Compliant"
+         *           },
+         *           "hasHistory": true,
+         *           "id": "66666666-6666-4666-8666-666666666666",
+         *           "obligationId": "44444444-4444-4444-8444-444444444444",
+         *           "orgUnitId": "55555555-5555-4555-8555-555555555555",
+         *           "reference": "A.5.1",
+         *           "title": "Our information security policies",
+         *           "version": 2
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        RegisterUnitPage: {
+            /**
+             * Items
+             * @description The units on this page, by reference; removed units are not listed.
+             */
+            items: components["schemas"]["RegisterUnit"][];
+            /**
+             * Total
+             * @description How many units match in total, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * RegisterUnitPaste
+         * @description The dry run's or the commit's answer, one row per pasted line.
+         * @example {
+         *       "created": 0,
+         *       "dryRun": true,
+         *       "rows": [
+         *         {
+         *           "line": 1,
+         *           "outcome": "will_create",
+         *           "problem": null,
+         *           "reference": "A.5.1",
+         *           "title": "Our information security policies",
+         *           "unitId": null
+         *         }
+         *       ]
+         *     }
+         */
+        RegisterUnitPaste: {
+            /**
+             * Created
+             * @description How many units were created, 0 on a dry run and whenever any line was refused.
+             */
+            created: number;
+            /**
+             * Dryrun
+             * @description True when nothing was stored, as asked; false when the units were created.
+             */
+            dryRun: boolean;
+            /**
+             * Rows
+             * @description One row per pasted line, in the order pasted.
+             */
+            rows: components["schemas"]["RegisterUnitPasteRow"][];
+        };
+        /**
+         * RegisterUnitPasteBody
+         * @description `POST /obligations/{obligationId}/units/paste`: many units for one entity, with a dry run.
+         * @example {
+         *       "dryRun": true,
+         *       "lines": [
+         *         {
+         *           "reference": "A.5.1",
+         *           "title": "Our information security policies"
+         *         }
+         *       ],
+         *       "orgUnitId": "55555555-5555-4555-8555-555555555555"
+         *     }
+         */
+        RegisterUnitPasteBody: {
+            /**
+             * Dryrun
+             * @description True, the default, answers what would be created and stores nothing; false creates the units, only when no line is refused, with one audit event per unit.
+             * @default true
+             */
+            dryRun: boolean;
+            /**
+             * Lines
+             * @description The pasted lines, at least 1, in the order pasted. A call holds at most the configured `REGISTER_BULK_MAX` lines, 100 by default.
+             */
+            lines: components["schemas"]["RegisterUnitPasteLine"][];
+            /**
+             * Orgunitid
+             * Format: uuid
+             * @description The legal entity the units belong to, as a UUID; its conformance row must apply.
+             */
+            orgUnitId: string;
+        };
+        /**
+         * RegisterUnitPasteLine
+         * @description One pasted line: a reference and a title.
+         */
+        RegisterUnitPasteLine: {
+            /**
+             * Reference
+             * @description The reference as pasted, at most 1000 characters. One longer than a unit's reference may be is reported on its row, not refused for the whole paste.
+             */
+            reference: string;
+            /**
+             * Title
+             * @description The title as pasted, in the bank's own words, at most 1000 characters. One longer than a unit's title may be is reported on its row.
+             */
+            title: string;
+        };
+        /**
+         * RegisterUnitPasteRow
+         * @description What happens to one pasted line.
+         */
+        RegisterUnitPasteRow: {
+            /**
+             * Line
+             * @description The line's position in the paste, counting from 1.
+             */
+            line: number;
+            /**
+             * Outcome
+             * @description `will_create` on a dry run for a line that would become a unit, `created` when it did, `refused` for a line that cannot become one, with the problem beside it.
+             * @enum {string}
+             */
+            outcome: "will_create" | "created" | "refused";
+            /**
+             * Problem
+             * @description Why a line is refused: `duplicate_reference` when the paste repeats a reference, `reference_exists` when the entity already has a unit with it, `reference_too_long` or `title_too_long` past the unit limits, `empty_line` for a line with no reference or title. Null when the line is not refused.
+             */
+            problem: ("duplicate_reference" | "reference_exists" | "reference_too_long" | "title_too_long" | "empty_line") | null;
+            /**
+             * Reference
+             * @description The reference as pasted, trimmed of surrounding spaces.
+             */
+            reference: string;
+            /**
+             * Title
+             * @description The title as pasted, trimmed of surrounding spaces.
+             */
+            title: string;
+            /**
+             * Unitid
+             * @description The created unit's UUID, null on a dry run and for a refused line.
+             */
+            unitId: string | null;
+        };
+        /**
+         * RegisterUnitPatch
+         * @description `PATCH /units/{unitId}`: rename a unit that has no history yet.
+         * @example {
+         *       "title": "Our information security policy set"
+         *     }
+         */
+        RegisterUnitPatch: {
+            /**
+             * Reference
+             * @description The bank's own reference for the clause or control, such as `A.5.1`, at most 64 characters, unique per legal entity. Fixed once the unit has history.
+             */
+            reference?: string | null;
+            /**
+             * Title
+             * @description The bank's own name for the clause or control, in its own words and never the standard's text, at most 300 characters. Fixed once the unit has history.
+             */
+            title?: string | null;
+        };
+        /**
+         * RegisterUnitQuery
+         * @description Filters of the units list.
+         */
+        RegisterUnitQuery: {
+            /**
+             * Entity
+             * @description Only the units of this legal entity, by its UUID from the bank's organisation.
+             */
+            entity?: string | null;
+        };
+        /**
+         * RegisterVocabRef
+         * @description A value of one of the bank's own lists as the register shows it: key, kind and label
+         *     together, so a screen shows a name while an integration stores what never moves.
+         */
+        RegisterVocabRef: {
+            /**
+             * Key
+             * @description The stable key of the row in the bank's own vocabulary, such as `partly_compliant` in `compliance_status`, `high` in `risk_rating`, `open` in `gap_status` or `policy` in `link_kind`. The bank's admin may add, relabel or retire rows, so an unfamiliar key is new data and not an error; read `GET /vocab/{listName}` for the live set. Store and compare the key, never the label.
+             */
+            key: string;
+            /**
+             * Kind
+             * @description The fixed category the row belongs to, which decides the pill's tone and every rule the server applies: for `compliance_status` one of `compliant`, `partly`, `gap` or `not_assessed`; for `gap_status` one of `open`, `remediating`, `risk_accepted` or `closed`. Null for a list whose rows carry no category, such as `risk_rating` or `link_kind`.
+             */
+            kind: string | null;
+            /**
+             * Label
+             * @description The row's name in the reader's language, for showing and for nothing else. The bank may reword and translate it at any time, so never store it or match on it.
+             */
+            label: string;
+        };
+        /**
          * RelatedObligation
          * @description An obligation a reader should see beside this one (INV-03), with the relation as a
          *     vocabulary row.
@@ -14601,6 +17688,215 @@ export interface components {
             expiresAt: string;
         };
         /**
+         * TaggingBatchBody
+         * @description `POST /taggings/preview` and `POST /taggings/batch` (VOC-08): one tag on many records
+         *     of one kind, as selected on a list.
+         * @example {
+         *       "subjectIds": [
+         *         "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10",
+         *         "9b2e4f61-0c3a-4e8d-b7a5-1d6c8e2f4a37"
+         *       ],
+         *       "subjectType": "obligation",
+         *       "tagKey": "custody"
+         *     }
+         */
+        TaggingBatchBody: {
+            /**
+             * Subjectids
+             * @description The ids of the selected records, each a UUID, at least 1. A repeated id counts once. At most `BULK_TAGGING_MAX_RECORDS` distinct ids, 200 unless the operator set another number; more answers 422 `too_many_records` and nothing is tagged. An id the caller may not read (it does not exist, it is another bank's, it is of another kind, or the caller's roles do not read this kind) is skipped and counted, never tagged and never named back.
+             * @example [
+             *       "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"
+             *     ]
+             */
+            subjectIds: string[];
+            /**
+             * Subjecttype
+             * @description The kind of record being tagged, at most 64 characters, one of:
+             *     - `obligation`: a library obligation the bank can read (`GET /obligations`);
+             *     - `change`: a regulatory change in the library (`GET /changes`);
+             *     - `change_case`: one of this bank's own cases for a change.
+             *     Any other kind answers 422 `unsupported_subject`. A tag is the bank's own marker and never changes the library record it sits on: another bank never sees it. A batch holds records of this one kind only.
+             * @example obligation
+             */
+            subjectType: string;
+            /**
+             * Tagkey
+             * @description The key of a row of this bank's own `tenant_tag` vocabulary, at most 80 characters, such as `follow_up` (the one tag every bank starts with) or `custody`. The values are rows the bank's admin may extend or relabel without a deploy, and have no kind; `GET /vocab/tenant_tag` lists the live set. Send the key, never the label. A key this bank does not have answers 422 `unknown_key`.
+             * @example custody
+             */
+            tagKey: string;
+        };
+        /**
+         * TaggingBatchOutcome
+         * @description What a batch would do (the preview) or did (the commit), with the same shape so a
+         *     screen shows the preview and then the result without a second layout (VOC-08).
+         * @example {
+         *       "alreadyTagged": {
+         *         "count": 1,
+         *         "ids": [
+         *           "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"
+         *         ]
+         *       },
+         *       "gained": {
+         *         "count": 1,
+         *         "ids": [
+         *           "9b2e4f61-0c3a-4e8d-b7a5-1d6c8e2f4a37"
+         *         ]
+         *       },
+         *       "skipped": {
+         *         "count": 0
+         *       },
+         *       "subjectType": "obligation",
+         *       "tag": {
+         *         "key": "custody",
+         *         "kind": null,
+         *         "label": "Custody"
+         *       }
+         *     }
+         */
+        TaggingBatchOutcome: {
+            /** @description The records that already carried the tag and are left as they are, on a preview and a commit alike. */
+            alreadyTagged: components["schemas"]["TaggingIds"];
+            /** @description The records that did not carry the tag: on a preview, the ones that would gain it; on a commit, the ones that now carry it. */
+            gained: components["schemas"]["TaggingIds"];
+            /** @description The records the caller may not read, counted and never named. */
+            skipped: components["schemas"]["TaggingSkipped"];
+            /**
+             * Subjecttype
+             * @description The kind of every record in the batch, as sent: `obligation`, `change` or `change_case`.
+             * @example obligation
+             */
+            subjectType: string;
+            /** @description The tag the batch applies: a row of this bank's own `tenant_tag` vocabulary, which has no kinds and which the bank's admin may extend or relabel without a deploy; `GET /vocab/tenant_tag` lists the live set. */
+            tag: components["schemas"]["TaggingTagRef"];
+        };
+        /**
+         * TaggingBody
+         * @description `POST /taggings` and `POST /taggings/remove` (VOC-08): one tag on or off one record.
+         * @example {
+         *       "subjectId": "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10",
+         *       "subjectType": "obligation",
+         *       "tagKey": "custody"
+         *     }
+         */
+        TaggingBody: {
+            /**
+             * Subjectid
+             * Format: uuid
+             * @description The id of the record to tag, a UUID, as the record's own read returns it. A record that does not exist, that belongs to another bank, or that the caller's roles do not let them read answers the same 404 `not_found`, so the answer never says which.
+             * @example 5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10
+             */
+            subjectId: string;
+            /**
+             * Subjecttype
+             * @description The kind of record being tagged, at most 64 characters, one of:
+             *     - `obligation`: a library obligation the bank can read (`GET /obligations`);
+             *     - `change`: a regulatory change in the library (`GET /changes`);
+             *     - `change_case`: one of this bank's own cases for a change.
+             *     Any other kind answers 422 `unsupported_subject`. A tag is the bank's own marker and never changes the library record it sits on: another bank never sees it.
+             * @example obligation
+             */
+            subjectType: string;
+            /**
+             * Tagkey
+             * @description The key of a row of this bank's own `tenant_tag` vocabulary, at most 80 characters, such as `follow_up` (the one tag every bank starts with) or `custody`. The values are rows the bank's admin may extend or relabel without a deploy, and have no kind; `GET /vocab/tenant_tag` lists the live set. Send the key, never the label. A key this bank does not have answers 422 `unknown_key`.
+             * @example custody
+             */
+            tagKey: string;
+        };
+        /**
+         * TaggingIds
+         * @description A set of records a batch names back: the caller could read every one of them.
+         */
+        TaggingIds: {
+            /**
+             * Count
+             * @description How many records, never negative; 0 when none.
+             * @example 2
+             */
+            count: number;
+            /**
+             * Ids
+             * @description Their ids, each a UUID, in the order the batch sent them; an empty list when there are none.
+             * @example [
+             *       "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"
+             *     ]
+             */
+            ids: string[];
+        };
+        /**
+         * TaggingRecordTags
+         * @description The bank's own tags on one record after a tag went on or came off (VOC-08).
+         * @example {
+         *       "subjectId": "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10",
+         *       "subjectType": "obligation",
+         *       "tags": [
+         *         {
+         *           "key": "custody",
+         *           "kind": null,
+         *           "label": "Custody"
+         *         }
+         *       ]
+         *     }
+         */
+        TaggingRecordTags: {
+            /**
+             * Subjectid
+             * Format: uuid
+             * @description The id of the record, a UUID, as sent.
+             * @example 5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10
+             */
+            subjectId: string;
+            /**
+             * Subjecttype
+             * @description The kind of the record, as sent: `obligation`, `change` or `change_case`.
+             * @example obligation
+             */
+            subjectType: string;
+            /**
+             * Tags
+             * @description Every one of this bank's tags now on the record, in the vocabulary's own order: rows of the bank's own `tenant_tag` vocabulary, which has no kinds and which the bank's admin may extend or relabel without a deploy (`GET /vocab/tenant_tag` lists the live set); an empty list when it carries none. Only the bank's own tags: the library's tags on an obligation are read from the obligation itself.
+             */
+            tags: components["schemas"]["TaggingTagRef"][];
+        };
+        /**
+         * TaggingSkipped
+         * @description The records a batch left alone because the caller may not read them: counted only.
+         */
+        TaggingSkipped: {
+            /**
+             * Count
+             * @description How many of the sent ids were skipped because the caller may not read them: they do not exist, belong to another bank, are of another kind, or the caller's roles do not read this kind. Never negative: at least 0, and 0 when nothing was skipped. Their ids are never named back, so the answer never tells which records exist.
+             * @example 1
+             */
+            count: number;
+        };
+        /**
+         * TaggingTagRef
+         * @description One of the bank's own tags as a pill shows it: the key to store and compare and the
+         *     label to show, never a phrase to match on.
+         */
+        TaggingTagRef: {
+            /**
+             * Key
+             * @description The tag's immutable key, the only part to store, compare or send back. A row of this bank's own `tenant_tag` vocabulary, which the bank's admin may extend or relabel without a deploy; `GET /vocab/tenant_tag` lists the live set, starting with `follow_up`.
+             * @example custody
+             */
+            key: string;
+            /**
+             * Kind
+             * @description Always null: the bank's tags have no kind. Present so every vocabulary reference has one shape.
+             * @example null
+             */
+            kind?: string | null;
+            /**
+             * Label
+             * @description The tag's name in the caller's language, falling back to the language it was written in, then to the key. For display only; a rename changes it and never the key.
+             * @example Custody
+             */
+            label: string;
+        };
+        /**
          * TaxonomyDimensionPage
          * @description `GET /taxonomy/dimensions`: every active dimension of the taxonomy, in picker order.
          *     A reference list, not a page: it is short and never paginates.
@@ -14989,7 +18285,24 @@ export interface components {
          *       },
          *       "slug": "example-bank",
          *       "status": "active",
-         *       "timezone": "Europe/Stockholm"
+         *       "timezone": "Europe/Stockholm",
+         *       "workflow": {
+         *         "digestWeekday": "monday",
+         *         "escalateAfterDays": 5,
+         *         "escalateToRole": {
+         *           "key": "compliance_officer",
+         *           "kind": null,
+         *           "label": "Compliance officer"
+         *         },
+         *         "reminderDaysBefore": [
+         *           7,
+         *           3
+         *         ],
+         *         "reviewReminderDaysBefore": [
+         *           30
+         *         ],
+         *         "triageTargetHours": 48
+         *       }
          *     }
          */
         TenantOut: {
@@ -15033,6 +18346,8 @@ export interface components {
              * @description The IANA timezone the bank works in, such as `Europe/Stockholm`. It is what turns a stored UTC instant into the local day a deadline is counted in and a screen is grouped by. It belongs to the organisation and not to a person: a member reading from another country still sees the bank's day.
              */
             timezone: string;
+            /** @description The bank's workflow policy: reminder lead days, when overdue work escalates and to which role, the digest's weekday and the triage target. Every member may read it; only `PATCH /tenant/workflow`, with `workflow.manage`, changes it, and the profile edit ignores it. */
+            workflow: components["schemas"]["TenantWorkflow"];
         };
         /**
          * TenantPatch
@@ -15163,6 +18478,105 @@ export interface components {
              * @description The one-line request as the person here who filed it wrote it, which is what the screen lists it under.
              */
             title: string;
+        };
+        /**
+         * TenantWorkflow
+         * @description The bank's workflow policy: when its members are reminded, when overdue work
+         *     escalates and to whom, the day the digest goes out and how quickly a new change should
+         *     be triaged. Every bank starts at the platform defaults and changes its own through
+         *     `PATCH /tenant/workflow`.
+         * @example {
+         *       "digestWeekday": "monday",
+         *       "escalateAfterDays": 5,
+         *       "escalateToRole": {
+         *         "key": "compliance_officer",
+         *         "kind": null,
+         *         "label": "Compliance officer"
+         *       },
+         *       "reminderDaysBefore": [
+         *         7,
+         *         3
+         *       ],
+         *       "reviewReminderDaysBefore": [
+         *         30
+         *       ],
+         *       "triageTargetHours": 48
+         *     }
+         */
+        TenantWorkflow: {
+            /**
+             * Digestweekday
+             * @description The day of the week the bank's digest goes out, in the bank's own timezone: one of the seven days in lower case: `monday`, `tuesday`, `wednesday`, `thursday`, `friday`, `saturday` or `sunday`. A fixed set in code rather than a list a bank extends. The platform default is `monday`.
+             */
+            digestWeekday: string;
+            /**
+             * Escalateafterdays
+             * @description How many whole days a piece of work may be overdue before it escalates, from 1 to 90. It escalates once, to the members holding `escalateToRole`. The platform default is 5.
+             */
+            escalateAfterDays: number;
+            /** @description The role of this bank whose members are told when overdue work escalates, as key, kind and label; the key is what `PATCH /tenant/workflow` takes. Roles are rows of the bank's role vocabulary: the seeded `admin`, `compliance_officer` (the platform default), `owner`, `approver`, `contributor`, `reader` and `auditor`, plus any role an admin may extend it with in the role editor (`GET /tenant/roles` lists the live set), so an unfamiliar key is new data and not an error. It names a role and never a person, so the escalation survives a member leaving. */
+            escalateToRole: components["schemas"]["RoleRef"];
+            /**
+             * Reminderdaysbefore
+             * @description How many days before a due date the owner of an open action or case is reminded, one reminder per entry, largest first — `[7, 3]` reminds a week ahead and again three days ahead. One to 5 entries, each a whole number of days from 1 to 90, counted in the bank's own timezone. The platform default is `[3]`.
+             */
+            reminderDaysBefore: number[];
+            /**
+             * Reviewreminderdaysbefore
+             * @description How many days before a scheduled review the owner of the record under review is reminded, largest first. One to 5 entries, each a whole number of days from 1 to 90. The platform default is `[30]`.
+             */
+            reviewReminderDaysBefore: number[];
+            /**
+             * Triagetargethours
+             * @description How many hours a new change may wait before somebody at the bank has triaged it, from 1 to 720 (thirty days). A case's triage due time is counted from it. The platform default is 48.
+             */
+            triageTargetHours: number;
+        };
+        /**
+         * TenantWorkflowPatch
+         * @description What a holder of `workflow.manage` may change about the bank's workflow policy. Send
+         *     only the fields you are changing; an omitted field, or one sent as null, is left as it
+         *     was, and a field this schema does not name is refused.
+         * @example {
+         *       "digestWeekday": "monday",
+         *       "escalateAfterDays": 5,
+         *       "reminderDaysBefore": [
+         *         7,
+         *         3
+         *       ]
+         *     }
+         */
+        TenantWorkflowPatch: {
+            /**
+             * Digestweekday
+             * @description The day the digest goes out: one of the seven days in lower case: `monday`, `tuesday`, `wednesday`, `thursday`, `friday`, `saturday` or `sunday`, at most 16 characters. Any other value is refused with `unknown_key` naming the field. Omit the field to leave it alone.
+             */
+            digestWeekday?: string | null;
+            /**
+             * Escalateafterdays
+             * @description How many whole days work may be overdue before it escalates, from 1 to 90. Omit the field to leave it alone; a value out of range is refused with `validation_error` naming the field.
+             */
+            escalateAfterDays?: number | null;
+            /**
+             * Escalatetorole
+             * @description The key of the role whose members are told when work escalates, such as `compliance_officer`, at most 80 characters. A key, never a label. It must be an active role of this bank — read `GET /tenant/roles` for the set; a key that is not, including a role of another bank or a retired one, is refused with `unknown_key` naming the field. Omit the field to leave it alone.
+             */
+            escalateToRole?: string | null;
+            /**
+             * Reminderdaysbefore
+             * @description The complete new list of days before a due date on which the owner is reminded: one to 5 whole numbers, each from 1 to 90. It replaces the current list; a repeated day counts once and the list is stored largest first. Omit the field to leave it alone; an empty list, a longer one or a day out of range is refused with `validation_error` naming the field.
+             */
+            reminderDaysBefore?: number[] | null;
+            /**
+             * Reviewreminderdaysbefore
+             * @description The complete new list of days before a scheduled review on which the owner is reminded: one to 5 whole numbers, each from 1 to 90, stored largest first with repeats counted once. Omit the field to leave it alone; an empty list, a longer one or a day out of range is refused with `validation_error` naming the field.
+             */
+            reviewReminderDaysBefore?: number[] | null;
+            /**
+             * Triagetargethours
+             * @description How many hours a new change may wait before it is triaged, from 1 to 720. Omit the field to leave it alone; a value out of range is refused with `validation_error` naming the field.
+             */
+            triageTargetHours?: number | null;
         };
         /**
          * TermRef
@@ -19498,7 +22912,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description The answer to rate, as a UUID: the `id` of the `start` event that `POST /ask` streamed first, which is also the answer's row in the AI log. It must be an answer of the caller's own bank. Another bank's answer, an id that is no answer and a value that is not a UUID all answer `not_found`, never saying which. */
+                /** @description The answer to rate, as a UUID: the `id` of the `start` event that `POST /ask` streamed first, which is also the answer's row in the AI log. It must be an answer the caller was given themselves. A colleague's answer, another bank's, an id that is no answer and a value that is not a UUID all answer `not_found`, never saying which. */
                 answer_id: string;
             };
             cookie?: never;
@@ -19515,6 +22929,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    setApplicabilityMany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterApplicabilityManyBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterApplicabilityMany"];
+                };
             };
         };
     };
@@ -20684,6 +24122,33 @@ export interface operations {
             };
         };
     };
+    completeDutyOccurrence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The dated duty occurrence, as a UUID. Another bank's occurrence answers 404, never 403. */
+                occurrence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterDutyCompleteBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterDutyCompletion"];
+                };
+            };
+        };
+    };
     e2eMailOutbox: {
         parameters: {
             query?: never;
@@ -20820,6 +24285,273 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvalRunPage"];
+                };
+            };
+        };
+    };
+    listExports: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportJobPage"];
+                };
+            };
+        };
+    };
+    createExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "format": "json",
+                 *       "kind": "case_file",
+                 *       "subjectId": "0c9a4a57-8a55-4c43-9c8e-6f1a2b3c4d5e"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ExportInput"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportJobOut"];
+                };
+            };
+        };
+    };
+    getExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The export job's identifier, as a UUID, from `POST /exports` or `GET /exports`. Another bank's job is never reachable and answers 404. */
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "completedAt": "2026-09-25T08:14:05Z",
+                     *       "contentHash": "9f2c4b7a0d1e3f5a6b8c9d0e1f2a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c",
+                     *       "createdAt": "2026-09-25T08:14:03Z",
+                     *       "downloadedAt": null,
+                     *       "error": null,
+                     *       "expiresAt": "2026-10-02T08:14:05Z",
+                     *       "format": "json",
+                     *       "id": "5b0f7c1e-2f5a-4d7e-9a51-3c1f0d9e8a42",
+                     *       "kind": "case_file",
+                     *       "status": "succeeded",
+                     *       "subjectId": "0c9a4a57-8a55-4c43-9c8e-6f1a2b3c4d5e"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ExportJobOut"];
+                };
+            };
+        };
+    };
+    downloadExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The export job's identifier, as a UUID, from `POST /exports` or `GET /exports`. Another bank's job is never reachable and answers 404. */
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {"case": {"title": "FI adopts amended rules on paying for investment research"}} */
+                    "application/octet-stream": string;
+                };
+            };
+        };
+    };
+    listRegisterGaps: {
+        parameters: {
+            query?: {
+                /** @description Only gaps in this status. The key of a row in the bank's own `gap_status` vocabulary, at most 64 characters, under one of the fixed categories `open`, `remediating`, `risk_accepted` and `closed`. The bank's admin may add or relabel rows, so read `GET /vocab/gap_status` for the live set. A risk is accepted only through the acceptance routes, never by setting the status. */
+                status?: string | null;
+                /** @description Only gaps of this severity. The key of a row in the bank's own `risk_rating` vocabulary, at most 64 characters. Seeded as `low`, `medium` and `high`, each with a fixed ordinal; the bank's admin may add or relabel rows, so read `GET /vocab/risk_rating` for the live set. */
+                severity?: string | null;
+                /** @description Only gaps this member owns, by their user UUID. */
+                owner?: string | null;
+                /** @description Only gaps in this legal entity, by its UUID from the bank's organisation. */
+                entity?: string | null;
+                /** @description Only gaps whose target date is on or after this plain date. */
+                targetFrom?: string | null;
+                /** @description Only gaps whose target date is on or before this plain date. */
+                targetTo?: string | null;
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterGapPage"];
+                };
+            };
+        };
+    };
+    updateGap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The gap, as a UUID. Another bank's gap answers 404, never 403. */
+                gap_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterGapPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterGap"];
+                };
+            };
+        };
+    };
+    requestRiskAcceptance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The gap, as a UUID. Another bank's gap answers 404, never 403. */
+                gap_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRiskAcceptanceBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterGap"];
+                };
+            };
+        };
+    };
+    approveRiskAcceptance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The gap, as a UUID. Another bank's gap answers 404, never 403. */
+                gap_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterGap"];
+                };
+            };
+        };
+    };
+    reopenGap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The gap, as a UUID. Another bank's gap answers 404, never 403. */
+                gap_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterGap"];
                 };
             };
         };
@@ -21054,6 +24786,27 @@ export interface operations {
                      */
                     "application/json": components["schemas"]["ProvisionNode"][];
                 };
+            };
+        };
+    };
+    removeInternalLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The internal link, as a UUID. Another bank's link answers 404, never 403. */
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -21416,6 +25169,67 @@ export interface operations {
             };
         };
     };
+    setApplicability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterApplicabilityBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterApplicability"];
+                };
+            };
+        };
+    };
+    listAssessments: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterAssessmentPage"];
+                };
+            };
+        };
+    };
     listObligationChanges: {
         parameters: {
             query?: {
@@ -21489,6 +25303,212 @@ export interface operations {
             };
         };
     };
+    listDuties: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterDutyPage"];
+                };
+            };
+        };
+    };
+    listObligationGaps: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterGapPage"];
+                };
+            };
+        };
+    };
+    createGap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterGapBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterGap"];
+                };
+            };
+        };
+    };
+    listInternalLinks: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterInternalLinkPage"];
+                };
+            };
+        };
+    };
+    addInternalLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterInternalLinkBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterInternalLink"];
+                };
+            };
+        };
+    };
+    getInterpretation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterInterpretation"];
+                };
+            };
+        };
+    };
+    saveInterpretation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterInterpretationBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterInterpretation"];
+                };
+            };
+        };
+    };
     reportObligationProblem: {
         parameters: {
             query?: never;
@@ -21516,6 +25536,85 @@ export interface operations {
             };
         };
     };
+    getRegisterEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterEntry"];
+                };
+            };
+        };
+    };
+    updateRegister: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterEntry"];
+                };
+            };
+        };
+    };
+    updateRegisterEntity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+                /** @description The bank's own legal entity to write for, as a UUID from its organisation. */
+                org_unit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterEntityPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterEntityStatus"];
+                };
+            };
+        };
+    };
     getRecordSources: {
         parameters: {
             query?: never;
@@ -21535,6 +25634,132 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LibraryRecordSources"];
+                };
+            };
+        };
+    };
+    getStatementOfApplicability: {
+        parameters: {
+            query: {
+                /** @description The legal entity whose statement to read, by its UUID from the bank's organisation. Required. */
+                entity: string;
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterStatementOfApplicability"];
+                };
+            };
+        };
+    };
+    listUnits: {
+        parameters: {
+            query?: {
+                /** @description Only the units of this legal entity, by its UUID from the bank's organisation. */
+                entity?: string | null;
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterUnitPage"];
+                };
+            };
+        };
+    };
+    createUnit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterUnitBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterUnit"];
+                };
+            };
+        };
+    };
+    pasteUnits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterUnitPasteBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterUnitPaste"];
                 };
             };
         };
@@ -22248,6 +26473,206 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WatchSourceOut"];
+                };
+            };
+        };
+    };
+    tagRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "subjectId": "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10",
+                 *       "subjectType": "obligation",
+                 *       "tagKey": "custody"
+                 *     }
+                 */
+                "application/json": components["schemas"]["TaggingBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "subjectId": "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10",
+                     *       "subjectType": "obligation",
+                     *       "tags": [
+                     *         {
+                     *           "key": "custody",
+                     *           "kind": null,
+                     *           "label": "Custody"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["TaggingRecordTags"];
+                };
+            };
+        };
+    };
+    tagRecords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "subjectIds": [
+                 *         "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10",
+                 *         "9b2e4f61-0c3a-4e8d-b7a5-1d6c8e2f4a37"
+                 *       ],
+                 *       "subjectType": "obligation",
+                 *       "tagKey": "custody"
+                 *     }
+                 */
+                "application/json": components["schemas"]["TaggingBatchBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "alreadyTagged": {
+                     *         "count": 1,
+                     *         "ids": [
+                     *           "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"
+                     *         ]
+                     *       },
+                     *       "gained": {
+                     *         "count": 1,
+                     *         "ids": [
+                     *           "9b2e4f61-0c3a-4e8d-b7a5-1d6c8e2f4a37"
+                     *         ]
+                     *       },
+                     *       "skipped": {
+                     *         "count": 0
+                     *       },
+                     *       "subjectType": "obligation",
+                     *       "tag": {
+                     *         "key": "custody",
+                     *         "kind": null,
+                     *         "label": "Custody"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["TaggingBatchOutcome"];
+                };
+            };
+        };
+    };
+    previewTagging: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "subjectIds": [
+                 *         "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10",
+                 *         "9b2e4f61-0c3a-4e8d-b7a5-1d6c8e2f4a37"
+                 *       ],
+                 *       "subjectType": "obligation",
+                 *       "tagKey": "custody"
+                 *     }
+                 */
+                "application/json": components["schemas"]["TaggingBatchBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "alreadyTagged": {
+                     *         "count": 1,
+                     *         "ids": [
+                     *           "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"
+                     *         ]
+                     *       },
+                     *       "gained": {
+                     *         "count": 1,
+                     *         "ids": [
+                     *           "9b2e4f61-0c3a-4e8d-b7a5-1d6c8e2f4a37"
+                     *         ]
+                     *       },
+                     *       "skipped": {
+                     *         "count": 0
+                     *       },
+                     *       "subjectType": "obligation",
+                     *       "tag": {
+                     *         "key": "custody",
+                     *         "kind": null,
+                     *         "label": "Custody"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["TaggingBatchOutcome"];
+                };
+            };
+        };
+    };
+    untagRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "subjectId": "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10",
+                 *       "subjectType": "obligation",
+                 *       "tagKey": "custody"
+                 *     }
+                 */
+                "application/json": components["schemas"]["TaggingBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "subjectId": "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10",
+                     *       "subjectType": "obligation",
+                     *       "tags": []
+                     *     }
+                     */
+                    "application/json": components["schemas"]["TaggingRecordTags"];
                 };
             };
         };
@@ -23214,6 +27639,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SecurityLogPage"];
+                };
+            };
+        };
+    };
+    updateTenantWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantWorkflowPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantOut"];
+                };
+            };
+        };
+    };
+    removeUnit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The Statement of Applicability unit, as a UUID. Another bank's unit answers 404, never 403. */
+                unit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateUnit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The Statement of Applicability unit, as a UUID. Another bank's unit answers 404, never 403. */
+                unit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterUnitPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterUnit"];
                 };
             };
         };

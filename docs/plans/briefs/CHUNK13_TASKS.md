@@ -52,6 +52,8 @@ smallest edit that keeps the format:
    questions 1 and 4 are marked as product confirmations whose invariant side is
    already settled; 2 and 5 stay open.
 
+> **PRD 0.7 (D-89, D-91, ADR 0059, 2026-09-25).** INV-07 and the private proposal half of PRO-03 move to chunk 11 with group OWN, taking `c13-private-contract` and `c13-private-child-rls` with them; private sources (WAT-06, `c13-private-sources` and the watch packages) stay here.
+
 ## Scope, rules and defaults
 
 Chunk 13 is integrations and enterprise access: signed webhooks and their delivery

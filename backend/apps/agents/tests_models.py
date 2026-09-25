@@ -620,7 +620,7 @@ class AgentVersionTests(TransactionTestCase):
             self.agent = Agent.objects.create(key="watch-sweeper", kind=AgentKind.WATCH.value, current_version=1)
         with library_write("test"), tenancy.library_door("seed", using="app"):
             self.version = AgentVersion.objects.using("app").create(
-                agent=self.agent, version_no=1, model="test-model", prompt_path="prompt.md", tools=[{"operation": "GET /sources"}]
+                agent=self.agent, version_number=1, model="test-model", prompt_path="prompt.md", tools=[{"operation": "GET /sources"}]
             )
 
     def _sql(self, statement: str) -> None:
@@ -655,7 +655,7 @@ class AgentVersionTests(TransactionTestCase):
     def test_one_row_per_version_number(self) -> None:
         with self.assertRaises(IntegrityError):
             with library_write("test"), tenancy.library_door("seed", using="app"):
-                AgentVersion.objects.using("app").create(agent=self.agent, version_no=1, model="m", prompt_path="p.md")
+                AgentVersion.objects.using("app").create(agent=self.agent, version_number=1, model="m", prompt_path="p.md")
 
 
 class WorkerRunTests(TestCase):
@@ -665,8 +665,8 @@ class WorkerRunTests(TestCase):
     def setUp(self) -> None:
         with library_write("test"):
             self.agent = Agent.objects.create(key="watch-sweeper", kind=AgentKind.WATCH.value, current_version=1)
-            self.v1 = AgentVersion.objects.create(agent=self.agent, version_no=1, model="m", prompt_path="prompt.md")
-            self.v2 = AgentVersion.objects.create(agent=self.agent, version_no=2, model="m", prompt_path="prompt.md")
+            self.v1 = AgentVersion.objects.create(agent=self.agent, version_number=1, model="m", prompt_path="prompt.md")
+            self.v2 = AgentVersion.objects.create(agent=self.agent, version_number=2, model="m", prompt_path="prompt.md")
         self.definition = tenant_definition()
         self.tenant = factories.tenant(slug="worker-run")
         tenancy.activate(self.tenant.id)

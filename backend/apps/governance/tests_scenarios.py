@@ -794,7 +794,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         sent = agents_testing.decision(reviewer_key)
         decision = self._post(
             f"/proposals/{approved.json()['id']}/approve",
-            {"note": "Confirmed.", "payloadOverrides": {"summaries": {"en": corrected}}, **sent},
+            {"note": "Confirmed.", "payloadOverrides": {"summaries": {"en": corrected}}, "fieldSources": {"summaries.en": "https://www.fi.se/"}, **sent},
             {"HTTP_X_API_KEY": reviewer_key.plain_key},
         )
         self.assertEqual(decision.status_code, 200, decision.content)

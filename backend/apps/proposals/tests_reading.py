@@ -225,6 +225,8 @@ class QueueReads(ScenarioTestCase):
         body: dict[str, Any] = {"note": "Checked against the board decision."}
         if overrides is not None:
             body["payloadOverrides"] = overrides
+            # Every corrected value names the source it was read in (H35).
+            body["fieldSources"] = {f"summaries.{language}": "https://www.fi.se/" for language in overrides.get("summaries", {})}
         if not isinstance(caller, dict):
             body.update(agents_testing.decision(caller))
             caller = {"HTTP_X_API_KEY": caller.plain_key}

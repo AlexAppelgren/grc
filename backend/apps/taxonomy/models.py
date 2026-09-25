@@ -33,6 +33,10 @@ import enum
 from django.db import models
 
 from apps.shared.audit import AppendOnlyModel
+# Defined in kinds.py so the pure case state machine (apps/cases/state.py) reads them
+# without importing a model; every caller that imports them from here keeps working.
+from apps.shared.kinds import CaseStatusCategory as CaseStatusCategory
+from apps.shared.kinds import CloseReason as CloseReason
 from apps.shared.tenancy import LibraryModel, TenantModel
 from apps.shared.vocabulary import (
     ORIGIN_CHOICES,
@@ -106,24 +110,24 @@ class ComplianceCategory(enum.StrEnum):
     NOT_ASSESSED = "not_assessed"
 
 
-class CaseStatusCategory(enum.StrEnum):
-    """The seven fixed categories the case state machine reads (D-13, VOC-04)."""
+class GapCategory(enum.StrEnum):
+    """The four fixed states of a gap (REG-03, VOC-04): a tenant's gap statuses sit inside
+    one, and the pill tone and the reports read it. `risk_accepted` is the frontend's
+    spelling (tone-by-kind.ts), so one state has one name."""
 
-    NEW = "new"
-    ASSIGNED = "assigned"
-    ASSESSING = "assessing"
-    IMPLEMENTING = "implementing"
-    SIGNOFF = "signoff"
+    OPEN = "open"
+    REMEDIATING = "remediating"
+    RISK_ACCEPTED = "risk_accepted"
     CLOSED = "closed"
-    DISMISSED = "dismissed"
 
 
-class CloseReason(enum.StrEnum):
-    """The fixed close categories (CAS-02): a tenant's closure reasons sit inside one."""
+class RiskLevel(enum.StrEnum):
+    """The fixed level a tenant's risk rating maps to (VOC-05): the tone reads it, never the
+    rating's editable ordinal or its label."""
 
-    SIGNED_OFF = "signed_off"
-    NOT_APPLICABLE = "not_applicable"
-    NO_ACTION = "no_action"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
 
 
 class ApprovalStatus(enum.StrEnum):
@@ -515,6 +519,11 @@ class ComplianceStatusLabel(VocabularyLabel):
 
 
 class RiskRating(TenantListVocabulary):
+    """A tenant's risk scale (VOC-05): `kind` is the fixed level the tone reads, `ordinal`
+    the bank's own order, which an admin may edit."""
+
+    KIND_CHOICES = _choices(RiskLevel)
+
     ordinal = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -591,6 +600,89 @@ class ClosureReasonLabel(VocabularyLabel):
         db_table = "close_reason_label"
         ordering = ["language"]
         constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="close_reason_label_unique")]
+
+
+class GapStatus(TenantListVocabulary):
+    """A tenant's gap statuses (REG-03, VOC-04), each inside a fixed `GapCategory`."""
+
+    KIND_CHOICES = _choices(GapCategory)
+
+    class Meta:
+        db_table = "gap_status"
+        ordering = ["sort_order", "key"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "key"], name="gap_status_key_unique")]
+
+
+class GapStatusLabel(VocabularyLabel):
+    tenant = models.ForeignKey("shared.Tenant", on_delete=models.PROTECT, related_name="+")
+    vocabulary = models.ForeignKey(GapStatus, on_delete=models.CASCADE, related_name="labels")
+
+    class Meta:
+        db_table = "gap_status_label"
+        ordering = ["language"]
+        constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="gap_status_label_unique")]
+
+
+class GapSource(TenantListVocabulary):
+    """Where a gap was found (REG-03). No kind: its pill takes the `source` slot's tone."""
+
+    class Meta:
+        db_table = "gap_source"
+        ordering = ["sort_order", "key"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "key"], name="gap_source_key_unique")]
+
+
+class GapSourceLabel(VocabularyLabel):
+    tenant = models.ForeignKey("shared.Tenant", on_delete=models.PROTECT, related_name="+")
+    vocabulary = models.ForeignKey(GapSource, on_delete=models.CASCADE, related_name="labels")
+
+    class Meta:
+        db_table = "gap_source_label"
+        ordering = ["language"]
+        constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="gap_source_label_unique")]
+
+
+class RiskAcceptanceReason(TenantListVocabulary):
+    """Why a gap's risk was accepted (VOC-06)."""
+
+    class Meta:
+        db_table = "risk_acceptance_reason"
+        ordering = ["sort_order", "key"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "key"], name="risk_acceptance_reason_key_unique")]
+
+
+class RiskAcceptanceReasonLabel(VocabularyLabel):
+    tenant = models.ForeignKey("shared.Tenant", on_delete=models.PROTECT, related_name="+")
+    vocabulary = models.ForeignKey(RiskAcceptanceReason, on_delete=models.CASCADE, related_name="labels")
+
+    class Meta:
+        db_table = "risk_acceptance_reason_label"
+        ordering = ["language"]
+        constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="risk_acceptance_reason_label_unique")]
+
+
+class Team(TenantListVocabulary):
+    """A team that can own work (TEN-03, INPUT_DELTAS §1): a tenant list, so create, rename
+    and retire are the generic list routes under `vocab.manage`. `UNIQUE (tenant_id, id)` is
+    added in SQL (taxonomy 0009) so membership and departments can point at a team with a
+    composite key; its org unit arrives with the teams model."""
+
+    email = models.EmailField(blank=True)
+
+    class Meta:
+        db_table = "team"
+        ordering = ["sort_order", "key"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "key"], name="team_key_unique")]
+
+
+class TeamLabel(VocabularyLabel):
+    tenant = models.ForeignKey("shared.Tenant", on_delete=models.PROTECT, related_name="+")
+    vocabulary = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="labels")
+
+    class Meta:
+        db_table = "team_label"
+        ordering = ["language"]
+        constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="team_label_unique")]
 
 
 class VocabularySuggestion(TenantModel):

@@ -268,3 +268,8 @@ export function changeSummary(proposal: Pick<ProposalRef, 'title'>, t: Translate
 export function presentPendingProposal(t: Translate): PresentedPill[] {
   return [{ key: 'proposal:open', label: t('admin.vocabulary.waitingForReview'), tone: proposalStatusTone.open, order: 0 }];
 }
+
+/** A value suggested from a picker (VOC-03), marked on the field while it waits for an administrator. */
+export function presentSuggestedValue(label: string, t: Translate): PresentedPill[] {
+  return [{ key: 'suggestion:pending', label: t('picker.suggested', { label }), tone: proposalStatusTone.open, order: 0 }];
+}

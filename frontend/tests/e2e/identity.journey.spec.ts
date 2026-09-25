@@ -188,7 +188,7 @@ test.describe('identity journeys', () => {
     await expect(page.locator('[data-who-panel]')).toContainText('Example Bank AB');
     await page.goto('/me/sessions');
     await expect(page.locator('[data-session-id][data-current]')).toHaveCount(1);
-    await expect(page.getByText('This device')).toBeVisible();
+    await expect(page.getByText('This device', { exact: true })).toBeVisible();
   });
 
   test("ID-S10: A user adds and renames passkeys and can never remove the last one", async ({ page, apiGuard }) => {

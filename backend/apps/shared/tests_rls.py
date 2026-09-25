@@ -158,7 +158,8 @@ LIBRARY_OWNED_TABLES = frozenset({"instrument", "obligation"})
 # about a week, which cases that telling named, and the calendar addresses its people
 # subscribed with. None of the three ever holds a library row - a week that holds nothing
 # for one bank holds three reforms for another, because the footprint behind it is its own
-# (HOM-02, HOM-04).
+# (HOM-02, HOM-04). `export_job` is a bank's export and the file it produced (REP-02,
+# CAS-07); a job never holds a library row.
 TENANT_ONLY_TABLES = [
     "membership",
     "tenant_role",
@@ -169,10 +170,26 @@ TENANT_ONLY_TABLES = [
     "briefing",
     "briefing_item",
     "calendar_feed",
-    # Chunk 11 (agents 0005): the agents a bank added for itself and its one monthly cap on
-    # them. bleqq's own agents are library rows with no tenant column (ADR 0053).
-    "tenant_agent",
-    "tenant_agent_budget",
+    # c8-org-models (tenants 0002, TEN-02, REG-05, ID-07, ID-08): the bank's organisation and
+    # its security policy. Each reference to another tenant row is also a composite key
+    # (apps/tenants/tests_models.py proves the database refuses a cross-tenant one).
+    "org_unit",
+    "licence",
+    "licence_service_term",
+    "tenant_product",
+    "tenant_product_term",
+    "internal_item",
+    "security_policy",
+    # Chunk 8's team list (TEN-03, c8-vocab-lists-rules): a bank's teams and their labels.
+    "team",
+    "team_label",
+    # Chunk 9's case workflow (c9-case-models): one bank's impact assessment, actions,
+    # transition ledger and evidence on its own case. None ever holds a library row, and
+    # each child's case and people are composite (tenant_id, …) keys as well (D-18).
+    "impact_assessment",
+    "action",
+    "case_transition",
+    "evidence",
     # Chunk 10's (c10-collab-models): a comment, the people it mentions, the text an edit
     # replaced, a person's notifications and the proof a mail went out. All one bank's own;
     # comments and revisions hold tenant text (COL-01, COL-02).
@@ -181,7 +198,17 @@ TENANT_ONLY_TABLES = [
     "comment_revision",
     "notification",
     "email_message",
+    # Chunk 11 (agents 0005): the agents a bank added for itself and its one monthly cap on
+    # them. bleqq's own agents are library rows with no tenant column (ADR 0053).
+    "tenant_agent",
+    "tenant_agent_budget",
+    "export_job",
 ]
+
+# The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the
+# queue is the platform's and a bank's link to its own filing is `proposal_tenant` above.
+# A batch's rows (proposals 0008) are library records' previews and never a bank's.
+PROPOSAL_LIBRARY_TABLES = frozenset({"proposal", "proposal_batch_row"})
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also
 # demands a key of the same zone; agents 0002 renamed its read policy to the shared name.
@@ -252,6 +279,14 @@ class RowLevelSecurityGuard(TestCase):
             cursor.execute("SELECT relname FROM pg_class WHERE relname = ANY(%s)", [sorted(WATCH_LIBRARY_TABLES)])
             found = {row[0] for row in cursor.fetchall()}
         self.assertEqual(found, set(WATCH_LIBRARY_TABLES), "the watch migration did not create every table it guards")
+
+    def test_the_proposal_tables_carry_no_tenant_column(self) -> None:
+        tables = {model._meta.db_table for model in tenant_scoped_models()}
+        self.assertEqual(PROPOSAL_LIBRARY_TABLES & tables, set(), "a proposal table grew a tenant column (PRO-01)")
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute("SELECT relname FROM pg_class WHERE relname = ANY(%s)", [sorted(PROPOSAL_LIBRARY_TABLES)])
+            found = {row[0] for row in cursor.fetchall()}
+        self.assertEqual(found, set(PROPOSAL_LIBRARY_TABLES), "a proposal migration did not create every table it guards")
 
     def test_only_the_named_tables_carry_the_identity_lookup_clause(self) -> None:
         with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
@@ -692,3 +727,52 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
                 tenancy.activate(tenant_id, using="app")
             cursor.execute(f'SELECT id FROM "{table}" WHERE id = ANY(%s)', [probes])
             return {row[0] for row in cursor.fetchall()}
+
+
+class TeamRowsAreTenantOnly(TransactionTestCase):
+    """The team list as cw_app (TEN-03, c8-vocab-lists-rules): each bank reads only its own
+    teams and their labels, a session with no tenant reads none, and a bank cannot file a
+    team under another. Every tenant gets the system team from the tenant hook, so both
+    banks already hold one."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def test_a_bank_reads_and_writes_only_its_own_teams(self) -> None:
+        from apps.taxonomy.models import Team, TeamLabel
+
+        tenant_a = factories.tenant(slug="team-a")
+        tenant_b = factories.tenant(slug="team-b")
+        with transaction.atomic(using="app"):
+            tenancy.activate(tenant_a.id, using="app")
+            self.assertEqual(set(Team.objects.using("app").values_list("tenant_id", flat=True)), {tenant_a.id})
+            self.assertEqual(set(TeamLabel.objects.using("app").values_list("tenant_id", flat=True)), {tenant_a.id})
+        with transaction.atomic(using="app"):
+            self.assertFalse(Team.objects.using("app").exists(), "an unset tenant must match no team (fail closed)")
+            self.assertFalse(TeamLabel.objects.using("app").exists())
+        with self.assertRaises(ProgrammingError):
+            with transaction.atomic(using="app"):
+                tenancy.activate(tenant_a.id, using="app")
+                Team.objects.using("app").create(tenant_id=tenant_b.id, key="legal")
+
+
+class RecurringDutyIsLibraryOnly(TestCase):
+    """REG-07 (c8-recurring-duty-library): a recurring duty is a public fact about an
+    obligation, shared by every bank. It carries no tenant column, so no bank's judgement
+    can hide in it (that lives on the bank's own occurrences), and no policy: what holds it
+    is the library fence and the door trigger (tests_library_db_guard.py). Adding a tenant
+    column or a policy here is a review question."""
+
+    def test_the_table_has_no_tenant_column_and_no_policy(self) -> None:
+        from apps.library.models import RecurringDuty
+
+        self.assertNotIn(RecurringDuty, tenant_scoped_models())
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute("SELECT to_regclass('recurring_duty') IS NOT NULL")
+            self.assertEqual(cursor.fetchone(), (True,), "the migration did not create the table")
+            cursor.execute(
+                "SELECT count(*) FROM information_schema.columns WHERE table_name = 'recurring_duty' AND column_name LIKE %s",
+                ["%tenant%"],
+            )
+            self.assertEqual(cursor.fetchone(), (0,))
+            cursor.execute("SELECT count(*) FROM pg_policies WHERE tablename = 'recurring_duty'")
+            self.assertEqual(cursor.fetchone(), (0,))

@@ -21,7 +21,12 @@ Exports, imports and the tenant export are asynchronous jobs with a status
 endpoint. Every export is behind step-up and its download streams through a
 permission-checked, audited endpoint. Every report respects the footprint.
 
-Deliberately simplified: the whole app is R3 (chunk 12).
+Deliberately simplified: the whole app is R3 (chunk 12), except the export mechanism, which
+moved into R2 so the case file can export (CAS-07; x-exports-contract, 2026-09-25): the
+`export_job` table, `POST /exports` behind `exports.create` and a step-up, the status and
+list reads, the streamed and audited download, the runner and the exporter registry
+(`exporters/__init__.py`), where each export kind registers its builder. No exporter of this
+app is built yet, so REP-02 stays pending; REP-S3, which is exactly that mechanism, is green.
 
 ## 2. Requirements
 

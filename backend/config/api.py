@@ -28,6 +28,8 @@ from apps.home.api import router as home_router
 from apps.identity.api import router as identity_router
 from apps.library.api import router as library_router
 from apps.proposals.api import router as proposals_router
+from apps.register.api import router as register_router
+from apps.reports.api import router as reports_router
 from apps.search.api import router as search_router
 from apps.shared.api import router as shared_router
 from apps.shared.errors import STATUS_BY_CODE, ProblemError, problem_response
@@ -65,6 +67,8 @@ api.add_router("", agents_router)
 api.add_router("", watch_router)
 api.add_router("", cases_router)
 api.add_router("", home_router)
+api.add_router("", register_router)
+api.add_router("", reports_router)
 
 
 @api.exception_handler(ProblemError)
