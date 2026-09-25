@@ -2238,7 +2238,8 @@ def _seed_record(case: ChangeCase, action: str, after: dict[str, Any], before: d
 COMMENT_EDITED_AFTER = datetime.timedelta(minutes=10)
 COMMENT_DELETED_AFTER = datetime.timedelta(minutes=5)
 COMMENT_READ_AFTER = datetime.timedelta(hours=1)
-_COMMENTED_CASE = "chg-e2e-case-evidence"
+# A home case, not a case journey's, whose trail c9-e2e-seed counts row by row.
+_COMMENTED_CASE = EXPECTED_HOME.later_change
 _COMMENTED_OBLIGATION = "obl-dora-ict-register"
 
 
@@ -2264,13 +2265,13 @@ class SeedComment:
 EXPECTED_COMMENTS: tuple[SeedComment, ...] = (
     SeedComment(
         uuid.UUID("00000000-0000-4000-a000-00000000c001"), TENANT_A_SLUG, "change_case", _COMMENTED_CASE, OWNER_A,
-        "The KYC data mapping is done. The gaps list is attached as evidence, and the onboarding team is briefed next week.",
+        "The reporting fields are mapped. The open questions are listed in the assessment, and the operations team is briefed next week.",
         datetime.timedelta(days=3, hours=2),
-        edited_from="The KYC mapping is done; the gaps list is in the evidence folder.",
+        edited_from="The fields are mapped; the open questions are in the assessment.",
     ),
     SeedComment(
         uuid.UUID("00000000-0000-4000-a000-00000000c002"), TENANT_A_SLUG, "change_case", _COMMENTED_CASE, OFFICER_A,
-        "Oskar, can you confirm whether the new beneficial ownership threshold changes the onboarding checklist? Axel, for your awareness.",
+        "Oskar, can you confirm whether the new reporting fields change what we send for securities lending? Axel, for your awareness.",
         datetime.timedelta(days=2, hours=1),
         mentions=("reader@example-bank.test", "library-only@example-bank.test"),
     ),
