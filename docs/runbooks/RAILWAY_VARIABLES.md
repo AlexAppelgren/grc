@@ -118,6 +118,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 |---|---|---|---|---|---|
 | `NEXT_PUBLIC_API_URL` | web | `http://localhost:8000` | `http://localhost:8000` | the api's public URL | Baked at build time by Next; a change needs a rebuild |
 | `NEXT_PUBLIC_SUPPORT_CONTACT` | web | empty | empty | the address that answers access requests | An email address. The public page's "Write to us" opens a mail to it; empty hides the link. Baked at build time |
+| `NEXT_PUBLIC_RESEARCH_POLL_MS` | web | `5000` | `5000` | `5000` | How often, in milliseconds, `/admin/agents` re-reads a research request still queued or running from its status endpoint (AGT-05). Lower it and a finished request shows sooner at the cost of more reads. Baked at build time |
 
 ## Rules
 

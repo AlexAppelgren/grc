@@ -1,3 +1,5 @@
+import enAdminAgents from '@/messages/admin-agents/en.json';
+import svAdminAgents from '@/messages/admin-agents/sv.json';
 import enAuth from '@/messages/auth/en.json';
 import svAuth from '@/messages/auth/sv.json';
 import enBriefing from '@/messages/briefing/en.json';
@@ -50,6 +52,7 @@ import svWatch from '@/messages/watch/sv.json';
 // merge below never silently drops copy. `sv` is typed against `en`, so a key
 // missing in one language fails `tsc` as well as the check.
 const en = {
+  ...enAdminAgents,
   ...enAuth,
   ...enBriefing,
   ...enCalendarFeeds,
@@ -75,6 +78,7 @@ const en = {
 };
 
 const sv = {
+  ...svAdminAgents,
   ...svAuth,
   ...svBriefing,
   ...svCalendarFeeds,
