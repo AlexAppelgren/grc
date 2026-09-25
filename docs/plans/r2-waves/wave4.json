@@ -264,8 +264,7 @@
    "c8-ten-support-grants",
    "c11-session-policy",
    "acc-principal-guard",
-   "c9-case-contract",
-   "c11-signin-policy-enrol"
+   "c9-case-contract"
   ],
   "wave": 4,
   "size": "M",
@@ -950,58 +949,6 @@
   "brief": "Read R2_CROSS_CUTTING.md, D-61, ADR 0053. A guard proves no platform path reaches scope.py. Tenant runs get keys only (rule n)."
  },
  {
-  "package": "c11-signin-policy-use",
-  "title": "A non-compliant passkey stops opening sessions after the notice date",
-  "goal": "Sign-in and step-up in a device_bound tenant refuse non-compliant passkeys past the date, and a policy that would lock out the acting admin is refused.",
-  "requirement_ids": [
-   "ID-07"
-  ],
-  "scenario_ids": [
-   "ID-S29"
-  ],
-  "files_owned": [
-   "backend/apps/identity/passkey_logic.py",
-   "backend/apps/identity/credential_policy.py",
-   "backend/apps/identity/tests_credential_policy.py",
-   "backend/apps/tenants/security_policy.py"
-  ],
-  "shared_files": [
-   "backend/apps/identity/tests_scenarios.py",
-   "backend/apps/identity/app.md"
-  ],
-  "depends_on": [
-   "c11-signin-policy-enrol",
-   "c11-security-policy-routes"
-  ],
-  "wave": 4,
-  "size": "M",
-  "acceptance": "403 credential_policy with a security-log row at sign-in and step-up past device_bound_from (step-up leaves the action undone); before the date succeeds; sessions opened earlier end at the absolute limit; passkeys kept; the 409 would_lock_out_actor uses this function; ID-S29 un-skipped with its gherkin fence closed; ID-07 in_progress.",
-  "brief": "Read R2_CROSS_CUTTING.md, ADR 0048. No password or fallback appears."
- },
- {
-  "package": "c11-device-allowlist",
-  "title": "The committed authenticator allow-list",
-  "goal": "Banks can pick device-bound models from a list built from a licensable source.",
-  "requirement_ids": [
-   "ID-07"
-  ],
-  "scenario_ids": [],
-  "files_owned": [
-   "backend/apps/identity/data/authenticators.json",
-   "backend/apps/identity/tests_authenticator_list.py"
-  ],
-  "shared_files": [
-   "docs/plans/Verification_Log.md"
-  ],
-  "depends_on": [
-   "c11-signin-policy-enrol"
-  ],
-  "wave": 4,
-  "size": "S",
-  "acceptance": "Every entry has model id, AAGUID, our own display name and at least one root; AAGUIDs unique; each source fetched and logged; self-review of the data's licence line.",
-  "brief": "Waits for Alex's answer on the list's source. Default if confirmed: vendors' own published attestation roots, names we write, no FIDO MDS data (Verification_Log row 47). Until then the list stays absent and a device-bound policy refuses with empty_authenticator_list; nothing else waits for this package."
- },
- {
   "package": "c11-fe-admin-agents",
   "title": "The bank's agents page: its own agents, bleqq's watch, spend and research",
   "goal": "/admin/agents lets a bank run and control its own agents, read what bleqq watches, set its cap and ask for research.",
@@ -1046,9 +993,8 @@
  {
   "package": "c11-fe-admin-security",
   "title": "The bank's security page: passkeys and sessions",
-  "goal": "/admin/security sets credential and session policy behind a step-up, with a slot for tenant reach.",
+  "goal": "/admin/security sets session limits behind a step-up, with a slot for tenant reach.",
   "requirement_ids": [
-   "ID-07",
    "ID-08",
    "ADM-01"
   ],
@@ -1076,8 +1022,8 @@
   ],
   "wave": 4,
   "size": "M",
-  "acceptance": "Allow-list picker (empty-list state included), notice date default, plain-words effect, 409 lock-out state, step-up on save; limits with platform maximum and above_platform_maximum from its code; TenantReachPanel mounted as a stub; ADM-S1 extended; frontend gates pass.",
-  "brief": "Read R2_CROSS_CUTTING.md and admin-security.html."
+  "acceptance": "Limits with platform maximum and above_platform_maximum from its code, step-up on save; TenantReachPanel mounted as a stub; no passkey-policy section, allow-list picker or lock-out state (D-100: ID-07 is out of R2); ADM-S1 extended; frontend gates pass.",
+  "brief": "Read R2_CROSS_CUTTING.md and admin-security.html. Omit the card's passkey-policy section (D-100) and leave no dead control for it."
  },
  {
   "package": "acc-entries-and-log",

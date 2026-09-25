@@ -623,8 +623,8 @@
   ],
   "wave": 5,
   "size": "M",
-  "acceptance": "run_now, check_source, check_url (https only, no private, loopback or redirect-to-private address, no STANDARDS_PUBLISHER_HOSTS, fetched body screened and stored as data) and research_topic (library or taxonomy keys only until Alex answers the tenant-text question) each open a run with trigger request and are jobs; platform agent 403; no own agent 409 no_tenant_agent; RESEARCH_REQUESTS_PER_MONTH 429; at cap 422 budget_cap_reached; request text never logged and never reaches a model; B 404; console re-tag (tenant NULL) opens a platform run and files its batch through batch.create_batch(); a tenant session 403; AGT-S7 reworded to agents.manage and un-skipped, journey un-fixmed; AGT-05 cell.",
-  "brief": "Read R2_CROSS_CUTTING.md, D-07, D-32 and CLAUDE.md section 11."
+  "acceptance": "run_now, check_source, check_url (https only, no private, loopback or redirect-to-private address, no STANDARDS_PUBLISHER_HOSTS, fetched body screened and stored as data) and research_topic (library or taxonomy keys plus a topic text length-capped, screened as untrusted, sent only through the logged wrapper to an approved EU endpoint, stopped by the bank's AI switch and budget cap, never logged and never in a platform run (D-98)) each open a run with trigger request and are jobs; platform agent 403; no own agent 409 no_tenant_agent; RESEARCH_REQUESTS_PER_MONTH 429; at cap 422 budget_cap_reached; request text never logged and reaches a model only as D-98 allows; B 404; console re-tag (tenant NULL) opens a platform run and files its batch through batch.create_batch(); a tenant session 403; AGT-S7 reworded to agents.manage and un-skipped, journey un-fixmed; AGT-05 cell.",
+  "brief": "Read R2_CROSS_CUTTING.md, D-07, D-32 and CLAUDE.md section 11. D-98 and its ADR (written by d89-researcher-definition) govern the topic text."
  },
  {
   "package": "c11-e2e-console",

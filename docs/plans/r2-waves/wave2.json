@@ -364,7 +364,7 @@
   "wave": 2,
   "size": "M",
   "acceptance": "MockScanner flags EICAR and marker names deterministically; ClamdScanner maps timeout, refused connection or unparsable reply to error; get_scanner refuses unknown providers and mock on a deployed environment; a log-capture test proves no filename, path or byte is logged; Verification_Log row for INSTREAM fetched, not recalled.",
-  "brief": "Read R2_CROSS_CUTTING.md; ScanState already lives in this module. Add ScanResult (state, signature, scanned_at), MockScanner, ClamdScanner (INSTREAM over SCANNER_HOST, SCANNER_PORT, SCANNER_TIMEOUT_SECONDS) and get_scanner() reading SCANNER_PROVIDER. Fetch the clamd INSTREAM protocol docs and log them. Settings banner, env and runbook lines, a HARDENING row asking the EU data-location package to add the boot refusal. Security review of your own diff before finishing."
+  "brief": "Read R2_CROSS_CUTTING.md; ScanState already lives in this module. Add ScanResult (state, signature, scanned_at), MockScanner, ClamdScanner (INSTREAM over SCANNER_HOST, SCANNER_PORT, SCANNER_TIMEOUT_SECONDS) and get_scanner() reading SCANNER_PROVIDER. Fetch the clamd INSTREAM protocol docs and log them. Settings banner, env and runbook lines, a HARDENING row asking the EU data-location package to add the boot refusal. Security review of your own diff before finishing. Alex confirmed multipart uploads through the API and will provision clamd himself (D-101): write the exact Railway EU West steps (service, image, port, SCANNER_PROVIDER=clamd on api and worker, SCANNER_HOST, SCANNER_PORT) as one block in docs/TODO_FOR_alex.md."
  },
  {
   "package": "c9-e2e-seed",

@@ -9,7 +9,6 @@
    "AGT-05",
    "AGT-06",
    "PRO-04",
-   "ID-07",
    "ID-08"
   ],
   "scenario_ids": [],
@@ -24,13 +23,13 @@
    "c11-tenant-controls-cap",
    "c11-research-requests",
    "c11-e2e-console",
-   "c11-fe-signin-compliance",
-   "c10-fe-prefs-and-ooo"
+   "c10-fe-prefs-and-ooo",
+   "c11-fe-admin-security"
   ],
   "wave": 7,
   "size": "M",
-  "acceptance": "The fence at database, route and scheduler; no platform run reads a tenant row; no tenant text in logs, model inputs or platform surfaces; SSRF on check_url; runner events validated; the cap's two points; attestation verification not trusting the library; the BE flag; the lockout guard; session limits; batch four eyes and apply; proof the diff touches none of tests_library_fence's allowlists or the boot guard beyond what packages declared; the authenticator list reviewed if merged; fixes test-first; lower findings as HARDENING rows.",
-  "brief": "Read R2_CROSS_CUTTING.md. Run the guard suites. c11-device-allowlist carries its own review, so this one does not wait for Alex's answer on it."
+  "acceptance": "The fence at database, route and scheduler; no platform run reads a tenant row; no tenant text in logs, model inputs or platform surfaces; SSRF on check_url; runner events validated; the cap's two points; the BE flag; session limits; the D-98 path for a bank's capped research text (screened, capped, logged wrapper, approved EU endpoint only, AI switch and budget cap, never logged, never a platform run); batch four eyes and apply; proof the diff touches none of tests_library_fence's allowlists or the boot guard beyond what packages declared; fixes test-first; lower findings as HARDENING rows.",
+  "brief": "Read R2_CROSS_CUTTING.md. Run the guard suites."
  },
  {
   "package": "security-review-c11-access-d89",
@@ -106,7 +105,7 @@
    "c11-tenant-controls-cap",
    "c11-research-requests",
    "d89-private-records",
-   "c11-fe-signin-compliance"
+   "c11-fe-admin-security"
   ],
   "wave": 7,
   "size": "M",
@@ -146,8 +145,8 @@
    "security-review-c10",
    "acc-fe-personal-grants",
    "d89-fe-scope-items",
-   "c11-fe-signin-compliance",
-   "r2-j8-isolation"
+   "r2-j8-isolation",
+   "c11-fe-admin-security"
   ],
   "wave": 7,
   "size": "M",
@@ -185,7 +184,7 @@
   "wave": 7,
   "size": "M",
   "acceptance": "Approval creates an InternalItem of the control kind linked to the private obligation through record() in the tenant zone, under the same private approval with four eyes and step-up; the agent's runner-event channel accepts it beside the obligation; the migration takes the next free proposals number; security review of the diff before finishing.",
-  "brief": "Blocked: starts only when Alex has answered what a control inventory is. If his answer differs from the default (a REG-05 internal item of the control kind), follow the answer or stop and report. Read R2_CROSS_CUTTING.md. If still unanswered at R2 close, OWN-05 is named held and R2 closes without it."
+  "brief": "Alex answered (D-99): a control is a REG-05 internal item of the control kind, linked to the private obligation it serves, as the default says. Build it. Read R2_CROSS_CUTTING.md."
  },
  {
   "package": "d89-e2e-journey",

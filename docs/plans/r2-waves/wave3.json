@@ -958,9 +958,8 @@
  {
   "package": "c11-security-policy-routes",
   "title": "Read and set the bank's credential and session policy",
-  "goal": "security.manage holders set passkey policy and session limits with a passkey, never locking themselves out.",
+  "goal": "security.manage holders set session limits with a passkey, within the platform maximums.",
   "requirement_ids": [
-   "ID-07",
    "ID-08",
    "ADM-01"
   ],
@@ -985,38 +984,8 @@
   ],
   "wave": 3,
   "size": "M",
-  "acceptance": "getSecurityPolicy, putSecurityPolicy (security.manage + step-up), GET /reference/authenticators (committed file, empty when absent; tests use a fixture) documented; 422 above_platform_maximum and empty_authenticator_list; tightening takes the default notice date, a past date refused, loosening immediate; 409 would_lock_out_actor through a named stub for credential policy; one audit with before, after and assertion id; outbox event to other security.manage holders; B gets 404; ID-S17's 422 line added.",
-  "brief": "Read R2_CROSS_CUTTING.md, ADR 0048. security_policy.py makes no passkey decision; c11-signin-policy-use wires the lockout check."
- },
- {
-  "package": "c11-signin-policy-enrol",
-  "title": "Device-bound tenants accept only attested, verified authenticators at registration",
-  "goal": "Registration in a device_bound tenant verifies attestation against the claimed model's roots and records the result.",
-  "requirement_ids": [
-   "ID-07"
-  ],
-  "scenario_ids": [
-   "ID-S16"
-  ],
-  "files_owned": [
-   "backend/apps/identity/credential_policy.py",
-   "backend/apps/identity/models.py",
-   "backend/apps/identity/migrations/0008_credential_attestation.py",
-   "backend/apps/identity/passkey_logic.py",
-   "backend/apps/identity/tests_credential_policy.py"
-  ],
-  "shared_files": [
-   "backend/apps/identity/tests_scenarios.py"
-  ],
-  "depends_on": [
-   "c11-backup-eligible-flag",
-   "c8-org-models",
-   "acc-foundation"
-  ],
-  "wave": 3,
-  "size": "M",
-  "acceptance": "ID-S16 un-skipped; direct attestation requested; only packed or tpm accepted with a chain verified against the claimed model's roots only; empty roots, AAGUID mismatch, missing extension for a shared root, set BE, apple/android-key/android-safetynet each refused 422 credential_policy with a security-log row and nothing stored; attestation_format and attestation_verified stored; loader reads identity/data/authenticators.json (empty until c11-device-allowlist); tests use a fixture root; security review of your diff.",
-  "brief": "Read R2_CROSS_CUTTING.md, ADR 0048. passkey_is_compliant(passkey, policy) does not trust the library's result alone. Registration path only; sign-in is c11-signin-policy-use's. Keep: no passwords, no fallback."
+  "acceptance": "getSecurityPolicy, putSecurityPolicy (security.manage + step-up) for session limits documented; 422 above_platform_maximum; one audit with before, after and assertion id; outbox event to other security.manage holders; B gets 404; ID-S17's 422 line added. No passkey (credential) policy: no device_bound field, no /reference/authenticators, no lock-out check (D-100).",
+  "brief": "Read R2_CROSS_CUTTING.md. Alex moved ID-07 (device-bound passkey policy) out of R2 (D-100): leave ADR 0048's credential policy unbuilt and ID-S16 and ID-S29 skipped as pending: ID-07."
  },
  {
   "package": "c11-fe-console-agents",
@@ -1282,8 +1251,8 @@
   ],
   "wave": 3,
   "size": "M",
-  "acceptance": "Definition scope tenant, tenant_configurable true, writes_to tenant, a tool list with no library-writing, footprint-writing or key-scoped write operation; inputs are the item's jurisdiction and regime keys and id only; every field sourced; AGT-08 sector-scope and standards rules; fetched content screened as untrusted; evaluation rows and gate follow the sweeper's pattern; seed loader and README entries.",
-  "brief": "Built under D-89; the item's free-text fields reach it only after Alex answers the tenant-text question. Read R2_CROSS_CUTTING.md, AGT-07, AGT-08, D-32, ADR 0059."
+  "acceptance": "Definition scope tenant, tenant_configurable true, writes_to tenant, a tool list with no library-writing, footprint-writing or key-scoped write operation; inputs are the item's jurisdiction and regime keys and id, plus its name, official reference and source addresses length-capped, screened as untrusted, sent only through the logged wrapper to an approved EU endpoint, stopped by the bank's AI switch and budget cap, never logged and never in a platform run (D-98); every field sourced; AGT-08 sector-scope and standards rules; fetched content screened as untrusted; evaluation rows and gate follow the sweeper's pattern; seed loader and README entries.",
+  "brief": "Built under D-89. Alex answered the tenant-text question yes, guarded (D-98): write the ADR (next free number) that records it as the second named exception beside Ask, amending D-07 and D-32, with every guard listed in the acceptance. Read R2_CROSS_CUTTING.md, AGT-07, AGT-08, D-32, ADR 0059."
  },
  {
   "package": "x-console-jurisdictions-fe",

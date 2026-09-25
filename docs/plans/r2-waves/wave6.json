@@ -116,40 +116,6 @@
   "brief": "Read R2_CROSS_CUTTING.md and CLAUDE.md section 11."
  },
  {
-  "package": "c11-fe-signin-compliance",
-  "title": "Who a stricter passkey policy would refuse (ADR 0048 tranche 3)",
-  "goal": "Admins see members without a compliant passkey before saving a stricter policy, and members see their own.",
-  "requirement_ids": [
-   "ID-07"
-  ],
-  "scenario_ids": [],
-  "files_owned": [
-   "backend/apps/identity/schemas.py",
-   "backend/apps/identity/me_logic.py",
-   "backend/apps/identity/members_logic.py",
-   "backend/apps/identity/tests_credential_reads.py",
-   "frontend/src/components/admin/MembersScreen.tsx",
-   "frontend/src/features/identity/api.ts"
-  ],
-  "shared_files": [
-   "frontend/src/messages/tenant-admin/en.json",
-   "frontend/src/messages/tenant-admin/sv.json",
-   "backend/apps/identity/app.md",
-   "openapi.json",
-   "frontend/src/types/api.generated.ts"
-  ],
-  "depends_on": [
-   "c11-signin-policy-use",
-   "c11-fe-admin-security",
-   "acc-personal-grants",
-   "c8-ten-reassignment"
-  ],
-  "wave": 6,
-  "size": "M",
-  "acceptance": "meetsPolicy on passkey reads; a members filter 'without a compliant passkey'; shown on admin members and my passkeys; a shell notice before the notice date; ID-07 built (or in_progress naming c11-device-allowlist if the list is still absent).",
-  "brief": "Read R2_CROSS_CUTTING.md, ADR 0048. Default keeps this in R2 so ID-07 can close built."
- },
- {
   "package": "r2-j8-isolation",
   "title": "J-8 covers R2: comments, notifications, participants and configuration",
   "goal": "TEN-S7 proves tenant B sees nothing of A's R2 records or configuration.",
@@ -162,7 +128,6 @@
    "COL-04",
    "AGT-04",
    "ACC-01",
-   "ID-07",
    "ID-08"
   ],
   "scenario_ids": [
@@ -282,8 +247,8 @@
   ],
   "wave": 6,
   "size": "M",
-  "acceptance": "On scope_item.added (an outbox handler in agents/apps.py) a research request of kind scope_item opens for the bank's scope-researcher ('waiting for your agent' otherwise), keys and ids only; honours cap and AI off; runner events file owned proposals through proposals/tenant_agent.py with owner_tenant forced to the run's bank; shared targets, non-private kinds and re-tags refused; text screened (AGT-07); idempotent per run and event; a duplicate by official reference or stable key 409 already_in_our_library by a database lookup, never by giving the model the bank's records; each proposal names the agent, its version and the reported model and reads 'Proposed by our agent'; a test proves a bank key still opens no run and files nothing (refuse_tenant_key and key scopes unchanged); a guard proves no run writes a scope item, footprint term or scope request; AGT-S14 and AGT-S16 un-skipped; security review.",
-  "brief": "Built under D-89; free-text fields wait for Alex's tenant-text answer. Read R2_CROSS_CUTTING.md, D-32, D-57, D-89, ADR 0059 and SCOPE_ITEMS.md. The channel is ADR 0059's; do not add an API-key path."
+  "acceptance": "On scope_item.added (an outbox handler in agents/apps.py) a research request of kind scope_item opens for the bank's scope-researcher ('waiting for your agent' otherwise), keys, ids and the item's text fields as D-98 allows; honours cap and AI off; runner events file owned proposals through proposals/tenant_agent.py with owner_tenant forced to the run's bank; shared targets, non-private kinds and re-tags refused; text screened (AGT-07); idempotent per run and event; a duplicate by official reference or stable key 409 already_in_our_library by a database lookup, never by giving the model the bank's records; each proposal names the agent, its version and the reported model and reads 'Proposed by our agent'; a test proves a bank key still opens no run and files nothing (refuse_tenant_key and key scopes unchanged); a guard proves no run writes a scope item, footprint term or scope request; AGT-S14 and AGT-S16 un-skipped; security review.",
+  "brief": "Built under D-89; D-98 lets the item's capped text fields reach the bank's own agent; the bank's private records still never reach a model. Read R2_CROSS_CUTTING.md, D-32, D-57, D-89, ADR 0059 and SCOPE_ITEMS.md. The channel is ADR 0059's; do not add an API-key path."
  },
  {
   "package": "d89-fe-scope-items",

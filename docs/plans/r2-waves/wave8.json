@@ -4,7 +4,6 @@
   "title": "R2 close and readiness",
   "goal": "Every R2 requirement reads built or names its cut, the whole suite and E2E are green over the merged batch, and the documents say what waits for Alex.",
   "requirement_ids": [
-   "ID-07",
    "ID-08",
    "TEN-02",
    "TEN-03",
@@ -98,6 +97,6 @@
   "wave": 8,
   "size": "M",
   "acceptance": "bash scripts/prepush.sh --all and the full E2E suite (@smoke incl. J-2, J-3, J-9 to J-12, @coldstart, demo) green over the merged batch; no R2 route answers 501, no R2 scenario skipped and no journey fixme except named cuts; api_docs_pending empty; contract_drift_pending justified; coverage floors ratcheted for new modules, never lowered; test_module_seconds re-measured; IMPLEMENTATION_STATUS rows 8-11 and an 'R2 close' section; TODO 'R2 is closed: what waits for you'; stale HARDENING rows verified against proof before marked fixed; the integrator ships through scripts/ship.sh.",
-  "brief": "Read R2_CROSS_CUTTING.md. Name what is left: REG-06 and REG-S9 (chunk 13), CAS-04's tickets and INT-S3 (chunk 13), the SoA export (R3, D-46), ACC-10 and ACC-S10, COL-03, proposal_waiting and saved_search_hit, webhook delivery, comment retention, WAT-06 and private sources, the real agent runner (waits for the D-07 EU path), OWN-05 if d89-controls has not merged, the free-text research path if Alex has not answered, the authenticator list if c11-device-allowlist has not merged, and agent decisions on batch rows if unanswered. If d89-controls merged, set its cells. Set every app.md status cell. Correct the VOC-S6 row in the UI plan. Add Verification_Log rows for evidence MIME types. Record every default taken and each owner answer in TODO_FOR_alex. Do not deploy."
+  "brief": "Read R2_CROSS_CUTTING.md. Name what is left: REG-06 and REG-S9 (chunk 13), CAS-04's tickets and INT-S3 (chunk 13), the SoA export (R3, D-46), ACC-10 and ACC-S10, COL-03, proposal_waiting and saved_search_hit, webhook delivery, comment retention, WAT-06 and private sources, the real agent runner (waits for the D-07 EU path), OWN-05 if d89-controls has not merged, ID-07 with ID-S16 and ID-S29 (device-bound passkey policy, out of R2 by Alex's D-100), and agent decisions on batch rows if unanswered. If d89-controls merged, set its cells. Set every app.md status cell. Correct the VOC-S6 row in the UI plan. Add Verification_Log rows for evidence MIME types. Record every default taken and each owner answer in TODO_FOR_alex. Do not deploy."
  }
 ]
