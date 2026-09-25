@@ -1302,3 +1302,55 @@ Section 17 of `schema.sql` (`org_unit`, `licence`, `tenant_product`, `tenant_pro
   both above zero and capped by `SESSION_IDLE_MINUTES_MAX` and `SESSION_ABSOLUTE_HOURS_MAX`
   in the write), `updated_by_id`, `updated_at`. No row means the platform defaults.
   `CREDENTIAL_POLICY_NOTICE_DAYS` (14) is the default notice a tightening gives.
+
+## 18. Chunk 11's agent tables (2026-09-25, c11-agent-models)
+
+Agents migrations 0004 and 0005 build schema v0.3 PART 3's agent tables with three rulings
+of `docs/plans/briefs/CHUNK11_TASKS.md` and the fence of ADR 0053 in the database:
+
+- **Ruling 1: a definition is always bleqq's.** Every `agent` row is a library row and no
+  bank ever creates one. `agent.scope` (`platform` or `tenant`) and `tenant_configurable`
+  say whether a bank may add it for itself. A CHECK refuses a platform row that is
+  tenant-configurable, and a tenant row carrying `platform_scope` or
+  `platform_monthly_budget` (the two platform settings v0.3 does not have) or a `writes_to`
+  other than `tenant`. A trigger on `tenant_agent` refuses a row, inserted or moved, whose
+  definition is not a configurable tenant one, and agents 0001's key guard now refuses a
+  changed `scope` too. `tenant_agent` is paused, never deleted: its trigger refuses a
+  DELETE outside the schema owner's maintenance hatch. Closed by c11-agent-models (tables)
+  and c11-tenant-agent-controls-a (the route's own refusal).
+- **Ruling 3: one cap per bank.** `tenant_agent.monthly_budget` is not built; the bank's
+  one cap is `tenant_agent_budget` (one row per tenant, `monthly_cap`, `currency`), and
+  spend is the month's `agent_run.cost` of the bank's own runs. Closed by
+  c11-run-scheduler-b.
+- **Ruling 4: the runner seam only.** `agent.runtime` keeps v0.3's three values as a kind,
+  and defaults to `agent_sdk`, not v0.3's `managed_agents`: D-54 refuses `managed_agents`
+  on every deployed environment but test and runs production agents in our own worker.
+  `agent_version.external_agent_id`, `tenant_agent.pinned_version_id`, `environment` and
+  `external_environment_id` are not built. Closed by c11-runner-adapter.
+
+Also departing from v0.3:
+
+- `agent_version.prompt_template_id` is `prompt_path`, the prompt's file inside the version
+  folder (`backend/agents/<agent>/v<n>/`), because the definitions are files in the image.
+  The version is append-only in the database, retiring it once being the one change.
+- `agent_run.api_key_id` (§5) becomes nullable: a run the worker opens has no key. A CHECK
+  demands a key when `trigger = 'api'`, the default, which every R1 run is. The write
+  policy asks for a key of the run's zone only when there is a key; the own-zone rule is
+  unchanged. A keyless run's zone is its tenant agent's, or the library's without one, and a
+  CHECK refuses a library run naming a tenant agent. `agent_version_id` is written once, at
+  open. `changes_found`, `proposals_made` and `search_count` are not columns: counts stay in
+  `stats` (`AgentRunStats`). `prompt_template_id` is not built. `scope` is the copy of the
+  scope the run started with (D-32).
+- `research_request.tenant_id` is nullable and the table mixed, with agent_run's split
+  policy: the console's `retag` (§5) has no tenant and no tenant agent, and a CHECK demands
+  both of every other kind. `reverify` is not a kind: re-verification is a person's stamp
+  (INV-06) or the platform's own agent, never a bank's request. `changes_found` is not
+  built; `batch_proposal_id` names the batch a retag produced, a plain uuid until the batch
+  table (c11-proposal-batches-model) gives it a foreign key.
+- `tenant_agent` gains `pause_reason`, what the person or the scheduler said when it paused
+  the agent.
+- New tier-one kinds (§1): `agent_scope`, `agent_cadence`, `agent_runtime`,
+  `agent_writes_to` (v0.3's `both` dropped: no definition writes both zones, and a bank's
+  never writes the library), `run_trigger`, `research_request_kind` and
+  `research_request_status`. Like `agent_kind` they are kinds in code with no database
+  constraint on their values.
