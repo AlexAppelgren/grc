@@ -62,6 +62,10 @@ READ_ONLY_ALLOWED: frozenset[tuple[str, str]] = frozenset(
 API_ROUTE_PREFIX = "api/v1/"
 RATE_WINDOW_SECONDS = 60
 SCOPE_HEADER = "Agent-Access-Scope"
+# Set by the MCP server on the request it makes to the route behind a tool
+# (apps/integrations/mcp_tools.py): the fence runs on it again, but the MCP request already
+# spent the credential's rate. An attribute, never a header, so no caller can set it.
+TOOL_CALL = "agent_access_tool_call"
 _STATED = "agent_access_scope_principal"
 
 
@@ -101,7 +105,8 @@ def _limit_rate(principal: Principal) -> None:
 def check(request: HttpRequest, principal: Principal) -> None:
     if not principal.is_agent_access:
         return
-    _limit_rate(principal)
+    if not getattr(request, TOOL_CALL, False):
+        _limit_rate(principal)
     setattr(request, _STATED, principal)
     operation = operation_of(request)
     from apps.governance import access_log

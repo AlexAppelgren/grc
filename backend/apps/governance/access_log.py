@@ -11,7 +11,8 @@ refused write or step-up is logged with its 403, while a request refused for its
 not: the security log already holds one row per window for it, and a runaway agent must not
 flood this one. `AccessLogMiddleware` writes the row after the response, in a transaction of
 its own, so a call whose request rolled back is still logged. A route that knows better than
-the query string (a read with a body, the MCP server's tool) says so through `note`.
+the query string (a read with a body, the MCP server's tool) says so through `note`; the MCP
+server hands it the answer of the route behind the tool, whose status and count the row keeps.
 
 `list_calls` is the entry's log for `GET /agent-access/{id}/calls`.
 """
@@ -54,6 +55,7 @@ class PendingCall:
     filters: dict[str, list[str]]
     record_count: int | None = None
     counted: bool = field(default=False)
+    status: int | None = None
 
 
 def _kept(name: str, values: Iterable[str]) -> list[str]:
@@ -82,10 +84,17 @@ def begin(request: HttpRequest, principal: Principal, tool: str) -> None:
 
 
 def note(
-    request: HttpRequest, *, tool: str | None = None, filters: dict[str, list[str]] | None = None, record_count: int | None = None
+    request: HttpRequest,
+    *,
+    tool: str | None = None,
+    filters: dict[str, list[str]] | None = None,
+    record_count: int | None = None,
+    answered: HttpResponse | None = None,
 ) -> None:
     """A route's own word on its call: the tool it served, the filters of a body it read
-    (names and keys only, the caller's text never) and how many records it answered."""
+    (names and keys only, the caller's text never) and how many records it answered.
+    `answered` is the answer of the route an MCP tool ran: the row keeps its status and,
+    unless counted already, its count, rather than the MCP message's."""
     pending: PendingCall | None = getattr(request, REQUEST_ATTRIBUTE, None)
     if pending is None:
         return
@@ -96,6 +105,11 @@ def note(
     if record_count is not None:
         pending.record_count = record_count
         pending.counted = True
+    if answered is not None:
+        pending.status = answered.status_code
+        if not pending.counted:
+            pending.record_count = _counted(answered)
+            pending.counted = True
 
 
 def _counted(response: HttpResponse) -> int | None:
@@ -148,7 +162,7 @@ def finish(request: HttpRequest, response: HttpResponse, duration_ms: int) -> No
             scope_narrowed=narrowed,
             scope_terms=terms,
             duration_ms=duration_ms,
-            status=response.status_code,
+            status=pending.status or response.status_code,
         )
 
 

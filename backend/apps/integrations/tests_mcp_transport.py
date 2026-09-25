@@ -169,7 +169,7 @@ class EarlierRevisions(McpTestCase):
         self.assertEqual(response.json()["error"]["data"]["supported"], [MODERN, "2025-11-25", "2025-06-18"])
 
     def test_an_unknown_method_is_an_error_in_a_200(self) -> None:
-        self.assertEqual(self.error_of(self.legacy("tools/call"), 200), -32601)
+        self.assertEqual(self.error_of(self.legacy("resources/list"), 200), -32601)
 
 
 class CurrentRevision(McpTestCase):
@@ -223,7 +223,7 @@ class CurrentRevision(McpTestCase):
         self.assertEqual(self.error_of(self.post(not_a_string, headers=headers), 400), -32602)
 
     def test_methods_this_revision_removed_or_we_do_not_offer_are_not_found(self) -> None:
-        for method in ("ping", "tools/call", "resources/list"):
+        for method in ("ping", "prompts/list", "resources/list"):
             with self.subTest(method):
                 self.assertEqual(self.error_of(self.modern(method), 404), -32601)
 

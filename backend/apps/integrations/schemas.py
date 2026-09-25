@@ -3,7 +3,7 @@ class names where a shape is specific to this app (playbook 4.1)."""
 
 from typing import Any, Literal
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, JsonValue
 
 from apps.shared.schemas import CamelSchema, LibraryResponse
 
@@ -78,6 +78,13 @@ class McpTool(LibraryResponse):
     annotations: McpToolAnnotations = Field(description="Hints about the tool's behaviour: every tool reads only this service.")
 
 
+class McpTextContent(LibraryResponse):
+    """One block of a tool's answer, as text."""
+
+    type: Literal["text"] = Field(description="Always `text`: every tool answers one text block.")
+    text: str = Field(description="The tool's answer as JSON text, the same JSON as `structuredContent`, for a client that reads only text.")
+
+
 class McpResultMeta(LibraryResponse):
     """Protocol metadata on a result of the current revision."""
 
@@ -89,8 +96,9 @@ class McpResultMeta(LibraryResponse):
 class McpResult(LibraryResponse):
     """The result of a request. Which fields it carries depends on the method: `initialize`
     answers protocolVersion, capabilities, serverInfo and instructions; `server/discover`
-    answers supportedVersions, capabilities and instructions; `tools/list` answers tools; a
-    `ping` answers an empty object."""
+    answers supportedVersions, capabilities and instructions; `tools/list` answers tools;
+    `tools/call` answers content, structuredContent and isError; a `ping` answers an empty
+    object."""
 
     result_type: Literal["complete"] | None = Field(
         default=None, description="Always `complete` on a result of revision 2026-07-28; absent on a result of an earlier revision, which a client reads as complete."
@@ -115,6 +123,24 @@ class McpResult(LibraryResponse):
             "page. The list follows the credential: a tool appears only when the credential holds the scope its route "
             "needs, and the register tool only when it also reaches the bank's register."
         ),
+    )
+    content: list[McpTextContent] | None = Field(
+        default=None, description="On a `tools/call` result only: the answer as one text block holding the same JSON as `structuredContent`."
+    )
+    structured_content: JsonValue = Field(
+        default=None,
+        description=(
+            "On a `tools/call` result only: exactly the body the REST route behind the tool answers, the same "
+            "gates, scope and pagination included; when `isError` is true, the route's problem details, whose "
+            "`code` is the one to branch on (`permission_denied`, `not_found`, `tenant_reach_off`, "
+            "`read_only_credential`, `validation_error` and the others the route names). On revision "
+            "2025-11-25 and 2025-06-18 an answer that is a list arrives as the object `{\"items\": [...]}`, "
+            "because those revisions take only an object here."
+        ),
+    )
+    is_error: bool | None = Field(
+        default=None,
+        description="On a `tools/call` result only: true when the route refused the call or an argument was wrong, false when it answered.",
     )
     ttl_ms: int | None = Field(
         default=None,

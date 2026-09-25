@@ -1518,3 +1518,22 @@ Built on these defaults; each stays yours to overrule.
 - [ ] Default taken: `GET /obligations/{obligationId}` reads a stable key in the id's place,
       so the MCP server's `get_obligation` needs no path of its own; a slug that is not a
       UUID now answers 404 rather than 422.
+
+## acc-mcp-tools: how the MCP server's tools call the API (2026-09-25, ACC-05, ACC-08, ACC-09)
+Built on these defaults; each stays yours to overrule.
+- [ ] **A tool is its REST route, run as a request of its own.** `tools/call` builds the
+      request to the route behind the tool with the caller's own credential and lets Django
+      route it, so the authentication class, the agent access fence, the scope gate, the
+      logic and the pagination are the route's, and the structured content is its body.
+      The one thing not repeated is the rate: a tool call is one request of the
+      credential's `AGENT_ACCESS_RATE_PER_MINUTE`, not two. Default: so.
+- [ ] **A tool the list did not offer still reaches its route.** A credential calling a tool
+      its scopes do not reach gets the route's own refusal (`permission_denied`,
+      `tenant_reach_off`) as a tool error, rather than the protocol's "unknown tool", so the
+      answer is the one the REST API gives. Only a name the server has no tool for is -32602.
+- [ ] **An earlier revision gets a list inside an object.** Revision 2025-11-25 takes only an
+      object as structured content, so `list_upcoming_changes` answers `{"items": [...]}`
+      there; revision 2026-07-28 gets the route's array as it is.
+- [ ] **The access log names the tool.** A tool call's row carries the tool's name
+      (`get_obligation`, not `mcpMessage`) with the route's status, filters and record
+      count; `tools/list` and the handshake stay logged as `mcpMessage`.
