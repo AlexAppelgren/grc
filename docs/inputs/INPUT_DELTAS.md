@@ -925,6 +925,21 @@ Chunk 8 (the register contract, `c8-register-contract`), 2026-09-25:
   for `If-Match` (section 4) to the designed `Register`, and returns the status and risk
   as `{key, kind, label}` rows of the bank's own lists (section 1).
 
+acc-register-read (ACC-04, ACC-08, D-76), 2026-09-25:
+
+- `GET /register-entries` (`listRegisterEntries`) and `GET /register-entries/{obligationId}`
+  (`readRegisterEntry`) are new: the register as a bank's own agent reads it, which the
+  designed contract does not have (AGENT_ACCESS.md names the list `GET /register`, a path the
+  designed contract never declared). The per-obligation read is a separate operation rather
+  than the same one with a filter, and rather than `getRegisterEntry` taking a key: it takes
+  the obligation as a path parameter so an obligation outside the entry's scope answers 404,
+  never a filtered 200 (AGENT_ACCESS.md section 7), and it answers D-76's fields alone, where
+  a person's `getRegisterEntry` also carries the risk rating and the evidence location. Both
+  take `ApiKeyAuth` only with `tenant:read`, and answer 403 `tenant_reach_off` unless the
+  bank's tenant reach and the entry's own toggle are both on. The row shape,
+  `RegisterDecision`, is one per obligation with its legal entities and live linked items
+  nested; the list pages 20 by default and 100 at most (D-1xx, acc-register-read).
+
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
 **`change_case` (`c5-contract-models-cases`).** Built with R1 columns only:
@@ -1536,3 +1551,68 @@ enabled and forced row-level security, with these departures on purpose:
 - `GET /exports/{exportId}/download` streams the file itself (section 4, section 7), with
   `Content-Disposition: attachment` and `Cache-Control: no-store`, and records every
   download in the audit log. There is no `DownloadLink`.
+## acc-foundation. Agent access entries and credential kinds (2026-09-25, agents 0006, identity 0007)
+
+`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
+third column the R2 plan names (`acts_as_user`), are built with these departures:
+
+- `agent_access.owner_team_id` is required, not "null until chunk 8 lands teams": the team
+  list has landed and every bank has the system team `compliance` (ACC-01 names the team).
+  `revoked_at` and `revoked_by_id` are columns, and a CHECK keeps `active` false exactly when
+  `revoked_at` is set. An entry is revoked, never deleted (`delete()` refuses).
+- Every reference is also a composite `(tenant_id, …)` key: the team, the departments
+  (`org_unit`) and products (`tenant_product`) of the joins, the creator and revoker (into
+  `membership (tenant_id, user_id)`), and on `api_key` the entry and `acts_as_user`.
+- `api_key.kind` is the tier-one kind `credential_kind` (`service`, `personal`); every key
+  before identity 0007 is `service`. CHECKs: a personal token has a tenant, a person and an
+  expiry and no agent, and only a token acts as a person; a key bound to an entry has a
+  tenant and no agent definition (it is not one of the agents we run); an entry's key and
+  every token hold only `AGENT_ACCESS_SCOPES` (`library:read`, `search:read`,
+  `upcoming:read`, `tenant:read`), so "reads and nothing else" (ADR 0055) is the
+  database's rule as well as the code's.
+- `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
+  `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
+## c8-register-models. The register as tables (2026-09-25, register 0001 and 0002)
+
+Sections 7 and 19 of `schema.sql` (`tenant_obligation`, `tenant_obligation_scope`,
+`compliance_assessment`, `gap`, `interpretation`, `internal_link`) are built with these
+departures:
+
+- `applicability` is the tier-one kind `Applicability` with `applies`, `does_not_apply`
+  and `not_assessed` (the designed `not_applicable` and `under_assessment` renamed to the
+  register spec's words), default `not_assessed`. Who decided it is
+  `applicability_decided_by_id`, beside the reason and the time, on the entry and on each
+  scope row. There is no `applicability_request` table (D-75).
+- The designed `CHECK (compliance_status = 'not_assessed' OR applicability = 'applies')` is
+  left out: a status survives a "does not apply" and reads again when it applies (REG-S4).
+- `compliance_status`, `risk_rating`, a gap's `severity` (a `risk_rating` row), `source`
+  and `status`, and its `acceptance_reason` are the tenant's list rows, not enums. The
+  entry and scope row start on the bank's default compliance status. `compliance_status`,
+  `risk_rating`, `gap_status`, `gap_source` and `risk_acceptance_reason` gain
+  `UNIQUE (tenant_id, id)` as the targets of composite keys.
+- Every reference to another tenant row is a composite `(tenant_id, …)` key, and every
+  person (owner, contact, decider, author, identifier, requester, approver, closer,
+  remover) is a key into `membership (tenant_id, user_id)`. The entry and scope row carry
+  `owner_team_id` (TEN-03); a scope row and a gap are owned by a person or a team, never
+  both.
+- `tenant_obligation_scope` names one org unit and optionally one product (the designed
+  CHECK of "one of the two" becomes a required org unit), and carries REG-S3's own risk,
+  process, system, evidence location, next review, `version` and `updated_at` per entity.
+  The entry carries `version`.
+- `compliance_assessment` is append-only by trigger, with `method` the tier-one kind
+  `AssessmentMethod` (the designed `assessment_method` values). `likelihood`, `impact` and
+  `approved_by` are left out: nothing in REG-04 reads them.
+- `gap` records risk acceptance as `acceptance_reason_id`, `acceptance_note`,
+  `acceptance_requested_by_id`/`_at` and `accepted_by_id`/`_at`. Four eyes is
+  `gap_four_eyes`, `accepted_by <> acceptance_requested_by` (the designed check compared
+  with the identifier); `gap_acceptance_complete` makes an acceptance name its reason and
+  requester; and a trigger refuses a status of the `risk_accepted` category without an
+  acceptance, since a CHECK cannot read the status row. `requirement_id` and `case_id`
+  are left out until a package needs them; the SoA unit is register 0003's.
+- `interpretation` has `superseded_at` in place of the designed draft, approve and
+  supersede status: "How we read this rule" has no approver in REG-04. Its `version_no` is
+  `version_number`, as on the library's versions, because the I18N guard reads a `_no`
+  suffix as a Norwegian text column.
+- `internal_link` points at an `internal_item` (nullable, a composite key) rather than
+  carrying the designed `kind`: the item carries the kind. It is removed by stamping
+  `removed_at` and `removed_by`, never deleted, with one live link per entry and item.

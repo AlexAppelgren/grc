@@ -7,7 +7,8 @@ from typing import Annotated, Any, cast
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.governance import ai_log, logic, problem_reports_logic
+from apps.governance import ai_log, logic, problem_reports_logic, reach
+from apps.governance.models import TenantReachRequest
 from apps.governance.schemas import (
     AiGenerationPage,
     AiGenerationQuery,
@@ -17,12 +18,14 @@ from apps.governance.schemas import (
     ProblemReportPage,
     ProblemReportQuery,
     ProblemReportRow,
+    TenantReachRequestRow,
+    TenantReachView,
 )
 from apps.shared import permissions as perms
 from apps.shared.authentication import Principal, SessionAuth
-from apps.shared.permissions import requires_permission
+from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, answers_problems, caller_user
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, if_match, uuid_or_404
 from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Governance"])
@@ -225,3 +228,214 @@ def close_problem_report(
         actor=actor_for(request, closer),
         order=language_order(request),
     )
+
+
+# ---------------------------------------------------------------------------------------
+# Tenant reach (acc-scope-and-reach; ACC-08, D-72, ADR 0057): two people switch it on, one
+# switches it off, and every write carries a passkey step-up
+# ---------------------------------------------------------------------------------------
+_REACH_WHAT = (
+    "Tenant reach decides whether the bank's own register decisions may reach the agents the "
+    "bank runs itself. It is off for every bank until two different people holding "
+    "`security.manage` switch it on: one requests it, the other approves it, each with a "
+    "passkey. With it off, every agent access entry reads the shared library only, whatever "
+    "the entry's own setting says."
+)
+_REACH_GATE = (
+    "Needs `security.manage` in the caller's bank and a passkey step-up younger than the "
+    "configured freshness window (`POST /auth/step-up/options`, then `POST /auth/step-up/verify`); "
+    "an API key or a personal access token is refused, because neither can step up."
+)
+_REACH_GATE_ERRORS = (
+    "`step_up_required` (403) without a fresh passkey step-up; `permission_denied` (403) "
+    "without `security.manage`, with `requiredPermission` named; `unauthenticated` (401) "
+    "without a session; `not_found` (404) for a principal in no bank"
+)
+_ReachRequestId = Annotated[
+    str,
+    Path(
+        description=(
+            "The id of the tenant reach request, a UUID as `GET /tenant/reach` shows it under "
+            "`pending`. Anything else, or a request of another bank, answers `not_found` (404)."
+        )
+    ),
+]
+
+
+def _reach_request(tenant: Any, request_id: str) -> TenantReachRequest:
+    found = (
+        TenantReachRequest.objects.filter(tenant=tenant, pk=uuid_or_404(request_id))
+        .select_related("requested_by", "decided_by")
+        .first()  # ordering: pk lookup, at most one row
+    )
+    if found is None:
+        from django.core.exceptions import ValidationError
+
+        raise ValidationError("That request for tenant reach is not here.", code="not_found")
+    return found
+
+
+@router.get(
+    "/tenant/reach",
+    response=TenantReachView,
+    auth=SessionAuth(),
+    operation_id="getTenantReach",
+    by_alias=True,
+    summary="See whether our register may reach the agents we run ourselves",
+    description=(
+        f"{_REACH_WHAT}\n\n"
+        "Answers whether reach is on, who last switched it and when, and the request waiting "
+        "for a second person, if one does. A bank that never asked is a 200 with `enabled` "
+        "false and nothing pending.\n\n"
+        "A read: it changes nothing and writes no audit row. Needs `security.manage` in the "
+        "caller's bank and a person's session; an API key is refused.\n\n"
+        "Errors: `permission_denied` (403) without `security.manage`, with `requiredPermission` "
+        "named; `unauthenticated` (401) without a session; `not_found` (404) for a principal in "
+        "no bank."
+    ),
+)
+@requires_permission(perms.SECURITY_MANAGE)
+def get_tenant_reach(request: HttpRequest) -> TenantReachView:
+    return reach.view(caller_tenant(request).id)
+
+
+@router.post(
+    "/tenant/reach/requests",
+    response={201: TenantReachRequestRow},
+    auth=SessionAuth(),
+    operation_id="requestTenantReach",
+    by_alias=True,
+    summary="Ask for our register to reach the agents we run ourselves",
+    description=(
+        f"{_REACH_WHAT}\n\n"
+        "Makes the request a second person decides; nothing reaches any agent yet. A bank has "
+        "one pending request at a time, and none while reach is already on. Answers 201 with the "
+        "pending request. Takes no body.\n\n"
+        f"{_REACH_GATE} Records `tenant_reach.requested` in the audit log, naming the requester "
+        "and the passkey assertion.\n\n"
+        "Errors: `request_pending` (409) when a request already waits for a decision; "
+        f"`invalid_transition` (409) when reach is already on; {_REACH_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.SECURITY_MANAGE)
+@requires_step_up
+@answers_problems
+def request_tenant_reach(request: HttpRequest) -> Any:
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    created = reach.request_reach(
+        tenant=tenant,
+        requester=user,
+        actor=actor_for(request, user),
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return 201, reach.request_row(created)
+
+
+@router.post(
+    "/tenant/reach/requests/{request_id}/approve",
+    response=TenantReachRequestRow,
+    auth=SessionAuth(),
+    operation_id="approveTenantReach",
+    by_alias=True,
+    summary="Approve tenant reach as the second person",
+    description=(
+        f"{_REACH_WHAT}\n\n"
+        "Approves a pending request: reach is on at once, for every agent access entry whose own "
+        "toggle is on. The approver must be someone other than the requester, which the database "
+        "enforces too. Answers the request, now `approved`. Takes no body; send `If-Match` with "
+        "the version last read to be told when the request moved on.\n\n"
+        f"{_REACH_GATE} Records `tenant_reach.approved` in the audit log, naming the approver, the "
+        "requester and the passkey assertion.\n\n"
+        "Errors: `four_eyes_violation` (409) when the requester approves their own request; "
+        "`invalid_transition` (409) when it was already decided; `stale_write` (409) when "
+        "`If-Match` names an old version; `validation_error` (422) for an `If-Match` that is not "
+        f"a version; `not_found` (404) for a request that is not here; {_REACH_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.SECURITY_MANAGE)
+@requires_step_up
+@answers_problems
+def approve_tenant_reach(request: HttpRequest, request_id: _ReachRequestId) -> Any:
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    decided = reach.approve(
+        tenant=tenant,
+        request=_reach_request(tenant, request_id),
+        decider=user,
+        actor=actor_for(request, user),
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+        expected_version=if_match(request),
+    )
+    return reach.request_row(decided)
+
+
+@router.post(
+    "/tenant/reach/requests/{request_id}/reject",
+    response=TenantReachRequestRow,
+    auth=SessionAuth(),
+    operation_id="rejectTenantReach",
+    by_alias=True,
+    summary="Turn down a request for tenant reach",
+    description=(
+        f"{_REACH_WHAT}\n\n"
+        "Rejects a pending request: reach stays off and the request is final. The person "
+        "rejecting must be someone other than the requester. Answers the request, now "
+        "`rejected`. Takes no body; send `If-Match` with the version last read to be told when "
+        "the request moved on.\n\n"
+        f"{_REACH_GATE} Records `tenant_reach.rejected` in the audit log, naming the person, the "
+        "requester and the passkey assertion.\n\n"
+        "Errors: `four_eyes_violation` (409) when the requester rejects their own request; "
+        "`invalid_transition` (409) when it was already decided; `stale_write` (409) when "
+        "`If-Match` names an old version; `validation_error` (422) for an `If-Match` that is not "
+        f"a version; `not_found` (404) for a request that is not here; {_REACH_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.SECURITY_MANAGE)
+@requires_step_up
+@answers_problems
+def reject_tenant_reach(request: HttpRequest, request_id: _ReachRequestId) -> Any:
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    decided = reach.reject(
+        tenant=tenant,
+        request=_reach_request(tenant, request_id),
+        decider=user,
+        actor=actor_for(request, user),
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+        expected_version=if_match(request),
+    )
+    return reach.request_row(decided)
+
+
+@router.post(
+    "/tenant/reach/off",
+    response=TenantReachView,
+    auth=SessionAuth(),
+    operation_id="switchOffTenantReach",
+    by_alias=True,
+    summary="Switch tenant reach off for every agent at once",
+    description=(
+        f"{_REACH_WHAT}\n\n"
+        "Switches reach off from the next read, for every agent access entry at once, whatever "
+        "each entry's own toggle says. One person is enough: turning egress off never needs a "
+        "second. Switching it on again takes a new request and a second person. Answers the "
+        "reach state, now off. Takes no body.\n\n"
+        f"{_REACH_GATE} Records `tenant_reach.switched_off` in the audit log, naming the person "
+        "and the passkey assertion.\n\n"
+        f"Errors: `invalid_transition` (409) when reach is already off; {_REACH_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.SECURITY_MANAGE)
+@requires_step_up
+@answers_problems
+def switch_off_tenant_reach(request: HttpRequest) -> Any:
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    reach.switch_off(
+        tenant=tenant,
+        user=user,
+        actor=actor_for(request, user),
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return reach.view(tenant.id)

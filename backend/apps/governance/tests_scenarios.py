@@ -854,12 +854,49 @@ class GovernanceScenarioTests(ScenarioTestCase):
         self.assertIn("append-only", str(refused.exception))
         self.assertEqual(self._one("proposal.approved", uuid.UUID(approved.json()["id"])).summary, written)
 
-    @skip("pending: ACC-S11 (ACC-08, AC-ACC2, chunk 11)")
+    # acc-register-read: reach decided through its routes, read through the register's.
     def test_acc_s11(self) -> None:
         """ACC-S11
 
         Tenant reach needs two people, and off means off (ACC-08, AC-ACC2).
         """
+        from apps.governance.models import TenantReach
+        from apps.register.tests_agent_read import ENTRIES, ReadWorld
+
+        world = ReadWorld(slug="acc-s11")
+        tenancy.activate(world.tenant.id)
+        TenantReach.objects.filter(tenant=world.tenant).delete()  # the bank starts with reach off
+        first = factories.member(world.tenant, roles=("admin",), user_row=factories.user(name="Erik Holm")).user
+        second = factories.member(world.tenant, roles=("admin",), user_row=factories.user(name="Magnus Öberg")).user
+
+        def post(path: str, user: Any) -> Any:
+            return self.client.post(
+                f"{V1}/tenant/reach{path}", "{}", content_type="application/json", **sign_in(user, tenant=world.tenant, step_up=True)
+            )
+
+        def reads(key: str) -> Any:
+            return world.get(self.client, ENTRIES, key)
+
+        # Off to begin with, whatever the entry's own toggle says.
+        self.assertEqual(reads(world.narrow_key).json()["code"], "tenant_reach_off")
+        # requestTenantReach, then the requester's own approval: refused.
+        asked = post("/requests", first).json()
+        own = post(f"/requests/{asked['id']}/approve", first)
+        self.assertEqual((own.status_code, own.json()["code"]), (409, "four_eyes_violation"))
+        # approveTenantReach by the second person: on, one audit row for each, assertion referenced.
+        self.assertEqual(post(f"/requests/{asked['id']}/approve", second).json()["status"], "approved")
+        tenancy.activate(world.tenant.id)
+        rows = {row.action: row for row in AuditEvent.objects.filter(tenant_id=world.tenant.id, action__startswith="tenant_reach.")}
+        self.assertEqual((rows["tenant_reach.requested"].actor_id, rows["tenant_reach.approved"].actor_id), (first.id, second.id))
+        self.assertTrue(all(row.step_up_assertion_id for row in rows.values()))
+        # The entry reads the register.
+        self.assertEqual(reads(world.narrow_key).status_code, 200)
+        # switchOffTenantReach by either: every register route refuses every entry.
+        self.assertFalse(post("/off", second).json()["enabled"])
+        for key in (world.narrow_key, world.general_key):
+            for path in (ENTRIES, f"{ENTRIES}/{world.in_scope[0].id}"):
+                refused = world.get(self.client, path, key)
+                self.assertEqual((refused.status_code, refused.json()["code"]), (403, "tenant_reach_off"))
 
     @skip("pending: ACC-S12 (ACC-08, chunk 11)")
     def test_acc_s12(self) -> None:
@@ -867,3 +904,43 @@ class GovernanceScenarioTests(ScenarioTestCase):
 
         The access log records the call and holds no content (ACC-08).
         """
+
+    # acc-scope-and-reach: the reach switch alone, ahead of the register reads ACC-S11 needs.
+    def test_acc_s14(self) -> None:
+        """ACC-S14
+
+        Tenant reach is switched on by two people and off by one (ACC-08).
+        """
+        from apps.governance import reach
+
+        tenant = factories.tenant(slug="acc-s14")
+        first = factories.member(tenant, roles=("admin",), user_row=factories.user(name="Erik Holm")).user
+        second = factories.member(tenant, roles=("admin",), user_row=factories.user(name="Maria Ek")).user
+
+        def post(path: str, user: Any) -> Any:
+            return self.client.post(f"{V1}/tenant/reach{path}", "{}", content_type="application/json", **sign_in(user, tenant=tenant, step_up=True))
+
+        def on() -> bool:
+            tenancy.activate(tenant.id)
+            return reach.tenant_reach_on(tenant.id)
+
+        # requestTenantReach, then the requester's own approveTenantReach: refused.
+        asked = post("/requests", first).json()
+        own = post(f"/requests/{asked['id']}/approve", first)
+        self.assertEqual((own.status_code, own.json()["code"]), (409, "four_eyes_violation"))
+        self.assertFalse(on())
+        # approveTenantReach by the second person: on, with a row naming each and their assertion.
+        self.assertEqual(post(f"/requests/{asked['id']}/approve", second).json()["status"], "approved")
+        self.assertTrue(on())
+        tenancy.activate(tenant.id)
+        rows = {row.action: row for row in AuditEvent.objects.filter(tenant_id=tenant.id, action__startswith="tenant_reach.")}
+        self.assertEqual(rows["tenant_reach.requested"].actor_id, first.id)
+        self.assertEqual(rows["tenant_reach.approved"].actor_id, second.id)
+        self.assertTrue(all(row.step_up_assertion_id for row in rows.values()))
+        # switchOffTenantReach by either of them: off at once.
+        self.assertFalse(post("/off", first).json()["enabled"])
+        self.assertFalse(on())
+        # rejectTenantReach by the second person: reach stays off.
+        again = post("/requests", first).json()
+        self.assertEqual(post(f"/requests/{again['id']}/reject", second).json()["status"], "rejected")
+        self.assertFalse(on())

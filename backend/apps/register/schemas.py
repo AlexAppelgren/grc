@@ -78,6 +78,17 @@ _RISK_KEY = (
     "Seeded as `low`, `medium` and `high`, each with a fixed ordinal; the bank's admin may "
     "add or relabel rows, so read `GET /vocab/risk_rating` for the live set."
 )
+_TEAM_KEY = (
+    "The key of a row in the bank's own `team` vocabulary, at most 64 characters, such as "
+    "`compliance`; the bank's admin adds, renames and retires teams, so read `GET /vocab/team` "
+    "for the live set. A key that is not an active team of this bank is refused; null or "
+    "absent leaves the field as it is on a patch."
+)
+_TEAM_REF = (
+    "The team that owns the obligation here, as a row of the bank's own `team` vocabulary, "
+    "which its admin may extend; read `GET /vocab/team` for the live set. The key is stable "
+    "and the label is for showing. Null when no team owns it."
+)
 _PERSON_ID = (
     "A member of the bank, by their user UUID. Someone who is not an active member of "
     "this bank is refused; null or absent leaves the field as it is on a patch."
@@ -112,6 +123,7 @@ _APPLICABILITY_REASON = (
 _PERSON_EXAMPLE: dict[str, Any] = {"id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30", "name": "Sara Lind"}
 _STATUS_EXAMPLE: dict[str, Any] = {"key": "partly_compliant", "kind": "partly", "label": "Partly compliant"}
 _RISK_EXAMPLE: dict[str, Any] = {"key": "medium", "kind": None, "label": "Medium"}
+_TEAM_EXAMPLE: dict[str, Any] = {"key": "compliance", "kind": None, "label": "Compliance"}
 _GAP_STATUS_EXAMPLE: dict[str, Any] = {"key": "open", "kind": "open", "label": "Open"}
 _ENTITY_EXAMPLE: dict[str, Any] = {
     "orgUnitId": "55555555-5555-4555-8555-555555555555",
@@ -124,6 +136,7 @@ _ENTITY_EXAMPLE: dict[str, Any] = {
     "statusNote": "Reconciliation runs daily; the evidence log is still manual.",
     "riskRating": _RISK_EXAMPLE,
     "owner": _PERSON_EXAMPLE,
+    "ownerTeam": None,
     "process": "Client asset reconciliation",
     "system": "Custody ledger",
     "evidenceLocation": "Compliance share / Client assets / 2026",
@@ -203,7 +216,10 @@ class RegisterEntityStatus(CamelSchema):
             "set. Null until rated."
         )
     )
-    owner: RegisterPersonRef | None = Field(description="The member who owns the obligation for this entity; null when nobody does yet.")
+    owner: RegisterPersonRef | None = Field(
+        description="The member who owns the obligation for this entity; null when nobody does, or when a team owns it instead."
+    )
+    owner_team: RegisterVocabRef | None = Field(description=f"{_TEAM_REF} An entity's row is owned by a person or a team, never both.")
     process: str | None = Field(description="The bank's own business process the obligation is met in, by its name; null when not recorded.")
     system: str | None = Field(description="The bank's own system the obligation is met in, by its name; null when not recorded.")
     evidence_location: str | None = Field(
@@ -233,6 +249,7 @@ class RegisterEntry(CamelSchema):
                     "riskRating": _RISK_EXAMPLE,
                     "firstLineOwner": _PERSON_EXAMPLE,
                     "complianceContact": {"id": "2b9e4c71-5a3d-4f08-9c6e-7d1a0b3f5e82", "name": "Johan Berg"},
+                    "ownerTeam": _TEAM_EXAMPLE,
                     "process": "Client asset reconciliation",
                     "system": "Custody ledger",
                     "evidenceLocation": "Compliance share / Client assets / 2026",
@@ -254,9 +271,10 @@ class RegisterEntry(CamelSchema):
         description=(
             "How the bank complies, as a row of its own `compliance_status` vocabulary, which "
             "its admin may extend under fixed categories; read `GET /vocab/compliance_status` "
-            "for the live set. Where the obligation spans several legal entities it is the worse "
-            "of their statuses by the category's ordinal, computed by the server. The `gap` "
-            "category means a gap exists, which applicability never hides."
+            "for the live set. Where legal entities the obligation applies to have rows, it is the "
+            "worst of their statuses by category, computed by the server: `gap`, then `partly`, "
+            "then `not_assessed`, then `compliant`; the label and the bank's ordinal never decide. "
+            "The `gap` category means a gap exists, which applicability never hides."
         )
     )
     status_note: str | None = Field(description="The bank's note on the status, in its own words; null when none was written.")
@@ -269,6 +287,7 @@ class RegisterEntry(CamelSchema):
     )
     first_line_owner: RegisterPersonRef | None = Field(description="The first-line member who owns meeting the obligation; null when nobody does yet.")
     compliance_contact: RegisterPersonRef | None = Field(description="The compliance member who follows the obligation; null when nobody does yet.")
+    owner_team: RegisterVocabRef | None = Field(description=_TEAM_REF)
     process: str | None = Field(description="The bank's own business process the obligation is met in, by its name; null when not recorded.")
     system: str | None = Field(description="The bank's own system the obligation is met in, by its name; null when not recorded.")
     evidence_location: str | None = Field(
@@ -300,6 +319,7 @@ class RegisterStatusFields(WriteBody):
         description=f"The bank's note on the status, at most {NOTE_MAX} characters. Tenant content that never leaves the bank.",
     )
     risk_rating: str | None = Field(default=None, max_length=KEY_MAX, description=_RISK_KEY)
+    owner_team: str | None = Field(default=None, max_length=KEY_MAX, description=_TEAM_KEY)
     process: str | None = Field(
         default=None, max_length=NAME_MAX, description=f"The business process the obligation is met in, by name, at most {NAME_MAX} characters."
     )
@@ -353,7 +373,19 @@ class RegisterEntityPatch(RegisterStatusFields):
         }
     )
 
-    owner_id: uuid.UUID | None = Field(default=None, description=f"The entity's owner of the obligation. {_PERSON_ID}")
+    owner_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            f"The entity's owner of the obligation. {_PERSON_ID} A person and a team never own "
+            "the same row: setting one clears the other, and sending both is refused."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _one_owner_kind(self) -> RegisterEntityPatch:
+        if self.owner_id is not None and self.owner_team is not None:
+            raise ValueError("Send an owner or an owner team, not both.")
+        return self
 
 
 # ---------------------------------------------------------------------------------------
@@ -817,7 +849,8 @@ _LINK_EXAMPLE: dict[str, Any] = {
     "label": "Client asset policy",
     "url": "https://intranet.example-bank.test/policies/client-assets",
     "externalRef": "POL-014",
-    "internalItemId": None,
+    "externalSystem": "ServiceNow GRC",
+    "internalItemId": "2b4d6f8a-0c1e-4a3b-9d5f-7e9a1c3b5d24",
     "createdBy": _PERSON_EXAMPLE,
     "createdAt": "2026-09-18T13:05:00Z",
 }
@@ -840,8 +873,15 @@ class RegisterInternalLink(CamelSchema):
     label: str = Field(description="The item's name as the bank calls it, such as `Client asset policy`.")
     url: str | None = Field(description="Where the item lives in the bank's own systems; null when none was given. Never fetched by the server.")
     external_ref: str | None = Field(description="The item's reference in the bank's GRC or document system, such as `POL-014`; null when none was given.")
-    internal_item_id: uuid.UUID | None = Field(
-        description="The bank's internal item this link points at, as a UUID, when it was picked from the organisation; null for an ad hoc link."
+    external_system: str | None = Field(
+        description="The name of the outside system that reference belongs to, such as `ServiceNow GRC`; null when none was given."
+    )
+    internal_item_id: uuid.UUID = Field(
+        description=(
+            "The bank's internal item this link points at, as a UUID: the one picked from its "
+            "organisation, or the one this link's call created. The item carries the kind and "
+            "survives the link's removal."
+        )
     )
     created_by: RegisterPersonRef = Field(description="The person who made the link.")
     created_at: datetime.datetime = Field(description="The UTC timestamp at which the link was made, set by the server.")
@@ -872,11 +912,36 @@ class RegisterInternalLinkBody(WriteBody):
         ),
     )
     label: str = Field(min_length=1, max_length=TITLE_MAX, description=f"The item's name as the bank calls it, 1 to {TITLE_MAX} characters.")
-    url: str | None = Field(default=None, max_length=URL_MAX, description=f"Where the item lives, a link of at most {URL_MAX} characters. Never fetched by the server.")
+    url: str | None = Field(default=None, max_length=URL_MAX, description=f"Where the item lives, an http or https address of at most {URL_MAX} characters. Never fetched by the server.")
     external_ref: str | None = Field(
         default=None, max_length=EXTERNAL_REF_MAX, description=f"The item's reference in the bank's GRC system, at most {EXTERNAL_REF_MAX} characters."
     )
-    internal_item_id: uuid.UUID | None = Field(default=None, description="An internal item of the bank's organisation to link, as a UUID; absent for an ad hoc link.")
+    internal_item_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "An internal item of the bank's organisation to link, as a UUID, whose kind must be "
+            "`kind`. Absent to create the item from this call: its kind, `label` as its name, "
+            "`url`, `externalRef` and the item fields below. Another bank's item answers 404."
+        ),
+    )
+    # The item's own fields, read only when this call creates the item (REG-05).
+    reference: str | None = Field(
+        default=None, max_length=EXTERNAL_REF_MAX, description=f"The bank's own reference for a new item, such as `POL-014`, at most {EXTERNAL_REF_MAX} characters."
+    )
+    external_system: str | None = Field(
+        default=None, max_length=100, description="The outside system a new item's `externalRef` belongs to, such as `ServiceNow GRC`, at most 100 characters."
+    )
+    owner_id: uuid.UUID | None = Field(
+        default=None, description="A new item's owner, a member of the bank by their user UUID; never together with `ownerTeamId`."
+    )
+    owner_team_id: uuid.UUID | None = Field(
+        default=None, description="A new item's owning team, one of the bank's teams by its UUID; never together with `ownerId`."
+    )
+    org_unit_id: uuid.UUID | None = Field(
+        default=None, description="The part of the bank's organisation a new item belongs to, as a UUID from its organisation."
+    )
+    last_reviewed_on: datetime.date | None = Field(default=None, description="The plain date a new item was last reviewed.")
+    next_review_on: datetime.date | None = Field(default=None, description="The plain date a new item is next due for review.")
 
 
 # ---------------------------------------------------------------------------------------
@@ -1208,3 +1273,132 @@ class RegisterDutyCompletion(CamelSchema):
     next: RegisterDutyOccurrence | None = Field(
         description="The next occurrence, generated from the recurrence rule in the bank's time zone; null when the duty does not recur again."
     )
+
+
+# ---------------------------------------------------------------------------------------
+# acc-register-read: the register as the bank's own agents read it (ACC-04, D-76, ADR 0057)
+# ---------------------------------------------------------------------------------------
+_AGENT_STATUS = (
+    "How the bank complies here, as a row of its own `compliance_status` vocabulary: the key "
+    "is stable, `kind` is the fixed category (`compliant`, `partly`, `gap` or `not_assessed`) "
+    "and the label is for showing. The bank's admin may add and relabel rows, so branch on "
+    "`kind` and read `GET /vocab/compliance_status` for the live set."
+)
+_AGENT_STATUS_NOTE = "The bank's note on the status, in its own words; null when none was written."
+_AGENT_PROCESS = "The bank's own business process the obligation is met in, by its name; null when not recorded."
+_AGENT_SYSTEM = "The bank's own system the obligation is met in, by its name; null when not recorded."
+_AGENT_REVIEW = "The plain date by which the bank means to review this row again; null when none is set."
+_AGENT_ENTITY_EXAMPLE: dict[str, Any] = {
+    "orgUnitId": "55555555-5555-4555-8555-555555555555",
+    "orgUnitName": "Example Bank AB",
+    "applicability": "applies",
+    "applicabilityReason": "Holds client assets under the securities licence",
+    "complianceStatus": _STATUS_EXAMPLE,
+    "statusNote": "Reconciliation runs daily; the evidence log is still manual.",
+    "owner": _PERSON_EXAMPLE,
+    "ownerTeam": None,
+    "process": "Client asset reconciliation",
+    "system": "Custody ledger",
+    "nextReviewDate": "2027-03-31",
+}
+_AGENT_ITEM_EXAMPLE: dict[str, Any] = {
+    "kind": {"key": "policy", "kind": None, "label": "Policy"},
+    "label": "Client asset policy",
+    "url": "https://intranet.example-bank.test/policies/client-assets",
+    "externalRef": "POL-014",
+    "externalSystem": "ServiceNow GRC",
+}
+_AGENT_DECISION_EXAMPLE: dict[str, Any] = {
+    "obligationId": "44444444-4444-4444-8444-444444444444",
+    "obligationKey": "fffs-2017-2/9-6",
+    "applicability": "applies",
+    "applicabilityReason": "Holds client assets under the securities licence",
+    "complianceStatus": _STATUS_EXAMPLE,
+    "statusNote": "Reconciliation runs daily; the evidence log is still manual.",
+    "interpretation": "We read this as covering every client account, custody included.",
+    "owner": _PERSON_EXAMPLE,
+    "ownerTeam": _TEAM_EXAMPLE,
+    "process": "Client asset reconciliation",
+    "system": "Custody ledger",
+    "nextReviewDate": "2027-03-31",
+    "entities": [_AGENT_ENTITY_EXAMPLE],
+    "internalItems": [_AGENT_ITEM_EXAMPLE],
+}
+
+
+class RegisterDecisionEntity(CamelSchema):
+    """The bank's decision on the obligation for one of its legal entities."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_AGENT_ENTITY_EXAMPLE]})
+
+    org_unit_id: uuid.UUID = Field(description="The bank's legal entity this row is about, as a UUID from its organisation.")
+    org_unit_name: str = Field(description="The legal entity's name as the bank's organisation holds it, for showing.")
+    applicability: Applicability = Field(description=_APPLICABILITY)
+    applicability_reason: str | None = Field(description=_APPLICABILITY_REASON)
+    compliance_status: RegisterVocabRef = Field(description=_AGENT_STATUS)
+    status_note: str | None = Field(description=_AGENT_STATUS_NOTE)
+    owner: RegisterPersonRef | None = Field(description="The member who owns meeting the obligation in this entity; null when a team or nobody does.")
+    owner_team: RegisterVocabRef | None = Field(description=_TEAM_REF)
+    process: str | None = Field(description=_AGENT_PROCESS)
+    system: str | None = Field(description=_AGENT_SYSTEM)
+    next_review_date: datetime.date | None = Field(description=_AGENT_REVIEW)
+
+
+class RegisterDecisionItem(CamelSchema):
+    """A policy, procedure, control, process or system of the bank's own that the obligation
+    is linked to now. A link the bank removed is not listed."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_AGENT_ITEM_EXAMPLE]})
+
+    kind: RegisterVocabRef = Field(
+        description=(
+            "What the linked item is, as a row of the bank's own `link_kind` vocabulary, seeded as "
+            "`policy`, `procedure` and `control`; its admin may add rows such as a process or a system."
+        )
+    )
+    label: str = Field(description="The item's name as the bank calls it, such as `Client asset policy`.")
+    url: str | None = Field(description="Where the item lives in the bank's own systems; null when none was given. Never fetched by the server.")
+    external_ref: str | None = Field(description="The item's reference in the bank's GRC or document system, such as `POL-014`; null when none was given.")
+    external_system: str | None = Field(description="The name of the outside system that reference belongs to; null when none was given.")
+
+
+class RegisterDecision(CamelSchema):
+    """The bank's settled decisions on one obligation, as its own agent reads them (D-76):
+    applicability and its reason, compliance status and its note, how the bank reads the
+    rule, the owner, process, system and next review, per legal entity where it spans
+    several, and the internal items linked to it. Never a gap, a case, an assessment, a
+    comment, evidence or its location, a risk rating or the audit log."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_AGENT_DECISION_EXAMPLE]})
+
+    obligation_id: uuid.UUID = Field(description=_OBLIGATION_ID)
+    obligation_key: str = Field(
+        description="The obligation's stable key in the shared library, which never changes; read the obligation itself with `GET /obligations/{stableKey}`."
+    )
+    applicability: Applicability = Field(description=_APPLICABILITY)
+    applicability_reason: str | None = Field(description=_APPLICABILITY_REASON)
+    compliance_status: RegisterVocabRef = Field(
+        description=f"{_AGENT_STATUS} Where legal entities the obligation applies to have rows, it is the worst of theirs by category: gap, then partly, then not assessed, then compliant."
+    )
+    status_note: str | None = Field(description=_AGENT_STATUS_NOTE)
+    interpretation: str | None = Field(
+        description="How the bank reads this rule, the version in force, in its own words; null when it has written none. Earlier versions are not included."
+    )
+    owner: RegisterPersonRef | None = Field(description="The first-line member who owns meeting the obligation; null when nobody does yet.")
+    owner_team: RegisterVocabRef | None = Field(description=_TEAM_REF)
+    process: str | None = Field(description=_AGENT_PROCESS)
+    system: str | None = Field(description=_AGENT_SYSTEM)
+    next_review_date: datetime.date | None = Field(description=_AGENT_REVIEW)
+    entities: list[RegisterDecisionEntity] = Field(
+        description="One row per legal entity the bank has decided on for this obligation, by entity name; empty when it decided for the obligation as a whole."
+    )
+    internal_items: list[RegisterDecisionItem] = Field(description="The bank's own items linked to the obligation now, oldest link first; empty when none.")
+
+
+class RegisterDecisionPage(CamelSchema):
+    """One page of the bank's register decisions its agent may read."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_AGENT_DECISION_EXAMPLE], "total": 1}]})
+
+    items: list[RegisterDecision] = Field(description="The decisions on this page, by the obligation's stable key.")
+    total: int = Field(description="How many decisions the agent may read in total, not how many are on this page; use it to size a pager.")
