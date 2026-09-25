@@ -28,11 +28,15 @@ const onboarding = {
 const seeded = { id: 'ta', name: 'Example Bank AB', slug: 'example-bank', timezone: 'Europe/Stockholm', status: 'active', defaultLanguage: svenska, contentLanguages: [svenska, english], aiEnabled: true, onboarding };
 const fresh = { ...seeded, id: 'tn', name: 'Third Bank AB', slug: 'third-bank-ab', defaultLanguage: null, contentLanguages: [] };
 
+// The sections below the profile read their own lists; this bank has recorded none.
+const EMPTY_LISTS = ['/api/v1/tenant/org-units', '/api/v1/tenant/products'];
+
 /** The server: the tenant as given, the three reference languages, and a PATCH that answers the tenant back. */
 function server(tenant: typeof seeded | typeof fresh): Sent[] {
   return installAdapter((sent) => {
     if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === LANGUAGES_PATH) return { status: 200, data: [svenska, english, suomi] };
+    if (EMPTY_LISTS.includes(sent.path)) return { status: 200, data: { items: [], total: 0 } };
     if (sent.path === TENANT_PATH && sent.method === 'get') return { status: 200, data: tenant };
     if (sent.path === TENANT_PATH && sent.method === 'patch') return { status: 200, data: tenant };
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
@@ -90,6 +94,16 @@ describe('the organisation profile form', () => {
     expect(await save(sent, 2)).toEqual({ name: 'Example Bank AB', timezone: 'Europe/Stockholm', defaultLanguage: 'sv', contentLanguages: ['sv', 'en', 'fi'] });
   });
 
+  it('mounts the departments, teams, legal entities and products sections below the profile', async () => {
+    server(seeded);
+    await renderScreen();
+    for (const name of ['Departments', 'Teams', 'Legal entities', 'Products']) {
+      expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument();
+    }
+    expect(await screen.findByText('No legal entities yet')).toBeInTheDocument();
+    expect(await screen.findByText('No products yet')).toBeInTheDocument();
+  });
+
   it('asks for at least one content language instead of emptying the list, and sends nothing', async () => {
     const sent = server(seeded);
     await renderScreen();
@@ -121,6 +135,7 @@ function aiServer(tenant: typeof seeded, answer?: (count: number) => Answer): Se
   return installAdapter((sent) => {
     if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === LANGUAGES_PATH) return { status: 200, data: [svenska, english, suomi] };
+    if (EMPTY_LISTS.includes(sent.path)) return { status: 200, data: { items: [], total: 0 } };
     if (sent.path === TENANT_PATH && sent.method === 'get') return { status: 200, data: tenant };
     if (sent.path === AI_PATH && sent.method === 'put') {
       puts += 1;

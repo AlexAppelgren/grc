@@ -253,6 +253,12 @@ When they set a withdrawal date
 Then the row reads as withdrawn and stays in the history
 ```
 
+> **c8-ui-organisation (TEN-02, ADM-01).** `/admin/organisation` draws the legal entities as a
+> tree under the group, each entity's licences and certificates, and the products, with Add
+> and Edit for `vocab.manage` only; `stale_write`, `unknown_member`, `unknown_key` and a 422's
+> named fields render where they belong. The departments and teams sections are mounted as
+> stubs for their own package. TEN-S2 and TEN-S10 are journeys in `tenants.journey.spec.ts`.
+
 ### TEN-S11 — A support session reads and never writes, and never approves itself `@integration` (TEN-06)
 ```gherkin
 Given an approved support grant and a support session opened under it
