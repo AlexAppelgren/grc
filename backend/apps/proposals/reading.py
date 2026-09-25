@@ -187,6 +187,10 @@ def detail(proposal: Proposal, order: list[str], *, reviewer: Reviewer) -> Propo
     replaces against what this would make it say, the source behind every changed field, and
     the scope before and after."""
     row = queue_rows([proposal], order, reviewer=reviewer)[0]
+    if proposal.is_batch:
+        # A batch's preview is its rows, read through `GET /proposal-batches/{batchId}`
+        # (apps/proposals/batch.py); its payload has no single record to compare with.
+        return ProposalDetail(**dict(row), sources=_sources(proposal), rejection_reason=_rejection_reason(proposal, order))
     payload = logic.parsed_payload(proposal.kind, proposal.corrected_payload or proposal.payload)
     if not isinstance(payload, ProposalObligationVersionPayload) or proposal.target_id is None:
         # No wording to compare: a list row is written by a person, and a new record replaces

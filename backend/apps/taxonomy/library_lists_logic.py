@@ -8,9 +8,11 @@ the console applies it (apps/proposals/apply.py).
 
 The same checks a tenant write makes run here before the proposal exists: the labels are
 in real languages, the kind is one the list knows, the key is not taken, the value is not a
-near-duplicate, a system row is not retired. A proposal the reviewer could only reject for
+near-duplicate, a system row is not retired (on a list of fixed keys, the jurisdictions, one
+may be, and no value is added or merged away: D-94). A proposal the reviewer could only reject for
 a reason the proposer could have been told at once wastes both people's time. A term of a
-mirrored dimension is not proposed at all (FP-S12): the reference seed owns those.
+mirrored dimension is not proposed at all (FP-S12), nor is a change to that dimension's own
+row (H28): the reference seed owns those.
 
 This module writes proposals, never library rows, and names no `LibraryModel` class.
 """
@@ -58,6 +60,7 @@ def propose_create(
     force: bool = False,
 ) -> Proposal:
     entry = _proposable(list_name)
+    proposals.refuse_vocabulary_change(entry, ProposalKind.VOCABULARY_CREATE.value, [])
     cleaned = lists.validated_labels(labels)
     row_key = lists.key_for(cleaned, key)
     lists.check_duplicate(entry, None, row_key)
@@ -117,9 +120,11 @@ def propose_relabel(
 
 
 def propose_retire(*, list_name: str, proposer: proposals.Proposer, key: str, confirm: bool) -> Proposal:
-    _proposable(list_name)
+    entry = _proposable(list_name)
     row = lists.row_by_key(list_name, key, None)
-    if row.is_system:
+    proposals.refuse_vocabulary_change(entry, ProposalKind.VOCABULARY_RETIRE.value, [key])
+    # Every row of a list of fixed keys is the seed's, so retiring is how one leaves (D-94).
+    if row.is_system and not entry.fixed_keys:
         raise ValidationError(f"{key} is a system value: it can be relabelled but not retired.", code="system_row")
     count = int(getattr(row, "usage_count", 0))
     if count and not confirm:
@@ -161,6 +166,7 @@ def propose_merge(
     *, list_name: str, proposer: proposals.Proposer, key: str, into: str, dry_run: bool
 ) -> VocabularyMerged | Proposal:
     entry = _proposable(list_name)
+    proposals.refuse_vocabulary_change(entry, ProposalKind.VOCABULARY_MERGE.value, [key, into])
     source = lists.row_by_key(list_name, key, None)
     target = lists.row_by_key(list_name, into, None)
     if source.pk == target.pk:

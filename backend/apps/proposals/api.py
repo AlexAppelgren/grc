@@ -20,10 +20,13 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.proposals import logic, reading, updates
-from apps.proposals.logic import Reviewer
+from apps.proposals import batch, logic, reading, updates
+from apps.proposals.logic import Proposer, Reviewer
 from apps.proposals.schemas import (
     LibraryUpdatesPage,
+    ProposalBatch,
+    ProposalBatchDecision,
+    ProposalBatchInput,
     LibraryUpdatesQuery,
     ProposalApproveBody,
     ProposalCreateBody,
@@ -39,7 +42,7 @@ from apps.shared import permissions as perms
 from apps.shared.audit import Actor, ActorType
 from apps.shared.authentication import ApiKeyAuth, PrincipalKind, SessionAuth
 from apps.shared.errors import ProblemError
-from apps.shared.permissions import enforce_step_up, requires_permission
+from apps.shared.permissions import enforce_step_up, requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
 from apps.taxonomy.reading import language_order
 from apps.taxonomy.http import (
@@ -371,12 +374,15 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     term of the regime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes
     an obligation with a term of a dimension that mirrors the jurisdiction list;
     `duplicate_key` (409) when a new record's key is already a record's;
-    `validation_error` (422) for a body the schema or the kind's payload refuses;
+    `validation_error` (422) for a body the schema or the kind's payload refuses, a
+    `sourceUrl` that is not an https link on any kind, or a summary or text longer than
+    `PROPOSAL_TEXT_MAX_CHARS` (50000 unless the platform sets another number);
     `standard_term_only_on_standards` (422) when the scope puts a standard's term on an
     obligation whose instrument is not a standard; `licensed_text` (422) for a provision or
     provision version under a standard, a source on a standard's obligation that is not
-    an https link, or a standard's new obligation whose `refLabel` is not the standard's
-    official reference; `one_conformance_obligation` (422) for a new obligation under a standard
+    an https link, a standard's new obligation whose `refLabel` is not the standard's
+    official reference, or a `sourceLabel` under a standard that is anything but that
+    reference; `one_conformance_obligation` (422) for a new obligation under a standard
     that already holds one; `standard_term_required` (422) when a standard's obligation
     would carry no standard term, or more than one; `idempotency_conflict` (409) when the
     same proposer's `Idempotency-Key` arrives with a different body or from another bank
@@ -527,8 +533,10 @@ def approve_proposal(
     `riskFlags` is not empty, or corrects it with text the injection screen flags, which
     waits for a person who reads the flag; `invalid_transition` when the proposal was
     already approved or rejected, which is also what a repeated or simultaneous second call
-    answers, since nothing is ever applied twice; `source_missing` when a correction
-    introduces a field the proposal never sourced; `validation_error` when a key sends no
+    answers, since nothing is ever applied twice, and for a batch, which is decided row by
+    row through `POST /proposal-batches/{batchId}/decide`; `source_missing` when a correction
+    introduces a field the proposal never sourced, or changes a value without its fresh
+    source in `fieldSources`; `validation_error` when a key sends no
     `decision` or a person sends one or names a run, and when a correction is offered on a
     kind that cannot be corrected or does not fit its payload; `unknown_key` when the
     payload names a row the library does not hold; `not_a_regime` when a new instrument's
@@ -547,6 +555,7 @@ def approve_proposal(
         actor=reviewer.actor,
         note=body.note,
         payload_overrides=body.payload_overrides,
+        field_sources=body.field_sources,
         step_up_assertion_id=step_up_assertion_id,
         decision=body.decision,
         agent_run_id=body.agent_run_id,
@@ -604,7 +613,8 @@ def reject_proposal(
     `validation_error` (422) when a key sends no `decision`, when a person sends one or
     names a run, and for a field the body does not name; `four_eyes_violation` (409) when
     the reviewer is the person, key or agent who made the proposal; `invalid_transition`
-    (409) when the proposal was already approved or rejected.
+    (409) when the proposal was already approved or rejected, or is a batch, which is
+    decided row by row through `POST /proposal-batches/{batchId}/decide`.
     """
     reviewer = require_reviewer(request)
     proposal = logic.reject(
@@ -617,3 +627,201 @@ def reject_proposal(
         agent_run_id=body.agent_run_id,
     )
     return logic.row(proposal)
+
+
+# ---------------------------------------------------------------------------------------
+# Batch proposals (PRO-04, AGT-05; c11-proposal-batches-create)
+# ---------------------------------------------------------------------------------------
+def require_batch_proposer(request: HttpRequest) -> Proposer:
+    """Who may file a batch: a platform person holding `proposals.review`, the console's
+    re-tag, or a platform key holding `proposals:write`, which must then name an open run
+    of its own (checked in `batch.create_batch`). Re-tagging the library is the platform's
+    (AGT-05): a bank's session holds no platform permission, and a bank's key is refused
+    here even though a bank's key may hold `proposals:write` for a single proposal. Neither
+    403 carries a step-up: filing lets nothing into the library."""
+    who = principal(request)
+    if who.kind is PrincipalKind.AGENT:
+        if who.tenant_id is not None or not who.has_scope(perms.SCOPE_PROPOSALS_WRITE):
+            raise ProblemError(
+                status=403,
+                code="permission_denied",
+                detail="This key does not have the scope for that.",
+                required_permission=perms.SCOPE_PROPOSALS_WRITE,
+            )
+        return replace(proposer_for(request), agent_id=who.agent_id)
+    if who.tenant_id is not None or not who.has_permission(perms.PROPOSALS_REVIEW):
+        raise ProblemError(
+            status=403, code="permission_denied", detail="You do not have access to this.", required_permission=perms.PROPOSALS_REVIEW
+        )
+    return proposer_for(request)
+
+
+_BATCH_PATH = Path(
+    ...,
+    description=(
+        "The batch, the UUID `POST /proposal-batches` returned and the queue lists as the proposal's "
+        "`id`. A batch that does not exist, a proposal that is not a batch, and anything that is not a "
+        "UUID answer `not_found`."
+    ),
+)
+
+
+@router.post(
+    "/proposal-batches",
+    response={200: ProposalBatch, 201: ProposalBatch},
+    auth=[SessionAuth(), ApiKeyAuth()],
+    operation_id="createProposalBatch",
+    by_alias=True,
+    summary="Ask for one change to many library records at once, as one batch with a preview",
+)
+@answers_problems
+def create_proposal_batch(request: HttpRequest, body: ProposalBatchInput) -> Any:
+    """File a batch: one request that changes many shared library records the same way,
+    such as putting a scope term on every duty it belongs on. Call it from the console's
+    re-tag form, or from a platform agent's run that found a re-tag the library needs. The
+    batch is one proposal in the queue, listed once with `isBatch` and `rowCount`, with a
+    row per record carrying its preview: the record's fields before, as the library holds
+    them now, and after, as approving the row would leave them. Nothing in the library
+    changes until a second, independent reviewer approves a row.
+
+    `kind` is "obligation_scope", a re-tag, the only batch kind today: per obligation, the
+    scope terms to add and to take off, and the source for the new scope. It is checked in
+    full before anything is stored: every obligation a library one in force, every term a
+    live term and none of a dimension mirroring the jurisdiction list, every source an
+    https link or a provision's stable key, and the standards rule: a standard's term only
+    on a standard's obligation, which keeps exactly one, sourced by links alone. A batch
+    holds at most `PROPOSAL_BATCH_MAX_ROWS` rows (100 unless the platform sets another
+    number). The batch, its rows and its audit row are written in one transaction.
+
+    Needs the platform permission `proposals.review` from a person, with no step-up since
+    filing lets nothing in, or the scope `proposals:write` from a platform key, which names
+    in `agentRunId` an open run of its own. No bank role and no bank's key reaches it:
+    re-tagging the shared library is the platform's. Whoever files a batch never decides
+    it, which the database enforces.
+
+    Send an `Idempotency-Key`, because an agent retries: the same key with the same body
+    answers **200** with the batch it already made and records the retry. A new batch
+    answers **201**. Every text it arrives with is read by the injection screen and stored
+    as it arrived; what the screen finds is returned in `riskFlags`.
+
+    Errors to branch on: `unauthenticated` (401) without a session or a key;
+    `permission_denied` (403) without `proposals.review` or `proposals:write`, and for a
+    bank's session or key; `batch_too_large` (422) above `PROPOSAL_BATCH_MAX_ROWS` rows;
+    `unknown_key` (422) for a kind that is not a batch kind, an obligation the library does
+    not hold in force, or a term that is not a live term; `jurisdiction_term_mirrored`
+    (422) for a term of a dimension that mirrors the jurisdiction list; `source_missing`
+    (422) for an entry without a source; `standard_term_only_on_standards` (422) when a
+    standard's term would sit on a law's obligation; `standard_term_required` (422) when a
+    standard's obligation would carry no standard term or more than one; `licensed_text`
+    (422) for a source on a standard's obligation that is not an https link, or a
+    `sourceLabel` under a standard that is not its official reference; `run_not_open`
+    (422) when a key names no run or a closed one; `run_budget_exhausted` (422) when the
+    run has filed as many proposals as one run may; `not_found` (404) when the run is not
+    one this key opened; `idempotency_conflict` (409) when the same proposer's
+    `Idempotency-Key` arrives with a different body; `validation_error` (422) for a body
+    the schema refuses, an obligation named twice, a term both added and removed, an entry
+    that changes nothing, a source that is neither a link nor a provision's key, a
+    `sourceUrl` that is not an https link, or an `Idempotency-Key` longer than 200
+    characters.
+    """
+    # Ungated by design: logic-gate (proposals.review from the console or the proposals:write scope from a platform key; PRO-04, AGT-05).
+    proposer = require_batch_proposer(request)
+    proposal, created = batch.create_batch(
+        kind=body.kind,
+        title=body.title,
+        payload=body.payload,
+        proposer=proposer,
+        agent_run_id=body.agent_run_id,
+        idempotency_key=idempotency_key(request),
+        model=body.model,
+        source_label=body.source_label,
+        source_url=body.source_url,
+    )
+    return (201 if created else 200), batch.read(proposal, language_order(request))
+
+
+@router.get(
+    "/proposal-batches/{batch_id}",
+    response=ProposalBatch,
+    auth=SESSION,
+    operation_id="getProposalBatch",
+    by_alias=True,
+    summary="Open a batch proposal and read every record it would change, before and after",
+)
+@requires_permission(perms.PROPOSALS_REVIEW)
+@answers_problems
+def get_proposal_batch(request: HttpRequest, batch_id: str = _BATCH_PATH) -> ProposalBatch:
+    """A batch as a reviewer decides it: the proposal the queue lists, and every row beneath
+    it with the record it would change, by its own title and reference, the record's fields
+    before and after, the source behind the change and where the row stands. Call it before
+    deciding a batch, whole or row by row.
+
+    The preview is what was computed when the batch was filed, never recomputed, so the
+    reviewer decides on what was proposed. A pending row whose record has changed since is
+    marked `stale`: it was previewed against another scope and cannot be approved. Every
+    row comes back in one answer, since a batch holds at most `PROPOSAL_BATCH_MAX_ROWS`.
+    Reading it changes nothing and records nothing; until a row is approved the library
+    still says what it said.
+
+    Needs the platform permission `proposals.review`. No bank role reaches it.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without `proposals.review`; `not_found` (404) for a batch that does not exist, a
+    proposal that is not a batch, and anything that is not a UUID.
+    """
+    return batch.read(batch.by_id(uuid_or_404(batch_id)), language_order(request))
+
+
+@router.post(
+    "/proposal-batches/{batch_id}/decide",
+    response=ProposalBatch,
+    auth=SESSION,
+    operation_id="decideProposalBatch",
+    by_alias=True,
+    summary="Approve or reject a batch's rows, one by one or all the rest at once",
+)
+@requires_permission(perms.PROPOSALS_REVIEW)
+@requires_step_up
+@answers_problems
+def decide_proposal_batch(request: HttpRequest, body: ProposalBatchDecision, batch_id: str = _BATCH_PATH) -> ProposalBatch:
+    """Decide a batch: approve or reject the rows named in `rows`, and give every row still
+    pending one decision in `rest`, so a reviewer rejects the few that are wrong and
+    approves the others in one call. An approved row writes its record's new fields into the
+    library: for a re-tag, the obligation's scope terms become the row's `after`, and the
+    search index follows. A rejected one needs a reason from the "rejection_reason" list and
+    changes nothing. Every row decision, with the record's fields before and after, and one
+    more entry naming every row's outcome are written to the audit trail in the same
+    transaction as the library write, each carrying the passkey assertion; a failure part
+    way writes nothing. A row is decided once. The batch closes when no row is left pending:
+    `approved` if any row was approved, else `rejected`. The answer is the batch as it then
+    stands.
+
+    A pending row whose record was retired or changed since the batch was filed is `stale`
+    and cannot be approved: named for approval it fails the whole call, while under an
+    approved `rest` it is left pending and the others still apply, for the reviewer to reject.
+
+    Needs the platform permission `proposals.review` from a person, stepped up fresh with a
+    passkey. No API key reaches this route, and an agent never decides a batch. The reviewer
+    is never the batch's proposer, the person who asked for the re-tag, which the database
+    enforces on every row and on the batch.
+
+    Errors to branch on: `unauthenticated` (401) without a session, a key included;
+    `permission_denied` (403) without `proposals.review`, a bank's session included;
+    `step_up_required` (403) without a fresh passkey assertion; `not_found` (404) for a batch
+    that does not exist, a proposal that is not a batch, and anything that is not a UUID;
+    `four_eyes_violation` (409) when the reviewer proposed the batch, which decides nothing;
+    `invalid_transition` (409) when the batch or a named row is already decided;
+    `stale_write` (409) when a row named for approval is stale, or every row left to approve
+    is; `reason_required` (422) for a rejection without a live row of the rejection reason
+    list; `unknown_key` (422) for a row id that is not a row of this batch;
+    `validation_error` (422) for a decision that is not `approved` or `rejected`, a row
+    named twice, a reason on an approval, and a body that decides nothing.
+    """
+    user = caller_user(request)
+    proposal = batch.decide(
+        proposal=batch.by_id(uuid_or_404(batch_id)),
+        decision=body,
+        reviewer=Reviewer(actor=actor_for(request, user), user=user),
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return batch.read(proposal, language_order(request))

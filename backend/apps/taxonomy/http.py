@@ -38,6 +38,7 @@ CHUNK_STATUS_BY_CODE: dict[str, int] = {
     **STATUS_BY_CODE,
     "in_use": 409,
     "system_row": 409,
+    "category_empty": 409,
     "request_pending": 409,
     "invalid_transition": 409,
     "idempotency_conflict": 409,
