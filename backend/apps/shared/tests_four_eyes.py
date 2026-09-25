@@ -33,6 +33,9 @@ from apps.shared.permissions import (
 FOUR_EYES_TABLES: list[tuple[str, str]] = [
     ("footprint_change_request", "footprint_change_request_four_eyes"),
     ("proposal", "proposal_four_eyes"),
+    # c8-register-models (register 0002, REG-03): risk acceptance. The person who accepts a
+    # gap's risk is never the person who asked for it.
+    ("gap", "gap_four_eyes"),
 ]
 
 
@@ -58,5 +61,7 @@ class FourEyesGuard(TestCase):
     def test_the_approve_permissions_are_exactly_the_prd_list(self) -> None:
         self.assertEqual(
             APPROVE_PERMISSIONS,
-            {FOOTPRINT_APPROVE, CASES_SIGNOFF, APPLICABILITY_APPROVE, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW},
+            {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW},
         )
+        # One person sets applicability after a confirmation dialog, no second approver (D-75).
+        self.assertNotIn(APPLICABILITY_APPROVE, APPROVE_PERMISSIONS)
