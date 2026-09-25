@@ -21,7 +21,7 @@ from apps.shared.errors import ProblemError
 
 def list_definitions(*, limit: int, offset: int) -> AgentDefinitionPage:
     """Every definition by key, one page at a time, the same for every bank."""
-    published = AgentVersion.objects.filter(agent=OuterRef("pk"), version_no=OuterRef("current_version"))
+    published = AgentVersion.objects.filter(agent=OuterRef("pk"), version_number=OuterRef("current_version"))
     queryset = Agent.objects.annotate(published_at=Subquery(published.values("published_at")[:1])).order_by("key", "id")
     return AgentDefinitionPage(
         items=[AgentDefinitionOut.model_validate(row) for row in queryset[offset : offset + limit]],
