@@ -35,6 +35,8 @@ overwritten.
 | 2026-09-25 | c9-card-case-panels-a: the first half of the case panels drawn on `tenant-change.html`, replacing the triage placeholder. Triage (urgency, owner, owner team, Confirm and assign, the Dismiss dialog with the tenant's dismissal reasons and its refusals), Next step (Start assessment, No action with its close-reason dialog, one person, restorable, D-92), the impact assessment (applies, why, what must change, internal deadline, effort, the sub-status picker filtered to the category, contributor teams one add or remove at a time, "No" confirming before it closes, stale_write offering a reload and never a merge) and actions (owner, due date, days left, the add row, completion, remove with confirm, the lock while sign-off is pending, the cap), each with its permission-limited view, loading and error. A table on the card names each panel's operation and permission. `pills-and-labels.md` gains the scan-state and overdue rows. The screen-card row reads in progress until c9-card-case-panels-b draws the rest | design agent |
 | 2026-09-25 | c11-cards-agents-security: `admin-agents.html`, `console-agent-definitions.html`, `admin-security.html` and `console-queue-batch.html` drawn, and `admin-vocabulary.html` gains its jurisdictions console variant, which replaces the `console-languages.html` row. `admin-security.html` moves from chunk 13 to chunk 11 (CHUNK11_TASKS ruling 7); the IP allow-list and SSO stay chunk 13 and retention chunk 12. New pills are in `design/system/pills-and-labels.md` | c11-cards-agents-security |
 
+| 2026-09-25 | d89-cards (D-89, D-91, D-98, D-99): `tenant-private-records.html` drawn, the bank's own queue at `/private-records` with the agent's draft beside its sources, approve with a passkey, reject with a reason, the four-eyes refusal, empty, denied and not-found states, and the "Private to us" marker in place on the inventory row and the obligation and instrument heads. `admin-footprint.html` gains states 21 to 29, the scope-item panel: add and remove through the same request, the item in the pending preview, the passkey approval, and each item's research status. No control on either card lets an agent add or change a scope item or offers a platform reviewer. `pills-and-labels.md` gains the tones for record owner, proposer and research state. `GET /private-proposals/{id}` is a proposed path | d89-cards |
+
 ## Honesty rules (playbook 7.5, kept in spirit)
 
 - A feature is **covered** only when its screen exists, its role variants
@@ -127,6 +129,8 @@ destination of its own in the registry.
 | `tenant-reports.html`, `admin-data.html` | `/reports`, `/admin/data` | tenant | 12 | card pending; prototype `vReports()` is the cut |  |
 | `admin-integrations.html` | `/admin/integrations` | tenant | 13 | card pending |  |
 | `admin-security.html` | `/admin/security` | tenant | 11 (moved from 13, CHUNK11_TASKS ruling 7); IP allow-list and SSO 13, retention 12 | designed (c11-cards-agents-security): session limits within the platform maximums, step-up on save (ID-S17); the passkey-policy section left the card when the device-bound policy moved out of R2 (D-100); the Tenant reach panel is the agent access card's |  |
+| `tenant-private-records.html` | `/private-records`, `/private-records/[proposalId]` | tenant | 11 | designed (OWN-03, OWN-04, OWN-05, INV-07; PRO-S15, INV-S15, FP-S19): the bank's own queue and the "Private to us" marker |  |
+| `admin-footprint.html` scope-item panel, states 21 to 29 | `/admin/footprint` | tenant | 11 | designed (OWN-01, FP-02; FP-S18, FP-S19): scope items through the request, with research status |  |
 
 ## Operations
 
@@ -335,6 +339,18 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 |---|---|---|---|---|---|---|---|
 | `GET/POST /webhooks`, `PATCH/DELETE /webhooks/{id}`, `GET /webhooks/{id}/deliveries` | `admin-integrations.html` | tenant | `integrations.manage` | no | A | INT-S1, INT-S2, INT-S5 | later chunk 13, card pending |
 | `GET/PUT /integrations/tickets` | `admin-integrations.html` | tenant | `integrations.manage` | no | A | INT-S3 | later chunk 13, card pending |
+
+### The bank's own regulations (chunk 11, R2; D-89)
+
+| Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
+|---|---|---|---|---|---|---|---|
+| `POST /tenant/footprint/requests?dryRun=true`, `POST /tenant/footprint/requests` with scope-item add and remove rows | `admin-footprint.html` states 24, 27 | tenant | `footprint.request`; no API key | no | A, CO; others read-only | FP-S18, FP-S19 | designed |
+| `POST /tenant/footprint/requests/{id}/approve`, `/reject`, `/withdraw` for a request carrying scope items | `admin-footprint.html` states 25, 26, 27, 12 | tenant | approve and reject `footprint.approve`; withdraw: requester; no API key | approve yes | A, CO, AP; requester refused, 409 four_eyes_violation | FP-S18, FP-S19 | designed |
+| `GET /tenant/footprint` scope items with their research state | `admin-footprint.html` states 21 to 23 | tenant | `footprint.request` or `footprint.approve` (the page) | no | A, CO, AP | FP-S18 | designed |
+| `GET /private-proposals`, `GET /private-proposals/{id}` (path proposed) | `tenant-private-records.html` states 1 to 5, 11 to 14 | tenant | `private_records.approve`; no platform grant, no key scope | no | CO, AP; others see Restricted; another bank, a platform or support session 404 | PRO-S15, FP-S19 | designed |
+| `POST /private-proposals/{id}/approve` | `tenant-private-records.html` states 6, 7, 9, 10 | tenant | `private_records.approve` | yes | CO, AP; proposer refused, 409 four_eyes_violation | PRO-S15, FP-S19 | designed |
+| `POST /private-proposals/{id}/reject` (reason required) | `tenant-private-records.html` state 8 | tenant | `private_records.approve` | no | CO, AP | PRO-S15 | designed |
+| The owner kind on `GET /obligations`, `GET /obligations/{id}`, `GET /instruments/{id}` ("Private to us") | `tenant-private-records.html` state 15 on the inventory, obligation and instrument screens | tenant | `library.read` | no | All 7 of the owning bank; another bank 404 | INV-S15, FP-S19 | designed |
 
 ## Reachability audit (playbook 7.6), to run after each wave
 
