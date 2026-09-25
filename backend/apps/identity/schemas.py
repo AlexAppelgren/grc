@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
 from django.conf import settings
 from pydantic import ConfigDict, Field, JsonValue, ModelWrapValidatorHandler, ValidationInfo, model_validator
@@ -1045,6 +1045,14 @@ class MeTenant(CamelSchema):
     )
 
 
+class MeDepartment(CamelSchema):
+    """A department the caller heads (TEN-02, HOM-05, D-21): a business area, business unit or
+    function of the bank whose head is the caller."""
+
+    id: uuid.UUID = Field(description="The department's identifier, a UUID of this bank's organisation, as `GET /tenant/org-units` lists it.")
+    name: str = Field(description="The department's name as the bank wrote it, such as `Retail Banking`, for display only.")
+
+
 class MeCounts(CamelSchema):
     """The queue counts behind Today's "Decide now" panel: three independent reads, each
     filtered by the caller's own permissions rather than refused, so a reader without a
@@ -1226,6 +1234,7 @@ class Me(CamelSchema):
                         "assignments": True,
                         "weeklyBriefing": True,
                     },
+                    "headOf": [{"id": "5b1d7c2e-8f3a-4d6b-9c0e-2a4f6b8d0c1e", "name": "Retail Banking"}],
                 }
             ]
         }
@@ -1321,6 +1330,15 @@ class Me(CamelSchema):
             "What the person has chosen to be told about in this bank, each switch on unless "
             "they turned it off, or null for a platform session, which belongs to no bank. "
             "`PATCH /me` changes it."
+        )
+    )
+    head_of: list[MeDepartment] = Field(
+        description=(
+            "The active departments of this bank the caller is the head of, by name: the business "
+            "areas, business units and functions an administrator named them head of on the "
+            "organisation screen. A legal entity or a group is never a department. My work offers "
+            "a department view for each. Empty for someone who heads none, for a platform session "
+            "and for an enrolment session."
         )
     )
 
@@ -1451,6 +1469,7 @@ _EXAMPLE_MEMBER: dict[str, JsonValue] = {
     "lastSeenAt": "2026-09-22T06:58:04Z",
     "passkeyCount": 2,
     "activeSessions": 1,
+    "teams": ["compliance"],
 }
 _EXAMPLE_INVITATION: dict[str, JsonValue] = {
     "id": "7d2e9b14-6a3c-4f58-b1d0-3e8c5a7f2b96",
@@ -1608,6 +1627,16 @@ class MemberOut(CamelSchema):
             "`GET /tenant/members/{user_id}/sessions`."
         )
     )
+    teams: list[str] = Field(
+        description=(
+            "The keys of the bank's teams the person is in, in the team list's order, such as "
+            "`compliance`; empty when they are in none. Each is a row of the bank's own `team` "
+            "vocabulary, which an administrator may extend, so read the labels from "
+            "`GET /vocab/team` and never match on a label. A deactivated member keeps the teams "
+            "they were in until their removal ends them. `PUT /tenant/members/{user_id}/teams` "
+            "sets them."
+        )
+    )
 
 
 class MembersPage(CamelSchema):
@@ -1682,6 +1711,24 @@ class MemberPatch(CamelSchema):
             "The member's new job title in this bank, at most 200 characters, surrounding spaces "
             "trimmed; an empty string clears it. Leave it out, or send null (the default), to keep "
             "it as it is. Changing only the title needs no step-up."
+        ),
+    )
+
+
+class MemberTeamsBody(WriteBody):
+    """`PUT /tenant/members/{user_id}/teams`: the whole set of teams a member is in."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"teams": ["compliance", "retail-compliance"]}]})
+
+    teams: list[Annotated[str, Field(max_length=80)]] = Field(
+        max_length=50,
+        description=(
+            "The keys of every team the member is to be in, at most 50 keys of at most 80 "
+            "characters each, such as `compliance`; the set replaces the old one, a key named "
+            "twice counts once and an empty list takes the member out of every team. Each is a "
+            "key of the bank's own `team` vocabulary (`GET /vocab/team`), which an administrator "
+            "may extend. A key the bank does not have, or a retired team the member is not "
+            "already in, is refused with `unknown_key`; a retired team they are in may be kept."
         ),
     )
 

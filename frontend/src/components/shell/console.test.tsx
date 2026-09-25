@@ -63,6 +63,7 @@ const editor: Me = {
   counts: null,
   lastVisitAt: null,
   notificationPrefs: null,
+  headOf: [],
 };
 
 const member: Me = {
