@@ -79,6 +79,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     ),
     # Chunk 1 (identity and tenant admin basics). Each is something the rules branch on.
     "TenantStatus": ("tenant_status", "TEN-01: active or deactivated; every request branches on it"),
+    "Weekday": ("digest_weekday", "COL-02: the seven days of the week; the digest's schedule branches on it"),
     "UserStatus": ("user_status", "ID-02, ID-03: invited, active or deactivated; sign-in branches on it"),
     "InvitationKind": ("invitation_kind", "ID-01, ID-05: invite or re-enrolment; acceptance branches on it"),
     "ChallengeKind": ("challenge_kind", "ID-02, ID-06: registration, authentication or step-up ceremony"),
@@ -176,5 +177,47 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "roadmap_item_type",
         "HOM-03, HOM-04: what produced the date - a change's key date, an internal deadline, "
         "an action due or a review due; the card and the calendar builder branch on it",
+    ),
+    # Chunk 8 organisation and chunk 11 security policy (c8-org-models, tenants 0002).
+    "OrgUnitKind": (
+        "org_unit_kind",
+        "TEN-02, D-21: a group, legal entity, business area, business unit or function; only a legal "
+        "entity holds licences and the legal-entity term, and a department is a unit of the last three kinds",
+    ),
+    "ProductStatusKind": (
+        "product_status",
+        "TEN-02: planned, live or retired; retired is how a product is withdrawn, never deleted, and "
+        "scope and agent-access narrowing (D-70) branch on it, so it is a kind and not a tenant list",
+    ),
+    "CredentialPolicyKind": (
+        "credential_policy",
+        "ID-07, ADR 0048: any passkey or device-bound only; sign-in and enrolment branch on it",
+    ),
+    # Chunk 8's register lists (c8-vocab-lists-rules). Categories the rules read off a
+    # tenant row's fixed `kind`; the tenant's labels, order and extra rows stay its own.
+    "GapCategory": (
+        "gap_category",
+        "REG-03, VOC-04: open, remediating, risk accepted or closed; the gap workflow, the reports and the pill tone read the category, never the tenant's label",
+    ),
+    "RiskLevel": (
+        "risk_level",
+        "VOC-05: low, medium or high; the pill tone reads the level a risk rating maps to, never its editable ordinal or its label",
+    ),
+    # Chunk 10 (c10-collab-models): the notification and the mail it may send.
+    "NotificationKind": (
+        "notification_kind",
+        "COL-02: what a notification is about; the inbox, the preferences, delegation and the "
+        "mail composer branch on it. schema.sql's nine values plus participant_added, "
+        "involved_item_changed and review_due (COL-04, D-34), which chunk 10 produces with "
+        "mention, due_soon, overdue and escalation. assigned, signoff_requested and "
+        "approval_requested are produced by chunk 9 (c9-triage, c9-signoff); saved_search_hit "
+        "by chunk 13 (c13-saved-search-notify); proposal_waiting by no R2 chunk, because "
+        "'Decide now' counts waiting proposals on GET /me (D-23), and it is declared so the "
+        "kind list stays schema.sql's",
+    ),
+    "EmailStatus": (
+        "email_status",
+        "COL-02: queued, sent, delivered, bounced or failed; the delivery task and the "
+        "provider's callback branch on it, and no admin adds a delivery state",
     ),
 }
