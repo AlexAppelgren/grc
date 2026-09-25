@@ -184,21 +184,63 @@ class RegisterScenarioTests(TestCase):
         "Applies" and "we comply" are separate facts (REG-01, REG-02).
         """
 
-    @skip("pending: REG-S5")
     def test_reg_s5(self) -> None:
         """REG-S5
 
         A gap has an owner, severity, target date and remediation (REG-03).
         Operations: `createGap`, `updateGap`.
-        """
 
-    @skip("pending: REG-S6")
+        Up to the roadmap line: "Our deadline" on the roadmap is c8-home-standing-roadmap's.
+        """
+        from apps.register.tests_gaps import GapWorld, gap_body, seed_library
+        from apps.shared.testing import sign_in
+
+        seed_library()
+        world = GapWorld("reg-s5")
+        world.set_entry(applicability="applies", compliance_status=world.status("gap"))
+        owner = sign_in(world.owner, tenant=world.tenant)
+        body = gap_body(severity="high", ownerId=str(world.owner.id))
+        recorded = self.client.post(world.url(), data=body, content_type="application/json", **owner)
+        self.assertEqual(recorded.status_code, 201, recorded.content)
+        gap = recorded.json()
+        self.assertEqual((gap["status"]["key"], gap["status"]["kind"], gap["status"]["label"]), ("open", "open", "Open"))
+        self.assertEqual((gap["severity"]["key"], gap["severity"]["label"]), ("high", "High"))
+        self.assertEqual(gap["source"]["label"], "Assessment")
+        self.assertEqual((gap["owner"]["id"], gap["targetDate"], gap["remediation"]), (str(world.owner.id), body["targetDate"], body["remediation"]))
+        started = self.client.patch(
+            f"/api/v1/gaps/{gap['id']}", data={"status": "remediating"}, content_type="application/json", HTTP_IF_MATCH=str(gap["version"]), **owner
+        )
+        self.assertEqual(started.status_code, 200, started.content)
+        self.assertEqual((started.json()["status"]["kind"], started.json()["status"]["label"]), ("remediating", "Remediating"))
+
     def test_reg_s6(self) -> None:
         """REG-S6
 
         Risk acceptance is behind four eyes with step-up (REG-03).
         Operations: `requestRiskAcceptance`, `approveRiskAcceptance`, `reopenGap`.
         """
+        from apps.register.gaps import RISK_ACCEPTED
+        from apps.register.tests_gaps import GapWorld, gap_body, seed_library
+        from apps.shared.models import AuditEvent
+        from apps.shared.testing import sign_in
+
+        seed_library()
+        world = GapWorld("reg-s6")
+        officer = sign_in(world.officer, tenant=world.tenant, step_up=True)
+        gap = self.client.post(world.url(), data=gap_body(), content_type="application/json", **officer).json()
+        asked = self.client.post(f"/api/v1/gaps/{gap['id']}/accept-risk", data={"reason": "compensating_control"}, content_type="application/json", **officer)
+        self.assertEqual(asked.status_code, 200, asked.content)
+        self.assertIsNone(asked.json()["riskAcceptance"]["approvedBy"], "Waiting for approval")
+        self.assertEqual(asked.json()["status"]["key"], "open")
+        own = self.client.post(f"/api/v1/gaps/{gap['id']}/accept-risk/approve", **officer)
+        self.assertEqual((own.status_code, own.json()["code"]), (409, "four_eyes_violation"))
+        approved = self.client.post(f"/api/v1/gaps/{gap['id']}/accept-risk/approve", **sign_in(world.second_officer, tenant=world.tenant, step_up=True))
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertEqual((approved.json()["status"]["kind"], approved.json()["status"]["label"]), ("risk_accepted", "Risk accepted"))
+        [event] = AuditEvent.objects.filter(action=RISK_ACCEPTED, subject_id=gap["id"])
+        self.assertEqual(event.actor_id, world.second_officer.id)
+        self.assertEqual(event.after["requestedBy"], str(world.officer.id))
+        self.assertIsNotNone(event.step_up_assertion_id)
 
     @skip("pending: REG-S7")
     def test_reg_s7(self) -> None:
