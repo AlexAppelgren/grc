@@ -46,6 +46,7 @@ from apps.register.schemas import (
     RegisterInterpretationBody,
     RegisterPatch,
     RegisterRiskAcceptanceBody,
+    RegisterSpannedEntity,
     RegisterStatementOfApplicability,
     RegisterStatementQuery,
     RegisterUnit,
@@ -283,6 +284,41 @@ def set_applicability_many(request: HttpRequest, body: RegisterApplicabilityMany
     return applicability.set_applicability_many(
         tenant=tenant, actor=actor_for(request), order=language_order(request, tenant=tenant), body=body
     )
+
+
+# c8-ui-applicability-status: the legal entities an obligation spans (REG-01, D-42).
+@router.get(
+    "/obligations/{obligation_id}/register/entities",
+    response=list[RegisterSpannedEntity],
+    auth=SESSION,
+    operation_id="listSpannedEntities",
+    by_alias=True,
+    summary="See which of your legal entities an obligation spans",
+    openapi_extra={
+        "responses": {
+            200: {"content": {"application/json": {"example": [{"orgUnitId": "55555555-5555-4555-8555-555555555555", "orgUnitName": "Example Bank AB"}]}}}
+        }
+    },
+)
+@requires_permission(perms.REGISTER_READ)
+@answers_problems
+def list_spanned_entities(request: HttpRequest, obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID)) -> Any:
+    """Every active legal entity of the bank that the obligation spans, by name, whether or
+    not anyone has answered for it yet: those whose legal-entity term the obligation carries,
+    or all of them when it carries none in that dimension, as a standard's conformance
+    obligation does (D-42). These are exactly the entities `setApplicability` accepts as
+    `orgUnitId`; the obligation page offers one answer per entity where there are several.
+
+    A person's session holding `register.read`, which every role of a bank carries. A read: it
+    writes nothing, not even a scope row, and no audit event. A bank with no legal entity
+    recorded gets an empty list with 200. The list is the bank's legal entities, a handful, so
+    it is not paged.
+
+    Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
+    `register.read`; `not_found` (404) for an obligation the bank cannot see.
+    """
+    caller_tenant(request)
+    return applicability.list_spanned(obligation_id=obligation_id)
 
 
 # ---------------------------------------------------------------------------------------

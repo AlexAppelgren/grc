@@ -188,6 +188,14 @@ class RegisterPersonRef(CamelSchema):
 # ---------------------------------------------------------------------------------------
 # Compliance status on the register entry and per legal entity (REG-02)
 # ---------------------------------------------------------------------------------------
+class RegisterSpannedEntity(CamelSchema):
+    """A legal entity of the bank that an obligation spans, whether or not anyone has answered
+    for it yet (D-42)."""
+
+    org_unit_id: uuid.UUID = Field(description="The legal entity, as a UUID from the bank's organisation; send it as `orgUnitId` to answer for it.")
+    org_unit_name: str = Field(description="The legal entity's name as the bank wrote it, for display; match on the id.")
+
+
 class RegisterEntityStatus(CamelSchema):
     """One legal entity's row under an obligation that spans several: its own applicability
     and reason, and its own compliance status and details (REG-01, REG-02, D-42)."""
