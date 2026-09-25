@@ -46,7 +46,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | CAS-04 | Actions with owner and due date, locked while sign-off is pending, exportable as tickets | M | R2 | pending |
 | CAS-05 | Evidence as file, link or reference, scanned, hashed, streamed through permission checks | M | R2 | pending |
 | CAS-06 | Sign-off only with no open action and at least one piece of evidence, only by a second person, with step-up | M | R2 | pending |
-| CAS-07 | A case file that stands alone, as text and as an export | M | R2 | pending |
+| CAS-07 | A case file that stands alone, as text and as an export | M | R2 | built |
 | CAS-08 | Every response lists allowed transitions; concurrent edits are refused, never merged silently | M | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
@@ -218,9 +218,11 @@ And the guard declares the one expected 409 on the self sign-off
 
 ### CAS-S16 — Another tenant's case and evidence answer 404 `@integration` (CAS-05, CAS-07, NFR-01)
 ```gherkin
-Given a case with evidence in tenant A
-When tenant B fetches the case, its evidence file and its case file
-Then each answers 404 and no audit row records a download
+Given a case with actions and evidence in tenant A, and tenant B's own case for the same change
+When tenant B fetches the case file of that change
+Then it reads its own case's file, holding none of A's "So what?", actions, evidence or people
+When tenant B fetches A's evidence file, removes it, or edits or removes A's action
+Then each answers 404 and no refusal writes an audit row
 ```
 
 ### CAS-S17 — Contributor teams are the case's team participants `@integration` (CAS-03, COL-04)
