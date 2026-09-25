@@ -254,6 +254,16 @@ Then find-similar returns shared records only and the private change carries no 
 > append-only children is split out: it is proven by chunk 12's tenant-exit scenarios, which
 > delete every row of the tenant, and not by this R2 stub.
 
+> **Note — how INV-S13 is proven in R2 (d89-no-ai-index).** The indexer's reads skip an owned
+> record and every child of it (`search/sources.py`), and the embedder reads shared chunks
+> only, in its query as well as by the policy (`search/indexing.py`); find-similar and search
+> read `owner_tenant_id IS NULL` the same way (`search/hybrid.py`). A registered change
+> belongs to no bank in R2 (a bank's own sources are WAT-06, R3), so "a private change" is a
+> change to the bank's own record, and a "So what?" about it could only be a model call about
+> that record: `shared/ai.py` refuses any call whose subject is a bank's own instrument,
+> obligation or provision, or one its zone cannot read as shared, before a model is asked.
+> `search/tests_private_index.py` and `shared/tests_ai_private.py` hold each refusal alone.
+
 ### INV-S14 — A record an agent confirmed reads as machine-confirmed `@integration` `@e2e` (INV-05, INV-06, PRO-02)
 ```gherkin
 Given a proposal filed by one agent and approved by an independent agent
