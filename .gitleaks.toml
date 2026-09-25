@@ -242,3 +242,11 @@ description = "E2E passkey private key for the seeded user approver@second-bank.
 condition = "AND"
 regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgqp4keK1CVCmUqb6cuZmxD4PZsm4iHTiQkEIDgB8CBTmhRANCAAQItrG7COh7F-vyB9XMk6g-gn4Jp6BtV6O3663YP4y-LUtTEc-4zlyk0tFyDvnF9JlXLtLIOE8vHq82uz9Z-763$''']
 paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
+
+# acc-e2e-seed: two library stable keys built from public CELEX numbers, which the
+# generic-api-key rule reads as keys because the field is named `stable_key`.
+[[allowlists]]
+description = "Library stable keys of Commission Delegated Regulations (EU) 2017/565 and 2017/589, their public CELEX numbers (32017R0565, 32017R0589) in the E2E-only J-11 fixture. Identifiers of published EU law, not secrets."
+condition = "AND"
+regexes = ['''^celex-32017r0565$''', '''^celex-32017r0589$''']
+paths = ['''^backend/apps/library/fixtures/e2e_trading\.json$''']
