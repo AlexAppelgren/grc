@@ -1411,3 +1411,58 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       changed value in", an agent's correction without one answers 422 `source_missing`
       and applies nothing (fails safe; it can still approve as proposed or reject).
       Default if you say nothing: v3 carries that line when the confirmer next changes.
+## acc-principal-guard: how an agent access credential is fenced (2026-09-25, ACC-03, ACC-09)
+
+Built on these defaults; each stays yours to overrule.
+
+- [ ] **A token whose person loses a permission is refused, not revoked.** A personal
+      access token stops on the next request when its person is deactivated, leaves
+      the bank, or loses the permission behind any one of its scopes (`library.read`,
+      `search.use`, `roadmap.read`, `register.read`); it is refused whole rather than
+      narrowed. It is a check on every request, so if the person gets the permission
+      back the token works again until it expires. Default: so. The alternative is to
+      stamp the token revoked the first time the check fails.
+- [ ] **A session-only route answers a key or token with the fence's 403.** A key of
+      an agent access entry or a token that reaches a write or a step-up route which
+      takes only a person's session is answered 403 `read_only_credential` or
+      `step_up_required`, not 401, so every such route answers the same way whichever
+      auth it takes. A read it cannot use still answers 401.
+- [ ] **The rate-limit log.** Over `AGENT_ACCESS_RATE_PER_MINUTE` a credential gets 429,
+      and the first refusal of each minute writes one `credential_rate_limited` row in
+      the security log, not one per refused request, so a runaway agent cannot flood
+      the log.
+
+## acc-scope-and-reach: an entry's scope and tenant reach, answered by default (2026-09-25, ACC-02, ACC-08, D-70, D-72)
+
+- [ ] Default taken: an opt-in dimension keeps its rule inside an entry's scope too. The
+      second pass is FP-01 unchanged against the entry's terms, so an entry narrowed to
+      Trading sees a standard's records (ISO/IEC 27001) only when a Trading product names
+      that standard. Say if a narrowed entry should instead inherit every standard the bank
+      follows.
+- [ ] Default taken: a department brings its own products and those of every active unit
+      below it; a deactivated unit cuts its branch, and a retired product derives nothing.
+      An entry that names departments or products deriving no term reads nothing
+      (`entry_scope_empty`), and an entry the session cannot see, or one revoked, fails
+      closed the same way rather than reading the whole footprint.
+- [ ] Default taken: rejecting a reach request needs a passkey step-up like approving it,
+      and a reach request is never withdrawn (the requester's colleague rejects it).
+      Switching reach off needs one person and a step-up; on again takes a new request and
+      a second person. `GET /tenant/reach` is readable with `security.manage` alone.
+
+## acc-entries-and-log: entries, their keys and the access log, answered by default (2026-09-25, ACC-01, ACC-03, ACC-08)
+
+- [ ] Default taken: a call an agent access credential makes is logged whatever its answer,
+      a refused write or step-up with its 403 included, but a call refused for its rate is
+      not: the security log already keeps one `credential_rate_limited` row a minute for it,
+      and a runaway agent must not flood the access log. A call on a revoked or expired
+      credential is refused before it is anyone's call and is not logged either.
+- [ ] Default taken: a filter is logged as its name, and its value only when the value is a
+      key (a stable key, a vocabulary key, a UUID, a date, a number). `q`, `query`, `text`,
+      `description`, `topic` and `question` keep their name alone, so the log shows that an
+      agent searched, never for what.
+- [ ] Default taken: the log is read on the entry (`GET /agent-access/{entryId}/calls`) under
+      `agent_access.manage`, like the entry itself. Say if an auditor holding `audit.read`
+      should read it too.
+- [ ] Default taken: a key sent with no expiry lives `AGENT_ACCESS_KEY_MAX_DAYS` (90); a
+      later one is refused (`expiry_too_late`). Revoking an entry twice answers 409
+      `invalid_transition`; revoking one key twice is a safe retry.

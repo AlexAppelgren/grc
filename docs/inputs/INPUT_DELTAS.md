@@ -1536,3 +1536,35 @@ enabled and forced row-level security, with these departures on purpose:
 - `GET /exports/{exportId}/download` streams the file itself (section 4, section 7), with
   `Content-Disposition: attachment` and `Cache-Control: no-store`, and records every
   download in the audit log. There is no `DownloadLink`.
+## acc-foundation. Agent access entries and credential kinds (2026-09-25, agents 0006, identity 0007)
+
+`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
+third column the R2 plan names (`acts_as_user`), are built with these departures:
+
+- `agent_access.owner_team_id` is required, not "null until chunk 8 lands teams": the team
+  list has landed and every bank has the system team `compliance` (ACC-01 names the team).
+  `revoked_at` and `revoked_by_id` are columns, and a CHECK keeps `active` false exactly when
+  `revoked_at` is set. An entry is revoked, never deleted (`delete()` refuses).
+- Every reference is also a composite `(tenant_id, …)` key: the team, the departments
+  (`org_unit`) and products (`tenant_product`) of the joins, the creator and revoker (into
+  `membership (tenant_id, user_id)`), and on `api_key` the entry and `acts_as_user`.
+- `api_key.kind` is the tier-one kind `credential_kind` (`service`, `personal`); every key
+  before identity 0007 is `service`. CHECKs: a personal token has a tenant, a person and an
+  expiry and no agent, and only a token acts as a person; a key bound to an entry has a
+  tenant and no agent definition (it is not one of the agents we run); an entry's key and
+  every token hold only `AGENT_ACCESS_SCOPES` (`library:read`, `search:read`,
+  `upcoming:read`, `tenant:read`), so "reads and nothing else" (ADR 0055) is the
+  database's rule as well as the code's.
+- `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
+  `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
+
+## acc-entries-and-log. The access log of a bank's own agents (2026-09-25, governance 0005)
+
+`schema.sql` has no table for AGENT_ACCESS.md section 9's access log. `agent_access_call` is
+new: a tenant table under forced row-level security, append-only by the shared trigger, one
+row per call an agent access credential makes (`api_key_id`, `agent_access_id`,
+`acting_user_id`, `tool`, `filters`, `record_count`, `scopes`, `scope_narrowed`,
+`scope_terms`, `duration_ms`, `status`, `at`). The entry and the person are composite
+`(tenant_id, …)` keys; the credential is a plain key into the mixed `api_key` table. It holds
+no content column. A tenant ledger under D-53: the purge deletes a row whole ten years after
+it was written.

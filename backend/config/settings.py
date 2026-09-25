@@ -118,6 +118,9 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # acc-entries-and-log (ACC-08): the access log row of an agent access credential's call,
+    # written after the response.
+    "apps.governance.access_log.AccessLogMiddleware",
     # Timing last so the measurement is the application's own time (playbook 10), not
     # the middleware stack above it.
     "apps.shared.middleware.ServerTimingMiddleware",
@@ -274,6 +277,11 @@ EMBEDDER_PROVIDER = env_str("EMBEDDER_PROVIDER", "mock")  # mock | none | <chose
 EMBEDDER_API_KEY = env_str("EMBEDDER_API_KEY", "")
 EMBEDDING_DIMENSIONS = env_int("EMBEDDING_DIMENSIONS", 1024)  # DECISIONS D-09
 AGENT_RUNNER = env_str("AGENT_RUNNER", "mock")  # mock | managed_agents
+
+# --- c11-agents-contract (AGT-05) ------------------------------------------------------
+# The longest topic a research or re-tag request may carry, in characters: the text is a
+# bank's own (or the console's) and is validated at the boundary before anything reads it.
+AGENT_RESEARCH_TOPIC_MAX_CHARS = env_int("AGENT_RESEARCH_TOPIC_MAX_CHARS", 500)
 MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp
 MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")
 MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")
@@ -793,6 +801,18 @@ REFRESH_COOKIE_SECURE = not DEBUG
 # An API key's last_used_at (and its key_used security-log row) is written at most this
 # often, so a busy agent does not turn every call into a write (ID-10).
 API_KEY_LAST_USED_THROTTLE_SECONDS = env_int("API_KEY_LAST_USED_THROTTLE_SECONDS", 60)
+# ===== acc-foundation: agent access credentials (ACC-03, ACC-09, ADRs 0055 and 0056) =====
+# The longest a service key of an agent access entry, and a personal access token, may live;
+# a token cannot be minted without an expiry. And the requests one such credential may make
+# per minute, whatever it reads.
+AGENT_ACCESS_KEY_MAX_DAYS = env_int("AGENT_ACCESS_KEY_MAX_DAYS", 90)
+PERSONAL_TOKEN_MAX_DAYS = env_int("PERSONAL_TOKEN_MAX_DAYS", 90)
+AGENT_ACCESS_RATE_PER_MINUTE = env_int("AGENT_ACCESS_RATE_PER_MINUTE", 60)
+if min(AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS, AGENT_ACCESS_RATE_PER_MINUTE) < 1:
+    raise ImproperlyConfigured(
+        "Refusing to boot: AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS and "
+        "AGENT_ACCESS_RATE_PER_MINUTE must each be at least 1."
+    )
 
 # ---------------------------------------------------------------------------------------
 # ===== Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ===========
