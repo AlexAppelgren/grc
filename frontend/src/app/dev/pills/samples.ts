@@ -1,7 +1,7 @@
 import type { RoadmapItemFacts } from '@/features/home/roadmap-presentation';
 import type { InstrumentFacts } from '@/features/library/instrument-presentation';
 import type { ObligationFacts, ScopeFacts } from '@/features/library/obligation-presentation';
-import type { GapFacts } from '@/features/register/gap-presentation';
+import type { GapFacts } from '@/features/register/register-presentation';
 import type { KindRef } from '@/features/shared/presentation-types';
 import type { ComplianceKind, GapKind, SeverityKind, UrgencyKind } from '@/features/shared/tone-by-kind';
 import type { ChangeFacts } from '@/features/watch/change-presentation';
