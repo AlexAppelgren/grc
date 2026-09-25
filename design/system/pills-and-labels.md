@@ -42,6 +42,17 @@ There is no seventh tone and no component accepts a colour.
 An admin adds a value by typing a label, its translations and a usage note.
 A new compliance sub-status inherits the tone of its category.
 
+## Case work
+
+| Source | Rule |
+|---|---|
+| Slot | Workflow status stays in its `information` slot and reads the tenant's sub-status label ("Waiting for legal" under `assessing`), never a tone of its own: a sub-status changes the words, not the tone (CAS-S13) |
+| Kind with severity | Evidence scan state (`ScanState` plus `pending`): pending "Being checked" `notice`, clean "Checked" `positive`, error "Could not be checked" `warning`, infected "Refused, malware found" `negative` |
+| Computed | An open action whose due date is before the tenant-local today reads "Overdue" `negative`; a due date not yet passed, and any completed action, shows no pill, only the date and days left as text |
+
+Action row order: completion, title, owner, due date, "Overdue" if it applies,
+then days left or days late as text in tabular numerals.
+
 ## Slot order
 
 | Record | Order |
