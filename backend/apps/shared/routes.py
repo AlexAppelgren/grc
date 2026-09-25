@@ -57,4 +57,9 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/footprint/requests/{request_id}/reject", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/tenant/footprint/requests/{request_id}/withdraw", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/vocab/{list_name}/suggestions/{suggestion_id}/decline", "taxonomy.VocabularySuggestion", "vocabulary_suggestion"),
+    # c8-reg-gaps-risk (REG-03). `POST /gaps/{gap_id}/accept-risk` needs a body the guard's
+    # empty one fails before the lookup, so apps/register/tests_gaps.py proves its 404.
+    ("PATCH", "/gaps/{gap_id}", "register.Gap", "gap"),
+    ("POST", "/gaps/{gap_id}/accept-risk/approve", "register.Gap", "gap"),
+    ("POST", "/gaps/{gap_id}/reopen", "register.Gap", "gap"),
 ]
