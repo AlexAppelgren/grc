@@ -18,6 +18,7 @@ import { useFormatContext } from '@/features/identity/hooks';
 import { useTenantProposals } from '@/features/proposals/hooks';
 import {
   useCreateValue,
+  useDeclineSuggestion,
   useMergeValue,
   usePreviewMerge,
   useReorderValues,
@@ -25,9 +26,10 @@ import {
   useRetireValue,
   useUpdateValue,
   useVocabularies,
+  useVocabularySuggestions,
   useVocabularyValues,
 } from '@/features/vocabularies/hooks';
-import type { VocabularyRow } from '@/features/vocabularies/types';
+import type { VocabularyRow, VocabularySuggestion } from '@/features/vocabularies/types';
 import {
   IN_USE_CODE,
   exactDuplicateFrom,
@@ -55,6 +57,11 @@ import { formatDate } from '@/shared/utils/format';
 // never chosen on this screen: it comes from the list's slot or the row's
 // fixed kind.
 //
+// A tenant list also has a Suggested tab (VOC-03): values members without
+// vocab.manage suggested from a picker. Add creates the value with the
+// suggestion's key, which answers every suggestion for it; Decline turns it
+// down. Both need vocab.manage, which the tenant route's gate holds.
+//
 // On the console surface (ADM-02) the screen holds library lists only: a
 // library editor with library_vocab.manage proposes every change, and a
 // second editor approves it in the queue. A tenant list opened there by its
@@ -62,6 +69,8 @@ import { formatDate } from '@/shared/utils/format';
 
 const ACTIVE = 'active';
 const RETIRED = 'retired';
+const SUGGESTED = 'suggested';
+const VOCAB_MANAGE = 'vocab.manage';
 // A library-list write is a proposal: a tenant member proposes with the first
 // grant, platform staff in the console with the second (VOC-07).
 const LIBRARY_PROPOSERS = ['proposals.create', 'library_vocab.manage'];
@@ -501,6 +510,47 @@ function AddDialog({ list, isLibrary, onClose }: { list: string; isLibrary: bool
   );
 }
 
+// ——— a suggestion ————————————————————————————————————————————————
+
+function SuggestionRow({ list, suggestion }: { list: string; suggestion: VocabularySuggestion }) {
+  const t = useT();
+  const ctx = useFormatContext();
+  const create = useCreateValue(list);
+  const decline = useDeclineSuggestion(list);
+  const label = suggestion.labels.en ?? Object.values(suggestion.labels)[0] ?? suggestion.key;
+  const exact = exactDuplicateFrom(create.error)?.[0];
+  const near = nearDuplicateFrom(create.error)?.[0];
+  const busy = create.isPending || decline.isPending;
+
+  return (
+    <div className="grid grid-cols-1 items-start gap-x-3 gap-y-2 rounded-card border border-line bg-surface px-4 py-3 md:grid-cols-[1fr_auto]" data-suggestion={suggestion.id}>
+      <div className="min-w-0">
+        <SwatchPair>
+          <PillRow pills={[presentVocabularyValue(list, { key: suggestion.key, kind: null, label, extra: {} })]} />
+        </SwatchPair>
+        <small className="mt-1 block text-meta text-muted">{t('admin.vocabularies.suggestedBy', { name: suggestion.suggestedBy, date: formatDate(suggestion.createdAt, ctx) })}</small>
+        {suggestion.usageNote.length > 0 ? <small className="block text-meta text-muted">{suggestion.usageNote}</small> : null}
+        {exact !== undefined || near !== undefined ? (
+          <p role="alert" className="mt-1 text-meta text-negative">
+            {exact !== undefined ? t('picker.alreadyExists', { label: exact.label }) : t('admin.vocabularies.didYouMean', { label: near?.label ?? '' })}
+          </p>
+        ) : create.isError ? (
+          <ProblemAlert error={create.error} />
+        ) : null}
+        {decline.isError ? <ProblemAlert error={decline.error} /> : null}
+      </div>
+      <ButtonBar className="mt-0">
+        <Button variant="outline" size="small" disabled={busy} onClick={() => decline.mutate(suggestion.id)}>
+          {t('admin.vocabularies.decline')}
+        </Button>
+        <Button size="small" disabled={busy} onClick={() => create.mutate({ key: suggestion.key, labels: suggestion.labels, usageNote: suggestion.usageNote })}>
+          {t('admin.vocabularies.addButton')}
+        </Button>
+      </ButtonBar>
+    </div>
+  );
+}
+
 // What this bank proposed on a library list and is still waiting on (VOC-07,
 // PRO-01). The tenant route already requires vocab.manage, as GET
 // /tenant/proposals does; the console never reads a bank's proposals.
@@ -552,6 +602,8 @@ export function VocabularyScreen({ list, surface = 'tenant' }: { list: string; s
   // holds; a library list only by someone who may propose.
   const permissions = usePermissions() ?? [];
   const canWrite = !isLibrary || unlocks(LIBRARY_PROPOSERS, permissions);
+  const decidesSuggestions = lists.isSuccess && !isLibrary && permissions.includes(VOCAB_MANAGE);
+  const suggestions = useVocabularySuggestions(list, decidesSuggestions);
   const libraryLede = inConsole ? t('console.vocabularies.lede') : t('admin.vocabularies.libraryLede');
 
   const [editing, setEditing] = useState<string | null>(null);
@@ -571,6 +623,7 @@ export function VocabularyScreen({ list, surface = 'tenant' }: { list: string; s
   }, [values.data, order]);
 
   const shown = rows.filter((row) => (filter === ACTIVE ? row.active : !row.active));
+  const waiting = suggestions.data?.items ?? [];
   const activeKeys = rows.filter((row) => row.active).map((row) => row.key);
 
   const commitOrder = (keys: string[]) => {
@@ -635,12 +688,31 @@ export function VocabularyScreen({ list, surface = 'tenant' }: { list: string; s
         <Chip pressed={filter === RETIRED} onClick={() => setFilter(RETIRED)}>
           {t('admin.vocabularies.filterRetired')}
         </Chip>
+        {decidesSuggestions ? (
+          <Chip pressed={filter === SUGGESTED} onClick={() => setFilter(SUGGESTED)}>
+            {t('admin.vocabulary.filterSuggested', { count: suggestions.data?.total ?? 0 })}
+          </Chip>
+        ) : null}
         {isLibrary ? null : <span className="text-meta text-muted">{t('admin.vocabularies.reorderHint')}</span>}
       </ChipRow>
 
       {reorder.isError ? <ProblemAlert error={reorder.error} /> : null}
 
-      {shown.length === 0 ? (
+      {filter === SUGGESTED ? (
+        suggestions.isPending ? (
+          <LoadingState rows={2} />
+        ) : suggestions.isError ? (
+          <ErrorState title={t('admin.vocabularies.suggestionsError')} onRetry={() => void suggestions.refetch()} />
+        ) : waiting.length === 0 ? (
+          <EmptyState title={t('admin.vocabularies.noSuggestionsTitle')} body={t('admin.vocabularies.noSuggestionsBody')} />
+        ) : (
+          <Rows data-vocabulary-suggestions={list}>
+            {waiting.map((suggestion) => (
+              <SuggestionRow key={suggestion.id} list={list} suggestion={suggestion} />
+            ))}
+          </Rows>
+        )
+      ) : shown.length === 0 ? (
         filter === ACTIVE ? (
           <EmptyState title={t('admin.vocabularies.emptyTitleOne')} body={t('admin.vocabularies.emptyBodyOne')} />
         ) : (

@@ -11,6 +11,15 @@ a tool the definition declares with `library:read`;
 library's runs but never writes them, and a run lives in its key's zone; a key bound to
 an agent writes its audit rows as that agent, not as a bare key id; and the decision an
 agent reports with its model call is refused without a model, a version or a citation.
+
+Chunk 11's tables (AGT-03 to AGT-06, agents 0004 and 0005), in the database and on the
+`app` alias where a policy or a trigger is what decides: a platform definition is never
+tenant-configurable and a tenant one borrows no platform setting; a definition's scope never
+changes; a published version changes only by being retired, once; a run's version is
+written once; a run without a key is the worker's and lives in its tenant agent's zone; a
+bank's agent is refused on any definition but a configurable tenant one and is paused,
+never deleted; a research request without a tenant is the console's retag and nothing else;
+and a bank's agents, requests and cap are invisible to another bank.
 """
 
 from __future__ import annotations
@@ -24,13 +33,27 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from decimal import Decimal
 from django.conf import settings
-from django.db import DEFAULT_DB_ALIAS, DatabaseError, IntegrityError, ProgrammingError, transaction
+from django.db import DEFAULT_DB_ALIAS, DatabaseError, IntegrityError, ProgrammingError, connections, transaction
 from django.db.models import QuerySet
 from django.test import SimpleTestCase, TestCase, TransactionTestCase
 from pydantic import ValidationError as SchemaError
 
-from apps.agents.models import Agent, AgentKind, AgentRun, RunStatus
+from apps.agents.models import (
+    Agent,
+    AgentKind,
+    AgentRun,
+    AgentScopeKind,
+    AgentVersion,
+    AgentWritesTo,
+    ResearchRequest,
+    ResearchRequestKind,
+    RunStatus,
+    RunTrigger,
+    TenantAgent,
+    TenantAgentBudget,
+)
 from apps.agents.seeds import SHIPPED, definitions, seed_agent_definitions
 from apps.agents.seeds.definition import DEFINITIONS, DefinitionError, read_definition
 from apps.identity import tokens
@@ -519,3 +542,342 @@ class AgentDecisionTests(SimpleTestCase):
         body = {name: value for name, value in self.DECISION.items() if name != "model"}
         with self.assertRaises(SchemaError, msg="a missing model"):
             AgentDecision.model_validate(body)
+
+
+def tenant_definition(key: str = "bank-watch", *, configurable: bool = True) -> Agent:
+    """A definition a bank may add for itself (ruling 1): bleqq's, tenant-scoped."""
+    with library_write("test"):
+        return Agent.objects.create(
+            key=key,
+            kind=AgentKind.RESEARCH.value,
+            current_version=1,
+            scope=AgentScopeKind.TENANT.value,
+            tenant_configurable=configurable,
+            writes_to=AgentWritesTo.TENANT.value,
+        )
+
+
+class AgentDefinitionColumnTests(TestCase):
+    """The platform fence's first columns (AGT-03, ruling 1): refused by the database, so
+    a queryset update or a seed that skips every form is refused too."""
+
+    def setUp(self) -> None:
+        with library_write("test"):
+            self.platform = Agent.objects.create(key="watch-sweeper", kind=AgentKind.WATCH.value, current_version=1)
+
+    def _refused(self, **fields: Any) -> None:  # compliance: allow-kwargs test helper forwarding model fields
+        with library_write("test"), self.assertRaises(IntegrityError), transaction.atomic():
+            Agent.objects.filter(pk=self.platform.pk).update(**fields)
+
+    def test_a_definition_is_one_of_bleqqs_agents_unless_it_says_otherwise(self) -> None:
+        self.assertEqual(
+            (self.platform.scope, self.platform.tenant_configurable, self.platform.writes_to),
+            (AgentScopeKind.PLATFORM.value, False, AgentWritesTo.LIBRARY.value),
+        )
+        self.assertEqual((self.platform.runtime, self.platform.default_cadence), ("agent_sdk", "weekly"))
+
+    def test_a_platform_definition_is_never_tenant_configurable(self) -> None:
+        self._refused(tenant_configurable=True)
+
+    def test_a_platform_definition_carries_its_platform_settings(self) -> None:
+        with library_write("test"):
+            Agent.objects.filter(pk=self.platform.pk).update(
+                platform_scope={"jurisdictions": ["se", "fi"]}, platform_monthly_budget=Decimal("250.00")
+            )
+        self.platform.refresh_from_db()
+        self.assertEqual(self.platform.platform_monthly_budget, Decimal("250.00"))
+
+    def test_a_tenant_definition_borrows_no_platform_setting_and_never_writes_the_library(self) -> None:
+        definition = tenant_definition()
+        for fields, why in (
+            ({"platform_scope": {"jurisdictions": ["se"]}}, "a platform scope"),
+            ({"platform_monthly_budget": Decimal("10.00")}, "a platform budget"),
+            ({"writes_to": AgentWritesTo.LIBRARY.value}, "writes to the library"),
+        ):
+            with self.subTest(why), library_write("test"), self.assertRaises(IntegrityError), transaction.atomic():
+                Agent.objects.filter(pk=definition.pk).update(**fields)
+
+    def test_a_definitions_scope_never_changes(self) -> None:
+        definition = tenant_definition()
+        for agent, scope in ((self.platform, AgentScopeKind.TENANT), (definition, AgentScopeKind.PLATFORM)):
+            with self.subTest(agent.key), library_write("test"), self.assertRaises(DatabaseError) as caught:
+                with transaction.atomic():
+                    Agent.objects.filter(pk=agent.pk).update(
+                        scope=scope.value, tenant_configurable=False, writes_to=AgentWritesTo.TENANT.value
+                    )
+            self.assertIn("scope never changes", str(caught.exception))
+
+
+class AgentVersionTests(TransactionTestCase):
+    """A published version as cw_app (AGT-03): inserted inside a door, then only retired,
+    once. The door itself is proven for every library table in
+    apps/shared/tests_library_db_guard.py."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def setUp(self) -> None:
+        with library_write("test"):
+            self.agent = Agent.objects.create(key="watch-sweeper", kind=AgentKind.WATCH.value, current_version=1)
+        with library_write("test"), tenancy.library_door("seed", using="app"):
+            self.version = AgentVersion.objects.using("app").create(
+                agent=self.agent, version_number=1, model="test-model", prompt_path="prompt.md", tools=[{"operation": "GET /sources"}]
+            )
+
+    def _sql(self, statement: str) -> None:
+        with transaction.atomic(using="app"), tenancy.library_door("seed", using="app"):
+            with connections["app"].cursor() as cursor:
+                cursor.execute(statement, [self.version.pk])
+
+    def test_a_published_version_is_never_rewritten_or_deleted(self) -> None:
+        for statement in (
+            "UPDATE agent_version SET prompt_path = 'other.md' WHERE id = %s",
+            "UPDATE agent_version SET model = 'other', retired_at = now() WHERE id = %s",
+            "DELETE FROM agent_version WHERE id = %s",
+        ):
+            with self.subTest(statement), self.assertRaisesMessage(DatabaseError, "agent_version is append-only"):
+                self._sql(statement)
+        self.assertEqual(AgentVersion.objects.get(pk=self.version.pk).prompt_path, "prompt.md")
+
+    def test_retiring_is_the_one_change_and_happens_once(self) -> None:
+        self._sql("UPDATE agent_version SET retired_at = now() WHERE id = %s")
+        self.assertIsNotNone(AgentVersion.objects.get(pk=self.version.pk).retired_at)
+        with self.assertRaisesMessage(DatabaseError, "only retiring a version, once"):
+            self._sql("UPDATE agent_version SET retired_at = now() + interval '1 day' WHERE id = %s")
+
+    def test_the_app_role_cannot_open_the_maintenance_hatch(self) -> None:
+        for hatch in ("SET LOCAL cw.maintenance = 'on'", "SET LOCAL CW.MAINTENANCE = 'on'"):
+            with self.subTest(hatch), self.assertRaisesMessage(DatabaseError, "agent_version is append-only"):
+                with transaction.atomic(using="app"), tenancy.library_door("seed", using="app"):
+                    with connections["app"].cursor() as cursor:
+                        cursor.execute(hatch)
+                        cursor.execute("DELETE FROM agent_version WHERE id = %s", [self.version.pk])
+
+    def test_one_row_per_version_number(self) -> None:
+        with self.assertRaises(IntegrityError):
+            with library_write("test"), tenancy.library_door("seed", using="app"):
+                AgentVersion.objects.using("app").create(agent=self.agent, version_number=1, model="m", prompt_path="p.md")
+
+
+class WorkerRunTests(TestCase):
+    """A run the worker opens has no key (AGT-06): it is refused as an API run, lands in its
+    tenant agent's zone or the library's, and keeps the version it opened with."""
+
+    def setUp(self) -> None:
+        with library_write("test"):
+            self.agent = Agent.objects.create(key="watch-sweeper", kind=AgentKind.WATCH.value, current_version=1)
+            self.v1 = AgentVersion.objects.create(agent=self.agent, version_number=1, model="m", prompt_path="prompt.md")
+            self.v2 = AgentVersion.objects.create(agent=self.agent, version_number=2, model="m", prompt_path="prompt.md")
+        self.definition = tenant_definition()
+        self.tenant = factories.tenant(slug="worker-run")
+        tenancy.activate(self.tenant.id)
+        self.tenant_agent = TenantAgent.objects.create(tenant=self.tenant, agent=self.definition)
+        tenancy.clear_tenant()
+
+    def _run(self, **fields: Any) -> AgentRun:  # compliance: allow-kwargs test helper forwarding model fields
+        defaults = {"agent": self.agent, "model": "m", "pipeline_version": "0.4", "trigger": RunTrigger.SCHEDULE.value}
+        return AgentRun.objects.create(**{**defaults, **fields})
+
+    def test_an_api_run_without_a_key_is_refused(self) -> None:
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            self._run(trigger=RunTrigger.API.value)
+
+    def test_an_api_run_is_what_a_run_is_unless_the_worker_says_otherwise(self) -> None:
+        key = platform_key(self.agent)[1]
+        run = AgentRun.objects.create(agent=self.agent, api_key=key, model="m", pipeline_version="0.4")
+        self.assertEqual(run.trigger, RunTrigger.API.value)
+
+    def test_a_platform_run_without_a_key_is_a_library_run(self) -> None:
+        run = self._run(agent_version=self.v1, scope={"jurisdictions": ["se"]})
+        self.assertIsNone(run.tenant_id)
+        self.assertIsNone(run.api_key_id)
+
+    def test_a_tenant_agents_run_lands_in_its_tenant_whatever_the_caller_says(self) -> None:
+        tenancy.activate(self.tenant.id)
+        run = self._run(agent=self.definition, tenant_agent=self.tenant_agent, tenant=None, trigger=RunTrigger.MANUAL.value)
+        self.assertEqual(run.tenant_id, self.tenant.id)
+
+    def test_a_library_run_never_names_a_tenant_agent(self) -> None:
+        run = AgentRun(agent=self.definition, tenant_agent=self.tenant_agent, tenant=None, model="m", pipeline_version="0.4")
+        run.trigger = RunTrigger.SCHEDULE.value
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            AgentRun.objects.bulk_create([run])
+
+    def test_the_version_is_written_when_the_run_opens_and_never_changes(self) -> None:
+        run = self._run(agent_version=self.v1)
+        self.assertEqual(AgentRun.objects.filter(pk=run.pk).update(status=RunStatus.SUCCEEDED.value, cost=Decimal("0.12")), 1)
+        for version in (self.v2, None):
+            with self.subTest(version=version), self.assertRaisesMessage(DatabaseError, "never changes"):
+                with transaction.atomic():
+                    AgentRun.objects.filter(pk=run.pk).update(agent_version=version)
+        unversioned = self._run()
+        with self.assertRaisesMessage(DatabaseError, "never changes"), transaction.atomic():
+            AgentRun.objects.filter(pk=unversioned.pk).update(agent_version=self.v1)
+
+
+class TenantAgentTableTests(TransactionTestCase):
+    """The bank's own agents, research requests and cap on the `app` alias (cw_app, no
+    ownership). Written straight to the table, never through a route, so what refuses is
+    the database: the fence trigger, a CHECK or the policy."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def setUp(self) -> None:
+        with library_write("test"):
+            self.platform = Agent.objects.create(key="watch-sweeper", kind=AgentKind.WATCH.value, current_version=1)
+        self.definition = tenant_definition()
+        self.closed = tenant_definition("bank-closed", configurable=False)
+        self.tenant_a = factories.tenant(slug="tenant-agent-a")
+        self.tenant_b = factories.tenant(slug="tenant-agent-b")
+        self.user = factories.user(email="agents-admin@example.test")
+
+    def _tenant_agent(self, tenant: Any, agent: Agent) -> TenantAgent:
+        with transaction.atomic(using="app"):
+            tenancy.activate(tenant.id, using="app")
+            return TenantAgent.objects.using("app").create(tenant=tenant, agent=agent)
+
+    def _request(self, tenant_id: uuid.UUID | None, **fields: Any) -> ResearchRequest:  # compliance: allow-kwargs test helper forwarding model fields
+        with transaction.atomic(using="app"):
+            if tenant_id is not None:
+                tenancy.activate(tenant_id, using="app")
+            return ResearchRequest.objects.using("app").create(tenant_id=tenant_id, requested_by_id=self.user.id, **fields)
+
+    def test_a_bank_adds_an_agent_only_on_a_configurable_tenant_definition(self) -> None:
+        added = self._tenant_agent(self.tenant_a, self.definition)
+        self.assertEqual((added.enabled, added.cadence, added.scope), (False, "weekly", {}))
+        for agent, why in ((self.platform, "one of bleqq's agents"), (self.closed, "not tenant-configurable")):
+            with self.subTest(why), self.assertRaisesMessage(IntegrityError, "tenant_agent refused"):
+                self._tenant_agent(self.tenant_b, agent)
+        with self.assertRaisesMessage(IntegrityError, "tenant_agent refused"), transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_a.id, using="app")
+            TenantAgent.objects.using("app").filter(pk=added.pk).update(agent=self.platform)
+
+    def test_a_bank_has_one_row_per_agent_and_times_it_within_a_week_and_a_day(self) -> None:
+        self._tenant_agent(self.tenant_a, self.definition)
+        with self.assertRaises(IntegrityError):
+            self._tenant_agent(self.tenant_a, self.definition)
+        second = tenant_definition("bank-second")
+        for fields in ({"run_weekday": 0}, {"run_weekday": 8}, {"run_hour": 24}):
+            with self.subTest(fields), self.assertRaises(IntegrityError), transaction.atomic(using="app"):
+                tenancy.activate(self.tenant_a.id, using="app")
+                TenantAgent.objects.using("app").create(tenant=self.tenant_a, agent=second, **fields)
+
+    def test_an_agent_is_paused_never_deleted(self) -> None:
+        added = self._tenant_agent(self.tenant_a, self.definition)
+        with transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_a.id, using="app")
+            paused = TenantAgent.objects.using("app").filter(pk=added.pk).update(
+                paused_at=added.updated_at, paused_by_id=self.user.id, pause_reason="Quarter close"
+            )
+        self.assertEqual(paused, 1)
+        with self.assertRaisesMessage(DatabaseError, "paused, never deleted"), transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_a.id, using="app")
+            TenantAgent.objects.using("app").filter(pk=added.pk).delete()
+
+    def test_a_request_without_a_tenant_is_the_consoles_retag_and_nothing_else(self) -> None:
+        retag = self._request(None, kind=ResearchRequestKind.RETAG.value, topic="Custody records: Client money")
+        self.assertEqual(retag.status, "queued")
+        agent_a = self._tenant_agent(self.tenant_a, self.definition)
+        asked = self._request(self.tenant_a.id, tenant_agent_id=agent_a.id, kind=ResearchRequestKind.RESEARCH_TOPIC.value, topic="DORA")
+        self.assertEqual(asked.tenant_id, self.tenant_a.id)
+        for tenant_id, fields, why in (
+            (None, {"kind": ResearchRequestKind.RESEARCH_TOPIC.value, "topic": "x"}, "a platform request that is not a retag"),
+            (self.tenant_a.id, {"kind": ResearchRequestKind.RETAG.value, "tenant_agent_id": agent_a.id}, "a bank's retag"),
+            (self.tenant_a.id, {"kind": ResearchRequestKind.RUN_NOW.value}, "a bank's request to no agent of its own"),
+        ):
+            with self.subTest(why), self.assertRaises(IntegrityError):
+                self._request(tenant_id, **fields)
+
+    def test_research_requests_follow_agent_runs_split_policy(self) -> None:
+        agent_a = self._tenant_agent(self.tenant_a, self.definition)
+        retag = self._request(None, kind=ResearchRequestKind.RETAG.value, topic="Client money")
+        own = self._request(self.tenant_a.id, tenant_agent_id=agent_a.id, kind=ResearchRequestKind.RUN_NOW.value)
+        for tenant_id, expected in ((self.tenant_a.id, {retag.pk, own.pk}), (self.tenant_b.id, {retag.pk}), (None, {retag.pk})):
+            with self.subTest(tenant=tenant_id), transaction.atomic(using="app"):
+                if tenant_id is not None:
+                    tenancy.activate(tenant_id, using="app")
+                self.assertEqual(set(ResearchRequest.objects.using("app").values_list("pk", flat=True)), expected)
+        with transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_a.id, using="app")
+            self.assertEqual(ResearchRequest.objects.using("app").filter(pk=retag.pk).update(status="cancelled"), 0)
+        with self.assertRaises(ProgrammingError), transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_b.id, using="app")
+            ResearchRequest.objects.using("app").create(requested_by_id=self.user.id, kind=ResearchRequestKind.RETAG.value, topic="x")
+
+    def test_a_bank_has_one_cap_and_never_a_negative_one(self) -> None:
+        with transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_a.id, using="app")
+            TenantAgentBudget.objects.using("app").create(tenant=self.tenant_a, monthly_cap=Decimal("500.00"))
+        for tenant, cap, why in ((self.tenant_a, Decimal("100.00"), "a second cap"), (self.tenant_b, Decimal("-1.00"), "a negative cap")):
+            with self.subTest(why), self.assertRaises(IntegrityError), transaction.atomic(using="app"):
+                tenancy.activate(tenant.id, using="app")
+                TenantAgentBudget.objects.using("app").create(tenant=tenant, monthly_cap=cap)
+
+    def test_another_bank_reads_and_writes_none_of_it(self) -> None:
+        agent_a = self._tenant_agent(self.tenant_a, self.definition)
+        self._request(self.tenant_a.id, tenant_agent_id=agent_a.id, kind=ResearchRequestKind.RUN_NOW.value)
+        with transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_a.id, using="app")
+            TenantAgentBudget.objects.using("app").create(tenant=self.tenant_a, monthly_cap=Decimal("500.00"))
+        with transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_b.id, using="app")
+            for model in (TenantAgent, TenantAgentBudget, ResearchRequest):
+                self.assertFalse(model.objects.using("app").exists(), model.__name__)
+            self.assertEqual(TenantAgent.objects.using("app").filter(pk=agent_a.pk).update(enabled=True), 0)
+        with self.assertRaises(ProgrammingError), transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_b.id, using="app")
+            TenantAgent.objects.using("app").create(tenant=self.tenant_a, agent=tenant_definition("bank-other"))
+
+    def test_a_banks_request_or_run_never_names_another_banks_agent(self) -> None:
+        """Foreign keys ignore row-level security, so the id of tenant A's agent is enough to
+        reach it from tenant B's own row; the same-tenant foreign keys refuse it."""
+        agent_a = self._tenant_agent(self.tenant_a, self.definition)
+        for write, why in (
+            (
+                lambda: ResearchRequest.objects.using("app").create(
+                    tenant_id=self.tenant_b.id,
+                    tenant_agent_id=agent_a.id,
+                    requested_by_id=self.user.id,
+                    kind=ResearchRequestKind.RUN_NOW.value,
+                ),
+                "a request",
+            ),
+            (
+                lambda: AgentRun.objects.using("app").bulk_create(
+                    [
+                        AgentRun(
+                            agent_id=self.definition.id,
+                            tenant_id=self.tenant_b.id,
+                            tenant_agent_id=agent_a.id,
+                            trigger=RunTrigger.SCHEDULE.value,
+                            model="m",
+                            pipeline_version="0.4",
+                        )
+                    ]
+                ),
+                "a run",
+            ),
+        ):
+            with self.subTest(why), self.assertRaisesMessage(IntegrityError, "same_tenant"):
+                with transaction.atomic(using="app"):
+                    tenancy.activate(self.tenant_b.id, using="app")
+                    write()
+
+    def test_a_keyless_run_writes_only_the_sessions_zone(self) -> None:
+        agent_a = self._tenant_agent(self.tenant_a, self.definition)
+        with transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_a.id, using="app")
+            run = AgentRun.objects.using("app").create(
+                agent_id=self.definition.id, tenant_agent=agent_a, trigger=RunTrigger.SCHEDULE.value, model="m", pipeline_version="0.4"
+            )
+        self.assertEqual(run.tenant_id, self.tenant_a.id)
+        with transaction.atomic(using="app"):
+            AgentRun.objects.using("app").create(agent_id=self.platform.id, trigger=RunTrigger.SCHEDULE.value, model="m", pipeline_version="0.4")
+        for tenant_id, fields, why in (
+            (self.tenant_a.id, {"agent_id": self.platform.id}, "a library run from a bank's session"),
+            (None, {"agent_id": self.definition.id, "tenant_agent": agent_a}, "a bank's run from the platform's session"),
+            (self.tenant_b.id, {"agent_id": self.definition.id, "tenant_agent": agent_a}, "a bank's run from another bank's session"),
+        ):
+            with self.subTest(why), self.assertRaises(ProgrammingError), transaction.atomic(using="app"):
+                if tenant_id is not None:
+                    tenancy.activate(tenant_id, using="app")
+                AgentRun.objects.using("app").create(trigger=RunTrigger.SCHEDULE.value, model="m", pipeline_version="0.4", **fields)

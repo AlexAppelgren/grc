@@ -1937,3 +1937,204 @@ class FootprintRequestQuery(CamelSchema):
             "False, the default, sends the request for approval and answers 201."
         ),
     )
+
+
+# ---------------------------------------------------------------------------------------
+# VOC-08: the bank's own tags on a record, one by one or in a previewed batch
+# (c10-tagging-routes). The subject rides in the body of every route, never in the path or
+# a query string, because the request line reaches access logs (INPUT_DELTAS §7).
+# ---------------------------------------------------------------------------------------
+_TAGGING_TAG_KEY = (
+    "The key of a row of this bank's own `tenant_tag` vocabulary, at most 80 characters, such as "
+    "`follow_up` (the one tag every bank starts with) or `custody`. The values are rows the bank's "
+    "admin may extend or relabel without a deploy, and have no kind; `GET /vocab/tenant_tag` lists the "
+    "live set. Send the key, never the label. A key this bank does not have answers 422 `unknown_key`."
+)
+_TAGGING_SUBJECT_TYPE = (
+    "The kind of record being tagged, at most 64 characters, one of:\n"
+    "- `obligation`: a library obligation the bank can read (`GET /obligations`);\n"
+    "- `change`: a regulatory change in the library (`GET /changes`);\n"
+    "- `change_case`: one of this bank's own cases for a change.\n"
+    "Any other kind answers 422 `unsupported_subject`. A tag is the bank's own marker and never "
+    "changes the library record it sits on: another bank never sees it."
+)
+
+
+class TaggingBody(WriteBody):
+    """`POST /taggings` and `POST /taggings/remove` (VOC-08): one tag on or off one record."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "examples": [{"tagKey": "custody", "subjectType": "obligation", "subjectId": "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"}]
+        },
+    )
+
+    tag_key: str = Field(min_length=1, max_length=80, description=_TAGGING_TAG_KEY, examples=["custody"])
+    subject_type: str = Field(min_length=1, max_length=64, description=_TAGGING_SUBJECT_TYPE, examples=["obligation"])
+    subject_id: UUID = Field(
+        description=(
+            "The id of the record to tag, a UUID, as the record's own read returns it. A record that does not "
+            "exist, that belongs to another bank, or that the caller's roles do not let them read answers the "
+            "same 404 `not_found`, so the answer never says which."
+        ),
+        examples=["5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"],
+    )
+
+
+class TaggingBatchBody(WriteBody):
+    """`POST /taggings/preview` and `POST /taggings/batch` (VOC-08): one tag on many records
+    of one kind, as selected on a list."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "examples": [
+                {
+                    "tagKey": "custody",
+                    "subjectType": "obligation",
+                    "subjectIds": ["5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10", "9b2e4f61-0c3a-4e8d-b7a5-1d6c8e2f4a37"],
+                }
+            ]
+        },
+    )
+
+    tag_key: str = Field(min_length=1, max_length=80, description=_TAGGING_TAG_KEY, examples=["custody"])
+    subject_type: str = Field(
+        min_length=1,
+        max_length=64,
+        description=_TAGGING_SUBJECT_TYPE + " A batch holds records of this one kind only.",
+        examples=["obligation"],
+    )
+    subject_ids: list[UUID] = Field(
+        min_length=1,
+        description=(
+            "The ids of the selected records, each a UUID, at least 1. A repeated id counts once. At most "
+            "`BULK_TAGGING_MAX_RECORDS` distinct ids, 200 unless the operator set another number; more "
+            "answers 422 `too_many_records` and nothing is tagged. An id the caller may not read (it does not "
+            "exist, it is another bank's, it is of another kind, or the caller's roles do not read this kind) "
+            "is skipped and counted, never tagged and never named back."
+        ),
+        examples=[["5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"]],
+    )
+
+
+class TaggingTagRef(CamelSchema):
+    """One of the bank's own tags as a pill shows it: the key to store and compare and the
+    label to show, never a phrase to match on."""
+
+    key: str = Field(
+        description=(
+            "The tag's immutable key, the only part to store, compare or send back. A row of this bank's own "
+            "`tenant_tag` vocabulary, which the bank's admin may extend or relabel without a deploy; "
+            "`GET /vocab/tenant_tag` lists the live set, starting with `follow_up`."
+        ),
+        examples=["custody"],
+    )
+    kind: str | None = Field(
+        default=None,
+        description="Always null: the bank's tags have no kind. Present so every vocabulary reference has one shape.",
+        examples=[None],
+    )
+    label: str = Field(
+        description=(
+            "The tag's name in the caller's language, falling back to the language it was written in, then to "
+            "the key. For display only; a rename changes it and never the key."
+        ),
+        examples=["Custody"],
+    )
+
+
+class TaggingRecordTags(CamelSchema):
+    """The bank's own tags on one record after a tag went on or came off (VOC-08)."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "subjectType": "obligation",
+                    "subjectId": "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10",
+                    "tags": [{"key": "custody", "kind": None, "label": "Custody"}],
+                }
+            ]
+        }
+    )
+
+    subject_type: str = Field(
+        description="The kind of the record, as sent: `obligation`, `change` or `change_case`.", examples=["obligation"]
+    )
+    subject_id: UUID = Field(description="The id of the record, a UUID, as sent.", examples=["5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"])
+    tags: list[TaggingTagRef] = Field(
+        description=(
+            "Every one of this bank's tags now on the record, in the vocabulary's own order: rows of the bank's own "
+            "`tenant_tag` vocabulary, which has no kinds and which the bank's admin may extend or relabel without a "
+            "deploy (`GET /vocab/tenant_tag` lists the live set); an empty list when "
+            "it carries none. Only the bank's own tags: the library's tags on an obligation are read from the "
+            "obligation itself."
+        )
+    )
+
+
+class TaggingIds(CamelSchema):
+    """A set of records a batch names back: the caller could read every one of them."""
+
+    count: int = Field(ge=0, description="How many records, never negative; 0 when none.", examples=[2])
+    ids: list[UUID] = Field(
+        description="Their ids, each a UUID, in the order the batch sent them; an empty list when there are none.",
+        examples=[["5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"]],
+    )
+
+
+class TaggingSkipped(CamelSchema):
+    """The records a batch left alone because the caller may not read them: counted only."""
+
+    count: int = Field(
+        ge=0,
+        description=(
+            "How many of the sent ids were skipped because the caller may not read them: they do not exist, "
+            "belong to another bank, are of another kind, or the caller's roles do not read this kind. Never "
+            "negative: at least 0, and 0 when nothing was skipped. Their ids are never named back, so the answer never "
+            "tells which records exist."
+        ),
+        examples=[1],
+    )
+
+
+class TaggingBatchOutcome(CamelSchema):
+    """What a batch would do (the preview) or did (the commit), with the same shape so a
+    screen shows the preview and then the result without a second layout (VOC-08)."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "tag": {"key": "custody", "kind": None, "label": "Custody"},
+                    "subjectType": "obligation",
+                    "gained": {"count": 1, "ids": ["9b2e4f61-0c3a-4e8d-b7a5-1d6c8e2f4a37"]},
+                    "alreadyTagged": {"count": 1, "ids": ["5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"]},
+                    "skipped": {"count": 0},
+                }
+            ]
+        }
+    )
+
+    tag: TaggingTagRef = Field(
+        description=(
+            "The tag the batch applies: a row of this bank's own `tenant_tag` vocabulary, which has no kinds and which "
+            "the bank's admin may extend or relabel without a deploy; `GET /vocab/tenant_tag` lists the live set."
+        )
+    )
+    subject_type: str = Field(
+        description="The kind of every record in the batch, as sent: `obligation`, `change` or `change_case`.",
+        examples=["obligation"],
+    )
+    gained: TaggingIds = Field(
+        description=(
+            "The records that did not carry the tag: on a preview, the ones that would gain it; on a commit, the "
+            "ones that now carry it."
+        )
+    )
+    already_tagged: TaggingIds = Field(
+        description="The records that already carried the tag and are left as they are, on a preview and a commit alike."
+    )
+    skipped: TaggingSkipped = Field(description="The records the caller may not read, counted and never named.")

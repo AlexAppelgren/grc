@@ -400,3 +400,10 @@ test.describe('machine-confirmed provenance', () => {
     }
   });
 });
+
+// The bank's own records (PRD 0.7, OWN-04): stays test.fixme until chunk 11 builds it.
+test.describe("the bank's own records", () => {
+  test.fixme("INV-S15: The bank's own records read Private to us, and nothing changes when the library catches up", async () => {
+    // pending: INV-S15 (OWN-04, INV-07, AC-OWN1, chunk 11)
+  });
+});

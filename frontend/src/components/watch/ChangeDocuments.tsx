@@ -6,6 +6,7 @@ import { slotTone } from '@/features/shared/tone-by-kind';
 import type { ChangeDetail } from '@/features/watch/api';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { externalHref } from '@/shared/utils/external-href';
 import { formatDateTime, type FormatContext } from '@/shared/utils/format';
 
 // The documents panel of design/screens/tenant-change.html: every page the
@@ -41,9 +42,13 @@ export function ChangeDocuments({ documents }: { documents: readonly ChangeDocum
       {documents.map((document) => (
         <div key={document.id} className="border-b border-line py-2.5 last:border-b-0" data-document={document.id}>
           {fetchedLine(document, t, ctx) !== null ? <span className="block text-muted">{fetchedLine(document, t, ctx)}</span> : null}
-          <a href={document.url} rel="noopener noreferrer" target="_blank" className="font-medium underline">
-            {document.title ?? document.url}
-          </a>
+          {externalHref(document.url) === null ? (
+            <span className="font-medium break-all">{document.title ?? document.url}</span>
+          ) : (
+            <a href={document.url} rel="noopener noreferrer" target="_blank" className="font-medium underline">
+              {document.title ?? document.url}
+            </a>
+          )}
           <PillRow pills={presentDocument(document, t)} />
           {document.riskFlags.length > 0 ? (
             <Notice tone="warn" className="mt-2 mb-0" data-screened="">

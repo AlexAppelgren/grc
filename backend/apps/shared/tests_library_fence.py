@@ -265,6 +265,9 @@ class LibraryFenceGuard(SimpleTestCase):
         }  # fmt: skip
         self.assertLessEqual(chunk3 | {"TaxonomyTerm", "RelationType"}, names)
         self.assertNotIn("ProblemReport", names, "any member reports a problem; it is a mixed tenant table, not a library record")
+        # REG-07 (c8-recurring-duty-library): a recurring duty is a shared public fact, so
+        # its table is watched here beside the inventory.
+        self.assertIn("RecurringDuty", names)
 
     def test_only_the_watch_door_may_write_the_library_from_a_watch_module(self) -> None:
         # Ruling H: `watch/logic.py` came off this list and `watch/write.py` took its place,
@@ -934,3 +937,37 @@ class ProposalDoorGuard(SimpleTestCase):
             scopes=perms.ALL_SCOPES | {perms.PROPOSALS_REVIEW},
         )
         self.assertFalse(agent.has_permission(perms.PROPOSALS_REVIEW))
+
+
+# ---------------------------------------------------------------------------------------
+# The recurring duty (REG-07, c8-recurring-duty-library)
+# ---------------------------------------------------------------------------------------
+class RecurringDutyIsBehindTheFence(SimpleTestCase):
+    """A recurring duty is a shared library record: no tenant column, no key scope and no
+    watch step reaches it, and a module outside the allowlist that writes it is named."""
+
+    def test_the_row_carries_no_tenant_column(self) -> None:
+        from apps.library.models import RecurringDuty
+
+        columns = {field.name for field in RecurringDuty._meta.concrete_fields}
+        self.assertEqual({column for column in columns if "tenant" in column}, set())
+        self.assertTrue(RecurringDuty._meta.ordering, "a library record is read in a fixed order")
+
+    def test_no_key_scope_and_no_watch_step_reaches_the_table(self) -> None:
+        from apps.library.models import RecurringDuty
+        from apps.watch.write import WATCH_TABLES
+
+        self.assertNotIn(RecurringDuty._meta.db_table, WATCH_TABLES)
+        resources = {scope.split(":")[0] for scope in perms.ALL_SCOPES}
+        self.assertEqual(resources & {"duties", "recurring-duties", "recurring_duties"}, set(), "no API key scope names the table")
+        # The one scope on the library as a whole reads it.
+        self.assertEqual({scope for scope in perms.ALL_SCOPES if scope.startswith("library:")}, {perms.SCOPE_LIBRARY_READ})
+
+    def test_a_planted_write_outside_the_allowlist_is_named(self) -> None:
+        planted = "from apps.library.models import RecurringDuty\n\ndef plant():\n    RecurringDuty.objects.create(title='x')\n"
+        visitor = LibraryWriteCalls()
+        visitor.visit(ast.parse(planted))
+        library_names = {model.__name__ for model in concrete_library_models()}
+        self.assertIn("RecurringDuty", library_names & visitor.names)
+        self.assertEqual(visitor.write_calls, [(4, "create")])
+        self.assertFalse(_is_allowed("register/duties.py"))

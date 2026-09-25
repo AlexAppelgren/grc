@@ -37,17 +37,29 @@ There is no seventh tone and no component accepts a colour.
 |---|---|
 | Slot | Change type is `notice`. Scope facets, instrument, flags and library tags are `brand`. Regime and workflow status are `information` |
 | Kind with severity | The fixed ordinal decides: urgency (act now `negative`, within 3 months `warning`, 6+ months `notice`, monitor `information`, no action `positive`), compliance category (compliant `positive`, partly `warning`, gap `negative`, not assessed `information`), gap category (open `negative`, remediating `warning`, risk accepted `information`, closed `positive`), severity (high `negative`, medium `warning`, low `information`) |
-| Computed | "Waiting for approval" and "Change waiting for approval" `warning`, "N open changes" `notice`, "Change pending: …" `warning`, "Added when approved" and "Removed when approved" `warning`, "You" `positive` |
+| Kind (support access grant, c8-cards-admin) | Requested reads "Waiting for approval" `warning`; approved and inside its window reads "Active" `notice`, like a running agent; ended, revoked, declined and lapsed are `information` |
+| Computed | "Waiting for approval" `warning` (a request someone else decides, such as a risk acceptance; never applicability, which one person sets, D-75), "N open changes" `notice`, "Change pending: …" `warning`, "Added when approved" and "Removed when approved" `warning`, "You" `positive` |
 
 An admin adds a value by typing a label, its translations and a usage note.
 A new compliance sub-status inherits the tone of its category.
+
+## Case work
+
+| Source | Rule |
+|---|---|
+| Slot | Workflow status stays in its `information` slot and reads the tenant's sub-status label ("Waiting for legal" under `assessing`), never a tone of its own: a sub-status changes the words, not the tone (CAS-S13) |
+| Kind with severity | Evidence scan state (`ScanState` plus `pending`): pending "Being checked" `notice`, clean "Checked" `positive`, error "Could not be checked" `warning`, infected "Refused, malware found" `negative` |
+| Computed | An open action whose due date is before the tenant-local today reads "Overdue" `negative`; a due date not yet passed, and any completed action, shows no pill, only the date and days left as text |
+
+Action row order: completion, title, owner, due date, "Overdue" if it applies,
+then days left or days late as text in tabular numerals.
 
 ## Slot order
 
 | Record | Order |
 |---|---|
 | Change row and header | Change type, urgency, flags, then workflow status (header only), then authority and date as plain meta text |
-| Obligation row | Instrument, "Guidance" if not binding ("Standard" when the binding level's kind is `standard`), applicability, compliance status if it applies, "Change waiting for approval", "N open changes" |
+| Obligation row | Instrument, "Guidance" if not binding ("Standard" when the binding level's kind is `standard`), applicability, compliance status if it applies, "N open changes" |
 | Obligation header | Instrument, regime, binding level ("Standard" when its kind is `standard`), compliance status |
 | Instrument header and row | Short name, level, binding level ("Standard" when the level's kind is `standard`), jurisdiction, regime |
 | Scope block | One `brand` pill per term. "All services" when every term is selected. Plain text "Not client-specific" when the list is empty, because empty means no restriction |
@@ -71,3 +83,40 @@ Agents read key, label and usage note at run start, submit keys only, and
 their classifications show as suggestions until a person confirms. A new
 term is a proposal. A re-tag request applies a new value to existing records
 as one batch proposal.
+
+## Notification kinds (chunk 10)
+
+A notification's pill takes its tone from its kind, a fixed code list
+(`notification.kind`), never from the record it points at. Drawn in
+`screens/tenant-notifications.html`.
+
+| Kind | Tone | Label |
+|---|---|---|
+| `mention`, `assigned`, `participant_added` | `information` | "Mention", "Assigned to you", "Added to" |
+| `signoff_requested`, `approval_requested`, `due_soon`, `review_due`, `proposal_waiting` | `warning` | "Sign-off requested", "Approval requested", "Due soon", "Review due", "Proposal waiting" |
+| `overdue`, `escalation` | `negative` | "Overdue", "Escalated" |
+| `involved_item_changed`, `saved_search_hit` | `notice` | "Change on your item", "New search match" |
+
+The comments panel (`comments-and-mentions.md`), the workflow settings and the
+out-of-office page add no pill.
+
+## Chunk 11: agents, definitions, batch review and jurisdictions (c11-cards-agents-security)
+
+Each is from the record's own facts, never chosen by a person. Where a pill above already
+covers a case (agent version `brand`, a finished run `positive`, a running agent `notice`,
+"Added when approved" and "Removed when approved" `warning`), the chunk 11 cards reuse it.
+
+| Pill | Tone | Slot or kind, and why |
+|---|---|---|
+| Agent state: "On", "Paused", "Off" | `positive`, `warning`, `information` | Kind (a bank's own agent). On is the working state; Paused needs attention because nothing runs until someone resumes it; Off is a neutral fact (`admin-agents.html`) |
+| Run status: "Done", "Running", "Stopped", "Failed" | `positive`, `notice`, `warning`, `negative` | Kind (agent run), a severity scale. Done and Running are the finished run and the running agent above; Stopped was interrupted by a person; Failed did not finish (`admin-agents.html`, `console-agent-definitions.html`) |
+| Jurisdiction on an agent: "EU", "Sweden", … | `brand` | Slot: a scope facet, what the agent covers or sweeps |
+| Definition scope: "Platform", "For banks" | `information` | Slot: a neutral fact about who runs the definition (`console-agent-definitions.html`) |
+| Definition state: "Active", "Draft" | `positive`, `information` | Kind: a published current version, or none yet |
+| Version state: "Current", "Retired" | `positive`, `information` | Kind: the version new runs use, or one no run starts on again |
+| Proposal kind "Re-tag" | `notice` | Slot: the proposal kind, as every kind in the queue (`console-queue-batch.html`) |
+| Batch and row status: "Waiting", "Approved", "Rejected" | `warning`, `positive`, `information` | The queue's own statuses (`console-queue.html`), applied to the batch and to each row |
+| Library tag in a batch's before and after | `brand` | Slot: library tags, as above |
+| Jurisdiction row: the label, "Retired", "Rename waiting for review" | `brand`, `information`, `warning` | The label is a scope facet; Retired is a neutral fact; waiting for review is computed from the open proposal, like "Waiting for approval" (`admin-vocabulary.html` console variant) |
+
+`admin-security.html` adds no pill: every state there is a sentence.

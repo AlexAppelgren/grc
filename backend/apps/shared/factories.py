@@ -119,6 +119,8 @@ def passkey(user_row: User, *, nickname: str = "Laptop", public_key: str = "", c
         transports=["internal"],
         aaguid="00000000-0000-0000-0000-000000000000",
         device_type=PasskeyDeviceType.MULTI_DEVICE.value,
+        backup_eligible=True,  # what registration stores for a multi-device passkey
+        backed_up=True,
         nickname=nickname,
     )
 

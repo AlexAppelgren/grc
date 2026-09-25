@@ -11,7 +11,7 @@ Operations exercised (the audit-on-write guard reads these names): createVocabul
 updateVocabularyRow, reorderVocabulary, retireVocabularyRow, restoreVocabularyRow, mergeVocabularyRow,
 suggestVocabularyRow, declineVocabularySuggestion, createTerm, updateTerm,
 createFootprintRequest, approveFootprintRequest, rejectFootprintRequest,
-withdrawFootprintRequest.
+withdrawFootprintRequest, tagRecord, untagRecord, previewTagging, tagRecords.
 
 Prefixes hosted: ACC, FP, I18N, VOC.
 """
@@ -166,7 +166,10 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         # Every tier 2 list of INPUT_DELTAS §1 is a library vocabulary; every tier 3 list a
         # tenant vocabulary with a tenant foreign key (under forced RLS, proven by the RLS guard).
         tier_two = {"instrument_level", "provision_kind", "change_type", "duty_type", "relation_type", "source_kind", "term_dimension", "urgency", "library_tag", "flag"}
-        tier_three = {"tenant_tag", "compliance_status", "risk_rating", "link_kind", "effort_size", "case_sub_status", "dismissal_reason", "close_reason"}
+        tier_three = {
+            "tenant_tag", "compliance_status", "risk_rating", "link_kind", "effort_size", "case_sub_status", "dismissal_reason", "close_reason",
+            "gap_status", "gap_source", "risk_acceptance_reason", "team",
+        }
         for name in tier_two:
             with self.subTest(list=name):
                 entry = REGISTRY[name]
@@ -420,19 +423,64 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(hint.status_code, 422)
         self.assertEqual(hint.json()["code"], "near_duplicate")
 
-    @skip("pending: VOC-S8 (VOC-04, R2)")
     def test_voc_s8(self) -> None:
         """VOC-S8
 
         Statuses live inside fixed categories and a category never goes empty (VOC-04).
         """
+        admin = sign_in(self.admin, tenant=self.tenant)
+        self.assertEqual(
+            REGISTRY["case_sub_status"].kinds, ("new", "assigned", "assessing", "implementing", "signoff", "closed", "dismissed")
+        )
+        added = self._post("/vocab/case_sub_status", {"labels": {"en": "Waiting for legal", "sv": "Väntar på juridik"}, "kind": "assessing"}, admin)
+        self.assertEqual(added.status_code, 201, added.content)
+        self.assertEqual((added.json()["key"], added.json()["kind"]), ("waiting_for_legal", "assessing"))
+        # The rules read the category: a relabel leaves the kind where it was.
+        relabelled = self._patch("/vocab/case_sub_status/waiting_for_legal", {"labels": {"en": "Legal review"}}, admin)
+        self.assertEqual(relabelled.status_code, 200, relabelled.content)
+        self.assertEqual((relabelled.json()["label"], relabelled.json()["kind"]), ("Legal review", "assessing"))
+        # While another status sits under assessing, the system row is refused as a system row.
+        self.assertEqual(self._post("/vocab/case_sub_status/assessing/retire", {"confirm": True}, admin).json()["code"], "system_row")
+        retired = self._post("/vocab/case_sub_status/waiting_for_legal/retire", {"confirm": True}, admin)
+        self.assertEqual(retired.status_code, 200, retired.content)
+        # Retiring the last status under assessing would empty the category.
+        last = self._post("/vocab/case_sub_status/assessing/retire", {"confirm": True}, admin)
+        self.assertEqual(last.status_code, 409, last.content)
+        self.assertEqual(last.json()["code"], "category_empty")
+        self.assertTrue(self._rows("case_sub_status", admin)["assessing"]["active"])
 
-    @skip("pending: VOC-S9 (VOC-05, R2)")
     def test_voc_s9(self) -> None:
         """VOC-S9
 
         Tenant scales map to fixed ordinals and the tone follows the ordinal (VOC-05).
+
+        The API returns key and kind and never a tone; the screen's tone comes from the kind
+        (frontend/src/features/shared/tone-by-kind.ts, pinned by the vocabulary presentation
+        tests), so this proves the kind is what the API carries and that neither a label nor
+        an ordinal moves it.
         """
+        admin = sign_in(self.admin, tenant=self.tenant)
+        for key, label in (("compliant", "Fully compliant"), ("partly_compliant", "Mostly compliant")):
+            response = self._patch(f"/vocab/compliance_status/{key}", {"labels": {"en": label}}, admin)
+            self.assertEqual(response.status_code, 200, response.content)
+        scale = self._rows("compliance_status", admin)
+        self.assertEqual(
+            {key: (scale[key]["label"], scale[key]["kind"]) for key in ("compliant", "partly_compliant", "gap")},
+            {"compliant": ("Fully compliant", "compliant"), "partly_compliant": ("Mostly compliant", "partly"), "gap": ("Gap", "gap")},
+        )
+        self.assertTrue(all("tone" not in row and "tone" not in row["extra"] for row in scale.values()))
+        # A risk rating maps to a fixed level: relabelling it and moving its ordinal to the
+        # top of the scale leave its level, and so its tone, where they were.
+        risk = self._rows("risk_rating", admin)
+        self.assertEqual({key: row["kind"] for key, row in risk.items()}, {"low": "low", "medium": "medium", "high": "high"})
+        moved = self._patch("/vocab/risk_rating/low", {"labels": {"en": "Severe"}, "extra": {"ordinal": 99}}, admin)
+        self.assertEqual(moved.status_code, 200, moved.content)
+        self.assertEqual((moved.json()["label"], moved.json()["extra"], moved.json()["kind"]), ("Severe", {"ordinal": 99}, "low"))
+        # A new rating names its level; one without is refused with the levels there are.
+        unmapped = self._post("/vocab/risk_rating", {"labels": {"en": "Extreme"}, "extra": {"ordinal": 4}}, admin)
+        self.assertEqual(unmapped.status_code, 422, unmapped.content)
+        self.assertEqual(unmapped.json()["code"], "unknown_key")
+        self.assertIn("low, medium, high", unmapped.json()["detail"])
 
     @skip("pending: VOC-S10 (VOC-06, R2)")
     def test_voc_s10(self) -> None:
@@ -496,12 +544,47 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         officer = self._post("/taxonomy/terms", {**body, "labels": {"en": "Lending"}}, sign_in(self.officer, tenant=self.tenant))
         self.assertEqual(officer.status_code, 202, officer.content)
 
-    @skip("pending: VOC-S12 (VOC-08, R2)")
     def test_voc_s12(self) -> None:
         """VOC-S12
 
         Bulk tagging from a list previews and writes one audit entry (VOC-08).
         """
+        custody = self._tag("Custody", key="custody")
+        instrument = library_build.instrument(key="voc-s12-lvm", regime="regime:securities")
+        rows = [library_build.obligation(instrument, key=f"obl-voc-s12-{n}") for n in range(6)]
+        ids = [str(row.id) for row in rows]
+        self.activate(self.tenant)
+        for row in rows[:2]:
+            Tagging.objects.create(tenant=self.tenant, tag=custody, subject_type="obligation", subject_id=row.id)
+        headers = sign_in(self.officer, tenant=self.tenant)
+        body = {"tagKey": "custody", "subjectType": "obligation", "subjectIds": ids}
+        # The preview lists the six and which already carry the tag, and writes nothing.
+        audit_before = set(AuditEvent.objects.values_list("id", flat=True))
+        preview = self._preview("/taggings/preview", body, headers)
+        self.assertEqual(preview.status_code, 200, preview.content)
+        shown = preview.json()
+        self.assertEqual(set(shown["gained"]["ids"]) | set(shown["alreadyTagged"]["ids"]), set(ids))
+        self.assertEqual(set(shown["alreadyTagged"]["ids"]), set(ids[:2]))
+        self.assertEqual(shown["skipped"], {"count": 0})
+        self.activate(self.tenant)
+        self.assertFalse(AuditEvent.objects.exclude(id__in=audit_before).filter(action__startswith="taggings.").exists())
+        # The commit links the tag to each and one audit event records the batch with the six ids.
+        committed = self._post("/taggings/batch", body, headers)
+        self.assertEqual(committed.status_code, 200, committed.content)
+        self.activate(self.tenant)
+        self.assertEqual(
+            set(Tagging.objects.filter(tag=custody, subject_type="obligation").values_list("subject_id", flat=True)),
+            {row.id for row in rows},
+        )
+        events = list(AuditEvent.objects.exclude(id__in=audit_before).filter(action__startswith="taggings."))
+        self.assertEqual([event.action for event in events], ["taggings.batch_added"])
+        self.assertEqual((events[0].after["tag"], set(events[0].after["ids"])), ("custody", set(ids)))
+        # One record at a time answers the record's tags, and a tag comes off the same way.
+        single = {"tagKey": "custody", "subjectType": "obligation", "subjectId": ids[0]}
+        removed = self._post("/taggings/remove", single, headers)
+        self.assertEqual((removed.status_code, removed.json()["tags"]), (200, []))
+        added = self._post("/taggings", single, headers)
+        self.assertEqual([tag["key"] for tag in added.json()["tags"]], ["custody"])
 
     @skip("pending: VOC-S13 (VOC-09, R3)")
     def test_voc_s13(self) -> None:
@@ -528,8 +611,10 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         retire = self._post("/vocab/urgency/act_now/retire", {"confirm": True}, editor)
         self.assertEqual(retire.status_code, 409, retire.content)
         self.assertEqual(retire.json()["code"], "system_row")
-        # A system row of a tenant list: the same rule, directly.
-        tenant_retire = self._post("/vocab/compliance_status/gap/retire", {"confirm": True}, admin)
+        # A system row of a tenant list: the same rule, directly. A list without categories,
+        # because on a categorised list the last value of a category answers category_empty
+        # first (VOC-S8).
+        tenant_retire = self._post("/vocab/dismissal_reason/out_of_scope/retire", {"confirm": True}, admin)
         self.assertEqual(tenant_retire.status_code, 409)
         self.assertEqual(tenant_retire.json()["code"], "system_row")
         renamed = self._patch("/vocab/compliance_status/gap", {"labels": {"sv": "Avvikelse"}}, admin, HTTP_IF_MATCH="1")
@@ -649,7 +734,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         ):
             change = watch_build.change(title=title)
             watch_build.term_link(change, term_ref=scope)
-            ChangeCase.objects.filter(pk=cases_build.case(self.tenant, change).pk).update(status=status.value)
+            cases_build.in_category(cases_build.case(self.tenant, change), status)
         officer = sign_in(self.officer, tenant=self.tenant)
         body = {"adds": [{"dimension": "client_category", "key": "retail"}], "removes": [{"dimension": "service_type", "key": "advice"}]}
         # Dry run first (playbook 15: dry run, preview, commit): the same preview, nothing written.
@@ -1914,6 +1999,13 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             matching.in_footprint(as_dict(iso), {})  # type: ignore[call-arg]
         with self.assertRaises(TypeError):
             matching.in_footprint(as_dict(iso), {}, restricting={"service_type", "standard"})
+
+    @skip("pending: FP-S18 (OWN-01, FP-02, AC-OWN2, chunk 11)")
+    def test_fp_s18(self) -> None:
+        """FP-S18
+
+        A scope item the library does not cover is requested by one person and approved by another with a passkey (OWN-01, FP-02, AC-OWN2).
+        """
 
     @skip("pending: ACC-S2 (ACC-02, AC-ACC1, chunk 11)")
     def test_acc_s2(self) -> None:

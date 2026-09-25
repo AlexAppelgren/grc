@@ -1103,7 +1103,6 @@ class Me(CamelSchema):
                     "permissions": [
                         "ai_log.read",
                         "applicability.approve",
-                        "applicability.request",
                         "audit.read",
                         "cases.contribute",
                         "cases.read",
@@ -2105,7 +2104,8 @@ class AgentKeyCreate(WriteBody):
             "The identifier of the agent definition the key will act as, a UUID taken from "
             "`GET /agent-definitions`. Everything the key writes is recorded as that agent, and a "
             "key runs that one agent and no other. An identifier that names no definition is "
-            "refused with `unknown_key`."
+            "refused with `unknown_key`, and a definition that is retired or switched off, rather "
+            "than active or a draft being evaluated, with `agent_inactive`."
         )
     )
     scopes: list[str] = Field(
@@ -2115,6 +2115,9 @@ class AgentKeyCreate(WriteBody):
             f"What the key may do: at least one and at most {len(perms.ALL_SCOPES)} scope keys, "
             "each counted once. Give the key the least its agent needs. "
             + _AGENT_KEY_SCOPES_TEXT
+            + " A review agent's key may not hold `sources:write`, `changes:write` or `proposals:write`, "
+            "and no other agent's key may hold `proposals:review`; either is refused with "
+            "`scope_not_for_kind`, naming the scope."
             + " Any other value is refused with `unknown_key`, and the message lists the valid scopes."
         ),
     )

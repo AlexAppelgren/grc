@@ -458,6 +458,34 @@ if min(SEARCH_RATE_PER_USER_PER_MINUTE, ASK_RATE_PER_USER_PER_MINUTE) < 1:
     )
 
 # ---------------------------------------------------------------------------------------
+# ===== x-hardening-inputs-ask: open Ask streams, problem reports, visits (H38, H39, H47) =
+# ASK_STREAMS_PER_USER is how many Ask answers one caller may have streaming at once
+# (apps/search/limits.py). The per-minute rate above bounds how often a caller asks, not how
+# long each answer holds a server thread (up to LLM_DEADLINE_S), so a few callers could
+# otherwise hold every thread for every bank (H47). A slot is taken before the first byte
+# and given back when the stream closes; a slot a lost worker never gave back expires
+# ASK_STREAM_SLOT_TTL_S after the caller's last take, which is past the longest a model
+# call can run.
+# PROBLEM_REPORTS_PER_USER_PER_HOUR is how many problem reports one person may file, and
+# separately close, in an hour (ACC-09, H39): each is a row and an audit row kept for ten
+# years, and a script behind a session could file thousands.
+# VISIT_MIN_INTERVAL_SECONDS: a `POST /me/visit` this soon after the person's last one
+# writes nothing, since each writes an audit and an outbox row kept for ten years (H38).
+# None of the three may be below 1: there is no value of them that means "no limit".
+# ---------------------------------------------------------------------------------------
+ASK_STREAMS_PER_USER = env_int("ASK_STREAMS_PER_USER", 2)
+ASK_STREAM_SLOT_TTL_S = int(LLM_DEADLINE_S + LLM_TIMEOUT_S) + 60
+PROBLEM_REPORTS_PER_USER_PER_HOUR = env_int("PROBLEM_REPORTS_PER_USER_PER_HOUR", 30)
+VISIT_MIN_INTERVAL_SECONDS = env_int("VISIT_MIN_INTERVAL_SECONDS", 60)
+for _name, _value in (
+    ("ASK_STREAMS_PER_USER", ASK_STREAMS_PER_USER),
+    ("PROBLEM_REPORTS_PER_USER_PER_HOUR", PROBLEM_REPORTS_PER_USER_PER_HOUR),
+    ("VISIT_MIN_INTERVAL_SECONDS", VISIT_MIN_INTERVAL_SECONDS),
+):
+    if _value < 1:
+        raise ImproperlyConfigured(f"Refusing to boot: {_name} is {_value}; it must be at least 1.")
+
+# ---------------------------------------------------------------------------------------
 # ===== SRC-03 Ask: what reaches the model and how much it may write (apps/search/ask.py) =
 # How many passages of the hybrid ranking the model is given, and the most it may write
 # back. The passages are the whole of what an answer may rest on, so a deeper retrieval is
@@ -523,6 +551,12 @@ LIBRARY_TERM_FILTER_MAX = env_int("LIBRARY_TERM_FILTER_MAX", 20)
 # ---------------------------------------------------------------------------------------
 PROPOSAL_SOURCE_MAX_CHARS = env_int("PROPOSAL_SOURCE_MAX_CHARS", 2000)
 PROPOSAL_SCOPE_MAX_TERMS = env_int("PROPOSAL_SCOPE_MAX_TERMS", 20)
+# A payload text (a provision's verbatim text or an obligation's summary, per language)
+# arrives from an agent or a person and is stored in the queue before anyone reads it, so it
+# is bounded too (H35). The longest article a Nordic or Union source publishes runs to a few
+# tens of thousands of characters; anything beyond this is refused with 422 rather than
+# queued.
+PROPOSAL_TEXT_MAX_CHARS = env_int("PROPOSAL_TEXT_MAX_CHARS", 50000)
 
 # ---------------------------------------------------------------------------------------
 # ===== PRO-03 how far back "what changed in the library" looks ===========================
@@ -646,6 +680,21 @@ CELERY_BEAT_SCHEDULE["briefing-weekly"] = {
 }
 
 # ---------------------------------------------------------------------------------------
+# ===== COL-02, TEN-01 the workflow policy's platform defaults (c10-workflow-policy) =====
+# What a bank's workflow policy starts at: a new tenant takes these, and the migration that
+# added the columns wrote them into every tenant that already existed. The bank changes its
+# own through PATCH /tenant/workflow; changing a value here moves no existing bank. The lead
+# days are comma-separated day counts, the weekday one of monday..sunday, the role a system
+# role key every tenant is seeded with.
+# ---------------------------------------------------------------------------------------
+WORKFLOW_REMINDER_DAYS_BEFORE = [int(value) for value in env_list("WORKFLOW_REMINDER_DAYS_BEFORE", "3")]
+WORKFLOW_REVIEW_REMINDER_DAYS_BEFORE = [int(value) for value in env_list("WORKFLOW_REVIEW_REMINDER_DAYS_BEFORE", "30")]
+WORKFLOW_ESCALATE_AFTER_DAYS = env_int("WORKFLOW_ESCALATE_AFTER_DAYS", 5)
+WORKFLOW_ESCALATE_TO_ROLE = env_str("WORKFLOW_ESCALATE_TO_ROLE", "compliance_officer")
+WORKFLOW_DIGEST_WEEKDAY = env_str("WORKFLOW_DIGEST_WEEKDAY", "monday")
+WORKFLOW_TRIAGE_TARGET_HOURS = env_int("WORKFLOW_TRIAGE_TARGET_HOURS", 48)
+
+# ---------------------------------------------------------------------------------------
 # ===== HOM-04 the calendar subscription's limits (D-52, ADR 0045) ========================
 # The token in a calendar address is a credential nobody can be asked to confirm: a
 # calendar client sends no header, follows no sign-in and polls unattended for years. Two
@@ -671,6 +720,25 @@ CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
 # an API key's stamp is throttled (ID-10). Without it a polling client would turn a read
 # into a write every time and fill the security log with one bank's polling.
 CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
+
+# ---------------------------------------------------------------------------------------
+# ===== VOC-08 bulk tagging's cap (c10-tagging-routes) ====================================
+# How many distinct records one tagging preview or batch may name. A list page holds at
+# most 100 rows, so two pages' worth covers every selection a screen makes, and the one
+# audit event a batch writes stays a size a reviewer can read. Above it the preview and
+# the batch answer 422 `too_many_records` and nothing is tagged.
+# `apps/taxonomy/tagging_logic.py` reads it.
+# ---------------------------------------------------------------------------------------
+BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200)
+
+# ---------------------------------------------------------------------------------------
+# ===== REP-02 export files (apps/reports, x-exports-contract) ===========================
+# How long an export's file is kept after the worker built it. A file carries a bank's
+# records outside the screens that permission-check them, so it lives only long enough to
+# be downloaded; after that its download answers 409 `export_expired` and the person asks
+# for a new one. The job row stays. A bank's policy may be stricter, so it is a setting.
+# ---------------------------------------------------------------------------------------
+EXPORT_RETENTION_DAYS = env_int("EXPORT_RETENTION_DAYS", 7)
 
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
@@ -710,6 +778,10 @@ SESSION_IDLE_MINUTES_DEFAULT = env_int("SESSION_IDLE_MINUTES_DEFAULT", 30)
 SESSION_ABSOLUTE_HOURS_DEFAULT = env_int("SESSION_ABSOLUTE_HOURS_DEFAULT", 12)
 SESSION_IDLE_MINUTES_MAX = env_int("SESSION_IDLE_MINUTES_MAX", 8 * 60)
 SESSION_ABSOLUTE_HOURS_MAX = env_int("SESSION_ABSOLUTE_HOURS_MAX", 24)
+# ===== c8-org-models: ID-07 credential policy (ADR 0048) =====
+# How many days ahead a tightened credential policy takes effect by default, so members can
+# enrol a device-bound passkey before theirs stop working (tenants.SecurityPolicy).
+CREDENTIAL_POLICY_NOTICE_DAYS = env_int("CREDENTIAL_POLICY_NOTICE_DAYS", 14)
 ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 10)
 REFRESH_REPLAY_GRACE_SECONDS = env_int("REFRESH_REPLAY_GRACE_SECONDS", 30)
 STEP_UP_FRESHNESS_MINUTES = env_int("STEP_UP_FRESHNESS_MINUTES", 5)

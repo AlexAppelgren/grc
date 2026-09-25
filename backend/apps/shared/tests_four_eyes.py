@@ -33,6 +33,17 @@ from apps.shared.permissions import (
 FOUR_EYES_TABLES: list[tuple[str, str]] = [
     ("footprint_change_request", "footprint_change_request_four_eyes"),
     ("proposal", "proposal_four_eyes"),
+    # Chunk 9 (c9-case-models): the case sign-off (CAS-06, AC-CAS1). The approver is
+    # `signed_off_by`, the requester `signoff_requested_by`.
+    ("change_case", "change_case_four_eyes"),
+]
+
+# PRO-04 (proposals 0008): a batch's parent is a `proposal` row, so `proposal_four_eyes`
+# above already refuses its proposer as its reviewer. Its rows are decided one by one, and a
+# check constraint cannot read the parent, so the row's trigger compares the decider with
+# the batch's proposer. (table, trigger, the clause its function must hold.)
+FOUR_EYES_TRIGGERS: list[tuple[str, str, str]] = [
+    ("proposal_batch_row", "proposal_batch_row_decision_guard", "proposed_by_user_id = NEW.decided_by_id"),
 ]
 
 
@@ -58,5 +69,25 @@ class FourEyesGuard(TestCase):
     def test_the_approve_permissions_are_exactly_the_prd_list(self) -> None:
         self.assertEqual(
             APPROVE_PERMISSIONS,
-            {FOOTPRINT_APPROVE, CASES_SIGNOFF, APPLICABILITY_APPROVE, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW},
+            {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW},
         )
+        # One person sets applicability after a confirmation dialog, no second approver (D-75).
+        self.assertNotIn(APPLICABILITY_APPROVE, APPROVE_PERMISSIONS)
+
+
+class FourEyesTriggerGuard(TestCase):
+    def test_every_four_eyes_trigger_exists_and_compares_the_decider_with_the_proposer(self) -> None:
+        missing: list[str] = []
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            for table, trigger, clause in FOUR_EYES_TRIGGERS:
+                cursor.execute(
+                    "SELECT p.prosrc FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid "
+                    "JOIN pg_proc p ON p.oid = t.tgfoid WHERE c.relname = %s AND t.tgname = %s",
+                    [table, trigger],
+                )
+                row = cursor.fetchone()
+                if row is None:
+                    missing.append(f"{table}: trigger {trigger} not found")
+                elif clause not in row[0]:
+                    missing.append(f"{table}: {trigger} does not compare the decider with the proposer")
+        self.assertEqual(missing, [], "Four-eyes triggers missing:\n  " + "\n  ".join(missing))

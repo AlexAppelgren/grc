@@ -17,6 +17,7 @@ import { useChange } from '@/features/watch/hooks';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { RestrictedScreen, forbiddenFrom } from '@/shared/navigation/require-permission';
+import { externalHref } from '@/shared/utils/external-href';
 import { formatDate, formatPartialDate, type DatePrecision, type FormatContext } from '@/shared/utils/format';
 import { hasProblemCode } from '@/shared/utils/problem';
 
@@ -129,6 +130,7 @@ export function ChangeScreen({ changeId }: { changeId: string }) {
   const provenance = typeProvenance(change);
   // Which agents stand behind a machine's confirmation, never read as a person's (D-74).
   const machineConfirmation = machineConfirmedBy([...(change.changeTypeFact ? [change.changeTypeFact] : []), ...change.flags, ...change.terms], t);
+  const sourceHref = externalHref(change.sourceUrl);
 
   return (
     <div data-change={change.stableKey}>
@@ -140,9 +142,13 @@ export function ChangeScreen({ changeId }: { changeId: string }) {
           // Two facts can read the same, so the position is the key.
           <span key={index}>{line}</span>
         ))}
-        <a href={change.sourceUrl} rel="noopener noreferrer" target="_blank" className="underline">
-          {t('watch.change.source', { source: change.sourceLabel })}
-        </a>
+        {sourceHref === null ? (
+          <span>{t('watch.change.source', { source: change.sourceLabel })}</span>
+        ) : (
+          <a href={sourceHref} rel="noopener noreferrer" target="_blank" className="underline">
+            {t('watch.change.source', { source: change.sourceLabel })}
+          </a>
+        )}
       </p>
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr] lg:items-start">

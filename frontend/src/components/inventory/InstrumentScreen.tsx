@@ -25,6 +25,7 @@ import { inForceLabel } from '@/features/library/version-presentation';
 import { useRefreshProblemReports } from '@/features/problem-reports/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
+import { externalHref } from '@/shared/utils/external-href';
 import { formatDate } from '@/shared/utils/format';
 import { problemStatus } from '@/shared/utils/problem';
 
@@ -204,6 +205,7 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
     t,
   );
   const context: ReportContext = {};
+  const sourceHref = externalHref(record.sourceUrl);
 
   return (
     <div data-instrument={record.stableKey}>
@@ -214,9 +216,13 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
       <PageHead title={record.name === null ? record.shortName : record.name.text} />
       <Meta className="mb-4">
         <span data-in-force-line="">{inForceLabel(record.inForceFrom, record.inForceTo, t, ctx)}</span>
-        <a href={record.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline" data-source-link="">
-          {t('inventory.instrument.sourceLabel')}
-        </a>
+        {sourceHref === null ? (
+          <span className="break-all">{record.sourceUrl}</span>
+        ) : (
+          <a href={sourceHref} target="_blank" rel="noopener noreferrer" className="underline" data-source-link="">
+            {t('inventory.instrument.sourceLabel')}
+          </a>
+        )}
       </Meta>
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">

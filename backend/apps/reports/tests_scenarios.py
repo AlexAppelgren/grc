@@ -9,12 +9,15 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: REP.
 """
 
-from unittest import skip
+from unittest import mock, skip
 
-from django.test import TestCase
+from apps.reports import exporters
+from apps.reports.models import ExportJob, ExportKind, JobStatus
+from apps.shared import factories, tenancy
+from apps.shared.testing import ScenarioTestCase, sign_in
 
 
-class ReportsScenarioTests(TestCase):
+class ReportsScenarioTests(ScenarioTestCase):
     """Scenario tests for apps.reports, one method per @integration scenario."""
 
     @skip("pending: REP-S1")
@@ -31,12 +34,38 @@ class ReportsScenarioTests(TestCase):
         The committee pack and the exports are produced by jobs (REP-02).
         """
 
-    @skip("pending: REP-S3")
     def test_rep_s3(self) -> None:
         """REP-S3
 
-        An export needs step-up and never runs inside the request (REP-02).
+        An export needs step-up and never runs inside the request (REP-02). `createExport`
+        answers 403 without a fresh assertion and 202 with one; the worker builds the file
+        after the request's transaction commits.
         """
+        tenant = factories.tenant()
+        person = factories.member(tenant, roles=("approver",)).user
+        body = {"kind": "cases", "format": "json"}
+        builder = mock.Mock(return_value=b"[]")
+        with mock.patch.dict(exporters._REGISTRY, {ExportKind.CASES: exporters.Exporter(frozenset({"json"}), builder)}):
+            refused = self.client.post(
+                "/api/v1/exports", data=body, content_type="application/json", **sign_in(person, tenant=tenant)
+            )
+            self.assertEqual(refused.status_code, 403)
+            self.assertEqual(refused.json()["code"], "step_up_required")
+
+            headers = sign_in(person, tenant=tenant, step_up=True)
+            with self.captureOnCommitCallbacks(execute=False) as queued:
+                accepted = self.client.post("/api/v1/exports", data=body, content_type="application/json", **headers)
+            self.assertEqual(accepted.status_code, 202)
+            job_id = accepted.json()["id"]
+            builder.assert_not_called()
+
+            for hand_off in queued:
+                hand_off()
+            builder.assert_called_once()
+        tenancy.activate(tenant.id)
+        job = ExportJob.objects.get(pk=job_id)
+        self.assertEqual(job.status, JobStatus.SUCCEEDED.value)
+        self.assertIsNotNone(job.storage_key)
 
     @skip("pending: REP-S4")
     def test_rep_s4(self) -> None:

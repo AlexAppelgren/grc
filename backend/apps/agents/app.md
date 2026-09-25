@@ -101,6 +101,26 @@ screen gains a second tab for them, and each tab says in one line what that kind
 agent does, because a reader who confuses the two will assume a bank's coding agent
 can change the register. The full design is `docs/plans/briefs/AGENT_ACCESS.md`.
 
+PRD 0.7 (D-89, Alex 2026-09-24; details answered by default in D-91, ADR 0059,
+`docs/plans/briefs/SCOPE_ITEMS.md`) adds group OWN, the bank's own regulations. Alex's
+words:
+"an agent can always add things to the library, and then another agent can verify it, its then up to the tenant to decide if they want to use it or not",
+and
+"The previously called 'footprint' can not be agent managed, only a tenant admin can add things that the agents should look out for or regulations that apply to them".
+D-89 decides that a bank's people may add to its regulatory scope
+a regulation or area the shared library does not yet cover, that the bank's own agents
+research it and fill the bank's own library zone with regulation and control inventories
+as proposals, and that the bank's people approve or reject them the way the shared queue
+works. Here that means OWN-02: an approved scope item opens a research request for the
+bank's own agent, a bleqq-authored tenant-scoped definition the bank switched on under
+AGT-04. The worker opens its run with no API key, and what it finds reaches the bank's
+queue only as runner events the worker applies, each proposal owned by the run's tenant.
+No key gains a proposal scope and `refuse_tenant_key` is unchanged. The agent never
+writes or re-tags the shared library, never writes the regulatory scope and never reads
+the bank's own records back (D-57); a duplicate by official reference is the server's
+409 `already_in_our_library`. Until Alex answers whether a bank's typed text may reach
+a model, only the item's term keys and the pages fetched from its public addresses do.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -110,8 +130,8 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 | built |
 | AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | built |
 | AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | pending |
-| AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. Such an agent writes only in its own tenant's zone (D-61) | M | R2 | pending |
-| AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console (D-61) | S | R2 | pending |
+| AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. Such an agent writes only in its own tenant's zone (D-61); what it files for a scope item is OWN-02 | M | R2 | pending |
+| AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console (D-61); an approved scope item opens a research request (OWN-02) | S | R2 | pending |
 | AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | pending |
 | AGT-07 | Fetched content screened for embedded instructions | M | R1 | built |
 | AGT-08 | Agents stay inside the sector scope: an out-of-scope document is a counted source check and nothing else; a standard's text is never fetched, quoted, summarised, translated or restated; a blocked page is a failed check; a law that cites a standard never carries its term | M | R1 | built |
@@ -119,6 +139,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ACC-06 | One call takes a description of what is being built and returns a labelled, logged summary above the deterministic full list of register entries and obligations in scope; the model never shortens the list and the list survives the model failing or AI being switched off | M | R2 | pending |
 | ACC-07 | A narrowed entry never narrows silently: every answer states the scope it was answered in, and an answer touching the footprint outside that scope names the dimensions and terms it could not see, from labels and never from records | M | R2 | pending |
 | ACC-10 | An entry records that a named application or system touches a register entry and how, as a linked internal item under REG-05 | C | R3 | pending |
+| OWN-02 | The bank's own agent researches an approved scope item from public sources and files the bank's own instruments and obligations as proposals, a source per field, only as runner events applied in the worker; never the shared library, never the regulatory scope, never reading the bank's own records back; a duplicate by official reference answers 409 `already_in_our_library` (D-89, D-91) | M | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -274,13 +295,13 @@ When the bank's own AI off switch is set
 Then its own agents stop and bleqq's agents keep running, because they read public sources only
 ```
 
-### AGT-S14 — A bank's own agent writes only in its own zone `@integration` (AGT-04, AGT-05)
+### AGT-S14 — A bank's own agent writes only in its own zone `@integration` (AGT-04, AGT-05, OWN-02)
 ```gherkin
-Given an agent tenant A added for itself, running under tenant A's key
-When it registers a change or submits a proposal against a shared library record
-Then the write is refused, because a tenant run never writes the shared library
-When it registers what it found against tenant A's private source
-Then the record carries owner_tenant_id A and tenant B never sees it
+Given an agent tenant A switched on for itself, whose run the worker opened with no API key
+When the run's runner events carry a change or a proposal against a shared library record
+Then the worker refuses them and writes nothing, because a tenant run never writes the shared library
+When the run's runner events carry what it found for tenant A's approved scope item
+Then each proposal carries owner_tenant_id A, set from the run, and tenant B never sees it
 When tenant A asks for a re-tag of library records
 Then the request is refused, because re-tagging the library is asked in the console
 ```
@@ -295,6 +316,21 @@ And its run records the proposals it decided, as a sweep records what it registe
 When a key of the proposing definition tries to confirm the same proposal
 Then the request answers 409 with code "four_eyes_violation"
 And no confirming-agent path writes a library row except through the approved proposal
+```
+
+### AGT-S16 — An approved scope item opens research, and the findings arrive as the bank's own proposals `@integration` (OWN-02, AGT-04, AGT-05, AGT-06)
+```gherkin
+Given tenant A switched on its own agent, a bleqq-authored tenant-scoped definition
+When a scope item in tenant A's regulatory scope is approved
+Then one research request is opened for that agent naming the item
+When the worker starts the run on the mock runner, with no API key
+Then the model input carries the item's term keys and the pages fetched from its public source addresses, never the item's name or any of tenant A's own records
+When the run's runner events carry an instrument and two obligations, each with a source per field
+Then the worker applies them as three proposals owned by tenant A, set from the run and never from the event
+And they wait in tenant A's own queue, and no shared library row, regulatory scope row or search chunk changed
+When a runner event carries an instrument whose official reference tenant A already holds as its own record
+Then it is refused with 409 "already_in_our_library" and nothing is stored
+And no API key of any scope files a proposal into tenant A's own queue
 ```
 
 ### ACC-S1 — An entry is registered, narrowed to a department, and revoking it stops its credentials `@integration` `@e2e` (ACC-01, J-11)
@@ -337,4 +373,22 @@ When it records that the application "order-router" reads customer classificatio
 Then a linked internal item of the system kind is written through record() with the entry named as its actor
 And the register entry lists the application with what it does
 And the same record sent twice writes one item
+```
+
+### ACC-S13 — J-11: a bank's coding agent reads what applies to it `@e2e` (ACC-01 to ACC-08, AC-ACC1, AC-ACC2, AC-ACC4, J-11)
+```gherkin
+Given a tenant admin with agent_access.manage and a Trading department with its products
+When they register an agent access entry for the Trading team's coding agent, narrowed to that department's products, and issue it a key with a step-up
+And two different people holding security.manage switch tenant reach on
+And the admin enables reach on the entry
+When the agent asks what applies to "a new order-routing service"
+Then it receives the bank's confirmed applicability and reading with citations
+And the full list sits beneath a summary labelled as AI-drafted
+And a line names card issuing as outside its scope
+When the agent reads a card obligation by its stable key
+Then the request answers 404
+When the agent sends a write
+Then the request answers 403
+When the admin revokes the entry
+Then the agent's next call answers 401
 ```

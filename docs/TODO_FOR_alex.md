@@ -2,6 +2,66 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## R2 starts: what waits for you (2026-09-25, `r2-plan-docs`)
+
+R2 is planned and its first wave is running. `docs/plans/briefs/R2_CROSS_CUTTING.md` holds
+the rules every R2 package shares. Nothing below stops the build: each question has a
+default the packages take, and each answer changes a task, not an invariant already built.
+
+**Owner questions this plan raises** (default taken in brackets):
+- [x] **Tenant text to a model.** May free text a bank types (a note, an assessment, a
+      comment) reach a model in a tenant agent run? (Default: no. A tenant run gets keys
+      only until you answer; `R2_CROSS_CUTTING.md` (n), D-07, D-89.) **Answered (Alex, 2026-09-25): yes, guarded, as a second named exception beside Ask (D-98).**
+- [x] **The control inventory.** What a bank's controls are and where their list comes from,
+      for the D-89 controls work. (Default: `d89-controls` builds the shape its brief names and
+      seeds nothing real.) **Answered (Alex, 2026-09-25): a REG-05 internal item of the control kind (D-99).**
+- [x] **Agent-confirmed links count for My work (D-97).** A WAT-04 link an independent agent
+      confirmed under D-74 now counts for "changes on your items", beside a person's
+      confirmation; an unconfirmed suggestion never does. (Default: D-25 amended as D-97 says.) **Answered (Alex, 2026-09-25): default taken (D-97).**
+- [x] **The re-tag batch's agent path.** Whether an agent may file a re-tag batch as well as a
+      person in the console. (Default: `CHUNK11_TASKS.md` as written, the console form only.) **Answered (Alex, 2026-09-25): default taken: a person decides a batch now; the agent path is a follow-on.**
+- [x] **The authenticator list source.** Where a bank's allowed authenticators (AAGUIDs) come
+      from: typed in by the bank, or taken from the FIDO metadata service. (Default:
+      `CHUNK11_TASKS.md`'s sign-in policy, a list the bank types.) **Answered (Alex, 2026-09-25): not in R2; the device-bound policy moves out and banks can still require passkeys (D-100).**
+- [x] **TEN-04 moves to chunk 10 (D-95).** Out-of-office with a delegate is built beside the
+      reminders, escalation and delegation that read it. (Default: chunk 10; say the word and it
+      goes back to chunk 8's cuttable list.) **Answered (Alex, 2026-09-25): default taken (D-95).**
+- [x] **When a banking group's scope is built (D-69, D-96).** (Default: as
+      `r2-banking-groups-brief` sets it in D-96.) **Answered (Alex, 2026-09-25): default taken (D-96).**
+- [x] **Search scope in R2 (D-10).** D-10 kept tenant content out of search in R1 and put the
+      question at R2. (Default: still library only; no tenant text is embedded.) **Answered (Alex, 2026-09-25): default taken: library only through R2 (D-10).**
+- [x] **ADM-02's languages (D-94).** Which content languages the console's jurisdiction and
+      translation surfaces carry. (Default: as `x-jurisdictions-by-proposal` sets it in D-94.) **Answered (Alex, 2026-09-25): default taken (D-94).**
+- [x] **Evidence upload and the scanner.** That evidence arrives by multipart through the API
+      rather than a presigned PUT (`CHUNK9_TASKS.md` ruling 4), and that the R2 deploy needs a
+      `clamd` service (`PARALLEL_PLAN.md` §7.3). (Default: multipart; a deployed environment
+      with no scanner refuses to store a file.) **Answered (Alex, 2026-09-25): multipart confirmed (D-101). Provisioning clamd is your own action, below.**
+- [x] **PRD 0.7's OWN group (D-91).** Confirm the ownership requirements as `r2-spec-d89`
+      writes them into the PRD. (Default: as D-91 and ADR 0059 say.) **Answered (Alex, 2026-09-25): default taken (D-91), with D-98 and D-99.**
+
+**Your own action:**
+- [ ] **Provision `clamd` in Railway EU West (D-101).** Until it runs, a deployed environment
+      refuses every evidence file with 503 `scanner_unavailable`.
+
+**Non-blocking defaults already taken**, each in the brief that holds it:
+- Chunk 9's four (the evidence allow-list and 25 MB cap, every `cases.read` holder downloads,
+  sub-statuses without a route, the scanner refusal at first use): `CHUNK9_TASKS.md`,
+  "Not questions". q-case-close is answered, Option B (D-92).
+- Chunk 10's: `CHUNK10_TASKS.md`, "DEFAULTS TAKEN" and "Open questions"; `c10-close` copies
+  them here.
+- Chunk 11's, plus every plan limit as a setting until plans exist: `CHUNK11_TASKS.md`,
+  "Defaults taken"; `c11-chunk-close` copies them here.
+- Agent access's: `docs/plans/briefs/AGENT_ACCESS.md` and the D-73, D-76 and D-77 items in
+  "Landed from `origin/claude/r1-integration`" below.
+
+**CLAUDE.md edits only you make:**
+- [ ] Sections 3 and 5: the agent access text already listed under "Landed from
+      `origin/claude/r1-integration`" (a) below.
+- [ ] Section 11: the golden paths are J-1 to J-12 as `@smoke`, per PRD section 5; the file
+      still says J-1 to J-8. (The PRD on `main` stops at J-11; J-12 arrives with PRD 0.7 from
+      `r2-spec-d89`.) The journey titles for J-9 (HOM-S13), J-10 (REG-S16) and J-11
+      (ACC-S13) already carry `@smoke`.
+
 ## R1 is closed: what waits for you (2026-09-24, `r1-close-and-readiness`)
 
 R1's code is on `main` and its gates are green; what is left is yours. The four that block
@@ -153,9 +213,11 @@ ADR (0026 to 0041), each reversible. These are the ones that need you.
 - [ ] Design cards still to be drawn before their chunks: the "Standard" pill's
       wording and tone; the regulatory scope page's opt-in group with "None
       followed"; the "Markets we watch" panel; My work; the participants panels;
-      the entity screen's "Licences and certificates"; the units list and paste
-      dialog; the approver's decide-selected queue; the Statement of
-      Applicability view; and a standard instrument's empty provision tree.
+      the entity screen's "Licences and certificates"; and a standard
+      instrument's empty provision tree. (c8-cards-register, 2026-09-25: the units
+      list, the paste dialog and the Statement of Applicability view are drawn in
+      `design/screens/tenant-obligation-units.html`; the decide-selected queue is
+      struck, because D-75 leaves nothing to decide in bulk.)
 
 ### Legal, before any standard is seeded
 
@@ -324,7 +386,7 @@ Change any of them and the answer changes a task, not an invariant.
       `answered`, `fixed` or `rejected` with a required note, using the kinds chunk 3
       already wrote. No close-reason vocabulary is added.
 - [ ] **Does the reporter get a notification when their report is closed?** Default: no.
-      They see the state on the record, and on My work once chunk 8 builds it.
+      They see the state on the record; My work lists no problem reports.
       Notifications are chunk 10, and adding one there is small.
 - [x] **PRD wording.** Done in PRD 0.4: AUD-03 now reads "A problem report stays inside
       the bank that filed it", ADM-02 lists no problem-report surface, and AUD-S5 and
@@ -411,7 +473,10 @@ change what four eyes means and are marked as such.
 
 ## The documentation gate's list of error codes (2026-09-20, first OAS sweep)
 
-- [ ] **`api_docs_gate.py` refuses a code that routes really do raise.** The gate checks every
+- [x] **`api_docs_gate.py` refuses a code that routes really do raise.** Done: `raisable_codes()`
+      now derives the list from source, every `code=` literal under `backend/apps/` and in
+      `config/api.py`'s handlers, so a truthfully documented code passes (checked 2026-09-25,
+      `r2-plan-docs`). What follows is the question as it was asked. The gate checks every
       backticked RFC 9457 code in an operation's description against `RAISABLE_CODES`, a
       hand-typed list built from `apps/shared/errors.py`'s `STATUS_BY_CODE` plus what
       `config/api.py` raises. But `config/api.py` passes a logic `ValidationError`'s own code
@@ -1325,3 +1390,40 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 - [ ] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. It
       follows the app's existing terms (skyldighet, förslag, godkännande), but
       a native read of the headline and the questions is worth five minutes.
+
+## r2-spec-d89: the bank's own regulations (PRD 0.7, 2026-09-25)
+
+- [x] **D-89: confirm PRD 0.7's OWN group.** Non-blocking: chunk 11 builds it on the
+      defaults in D-91 and ADR 0059 (design: `docs/plans/briefs/SCOPE_ITEMS.md`). A scope
+      item is added through the regulatory scope request with four eyes and a passkey, and
+      no agent or key writes one. The bank's own agent files what it finds as proposals only
+      through its runner, and a person holding `private_records.approve` decides each one
+      with a passkey. Three details are yours to overrule:
+      1. **What reaches the model.** Default: only the item's jurisdiction and regime keys
+         and the public pages it fetches, never the name the bank typed (D-07 and D-32 stay
+         open). Say if the name may reach the bank's own agent.
+      2. **What a control inventory is (OWN-05).** Default: a linked internal item of the
+         control kind (REG-05) with the fields REG-05 gives it. Say if a control needs more
+         (an owner, a test, a frequency).
+      3. **Who confirms a bank's own record.** Default: a person, always; an agent never
+         confirms one, unlike the shared library (D-62). Say if a bank may switch on a
+         confirming agent for its own queue. **Answered (Alex, 2026-09-25): 1 as D-98 (the typed name may reach the bank's own agent, guarded), 2 as D-99, 3 default taken.**
+
+## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-102)
+
+- [ ] **The console's correction form gained one field.** A reviewer who changes a
+      proposal's wording, date or scope before approving now gives "Source of your
+      correction", the link or provision they read the new value in; the server refuses a
+      changed value without one (security-review-c4 L5). The design card
+      (`design/screens/console-queue.html`) shows no such field, so it was added in the
+      form's existing style below the scope. Default if you say nothing: it stays. The
+      proposer's replaced source is kept in the approval's audit row, not beside the
+      reviewer's on the queue screen; say if the queue should show both (a column on
+      `proposal`, D-102).
+- [ ] **The confirming agent's next version should name its correction's source.**
+      `backend/agents/library-confirmer/v2/prompt.md` says a correction goes through
+      `payloadOverrides` and does not mention `fieldSources`; a shipped version is never
+      edited, so it stays. Until a v3 says "name in `fieldSources` the page you read each
+      changed value in", an agent's correction without one answers 422 `source_missing`
+      and applies nothing (fails safe; it can still approve as proposed or reject).
+      Default if you say nothing: v3 carries that line when the confirmer next changes.
