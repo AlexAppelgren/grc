@@ -175,7 +175,8 @@ And the API exposes them so an external GRC system can read the links
 There is no separate internal-items screen in R2: a link either picks one of the bank's
 internal items or creates it from the same call, with its kind (a `link_kind` row), name,
 reference, url, owner person or team, org unit, external system and reference and review
-dates, one audit event each. Every link points at an item, which carries the kind; the link
+dates, one audit event each. The dialog finds an item to pick through `GET /internal-items`, the bank's
+active items by name or reference under `register.read`. Every link points at an item, which carries the kind; the link
 keeps its own label, url and external reference. Removing a link stamps `removed_at` and
 `removed_by`; the link row and the item stay, and the list shows live links only.
 

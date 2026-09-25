@@ -74,6 +74,7 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("listInternalLinks", "get", f"/api/v1/obligations/{OBLIGATION}/internal-links", None, perms.REGISTER_READ, False),
     ("addInternalLink", "post", f"/api/v1/obligations/{OBLIGATION}/internal-links", LINK_BODY, perms.REGISTER_EDIT, False),
     ("removeInternalLink", "delete", f"/api/v1/internal-links/{RECORD}", None, perms.REGISTER_EDIT, False),
+    ("listInternalItems", "get", "/api/v1/internal-items", None, perms.REGISTER_READ, False),
     ("listUnits", "get", f"/api/v1/obligations/{OBLIGATION}/units?entity={ENTITY}", None, perms.REGISTER_READ, False),
     ("createUnit", "post", f"/api/v1/obligations/{OBLIGATION}/units", UNIT_BODY, perms.REGISTER_EDIT, False),
     ("updateUnit", "patch", f"/api/v1/units/{RECORD}", UNIT_PATCH, perms.REGISTER_EDIT, False),
@@ -94,6 +95,8 @@ BUILT: set[str] = {
     "listInternalLinks",
     "addInternalLink",
     "removeInternalLink",
+    # c8-ui-links-history-participants: tests_links.py
+    "listInternalItems",
 }
 
 

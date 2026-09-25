@@ -15,13 +15,22 @@ import uuid
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.identity.models import Membership
 from apps.library.reading import obligation_headings
 from apps.register.logic import ensure_register_entry
 from apps.register.models import InternalLink
-from apps.register.schemas import RegisterInternalLink, RegisterInternalLinkBody, RegisterInternalLinkPage, RegisterPersonRef, RegisterVocabRef
+from apps.register.schemas import (
+    RegisterInternalItem,
+    RegisterInternalItemPage,
+    RegisterInternalLink,
+    RegisterInternalLinkBody,
+    RegisterInternalLinkPage,
+    RegisterPersonRef,
+    RegisterVocabRef,
+)
 from apps.shared.audit import Actor, record
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
@@ -53,6 +62,26 @@ def list_links(
         .order_by("created_at", "id")[offset : offset + limit]
     )
     return RegisterInternalLinkPage(items=[_link_out(row, order) for row in rows], total=live.count())
+
+
+def list_items(*, order: list[str], query: str, limit: int, offset: int) -> RegisterInternalItemPage:
+    """The bank's active items whose name or reference holds `query`, by name, for the link
+    dialog to pick from, in a constant number of queries. Row-level security keeps it to
+    the bank's own."""
+    active = InternalItem.objects.filter(active=True)
+    if query:
+        active = active.filter(Q(name__icontains=query) | Q(reference__icontains=query))
+    rows = active.select_related("kind").prefetch_related("kind__labels").order_by("name", "id")[offset : offset + limit]
+    items = [
+        RegisterInternalItem(
+            id=row.id,
+            kind=RegisterVocabRef(key=row.kind.key, kind=row.kind.kind, label=label_for(row.kind, order)),
+            name=row.name,
+            reference=row.reference or None,
+        )
+        for row in rows
+    ]
+    return RegisterInternalItemPage(items=items, total=active.count())
 
 
 def add_link(

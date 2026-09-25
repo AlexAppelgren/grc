@@ -864,6 +864,56 @@ class RegisterInternalLinkPage(CamelSchema):
     total: int = Field(description="How many links the obligation has in total, not how many are on this page.")
 
 
+_ITEM_EXAMPLE: dict[str, Any] = {
+    "id": "2b4d6f8a-0c1e-4a3b-9d5f-7e9a1c3b5d24",
+    "kind": {"key": "control", "kind": None, "label": "Control"},
+    "name": "Daily reconciliation",
+    "reference": "CTL-203",
+}
+
+
+class RegisterInternalItemQuery(CamelSchema):
+    """What to look for among the bank's internal items."""
+
+    q: str = Field(
+        default="",
+        max_length=TITLE_MAX,
+        description=(
+            f"Part of an item's name or of its own reference, matched without regard to case, at "
+            f"most {TITLE_MAX} characters. Empty by default, which lists every active item."
+        ),
+    )
+
+
+class RegisterInternalItem(CamelSchema):
+    """One of the bank's own policies, procedures, controls, processes or systems, as the link
+    dialog offers it to pick (REG-05). An item is created from a link's call; there is no
+    other way in."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_ITEM_EXAMPLE]})
+
+    id: uuid.UUID = Field(description="The item's UUID in this bank; send it as `internalItemId` to link it.")
+    kind: RegisterVocabRef = Field(
+        description=(
+            "What the item is, as a row of the bank's own `link_kind` vocabulary, seeded as "
+            "`policy`, `procedure` and `control`; its admin may add rows such as a process or a "
+            "system, so read `GET /vocab/link_kind` for the live set. Send its `key` as the "
+            "link's `kind`."
+        )
+    )
+    name: str = Field(description="The item's name as the bank calls it, such as `Daily reconciliation`.")
+    reference: str | None = Field(description="The bank's own reference for the item, such as `CTL-203`; null when it has none.")
+
+
+class RegisterInternalItemPage(CamelSchema):
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_ITEM_EXAMPLE], "total": 1}]})
+
+    items: list[RegisterInternalItem] = Field(description="The active items on this page, by name; retired items are not listed.")
+    total: int = Field(description="How many active items match in total, not how many are on this page.")
+
+
 class RegisterInternalLinkBody(WriteBody):
     """`POST /obligations/{obligationId}/internal-links`: link an item of the bank's own."""
 

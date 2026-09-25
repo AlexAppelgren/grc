@@ -23,6 +23,8 @@ from ninja import Path, Query, Router
 
 from apps.register import applicability, duties, gaps, history, links, soa, status_logic, units
 from apps.register.schemas import (
+    RegisterInternalItemPage,
+    RegisterInternalItemQuery,
     RegisterApplicability,
     RegisterApplicabilityBody,
     RegisterApplicabilityMany,
@@ -676,6 +678,32 @@ def add_internal_link(
         obligation_id=obligation_id,
         body=body,
     )
+
+
+@router.get(
+    "/internal-items",
+    response=RegisterInternalItemPage,
+    auth=SESSION,
+    operation_id="listInternalItems",
+    by_alias=True,
+    summary="Find one of your policies, procedures or controls to link",
+)
+@requires_permission(perms.REGISTER_READ)
+@answers_problems
+def list_internal_items(request: HttpRequest, filters: Query[RegisterInternalItemQuery], page: PageQuery = Query(...)) -> Any:
+    """The bank's own active internal items, by name, each with its kind and reference, so the
+    link dialog can pick one instead of creating it again. `q` narrows the list to the items
+    whose name or reference holds it. Another bank's items are never listed.
+
+    A person's session holding `register.read`. A read: it changes nothing and writes no
+    audit event. Pages with `limit` and `offset`, 20 by default and 100 at most; nothing
+    matching is a 200 with an empty page.
+
+    Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
+    `validation_error` (422) for a `q` longer than 300 characters or a page out of range.
+    """
+    tenant = caller_tenant(request)
+    return links.list_items(order=language_order(request, tenant=tenant), query=filters.q, limit=page.limit, offset=page.offset)
 
 
 @router.delete(
