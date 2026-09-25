@@ -17,15 +17,21 @@ removeEvidence, CAS-S8 requestSignoff, CAS-S10 approveSignoff, CAS-S18 sendBackS
 
 from unittest import skip
 
-from django.test import TestCase
+from django.db import transaction
+from django.utils import timezone
 
-from apps.cases import creation, testing as case_build
+from apps.cases import creation, logic, state, testing as case_build
+from apps.cases import tests_signoff as signoff_build
+from apps.cases.models import Action, CaseTransition
 from apps.cases.tests_creation import cases_of, drain, registered
+from apps.shared import tenancy
+from apps.shared.models import AuditEvent
+from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy.models import CaseStatusCategory
 from apps.watch import testing as watch_build
 
 
-class CasesScenarioTests(TestCase):
+class CasesScenarioTests(ScenarioTestCase):
     """Scenario tests for apps.cases, one method per @integration scenario."""
 
     def test_cas_s1(self) -> None:
@@ -104,26 +110,58 @@ class CasesScenarioTests(TestCase):
         Evidence is scanned, hashed and streamed through permission checks (CAS-05).
         """
 
-    @skip("pending: CAS-S8")
     def test_cas_s8(self) -> None:
         """CAS-S8
 
         Sign-off is refused while actions are open or evidence is missing (CAS-06, AC-CAS1).
         """
+        bank = signoff_build.Bank()
+        action = bank.action(done=False)
+        response = bank.post(self.client, "request", bank.owner)
+        self.assertEqual((response.status_code, response.json()["code"]), (409, "open_actions"))
 
-    @skip("pending: CAS-S9")
+        with transaction.atomic():
+            tenancy.activate(bank.tenant.id)
+            Action.objects.filter(pk=action.pk).update(done_at=timezone.now(), done_by=bank.owner)
+        response = bank.post(self.client, "request", bank.owner)
+        self.assertEqual((response.status_code, response.json()["code"]), (409, "evidence_missing"))
+
+        bank.evidence("clean")
+        response = bank.post(self.client, "request", bank.owner)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "signoff", "the category that reads \"Waiting for sign-off\"")
+
     def test_cas_s9(self) -> None:
         """CAS-S9
 
         The requester cannot sign off their own case (CAS-06, AC-CAS1).
         """
+        bank = signoff_build.Bank()
+        bank.ready_for_signoff(self.client)
+        response = bank.post(self.client, "approve", bank.owner, body={"note": ""}, step_up=True)
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["code"], "four_eyes_violation")
+        self.assertEqual(response.json()["detail"], "A second person must sign off.")
+        self.assertEqual(bank.fresh().status, CaseStatusCategory.SIGNOFF.value)
 
-    @skip("pending: CAS-S10")
     def test_cas_s10(self) -> None:
         """CAS-S10
 
         A second person signs off with step-up and the inventory is untouched (CAS-06).
         """
+        bank = signoff_build.Bank()
+        bank.ready_for_signoff(self.client)
+        response = bank.post(self.client, "approve", bank.approver, body={"note": ""}, step_up=False)
+        self.assertEqual((response.status_code, response.json()["code"]), (403, "step_up_required"))
+
+        before = signoff_build.inventory_snapshot()
+        response = bank.post(self.client, "approve", bank.approver, body={"note": "Checked."}, step_up=True)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "closed")
+        case = bank.fresh()
+        audit = AuditEvent.objects.filter(subject_id=case.id, after__status="closed").get()
+        self.assertIsNotNone(audit.step_up_assertion_id, "the audit event carries the assertion")
+        self.assertEqual(signoff_build.inventory_snapshot(), before, "no library or register row changed")
 
     @skip("pending: CAS-S11")
     def test_cas_s11(self) -> None:
@@ -132,12 +170,22 @@ class CasesScenarioTests(TestCase):
         The case file stands alone as text and as an export (CAS-07).
         """
 
-    @skip("pending: CAS-S12")
     def test_cas_s12(self) -> None:
         """CAS-S12
 
         Every response lists allowed transitions and an invalid one is refused (CAS-08).
         """
+        bank = signoff_build.Bank()
+        case_build.in_category(bank.case, CaseStatusCategory.ASSESSING)
+        read = self.client.get(f"/api/v1/changes/{bank.case.change_id}", **sign_in(bank.approver, tenant=bank.tenant))
+        self.assertEqual(read.status_code, 200)
+        case = bank.fresh()
+        machine = state.allowed_transitions(CaseStatusCategory.ASSESSING, logic.case_facts(case, actor=bank.approver.id))
+        self.assertEqual(read.json()["case"]["allowedTransitions"], [category.value for category in machine])
+
+        response = bank.post(self.client, "approve", bank.approver, body={"note": ""}, step_up=True)
+        self.assertEqual((response.status_code, response.json()["code"]), (409, "invalid_transition"))
+        self.assertEqual(bank.fresh().status, CaseStatusCategory.ASSESSING.value)
 
     @skip("pending: CAS-S13")
     def test_cas_s13(self) -> None:
@@ -152,6 +200,26 @@ class CasesScenarioTests(TestCase):
 
         Another tenant's case and evidence answer 404 (CAS-05, CAS-07, NFR-01).
         """
+
+    def test_cas_s18(self) -> None:
+        """CAS-S18
+
+        Send-back returns a case to implementing and a fresh request is possible (CAS-06, CAS-08).
+        """
+        bank = signoff_build.Bank()
+        bank.action(done=True)
+        bank.ready_for_signoff(self.client)
+        response = bank.post(self.client, "send-back", bank.approver, body={"note": "Attach the desk's signature."})
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "implementing", "the actions' lock reads this category, so they unlock")
+        case = bank.fresh()
+        self.assertIsNone(case.signoff_requested_by_id)
+        moved = CaseTransition.objects.filter(case=case, to_status="implementing", from_status="signoff").get()
+        self.assertEqual(moved.note, "Attach the desk's signature.", "the note is on the case's trail")
+
+        response = bank.post(self.client, "request", bank.owner)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "signoff")
 
     @skip("pending: CAS-S17 (CAS-03, COL-04, chunk 9)")
     def test_cas_s17(self) -> None:

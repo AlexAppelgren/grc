@@ -34,9 +34,6 @@ POST /changes/{}/close chunk 9
 POST /changes/{}/dismiss chunk 9
 POST /changes/{}/evidence chunk 9
 POST /changes/{}/restore chunk 9
-POST /changes/{}/signoff/approve chunk 9
-POST /changes/{}/signoff/request chunk 9
-POST /changes/{}/signoff/send-back chunk 9
 POST /changes/{}/triage chunk 9
 POST /comments chunk 10
 POST /eval/runs chunk 14 a run builds the sample corpus in a database of its own and takes minutes, so it waits for chunk 14's job runner; record_eval_run records runs until then
