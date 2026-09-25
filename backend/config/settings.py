@@ -674,6 +674,17 @@ CELERY_BEAT_SCHEDULE["briefing-weekly"] = {
 }
 
 # ---------------------------------------------------------------------------------------
+# Reminders before and after a due date (COL-02, c10-reminders-core). The hour is each
+# bank's own local hour, so the entry runs every hour and hands on the banks whose clock
+# has just struck it; a daylight saving change moves the UTC hour, not the local one.
+# ---------------------------------------------------------------------------------------
+REMINDER_SEND_HOUR = env_int("REMINDER_SEND_HOUR", 7)
+CELERY_BEAT_SCHEDULE["collab-reminders"] = {
+    "task": "apps.collab.tasks.send_reminders",
+    "schedule": crontab(minute="0"),
+}
+
+# ---------------------------------------------------------------------------------------
 # ===== COL-02, TEN-01 the workflow policy's platform defaults (c10-workflow-policy) =====
 # What a bank's workflow policy starts at: a new tenant takes these, and the migration that
 # added the columns wrote them into every tenant that already existed. The bank changes its
