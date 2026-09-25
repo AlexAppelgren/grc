@@ -8,7 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Notice } from '@/components/ui/Notice';
 import { PillRow } from '@/components/ui/PillRow';
 import { ProblemAlert } from '@/components/ui/States';
-import { usePasteUnits, useSetApplicabilityMany } from '@/features/register/hooks';
+import { usePasteUnits } from '@/features/register/hooks';
 import { presentApplicability } from '@/features/register/register-presentation';
 import type { Applicability, RegisterUnitPaste } from '@/features/register/types';
 import type { MessageKey, Translate } from '@/shared/i18n';
@@ -65,6 +65,7 @@ const SERVER_REFUSAL: Record<PasteProblem, MessageKey> = {
   reference_too_long: 'obligationUnits.refusedReferenceLong',
   title_too_long: 'obligationUnits.refusedTitleLong',
   empty_line: 'obligationUnits.refusedEmpty',
+  reason_missing: 'obligationUnits.refusedReason',
 };
 
 interface CheckedLine extends PastedLine {
@@ -98,13 +99,10 @@ export function PasteUnitsDialog({
 }) {
   const t = useT();
   const paste = usePasteUnits(obligationId);
-  const decide = useSetApplicabilityMany();
   const [text, setText] = useState('');
   const [step, setStep] = useState<'text' | 'dry' | 'confirm'>('text');
   const [checked, setChecked] = useState<CheckedLine[]>([]);
   const [leftOut, setLeftOut] = useState(false);
-  /** The units the commit created, by line, kept so a failed decision call is retried alone. */
-  const [created, setCreated] = useState<string[] | null>(null);
   const words: DecisionWords = { applies: t('obligationUnits.wordApplies'), doesNotApply: t('obligationUnits.wordDoesNotApply') };
 
   const ready = checked.filter((line) => line.why === null);
@@ -119,12 +117,10 @@ export function PasteUnitsDialog({
     setStep('text');
     setChecked([]);
     setLeftOut(false);
-    setCreated(null);
     paste.reset();
-    decide.reset();
     onOpenChange(false);
   };
-  const close = () => finish(created === null ? null : created.length);
+  const close = () => finish(null);
 
   const check = async (event: FormEvent) => {
     event.preventDefault();
@@ -143,22 +139,11 @@ export function PasteUnitsDialog({
     setStep('dry');
   };
 
+  // One call: the units and the decisions their lines carry are stored together, all or none.
   const commit = async () => {
-    let units = created;
-    if (units === null) {
-      const result = await paste
-        .mutateAsync({ orgUnitId: entity.id, lines: ready.map(({ reference, title }) => ({ reference, title })), dryRun: false })
-        .catch(() => null);
-      if (result === null) return;
-      units = result.rows.flatMap((row) => (row.unitId == null ? [] : [row.unitId]));
-      setCreated(units);
-    }
-    const rows = ready.flatMap((line, index) => {
-      const unitId = units[index];
-      return line.decision === null || unitId === undefined ? [] : [{ obligationId, unitId, applicability: line.decision, reason: line.reason }];
-    });
-    if (rows.length > 0 && (await decide.mutateAsync({ rows }).catch(() => null)) === null) return;
-    finish(units.length);
+    const lines = ready.map(({ reference, title, decision, reason }) => (decision === null ? { reference, title } : { reference, title, applicability: decision, reason }));
+    const result = await paste.mutateAsync({ orgUnitId: entity.id, lines, dryRun: false }).catch(() => null);
+    if (result !== null) finish(result.created);
   };
 
   const title = step === 'text' ? t('obligationUnits.pasteTitle', { entity: entity.name }) : step === 'dry' ? t('obligationUnits.dryTitle') : t('obligationUnits.confirmTitle', { count: decisions.length, entity: entity.name });
@@ -275,14 +260,12 @@ export function PasteUnitsDialog({
               </tbody>
             </table>
           </div>
-          {created !== null && decide.isError ? <Notice tone="bad">{t('obligationUnits.decisionsFailed')}</Notice> : null}
           {paste.isError ? <ProblemAlert error={paste.error} codes={problemCodes} /> : null}
-          {decide.isError ? <ProblemAlert error={decide.error} /> : null}
           <ButtonBar>
-            <Button variant="outline" onClick={created === null ? () => setStep('dry') : close}>
+            <Button variant="outline" onClick={() => setStep('dry')}>
               {t('common.cancel')}
             </Button>
-            <Button disabled={paste.isPending || decide.isPending} onClick={() => void commit()}>
+            <Button disabled={paste.isPending} onClick={() => void commit()}>
               {t('obligationUnits.confirm', { count: decisions.length })}
             </Button>
           </ButtonBar>

@@ -533,6 +533,7 @@ describe('the diff sentence', () => {
 const FILLED: readonly string[] = [
   'Applicability', // c8-ui-applicability-status
   'Status', // c8-ui-applicability-status
+  'Units', // c8-ui-units
 ];
 
 describe('the panel stubs', () => {

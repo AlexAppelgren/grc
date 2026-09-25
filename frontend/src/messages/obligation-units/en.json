@@ -65,5 +65,19 @@
   "obligationUnits.confirmTitle": "{count, plural, one {Set # decision for {entity}?} other {Set # decisions for {entity}?}}",
   "obligationUnits.confirmBody": "The units are created and each decision is stored in your name with its reason. Each is kept in the audit log.",
   "obligationUnits.confirm": "{count, plural, one {Set # decision} other {Set # decisions}}",
-  "obligationUnits.decisionsFailed": "The units were created, but their decisions were not stored. Try again to store them."
+  "obligationUnits.tabUnits": "Units",
+  "obligationUnits.tabStatement": "Statement of Applicability",
+  "obligationUnits.soaLede": "Every unit {entity} lists under this standard, with its decision, reason and status.",
+  "obligationUnits.soaConformance": "Conformance for {entity}",
+  "obligationUnits.soaConformanceNote": "This is the status assessed on the obligation for the entity. The units below do not change it.",
+  "obligationUnits.soaEmptyBody": "Units are added and decided on the Units tab.",
+  "obligationUnits.soaLoadError": "The Statement of Applicability could not be loaded",
+  "obligationUnits.columnApplicability": "Applicability",
+  "obligationUnits.columnStatus": "Status",
+  "obligationUnits.columnSetBy": "Set by",
+  "obligationUnits.columnDecided": "Decided",
+  "obligationUnits.columnHistory": "History",
+  "obligationUnits.noneYet": "None yet",
+  "obligationUnits.historyCount": "{count, plural, one {# decision} other {# decisions}}",
+  "obligationUnits.historyEntry": "Set by {person}, {date}"
 }
