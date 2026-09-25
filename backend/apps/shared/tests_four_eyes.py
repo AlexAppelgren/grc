@@ -23,6 +23,7 @@ from apps.shared.permissions import (
     APPROVE_PERMISSIONS,
     CASES_SIGNOFF,
     FOOTPRINT_APPROVE,
+    PRIVATE_RECORDS_APPROVE,
     PROPOSALS_REVIEW,
     RISK_ACCEPT_APPROVE,
 )
@@ -66,7 +67,9 @@ class FourEyesGuard(TestCase):
     def test_the_approve_permissions_are_exactly_the_prd_list(self) -> None:
         self.assertEqual(
             APPROVE_PERMISSIONS,
-            {FOOTPRINT_APPROVE, CASES_SIGNOFF, APPLICABILITY_APPROVE, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW},
+            # PRIVATE_RECORDS_APPROVE decides a bank's own proposal on the same `proposal` row, so
+            # `proposal_four_eyes` above is its constraint too (D-57, d89-proposal-owner).
+            {FOOTPRINT_APPROVE, CASES_SIGNOFF, APPLICABILITY_APPROVE, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW, PRIVATE_RECORDS_APPROVE},
         )
 
 

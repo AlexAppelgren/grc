@@ -1195,6 +1195,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
         # When a proposal filed before the mirror rule would tag an obligation with a
         # jurisdiction term, applying it answers 422 and scopes nothing.
+        tenancy.clear_tenant()  # the console's zone, as its own request has in production (proposals 0009)
         filed = Proposal.objects.create(
             kind=ProposalKind.NEW_OBLIGATION_VERSION.value,
             title="Filed before the mirror rule",

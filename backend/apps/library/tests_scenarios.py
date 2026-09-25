@@ -609,6 +609,7 @@ class LibraryScenarioTests(ScenarioTestCase):
         # arrived before the rule, is refused when a reviewer approves it: the apply
         # answers 422 not_a_regime and nothing is written.
         body = instrument_body(key="inv-s12-service-regime", regime="service_type:advice")
+        tenancy.clear_tenant()  # the console's zone, as its own request has in production (proposals 0009)
         proposal = Proposal.objects.create(
             kind=body["kind"],
             title=body["title"],
