@@ -116,7 +116,7 @@ class QueueReads(ScenarioTestCase):
 
     def _provision(self) -> Provision:
         """The provision a proposal cites as the source of a changed field, instead of a link."""
-        with library_write("test"):
+        with library_write("test"), tenancy.platform_zone():
             return Provision.objects.create(
                 stable_key=PROVISION_SOURCE,
                 instrument=self.instrument,
@@ -127,7 +127,7 @@ class QueueReads(ScenarioTestCase):
 
     def _obligation(self, stable_key: str) -> Obligation:
         """A duty with version 1 in force and one scope term, as the library seeds write it."""
-        with library_write("test"):
+        with library_write("test"), tenancy.platform_zone():
             obligation = Obligation.objects.create(
                 stable_key=stable_key,
                 instrument=self.instrument,

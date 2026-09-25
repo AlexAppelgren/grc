@@ -109,7 +109,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
     def _obligation(self) -> Obligation:
         """An obligation to propose a new version of. Chunk 3 seeds the real library; a
         scenario needs one record, written as the seeds write theirs."""
-        with library_write("scenario"):
+        with library_write("scenario"), tenancy.platform_zone():
             instrument = Instrument.objects.create(
                 stable_key="fffs-2017-2",
                 short_name="FFFS 2017:2",
@@ -143,7 +143,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
 
     def _version_one(self, obligation: Obligation) -> ObligationVersion:
         """The version in force before the proposal: chunk 3 seeds these, a scenario needs one."""
-        with library_write("scenario"):
+        with library_write("scenario"), tenancy.platform_zone():
             version = ObligationVersion.objects.create(obligation=obligation, version_number=1, effective_from=date(2024, 1, 1))
             ObligationSummary.objects.create(version=version, language_id="sv", text=VERSION_ONE_SV, is_original=True)
             ObligationTerm.objects.create(obligation=obligation, term=self._term("legal_entity", "bank"))

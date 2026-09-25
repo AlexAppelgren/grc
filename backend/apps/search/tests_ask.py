@@ -55,7 +55,7 @@ from apps.search.tests_hybrid import (
     REPORTING_SUMMARY_V2,
     CorpusMixin,
 )
-from apps.shared import ai, factories
+from apps.shared import ai, factories, tenancy
 from apps.shared.adapters import llm
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.tenancy import library_write
@@ -318,7 +318,7 @@ class AskPendingChangeTests(AskTestCase):
         row = watch.change(authority=None, urgency=None, **change)
         watch.obligation_link(row, self.reporting)
         if confirmed:
-            with watch_write("test fixture: the library confirms the link"):
+            with tenancy.platform_zone(), watch_write("test fixture: the library confirms the link"):
                 ChangeObligation.objects.filter(change=row).update(confirmed_by=self.editor, confirmed_at=watch.ANCHOR)
         return row
 

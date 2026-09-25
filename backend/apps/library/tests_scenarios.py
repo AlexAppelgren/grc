@@ -8,7 +8,9 @@ when a scenario here and a heading in app.md drift apart.
 
 Chunk 3 un-skips INV-S3 to INV-S6, the record reads, INV-S7 and INV-S8, the two scenarios
 the write routes prove, and, with the instrument read (chunk3-rest-T13), INV-S1 and
-INV-S10; INV-S11 with the first standard, built by `testing.standard()`. INV-S2 waits for the provision tree read (chunk3-rest-T16); INV-S9 is R3.
+INV-S10; INV-S11 with the first standard, built by `testing.standard()`. INV-S2 waits for the provision tree read (chunk3-rest-T16). INV-S9 is
+d89-child-rls's, the children following their parent's zone (library 0012), all but its
+support-grant clause, which d89-private-records adds with the approval inside the bank.
 
 Operations exercised (the audit-on-write guard reads these names):
 reportObligationProblem, reportInstrumentProblem, reverifyObligation.
@@ -45,7 +47,7 @@ from django.db import DatabaseError, connection, transaction
 
 from apps.identity.models import User
 from apps.library import reading, testing as build
-from apps.library.models import Instrument, Obligation, ObligationVersion, ProblemReport, Verification
+from apps.library.models import Instrument, Obligation, ObligationTitle, ObligationVersion, ProblemReport, Verification
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import load_library, seed_authorities
 from apps.shared import factories, permissions as perms, tenancy
@@ -293,7 +295,13 @@ class LibraryScenarioTests(ScenarioTestCase):
         # Nothing has rewritten the first version, and nothing can: the table is append-only
         # whatever the write path, so "as of" reads a history no correction can change.
         first = ObligationVersion.objects.get(obligation=self.versioned, version_number=1)
-        with self.assertRaisesMessage(DatabaseError, "obligation_version is append-only"), transaction.atomic(), connection.cursor() as cursor:
+        # From the shared library's own zone, the one that writes its versions (library 0012).
+        with (
+            self.assertRaisesMessage(DatabaseError, "obligation_version is append-only"),
+            tenancy.platform_zone(),
+            transaction.atomic(),
+            connection.cursor() as cursor,
+        ):
             cursor.execute("UPDATE obligation_version SET effective_from = %s WHERE id = %s", ["2027-01-01", first.id])
         first.refresh_from_db()
         self.assertEqual(first.effective_from, FIRST_VERSION)
@@ -519,12 +527,43 @@ class LibraryScenarioTests(ScenarioTestCase):
 
         self.assertEqual(Verification.objects.count(), 2)
 
-    @skip("pending: INV-S9 (INV-07, chunk 11)")
     def test_inv_s9(self) -> None:
         """INV-S9
 
         Tenant-private records are visible to their owner only (INV-07).
+
+        `other` owns `private`, and `tenant` is the other bank. The Given's approval inside
+        the bank and the support-grant clause are d89-private-records' (the approval route
+        answers 501 until then), so the record is the one setUpTestData writes in its owner's
+        zone, as that approval will. The database refuses the child writes on this
+        connection too: the migrator owns the tables and row-level security is forced on it.
         """
+        both = [self.obligation.pk, self.private.pk]
+        self.activate(self.other)
+        self.assertEqual(Obligation.objects.get(pk=self.private.pk).owner_tenant_id, self.other.id)
+        self.assertEqual(set(Obligation.objects.filter(pk__in=both).values_list("pk", flat=True)), set(both), "beside the shared library")
+        self.assertTrue(ObligationTitle.objects.filter(obligation_id=self.private.pk).exists(), "its children follow it")
+
+        self.activate(self.tenant)
+        self.assertEqual(list(Obligation.objects.filter(pk__in=both).values_list("pk", flat=True)), [self.obligation.pk])
+        self.assertFalse(ObligationTitle.objects.filter(obligation_id=self.private.pk).exists())
+        response = self.client.get(f"{URL}/{self.private.id}", **sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual((response.status_code, response.json()["code"]), (404, "not_found"), response.content)
+
+        # A platform session reads no bank's inventory: the console holds no library read, and
+        # the database shows it the shared zone alone.
+        response = self.client.get(f"{URL}/{self.private.id}", **sign_in(self.editor))
+        self.assertEqual((response.status_code, response.json()["code"]), (403, "permission_denied"), response.content)
+        tenancy.clear_tenant()
+        self.assertEqual(list(Obligation.objects.filter(pk__in=both).values_list("pk", flat=True)), [self.obligation.pk])
+        self.assertFalse(ObligationTitle.objects.filter(obligation_id=self.private.pk).exists())
+
+        for parent in both:
+            with self.subTest(parent=str(parent)), self.assertRaises(DatabaseError) as refused, transaction.atomic():
+                self.activate(self.tenant)
+                with tenancy.library_write("INV-S9"):
+                    ObligationTitle.objects.create(obligation_id=parent, language_id="da", text="Bankens egen rad", is_original=False, is_machine=True)
+            self.assertIn("row-level security", str(refused.exception))
 
     def test_inv_s10(self) -> None:
         """INV-S10

@@ -449,7 +449,7 @@ class ConsoleChangeQueueTests(WatchReadFixture):
         """A change whose type, flags, scope terms and links somebody has confirmed has
         nothing left to confirm and is not work, whoever registered it: a person's filing is
         a suggestion too (D-74). `confirmed=all` still finds it."""
-        with watch_write("test fixture"):
+        with tenancy.platform_zone(), watch_write("test fixture"):
             RegulatoryChange.objects.filter(pk=self.undated.pk).update(
                 origin="user", change_type_suggested=False, change_type_confirmed_by=self.editor, change_type_confirmed_at=timezone.now()
             )

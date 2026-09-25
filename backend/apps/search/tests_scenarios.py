@@ -556,7 +556,7 @@ class AskScenarioTests(CorpusMixin, TestCase):
         """
         change = watch.change(authority=None, urgency=None, key_date=datetime.date(2026, 10, 1))
         watch.obligation_link(change, self.reporting)
-        with watch_write("SRC-S4: the library confirms the link"):
+        with tenancy.platform_zone(), watch_write("SRC-S4: the library confirms the link"):
             ChangeObligation.objects.filter(change=change).update(
                 confirmed_by=factories.platform_user(), confirmed_at=watch.ANCHOR
             )
@@ -702,7 +702,7 @@ class AskScenarioTests(CorpusMixin, TestCase):
         Operations: `ask`, `search`.
         """
         question = "What does the Example Security Standard require of a control?"
-        with library_write("SRC-S12: an invented standard's edition and its conformance duty"):
+        with tenancy.platform_zone(), library_write("SRC-S12: an invented standard's edition and its conformance duty"):
             tier = InstrumentLevel.objects.create(
                 key="src-s12-standards-tier", kind=InstrumentLevelKind.STANDARD.value, binding_default=False, rank=900
             )

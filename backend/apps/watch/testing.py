@@ -26,6 +26,8 @@ import itertools
 from collections.abc import Iterable, Sequence
 from typing import Any
 
+from django.db import transaction
+
 from apps.agents.models import AgentRun
 from apps.library.models import Authority, DatePrecision, Obligation, SubjectType
 from apps.library.seeds import seed_jurisdictions, seed_languages
@@ -46,6 +48,7 @@ from apps.watch.models import (
     SourceCheck,
     SourceCheckKind,
 )
+from apps.shared import tenancy
 from apps.watch.write import watch_write
 
 REASON = "test builder"
@@ -275,8 +278,11 @@ def obligation_link(
 ) -> ChangeObligation:
     """An obligation the change affects, as the agent of the change's own run suggested it.
     A bank's own decision about the link lives on its case and never here (WAT-04, ruling
-    C)."""
-    with watch_write(REASON):
+    C). Written in the obligation's zone, as its child (library 0012): the shared library's
+    from a session with no bank, a bank's own record's from that bank."""
+    with transaction.atomic(), tenancy.platform_zone(), watch_write(REASON):
+        if obligation.owner_tenant_id is not None:
+            tenancy.activate(obligation.owner_tenant_id)
         return ChangeObligation.objects.create(
             change=row,
             obligation=obligation,

@@ -197,7 +197,7 @@ class CaseObligationLinkTests(CaseZoneTestCase):
         """WAT-04, ruling C: the library's own link is the library editor's. A bank
         accepting or removing one on its case changes nothing in `change_obligation`."""
         obligation = self.obligation()
-        with watch_write(REASON):
+        with tenancy.platform_zone(), watch_write(REASON):
             library_link = ChangeObligation.objects.create(
                 change=self.change, obligation=obligation, origin=OriginType.AGENT.value, confidence=None
             )

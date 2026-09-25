@@ -34,7 +34,7 @@ from apps.cases.models import CaseLinkDecision, ChangeCase
 from apps.identity.models import User
 from apps.library import testing as library_build
 from apps.library.models import Obligation
-from apps.shared import factories
+from apps.shared import factories, tenancy
 from apps.shared import permissions as perms
 from apps.shared.models import Tenant
 from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, sign_in, stub_session, user_principal
@@ -75,7 +75,7 @@ def confirm_link(change: RegulatoryChange, obligation: Obligation, editor: User)
     """A person confirms the link for the shared library, as a library editor still may
     with a passkey (D-74). Through the watch door, because `change_obligation` is a library
     row."""
-    with watch_write("test fixture"):
+    with tenancy.platform_zone(), watch_write("test fixture"):
         ChangeObligation.objects.filter(change=change, obligation=obligation).update(
             confirmed_by=editor, confirmed_at=build.ANCHOR
         )

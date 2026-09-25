@@ -103,7 +103,7 @@ class LibraryUpdates(ScenarioTestCase):
         )
 
     def _obligation(self, stable_key: str, *terms: str) -> Obligation:
-        with library_write("test"):
+        with library_write("test"), tenancy.platform_zone():
             obligation = Obligation.objects.create(
                 stable_key=stable_key,
                 instrument=self.instrument,

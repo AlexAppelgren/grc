@@ -216,7 +216,7 @@ class RoadmapObligations(TestCase):
         change = a_change(key_date=THIS_QUARTER)
         watch_build.obligation_link(change, cls.confirmed, confidence=0.82)
         watch_build.obligation_link(change, suggested, confidence=0.4)
-        with watch_write("test setup"):
+        with tenancy.platform_zone(), watch_write("test setup"):
             ChangeObligation.objects.filter(change=change).filter(obligation=cls.confirmed).update(
                 confirmed_by=editor, confirmed_at=INSTANT
             )
@@ -241,7 +241,7 @@ class RoadmapObligations(TestCase):
         machine's confirmation never reaches a bank's plan as a person's verification."""
         tenancy.clear_tenant()
         confirmer = agent_build.agent_key(agent_row=agent_build.agent(key="library-confirmer"))
-        with watch_write("test setup"):
+        with tenancy.platform_zone(), watch_write("test setup"):
             ChangeObligation.objects.filter(obligation=self.confirmed).update(
                 confirmed_by=None, confirmed_by_api_key_id=confirmer.id, confirmed_by_agent_id=confirmer.agent.id
             )
@@ -327,7 +327,7 @@ class RoadmapCost(TestCase):
             change = a_change(key_date=THIS_QUARTER + datetime.timedelta(days=number), title=f"Reform {number}")
             obligation = library_build.obligation(instrument, key=f"obl-cost-{number}")
             watch_build.obligation_link(change, obligation)
-            with watch_write("test setup"):
+            with tenancy.platform_zone(), watch_write("test setup"):
                 ChangeObligation.objects.filter(change=change).update(confirmed_by=editor, confirmed_at=INSTANT)
             cases_build.case(cls.tenant, change)
 

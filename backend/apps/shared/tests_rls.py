@@ -142,6 +142,33 @@ WATCH_LIBRARY_TABLES = frozenset(
 # proposal, the re-verification stamp or a reference seed (H16, ADR 0058).
 LIBRARY_OWNED_TABLES = frozenset({"instrument", "obligation"})
 
+# Every child of those two, and the parent each follows (INV-07, OWN-04; library 0012,
+# d89-child-rls). A child holds no zone column of its own, so it carries the pair: FOR SELECT
+# where its parent is visible, and FOR ALL where the owner of its root record is the session's
+# own zone, so a bank writes no child under a shared record or another bank's. A grandchild
+# names its own parent, which follows the root in turn. A link row follows its owning end.
+# The enumeration below walks the foreign keys from both roots, so a new child without the
+# pair fails here. `change_obligation` is a watch table; its other parent, `regulatory_change`,
+# holds no zone yet, and the package that gives it one rewrites the pair with both parents.
+CHILD_TABLES = {
+    "instrument_title": "instrument",
+    "instrument_relation": "instrument",
+    "provision": "instrument",
+    "provision_version": "provision",
+    "provision_text": "provision_version",
+    "obligation_title": "obligation",
+    "obligation_version": "obligation",
+    "obligation_summary": "obligation_version",
+    "obligation_provision": "obligation",
+    "obligation_term": "obligation",
+    "obligation_tag": "obligation",
+    "obligation_relation": "obligation",
+    "recurring_duty": "obligation",
+    "change_obligation": "obligation",
+}
+CHILD_READ_POLICY = "parent_visible"
+CHILD_WRITE_POLICY = "parent_owned"
+
 # Tables that hold one bank's rows and nothing else, named here so the enumeration cannot
 # quietly stop seeing one. `change_case` and `case_obligation_link` are chunk 5's: a bank's
 # case for a library change and its own decision about a suggested obligation link. They
@@ -207,6 +234,32 @@ def own_zone_rule(column: str) -> str:
     """`<column> IS NOT DISTINCT FROM <the session's tenant>` as PostgreSQL renders it back
     in pg_policies, which is with the negation on the outside."""
     return f"NOT ({column} IS DISTINCT FROM"
+
+
+def library_children() -> dict[str, set[str]]:
+    """Every table without a tenant column that reaches instrument or obligation through its
+    foreign keys, directly or through another such table, and the tables it points at on the
+    way. A tenant table is in its own zone already (`tenant_isolation`) and is left out."""
+    tenant_tables = {model._meta.db_table for model in tenant_scoped_models()}
+    found: dict[str, set[str]] = {}
+    reached = set(LIBRARY_OWNED_TABLES)
+    while True:
+        grown = False
+        for model in production_models():
+            table = model._meta.db_table
+            if table in tenant_tables or table in LIBRARY_OWNED_TABLES:
+                continue
+            parents = {
+                field.related_model._meta.db_table
+                for field in model._meta.get_fields()
+                if isinstance(field, ForeignKey) and field.related_model._meta.db_table in reached and field.related_model is not model
+            }
+            if parents - found.get(table, set()):
+                found[table] = found.get(table, set()) | parents
+                reached.add(table)
+                grown = True
+        if not grown:
+            return found
 
 
 def tenant_scoped_models() -> list[type[Model]]:
@@ -414,6 +467,46 @@ class RowLevelSecurityGuard(TestCase):
             problems.append(f"{sorted(carriers - PLATFORM_ONLY_TABLES)} carry {PLATFORM_ONLY_POLICY}; list them in PLATFORM_ONLY_TABLES")
         self.assertEqual(problems, [], "Platform-only tables a tenant session could reach:\n  " + "\n  ".join(problems))
 
+
+    def test_every_child_of_a_record_a_bank_may_own_is_named_with_its_parent(self) -> None:
+        found = library_children()
+        self.assertEqual(
+            sorted(found),
+            sorted(CHILD_TABLES),
+            "a child of instrument or obligation is not in CHILD_TABLES: give it the pair of "
+            "library 0012 in its own migration and name its parent here",
+        )
+        for table, parent in sorted(CHILD_TABLES.items()):
+            self.assertIn(parent, found.get(table, set()), f"{table} does not point at {parent}")
+
+    def test_every_child_carries_forced_rls_and_the_pair_and_nothing_else(self) -> None:
+        """FOR SELECT where the parent is visible, FOR ALL where the root's owner is the
+        session's own zone; a second FOR ALL policy would OR with the first and widen it."""
+        problems: list[str] = []
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute(
+                "SELECT relname, relrowsecurity, relforcerowsecurity FROM pg_class WHERE relname = ANY(%s)", [sorted(CHILD_TABLES)]
+            )
+            flags = {name: (enabled, forced) for name, enabled, forced in cursor.fetchall()}
+        for table, parent in sorted(CHILD_TABLES.items()):
+            if flags.get(table) != (True, True):
+                problems.append(f"{table}: row-level security is not enabled and forced: {flags.get(table)}")
+            policies = self._policies(table)
+            if set(policies) != {CHILD_READ_POLICY, CHILD_WRITE_POLICY}:
+                problems.append(f"{table}: policies {sorted(policies)}, not {CHILD_READ_POLICY} and {CHILD_WRITE_POLICY}")
+                continue
+            root = parent
+            while root not in LIBRARY_OWNED_TABLES:
+                root = CHILD_TABLES[root]
+            cmd, qual, _ = policies[CHILD_READ_POLICY]
+            if cmd != "SELECT" or not re.search(rf"\bFROM \(?{parent} p0\b", qual):
+                problems.append(f"{table}: {CHILD_READ_POLICY} is FOR {cmd} USING {qual}, not a read of {parent}")
+            cmd, qual, with_check = policies[CHILD_WRITE_POLICY]
+            if cmd != "ALL" or qual != with_check:
+                problems.append(f"{table}: {CHILD_WRITE_POLICY} is FOR {cmd}, or its USING and WITH CHECK differ")
+            if not re.search(rf"\b(FROM|JOIN) \(?{root} (p\d)\b.*NOT \(\2\.owner_tenant_id IS DISTINCT FROM .*{re.escape(TENANT_SETTING)}", qual, re.S):
+                problems.append(f"{table}: {CHILD_WRITE_POLICY} does not hold {root}'s owner to the session's zone: {qual}")
+        self.assertEqual(problems, [], "Children of a record a bank may own, outside its parent's zone:\n  " + "\n  ".join(problems))
 
     def test_problem_report_carries_the_mixed_shape_and_nothing_else(self) -> None:
         """AUD-03, D-50: a report is read and closed inside its own bank, so nothing may sit
@@ -762,11 +855,12 @@ class SharedProposalFiledFromABank(TransactionTestCase):
 class RecurringDutyIsLibraryOnly(TestCase):
     """REG-07 (c8-recurring-duty-library): a recurring duty is a public fact about an
     obligation, shared by every bank. It carries no tenant column, so no bank's judgement
-    can hide in it (that lives on the bank's own occurrences), and no policy: what holds it
-    is the library fence and the door trigger (tests_library_db_guard.py). Adding a tenant
-    column or a policy here is a review question."""
+    can hide in it (that lives on the bank's own occurrences). What holds it is the library
+    fence, the door trigger (tests_library_db_guard.py) and, since library 0012, the pair every
+    child of an obligation carries, so a duty of a bank's own obligation is that bank's alone.
+    Adding a tenant column or another policy here is a review question."""
 
-    def test_the_table_has_no_tenant_column_and_no_policy(self) -> None:
+    def test_the_table_has_no_tenant_column_and_only_the_childs_pair(self) -> None:
         from apps.library.models import RecurringDuty
 
         self.assertNotIn(RecurringDuty, tenant_scoped_models())
@@ -778,8 +872,8 @@ class RecurringDutyIsLibraryOnly(TestCase):
                 ["%tenant%"],
             )
             self.assertEqual(cursor.fetchone(), (0,))
-            cursor.execute("SELECT count(*) FROM pg_policies WHERE tablename = 'recurring_duty'")
-            self.assertEqual(cursor.fetchone(), (0,))
+            cursor.execute("SELECT policyname FROM pg_policies WHERE tablename = 'recurring_duty' ORDER BY policyname")
+            self.assertEqual(sorted(cursor.fetchall()), sorted([(CHILD_READ_POLICY,), (CHILD_WRITE_POLICY,)]))
 
 
 class TeamRowsAreTenantOnly(TransactionTestCase):
