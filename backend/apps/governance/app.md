@@ -23,6 +23,16 @@ stays inside the bank that filed it: no bleqq editor, other bank, agent or model
 reads it, and a library error reaches the library instead through the watch
 agents' re-check and a proposal (D-50, ADR 0043).
 
+The access log of the agents a bank runs itself (ACC-08, acc-entries-and-log) is here
+too: `agent_access_call`, one row per call an agent access credential makes, written after
+the response by `apps/governance/access_log.py` and read on the entry with
+`GET /agent-access/{entryId}/calls`. It names the credential, the entry, the person a
+personal token acts as, the tool, the filters (names, and values only when they are keys),
+the record count, the scopes and the entry's term scope, the time and the status, never
+the content. It is a tenant ledger, append-only by trigger under forced row-level security:
+the D-53 purge deletes a row whole ten years after it was written, and nothing else
+changes or removes one. A call refused for its rate is in the security log instead.
+
 Since PRD 0.4 (Alex, 2026-09-20, D-62 and ADR 0054) a library proposal may be
 confirmed by an independent agent rather than a person, so the audit trail
 carries decisions nobody signed with a passkey. Nothing about `record()`

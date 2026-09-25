@@ -1557,3 +1557,14 @@ third column the R2 plan names (`acts_as_user`), are built with these departures
   database's rule as well as the code's.
 - `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
   `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
+
+## acc-entries-and-log. The access log of a bank's own agents (2026-09-25, governance 0005)
+
+`schema.sql` has no table for AGENT_ACCESS.md section 9's access log. `agent_access_call` is
+new: a tenant table under forced row-level security, append-only by the shared trigger, one
+row per call an agent access credential makes (`api_key_id`, `agent_access_id`,
+`acting_user_id`, `tool`, `filters`, `record_count`, `scopes`, `scope_narrowed`,
+`scope_terms`, `duration_ms`, `status`, `at`). The entry and the person are composite
+`(tenant_id, …)` keys; the credential is a plain key into the mixed `api_key` table. It holds
+no content column. A tenant ledger under D-53: the purge deletes a row whole ten years after
+it was written.

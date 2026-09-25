@@ -26,10 +26,20 @@ from pydantic import ConfigDict, JsonValue
 
 from django.conf import settings
 
-from apps.shared.schemas import CamelSchema, PageQuery, WriteBody
+from apps.shared.schemas import CamelSchema, PageQuery, SingleLineName, WriteBody
 from apps.taxonomy.schemas import PersonRef
 
 __all__ = [
+    "AgentAccessInput",
+    "AgentAccessKeyCreated",
+    "AgentAccessKeyInput",
+    "AgentAccessKeyOut",
+    "AgentAccessOut",
+    "AgentAccessPage",
+    "AgentAccessReachInput",
+    "AgentAccessTeamRef",
+    "AgentAccessUnitRef",
+    "AgentAccessUpdate",
     "AgentBudget",
     "AgentBudgetInput",
     "AgentDefinitionDetail",
@@ -1028,3 +1038,280 @@ class PlatformWatchPage(CamelSchema):
 
     items: list[PlatformWatchItem] = Field(description="bleqq's agents on this page, by key. The same for every bank.")
     total: int = Field(description="How many of bleqq's agents there are in total, not how many are on this page.")
+
+
+# ---------------------------------------------------------------------------------------
+# acc-entries-and-log (ACC-01, ACC-03): the agents a bank runs itself, registered as agent
+# access entries, and their service keys. Not the agents we run: an entry holds a name, a
+# purpose, a scope and credentials, and every credential under it reads and nothing else.
+# The examples are the prototype's trading coding agent, never a real bank.
+# ---------------------------------------------------------------------------------------
+_ACCESS_SCOPES_TEXT = (
+    "`library:read` reads the shared library's records in the entry's scope; `search:read` "
+    "searches them; `upcoming:read` reads the dated changes coming up that touch them; "
+    "`tenant:read` reads the bank's own register decisions on them, and only while tenant reach "
+    "is on for the bank and for the entry. Nothing else: a key of an entry never writes."
+)
+_KEY_EXAMPLE: dict[str, JsonValue] = {
+    "id": "0f9e8d7c-6b5a-4c3d-9e2f-1a0b9c8d7e6f",
+    "name": "Order router CI",
+    "keyPrefix": "9a1f3c7e",
+    "kind": "service",
+    "scopes": ["library:read", "search:read"],
+    "person": None,
+    "createdAt": "2026-09-25T09:00:00Z",
+    "expiresAt": "2026-12-24T09:00:00Z",
+    "revokedAt": None,
+    "lastUsedAt": None,
+}
+_ENTRY_EXAMPLE: dict[str, JsonValue] = {
+    "id": "3c2b1a09-8f7e-4d6c-b5a4-938271605f4e",
+    "name": "Trading platform coding agent",
+    "purpose": "Designs and reviews the order-routing service.",
+    "ownerTeam": {"key": "compliance", "kind": "team", "label": "Compliance"},
+    "departments": [{"id": "7d6c5b4a-3f2e-4d1c-8b0a-9f8e7d6c5b4a", "name": "Trading"}],
+    "products": [],
+    "tenantReach": False,
+    "active": True,
+    "revokedAt": None,
+    "revokedBy": None,
+    "createdBy": {"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Sara Lindqvist"},
+    "createdAt": "2026-09-25T08:55:00Z",
+    "version": 1,
+    "keys": [_KEY_EXAMPLE],
+}
+
+
+class AgentAccessUnitRef(CamelSchema):
+    """A department or a product of the bank that an entry serves, by id and name."""
+
+    id: uuid.UUID = Field(description="The department's or product's identifier in the bank's organisation, a UUID that never changes.")
+    name: str = Field(description="Its name as the bank's organisation gives it, for display only; nothing may match on it.")
+
+
+class AgentAccessTeamRef(CamelSchema):
+    """The team that answers for an entry, a row of the bank's own team list."""
+
+    key: str = Field(
+        description=(
+            "The team's key in the bank's team list, a vocabulary whose rows the bank's admin "
+            "adds, renames and retires; every bank starts with `compliance`. Store and compare the "
+            "key, never the label; read `GET /vocab/team` for the live set."
+        ),
+        examples=["compliance"],
+    )
+    kind: Literal["team"] = Field(
+        default="team", description="Which list the key belongs to: always `team`, the bank's own team list.", examples=["team"]
+    )
+    label: str = Field(description="The team's name in the reader's language, for display only.", examples=["Compliance"])
+
+
+class AgentAccessKeyOut(CamelSchema):
+    """A credential bound to an entry: a service key, or a personal access token that names
+    the entry. The secret is never here, only its prefix."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_KEY_EXAMPLE]})
+
+    id: uuid.UUID = Field(description="The credential's identifier, a UUID: the handle to revoke it by, never the key itself.")
+    name: str = Field(description="The name it was given, to tell credentials apart on screen. A label only.")
+    key_prefix: str = Field(
+        description=(
+            "The eight hexadecimal characters the credential begins with after `cw_`, kept in the "
+            "clear so it can be matched to a key in a vault; not enough to call the API."
+        ),
+        examples=["9a1f3c7e"],
+    )
+    kind: Literal["service", "personal"] = Field(
+        description=(
+            "`service`: a service key bound to the entry, acting as the entry, for anything "
+            "deployed, scheduled or running in CI. `personal`: a personal access token a member "
+            "minted for themselves naming this entry, acting as that member and never exceeding "
+            "their own permissions."
+        ),
+        examples=["service"],
+    )
+    scopes: list[str] = Field(description="What it may read, as scope keys, sorted. " + _ACCESS_SCOPES_TEXT)
+    person: PersonRef | None = Field(
+        default=None, description="The member a personal access token acts as; null for a service key, which acts as the entry."
+    )
+    created_at: datetime = Field(description="When it was created, a UTC timestamp set by the server.")
+    expires_at: datetime | None = Field(
+        default=None,
+        description="When it stops working on its own, a UTC timestamp; every call after it answers `unauthenticated` (401).",
+    )
+    revoked_at: datetime | None = Field(
+        default=None, description="When it was revoked, a UTC timestamp; null while it works. A revoked credential never works again."
+    )
+    last_used_at: datetime | None = Field(
+        default=None, description="When it last made a call, a UTC timestamp stamped at most once a minute or so; null if never used."
+    )
+
+
+class AgentAccessKeyCreated(AgentAccessKeyOut):
+    """The secret appears here and nowhere else: no log, no audit value, no outbox payload."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{**_KEY_EXAMPLE, "plainKey": "cw_9a1f3c7e_<secret-shown-once>"}]})
+
+    plain_key: str = Field(
+        description=(
+            "The key itself, `cw_<prefix>_<secret>`, sent as `X-API-Key` or as a bearer token. "
+            "This answer is the only time it exists outside the caller: the server keeps only a "
+            "hash of the secret, so put it straight into the agent's secret store. A lost key is "
+            "revoked and replaced, not recovered."
+        )
+    )
+
+
+class AgentAccessOut(CamelSchema):
+    """An agent the bank runs on its own infrastructure, registered so it can read (ACC-01).
+    Not one of the agents we run: it holds no prompt or schedule, and every credential under
+    it reads and nothing else."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_ENTRY_EXAMPLE]})
+
+    id: uuid.UUID = Field(description="The entry's permanent identifier, a UUID the server issues.")
+    name: str = Field(description="What the bank calls the agent, such as `Trading platform coding agent`.")
+    purpose: str = Field(
+        description="What the agent does, in one sentence the bank wrote. The bank's own text: it stays in the bank and is never in the access log."
+    )
+    owner_team: AgentAccessTeamRef = Field(
+        description=(
+            "The team that answers for the agent: a row of the bank's team list, a vocabulary of "
+            "the `team` kind whose rows the bank's admin may add, rename and retire; every bank "
+            "starts with `compliance`. Read `GET /vocab/team` for the live set."
+        )
+    )
+    departments: list[AgentAccessUnitRef] = Field(
+        description=(
+            "The departments the agent serves, by name. The entry reads the terms of their products "
+            "and of every unit below them. With `products`, they can only narrow what the bank "
+            "itself sees; naming neither narrows nothing."
+        )
+    )
+    products: list[AgentAccessUnitRef] = Field(description="The products the agent serves, by name, narrowing as the departments do.")
+    tenant_reach: bool = Field(
+        description=(
+            "The entry's own half of tenant reach: true lets its `tenant:read` credentials read the "
+            "bank's register decisions, but only while the bank's own switch is on too; with that "
+            "off, the entry reads the shared library only, whatever this says."
+        ),
+        examples=[False],
+    )
+    active: bool = Field(description="True until the entry is revoked; a revoked entry's credentials all stop and never work again.")
+    revoked_at: datetime | None = Field(default=None, description="When the entry was revoked, a UTC timestamp; null while active.")
+    revoked_by: PersonRef | None = Field(default=None, description="Who revoked it; null while active.")
+    created_by: PersonRef = Field(description="The member who registered the entry.")
+    created_at: datetime = Field(description="When it was registered, a UTC timestamp set by the server.")
+    version: int = Field(
+        description="The entry's version, starting at 1 and raised by one on every change. Send it in `If-Match` to be told, with `stale_write` (409), that someone changed it first.",
+        examples=[1],
+    )
+    keys: list[AgentAccessKeyOut] = Field(
+        description="Every credential bound to the entry, newest first, revoked and expired ones included, so the list is the whole history."
+    )
+
+
+class AgentAccessPage(CamelSchema):
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_ENTRY_EXAMPLE], "total": 1}]})
+
+    items: list[AgentAccessOut] = Field(
+        description="The bank's entries on this page, by name, revoked ones included. An empty list is a 200: the bank has registered none."
+    )
+    total: int = Field(description="How many entries the bank has in total, not how many are on this page.")
+
+
+_ACCESS_NAME = "What the bank calls the agent, one line of at most 200 characters, such as `Trading platform coding agent`; surrounding spaces are trimmed and a name of spaces alone is refused with `name_required` (422)."
+_ACCESS_PURPOSE = "What the agent does, one line of at most 500 characters. It stays in the bank and never reaches the access log; a purpose of spaces alone is refused with `purpose_required` (422)."
+_ACCESS_TEAM = "The key of the team that answers for the agent, from the bank's team list (`GET /vocab/team`; every bank has `compliance`), at most 80 characters. A key the bank has not got, or has retired, is refused with `unknown_key` (422)."
+_ACCESS_UNITS = "The ids, each a UUID, of the bank's {what} the agent serves, at most 50, each counted once. An id that is not one of the bank's {what} is refused with `unknown_key` (422)."
+
+
+class AgentAccessInput(WriteBody):
+    """`POST /agent-access`: register an agent the bank runs itself."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "Trading platform coding agent",
+                    "purpose": "Designs and reviews the order-routing service.",
+                    "ownerTeam": "compliance",
+                    "departmentIds": ["7d6c5b4a-3f2e-4d1c-8b0a-9f8e7d6c5b4a"],
+                    "productIds": [],
+                }
+            ]
+        }
+    )
+
+    name: SingleLineName = Field(max_length=200, description=_ACCESS_NAME)
+    purpose: SingleLineName = Field(max_length=500, description=_ACCESS_PURPOSE)
+    owner_team: str = Field(max_length=80, description=_ACCESS_TEAM)
+    department_ids: list[uuid.UUID] = Field(
+        default_factory=list, max_length=50, description=_ACCESS_UNITS.format(what="departments (org units)") + " By default empty."
+    )
+    product_ids: list[uuid.UUID] = Field(
+        default_factory=list, max_length=50, description=_ACCESS_UNITS.format(what="products") + " By default empty."
+    )
+
+
+class AgentAccessUpdate(WriteBody):
+    """`PATCH /agent-access/{entryId}`: change what the body sends and nothing else. A list sent
+    replaces the whole list."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"productIds": ["2e1d0c9b-8a7f-4e6d-9c5b-4a3f2e1d0c9b"]}]})
+
+    name: SingleLineName | None = Field(default=None, max_length=200, description=_ACCESS_NAME + " By default null, which leaves it.")
+    purpose: SingleLineName | None = Field(default=None, max_length=500, description=_ACCESS_PURPOSE + " By default null, which leaves it.")
+    owner_team: str | None = Field(default=None, max_length=80, description=_ACCESS_TEAM + " By default null, which leaves it.")
+    department_ids: list[uuid.UUID] | None = Field(
+        default=None, max_length=50, description=_ACCESS_UNITS.format(what="departments (org units)") + " By default null, which leaves them."
+    )
+    product_ids: list[uuid.UUID] | None = Field(
+        default=None, max_length=50, description=_ACCESS_UNITS.format(what="products") + " By default null, which leaves them."
+    )
+
+
+class AgentAccessReachInput(WriteBody):
+    """`PUT /agent-access/{entryId}/tenant-reach`: the entry's own half of tenant reach."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"enabled": True}]})
+
+    enabled: bool = Field(
+        description=(
+            "True lets the entry's `tenant:read` credentials read the bank's register decisions "
+            "while the bank's own switch is on; false keeps the entry to the shared library."
+        )
+    )
+
+
+class AgentAccessKeyInput(WriteBody):
+    """`POST /agent-access/{entryId}/keys`: a service key for the entry."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"name": "Order router CI", "scopes": ["library:read", "search:read"], "expiresAt": "2026-12-24T09:00:00Z"}]}
+    )
+
+    name: SingleLineName = Field(
+        max_length=200,
+        description="A name to tell the key apart, at most 200 characters, such as `Order router CI`; a name of spaces alone is refused with `name_required` (422).",
+    )
+    scopes: list[str] = Field(
+        min_length=1,
+        max_length=4,
+        description=(
+            "What the key may read, at least one and at most 4 scope keys, each counted once. "
+            + _ACCESS_SCOPES_TEXT
+            + " Any other scope is refused with `unknown_key` (422)."
+        ),
+    )
+    expires_at: datetime | None = Field(
+        default=None,
+        description=(
+            "When the key stops working, a UTC timestamp in the future and no later than "
+            f"`AGENT_ACCESS_KEY_MAX_DAYS` days from now ({settings.AGENT_ACCESS_KEY_MAX_DAYS} unless the operator sets it). "
+            "By default null, which sets it that many days from now. A past one is refused with "
+            "`expiry_in_past` (422) and a later one with `expiry_too_late` (422)."
+        ),
+    )

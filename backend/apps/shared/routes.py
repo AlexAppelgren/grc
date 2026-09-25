@@ -60,4 +60,10 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # acc-scope-and-reach (ACC-08): deciding a request for tenant reach.
     ("POST", "/tenant/reach/requests/{request_id}/approve", "governance.TenantReachRequest", "tenant_reach_request"),
     ("POST", "/tenant/reach/requests/{request_id}/reject", "governance.TenantReachRequest", "tenant_reach_request"),
+    # acc-entries-and-log (ACC-01, ACC-03, ACC-08): an agent access entry, its keys and its log.
+    ("GET", "/agent-access/{uuidstr:entry_id}", "agents.AgentAccess", "agent_access_entry"),
+    ("PATCH", "/agent-access/{uuidstr:entry_id}", "agents.AgentAccess", "agent_access_entry"),
+    ("POST", "/agent-access/{uuidstr:entry_id}/revoke", "agents.AgentAccess", "agent_access_entry"),
+    ("POST", "/agent-access/{uuidstr:entry_id}/keys/{uuidstr:key_id}/revoke", "identity.ApiKey", "agent_access_key"),
+    ("GET", "/agent-access/{uuidstr:entry_id}/calls", "agents.AgentAccess", "agent_access_entry"),
 ]

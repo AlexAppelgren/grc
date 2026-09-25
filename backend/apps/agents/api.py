@@ -20,8 +20,16 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Header, Path, Query, Router
 
-from apps.agents import budget, control, definitions, platform, platform_read, requests, runs, runs_read, tenant_agents
+from apps.agents import agent_access, budget, control, definitions, platform, platform_read, requests, runs, runs_read, tenant_agents
 from apps.agents.schemas import (
+    AgentAccessInput,
+    AgentAccessKeyCreated,
+    AgentAccessKeyInput,
+    AgentAccessKeyOut,
+    AgentAccessOut,
+    AgentAccessPage,
+    AgentAccessReachInput,
+    AgentAccessUpdate,
     AgentBudget,
     AgentBudgetInput,
     AgentDefinitionDetail,
@@ -50,7 +58,8 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_scope, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import answers_problems, caller_tenant, principal, require_any
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, if_match, principal, require_any
+from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Agents"])
 
@@ -818,3 +827,328 @@ def get_research_request(
     that will fill it, and answering 501 `not_built` until that ships.
     """
     return requests.get_request(tenant=caller_tenant(request), request_id=request_id)
+
+
+# ---------------------------------------------------------------------------------------
+# acc-entries-and-log (ACC-01, ACC-03, ACC-08): the agents a bank runs itself, registered
+# as agent access entries, and their service keys. Every route is an admin's, under
+# `agent_access.manage` on a person's session; every write also needs a passkey step-up and
+# is recorded in the audit log. The path takes a UUID converter, so `what-applies` beside
+# it is never read as an entry.
+# ---------------------------------------------------------------------------------------
+_ENTRY_ID = (
+    "The entry's identifier, a UUID as `GET /agent-access` lists it. An entry of another bank, "
+    "or none, answers `not_found` (404)."
+)
+_ACCESS_GATE = (
+    "Needs `agent_access.manage` on a person's session in the bank and a passkey step-up on it "
+    "younger than the step-up window; an API key or a personal access token is refused, since "
+    "neither can step up."
+)
+_ACCESS_GATE_ERRORS = (
+    "`step_up_required` (403) without a fresh step-up, which the screen answers by opening the "
+    "passkey prompt and retrying; `permission_denied` (403) without `agent_access.manage`; "
+    "`unauthenticated` (401) without a live session"
+)
+_ACCESS_WHAT = (
+    "An agent access entry is an agent the bank runs on its own infrastructure, registered so "
+    "it can read Compliance Watch through the REST API or the MCP server. It is not one of the "
+    "agents we run: it holds a name, a purpose, a scope and credentials, and every credential "
+    "under it reads and nothing else."
+)
+
+
+def _access_views(request: HttpRequest, tenant: Any, rows: list[Any]) -> list[AgentAccessOut]:
+    return agent_access.views(rows, language_order(request, tenant=tenant))
+
+
+def _access_view(request: HttpRequest, tenant: Any, entry_id: uuid.UUID) -> AgentAccessOut:
+    return _access_views(request, tenant, [agent_access.entry(tenant.id, entry_id)])[0]
+
+
+@router.get(
+    "/agent-access",
+    response=AgentAccessPage,
+    auth=SESSION,
+    operation_id="listAgentAccess",
+    by_alias=True,
+    summary="See the agents your bank runs itself and the keys each holds",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Answers the bank's entries one page at a time, by name, revoked ones included, each "
+        "with its team, departments, products, tenant reach toggle and every credential bound "
+        "to it (never a secret). An empty page is a 200 with `total` 0.\n\n"
+        "A read: it changes nothing and writes no audit row. Needs `agent_access.manage` on a "
+        "person's session in the bank.\n\n"
+        "Errors: `validation_error` (422) when `limit` is above 100; `permission_denied` (403) "
+        "without `agent_access.manage`; `unauthenticated` (401) without a live session."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+def list_agent_access(request: HttpRequest, page: PageQuery = Query(...)) -> AgentAccessPage:
+    tenant = caller_tenant(request)
+    rows, total = agent_access.list_entries(tenant.id, limit=page.limit, offset=page.offset)
+    return AgentAccessPage(items=_access_views(request, tenant, rows), total=total)
+
+
+@router.post(
+    "/agent-access",
+    response={201: AgentAccessOut},
+    auth=SESSION,
+    operation_id="registerAgentAccess",
+    by_alias=True,
+    summary="Register an agent your bank runs itself so it can read",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Registers the agent with its name, purpose, the team that answers for it, and the "
+        "departments and products it serves, which narrow what it reads to their terms within the "
+        "bank's footprint; naming neither narrows nothing. Answers 201 with the entry, active, "
+        "tenant reach off and no credential yet: issue one with `POST /agent-access/{entryId}/keys`.\n\n"
+        f"{_ACCESS_GATE} Records `agent_access.registered` in the audit log with the team, "
+        "department and product ids and the step-up assertion, never the purpose.\n\n"
+        "Errors: `unknown_key` (422) for a team, department or product the bank has not got; "
+        "`name_required` or `purpose_required` (422) for one of spaces alone; `validation_error` "
+        f"(422) for a body the schema refuses; {_ACCESS_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@requires_step_up
+@answers_problems
+def register_agent_access(request: HttpRequest, body: AgentAccessInput) -> Any:
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    row = agent_access.register(
+        tenant=tenant,
+        user=user,
+        actor=actor_for(request, user),
+        name=body.name,
+        purpose=body.purpose,
+        owner_team=body.owner_team,
+        department_ids=body.department_ids,
+        product_ids=body.product_ids,
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return 201, _access_view(request, tenant, row.id)
+
+
+@router.get(
+    "/agent-access/{uuid:entry_id}",
+    response=AgentAccessOut,
+    auth=SESSION,
+    operation_id="getAgentAccess",
+    by_alias=True,
+    summary="See one agent your bank runs itself and its keys",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Answers the entry with its team, departments, products, tenant reach toggle, version and "
+        "every credential bound to it, newest first, revoked ones included; never a secret.\n\n"
+        "A read: it changes nothing and writes no audit row. Needs `agent_access.manage` on a "
+        "person's session in the bank.\n\n"
+        "Errors: `not_found` (404) for an entry the bank has not got; `permission_denied` (403) "
+        "without `agent_access.manage`; `unauthenticated` (401) without a live session."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@answers_problems
+def get_agent_access(request: HttpRequest, entry_id: uuid.UUID = Path(..., description=_ENTRY_ID)) -> Any:
+    return _access_view(request, caller_tenant(request), entry_id)
+
+
+@router.patch(
+    "/agent-access/{uuid:entry_id}",
+    response=AgentAccessOut,
+    auth=SESSION,
+    operation_id="updateAgentAccess",
+    by_alias=True,
+    summary="Rename, re-purpose or re-scope an agent your bank runs itself",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Changes what the body sends and nothing else; a list sent replaces the whole list, so "
+        "sending an empty `departmentIds` stops narrowing by department. The new scope counts "
+        "from the entry's next call. Send `If-Match` with the version last read to be told when "
+        "someone changed it first. Answers the entry, its version raised by one.\n\n"
+        f"{_ACCESS_GATE} Records `agent_access.updated` with the ids and keys before and after, "
+        "and whether the purpose changed, never its text.\n\n"
+        "Errors: `invalid_transition` (409) for a revoked entry; `stale_write` (409) when "
+        "`If-Match` names an old version; `unknown_key` (422) for a team, department or product "
+        "the bank has not got; `name_required` or `purpose_required` (422) for one of spaces "
+        "alone; `validation_error` (422) for a body the schema refuses or an `If-Match` that is "
+        f"not a version; `not_found` (404) for an entry the bank has not got; {_ACCESS_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@requires_step_up
+@answers_problems
+def update_agent_access(request: HttpRequest, body: AgentAccessUpdate, entry_id: uuid.UUID = Path(..., description=_ENTRY_ID)) -> Any:
+    tenant = caller_tenant(request)
+    agent_access.update(
+        tenant=tenant,
+        entry_id=entry_id,
+        actor=actor_for(request),
+        name=body.name,
+        purpose=body.purpose,
+        owner_team=body.owner_team,
+        department_ids=body.department_ids,
+        product_ids=body.product_ids,
+        expected_version=if_match(request),
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return _access_view(request, tenant, entry_id)
+
+
+@router.post(
+    "/agent-access/{uuid:entry_id}/revoke",
+    response=AgentAccessOut,
+    auth=SESSION,
+    operation_id="revokeAgentAccess",
+    by_alias=True,
+    summary="Stop an agent your bank runs itself, and every key it holds, for good",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Revokes the entry and, in the same moment, every credential bound to it: its service "
+        "keys and any personal access token naming it. From the next call each answers "
+        "`unauthenticated` (401). An entry is never deleted and never switched back on; register "
+        "a new one instead. Takes no body; send `If-Match` with the version last read. Answers "
+        "the entry, inactive.\n\n"
+        f"{_ACCESS_GATE} Records `agent_access.revoked` with the prefixes of the credentials it "
+        "revoked, and one row per revoked credential in the security log.\n\n"
+        "Errors: `invalid_transition` (409) for an entry already revoked; `stale_write` (409) "
+        "when `If-Match` names an old version; `validation_error` (422) for an `If-Match` that is "
+        f"not a version; `not_found` (404) for an entry the bank has not got; {_ACCESS_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@requires_step_up
+@answers_problems
+def revoke_agent_access(request: HttpRequest, entry_id: uuid.UUID = Path(..., description=_ENTRY_ID)) -> Any:
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    agent_access.revoke(
+        tenant=tenant,
+        entry_id=entry_id,
+        user=user,
+        actor=actor_for(request, user),
+        expected_version=if_match(request),
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return _access_view(request, tenant, entry_id)
+
+
+@router.put(
+    "/agent-access/{uuid:entry_id}/tenant-reach",
+    response=AgentAccessOut,
+    auth=SESSION,
+    operation_id="setAgentAccessReach",
+    by_alias=True,
+    summary="Let an agent your bank runs itself read your register, or stop it",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Sets the entry's own half of tenant reach. With it on, the entry's credentials holding "
+        "`tenant:read` read the bank's register decisions, but only while the bank's own switch "
+        "(`GET /tenant/reach`, turned on by two people) is on as well; with the bank's switch "
+        "off, every entry reads the shared library only, whatever this says. Send `If-Match` with "
+        "the version last read. Answers the entry, its version raised by one.\n\n"
+        f"{_ACCESS_GATE} Records `agent_access.reach_set` with the toggle before and after.\n\n"
+        "Errors: `invalid_transition` (409) for a revoked entry; `stale_write` (409) when "
+        "`If-Match` names an old version; `validation_error` (422) for a body the schema refuses "
+        "or an `If-Match` that is not a version; `not_found` (404) for an entry the bank has not "
+        f"got; {_ACCESS_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@requires_step_up
+@answers_problems
+def set_agent_access_reach(request: HttpRequest, body: AgentAccessReachInput, entry_id: uuid.UUID = Path(..., description=_ENTRY_ID)) -> Any:
+    tenant = caller_tenant(request)
+    agent_access.set_tenant_reach(
+        tenant=tenant,
+        entry_id=entry_id,
+        actor=actor_for(request),
+        enabled=body.enabled,
+        expected_version=if_match(request),
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return _access_view(request, tenant, entry_id)
+
+
+@router.post(
+    "/agent-access/{uuid:entry_id}/keys",
+    response={201: AgentAccessKeyCreated},
+    auth=SESSION,
+    operation_id="createAgentAccessKey",
+    by_alias=True,
+    summary="Issue a key to an agent your bank runs itself",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Issues a service key bound to the entry and answers it once, with 201. The key acts as "
+        "the entry and reads within its scope; put `plainKey` straight into the agent's secret "
+        "store, because the server keeps only a hash of the secret and never shows it again. It "
+        "holds only the reading scopes, and it expires no later than `AGENT_ACCESS_KEY_MAX_DAYS` "
+        "days from now, which is also its expiry when none is sent.\n\n"
+        f"{_ACCESS_GATE} Records `api_key.created` with the prefix, scopes and expiry, never the "
+        "secret, and a row for the new key in the security log.\n\n"
+        "Errors: `invalid_transition` (409) for a revoked entry; `unknown_key` (422) for a scope "
+        "an entry's key may not hold, the message naming the valid ones; `expiry_in_past` (422) "
+        "for an expiry that is not in the future; `expiry_too_late` (422) for one beyond the "
+        "longest a key may live; `name_required` (422) for a name of spaces alone; "
+        "`validation_error` (422) for a body the schema refuses; `not_found` (404) for an entry "
+        f"the bank has not got; {_ACCESS_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@requires_step_up
+@answers_problems
+def create_agent_access_key(request: HttpRequest, body: AgentAccessKeyInput, entry_id: uuid.UUID = Path(..., description=_ENTRY_ID)) -> Any:
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    key, plain = agent_access.create_key(
+        tenant=tenant,
+        entry_id=entry_id,
+        user=user,
+        actor=actor_for(request, user),
+        name=body.name,
+        scopes=body.scopes,
+        expires_at=body.expires_at,
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return 201, AgentAccessKeyCreated(**agent_access.key_out(key).model_dump(), plain_key=plain)
+
+
+@router.post(
+    "/agent-access/{uuid:entry_id}/keys/{uuid:key_id}/revoke",
+    response=AgentAccessKeyOut,
+    auth=SESSION,
+    operation_id="revokeAgentAccessKey",
+    by_alias=True,
+    summary="Stop one key of an agent your bank runs itself, for good",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Revokes one credential bound to the entry, a service key or a personal access token "
+        "naming it: from its next call it answers `unauthenticated` (401), and it never works "
+        "again. Revoking one already revoked changes nothing and answers the same, so a retry is "
+        "safe. Takes no body. Answers the credential with its revocation time.\n\n"
+        f"{_ACCESS_GATE} Records `api_key.revoked` in the audit log every time, and a row "
+        "in the security log the first time.\n\n"
+        "Errors: `not_found` (404) for an entry the bank has not got or a credential not bound to "
+        f"it; {_ACCESS_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@requires_step_up
+@answers_problems
+def revoke_agent_access_key(
+    request: HttpRequest,
+    entry_id: uuid.UUID = Path(..., description=_ENTRY_ID),
+    key_id: uuid.UUID = Path(..., description="The credential's identifier, a UUID as the entry's `keys` list shows it; one not bound to this entry answers `not_found` (404)."),
+) -> Any:
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    key = agent_access.revoke_key(
+        tenant=tenant,
+        entry_id=entry_id,
+        key_id=key_id,
+        user=user,
+        actor=actor_for(request, user),
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return agent_access.key_out(key)

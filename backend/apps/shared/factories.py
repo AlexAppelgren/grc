@@ -237,6 +237,14 @@ def entry_key(tenant: Tenant, entry: SimpleNamespace, *, scopes: Iterable[str] =
     return SimpleNamespace(id=row.id, row=row, plain_key=plain)
 
 
+def agent_access_key(tenant: Tenant) -> SimpleNamespace:
+    """A live entry of `tenant` with one service key, addressed as the key's revoke route
+    names them (acc-entries-and-log)."""
+    entry = agent_access_entry(tenant)
+    key = entry_key(tenant, entry)
+    return SimpleNamespace(id=key.id, entry=entry, key=key, params={"uuidstr:entry_id": entry.id, "uuidstr:key_id": key.id})
+
+
 def personal_token(
     tenant: Tenant, person: User, *, scopes: Iterable[str] = ("library:read",), entry: SimpleNamespace | None = None
 ) -> SimpleNamespace:
