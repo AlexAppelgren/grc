@@ -158,7 +158,8 @@ When remediation starts
 Then the gap status reads "Remediating" as warning
 ```
 `@integration` covers every step, the roadmap line included since `c8-home-standing-roadmap`
-built the gap target branch. A gap is owned by a person or a team; a gap on an obligation, or a legal entity, whose
+built the gap target branch; the journey reads the gap's target under the roadmap's "Our
+deadlines" and opens its obligation from there (`c8-ui-home-register`). A gap is owned by a person or a team; a gap on an obligation, or a legal entity, whose
 answer is "does not apply" is refused with 409 `does_not_apply`, and a gap on a Statement of
 Applicability unit is `c8-units-paste-soa`'s (c8-reg-gaps-risk).
 

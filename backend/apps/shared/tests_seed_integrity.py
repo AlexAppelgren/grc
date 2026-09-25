@@ -101,6 +101,7 @@ from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
 # c8-seed-org-register
 from apps.register.models import ComplianceAssessment, Gap, InternalLink, Interpretation, TenantObligation, TenantObligationScope
 from apps.shared.e2e_seed import (
+    CERTIFICATE,
     EXPECTED_ORG_REGISTER,
     HISTORY_OBLIGATION,
     J9_CHANGED_OBLIGATION,
@@ -1509,6 +1510,21 @@ class SeededOrgAndRegister(SeededOnce):
         self.assertTrue(TenantObligation.objects.filter(owner_team=team, first_line_owner__isnull=True).exists())
         self.assertTrue(TeamMember.objects.filter(team=team, user__email=J9_OWNER).exists())
         self.assertTrue(TenantObligation.objects.filter(first_line_owner__email=J9_OWNER).exists())
+
+    def test_the_bank_holds_a_certificate_with_an_owner_and_both_dates_ahead(self) -> None:
+        """HOM-S15, AC-TEN1: Example Bank AB's certificate, with its owner, its next audit and
+        the last day it is valid, both ahead of the bank's today, so the roadmap lists both."""
+        tenant = self._activate(TENANT_A_SLUG)
+        row = Licence.objects.select_related("org_unit", "owner_user", "licence_type").get(org_unit__name=CERTIFICATE.org_unit, scope_note=CERTIFICATE.scope_note)
+        assert CERTIFICATE.valid_in_days is not None and CERTIFICATE.audit_in_days is not None and row.owner_user is not None
+        today = self._today(tenant)
+        self.assertIsNone(row.withdrawn_on)
+        self.assertEqual(row.owner_user.email, CERTIFICATE.owner)
+        self.assertEqual(row.issuer, CERTIFICATE.issuer)
+        self.assertEqual(row.valid_until, today + datetime.timedelta(days=CERTIFICATE.valid_in_days))
+        self.assertEqual(row.next_audit_on, today + datetime.timedelta(days=CERTIFICATE.audit_in_days))
+        assert row.next_audit_on is not None and row.valid_until is not None
+        self.assertLess(row.next_audit_on, row.valid_until)
 
     def test_j9_finds_the_owners_overdue_review_and_a_confirmed_change_on_their_obligation(self) -> None:
         tenant = self._activate(TENANT_A_SLUG)

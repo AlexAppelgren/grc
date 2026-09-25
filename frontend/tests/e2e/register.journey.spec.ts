@@ -92,8 +92,8 @@ test.describe('register journeys', () => {
   test("REG-S5: A gap has an owner, severity, target date and remediation", async ({ page, apiGuard }, testInfo) => {
     // REG-S5 (REG-03): the owner records a high gap on an obligation whose
     // status is Gap, sees Open and High in the negative tone with its source,
-    // and starts remediation, which reads Remediating as warning. The roadmap's
-    // "Our deadline" line is c8-ui-home-register's step.
+    // and starts remediation, which reads Remediating as warning. The roadmap
+    // lists its target as "Our deadline" (c8-ui-home-register).
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.owner);
     await openObligation(page, ESMA_INSTRUMENT, ESMA);
@@ -112,8 +112,18 @@ test.describe('register journeys', () => {
       await gap.getByRole('button', { name: 'Start remediation' }).click();
       await expect(gap.getByText('Remediation started.')).toBeVisible();
       await expect(pill(gap, 'Remediating')).toHaveAttribute('data-pill', 'warning');
+
+      await page.goto('/roadmap?kind=internal');
+      const target = page.locator('[data-roadmap-card^="gap_target:"]').filter({ hasText: title });
+      await expect(target).toContainText('Our deadline · Gap target date · Johan Berg');
+      await target.click();
+      const detail = page.locator('[data-roadmap-detail]');
+      await expect(detail.locator('[data-pill="brand"]')).toHaveText('Our deadline');
+      await detail.getByRole('link', { name: 'Open obligation' }).click();
+      await expect(page.locator('[data-gaps-panel]')).toBeVisible();
     } finally {
-      // On a failure too: the recorded gap leaves no open work behind.
+      // On a failure too: the recorded gap leaves no open work behind, from its obligation's page.
+      if ((await page.locator('[data-gaps-panel]').count()) === 0) await openObligation(page, ESMA_INSTRUMENT, ESMA);
       await closeGap(gap);
     }
   });

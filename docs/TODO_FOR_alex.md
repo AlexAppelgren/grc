@@ -1451,3 +1451,19 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       key date brings it into "Due soon" first. Default if you say nothing: it stays
       so. The alternative is the same 14 days from the day the link was confirmed,
       after which the change drops off My work while the case is still open.
+
+## c8-ui-home-register: where Today's standing lines lead (2026-09-25, HOM-01, HOM-03)
+
+- [ ] **Each compliance category opens the inventory through one status key.** `GET /home`
+      counts per fixed category, but the inventory filters by one status key
+      (`complianceStatus`, c8-inventory-overlay). Default taken: a category's line opens
+      `/inventory?applicability=applies&complianceStatus=<key>` with the bank's system
+      status of that category (or the first it added, if the system row was retired). A
+      bank that adds a second status under a category sees the obligations in the system
+      one only. The alternative is a category filter on `GET /obligations`, a contract
+      change for another package.
+- [ ] **The open gaps open the whole gap list.** The count is gaps open or in
+      remediation, and `/gaps` filters by one status key, so "See the gaps" opens `/gaps`
+      unfiltered rather than a list that would hold fewer gaps than the count said.
+      Default if you say nothing: it stays so; a two-status filter on `/gaps` would make
+      it exact.

@@ -1946,6 +1946,12 @@ class SeedLicence:
     licence_type: str
     scope_note: str
     services: tuple[str, ...] = ()
+    # A certificate (D-43, TEN-02): who issued it, its owner, and its next audit and the
+    # last day it is valid, in days from the bank's today.
+    issuer: str = ""
+    owner: str | None = None
+    audit_in_days: int | None = None
+    valid_in_days: int | None = None
 
 
 @dataclass(frozen=True)
@@ -2076,6 +2082,17 @@ SPANNING_OBLIGATION = "obl-product-governance"
 HISTORY_OBLIGATION = "obl-appropriateness"
 # REG-01: the obligation that does not apply, with the status it had before kept.
 NOT_APPLYING_OBLIGATION = "obl-gdpr-article-22"
+# HOM-S15, AC-TEN1: the certificate whose next audit and expiry are our deadlines on the
+# roadmap and never in a calendar feed.
+CERTIFICATE = SeedLicence(
+    "Example Bank AB",
+    "standard:iso_iec_27001",
+    "Information security management, ISO/IEC 27001:2022 certificate",
+    issuer="Example Certification AB",
+    owner=_SARA,
+    audit_in_days=163,
+    valid_in_days=790,
+)
 
 EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
     SeedOrgRegister(
@@ -2100,6 +2117,7 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
             SeedLicence("Example Liv Försäkring AB", "legal_entity:insurer", "Life insurance business"),
             SeedLicence("Example Liv Försäkring AB", "legal_entity:insurer", "Insurance distribution", ("service_type:insurance_distribution",)),
             SeedLicence("Example Fonder AB", "legal_entity:fund_company", "Fund operations, LVF", ("service_type:portfolio_management",)),
+            CERTIFICATE,
         ),
         products=(
             SeedProduct(
@@ -2306,6 +2324,7 @@ def _seeded(tenant: Tenant, subject_type: str, row: Any, title: str, after: dict
 
 def _seed_organisation(tenant: Tenant, spec: SeedOrgRegister, people: dict[str, User]) -> dict[str, Any]:
     """Units, licences, products and teams; each created once, found by its name on a reseed."""
+    today = datetime.datetime.now(ZoneInfo(tenant.timezone)).date()
     units: dict[str, Any] = {}
     for unit in spec.units:
         row = OrgUnit.objects.filter(kind=unit.kind, name=unit.name).first()  # ordering: Meta.ordering; one per name
@@ -2334,6 +2353,10 @@ def _seed_organisation(tenant: Tenant, spec: SeedOrgRegister, people: dict[str, 
             authority=authority,
             licence_type=_term(licence.licence_type),
             scope_note=licence.scope_note,
+            issuer=licence.issuer,
+            owner_user=people[licence.owner] if licence.owner else None,
+            next_audit_on=None if licence.audit_in_days is None else today + datetime.timedelta(days=licence.audit_in_days),
+            valid_until=None if licence.valid_in_days is None else today + datetime.timedelta(days=licence.valid_in_days),
         )
         for service in licence.services:
             LicenceServiceTerm.objects.create(tenant=tenant, licence=licence_row, term=_term(service))

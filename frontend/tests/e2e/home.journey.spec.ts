@@ -30,13 +30,20 @@ function seededQuarterText(offsetDays: number): string {
 
 const NEAR_OFFSET = 20;
 const FAR_OFFSET = 120;
+// c8-seed-org-register and c8-ui-home-register: the remediating gap on the ESMA warnings,
+// its target 60 days ahead and Johan its owner, and the certificate of Example Bank AB, its
+// next audit 163 days ahead and its expiry 790, Sara its owner (apps/shared/e2e_seed.py).
+const SEEDED_GAP = 'The warning can be dismissed with one tap and the choice is not logged';
+const GAP_TARGET_OFFSET = 60;
+const CERTIFICATE = 'ISO/IEC 27001';
+const AUDIT_OFFSET = 163;
+const EXPIRY_OFFSET = 790;
 
 test.describe('home journeys', () => {
   test("HOM-S1: Today shows the next dates, the lead item, what needs a decision and source health", async ({ page, apiGuard }) => {
-    // The reworded scenario (chunk 6 ruling 2): standing is chunk 8's, so it is
-    // not asserted here. "A reader without watch.read gets no lead and no
-    // source panel" is proved at the backend (apps/home/tests_home.py): every
-    // seeded system role holds watch.read, so no E2E login can drive that step.
+    // "A reader without watch.read gets no lead and no source panel", and one without
+    // register.read no standing, are proved at the backend (apps/home/tests_home.py) and in
+    // TodayScreen.test.tsx: every seeded system role holds both, so no E2E login can drive them.
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.complianceOfficer);
 
@@ -46,17 +53,17 @@ test.describe('home journeys', () => {
     // rows it holds: the seed grows as later chunks add their own reforms, and a
     // count assertion turns every such addition into a false failure here (the
     // chunk 5 watch seed did exactly that, 2026-09-21). What this journey owns is
-    // that its own cases are present, ordered, and that the out-of-scope one is not.
+    // that its lead case is present, the list is in date order, and the
+    // out-of-scope one is not. The +120-day reform is the roadmap's to show
+    // (HOM-S4): the register's own nearer dates, reviews and gap targets, fill
+    // the short list ahead of it since the roadmap carries them (c8-ui-home-register).
     const comingUp = page.locator('[data-coming-up]');
     const items = comingUp.locator('[data-roadmap-item]');
     await expect(items.filter({ hasText: 'FI adopts amended rules on paying for investment research' })).toHaveCount(1);
-    await expect(items.filter({ hasText: 'Amended reporting of securities financing transactions' })).toHaveCount(1);
-    // Ordered against each other, never against the top of the list: chunk 5's
-    // seed dates one reform 2027-01-01, a literal, which reaches the top ahead
-    // of the +20-day lead from 12 December 2026 and flipped a first-row check.
-    const titles = await items.allInnerTexts();
-    const leadAt = titles.findIndex((text) => text.includes('FI adopts amended rules on paying for investment research'));
-    expect(leadAt).toBeLessThan(titles.findIndex((text) => text.includes('Amended reporting of securities financing transactions')));
+    // Every row stated to the day, compared by its day: a quarter or a month prints no day.
+    const days = (await items.allInnerTexts()).map((text) => Date.parse(`${text.split('\n')[0]} UTC`)).filter((at) => !Number.isNaN(at));
+    expect(days.length).toBeGreaterThan(1);
+    expect(days).toEqual([...days].sort((a, b) => a - b));
     await expect(comingUp.getByText('Insurance distribution guidance outside our scope')).toHaveCount(0);
     await expect(comingUp.getByText(/\d+ dated items ahead/)).toBeVisible();
 
@@ -86,6 +93,30 @@ test.describe('home journeys', () => {
     // sentence is asserted by shape and the failed source this journey seeded by name.
     await expect(sources).toContainText(/Sources: \d+ of \d+ checked\./);
     await expect(sources).toContainText('EBA news feed (E2E) failed.');
+
+    // Where we stand (c8-ui-home-register): a number per line, not the number, because other
+    // journeys record statuses and gaps as they run. Each line leads to the list it counts.
+    const standing = page.locator('[data-standing]');
+    await expect(standing.getByRole('heading', { name: 'Where we stand' })).toBeVisible();
+    await expect(standing.getByRole('link', { name: /^\d+ obligations? appl(y|ies) to us\.$/ })).toHaveAttribute('href', '/inventory?applicability=applies');
+    for (const [name, key] of [
+      ['Compliant', 'compliant'],
+      ['Partly compliant', 'partly_compliant'],
+      ['Gap', 'gap'],
+      ['Not assessed', 'not_assessed'],
+    ] as const) {
+      await expect(standing.getByRole('link', { name, exact: true })).toHaveAttribute('href', `/inventory?applicability=applies&complianceStatus=${key}`);
+    }
+    await expect(standing.locator('[data-standing-line="partly"]')).toContainText(/Partly compliant\s*[1-9]\d*/);
+    await expect(standing.getByText(/^\d+ gaps? open or in remediation$/)).toBeVisible();
+
+    await standing.getByRole('link', { name: 'Partly compliant', exact: true }).click();
+    await expect(page).toHaveURL(/\/inventory\?applicability=applies&complianceStatus=partly_compliant$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Inventory' })).toBeVisible();
+    await page.goBack();
+    await page.locator('[data-standing]').getByRole('link', { name: 'See the gaps' }).click();
+    await expect(page).toHaveURL(/\/gaps$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Gaps' })).toBeVisible();
   });
 
   // What needs a decision is counted per person: each line is one the reader's permissions
@@ -168,8 +199,8 @@ test.describe('home journeys', () => {
   });
 
   test('HOM-S4: The roadmap shows the quarters ahead with their regulatory dates', async ({ page, apiGuard }) => {
-    // Reworded (chunk 6 ruling 3): the internal branches ("Our deadline") have
-    // no R1 producer, so only the regulatory branch is proved here.
+    // The regulatory branch, then the bank's own deadlines beside it (c8-ui-home-register):
+    // the seeded gap's target, named with what it is and its owner, opening its obligation.
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.complianceOfficer);
     await page.goto('/roadmap');
@@ -192,6 +223,21 @@ test.describe('home journeys', () => {
 
     await detail.getByRole('link', { name: 'Open change' }).click();
     await expect(page).toHaveURL(/\/watch\//);
+
+    await page.goto('/roadmap');
+    await page.getByRole('button', { name: 'Our deadlines' }).click();
+    await expect(page).toHaveURL(/\/roadmap\?kind=internal$/);
+    const target = page.locator('[data-roadmap-card^="gap_target:"]').filter({ hasText: SEEDED_GAP });
+    await expect(target).toContainText('Our deadline · Gap target date · Johan Berg');
+    await expect(target).toContainText(seededDateText(GAP_TARGET_OFFSET));
+    // Only our own: no regulatory date under this chip.
+    await expect(page.locator('[data-roadmap-card^="change_date:"]')).toHaveCount(0);
+    await target.click();
+    const ours = page.locator('[data-roadmap-detail]');
+    await expect(ours.getByRole('heading', { name: SEEDED_GAP })).toBeVisible();
+    await expect(ours.locator('[data-our-deadline]')).toContainText('Johan Berg');
+    await ours.getByRole('link', { name: 'Open obligation' }).click();
+    await expect(page).toHaveURL(/\/inventory\/obligations\//);
   });
 
   test('HOM-S5: Upcoming changes are public facts and the calendar feed is revocable', async ({ page, apiGuard }) => {
@@ -277,6 +323,14 @@ test.describe('home journeys', () => {
     await expect(detail.getByText('6+ months', { exact: true })).toBeVisible();
     // The date and the days left follow the pill as plain text, not a second pill.
     await expect(detail).toContainText(seededDateText(FAR_OFFSET));
+
+    // One of our own deadlines wears "Our deadline" in the brand tone instead of an urgency.
+    await page.locator('[data-roadmap-card^="gap_target:"]').filter({ hasText: SEEDED_GAP }).click();
+    const ours = page.locator('[data-roadmap-detail]');
+    await expect(ours.locator('[data-pill="brand"]')).toHaveText('Our deadline');
+    await expect(ours.locator('[data-pill]')).toHaveCount(1);
+    await expect(ours).toContainText(seededDateText(GAP_TARGET_OFFSET));
+    await expect(ours).toContainText(/in \d+ days/);
   });
 });
 
@@ -296,7 +350,62 @@ test.describe('my work and certificate deadlines', () => {
     // pending: HOM-S13 (HOM-05, COL-04, TEN-03, J-9)
   });
 
-  test.fixme("HOM-S15: A certificate's expiry and next audit are our deadlines, never in the calendar feed", async () => {
-    // pending: HOM-S15 (HOM-03, HOM-04, TEN-02, AC-TEN1)
+  test("HOM-S15: A certificate's expiry and next audit are our deadlines, never in the calendar feed", async ({ page, apiGuard }) => {
+    // HOM-S15 (HOM-03, HOM-04, TEN-02, AC-TEN1): the seeded certificate's next audit and its
+    // expiry are on the roadmap as our deadlines, with the owner, the certificate and its
+    // legal entity, and a calendar feed carries neither. "When the licence is withdrawn,
+    // neither date appears" is proved at the backend (apps/home/tests_scenarios.py
+    // ::test_hom_s15): no screen withdraws a certificate yet (the organisation screen's
+    // licences are c8-ui-organisation's), and a journey never writes around the UI.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await page.goto('/roadmap?kind=internal');
+
+    const audit = page.locator('[data-roadmap-card^="certificate_audit:"]').filter({ hasText: CERTIFICATE });
+    const expiry = page.locator('[data-roadmap-card^="certificate_expiry:"]').filter({ hasText: CERTIFICATE });
+    await expect(audit).toContainText('Our deadline · Certificate audit · Sara Lindqvist');
+    await expect(audit).toContainText(seededDateText(AUDIT_OFFSET));
+    await expect(page.getByRole('heading', { name: seededQuarterText(AUDIT_OFFSET), exact: true })).toBeVisible();
+    await expect(expiry).toContainText('Our deadline · Certificate expires · Sara Lindqvist');
+    await expect(expiry).toContainText(seededDateText(EXPIRY_OFFSET));
+    await expect(page.getByRole('heading', { name: seededQuarterText(EXPIRY_OFFSET), exact: true })).toBeVisible();
+
+    await audit.click();
+    const detail = page.locator('[data-roadmap-detail]');
+    await expect(detail.locator('[data-pill="brand"]')).toHaveText('Our deadline');
+    const facts = detail.locator('[data-our-deadline]');
+    await expect(facts).toContainText('Certificate audit');
+    await expect(facts).toContainText('Sara Lindqvist');
+    await expect(facts).toContainText('Example Bank AB');
+
+    // Never in the calendar feed: a feed made now carries the regulatory dates and neither of these.
+    await page.getByRole('link', { name: 'Subscribe to calendar feed' }).click();
+    await expect(page).toHaveURL(/\/me\/calendar-feeds$/);
+    const answered = page.waitForResponse((r) => r.url().endsWith('/api/v1/calendar-feeds') && r.request().method() === 'POST' && r.ok());
+    await page.getByRole('button', { name: 'New feed' }).click();
+    const { feed } = (await (await answered).json()) as { feed: { id: string } };
+    const row = page.locator(`[data-feed-id="${feed.id}"]`);
+    try {
+      const shown = page.getByRole('dialog', { name: 'Copy this address into your calendar' });
+      const address = (await shown.locator('[data-feed-address]').innerText()).trim();
+      const served = await page.request.get(address);
+      expect(served.status()).toBe(200);
+      const ics = (await served.text()).replace(/\r\n[ \t]/g, '');
+      expect(ics).toContain('SUMMARY:In force: FI adopts amended rules on paying for investment research\r\n');
+      const compact = (offset: number) => seededDay(offset).toISOString().slice(0, 10).replaceAll('-', '');
+      for (const absent of [CERTIFICATE, 'Sara Lindqvist', compact(AUDIT_OFFSET), compact(EXPIRY_OFFSET)]) expect(ics).not.toContain(absent);
+      await shown.getByRole('button', { name: 'Done' }).click();
+      await expect(shown).toBeHidden();
+    } finally {
+      // Teardown that runs on failure too: a live address never outlives the attempt.
+      await page.goto('/me/calendar-feeds');
+      await expect(row).toBeVisible();
+      if ((await row.getByRole('button', { name: /^Revoke the feed created / }).count()) > 0) {
+        await row.getByRole('button', { name: /^Revoke the feed created / }).click();
+        const confirm = page.getByRole('dialog', { name: /^Revoke the feed created .+\?$/ });
+        await confirm.getByRole('button', { name: 'Revoke', exact: true }).click();
+        await expect(row.getByText('Revoked', { exact: true })).toBeVisible();
+      }
+    }
   });
 });
