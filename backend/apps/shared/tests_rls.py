@@ -212,6 +212,9 @@ TENANT_ONLY_TABLES = [
     "gap",
     "interpretation",
     "internal_link",
+    # c8-teams-model (tenants 0003, TEN-03): a person in a team. Both keys are composite
+    # (apps/tenants/tests_team_models.py proves the database refuses a cross-tenant one).
+    "team_member",
 ]
 
 # The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the
