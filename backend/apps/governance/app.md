@@ -72,7 +72,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | AUD-02 | AI output log with model, version, purpose, citations, review state and feedback | M | R1 | built |
 | AUD-03 | A problem report stays inside the bank that filed it and nobody outside reads it; the loop to the library is closed by the watch agents' re-check, which proposes the correction (D-50) | S | R1 | built |
 | AUD-04 | Retention: a record is deleted ten years after its last use. The purge never updates an append-only row, deletes one only past that age, and runs through one database-guarded path (D-53) | S | R3 | pending |
-| ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, evaluation sets, tenants and plans, support access, system health (coverage, runs, outbox lag, failed jobs with retry, and each bank's usage figures through one audited read of numbers only). No problem-report surface (D-50, D-59). R1 built the proposal queue, library vocabularies, Change facts, sources, evaluation sets, tenants and agent keys; agent definitions come in chunk 11 and support access in chunk 8 (R2), languages and jurisdictions in R2 (jurisdictions read-only on the vocabularies screen until then), plans and system health in chunk 14 (R3) | M | R1 to R3 | in_progress |
+| ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, evaluation sets, tenants and plans, support access, system health (coverage, runs, outbox lag, failed jobs with retry, and each bank's usage figures through one audited read of numbers only). No problem-report surface (D-50, D-59). R1 built the proposal queue, library vocabularies, Change facts, sources, evaluation sets, tenants and agent keys; agent definitions come in chunk 11 and support access in chunk 8 (R2), jurisdictions in R2, proposed on the vocabularies screen (ADM-S18) while languages stay a read-only list the seed files (D-94), plans and system health in chunk 14 (R3) | M | R1 to R3 | in_progress |
 | ACC-08 | Tenant reach is requested and approved by two different people holding `security.manage`, each with a passkey; a tenant admin then enables it per entry. Off means off for every entry. Every call is logged with its credential, entry, tool, filters, record count, scope and timing, never content | M | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
@@ -215,8 +215,10 @@ are untouched here.
 
 The surfaces this scenario does not yet reach, each with what builds it: agent
 definitions and platform runs (chunk 11), system health (chunk 14), support access
-(TEN-S6), plans (NFR-S17 to S19), and languages and jurisdictions (R2; jurisdictions
-are read-only on the vocabularies screen).
+(TEN-S6) and plans (NFR-S17 to S19). Jurisdictions are reached through the library
+editor's vocabularies destination, where a market's labels, retirement and restore are
+proposed (ADM-S18); languages are no console surface, a read-only list the seed files
+(D-94).
 
 ### ADM-S5 — System health names what is wrong `@integration` `@e2e` (ADM-02)
 ```gherkin
@@ -346,5 +348,10 @@ Then it is refused with "validation_error": a jurisdiction's key never changes a
 When anyone proposes a change to the dimension row whose terms mirror the jurisdictions
 Then it is refused with "jurisdiction_term_mirrored" when proposed and again when approved
 ```
-Languages stay a read-only list the reference seed files (D-94). The console screen that
-makes these proposals is `x-console-jurisdictions-fe`'s, which un-fixmes the journey.
+Languages stay a read-only list the reference seed files (D-94). The console's vocabulary
+screen makes these proposals (`x-console-jurisdictions-fe`): on the jurisdictions it offers a
+label per content language, a retirement and a restore, a seeded market included, and never
+an addition or a merge. The journey walks the relabel end to end on Finland, whose labels no
+other journey reads: an editor proposes new English and Danish labels, the bank's regulatory
+scope still reads the old one, a second editor approves with a passkey, and the scope reads
+the new one; the labels are put back afterwards, on failure too.

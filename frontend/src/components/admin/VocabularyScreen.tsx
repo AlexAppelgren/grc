@@ -16,6 +16,7 @@ import { ErrorState, LoadingState, NotFoundScreen, ProblemAlert, StatusLine } fr
 import { SwatchPair } from '@/components/ui/Swatch';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useTenantProposals } from '@/features/proposals/hooks';
+import { useLanguages } from '@/features/tenant-admin/hooks';
 import {
   useCreateValue,
   useDeclineSuggestion,
@@ -33,6 +34,7 @@ import type { VocabularyRow, VocabularySuggestion } from '@/features/vocabularie
 import {
   IN_USE_CODE,
   exactDuplicateFrom,
+  hasFixedKeys,
   listLabel,
   nearDuplicateFrom,
   presentPendingProposal,
@@ -66,6 +68,12 @@ import { formatDate } from '@/shared/utils/format';
 // library editor with library_vocab.manage proposes every change, and a
 // second editor approves it in the queue. A tenant list opened there by its
 // address is not found.
+//
+// The jurisdictions are a list of fixed keys (D-94): the seed files every
+// market, so nothing is added or merged here. A proposal sets a label per
+// content language, or retires or restores a market, a seeded one included,
+// and the market's scope term follows when it is approved. Languages are the
+// seed's alone and are no list here.
 
 const ACTIVE = 'active';
 const RETIRED = 'retired';
@@ -156,6 +164,87 @@ function RenameForm({ list, row, isLibrary, onClose }: { list: string; row: Voca
   );
 }
 
+// ——— labels per language, on a list of fixed keys ———————————————————
+
+function LabelsForm({ list, row, onClose }: { list: string; row: VocabularyRow; onClose: () => void }) {
+  const t = useT();
+  const update = useUpdateValue(list);
+  const languages = useLanguages();
+  const [labels, setLabels] = useState<Record<string, string>>(row.labels);
+  const [blank, setBlank] = useState(false);
+  const [proposed, setProposed] = useState<string | null>(null);
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const filled = Object.fromEntries(
+      Object.entries(labels)
+        .map(([language, text]) => [language, text.trim()])
+        .filter(([, text]) => text !== ''),
+    );
+    if (Object.keys(filled).length === 0) {
+      setBlank(true);
+      return;
+    }
+    setBlank(false);
+    update.mutate(
+      { key: row.key, body: { labels: filled }, version: row.version },
+      {
+        onSuccess: (write) => {
+          if (write.outcome === 'proposed') setProposed(write.proposal.title);
+          else onClose();
+        },
+      },
+    );
+  };
+
+  if (proposed !== null) {
+    return (
+      <div className="grid gap-1.5" data-rename-proposed="">
+        <StatusLine tone="positive">{t('admin.vocabularies.proposed', { title: proposed })}</StatusLine>
+        <ButtonBar>
+          <Button variant="outline" size="small" onClick={onClose}>
+            {t('common.done')}
+          </Button>
+        </ButtonBar>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} noValidate aria-busy={update.isPending} aria-label={t('admin.vocabularies.labelsTitle', { label: row.label })} data-labels-form={row.key} className="grid gap-1.5">
+      <small className="text-meta text-muted">{t('admin.vocabularies.fixedKeyKept', { key: row.key })}</small>
+      {languages.isPending ? (
+        <LoadingState rows={1} />
+      ) : languages.isError ? (
+        <ErrorState title={t('admin.vocabularies.errorTitleOne')} onRetry={() => void languages.refetch()} />
+      ) : (
+        <div className="grid gap-x-3 sm:grid-cols-2">
+          {languages.data.map((language) => (
+            <Field key={language.key} id={`labels-${row.key}-${language.key}`} label={language.label}>
+              <TextInput
+                id={`labels-${row.key}-${language.key}`}
+                value={labels[language.key] ?? ''}
+                onChange={(e) => setLabels({ ...labels, [language.key]: e.target.value })}
+              />
+            </Field>
+          ))}
+        </div>
+      )}
+      {blank ? <p role="alert" className="text-meta text-negative">{t('admin.vocabularies.labelRequired')}</p> : null}
+      <small className="text-meta text-muted">{t('admin.vocabularies.scopeTermFollows', { label: row.label })}</small>
+      {update.isError ? <ProblemAlert error={update.error} /> : null}
+      <ButtonBar>
+        <Button variant="outline" size="small" onClick={onClose} disabled={update.isPending}>
+          {t('common.cancel')}
+        </Button>
+        <Button type="submit" size="small" disabled={update.isPending || !languages.isSuccess}>
+          {t('admin.vocabularies.sendForReview')}
+        </Button>
+      </ButtonBar>
+    </form>
+  );
+}
+
 // ——— one row ——————————————————————————————————————————————————————
 
 function ValueRow({
@@ -164,6 +253,7 @@ function ValueRow({
   index,
   count,
   isLibrary,
+  fixedKeys,
   readOnly,
   editing,
   onEdit,
@@ -178,6 +268,7 @@ function ValueRow({
   index: number;
   count: number;
   isLibrary: boolean;
+  fixedKeys: boolean;
   readOnly: boolean;
   editing: boolean;
   onEdit: (key: string | null) => void;
@@ -234,7 +325,9 @@ function ValueRow({
       )}
 
       <div className="min-w-0">
-        {editing ? (
+        {editing && fixedKeys ? (
+          <LabelsForm list={list} row={row} onClose={() => onEdit(null)} />
+        ) : editing ? (
           <RenameForm list={list} row={row} isLibrary={isLibrary} onClose={() => onEdit(null)} />
         ) : (
           <>
@@ -249,6 +342,9 @@ function ValueRow({
             {row.usageNote.length > 0 ? <small className="block text-meta text-muted">{row.usageNote}</small> : null}
           </>
         )}
+        {restore.data?.outcome === 'proposed' ? (
+          <StatusLine tone="positive">{t('admin.vocabularies.proposed', { title: restore.data.proposal.title })}</StatusLine>
+        ) : null}
         {restore.isError ? <ProblemAlert error={restore.error} /> : null}
       </div>
 
@@ -256,23 +352,23 @@ function ValueRow({
         <div className="col-span-2 md:col-span-1">
           <ButtonBar className="mt-0">
             {!row.active ? (
-              <Button variant="outline" size="small" disabled={restore.isPending} onClick={() => restore.mutate(row.key)}>
+              <Button variant="outline" size="small" disabled={restore.isPending || restore.isSuccess} onClick={() => restore.mutate(row.key)}>
                 {t('admin.vocabularies.restore')}
               </Button>
             ) : (
               <>
-                {row.isSystem ? null : (
+                {row.isSystem && !fixedKeys ? null : (
                   <Button variant="danger" size="small" onClick={() => onRetire(row)}>
                     {t('admin.vocabularies.retire')}
                   </Button>
                 )}
-                {row.isSystem ? null : (
+                {row.isSystem || fixedKeys ? null : (
                   <Button variant="outline" size="small" onClick={() => onMerge(row)}>
                     {t('admin.vocabularies.mergeInto')}
                   </Button>
                 )}
                 <Button variant="outline" size="small" onClick={() => onEdit(row.key)}>
-                  {t('admin.vocabularies.rename')}
+                  {fixedKeys ? t('admin.vocabularies.editLabels') : t('admin.vocabularies.rename')}
                 </Button>
               </>
             )}
@@ -285,9 +381,10 @@ function ValueRow({
 
 // ——— retire ———————————————————————————————————————————————————————
 
-function RetireDialog({ list, row, onClose }: { list: string; row: VocabularyRow; onClose: () => void }) {
+function RetireDialog({ list, row, isLibrary, fixedKeys, onClose }: { list: string; row: VocabularyRow; isLibrary: boolean; fixedKeys: boolean; onClose: () => void }) {
   const t = useT();
   const retire = useRetireValue(list);
+  const [proposed, setProposed] = useState<string | null>(null);
   return (
     <Modal
       open
@@ -297,15 +394,41 @@ function RetireDialog({ list, row, onClose }: { list: string; row: VocabularyRow
       title={t('admin.vocabularies.retireTitle', { label: row.label })}
       description={row.usageCount === 0 ? t('admin.vocabularies.retireBodyUnused') : t('admin.vocabularies.retireBodyUsed', { count: row.usageCount })}
     >
-      {retire.isError ? <ProblemAlert error={retire.error} codes={{ [IN_USE_CODE]: t('admin.vocabularies.retireBodyUsed', { count: row.usageCount }) }} /> : null}
-      <ButtonBar>
-        <Button variant="outline" onClick={onClose} disabled={retire.isPending}>
-          {t('common.cancel')}
-        </Button>
-        <Button variant="danger" disabled={retire.isPending} onClick={() => retire.mutate({ key: row.key, confirm: true }, { onSuccess: onClose })}>
-          {t('admin.vocabularies.retire')}
-        </Button>
-      </ButtonBar>
+      {fixedKeys ? <p className="mb-3 text-muted">{t('admin.vocabularies.retireFollows')}</p> : null}
+      {proposed !== null ? (
+        <>
+          <StatusLine tone="positive">{t('admin.vocabularies.proposed', { title: proposed })}</StatusLine>
+          <ButtonBar>
+            <Button onClick={onClose}>{t('common.done')}</Button>
+          </ButtonBar>
+        </>
+      ) : (
+        <>
+          {retire.isError ? <ProblemAlert error={retire.error} codes={{ [IN_USE_CODE]: t('admin.vocabularies.retireBodyUsed', { count: row.usageCount }) }} /> : null}
+          <ButtonBar>
+            <Button variant="outline" onClick={onClose} disabled={retire.isPending}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="danger"
+              disabled={retire.isPending}
+              onClick={() =>
+                retire.mutate(
+                  { key: row.key, confirm: true },
+                  {
+                    onSuccess: (write) => {
+                      if (write.outcome === 'proposed') setProposed(write.proposal.title);
+                      else onClose();
+                    },
+                  },
+                )
+              }
+            >
+              {isLibrary ? t('admin.vocabularies.sendForReview') : t('admin.vocabularies.retire')}
+            </Button>
+          </ButtonBar>
+        </>
+      )}
     </Modal>
   );
 }
@@ -598,6 +721,7 @@ export function VocabularyScreen({ list, surface = 'tenant' }: { list: string; s
   const back = vocabulariesHref(surface);
   const summary = lists.data?.find((entry) => entry.list === list);
   const isLibrary = inConsole || summary?.tier === 'library';
+  const fixedKeys = hasFixedKeys(list);
   // A tenant list is written with vocab.manage, which the route's gate already
   // holds; a library list only by someone who may propose.
   const permissions = usePermissions() ?? [];
@@ -676,10 +800,11 @@ export function VocabularyScreen({ list, surface = 'tenant' }: { list: string; s
       <PageHead
         kicker={kicker}
         title={title}
-        actions={canWrite ? <Button onClick={() => setAdding(true)}>{isLibrary ? t('admin.vocabularies.proposeValue') : t('admin.vocabularies.addValue')}</Button> : undefined}
+        actions={canWrite && !fixedKeys ? <Button onClick={() => setAdding(true)}>{isLibrary ? t('admin.vocabularies.proposeValue') : t('admin.vocabularies.addValue')}</Button> : undefined}
       />
 
       {isLibrary ? <p className="mb-4 max-w-[70ch] text-muted">{libraryLede}</p> : null}
+      {fixedKeys ? <p className="mb-4 max-w-[70ch] text-muted">{t('admin.vocabularies.fixedKeysLede')}</p> : null}
 
       <ChipRow className="mb-4">
         <Chip pressed={filter === ACTIVE} onClick={() => setFilter(ACTIVE)}>
@@ -728,6 +853,7 @@ export function VocabularyScreen({ list, surface = 'tenant' }: { list: string; s
               index={index}
               count={activeCount}
               isLibrary={isLibrary === true}
+              fixedKeys={fixedKeys}
               readOnly={!canWrite}
               editing={editing === row.key}
               onEdit={setEditing}
@@ -743,7 +869,7 @@ export function VocabularyScreen({ list, surface = 'tenant' }: { list: string; s
 
       {isLibrary && !inConsole ? <PendingProposals list={list} /> : null}
 
-      {retiring !== null ? <RetireDialog list={list} row={retiring} onClose={() => setRetiring(null)} /> : null}
+      {retiring !== null ? <RetireDialog list={list} row={retiring} isLibrary={isLibrary === true} fixedKeys={fixedKeys} onClose={() => setRetiring(null)} /> : null}
       {merging !== null ? (
         <MergeDialog list={list} row={merging} targets={rows.filter((row) => row.active && row.key !== merging.key)} onClose={() => setMerging(null)} />
       ) : null}

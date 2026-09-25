@@ -4,6 +4,7 @@ import { destinations, type Destination } from '@/shared/navigation/registry';
 
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, BACKEND_URL, inviteLinkFrom, LOGINS, mailOutbox, mailsTo, restrictedScreen, signInAs, signOut } from './support/passkeys';
+import { approveQueueProposal } from './support/watch';
 
 // governance: the @e2e scenarios from backend/apps/governance/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
@@ -396,7 +397,74 @@ test.describe('governance journeys', () => {
     // pending: ACC-S11 (ACC-08, AC-ACC2, chunk 11)
   });
 
-  test.fixme("ADM-S18: A jurisdiction is relabelled, retired and restored by proposal, and the market that mirrors it follows", async () => {
-    // pending: ADM-S18 (ADM-02, VOC-07, FP-04, I18N-01); x-console-jurisdictions-fe builds the screen
+  test("ADM-S18: A jurisdiction is relabelled, retired and restored by proposal, and the market that mirrors it follows", async ({ page, browser, apiGuard }, testInfo) => {
+    // ADM-S18 (ADM-02, VOC-07, FP-04, I18N-01), the console half: a library editor
+    // proposes new labels for a market, a second editor approves with a passkey, and the
+    // bank's regulatory scope reads the new label, because the approval moves the scope
+    // term that mirrors the market in the same transaction. The retirement, the agent pair
+    // and the refusals are the integration half. Finland, not Denmark: Denmark's English
+    // label is read by exact text in journeys that run beside this one (FP-S8, FP-S10,
+    // FP-S13), and no journey reads Finland's. Its Danish label changes with the English
+    // one, and both are put back afterwards, on failure too.
+    allowFreshContext(apiGuard);
+    apiGuard.allow(/\/proposals\/.+\/approve$/, 403, 'approving asks for a fresh passkey assertion first, which opens the step-up prompt');
+    const signedIn = async (login: string): Promise<Page> => {
+      const context = await browser.newContext({ baseURL: testInfo.project.use.baseURL });
+      const other = await context.newPage();
+      apiGuard.watch(other);
+      await signInAs(other, login);
+      return other;
+    };
+    const FINLAND = 'fi';
+    const RENAMED = 'Republic of Finland';
+    const SEEDED = 'Finland';
+
+    await signInAs(page, LOGINS.editor);
+    const approver = await signedIn(LOGINS.editor2);
+    const officer = await signedIn(LOGINS.complianceOfficer);
+    const scopeTerm = officer.locator(`[data-dimension="jurisdiction"] [data-term="${FINLAND}"]`);
+
+    /** The editor proposes Finland's English and Danish labels; the second editor approves them. */
+    async function relabel(english: string, danish: string, beforeApproval?: () => Promise<void>): Promise<void> {
+      await page.goto('/console/vocabularies');
+      await page.locator('[data-vocabulary-list="jurisdiction"]').click();
+      await expect(page.getByRole('heading', { level: 1, name: 'Jurisdictions' })).toBeVisible();
+      await page.locator(`[data-value-key="${FINLAND}"]`).getByRole('button', { name: 'Edit labels' }).click();
+      const form = page.locator(`[data-labels-form="${FINLAND}"]`);
+      await form.getByLabel('English', { exact: true }).fill(english);
+      await form.getByLabel('Dansk', { exact: true }).fill(danish);
+      await form.getByRole('button', { name: 'Send for review' }).click();
+      await expect(page.locator('[data-rename-proposed]').getByText('Change fi on jurisdiction is waiting for review.')).toBeVisible();
+      await beforeApproval?.();
+      await approveQueueProposal(approver, /Change fi on jurisdiction/);
+    }
+
+    try {
+      // A market's key never changes: the seed alone files one, so nothing is added here.
+      await page.goto('/console/vocabularies');
+      await page.locator('[data-vocabulary-list="jurisdiction"]').click();
+      await expect(page.locator(`[data-value-key="${FINLAND}"]`)).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Suggest a change' })).toHaveCount(0);
+      await expect(page.locator(`[data-value-key="${FINLAND}"]`).getByRole('button', { name: /^Merge into/ })).toHaveCount(0);
+
+      await officer.goto('/admin/footprint');
+      await expect(scopeTerm).toHaveText(/^Finland (In|Not in) our scope$/);
+
+      await relabel(RENAMED, 'Republikken Finland', async () => {
+        // Nothing changes until a second editor approves it.
+        await officer.reload();
+        await expect(scopeTerm).toHaveText(/^Finland (In|Not in) our scope$/);
+      });
+      await officer.reload();
+      await expect(scopeTerm).toHaveText(/^Republic of Finland (In|Not in) our scope$/);
+    } finally {
+      await officer.goto('/admin/footprint');
+      await expect(scopeTerm).toBeVisible();
+      if (((await scopeTerm.textContent()) ?? '').startsWith(RENAMED)) {
+        await relabel(SEEDED, SEEDED);
+        await officer.reload();
+      }
+      await expect(scopeTerm).toHaveText(/^Finland (In|Not in) our scope$/);
+    }
   });
 });

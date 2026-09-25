@@ -194,5 +194,11 @@
   "admin.vocabularies.suggestedBy": "Suggested by {name}, {date}",
   "admin.vocabularies.noSuggestionsTitle": "Nothing is waiting",
   "admin.vocabularies.noSuggestionsBody": "Values people suggest from a picker wait here for you to add or decline.",
-  "admin.vocabularies.suggestionsError": "Could not load the suggestions"
+  "admin.vocabularies.suggestionsError": "Could not load the suggestions",
+  "admin.vocabularies.fixedKeysLede": "A market's key never changes. Propose new labels, a retirement or a restore; a second library editor approves it, and the market's scope term follows.",
+  "admin.vocabularies.editLabels": "Edit labels",
+  "admin.vocabularies.labelsTitle": "Labels for {label}",
+  "admin.vocabularies.fixedKeyKept": "Key {key}. The key never changes; only the labels do.",
+  "admin.vocabularies.scopeTermFollows": "When it is approved, the {label} scope term in every bank's Regulatory scope follows.",
+  "admin.vocabularies.retireFollows": "When it is approved, its scope term is retired with it."
 }

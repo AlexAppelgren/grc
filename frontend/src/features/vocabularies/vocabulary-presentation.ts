@@ -21,6 +21,14 @@ export const DUPLICATE_KEY_CODE = 'duplicate_key';
 export const IN_USE_CODE = 'in_use';
 export const SYSTEM_ROW_CODE = 'system_row';
 
+// Lists whose keys the reference seed alone files and nothing merges away (D-94): a
+// proposal relabels, retires or restores one of their values, a seeded one included.
+const FIXED_KEY_LISTS: ReadonlySet<string> = new Set(['jurisdiction']);
+
+export function hasFixedKeys(list: string): boolean {
+  return FIXED_KEY_LISTS.has(list);
+}
+
 export interface ValueTone {
   tone: PillTone;
   outlined: boolean;
