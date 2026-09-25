@@ -76,6 +76,33 @@ class WeeklyBriefingSchedule(TestCase):
         self.assertEqual(list(inspect.signature(tasks.send_weekly_briefing.run).parameters)[0], "tenant_id")
 
 
+class AgentSchedules(TestCase):
+    """c11-scheduler (AGT-03, AGT-04, AGT-06): bleqq's agents and the banks' own each have a
+    beat, every `AGENT_BEAT_INTERVAL_MINUTES`. bleqq's runs in no tenant's zone and takes no
+    tenant; the banks' hands each bank to a wrapped tenant task."""
+
+    def test_both_agent_beats_run_every_interval_and_name_tasks_that_exist(self) -> None:
+        from django.conf import settings
+
+        schedule = celery_app.conf.beat_schedule or {}
+        for name, task in (
+            ("agents-platform", "apps.agents.tasks.run_platform_agents"),
+            ("agents-tenant", "apps.agents.tasks.schedule_tenant_agents"),
+        ):
+            with self.subTest(name):
+                self.assertEqual(schedule[name]["task"], task)
+                self.assertIn(task, celery_app.tasks)
+                self.assertEqual(schedule[name]["schedule"], settings.AGENT_BEAT_INTERVAL_MINUTES * 60)
+
+    def test_the_platform_beat_is_not_a_tenant_task_and_the_bank_task_is(self) -> None:
+        from apps.agents import tasks
+
+        self.assertFalse(is_tenant_task(tasks.run_platform_agents.run))
+        self.assertEqual(list(inspect.signature(tasks.run_platform_agents.run).parameters), [])
+        self.assertTrue(is_tenant_task(tasks.run_due_tenant_agents.run))
+        self.assertEqual(list(inspect.signature(tasks.run_due_tenant_agents.run).parameters)[0], "tenant_id")
+
+
 class TenantTaskDecorator(TestCase):
     def test_tenant_task_activates_inside_its_own_transaction(self) -> None:
         tenant = factories.tenant()
