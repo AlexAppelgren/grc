@@ -472,6 +472,7 @@ def add_obligation_participant(
     by_alias=True,
     summary="Remove a participant, or leave an obligation",
 )
+@requires_permission(perms.REGISTER_READ)
 @answers_problems
 def remove_obligation_participant(
     request: HttpRequest,
@@ -481,20 +482,21 @@ def remove_obligation_participant(
     """End one participation on the bank's register entry for an obligation: "Leave" on the
     caller's own row, or "Remove" on anyone else's.
 
-    Any person's session in a bank may leave their own participation, whatever their role,
-    and the audit event is `participant.left`; removing anyone else, a team included, needs
+    Needs a person's session in a bank holding `register.read`, which every participant held
+    when they were added. With it, a person may always leave their own participation, and
+    the audit event is `participant.left`; removing anyone else, a team included, also needs
     `register.edit`, and the audit event is `participant.removed`. Either holds ids only. The
     participation is ended with its time and who ended it, never deleted, so the record's
     history still shows who took part until when. No API key reaches it and no step-up is
     asked. Answers 204 with no body.
 
     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
-    finish enrolling, `permission_denied` for removing someone else without `register.edit`
-    (naming it in `requiredPermission`), and `not_found` for a platform session, for an
+    finish enrolling, `permission_denied` without `register.read`, or for removing someone
+    else without `register.edit` (naming the permission in `requiredPermission`), and `not_found` for a platform session, for an
     obligation the bank cannot see and for a participation that is not live on this bank's
     entry for it.
     """
-    # Ungated by design: logic-gate (register.edit, or the person on their own row).
+    # register.edit for anyone else's row is checked by the logic on the row.
     tenant = caller_tenant(request)
     user = caller_user(request)
     participants.remove_participant(
