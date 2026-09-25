@@ -1456,7 +1456,7 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
          confirms one, unlike the shared library (D-62). Say if a bank may switch on a
          confirming agent for its own queue. **Answered (Alex, 2026-09-25): 1 as D-98 (the typed name may reach the bank's own agent, guarded), 2 as D-99, 3 default taken.**
 
-## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-102)
+## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-103)
 
 - [ ] **The console's correction form gained one field.** A reviewer who changes a
       proposal's wording, date or scope before approving now gives "Source of your
@@ -1466,7 +1466,7 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       form's existing style below the scope. Default if you say nothing: it stays. The
       proposer's replaced source is kept in the approval's audit row, not beside the
       reviewer's on the queue screen; say if the queue should show both (a column on
-      `proposal`, D-102).
+      `proposal`, D-103).
 - [ ] **The confirming agent's next version should name its correction's source.**
       `backend/agents/library-confirmer/v2/prompt.md` says a correction goes through
       `payloadOverrides` and does not mention `fieldSources`; a shipped version is never
