@@ -90,4 +90,7 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/support-access/{grant_id}/approve", "tenants.SupportAccess", "support_access"),
     ("POST", "/tenant/support-access/{grant_id}/decline", "tenants.SupportAccess", "support_access"),
     ("POST", "/tenant/support-access/{grant_id}/revoke", "tenants.SupportAccess", "support_access"),
+    # acc-scope-and-reach (ACC-08): deciding a request for tenant reach.
+    ("POST", "/tenant/reach/requests/{request_id}/approve", "governance.TenantReachRequest", "tenant_reach_request"),
+    ("POST", "/tenant/reach/requests/{request_id}/reject", "governance.TenantReachRequest", "tenant_reach_request"),
 ]

@@ -35,6 +35,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, Team, VocabularySuggestion
+from apps.governance.models import TenantReachRequest
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -342,3 +343,18 @@ def support_access(tenant: Tenant) -> SupportAccess:
         return SupportAccess.objects.create(
             tenant=tenant, platform_user=requester, reason="The bank's watch feed stopped updating.", started_at=timezone.now()
         )
+
+
+# acc-scope-and-reach (ACC-08): the tenant-isolation guard's record for tenant reach routes.
+def tenant_reach_request(tenant: Tenant) -> TenantReachRequest:
+    """The tenant's pending request for tenant reach, reused when one waits, because a
+    second cannot."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        waiting = TenantReachRequest.objects.filter(tenant=tenant, status=ApprovalStatus.PENDING.value).first()  # ordering: at most one pending row per tenant, by constraint
+    if waiting is not None:
+        return waiting
+    requester = member_user(tenant, roles=("admin",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantReachRequest.objects.create(tenant=tenant, requested_by=requester)

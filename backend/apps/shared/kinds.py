@@ -304,4 +304,10 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
         "reporting branches on",
     ),
+    # acc-foundation (identity 0007, ACC-03, D-77, ADR 0056).
+    "CredentialKind": (
+        "credential_kind",
+        "ACC-03: a service key or a personal access token on one api_key table; authentication, "
+        "the step-up fence and the api_key CHECKs branch on it",
+    ),
 }

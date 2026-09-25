@@ -2007,12 +2007,73 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         A scope item the library does not cover is requested by one person and approved by another with a passkey (OWN-01, FP-02, AC-OWN2).
         """
 
-    @skip("pending: ACC-S2 (ACC-02, AC-ACC1, chunk 11)")
     def test_acc_s2(self) -> None:
         """ACC-S2
 
         An entry's scope narrows the footprint and can never widen it (ACC-02, AC-ACC1).
         """
+        # acc-scope-and-reach: the entry's terms are derived in the database (taxonomy 0011)
+        # and a list filters with the same function it answers one record with.
+        from django.db.models import BooleanField, Func, UUIDField, Value
+
+        from apps.library.reading import scope_term_ids
+        from apps.taxonomy import entry_scope, matching
+        from apps.taxonomy.tests_entry_scope import EntryBank, term
+
+        derivatives, securities = term("product_type", "derivatives"), term("product_type", "securities")
+        cards, advice = term("product_type", "cards"), term("service_type", "advice")
+        bank = EntryBank(self.tenant)
+        regimes = [library_build.term("regime:securities"), library_build.term("regime:payments")]
+        bank.footprint(*regimes, derivatives, securities, cards)
+        trading = bank.unit("Trading")
+        bank.product("Futures", derivatives, unit=trading)
+        bank.product("Equities", securities, unit=bank.unit("Equity desk", parent=trading))
+        mifid = library_build.instrument(key="acc-s2-mifid", regime="regime:securities")
+        psd = library_build.instrument(key="acc-s2-psd", regime="regime:payments")
+        untagged = library_build.obligation(mifid, key="acc-s2-untagged")
+        futures = library_build.obligation(mifid, key="acc-s2-futures", terms=["product_type:derivatives"])
+        card_only = library_build.obligation(psd, key="acc-s2-cards", terms=["product_type:cards"])
+        ours = {untagged.stable_key, futures.stable_key, card_only.stable_key}
+
+        def reads(entry: Any) -> set[str]:
+            self.activate(self.tenant)
+            admitted = Func(
+                Value(self.tenant.id, output_field=UUIDField()),
+                Value(entry.id, output_field=UUIDField()),
+                scope_term_ids(),
+                function="taxonomy_entry_admits",
+                output_field=BooleanField(),
+            )
+            return set(Obligation.objects.filter(admitted, stable_key__in=ours).values_list("stable_key", flat=True))
+
+        # Named Trading: its products and those of the desk below it, and no card term.
+        entry = bank.entry(departments=[trading], name="Trading platform coding agent")
+        scope = bank.scope(entry)
+        self.assertEqual(scope.terms["product_type"], {"derivatives", "securities"})
+        self.assertNotIn("cards", scope.terms["product_type"])
+        # No product type at all is in scope (an empty dimension does not restrict); card only is not.
+        self.assertEqual(reads(entry), {untagged.stable_key, futures.stable_key})
+        # A named product whose term is outside the footprint adds nothing to the scope.
+        outside = bank.product("Advisory desk", advice)
+        widened = bank.entry(departments=[trading], products=[outside], name="Wider")
+        self.assertNotIn("service_type", bank.scope(widened).terms)
+        self.assertEqual(reads(widened), reads(entry))
+        # Naming nothing: the footprint exactly, through the same function.
+        general = bank.entry(name="Staff assistant")
+        self.assertFalse(bank.scope(general).narrowed)
+        self.assertEqual(
+            {dimension: set(keys) for dimension, keys in bank.scope(general).terms.items()},
+            matching.footprint_of(self.tenant.id),
+        )
+        in_footprint = Obligation.objects.filter(
+            matching.in_footprint_expression(self.tenant.id, scope_term_ids()), stable_key__in=ours
+        )
+        self.assertEqual(reads(general), set(in_footprint.values_list("stable_key", flat=True)))
+        self.assertEqual(reads(general), ours)
+        # Naming what derives nothing reads nothing, and says why.
+        back_office = bank.entry(departments=[bank.unit("Back office")], name="Back office")
+        self.assertEqual(bank.scope(back_office).empty_reason, entry_scope.EMPTY_SCOPE)
+        self.assertEqual(reads(back_office), set())
 
 
 class HeldStandardInScope(ScenarioTestCase):
