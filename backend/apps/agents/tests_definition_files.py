@@ -138,7 +138,7 @@ class TheSeed(TestCase):
             )
             version = AgentVersion.objects.get(agent=agent)
             self.assertEqual(
-                (version.version_no, version.model, version.prompt_path, version.tools, version.change_note),
+                (version.version_number, version.model, version.prompt_path, version.tools, version.change_note),
                 (read.version, read.model, read.prompt, list(read.tools), read.change_note),
             )
             self.assertIsNone(version.published_by_id, "loaded by the deploy, not published by a person")
@@ -165,7 +165,7 @@ class TheSeed(TestCase):
             before_versions = Agent.objects.create(key="watch-sweeper", kind="watch", current_version=1)
             on_an_older_folder = Agent.objects.create(key="library-confirmer", kind="review", current_version=1)
         self.assertEqual(seed_agent_definitions(), 1, "only the bank-addable definition is new")
-        self.assertEqual(list(before_versions.versions.values_list("version_no", flat=True)), [1])
+        self.assertEqual(list(before_versions.versions.values_list("version_number", flat=True)), [1])
         self.assertFalse(on_an_older_folder.versions.exists(), "a later folder arrives through publish, never a deploy")
         on_an_older_folder.refresh_from_db()
         self.assertEqual(on_an_older_folder.current_version, 1, "a deploy never moves an agent to another version")

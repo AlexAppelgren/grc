@@ -84,7 +84,7 @@ def seed_agent_definitions() -> int:
 def _seed_first_version(agent: Agent, definition: Definition) -> None:
     version = AgentVersion.objects.create(
         agent=agent,
-        version_no=definition.version,
+        version_number=definition.version,
         model=definition.model,
         prompt_path=definition.prompt,
         tools=list(definition.tools),
@@ -95,8 +95,8 @@ def _seed_first_version(agent: Agent, definition: Definition) -> None:
         actor=ACTOR,
         subject_type="agent_version",
         subject_id=version.id,
-        subject_title=f"{agent.key} v{version.version_no}",
-        summary=f"Version {version.version_no} of agent {agent.key} loaded from its definition.",
+        subject_title=f"{agent.key} v{version.version_number}",
+        summary=f"Version {version.version_number} of agent {agent.key} loaded from its definition.",
         tenant_id=None,
-        after={"agent": agent.key, "versionNo": version.version_no, "model": version.model, "tools": version.tools},
+        after={"agent": agent.key, "versionNo": version.version_number, "model": version.model, "tools": version.tools},
     )

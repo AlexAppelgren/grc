@@ -53,7 +53,7 @@ class NoAgentKeyOrBankWritesPlatformConfiguration(TestCase):
 
     def snapshot(self) -> tuple[Any, ...]:
         agent = Agent.objects.get(pk=self.agent.pk)
-        versions = list(AgentVersion.objects.filter(agent=agent).order_by("version_no").values_list("version_no", "retired_at"))
+        versions = list(AgentVersion.objects.filter(agent=agent).order_by("version_number").values_list("version_number", "retired_at"))
         audit = AuditEvent.objects.filter(subject_title__startswith=self.agent.key).count()
         return agent.current_version, agent.default_cadence, agent.platform_scope, agent.platform_monthly_budget, versions, audit
 

@@ -38,7 +38,7 @@ SUBJECT_TYPE = "agent_version"
 
 
 def _definitions() -> QuerySet[Agent]:
-    published = AgentVersion.objects.filter(agent=OuterRef("pk"), version_no=OuterRef("current_version"))
+    published = AgentVersion.objects.filter(agent=OuterRef("pk"), version_number=OuterRef("current_version"))
     return Agent.objects.annotate(published_at=Subquery(published.values("published_at")[:1])).order_by("key", "id")
 
 
@@ -62,7 +62,7 @@ def _agent(agent_key: str, *, lock: bool = False) -> Agent:
 def version_row(version: AgentVersion) -> AgentVersionOut:
     person = version.published_by
     return AgentVersionOut(
-        version_no=version.version_no,
+        version_no=version.version_number,
         model=version.model,
         change_note=version.change_note,
         published_at=version.published_at,
@@ -76,7 +76,7 @@ def get_definition(*, agent_key: str) -> AgentDefinitionDetail:
     agent = _definitions().filter(key=agent_key).first()  # ordering: key is unique, at most one row
     if agent is None:
         raise ProblemError(status=404, code="not_found", detail="Not found.")
-    versions = agent.versions.select_related("published_by").order_by("-version_no")
+    versions = agent.versions.select_related("published_by").order_by("-version_number")
     return AgentDefinitionDetail.model_validate(
         {**AgentDefinitionOut.model_validate(agent).model_dump(), "versions": [version_row(row) for row in versions]}
     )
@@ -126,7 +126,7 @@ def publish_version(*, who: Principal, agent_key: str, body: AgentVersionInput) 
     actor, person_id = platform_person(who)
     with transaction.atomic():
         agent = _agent(agent_key, lock=True)
-        published = list(agent.versions.values_list("version_no", flat=True))
+        published = list(agent.versions.values_list("version_number", flat=True))
         if body.version_no in published:
             raise ProblemError(
                 status=409, code="version_exists", detail=f"Version {body.version_no} is already published."
@@ -142,13 +142,13 @@ def publish_version(*, who: Principal, agent_key: str, body: AgentVersionInput) 
             actor=actor,
             subject_type=SUBJECT_TYPE,
             subject_id=version.id,
-            subject_title=f"{agent.key} v{version.version_no}",
-            summary=f"Version {version.version_no} of agent {agent.key} published.",
+            subject_title=f"{agent.key} v{version.version_number}",
+            summary=f"Version {version.version_number} of agent {agent.key} published.",
             tenant_id=None,
             before=before,
             after={
                 "currentVersion": agent.current_version,
-                "versionNo": version.version_no,
+                "versionNo": version.version_number,
                 "model": version.model,
                 "tools": version.tools,
                 "changeNote": version.change_note,
@@ -165,7 +165,7 @@ def retire_version(*, who: Principal, agent_key: str, version_no: int) -> AgentV
     actor, _ = platform_person(who)
     with transaction.atomic():
         agent = _agent(agent_key, lock=True)
-        version = agent.versions.select_related("published_by").filter(version_no=version_no).first()  # ordering: unique per agent
+        version = agent.versions.select_related("published_by").filter(version_number=version_no).first()  # ordering: unique per agent
         if version is None:
             raise ProblemError(status=404, code="not_found", detail="Not found.")
         if version.retired_at is not None:
@@ -182,8 +182,8 @@ def retire_version(*, who: Principal, agent_key: str, version_no: int) -> AgentV
             actor=actor,
             subject_type=SUBJECT_TYPE,
             subject_id=version.id,
-            subject_title=f"{agent.key} v{version.version_no}",
-            summary=f"Version {version.version_no} of agent {agent.key} retired.",
+            subject_title=f"{agent.key} v{version.version_number}",
+            summary=f"Version {version.version_number} of agent {agent.key} retired.",
             tenant_id=None,
             before={"retiredAt": None},
             after={"retiredAt": version.retired_at.isoformat() if version.retired_at else None},
@@ -198,7 +198,7 @@ def version_to_run(agent_id: uuid.UUID) -> uuid.UUID | None:
     new run. None for a definition that has never had a version row, which only a build
     older than agents 0004 left behind."""
     versions = AgentVersion.objects.filter(agent_id=agent_id)
-    newest = versions.filter(retired_at__isnull=True).order_by("-version_no").values_list("id", flat=True).first()
+    newest = versions.filter(retired_at__isnull=True).order_by("-version_number").values_list("id", flat=True).first()
     if newest is None and versions.exists():
         raise ProblemError(
             status=409,

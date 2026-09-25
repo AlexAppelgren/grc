@@ -161,7 +161,7 @@ def _run(run: Any) -> AgentRunListItem:
                 "proposals_submitted": run.counted_proposals,
             },
             "tenant_agent_id": None,
-            "agent_version": run.agent_version.version_no if run.agent_version is not None else None,
+            "agent_version": run.agent_version.version_number if run.agent_version is not None else None,
             "trigger": run.trigger,
             "requested_by": PersonRef(id=requester.id, name=requester.name) if requester is not None else None,
             "cost": run.cost,

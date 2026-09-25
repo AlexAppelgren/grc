@@ -388,7 +388,7 @@ class AgentsScenarioTests(TestCase):
             return AgentRun.objects.get(pk=response.json()["id"])
 
         def version_of(run: AgentRun) -> int | None:
-            return AgentRun.objects.filter(pk=run.pk).values_list("agent_version__version_no", flat=True).first()  # ordering: pk lookup
+            return AgentRun.objects.filter(pk=run.pk).values_list("agent_version__version_number", flat=True).first()  # ordering: pk lookup
 
         earlier = open_run()
         self.assertEqual(version_of(earlier), 3)
