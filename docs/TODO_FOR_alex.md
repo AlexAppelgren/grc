@@ -1411,3 +1411,33 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       changed value in", an agent's correction without one answers 422 `source_missing`
       and applies nothing (fails safe; it can still approve as proposed or reject).
       Default if you say nothing: v3 carries that line when the confirmer next changes.
+## c9-signoff: evidence can leave a case while it waits for sign-off (2026-09-25)
+
+- [ ] **Should the approval re-check the evidence, or should evidence lock?** A sign-off
+      request needs no open action and one piece of evidence the scanner passed. While
+      the case waits, the actions lock (`c9-actions`, `actions_locked`), but nothing in
+      the plan locks the evidence: `removeEvidence` only sets `removed_at`, and a rescan
+      could mark a file infected. The approval then closes a case whose evidence is gone,
+      because the fixed guard on `signoff → closed` checks only the second person.
+      Default taken: no change, since the guards are fixed (CLAUDE.md section 5) and this
+      package does not own `state.py` or `evidence.py`. Two ways out: (a) `c9-evidence-b`
+      refuses `removeEvidence` with 409 `actions_locked`-style `evidence_locked` while
+      the case is in `signoff`, which mirrors the actions lock; or (b) the
+      `signoff → closed` edge also carries the `no_open_action` and `clean_evidence`
+      guards. The first keeps the state machine as designed; say which.
+## acc-scope-and-reach: an entry's scope and tenant reach, answered by default (2026-09-25, ACC-02, ACC-08, D-70, D-72)
+
+- [ ] Default taken: an opt-in dimension keeps its rule inside an entry's scope too. The
+      second pass is FP-01 unchanged against the entry's terms, so an entry narrowed to
+      Trading sees a standard's records (ISO/IEC 27001) only when a Trading product names
+      that standard. Say if a narrowed entry should instead inherit every standard the bank
+      follows.
+- [ ] Default taken: a department brings its own products and those of every active unit
+      below it; a deactivated unit cuts its branch, and a retired product derives nothing.
+      An entry that names departments or products deriving no term reads nothing
+      (`entry_scope_empty`), and an entry the session cannot see, or one revoked, fails
+      closed the same way rather than reading the whole footprint.
+- [ ] Default taken: rejecting a reach request needs a passkey step-up like approving it,
+      and a reach request is never withdrawn (the requester's colleague rejects it).
+      Switching reach off needs one person and a step-up; on again takes a new request and
+      a second person. `GET /tenant/reach` is readable with `security.manage` alone.

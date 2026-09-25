@@ -793,6 +793,25 @@ REFRESH_COOKIE_SECURE = not DEBUG
 # An API key's last_used_at (and its key_used security-log row) is written at most this
 # often, so a busy agent does not turn every call into a write (ID-10).
 API_KEY_LAST_USED_THROTTLE_SECONDS = env_int("API_KEY_LAST_USED_THROTTLE_SECONDS", 60)
+# ===== c8-ten-support-grants: TEN-06 support access (D-49, ADR 0042) =====
+# The longest window platform support may ask a bank for, in hours; a longer request answers
+# 422. The window starts when the bank approves.
+SUPPORT_ACCESS_MAX_HOURS = env_int("SUPPORT_ACCESS_MAX_HOURS", 4)
+# How long a request nobody decides stays open before it reads as lapsed, in hours.
+SUPPORT_ACCESS_REQUEST_TTL_HOURS = env_int("SUPPORT_ACCESS_REQUEST_TTL_HOURS", 24)
+
+# ===== acc-foundation: agent access credentials (ACC-03, ACC-09, ADRs 0055 and 0056) =====
+# The longest a service key of an agent access entry, and a personal access token, may live;
+# a token cannot be minted without an expiry. And the requests one such credential may make
+# per minute, whatever it reads.
+AGENT_ACCESS_KEY_MAX_DAYS = env_int("AGENT_ACCESS_KEY_MAX_DAYS", 90)
+PERSONAL_TOKEN_MAX_DAYS = env_int("PERSONAL_TOKEN_MAX_DAYS", 90)
+AGENT_ACCESS_RATE_PER_MINUTE = env_int("AGENT_ACCESS_RATE_PER_MINUTE", 60)
+if min(AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS, AGENT_ACCESS_RATE_PER_MINUTE) < 1:
+    raise ImproperlyConfigured(
+        "Refusing to boot: AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS and "
+        "AGENT_ACCESS_RATE_PER_MINUTE must each be at least 1."
+    )
 
 # ---------------------------------------------------------------------------------------
 # ===== Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ===========

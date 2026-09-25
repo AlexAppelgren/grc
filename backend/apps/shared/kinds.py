@@ -119,6 +119,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "LoginMethod": ("login_method", "ID-11, INPUT_DELTAS §2: email_code, passkey, api_key (later oidc, saml)"),
     "LoginEventKind": ("login_event", "ID-11: what the security log records; the log is a ledger, not a picker"),
     "SupportAccessLevel": ("support_access_level", "ID-05, TEN-06: read or write support access"),
+    "SupportAccessStatus": ("support_access_status", "TEN-06: requested, approved, declined, revoked or expired; the decisions branch on it"),
     # Chunk 2 (vocabularies, taxonomy and footprint). Each is a category the rules read
     # off a vocabulary row's fixed `kind`; the row's label, translations and usage note
     # stay an admin's to change (playbook 15, INPUT_DELTAS §1).
@@ -295,5 +296,18 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "research_request_status",
         "AGT-05: a request's lifecycle, queued to done, failed, rejected or cancelled; the "
         "worker and the request list branch on it",
+    ),
+    # Chunk 8's register (c8-register-models, register 0001). `Applicability` is listed above.
+    "AssessmentMethod": (
+        "assessment_method",
+        "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
+        "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
+        "reporting branches on",
+    ),
+    # acc-foundation (identity 0007, ACC-03, D-77, ADR 0056).
+    "CredentialKind": (
+        "credential_kind",
+        "ACC-03: a service key or a personal access token on one api_key table; authentication, "
+        "the step-up fence and the api_key CHECKs branch on it",
     ),
 }

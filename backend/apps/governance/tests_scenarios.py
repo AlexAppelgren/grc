@@ -138,6 +138,15 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
     ),
     "listEvalRuns": ("GET", "/eval/runs", None),
     "getEvalBaseline": ("GET", "/eval/baseline", None),
+    # Platform support's side of a bank's support access (TEN-06, c8-ten-support-grants): the
+    # platform admin's alone, and entering also needs a passkey, which the owner half proves.
+    "requestConsoleSupportAccess": (
+        "POST",
+        f"/console/tenants/{_ANY_ID}/support-access",
+        {"purpose": "The bank's watch feed stopped updating.", "hours": 2},
+    ),
+    "listConsoleSupportAccess": ("GET", "/console/support-access", None),
+    "enterConsoleSupportAccess": ("POST", f"/console/support-access/{_ANY_ID}/enter", {}),
 }
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a
@@ -867,3 +876,43 @@ class GovernanceScenarioTests(ScenarioTestCase):
 
         The access log records the call and holds no content (ACC-08).
         """
+
+    # acc-scope-and-reach: the reach switch alone, ahead of the register reads ACC-S11 needs.
+    def test_acc_s14(self) -> None:
+        """ACC-S14
+
+        Tenant reach is switched on by two people and off by one (ACC-08).
+        """
+        from apps.governance import reach
+
+        tenant = factories.tenant(slug="acc-s14")
+        first = factories.member(tenant, roles=("admin",), user_row=factories.user(name="Erik Holm")).user
+        second = factories.member(tenant, roles=("admin",), user_row=factories.user(name="Maria Ek")).user
+
+        def post(path: str, user: Any) -> Any:
+            return self.client.post(f"{V1}/tenant/reach{path}", "{}", content_type="application/json", **sign_in(user, tenant=tenant, step_up=True))
+
+        def on() -> bool:
+            tenancy.activate(tenant.id)
+            return reach.tenant_reach_on(tenant.id)
+
+        # requestTenantReach, then the requester's own approveTenantReach: refused.
+        asked = post("/requests", first).json()
+        own = post(f"/requests/{asked['id']}/approve", first)
+        self.assertEqual((own.status_code, own.json()["code"]), (409, "four_eyes_violation"))
+        self.assertFalse(on())
+        # approveTenantReach by the second person: on, with a row naming each and their assertion.
+        self.assertEqual(post(f"/requests/{asked['id']}/approve", second).json()["status"], "approved")
+        self.assertTrue(on())
+        tenancy.activate(tenant.id)
+        rows = {row.action: row for row in AuditEvent.objects.filter(tenant_id=tenant.id, action__startswith="tenant_reach.")}
+        self.assertEqual(rows["tenant_reach.requested"].actor_id, first.id)
+        self.assertEqual(rows["tenant_reach.approved"].actor_id, second.id)
+        self.assertTrue(all(row.step_up_assertion_id for row in rows.values()))
+        # switchOffTenantReach by either of them: off at once.
+        self.assertFalse(post("/off", first).json()["enabled"])
+        self.assertFalse(on())
+        # rejectTenantReach by the second person: reach stays off.
+        again = post("/requests", first).json()
+        self.assertEqual(post(f"/requests/{again['id']}/reject", second).json()["status"], "rejected")
+        self.assertFalse(on())
