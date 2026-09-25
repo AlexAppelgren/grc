@@ -65,7 +65,8 @@ class AgentRunnerAdapter(SimpleTestCase):
     def test_mock_completes_immediately_and_can_be_interrupted(self) -> None:
         run_id = uuid.uuid4()
         handle = agent_runner.get_agent_runner().start(run_id=run_id, definition_key="watch", definition_version=1)
-        self.assertEqual(handle.status, "completed")
+        self.assertEqual(handle.status, "running")
+        self.assertEqual(agent_runner.MockAgentRunner().poll(handle)[-1].status, "succeeded")
         self.assertEqual(agent_runner.MockAgentRunner().interrupt(handle).status, "interrupted")
 
     @override_settings(AGENT_RUNNER="managed_agents")
