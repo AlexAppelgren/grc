@@ -480,7 +480,7 @@ Chunk 3 (library and inventory), 2026-09-19:
   `pendingApplicability` and `complianceStatus` are null until the register (chunk 8), as
   are the designed `applicability`, `riskRating` and `owner` and the `applicability`,
   `complianceStatus`, `ownerId`, `hasOpenChanges` and `reviewDueBefore` filters. The tag
-  filter is deferred. A person with `library.read` in their tenant, or an API key with
+  filter is deferred (closed 2026-09-25, "Chunk 10" below). A person with `library.read` in their tenant, or an API key with
   `library:read`.
 
 Chunk 7 (the search and ask contract), 2026-09-19:
@@ -836,6 +836,48 @@ Chunk 6 (home, the briefing, the roadmap and the calendar feed), 2026-09-21:
   outlives the session that asked for it, so without this a stolen access token would leave
   behind a calendar address that answers for months. Revoking asks for nothing of the kind:
   a person whose address has leaked must be able to stop it at once.
+
+Chunk 8 (the register contract, `c8-register-contract`), 2026-09-25:
+
+- Applicability has no request (D-75, which supersedes D-44 and ADR 0038). The designed
+  `GET /applicability-requests` (`listApplicabilityRequests`),
+  `POST /obligations/{obligationId}/applicability-requests` (`requestApplicability`),
+  `POST /applicability-requests/{requestId}/approve` (`approveApplicability`) and
+  `POST /applicability-requests/{requestId}/reject` (`rejectApplicability`) are not built,
+  and neither is the withdraw route the chunk 8 plan once added. They are replaced by
+  `setApplicability`, `PUT /obligations/{obligationId}/applicability`, which stores one
+  confirmed answer for the obligation, one legal entity or one unit, and
+  `setApplicabilityMany`, `POST /applicability`, which stores many confirmed rows in one
+  call capped by `REGISTER_BULK_MAX`. Both take `applicability.approve`, no step-up and
+  no second approver, and write one audit event per row naming the person, the value
+  before and after, and the reason. There is no `applicability_request` table and no
+  "Waiting for approval" state for applicability; the designed `Note` body and
+  `ApplicabilityRequest` shapes go with them.
+- `PATCH /obligations/{obligationId}/register` (`updateRegister`) keeps its designed fields
+  and adds `rationale`, stored on the assessment row a status change writes (REG-04), and
+  takes the status, risk and people as keys and ids. It answers `RegisterEntry`, which
+  adds `applicabilityDecidedBy`, `entities` (one row per legal entity, D-42) and `version`
+  for `If-Match` (section 4) to the designed `Register`, and returns the status and risk
+  as `{key, kind, label}` rows of the bank's own lists (section 1).
+
+Chunk 10 (the obligation row's R2 fields, c10-tag-filters-and-limits), 2026-09-25:
+
+- `GET /obligations` gains the deferred tag filter as two repeatable filters, because a row
+  carries two kinds of tag: `tag` over the library's own tag keys (the row's `tags`) and
+  `tenantTag` over the caller's bank's own `tenant_tag` keys. Every tag named must be on
+  the obligation (AND, like `term`), at most `LIBRARY_TERM_FILTER_MAX` of each; a key that
+  names no tag answers 422 `unknown_key` naming each one, and a key that belongs to no bank
+  sending `tenantTag` answers 422 `unknown_filter` (without it, such a key reads 404 as
+  before). The row and `GET /obligations/{id}` gain `tenantTags[{key, kind, label}]`, read
+  for the page in one query and never shared with another bank, and `privateToUs`, true
+  only on a record the caller's bank owns; `GET /instruments` and `GET /instruments/{id}`
+  gain `privateToUs` too.
+- `pendingApplicability` is gone from the row (D-75): an applicability change is one
+  person's decision, so no request ever waits on a row, and a field that could only answer
+  null is dropped rather than kept.
+- Every string filter of `GET /obligations` and `GET /instruments` is at most 80 characters
+  (`instrument`, `dutyType`, `regime`, each `term`, `tag` and `tenantTag` item), as the key
+  columns are; a longer one answers 422 `validation_error` (hardening H27).
 
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 

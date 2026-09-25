@@ -1,0 +1,10 @@
+{
+  "obligationTags.heading": "Våra taggar",
+  "obligationTags.none": "Inga ännu",
+  "obligationTags.add": "Lägg till en tagg",
+  "obligationTags.suggest": "Föreslå en tagg",
+  "obligationTags.remove": "Ta bort {label}",
+  "obligationTags.retired": "\"{label}\" avvecklades medan du valde. Välj en annan tagg.",
+  "obligationTags.denied": "Dina roller omfattar inte längre att hantera vokabulärer. Taggarna är som de var.",
+  "obligationTags.failed": "Det gick inte att ändra taggarna."
+}

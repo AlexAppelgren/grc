@@ -35,9 +35,10 @@ import type {
 } from './types';
 
 // Thin typed wrappers returning `.data` (playbook 6.1). The library reads sit
-// under /api/v1; nothing here writes, because proposals are the only door
-// into the library. The server's shapes (openapi.json) are read through the
-// normalisers below into the types the screen and its presentation functions
+// under /api/v1; nothing here writes the library, because proposals are the
+// only door into it: the one write besides a problem report is the bank's own
+// tags, which live in its own zone. The server's shapes (openapi.json) are
+// read through the normalisers below into the types the screen and its presentation functions
 // use, so a difference in shape is absorbed here, once.
 
 const OBLIGATIONS = '/api/v1/obligations';
@@ -49,6 +50,11 @@ const PRECISIONS: readonly DatePrecision[] = ['day', 'month', 'quarter', 'year']
 const COMPLIANCE_KINDS: readonly ComplianceKind[] = ['compliant', 'partly', 'gap', 'not_assessed'];
 
 export function refOf(raw: Schemas['LibraryRef']): LibraryRef {
+  return { key: raw.key, kind: raw.kind ?? null, label: raw.label };
+}
+
+/** One of the bank's own tags: the same shape as a library reference, with no kind of its own. */
+function tenantTagOf(raw: Schemas['TaggingTagRef']): LibraryRef {
   return { key: raw.key, kind: raw.kind ?? null, label: raw.label };
 }
 
@@ -108,6 +114,8 @@ export function obligationOf(raw: Schemas['ObligationRow']): Obligation {
     binding: raw.binding,
     dutyType: refOf(raw.dutyType),
     tags: (raw.tags ?? []).map(refOf),
+    tenantTags: (raw.tenantTags ?? []).map(tenantTagOf),
+    privateToUs: raw.privateToUs,
     scope: (raw.scope ?? []).map(scopeOf),
     version: versionOf(raw.version),
     upcomingVersion: versionOf(raw.upcomingVersion),
@@ -117,7 +125,6 @@ export function obligationOf(raw: Schemas['ObligationRow']): Obligation {
     lastVerifiedAt: raw.lastVerifiedAt,
     verifiedBy: raw.verifiedBy === null || raw.verifiedBy === undefined ? null : { id: raw.verifiedBy.id, name: raw.verifiedBy.name },
     openChangeCount: raw.openChangeCount,
-    pendingApplicability: raw.pendingApplicability,
     complianceStatus: complianceOf(raw.complianceStatus),
   };
 }
@@ -202,6 +209,8 @@ export function detailOf(raw: Schemas['ObligationDetail']): ObligationDetail {
     retention: raw.retention,
     sanctionExposure: raw.sanctionExposure,
     tags: (raw.tags ?? []).map(refOf),
+    tenantTags: (raw.tenantTags ?? []).map(tenantTagOf),
+    privateToUs: raw.privateToUs,
     scope: (raw.scope ?? []).map(scopeOf),
     inFootprint: raw.inFootprint,
     outsideReason: (raw.outsideReason ?? []).map(reasonOf),
@@ -258,6 +267,21 @@ export async function reportObligationProblem(obligationId: string, body: Proble
   return { id: data.id, status: data.status, createdAt: data.createdAt };
 }
 
+// The bank's own tags on an obligation (VOC-08): markers in the bank's zone, never a
+// library write. Each call answers the obligation's tags as they now stand.
+
+const TAGGINGS = '/api/v1/taggings';
+
+export async function tagObligation(obligationId: string, tagKey: string): Promise<LibraryRef[]> {
+  const body: Schemas['TaggingBody'] = { tagKey, subjectType: 'obligation', subjectId: obligationId };
+  return (await api.post<Schemas['TaggingRecordTags']>(TAGGINGS, body)).data.tags.map(tenantTagOf);
+}
+
+export async function untagObligation(obligationId: string, tagKey: string): Promise<LibraryRef[]> {
+  const body: Schemas['TaggingBody'] = { tagKey, subjectType: 'obligation', subjectId: obligationId };
+  return (await api.post<Schemas['TaggingRecordTags']>(`${TAGGINGS}/remove`, body)).data.tags.map(tenantTagOf);
+}
+
 // Instruments (INV-01, INV-06): the Instruments tab, the instrument filter and the
 // instrument card. Reads only, like every obligation read above; "This looks wrong" is
 // the one write, and it stays inside the reader's own bank.
@@ -284,6 +308,7 @@ export function instrumentOf(raw: Schemas['InstrumentRow']): Instrument {
     implementsNote: raw.implementsNote,
     obligationCount: raw.obligationCount,
     inFootprint: raw.inFootprint,
+    privateToUs: raw.privateToUs,
     lastVerifiedAt: raw.lastVerifiedAt,
     sourceUrl: raw.sourceUrl,
   };
@@ -323,6 +348,7 @@ export function instrumentDetailOf(raw: Schemas['InstrumentDetail']): Instrument
     sourceUrl: raw.sourceUrl,
     lastVerifiedAt: raw.lastVerifiedAt,
     verifiedBy: raw.verifiedBy === null || raw.verifiedBy === undefined ? null : { id: raw.verifiedBy.id, name: raw.verifiedBy.name },
+    privateToUs: raw.privateToUs,
     lineage: (raw.lineage ?? []).map(lineageOf),
   };
 }

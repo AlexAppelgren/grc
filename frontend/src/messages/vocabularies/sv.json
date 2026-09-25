@@ -189,5 +189,10 @@
   "admin.vocabulary.pendingTitle": "Era förslag som väntar på granskning",
   "admin.vocabulary.pendingEmpty": "Inget ni föreslagit för den här listan väntar på granskning.",
   "admin.vocabulary.pendingError": "Era förslag som väntar på granskning kunde inte läsas in.",
-  "admin.vocabulary.pendingSent": "Skickat {date}"
+  "admin.vocabulary.pendingSent": "Skickat {date}",
+  "admin.vocabularies.decline": "Avböj",
+  "admin.vocabularies.suggestedBy": "Föreslaget av {name}, {date}",
+  "admin.vocabularies.noSuggestionsTitle": "Inget väntar",
+  "admin.vocabularies.noSuggestionsBody": "Värden som föreslås från en väljare väntar här på att du lägger till eller avböjer dem.",
+  "admin.vocabularies.suggestionsError": "Det gick inte att läsa in förslagen"
 }

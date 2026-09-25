@@ -1,0 +1,10 @@
+{
+  "obligationTags.heading": "Our tags",
+  "obligationTags.none": "None yet",
+  "obligationTags.add": "Add a tag",
+  "obligationTags.suggest": "Suggest a tag",
+  "obligationTags.remove": "Remove {label}",
+  "obligationTags.retired": "\"{label}\" was retired while you were choosing. Pick another tag.",
+  "obligationTags.denied": "Your roles no longer include managing vocabularies. The tags are as they were.",
+  "obligationTags.failed": "Could not change the tags."
+}

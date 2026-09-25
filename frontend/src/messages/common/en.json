@@ -36,7 +36,6 @@
   "pill.guidanceComplyOrExplain": "Guidance, comply or explain",
   "pill.binding": "Binding",
   "pill.standard": "Standard",
-  "pill.changeWaitingForApproval": "Change waiting for approval",
   "pill.waitingForApproval": "Waiting for approval",
   "pill.openChanges": "{count, plural, one {# open change} other {# open changes}}",
   "pill.changePending": "Change pending: {date}",
