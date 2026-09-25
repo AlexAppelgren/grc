@@ -34,7 +34,7 @@ structure, set in Caslon, on a bank's colours.
 |---|---|
 | Green as one field | Since 2026-09-24 the top bar is paper with a hairline, not green; the green is left for the closing field and the thin section rules. Never on a button, which keeps `foundations.md`'s rule that a primary action stays neutral |
 | Sand where the product uses sand | The marginal column, the legal text block and the AI-drafted callout. Nowhere else, so the page is not a cream page |
-| Colour kept to the section references | Since 2026-09-24 hierarchy comes from type, not colour: brass marks the `§ n` references and the accent the double rules. Since 2026-09-25 everything a visitor reads runs in the text colour, because grey prose on the dark page was hard to read (Alex, on a phone); grey is left to short labels, the eyebrow, step numbers, actor tags, table heads and the footer. In dark the accent turns brass, as `brand.css` says the product accent does |
+| Colour kept to the section references | Since 2026-09-24 hierarchy comes from type, not colour: brass marks the `§ n` references and the accent the double rules. Since 2026-09-25 everything a visitor reads runs in the text colour, because grey prose on the dark page was hard to read (Alex, on a phone); grey is left to short labels, step numbers, actor tags, table heads and the footer. In dark the accent turns brass, as `brand.css` says the product accent does |
 | A marginal column | Every section carries `§ n` in Noto Sans Mono in the left margin, the way a statute carries marginal headings, and its heading says what the section shows, so a reader who only scans the headings still gets the argument. The one-line marginal notes were dropped on 2026-09-24 because they repeated the heading. Below 768 px the reference sits above the rule |
 | Thick-thin rules | Each section opens on a 3 px rule over a 1 px rule, the printed-document break. No cards around prose, no shadows anywhere |
 | One sentence where two would do | Every section was cut back after the first draft: a heading, a line, and the artefact or list that proves it. Nothing on the page explains twice |
@@ -64,7 +64,7 @@ thin section rules, and the closing "Access is by invitation" field.
 |---|---|---|
 | Plate headline | Libre Caslon Display 400 | `clamp(36px, 1.15rem + 4.4vw, 60px)` / 1.04 |
 | Section heading | Libre Caslon Display 400 | `clamp(26px, …, 36px)` / 1.12 |
-| Lede and record titles | Libre Caslon Text 400, italic for the lede | 18 to 20 px |
+| Question headings | Libre Caslon Text 400 | 16 px. No italic: Caslon's italic breaks up at reading size on a dark screen, so § 1 opens in the sans with the rest of its paragraph (Alex, 2026-09-25) |
 | Deck and prose | Hanken Grotesk 400 | 16 / 1.6, measure 62ch |
 | Sub-heading, labels, buttons | Hanken Grotesk 500 and 600 | 15 to 18 px |
 | Marginalia, references, citations, the chain, the colophon | Noto Sans Mono 400 and 500 | 12 to 13 px |
@@ -133,6 +133,11 @@ property declared in the light block first. The form is inert and says so on
 submit. There is no motion beyond hover and smooth scrolling, and
 `prefers-reduced-motion` turns that off. No horizontal scroll at 390 px, no
 element wider than the viewport, a 20 px minimum side gutter.
+
+The line above the headline ("Compliance Watch · for banks in the Nordics")
+is gone since 2026-09-25: Alex, a stock page opener that says nothing the
+headline and § 5 do not. The page opens on the headline; the tab title still
+names the product and the market.
 
 ## The demo
 

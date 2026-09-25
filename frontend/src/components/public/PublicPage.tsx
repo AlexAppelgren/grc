@@ -177,7 +177,6 @@ export function PublicPage() {
               the actions in the sticky bar (Alex, 2026-09-24: the page was cluttered and
               nothing drew the eye). The demo follows it, the product itself. */}
           <section aria-labelledby="public-title" className="pt-14 pb-10 md:pt-24 md:pb-14">
-            <p className="microlabel mb-5 font-mono text-muted">{t('public.hero.eyebrow')}</p>
             <h1 id="public-title" className="max-w-[20ch] font-serif-display text-hero text-balance">
               {t('public.hero.title')}
             </h1>
@@ -189,10 +188,7 @@ export function PublicPage() {
           </section>
 
           <Section id="case" number={1} headingKey="public.case.title">
-            <div className="max-w-[62ch] text-title font-normal">
-              <p className="mb-4 font-serif text-title font-normal italic">{t('public.case.lede')}</p>
-              <p>{t('public.case.body')}</p>
-            </div>
+            <p className="max-w-[62ch] text-title font-normal">{t('public.case.body')}</p>
             <ul className="mt-7 border-t border-line">
               {CASE.map(([title, body]) => (
                 <li key={title} className="border-b border-line py-4">
