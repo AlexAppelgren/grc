@@ -29,6 +29,10 @@ second person's approval switch it on (`TenantReachRequest`, four eyes by check 
 and `TenantReach` is the bank's one row of state, off until then and off again the moment
 anyone holding `security.manage` says so. Both are tenant tables under forced row-level
 security.
+
+acc-entries-and-log (governance 0005, ACC-08) adds the access log: one `AgentAccessCall` row
+per request an agent access credential makes, append-only by trigger and under forced
+row-level security, written by `apps/governance/access_log.py` and by nothing else.
 """
 
 from __future__ import annotations
@@ -36,8 +40,10 @@ from __future__ import annotations
 import enum
 import uuid
 
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
+from apps.shared.audit import AppendOnlyModel
 from apps.shared.tenancy import TenantModel
 from apps.taxonomy.models import ApprovalStatus
 
@@ -233,3 +239,38 @@ class TenantReach(TenantModel):
 
     def __str__(self) -> str:
         return f"{self.tenant_id}:{self.enabled}"
+
+
+class AgentAccessCall(AppendOnlyModel, TenantModel):
+    """One request an agent access credential made (ACC-08): which credential, the entry it
+    reads as, the person a personal token acts as, the tool (the operation it reached), the
+    filter names with only their key values, how many records it answered, the credential's
+    scopes and the entry's term scope, the time it took and its HTTP status.
+
+    Never the content: no free text a caller sent (a search query, a description), no record
+    it was answered with (the logging rule, playbook 4.7). Written once per request, after
+    the response, by `access_log.finish`; append-only in Python and by trigger. A tenant
+    ledger row: the D-53 purge deletes it whole ten years after it was written, and nothing
+    else ever removes or changes it. `agent_access` and `acting_user` are composite
+    `(tenant_id, …)` keys (governance 0005)."""
+
+    api_key = models.ForeignKey("identity.ApiKey", on_delete=models.PROTECT, related_name="+")
+    agent_access = models.ForeignKey("agents.AgentAccess", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    acting_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    tool = models.CharField(max_length=120)
+    filters = models.JSONField(default=dict, blank=True)  # schema: AgentAccessCallFilters
+    record_count = models.PositiveIntegerField(null=True, blank=True)
+    scopes = ArrayField(models.CharField(max_length=32), default=list, blank=True)
+    scope_narrowed = models.BooleanField(default=False)
+    scope_terms = models.JSONField(default=dict, blank=True)  # schema: AgentAccessCallFilters
+    duration_ms = models.PositiveIntegerField()
+    status = models.PositiveSmallIntegerField()
+    at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "agent_access_call"
+        ordering = ["-at", "-id"]
+        indexes = [models.Index(fields=["tenant", "agent_access", "-at"], name="agent_access_call_entry_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.tool}:{self.status}"
