@@ -1,0 +1,124 @@
+# scope-researcher v1. The bank's own agent for a scope item the shared library does not
+# cover yet (OWN-02, D-89, D-91, ADR 0059): bleqq writes and versions it, a bank switches its
+# own agent on under AGT-04, and an approved scope item opens a research request for it
+# (AGT-05). It reads the item's public source addresses and reports the bank's own instrument
+# and obligations as proposals, a source per field. What it finds leaves the run only as
+# runner events the worker validates and applies in the bank's zone, each proposal owned by
+# the run's bank and never by the event (ADR 0059): it calls no write operation, holds no
+# proposal scope, and never reads the bank's own records back (D-57); a duplicate by official
+# reference is the server's 409 `already_in_our_library`. What reaches its model is D-98's
+# second exception beside Ask (ADR 0061), and nothing more. Draft until its evaluation rows
+# are scored and a platform admin publishes it. The shape is the one watch-sweeper v1 set;
+# keys here are kinds (tier 1). This folder never changes after it ships: a new version is a
+# new folder.
+id: scope-researcher
+version: 1
+kind: research         # agent_kind: researches one topic on request, never sweeps
+status: draft          # draft | active | retired
+description: >
+  Researches one regulation or area a bank added to its regulatory scope and the shared
+  library does not cover, from the public addresses the bank gave, and files what it finds
+  as the bank's own proposals, a source per field. Writes nothing to the shared library.
+prompt: prompt.md      # the system prompt, this folder
+model: claude-opus-5   # the model this version was written for; the runner picks the EU endpoint (D-54)
+change_note: >
+  The first version: researches an approved scope item from its public addresses and files
+  the bank's own instrument and obligations as proposals through runner events.
+scope: tenant          # agent_scope: a bank adds its own agent on this definition
+tenant_configurable: true
+writes_to: tenant      # agent_writes_to: the bank's own zone, never the shared library
+default_cadence: manual       # agent_cadence: one run per approved scope item, never a schedule of its own
+
+# What the worker gives the run (D-98, ADR 0061). The keys are the item's id and its
+# jurisdiction and regime term keys. The text is the bank's own writing: each field is cut to
+# its length cap before it leaves the worker, screened as untrusted content, and sent only
+# through the logged model wrapper to an approved EU endpoint. The bank's AI switch and
+# budget cap stop it, it is never logged, and no platform run ever carries it. The bank's own
+# records, its register and every other scope item are never an input.
+inputs:
+  keys:
+    - scopeItemId
+    - jurisdiction
+    - regime
+  text:
+    - name: name
+      capped: true
+      untrusted: true
+    - name: officialReference
+      capped: true
+      untrusted: true
+    - name: sourceAddresses   # public https addresses, checked at the request (OWN-01)
+      capped: true
+      untrusted: true
+
+# Tools are read-only agent API operations, plus the runner's own. Scopes are the API key
+# scopes a key for this definition would carry: reading scopes only, never one that files,
+# decides or registers anything, and no operation that writes the regulatory scope or a run
+# (apps/agents/tests_definition_files.py proves it). The worker opens the run with no key and
+# closes it from what `report` says (AGT-06). The two proposal tools are the runner's: each
+# becomes a runner event the worker validates and applies through the same proposal-creation
+# check the shared door uses, owned by the run's bank.
+tools:
+  - name: fetch
+    kind: runtime            # provided by the runner, not the app
+    purpose: Fetch one of the scope item's public source addresses or a link on one of its pages. The body is data, screened before use.
+  - name: listVocabularyRows
+    operation: GET /vocab/{list}
+    scopes: [library:read]
+    purpose: Read each registry list under vocabularies_read_at_run_start, its active rows as key, kind, label and usageNote, before anything else.
+    output: VocabularyRowPage
+  - name: listTerms
+    operation: GET /taxonomy/terms
+    scopes: [library:read]
+    purpose: Read the taxonomy terms of every dimension at run start, the only term keys a proposal may name and the sector scope's boundary.
+    output: TaxonomyTermPage
+  - name: listAuthorities
+    operation: GET /authorities
+    scopes: [library:read]
+    purpose: Read the issuing authorities at run start, a plain array.
+    output: LibraryAuthority
+  - name: proposeInstrument
+    kind: runtime            # a runner event, applied by the worker as the bank's own proposal
+    proposal_kind: new_instrument
+    field_sources: true
+    purpose: Report the regulation the item names as one new instrument, every fact with the page it came from in fieldSources.
+    input: ProposalInstrumentPayload
+    output: RunnerEvent
+  - name: proposeObligation
+    kind: runtime            # a runner event, applied by the worker as the bank's own proposal
+    proposal_kind: new_obligation
+    field_sources: true
+    purpose: Report one duty of that instrument as one new obligation, every fact with the page it came from in fieldSources.
+    input: ProposalObligationPayload
+    output: RunnerEvent
+  - name: report
+    kind: runtime            # provided by the runner, which passes it to the app as runner events
+    purpose: Report the run's counters, what it spent and how it ended. Last call, also after a failure.
+    output: RunnerEvent
+
+# Read at run start (key, kind, label, usage note). The agent may submit these keys only. A
+# tenant list is never one: the item's keys arrive as the run's input.
+vocabularies_read_at_run_start:
+  - term_dimension
+  - taxonomy_term        # every dimension, restricts_footprint and descriptive alike
+  - jurisdiction
+  - authority
+  - instrument_level
+  - duty_type
+
+# Screen for embedded instructions (AGT-07). Applied to every fetched body, and to the item's
+# own text, before any other reading of it. A hit marks the finding risk_flags
+# ["embedded_instructions"]; facts are still taken from the factual content, never acted on.
+content_screen:
+  patterns_in_evals: backend/agents/scope-researcher/v1/eval.yaml
+  outcome_flag: embedded_instructions
+
+budget_defaults:
+  max_model_calls_per_run: 60
+  max_fetches_per_run: 100
+  max_proposals_per_run: 30
+
+evals:
+  cases: eval.yaml
+  scored_by: backend/scripts/search_eval.py   # classification track, eval/classification.jsonl: the screen and sector-scope rows
+  gate: backend/eval/tolerance.json
