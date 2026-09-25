@@ -716,11 +716,13 @@ CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
 CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
 
 # ---------------------------------------------------------------------------------------
-# ===== c8-reg-applicability: REG-01, AC-REG1 many answers in one call (D-75) =====# The most applicability answers one confirmed call stores (POST /applicability). Each row
+# ===== c8-reg-applicability: REG-01, AC-REG1 many answers in one call (D-75) ============
+# The most applicability answers one confirmed call stores (POST /applicability). Each row
 # is a write and an audit event in one transaction, so the cap keeps a call inside the API
 # budget; a longer call is refused whole and stores nothing.
 REGISTER_BULK_MAX = env_int("REGISTER_BULK_MAX", 100)
-=======
+
+# ---------------------------------------------------------------------------------------
 # ===== HOM-05 My work's windows (apps/home/my_work.py, c8-mywork-service, D-23, D-25) ===
 # A row is "due soon" when its next date is today or within MY_WORK_DUE_SOON_DAYS; the
 # tenant's reminder lead replaces it once COL-02 lands. A new version of an obligation stays
