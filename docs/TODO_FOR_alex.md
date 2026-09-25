@@ -2,6 +2,34 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## Provision clamd on Railway (2026-09-25, `c9-scanner-adapter`, D-101)
+
+Evidence upload scans every file with clamd before anyone can download it. Until these steps
+are done, a deployed environment refuses the first scan (`SCANNER_PROVIDER=mock` is refused on
+every deployed environment, `test` included), so attaching a file answers 503 and nothing is
+stored. Nothing else waits on it. Default if you say nothing: evidence files stay refused on
+Railway; links and references still work.
+
+- [ ] **Add the clamd service, in the project's EU West region.**
+      1. In the Railway project, environment `test`: New, Docker Image, `clamav/clamav:stable`
+         (the official image; `clamav/clamav:1.4` if you would rather pin the release). Name
+         the service `clamav`, so its private host is `clamav.railway.internal`.
+      2. Settings of `clamav`: region **EU West**, the same as `api` and `worker`. **No public
+         networking and no domain**: clamd has no authentication and must be reachable only on
+         the private network. It listens on TCP **3310**.
+      3. Memory: at least **3 GiB**, 4 GiB preferred (ClamAV's own figure for loading the
+         signatures). Add a volume mounted at `/var/lib/clamav` so the signature database
+         survives a redeploy; freshclam inside the container updates it once a day.
+      4. Variables on **both `api` and `worker`**: `SCANNER_PROVIDER=clamd`,
+         `SCANNER_HOST=clamav.railway.internal`, `SCANNER_PORT=3310`. Leave
+         `SCANNER_TIMEOUT_SECONDS` at its default of `60.0` unless scans of the largest file
+         (25 MB) time out.
+      5. Deploy `clamav` first and wait until its log shows clamd listening on 3310 (the first
+         start downloads the signatures and takes a few minutes), then redeploy `api` and
+         `worker`.
+      6. Check: attach the EICAR test file (eicar.org) to a test case; it ends refused as
+         infected, and an ordinary PDF ends downloadable.
+
 ## R2 starts: what waits for you (2026-09-25, `r2-plan-docs`)
 
 R2 is planned and its first wave is running. `docs/plans/briefs/R2_CROSS_CUTTING.md` holds

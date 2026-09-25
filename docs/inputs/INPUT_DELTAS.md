@@ -155,6 +155,14 @@ or has differently:
   reaches the seven watch tables and refuses every other library table at
   runtime, so no watch step can write an authority, an instrument, a provision,
   an obligation or a version table (PRO-01, chunk 5 ruling H).
+**Chunk 9 (c9-scanner-adapter, 2026-09-25).** `scan_state` (`pending`, `clean`,
+`infected`, `error`), declared by `c9-case-models` as `ScanState` in
+`apps/shared/adapters/scanner.py`: whether a stored file may be shown. The download and
+the scan task branch on it and no admin curates it, so it is a kind in code (CAS-05). A
+scan answers only `clean`, `infected` or `error`; `pending` is the state before one.
+`schema.sql` has no scan at all; the scanner seam is the playbook 16 adapter the design
+names without a shape, and evidence reaches it multipart through the API (D-101).
+
 In the API every such field is `{key, kind, label}` on reads and `key` on
 writes, never an OpenAPI `enum`.
 
@@ -1536,6 +1544,7 @@ enabled and forced row-level security, with these departures on purpose:
 - `GET /exports/{exportId}/download` streams the file itself (section 4, section 7), with
   `Content-Disposition: attachment` and `Cache-Control: no-store`, and records every
   download in the audit log. There is no `DownloadLink`.
+
 ## 19. Chunk 9's case contract (2026-09-25, c9-case-contract)
 
 The eighteen workflow operations of `openapi.yaml`'s "Case workflow" tag, less the ticket
@@ -1580,7 +1589,9 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
 - **`Action`** has no `changeTitle` or ticket fields, a required `dueDate`, and gains
   `doneBy` and `version`; `updateAction` and `deleteAction` read the action's own
   `If-Match`, and every move of the case reads the case's. `deleteAction` and
-  `removeEvidence` set `removed_at` and answer 204; nothing is deleted.
+  `removeEvidence` set `removed_at` and answer 204; nothing is deleted. `addAction`
+  answers the same `Action`, and its `ownerId` stays optional as designed: left out, the
+  case's owner owns the action (c9-actions).
 - **`Evidence`** gains `contentHash` and `scanState`; a link and a reference have no bytes
   and are recorded `clean`.
 - **The two lists page.** `listActions` and `listEvidence` answer `{items, total}` with

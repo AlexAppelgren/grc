@@ -262,7 +262,8 @@ CORS_ALLOW_HEADERS = [
     "x-request-id",
     "x-tenant-id",
 ]
-CORS_EXPOSE_HEADERS = ["etag", "server-timing", "x-request-id"]
+# content-disposition: an evidence download is saved under the name the server chose (CAS-05).
+CORS_EXPOSE_HEADERS = ["content-disposition", "etag", "server-timing", "x-request-id"]
 
 # ---------------------------------------------------------------------------------------
 # Adapters (playbook 16). One interface each, a mock chosen by setting. A mock outside the
@@ -607,6 +608,14 @@ CELERY_BEAT_SCHEDULE["outbox-deliver"] = {
 CASE_CREATION_BATCH = env_int("CASE_CREATION_BATCH", 100)
 
 # ---------------------------------------------------------------------------------------
+# ===== CAS-04 how many actions one case may carry (apps/cases/actions.py, c9-actions) ====
+# A case's live actions are read whole by the case file and the sign-off guard, so one case
+# cannot grow without bound and push those reads past the 250 ms budget. Adding one more
+# than this answers 409 `too_many_actions`; a removed action no longer counts.
+# ---------------------------------------------------------------------------------------
+CASE_ACTIONS_MAX = env_int("CASE_ACTIONS_MAX", 200)
+
+# ---------------------------------------------------------------------------------------
 # ===== WAT-01 when a watched source has gone stale (apps/watch/sources.py) ===============
 # The console's Source coverage says "we missed nothing" only as far as the coverage log
 # lets it. A source is stale when the last SOURCE_STALE_AFTER_CHECKS sweeps of it all
@@ -720,6 +729,37 @@ CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
 # an API key's stamp is throttled (ID-10). Without it a polling client would turn a read
 # into a write every time and fill the security log with one bank's polling.
 CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
+
+# ===== CAS-05 the malware scanner (apps/shared/adapters/scanner.py, c9-scanner-adapter) ==
+# `mock` answers from the EICAR string and marker names and is refused at first use on
+# every deployed environment, `test` included; `clamd` streams the bytes over INSTREAM to
+# a clamd service on the private network (D-101). A timeout, a refused connection or an
+# unreadable reply is a failed scan, never a clean one.
+SCANNER_PROVIDER = env_str("SCANNER_PROVIDER", "mock")  # mock | clamd
+SCANNER_HOST = env_str("SCANNER_HOST", "localhost")
+SCANNER_PORT = env_int("SCANNER_PORT", 3310)  # clamd's TCPSocket in the official image
+# Bounds the connect, each send, and the scan with its whole reply. clamd reads the whole
+# stream before it answers, so this must cover scanning the largest evidence file.
+SCANNER_TIMEOUT_SECONDS = float(env_str("SCANNER_TIMEOUT_SECONDS", "60.0"))
+
+# ===== CAS-05 evidence on a case (apps/cases/evidence.py, tasks.py, c9-evidence) =========
+# A file is refused with 422 before a byte is stored when its type is outside this list or
+# it is larger than the cap (parallel plan §7.2). The type is what the header claims, the
+# name's extension and the bytes themselves all agree on; a type listed here that the
+# server cannot recognise in the bytes is refused rather than trusted.
+EVIDENCE_ALLOWED_TYPES = env_list(
+    "EVIDENCE_ALLOWED_TYPES",
+    "application/pdf,"
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document,"
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,"
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation,"
+    "image/png,image/jpeg,text/plain,text/csv",
+)
+EVIDENCE_MAX_BYTES = env_int("EVIDENCE_MAX_BYTES", 25 * 1024 * 1024)
+# How many more times a scan that failed is tried before the file stays `error`.
+EVIDENCE_SCAN_RETRIES = env_int("EVIDENCE_SCAN_RETRIES", 2)
+# Live evidence one case may hold, so one case cannot push its case file past the budget.
+CASE_EVIDENCE_MAX = env_int("CASE_EVIDENCE_MAX", 200)
 
 # ---------------------------------------------------------------------------------------
 # ===== VOC-08 bulk tagging's cap (c10-tagging-routes) ====================================

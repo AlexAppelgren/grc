@@ -1,3 +1,5 @@
+import { isAxiosError, type AxiosProgressEvent } from 'axios';
+
 import { api } from '@/shared/utils/api-client';
 
 import type {
@@ -111,18 +113,64 @@ export interface EvidenceInput {
  * the type and the size before it stores a byte. The client keeps no copy of
  * the allowed types, so a refusal is always the server's own words.
  */
-export async function addEvidence(changeId: string, input: EvidenceInput): Promise<CaseEvidenceCreated> {
+export async function addEvidence(
+  changeId: string,
+  input: EvidenceInput,
+  onUploadProgress?: (event: AxiosProgressEvent) => void,
+): Promise<CaseEvidenceCreated> {
   const form = new FormData();
   form.append('kind', input.kind);
   form.append('name', input.name);
   if (input.url !== undefined) form.append('url', input.url);
   if (input.file !== undefined) form.append('file', input.file);
-  return (await api.post<CaseEvidenceCreated>(on(changeId, 'evidence'), form)).data;
+  return (await api.post<CaseEvidenceCreated>(on(changeId, 'evidence'), form, { onUploadProgress })).data;
 }
 
-/** A checked file's bytes, streamed through the permission check and audited per download. */
-export async function downloadEvidence(evidenceId: string): Promise<Blob> {
-  return (await api.get<Blob>(`${EVIDENCE}/${encodeURIComponent(evidenceId)}/download`, { responseType: 'blob' })).data;
+/** A downloaded file: its bytes, and the name the server chose to save it under. */
+export interface EvidenceDownload {
+  content: Blob;
+  fileName: string | null;
+}
+
+/**
+ * The name from a `Content-Disposition` answer, `filename*` (RFC 5987, UTF-8)
+ * before `filename`. The server strips control and direction characters and
+ * ends the name in the checked type's extension, so the client never builds
+ * a file name from what a person typed.
+ */
+export function fileNameOf(disposition: unknown): string | null {
+  if (typeof disposition !== 'string') return null;
+  const encoded = /filename\*=utf-8''([^;]+)/i.exec(disposition);
+  if (encoded?.[1] !== undefined) {
+    try {
+      return decodeURIComponent(encoded[1]);
+    } catch {
+      return null;
+    }
+  }
+  return /filename="((?:[^"\\]|\\.)*)"/i.exec(disposition)?.[1]?.replace(/\\(.)/g, '$1') ?? null;
+}
+
+/**
+ * A checked file's bytes, streamed through the permission check and audited
+ * per download. A refusal arrives as bytes too, so its problem body is read
+ * back into JSON before it is thrown, and the panel branches on its `code`.
+ */
+export async function downloadEvidence(evidenceId: string): Promise<EvidenceDownload> {
+  try {
+    const response = await api.get<Blob>(`${EVIDENCE}/${encodeURIComponent(evidenceId)}/download`, { responseType: 'blob' });
+    return { content: response.data, fileName: fileNameOf(response.headers['content-disposition']) };
+  } catch (error) {
+    const response = isAxiosError(error) ? error.response : undefined;
+    if (response?.data instanceof Blob) {
+      try {
+        response.data = JSON.parse(await response.data.text()) as unknown;
+      } catch {
+        response.data = {};
+      }
+    }
+    throw error;
+  }
 }
 
 export async function removeEvidence(evidenceId: string): Promise<void> {
