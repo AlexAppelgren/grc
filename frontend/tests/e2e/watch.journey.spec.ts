@@ -460,13 +460,15 @@ test.describe('the watch feed', () => {
 
   test('each tab answers for itself, and an empty one says so rather than looking broken', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
-    await signInAs(page, LOGINS.complianceOfficer);
+    // Tenant B, whose seeded cases all still need triage: tenant A's seed
+    // carries a case in every category for the case journeys (c9-e2e-seed).
+    await signInAs(page, LOGINS.secondBankAdmin);
     await openFeed(page);
 
     await tab(page, /^Closed/).click();
     await expect(page).toHaveURL(/tab=closed/);
     await expect(tab(page, /^Closed/)).toHaveAttribute('aria-selected', 'true');
-    // Nothing has been worked in R1, so this tab is honestly empty; the
+    // Nothing of tenant B's has been worked, so this tab is honestly empty; the
     // triage tab has its own words and its own next step.
     await expect(page.getByText('Nothing in this tab')).toBeVisible();
 

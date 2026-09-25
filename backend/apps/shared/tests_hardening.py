@@ -318,6 +318,11 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "A comment edited or deleted by its author: the same bank's own row, titled by the "
         "record the comment is on."
     ),
+    # c10-e2e-seed-comments: the E2E seed writes the same rows the comment routes write.
+    "apps/shared/e2e_seed.py record(comment.subject_type) tenant_id=comment.tenant_id actor=Actor.system('seed_e2e') title=title": (
+        "A seeded comment added, edited or deleted: the row carries the comment's own bank, "
+        "the actor is the seed, and the title is the record's own title, never the comment's text."
+    ),
 }
 
 
