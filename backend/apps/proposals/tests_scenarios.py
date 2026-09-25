@@ -452,6 +452,8 @@ class ProposalsScenarioTests(ScenarioTestCase):
             {
                 "note": "Retail only, and the wording follows the decision.",
                 "payloadOverrides": {"summaries": {"sv": corrected_sv, "en": "The institution assesses the client's knowledge and experience before advising."}, "terms": ["client_category:retail"]},
+                # Every corrected value names the source it was read in (H35).
+                "fieldSources": {field: "https://www.fi.se/" for field in ("summaries.sv", "summaries.en", "terms")},
             },
             reviewer,
         )
@@ -1003,6 +1005,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
                     "summaries": {"sv": corrected_sv, "en": "The institution assesses the client's knowledge and experience before advising."},
                     "isMachine": False,
                 },
+                "fieldSources": {"summaries.sv": "https://www.fi.se/", "summaries.en": "https://www.fi.se/"},
                 **sent,
             },
             reviewer_headers,

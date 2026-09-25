@@ -189,6 +189,8 @@ test.describe('proposals journeys', () => {
       const english = form.getByLabel(/^Text \(English\)/);
       const original = await english.inputValue();
       await english.fill(`${original} A library editor confirmed this wording for PRO-S4.`);
+      // Every corrected value names the source the reviewer read it in.
+      await form.getByLabel('Source of your correction', { exact: true }).fill('https://www.fi.se/');
       await form.getByRole('button', { name: 'Approve and apply' }).click();
       const prompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
       await expect(prompt.or(applied).first()).toBeVisible();

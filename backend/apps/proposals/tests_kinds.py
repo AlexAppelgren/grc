@@ -22,11 +22,14 @@ for a standard's obligation with no standard term or two, and
 from __future__ import annotations
 
 import datetime
+import importlib
 import uuid
 from typing import Any
 from unittest import mock
 
 from django.core.exceptions import ValidationError
+from django.db import migrations
+from django.test import TestCase
 
 from apps.agents import testing as agents_testing
 from apps.governance.models import AiGeneration
@@ -44,7 +47,7 @@ from apps.library.models import (
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import seed_authorities
 from apps.proposals import apply, logic, standards
-from apps.proposals.models import Proposal, ProposalStatus
+from apps.proposals.models import OriginType, Proposal, ProposalKind, ProposalStatus
 from apps.proposals.schemas import ProposalObligationPayload
 from apps.search.models import SearchChunk
 from apps.shared import factories, permissions as perms, tenancy
@@ -415,7 +418,10 @@ class NewObligation(KindsTestCase):
         # A field the kind does not have cannot arrive by correction.
         self._refused(self._approve(proposal["id"], {"payloadOverrides": {"retention": "Ten years."}}), 422, "validation_error")
 
-        approved = self._approve(proposal["id"], {"payloadOverrides": {"summaries": {"sv": corrected, "en": "The institution keeps a current register."}}})
+        approved = self._approve(
+            proposal["id"],
+            {"payloadOverrides": {"summaries": {"sv": corrected, "en": "The institution keeps a current register."}}, "fieldSources": {"summaries.sv": SOURCE, "summaries.en": SOURCE}},
+        )
 
         self.assertEqual(approved.status_code, 200, approved.content)
         version = ObligationVersion.objects.get(obligation__stable_key=OBLIGATION_KEY)
@@ -632,7 +638,8 @@ class StandardsCheck(KindsTestCase):
 
     def _conformance(self, **payload: Any) -> dict[str, Any]:  # compliance: allow-kwargs test helper overriding payload fields
         fields = {"key": "obl-iso-iec-27001-2022-conformance", "refLabel": "ISO/IEC 27001:2022", "terms": [STANDARD_TERM], **payload}
-        return obligation_body(STANDARD_KEY, **fields)
+        # A standard's source label is its official reference alone (H35).
+        return {**obligation_body(STANDARD_KEY, **fields), "sourceLabel": "ISO/IEC 27001:2022"}
 
     def test_a_standards_conformance_obligation_enters_with_its_one_term(self) -> None:
         proposal = self._filed(self._conformance())
@@ -712,3 +719,33 @@ class StandardsCheck(KindsTestCase):
         self.assertEqual((row.status, row.corrected_payload), (ProposalStatus.OPEN.value, None))
         self.assertFalse(Provision.objects.exists())
         self.assertFalse(AuditEvent.objects.filter(action__in=("proposal.approved", "provision.created")).exists())
+
+
+class TheObligationScopeKind(TestCase):
+    """PRO-04's re-tag kind, `obligation_scope`, which chunk 4 cut (parallel-plan ruling 14):
+    a member of the code enum `apply()` branches on, never a vocabulary row, so the class
+    already allowlisted in apps/shared/kinds.py covers it. Its payload schema and its apply
+    branch are the batch tasks' that follow; here it is a kind a proposal row can carry."""
+
+    def test_it_is_a_member_and_a_choice_of_the_kind_column(self) -> None:
+        self.assertEqual(ProposalKind.OBLIGATION_SCOPE.value, "obligation_scope")
+        self.assertIn("obligation_scope", {value for value, _ in Proposal._meta.get_field("kind").choices or []})
+
+    def test_the_migration_widens_the_stored_choices(self) -> None:
+        migration = importlib.import_module("apps.proposals.migrations.0008_proposal_batches").Migration
+        altered = [
+            operation
+            for operation in migration.operations
+            if isinstance(operation, migrations.AlterField) and operation.name == "kind"
+        ]
+        self.assertEqual(len(altered), 1)
+        self.assertIn(("obligation_scope", "obligation_scope"), list(altered[0].field.choices or []))
+
+    def test_every_kind_round_trips(self) -> None:
+        proposer = factories.user()
+        for kind in ProposalKind:
+            with self.subTest(kind=kind):
+                stored = Proposal.objects.create(
+                    kind=kind.value, title=f"A {kind.value}", origin=OriginType.USER.value, proposed_by_user=proposer
+                )
+                self.assertEqual(ProposalKind(Proposal.objects.get(pk=stored.pk).kind), kind)

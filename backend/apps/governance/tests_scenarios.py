@@ -138,6 +138,10 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
     ),
     "listEvalRuns": ("GET", "/eval/runs", None),
     "getEvalBaseline": ("GET", "/eval/baseline", None),
+    # A batch proposal (PRO-04, c11-proposal-batches-create): read and decided by a library
+    # editor, deciding behind a passkey too, so a platform admin is refused both.
+    "getProposalBatch": ("GET", f"/proposal-batches/{_ANY_ID}", None),
+    "decideProposalBatch": ("POST", f"/proposal-batches/{_ANY_ID}/decide", {"rest": "approved"}),
 }
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a
@@ -149,6 +153,13 @@ LOGIC_GATED_PLATFORM_ROUTES: dict[str, tuple[str, str, dict[str, Any] | None, st
         "POST",
         "/proposals",
         {"kind": "vocabulary_create", "title": "Add a flag", "payload": {"list": "flag", "key": "x", "labels": {"en": "X"}}},
+        "platform_admin",
+    ),
+    # Filing a batch is a library editor's, never a platform admin's (PRO-04, c11-proposal-batches-create).
+    "createProposalBatch": (
+        "POST",
+        "/proposal-batches",
+        {"kind": "obligation_scope", "title": "Re-tag", "payload": {"changes": [{"obligationId": str(_ANY_ID), "add": [], "source": "https://www.fi.se/"}]}},
         "platform_admin",
     ),
 }
@@ -780,7 +791,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         sent = agents_testing.decision(reviewer_key)
         decision = self._post(
             f"/proposals/{approved.json()['id']}/approve",
-            {"note": "Confirmed.", "payloadOverrides": {"summaries": {"en": corrected}}, **sent},
+            {"note": "Confirmed.", "payloadOverrides": {"summaries": {"en": corrected}}, "fieldSources": {"summaries.en": "https://www.fi.se/"}, **sent},
             {"HTTP_X_API_KEY": reviewer_key.plain_key},
         )
         self.assertEqual(decision.status_code, 200, decision.content)

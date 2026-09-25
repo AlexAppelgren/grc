@@ -15,9 +15,9 @@ stop between chunks unless a product invariant is at stake.
 | 5 | Watch and the agent API | Agents register changes and proposals with a key. The watch feed shows one record per reform with its timeline, flags and suggested links, and the markets we watch | WAT-01 to WAT-05, WAT-07, AGT-01, AGT-02, AGT-07, AGT-08, CAS-01, ID-10, FP-04 (the feed view and a change's jurisdiction), J-4 | R1 |
 | 6 | Home, briefing, roadmap | The timeline home, the weekly briefing with its email, the roadmap page, the calendar feed | HOM-01 to HOM-04 | R1 |
 | 7 | Search and ask | Hybrid search with filters and "as of", cited answers, the evaluation gate | SRC-01 to SRC-03, SRC-05, AUD-02, J-7 | R1 |
-| 8 | Register | Applicability with approval, compliance status per entity, gaps, history, internal links, entities, products, departments and teams, My work and participants, and the Statement of Applicability per entity | REG-01 to REG-03, REG-05, REG-08, HOM-05, COL-04, TEN-02, TEN-03, TEN-05, TEN-06, then the cuttable REG-04, REG-07, TEN-04, VOC-04 to VOC-06 | R2 |
+| 8 | Register | Applicability with approval, compliance status per entity, gaps, history, internal links, entities, products, departments and teams, My work and participants, and the Statement of Applicability per entity | REG-01 to REG-03, REG-05, REG-08, HOM-05, COL-04, TEN-02, TEN-03, TEN-05, TEN-06, then the cuttable REG-04, REG-07, VOC-04 to VOC-06 (TEN-04 moved to chunk 10, D-95) | R2 |
 | 9 | Case workflow | Triage to sign-off with evidence and the case file, with participants on cases | CAS-02 to CAS-08, COL-04 (cases), J-2, J-3 | R2 |
-| 10 | Collaboration | Comments, mentions, notifications, reminders, escalation, digest, delegation, and comments and mentions on My work | COL-01, COL-02, HOM-05 (comments and mentions), VOC-03, VOC-08 | R2 |
+| 10 | Collaboration | Comments, mentions, notifications, reminders, escalation, digest, delegation, and comments and mentions on My work | COL-01, COL-02, HOM-05 (comments and mentions), VOC-03, VOC-08, TEN-04 (D-95, pending Alex) | R2 |
 | 11 | Tenant-controlled agents, and agent access | Definitions, tenant settings, schedules, requests, budgets, the runner adapter, re-tag batches, and a default scope from the markets. Then agent access: a bank registers the agents it runs itself, narrows each to the departments and products it serves, issues a service key or mints a personal access token, and reads what applies through an MCP server over the same API | AGT-03 to AGT-06 (including AGT-04's default market scope), PRO-04, ID-07, ID-08, then ACC-01 to ACC-09, J-11 | R2 |
 | 12 | Reports, exports, import, exit | Dashboard, committee pack, exports, spreadsheet import, full tenant export and deletion | REP-01 to REP-04, AUD-04, VOC-09 | R3 |
 | 13 | Integrations and enterprise access | Webhooks, tickets, SIEM stream, SSO and SCIM, IP allow-list, saved searches, attestations, waivers, private sources, remaining UI languages, and agent access write-back: the map of which application touches which register entry | INT-01 to INT-03, ID-12, ID-13, SRC-04, REG-06, WAT-06, INV-07, COL-03, I18N-02, ACC-10 | R3 |
@@ -46,3 +46,13 @@ nothing else in chunk 11 changes. ACC-10 is R3 either way. `CHUNK11_TASKS.md` an
 tasks are planned from the brief before chunk 11 starts.
 
 **PRD 0.7 (D-89, 2026-09-25).** Chunk 11 gains group OWN, the bank's own regulations (OWN-01 to OWN-05, INV-07 moved from chunk 13, J-12; D-91, ADR 0059, `docs/plans/briefs/SCOPE_ITEMS.md`); its register half follows chunk 8, and private sources (WAT-06) stay in chunk 13.
+**R2 starts (2026-09-25).** Every R2 package reads
+`docs/plans/briefs/R2_CROSS_CUTTING.md` first: the shared-file rules, the migration and
+decision numbers, the page shells and the cross-cutting safety rules live there, and it wins
+over `PARALLEL_PLAN.md` where they disagree. Two moves in the table above follow from it.
+TEN-04, out-of-office with a delegate, is built in chunk 10 beside reminders, escalation and
+delegation, which it feeds, rather than at the bottom of chunk 8's cuttable list (D-95, the
+default until Alex answers the reorder). Export jobs, the `ExportJob` framework and
+`/exports`, move from chunk 12 into R2 as `x-exports-contract`, because chunk 9's case file
+exports on it; the export kinds of REP-02 to REP-04 stay chunk 12's, and import jobs stay
+R3.
