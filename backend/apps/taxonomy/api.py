@@ -24,7 +24,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy import footprint_logic, library_lists_logic, markets_logic, reading, terms_logic
+from apps.taxonomy import footprint_logic, library_lists_logic, markets_logic, reading, tagging_logic, terms_logic
 from apps.taxonomy import tenant_lists_logic as lists
 from apps.taxonomy.http import (
     actor_for,
@@ -52,6 +52,10 @@ from apps.taxonomy.schemas import (
     JurisdictionRow,
     MarketRow,
     MarketWatchBody,
+    TaggingBatchBody,
+    TaggingBatchOutcome,
+    TaggingBody,
+    TaggingRecordTags,
     TaxonomyDimensionPage,
     TaxonomyTermCreateBody,
     TaxonomyTermPage,
@@ -1239,3 +1243,192 @@ def list_jurisdictions(request: HttpRequest) -> list[JurisdictionRow]:
         )
         for row in rows
     ]
+
+
+# ---------------------------------------------------------------------------------------
+# VOC-08: the bank's own tags on a record, one by one or in a previewed batch. The subject
+# rides in the body on every route, never in the path or a query string (INPUT_DELTAS §7).
+# ---------------------------------------------------------------------------------------
+_ONE_TAGGING_EXAMPLE = {
+    "requestBody": {
+        "content": {"application/json": {"example": {"tagKey": "custody", "subjectType": "obligation", "subjectId": "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"}}}
+    },
+    "responses": {
+        200: {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "subjectType": "obligation",
+                        "subjectId": "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10",
+                        "tags": [{"key": "custody", "kind": None, "label": "Custody"}],
+                    }
+                }
+            }
+        }
+    },
+}
+_BATCH_TAGGING_EXAMPLE = {
+    "requestBody": {
+        "content": {
+            "application/json": {
+                "example": {
+                    "tagKey": "custody",
+                    "subjectType": "obligation",
+                    "subjectIds": ["5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10", "9b2e4f61-0c3a-4e8d-b7a5-1d6c8e2f4a37"],
+                }
+            }
+        }
+    },
+    "responses": {
+        200: {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "tag": {"key": "custody", "kind": None, "label": "Custody"},
+                        "subjectType": "obligation",
+                        "gained": {"count": 1, "ids": ["9b2e4f61-0c3a-4e8d-b7a5-1d6c8e2f4a37"]},
+                        "alreadyTagged": {"count": 1, "ids": ["5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"]},
+                        "skipped": {"count": 0},
+                    }
+                }
+            }
+        }
+    },
+}
+
+
+@router.post(
+    "/taggings",
+    response=TaggingRecordTags,
+    auth=SESSION,
+    operation_id="tagRecord",
+    by_alias=True,
+    summary="Tag a record with one of our own tags",
+    openapi_extra=_ONE_TAGGING_EXAMPLE,
+)
+@requires_permission(perms.VOCAB_MANAGE)
+@answers_problems
+def tag_record(request: HttpRequest, body: TaggingBody) -> TaggingRecordTags:
+    """Put one of the bank's own tags on one obligation, change or case (VOC-08) and answer
+    the record's tags as they now stand. The tag is a marker in the bank's own zone: the
+    library record it sits on does not change and no other bank sees it. Tagging a record
+    that already carries the tag changes nothing and answers the same 200. Every call writes
+    one audit event naming the record, the tag and whether anything changed.
+
+    Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
+    refused. The caller must also be able to read the record. Errors: `unsupported_subject`
+    (422) for a kind other than obligation, change or change_case; `unknown_key` (422)
+    for a tag the bank does not have or has retired; `not_found` (404) for a record that does
+    not exist, is another bank's or the caller may not read; `permission_denied` (403)
+    without `vocab.manage`; `unauthenticated` (401) without a session; `validation_error`
+    (422) for a body the schema rejects.
+    """
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    tagging_logic.tag(
+        tenant=tenant, who=principal(request), actor=actor_for(request, user),
+        tag_key=body.tag_key, subject_type=body.subject_type, subject_id=body.subject_id,
+    )
+    return tagging_logic.tags_of(body.subject_type, body.subject_id, reading.language_order(request, tenant=tenant))
+
+
+@router.post(
+    "/taggings/remove",
+    response=TaggingRecordTags,
+    auth=SESSION,
+    operation_id="untagRecord",
+    by_alias=True,
+    summary="Take one of our own tags off a record",
+    openapi_extra={**_ONE_TAGGING_EXAMPLE, "responses": {200: {"content": {"application/json": {"example": {"subjectType": "obligation", "subjectId": "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10", "tags": []}}}}}},
+)
+@requires_permission(perms.VOCAB_MANAGE)
+@answers_problems
+def untag_record(request: HttpRequest, body: TaggingBody) -> TaggingRecordTags:
+    """Take one of the bank's own tags off one obligation, change or case (VOC-08) and answer
+    the record's tags as they now stand; an empty list when none is left. A record that does
+    not carry the tag is left as it is and answers the same 200. A retired tag can still be
+    taken off. Every call writes one audit event naming the record, the tag and whether
+    anything changed.
+
+    Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
+    refused. Errors: `unsupported_subject` (422) for a kind other than obligation, change
+    or change_case; `unknown_key` (422) for a tag the bank does not have; `not_found` (404)
+    for a record that does not exist, is another bank's or the caller may not read;
+    `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401) without a
+    session; `validation_error` (422) for a body the schema rejects.
+    """
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    tagging_logic.untag(
+        tenant=tenant, who=principal(request), actor=actor_for(request, user),
+        tag_key=body.tag_key, subject_type=body.subject_type, subject_id=body.subject_id,
+    )
+    return tagging_logic.tags_of(body.subject_type, body.subject_id, reading.language_order(request, tenant=tenant))
+
+
+@router.post(
+    "/taggings/preview",
+    response=TaggingBatchOutcome,
+    auth=SESSION,
+    operation_id="previewTagging",
+    by_alias=True,
+    summary="See what tagging the selected records would do",
+    openapi_extra=_BATCH_TAGGING_EXAMPLE,
+)
+@requires_permission(perms.VOCAB_MANAGE)
+@answers_problems
+def preview_tagging(request: HttpRequest, body: TaggingBatchBody) -> TaggingBatchOutcome:
+    """Before tagging a selection from a list (VOC-08), see which records would gain the tag,
+    which already carry it and how many would be skipped because the caller may not read
+    them. Skipped records are counted and never named. A read with a body: it changes
+    nothing and writes no audit event.
+
+    Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
+    refused. At most `BULK_TAGGING_MAX_RECORDS` distinct ids, 200 unless the operator set
+    another number. Errors: `too_many_records` (422) above that cap; `unsupported_subject`
+    (422) for a kind other than obligation, change or change_case; `unknown_key`
+    (422) for a tag the bank does not have or has retired; `permission_denied` (403)
+    without `vocab.manage`; `unauthenticated` (401) without a session; `validation_error`
+    (422) for a body the schema rejects, such as an empty selection.
+    """
+    tenant = caller_tenant(request)
+    return tagging_logic.preview(
+        tenant=tenant, who=principal(request), tag_key=body.tag_key, subject_type=body.subject_type,
+        subject_ids=body.subject_ids, order=reading.language_order(request, tenant=tenant),
+    )
+
+
+@router.post(
+    "/taggings/batch",
+    response=TaggingBatchOutcome,
+    auth=SESSION,
+    operation_id="tagRecords",
+    by_alias=True,
+    summary="Tag the selected records at once",
+    openapi_extra=_BATCH_TAGGING_EXAMPLE,
+)
+@requires_permission(perms.VOCAB_MANAGE)
+@answers_problems
+def tag_records(request: HttpRequest, body: TaggingBatchBody) -> TaggingBatchOutcome:
+    """Put one of the bank's own tags on every selected record of one kind at once (VOC-08),
+    in one transaction, and answer what happened in the preview's shape. Records that
+    already carry the tag are left as they are; records the caller may not read are
+    skipped, counted and never named. The whole batch writes exactly one audit event holding
+    the tag's key and the ids of the records it reached; a repeat of the same batch changes
+    nothing and writes its one event saying so.
+
+    Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
+    refused. At most `BULK_TAGGING_MAX_RECORDS` distinct ids, 200 unless the operator set
+    another number. Errors: `too_many_records` (422) above that cap, and nothing is tagged;
+    `unsupported_subject` (422) for a kind other than obligation, change or
+    change_case; `unknown_key` (422) for a tag the bank does not have or has retired;
+    `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401) without a
+    session; `validation_error` (422) for a body the schema rejects, such as an empty
+    selection.
+    """
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    return tagging_logic.tag_batch(
+        tenant=tenant, who=principal(request), actor=actor_for(request, user), tag_key=body.tag_key,
+        subject_type=body.subject_type, subject_ids=body.subject_ids, order=reading.language_order(request, tenant=tenant),
+    )

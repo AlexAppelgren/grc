@@ -458,6 +458,34 @@ if min(SEARCH_RATE_PER_USER_PER_MINUTE, ASK_RATE_PER_USER_PER_MINUTE) < 1:
     )
 
 # ---------------------------------------------------------------------------------------
+# ===== x-hardening-inputs-ask: open Ask streams, problem reports, visits (H38, H39, H47) =
+# ASK_STREAMS_PER_USER is how many Ask answers one caller may have streaming at once
+# (apps/search/limits.py). The per-minute rate above bounds how often a caller asks, not how
+# long each answer holds a server thread (up to LLM_DEADLINE_S), so a few callers could
+# otherwise hold every thread for every bank (H47). A slot is taken before the first byte
+# and given back when the stream closes; a slot a lost worker never gave back expires
+# ASK_STREAM_SLOT_TTL_S after the caller's last take, which is past the longest a model
+# call can run.
+# PROBLEM_REPORTS_PER_USER_PER_HOUR is how many problem reports one person may file, and
+# separately close, in an hour (ACC-09, H39): each is a row and an audit row kept for ten
+# years, and a script behind a session could file thousands.
+# VISIT_MIN_INTERVAL_SECONDS: a `POST /me/visit` this soon after the person's last one
+# writes nothing, since each writes an audit and an outbox row kept for ten years (H38).
+# None of the three may be below 1: there is no value of them that means "no limit".
+# ---------------------------------------------------------------------------------------
+ASK_STREAMS_PER_USER = env_int("ASK_STREAMS_PER_USER", 2)
+ASK_STREAM_SLOT_TTL_S = int(LLM_DEADLINE_S + LLM_TIMEOUT_S) + 60
+PROBLEM_REPORTS_PER_USER_PER_HOUR = env_int("PROBLEM_REPORTS_PER_USER_PER_HOUR", 30)
+VISIT_MIN_INTERVAL_SECONDS = env_int("VISIT_MIN_INTERVAL_SECONDS", 60)
+for _name, _value in (
+    ("ASK_STREAMS_PER_USER", ASK_STREAMS_PER_USER),
+    ("PROBLEM_REPORTS_PER_USER_PER_HOUR", PROBLEM_REPORTS_PER_USER_PER_HOUR),
+    ("VISIT_MIN_INTERVAL_SECONDS", VISIT_MIN_INTERVAL_SECONDS),
+):
+    if _value < 1:
+        raise ImproperlyConfigured(f"Refusing to boot: {_name} is {_value}; it must be at least 1.")
+
+# ---------------------------------------------------------------------------------------
 # ===== SRC-03 Ask: what reaches the model and how much it may write (apps/search/ask.py) =
 # How many passages of the hybrid ranking the model is given, and the most it may write
 # back. The passages are the whole of what an answer may rest on, so a deeper retrieval is
@@ -701,6 +729,16 @@ CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
 # an API key's stamp is throttled (ID-10). Without it a polling client would turn a read
 # into a write every time and fill the security log with one bank's polling.
 CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
+
+# ---------------------------------------------------------------------------------------
+# ===== VOC-08 bulk tagging's cap (c10-tagging-routes) ====================================
+# How many distinct records one tagging preview or batch may name. A list page holds at
+# most 100 rows, so two pages' worth covers every selection a screen makes, and the one
+# audit event a batch writes stays a size a reviewer can read. Above it the preview and
+# the batch answer 422 `too_many_records` and nothing is tagged.
+# `apps/taxonomy/tagging_logic.py` reads it.
+# ---------------------------------------------------------------------------------------
+BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200)
 
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
