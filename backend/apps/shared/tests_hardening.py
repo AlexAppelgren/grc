@@ -288,6 +288,15 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/taxonomy/tenant_lists_logic.py record('vocabulary') tenant_id=tenant.id actor=actor title=list_name": (
         "The same, for a reorder of one tenant's list."
     ),
+    # c11-proposal-batches-create (PRO-04, AGT-05).
+    "apps/proposals/batch.py record(logic.SUBJECT_TYPE) tenant_id=None actor=proposer.actor title=proposal.title": (
+        "A batch is filed only by platform staff holding proposals.review or a platform agent's key "
+        "(api.require_batch_proposer, and create_batch refuses a caller inside a bank), so the actor is "
+        "never a bank's person and the title is platform staff's or an agent's words."
+    ),
+    "apps/proposals/batch.py record(logic.SUBJECT_TYPE) tenant_id=None actor=proposer.actor title=existing.title": (
+        "The retry of the same platform-only batch filing: the same platform proposer and the title it filed."
+    ),
 }
 
 
