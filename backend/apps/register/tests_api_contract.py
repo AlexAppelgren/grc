@@ -200,6 +200,12 @@ BUILT_ROUTES = {
 }
 
 
+# The operations whose logic has landed, each proved in its package's own tests.
+BUILT = {
+    "setApplicability", "setApplicabilityMany",  # c8-reg-applicability, tests_applicability.py
+}
+
+
 class RegisterRouteStubs(TestCase):
     tenant: Any
     person: Any
@@ -229,6 +235,8 @@ class RegisterRouteStubs(TestCase):
         shape, with nothing of the server in it. Replaced row by row as each logic lands."""
         with stub_session(self._everything()):
             for name, method, url, body, _permission, _step_up in REGISTER_ROUTES:
+                if name in BUILT:
+                    continue
                 headers = {**AS_SESSION, "HTTP_IF_MATCH": '"3"'} if method in {"patch", "put", "delete"} else AS_SESSION
                 with self.subTest(operation=name):
                     response = _call(self.client, method, url, body, headers)

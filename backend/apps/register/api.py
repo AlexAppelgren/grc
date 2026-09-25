@@ -223,9 +223,9 @@ def set_applicability(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `applicability.approve`; `not_found` (404) for an obligation, entity or unit the bank
-    cannot see; `stale_write` (409); `validation_error` (422) for an unknown value, an empty
-    reason, or both `orgUnitId` and `unitId`. Published ahead of the logic that will fill it,
-    and answering 501 `not_built` until that ships.
+    cannot see, or a legal entity the obligation does not span; `stale_write` (409);
+    `validation_error` (422) for an unknown value, an empty reason, or both `orgUnitId` and
+    `unitId`; `not_built` (501) for a `unitId` until the Statement of Applicability's units ship.
     """
     tenant = caller_tenant(request)
     return applicability.set_applicability(
@@ -261,9 +261,10 @@ def set_applicability_many(request: HttpRequest, body: RegisterApplicabilityMany
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `applicability.approve`; `not_found` (404) when any row names an obligation, entity or unit
-    the bank cannot see; `validation_error` (422) for an empty list, a list over the cap or a
-    row the schema refuses. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    the bank cannot see, or a legal entity its obligation does not span; `validation_error`
+    (422) for an empty list, a list over the cap, the same target twice or a row the schema
+    refuses; `not_built` (501) for a row with a `unitId` until the Statement of
+    Applicability's units ship.
     """
     tenant = caller_tenant(request)
     return applicability.set_applicability_many(
