@@ -519,7 +519,7 @@ class LibraryScenarioTests(ScenarioTestCase):
 
         self.assertEqual(Verification.objects.count(), 2)
 
-    @skip("pending: INV-S9 (INV-07, R3)")
+    @skip("pending: INV-S9 (INV-07, chunk 11)")
     def test_inv_s9(self) -> None:
         """INV-S9
 
@@ -624,7 +624,7 @@ class LibraryScenarioTests(ScenarioTestCase):
         self.assertEqual(Proposal.objects.get(pk=proposal.pk).status, ProposalStatus.OPEN.value)
         self.assertFalse(AuditEvent.objects.filter(action="instrument.created").exists())
 
-    @skip("pending: INV-S13 (INV-07, chunk 13)")
+    @skip("pending: INV-S13 (INV-07, chunk 11)")
     def test_inv_s13(self) -> None:
         """INV-S13
 
@@ -702,3 +702,10 @@ class LibraryScenarioTests(ScenarioTestCase):
         for confirmation in (after["provenance"], after["version"]):
             self.assertEqual(confirmation["verifiedOrigin"], "agent")
             self.assertEqual(confirmation["confirmedByAgent"]["key"], confirmer.agent.key)
+
+    @skip("pending: INV-S15 (OWN-04, INV-07, AC-OWN1, chunk 11)")
+    def test_inv_s15(self) -> None:
+        """INV-S15
+
+        The bank's own records read "Private to us", and nothing changes when the library catches up (OWN-04, INV-07, AC-OWN1).
+        """
