@@ -15,9 +15,10 @@ from __future__ import annotations
 from typing import Any
 from unittest import skip
 
-from apps.identity.models import TenantRole
+from apps.identity.models import Membership, TenantRole
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, permissions as perms
+from apps.shared.models import AuditEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy import tenant_lists_logic
 from apps.taxonomy.models import FootprintTerm
@@ -95,6 +96,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S2
 
         Legal entities and products are scoped like obligations (TEN-02).
+        Operations: `createOrgUnit`, `createLicence`, `createProduct`, `updateProduct`.
         """
 
     @skip("pending: TEN-S3 (TEN-03, chunk 8)")
@@ -116,6 +118,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S5
 
         Removing a member with open work offers bulk reassignment (TEN-05).
+        Operations: `removeMember`.
         """
 
     @skip("pending: TEN-S6 (TEN-06, chunk 8)")
@@ -123,6 +126,8 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S6
 
         Support access is requested by the platform, approved by the bank and time-boxed (TEN-06).
+        Operations: `requestConsoleSupportAccess`, `approveSupportAccess`, `declineSupportAccess`,
+        `revokeSupportAccess`, `enterConsoleSupportAccess`.
         """
 
     def test_adm_s1(self) -> None:
@@ -178,13 +183,57 @@ class TenantsScenarioTests(ScenarioTestCase):
         # admin holds neither grant, which is what keeps them off those screens.
         self.assertNotIn(perms.VOCAB_MANAGE, self.client.get("/api/v1/me", **people_admin).json()["permissions"])
         self.assertNotIn(perms.WORKFLOW_MANAGE, self.client.get("/api/v1/me", **people_admin).json()["permissions"])
+        # The workflow policy (COL-02, updateTenantWorkflow) is the configuration admin's alone.
+        denied = self.client.patch("/api/v1/tenant/workflow", data={"escalateAfterDays": 7}, content_type="application/json", **people_admin)
+        self.assertEqual((denied.status_code, denied.json()["requiredPermission"]), (403, perms.WORKFLOW_MANAGE))
+        allowed = self.client.patch("/api/v1/tenant/workflow", data={"escalateAfterDays": 7}, content_type="application/json", **config_admin)
+        self.assertEqual((allowed.status_code, allowed.json()["workflow"]["escalateAfterDays"]), (200, 7))
 
-    @skip("pending: TEN-S8 (TEN-02, TEN-03, chunk 8)")
     def test_ten_s8(self) -> None:
         """TEN-S8
 
         A department has a head and teams, and team membership is set on the member row (TEN-02, TEN-03).
+        Operations: `createOrgUnit`, `updateOrgUnit`, `setMemberTeams`.
+
+        c8-ten-teams-people: the department and its team are rows here, because adding them
+        through `createOrgUnit` and `/vocab/team` is TEN-S2's and VOC-02's to prove; the
+        database's refusal of another bank's member, department or head is proven as `cw_app`
+        in tests_team_models.py and tests_models.py.
         """
+        karin = factories.member(self.tenant, user_row=factories.user(name="Karin Holm")).user
+        anna = factories.member(self.tenant, user_row=factories.user(name="Anna Berg")).user
+        johan = factories.member(self.tenant, user_row=factories.user(name="Johan Ek")).user
+        retail = factories.department(self.tenant, name="Retail Banking", head=karin)
+        factories.team(self.tenant, key="retail-compliance", label="Retail compliance", org_unit=retail)
+
+        me = self.client.get("/api/v1/me", **sign_in(karin, tenant=self.tenant)).json()
+        self.assertIn({"id": str(retail.id), "name": "Retail Banking"}, me["headOf"])
+
+        admin = sign_in(self.admin, tenant=self.tenant)
+        for person in (anna, johan):
+            url = f"/api/v1/tenant/members/{person.id}/teams"
+            response = self.client.put(url, data={"teams": ["retail-compliance"]}, content_type="application/json", **admin)
+            self.assertEqual(response.status_code, 200, response.content)
+            self.assertEqual(response.json()["teams"], ["retail-compliance"])
+            self.activate(self.tenant)
+            membership = Membership.objects.get(tenant=self.tenant, user=person)
+            event = AuditEvent.objects.get(action="member.teams_changed", subject_id=membership.id)
+            self.assertEqual((event.before, event.after), ({"teams": []}, {"teams": ["retail-compliance"]}))
+        members = self.client.get("/api/v1/tenant/teams/retail-compliance/members", **admin).json()
+        self.assertEqual([row["name"] for row in members["items"]], ["Anna Berg", "Johan Ek"])
+
+        other = factories.tenant(slug="elsewhere")
+        stranger = factories.member_user(other)
+        refused = self.client.put(
+            f"/api/v1/tenant/members/{stranger.id}/teams", data={"teams": ["retail-compliance"]}, content_type="application/json", **admin
+        )
+        self.assertEqual((refused.status_code, refused.json()["code"]), (422, "unknown_member"))
+
+        without = self._member_with(perms.CASES_READ)
+        denied = self.client.put(
+            f"/api/v1/tenant/members/{anna.id}/teams", data={"teams": []}, content_type="application/json", **without
+        )
+        self.assertEqual(denied.status_code, 403)
 
     @skip("pending: TEN-S9 (TEN-05, COL-04, chunk 8)")
     def test_ten_s9(self) -> None:
@@ -198,6 +247,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S10
 
         A legal entity records a certificate it holds (TEN-02, AC-TEN1).
+        Operations: `createLicence`, `updateLicence`.
         """
 
     @skip("pending: TEN-S11 (TEN-06, chunk 8)")
