@@ -523,6 +523,12 @@ LIBRARY_TERM_FILTER_MAX = env_int("LIBRARY_TERM_FILTER_MAX", 20)
 # ---------------------------------------------------------------------------------------
 PROPOSAL_SOURCE_MAX_CHARS = env_int("PROPOSAL_SOURCE_MAX_CHARS", 2000)
 PROPOSAL_SCOPE_MAX_TERMS = env_int("PROPOSAL_SCOPE_MAX_TERMS", 20)
+# A payload text (a provision's verbatim text or an obligation's summary, per language)
+# arrives from an agent or a person and is stored in the queue before anyone reads it, so it
+# is bounded too (H35). The longest article a Nordic or Union source publishes runs to a few
+# tens of thousands of characters; anything beyond this is refused with 422 rather than
+# queued.
+PROPOSAL_TEXT_MAX_CHARS = env_int("PROPOSAL_TEXT_MAX_CHARS", 50000)
 
 # ---------------------------------------------------------------------------------------
 # ===== PRO-03 how far back "what changed in the library" looks ===========================
