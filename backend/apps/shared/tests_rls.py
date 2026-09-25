@@ -180,6 +180,9 @@ TENANT_ONLY_TABLES = [
     "internal_link",
     # c8-reg-units (register 0003; REG-08, D-41): the Statement of Applicability's units.
     "soa_unit",
+    # c8-teams-model (tenants 0003, TEN-03): a person in a team. Both keys are composite
+    # (apps/tenants/tests_team_models.py proves the database refuses a cross-tenant one).
+    "team_member",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also

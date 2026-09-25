@@ -60,4 +60,6 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # c8-reg-units (REG-08): a Statement of Applicability unit, addressed by its id.
     ("PATCH", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
     ("DELETE", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
+    # c8-reg-status: a legal entity's register row (REG-02).
+    ("PATCH", "/obligations/{obligation_id}/register/entities/{org_unit_id}", "register.TenantObligationScope", "register_entity"),
 ]
