@@ -489,6 +489,15 @@ class PlatformFence(TestCase):
         self.assertEqual(response.status_code, 422, response.content)
         self.assertEqual(response.json()["code"], "unknown_key")
 
+    def test_a_library_run_is_fenced_whatever_definition_it_ran(self) -> None:
+        from apps.agents import platform
+        from apps.agents.models import AgentRun
+        from apps.shared.errors import ProblemError
+
+        with self.assertRaises(ProblemError) as refused:
+            platform.refuse_platform_run(AgentRun(agent=_tenant_definition(), tenant=None))
+        self.assertEqual(refused.exception.required_permission, perms.AGENT_DEFINITIONS_MANAGE)
+
     def test_a_bank_interrupting_a_platform_run_is_403(self) -> None:
         """A bank reads bleqq's runs in its run list; stopping one is the platform's."""
         from apps.agents.testing import platform_run

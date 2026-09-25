@@ -8,7 +8,7 @@ import uuid
 from typing import NoReturn
 
 from apps.agents.models import AgentRun
-from apps.agents.platform import refuse_platform_agent
+from apps.agents.platform import refuse_platform_run
 from apps.agents.tenant_agents import own_agent
 from apps.shared.authentication import Principal
 from apps.shared.errors import ProblemError
@@ -37,9 +37,8 @@ def interrupt(*, who: Principal, tenant: Tenant, run_id: uuid.UUID) -> NoReturn:
     """`POST /agent-runs/{runId}/interrupt`. A bank reads bleqq's library runs beside its
     own, so a library run is found and then fenced; another bank's run is not found.
     Built by `c11-tenant-controls-cap`."""
-    run = AgentRun.objects.select_related("agent").filter(pk=run_id).first()  # ordering: pk lookup, at most one row
+    run = AgentRun.objects.filter(pk=run_id).first()  # ordering: pk lookup, at most one row
     if run is None:
         raise ProblemError(status=404, code="not_found", detail="Not found.")
-    if run.tenant_id is None:
-        refuse_platform_agent(run.agent)
+    refuse_platform_run(run)
     raise ProblemError(status=501, code="not_built", detail="Stopping a run is not built yet.")

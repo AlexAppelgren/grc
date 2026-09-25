@@ -12,11 +12,20 @@ from __future__ import annotations
 
 from typing import NoReturn
 
-from apps.agents.models import Agent, AgentScopeKind
+from apps.agents.models import Agent, AgentRun, AgentScopeKind
 from apps.agents.schemas import PlatformAgentSettingsInput
 from apps.shared import permissions as perms
 from apps.shared.authentication import Principal
 from apps.shared.errors import ProblemError
+
+
+def _refused() -> ProblemError:
+    return ProblemError(
+        status=403,
+        code="permission_denied",
+        detail="Only bleqq changes its own agents.",
+        required_permission=perms.AGENT_DEFINITIONS_MANAGE,
+    )
 
 
 def refuse_platform_agent(agent: Agent) -> None:
@@ -25,12 +34,14 @@ def refuse_platform_agent(agent: Agent) -> None:
     names the permission that reaches it. The database refuses the row as well (agents
     0005); this is the answer a person reads."""
     if agent.scope != AgentScopeKind.TENANT.value or not agent.tenant_configurable:
-        raise ProblemError(
-            status=403,
-            code="permission_denied",
-            detail="Only bleqq changes its own agents.",
-            required_permission=perms.AGENT_DEFINITIONS_MANAGE,
-        )
+        raise _refused()
+
+
+def refuse_platform_run(run: AgentRun) -> None:
+    """A library run (no tenant) is bleqq's whatever definition it ran: a bank reads it in
+    its run log and never steers it."""
+    if run.tenant_id is None:
+        raise _refused()
 
 
 def get_settings(*, agent_key: str) -> NoReturn:
