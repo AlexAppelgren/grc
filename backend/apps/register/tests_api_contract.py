@@ -94,6 +94,18 @@ BUILT: set[str] = {
     "listInternalLinks",
     "addInternalLink",
     "removeInternalLink",
+    # c8-reg-status (apps/register/tests_status.py)
+    "getRegisterEntry",
+    "updateRegister",
+    "updateRegisterEntity",
+    # c8-reg-gaps-risk (apps/register/tests_gaps.py)
+    "listObligationGaps",
+    "createGap",
+    "listRegisterGaps",
+    "updateGap",
+    "requestRiskAcceptance",
+    "approveRiskAcceptance",
+    "reopenGap",
 }
 
 
@@ -200,22 +212,6 @@ IF_MATCH_ROUTES = {
     "removeUnit",
 }
 
-
-# The routes whose logic has landed, each proved in its own module's tests.
-BUILT = {
-    # c8-reg-status (apps/register/tests_status.py)
-    "getRegisterEntry",
-    "updateRegister",
-    "updateRegisterEntity",
-    # c8-reg-gaps-risk (apps/register/tests_gaps.py)
-    "listObligationGaps",
-    "createGap",
-    "listRegisterGaps",
-    "updateGap",
-    "requestRiskAcceptance",
-    "approveRiskAcceptance",
-    "reopenGap",
-}
 
 
 class RegisterRouteStubs(TestCase):

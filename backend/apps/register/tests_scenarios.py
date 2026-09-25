@@ -22,7 +22,7 @@ from apps.shared import factories, tenancy
 from apps.shared import permissions as perms
 from apps.register.logic import ensure_register_entry
 from apps.register.models import Applicability, TenantObligation, TenantObligationScope
-from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, stub_session, user_principal
+from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, sign_in, stub_session, user_principal
 from apps.taxonomy.models import ComplianceStatus
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.tenants.models import OrgUnit, OrgUnitKind
@@ -93,8 +93,6 @@ class StatusWorld:
             )
         self.case.assertEqual(response.status_code, 200, response.content)
         return response.json()
-
-from apps.shared.testing import sign_in
 
 
 class RegisterScenarioTests(TestCase):
