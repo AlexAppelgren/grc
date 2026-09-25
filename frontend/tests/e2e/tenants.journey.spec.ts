@@ -160,6 +160,39 @@ test.describe('tenants journeys', () => {
     await expect(page.locator('[data-admin-section="admin-security-log"]')).toHaveCount(0);
     await page.goto('/admin/members');
     await expect(restrictedScreen(page)).toContainText('Needs members manage');
+
+    // --- c11-fe-admin-agents: Agents (AGT-03, AGT-04, ADM-01) ---------------------------
+    // Every member holding watch.read reaches Agents and reads what bleqq watches; the
+    // controls are drawn only for agents.manage, which the compliance officer lacks, so the
+    // page says what changing agents needs instead of answering a page-level 403.
+    await page.goto('/admin');
+    await page.locator('[data-admin-section="admin-agents"]').click();
+    await expect(page).toHaveURL(/\/admin\/agents$/);
+    await expect(page.getByRole('heading', { name: 'What bleqq watches' })).toBeVisible();
+    // bleqq's agents, or the empty state until the seed publishes one: settled, then read.
+    const watch = page.locator('[data-platform-watch]');
+    await expect(watch.locator('[data-platform-agent]').or(watch.getByRole('heading', { name: 'Nothing to show yet' })).first()).toBeVisible();
+    await expect(page.getByText('Changing agents needs agents manage.')).toBeVisible();
+    await expect(page.locator('[data-our-agents], [data-agent-budget]')).toHaveCount(0);
+    await expect(page.locator('[data-platform-watch]').getByRole('button')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Add an agent' })).toHaveCount(0);
+    await signOut(page);
+
+    // The admin holds agents.manage: bleqq's watch stays read-only above the bank's own
+    // spend and agents. Research requests answer 501 until c11-research-requests builds them,
+    // and a seeded agent of the bank's own would open that panel.
+    apiGuard.allow(/\/research-requests$/, 501, 'research requests are built by c11-research-requests');
+    await signInAs(page, LOGINS.admin);
+    await page.goto('/admin');
+    await page.locator('[data-admin-section="admin-agents"]').click();
+    await expect(page).toHaveURL(/\/admin\/agents$/);
+    await expect(page.getByRole('heading', { name: 'What bleqq watches' })).toBeVisible();
+    await expect(page.locator('[data-platform-watch]').getByRole('button')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Spend this month' })).toBeVisible();
+    await expect(page.getByText("Our own agents only. bleqq's watch runs at bleqq's cost and is not counted here.")).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Our agents' })).toBeVisible();
+    await expect(page.getByText('Changing agents needs agents manage.')).toHaveCount(0);
+    // --- end c11-fe-admin-agents ----------------------------------------------------------
   });
 
   test.describe('the member ADM-S2 spends', () => {

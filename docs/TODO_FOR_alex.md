@@ -1384,3 +1384,23 @@ Nothing waits for these; each has the default the build took.
       the words from its catalog by key. `nextRunAt` is one cadence after the last start, now
       when an agent never ran or is overdue, and null for a manual one. Say if you want a
       name column on the definition instead.
+
+## c11-fe-admin-agents: the bank's agents page (2026-09-25, AGT-03, AGT-04, AGT-05, ADM-01)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **A bank cannot list the definitions it may add.** `GET /agent-definitions` is the
+      console's (`agent_definitions.manage`), and no route lists the tenant-scoped ones to a
+      bank. Default: "Add an agent" offers the two tenant-scoped definitions bleqq ships
+      (`tenant-source-watch` as "Source checker", `scope-researcher` as "Scope research"),
+      named in the `admin-agents` catalog; the server refuses any other key with
+      `unknown_key`, which the page renders. Say if you want a bank-facing list route, so a
+      newly published definition shows without a frontend change.
+- [ ] **No name or version on a bank's agent.** The card draws "Name: ours to recognise it
+      by" and a version pill, but `TenantAgentOut` carries neither. Default: an agent is named
+      by its definition and shows no version pill; each run names nothing of its version on
+      the bank's page either. Say if a bank should name its agents.
+- [ ] **Run now, Pause, Resume, Stop run and research requests still answer 501.** The page
+      draws them against the published contract; `c11-tenant-controls-cap` and
+      `c11-research-requests` (wave 5) fill the routes. The research panel shows only once the
+      bank has an agent of its own.
