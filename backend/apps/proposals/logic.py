@@ -904,6 +904,8 @@ def row(proposal: Proposal) -> ProposalRow:
         rejection_code=proposal.rejection_code,
         review_note=proposal.review_note,
         applied_at=proposal.applied_at,
+        is_batch=proposal.is_batch,
+        row_count=proposal.row_count,
         created_at=proposal.created_at,
     )
 
@@ -949,6 +951,17 @@ def _decidable(proposal: Proposal, reviewer: Reviewer) -> None:
         raise ValidationError(
             "A proposal is decided by someone other than the person, key or agent who made it.",
             code="four_eyes_violation",
+        )
+
+
+def _not_a_batch(proposal: Proposal) -> None:
+    """A batch (PRO-04) is decided row by row through apps/proposals/batch.py, never as one
+    proposal here: approving it whole would apply no row, and rejecting it would leave its
+    rows pending under a closed proposal. 409 `invalid_transition`."""
+    if proposal.is_batch:
+        raise ValidationError(
+            "This proposal is a batch: decide its rows through POST /proposal-batches/{batchId}/decide.",
+            code="invalid_transition",
         )
 
 
@@ -1146,6 +1159,7 @@ def approve(
     """
     from apps.proposals import apply
 
+    _not_a_batch(proposal)
     reviewer = as_reviewer(reviewer, actor)
     with transaction.atomic():
         run = _decision_run(reviewer, decision, agent_run_id)
@@ -1220,6 +1234,7 @@ def reject(
     older caller; `as_reviewer` normalizes either into the same shape below."""
     from apps.taxonomy.registry import REGISTRY
 
+    _not_a_batch(proposal)
     reviewer = as_reviewer(reviewer, actor)
     with transaction.atomic():
         run = _decision_run(reviewer, decision, agent_run_id)
