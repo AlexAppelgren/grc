@@ -129,10 +129,10 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 | built |
 | AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | built |
-| AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | pending |
-| AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. Such an agent writes only in its own tenant's zone (D-61); what it files for a scope item is OWN-02 | M | R2 | pending |
-| AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console (D-61); an approved scope item opens a research request (OWN-02) | S | R2 | pending |
-| AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | pending |
+| AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | in_progress |
+| AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. Such an agent writes only in its own tenant's zone (D-61); what it files for a scope item is OWN-02 | M | R2 | in_progress |
+| AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console (D-61); an approved scope item opens a research request (OWN-02) | S | R2 | in_progress |
+| AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | in_progress |
 | AGT-07 | Fetched content screened for embedded instructions | M | R1 | built |
 | AGT-08 | Agents stay inside the sector scope: an out-of-scope document is a counted source check and nothing else; a standard's text is never fetched, quoted, summarised, translated or restated; a blocked page is a failed check; a law that cites a standard never carries its term | M | R1 | built |
 | ACC-01 | A tenant registers each agent it runs itself: name, purpose, owning team, and the departments and products it serves. `agent_access.manage` and a step-up; revoking stops every credential under it on the next request | M | R2 | pending |
@@ -196,30 +196,40 @@ And a new term arrives only as a proposal, never as free text
 ### AGT-S4 — Agent definitions are versioned and owned by the platform `@integration` `@e2e` (AGT-03)
 ```gherkin
 Given a definition "nordic-watch" at version 3 in the console
-When a platform admin publishes version 4 with a changed prompt
+When a platform admin publishes version 4 with a changed prompt, from the folder the build ships, with a fresh passkey
 Then runs started after that reference version 4 and earlier runs still reference 3
-And a tenant admin's request to edit the prompt answers 403
-And "nordic-watch" is one of bleqq's agents, so a bank sees it read-only with its history
+And a tenant admin's request to reach the definition at all, to read, publish, retire or set it, answers 403 naming agent_definitions.manage
+And "nordic-watch" is one of bleqq's agents, so a bank's run log carries none of its runs, which the console lists
 ```
+
+A version is published only from its shipped folder, read by the seed's reader: 409
+`version_exists` for a number already published, 422 `definition_unreadable` for a folder
+the reader refuses or one that changes the agent's id, kind, scope or zone, and 409
+`last_version` for retiring the last published version of an active agent. A run pins the
+newest published version when it opens, and a trigger keeps it there.
 
 ### AGT-S5 — A tenant controls its agents without touching their instructions `@integration` `@e2e` (AGT-04)
 ```gherkin
-Given a tenant admin with agents.manage and an agent the bank added for itself
+Given a tenant admin with agents.manage and an agent the bank added for itself from a tenant-scoped definition
 When they switch it on, set a weekly cadence within the plan limit, restrict scope to SE and FI, and choose "Run now"
 Then a run is queued with those settings and "Recent runs" lists it with findings and cost
 When they choose "Stop run"
 Then the run is interrupted and its status says so
 When they set a cadence above the plan limit
 Then the request answers 422 with code "above_plan_limit"
+When they send the same calls against one of bleqq's agents
+Then each answers 403 naming agent_definitions.manage and nothing about that agent changes
 ```
 
 ### AGT-S6 — The budget cap pauses runs and the AI off switch stops every model call `@integration` `@e2e` (AGT-04)
 ```gherkin
-Given a monthly cap set with "Set cap" and "Spend this month" close to it
-When a run would exceed the cap
+Given a monthly cap on the bank's own agents set with "Set cap" and "Spend this month" close to it
+When a run of one of the bank's own agents would exceed the cap
 Then it is not started and the admin is notified
+And "Spend this month" counts the bank's own runs only, never a run of bleqq's agents
 When the admin switches all AI features off
-Then no run starts, Ask answers 403 "feature_off" and the LLM adapter records no call for the tenant
+Then none of the bank's own agents starts a run, Ask answers 403 "feature_off" and the LLM adapter records no call for the tenant
+And bleqq's watch is unaffected: its agents keep their schedule, because they read public sources only
 ```
 
 ### AGT-S7 — Research requests ask an agent to check, research or re-tag `@integration` `@e2e` (AGT-05)
@@ -233,12 +243,19 @@ And the re-tag request produces one batch proposal with a preview, never direct 
 ### AGT-S8 — The runner is an adapter with a mock and the app is the scheduler of record `@integration` (AGT-06)
 ```gherkin
 Given AGENT_RUNNER=mock
-When the beat schedule fires for a tenant
-Then the worker starts a run through the adapter inside @tenant_task and records it before the runner answers
+When the beat schedule fires for a tenant with one of its own agents due
+Then the worker records the run, with its version, trigger, scope and budget limit, inside @tenant_task and before the adapter is called
+When bleqq's beat fires
+Then each of bleqq's due agents gets a run with no tenant, from a task that activates none
 When the mock runner emits events
 Then the run row is updated from them
 And booting with AGENT_RUNNER=mock in a deployed environment other than test is refused
 ```
+
+The app schedules through `apps/agents/tasks.py` (c11-scheduler): one opener records every
+run before the runner is asked; bleqq's beat is not a `@tenant_task` and reads no tenant row
+or setting; a bank's beat asks the AI switch and the cap before a run of its own opens. What
+polls a real runner for its events arrives with that runner.
 
 ### AGT-S9 — Fetched content is screened for embedded instructions `@integration` (AGT-07)
 ```gherkin
@@ -264,14 +281,14 @@ than a number, so a retry proves the same thing.
 
 ### AGT-S11 — A tenant agent's default scope is the operating markets first, then the watched ones `@integration` (AGT-04)
 ```gherkin
-Given a tenant operating in Sweden and watching Norway, and a tenant agent with no scope of its own
+Given a tenant operating in Sweden and watching Norway, and an agent the bank added for itself with no scope of its own
 When a run starts
 Then the run's stored scope lists Sweden as operating, Norway as watching and the EU as reaching them, in that order
 And later market changes do not alter that run's scope
 When an admin with agents.manage restricts the agent's scope to Sweden and Finland
 Then the next run's scope is Sweden and Finland only
 When a platform library run starts
-Then its scope contains no tenant's markets and every covered jurisdiction is swept
+Then it reads no tenant row and sweeps every covered jurisdiction
 ```
 
 ### AGT-S12 — Out-of-scope documents are counted and never registered, and the eval set gates it `@integration` (AGT-08, SRC-05, AC-AGT1)
@@ -288,12 +305,19 @@ Then the run history shows two source checks, no change and no proposal from the
 ### AGT-S13 — A bank cannot switch off, pause or re-scope one of bleqq's agents `@integration` `@e2e` (AGT-03, AGT-04)
 ```gherkin
 Given a tenant admin with agents.manage and one of bleqq's base-package agents
-When they switch it off, pause it, change its cadence, scope or budget cap, or ask for a run now
-Then each request answers 403 and nothing about that agent changes
+When they add it as one of the bank's own, change its cadence, scope or budget, or stop one of its runs
+Then each request answers 403 naming agent_definitions.manage and nothing about that agent changes
+And no agent of the bank's own can be made from it, so switching off, pausing and "Run now" have nothing of bleqq's to reach
 And the agents screen shows it under bleqq's agents, read-only, with its recent runs
 When the bank's own AI off switch is set
 Then its own agents stop and bleqq's agents keep running, because they read public sources only
 ```
+
+Reworded by c11-scheduler: a bank's controls address its own agents by their row, and the
+database refuses such a row on one of bleqq's definitions, so the fence is proved where a
+request can name bleqq's agent: adding it, its console settings and its runs. The screen
+line is the `@e2e` half's; the integration test proves the rest, the AI off line through
+both beats.
 
 ### AGT-S14 — A bank's own agent writes only in its own zone `@integration` (AGT-04, AGT-05, OWN-02)
 ```gherkin

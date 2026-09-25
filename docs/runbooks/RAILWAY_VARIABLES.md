@@ -71,6 +71,13 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `ASK_RETRIEVAL_DEPTH` | api | `6` | `6` | `6` | How many passages of the reader's own ranking Ask gives the model, best first: the whole of what an answer may rest on, each one a numbered citation. From 1 to `AI_GENERATION_CITATIONS_MAX`, or the app refuses to boot (SRC-03) |
 | `ASK_MAX_TOKENS` | api | `1024` | `1024` | `1024` | The most one Ask answer may write, beneath the `LLM_MAX_TOKENS` ceiling: an answer is a few cited sentences. At least 1, or the app refuses to boot (SRC-03) |
 | `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |
+| `AGENT_RESEARCH_TOPIC_MAX_CHARS` | api | `500` | `500` | `500` | The longest topic a research request or a console re-tag request may carry, in characters (AGT-05, c11-agents-contract); a longer one answers 422 `validation_error` |
+| `AGENT_MIN_CADENCE` | api | `weekly` | `weekly` | `weekly` | The most frequent cadence a bank may give one of its own agents: `daily`, `weekly` or `monthly`, and `manual` is always allowed; a more frequent one answers 422 `above_plan_limit`. Any other value and the app refuses to boot (AGT-04, c11-tenant-agents-budget-scope) |
+| `AGENTS_PER_TENANT_MAX` | api | `3` | `3` | `3` | How many agents of its own a bank may add; one more answers 422 `above_plan_limit` (AGT-04, c11-tenant-agents-budget-scope) |
+| `AGENT_DEFAULT_RUN_HOUR` | api | `6` | `6` | `6` | The hour, from 0 to 23 in the bank's own time zone, a scheduled run of a bank's own agent starts when the bank names none; outside that range the app refuses to boot (AGT-04, c11-tenant-agents-budget-scope) |
+| `AGENT_BEAT_INTERVAL_MINUTES` | worker, beat | `15` | `15` | `15` | How often the two agent beats fire, in minutes: bleqq's agents and the banks' own; below 1 the app refuses to boot (AGT-06, c11-scheduler) |
+| `AGENT_RUNS_PER_BEAT` | worker | `5` | `5` | `5` | The most runs of bleqq's agents one beat starts, the longest-waiting first; the rest start on the next beat, and below 1 the app refuses to boot (AGT-03, c11-scheduler) |
+| `AGENT_RUN_BUDGET_LIMIT` | api, worker | `5.00` | `5.00` | `5.00` | The most one run of a bank's own agent may spend, in EUR, stored on the run; a run starts only when the month's spend plus this fits under the bank's cap, and anything but an amount above zero refuses the boot (AGT-04, c11-scheduler) |
 
 ## Testing, observability, budgets
 

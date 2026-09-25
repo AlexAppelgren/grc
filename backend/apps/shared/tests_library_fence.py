@@ -97,6 +97,12 @@ Proven to fail 2026-09-24, then reverted: a `library_write("a repoint helper")` 
 door planted in apps/watch/write.py, which the database would have let reach every
 inventory table (red, naming `watch/write.py::_plant`).
 
+Platform configuration (D-102, ADR 0059) is `PlatformConfigurationGuard`: agent
+definitions, agent versions and the platform agent settings they carry are named once in
+`PLATFORM_CONFIGURATION`, reached by three console routes alone, each through one writer of
+`agents/seeds/console.py`, behind `agent_definitions.manage`, a step-up and a person's
+session. Every other model, route, proposal kind and watch module is judged as before.
+
 The step-up edge proven to fail 2026-09-23, then reverted: approveProposal with its
 `enforce_step_up` call and import removed (red here, naming the missing edge, and red in
 apps/proposals/tests_decide.py, where a person's approval without an assertion and one
@@ -222,6 +228,20 @@ def concrete_library_models() -> list[type[LibraryModel]]:
     return [m for m in production_models() if issubclass(m, LibraryModel) and not m._meta.abstract]
 
 
+def library_model_write(rel: str, source: str, library_names: set[str]) -> str | None:
+    """Why the production module at `rel` may be writing a library row outside the fence: it
+    names a library model and calls a write, anywhere in the module. None when it may not."""
+    if _is_allowed(rel) or rel.endswith("/models.py"):
+        return None
+    visitor = LibraryWriteCalls()
+    visitor.visit(ast.parse(source))
+    mentioned = library_names & visitor.names
+    if not (mentioned and visitor.write_calls):
+        return None
+    line, method = visitor.write_calls[0]
+    return f"apps/{rel}:{line} calls .{method}() and names {sorted(mentioned)}"
+
+
 class LibraryFenceGuard(SimpleTestCase):
     def test_library_write_is_called_only_from_allowlisted_modules(self) -> None:
         offenders: list[str] = []
@@ -242,18 +262,33 @@ class LibraryFenceGuard(SimpleTestCase):
 
     def test_no_module_outside_the_allowlist_writes_a_library_model(self) -> None:
         library_names = {model.__name__ for model in concrete_library_models()}
-        offenders: list[str] = []
-        for path in production_modules():
-            rel = path.relative_to(APPS_DIR).as_posix()
-            if _is_allowed(rel) or rel.endswith("/models.py"):
-                continue
-            visitor = LibraryWriteCalls()
-            visitor.visit(ast.parse(path.read_text(encoding="utf-8")))
-            mentioned = library_names & visitor.names
-            if mentioned and visitor.write_calls:
-                line, method = visitor.write_calls[0]
-                offenders.append(f"apps/{rel}:{line} calls .{method}() and names {sorted(mentioned)}")
+        offenders = [
+            offence
+            for path in production_modules()
+            if (offence := library_model_write(path.relative_to(APPS_DIR).as_posix(), path.read_text(encoding="utf-8"), library_names))
+        ]
         self.assertEqual(offenders, [], "possible library writes outside the fence:\n  " + "\n  ".join(offenders))
+
+    def test_a_bank_writer_that_names_a_library_model_is_still_named(self) -> None:
+        # c11-scheduler: the agents app's writers of a bank's rows (a run, its scope, a
+        # bank's agent and its next run) read the definitions and terms they need from
+        # `agents/logic.py` and name no library model. The rule did not move: a writer of a
+        # tenant row that names one again, even only to read it, is named, and so is a
+        # fixture in factories.py that builds a definition.
+        library_names = {model.__name__ for model in concrete_library_models()}
+        self.assertLessEqual({"Agent", "AgentVersion", "TaxonomyTerm"}, library_names)
+        planted = {
+            "agents/tenant_agents.py": "def plant(tenant):\n    Agent.objects.filter(key='x').first()\n    TenantAgent(tenant=tenant).save()\n",
+            "agents/scope.py": "def plant(run):\n    TaxonomyTerm.objects.filter(active=True)\n    run.save(update_fields=['scope'])\n",
+            "agents/opener.py": "def plant(version: AgentVersion):\n    AgentRun.objects.create(agent_version=version)\n",
+            "shared/factories.py": "def plant():\n    Agent.objects.get_or_create(key='x')\n",
+        }
+        for rel, source in planted.items():
+            with self.subTest(module=rel):
+                self.assertIsNotNone(library_model_write(rel, source, library_names))
+        # A reader that writes nothing, and a writer that names only tenant models, pass.
+        self.assertIsNone(library_model_write("agents/logic.py", "def f():\n    return Agent.objects.first()\n", library_names))
+        self.assertIsNone(library_model_write("agents/opener.py", "def f(run):\n    run.save()\n    TenantAgent.objects.create()\n", library_names))
 
     def test_enumeration_reports_the_library_models_it_guards(self) -> None:
         # Chunk 3's library records are guarded beside chunk 2's vocabularies and terms.
@@ -464,6 +499,27 @@ WATCH_ROUTE_GATES: dict[str, perms.Gate | Node] = {
     "recordSourceCheck": perms.Gate("scope", perms.SCOPE_SOURCES_WRITE),
     "confirmChangeCuration": CURATION_CONFIRMER,
 }
+# Platform configuration (Alex, 2026-09-25, D-102, ADR 0059). An agent definition, the
+# versions it publishes and the settings bleqq runs it with are the platform's own
+# configuration, not sourced facts about the law: none of them enters the inventory, so no
+# proposal carries them and four eyes over the inventory does not reach them. They keep the
+# fence's machinery (a write outside `library_write()` is refused in Python and in the
+# database), and their door is three console routes, each writing through one function of
+# `agents/seeds/console.py` behind the platform permission `agent_definitions.manage`, a
+# fresh passkey step-up and a person's session (`PlatformConfigurationGuard` below). Named
+# here once, by model; everything else — another model, another route, a proposal kind, a
+# watch module — is judged as the library and fails closed.
+PLATFORM_CONFIGURATION: dict[str, str] = {
+    "Agent": "agent definitions, and the platform agent settings each one carries",
+    "AgentVersion": "agent versions",
+}
+AGENT_CONSOLE = "apps.agents.seeds.console"
+PLATFORM_CONFIGURATION_ROUTES: dict[str, Node] = {
+    "publishAgentVersion": (AGENT_CONSOLE, "publish"),
+    "retireAgentVersion": (AGENT_CONSOLE, "retire"),
+    "updatePlatformAgentSettings": (AGENT_CONSOLE, "set_platform_settings"),
+}
+PLATFORM_CONFIGURATION_GATE = perms.Gate("permission", perms.AGENT_DEFINITIONS_MANAGE)
 LIBRARY_ROUTE_PREFIXES = ("/instruments", "/provisions", "/obligations", "/vocab")
 FUNCTIONS = (ast.FunctionDef, ast.AsyncFunctionDef)
 
@@ -472,7 +528,11 @@ def unexpected_writer(operation_id: str, writes: set[Node]) -> str | None:
     """Why this route's writers are wrong, or None. A route may reach the one writer its
     map allows it and nothing else; a route in neither map may reach none at all. A map
     says 'may', not 'must', so a route that reaches nothing yet is no complaint."""
-    allowed = LIBRARY_WRITING_ROUTES.get(operation_id) or WATCH_WRITING_ROUTES.get(operation_id)
+    allowed = (
+        LIBRARY_WRITING_ROUTES.get(operation_id)
+        or WATCH_WRITING_ROUTES.get(operation_id)
+        or PLATFORM_CONFIGURATION_ROUTES.get(operation_id)
+    )
     if not writes or writes == {allowed}:
         return None
     return f"reaches {sorted(writes)}, but may reach {allowed}"
@@ -660,7 +720,8 @@ class ProposalDoorGuard(SimpleTestCase):
             [],
             "Routes that reach library_write() other than through their one expected writer:\n  "
             + "\n  ".join(wrong)
-            + f"\nExpected: {LIBRARY_WRITING_ROUTES} and {WATCH_WRITING_ROUTES}. An inventory change is a "
+            + f"\nExpected: {LIBRARY_WRITING_ROUTES}, {WATCH_WRITING_ROUTES} and {PLATFORM_CONFIGURATION_ROUTES}. "
+            "An inventory change is a "
             "proposal and approval applies it; the re-verification stamp is the single exception and stays "
             "only a stamp; a watch route registers a sighting through the watch door and reaches nothing "
             "else (AC-PRO1, INV-06, D-64).",
@@ -678,11 +739,15 @@ class ProposalDoorGuard(SimpleTestCase):
         person's session alone."""
         index = code_index()
         # The watch routes are the exception the guard now knows (D-64): they write a sighting,
-        # not the inventory, and are gated instead by the two tests below.
+        # not the inventory, and are gated instead by the two tests below. The platform
+        # configuration routes write no library row at all (D-102) and are gated by
+        # `PlatformConfigurationGuard`.
         writing = [
             op
             for op in iter_operations(api)
-            if index.library_writes_reached(view_node(op)) and op.operation_id not in WATCH_WRITING_ROUTES
+            if index.library_writes_reached(view_node(op))
+            and op.operation_id not in WATCH_WRITING_ROUTES
+            and op.operation_id not in PLATFORM_CONFIGURATION_ROUTES
         ]
         self.assertTrue(writing, "no route reaches a library write; the walk is broken")
         for operation in writing:
@@ -971,3 +1036,125 @@ class RecurringDutyIsBehindTheFence(SimpleTestCase):
         self.assertIn("RecurringDuty", library_names & visitor.names)
         self.assertEqual(visitor.write_calls, [(4, "create")])
         self.assertFalse(_is_allowed("register/duties.py"))
+
+
+# ---------------------------------------------------------------------------------------
+# Platform configuration: the three console routes and nothing else (D-102, ADR 0059)
+# ---------------------------------------------------------------------------------------
+def configuration_overreach(source: str, library_names: set[str]) -> list[str]:
+    """The library models a console writer's module names beyond the platform configuration.
+    The console opens the seed door, which the database accepts on every inventory table, so
+    what keeps it to agent rows is that its module names no other library model."""
+    visitor = LibraryWriteCalls()
+    visitor.visit(ast.parse(source))
+    return sorted((library_names & visitor.names) - set(PLATFORM_CONFIGURATION))
+
+
+def module_offences(rel: str, source: str) -> list[str]:
+    """Why a production module at `rel` may not hold `source`: it opens `library_write()`
+    outside the allowlist, or the watch door outside the watch steps."""
+    visitor = LibraryWriteCalls()
+    visitor.visit(ast.parse(source))
+    offences = []
+    if visitor.calls and not _is_allowed(rel):
+        offences.append(f"apps/{rel} calls library_write()")
+    if visitor.watch_calls and rel not in WATCH_WRITE_ALLOWLIST:
+        offences.append(f"apps/{rel} calls watch_write()")
+    return offences
+
+
+class PlatformConfigurationGuard(SimpleTestCase):
+    """Proven to fail 2026-09-25, each breach then reverted: `@requires_step_up` removed from
+    retireAgentVersion (red, the route named); updatePlatformAgentSettings gated by
+    `agents.manage`, a bank administrator's permission (red); and `Obligation` named beside
+    a write in `agents/seeds/console.py` (red, naming the model). Before this guard the three
+    routes were red in `ProposalDoorGuard` as library writes without `proposals.review`."""
+
+    def test_the_platform_configuration_is_two_real_models_and_three_registered_routes(self) -> None:
+        self.assertLessEqual(
+            set(PLATFORM_CONFIGURATION),
+            {model.__name__ for model in concrete_library_models()},
+            "PLATFORM_CONFIGURATION names a model that is not behind the fence",
+        )
+        operations = {operation.operation_id: operation for operation in iter_operations(api)}
+        self.assertEqual(sorted(set(PLATFORM_CONFIGURATION_ROUTES) - set(operations)), [], "a route nobody registered")
+        self.assertEqual(
+            set(PLATFORM_CONFIGURATION_ROUTES) & (set(LIBRARY_WRITING_ROUTES) | set(WATCH_WRITING_ROUTES)),
+            set(),
+            "a route belongs to one door only",
+        )
+        for operation_id in PLATFORM_CONFIGURATION_ROUTES:
+            self.assertEqual(view_node(operations[operation_id])[0], "apps.agents.api", f"{operation_id} is the agents app's")
+
+    def test_each_route_is_a_platform_administrators_with_a_fresh_passkey_and_reaches_its_one_writer(self) -> None:
+        index = code_index()
+        operations = {operation.operation_id: operation for operation in iter_operations(api)}
+        for operation_id, writer in PLATFORM_CONFIGURATION_ROUTES.items():
+            operation = operations[operation_id]
+            with self.subTest(route=_label(operation)):
+                self.assertEqual(perms.gate_of(operation.view_func), PLATFORM_CONFIGURATION_GATE)
+                self.assertTrue(perms.step_up_of(operation.view_func), "platform configuration needs a fresh passkey")
+                self.assertTrue(operation.auth, "platform configuration needs a signed-in person")
+                for auth in operation.auth:
+                    self.assertIsInstance(auth, SessionAuth, "no API key reaches platform configuration")
+                self.assertEqual(index.library_writes_reached(view_node(operation)), {writer})
+
+    def test_the_writers_are_reached_from_the_console_logic_alone(self) -> None:
+        # No task, command or other route names a console writer: what reaches one is the
+        # route's own logic function and nothing else.
+        index = code_index()
+        expected = {
+            "publish": [("apps.agents.definitions", "publish_version")],
+            "retire": [("apps.agents.definitions", "retire_version")],
+            "set_platform_settings": [("apps.agents.platform", "update_settings")],
+        }
+        for writer in PLATFORM_CONFIGURATION_ROUTES.values():
+            with self.subTest(writer=writer):
+                self.assertEqual(index.referrers(writer), expected[writer[1]])
+        self.assertEqual(
+            {node[1] for node in index.edges if node[0] == AGENT_CONSOLE and LIBRARY_WRITE in index.edges[node]},
+            set(expected),
+            "the console module opens library_write() in its three writers and nowhere else",
+        )
+
+    def test_the_console_writes_platform_configuration_and_no_other_library_model(self) -> None:
+        library_names = {model.__name__ for model in concrete_library_models()}
+        source = (APPS_DIR / "agents/seeds/console.py").read_text(encoding="utf-8")
+        self.assertEqual(configuration_overreach(source, library_names), [])
+        self.assertEqual(module_offences("agents/seeds/console.py", source), [])
+
+    def test_the_permission_is_one_no_bank_and_no_key_holds(self) -> None:
+        permission = PLATFORM_CONFIGURATION_GATE.value
+        self.assertIn(permission, perms.PLATFORM_PERMISSIONS)
+        self.assertNotIn(permission, perms.TENANT_PERMISSIONS)
+        for key in (key for key in perms.SYSTEM_ROLES if key not in roles_logic.PLATFORM_ROLE_LABELS):
+            self.assertNotIn(permission, perms.SYSTEM_ROLES[key], f"the tenant role {key!r}")
+        with self.assertRaises(ValidationError):
+            roles_logic._validate_permissions([permission])
+        self.assertNotIn(permission.replace(".", ":"), perms.ALL_SCOPES)
+        agent = Principal(
+            kind=PrincipalKind.AGENT, subject_id=uuid.uuid4(), permissions=perms.ALL_PERMISSIONS, scopes=perms.ALL_SCOPES
+        )
+        self.assertFalse(agent.has_permission(permission))
+
+    def test_anything_else_is_still_refused(self) -> None:
+        publish, settings = PLATFORM_CONFIGURATION_ROUTES["publishAgentVersion"], PLATFORM_CONFIGURATION_ROUTES["updatePlatformAgentSettings"]
+        self.assertIsNone(unexpected_writer("publishAgentVersion", {publish}))
+        # A console route reaching the inventory, the watch door or another console writer.
+        self.assertIsNotNone(unexpected_writer("publishAgentVersion", {publish, APPLY}))
+        self.assertIsNotNone(unexpected_writer("updatePlatformAgentSettings", {WATCH_WRITE}))
+        self.assertIsNotNone(unexpected_writer("retireAgentVersion", {publish}))
+        # Another route reaching a console writer: a new tenant or agent route, or a
+        # proposal kind whose approval applied an agent definition.
+        self.assertIsNotNone(unexpected_writer("createTenantAgent", {settings}))
+        self.assertIsNotNone(unexpected_writer("approveProposal", {APPLY, publish}))
+        self.assertIsNotNone(unexpected_writer("createChange", {WATCH_WRITE, settings}))
+        # A new shared model the console named beside a write is not platform configuration.
+        planted = "def plant(row):\n    AgentBudgetLedger.objects.create(agent=row)\n"
+        self.assertEqual(configuration_overreach(planted, {"Agent", "AgentBudgetLedger"}), ["AgentBudgetLedger"])
+        self.assertEqual(configuration_overreach("Obligation.objects.update(x=1)", {"Obligation"}), ["Obligation"])
+        # A new watch write module, and the console writer moved out of the seeds.
+        self.assertNotEqual(module_offences("watch/planted.py", "watch_write('x')"), [])
+        self.assertNotEqual(module_offences("watch/planted.py", "library_write('x')"), [])
+        self.assertNotEqual(module_offences("agents/seeds/console.py", "watch_write('x')"), [])
+        self.assertNotEqual(module_offences("agents/console.py", "library_write('x')"), [])

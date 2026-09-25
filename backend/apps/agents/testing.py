@@ -1,5 +1,6 @@
 """Agent builders for tests (playbook 8.1): a platform agent definition, a key bound to
-it and a platform run to anchor everything that run writes.
+it and a platform run to anchor everything that run writes, and a definition a bank may
+add as its own agent.
 
 `Agent` is a library row, so it is written inside `library_write()`. This module may do
 that because the library fence exempts `testing.py` modules
@@ -21,7 +22,7 @@ from types import SimpleNamespace
 from collections.abc import Iterable
 from typing import Any
 
-from apps.agents.models import Agent, AgentKind, AgentRun
+from apps.agents.models import Agent, AgentKind, AgentRun, AgentScopeKind, AgentWritesTo
 from apps.identity import tokens
 from apps.identity.models import ApiKey
 from apps.shared.models import Tenant
@@ -50,6 +51,22 @@ def agent(*, key: str | None = None, kind: AgentKind = AgentKind.WATCH, version:
             current_version=version,
         )
 
+
+def tenant_definition(key: str = "bank-watch") -> Agent:
+    """A definition a bank may add as its own agent: tenant-scoped, configurable, writing
+    in the bank's zone. Shared by every bank that adds it, so it is fetched when it exists."""
+    with library_write(REASON):
+        row, _ = Agent.objects.get_or_create(
+            key=key,
+            defaults={
+                "kind": AgentKind.RESEARCH.value,
+                "current_version": 1,
+                "scope": AgentScopeKind.TENANT.value,
+                "tenant_configurable": True,
+                "writes_to": AgentWritesTo.TENANT.value,
+            },
+        )
+    return row
 
 def agent_key(*, agent_row: Agent | None = None, scopes: Iterable[str] = WATCH_SCOPES) -> SimpleNamespace:
     """A live platform key bound to an agent: `.id`, `.row` (the ApiKey), `.agent` and
