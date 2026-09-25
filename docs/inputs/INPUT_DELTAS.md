@@ -1309,3 +1309,13 @@ forced row-level security, each child's case a composite key `(tenant_id, case_i
   because a file must be invisible until the malware scan passes (CAS-05) and the design
   has nowhere to record it. A CHECK per kind: only a file carries a storage key, and it
   carries its hash, size and type with it; a link carries a url.
+
+## 20. A case knows when triage is due (2026-09-25, c10-case-triage-due)
+
+`change_case.triage_due_at` (`schema.sql` §13, "from the tenant's triage target") is a
+nullable timestamp, set when the case opens to its opening time plus the bank's
+`triage_target_hours` (section 18). Cases 0004 backfills it for every open `new` case, one
+bank's zone at a time because forced row-level security binds the schema owner too; a case
+that already left `new` keeps a null, since reminders read the column only while a case is
+`new` (`c10-reminders-core`). The backfill writes no audit row: the column is derived from
+two facts already on record, not a decision.

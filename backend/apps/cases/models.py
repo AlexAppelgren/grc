@@ -148,6 +148,10 @@ class ChangeCase(TenantModel):
     )
     closed_note = models.TextField(blank=True)
     closed_at = models.DateTimeField(null=True, blank=True)
+    # When triage is due: creation plus the bank's `triage_target_hours`, set once when the
+    # case opens (COL-02, `schema.sql` §13). Reminders read it only while the case is `new`.
+    # Null on a case that left `new` before the column existed.
+    triage_due_at = models.DateTimeField(null=True, blank=True)
     version = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
