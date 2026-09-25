@@ -77,11 +77,11 @@ _COMMENT_ID = (
 )
 
 
-def _member(request: HttpRequest) -> None:
+def _member(request: HttpRequest) -> Any:
     """A person's session in a bank: a platform session has no bank and gets the 404 every
-    tenant read gives it."""
+    tenant read gives it. Returns the caller."""
     caller_tenant(request)
-    caller_user(request)
+    return caller_user(request)
 
 
 # ---------------------------------------------------------------------------------------
@@ -112,13 +112,10 @@ def list_notifications(request: HttpRequest, query: Query[CollabNotificationQuer
     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
     finish enrolling, `not_found` for a platform session, which belongs to no bank, and
     `validation_error` for a `limit` above the maximum or below 1.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     # Ungated by design: self (the caller's own notification rows).
-    _member(request)
-    return inbox.list_notifications()
+    user = _member(request)
+    return inbox.list_notifications(user=user, unread=query.unread, limit=query.limit, offset=query.offset)
 
 
 @router.post(
@@ -141,13 +138,10 @@ def mark_all_notifications_read(request: HttpRequest) -> Any:
 
     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
     finish enrolling, and `not_found` for a platform session, which belongs to no bank.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     # Ungated by design: self (the caller's own notification rows).
-    _member(request)
-    return inbox.mark_all_read()
+    inbox.mark_all_read(user=_member(request))
+    return 204, None
 
 
 @router.post(
@@ -171,13 +165,10 @@ def mark_notification_read(
     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
     finish enrolling, and `not_found` for a platform session or for a notification that is
     not the caller's own, in their bank.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     # Ungated by design: self (the caller's own notification rows).
-    _member(request)
-    return inbox.mark_read()
+    inbox.mark_read(user=_member(request), notification_id=notification_id)
+    return 204, None
 
 
 # ---------------------------------------------------------------------------------------
@@ -346,7 +337,7 @@ def list_my_comments(request: HttpRequest, query: Query[CollabMyCommentQuery]) -
     A read: it changes nothing and writes no audit row. Any person's session in a bank; no API
     key reaches it. Only comments on records the caller can read today are listed; the kinds
     of record the caller's role cannot read are named in `permissionLimitedKinds`, never the
-    records themselves.
+    records themselves. A deleted comment has no text left to read and is not listed.
 
     Pages with `limit` and `offset`, 20 rows by default and 100 at most. Nothing to show is a
     200 with an empty `items`.
@@ -355,13 +346,17 @@ def list_my_comments(request: HttpRequest, query: Query[CollabMyCommentQuery]) -
     finish enrolling, `not_found` for a platform session, which belongs to no bank, and
     `validation_error` for an `about` other than `written` or `mentioned`, or a `limit`
     outside 1 to 100.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     # Ungated by design: self (the caller's own comments and mentions).
-    _member(request)
-    return me_comments.list_my_comments()
+    tenant = caller_tenant(request)
+    return me_comments.list_my_comments(
+        who=principal(request),
+        user=caller_user(request),
+        tenant=tenant,
+        about=query.about,
+        limit=query.limit,
+        offset=query.offset,
+    )
 
 
 # ---------------------------------------------------------------------------------------
