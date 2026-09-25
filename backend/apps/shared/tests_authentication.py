@@ -171,3 +171,41 @@ class ProductRoute(TestCase):
         self.assertEqual(response.json(), {"productName": "bleqq compliance"})
         self.assertIn("Server-Timing", response)
         self.assertIn("X-Request-ID", response)
+
+
+class SessionAuthNeverAcceptsAToken(TestCase):
+    """ACC-03: a personal access token, or any key, authenticates API requests through
+    `ApiKeyAuth` only. It never opens a session, by either header."""
+
+    def setUp(self) -> None:
+        from apps.shared import factories
+
+        self.factory = RequestFactory()
+        bank = factories.tenant(slug="session-token-bank")
+        person = factories.member(bank, roles=("admin",)).user
+        self.token = factories.personal_token(bank, person).plain_key
+
+    def test_the_auth_class_refuses_a_live_token_by_either_header(self) -> None:
+        for headers in ({"HTTP_AUTHORIZATION": f"Bearer {self.token}"}, {"HTTP_X_API_KEY": self.token}):
+            with self.subTest(sorted(headers)[0]):
+                self.assertIsNone(SessionAuth()(self.factory.get("/", **headers)))
+                self.assertIsNotNone(ApiKeyAuth()(self.factory.get("/", **headers)), "the same token is a live key")
+
+    def test_a_session_route_answers_a_token_as_unauthenticated(self) -> None:
+        for headers in ({"HTTP_AUTHORIZATION": f"Bearer {self.token}"}, {"HTTP_X_API_KEY": self.token}):
+            with self.subTest(sorted(headers)[0]):
+                response = self.client.get("/api/v1/me", **headers)
+                self.assertEqual((response.status_code, response.json()["code"]), (401, "unauthenticated"))
+
+    def test_a_session_bearer_beside_a_key_header_is_still_the_session(self) -> None:
+        person = user_principal(permissions={LIBRARY_READ})
+        request = self.factory.get("/", HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}", HTTP_X_API_KEY=self.token)
+        with stub_session(person):
+            self.assertIs(SessionAuth()(request), person)
+
+    def test_only_a_credential_of_an_entry_or_a_person_is_agent_access(self) -> None:
+        subject = uuid.uuid4()
+        self.assertFalse(Principal(kind=PrincipalKind.AGENT, subject_id=subject).is_agent_access)
+        self.assertTrue(Principal(kind=PrincipalKind.AGENT, subject_id=subject, agent_access_id=uuid.uuid4()).is_agent_access)
+        self.assertTrue(Principal(kind=PrincipalKind.AGENT, subject_id=subject, acting_user_id=uuid.uuid4()).is_agent_access)
+        self.assertFalse(Principal(kind=PrincipalKind.USER, subject_id=subject, acting_user_id=uuid.uuid4()).is_agent_access)
