@@ -42,6 +42,8 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   'admin-security-log': { ready: '[data-security-log] [data-event]' },
   'admin-audit-log': { ready: '[data-audit-log] [data-audit-row]' },
   'admin-ai-log': { ready: `[data-ai-log] [data-ai-row]${OR_EMPTY}` },
+  // c11 (AGT-03): what bleqq watches, the first thing every member reads there.
+  'admin-agents': { ready: `[data-platform-watch] [data-platform-agent]${OR_EMPTY}` },
   'me-passkeys': { ready: '[data-passkey-id]' },
   'me-sessions': { ready: '[data-session-id]' },
   'me-calendar-feeds': { ready: `[data-feeds-list] [data-feed-id]${OR_EMPTY}` },
@@ -51,6 +53,7 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   'console-sources': { ready: '[data-sources-list] [data-source-id]' },
   'console-tenants': { ready: '[data-tenants-list] [data-tenant-id]' },
   'console-agent-keys': { ready: `[data-agent-keys-list] [data-agent-key-id]${OR_EMPTY}` },
+  'console-agents': { ready: `[data-agent-definitions] [data-agent-definition]${OR_EMPTY}` },
   'console-evaluation': { ready: `[data-eval-questions] [data-question-key]${OR_EMPTY}` },
 };
 

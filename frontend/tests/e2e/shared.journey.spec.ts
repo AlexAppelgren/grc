@@ -198,6 +198,9 @@ test.describe('shared journeys', () => {
       // time limit grows with the samples and the screens.
       test.setTimeout(60_000 + SCREEN_SAMPLES * mine.length * 6_000);
       allowFreshContext(apiGuard);
+      // The Agents screen reads a bank's research requests beside its own agent; the route
+      // answers not_built until c11-research-requests fills it (the published contract).
+      apiGuard.allow(/\/api\/v1\/research-requests$/, 501, 'research requests are built by c11-research-requests');
 
       // A bank's administrator unlocks every tenant destination; the console's
       // destinations are split between a library editor and a platform admin.
