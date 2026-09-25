@@ -547,7 +547,8 @@ def refresh_session(request: HttpRequest, response: HttpResponse) -> RefreshResu
     $replay_grace_seconds seconds of its rotation gets a fresh access token without rotating
     again. Presented any later it is treated as stolen, the whole session is revoked and the
     replay is written to the security log. A session also ends after $idle_minutes minutes
-    without a refresh or $absolute_hours hours after sign-in, and a revoked one cannot be
+    without a refresh or $absolute_hours hours after sign-in (the defaults; the bank's
+    security policy may set its own limits, which apply here), and a revoked one cannot be
     refreshed.
 
     Writes the audit event `session.refreshed`; a session that ends here writes
