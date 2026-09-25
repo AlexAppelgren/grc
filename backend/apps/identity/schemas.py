@@ -1054,11 +1054,15 @@ class MeDepartment(CamelSchema):
 
 
 class MeCounts(CamelSchema):
-    """The queue counts behind Today's "Decide now" panel: three independent reads, each
+    """The queue counts behind Today's "Decide now" panel: eight independent reads, each
     filtered by the caller's own permissions rather than refused, so a reader without a
-    permission sees a true zero and not a 403 that would take the whole panel away."""
+    permission sees a true zero and not a 403 that would take the whole panel away. The four
+    decision counts (sign-offs, risk acceptances, support access requests and tenant reach
+    requests) count only what the caller may decide: a request the caller made themselves is
+    never counted, because four eyes would refuse them. There is no applicability count:
+    applicability is set by one person and never requested (D-75)."""
 
-    # HOM-01, D-23.
+    # HOM-01, D-23; x-decide-now-counts: CAS-06, REG-03, TEN-06, ACC-08.
 
     triage: int = Field(
         ge=0,
@@ -1092,6 +1096,42 @@ class MeCounts(CamelSchema):
             "more. Every member reads their own, so no permission is needed."
         ),
         examples=[4],
+    )
+    signoffs: int = Field(
+        ge=0,
+        description=(
+            "How many of this bank's cases wait for a sign-off (status `signoff`) that someone "
+            "other than the caller asked for, 0 or more. 0 without `cases.signoff`; a case the "
+            "caller sent for sign-off is never counted, because they may not sign it off."
+        ),
+        examples=[1],
+    )
+    risk_acceptances: int = Field(
+        ge=0,
+        description=(
+            "How many of this bank's gaps have a risk acceptance waiting for approval, asked "
+            "for by someone other than the caller, 0 or more. Only a gap still open or being "
+            "remediated counts. 0 without `risk.accept.approve`."
+        ),
+        examples=[2],
+    )
+    support_access_requests: int = Field(
+        ge=0,
+        description=(
+            "How many requests from platform support to read this bank are pending: asked "
+            "for, not yet approved or declined, and not lapsed. 0 or more, and 0 without "
+            "`security.manage`."
+        ),
+        examples=[1],
+    )
+    tenant_reach_requests: int = Field(
+        ge=0,
+        description=(
+            "How many requests to switch on tenant reach wait for a decision, asked for by "
+            "someone other than the caller: 0 or 1, since a bank has at most one pending. 0 "
+            "without `security.manage`."
+        ),
+        examples=[0],
     )
 
 
@@ -1225,7 +1265,7 @@ class Me(CamelSchema):
                     "enrolmentPending": False,
                     "passkeyCount": 2,
                     "stepUpValidUntil": None,
-                    "counts": {"triage": 3, "proposals": 2, "assignedToMe": 1, "unreadNotifications": 4},
+                    "counts": {"triage": 3, "proposals": 2, "assignedToMe": 1, "unreadNotifications": 4, "signoffs": 1, "riskAcceptances": 2, "supportAccessRequests": 1, "tenantReachRequests": 0},
                     "lastVisitAt": "2026-09-18T07:00:00Z",
                     "notificationPrefs": {
                         "weeklyDigest": True,
@@ -1312,8 +1352,8 @@ class Me(CamelSchema):
     counts: MeCounts | None = Field(
         description=(
             "The caller's own queue counts for 'Decide now', or null for a platform session, "
-            "which has no tenant to count against. Each of the three counts is 0 rather than "
-            "refused when the caller's permissions do not unlock it."
+            "which has no tenant to count against. Each count is 0 rather than refused when "
+            "the caller's permissions do not unlock it."
         )
     )
     last_visit_at: datetime | None = Field(
