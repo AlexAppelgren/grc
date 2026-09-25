@@ -14,8 +14,9 @@ from __future__ import annotations
 from typing import Any
 
 from django.apps import apps
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.test import TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from apps.cases import logic, responses, state
@@ -119,7 +120,8 @@ def row_counts() -> dict[str, int]:
 
 def inventory_snapshot() -> dict[str, list[tuple[Any, ...]]]:
     """Every row of every library model and every register model, whole, so any insert,
-    update or delete during a call shows as a difference."""
+    update or delete during a call shows as a difference. The register's models join the
+    snapshot by app as they land (c8-register-models), with no change here."""
     models: list[type[Any]] = [model for model in apps.get_models() if issubclass(model, LibraryModel)]
     models += list(apps.get_app_config("register").get_models())
     return {
@@ -325,7 +327,18 @@ class ApproveSignoff(ScenarioTestCase):
     def test_the_requester_is_refused_before_anything_is_written(self) -> None:
         before_counts = row_counts()
         before = self.bank.fresh()
-        response = self.bank.post(self.client, "approve", self.bank.owner, body={"note": "Mine."}, step_up=True)
+        headers = sign_in(self.bank.owner, tenant=self.bank.tenant, step_up=True)
+        with CaptureQueriesContext(connection) as issued:
+            response = self.client.post(
+                f"{V1}/changes/{self.bank.case.change_id}/signoff/approve",
+                data={"note": "Mine."},
+                content_type="application/json",
+                HTTP_IF_MATCH=str(before.version),
+                **headers,
+            )
+        writes = [q["sql"] for q in issued.captured_queries if q["sql"].lstrip().upper().startswith(("INSERT", "UPDATE", "DELETE"))]
+        case_writes = [sql for sql in writes if any(f'"{table}"' in sql for table in ("change_case", "case_transition", "audit_event", "outbox_event", "notification"))]
+        self.assertEqual(case_writes, [], "the guard refuses before a statement touches the case or its trail, not by a rollback")
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.json()["code"], "four_eyes_violation")
         after = self.bank.fresh()
