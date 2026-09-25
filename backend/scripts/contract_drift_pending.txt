@@ -13,7 +13,6 @@ GET /applicability-requests chunk 8
 GET /changes/{}/actions chunk 9
 GET /changes/{}/evidence chunk 9
 GET /comments chunk 10
-GET /exports/{} chunk 12
 GET /imports/{} chunk 12
 GET /integrations/tickets chunk 13
 GET /me/work chunk 8
@@ -46,7 +45,6 @@ POST /changes/{}/signoff/send-back chunk 9
 POST /changes/{}/triage chunk 9
 POST /comments chunk 10
 POST /eval/runs chunk 14 a run builds the sample corpus in a database of its own and takes minutes, so it waits for chunk 14's job runner; record_eval_run records runs until then
-POST /exports chunk 12
 POST /imports chunk 12
 POST /imports/{}/commit chunk 12
 POST /notifications/read-all chunk 10

@@ -55,3 +55,12 @@ default until Alex answers the reorder). Export jobs, the `ExportJob` framework 
 `/exports`, move from chunk 12 into R2 as `x-exports-contract`, because chunk 9's case file
 exports on it; the export kinds of REP-02 to REP-04 stay chunk 12's, and import jobs stay
 R3.
+
+**Export jobs move into R2 (2026-09-25, x-exports-contract).** Chunk 9's case file must
+export (CAS-07), so the export mechanism of chunk 12 is built in R2 wave 1 ahead of the
+rest of the chunk: `ExportJob` (forced RLS, `JobStatus`), `POST /exports` behind
+`exports.create` and a step-up, `GET /exports`, `GET /exports/{exportId}`, the streamed and
+audited download, the runner and the exporter registry in `apps/reports/exporters/`. It is
+the work of `c12-exports-contract-a` and `-b` except `ImportJob`, the import routes and the
+storage adapter (the existing `apps/shared/storage.py` is reused). REP-S3 is green; REP-02
+itself, its exporters and every other chunk 12 requirement stay R3.

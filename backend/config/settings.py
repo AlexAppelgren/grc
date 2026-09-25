@@ -673,6 +673,15 @@ CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
 CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
 
 # ---------------------------------------------------------------------------------------
+# ===== REP-02 export files (apps/reports, x-exports-contract) ===========================
+# How long an export's file is kept after the worker built it. A file carries a bank's
+# records outside the screens that permission-check them, so it lives only long enough to
+# be downloaded; after that its download answers 409 `export_expired` and the person asks
+# for a new one. The job row stays. A bank's policy may be stricter, so it is a setting.
+# ---------------------------------------------------------------------------------------
+EXPORT_RETENTION_DAYS = env_int("EXPORT_RETENTION_DAYS", 7)
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------
