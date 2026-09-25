@@ -1477,7 +1477,7 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 
 ## R2 wave 2 integration: one CodeQL finding needs your triage (2026-09-25)
 
-- [ ] **CodeQL `py/clear-text-storage-sensitive-data` at `backend/apps/identity/session_logic.py`
+- [x] **CodeQL `py/clear-text-storage-sensitive-data` at `backend/apps/identity/session_logic.py`
       `set_refresh_cookie` (fingerprint `a6ba8ac839efa77d:1`).** CodeQL now reports the refresh
       token written into its cookie. That write is the session design (D-06, ADR 0006): the
       cookie is HttpOnly, Secure, SameSite=Strict and scoped to the auth path, the token is a
@@ -1487,4 +1487,4 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       end, whose test builds a concrete `HttpResponse`. The integration did not accept it on
       its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
       then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
-      (Default proposed: accept with that reason, acceptedBy you.)
+      (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**
