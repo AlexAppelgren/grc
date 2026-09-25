@@ -1,9 +1,12 @@
 'use client';
 
 import { BackLink } from '@/components/admin/AdminGate';
+import { CaseParticipantsPanel } from '@/components/cases/CaseParticipantsPanel';
+import { CaseWorkPanels } from '@/components/cases/CaseWorkPanels';
 import { Panel } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, NotFoundScreen } from '@/components/ui/States';
+import { ChangeCommentsPanel } from '@/components/watch/ChangeCommentsPanel';
 import { ChangeDocuments } from '@/components/watch/ChangeDocuments';
 import { ChangeObligations } from '@/components/watch/ChangeObligations';
 import { ChangeTimeline } from '@/components/watch/ChangeTimeline';
@@ -12,7 +15,7 @@ import { useFormatContext } from '@/features/identity/hooks';
 import type { PresentedPill } from '@/features/shared/presentation-types';
 import { slotTone } from '@/features/shared/tone-by-kind';
 import type { ChangeDetail } from '@/features/watch/api';
-import { CHANGE_SLOT_ORDER, caseStatusLabel, machineConfirmedBy, presentChange, urgencyOf, type ChangeFacts } from '@/features/watch/change-presentation';
+import { CHANGE_SLOT_ORDER, machineConfirmedBy, presentChange, urgencyOf, workflowStatusOf, type ChangeFacts } from '@/features/watch/change-presentation';
 import { useChange } from '@/features/watch/hooks';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -25,8 +28,11 @@ import { hasProblemCode } from '@/shared/utils/problem';
 // WAT-04, INV-06, FP-03). The reform's sourced facts — its header, what
 // happened, how it was classified, its timeline, the pages it was found on
 // and the duties it affects. The bank's own "So what?" is the panel beside
-// "What happened"; triage, assessment, actions, evidence and sign-off are
-// the case workflow and arrive with chunk 9.
+// "What happened". A bank's change page is also its case: below the
+// obligations sit the case's work panels (CaseWorkPanels decides which, from
+// the case's category) and its comments, and beside the documents its
+// participants. Each panel is its own file, mounted here once; a change
+// without a case mounts none of them.
 //
 // A change's type, flags and scope are library facts that an independent
 // agent or a person settles for every bank (D-74), so this screen shows what
@@ -60,7 +66,7 @@ export function detailFacts(change: ChangeDetail, t: Translate): ChangeFacts {
     flags: change.flags.map((flag) => ({ key: flag.ref.key, label: flag.ref.label })),
     suggested: provenance === 'suggested',
     machineConfirmed: provenance === 'machineConfirmed',
-    ...(change.case === null ? {} : { workflowStatus: { key: change.case.category, label: caseStatusLabel(change.case.category, t) } }),
+    ...(change.case === null ? {} : { workflowStatus: workflowStatusOf(change.case, t) }),
   };
 }
 
@@ -192,6 +198,13 @@ export function ChangeScreen({ changeId }: { changeId: string }) {
           <Panel title={t('watch.change.obligations')}>
             <ChangeObligations change={change} />
           </Panel>
+
+          {change.case === null ? null : (
+            <>
+              <CaseWorkPanels change={change} workflow={change.case} />
+              <ChangeCommentsPanel change={change} workflow={change.case} />
+            </>
+          )}
         </div>
 
         <div>
@@ -201,6 +214,7 @@ export function ChangeScreen({ changeId }: { changeId: string }) {
           <Panel title={t('watch.change.documents')}>
             <ChangeDocuments documents={change.documents} />
           </Panel>
+          {change.case === null ? null : <CaseParticipantsPanel change={change} workflow={change.case} />}
           <Panel title={t('watch.change.record')}>
             <dl className="grid grid-cols-1 gap-x-3.5 gap-y-2.5 md:grid-cols-[120px_1fr]">
               <dt className="text-meta text-muted">{t('watch.change.stableKey')}</dt>
