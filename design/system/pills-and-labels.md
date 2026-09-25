@@ -71,3 +71,30 @@ Agents read key, label and usage note at run start, submit keys only, and
 their classifications show as suggestions until a person confirms. A new
 term is a proposal. A re-tag request applies a new value to existing records
 as one batch proposal.
+
+## Chunk 11: agents, definitions, batch review and jurisdictions (c11-cards-agents-security)
+
+Each is from the record's own facts, never chosen by a person. Where a pill above already
+covers a case (agent version `brand`, a finished run `positive`, a running agent `notice`,
+"Added when approved" and "Removed when approved" `warning`), the chunk 11 cards reuse it.
+
+| Pill | Tone | Slot or kind, and why |
+|---|---|---|
+| Agent state: "On", "Paused", "Off" | `positive`, `warning`, `information` | Kind (a bank's own agent). On is the working state; Paused needs attention because nothing runs until someone resumes it; Off is a neutral fact (`admin-agents.html`) |
+| Run status: "Done", "Running", "Stopped", "Failed" | `positive`, `notice`, `warning`, `negative` | Kind (agent run), a severity scale. Done and Running are the finished run and the running agent above; Stopped was interrupted by a person; Failed did not finish (`admin-agents.html`, `console-agent-definitions.html`) |
+| Jurisdiction on an agent: "EU", "Sweden", … | `brand` | Slot: a scope facet, what the agent covers or sweeps |
+| Definition scope: "Platform", "For banks" | `information` | Slot: a neutral fact about who runs the definition (`console-agent-definitions.html`) |
+| Definition state: "Active", "Draft" | `positive`, `information` | Kind: a published current version, or none yet |
+| Version state: "Current", "Retired" | `positive`, `information` | Kind: the version new runs use, or one no run starts on again |
+| Proposal kind "Re-tag" | `notice` | Slot: the proposal kind, as every kind in the queue (`console-queue-batch.html`) |
+| Batch and row status: "Waiting", "Approved", "Rejected" | `warning`, `positive`, `information` | The queue's own statuses (`console-queue.html`), applied to the batch and to each row |
+| Library tag in a batch's before and after | `brand` | Slot: library tags, as above |
+| Jurisdiction row: the label, "Retired", "Rename waiting for review" | `brand`, `information`, `warning` | The label is a scope facet; Retired is a neutral fact; waiting for review is computed from the open proposal, like "Waiting for approval" (`admin-vocabulary.html` console variant) |
+
+`admin-security.html` adds no pill: every state there is a sentence.
+
+### Chunk 11: research requests (c11-fe-console-agents)
+
+| Pill | Tone | Slot or kind, and why |
+|---|---|---|
+| Research request status: "Queued", "Running", "Done", "Failed", "Rejected", "Cancelled" | `information`, `notice`, `positive`, `negative`, `information`, `information` | Kind (`RequestState`). Queued is a neutral fact and running reads as a running agent; Done is good and Failed did not finish; Rejected and Cancelled are decisions made on purpose, never negative, like a rejected proposal (`frontend/src/features/agents/agents-presentation.ts`) |

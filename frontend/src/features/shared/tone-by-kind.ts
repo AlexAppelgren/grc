@@ -176,3 +176,69 @@ export const slotTone = {
   // so it needs attention; it is not itself bad.
   riskFlagged: 'warning',
 } as const satisfies Record<string, PillTone>;
+
+// ---------------------------------------------------------------------------
+// Chunk 11, agents (c11-fe-console-agents): design/system/pills-and-labels.md,
+// "Chunk 11". Each tone is read off the record's own facts, never chosen.
+// ---------------------------------------------------------------------------
+
+// A run, platform or bank: done and running are the finished run and the
+// running agent; stopped was interrupted by a person, which needs a look;
+// failed did not finish.
+export type AgentRunStateKind = 'done' | 'running' | 'stopped' | 'failed';
+
+export const agentRunStateTone: Record<AgentRunStateKind, PillTone> = {
+  done: 'positive',
+  running: 'notice',
+  stopped: 'warning',
+  failed: 'negative',
+};
+
+// A bank's own agent: on is the working state; paused needs attention because
+// nothing runs until someone resumes it; off is a neutral fact.
+export type TenantAgentStateKind = 'on' | 'paused' | 'off';
+
+export const tenantAgentStateTone: Record<TenantAgentStateKind, PillTone> = {
+  on: 'positive',
+  paused: 'warning',
+  off: 'information',
+};
+
+// A definition's scope is a neutral fact about who runs it; its state is a
+// published current version or none yet.
+export type AgentDefinitionScopeKind = 'platform' | 'tenant';
+
+export const agentDefinitionScopeTone: Record<AgentDefinitionScopeKind, PillTone> = {
+  platform: 'information',
+  tenant: 'information',
+};
+
+export type AgentDefinitionStateKind = 'active' | 'draft';
+
+export const agentDefinitionStateTone: Record<AgentDefinitionStateKind, PillTone> = {
+  active: 'positive',
+  draft: 'information',
+};
+
+// A version is the one new runs use, or one no run starts on again.
+export type AgentVersionStateKind = 'current' | 'retired';
+
+export const agentVersionStateTone: Record<AgentVersionStateKind, PillTone> = {
+  current: 'positive',
+  retired: 'information',
+};
+
+// AGT-05: a research request, as `RequestState` names it. Waiting in the
+// queue is a neutral fact and a running one reads as a running agent does;
+// done is good and failed did not finish. Rejected and cancelled are
+// decisions made on purpose, neutral facts, never negative.
+export type ResearchRequestStateKind = 'queued' | 'running' | 'done' | 'failed' | 'rejected' | 'cancelled';
+
+export const researchRequestStateTone: Record<ResearchRequestStateKind, PillTone> = {
+  queued: 'information',
+  running: 'notice',
+  done: 'positive',
+  failed: 'negative',
+  rejected: 'information',
+  cancelled: 'information',
+};

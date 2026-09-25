@@ -1563,9 +1563,13 @@ def create_agent_key(request: HttpRequest, body: AgentKeyCreate) -> tuple[int, A
     Needs the platform permission `agent_definitions.manage` and a fresh passkey step-up
     on the session; an API key cannot create a key. The key belongs to no bank. Everything
     it writes is recorded as the agent it is bound to, and it runs that agent and no other.
-    It may hold any scope, `proposals:review` included, which makes the agent a second,
-    independent reviewer of proposals someone else filed; no scope writes a library
-    record. Give it the least its agent needs.
+    Its scopes follow its agent's kind: a review agent's key may hold `proposals:review`,
+    which makes it a second, independent reviewer of proposals someone else filed, and none
+    of the filing scopes `sources:write`, `changes:write` and `proposals:write`; every other
+    kind's key may hold those and never `proposals:review`. The agent must be active, or a
+    draft still being evaluated; a retired or switched-off agent takes no key, and a key of
+    an agent switched off later stops working. No scope writes a library record. Give it the
+    least its agent needs.
 
     The creation is recorded in the audit log as `agent_key.created` with the prefix, the
     agent, the scopes and the expiry, never the secret, and with the step-up assertion
@@ -1575,6 +1579,8 @@ def create_agent_key(request: HttpRequest, body: AgentKeyCreate) -> tuple[int, A
     Errors: `step_up_required` without a fresh passkey assertion, which the console answers
     by opening the passkey prompt and retrying; `unknown_key` when `agentId` names no agent
     definition or a scope does not exist, the message naming the valid scopes;
+    `agent_inactive` (422) when the agent is retired or switched off; `scope_not_for_kind`
+    (422) for a scope the agent's kind does not take, the message naming it;
     `name_required` for a name of spaces alone; `expiry_in_past` for an expiry that is not
     in the future; `validation_error` for a field the schema refuses, a field it does not
     name among them; `permission_denied` without `agent_definitions.manage`;
