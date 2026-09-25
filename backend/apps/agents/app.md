@@ -374,3 +374,21 @@ Then a linked internal item of the system kind is written through record() with 
 And the register entry lists the application with what it does
 And the same record sent twice writes one item
 ```
+
+### ACC-S13 — J-11: a bank's coding agent reads what applies to it `@e2e` (ACC-01 to ACC-08, AC-ACC1, AC-ACC2, AC-ACC4, J-11)
+```gherkin
+Given a tenant admin with agent_access.manage and a Trading department with its products
+When they register an agent access entry for the Trading team's coding agent, narrowed to that department's products, and issue it a key with a step-up
+And two different people holding security.manage switch tenant reach on
+And the admin enables reach on the entry
+When the agent asks what applies to "a new order-routing service"
+Then it receives the bank's confirmed applicability and reading with citations
+And the full list sits beneath a summary labelled as AI-drafted
+And a line names card issuing as outside its scope
+When the agent reads a card obligation by its stable key
+Then the request answers 404
+When the agent sends a write
+Then the request answers 403
+When the admin revokes the entry
+Then the agent's next call answers 401
+```
