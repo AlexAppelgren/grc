@@ -415,6 +415,11 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/proposals/{proposal_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSALS_REVIEW),
     ("POST", "/proposals/{proposal_id}/approve"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSALS_REVIEW),
     ("POST", "/proposals/{proposal_id}/reject"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSALS_REVIEW),
+    # c11-proposal-batches-create (PRO-04, AGT-05).
+    ("POST", "/proposal-batches"): Ungated(
+        UngatedReason.LOGIC_GATE,
+        "proposals.review from a platform person, or the proposals:write scope from a platform key naming an open run of its own; no bank's session or key re-tags the library (PRO-04, AGT-05). The gate is apps/proposals/api.py:require_batch_proposer, which refuses a tenant-carrying principal and names the permission or scope it wanted.",
+    ),
     ("GET", "/tenant/footprint"): Ungated(
         UngatedReason.CAPABILITY, "Every member reads the footprint that filters every surface they see (FP-03)."
     ),

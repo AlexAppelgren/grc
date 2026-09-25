@@ -34,6 +34,12 @@ from django.db import transaction
 
 from apps.agents.models import AgentRun, RunStatus
 from apps.agents.seeds import seed_agent_definitions
+# c11-e2e-seed
+from decimal import Decimal
+from apps.agents.models import AgentCadence, RunTrigger, TenantAgent, TenantAgentBudget
+from apps.agents.seeds.e2e import publish_e2e_version
+from apps.proposals import batch as proposal_batch
+from apps.proposals.schemas import ObligationScopeChange, ObligationScopePayload
 from apps.cases import matching as case_matching
 from apps.cases.creation import CHANGE_REGISTERED
 from apps.cases.models import ChangeCase
@@ -1754,6 +1760,198 @@ def seed_ask_pending_link() -> None:
     )
 
 
+# --- c11-e2e-seed (AGT-03, AGT-04, AGT-05, PRO-04) ------------------------------------------
+@dataclass(frozen=True)
+class SeedChunk11:
+    """What the chunk 11 journeys find: the sweeper published at two versions with a
+    scheduled platform run on each (AGT-S4); tenant A's own source watch, weekly with a scope,
+    whose runs over the recent weeks put the month's spend just under its one cap (AGT-S5,
+    AGT-S6); tenant B with no agent and no cap of its own; and one open re-tag of twelve
+    obligations waiting in the console (PRO-S8), filed by the second library editor so the
+    first can decide it.
+
+    Every run is dated from the seed's clock in tenant A's zone, at midnight (the fixed wall
+    time, never after "now"): a run this month is on today's date less whole weeks, but never
+    before the first of the month, and a run of the month before is whole weeks before the
+    first. So the month's spend is the sum of `month_costs` on any day, a month boundary
+    included (apps/agents/tests_seed.py). The re-tag adds a lifecycle stage, a dimension that
+    never narrows a footprint, so deciding it moves no bank's scope under another journey."""
+
+    platform_agent: str
+    platform_versions: tuple[int, ...]
+    confirming_agent: str
+    tenant_agent: str
+    tenant_slug: str
+    scope: dict[str, list[str]]
+    monthly_cap: Decimal
+    currency: str
+    month_costs: tuple[Decimal, ...]
+    earlier_costs: tuple[Decimal, ...]
+    batch_title: str
+    batch_term: str
+    batch_source: str
+    batch_obligations: tuple[str, ...]
+    batch_proposer_email: str
+    updated_by_email: str
+
+
+# The prototype's weekly run costs (prototype_data.json `agent_runs`), and a cap one more
+# such run would pass.
+EXPECTED_CHUNK11 = SeedChunk11(
+    platform_agent="watch-sweeper",
+    platform_versions=(1, 2),
+    confirming_agent=CONFIRMING_AGENT,
+    tenant_agent="tenant-source-watch",
+    tenant_slug=TENANT_A_SLUG,
+    scope={"jurisdictions": ["se", "dk"]},
+    monthly_cap=Decimal("7.00"),
+    currency="EUR",
+    month_costs=(Decimal("2.1000"), Decimal("1.8500"), Decimal("2.3000")),
+    earlier_costs=(Decimal("1.9500"), Decimal("2.0500")),
+    batch_title="Add the reporting stage to twelve obligations whose duty ends in a report",
+    batch_term="lifecycle_stage:reporting",
+    batch_source="https://www.fi.se/en/our-registers/reporting/",
+    # Twelve obligations without the term, none with a proposal of its own waiting on its
+    # scope, and not the advice-only one J-6 hides.
+    batch_obligations=(
+        "obl-dk-csd-registration",
+        "obl-dora-ict-register",
+        "obl-esma-warnings",
+        "obl-gdpr-article-22",
+        "obl-idd-demands-needs",
+        "obl-isk-approved-assets",
+        "obl-no-suitability",
+        "obl-pension-transfer-right",
+        "obl-priips-kid",
+        "obl-product-governance",
+        "obl-suitability",
+        "obl-switch-documentation",
+    ),
+    batch_proposer_email="editor2@bleqq.test",
+    updated_by_email="admin@example-bank.test",
+)
+# Fixed ids, so a reseed finds each run rather than opening another.
+C11_PLATFORM_RUNS: tuple[uuid.UUID, ...] = tuple(uuid.UUID(f"00000000-0000-4000-8000-00000c110{n:03d}") for n in range(3))
+C11_TENANT_RUNS: tuple[uuid.UUID, ...] = tuple(
+    uuid.UUID(f"00000000-0000-4000-8000-00000c111{n:03d}")
+    for n in range(len(EXPECTED_CHUNK11.month_costs) + len(EXPECTED_CHUNK11.earlier_costs))
+)
+C11_RUN_MINUTES = 14
+
+
+def c11_run_starts(now: datetime.datetime) -> tuple[list[datetime.datetime], list[datetime.datetime]]:
+    """The start of each of tenant A's runs of this month and of the month before, newest
+    first, at midnight in its zone: never after `now`, and never on the other side of the
+    first of the month from where `month_costs` and `earlier_costs` say."""
+    zone = ZoneInfo(TENANT_A.timezone)
+    today = now.astimezone(zone).date()
+    first = today.replace(day=1)
+
+    def midnight(day: datetime.date) -> datetime.datetime:
+        return datetime.datetime.combine(day, datetime.time(0, 0), tzinfo=zone)
+
+    this_month = [midnight(max(today - datetime.timedelta(weeks=n), first)) for n in range(len(EXPECTED_CHUNK11.month_costs))]
+    earlier = [midnight(first - datetime.timedelta(weeks=n + 1)) for n in range(len(EXPECTED_CHUNK11.earlier_costs))]
+    return this_month, earlier
+
+
+def _c11_run(pk: uuid.UUID, started: datetime.datetime, now: datetime.datetime, **fields: Any) -> None:  # compliance: allow-kwargs one run's columns
+    """One closed run, found by its fixed id or opened once, then dated from the clock: the
+    date is the one column a reseed on another day moves, and `update()` leaves every other
+    column, `updated_at`s included, as it was."""
+    AgentRun.objects.get_or_create(pk=pk, defaults={"status": RunStatus.SUCCEEDED.value, "pipeline_version": "0.4", **fields})
+    AgentRun.objects.filter(pk=pk).update(started_at=started, finished_at=min(started + datetime.timedelta(minutes=C11_RUN_MINUTES), now))
+
+
+def seed_chunk11_agents(tenants: list[Tenant], now: datetime.datetime | None = None) -> None:
+    """The chunk 11 rows (EXPECTED_CHUNK11), anchored to `now` (the real clock unless a test
+    moves it). Idempotent: a reseed on the same clock changes nothing, and on another day it
+    moves the runs' dates and the next run and nothing else."""
+    now = now or datetime.datetime.now(datetime.UTC)
+    spec = EXPECTED_CHUNK11
+    seed_agent_definitions()
+    tenancy.clear_tenant()
+
+    # AGT-S4: the sweeper at two versions, a scheduled platform run on each, and one of the
+    # confirmer, so the console lists runs no bank owns.
+    first_version = _agent(spec.platform_agent).versions.get(version_no=spec.platform_versions[0])
+    second_version = publish_e2e_version(
+        key=spec.platform_agent,
+        version_no=spec.platform_versions[1],
+        change_note="Version 1's prompt and tools, published again so the journeys find a version history.",
+    )
+    confirmer = _agent(spec.confirming_agent)
+    zone = ZoneInfo(TENANT_A.timezone)
+    today = datetime.datetime.combine(now.astimezone(zone).date(), datetime.time(0, 0), tzinfo=zone)
+    with tenancy.platform_zone():
+        for pk, agent, version, weeks, cost in (
+            (C11_PLATFORM_RUNS[0], _agent(spec.platform_agent), first_version, 3, Decimal("3.4000")),
+            (C11_PLATFORM_RUNS[1], _agent(spec.platform_agent), second_version, 1, Decimal("3.1500")),
+            (C11_PLATFORM_RUNS[2], confirmer, confirmer.versions.get(version_no=confirmer.current_version), 1, Decimal("0.9200")),
+        ):
+            _c11_run(
+                pk, today - datetime.timedelta(weeks=weeks), now,
+                agent=agent, agent_version=version, trigger=RunTrigger.SCHEDULE.value, model=version.model, cost=cost,
+                stats={"modelCalls": 18, "fetches": 40, "sourcesChecked": 12, "changesRegistered": 2, "proposalsSubmitted": 1},
+            )
+
+    # AGT-S5, AGT-S6: tenant A's own agent, its runs and its one cap. Tenant B gets none.
+    tenant = next(t for t in tenants if t.slug == spec.tenant_slug)
+    tenancy.activate(tenant.id)
+    admin = User.objects.get(email=spec.updated_by_email)
+    definition = _agent(spec.tenant_agent)
+    this_month, earlier = c11_run_starts(now)
+    tenant_agent, created = TenantAgent.objects.get_or_create(
+        tenant=tenant,
+        agent=definition,
+        defaults={"enabled": True, "cadence": AgentCadence.WEEKLY.value, "run_hour": 0, "scope": spec.scope, "updated_by": admin},
+    )
+    TenantAgent.objects.filter(pk=tenant_agent.pk).update(next_run_at=this_month[0] + datetime.timedelta(weeks=1))
+    budget, budget_created = TenantAgentBudget.objects.get_or_create(
+        tenant=tenant, defaults={"monthly_cap": spec.monthly_cap, "currency": spec.currency, "updated_by": admin}
+    )
+    if created:
+        record(
+            action="tenant_agent.seeded", actor=SEED_ACTOR, subject_type="tenant_agent", subject_id=tenant_agent.pk,
+            subject_title=definition.key, summary="Seeded for E2E journeys.", tenant_id=tenant.id,
+            after={"agent": definition.key, "enabled": True, "cadence": AgentCadence.WEEKLY.value, "scope": spec.scope},
+        )
+    if budget_created:
+        record(
+            action="tenant_agent_budget.seeded", actor=SEED_ACTOR, subject_type="tenant_agent_budget", subject_id=budget.pk,
+            subject_title=tenant.slug, summary="Seeded for E2E journeys.", tenant_id=tenant.id,
+            after={"monthlyCap": str(spec.monthly_cap), "currency": spec.currency},
+        )
+    version = definition.versions.get(version_no=definition.current_version)
+    for pk, started, cost in zip(C11_TENANT_RUNS, [*this_month, *earlier], [*spec.month_costs, *spec.earlier_costs], strict=True):
+        _c11_run(
+            pk, started, now,
+            agent=definition, agent_version=version, tenant_agent=tenant_agent, trigger=RunTrigger.SCHEDULE.value,
+            model=version.model, scope=spec.scope, cost=cost, tokens_in=41_000, tokens_out=3_200,
+            stats={"modelCalls": 6, "fetches": 9, "sourcesChecked": 4},
+        )
+
+    # PRO-S8: the open re-tag, through the one function that files a batch.
+    tenancy.clear_tenant()
+    if Proposal.objects.filter(is_batch=True, title=spec.batch_title, status=ProposalStatus.OPEN.value).exists():
+        return
+    editor = User.objects.get(email=spec.batch_proposer_email)
+    proposal_batch.create_batch(
+        kind=ProposalKind.OBLIGATION_SCOPE.value,
+        title=spec.batch_title,
+        payload=ObligationScopePayload(
+            changes=[
+                ObligationScopeChange(obligation_id=_obligation_id(key), add=[spec.batch_term], remove=[], source=spec.batch_source)
+                for key in spec.batch_obligations
+            ]
+        ),
+        proposer=Proposer(actor=Actor(kind=ActorType.USER, id=editor.id, label=editor.name), user=editor),
+        source_label="Finansinspektionen, reporting",
+        source_url=spec.batch_source,
+    )
+# --- end c11-e2e-seed -------------------------------------------------------------------------
+
+
 def seed_e2e() -> dict[str, int]:
     """Run the whole seed. Returns counts the command prints and the guard asserts."""
     refuse_when_deployed()
@@ -1805,6 +2003,8 @@ def seed_e2e() -> dict[str, int]:
         chunk5_cases = seed_chunk5_cases(tenants)
         seed_watched_market_change()
         seed_standard_change()
+        # c11-e2e-seed: after the logins and the platform runs, before the search index.
+        seed_chunk11_agents(tenants)
 
         # INV-S14, after the logins: the re-verification names a seeded library editor.
         machine_confirmed = seed_machine_confirmed()
