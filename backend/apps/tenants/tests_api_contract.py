@@ -333,6 +333,9 @@ class TenantsRouteStubs(TenantsContractCase):
         "listProducts",
         "createProduct",
         "updateProduct",
+        # c8-ten-teams-people's people picker, ported by c8-ui-soa-j10 for J-10's owner picker:
+        # proved in tests_reference_people.py.
+        "listPeople",
     }
 
     def test_an_if_match_that_is_not_a_version_is_422_on_every_versioned_write(self) -> None:
@@ -372,10 +375,10 @@ class TenantsRouteStubs(TenantsContractCase):
                 with self.subTest(operation=name):
                     self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, 200 if name in self.BUILT else 501)
 
-    def test_a_known_permission_on_the_people_picker_reaches_the_stub(self) -> None:
+    def test_a_known_permission_on_the_people_picker_is_answered(self) -> None:
         with stub_session(self.everything(permissions=frozenset())):
             response = self.client.get(f"/api/v1/reference/people?permission={perms.CASES_SIGNOFF}", **AS_SESSION)
-        self.assertEqual(response.status_code, 501)
+        self.assertEqual(response.status_code, 200)
 
 
 class PermissionDescriptions(TestCase):

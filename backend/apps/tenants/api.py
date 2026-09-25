@@ -786,9 +786,8 @@ def list_people(
 
     Errors: `unknown_key` (422) for a permission that is not one of a bank's;
     `validation_error` (422) for a permission longer than 64 characters; `not_found` (404) for
-    a session that belongs to no bank; `unauthenticated` (401) without a member session.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    a session that belongs to no bank; `unauthenticated` (401) without a member session;
+    `enrolment_only` (403) from an enrolment session.
     """
     # Ungated by design: capability (a member session, never an enrolment session).
     return people.list_people(tenant=caller_tenant(request), permission=permission)
