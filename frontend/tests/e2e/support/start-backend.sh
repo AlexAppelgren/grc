@@ -89,6 +89,25 @@ if [ "${1:-}" = "manage" ]; then
   exec "$PY" manage.py "$@"
 fi
 
+# The agent definitions the server reads (AGT-03): a copy of backend/agents/ in which
+# watch-sweeper v1 is released (`status: active`, as a deploy ships it once its evaluation
+# passes), so a bank's agents page lists it and the beat runs it with the mock runner
+# (AGT-S13); plus fixture folders for watch-sweeper v3 to v5, the versions AGT-S4's journey
+# publishes from the console, one per attempt (the seed publishes v1 and v2). A fixture is
+# v1's definition under the new number with a prompt of its own. backend/agents/ itself is
+# never touched; config/settings.py reads AGENT_DEFINITIONS_DIR only under E2E_MODE.
+AGENTS_COPY="${TMPDIR:-/tmp}/cw-e2e-agents-$PORT"
+rm -rf "$AGENTS_COPY"
+cp -R "$BACKEND/agents" "$AGENTS_COPY"
+sed "s/^status: draft /status: active /" "$BACKEND/agents/watch-sweeper/v1/definition.yaml" >"$AGENTS_COPY/watch-sweeper/v1/definition.yaml"
+for version in 3 4 5; do
+  folder="$AGENTS_COPY/watch-sweeper/v$version"
+  mkdir -p "$folder"
+  sed "s/^version: .*/version: $version/" "$BACKEND/agents/watch-sweeper/v1/definition.yaml" >"$folder/definition.yaml"
+  printf 'E2E fixture, version %s: sweep the registered sources and read the new FFFS index page first.\n' "$version" >"$folder/prompt.md"
+done
+export AGENT_DEFINITIONS_DIR="$AGENTS_COPY"
+
 echo "start-backend: recreating $E2E_DB and migrating from zero (as cw_migrator)"
 DATABASE_URL="$MIGRATOR_URL" "$PY" manage.py migrate_from_zero --name "$E2E_DB" --keep
 
