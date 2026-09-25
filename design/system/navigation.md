@@ -93,7 +93,7 @@ What today's registry produces:
 
 **Tab labels.**
 - A new optional registry field, `shortLabelKey`, holds a tab's label. Without it, the tab uses `labelKey`.
-- No tab needs one today. Search needed one while its label was "Search and ask"; since D-9x search lives in the inventory and the destination is "Ask" ("Fråga" in Swedish), one word in the rail, the More sheet and the bar alike.
+- No tab needs one today. Search needed one while its label was "Search and ask"; since D-103 search lives in the inventory and the destination is "Ask" ("Fråga" in Swedish), one word in the rail, the More sheet and the bar alike.
 - The rail and the More sheet keep the full labels.
 - Why: Apple asks for single-word labels. Material asks for one or two words, and says never to truncate or shrink them.
 

@@ -15,7 +15,7 @@ import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { cn } from '@/shared/utils/cn';
 
-// The inventory's filters (design/screens/tenant-inventory.html, D-9x): a Filters
+// The inventory's filters (design/screens/tenant-inventory.html, D-103): a Filters
 // sheet, the set filters as removable chips beside its button, and the scope as a
 // segmented control on the tab row. Regime and Service are taxonomy terms, Duty type
 // is a library vocabulary, Instrument a stable key from GET /instruments; every value

@@ -30,7 +30,7 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   briefing: { ready: `[data-lead-card], [data-brief-item]${OR_EMPTY}` },
   // At rest Ask asks nothing of the ask route (the question stays out of the
   // URL); it is ready when the permission gate has read the session and the
-  // start panel is drawn. Search lives in the inventory's row (D-9x).
+  // start panel is drawn. Search lives in the inventory's row (D-103).
   ask: { ready: '[data-ask-start]' },
   admin: { ready: '[data-admin-section]' },
   'admin-organisation': { ready: '[data-onboarding] [data-step]' },

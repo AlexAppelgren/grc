@@ -162,7 +162,7 @@ const TENANT_SCREENS: readonly Screen[] = [
   {
     name: 'Search',
     open: async (page) => {
-      // Search lives in the inventory's search bar (D-9x); Enter runs it.
+      // Search lives in the inventory's search bar (D-103); Enter runs it.
       await page.goto('/inventory');
       await page.getByRole('searchbox', { name: 'Search the inventory' }).fill('FFFS 2017:2');
       await page.getByRole('searchbox', { name: 'Search the inventory' }).press('Enter');

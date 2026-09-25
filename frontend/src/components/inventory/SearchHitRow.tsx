@@ -10,7 +10,7 @@ import type { Translate } from '@/shared/i18n';
 import type { FormatContext } from '@/shared/utils/format';
 
 // One hit of the inventory's search (design/screens/tenant-search.html's hit row,
-// D-9x): the pills of its slots, the title, the snippet with the query's words
+// D-103): the pills of its slots, the title, the snippet with the query's words
 // marked, and its version and validity. The inventory searches obligations and
 // provisions only; watch changes are found on Watch.
 

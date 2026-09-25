@@ -37,7 +37,7 @@ function rows(page: Page) {
   return page.locator('[data-search-rows] > *');
 }
 
-/** Search lives in the inventory's search bar (D-9x); Enter runs it. */
+/** Search lives in the inventory's search bar (D-103); Enter runs it. */
 async function runSearch(page: Page, query: string): Promise<void> {
   if (!new URL(page.url()).pathname.startsWith('/inventory')) await page.goto('/inventory');
   const box = page.getByRole('searchbox', { name: 'Search the inventory' });

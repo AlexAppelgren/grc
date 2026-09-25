@@ -11,7 +11,7 @@ import { useFormatContext } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { formatDate } from '@/shared/utils/format';
 
-// /ask (design/screens/tenant-ask.html; SRC-03, AC-SRC2, J-7, D-9x). Ask has
+// /ask (design/screens/tenant-ask.html; SRC-03, AC-SRC2, J-7, D-103). Ask has
 // its own page since search moved into the inventory's search bar. The "as of"
 // date travels in the URL; the question is the bank's own words and never
 // does, so "Search the inventory" opens the inventory without it.

@@ -127,7 +127,7 @@ padding, 6 px radius, `body` at 500. Off: `l2-neutral-02`, `border-neutral-02`,
 `content-neutral-02` text. On: `l3-neutral-02`, `border-neutral-01`,
 `content-neutral-01` text. Was: fully rounded, solid black when on.
 
-**Segmented control** (the scope quick filter, D-9x). Toggles joined in one
+**Segmented control** (the scope quick filter, D-103). Toggles joined in one
 frame: `l2-neutral-02`, a 1 px `border-neutral-02`, 2 px padding, 8 px radius.
 Segments are 28 px, 12 px padding, 6 px radius, `meta` at 500; the chosen one
 takes the toggle's on colours, the others `content-neutral-02` with no border.
@@ -135,14 +135,14 @@ Exactly one segment is chosen. It sits at the end of the tab row when it
 applies to every tab; on a phone it takes the full width under the tabs and the
 segments share it equally.
 
-**Search field** (a list's own search, D-9x). An input with a 16 px search icon
+**Search field** (a list's own search, D-103). An input with a 16 px search icon
 inside at the start and a Clear button (28 px, ghost, icon only, labelled) once
 there is text. 36 px, 44 px on a touch screen; up to 560 px wide beside its
 Filters button, full width on a phone. Enter runs the search. What is typed is
 the bank's own words, so it stays in the component and never reaches the
 address bar.
 
-**Filters sheet** (D-9x). An outline Filters button with a 16 px sliders icon
+**Filters sheet** (D-103). An outline Filters button with a 16 px sliders icon
 opens it: from the right edge on a desktop (440 px, `l2-neutral-02`, a hairline
 on its open side), from the bottom on a phone (the More sheet's rules), over
 `Modal`'s scrim. A `title` heading with a Close button, then one `microlabel`

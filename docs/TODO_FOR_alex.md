@@ -608,7 +608,7 @@ section. Copied here as chunk3-rest-T20 requires.
       scope is one more reader of the footprint this reshapes (D-70).
 
 ## Inventory search and filters (2026-09-25, `inventory-search-filters`)
-- [x] **Approve the chosen design** (D-9x). Taken from your "Go ahead" of 2026-09-25, whose
+- [x] **Approve the chosen design** (D-103). Taken from your "Go ahead" of 2026-09-25, whose
       message was cut off after those words; say if you meant something else. The part that
       needs no R2 work is built: the search bar, the Filters sheet, the three quick filters,
       filter values bounded by the scope, and Ask at `/ask`.

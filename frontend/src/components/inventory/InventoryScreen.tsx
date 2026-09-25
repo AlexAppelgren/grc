@@ -26,13 +26,13 @@ import { usePermissions } from '@/shared/navigation/require-permission';
 import { formatDate } from '@/shared/utils/format';
 
 // /inventory (design/screens/tenant-inventory.html; INV-01, INV-03, INV-04,
-// FP-03, SRC-01, SRC-02, J-6, D-9x). The filters live in the URL as keys and a
+// FP-03, SRC-01, SRC-02, J-6, D-103). The filters live in the URL as keys and a
 // plain date, so a view is linkable and "as of" is never today by accident.
 // Nothing on this screen writes. Obligations and Instruments are two tabs of the
 // one screen, switched by the `tab` query parameter so a link to either is
 // bookmarkable; the scope sits at the end of the tab row because it applies to both.
 //
-// The search bar is the product's search (D-9x): on the Obligations tab it runs the
+// The search bar is the product's search (D-103): on the Obligations tab it runs the
 // hybrid search over obligations and provisions inside the scope and every filter
 // that is set; on the Instruments tab it finds instruments by reference or name.
 // What is typed is the bank's own words, so it lives in component state alone and

@@ -189,7 +189,7 @@ describe('navigation registry (playbook 6.2)', () => {
   });
 
   it('gives a tab its short label in every language where it has one, and Ask needs none', () => {
-    // Search needed "Search" while its label was "Search and ask"; since D-9x the destination is Ask, one word.
+    // Search needed "Search" while its label was "Search and ask"; since D-103 the destination is Ask, one word.
     const short = destinations.filter((d) => d.shortLabelKey !== undefined);
     for (const d of short) {
       const key = d.shortLabelKey ?? d.labelKey;
