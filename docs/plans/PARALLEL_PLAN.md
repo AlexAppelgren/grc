@@ -1,5 +1,7 @@
 # Parallel build plan: chunks 3 to 14
 
+> **R2 follows `docs/plans/briefs/R2_CROSS_CUTTING.md` (2026-09-25).** From R2 on, the shared-file rules, the migration and decision numbers, the page shells and the cross-cutting safety rules are that file's. Where this plan and that file disagree, that file wins; the package maps below still name the work.
+
 Written 2026-09-19 by the planning workflow. Revised the same day after a review that sent 35 corrections (section 9 lists the parts not taken). The plan changes only the order of work and where each piece runs. No requirement, invariant or gate is lowered. The review found some pieces missing, and the plan now adds them: a fix package after every security review, an R1 performance check, owners for console surfaces nobody had picked up, and a stronger gate at each merge.
 
 It covers 456 work packages (the replans of 2026-09-20 removed one chunk 4 package, added two in chunk 11 and added two more in chunk 4; sections 3.3.1 and 3.3.2). 8 are done, 7 are built and waiting for review or merge, 2 are running, and 438 are still to start. That is about 356 agent-hours of package work, plus about 240 agent-hours of review. The packages are:
