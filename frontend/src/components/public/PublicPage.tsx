@@ -13,9 +13,10 @@ import { cn } from '@/shared/utils/cn';
 // The public page (design/public/index.html, approved by Alex 2026-09-24): a
 // legal instrument on paper, with the brand green as a sticky ribbon and one
 // closing field. Every section carries a marginal section reference, the way
-// a statute carries marginal headings. Hierarchy comes from type and the two
-// greys, so colour is kept to the section references and the double rules, and
-// running prose is set at 16 px. Colours are token utilities only; the serif
+// a statute carries marginal headings. Colour is kept to the section references
+// and the double rules; everything a visitor reads runs in the text colour at
+// 16 px, and grey is left to short labels (Alex, 2026-09-25: grey prose on the
+// dark page was hard to read). Colours are token utilities only; the serif
 // faces are loaded by the (public) layout.
 
 const t = createT(defaultLocale);
@@ -59,11 +60,11 @@ const CASE: readonly (readonly [MessageKey, MessageKey])[] = [
   ['public.case.coverage.title', 'public.case.coverage.body'],
 ];
 
-const WHAT: readonly (readonly [MessageKey, MessageKey, MessageKey])[] = [
-  ['public.what.inventory.kicker', 'public.what.inventory.title', 'public.what.inventory.body'],
-  ['public.what.watch.kicker', 'public.what.watch.title', 'public.what.watch.body'],
-  ['public.what.ask.kicker', 'public.what.ask.title', 'public.what.ask.body'],
-  ['public.what.evidence.kicker', 'public.what.evidence.title', 'public.what.evidence.body'],
+const WHAT: readonly (readonly [MessageKey, MessageKey])[] = [
+  ['public.what.inventory.title', 'public.what.inventory.body'],
+  ['public.what.watch.title', 'public.what.watch.body'],
+  ['public.what.ask.title', 'public.what.ask.body'],
+  ['public.what.evidence.title', 'public.what.evidence.body'],
 ];
 
 const STEPS: readonly (readonly [MessageKey, MessageKey, MessageKey])[] = [
@@ -180,7 +181,7 @@ export function PublicPage() {
             <h1 id="public-title" className="max-w-[20ch] font-serif-display text-hero text-balance">
               {t('public.hero.title')}
             </h1>
-            <p className="mt-6 max-w-[52ch] text-title font-normal text-muted">{t('public.hero.deck')}</p>
+            <p className="mt-6 max-w-[52ch] text-title font-normal">{t('public.hero.deck')}</p>
           </section>
 
           <section aria-label={t('public.demo.label')} className="pb-16 md:pb-24">
@@ -196,7 +197,7 @@ export function PublicPage() {
               {CASE.map(([title, body]) => (
                 <li key={title} className="border-b border-line py-4">
                   <h3 className="mb-1 text-title">{t(title)}</h3>
-                  <p className="text-title font-normal text-muted">{t(body)}</p>
+                  <p className="text-title font-normal">{t(body)}</p>
                 </li>
               ))}
             </ul>
@@ -204,11 +205,10 @@ export function PublicPage() {
 
           <Section id="what" number={2} headingKey="public.what.title">
             <div className="grid gap-x-12 md:grid-cols-2">
-              {WHAT.map(([kicker, title, body]) => (
-                <div key={kicker} className="border-t border-line py-4.5">
-                  <p className="mb-2 font-mono text-meta text-muted">{t(kicker)}</p>
+              {WHAT.map(([title, body]) => (
+                <div key={title} className="border-t border-line py-4.5">
                   <h3 className="mb-1.5 text-title">{t(title)}</h3>
-                  <p className="text-title font-normal text-muted">{t(body)}</p>
+                  <p className="text-title font-normal">{t(body)}</p>
                 </div>
               ))}
             </div>
@@ -229,28 +229,28 @@ export function PublicPage() {
                 </li>
               ))}
             </ol>
-            <p className="mt-5 max-w-[62ch] text-muted">{t('public.method.footnote')}</p>
+            <p className="mt-5 max-w-[62ch]">{t('public.method.footnote')}</p>
           </Section>
 
           <Section id="zones" number={4} headingKey="public.zones.title">
             <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-7">
               <div className="rounded-card border border-line bg-surface p-4">
                 <h3 className="mb-1.5 text-title">{t('public.zones.library.title')}</h3>
-                <p className="text-title font-normal text-muted">{t('public.zones.library.body')}</p>
+                <p className="text-title font-normal">{t('public.zones.library.body')}</p>
               </div>
               <div className="flex items-center justify-center gap-2.5 text-center md:min-w-[118px] md:flex-col">
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-5 rotate-90 text-muted md:rotate-0">
                   <path d="M4 12h16M14 6l6 6-6 6" />
                 </svg>
                 <span className="microlabel text-muted">{t('public.zones.door.label')}</span>
-                <span className="max-w-[16ch] text-meta text-muted">{t('public.zones.door.body')}</span>
+                <span className="max-w-[16ch] text-meta">{t('public.zones.door.body')}</span>
               </div>
               <div className="rounded-card border border-line bg-subtle p-4">
                 <h3 className="mb-1.5 text-title">{t('public.zones.yours.title')}</h3>
-                <p className="text-title font-normal text-muted">{t('public.zones.yours.body')}</p>
+                <p className="text-title font-normal">{t('public.zones.yours.body')}</p>
               </div>
             </div>
-            <p className="mt-6 max-w-[62ch] text-muted">{t('public.zones.footnote')}</p>
+            <p className="mt-6 max-w-[62ch]">{t('public.zones.footnote')}</p>
           </Section>
 
           <Section id="coverage" number={5} headingKey="public.coverage.title">
@@ -271,8 +271,8 @@ export function PublicPage() {
                       <th scope="row" className="border-b border-line py-3.5 pr-4 text-left align-top font-semibold">
                         {t(name)}
                       </th>
-                      <td className="border-b border-line py-3.5 pr-4 align-top text-muted">{t(sources)}</td>
-                      <td className="border-b border-line py-3.5 align-top text-muted">{t(languages)}</td>
+                      <td className="border-b border-line py-3.5 pr-4 align-top">{t(sources)}</td>
+                      <td className="border-b border-line py-3.5 align-top">{t(languages)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -285,7 +285,7 @@ export function PublicPage() {
               {ASSURANCE.map(([term, body]) => (
                 <div key={term} className="grid gap-1 border-b border-line py-3.5 sm:grid-cols-[30%_minmax(0,1fr)] sm:gap-4">
                   <dt className="text-title">{t(term)}</dt>
-                  <dd className="m-0 text-title font-normal text-muted">{t(body)}</dd>
+                  <dd className="m-0 text-title font-normal">{t(body)}</dd>
                 </div>
               ))}
             </dl>
@@ -296,7 +296,7 @@ export function PublicPage() {
               {QUESTIONS.map(([question, answer]) => (
                 <div key={question} className="border-t border-line py-4.5">
                   <h3 className="mb-1.5 font-serif text-title font-normal">{t(question)}</h3>
-                  <p className="text-title font-normal text-muted">{t(answer)}</p>
+                  <p className="text-title font-normal">{t(answer)}</p>
                 </div>
               ))}
             </div>

@@ -96,4 +96,16 @@ test.describe('public page', () => {
     await expect(page.locator('html')).toHaveClass(/(^|\s)dark(\s|$)/);
     await expect(footer.getByRole('button', { name: 'Light theme' })).toBeVisible();
   });
+
+  test('no other site can frame the app, while its own public page frames the demo', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    const response = await page.goto('/welcome');
+    expect(response?.headers()['content-security-policy']).toBe("frame-ancestors 'self'");
+    expect(response?.headers()['x-frame-options']).toBe('SAMEORIGIN');
+    const app = page.url();
+
+    // A page on another origin frames it: the browser puts its own error page in the frame instead.
+    await page.goto(`data:text/html,<iframe name="elsewhere" src="${app}"></iframe>`);
+    await expect.poll(() => page.frame({ name: 'elsewhere' })?.url()).toMatch(/^chrome-error:/);
+  });
 });

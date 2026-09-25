@@ -34,7 +34,7 @@ structure, set in Caslon, on a bank's colours.
 |---|---|
 | Green as one field | Since 2026-09-24 the top bar is paper with a hairline, not green; the green is left for the closing field and the thin section rules. Never on a button, which keeps `foundations.md`'s rule that a primary action stays neutral |
 | Sand where the product uses sand | The marginal column, the legal text block and the AI-drafted callout. Nowhere else, so the page is not a cream page |
-| Colour kept to the section references | Since 2026-09-24 hierarchy comes from type and the two greys, as on the best-reviewed legal and product pages: brass marks the `§ n` references, the accent the double rules, and the eyebrow, kickers, step numbers and footer labels are muted. In dark the accent turns brass, as `brand.css` says the product accent does |
+| Colour kept to the section references | Since 2026-09-24 hierarchy comes from type, not colour: brass marks the `§ n` references and the accent the double rules. Since 2026-09-25 everything a visitor reads runs in the text colour, because grey prose on the dark page was hard to read (Alex, on a phone); grey is left to short labels, the eyebrow, step numbers, actor tags, table heads and the footer. In dark the accent turns brass, as `brand.css` says the product accent does |
 | A marginal column | Every section carries `§ n` in Noto Sans Mono in the left margin, the way a statute carries marginal headings, and its heading says what the section shows, so a reader who only scans the headings still gets the argument. The one-line marginal notes were dropped on 2026-09-24 because they repeated the heading. Below 768 px the reference sits above the rule |
 | Thick-thin rules | Each section opens on a 3 px rule over a 1 px rule, the printed-document break. No cards around prose, no shadows anywhere |
 | One sentence where two would do | Every section was cut back after the first draft: a heading, a line, and the artefact or list that proves it. Nothing on the page explains twice |
@@ -84,7 +84,7 @@ links Google Fonts as the prototype does; a build self-hosts all four.
 | | Demo | Since 2026-09-24, under the headline: the product itself on a sample bank's data (below, "The demo") |
 | | Facts strip | Jurisdictions, content languages, the two zones, audit from the first write |
 | § 1 | The case | Why a spreadsheet and an inbox cannot answer what a review asks |
-| § 2 | What it does | Inventory, Watch, Ask, Evidence, one paragraph each |
+| § 2 | What it does | Inventory, Watch, Ask, Evidence: the name and one paragraph each, without a line in between (Alex, 2026-09-25) |
 | § 3 | The method | The six steps from sighting to sign-off, with the actor at each one |
 | § 4 | Two zones | The shared library, the one-way proposal door, the tenant zone under forced row-level security |
 | § 5 | Coverage | Five jurisdictions against their authorities and publication languages |
@@ -169,6 +169,10 @@ linear.app the same day); ours is the app itself.
   frame inside a scrolling page traps the thumb, and nothing of the app loads
   before that. The recordings are their own chunk (about 30 KB compressed), so
   the page itself never carries them.
+- **Framing.** The app answers every page with `Content-Security-Policy:
+  frame-ancestors 'self'` and `X-Frame-Options: SAMEORIGIN` (`next.config.ts`),
+  so only its own public page can frame it and no other site can put it under a
+  click trap; the API refuses every frame on its own side.
 - **Not a mocked test.** The replay is what the public page ships, not a test
   double: every journey, the demo's recording walk included, runs against the
   real API.
