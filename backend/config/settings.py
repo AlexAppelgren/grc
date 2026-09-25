@@ -564,6 +564,15 @@ PROPOSAL_SCOPE_MAX_TERMS = env_int("PROPOSAL_SCOPE_MAX_TERMS", 20)
 PROPOSAL_TEXT_MAX_CHARS = env_int("PROPOSAL_TEXT_MAX_CHARS", 50000)
 
 # ---------------------------------------------------------------------------------------
+# ===== PRO-04 how many rows one batch proposal may hold (c11-proposal-batches-create) ====
+# A batch is one proposal with a row per library record it would change, each carrying its
+# preview, and a reviewer reads the whole batch in one answer. The cap keeps that read one
+# page (the API's own maximum page is 100) and inside the 250 ms budget; a larger re-tag is
+# filed as more than one batch, and above the cap creation answers 422 `batch_too_large`.
+# ---------------------------------------------------------------------------------------
+PROPOSAL_BATCH_MAX_ROWS = env_int("PROPOSAL_BATCH_MAX_ROWS", 100)
+
+# ---------------------------------------------------------------------------------------
 # ===== PRO-03 how far back "what changed in the library" looks ===========================
 # A reader who has never marked the library as seen has no bookmark to read from, so the
 # list falls back to this many days. Long enough that a first visit is not empty and a
