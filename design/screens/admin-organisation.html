@@ -12,22 +12,22 @@
    HOM-S9 and TEN-S8): a department is the org unit of kind business area,
    business unit or function, and a team belongs to one. Team membership is set
    on the member row, in admin-members.html, because it is members.manage and
-   not vocab.manage. Legal entities, licences and products still arrive with
-   chunk 8. Team leads are not built: a department has a head, and a team's
+   not vocab.manage. Legal entities, licences and certificates, and products are
+   chunk 8 too (TEN-02, TEN-S2, TEN-S10, D-43). Team leads are not built: a department has a head, and a team's
    notifications reach its active members. */
 :root{
   --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;
   --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
-  --btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;--red:#b92f13;--green:#026436;--grey-soft:#eaebeb;
+  --btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;--red:#b92f13;--green:#026436;--grey-soft:#eaebeb;--brand-pill:#ece5d6;--brand-text:#6a5730;
   --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
-  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;--grey-soft:#313533;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;--grey-soft:#313533;--brand-pill:#33291a;--brand-text:#d9cba9;
 }}
 :root[data-theme="dark"]{
   --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
-  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;--grey-soft:#313533;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;--grey-soft:#313533;--brand-pill:#33291a;--brand-text:#d9cba9;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5}
@@ -79,8 +79,28 @@ main{padding:32px 36px 96px;max-width:1100px;width:100%}
 .empty h2{color:var(--text);margin-bottom:8px}
 .states h2.k{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:28px 0 10px}
 .note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
+/* Chunk 8: legal entities, licences and certificates, products. Pills are the
+   scope block's brand pills (pills-and-labels.md), plus the plain information
+   pill; values are Green's l3-brand-02 / content-brand-02 and l3-neutral-02. */
+.pill{display:inline-block;border-radius:999px;padding:0 8px;font-size:.8rem;line-height:20px;font-weight:500;background:var(--grey-soft);color:var(--text);white-space:nowrap}
+.pill.brand{background:var(--brand-pill);color:var(--brand-text)}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 0}
+.tree{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.tree .tree{margin:10px 0 0 20px;padding-left:12px;border-left:1px solid var(--line)}
+.dim{opacity:.6}
+.kv{display:grid;grid-template-columns:150px minmax(0,1fr);gap:4px 14px;font-size:.9rem;margin:8px 0 0}
+.kv dt{color:var(--muted)}.kv dd{margin:0}
+.mono{font-family:"Noto Sans Mono",ui-monospace,Menlo,monospace;font-size:.86rem}
+.sub{font-size:.95rem;font-weight:600;margin:16px 0 8px}
+.theme.light{--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;--red:#b92f13;--green:#026436;--grey-soft:#eaebeb;--brand-pill:#ece5d6;--brand-text:#6a5730}
+.theme.dark{--bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;--grey-soft:#313533;--brand-pill:#33291a;--brand-text:#d9cba9}
+.theme{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:16px;padding:12px}
+.phones{display:flex;flex-wrap:wrap;gap:16px}
+.phones>*{flex:0 1 375px;min-width:0}
+.phones .kv{grid-template-columns:1fr;gap:0}.phones .kv dd{margin-bottom:6px}
 .tabbar{display:none}
 @media (max-width:820px){
+  .kv{grid-template-columns:1fr;gap:0}.kv dd{margin-bottom:6px}
   .app{grid-template-columns:1fr}.side{display:none}
   .mbrand{display:block;margin:0 0 12px}.mbrand .logo{width:150px}
   main{padding:20px 16px 100px}h1{font-size:1.6rem}
@@ -157,6 +177,54 @@ main{padding:32px 36px 96px;max-width:1100px;width:100%}
       <div class="bar"><button class="btn small">Add a team</button></div>
     </div>
 
+    <div class="panel" style="margin-top:16px" aria-labelledby="le"><h2 id="le">Legal entities</h2>
+      <p style="color:var(--muted);margin-bottom:12px">The group and the legal entities in it. Each entity ties to a legal-entity term, so the register can say where an obligation applies and where you comply, one entity at a time.</p>
+      <ul class="tree">
+        <li><div class="row"><div><h3>Example Group AB</h3><div class="meta"><span>Group</span><span class="mono">556000-0001</span><span class="mono">LEI 549300EXAMPLEGRP0001</span><span>Sweden</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+          <ul class="tree">
+            <li><div class="row"><div><h3>Example Bank AB</h3><div class="meta"><span>Legal entity</span><span class="mono">556000-1234</span><span class="mono">LEI 549300EXAMPLEBNK0002</span><span>Sweden</span></div><div class="pills"><span class="pill brand">Credit institution</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div></li>
+            <li><div class="row"><div><h3>Example Fonder AB</h3><div class="meta"><span>Legal entity</span><span class="mono">556000-5678</span><span class="mono">LEI 549300EXAMPLEFND0003</span><span>Sweden</span></div><div class="pills"><span class="pill brand">Fund management company</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div></li>
+            <li><div class="row"><div><h3>Example Bank Norge, filial</h3><div class="meta"><span>Legal entity</span><span class="mono">920 000 001</span><span>No LEI</span><span>Norway</span></div><div class="pills"><span class="pill brand">Branch of a credit institution</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div></li>
+            <li class="dim"><div class="row"><div><h3>Example Finans Oy</h3><div class="meta"><span>Legal entity</span><span class="mono">1234567-8</span><span>Finland</span><span>Inactive since 30 Jun 2025</span></div><div class="pills"><span class="pill brand">Consumer credit institution</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div></li>
+          </ul>
+        </li>
+      </ul>
+      <div class="bar"><button class="btn small">Add a legal entity</button></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px" aria-labelledby="lc"><h2 id="lc">Licences and certificates</h2>
+      <p style="color:var(--muted);margin-bottom:12px">What each legal entity is licensed or certified for. A certificate's expiry and next audit show on the roadmap as your own deadlines.</p>
+      <h3 class="sub">Example Bank AB</h3>
+      <div class="rows">
+        <div class="row"><div style="flex:1;min-width:0"><h3>Credit institution</h3><div class="meta"><span>Licence</span><span>Finansinspektionen</span></div>
+          <dl class="kv"><dt>Reference</dt><dd class="mono">FI Dnr 04-1234</dd><dt>Granted</dt><dd>1 Jun 2004</dd><dt>Services</dt><dd><div class="pills"><span class="pill brand">Deposits</span><span class="pill brand">Lending</span><span class="pill brand">Payment services</span><span class="pill brand">Custody</span></div></dd><dt>Scope note</dt><dd>Covers the Swedish business and the Norwegian branch under the EEA passport.</dd></dl></div>
+          <div class="bar"><button class="btn ghost small">Edit</button></div></div>
+        <div class="row"><div style="flex:1;min-width:0"><h3>ISO/IEC 27001:2022 certificate</h3><div class="meta"><span>Certificate</span><span>Example Certification AB</span></div>
+          <dl class="kv"><dt>Certificate number</dt><dd class="mono">EC-27001-0421</dd><dt>Scope statement</dt><dd>The information security management system for retail banking IT operations in Stockholm and Göteborg.</dd><dt>Issued</dt><dd>12 Mar 2025</dd><dt>Valid until</dt><dd>11 Mar 2028</dd><dt>Next audit</dt><dd>10 Mar 2027</dd><dt>Owner</dt><dd>Information security (team)</dd></dl></div>
+          <div class="bar"><button class="btn ghost small">Edit</button></div></div>
+        <div class="row dim"><div style="flex:1;min-width:0"><h3>Consumer credit institution</h3><div class="meta"><span>Licence</span><span>Finansinspektionen</span><span>Withdrawn 31 Mar 2025</span></div>
+          <dl class="kv"><dt>Reference</dt><dd class="mono">FI Dnr 15-9876</dd><dt>Granted</dt><dd>1 Oct 2015</dd><dt>Services</dt><dd><div class="pills"><span class="pill brand">Consumer credit</span></div></dd></dl></div></div>
+        <div class="row dim"><div style="flex:1;min-width:0"><h3>PCI DSS 4.0 attestation of compliance</h3><div class="meta"><span>Certificate</span><span>Example Assessors Oy</span><span>Withdrawn 1 Feb 2026</span></div>
+          <dl class="kv"><dt>Certificate number</dt><dd class="mono">AOC-2024-117</dd><dt>Valid until</dt><dd>31 Jan 2026</dd><dt>Owner</dt><dd>Marcus Dahl</dd></dl></div></div>
+      </div>
+      <div class="bar"><button class="btn ghost small">Show withdrawn</button><button class="btn small">Add a licence</button></div>
+      <h3 class="sub">Example Fonder AB</h3>
+      <div class="rows"><div class="row"><div style="flex:1;min-width:0"><h3>UCITS management company</h3><div class="meta"><span>Licence</span><span>Finansinspektionen</span></div>
+        <dl class="kv"><dt>Reference</dt><dd class="mono">FI Dnr 09-4411</dd><dt>Granted</dt><dd>15 Jan 2010</dd><dt>Services</dt><dd><div class="pills"><span class="pill brand">Fund management</span></div></dd></dl></div><div class="bar"><button class="btn ghost small">Edit</button></div></div></div>
+      <h3 class="sub">Example Bank Norge, filial</h3>
+      <p style="color:var(--muted);font-size:.9rem">No licences or certificates recorded.</p>
+    </div>
+
+    <div class="panel" style="margin-top:16px" aria-labelledby="pr"><h2 id="pr">Products</h2>
+      <p style="color:var(--muted);margin-bottom:12px">Products are scoped with the same terms as obligations, so the register can show which obligations reach a product.</p>
+      <div class="rows">
+        <div class="row"><div style="flex:1;min-width:0"><h3>Custody</h3><p style="margin:0 0 4px">Safekeeping of listed securities for retail and professional clients.</p><div class="meta"><span>Live</span><span>Launched 1 Mar 2012</span><span>Owner: Retail compliance (team)</span></div><div class="pills"><span class="pill brand">Example Bank AB</span><span class="pill brand">Custody</span><span class="pill brand">Retail clients</span><span class="pill brand">Professional clients</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+        <div class="row"><div style="flex:1;min-width:0"><h3>Instant payments</h3><p style="margin:0 0 4px">Euro and krona instant credit transfers in the app.</p><div class="meta"><span>Planned</span><span>Launch 1 Apr 2027</span><span>Owner: Marcus Dahl</span></div><div class="pills"><span class="pill brand">Example Bank AB</span><span class="pill brand">Payment services</span><span class="pill brand">Retail clients</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+        <div class="row dim"><div style="flex:1;min-width:0"><h3>Card credit</h3><p style="margin:0 0 4px">Revolving credit on the debit card.</p><div class="meta"><span>Retired</span><span>Launched 1 Sep 2016</span><span>Owner: Cards (team)</span></div><div class="pills"><span class="pill brand">Example Finans Oy</span><span class="pill brand">Consumer credit</span><span class="pill brand">Retail clients</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+      </div>
+      <div class="bar"><button class="btn small">Add a product</button></div>
+    </div>
+
     <h2 class="k">A department and a team, before anything is set up</h2>
     <div class="empty"><h2>No departments yet</h2><p>Add the business areas, units and functions you work in, give each one a head, and put your teams in them.</p><button class="btn small">Add a department</button></div>
 
@@ -194,12 +262,78 @@ main{padding:32px 36px 96px;max-width:1100px;width:100%}
     <h2 class="k">Refused by the server (the 403 rendered as is, for a member without security manage)</h2>
     <div class="panel"><p class="err" role="alert">Only a member who manages security can change the profile. Needs security manage.</p></div>
 
+    <h2 class="k">Record a licence or certificate (dialog; the certificate fields show when the kind is certificate)</h2>
+    <form class="panel" aria-labelledby="lf"><h2 id="lf">Add a licence or certificate to Example Bank AB</h2>
+      <div class="pair">
+        <div class="field"><label for="lk">Kind</label><select id="lk"><option>Licence</option><option selected>Certificate</option></select></div>
+        <div class="field"><label for="lt">Name</label><input id="lt" value="ISO/IEC 27001:2022 certificate"></div>
+      </div>
+      <div class="pair">
+        <div class="field"><label for="li">Issuer</label><input id="li" value="Example Certification AB"></div>
+        <div class="field"><label for="ln">Certificate number</label><input id="ln" value="EC-27001-0421"></div>
+      </div>
+      <div class="field"><label for="ls">Scope statement</label><input id="ls" value="The information security management system for retail banking IT operations"></div>
+      <div class="pair">
+        <div class="field"><label for="ld">Issued</label><input id="ld" type="date" value="2025-03-12"></div>
+        <div class="field"><label for="lv">Valid until</label><input id="lv" type="date" value="2028-03-11"></div>
+      </div>
+      <div class="pair">
+        <div class="field"><label for="la">Next audit</label><input id="la" type="date" value="2027-03-10"></div>
+        <div class="field"><label for="lo">Owner</label><input id="lo" list="owners" value="Information security"><datalist id="owners"><option>Information security</option><option>Sara Lindqvist</option><option>Marcus Dahl</option></datalist><span class="hint">A person or a team. They see the expiry and the next audit on the roadmap.</span></div>
+      </div>
+      <div class="field"><label for="lw">Withdrawn</label><input id="lw" type="date"><span class="hint">Set it when the licence or certificate ends. It stays in the history.</span></div>
+      <p class="err" role="alert">Valid until must come after the issue date.</p>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Save</button></div>
+    </form>
+    <form class="panel" aria-labelledby="lf2"><h2 id="lf2">Add a licence or certificate to Example Bank AB</h2>
+      <div class="pair">
+        <div class="field"><label for="lk2">Kind</label><select id="lk2"><option selected>Licence</option><option>Certificate</option></select></div>
+        <div class="field"><label for="lt2">Licence type</label><select id="lt2"><option>Credit institution</option><option>Payment institution</option><option>Consumer credit institution</option></select></div>
+      </div>
+      <div class="pair">
+        <div class="field"><label for="lauth">Authority</label><input id="lauth" value="Finansinspektionen"></div>
+        <div class="field"><label for="lr2">Reference</label><input id="lr2" placeholder="e.g. FI Dnr 04-1234"></div>
+      </div>
+      <div class="pair">
+        <div class="field"><label for="lg2">Granted</label><input id="lg2" type="date"></div>
+        <div class="field"><label for="lw2">Withdrawn</label><input id="lw2" type="date"></div>
+      </div>
+      <div class="field"><label>Services</label><div class="pills"><span class="pill brand">Deposits ×</span><span class="pill brand">Lending ×</span></div><span class="hint">Terms from the service list obligations use.</span></div>
+      <div class="field"><label for="ln2">Scope note</label><input id="ln2" placeholder="e.g. which business and which branches it covers"></div>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Save</button></div>
+    </form>
+
+    <h2 class="k">Legal entities, licences and products before anything is set up</h2>
+    <div class="empty"><h2>No legal entities yet</h2><p>Add the group and each legal entity, then the licences and certificates each one holds.</p><button class="btn small">Add a legal entity</button></div>
+    <div class="empty" style="margin-top:10px"><h2>No products yet</h2><p>Add a product and scope it with the same terms your obligations use.</p><button class="btn small">Add a product</button></div>
+
+    <h2 class="k">Refused by the server (the 403 rendered as is, for a member without vocab manage, who sees these sections without Edit and Add)</h2>
+    <div class="panel"><p class="err" role="alert">You do not have permission to do this. Needs vocab manage.</p></div>
+
+    <h2 class="k">Legal entities, a licence and a product at 375 px, light and dark</h2>
+    <div class="phones">
+      <div class="theme light"><div class="rows">
+        <div class="row"><div><h3>Example Bank AB</h3><div class="meta"><span>Legal entity</span><span class="mono">556000-1234</span><span>Sweden</span></div><div class="pills"><span class="pill brand">Credit institution</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+        <div class="row dim"><div><h3>Example Finans Oy</h3><div class="meta"><span>Legal entity</span><span>Finland</span><span>Inactive since 30 Jun 2025</span></div></div></div>
+        <div class="row"><div style="min-width:0"><h3>ISO/IEC 27001:2022 certificate</h3><div class="meta"><span>Certificate</span><span>Example Certification AB</span></div><dl class="kv"><dt>Valid until</dt><dd>11 Mar 2028</dd><dt>Next audit</dt><dd>10 Mar 2027</dd><dt>Owner</dt><dd>Information security (team)</dd></dl></div></div>
+        <div class="row dim"><div><h3>Consumer credit institution</h3><div class="meta"><span>Licence</span><span>Withdrawn 31 Mar 2025</span></div></div></div>
+        <div class="row"><div style="min-width:0"><h3>Custody</h3><div class="meta"><span>Live</span><span>Owner: Retail compliance (team)</span></div><div class="pills"><span class="pill brand">Example Bank AB</span><span class="pill brand">Custody</span><span class="pill brand">Retail clients</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+      </div></div>
+      <div class="theme dark"><div class="rows">
+        <div class="row"><div><h3>Example Bank AB</h3><div class="meta"><span>Legal entity</span><span class="mono">556000-1234</span><span>Sweden</span></div><div class="pills"><span class="pill brand">Credit institution</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+        <div class="row dim"><div><h3>Example Finans Oy</h3><div class="meta"><span>Legal entity</span><span>Finland</span><span>Inactive since 30 Jun 2025</span></div></div></div>
+        <div class="row"><div style="min-width:0"><h3>ISO/IEC 27001:2022 certificate</h3><div class="meta"><span>Certificate</span><span>Example Certification AB</span></div><dl class="kv"><dt>Valid until</dt><dd>11 Mar 2028</dd><dt>Next audit</dt><dd>10 Mar 2027</dd><dt>Owner</dt><dd>Information security (team)</dd></dl></div></div>
+        <div class="row dim"><div><h3>Consumer credit institution</h3><div class="meta"><span>Licence</span><span>Withdrawn 31 Mar 2025</span></div></div></div>
+        <div class="row"><div style="min-width:0"><h3>Custody</h3><div class="meta"><span>Live</span><span>Owner: Retail compliance (team)</span></div><div class="pills"><span class="pill brand">Example Bank AB</span><span class="pill brand">Custody</span><span class="pill brand">Retail clients</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+      </div></div>
+    </div>
+
     <h2 class="k">Loading and error</h2>
     <div class="panel" aria-busy="true" style="height:160px;background:var(--surface-2)"></div>
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the organisation</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     </div>
 
-    <p class="note">Organisation card (TEN-01; departments and teams TEN-02 and TEN-03, chunk 8). Ask and AI drafts is the bank's own switch over its AI features (D-07, SRC-03): one button whose words say what it will do, the current state in a sentence naming the organisation, no pill. Switching is a security change: it needs security manage and a passkey step-up, the prompt opens from the button, and a cancelled prompt or a refusal renders in place with nothing changed. It switches this organisation's Ask and drafts only; the profile's Save never touches it. Any member may read the profile; saving needs security manage and the server's 403 renders in place with its detail and the missing grant. Languages come from the language rows as key and label; the timezone is a free IANA name with Nordic suggestions. The checklist is computed by the server; each undone step links to where it is done. Departments and teams need vocab.manage, as the legal entities do; they need no step-up and no second person, because neither grants access. A department is an org unit whose kind is business area, business unit or function, shown as plain meta text and not as a pill because this card adds no pill slot; it may sit under another, and its head is a member of this tenant. Naming a head is what puts the department on that person's scope switch on My work; the view itself is a filter any member may open. Who is in a team is set on the member row under Members, because that is members.manage. Retiring a team that still owns open work is refused, and merging two teams re-points the owner-team and participant rows.</p>
+    <p class="note">Organisation card (TEN-01; departments and teams TEN-02 and TEN-03, chunk 8). Ask and AI drafts is the bank's own switch over its AI features (D-07, SRC-03): one button whose words say what it will do, the current state in a sentence naming the organisation, no pill. Switching is a security change: it needs security manage and a passkey step-up, the prompt opens from the button, and a cancelled prompt or a refusal renders in place with nothing changed. It switches this organisation's Ask and drafts only; the profile's Save never touches it. Any member may read the profile; saving needs security manage and the server's 403 renders in place with its detail and the missing grant. Languages come from the language rows as key and label; the timezone is a free IANA name with Nordic suggestions. The checklist is computed by the server; each undone step links to where it is done. Departments and teams need vocab.manage, as the legal entities do; they need no step-up and no second person, because neither grants access. A department is an org unit whose kind is business area, business unit or function, shown as plain meta text and not as a pill because this card adds no pill slot; it may sit under another, and its head is a member of this tenant. Naming a head is what puts the department on that person's scope switch on My work; the view itself is a filter any member may open. Who is in a team is set on the member row under Members, because that is members.manage. Retiring a team that still owns open work is refused, and merging two teams re-points the owner-team and participant rows. Legal entities, licences and certificates, and products (TEN-02, TEN-S2 and TEN-S10, D-43) need vocab.manage and no step-up. Legal entities are the org units of kind group and legal entity, drawn as a tree under the group, with the org number, LEI and country as meta text and the legal-entity term as the scope block's brand pill; an inactive unit is dimmed with the date, never hidden. A licence row is a licence or a certificate on one entity: the licence carries its type, authority, reference, granted and withdrawn dates, the services it covers as brand pills and a scope note; a certificate carries its issuer, number, scope statement, issue date, valid until, next audit and owner (a person or a team) and no term, so it decides no applicability and changes no obligation. A withdrawn row is dimmed with its date and stays in the history behind Show withdrawn; its expiry and next audit leave the roadmap. Every write is audited with the values before and after. A product carries its name, description, status, launch date, owner, the entity it belongs to and the terms that scope it, all as the scope block's brand pills; status is plain meta text because this card adds no pill slot, and a retired product is dimmed.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Search</button><button>More</button></nav>
