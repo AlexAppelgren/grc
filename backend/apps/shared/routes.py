@@ -59,4 +59,9 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/vocab/{list_name}/suggestions/{suggestion_id}/decline", "taxonomy.VocabularySuggestion", "vocabulary_suggestion"),
     # c8-reg-status: a legal entity's register row (REG-02).
     ("PATCH", "/obligations/{obligation_id}/register/entities/{org_unit_id}", "register.TenantObligationScope", "register_entity"),
+    # c8-reg-gaps-risk (REG-03). `POST /gaps/{gap_id}/accept-risk` needs a body the guard's
+    # empty one fails before the lookup, so apps/register/tests_gaps.py proves its 404.
+    ("PATCH", "/gaps/{gap_id}", "register.Gap", "gap"),
+    ("POST", "/gaps/{gap_id}/accept-risk/approve", "register.Gap", "gap"),
+    ("POST", "/gaps/{gap_id}/reopen", "register.Gap", "gap"),
 ]

@@ -53,7 +53,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason, set by one person holding `applicability.approve` after a confirmation dialog, with an audit event and no second approver or step-up (D-75); many rows set in one call, one audit event per row | M | R2 | in_progress |
 | REG-02 | Compliance status, status note, risk, owners, process, system, evidence location, next review, per legal entity where the obligation spans several | M | R2 | built |
-| REG-03 | Gaps with owner, severity, target date, remediation, and risk acceptance behind four eyes | M | R2 | in_progress |
+| REG-03 | Gaps with owner, severity, target date, remediation, and risk acceptance behind four eyes | M | R2 | built |
 | REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 | in_progress |
 | REG-05 | Linked internal items (policy, procedure, control, process, system) with external references | M | R2 | in_progress |
 | REG-06 | Yearly attestation by the owner, and waivers | C | R3 | pending |
@@ -139,17 +139,26 @@ And the roadmap lists the target date as "Our deadline"
 When remediation starts
 Then the gap status reads "Remediating" as warning
 ```
+`@integration` covers every step but the roadmap line, which `c8-home-standing-roadmap` makes
+true. A gap is owned by a person or a team; a gap on an obligation, or a legal entity, whose
+answer is "does not apply" is refused with 409 `does_not_apply`, and a gap on a Statement of
+Applicability unit is `c8-units-paste-soa`'s (c8-reg-gaps-risk).
 
 ### REG-S6 — Risk acceptance is behind four eyes with step-up `@integration` `@e2e` (REG-03)
 ```gherkin
 Given an open gap
-When the owner chooses "Accept the risk" with a reason key
-Then the gap shows "Waiting for approval"
-When the owner tries to approve it
-Then the request answers 409 with code "four_eyes_violation"
-When a compliance officer with risk.accept.approve and a fresh step-up approves
-Then the gap reads "Risk accepted" as information and the audit event records both people
+When a compliance officer chooses "Accept the risk" with a reason key
+Then the gap shows "Waiting for approval" and its status does not move
+When the same officer tries to approve it
+Then the request answers 409 with code "four_eyes_violation" and nothing is written
+When a different holder of risk.accept.approve with a fresh step-up approves
+Then the gap reads "Risk accepted" as information and the audit event records both people and the step-up assertion
 ```
+Amended by c8-reg-gaps-risk: four eyes compare the approver with the person who asked for the
+acceptance, as `gap_four_eyes` does (INPUT_DELTAS, c8-register-models), so the requester is a
+compliance officer, who holds `risk.accept.approve` too, rather than the owner, who cannot
+approve at all. Reopening a closed or accepted gap clears the acceptance, audited; the
+acceptance stays in the audit log.
 
 ### REG-S7 — Assessment history and "How we read this rule" are kept per obligation `@integration` `@e2e` (REG-04)
 ```gherkin
