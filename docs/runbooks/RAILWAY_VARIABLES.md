@@ -72,6 +72,9 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `ASK_MAX_TOKENS` | api | `1024` | `1024` | `1024` | The most one Ask answer may write, beneath the `LLM_MAX_TOKENS` ceiling: an answer is a few cited sentences. At least 1, or the app refuses to boot (SRC-03) |
 | `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |
 | `AGENT_RESEARCH_TOPIC_MAX_CHARS` | api | `500` | `500` | `500` | The longest topic a research request or a console re-tag request may carry, in characters (AGT-05, c11-agents-contract); a longer one answers 422 `validation_error` |
+| `AGENT_MIN_CADENCE` | api | `weekly` | `weekly` | `weekly` | The most frequent cadence a bank may give one of its own agents: `daily`, `weekly` or `monthly`, and `manual` is always allowed; a more frequent one answers 422 `above_plan_limit`. Any other value and the app refuses to boot (AGT-04, c11-tenant-agents-budget-scope) |
+| `AGENTS_PER_TENANT_MAX` | api | `3` | `3` | `3` | How many agents of its own a bank may add; one more answers 422 `above_plan_limit` (AGT-04, c11-tenant-agents-budget-scope) |
+| `AGENT_DEFAULT_RUN_HOUR` | api | `6` | `6` | `6` | The hour, from 0 to 23 in the bank's own time zone, a scheduled run of a bank's own agent starts when the bank names none; outside that range the app refuses to boot (AGT-04, c11-tenant-agents-budget-scope) |
 
 ## Testing, observability, budgets
 
@@ -128,6 +131,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 |---|---|---|---|---|---|
 | `NEXT_PUBLIC_API_URL` | web | `http://localhost:8000` | `http://localhost:8000` | the api's public URL | Baked at build time by Next; a change needs a rebuild |
 | `NEXT_PUBLIC_SUPPORT_CONTACT` | web | empty | empty | the address that answers access requests | An email address. The public page's "Write to us" opens a mail to it; empty hides the link. Baked at build time |
+| `NEXT_PUBLIC_RESEARCH_POLL_MS` | web | `5000` | `5000` | `5000` | How often, in milliseconds, `/admin/agents` re-reads a research request still queued or running from its status endpoint (AGT-05). Lower it and a finished request shows sooner at the cost of more reads. Baked at build time |
 
 ## Rules
 

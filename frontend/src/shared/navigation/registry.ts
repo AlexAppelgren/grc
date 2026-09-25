@@ -75,6 +75,9 @@ export const destinations: readonly Destination[] = [
   { id: 'admin-api-keys', href: '/admin/api-keys', labelKey: 'nav.admin.apiKeys', surface: 'tenant', anyOfPermissions: ['integrations.manage'], group: 'admin', parent: 'admin' },
   { id: 'admin-security-log', href: '/admin/security-log', labelKey: 'nav.admin.securityLog', surface: 'tenant', anyOfPermissions: ['security.manage'], group: 'admin', parent: 'admin' },
   { id: 'admin-audit-log', href: '/admin/audit-log', labelKey: 'nav.admin.auditLog', surface: 'tenant', anyOfPermissions: ['audit.read'], group: 'admin', parent: 'admin' },
+  // Agents (c11-fe-admin-agents, AGT-03, AGT-04): bleqq's watch reads under watch.read, so every
+  // member reaches it; the controls on the page are drawn only for agents.manage (ruling 6).
+  { id: 'admin-agents', href: '/admin/agents', labelKey: 'nav.admin.agents', surface: 'tenant', anyOfPermissions: ['watch.read'], group: 'admin', parent: 'admin' },
   { id: 'admin-ai-log', href: '/admin/ai-log', labelKey: 'nav.admin.aiLog', surface: 'tenant', anyOfPermissions: ['ai_log.read'], group: 'admin', parent: 'admin' },
   // Account: any signed-in person, from the who panel.
   { id: 'me-passkeys', href: '/me/passkeys', labelKey: 'nav.me.passkeys', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },

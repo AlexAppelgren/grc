@@ -201,3 +201,25 @@ def user_actor(*, label: str = "Test Person", user_id: uuid.UUID | None = None) 
 
 def agent_actor(*, label: str = "Test Agent", agent_id: uuid.UUID | None = None) -> Actor:
     return Actor(kind=ActorType.AGENT, id=agent_id or uuid.uuid4(), label=label)
+
+
+# c11-tenant-agents-budget-scope (AGT-04)
+def tenant_agent(tenant: Tenant) -> object:
+    """The tenant-isolation guard's record for `PATCH /agents/{tenant_agent_id}`: one of the
+    bank's own agents, on a tenant-scoped definition shared by every bank that asks."""
+    from apps.agents.models import Agent, AgentKind, AgentScopeKind, AgentWritesTo, TenantAgent
+
+    with tenancy.library_write("test"):
+        definition, _ = Agent.objects.get_or_create(
+            key="isolation-bank-watch",
+            defaults={
+                "kind": AgentKind.RESEARCH.value,
+                "current_version": 1,
+                "scope": AgentScopeKind.TENANT.value,
+                "tenant_configurable": True,
+                "writes_to": AgentWritesTo.TENANT.value,
+            },
+        )
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantAgent.objects.create(tenant=tenant, agent=definition)

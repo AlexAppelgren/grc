@@ -182,6 +182,9 @@ Then "Members" and "Invitations" are reachable
 And "Vocabularies", "Security policy", "Agents" and "Integrations" are absent from the navigation
 When they call the vocabulary write endpoint directly
 Then it answers 403 with requiredPermission "vocab.manage"
+When a member holding watch.read but not agents.manage opens "Agents"
+Then they read what bleqq watches with no control on it and a line saying changing agents needs agents.manage, never a page-level 403
+And an admin holding agents.manage sees the same read-only watch above the bank's own spend and agents
 ```
 
 ### ADM-S2 — The members screen invites, assigns roles, re-issues enrolment and revokes sessions `@e2e` (ADM-01)
