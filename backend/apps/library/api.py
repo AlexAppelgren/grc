@@ -106,9 +106,11 @@ REPORT_DESCRIPTION = (
     "Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) "
     "without the permission, including for every platform role; `not_found` (404) when the "
     "{record} is not one this caller may read; `validation_error` (422) when the body is "
-    "malformed, the text is longer than 4000 characters or the path segment is not a UUID; "
-    "`description_required` (422) when the description is only whitespace; `unknown_key` (422) "
-    "when the language is not an active content language."
+    "malformed, the text is longer than 4000 characters or holds a NUL character, or the path "
+    "segment is not a UUID; `description_required` (422) when the description is only "
+    "whitespace; `unknown_key` (422) when the language is not an active content language; "
+    "`rate_limited` (429) when this person has filed 30 reports in the last hour "
+    "(`PROBLEM_REPORTS_PER_USER_PER_HOUR`), to wait out and retry."
 )
 
 REVERIFY_DESCRIPTION = (
