@@ -347,9 +347,11 @@ def _stated_in_language(request: HttpRequest) -> dict[str, Any]:
         No library row moves. An optional `subStatus` places the case inside `assigned`.
         """ + _IF_MATCH + """
 
-        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `owner_required` when no
-        owner is named; `unknown_key` for an urgency or sub-status key the lists do not hold;
-        `validation_error` for a body the schema refuses. """ + _AHEAD
+        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `owner_required` when the
+        owner named is not an active member of this bank whose roles hold `cases.work`;
+        `unknown_key` for an urgency or sub-status key the lists do not hold, with the valid
+        keys in `validKeys`; `validation_error` for a body the schema refuses, including a
+        missing `ownerId`, which the error names."""
     ),
     summary="Decide how urgent a change is for your bank and who owns it",
 )
@@ -376,8 +378,8 @@ def triage_change(request: HttpRequest, body: CasesTriageBody, change_id: uuid.U
         which is a separate fact in the register. """ + _IF_MATCH + """
 
         Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `reason_required` when no
-        reason is given; `unknown_key` for a reason key the list does not hold;
-        `validation_error` for a body the schema refuses. """ + _AHEAD
+        reason is given; `unknown_key` for a reason key the list does not hold, with the valid
+        keys in `validKeys`; `validation_error` for a body the schema refuses."""
     ),
     summary="Set a change aside as not relevant to your bank, with a reason",
 )
@@ -403,7 +405,7 @@ def dismiss_change(request: HttpRequest, body: CasesReasonBody, change_id: uuid.
         earlier decision stays in the case's history. """ + _IF_MATCH + """
 
         Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """, including a case that was
-        signed off. """ + _AHEAD
+        signed off."""
     ),
     summary="Bring a dismissed change back to triage",
 )
@@ -490,10 +492,11 @@ def save_assessment(request: HttpRequest, body: CasesAssessmentBody, change_id: 
         reason's key, never the note. The close can be undone with
         `POST /changes/{changeId}/restore`. """ + _IF_MATCH + """
 
-        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `four_eyes_violation` for a
-        reason of the "signed_off" kind, which needs a second person; `reason_required` when no
-        reason is given; `unknown_key` for a reason key the list does not hold;
-        `validation_error` for a body the schema refuses. """ + _AHEAD
+        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """, including a case waiting for
+        sign-off, which only a second person closes; `four_eyes_violation` for a reason of the
+        "signed_off" kind, which needs a second person; `reason_required` when no reason is
+        given; `unknown_key` for a reason key the list does not hold, with the valid keys in
+        `validKeys`; `validation_error` for a body the schema refuses."""
     ),
     summary="Close a case that needs no work, with a reason",
 )
