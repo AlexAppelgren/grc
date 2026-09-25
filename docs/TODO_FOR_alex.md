@@ -1465,3 +1465,22 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       owner chooses Request sign-off" and receives the 409: with this default the journey
       shows the disabled button and its reason instead, and proves the 409 in
       `tests_scenarios.py`. Say if the card should win.
+
+## c9-e2e-signoff-j3: the sign-off journeys and J-3 (2026-09-25)
+
+- [ ] **The feed's "In progress" tab lists assigned cases only.** It asks `GET /changes`
+      for `tab=assigned`, and the API filters one category, so a case being assessed,
+      implemented or waiting for sign-off is on no tab of the feed (the card's In progress
+      tab shows "Assessment in progress"). Default taken: not fixed here, which would widen
+      a journey package into the feed's API; the sign-off journeys and J-3 open the change
+      from Search, which finds every registered change by title. Proposed fix, for the
+      feed's owner: an `in_progress` value of `tab` covering `assigned`, `assessing`,
+      `implementing` and `signoff`, which the tab then sends.
+- [ ] **CAS-S8 reaches its two 409s from a second tab.** With Request sign-off disabled
+      until `canRequestSignoff` (c9-fe-signoff-casefile's default above), the journey
+      makes the case ready in one tab, opens a second tab, takes the first back to one
+      open action and no evidence, and the stale tab asks: `open_actions`, then, with the
+      action completed, `evidence_missing`. If the card wins, the journey can ask from one tab.
+- [ ] **CAS-S10's teardown cannot return a signed-off case to waiting.** Closed is final
+      and nothing moves it back, so every step settles on the state it finds: a retry after
+      the approval proves the audit row and the obligation on the closed case.
