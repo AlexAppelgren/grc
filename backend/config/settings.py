@@ -701,6 +701,16 @@ CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
 CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
 
 # ---------------------------------------------------------------------------------------
+# ===== COL-01 comments on a record (apps/collab/comments.py, c10-comments-mentions) =====
+# A comment is a note to colleagues, not a document: the cap bounds what one request can
+# store and what a thread of twenty costs to read. An edit is for a slip noticed at once;
+# after the window the author may delete but not rewrite what others have already read
+# (CHUNK10_TASKS ruling 10). Both are settings because neither number is a rule.
+# ---------------------------------------------------------------------------------------
+COMMENT_MAX_CHARS = env_int("COMMENT_MAX_CHARS", 4000)
+COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------

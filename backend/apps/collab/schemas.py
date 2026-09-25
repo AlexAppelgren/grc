@@ -269,9 +269,11 @@ class CollabCommentCreated(CollabComment):
 
     undelivered_mentions: list[PersonRef] = Field(
         description=(
-            "The mentioned people who were not notified because they cannot read this record, "
-            "so the composer can say by name that the mention did not reach them. It never says "
-            "why. Empty when everyone mentioned was notified."
+            "The mentioned people who were not notified, so the composer can say by name that the "
+            "mention did not reach them: someone who cannot read this record, is no longer an "
+            "active member or has switched mentions off. It never says which. The author is never "
+            "notified of their own mention and never listed here. Empty when everyone mentioned "
+            "was notified."
         )
     )
 

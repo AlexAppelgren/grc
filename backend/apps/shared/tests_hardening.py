@@ -300,6 +300,15 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/taxonomy/tenant_lists_logic.py record('vocabulary') tenant_id=tenant.id actor=actor title=list_name": (
         "The same, for a reorder of one tenant's list."
     ),
+    # c10-comments-mentions: a comment on a record is always the bank's own row.
+    "apps/collab/comments.py record(subject_type) tenant_id=tenant.id actor=actor title=title": (
+        "A comment written on a record: the row always carries the writer's bank, so no other "
+        "bank reads it, and the title is the record's own title, never the comment's text."
+    ),
+    "apps/collab/comments.py record(comment.subject_type) tenant_id=tenant.id actor=actor title=title": (
+        "A comment edited or deleted by its author: the same bank's own row, titled by the "
+        "record the comment is on."
+    ),
 }
 
 
