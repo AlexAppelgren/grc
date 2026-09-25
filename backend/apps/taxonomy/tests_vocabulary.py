@@ -32,6 +32,8 @@ from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy.models import (
     CaseStatusCategory,
+    GapStatus,
+    Team,
     CaseSubStatus,
     ChangeLifecycleKind,
     ChangeType,
@@ -56,7 +58,8 @@ from apps.taxonomy.seeds import (
     seed_term_dimensions,
     taxonomy_term_specs,
 )
-from apps.taxonomy.registry import REGISTRY
+from apps.taxonomy.registry import REGISTRY, VocabularyList
+from apps.taxonomy.tenant_lists_logic import KEY_MAX_CHARS, LABEL_MAX_CHARS
 from apps.taxonomy import repoint
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS, SystemRow, ensure_tenant_vocabularies
 from apps.watch import testing as watch_build
@@ -104,7 +107,7 @@ class VocabularyEdges(ScenarioTestCase):
         self.assertEqual(refused.status_code, 422, refused.content)
         self.assertEqual(self._code(refused), "validation_error")
         self.assertIn("ordinal", refused.json()["detail"])
-        created = self._post("/vocab/risk_rating", {"labels": {"en": "Severe"}, "extra": {"ordinal": "9"}}, self.admin)
+        created = self._post("/vocab/risk_rating", {"labels": {"en": "Severe"}, "kind": "high", "extra": {"ordinal": "9"}}, self.admin)
         self.assertEqual(created.status_code, 201, created.content)
         self.activate(self.tenant)
         self.assertEqual(RiskRating.objects.get(tenant=self.tenant, key="severe").ordinal, 9)
@@ -137,7 +140,7 @@ class VocabularyEdges(ScenarioTestCase):
         self.assertEqual(plain.status_code, 201, plain.content)
         self.assertIsNone(plain.json()["kind"])
         # The list's own columns are written from the camelCased names reads return.
-        rated = self._post("/vocab/risk_rating", {"labels": {"en": "Severe"}, "extra": {"ordinal": 9}}, self.admin)
+        rated = self._post("/vocab/risk_rating", {"labels": {"en": "Severe"}, "kind": "high", "extra": {"ordinal": 9}}, self.admin)
         self.assertEqual(rated.status_code, 201, rated.content)
         self.assertEqual(rated.json()["extra"], {"ordinal": 9})
         self.activate(self.tenant)
@@ -723,3 +726,175 @@ class LibraryListUsage(ScenarioTestCase):
         with self.assertRaises(RuntimeError):
             preview(conduct, disclosure)
         self.assertEqual(REGISTRY["rejection_reason"].repoint(conduct, disclosure), {})
+
+
+def _shape(entry: VocabularyList) -> tuple[Any, ...]:
+    """What a registry entry promises its readers: tier, models, kind, extra columns,
+    whether it is proposed, its references and, for a library list, its links."""
+    return (
+        entry.tier,
+        entry.model.__name__,
+        entry.label_model.__name__,
+        entry.kind_name,
+        entry.kinds,
+        entry.kind_required,
+        entry.extra_fields,
+        entry.proposable,
+        tuple(sorted(entry.references.items())),
+        tuple((link.model.__name__, link.field) for link in entry.links),
+    )
+
+
+# The registry as chunk 8 found it on main, entry by entry. Chunk 8's register lists change
+# exactly five things: the four lists below and the fixed level on risk_rating (VOC-05).
+REGISTRY_BEFORE_CHUNK_8: dict[str, tuple[Any, ...]] = {
+    "term_dimension": (2, "TermDimension", "TermDimensionLabel", "term_dimension_kind", ("scope", "classification", "opt_in"), True, ("restricts_footprint",), True, (), ()),
+    "instrument_level": (2, "InstrumentLevel", "InstrumentLevelLabel", "instrument_level_kind", ("standard",), False, ("binding_default", "rank"), True, (), (("Instrument", "level"),)),
+    "provision_kind": (2, "ProvisionKind", "ProvisionKindLabel", "provision_structural_kind", ("division", "unit", "annex"), True, ("jurisdiction",), True, (("jurisdiction", "jurisdiction"),), (("Provision", "kind"),)),
+    "change_type": (2, "ChangeType", "ChangeTypeLabel", "change_lifecycle_kind", ("pre_adoption", "adopted", "in_force", "supervisory", "recurring"), True, (), True, (), (("RegulatoryChange", "change_type"),)),
+    "duty_type": (2, "DutyType", "DutyTypeLabel", None, (), False, (), True, (), (("Obligation", "duty_type"),)),
+    "relation_type": (2, "RelationType", "RelationTypeLabel", None, (), False, (), True, (), (("InstrumentRelation", "relation_type"), ("ObligationRelation", "relation_type"))),
+    "source_kind": (2, "SourceKind", "SourceKindLabel", None, (), False, (), True, (), (("Source", "kind"),)),
+    "urgency": (2, "Urgency", "UrgencyLabel", "pill_tone", ("information", "notice", "positive", "warning", "negative", "brand"), True, ("ordinal", "sla_days"), True, (), (("RegulatoryChange", "suggested_urgency"),)),
+    "library_tag": (2, "LibraryTag", "LibraryTagLabel", None, (), False, (), True, (), (("ObligationTag", "tag"),)),
+    "flag": (2, "Flag", "FlagLabel", None, (), False, (), True, (), (("ChangeTerm", "flag"),)),
+    "rejection_reason": (2, "RejectionReason", "RejectionReasonLabel", None, (), False, (), True, (), ()),
+    "jurisdiction": (2, "Jurisdiction", "JurisdictionLabel", "jurisdiction_kind", ("supranational", "country", "international"), True, (), False, (), ()),
+    "tenant_tag": (3, "TenantTag", "TenantTagLabel", None, (), False, (), True, (), ()),
+    "link_kind": (3, "LinkKind", "LinkKindLabel", None, (), False, (), True, (), ()),
+    "effort_size": (3, "EffortSize", "EffortSizeLabel", None, (), False, (), True, (), ()),
+    "compliance_status": (3, "ComplianceStatus", "ComplianceStatusLabel", "compliance_category", ("compliant", "partly", "gap", "not_assessed"), True, ("ordinal",), True, (), ()),
+    "risk_rating": (3, "RiskRating", "RiskRatingLabel", None, (), False, ("ordinal",), True, (), ()),
+    "case_sub_status": (3, "CaseSubStatus", "CaseSubStatusLabel", "case_status", ("new", "assigned", "assessing", "implementing", "signoff", "closed", "dismissed"), True, (), True, (), ()),
+    "dismissal_reason": (3, "DismissalReason", "DismissalReasonLabel", None, (), False, (), True, (), ()),
+    "close_reason": (3, "ClosureReason", "ClosureReasonLabel", "close_reason", ("signed_off", "not_applicable", "no_action"), True, (), True, (), ()),
+}
+CHUNK_8_CHANGES: dict[str, tuple[Any, ...]] = {
+    "risk_rating": (3, "RiskRating", "RiskRatingLabel", "risk_level", ("low", "medium", "high"), True, ("ordinal",), True, (), ()),
+    "gap_status": (3, "GapStatus", "GapStatusLabel", "gap_category", ("open", "remediating", "risk_accepted", "closed"), True, (), True, (), ()),
+    "gap_source": (3, "GapSource", "GapSourceLabel", None, (), False, (), True, (), ()),
+    "risk_acceptance_reason": (3, "RiskAcceptanceReason", "RiskAcceptanceReasonLabel", None, (), False, (), True, (), ()),
+    "team": (3, "Team", "TeamLabel", None, (), False, ("email",), True, (), ()),
+}
+
+# One category of each categorised tenant list and the system row that holds it (VOC-04).
+CATEGORY_ROWS = {
+    "compliance_status": ("partly", "partly_compliant"),
+    "case_sub_status": (CaseStatusCategory.ASSESSING.value, "assessing"),
+    "close_reason": ("no_action", "no_action"),
+    "gap_status": ("remediating", "remediating"),
+}
+
+
+class RegisterLists(ScenarioTestCase):
+    """Chunk 8's register lists (VOC-04, VOC-05, VOC-06, REG-03, TEN-03) and the rules every
+    categorised tenant list shares."""
+
+    def setUp(self) -> None:
+        seed_languages()
+        self.tenant = factories.tenant(slug="bank")
+        self.activate(self.tenant)
+        ensure_tenant_vocabularies(self.tenant, actor=SEED)
+        self.admin = sign_in(factories.member(self.tenant, roles=("admin",)).user, tenant=self.tenant)
+
+    def _post(self, path: str, body: dict[str, Any]) -> Any:
+        return self.client.post(f"{V1}{path}", data=body, content_type="application/json", **self.admin)
+
+    def _patch(self, path: str, body: dict[str, Any]) -> Any:
+        return self.client.patch(f"{V1}{path}", data=body, content_type="application/json", **self.admin)
+
+    def _items(self, list_name: str) -> dict[str, Any]:
+        response = self.client.get(f"{V1}/vocab/{list_name}", **self.admin)
+        self.assertEqual(response.status_code, 200, response.content)
+        return {row["key"]: row for row in response.json()["items"]}
+
+    def test_the_registry_gained_exactly_the_five_changes(self) -> None:
+        self.assertEqual({name: _shape(entry) for name, entry in REGISTRY.items()}, REGISTRY_BEFORE_CHUNK_8 | CHUNK_8_CHANGES)
+        self.assertEqual(set(REGISTRY) - set(REGISTRY_BEFORE_CHUNK_8), {"gap_status", "gap_source", "risk_acceptance_reason", "team"})
+
+    def test_retiring_the_last_value_of_a_category_is_refused_on_every_categorised_list(self) -> None:
+        for list_name, (kind, system_key) in CATEGORY_ROWS.items():
+            with self.subTest(list=list_name):
+                self.activate(self.tenant)
+                events = AuditEvent.objects.filter(tenant=self.tenant).count()
+                # The system row alone holds the category: the refusal names the category.
+                refused = self._post(f"/vocab/{list_name}/{system_key}/retire", {"confirm": True})
+                self.assertEqual(refused.status_code, 409, refused.content)
+                self.assertEqual(refused.json()["code"], "category_empty")
+                self.assertIn(kind, refused.json()["detail"])
+                self.activate(self.tenant)
+                self.assertEqual(AuditEvent.objects.filter(tenant=self.tenant).count(), events, "a refusal records nothing")
+                # An organisation's own value is refused the same way once it is the last one.
+                own = self._post(f"/vocab/{list_name}", {"labels": {"en": f"Our own {list_name}"}, "kind": kind, "force": True})
+                self.assertEqual(own.status_code, 201, own.content)
+                self.activate(self.tenant)
+                REGISTRY[list_name].model.objects.filter(tenant=self.tenant, key=system_key).update(active=False)
+                events = AuditEvent.objects.filter(tenant=self.tenant).count()
+                last = self._post(f"/vocab/{list_name}/{own.json()['key']}/retire", {"confirm": True})
+                self.assertEqual(last.json()["code"], "category_empty")
+                self.activate(self.tenant)
+                self.assertTrue(REGISTRY[list_name].model.objects.get(tenant=self.tenant, key=own.json()["key"]).active)
+                self.assertEqual(AuditEvent.objects.filter(tenant=self.tenant).count(), events, "a refusal records nothing")
+
+    def test_the_register_lists_file_system_rows_in_en_and_sv_and_a_deploy_keeps_a_relabel(self) -> None:
+        expected: dict[str, dict[str, str | None]] = {
+            "gap_status": {"open": "open", "remediating": "remediating", "risk_accepted": "risk_accepted", "closed": "closed"},
+            "gap_source": dict.fromkeys(("assessment", "change_case", "audit", "incident", "regulator")),
+            "risk_acceptance_reason": dict.fromkeys(("accepted_by_management", "cost_disproportionate", "compensating_control", "time_limited", "other")),
+            "risk_rating": {"low": "low", "medium": "medium", "high": "high"},
+        }
+        for list_name, kinds in expected.items():
+            with self.subTest(list=list_name):
+                self.activate(self.tenant)
+                entry = REGISTRY[list_name]
+                rows = entry.model.objects.filter(tenant=self.tenant, is_system=True)
+                self.assertEqual({row.key: row.kind for row in rows}, kinds)
+                languages = {(label.vocabulary.key, label.language) for label in entry.label_model.objects.filter(tenant=self.tenant)}
+                self.assertEqual(languages, {(key, language) for key in kinds for language in ("en", "sv")})
+        relabelled = self._patch("/vocab/gap_status/open", {"labels": {"en": "Found", "sv": "Hittad"}})
+        self.assertEqual(relabelled.status_code, 200, relabelled.content)
+        call_command("seed_reference", stdout=StringIO())
+        self.assertEqual((self._items("gap_status")["open"]["label"], self._items("gap_status")["open"]["kind"]), ("Found", "open"))
+        self.activate(self.tenant)
+        self.assertEqual(GapStatus.objects.get(tenant=self.tenant, key="open").labels.get(language="sv").text, "Hittad")
+
+    def test_the_team_list_serves_active_teams_with_their_email(self) -> None:
+        created = self._post("/vocab/team", {"labels": {"en": "Legal", "sv": "Juridik"}, "extra": {"email": "legal@bank.example"}})
+        self.assertEqual(created.status_code, 201, created.content)
+        bad = self._post("/vocab/team", {"labels": {"en": "Cards"}, "extra": {"email": "not an address"}})
+        self.assertEqual(bad.status_code, 422, bad.content)
+        self.assertIn("email", bad.json()["detail"])
+        teams = self._items("team")
+        self.assertEqual({key: (row["label"], row["extra"]) for key, row in teams.items()}, {"compliance": ("Compliance", {"email": ""}), "legal": ("Legal", {"email": "legal@bank.example"})})
+        self.assertEqual(self._post("/vocab/team/legal/retire", {"confirm": True}).status_code, 200)
+        self.assertEqual(set(self._items("team")), {"compliance"})
+        # A team is addressable by (tenant, id), so a membership can carry a composite key to it.
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'team_tenant_id_unique'")
+            self.assertEqual(cursor.fetchone(), ("UNIQUE (tenant_id, id)",))
+        self.activate(self.tenant)
+        self.assertEqual(Team.objects.filter(tenant=self.tenant).count(), 2)
+
+    def test_a_label_longer_than_its_column_is_refused_naming_the_language(self) -> None:
+        """H35: a label is capped at its column's width, on a tenant list and on a library
+        proposal alike, so it is a 422 when it is written, never a 500 when it is saved."""
+        self.assertEqual((LABEL_MAX_CHARS, KEY_MAX_CHARS), (200, 80))
+        seed_library_vocabularies()
+        too_long = "x" * (LABEL_MAX_CHARS + 1)
+        created = self._post("/vocab/tenant_tag", {"labels": {"en": too_long}})
+        self.assertEqual((created.status_code, created.json()["code"]), (422, "validation_error"))
+        self.assertIn("labels.en", created.json()["detail"])
+        relabel = self._patch("/vocab/tenant_tag/follow_up", {"labels": {"en": "Fine", "sv": too_long}})
+        self.assertEqual(relabel.status_code, 422, relabel.content)
+        self.assertIn("labels.sv", relabel.json()["detail"])
+        editor = sign_in(factories.platform_user(roles=("library_editor",), email="editor@bleqq.test"))
+        proposed = self.client.post(f"{V1}/vocab/flag", data={"labels": {"en": too_long}}, content_type="application/json", **editor)
+        self.assertEqual(proposed.status_code, 422, proposed.content)
+        self.assertIn("labels.en", proposed.json()["detail"])
+        # A label that fits makes a key cut to the key column; a key given too long is refused.
+        fits = self._post("/vocab/tenant_tag", {"labels": {"en": "y" * LABEL_MAX_CHARS}})
+        self.assertEqual(fits.status_code, 201, fits.content)
+        self.assertEqual(fits.json()["key"], "y" * KEY_MAX_CHARS)
+        keyed = self._post("/vocab/tenant_tag", {"labels": {"en": "Leasing"}, "key": "k" * (KEY_MAX_CHARS + 1)})
+        self.assertEqual(keyed.status_code, 422, keyed.content)
+        self.assertIn("key", keyed.json()["detail"])
