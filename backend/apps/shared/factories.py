@@ -33,7 +33,7 @@ from types import SimpleNamespace
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, Team, VocabularySuggestion
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -56,6 +56,8 @@ from apps.library.seeds import LANGUAGES
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
+from apps.tenants.models import Licence, OrgUnit, OrgUnitKind, SupportAccess, TenantProduct
+from apps.tenants.testing import licence_type_term
 
 _counter = itertools.count(1)
 
@@ -201,3 +203,51 @@ def user_actor(*, label: str = "Test Person", user_id: uuid.UUID | None = None) 
 
 def agent_actor(*, label: str = "Test Agent", agent_id: uuid.UUID | None = None) -> Actor:
     return Actor(kind=ActorType.AGENT, id=agent_id or uuid.uuid4(), label=label)
+
+
+# ---------------------------------------------------------------------------------------
+# c8-tenants-contract: the tenant-isolation guard's records for the chunk 8 tenants routes
+# (TEN-02, TEN-03, TEN-06). A licence's type is a library term this file may not write;
+# apps/tenants/testing.py, which the library fence exempts, writes it.
+# ---------------------------------------------------------------------------------------
+def org_unit(tenant: Tenant, *, name: str | None = None) -> OrgUnit:
+    """A department of `tenant` (a business area), which needs no legal-entity term."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return OrgUnit.objects.create(
+            tenant=tenant, kind=OrgUnitKind.BUSINESS_AREA.value, name=name or f"Business area {next(_counter)}"
+        )
+
+
+def licence(tenant: Tenant) -> Licence:
+    """A licence held by a department of `tenant`; its type is the one test term."""
+    unit = org_unit(tenant=tenant)
+    term = licence_type_term()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return Licence.objects.create(tenant=tenant, org_unit=unit, licence_type=term)
+
+
+def tenant_product(tenant: Tenant, *, name: str | None = None) -> TenantProduct:
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantProduct.objects.create(tenant=tenant, name=name or f"Product {next(_counter)}")
+
+
+def team_key(tenant: Tenant) -> SimpleNamespace:
+    """A team of `tenant`, addressed by key: `.id` is its key, which no other bank's team
+    shares, so the only thing between another bank and the team is tenancy."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        team = Team.objects.create(tenant=tenant, key=f"team-{next(_counter)}")
+    return SimpleNamespace(id=team.key, team=team)
+
+
+def support_access(tenant: Tenant) -> SupportAccess:
+    """A support-access row of `tenant`, as chunk 1's recovery writes one."""
+    requester = platform_user()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return SupportAccess.objects.create(
+            tenant=tenant, platform_user=requester, reason="The bank's watch feed stopped updating.", started_at=timezone.now()
+        )
