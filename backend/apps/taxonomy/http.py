@@ -28,7 +28,7 @@ from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 
 from apps.shared import permissions as perms
-from apps.shared.audit import Actor, ActorType
+from apps.shared.audit import Actor, ActorType, key_actor
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.errors import STATUS_BY_CODE, ProblemError, problem_response
 
@@ -128,12 +128,11 @@ def caller_tenant(request: HttpRequest) -> Any:
 
 def actor_for(request: HttpRequest, user: Any = None) -> Actor:
     """The audit actor. A person's name may be in the audit log (playbook 4.7); an agent's
-    key names its agent (ID-10), and a key bound to none is still named by its own id."""
+    key names its agent (ID-10), a personal access token its person and an agent access
+    entry's key its entry (ACC-03), and a key bound to none is still named by its own id."""
     who = principal(request)
     if who.kind is PrincipalKind.AGENT:
-        if who.agent_id is not None:
-            return Actor(kind=ActorType.AGENT, id=who.agent_id, label=who.agent_label)
-        return Actor(kind=ActorType.AGENT, id=who.subject_id, label=f"api key {who.subject_id}")
+        return key_actor(who)
     user = user if user is not None else caller_user(request)
     return Actor(kind=ActorType.USER, id=user.id, label=user.name)
 
