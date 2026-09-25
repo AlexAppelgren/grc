@@ -54,8 +54,6 @@
   "inventory.obligation.createdLabel": "Created",
   "inventory.obligation.createdByAgent": "{date} by {model}, through proposal review",
   "inventory.obligation.createdByPerson": "{date}, through proposal review",
-  "inventory.obligation.registerTitle": "Does it apply to us, where we stand, gaps",
-  "inventory.obligation.registerBody": "Whether this duty reaches us, and how we stand on it, arrive in a later release. Being listed here says neither.",
   "inventory.obligation.versionsLabel": "Versions",
   "inventory.obligation.asOfBanner": "Showing version {number}, in force on {date}.",
   "inventory.obligation.asOfNoVersion": "No version of this obligation was in force on {date}.",
