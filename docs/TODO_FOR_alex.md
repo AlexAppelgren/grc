@@ -1503,3 +1503,19 @@ Nothing waits for these; each has the default the build took.
       draws them against the published contract; `c11-tenant-controls-cap` and
       `c11-research-requests` (wave 5) fill the routes. The research panel shows only once the
       bank has an agent of its own.
+
+## acc-fe-admin: the Access tab and tenant reach panel, answered by default (2026-09-25, ACC-01, ACC-03, ACC-08)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **The key dialog does not print the longest expiry.** `AGENT_ACCESS_KEY_MAX_DAYS` is a
+      server setting no route exposes, so the card's "At most 90 days, so 24 Dec 2026 at the
+      latest" would mean copying the number into the frontend. Default: the hint says a key
+      never lives longer than the platform allows, an empty date takes the longest, and the
+      server's `expiry_too_late` renders under the form. Say if `GET /agent-access/{entryId}`
+      (or a settings read) should carry the maximum so the dialog can name the date.
+- [ ] **Without `security.manage` the Access tab cannot know the organisation's switch.**
+      `GET /tenant/reach` needs it, so a member holding `agent_access.manage` alone sees
+      "Whether our own agents may read our register decisions is set under Security" and no
+      "Reads our register" or "Library only" pill, rather than a guess. Every seeded admin
+      holds both. Say if the entry should carry the effective reach itself.
