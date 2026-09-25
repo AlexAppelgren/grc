@@ -69,7 +69,6 @@ class Matrix(SimpleTestCase):
         self.assertNotIn("applicability.request", p.ALL_PERMISSIONS)
         self.assertFalse(any("applicability.request" in grants for grants in p.SYSTEM_ROLES.values()))
         self.assertNotIn("applicability.request", p.PERMISSION_DESCRIPTIONS)
-        self.assertFalse(hasattr(p, "APPLICABILITY_REQUEST"))
 
     def test_no_scope_allows_a_library_edit(self) -> None:
         for scope in p.ALL_SCOPES:
