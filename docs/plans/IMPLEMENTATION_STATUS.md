@@ -31,9 +31,9 @@ commit for the chunk is on `main`. `pending` means none.
 | 8 | Register | R2 | | | | pending | PRD 0.3 adds HOM-05, COL-04, REG-08 and the amended TEN-02, TEN-03 and REG-01. HOM-05, COL-04, TEN-02 and TEN-03 sit above the cuttable Should items in the Build plan's list (D-26). D-75 (PRD 0.6) amends REG-01: one compliance person sets applicability after a confirmation dialog, with an audit event and no second approver or step-up; risk acceptance keeps its four eyes. The chunk 8 tasks that file, approve or decide applicability requests are re-planned before the chunk starts (`CHUNK8_TASKS.md`, "Amended by D-75") |
 | 9 | Case workflow | R2 | | | | pending | |
 | 10 | Collaboration | R2 | | | | pending | |
-| 11 | Tenant-controlled agents, and agent access | R2 | | | | pending | PRD 0.5 adds ACC-01 to ACC-09, the agents a bank runs itself (`docs/plans/briefs/AGENT_ACCESS.md`). ACC sits below the AGT work in the chunk's list and is cut first under the descope rule, moving whole to chunk 13 |
+| 11 | Tenant-controlled agents, and agent access | R2 | | | | pending | PRD 0.5 adds ACC-01 to ACC-09, the agents a bank runs itself (`docs/plans/briefs/AGENT_ACCESS.md`). ACC sits below the AGT work in the chunk's list and is cut first under the descope rule, moving whole to chunk 13. PRD 0.7 adds OWN-01 to OWN-05 and moves INV-07 here from chunk 13 (D-89, D-91, ADR 0059, `docs/plans/briefs/SCOPE_ITEMS.md`) |
 | 12 | Reports, exports, import, exit | R3 | | | | pending | |
-| 13 | Integrations and enterprise access | R3 | | | | pending | PRD 0.5 adds ACC-10, the map of which application touches which register entry |
+| 13 | Integrations and enterprise access | R3 | | | | pending | PRD 0.5 adds ACC-10, the map of which application touches which register entry. PRD 0.7 moves INV-07 to chunk 11 with OWN; private sources (WAT-06) stay here |
 | 14 | Hardening and assurance | R3 | | | | pending | |
 
 ## Chunk 0: Phase 0 checklist
