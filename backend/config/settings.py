@@ -673,6 +673,13 @@ CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
 CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
 
 # ---------------------------------------------------------------------------------------
+# ===== c8-reg-applicability: REG-01, AC-REG1 many answers in one call (D-75) ============
+# The most applicability answers one confirmed call stores (POST /applicability). Each row
+# is a write and an audit event in one transaction, so the cap keeps a call inside the API
+# budget; a longer call is refused whole and stores nothing.
+REGISTER_BULK_MAX = env_int("REGISTER_BULK_MAX", 100)
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------
