@@ -482,12 +482,35 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(unmapped.json()["code"], "unknown_key")
         self.assertIn("low, medium, high", unmapped.json()["detail"])
 
-    @skip("pending: VOC-S10 (VOC-06, R2)")
     def test_voc_s10(self) -> None:
         """VOC-S10
 
-        Reason lists drive dismissal, closure and risk acceptance (VOC-06).
+        Reason lists drive dismissal, closure and risk acceptance (VOC-06). The dismissal
+        and closure half (c9-triage); risk acceptance is the register's gap work (REG-03).
         """
+        officer = sign_in(self.officer, tenant=self.tenant)
+        dismissed = cases_build.case_on_a_new_change(self.tenant)
+        closed = cases_build.case_on_a_new_change(self.tenant)
+        cases_build.in_category(closed, CaseStatusCategory.ASSIGNED)
+
+        answer = self._post(f"/changes/{dismissed.change_id}/dismiss", {"reasonKey": "out_of_scope"}, officer, HTTP_IF_MATCH="1")
+        self.assertEqual(answer.status_code, 200, answer.content)
+        self.assertEqual(answer.json()["dismissedReason"], {"key": "out_of_scope", "kind": None, "label": "Out of scope"})
+        self.activate(self.tenant)
+        self.assertEqual(ChangeCase.objects.filter(pk=dismissed.id).values_list("dismissed_reason__key", flat=True).get(), "out_of_scope", "the case stores the key")
+
+        for path, body, vocabulary in (
+            (f"/changes/{closed.change_id}/dismiss", {"reasonKey": "not_a_reason"}, "dismissal_reason"),
+            (f"/changes/{closed.change_id}/close", {"reasonKey": "not_a_reason"}, "close_reason"),
+        ):
+            with self.subTest(vocabulary=vocabulary):
+                refused = self._post(path, body, officer, HTTP_IF_MATCH="1")
+                self.assertEqual(refused.status_code, 422, refused.content)
+                self.assertEqual(refused.json()["code"], "unknown_key")
+                self.assertEqual(refused.json()["vocabulary"], vocabulary)
+                self.activate(self.tenant)
+                valid = set(REGISTRY[vocabulary].model.objects.filter(tenant=self.tenant, active=True).values_list("key", flat=True))
+                self.assertEqual(set(refused.json()["validKeys"]), valid)
 
     def test_voc_s11(self) -> None:
         """VOC-S11

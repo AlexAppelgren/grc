@@ -31,9 +31,9 @@ are identical either way.
 
 Limits, in words as well as in the keywords: every list here pages at 20 by default and
 100 at most, and a `limit` above the maximum answers 422 rather than being clamped
-(`apps/shared/schemas.py:PageQuery`). No record in this app is versioned in R1, so no
-write here takes `If-Match`; the case's own concurrency arrives with the rest of CAS-08 in
-chunk 9. The agent writes (`POST /changes`, its documents, its events, its obligation
+(`apps/shared/schemas.py:PageQuery`). No record in this app is versioned, so no write here
+takes `If-Match`; the bank's case carries its own `version`, which the change page answers
+and the case workflow's writes read (CAS-08, `apps/cases/api.py`). The agent writes (`POST /changes`, its documents, its events, its obligation
 links and the source check) take an `Idempotency-Key` header because an agent retries;
 `POST /changes` is additionally idempotent on `stableKey` (AC-WAT1). One thing here takes
 a passkey step-up: a person's intervention in the curation agents do — confirming a fact,
@@ -51,9 +51,12 @@ from ninja import Field
 from pydantic import ConfigDict, HttpUrl, UrlConstraints, model_validator
 from pydantic.json_schema import JsonDict
 
+from apps.cases.schemas import ASSESSMENT_EXAMPLE as CASES_ASSESSMENT_EXAMPLE
+from apps.cases.schemas import NOTE_MAX, CasesAssessment, CasesVocabularyRef
 from apps.governance.schemas import AiCitation
 from apps.library.schemas import AgentRef, LibraryRef, LibraryResponse
 from apps.shared.schemas import AgentDecision, CamelSchema, PageQuery, WriteBody
+from apps.taxonomy.schemas import PersonRef
 
 __all__ = ["CamelSchema"]
 
@@ -178,7 +181,31 @@ CASE_EXAMPLE: JsonDict = {
     "soWhatConfirmedAt": None,
     "soWhatConfirmedByName": None,
     "obligationDecisions": [],
-    "allowedTransitions": [],
+    "subStatus": None,
+}
+CASE_WORKFLOW_EXAMPLE: JsonDict = {
+    **CASE_EXAMPLE,
+    "category": "assessing",
+    "urgency": {"key": "within_3_months", "kind": None, "label": "Within 3 months"},
+    "urgencyConfirmed": True,
+    "ownerId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+    "owner": {"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Sara Lind"},
+    "triagedBy": {"id": "5b7e2c1a-9d3f-4e8b-a6c4-0f1e2d3c4b5a", "name": "Johan Berg"},
+    "triagedAt": "2026-09-17T08:40:00Z",
+    "dismissedReason": None,
+    "dismissedBy": None,
+    "dismissedAt": None,
+    "signoffRequestedBy": None,
+    "signoffRequestedAt": None,
+    "signedOffBy": None,
+    "closeReason": None,
+    "closedNote": None,
+    "closedAt": None,
+    "assessment": CASES_ASSESSMENT_EXAMPLE,
+    "openActionCount": 2,
+    "canRequestSignoff": False,
+    "allowedTransitions": ["implementing", "closed"],
+    "version": 4,
 }
 CHANGE_ROW_EXAMPLE: JsonDict = {
     "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
@@ -256,7 +283,7 @@ CHANGE_DETAIL_EXAMPLE: JsonDict = CHANGE_EXAMPLE | {
     "terms": [TERM_FACT_EXAMPLE],
     "changeTypeFact": CHANGE_TYPE_FACT_EXAMPLE,
     "inFootprint": True,
-    "case": CASE_EXAMPLE,
+    "case": CASE_WORKFLOW_EXAMPLE,
 }
 # What a confirming agent sends: the facts it checked against the pages the change cites,
 # and the model call behind that decision (D-74, D-80).
@@ -1767,8 +1794,8 @@ class WatchChangeCase(LibraryResponse):
             "`assigned` (triaged with an urgency and an owner), `assessing` (the owner is "
             "working out what it means), `implementing` (actions are open), `signoff` (waiting "
             "for a second person), `closed` and `dismissed` (not for us, with a reason, and "
-            "restorable). A bank may name sub-statuses inside a category; the guards read the "
-            "category alone. In R1 every case is `new`: triage onwards is chunk 9."
+            "restorable). A bank may name sub-statuses inside a category, answered in "
+            "`subStatus`; the guards read the category alone."
         ),
         examples=["new"],
     )
@@ -1792,7 +1819,7 @@ class WatchChangeCase(LibraryResponse):
     owner_id: uuid.UUID | None = Field(
         description=(
             f"The person in this bank who owns the case, as {_UUID}, once triage names one. Null "
-            "before triage, which is where every case sits in R1. Never a person of another bank."
+            "before triage, and kept after a dismissal only if one was named. Never a person of another bank."
         ),
         examples=[None],
     )
@@ -1839,19 +1866,114 @@ class WatchChangeCase(LibraryResponse):
     obligation_decisions: list[WatchCaseObligationDecision] = Field(
         description="What this bank decided about the suggested obligation links. An empty list means it has decided nothing yet."
     )
+    sub_status: CasesVocabularyRef | None = Field(
+        description=(
+            "The bank's own finer step inside `category`, from its `case_sub_status` "
+            "vocabulary, whose `kind` is the category the row sits in; day one seeds one per "
+            "category, keyed like it. The values are rows of the bank's own vocabulary, which "
+            "the bank's admin may extend, relabel or retire without a deploy, so read "
+            "`GET /vocab/case_sub_status` for the live set and match on the key, never on the "
+            "label. It changes nothing a guard decides. Null when the bank uses none here."
+        ),
+    )
+
+
+_PERSON = "A person in this bank, as their id and display name; the only personal data this read carries about them."
+
+
+class WatchCaseWorkflow(WatchChangeCase):
+    """`GET /changes/{changeId}`'s `case`: everything a feed row says about the bank's case,
+    plus the workflow block the change page works it from — who triaged, dismissed, asked
+    for and gave sign-off and when, why it was closed, how many actions are open, whether
+    sign-off can be asked for, and the moves this reader may make now. Every value is
+    computed by the server from the case and the state machine; a screen never guesses a
+    move. The bank's own zone: no other bank, no bleqq person and no model endpoint sees it."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [CASE_WORKFLOW_EXAMPLE]})
+
+    owner: PersonRef | None = Field(description=f"Who owns the case, named at triage. {_PERSON} Null before triage.")
+    triaged_by: PersonRef | None = Field(description=f"Who triaged the case. {_PERSON} Null before triage.")
+    triaged_at: datetime.datetime | None = Field(
+        description="When the case was triaged, as an RFC 3339 timestamp in UTC (`2026-09-17T08:40:00Z`). Null before triage.",
+        examples=["2026-09-17T08:40:00Z"],
+    )
+    dismissed_reason: CasesVocabularyRef | None = Field(
+        description=(
+            "Why the bank dismissed the change, from its `dismissal_reason` vocabulary, "
+            "`out_of_scope`, `duplicate` and `already_covered` on day one; rows the bank's admin "
+            "may extend, so read `GET /vocab/dismissal_reason` for the live set and match on the "
+            "key. Null unless the case is or was dismissed."
+        )
+    )
+    dismissed_by: PersonRef | None = Field(description=f"Who dismissed it. {_PERSON} Null unless it was dismissed.")
+    dismissed_at: datetime.datetime | None = Field(
+        description="When it was dismissed, as an RFC 3339 timestamp in UTC. Null unless it was dismissed.", examples=[None]
+    )
+    signoff_requested_by: PersonRef | None = Field(
+        description=f"Who asked for sign-off; this person can never give it. {_PERSON} Null until someone asks."
+    )
+    signoff_requested_at: datetime.datetime | None = Field(
+        description="When sign-off was asked for, as an RFC 3339 timestamp in UTC. Null until someone asks.", examples=[None]
+    )
+    signed_off_by: PersonRef | None = Field(
+        description=f"The second person who signed the case off with a passkey, never the one who asked. {_PERSON} Null until then."
+    )
+    close_reason: CasesVocabularyRef | None = Field(
+        description=(
+            "Why the case was closed, from the bank's `close_reason` vocabulary, whose `kind` is "
+            "one of `signed_off` (a second person signed it off), `no_action` or `not_applicable` "
+            "(one person closed it, audited); rows the bank's admin may extend, so read "
+            "`GET /vocab/close_reason` for the live set and match on the key. Null while open."
+        )
+    )
+    closed_at: datetime.datetime | None = Field(
+        description="When the case was closed, as an RFC 3339 timestamp in UTC. Null while it is open.", examples=[None]
+    )
+    closed_note: str | None = Field(
+        description=(
+            f"The note the person who closed the case without action wrote, at most {NOTE_MAX} characters. "
+            "Tenant content. Null while the case is open and when no note was written."
+        ),
+        examples=[None],
+    )
+    assessment: CasesAssessment | None = Field(
+        description=(
+            "The bank's impact assessment of the change, as `saveAssessment` last saved it. Tenant "
+            "content. Null before the case reaches assessing."
+        )
+    )
+    open_action_count: int = Field(
+        description="How many live actions are not done yet, counted by the server. A removed action is not counted.",
+        examples=[2],
+    )
+    can_request_signoff: bool = Field(
+        description=(
+            "Computed by the server from the state machine: true when the case is implementing, "
+            "no action is open and at least one piece of evidence passed the malware scan."
+        ),
+        examples=[False],
+    )
     allowed_transitions: list[CaseCategory] = Field(
         description=(
-            "The categories this case may move to next, computed by the server from the state "
-            "machine's guards. A fixed kind in code, not a vocabulary an admin extends, and the "
-            "seven members are: `new`, registered and nobody has looked; `assigned`, triaged "
-            "with an urgency and an owner; `assessing`, the owner is working out what it means "
-            "for the bank; `implementing`, actions are open; `signoff`, waiting for a second "
-            "person to sign it off with a passkey; `closed`, signed off or closed with a reason; "
-            "and `dismissed`, not for this bank, with a reason, and restorable. Always empty in "
-            "R1, because the workflow that would move a case is chunk 9; empty means 'no move is "
-            "offered here yet', never 'the case is stuck'."
+            "The categories this reader may move the case to now, computed by the server from "
+            "the state machine and its guards; each is a fixed kind in code, one of: `new`, "
+            "registered and nobody has looked; `assigned`, triaged with an urgency and an owner; "
+            "`assessing`, the owner is working out what it means for the bank; `implementing`, "
+            "actions are being done; `signoff`, waiting for a second person to sign it off with "
+            "a passkey; `closed`, signed off or closed with a reason; and `dismissed`, not for "
+            "this bank, with a reason, and restorable. A move that needs something its request "
+            "supplies (an owner, a reason) is listed and refused if the request leaves it out. "
+            "Empty means no move is open to this reader now; the reader's permissions are "
+            "checked by the move itself."
         ),
-        examples=[[]],
+        examples=[["implementing", "closed"]],
+    )
+    version: int = Field(
+        description=(
+            "The case's version, starting at 1 and raised by every write to it. Send it in "
+            "`If-Match` on every workflow write; an older value answers 409 `stale_write`."
+        ),
+        examples=[4],
     )
 
 
@@ -2010,8 +2132,11 @@ class WatchChangeDetail(WatchChange):
     in_footprint: bool = Field(
         description="Whether the change's scope matches the reader's footprint, computed by the server (FP-03).", examples=[True]
     )
-    case: WatchChangeCase | None = Field(
-        description="The reader's own bank's case, or null when there is none. Never another bank's, and never present for a console session."
+    case: WatchCaseWorkflow | None = Field(
+        description=(
+            "The reader's own bank's case with its workflow block, or null when there is none. "
+            "Never another bank's, and never present for a console session."
+        )
     )
 
 
@@ -2058,7 +2183,7 @@ class WatchChangeQuery(PageQuery, CamelSchema):
             "Which case category to show, a fixed kind: `all`, or one of the seven categories "
             "`new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed`, `dismissed`. "
             "It filters on this bank's own cases, so a tab other than `all` answers nothing for "
-            "a caller with no case. In R1 every case is `new`."
+            "a caller with no case. Triage, assessment and sign-off move a case between them."
         ),
         examples=["all"],
     )

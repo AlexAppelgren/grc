@@ -20,8 +20,10 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from apps.cases.models import ChangeCase
+from apps.collab.models import Notification
 from apps.identity import passkey_logic, roles_logic, session_logic
 from apps.identity.models import Membership, PlatformRoleAssignment, User, UserStatus
+from apps.identity.schemas import MembershipNotificationPrefs, MembershipNotificationPrefsPatch
 from apps.library.models import Language
 from apps.proposals.models import ProposalStatus, ProposalTenant
 from apps.shared import permissions as perms
@@ -29,12 +31,15 @@ from apps.shared.audit import record
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.models import Tenant
 from apps.taxonomy.models import CaseStatusCategory
+from apps.tenants.models import OrgUnit, OrgUnitKind
 
 # The two categories a case has finished in (D-13): excluded from "assigned to me" so a
 # closed or dismissed case a person once owned does not sit in their queue forever. The
 # same pair `apps/home/roadmap.py` excludes from the roadmap; identity does not import
 # from home; two lines is not worth a cross-app dependency for.
 _FINISHED_CASES = (CaseStatusCategory.CLOSED.value, CaseStatusCategory.DISMISSED.value)
+
+DEPARTMENT_KINDS = (OrgUnitKind.BUSINESS_AREA.value, OrgUnitKind.BUSINESS_UNIT.value, OrgUnitKind.FUNCTION.value)
 
 
 def _tenant_out(tenant: Tenant | None) -> dict[str, Any] | None:
@@ -44,7 +49,7 @@ def _tenant_out(tenant: Tenant | None) -> dict[str, Any] | None:
 
 
 def _counts(principal: Principal) -> dict[str, int]:
-    """`MeCounts`: three independent reads, none chained behind another (a pinned query
+    """`MeCounts`: four independent reads, none chained behind another (a pinned query
     count proves it in `tests_me_counts.py`). A count behind a permission the caller lacks
     is 0 without the query ever running, exactly as `home.logic.home_today()` skips a panel
     a reader may not see rather than reading it and hiding the answer."""
@@ -60,7 +65,22 @@ def _counts(principal: Principal) -> dict[str, int]:
         # after its author has since left the bank.
         proposals = ProposalTenant.objects.filter(proposal__status=ProposalStatus.OPEN.value).count()
     assigned_to_me = ChangeCase.objects.filter(owner_id=principal.subject_id).exclude(status__in=_FINISHED_CASES).count()
-    return {"triage": triage, "proposals": proposals, "assignedToMe": assigned_to_me}
+    # Row-level security keeps this to the session's bank; every member reads their own.
+    unread = Notification.objects.filter(user_id=principal.subject_id, read_at__isnull=True).count()
+    return {"triage": triage, "proposals": proposals, "assignedToMe": assigned_to_me, "unreadNotifications": unread}
+
+
+def _head_of(tenant: Tenant, user: User) -> list[dict[str, Any]]:
+    """The active departments the member heads, by name (TEN-02, HOM-05, D-21). A department is
+    a business area, business unit or function; a legal entity or group never is."""
+    units = OrgUnit.objects.filter(tenant=tenant, head_user=user, active=True, kind__in=DEPARTMENT_KINDS).order_by("name", "id")
+    return [{"id": unit.id, "name": unit.name} for unit in units]
+
+
+def notification_prefs(membership: Membership) -> dict[str, bool]:
+    """A member's switches as stored (the schema's camelCase keys), with every key they
+    never set read as on, so an older row needs no migration (COL-02)."""
+    return MembershipNotificationPrefs.model_validate(membership.notification_prefs).model_dump(by_alias=True)
 
 
 def me(principal: Principal) -> dict[str, Any]:
@@ -69,6 +89,8 @@ def me(principal: Principal) -> dict[str, Any]:
     order = roles_logic.language_order(user, tenant)
     roles: list[dict[str, Any]] = []
     last_visit_at = None
+    prefs = None
+    head_of: list[dict[str, Any]] = []
     if principal.kind is PrincipalKind.USER and tenant is not None:
         membership = (
             Membership.objects.filter(tenant=tenant, user=user, deactivated_at__isnull=True)
@@ -78,6 +100,8 @@ def me(principal: Principal) -> dict[str, Any]:
         if membership is not None:
             roles = [roles_logic.role_ref(role, order) for role in membership.roles.all()]
             last_visit_at = membership.last_visit_at
+            prefs = notification_prefs(membership)
+            head_of = _head_of(tenant, user)
     platform_roles = [
         roles_logic.role_ref(assignment.role, order)
         for assignment in PlatformRoleAssignment.objects.filter(user=user, role__active=True).select_related("role").prefetch_related("role__labels")
@@ -91,6 +115,8 @@ def me(principal: Principal) -> dict[str, Any]:
         "tenant": _tenant_out(tenant),
         "counts": _counts(principal) if principal.tenant_id is not None else None,
         "last_visit_at": last_visit_at,
+        "notification_prefs": prefs,
+        "head_of": head_of,
         "roles": roles,
         "permissions": sorted(principal.permissions),
         "platform_roles": platform_roles,
@@ -100,9 +126,33 @@ def me(principal: Principal) -> dict[str, Any]:
     }
 
 
-def update_me(principal: Principal, *, name: str | None, locale: str | None) -> dict[str, Any]:
+def update_me(
+    principal: Principal,
+    *,
+    name: str | None,
+    locale: str | None,
+    notification_prefs_patch: MembershipNotificationPrefsPatch | None,
+) -> dict[str, Any]:
+    """The caller's own name, language and notification switches, in one audit event with
+    before and after: these are the person's own settings, not tenant content. A switch
+    key the schema does not name is refused before anything is written."""
     user = User.objects.select_related("locale").get(pk=principal.subject_id)
-    before = {"name": user.name, "locale": user.locale.key if user.locale else None}
+    before: dict[str, Any] = {"name": user.name, "locale": user.locale.key if user.locale else None}
+    after: dict[str, Any] = {}
+    membership = None
+    if notification_prefs_patch is not None:
+        if notification_prefs_patch.model_extra:
+            raise ValidationError("Unknown notification preference.", code="unknown_key")
+        if principal.tenant_id is not None:
+            membership = Membership.objects.filter(
+                tenant_id=principal.tenant_id, user_id=user.id, deactivated_at__isnull=True
+            ).first()  # ordering: unique (tenant, user), at most one row
+        if membership is None:
+            raise ValidationError("Not found.", code="not_found")
+        prefs = notification_prefs(membership)
+        before["notificationPrefs"] = prefs
+        changed = notification_prefs_patch.model_dump(exclude_none=True, by_alias=True)
+        membership.notification_prefs = {**prefs, **changed}
     if name is not None:
         cleaned = name.strip()
         if not cleaned:
@@ -114,6 +164,10 @@ def update_me(principal: Principal, *, name: str | None, locale: str | None) -> 
             raise ValidationError("Unknown language.", code="unknown_key")
         user.locale = language
     user.save(update_fields=["name", "locale"])
+    after.update({"name": user.name, "locale": user.locale.key if user.locale else None})
+    if membership is not None:
+        membership.save(update_fields=["notification_prefs"])
+        after["notificationPrefs"] = membership.notification_prefs
     record(
         action="user.updated",
         actor=session_logic.actor_of(user),
@@ -123,7 +177,7 @@ def update_me(principal: Principal, *, name: str | None, locale: str | None) -> 
         summary="Profile updated.",
         tenant_id=principal.tenant_id,
         before=before,
-        after={"name": user.name, "locale": user.locale.key if user.locale else None},
+        after=after,
     )
     return me(principal)
 
