@@ -189,6 +189,17 @@ TENANT_ONLY_TABLES = [
     "comment_revision",
     "notification",
     "email_message",
+    # Chunk 9's case workflow (c9-case-models): one bank's impact assessment, actions,
+    # transition ledger and evidence on its own case. None ever holds a library row, and
+    # each child's case and people are composite (tenant_id, …) keys as well (D-18).
+    "impact_assessment",
+    "action",
+    "case_transition",
+    "evidence",
+    # c8-participants (collab 0002, COL-04): a person or a team taking part in a register
+    # entry or a case. Every key is composite (apps/collab/tests_participants.py proves the
+    # database refuses a cross-tenant user, team, entry or case).
+    "participant",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also

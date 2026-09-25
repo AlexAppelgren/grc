@@ -203,6 +203,13 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "risk_level",
         "VOC-05: low, medium or high; the pill tone reads the level a risk rating maps to, never its editable ordinal or its label",
     ),
+    # Chunk 8's register (c8-register-models, register 0001). `Applicability` is listed above.
+    "AssessmentMethod": (
+        "assessment_method",
+        "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
+        "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
+        "reporting branches on",
+    ),
     # Chunk 10 (c10-collab-models): the notification and the mail it may send.
     "NotificationKind": (
         "notification_kind",
@@ -220,11 +227,11 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "COL-02: queued, sent, delivered, bounced or failed; the delivery task and the "
         "provider's callback branch on it, and no admin adds a delivery state",
     ),
-    # Chunk 8's register (c8-register-models, register 0001). `Applicability` is listed above.
-    "AssessmentMethod": (
-        "assessment_method",
-        "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
-        "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
-        "reporting branches on",
+    # Chunk 9 (c9-case-models). The evidence scan; `c9-scanner-adapter` adds the adapters
+    # that answer it.
+    "ScanState": (
+        "scan_state",
+        "CAS-05: a stored file is pending, clean, infected or error; the download serves "
+        "only `clean`, and a new row starts `pending`, so an unscanned file is never shown",
     ),
 }

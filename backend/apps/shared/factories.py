@@ -196,6 +196,15 @@ def vocabulary_suggestion(tenant: Tenant) -> SimpleNamespace:
     return SimpleNamespace(id=row.id, params={"list_name": "tenant_tag"})
 
 
+def obligation_participant(tenant: Tenant) -> SimpleNamespace:
+    """The tenant-isolation guard's record for the register-entry participant routes: a
+    person taking part in `tenant`'s register entry for an obligation private to `tenant`.
+    The obligation is built by `apps/collab/testing.py`, which the library fence exempts."""
+    from apps.collab import testing as collab_testing
+
+    return collab_testing.participant_on_private_obligation(tenant)
+
+
 def user_actor(*, label: str = "Test Person", user_id: uuid.UUID | None = None) -> Actor:
     return Actor(kind=ActorType.USER, id=user_id or uuid.uuid4(), label=label)
 
