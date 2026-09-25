@@ -52,7 +52,6 @@ CASES_CONTRIBUTE = "cases.contribute"  # compliance officer, owner, contributor
 CASES_SIGNOFF = "cases.signoff"  # approver
 REGISTER_EDIT = "register.edit"  # compliance officer, owner
 GAPS_EDIT = "gaps.edit"  # compliance officer, owner
-APPLICABILITY_REQUEST = "applicability.request"  # compliance officer, owner
 APPLICABILITY_APPROVE = "applicability.approve"  # compliance officer, approver
 RISK_ACCEPT_APPROVE = "risk.accept.approve"  # compliance officer, approver
 PROPOSALS_CREATE = "proposals.create"  # compliance officer
@@ -98,7 +97,6 @@ TENANT_PERMISSIONS: frozenset[str] = frozenset(
         CASES_SIGNOFF,
         REGISTER_EDIT,
         GAPS_EDIT,
-        APPLICABILITY_REQUEST,
         APPLICABILITY_APPROVE,
         RISK_ACCEPT_APPROVE,
         PROPOSALS_CREATE,
@@ -127,9 +125,10 @@ PLATFORM_PERMISSIONS: frozenset[str] = frozenset(
 )
 ALL_PERMISSIONS: frozenset[str] = TENANT_PERMISSIONS | PLATFORM_PERMISSIONS
 
-# Four eyes applies to every approve permission: never the requester (PRD §6).
+# Four eyes applies to every approve permission: never the requester (PRD §6). Not to
+# `applicability.approve`: one person sets applicability after a confirmation (D-75).
 APPROVE_PERMISSIONS: frozenset[str] = frozenset(
-    {FOOTPRINT_APPROVE, CASES_SIGNOFF, APPLICABILITY_APPROVE, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW}
+    {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW}
 )
 
 # ---------------------------------------------------------------------------------------
@@ -174,7 +173,6 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         CASES_CONTRIBUTE,
         REGISTER_EDIT,
         GAPS_EDIT,
-        APPLICABILITY_REQUEST,
         APPLICABILITY_APPROVE,
         RISK_ACCEPT_APPROVE,
         PROPOSALS_CREATE,
@@ -184,7 +182,7 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         WORKFLOW_MANAGE,
     },
     "owner": _EVERYONE
-    | {CASES_WORK, CASES_CONTRIBUTE, REGISTER_EDIT, GAPS_EDIT, APPLICABILITY_REQUEST},
+    | {CASES_WORK, CASES_CONTRIBUTE, REGISTER_EDIT, GAPS_EDIT},
     "approver": _EVERYONE
     | {
         FOOTPRINT_APPROVE,
@@ -275,8 +273,7 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     CASES_SIGNOFF: "Sign off a case worked by someone else.",
     REGISTER_EDIT: "Edit register entries.",
     GAPS_EDIT: "Edit gaps.",
-    APPLICABILITY_REQUEST: "Request an applicability decision.",
-    APPLICABILITY_APPROVE: "Approve an applicability decision requested by someone else.",
+    APPLICABILITY_APPROVE: "Set whether an obligation applies, after confirming it.",
     RISK_ACCEPT_APPROVE: "Approve a risk acceptance requested by someone else.",
     PROPOSALS_CREATE: "Propose a change to the shared library.",
     EXPORTS_CREATE: "Create exports.",
