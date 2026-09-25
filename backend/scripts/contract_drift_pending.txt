@@ -36,8 +36,6 @@ POST /changes/{}/signoff/send-back chunk 9
 POST /eval/runs chunk 14 a run builds the sample corpus in a database of its own and takes minutes, so it waits for chunk 14's job runner; record_eval_run records runs until then
 POST /imports chunk 12
 POST /imports/{}/commit chunk 12
-POST /notifications/read-all chunk 10
-POST /notifications/{}/read chunk 10
 POST /obligations/{}/applicability-requests chunk 8
 POST /obligations/{}/attestations chunk 13 REG-06, attestations and waivers, is R3
 POST /obligations/{}/internal-links chunk 8
