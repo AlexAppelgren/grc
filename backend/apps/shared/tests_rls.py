@@ -156,6 +156,16 @@ TENANT_ONLY_TABLES = [
     "briefing",
     "briefing_item",
     "calendar_feed",
+    # c8-org-models (tenants 0002, TEN-02, REG-05, ID-07, ID-08): the bank's organisation and
+    # its security policy. Each reference to another tenant row is also a composite key
+    # (apps/tenants/tests_models.py proves the database refuses a cross-tenant one).
+    "org_unit",
+    "licence",
+    "licence_service_term",
+    "tenant_product",
+    "tenant_product_term",
+    "internal_item",
+    "security_policy",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also
