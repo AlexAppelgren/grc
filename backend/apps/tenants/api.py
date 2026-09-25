@@ -31,6 +31,7 @@ from apps.tenants.schemas import (
     TenantAiBody,
     TenantOut,
     TenantPatch,
+    TenantWorkflowPatch,
 )
 
 router = Router(tags=["Tenants"])
@@ -102,6 +103,54 @@ def update_tenant(request: HttpRequest, body: TenantPatch) -> TenantOut:
         timezone_name=body.timezone,
         default_language=body.default_language,
         content_language_keys=body.content_languages,
+    )
+    return TenantOut.model_validate(logic.tenant_out(tenant))
+
+
+@router.patch(
+    "/tenant/workflow",
+    response=TenantOut,
+    auth=SessionAuth(),
+    operation_id="updateTenantWorkflow",
+    by_alias=True,
+    summary="Change your bank's reminders, escalation, digest day or triage target",
+)
+@requires_permission(perms.WORKFLOW_MANAGE)
+def update_tenant_workflow(request: HttpRequest, body: TenantWorkflowPatch) -> TenantOut:
+    """Updates the bank's workflow policy and returns the whole profile as it now stands,
+    with the policy under `workflow`. Send only the fields you are changing: an omitted
+    field is left alone, and each list replaces the current one rather than adding to it.
+    Call it from the bank's workflow settings once an administrator has edited them.
+
+    The policy decides how many days before a due date or a review the owner is reminded,
+    how many days overdue work waits before it escalates and to which of the bank's roles,
+    the weekday the digest goes out and the triage target in hours. A new bank starts at
+    the platform defaults. It is separate from the profile edit, `PATCH /tenant`, which
+    needs `security.manage` and ignores these fields.
+
+    Needs the `workflow.manage` permission, which the bank's administrator and compliance
+    officer roles carry; a member without it is refused and nothing is written. No passkey
+    step-up is asked for: this is a workflow control, not a security one. The change is
+    recorded in the audit log as `tenant.workflow_updated` with every policy value before
+    and after, in the same transaction as the write.
+
+    Errors: `validation_error` (422) with the field named in `errors` for a number or a day
+    out of range, an empty or over-long list, or a field the body does not name;
+    `unknown_key` (422) with the field named in `errors` for a role that is not an active
+    role of this bank or a weekday that is not one of the seven; `permission_denied` (403)
+    without `workflow.manage`, naming it in `requiredPermission`; `unauthenticated` (401)
+    without a session.
+    """
+    principal = _principal(request)
+    tenant = logic.update_workflow(
+        tenant=logic.get_tenant(principal.tenant_id),
+        actor=actor_of(User.objects.get(pk=principal.subject_id)),
+        reminder_days_before=body.reminder_days_before,
+        review_reminder_days_before=body.review_reminder_days_before,
+        escalate_after_days=body.escalate_after_days,
+        escalate_to_role=body.escalate_to_role,
+        digest_weekday=body.digest_weekday,
+        triage_target_hours=body.triage_target_hours,
     )
     return TenantOut.model_validate(logic.tenant_out(tenant))
 

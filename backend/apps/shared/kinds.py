@@ -79,6 +79,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     ),
     # Chunk 1 (identity and tenant admin basics). Each is something the rules branch on.
     "TenantStatus": ("tenant_status", "TEN-01: active or deactivated; every request branches on it"),
+    "Weekday": ("digest_weekday", "COL-02: the seven days of the week; the digest's schedule branches on it"),
     "UserStatus": ("user_status", "ID-02, ID-03: invited, active or deactivated; sign-in branches on it"),
     "InvitationKind": ("invitation_kind", "ID-01, ID-05: invite or re-enrolment; acceptance branches on it"),
     "ChallengeKind": ("challenge_kind", "ID-02, ID-06: registration, authentication or step-up ceremony"),
@@ -193,5 +194,12 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "email_status",
         "COL-02: queued, sent, delivered, bounced or failed; the delivery task and the "
         "provider's callback branch on it, and no admin adds a delivery state",
+    ),
+    # Chunk 9 (c9-case-models). The evidence scan; `c9-scanner-adapter` adds the adapters
+    # that answer it.
+    "ScanState": (
+        "scan_state",
+        "CAS-05: a stored file is pending, clean, infected or error; the download serves "
+        "only `clean`, and a new row starts `pending`, so an unscanned file is never shown",
     ),
 }

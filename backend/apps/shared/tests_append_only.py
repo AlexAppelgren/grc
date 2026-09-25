@@ -61,6 +61,9 @@ APPEND_ONLY_TRIGGERS = {
     # The text an edit of a comment replaced: an edit keeps it and nobody rewrites it
     # away (COL-01, CHUNK10_TASKS ruling 10).
     "comment_revision": "cw_append_only_guard",
+    # Every move of a case between categories, so the time it spent in each stage cannot
+    # be rewritten afterwards (CAS-08, c9-case-models).
+    "case_transition": "cw_append_only_guard",
     "footprint_history": "cw_append_only_guard",
     "login_event": "cw_append_only_guard",
     "obligation_summary": "cw_append_only_guard",
