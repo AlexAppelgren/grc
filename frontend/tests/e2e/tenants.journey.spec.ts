@@ -1,5 +1,7 @@
 import { expect, test } from './support/api-guard';
-import { allowFreshContext, LOGINS, restrictedScreen, signInAs, signOut } from './support/passkeys';
+import type { Page } from '@playwright/test';
+
+import { allowFreshContext, BACKEND_URL, LOGINS, mailOutbox, mailsTo, restrictedScreen, signInAs, signOut } from './support/passkeys';
 
 // tenants: the @e2e scenarios from backend/apps/tenants/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
@@ -19,6 +21,19 @@ const A_ONLY_TERMS: ReadonlyArray<readonly [string, string]> = [
   ['service_type', 'advice'],
 ];
 const A_REQUESTER = 'Sara Lindqvist';
+
+// TEN-S6's people (backend/apps/shared/e2e_logins.py): tenant A by its organisation name,
+// its administrator, whose name the console must never show, and the platform admin.
+const BANK = 'Example Bank AB';
+const BANK_ADMIN = 'Erik Holm';
+const PLATFORM_PERSON = 'Per Ström';
+
+/** The signed-in session's own bearer: its refresh cookie, turned into an access token as the client does. */
+async function bearerOf(page: Page): Promise<Record<string, string>> {
+  const refreshed = await page.request.post(`${BACKEND_URL}/api/v1/auth/refresh`);
+  expect(refreshed.status(), 'the session the UI opened refreshes').toBe(200);
+  return { Authorization: `Bearer ${((await refreshed.json()) as { accessToken: string }).accessToken}` };
+}
 
 test.describe('tenants journeys', () => {
   test("TEN-S1: A tenant profile holds timezone, languages and the onboarding checklist", async ({ page, apiGuard }) => {
@@ -77,8 +92,121 @@ test.describe('tenants journeys', () => {
     // pending: TEN-S5 (TEN-05, chunk 8)
   });
 
-  test.fixme("TEN-S6: Support access is requested by the platform, approved by the bank and time-boxed", async () => {
-    // pending: TEN-S6 (TEN-06, chunk 8)
+  test("TEN-S6: Support access is requested by the platform, approved by the bank and time-boxed", async ({ page, browser, apiGuard }, testInfo) => {
+    // TEN-S6 (TEN-06, D-49): the platform admin asks through the console, the bank's admin
+    // approves with a passkey, the platform admin enters with a passkey and reads, and the
+    // bank revokes. The reads under the grant are the support session's own requests, made
+    // with the session the Enter button opened; the window passing and a declined or
+    // lapsed request are proven in test_ten_s6, because no journey may move the clock.
+    allowFreshContext(apiGuard);
+    apiGuard.allow(/\/tenant\/support-access\/[^/]+\/approve$/, 403, 'approving answers step_up_required first and opens the prompt');
+    apiGuard.allow(/\/console\/support-access\/[^/]+\/enter$/, 403, 'entering answers step_up_required first and opens the prompt');
+    const purpose = `The watch feed shows two changes twice (run ${Date.now()}).`;
+    const ticket = `SUP-${Date.now()}`;
+
+    const bankContext = await browser.newContext({ baseURL: testInfo.project.use.baseURL });
+    const bank = await bankContext.newPage();
+    apiGuard.watch(bank);
+    let grantId: string | null = null;
+    try {
+      // Given a platform admin without any grant, the bank answers 404.
+      await signInAs(page, LOGINS.platform);
+      expect((await page.request.get(`${BACKEND_URL}/api/v1/tenant/support-access`, { headers: await bearerOf(page) })).status()).toBe(404);
+
+      // They ask for two hours with a purpose, from the console.
+      await page.goto('/console/support-access');
+      await expect(page.getByRole('heading', { level: 1, name: 'Support access' })).toBeVisible();
+      await page.getByRole('button', { name: 'Ask for access' }).click();
+      const form = page.getByRole('dialog', { name: 'Ask for access' });
+      await form.getByLabel('Bank').selectOption({ label: BANK });
+      await form.getByLabel('Purpose').fill(purpose);
+      await form.getByLabel('Ticket').fill(ticket);
+      await form.getByLabel('How long, in hours').fill('2');
+      const asked = page.waitForResponse((r) => /\/console\/tenants\/[^/]+\/support-access$/.test(r.url()) && r.request().method() === 'POST' && r.status() === 201);
+      await form.getByRole('button', { name: 'Ask for access' }).click();
+      grantId = ((await (await asked).json()) as { id: string }).id;
+      await expect(page.getByText(`Asked. ${BANK}'s administrators have been emailed.`)).toBeVisible();
+      const request = page.locator(`[data-grant-id="${grantId}"]`);
+      await expect(request).toHaveAttribute('data-grant-state', 'pending');
+      await expect(request.getByText('Waiting for approval')).toBeVisible();
+      await expect(request.getByRole('button', { name: 'Enter' })).toHaveCount(0);
+
+      // Nothing is granted: the bank still answers 404, and its security.manage holders are told.
+      expect((await page.request.get(`${BACKEND_URL}/api/v1/tenant/support-access`, { headers: await bearerOf(page) })).status()).toBe(404);
+      await expect
+        .poll(async () => mailsTo(await mailOutbox(page.request), LOGINS.admin).some((mail) => mail.body.includes(purpose)), { timeout: 15_000 })
+        .toBe(true);
+
+      // A tenant admin approves with a fresh step-up; the panel shows the purpose, the person and the end.
+      await signInAs(bank, LOGINS.admin);
+      await bank.goto('/admin/support-access');
+      const pending = bank.locator(`[data-support-section="pending"] [data-grant-id="${grantId}"]`);
+      await expect(pending).toContainText(purpose);
+      const approved = bank.waitForResponse((r) => r.url().endsWith(`/tenant/support-access/${grantId}/approve`) && r.ok());
+      await pending.getByRole('button', { name: 'Approve' }).click();
+      const prompt = bank.getByRole('dialog', { name: 'Confirm with your passkey' });
+      await expect(prompt).toBeVisible();
+      await prompt.getByRole('button', { name: 'Use passkey' }).click();
+      const approval = (await (await approved).json()) as { decidedAt: string; endsAt: string };
+      // The window is the two hours asked for, from the moment of approval.
+      expect(Date.parse(approval.endsAt) - Date.parse(approval.decidedAt)).toBe(2 * 60 * 60 * 1000);
+      const live = bank.locator(`[data-support-section="active"] [data-grant-id="${grantId}"]`);
+      await expect(live).toContainText(purpose);
+      await expect(live).toContainText(`${PLATFORM_PERSON}, bleqq support`);
+      await expect(live.getByText('Until')).toBeVisible();
+
+      // The console shows it live, the approval as a time and nobody at the bank by name.
+      await page.reload();
+      const grant = page.locator(`[data-grant-id="${grantId}"]`);
+      await expect(grant).toHaveAttribute('data-grant-state', 'active');
+      await expect(grant).toContainText(ticket);
+      await expect(page.locator('main')).not.toContainText(BANK_ADMIN);
+
+      // The platform admin enters with a fresh step-up; the console session becomes the support session.
+      const entered = page.waitForResponse((r) => r.url().endsWith(`/console/support-access/${grantId}/enter`) && r.ok());
+      await grant.getByRole('button', { name: 'Enter' }).click();
+      const enterPrompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
+      await expect(enterPrompt).toBeVisible();
+      await enterPrompt.getByRole('button', { name: 'Use passkey' }).click();
+      await entered;
+      await expect(page.locator('[data-support-banner]')).toContainText(`Support access to ${BANK}.`);
+      await expect(page.locator('main')).not.toContainText(BANK_ADMIN);
+
+      // Every read under it is in the bank's audit log as support_access.read, with the route
+      // and the platform person; a write answers 403 support_read_only.
+      const support = await bearerOf(page);
+      expect((await page.request.get(`${BACKEND_URL}/api/v1/changes`, { headers: support })).status()).toBe(200);
+      const write = await page.request.patch(`${BACKEND_URL}/api/v1/tenant/workflow`, { headers: support, data: { escalateAfterDays: 7 } });
+      expect([write.status(), ((await write.json()) as { code: string }).code]).toEqual([403, 'support_read_only']);
+      await bank.goto('/admin/audit-log');
+      await bank.getByLabel('Record kind').selectOption('support_access');
+      const reads = bank.locator(`[data-audit-row][data-subject-id="${grantId}"][data-action="support_access.read"]`);
+      await expect(reads.first()).toBeVisible();
+      await expect(reads.first()).toContainText(`By ${PLATFORM_PERSON}`);
+      await expect(reads.filter({ hasText: '/changes' }).first()).toBeVisible();
+
+      // The tenant admin revokes it: the next request answers 401 support_access_ended.
+      await bank.goto('/admin/support-access');
+      await bank.locator(`[data-support-section="active"] [data-grant-id="${grantId}"]`).getByRole('button', { name: 'Revoke' }).click();
+      await expect(bank.locator(`[data-support-section="history"] [data-grant-id="${grantId}"]`)).toHaveAttribute('data-grant-state', 'revoked');
+      const ended = await page.request.get(`${BACKEND_URL}/api/v1/changes`, { headers: support });
+      expect([ended.status(), ((await ended.json()) as { code: string }).code]).toEqual([401, 'support_access_ended']);
+
+      // And the ones after that are the platform admin's next console session: 404 again.
+      await signInAs(page, LOGINS.platform);
+      expect((await page.request.get(`${BACKEND_URL}/api/v1/tenant/support-access`, { headers: await bearerOf(page) })).status()).toBe(404);
+      await page.goto('/console/support-access');
+      await expect(page.locator(`[data-grant-id="${grantId}"]`)).toHaveAttribute('data-grant-state', 'revoked');
+      await expect(page.locator('main')).not.toContainText(BANK_ADMIN);
+      grantId = null;
+    } finally {
+      // Whatever happened above, no request or grant of this run stays open in the bank.
+      if (grantId !== null) {
+        const headers = await bearerOf(bank);
+        for (const verb of ['decline', 'revoke']) await bank.request.post(`${BACKEND_URL}/api/v1/tenant/support-access/${grantId}/${verb}`, { headers });
+      }
+      await bankContext.close();
+    }
   });
 
   test("TEN-S7 J-8 @smoke: tenant B cannot see tenant A", async ({ page, apiGuard }) => {
