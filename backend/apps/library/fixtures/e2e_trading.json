@@ -4,7 +4,7 @@
     "anchor_date": "2026-09-25",
     "in_force_from_source": "docs/plans/Verification_Log.md, 'acc-e2e-seed: the J-11 trading world', checked 2026-09-25 against legislation.gov.uk's copies of the EU texts as adopted: Regulation (EU) 2015/751, OJ L 123 of 19 May 2015, in force the twentieth day after (8 June 2015), Articles 3 and 4 applying from 9 December 2015 (Article 18); Delegated Regulations (EU) 2017/565 and 2017/589, OJ L 87 of 31 March 2017, in force the twentieth day after (20 April 2017), applying from 3 January 2018 (2017/589 Article 29, 2017/565 Article 91). Day precision.",
     "held_terms": [
-      "product_type:securities",
+      "product_type:shares",
       "product_type:derivatives",
       "product_type:cards",
       "licensed_activity:card_issuing"
@@ -77,7 +77,7 @@
   "obligation_provisions": [],
   "obligations": [
     {
-      "stable_key": "obl-e2e-order-routing-best-result",
+      "stable_key": "obl-trading-order-routing-best-result",
       "instrument": "celex-32017r0565",
       "ref_label": "Article 65",
       "title": "Obtain the best possible result when routing client orders to other firms",
@@ -95,7 +95,7 @@
       "last_verified_at": "2026-09-25"
     },
     {
-      "stable_key": "obl-e2e-algo-pre-trade-controls",
+      "stable_key": "obl-trading-algo-pre-trade-controls",
       "instrument": "celex-32017r0589",
       "ref_label": "Article 15",
       "title": "Run pre-trade controls on every order an algorithm enters",
@@ -113,7 +113,7 @@
       "last_verified_at": "2026-09-25"
     },
     {
-      "stable_key": "obl-e2e-card-interchange-caps",
+      "stable_key": "obl-cards-interchange-caps",
       "instrument": "celex-32015r0751",
       "ref_label": "Articles 3 and 4",
       "title": "Keep interchange fees on consumer card transactions within the caps",
@@ -133,7 +133,7 @@
   ],
   "obligation_versions": [
     {
-      "obligation": "obl-e2e-order-routing-best-result",
+      "obligation": "obl-trading-order-routing-best-result",
       "version_no": 1,
       "summary_en": "When the firm passes client orders to other firms for execution, it takes all sufficient steps to obtain the best possible result for the client, keeps a policy naming the firms it uses and monitors how well that policy works.",
       "summary_sv": "När företaget skickar kundorder vidare till andra företag för utförande vidtar det alla tillräckliga åtgärder för att uppnå bästa möjliga resultat för kunden, har en policy som anger vilka företag det använder och följer upp hur väl policyn fungerar.",
@@ -145,7 +145,7 @@
       "approved_by": null
     },
     {
-      "obligation": "obl-e2e-algo-pre-trade-controls",
+      "obligation": "obl-trading-algo-pre-trade-controls",
       "version_no": 1,
       "summary_en": "A firm that trades algorithmically applies pre-trade controls on order entry for every financial instrument: price collars, maximum order values, maximum order volumes and maximum message limits.",
       "summary_sv": "Ett företag som handlar algoritmiskt tillämpar kontroller före handel när order läggs in, för varje finansiellt instrument: priskorridorer, högsta ordervärde, högsta ordervolym och högsta antal meddelanden.",
@@ -157,7 +157,7 @@
       "approved_by": null
     },
     {
-      "obligation": "obl-e2e-card-interchange-caps",
+      "obligation": "obl-cards-interchange-caps",
       "version_no": 1,
       "summary_en": "A payment service provider neither offers nor requests an interchange fee above 0.2 % of the transaction value on a consumer debit card transaction, or above 0.3 % on a consumer credit card transaction.",
       "summary_sv": "En betaltjänstleverantör varken erbjuder eller begär en förmedlingsavgift över 0,2 % av transaktionsvärdet för en debetkortstransaktion för konsumenter, eller över 0,3 % för en kreditkortstransaktion för konsumenter.",
@@ -170,19 +170,19 @@
     }
   ],
   "obligation_terms": [
-    {"obligation": "obl-e2e-order-routing-best-result", "term": "product_type:securities"},
-    {"obligation": "obl-e2e-order-routing-best-result", "term": "product_type:derivatives"},
-    {"obligation": "obl-e2e-order-routing-best-result", "term": "legal_entity:bank"},
-    {"obligation": "obl-e2e-order-routing-best-result", "term": "service_type:execution_only"},
-    {"obligation": "obl-e2e-order-routing-best-result", "term": "client_category:retail"},
-    {"obligation": "obl-e2e-order-routing-best-result", "term": "client_category:professional"},
-    {"obligation": "obl-e2e-algo-pre-trade-controls", "term": "product_type:securities"},
-    {"obligation": "obl-e2e-algo-pre-trade-controls", "term": "product_type:derivatives"},
-    {"obligation": "obl-e2e-algo-pre-trade-controls", "term": "legal_entity:bank"},
-    {"obligation": "obl-e2e-card-interchange-caps", "term": "product_type:cards"},
-    {"obligation": "obl-e2e-card-interchange-caps", "term": "licensed_activity:card_issuing"},
-    {"obligation": "obl-e2e-card-interchange-caps", "term": "legal_entity:bank"},
-    {"obligation": "obl-e2e-card-interchange-caps", "term": "client_category:retail"}
+    {"obligation": "obl-trading-order-routing-best-result", "term": "product_type:shares"},
+    {"obligation": "obl-trading-order-routing-best-result", "term": "product_type:derivatives"},
+    {"obligation": "obl-trading-order-routing-best-result", "term": "legal_entity:bank"},
+    {"obligation": "obl-trading-order-routing-best-result", "term": "service_type:execution_only"},
+    {"obligation": "obl-trading-order-routing-best-result", "term": "client_category:retail"},
+    {"obligation": "obl-trading-order-routing-best-result", "term": "client_category:professional"},
+    {"obligation": "obl-trading-algo-pre-trade-controls", "term": "product_type:shares"},
+    {"obligation": "obl-trading-algo-pre-trade-controls", "term": "product_type:derivatives"},
+    {"obligation": "obl-trading-algo-pre-trade-controls", "term": "legal_entity:bank"},
+    {"obligation": "obl-cards-interchange-caps", "term": "product_type:cards"},
+    {"obligation": "obl-cards-interchange-caps", "term": "licensed_activity:card_issuing"},
+    {"obligation": "obl-cards-interchange-caps", "term": "legal_entity:bank"},
+    {"obligation": "obl-cards-interchange-caps", "term": "client_category:retail"}
   ],
   "obligation_relations": [],
   "proposals": []

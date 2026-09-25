@@ -1694,6 +1694,18 @@ class SeededJ11(SeededOnce):
             self.assertTrue(term.active, ref)
             self.assertEqual(set(term.labels.values_list("language", flat=True)), {"en", "sv"})
 
+    def test_the_new_terms_and_duties_leave_what_other_journeys_read_as_it_was(self) -> None:
+        """The console finds a scope term by its key and label together (WAT-S4), so no new
+        term may share both with another; and FP-S5 finds the advice-only duty on the
+        inventory's first page, ordered by stable key, so the new duties sort after it."""
+        pairs = Counter(
+            (term.key, term.labels.get(language="en").text) for term in TaxonomyTerm.objects.prefetch_related("labels") if term.labels.filter(language="en").exists()
+        )
+        for spec in EXPECTED_J11.terms:
+            self.assertEqual(pairs[(spec["key"], spec["label_en"])], 1, spec["key"])
+        before = Obligation.objects.filter(stable_key__lt=EXPECTED_LIBRARY.advice_only_obligation).count()
+        self.assertLess(before, 20, "the advice-only duty must stay on the inventory's first page")
+
     def test_the_footprint_covers_trading_and_cards(self) -> None:
         footprint = {f"{dimension}:{key}" for dimension, keys in footprint_of(self.tenant.id).items() for key in keys}
         self.assertLessEqual(set(EXPECTED_J11.footprint), footprint)

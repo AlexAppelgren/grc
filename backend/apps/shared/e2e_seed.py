@@ -159,7 +159,7 @@ EXPECTED_FOOTPRINTS: dict[str, tuple[str, ...]] = {
         "jurisdiction:se",
         # acc-e2e-seed (J-11): trading, cards and card issuing, `EXPECTED_J11.footprint`. No
         # record but the J-11 fixture carries a product type or a licensed activity, so none moves.
-        "product_type:securities",
+        "product_type:shares",
         "product_type:derivatives",
         "product_type:cards",
         "licensed_activity:card_issuing",
@@ -2321,19 +2321,19 @@ _J11_TERM_NOTE = "E2E only: the product types J-11's trading and card products c
 EXPECTED_J11 = SeedJ11(
     tenant_slug=TENANT_A_SLUG,
     terms=(
-        {"dimension": "product_type", "key": "securities", "label_en": "Securities", "label_sv": "Värdepapper", "sort_order": 1, "usage_note": _J11_TERM_NOTE},
+        {"dimension": "product_type", "key": "shares", "label_en": "Shares", "label_sv": "Aktier", "sort_order": 1, "usage_note": _J11_TERM_NOTE},
         {"dimension": "product_type", "key": "derivatives", "label_en": "Derivatives", "label_sv": "Derivat", "sort_order": 2, "usage_note": _J11_TERM_NOTE},
         {"dimension": "product_type", "key": "cards", "label_en": "Cards", "label_sv": "Kort", "sort_order": 3, "usage_note": _J11_TERM_NOTE},
     ),
-    footprint=("product_type:securities", "product_type:derivatives", "product_type:cards", "licensed_activity:card_issuing"),
+    footprint=("product_type:shares", "product_type:derivatives", "product_type:cards", "licensed_activity:card_issuing"),
     department="Trading",
     team="trading",
     products=("Equity derivatives", "Cash equities", "Smart order routing"),
     order_routing_product="Smart order routing",
     card_department="Cards and payments",
     card_product="Consumer debit card",
-    trading_obligations=("obl-e2e-order-routing-best-result", "obl-e2e-algo-pre-trade-controls"),
-    card_obligation="obl-e2e-card-interchange-caps",
+    trading_obligations=("obl-trading-order-routing-best-result", "obl-trading-algo-pre-trade-controls"),
+    card_obligation="obl-cards-interchange-caps",
     outside_scope_term="licensed_activity:card_issuing",
     outside_scope_label="Card issuing",
 )
@@ -2379,10 +2379,10 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
             SeedProduct("Pension insurance", "Example Liv Försäkring AB", "live", _SARA, ("account_type:pension", "service_type:insurance_distribution", "service_type:advice")),
             # acc-e2e-seed (J-11): Trading's three products and card issuing's one.
             SeedProduct("Equity derivatives", EXPECTED_J11.department, "live", _SARA, ("product_type:derivatives", "service_type:execution_only")),
-            SeedProduct("Cash equities", EXPECTED_J11.department, "live", _SARA, ("product_type:securities", "service_type:execution_only")),
+            SeedProduct("Cash equities", EXPECTED_J11.department, "live", _SARA, ("product_type:shares", "service_type:execution_only")),
             SeedProduct(
                 EXPECTED_J11.order_routing_product, EXPECTED_J11.department, "planned", _SARA,
-                ("product_type:securities", "product_type:derivatives", "service_type:execution_only"),
+                ("product_type:shares", "product_type:derivatives", "service_type:execution_only"),
             ),
             SeedProduct(EXPECTED_J11.card_product, EXPECTED_J11.card_department, "live", _SARA, ("product_type:cards", "licensed_activity:card_issuing")),
         ),
