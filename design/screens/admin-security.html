@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Screen card: security (/admin/security)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Noto+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Serves ID-07, ID-08 and ADM-01 (chunk 11; ID-S16, ID-S17), from ADR 0048 and ID-08,
+   for an admin holding security.manage. The prototype is silent; designed in its
+   language on the tenant shell. The UI plan had this card at chunk 13; ID-07 and ID-08
+   are R2 and chunk 11 (CHUNK11_TASKS ruling 7).
+
+   Panels that arrive later, each drawn by its own card when its chunk starts:
+   - IP allow-list (ID-13): chunk 13.
+   - Single sign-on (SSO): chunk 13.
+   - Retention: chunk 12 (admin-data.html).
+   - Tenant reach: the agent access card (acc-cards) draws it below Sessions, in the
+     place marked on this card.
+
+   Passkeys we accept: a stricter policy binds new registrations at once and existing
+   passkeys at a notice date, 14 days ahead by default; loosening takes effect at once.
+   A save that would refuse the acting admin's own passkeys answers 409, drawn here as a
+   state with a way forward, not as an error banner. Sessions: idle and absolute limits,
+   each with the platform maximum beside it, refused above it with 422
+   above_platform_maximum. Saving asks for a passkey, and no state
+   asks anyone to type a secret.
+
+   Values follow design/system/foundations.md and design/system/pills-and-labels.md; the
+   build maps them to Green tokens. Models, names and dates are sample data. */
+/* Values: design/system/foundations.md (14px base, 36px buttons at a 6px radius,
+   hairline cards at 8px, dialogs at 12px) and design/system/pills-and-labels.md.
+   Every colour is a Green token from green-tokens 3.1.8, with the brand pair as
+   frontend/src/styles/brand.css overrides it, never SEB's values. */
+:root{
+  --page:#ffffff;            /* l1-neutral-01 */
+  --surface:#ffffff;         /* l2-neutral-02 */
+  --subtle:#f4f5f5;          /* l1-neutral-02 */
+  --accent:#eaebeb;          /* l3-neutral-02 */
+  --hover:rgba(0,0,0,.06);   /* state-neutral-05 */
+  --line:#dfe1e1;            /* border-neutral-02 */
+  --line-control:#dfe1e1;    /* border-neutral-02 */
+  --line-strong:#777e7c;     /* border-neutral-01 */
+  --text:#0a0b0b;            /* content-neutral-01 */
+  --muted:#636967;           /* content-neutral-02 */
+  --primary:#0a0b0b;         /* l3-neutral-03 */
+  --on-primary:#ffffff;      /* content-neutral-03 */
+  --focus:#005fb3;           /* content-notice-01 */
+  --notice:#005fb3;--notice-pill:#e6f3ff;          /* content-notice-01 on l3-notice-02 */
+  --positive:#026436;--positive-pill:#dcefdc;      /* content-positive-03 on l3-positive-02 */
+  --warning:#8f530a;--warning-pill:#fce8cf;--warning-soft:#fce8cf;  /* l3-warning-02 */
+  --negative:#b92f13;--negative-pill:#fdebe8;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --brand:#6a5730;--brand-pill:#ece5d6;--meter:#0a3a2a;            /* brand.css content-brand-02 on l3-brand-02 */
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+}
+/* Dark: the four status tones take Green's -03 step on pills; a warn or bad
+   banner keeps the -02 step and puts every word in the text colour. */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --notice:#66b8ff;--notice-pill:#003666;
+  --positive:#8ae58d;--positive-pill:#003d26;
+  --warning:#f5b970;--warning-pill:#5f3707;--warning-soft:#774508;
+  --negative:#f08975;--negative-pill:#5c170a;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --brand:#d9cba9;--brand-pill:#33291a;--meter:#d9cba9;
+}}
+/* Fixed-theme frames, so one card shows a state in light AND dark whatever the
+   viewer's system is set to. They carry the same aliases, so nothing inside
+   needs to know which theme it is in. */
+.theme{border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--page);color:var(--text)}
+.theme.light{
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --notice:#005fb3;--notice-pill:#e6f3ff;--positive:#026436;--positive-pill:#dcefdc;
+  --warning:#8f530a;--warning-pill:#fce8cf;--warning-soft:#fce8cf;
+  --negative:#b92f13;--negative-pill:#fdebe8;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --brand:#6a5730;--brand-pill:#ece5d6;--meter:#0a3a2a;
+}
+.theme.dark{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --notice:#66b8ff;--notice-pill:#003666;--positive:#8ae58d;--positive-pill:#003d26;
+  --warning:#f5b970;--warning-pill:#5f3707;--warning-soft:#774508;
+  --negative:#f08975;--negative-pill:#5c170a;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --brand:#d9cba9;--brand-pill:#33291a;--meter:#d9cba9;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px;font-weight:500}
+p{margin:0 0 8px}
+b{font-weight:600}
+a{color:inherit;text-underline-offset:3px}
+main{padding:24px max(32px,env(safe-area-inset-right)) 64px max(32px,env(safe-area-inset-left));max-width:1200px;width:100%;margin:0 auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.meta{color:var(--muted);font-size:13px;line-height:18px}
+.mono{font-family:var(--mono);font-size:13px}
+.microlabel{font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+/* State labels. They belong to the card, not to the screen. */
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-of-type{margin-top:24px}
+.cap{color:var(--muted);font-size:13px;line-height:18px;margin:0 0 10px}
+
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 16px;margin-bottom:20px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+.head .acts{margin-left:auto}
+.back{background:none;border:0;padding:0;margin:0 0 8px;color:var(--muted);font-size:13px;line-height:18px;text-decoration:underline;text-underline-offset:3px}
+.status{margin:0 0 12px;font-weight:500}
+.status:empty{display:none}
+
+/* Notice (banner): a tone fill, no coloured edge, 6px radius. Every word inside
+   a warn or bad notice is the text colour (foundations.md). */
+.notice{background:var(--subtle);color:var(--text);border-radius:6px;padding:10px 12px;margin:0 0 16px}
+.notice.warn{background:var(--warning-soft)}
+.notice.bad{background:var(--negative-soft)}
+.notice p:last-child{margin-bottom:0}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+.panel>h2{margin-bottom:12px}
+.panel>.cap{margin-top:-6px}
+.cols{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.cols>*{min-width:0}
+@media (min-width:768px){.cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Pill: fully rounded, 20px, 13px at 500, no border. Tone comes from the slot
+   or the kind, never from a person (pills-and-labels.md). */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+.pill.notice{background:var(--notice-pill);color:var(--notice)}
+.pill.positive{background:var(--positive-pill);color:var(--positive)}
+.pill.warning{background:var(--warning-pill);color:var(--warning)}
+.pill.negative{background:var(--negative-pill);color:var(--negative)}
+.pill.brand{background:var(--brand-pill);color:var(--brand)}
+.pill .x{margin-left:6px;font-weight:400}
+.pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pills.line{gap:6px 10px}
+
+/* Button: 36px, 6px radius, body at 500. Primary is neutral; danger is an
+   outline button with negative text. */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.ghost{background:transparent;color:var(--text);border-color:transparent}
+.btn.danger{background:var(--surface);color:var(--negative);border-color:var(--line-control)}
+.btn.small{height:32px;padding:0 12px}
+.btn.outline:hover,.btn.ghost:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.btn.danger:hover{background:var(--negative-hover)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* Actions right, two per row on a phone, the primary last and so on the right. */
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+.bar.left{justify-content:flex-start}
+.bar .btn{min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* List rows: 12 by 16px, a hairline card at 8px. */
+.rows{display:grid;gap:8px}
+.row{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;text-decoration:none;color:inherit}
+a.row:hover,button.row:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.row h3{margin:6px 0 4px;font-weight:600}
+.row .meta{display:flex;flex-wrap:wrap;gap:4px 12px}
+
+.field{display:grid;gap:4px;margin-bottom:12px}
+.field label{font-weight:500}
+.field input,.field select,.field textarea{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;color:var(--text)}
+.field textarea{height:auto;min-height:76px;padding:8px 10px;resize:vertical}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted);font-style:italic}
+.field input[aria-invalid="true"],.field select[aria-invalid="true"]{border-color:var(--negative)}
+.field .hint,.field .err{font-size:13px;line-height:18px}
+.field .hint{color:var(--muted)}
+.field .err{color:var(--negative)}
+.pair{display:grid;gap:0 16px;grid-template-columns:minmax(0,1fr)}
+.pair>*{min-width:0}
+@media (min-width:768px){.pair{grid-template-columns:repeat(2,minmax(0,1fr))}}
+fieldset{border:0;margin:0;padding:0}
+legend{padding:0;font-weight:500}
+.check{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{width:16px;height:16px;height:16px;margin:2px 0 0;accent-color:var(--primary);flex:none}
+.check small{display:block;color:var(--muted);font-size:13px;line-height:18px}
+
+/* Dialog: 12px radius, at most 560px, over the scrim. */
+.modal{display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,11,11,.6);border-radius:8px;margin-bottom:16px}
+.modal .box{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.modal .box>h2{margin-bottom:12px}
+
+.skeleton{height:72px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.empty,.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.empty h2,.errorstate h2{color:var(--text)}
+.empty p,.errorstate p{margin:8px auto 16px;max-width:60ch}
+.restricted{max-width:60ch;margin:0 auto;padding:48px 0;text-align:center}
+.restricted p{margin:12px 0 0;color:var(--muted)}
+/* Grid items must be allowed to shrink, or the 375px phone frame inside one
+   widens its track and the page scrolls sideways. */
+.statebox{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.statebox>*{min-width:0}
+@media (min-width:768px){.statebox{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* A 375px frame, so the narrow layout can be read on a wide screen. */
+.phone{width:375px;max-width:100%;padding:12px;background:var(--page);border:1px solid var(--line);border-radius:8px}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
+}
+
+/* The plain key, shown once: monospace, wrapping, on the subtle surface. */
+.secret{font-family:var(--mono);font-size:13px;line-height:20px;word-break:break-all;background:var(--subtle);border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin:0 0 8px}
+/* Key facts under a row title: label, then value. */
+.kv{display:grid;grid-template-columns:1fr;gap:2px 16px;margin:8px 0 0}
+@media (min-width:768px){.kv{grid-template-columns:132px minmax(0,1fr)}}
+.kv dt{color:var(--muted);font-size:13px;line-height:18px}
+.kv dd{margin:0 0 6px}
+@media (min-width:768px){.kv dd{margin-bottom:2px}}
+
+/* Shared by the chunk 11 cards. */
+.kv{grid-template-columns:1fr}
+@media (min-width:768px){.kv.wide{grid-template-columns:132px minmax(0,1fr)}}
+/* Meter: brand green is for meters and the timeline alone (design/README.md). */
+.meter{height:8px;border-radius:999px;background:var(--accent);overflow:hidden;margin:8px 0}
+.meter i{display:block;height:100%;background:var(--meter)}
+.figure{font-size:24px;line-height:32px;font-weight:600;letter-spacing:-.02em;margin:0}
+.figure small{font-size:14px;font-weight:400;color:var(--muted);letter-spacing:0}
+/* A run or a version line: facts left, figure right, wrapping on a phone. */
+.lines{margin:8px 0 0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.lines li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.lines li:last-child{border-bottom:0}
+.lines .grow{flex:1 1 180px;min-width:0}
+.lines .fig{margin-left:auto;font-variant-numeric:tabular-nums}
+.inline{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.inline .field{margin:0;flex:0 1 200px;min-width:0}
+.sub{margin:16px 0 4px;font-size:14px;font-weight:600}
+/* A select shrinks with its column; a long option never widens the page. */
+.field select,.kv select{max-width:100%;min-width:0}
+.models{max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:0 12px;margin-top:4px}
+.unit{display:flex;align-items:center;gap:8px}
+.unit input{width:96px}
+.slot{border:1px dashed var(--line-control);border-radius:8px;padding:16px;color:var(--muted);margin-bottom:16px}
+</style>
+</head>
+<body>
+<main>
+
+<h2 class="k">1 · The page (an admin holding security manage), tightening the policy</h2>
+<button class="back">Admin</button>
+<div class="head">
+  <div>
+    <h1>Security</h1>
+    <p class="lede">Which passkeys our members may sign in with, and how long a session lasts.</p>
+  </div>
+</div>
+<p class="status" role="status" tabindex="-1"></p>
+
+<form aria-label="Security policy">
+<section class="panel" aria-labelledby="pk">
+  <h2 id="pk">Passkeys we accept</h2>
+  <fieldset class="field">
+    <legend class="sr">Passkeys we accept</legend>
+    <label class="check" for="p1"><input type="radio" name="pol" id="p1"><span>Any passkey<small>A passkey synced across a member's devices, or one kept on a single device or security key.</small></span></label>
+    <label class="check" for="p2"><input type="radio" name="pol" id="p2" checked><span>Device-bound, from the list<small>Only a passkey kept on one device, of a model on the list below.</small></span></label>
+  </fieldset>
+  <div class="field">
+    <label for="mq">Models on the list</label>
+    <input id="mq" type="search" placeholder="Find a model">
+    <div class="models" role="group" aria-label="Authenticator models">
+      <label class="check" for="m1"><input type="checkbox" id="m1" checked><span>YubiKey 5 Series<small>Yubico · security key</small></span></label>
+      <label class="check" for="m2"><input type="checkbox" id="m2" checked><span>YubiKey 5 FIPS Series<small>Yubico · security key</small></span></label>
+      <label class="check" for="m3"><input type="checkbox" id="m3"><span>Feitian BioPass FIDO2<small>Feitian · security key with fingerprint</small></span></label>
+      <label class="check" for="m4"><input type="checkbox" id="m4" checked><span>Windows Hello, hardware<small>Microsoft · built into the computer</small></span></label>
+      <label class="check" for="m5"><input type="checkbox" id="m5"><span>Token2 T2F2<small>Token2 · security key</small></span></label>
+    </div>
+    <span class="hint">3 models chosen. The list comes from bleqq and is updated with each release.</span>
+  </div>
+  <div class="field">
+    <label for="nd">Passkeys that do not meet it stop working on</label>
+    <input id="nd" type="date" value="2026-10-09" aria-describedby="ndh">
+    <span class="hint" id="ndh">14 days from today unless you choose another date. New passkeys must meet the policy from the moment you save; the ones members already have keep working until this date.</span>
+  </div>
+</section>
+
+<section class="panel" aria-labelledby="ss">
+  <h2 id="ss">Sessions</h2>
+  <div class="pair">
+    <div class="field">
+      <label for="si">Sign out after this long without activity</label>
+      <div class="unit"><input id="si" type="number" min="1" value="15" aria-describedby="sih"><span>minutes</span></div>
+      <span class="hint" id="sih">At most 480 minutes, which is 8 hours.</span>
+    </div>
+    <div class="field">
+      <label for="sa">Sign out after this long in all</label>
+      <div class="unit"><input id="sa" type="number" min="1" value="8" aria-describedby="sah"><span>hours</span></div>
+      <span class="hint" id="sah">At most 24 hours.</span>
+    </div>
+  </div>
+  <p class="meta" style="margin:0">New limits apply to sessions from their next refresh.</p>
+</section>
+
+<div class="slot" aria-hidden="true"><p class="microlabel" style="margin:0">Tenant reach</p><p style="margin:4px 0 0">Room for the agent access panel, drawn by its own card.</p></div>
+
+<div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Save</button></div>
+<p class="meta" style="margin:8px 0 0;text-align:right">Saving asks for your passkey.</p>
+</form>
+
+<h2 class="k">2 · The passkey step-up on Save</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="su" aria-describedby="sud">
+    <h2 id="su">Use your passkey to save the security policy</h2>
+    <p id="sud" class="meta">Device-bound, from the list · 3 models · from 9 Oct 2026 · 15 minutes idle, 8 hours in all</p>
+    <p>This changes how every member of Example Bank AB signs in, so we ask for your passkey first.</p>
+    <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Continue with passkey</button></div>
+  </div>
+</div>
+
+<h2 class="k">3 · Saved, with a notice date ahead</h2>
+<p class="status" role="status" tabindex="-1">Saved. New passkeys must meet the policy now; passkeys that do not stop working on 9 Oct 2026.</p>
+<div class="notice" role="status"><p><b>Device-bound passkeys from 9 Oct 2026.</b> Until then every member's passkey still works. Members whose passkeys do not meet the policy should add one that does before that date.</p></div>
+
+<h2 class="k">4 · This would lock you out (409), a state, not an error</h2>
+<section class="panel" role="alert" aria-labelledby="lo">
+  <h2 id="lo">This would lock you out</h2>
+  <p>None of your own passkeys is a model on the list, so you could not sign in after 9 Oct 2026. Nothing was saved.</p>
+  <p class="meta">Add a passkey of a model on the list first, or put the model of one of yours on the list.</p>
+  <div class="bar"><a class="btn outline" href="me-passkeys.html">My passkeys</a><button class="btn">Back to the list</button></div>
+</section>
+
+<h2 class="k">5 · A limit above the platform maximum (422 above_platform_maximum)</h2>
+<div class="panel">
+  <div class="field" style="margin:0">
+    <label for="sa2">Sign out after this long in all</label>
+    <div class="unit"><input id="sa2" type="number" value="36" aria-invalid="true" aria-describedby="sa2e" style="border-color:var(--negative)"><span>hours</span></div>
+    <span class="err" id="sa2e" role="alert">At most 24 hours. Choose 24 or fewer.</span>
+  </div>
+</div>
+
+<h2 class="k">6 · The policy in force, and loosening it</h2>
+<section class="panel" aria-labelledby="pk2">
+  <h2 id="pk2">Passkeys we accept</h2>
+  <p>Device-bound, from the list, since 9 Oct 2026. 3 models on the list.</p>
+  <label class="check" for="p3"><input type="radio" name="pol2" id="p3" checked><span>Any passkey<small>A passkey synced across a member's devices, or one kept on a single device or security key.</small></span></label>
+  <p class="meta" style="margin:8px 0 0">Allowing any passkey takes effect as soon as you save.</p>
+</section>
+
+<h2 class="k">7 · Loading, error and denied, in both themes</h2>
+<p class="cap">The same markup with the light and the dark aliases fixed. The page always has a policy, so it has no empty state: a new organisation reads Any passkey, 30 minutes and 12 hours. Denied is what an admin without security manage sees here.</p>
+<div class="statebox">
+  <div class="theme light">
+    <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Light</p>
+    <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:0 0 16px"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+    <div class="errorstate" role="alert"><h2>Could not load the security policy</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+    <section class="panel" role="alert" style="margin-top:16px"><h2>This would lock you out</h2><p>None of your own passkeys is a model on the list, so you could not sign in after 9 Oct 2026. Nothing was saved.</p><div class="bar"><a class="btn outline" href="me-passkeys.html">My passkeys</a><button class="btn">Back to the list</button></div></section>
+    <div class="restricted" role="alert" style="padding:24px 0"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p class="meta">Needs security manage</p></div>
+  </div>
+  <div class="theme dark">
+    <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Dark</p>
+    <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:0 0 16px"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+    <div class="errorstate" role="alert"><h2>Could not load the security policy</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+    <section class="panel" role="alert" style="margin-top:16px"><h2>This would lock you out</h2><p>None of your own passkeys is a model on the list, so you could not sign in after 9 Oct 2026. Nothing was saved.</p><div class="bar"><a class="btn outline" href="me-passkeys.html">My passkeys</a><button class="btn">Back to the list</button></div></section>
+    <div class="restricted" role="alert" style="padding:24px 0"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p class="meta">Needs security manage</p></div>
+  </div>
+</div>
+
+<h2 class="k">8 · At 375 px, light and dark: the policy, the notice date and the session limits</h2>
+<div class="statebox">
+  <div class="theme light" style="padding:0;border:0">
+    <div class="phone">
+      <section class="panel"><h2>Passkeys we accept</h2><label class="check" for="q1"><input type="radio" name="q" id="q1"><span>Any passkey</span></label><label class="check" for="q2"><input type="radio" name="q" id="q2" checked><span>Device-bound, from the list<small>3 models chosen</small></span></label><div class="field" style="margin:8px 0 0"><label for="qd">Passkeys that do not meet it stop working on</label><input id="qd" type="date" value="2026-10-09"></div></section>
+      <section class="panel"><h2>Sessions</h2><div class="field"><label for="qi">Sign out after this long without activity</label><div class="unit"><input id="qi" type="number" value="15"><span>minutes</span></div><span class="hint">At most 480 minutes, which is 8 hours.</span></div><div class="field" style="margin:0"><label for="qa">Sign out after this long in all</label><div class="unit"><input id="qa" type="number" value="8"><span>hours</span></div><span class="hint">At most 24 hours.</span></div></section>
+      <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Save</button></div>
+    </div>
+  </div>
+  <div class="theme dark" style="padding:0;border:0">
+    <div class="phone">
+      <section class="panel"><h2>Passkeys we accept</h2><label class="check" for="r1"><input type="radio" name="r" id="r1"><span>Any passkey</span></label><label class="check" for="r2"><input type="radio" name="r" id="r2" checked><span>Device-bound, from the list<small>3 models chosen</small></span></label><div class="field" style="margin:8px 0 0"><label for="rd">Passkeys that do not meet it stop working on</label><input id="rd" type="date" value="2026-10-09"></div></section>
+      <section class="panel"><h2>Sessions</h2><div class="field"><label for="ri">Sign out after this long without activity</label><div class="unit"><input id="ri" type="number" value="15"><span>minutes</span></div><span class="hint">At most 480 minutes, which is 8 hours.</span></div><div class="field" style="margin:0"><label for="ra">Sign out after this long in all</label><div class="unit"><input id="ra" type="number" value="8"><span>hours</span></div><span class="hint">At most 24 hours.</span></div></section>
+      <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Save</button></div>
+    </div>
+  </div>
+</div>
+
+<p class="note">Security card (/admin/security), under Admin for security manage. One form, one
+Save, one passkey step-up for both panels. Passkeys we accept is a choice of two: any passkey, or
+device-bound passkeys of a model the admin ticks on bleqq's committed list. Tightening binds new
+registrations the moment it is saved and existing passkeys from the notice date, which defaults
+to 14 days ahead and is the admin's to move; loosening takes effect at once, so the date field
+disappears. A save that would leave the acting admin with no passkey that meets the policy is
+refused with 409 and drawn as its own panel with two ways forward, My passkeys and back to the
+list, never as a red banner, and nothing is saved. The session limits show the platform maximum
+beside each field, read from the platform's settings; above it the server's 422 renders under
+the field. No pill is added: every state is a sentence. The Tenant reach panel is drawn by the
+agent access card in the marked place, and the IP allow-list, single sign-on (chunk 13) and
+retention (chunk 12) arrive with their own cards. Two buttons per row on a phone, the primary on
+the right.</p>
+
+</main>
+</body>
+</html>

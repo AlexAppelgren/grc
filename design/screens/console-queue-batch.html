@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Screen card: batch review (/console/queue/[proposalId])</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Noto+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Serves PRO-04, AGT-05 and ADM-02 (chunk 11; PRO-S8). The batch variant of the console
+   queue (console-queue.html), for a library editor holding proposals.review. The
+   prototype has no batch; drawn in the queue card's language.
+
+   A batch is one proposal with a row per record beneath it, so four eyes, the rejection
+   reason and the audit row are the queue's own: whoever asked for the batch cannot decide
+   it, every rejection carries a reason from the rejection reason vocabulary (never a
+   phrase in code), approving asks for a passkey, and the batch writes one audit event
+   with each row's outcome. The preview is before and after per record, decided row by
+   row or whole. "Ask for a re-tag" is how the console asks for one (AGT-05); it files the
+   batch and never edits a record.
+
+   The preview is a list of cards, not a table, so it reads at 375 px without sideways
+   scrolling: before and after sit side by side from 768 px and stack below it.
+
+   Values follow design/system/foundations.md and design/system/pills-and-labels.md; the
+   build maps them to Green tokens. Names, counts and dates are sample data. */
+/* Values: design/system/foundations.md (14px base, 36px buttons at a 6px radius,
+   hairline cards at 8px, dialogs at 12px) and design/system/pills-and-labels.md.
+   Every colour is a Green token from green-tokens 3.1.8, with the brand pair as
+   frontend/src/styles/brand.css overrides it, never SEB's values. */
+:root{
+  --page:#ffffff;            /* l1-neutral-01 */
+  --surface:#ffffff;         /* l2-neutral-02 */
+  --subtle:#f4f5f5;          /* l1-neutral-02 */
+  --accent:#eaebeb;          /* l3-neutral-02 */
+  --hover:rgba(0,0,0,.06);   /* state-neutral-05 */
+  --line:#dfe1e1;            /* border-neutral-02 */
+  --line-control:#dfe1e1;    /* border-neutral-02 */
+  --line-strong:#777e7c;     /* border-neutral-01 */
+  --text:#0a0b0b;            /* content-neutral-01 */
+  --muted:#636967;           /* content-neutral-02 */
+  --primary:#0a0b0b;         /* l3-neutral-03 */
+  --on-primary:#ffffff;      /* content-neutral-03 */
+  --focus:#005fb3;           /* content-notice-01 */
+  --notice:#005fb3;--notice-pill:#e6f3ff;          /* content-notice-01 on l3-notice-02 */
+  --positive:#026436;--positive-pill:#dcefdc;      /* content-positive-03 on l3-positive-02 */
+  --warning:#8f530a;--warning-pill:#fce8cf;--warning-soft:#fce8cf;  /* l3-warning-02 */
+  --negative:#b92f13;--negative-pill:#fdebe8;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --brand:#6a5730;--brand-pill:#ece5d6;--meter:#0a3a2a;            /* brand.css content-brand-02 on l3-brand-02 */
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+}
+/* Dark: the four status tones take Green's -03 step on pills; a warn or bad
+   banner keeps the -02 step and puts every word in the text colour. */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --notice:#66b8ff;--notice-pill:#003666;
+  --positive:#8ae58d;--positive-pill:#003d26;
+  --warning:#f5b970;--warning-pill:#5f3707;--warning-soft:#774508;
+  --negative:#f08975;--negative-pill:#5c170a;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --brand:#d9cba9;--brand-pill:#33291a;--meter:#d9cba9;
+}}
+/* Fixed-theme frames, so one card shows a state in light AND dark whatever the
+   viewer's system is set to. They carry the same aliases, so nothing inside
+   needs to know which theme it is in. */
+.theme{border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--page);color:var(--text)}
+.theme.light{
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --notice:#005fb3;--notice-pill:#e6f3ff;--positive:#026436;--positive-pill:#dcefdc;
+  --warning:#8f530a;--warning-pill:#fce8cf;--warning-soft:#fce8cf;
+  --negative:#b92f13;--negative-pill:#fdebe8;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --brand:#6a5730;--brand-pill:#ece5d6;--meter:#0a3a2a;
+}
+.theme.dark{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --notice:#66b8ff;--notice-pill:#003666;--positive:#8ae58d;--positive-pill:#003d26;
+  --warning:#f5b970;--warning-pill:#5f3707;--warning-soft:#774508;
+  --negative:#f08975;--negative-pill:#5c170a;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --brand:#d9cba9;--brand-pill:#33291a;--meter:#d9cba9;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px;font-weight:500}
+p{margin:0 0 8px}
+b{font-weight:600}
+a{color:inherit;text-underline-offset:3px}
+main{padding:24px max(32px,env(safe-area-inset-right)) 64px max(32px,env(safe-area-inset-left));max-width:1200px;width:100%;margin:0 auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.meta{color:var(--muted);font-size:13px;line-height:18px}
+.mono{font-family:var(--mono);font-size:13px}
+.microlabel{font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+/* State labels. They belong to the card, not to the screen. */
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-of-type{margin-top:24px}
+.cap{color:var(--muted);font-size:13px;line-height:18px;margin:0 0 10px}
+
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 16px;margin-bottom:20px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+.head .acts{margin-left:auto}
+.back{background:none;border:0;padding:0;margin:0 0 8px;color:var(--muted);font-size:13px;line-height:18px;text-decoration:underline;text-underline-offset:3px}
+.status{margin:0 0 12px;font-weight:500}
+.status:empty{display:none}
+
+/* Notice (banner): a tone fill, no coloured edge, 6px radius. Every word inside
+   a warn or bad notice is the text colour (foundations.md). */
+.notice{background:var(--subtle);color:var(--text);border-radius:6px;padding:10px 12px;margin:0 0 16px}
+.notice.warn{background:var(--warning-soft)}
+.notice.bad{background:var(--negative-soft)}
+.notice p:last-child{margin-bottom:0}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+.panel>h2{margin-bottom:12px}
+.panel>.cap{margin-top:-6px}
+.cols{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.cols>*{min-width:0}
+@media (min-width:768px){.cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Pill: fully rounded, 20px, 13px at 500, no border. Tone comes from the slot
+   or the kind, never from a person (pills-and-labels.md). */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+.pill.notice{background:var(--notice-pill);color:var(--notice)}
+.pill.positive{background:var(--positive-pill);color:var(--positive)}
+.pill.warning{background:var(--warning-pill);color:var(--warning)}
+.pill.negative{background:var(--negative-pill);color:var(--negative)}
+.pill.brand{background:var(--brand-pill);color:var(--brand)}
+.pill .x{margin-left:6px;font-weight:400}
+.pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pills.line{gap:6px 10px}
+
+/* Button: 36px, 6px radius, body at 500. Primary is neutral; danger is an
+   outline button with negative text. */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.ghost{background:transparent;color:var(--text);border-color:transparent}
+.btn.danger{background:var(--surface);color:var(--negative);border-color:var(--line-control)}
+.btn.small{height:32px;padding:0 12px}
+.btn.outline:hover,.btn.ghost:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.btn.danger:hover{background:var(--negative-hover)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* Actions right, two per row on a phone, the primary last and so on the right. */
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+.bar.left{justify-content:flex-start}
+.bar .btn{min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* List rows: 12 by 16px, a hairline card at 8px. */
+.rows{display:grid;gap:8px}
+.row{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;text-decoration:none;color:inherit}
+a.row:hover,button.row:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.row h3{margin:6px 0 4px;font-weight:600}
+.row .meta{display:flex;flex-wrap:wrap;gap:4px 12px}
+
+.field{display:grid;gap:4px;margin-bottom:12px}
+.field label{font-weight:500}
+.field input,.field select,.field textarea{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;color:var(--text)}
+.field textarea{height:auto;min-height:76px;padding:8px 10px;resize:vertical}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted);font-style:italic}
+.field input[aria-invalid="true"],.field select[aria-invalid="true"]{border-color:var(--negative)}
+.field .hint,.field .err{font-size:13px;line-height:18px}
+.field .hint{color:var(--muted)}
+.field .err{color:var(--negative)}
+.pair{display:grid;gap:0 16px;grid-template-columns:minmax(0,1fr)}
+.pair>*{min-width:0}
+@media (min-width:768px){.pair{grid-template-columns:repeat(2,minmax(0,1fr))}}
+fieldset{border:0;margin:0;padding:0}
+legend{padding:0;font-weight:500}
+.check{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{width:16px;height:16px;height:16px;margin:2px 0 0;accent-color:var(--primary);flex:none}
+.check small{display:block;color:var(--muted);font-size:13px;line-height:18px}
+
+/* Dialog: 12px radius, at most 560px, over the scrim. */
+.modal{display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,11,11,.6);border-radius:8px;margin-bottom:16px}
+.modal .box{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.modal .box>h2{margin-bottom:12px}
+
+.skeleton{height:72px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.empty,.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.empty h2,.errorstate h2{color:var(--text)}
+.empty p,.errorstate p{margin:8px auto 16px;max-width:60ch}
+.restricted{max-width:60ch;margin:0 auto;padding:48px 0;text-align:center}
+.restricted p{margin:12px 0 0;color:var(--muted)}
+/* Grid items must be allowed to shrink, or the 375px phone frame inside one
+   widens its track and the page scrolls sideways. */
+.statebox{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.statebox>*{min-width:0}
+@media (min-width:768px){.statebox{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* A 375px frame, so the narrow layout can be read on a wide screen. */
+.phone{width:375px;max-width:100%;padding:12px;background:var(--page);border:1px solid var(--line);border-radius:8px}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
+}
+
+/* The plain key, shown once: monospace, wrapping, on the subtle surface. */
+.secret{font-family:var(--mono);font-size:13px;line-height:20px;word-break:break-all;background:var(--subtle);border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin:0 0 8px}
+/* Key facts under a row title: label, then value. */
+.kv{display:grid;grid-template-columns:1fr;gap:2px 16px;margin:8px 0 0}
+@media (min-width:768px){.kv{grid-template-columns:132px minmax(0,1fr)}}
+.kv dt{color:var(--muted);font-size:13px;line-height:18px}
+.kv dd{margin:0 0 6px}
+@media (min-width:768px){.kv dd{margin-bottom:2px}}
+
+/* Shared by the chunk 11 cards. */
+.kv{grid-template-columns:1fr}
+@media (min-width:768px){.kv.wide{grid-template-columns:132px minmax(0,1fr)}}
+/* Meter: brand green is for meters and the timeline alone (design/README.md). */
+.meter{height:8px;border-radius:999px;background:var(--accent);overflow:hidden;margin:8px 0}
+.meter i{display:block;height:100%;background:var(--meter)}
+.figure{font-size:24px;line-height:32px;font-weight:600;letter-spacing:-.02em;margin:0}
+.figure small{font-size:14px;font-weight:400;color:var(--muted);letter-spacing:0}
+/* A run or a version line: facts left, figure right, wrapping on a phone. */
+.lines{margin:8px 0 0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.lines li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.lines li:last-child{border-bottom:0}
+.lines .grow{flex:1 1 180px;min-width:0}
+.lines .fig{margin-left:auto;font-variant-numeric:tabular-nums}
+.inline{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.inline .field{margin:0;flex:0 1 200px;min-width:0}
+.sub{margin:16px 0 4px;font-size:14px;font-weight:600}
+/* A select shrinks with its column; a long option never widens the page. */
+.field select,.kv select{max-width:100%;min-width:0}
+/* Batch actions: on the screen they stay pinned to the bottom of the view; drawn in place here. */
+.diff{display:grid;gap:8px;grid-template-columns:minmax(0,1fr);margin:8px 0 0}
+@media (min-width:768px){.diff{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.phone .diff{grid-template-columns:minmax(0,1fr)}
+.diff>div{background:var(--subtle);border-radius:6px;padding:8px 10px;min-width:0}
+.diff .microlabel{color:var(--muted);margin:0 0 4px}
+.row.decided{background:var(--subtle)}
+.tally{display:flex;flex-wrap:wrap;gap:4px 12px;margin:12px 0 0}
+.sticky{border-top:1px solid var(--line);padding:12px 0 0;margin-top:12px}
+</style>
+</head>
+<body>
+<main>
+
+<h2 class="k">1 · The batch header (a library editor who did not ask for it)</h2>
+<button class="back">Queue</button>
+<div class="head">
+  <div>
+    <div class="pills"><span class="pill notice">Re-tag</span><span class="pill warning">Waiting</span></div>
+    <h1>Add the tag Client money to 12 obligations</h1>
+    <p class="lede">Every row shows the record as it is and as it would be. Decide each one, or the rest at once.</p>
+  </div>
+</div>
+<section class="panel" aria-label="About this batch">
+  <dl class="kv wide">
+    <dt>Asked by</dt><dd>Maria Ek, 24 Sep 2026 14:10</dd>
+    <dt>Why</dt><dd>The Finnish authority's guidance of 12 Sep 2026 applies the client money rules to payment institutions.</dd>
+    <dt>Source</dt><dd><a href="#">FIN-FSA, Guidance 4/2026, section 3</a></dd>
+    <dt>Records</dt><dd>12 obligations</dd>
+  </dl>
+</section>
+
+<h2 class="k">2 · The preview, row by row</h2>
+<div class="rows">
+  <div class="row">
+    <div class="pills"><span class="pill brand">MiFID II</span><span class="pill warning">Added when approved</span></div>
+    <h3>Keep client money in a segregated account</h3>
+    <div class="diff">
+      <div><p class="microlabel">Before</p><div class="pills"><span class="pill brand">Safeguarding</span></div></div>
+      <div><p class="microlabel">After</p><div class="pills"><span class="pill brand">Safeguarding</span><span class="pill brand">Client money</span></div></div>
+    </div>
+    <div class="bar"><button class="btn outline small">Reject</button><button class="btn small">Approve</button></div>
+  </div>
+  <div class="row">
+    <div class="pills"><span class="pill brand">PSD2</span><span class="pill warning">Added when approved</span></div>
+    <h3>Safeguard funds received for payment transactions</h3>
+    <div class="diff">
+      <div><p class="microlabel">Before</p><div class="pills"><span class="pill brand">Safeguarding</span><span class="pill brand">Payments</span></div></div>
+      <div><p class="microlabel">After</p><div class="pills"><span class="pill brand">Safeguarding</span><span class="pill brand">Payments</span><span class="pill brand">Client money</span></div></div>
+    </div>
+    <div class="bar"><button class="btn outline small">Reject</button><button class="btn small">Approve</button></div>
+  </div>
+  <div class="row decided">
+    <div class="pills"><span class="pill brand">MiFID II</span><span class="pill positive">Approved</span></div>
+    <h3>Reconcile client money records daily</h3>
+    <div class="diff">
+      <div><p class="microlabel">Before</p><p class="meta" style="margin:0">No tags</p></div>
+      <div><p class="microlabel">After</p><div class="pills"><span class="pill brand">Client money</span></div></div>
+    </div>
+    <div class="bar"><button class="btn ghost small">Undo</button></div>
+  </div>
+  <div class="row decided">
+    <div class="pills"><span class="pill brand">CRR</span><span class="pill">Rejected</span></div>
+    <h3>Hold own funds against operational risk</h3>
+    <div class="diff">
+      <div><p class="microlabel">Before</p><div class="pills"><span class="pill brand">Capital</span></div></div>
+      <div><p class="microlabel">After</p><div class="pills"><span class="pill brand">Capital</span><span class="pill brand">Client money</span></div></div>
+    </div>
+    <p class="meta" style="margin:8px 0 0">Wrong scope · Own funds are not client money.</p>
+    <div class="bar"><button class="btn ghost small">Undo</button></div>
+  </div>
+  <p class="meta">8 more rows.</p>
+</div>
+
+<h2 class="k">3 · Reject one row, with a reason from the list</h2>
+<div class="row">
+  <div class="pills"><span class="pill brand">PSD2</span><span class="pill warning">Added when approved</span></div>
+  <h3>Safeguard funds received for payment transactions</h3>
+  <form aria-label="Reject this row" style="margin-top:8px">
+    <div class="field"><label for="rr">Reason</label><select id="rr"><option value="">Choose a reason</option><option>Wrong fact</option><option selected>Wrong scope</option><option>Bad source</option><option>Duplicate</option><option>Not relevant</option><option>Outside the sector scope</option></select></div>
+    <div class="field"><label for="rn">Note</label><textarea id="rn" placeholder="Optional. e.g. Own funds are not client money"></textarea></div>
+    <div class="bar"><button class="btn outline small" type="button">Cancel</button><button class="btn small" type="submit">Reject the row</button></div>
+  </form>
+</div>
+<div class="panel" style="margin-top:8px"><div class="field" style="margin:0"><label for="rr2">Reason</label><select id="rr2" aria-invalid="true" aria-describedby="rr2e"><option selected>Choose a reason</option></select><span class="err" id="rr2e" role="alert">Choose why this row is rejected.</span></div></div>
+
+<h2 class="k">4 · The whole batch: Approve the rest, Reject all</h2>
+<div class="sticky">
+  <div class="tally meta" role="status"><span>1 approved</span><span>1 rejected</span><span>10 not decided</span></div>
+  <div class="bar"><button class="btn danger">Reject all</button><button class="btn">Approve the rest</button></div>
+  <p class="meta" style="margin:8px 0 0;text-align:right">Approving asks for your passkey.</p>
+</div>
+<div class="modal" style="margin-top:16px">
+  <form class="box" aria-labelledby="ra">
+    <h2 id="ra">Reject all 12 rows?</h2>
+    <p>None of the obligations changes. The request stays in the queue's history with your reason.</p>
+    <div class="field"><label for="rar">Reason</label><select id="rar"><option>Choose a reason</option><option>Wrong fact</option><option>Wrong scope</option><option selected>Bad source</option><option>Duplicate</option><option>Not relevant</option><option>Outside the sector scope</option></select></div>
+    <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn danger" type="submit">Reject all</button></div>
+  </form>
+</div>
+
+<h2 class="k">5 · The passkey step-up</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="su" aria-describedby="sud">
+    <h2 id="su">Use your passkey to apply this batch</h2>
+    <p id="sud" class="meta">Add the tag Client money · 11 obligations change, 1 does not</p>
+    <p>The library changes for every bank the moment you continue, so we ask for your passkey first.</p>
+    <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Continue with passkey</button></div>
+  </div>
+</div>
+
+<h2 class="k">6 · Four eyes: the editor who asked for it</h2>
+<div class="notice bad" role="alert"><p><b>You asked for this re-tag.</b> A second library editor has to decide it.</p></div>
+<div class="bar left" style="margin-top:0"><button class="btn outline small">Withdraw the request</button></div>
+<p class="cap" style="margin-top:12px">The row buttons, Approve the rest and Reject all are not drawn for them; a decision that reaches the server anyway renders its 409 in place:</p>
+<p class="err" role="alert" style="color:var(--negative)">Deciding a batch you asked for is not allowed.</p>
+
+<h2 class="k">7 · The result</h2>
+<div class="head" style="margin-bottom:12px">
+  <div>
+    <div class="pills"><span class="pill notice">Re-tag</span><span class="pill positive">Approved</span></div>
+    <h1>Add the tag Client money to 12 obligations</h1>
+  </div>
+</div>
+<section class="panel" role="status" aria-labelledby="rs">
+  <h2 id="rs">11 obligations changed, 1 did not</h2>
+  <p class="meta">Decided by Kari Nygaard, 25 Sep 2026 09:40. Each bank sees the change under Library updates.</p>
+  <div class="bar left"><a class="btn outline small" href="#">Open the audit entry</a></div>
+</section>
+
+<h2 class="k">8 · Ask for a re-tag</h2>
+<form class="panel" aria-labelledby="rq">
+  <h2 id="rq">Ask for a re-tag</h2>
+  <div class="field">
+    <label for="qa">Change</label>
+    <select id="qa"><option selected>Add a tag</option><option>Remove a tag</option></select>
+  </div>
+  <div class="field">
+    <label for="qt">Tag</label>
+    <input id="qt" value="client monies" aria-describedby="qte">
+    <p class="err" id="qte" role="alert">Did you mean Client money? <button type="button" class="btn ghost small">Use Client money</button></p>
+  </div>
+  <div class="field">
+    <label for="qr">Which obligations</label>
+    <select id="qr"><option selected>Obligations under MiFID II, PSD2 and CRR that mention client funds</option></select>
+    <span class="hint">12 obligations match. The batch opens with every one of them for review.</span>
+  </div>
+  <div class="field">
+    <label for="qw">Why</label>
+    <textarea id="qw" placeholder="e.g. The Finnish authority's guidance of 12 Sep 2026 applies the client money rules to payment institutions"></textarea>
+  </div>
+  <div class="field">
+    <label for="qs">Source</label>
+    <input id="qs" placeholder="The address of the text that asks for it">
+  </div>
+  <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Ask for the re-tag</button></div>
+  <p class="meta" style="margin:8px 0 0">It opens in the queue as a batch. Nothing changes until another library editor approves it.</p>
+</form>
+<p class="status" role="status" tabindex="-1">Sent. The re-tag is in the queue with 12 rows.</p>
+
+<h2 class="k">9 · Loading, error and denied, in both themes</h2>
+<p class="cap">The same markup with the light and the dark aliases fixed. A batch always has rows, so there is no empty batch; the queue list's own empty state is the queue card's. Denied is what a platform admin without proposals review sees here.</p>
+<div class="statebox">
+  <div class="theme light">
+    <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Light</p>
+    <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:0 0 16px"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+    <div class="errorstate" role="alert"><h2>Could not load this batch</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+    <div class="notice bad" role="alert" style="margin-top:16px"><p><b>You asked for this re-tag.</b> A second library editor has to decide it.</p></div>
+    <div class="restricted" role="alert" style="padding:24px 0"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p class="meta">Needs proposals review</p></div>
+  </div>
+  <div class="theme dark">
+    <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Dark</p>
+    <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:0 0 16px"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+    <div class="errorstate" role="alert"><h2>Could not load this batch</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+    <div class="notice bad" role="alert" style="margin-top:16px"><p><b>You asked for this re-tag.</b> A second library editor has to decide it.</p></div>
+    <div class="restricted" role="alert" style="padding:24px 0"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p class="meta">Needs proposals review</p></div>
+  </div>
+</div>
+
+<h2 class="k">10 · At 375 px, light and dark: a row to decide, a decided row and the batch actions</h2>
+<div class="statebox">
+  <div class="theme light" style="padding:0;border:0">
+    <div class="phone">
+      <div class="rows">
+        <div class="row"><div class="pills"><span class="pill brand">PSD2</span><span class="pill warning">Added when approved</span></div><h3>Safeguard funds received for payment transactions</h3><div class="diff"><div><p class="microlabel">Before</p><div class="pills"><span class="pill brand">Safeguarding</span><span class="pill brand">Payments</span></div></div><div><p class="microlabel">After</p><div class="pills"><span class="pill brand">Safeguarding</span><span class="pill brand">Payments</span><span class="pill brand">Client money</span></div></div></div><div class="bar"><button class="btn outline small">Reject</button><button class="btn small">Approve</button></div></div>
+        <div class="row decided"><div class="pills"><span class="pill brand">CRR</span><span class="pill">Rejected</span></div><h3>Hold own funds against operational risk</h3><p class="meta" style="margin:8px 0 0">Wrong scope · Own funds are not client money.</p><div class="bar"><button class="btn ghost small">Undo</button></div></div>
+      </div>
+      <div class="sticky"><div class="tally meta"><span>1 approved</span><span>1 rejected</span><span>10 not decided</span></div><div class="bar"><button class="btn danger">Reject all</button><button class="btn">Approve the rest</button></div></div>
+    </div>
+  </div>
+  <div class="theme dark" style="padding:0;border:0">
+    <div class="phone">
+      <div class="rows">
+        <div class="row"><div class="pills"><span class="pill brand">PSD2</span><span class="pill warning">Added when approved</span></div><h3>Safeguard funds received for payment transactions</h3><div class="diff"><div><p class="microlabel">Before</p><div class="pills"><span class="pill brand">Safeguarding</span><span class="pill brand">Payments</span></div></div><div><p class="microlabel">After</p><div class="pills"><span class="pill brand">Safeguarding</span><span class="pill brand">Payments</span><span class="pill brand">Client money</span></div></div></div><div class="bar"><button class="btn outline small">Reject</button><button class="btn small">Approve</button></div></div>
+        <div class="row decided"><div class="pills"><span class="pill brand">CRR</span><span class="pill">Rejected</span></div><h3>Hold own funds against operational risk</h3><p class="meta" style="margin:8px 0 0">Wrong scope · Own funds are not client money.</p><div class="bar"><button class="btn ghost small">Undo</button></div></div>
+      </div>
+      <div class="sticky"><div class="tally meta"><span>1 approved</span><span>1 rejected</span><span>10 not decided</span></div><div class="bar"><button class="btn danger">Reject all</button><button class="btn">Approve the rest</button></div></div>
+    </div>
+  </div>
+</div>
+
+<p class="note">Batch review card (/console/queue/[proposalId] when the proposal is a batch). The
+kind is a notice pill (Re-tag) and the status the queue's own (Waiting warning, Approved positive,
+Rejected information). Each row names its record with the instrument in brand and the computed
+"Added when approved" (or "Removed when approved") in warning, and shows the library tags before
+and after as brand pills. A row is decided on its own, Approve or Reject, and stays undoable
+until the batch is applied; Reject opens a reason picker read from the rejection reason
+vocabulary with an optional note, and no row is rejected without a reason. Approve the rest
+applies every undecided row with the decisions already made, behind a passkey; Reject all asks
+for one reason and changes nothing. The editor who asked for the batch sees the four-eyes notice
+and Withdraw instead of any decision. The result names how many changed and how many did not, and
+links the one audit entry that carries each row's outcome. Ask for a re-tag files the batch: the
+tag picker answers the vocabulary's near-duplicate check in place, the record filter states how
+many match, and nothing changes until a second editor decides. Rows stack at 375 px, so nothing
+scrolls sideways; the batch actions stay in reach at the bottom.</p>
+
+</main>
+</body>
+</html>
