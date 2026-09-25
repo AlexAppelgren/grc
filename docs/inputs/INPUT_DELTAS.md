@@ -1239,3 +1239,29 @@ The shapes depart from the design on purpose:
 - `POST /eval/runs` (`startEvalRun`) waits for chunk 14's job runner
   (`backend/scripts/contract_drift_pending.txt`): a run builds the sample corpus in a
   database of its own and takes minutes, which no request should hold open.
+
+## 18. Export jobs move into R2 and carry their file's checksum (2026-09-25, x-exports-contract)
+
+The case file must export (CAS-07, R2), so the export mechanism of chunk 12 moves ahead of
+the rest of REP-02, which stays R3. `export_job` is built as designed, a tenant table under
+enabled and forced row-level security, with these departures on purpose:
+
+- `export_kind` gains `cases`, `configuration` and `tenant_export` beside the designed five
+  (CHUNK12_TASKS ruling 6): the list of cases, the configuration snapshot and the exit's
+  final export are exports like the others, so they are kinds of the one job and not routes
+  of their own. `job_status` is as designed.
+- `POST /exports` (`createExport`) takes an optional typed `filters` object
+  (`ExportFilters`: `instrumentKey`, `entityId`, `standardEdition`, `from`, `to`,
+  `statusKeys`) that every exporter shares, so a later exporter never changes the contract
+  (ruling 7). It answers 501 `not_built` for a kind whose exporter is not registered yet,
+  and 422 `format_not_offered` for a format the kind does not come in, both before a job is
+  written.
+- `ExportJob`, as answered by `createExport` and `getExport`, adds `expiresAt`,
+  `contentHash` (the file's SHA-256) and `downloadedAt` (the first download): the screen
+  shows the checksum, the file lives `EXPORT_RETENTION_DAYS` and its download answers 409
+  `export_expired` after that, and the tenant exit refuses an export nobody downloaded.
+- `GET /exports` (`listExports`) is added: the bank's jobs as the shared page, newest
+  first, under `exports.create`.
+- `GET /exports/{exportId}/download` streams the file itself (section 4, section 7), with
+  `Content-Disposition: attachment` and `Cache-Control: no-store`, and records every
+  download in the audit log. There is no `DownloadLink`.

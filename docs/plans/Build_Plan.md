@@ -44,3 +44,12 @@ release. If it is cut, it moves whole to chunk 13, where ACC-10 already sits, an
 nothing else in chunk 11 changes. ACC-10 is R3 either way. `CHUNK11_TASKS.md` and
 `CHUNK13_TASKS.md` were written before ACC landed and carry no ACC task yet; its
 tasks are planned from the brief before chunk 11 starts.
+
+**Export jobs move into R2 (2026-09-25, x-exports-contract).** Chunk 9's case file must
+export (CAS-07), so the export mechanism of chunk 12 is built in R2 wave 1 ahead of the
+rest of the chunk: `ExportJob` (forced RLS, `JobStatus`), `POST /exports` behind
+`exports.create` and a step-up, `GET /exports`, `GET /exports/{exportId}`, the streamed and
+audited download, the runner and the exporter registry in `apps/reports/exporters/`. It is
+the work of `c12-exports-contract-a` and `-b` except `ImportJob`, the import routes and the
+storage adapter (the existing `apps/shared/storage.py` is reused). REP-S3 is green; REP-02
+itself, its exporters and every other chunk 12 requirement stay R3.
