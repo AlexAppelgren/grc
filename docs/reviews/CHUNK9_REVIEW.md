@@ -64,7 +64,7 @@ transitions only through `state.py`.
 | Soft removal | **Holds** for actions and evidence: both the model and queryset deletes raise, and removal sets `removed_at` only. See L1 and L7 for database-level and participant gaps. | `tests_evidence_remove.test_a_hard_delete_is_impossible`, `test_removal_sets_removed_at_only_and_writes_one_audit_row` |
 | Tenancy on every route | **Holds.** Every loader filters by the bank as well as relying on row-level security, and another bank's case, action, evidence or participant id answers 404 with no audit row. See L6 for the isolation list's coverage. | `tests_contract.test_another_banks_case_action_and_evidence_are_404_before_the_stub`, `tests_actions.test_another_banks_action_is_404_on_every_write`, `tests_evidence.test_another_banks_evidence_is_404_everywhere_and_leaves_no_audit_row`, `shared/tests_scenarios` isolation guard |
 | Permissions | **Holds.** Every route names a permission constant (read, contribute, work, triage, sign-off). Participant removal is the one logic gate, because leaving needs none. No role names appear. | `tests_contract.test_a_session_without_the_permission_is_403_naming_it`, `shared/tests_route_permissions` |
-| One audit row per write and download | **Holds, with L4 fixed.** Every write and every download writes exactly one row through `record()` in the request's transaction, and refusals write none. | `tests_evidence.test_a_clean_file_streams_as_an_attachment_of_its_type_with_one_audit_row_per_download`, the scenario client's audit check |
+| One audit row per write and download | **Holds, with L9 fixed.** Every write and every download writes exactly one row through `record()` in the request's transaction, and refusals write none. | `tests_evidence.test_a_clean_file_streams_as_an_attachment_of_its_type_with_one_audit_row_per_download`, the scenario client's audit check |
 | Library fence across sign-off | **Holds.** Sign-off writes the case, its ledger, audit, outbox and notifications only. | `tests_signoff.test_a_sign_off_moves_no_library_or_register_row`, `shared/tests_library_fence` |
 | My work and the roadmap | **Holds.** Case rows need `cases.read`, and a case reached through a register link also needs `register.read`. The department view filters and never grants. Only the change's library title is shown. | `home/tests_my_work_cases`, `home/tests_roadmap_cases` |
 
@@ -88,7 +88,7 @@ differ from what was requested.
 - **Test:** `tests_evidence_remove.test_evidence_is_locked_while_the_case_waits_for_sign_off`,
   red before the fix (204 where 409 was expected).
 
-**L4 (low, fixed): an action's audit row named the title a person typed.** The actions
+**L9 (low, fixed): an action's audit row named the title a person typed.** The actions
 module's own rule m keeps typed text out of audit rows, and its values held to it, but the
 subject title, which the audit log lists, was the action's title. It is now the change's
 title.
