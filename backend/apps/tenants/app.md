@@ -42,13 +42,23 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | TEN-01 | Tenant profile, timezone, default languages, onboarding checklist | M | R1 | built |
-| TEN-02 | Legal entities with licences and certificates (issuer, reference, scope, validity, next audit, owner), departments with a head and the teams in them, and products described the way obligations are scoped | M | R2 | pending |
+| TEN-02 | Legal entities with licences and certificates (issuer, reference, scope, validity, next audit, owner), departments with a head and the teams in them, and products described the way obligations are scoped | M | R2 | in_progress |
 | TEN-03 | Teams as owners and participants, so ownership survives a person leaving | M | R2 | in_progress |
 | TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | pending |
-| TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | pending |
+| TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | in_progress |
 | TEN-06 | Support access grants: requested by the platform, approved by a tenant admin with a passkey, read-only, visible to the tenant, time-boxed, revocable and logged in the bank (D-49) | M | R2 | built |
 | ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
 | ADM-03 | Admin duties are separate permissions | M | R1 | built |
+
+**TEN-05 is built for the register, which is why it is `in_progress`.** `GET
+/tenant/members/{userId}/open-work`, the refusal of a plain removal (422
+`reassignment_required`) and `POST /tenant/members/{userId}/remove` move register entries,
+legal entities' rows, gaps and internal items, end the member's participations and team
+memberships, and deactivate them in one step-up transaction (`c8-ten-reassignment`, TEN-S5,
+TEN-S9, and TEN-S3's register half). The case halves of TEN-S3, TEN-S5 and TEN-S9 — cases,
+actions and case participations — are `c9-owner-team-and-reassign`'s; dated duties join when
+`duty_occurrence` exists (`c8-reg-duty-occurrences`). The removal dialog on the member
+screen and TEN-S5's journey came with `c8-ui-departments-teams-removal`.
 
 **ADM-01 is built in part, which is why it stays `in_progress`.** The R1 slice on `main`:
 the organisation profile with its onboarding checklist (TEN-S1); members and invitations,
@@ -56,7 +66,9 @@ roles, and each admin screen gated by its own permission (ADM-S1 to ADM-S3); an 
 passkey re-enrolment of a member and the sessions a person sees and revokes (ID-S12,
 ID-S11); the bank's own API keys; the security log; the audit log; the regulatory scope with
 its change requests and its markets panel (FP-S10); and the vocabularies. What remains, each
-with the Build_Plan.md chunk that delivers it: teams and team membership on the member row (TEN-03, chunk 8; departments with a head and the rest of the organisation came with c8-ten-organisation); the
+with the Build_Plan.md chunk that delivers it: putting a team in a department, which no
+route writes yet (TEN-02, chunk 8; departments with their heads, teams and team membership on
+the member row came with c8-ten-organisation and c8-ui-departments-teams-removal); the
 workflow policy's reminders and escalation (COL-02, chunk 10); the agents a bank adds for
 itself (AGT-04, chunk 11); data, meaning exports, import, retention and tenant exit (REP-02
 to REP-04, AUD-04, chunk 12); and integrations beyond the API keys, with the security
@@ -179,23 +191,32 @@ When a tenant admin declines a second request, or nobody decides it within the r
 Then nothing was ever granted and the request can no longer be approved
 ```
 
-### TEN-S7 — J-8: tenant B cannot see tenant A `@e2e` (TEN-06, COL-04, J-8)
+### TEN-S7 — J-8: tenant B cannot see tenant A `@e2e` (NFR-01, TEN-02, TEN-03, TEN-06, COL-01, COL-02, COL-04, AGT-04, ACC-01, ID-08, J-8)
 ```gherkin
-Given seeded tenants A and B, a case with evidence, comments and a participant in A, and A watching Norway
-When B's compliance officer signs in and opens A's case URL, evidence URL and vocabulary screen
+Given seeded tenants A and B that both hold a case on one change and discuss and take part in the same obligations
+And tenant A alone holds a member, a custom role and tag, departments, products and teams, a comment on its case mentioning its administrator, a support request, one of its own agents, an agent access entry with a key and a session policy
+When A's administrator signs in
+Then each of A's records is there for A
+When B's compliance officer signs in and opens the change both banks work on
+Then B's case shows none of A's comments and lists only B's evidence
+And the comments of A's case and the download of A's evidence answer 404 by URL
+When B opens the obligation both banks discuss and the obligation both take part in
+Then B sees only its own comment and its own participant
+And B's inbox holds nothing of A's, and marking A's notification read answers 404
+When B's administrator opens A's member and A's agent access entry by URL
 Then each answers 404 and the UI shows "Not found", never the data and never a 403
-When B opens the participants of a shared obligation on which A has participants
-Then B sees only its own participants
-And B's regulatory scope screen shows no market that A watches
-And B's lists show only B's records
+And A's legal entity, department, product, team, support request, agent, agent access key and access log answer 404 by URL
+And B's members, organisation, support access, agents, agent access entries and session limits show only B's own
+And B's regulatory scope screen shows no market that A watches, none of A's terms and not A's pending request
+And B's roles and tenant tags hold none of A's
 ```
 
-> **Note — what R1 walks (tax-market-journeys).** The `@e2e` journey proves B cannot reach
-> A's member by URL and lists only its own members; that B's regulatory scope shows no
-> market A watches as watched, none of A's terms as held and neither A's pending request nor
-> its requester; and that B's roles and tenant tags hold none of A's own (the seed gives A a
-> custom role and a tag for this, `EXPECTED_TENANT_A_ONLY`). The case, evidence, comment and
-> participant steps join the journey with chunks 9 and 10, when those screens exist.
+> **Note — what the journey walks (r2-j8-isolation).** Tenant A's rows are the seed's
+> (`EXPECTED_TENANT_A_ONLY`, `EXPECTED_J8_ISOLATION`, `EXPECTED_ORG_REGISTER`,
+> `EXPECTED_COMMENTS` and the participants block in `apps/shared/e2e_seed.py`); the journey
+> reads their ids in A's own session, then reaches for each from B, in the UI where a screen
+> addresses the record by id and through the API from B's signed-in page where none does.
+> Every 404 is declared where it is expected, so any other failure still fails the journey.
 
 ### ADM-S1 — Tenant admin surfaces are gated by their own permissions `@integration` `@e2e` (ADM-01, ADM-03)
 ```gherkin
@@ -265,6 +286,12 @@ And no obligation, scope row or applicability changes
 When they set a withdrawal date
 Then the row reads as withdrawn and stays in the history
 ```
+
+> **c8-ui-organisation (TEN-02, ADM-01).** `/admin/organisation` draws the legal entities as a
+> tree under the group, each entity's licences and certificates, and the products, with Add
+> and Edit for `vocab.manage` only; `stale_write`, `unknown_member`, `unknown_key` and a 422's
+> named fields render where they belong. The departments and teams sections are mounted as
+> stubs for their own package. TEN-S2 and TEN-S10 are journeys in `tenants.journey.spec.ts`.
 
 ### TEN-S11 — A support session reads and never writes, and never approves itself `@integration` (TEN-06)
 ```gherkin

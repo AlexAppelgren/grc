@@ -36,7 +36,7 @@ describe('navigation registry (playbook 6.2)', () => {
     ]);
     // A console destination registers with its page: vocabularies and tenants
     // from chunk 4, Change facts, Sources and Agent keys from chunk 5,
-    // Evaluation from chunk 7. The queue joins with its own.
+    // Evaluation from chunk 7, Support access from chunk 8. The queue joins with its own.
     expect(visibleDestinations('console', PLATFORM).map((d) => d.id)).toEqual([
       'console-queue',
       'console-vocabularies',
@@ -46,6 +46,7 @@ describe('navigation registry (playbook 6.2)', () => {
       'console-agent-keys',
       'console-agents',
       'console-evaluation',
+      'console-support-access',
     ]);
     // Each console destination answers to the one platform role that holds
     // its permission, so neither platform role sees the other's (ADM-S4).
@@ -106,7 +107,7 @@ describe('navigation registry (playbook 6.2)', () => {
   it('puts every visible destination that is not a tab in More, and never promotes an unranked one', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(moreDestinations('tenant', all).map((d) => d.id)).toEqual(['roadmap', 'admin']);
-    expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys', 'console-agents', 'console-evaluation']);
+    expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys', 'console-agents', 'console-evaluation', 'console-support-access']);
 
     expect(dockDestinations('tenant', []).map((d) => d.id)).toEqual(['today']);
     expect(moreDestinations('tenant', []).map((d) => d.id)).toEqual([]);
@@ -141,26 +142,28 @@ describe('navigation registry (playbook 6.2)', () => {
   });
 
   it('keeps admin sections and account links under their parent, gated by their own permission', () => {
-    expect(childDestinations('admin', ['members.manage']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-members']);
+    expect(childDestinations('admin', ['members.manage']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-members', 'admin-support-access']);
     expect(childDestinations('admin', ['roles.manage', 'integrations.manage', 'security.manage']).map((d) => d.id)).toEqual([
       'admin-organisation',
       'admin-roles',
       'admin-api-keys',
       'admin-security-log',
+      'admin-support-access',
       'admin-security',
     ]);
     // Chunk 2: the vocabulary screen needs vocab.manage; the footprint screen
     // opens for either footprint grant and is read-only without the first.
-    expect(childDestinations('admin', ['vocab.manage']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-vocabularies']);
-    expect(childDestinations('admin', ['footprint.request']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-footprint']);
-    expect(childDestinations('admin', ['footprint.approve']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-footprint']);
+    expect(childDestinations('admin', ['vocab.manage']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-vocabularies', 'admin-support-access']);
+    expect(childDestinations('admin', ['footprint.request']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-footprint', 'admin-support-access']);
+    expect(childDestinations('admin', ['footprint.approve']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-footprint', 'admin-support-access']);
     // An approver who holds nothing else still reaches /admin to find it.
     expect(visibleDestinations('tenant', ['footprint.approve']).map((d) => d.id)).toEqual(['today', 'admin']);
-    // A member's own access tokens (ACC-03) are every member's: a token held stays revocable.
-    expect(childDestinations(ACCOUNT_PARENT, []).map((d) => d.href)).toEqual(['/me/passkeys', '/me/sessions', '/me/tokens']);
+    // Notifications (COL-02) is any member's own inbox, first in the account group, and a
+    // member's own access tokens (ACC-03) are every member's: a token held stays revocable.
+    expect(childDestinations(ACCOUNT_PARENT, []).map((d) => d.href)).toEqual(['/notifications', '/me/passkeys', '/me/sessions', '/me/tokens']);
     // Calendar feeds needs the grant the roadmap needs (HOM-04), so it joins the
     // account links only for a reader who holds it, and never unlocks anything else.
-    expect(childDestinations(ACCOUNT_PARENT, ['roadmap.read']).map((d) => d.href)).toEqual(['/me/passkeys', '/me/sessions', '/me/tokens', '/me/calendar-feeds']);
+    expect(childDestinations(ACCOUNT_PARENT, ['roadmap.read']).map((d) => d.href)).toEqual(['/notifications', '/me/passkeys', '/me/sessions', '/me/tokens', '/me/calendar-feeds']);
     expect(visibleDestinations('tenant', ['roadmap.read']).map((d) => d.id)).toEqual(['today', 'roadmap']);
     // Children never reach the rail or the dock.
     const all = destinations.flatMap((d) => d.anyOfPermissions);
@@ -175,7 +178,7 @@ describe('navigation registry (playbook 6.2)', () => {
   // admin section a reader reaches, and it is what puts Admin in their rail.
   it('lets any member reach Admin for the audit log and the organisation profile', () => {
     expect(visibleDestinations('tenant', ['audit.read']).map((d) => d.id)).toEqual(['today', 'admin']);
-    expect(childDestinations('admin', ['audit.read']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-audit-log']);
+    expect(childDestinations('admin', ['audit.read']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-support-access', 'admin-audit-log']);
     expect(findDestination('admin-audit-log')?.href).toBe('/admin/audit-log');
     expect(existsSync(join(import.meta.dirname, '..', '..', 'app', '(tenant)', 'admin', 'audit-log', 'page.tsx'))).toBe(true);
   });

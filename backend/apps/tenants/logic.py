@@ -18,7 +18,13 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.identity import invitation_logic, roles_logic
-from apps.identity.models import Invitation, Membership, PlatformRoleAssignment, User, WebAuthnCredential
+from apps.identity.models import (
+    Invitation,
+    Membership,
+    PlatformRoleAssignment,
+    User,
+    WebAuthnCredential,
+)
 from apps.library.models import Language
 from apps.shared import permissions as perms
 from apps.shared import tenancy

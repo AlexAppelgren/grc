@@ -74,6 +74,9 @@ export const destinations: readonly Destination[] = [
   { id: 'admin-footprint', href: '/admin/footprint', labelKey: 'nav.admin.footprint', surface: 'tenant', anyOfPermissions: FOOTPRINT_PERMISSIONS, group: 'admin', parent: 'admin' },
   { id: 'admin-api-keys', href: '/admin/api-keys', labelKey: 'nav.admin.apiKeys', surface: 'tenant', anyOfPermissions: ['integrations.manage'], group: 'admin', parent: 'admin' },
   { id: 'admin-security-log', href: '/admin/security-log', labelKey: 'nav.admin.securityLog', surface: 'tenant', anyOfPermissions: ['security.manage'], group: 'admin', parent: 'admin' },
+  // Support access (TEN-06, D-49): any member reads who from platform support
+  // asked and who was let in; approve, decline and revoke need security.manage.
+  { id: 'admin-support-access', href: '/admin/support-access', labelKey: 'nav.admin.supportAccess', surface: 'tenant', anyOfPermissions: [], group: 'admin', parent: 'admin' },
   { id: 'admin-audit-log', href: '/admin/audit-log', labelKey: 'nav.admin.auditLog', surface: 'tenant', anyOfPermissions: ['audit.read'], group: 'admin', parent: 'admin' },
   // Agents (c11-fe-admin-agents, AGT-03, AGT-04): bleqq's watch reads under watch.read, so every
   // member reaches it; the controls on the page are drawn only for agents.manage (ruling 6).
@@ -88,6 +91,9 @@ export const destinations: readonly Destination[] = [
   // workflow.manage rather than by the organisation profile's grants.
   { id: 'admin-workflow', href: '/admin/workflow', labelKey: 'nav.admin.workflow', surface: 'tenant', anyOfPermissions: ['workflow.manage'], group: 'admin', parent: 'admin' },
   // Account: any signed-in person, from the who panel.
+  // The person's own notification inbox (COL-02), first in the account group; its unread count
+  // comes from GET /me (c10-fe-notifications).
+  { id: 'notifications', href: '/notifications', labelKey: 'nav.notifications', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-passkeys', href: '/me/passkeys', labelKey: 'nav.me.passkeys', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-sessions', href: '/me/sessions', labelKey: 'nav.me.sessions', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   // A person's own access tokens (ACC-03): every member's, since a token held stays
@@ -113,6 +119,8 @@ export const destinations: readonly Destination[] = [
   { id: 'console-agents', href: '/console/agents', labelKey: 'nav.console.agents', surface: 'console', anyOfPermissions: ['agent_definitions.manage'], group: 'primary' },
   // The search evaluation set (SRC-05): the library editor's, beside Sources.
   { id: 'console-evaluation', href: '/console/evaluation', labelKey: 'nav.console.evaluation', surface: 'console', anyOfPermissions: ['eval.manage'], group: 'primary' },
+  // Support access (TEN-06): the platform admin asks a bank to read, and enters a grant it approved.
+  { id: 'console-support-access', href: '/console/support-access', labelKey: 'nav.console.supportAccess', surface: 'console', anyOfPermissions: ['support_access.grant'], group: 'primary' },
 ];
 
 /** The console's landing: it sends each person on to the first console destination they may open. */

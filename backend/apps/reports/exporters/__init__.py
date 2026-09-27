@@ -10,17 +10,28 @@ app whose records it exports and is registered by one line at the bottom of this
 the task that builds it (`case_file` by c9-case-file-export). A builder runs in the worker
 with the job's tenant active, reads only through that tenant's row-level security, and
 raises `ValidationError` with user-facing text when it cannot build the file; the runner
-turns that into a failed job.
+turns that into a failed job. A kind about one record also registers a `check`, which
+`POST /exports` and every download call with the caller's permissions and the job's subject:
+it answers 404 for a record that is not the caller's bank's, and 403 for a person who may
+not read that kind of record, before anything is written or streamed.
 """
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Protocol
 
 from apps.reports.models import EXPORT_FORMATS, ExportJob, ExportKind
+from apps.shared.models import Tenant
 
 Builder = Callable[[ExportJob], bytes]
+
+
+class SubjectCheck(Protocol):
+    def __call__(self, *, tenant: Tenant, permissions: frozenset[str], subject_id: uuid.UUID | None) -> None: ...
+
 
 CONTENT_TYPES: dict[str, str] = {
     "pdf": "application/pdf",
@@ -47,12 +58,13 @@ PLANNED_BY: dict[ExportKind, str] = {
 class Exporter:
     formats: frozenset[str]
     build: Builder
+    check: SubjectCheck | None = None
 
 
 _REGISTRY: dict[ExportKind, Exporter] = {}
 
 
-def register(kind: ExportKind, *, formats: frozenset[str], build: Builder) -> None:
+def register(kind: ExportKind, *, formats: frozenset[str], build: Builder, check: SubjectCheck | None = None) -> None:
     """Register the builder of one kind, once. A second registration of the same kind, or
     a format outside the designed set, is a programming error and fails at import."""
     if kind in _REGISTRY:
@@ -60,7 +72,7 @@ def register(kind: ExportKind, *, formats: frozenset[str], build: Builder) -> No
     unknown = formats - set(EXPORT_FORMATS)
     if not formats or unknown:
         raise ValueError(f"export kind {kind} offers formats outside {EXPORT_FORMATS}: {sorted(unknown)}")
-    _REGISTRY[kind] = Exporter(formats=formats, build=build)
+    _REGISTRY[kind] = Exporter(formats=formats, build=build, check=check)
 
 
 def lookup(kind: ExportKind) -> Exporter | None:
@@ -68,3 +80,6 @@ def lookup(kind: ExportKind) -> Exporter | None:
 
 
 # ---- Registrations (append one line per builder, in the task that builds it) -----------
+from apps.reports.exporters import case_file as _case_file  # noqa: E402 - registered after the registry exists
+
+register(ExportKind.CASE_FILE, formats=frozenset({"txt"}), build=_case_file.build, check=_case_file.check)

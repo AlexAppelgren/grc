@@ -227,6 +227,9 @@ TENANT_ONLY_TABLES = [
     "action",
     "case_transition",
     "evidence",
+    # c8-teams-model (tenants 0003, TEN-03): a person in a team. Both keys are composite
+    # (apps/tenants/tests_team_models.py proves the database refuses a cross-tenant one).
+    "team_member",
     # Chunk 10's (c10-collab-models): a comment, the people it mentions, the text an edit
     # replaced, a person's notifications and the proof a mail went out. All one bank's own;
     # comments and revisions hold tenant text (COL-01, COL-02).
@@ -249,9 +252,6 @@ TENANT_ONLY_TABLES = [
     "gap",
     "interpretation",
     "internal_link",
-    # c8-teams-model (tenants 0003, TEN-03): a person in a team. Both keys are composite
-    # (apps/tenants/tests_team_models.py proves the database refuses a cross-tenant one).
-    "team_member",
     # acc-foundation (agents 0006, ACC-01, ACC-02): the agents a bank runs itself and the
     # departments and products narrowing each (apps/agents/tests_agent_access_models.py
     # proves the composite keys refuse another bank's row).
@@ -275,6 +275,10 @@ TENANT_ONLY_TABLES = [
     # (apps/taxonomy/tests_scope_item_models.py proves the database refuses another bank's).
     "scope_item",
     "footprint_change_scope_item",
+    # c8-participants (collab 0002, COL-04): a person or a team taking part in a register
+    # entry or a case. Every key is composite (apps/collab/tests_participants.py proves the
+    # database refuses a cross-tenant user, team, entry or case).
+    "participant",
 ]
 
 # The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the

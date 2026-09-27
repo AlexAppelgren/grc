@@ -483,10 +483,6 @@ def team(tenant: Tenant, *, key: str, label: str, org_unit: OrgUnit | None = Non
     return row
 
 
-def named_department(tenant: Tenant, *, name: str, head: User | None, kind: OrgUnitKind = OrgUnitKind.BUSINESS_AREA) -> OrgUnit:
-    with transaction.atomic():
-        tenancy.activate(tenant.id)
-        return OrgUnit.objects.create(tenant=tenant, kind=kind.value, name=name, head_user=head)
 
 
 # c8-reg-status: the tenant-isolation guard's record for a legal entity's register row.
@@ -615,15 +611,135 @@ def org_legal_entity(tenant: Tenant, *, parent: OrgUnit | None = None, head: Use
         )
 
 
-def department(tenant: Tenant, *, parent: OrgUnit | None = None, head: User | None = None) -> OrgUnit:
-    """A business unit of `tenant` with a head, under `parent`."""
+def department(
+    tenant: Tenant,
+    *,
+    name: str | None = None,
+    parent: OrgUnit | None = None,
+    head: User | None = None,
+    kind: OrgUnitKind = OrgUnitKind.BUSINESS_UNIT,
+) -> OrgUnit:
+    """An org unit of `tenant` (a business unit unless `kind` says otherwise) with a head, under `parent`."""
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return OrgUnit.objects.create(
-            tenant=tenant, kind=OrgUnitKind.BUSINESS_UNIT.value, name=f"Unit {next(_counter)}", parent=parent, head_user=head
+            tenant=tenant, kind=kind.value, name=name or f"Unit {next(_counter)}", parent=parent, head_user=head
         )
 # acc-scope-and-reach (ACC-08): the tenant-isolation guard's record for tenant reach routes.
 
 
 # c11-tenant-agents-budget-scope (AGT-04). The definition is a library row, so
 # `apps/agents/testing.py` (the fence exempts it) builds it, as the case builders above do.
+
+
+def obligation_participant(tenant: Tenant) -> SimpleNamespace:
+    """The tenant-isolation guard's record for the register-entry participant routes: a
+    person taking part in `tenant`'s register entry for an obligation private to `tenant`.
+    The obligation is built by `apps/collab/testing.py`, which the library fence exempts."""
+    from apps.collab import testing as collab_testing
+
+    return collab_testing.participant_on_private_obligation(tenant)
+
+
+# ---------------------------------------------------------------------------------------
+# c9-case-file-export: a case worked from triage to sign-off, for the case file (CAS-07).
+# ---------------------------------------------------------------------------------------
+def closed_case(tenant: Tenant, *, actions: int = 2, evidence: int = 3, so_what_confirmed: bool = True) -> SimpleNamespace:
+    """A case of `tenant` signed off by a second person, with everything its file prints: a
+    "So what?", a saved assessment, `actions` actions (the first done, the second removed,
+    the rest open) and `evidence` pieces (a scanned file, a link, then removed files), the
+    whole transition ledger and the sign-off's audit row carrying its step-up. An
+    unconfirmed "So what?" stays the AI's draft."""
+    from apps.cases.models import Action, CaseTransition, ChangeCase, Evidence, EvidenceKind, ImpactAssessment
+    from apps.shared.audit import record
+    from apps.taxonomy.models import CaseStatusCategory, ClosureReason, EffortSize
+
+    row = case_change(tenant).case
+    owner = member_user(tenant, roles=("compliance_officer",))
+    approver = member_user(tenant, roles=("approver",))
+    now = timezone.now()
+    step_up = uuid.uuid4()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        confirmation = {"so_what_confirmed_by": owner, "so_what_confirmed_at": now} if so_what_confirmed else {}
+        ChangeCase.objects.filter(pk=row.pk).update(
+            status=CaseStatusCategory.CLOSED.value,
+            owner=owner,
+            urgency_confirmed=True,
+            so_what_text="Our research payment model must be documented before the rules apply.",
+            so_what_confirmed=so_what_confirmed,
+            triaged_by=owner,
+            triaged_at=now,
+            signoff_requested_by=owner,
+            signoff_requested_at=now,
+            signed_off_by=approver,
+            close_reason=ClosureReason.objects.get(key="signed_off"),
+            closed_at=now,
+            closed_note="Signed off after the board meeting.",
+            **confirmation,
+        )
+        ImpactAssessment.objects.create(
+            tenant=tenant,
+            case=row,
+            applies="partly",
+            why="The equity desk buys research from three brokers.",
+            what_must_change="Written criteria for research budgets.",
+            internal_deadline=timezone.localdate() + timedelta(days=30),
+            effort=EffortSize.objects.get(key="m"),
+            saved=True,
+            saved_by=owner,
+            saved_at=now,
+        )
+        for index in range(actions):
+            Action.objects.create(
+                tenant=tenant,
+                case=row,
+                title=f"Action {index + 1}: document the research criteria",
+                owner=owner,
+                due_date=timezone.localdate() + timedelta(days=index),
+                created_by=owner,
+                done_at=now if index == 0 else None,
+                done_by=owner if index == 0 else None,
+                removed_at=now if index == 1 else None,
+                removed_by=owner if index == 1 else None,
+            )
+        for index in range(evidence):
+            is_link = index == 1
+            Evidence.objects.create(
+                tenant=tenant,
+                case=row,
+                kind=EvidenceKind.LINK.value if is_link else EvidenceKind.FILE.value,
+                name=f"Evidence {index + 1}: board minutes",
+                url="https://intranet.example.com/minutes/7" if is_link else "",
+                storage_key="" if is_link else f"tenants/{tenant.id}/evidence/{uuid.uuid4()}",
+                content_hash="" if is_link else f"{index:064x}",
+                size_bytes=None if is_link else 1024,
+                mime_type="" if is_link else "application/pdf",
+                uploaded_by=owner,
+                removed_at=now if index >= 2 else None,
+                scan_state="clean",
+                scanned_at=now,
+            )
+        path = ["", "new", "assigned", "assessing", "implementing", "signoff", "closed"]
+        for before, after in itertools.pairwise(path):
+            CaseTransition.objects.create(
+                tenant=tenant,
+                case=row,
+                from_status=before,
+                to_status=after,
+                by_user=approver if after == "closed" else owner,
+                note="Checked against the minutes." if after == "closed" else "",
+            )
+        record(
+            action="case.moved",
+            actor=Actor(kind=ActorType.USER, id=approver.id, label=approver.name),
+            subject_type="change_case",
+            subject_id=row.id,
+            subject_title=row.change.title,
+            summary=f"{approver.name} signed off a case.",
+            tenant_id=tenant.id,
+            after={"status": "closed"},
+            step_up_assertion_id=step_up,
+        )
+    row.refresh_from_db()
+    return SimpleNamespace(case=row, change_id=row.change_id, owner=owner, approver=approver, step_up=step_up)

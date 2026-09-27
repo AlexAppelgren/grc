@@ -123,9 +123,6 @@ MIDDLEWARE = [
     # acc-entries-and-log (ACC-08): the access log row of an agent access credential's call,
     # written after the response.
     "apps.governance.access_log.AccessLogMiddleware",
-    # acc-what-applies (ACC-07): the scope statement on every answer to an agent access
-    # credential.
-    "apps.shared.agent_access_guard.ScopeStatementMiddleware",
     # Timing last so the measurement is the application's own time (playbook 10), not
     # the middleware stack above it.
     "apps.shared.middleware.ServerTimingMiddleware",
@@ -270,7 +267,8 @@ CORS_ALLOW_HEADERS = [
     "x-request-id",
     "x-tenant-id",
 ]
-CORS_EXPOSE_HEADERS = ["etag", "server-timing", "x-request-id"]
+# content-disposition: an evidence download is saved under the name the server chose (CAS-05).
+CORS_EXPOSE_HEADERS = ["content-disposition", "etag", "server-timing", "x-request-id"]
 
 # ---------------------------------------------------------------------------------------
 # Adapters (playbook 16). One interface each, a mock chosen by setting. A mock outside the
@@ -700,6 +698,14 @@ CELERY_BEAT_SCHEDULE["outbox-deliver"] = {
 CASE_CREATION_BATCH = env_int("CASE_CREATION_BATCH", 100)
 
 # ---------------------------------------------------------------------------------------
+# ===== CAS-04 how many actions one case may carry (apps/cases/actions.py, c9-actions) ====
+# A case's live actions are read whole by the case file and the sign-off guard, so one case
+# cannot grow without bound and push those reads past the 250 ms budget. Adding one more
+# than this answers 409 `too_many_actions`; a removed action no longer counts.
+# ---------------------------------------------------------------------------------------
+CASE_ACTIONS_MAX = env_int("CASE_ACTIONS_MAX", 200)
+
+# ---------------------------------------------------------------------------------------
 # ===== WAT-01 when a watched source has gone stale (apps/watch/sources.py) ===============
 # The console's Source coverage says "we missed nothing" only as far as the coverage log
 # lets it. A source is stale when the last SOURCE_STALE_AFTER_CHECKS sweeps of it all
@@ -805,6 +811,15 @@ CALENDAR_FEED_IDLE_DAYS = env_int("CALENDAR_FEED_IDLE_DAYS", 30)
 # stays short however many a person has replaced over the years, which is what lets it go
 # unpaged (the live ones are capped above).
 CALENDAR_FEED_REVOKED_SHOWN = env_int("CALENDAR_FEED_REVOKED_SHOWN", 5)
+
+# ---------------------------------------------------------------------------------------
+# Participants (COL-04, D-18, c8-participants)
+# How many people and teams may take part in one register entry or case at once. A record
+# that everyone takes part in tells nobody anything, and every participant is a recipient of
+# every notification about it, so the list is capped; adding past the cap answers 422
+# `too_many_participants`. `apps/collab/participants.py` reads it on every add.
+# ---------------------------------------------------------------------------------------
+MAX_PARTICIPANTS_PER_RECORD = env_int("MAX_PARTICIPANTS_PER_RECORD", 50)
 # How often one address may be fetched. A calendar client polls every few hours, so this
 # is generous for every real client and still bounds what someone who found an address
 # can pull from it. It is per token, so a flood on one address leaves the others answering.
@@ -825,6 +840,25 @@ SCANNER_PORT = env_int("SCANNER_PORT", 3310)  # clamd's TCPSocket in the officia
 # Bounds the connect, each send, and the scan with its whole reply. clamd reads the whole
 # stream before it answers, so this must cover scanning the largest evidence file.
 SCANNER_TIMEOUT_SECONDS = float(env_str("SCANNER_TIMEOUT_SECONDS", "60.0"))
+
+# ===== CAS-05 evidence on a case (apps/cases/evidence.py, tasks.py, c9-evidence) =========
+# A file is refused with 422 before a byte is stored when its type is outside this list or
+# it is larger than the cap (parallel plan §7.2). The type is what the header claims, the
+# name's extension and the bytes themselves all agree on; a type listed here that the
+# server cannot recognise in the bytes is refused rather than trusted.
+EVIDENCE_ALLOWED_TYPES = env_list(
+    "EVIDENCE_ALLOWED_TYPES",
+    "application/pdf,"
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document,"
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,"
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation,"
+    "image/png,image/jpeg,text/plain,text/csv",
+)
+EVIDENCE_MAX_BYTES = env_int("EVIDENCE_MAX_BYTES", 25 * 1024 * 1024)
+# How many more times a scan that failed is tried before the file stays `error`.
+EVIDENCE_SCAN_RETRIES = env_int("EVIDENCE_SCAN_RETRIES", 2)
+# Live evidence one case may hold, so one case cannot push its case file past the budget.
+CASE_EVIDENCE_MAX = env_int("CASE_EVIDENCE_MAX", 200)
 
 # ---------------------------------------------------------------------------------------
 # ===== VOC-08 bulk tagging's cap (c10-tagging-routes) ====================================
@@ -851,6 +885,16 @@ EXPORT_RETENTION_DAYS = env_int("EXPORT_RETENTION_DAYS", 7)
 # is a write and an audit event in one transaction, so the cap keeps a call inside the API
 # budget; a longer call is refused whole and stores nothing.
 REGISTER_BULK_MAX = env_int("REGISTER_BULK_MAX", 100)
+
+# ---------------------------------------------------------------------------------------
+# ===== COL-01 comments on a record (apps/collab/comments.py, c10-comments-mentions) =====
+# A comment is a note to colleagues, not a document: the cap bounds what one request can
+# store and what a thread of twenty costs to read. An edit is for a slip noticed at once;
+# after the window the author may delete but not rewrite what others have already read
+# (CHUNK10_TASKS ruling 10). Both are settings because neither number is a rule.
+# ---------------------------------------------------------------------------------------
+COMMENT_MAX_CHARS = env_int("COMMENT_MAX_CHARS", 4000)
+COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)
 
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================

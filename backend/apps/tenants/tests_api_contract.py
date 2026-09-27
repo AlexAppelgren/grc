@@ -65,6 +65,8 @@ BUILT_SINCE = {
     "revokeSupportAccess",
     # c8-support-session-guard (TEN-06): apps/shared/tests_support_session.py.
     "enterConsoleSupportAccess",
+    # c8-ui-support-console (TEN-06): tests_support_access.py, ConsoleList.
+    "listConsoleSupportAccess",
 }
 
 ORG_UNIT_BODY = {"kind": "business_area", "name": "Retail Banking"}
@@ -350,6 +352,10 @@ class TenantsRouteStubs(TenantsContractCase):
         "createProduct",
         "updateProduct",
     }
+    # c8-ten-teams-people: built, and proven in tests_teams.py and tests_reference_people.py.
+    BUILT |= {"listTeams", "listTeamMembers", "listPeople"}
+    # c8-ten-reassignment: built, and proven in tests_reassignment.py.
+    BUILT |= {"getMemberOpenWork", "removeMember"}
 
     def test_an_if_match_that_is_not_a_version_is_422_on_every_versioned_write(self) -> None:
         with stub_session(self.everything()):
@@ -368,7 +374,7 @@ class TenantsRouteStubs(TenantsContractCase):
         calls = [(route, self.everything()) for route in self.records.routes() if route[0] not in self.BUILT]
         calls += [(route, self.console()) for route in self.records.console_routes()]
         for (name, method, url, body, _permission, _step_up), who in calls:
-            if name in self.BUILT:
+            if name in self.BUILT or name in BUILT_SINCE:
                 continue
             headers = {**AS_SESSION, "HTTP_IF_MATCH": '"1"'} if method == "patch" else AS_SESSION
             with self.subTest(operation=name), stub_session(who):
@@ -386,7 +392,8 @@ class TenantsRouteStubs(TenantsContractCase):
                 if permission is not None:
                     continue
                 with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, 200 if name in self.BUILT else 501)
+                    expected = 200 if name in self.BUILT or name in BUILT_SINCE else 501
+                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, expected)
 
     def test_a_known_permission_on_the_people_picker_is_answered(self) -> None:
         with stub_session(self.everything(permissions=frozenset())):

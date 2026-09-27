@@ -86,6 +86,12 @@ from apps.taxonomy import footprint_logic, markets_logic, tenant_lists_logic, te
 from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, FootprintTerm, WatchedMarket
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, switch_on_term
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
+from apps.collab import logic as collab_logic
+from apps.collab import subjects as collab_subjects
+from apps.collab.models import Comment, CommentMention, CommentRevision, Notification, NotificationKind, Participant
+from apps.tenants import support_access
+from apps.tenants.models import SecurityPolicy
+from apps.tenants.schemas import ConsoleSupportAccessBody
 from apps.tenants.logic import set_content_languages
 # c8-seed-org-register
 from apps.register import logic as register_logic
@@ -2024,10 +2030,20 @@ def seed_e2e() -> dict[str, int]:
         chunk5_cases = seed_chunk5_cases(tenants)
         # c9-e2e-seed: one case per journey that moves one, after the logins it names.
         case_journeys = seed_case_journeys(tenants)
+        # c9-evidence: after the case journeys and chunk 5's cases it attaches to.
+        case_evidence = seed_case_evidence(tenants)
+        # c9-e2e-signoff-j3: after the case journeys, whose CAS-S10 change it links.
+        seed_signoff_spot_check_link()
+        # c10-e2e-seed-comments: after the cases and the logins its comments name.
+        comments = seed_comments(tenants)
         seed_watched_market_change()
         seed_standard_change()
         # c8-seed-org-register: after the logins and chunk 5's links.
         seed_org_register(tenants)
+        # c8-ui-links-history-participants: after the register entries it names.
+        seed_participants(tenants)
+        # r2-j8-isolation: after the comments, the register entries and the teams it names.
+        seed_j8_isolation(tenants)
         # c11-e2e-seed: after the logins and the platform runs, before the search index.
         seed_chunk11_agents(tenants)
         # acc-e2e-seed: a reseed leaves no entry of tenant A reaching its register (ACC-08).
@@ -2049,6 +2065,8 @@ def seed_e2e() -> dict[str, int]:
         "home_cases": home_cases,
         "chunk5_cases": chunk5_cases,
         "case_journeys": case_journeys,
+        "case_evidence": case_evidence,
+        "comments": comments,
         "machine_confirmed": machine_confirmed,
         "eval_questions": eval_questions,
         **library,
@@ -3149,3 +3167,439 @@ def switch_reach_off() -> int:
         tenancy.clear_tenant()
     return switched
 # --- end acc-e2e-seed ----------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SeedEvidence:
+    """One piece of evidence on the case for `stable_key` in `tenant_slug`. A file carries
+    `scan_state`; a link carries `url` and reads clean."""
+
+    stable_key: str
+    name: str
+    scan_state: str = "clean"
+    url: str = ""
+    tenant_slug: str = TENANT_A_SLUG
+
+
+EXPECTED_EVIDENCE: tuple[SeedEvidence, ...] = (
+    SeedEvidence("chg-e2e-case-evidence", "AMLR gap analysis.pdf"),
+    SeedEvidence("chg-e2e-case-evidence", "Customer due diligence checklist.pdf", scan_state="pending"),
+    SeedEvidence("chg-e2e-case-evidence", "Vendor questionnaire.pdf", scan_state="infected"),
+    SeedEvidence("chg-e2e-case-actions-locked", "Inducements policy 2026.pdf"),
+    SeedEvidence("chg-e2e-case-self-signoff", "Client categorisation procedure.pdf"),
+    SeedEvidence("chg-e2e-case-signoff", "Product governance review.pdf"),
+    SeedEvidence("chg-e2e-case-file", "Best execution report 2026.pdf"),
+    SeedEvidence("chg-e2e-case-file", "FI decision memo", url="https://intranet.example-bank.test/memo/42"),
+    SeedEvidence("chg-e2e-c5-timeline", "Research payment criteria.pdf"),
+    SeedEvidence("chg-e2e-c5-timeline", "Research payment criteria (DK).pdf", tenant_slug=TENANT_B_SLUG),
+)
+
+
+# The day after the case's first sighting each piece was attached: after the actions were
+# done and before the sign-off request (`_DONE_DAY`, `_MOVE_DAY`). Chunk 5's shared change
+# is sighted this week, so its pieces are attached at the sighting instead.
+_EVIDENCE_DAY = 11
+
+
+def seed_evidence_pdf(name: str) -> bytes:
+    """The bytes of a seeded clean file: a small, well-formed PDF, the same on every run."""
+    return f"%PDF-1.4\n% Seeded evidence: {name}\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n".encode()
+
+
+def seed_case_evidence(tenants: list[Tenant]) -> int:
+    """c9-evidence: each piece of `EXPECTED_EVIDENCE`, once per case and name. A second run
+    writes no row and no audit row; it only writes a clean file's bytes back when the media
+    root lost them, under the key the row already names."""
+    import hashlib
+
+    from apps.cases.models import Evidence, EvidenceKind
+    from apps.shared.storage import get_storage
+
+    by_slug = {tenant.slug: tenant for tenant in tenants}
+    storage = get_storage()
+    uploader = {TENANT_A_SLUG: OWNER_A, TENANT_B_SLUG: "compliance_officer@second-bank.test"}
+    for plan in EXPECTED_EVIDENCE:
+        tenant = by_slug[plan.tenant_slug]
+        tenancy.activate(tenant.id)
+        case = ChangeCase.objects.select_related("change").get(change__stable_key=plan.stable_key)
+        content = seed_evidence_pdf(plan.name)
+        row = Evidence.objects.filter(case=case, name=plan.name).first()  # ordering: Meta.ordering, one per (case, name)
+        if row is None:
+            # Eleven days after the sighting, or at the sighting for a change seen this week.
+            at = case.change.first_seen_at + datetime.timedelta(days=_EVIDENCE_DAY)
+            if at > case_anchor(tenant.timezone):
+                at = case.change.first_seen_at
+            kind = EvidenceKind.LINK if plan.url else EvidenceKind.FILE
+            row = Evidence(
+                tenant=tenant,
+                case=case,
+                kind=kind.value,
+                name=plan.name,
+                url=plan.url,
+                uploaded_by=User.objects.get(email=uploader[plan.tenant_slug]),
+                uploaded_at=at,
+                scan_state=plan.scan_state,
+                scanned_at=None if plan.scan_state == "pending" else at,
+            )
+            if kind is EvidenceKind.FILE:
+                row.storage_key = f"{tenant.id}/cases/{case.id}/evidence/{uuid.uuid4().hex}"
+                row.content_hash = "sha256:" + hashlib.sha256(content).hexdigest()
+                row.size_bytes = len(content)
+                row.mime_type = "application/pdf"
+            # The fixture path (`raw`), as for actions, so "attached on" is the anchored moment.
+            row.save_base(raw=True)
+            record(
+                action="case.evidence_attached",
+                actor=SEED_ACTOR,
+                subject_type="evidence",
+                subject_id=row.id,
+                subject_title=case.change.title,
+                summary="Seeded for E2E journeys.",
+                tenant_id=tenant.id,
+                after={"evidenceId": str(row.id), "caseId": str(case.id), "kind": row.kind, "scanState": row.scan_state},
+            )
+        if row.storage_key and row.scan_state != "infected" and not storage.exists(row.storage_key):
+            storage.write(row.storage_key, content, row.mime_type)
+    tenancy.clear_tenant()
+    return len(EXPECTED_EVIDENCE)
+
+
+# --- c9-e2e-signoff-j3 (CAS-S10) -----------------------------------------------------------------
+# CAS-S10 proves a sign-off changes no library or register row by reading one obligation before
+# and after it: the one its change links to. The ISK control statements duty is read by SRC-S3
+# and changed by no journey or seed, so what the journey reads twice can only move if the
+# sign-off moved it.
+SIGNOFF_SPOT_CHECK_OBLIGATION = "obl-isk-control-statements"
+
+
+def seed_signoff_spot_check_link() -> None:
+    """The CAS-S10 change's link to `SIGNOFF_SPOT_CHECK_OBLIGATION`, the sweeper's suggestion
+    confirmed by the library confirmer's own key, as every confirmation here is (D-74). A link
+    is library-zone, so no tenant is active; a second run upserts the same row."""
+    tenancy.clear_tenant()
+    sweeper, _agent_row = _sweeper_key()
+    change = django_apps.get_model("watch", "RegulatoryChange").objects.get(stable_key="chg-e2e-case-signoff")
+    watch_e2e_seed.seed_obligation_link(
+        change,
+        _obligation(SIGNOFF_SPOT_CHECK_OBLIGATION),
+        confidence=0.87,
+        suggester=sweeper,
+        confirmer=_confirmer_key(),
+        confirmed_at=change.first_seen_at + datetime.timedelta(days=1),
+    )
+
+
+# --- c10-e2e-seed-comments (COL-01, COL-02) -----------------------------------------------------
+# What the comments panel, the inbox, My work and J-8 read: tenant A's comments on a case and on
+# an obligation, one edited with the text it replaced, one deleted, the reader mentioned on both
+# records with one mention read and one not, and the login whose role reads no case mentioned on
+# the case and told nothing about it; tenant B's one comment on the obligation tenant A discusses,
+# so J-8 proves the two never meet. Every moment is the bank's own anchor less a fixed offset.
+COMMENT_EDITED_AFTER = datetime.timedelta(minutes=10)
+
+
+COMMENT_DELETED_AFTER = datetime.timedelta(minutes=5)
+
+
+COMMENT_READ_AFTER = datetime.timedelta(hours=1)
+
+
+# A home case, not a case journey's, whose trail c9-e2e-seed counts row by row.
+_COMMENTED_CASE = EXPECTED_HOME.later_change
+
+
+_COMMENTED_OBLIGATION = "obl-dora-ict-register"
+
+
+@dataclass(frozen=True)
+class SeedComment:
+    """One seeded comment. `subject_key` is the change's stable key for a bank's case and the
+    obligation's for an obligation. `edited_from` is the text an edit replaced; `read_by` names
+    the mentioned people who have already read their notification."""
+
+    id: uuid.UUID
+    tenant_slug: str
+    subject_type: str
+    subject_key: str
+    author: str
+    body: str
+    before_anchor: datetime.timedelta
+    mentions: tuple[str, ...] = ()
+    edited_from: str | None = None
+    deleted: bool = False
+    read_by: tuple[str, ...] = ()
+
+
+EXPECTED_COMMENTS: tuple[SeedComment, ...] = (
+    SeedComment(
+        uuid.UUID("00000000-0000-4000-a000-00000000c001"), TENANT_A_SLUG, "change_case", _COMMENTED_CASE, OWNER_A,
+        "The reporting fields are mapped. The open questions are listed in the assessment, and the operations team is briefed next week.",
+        datetime.timedelta(days=3, hours=2),
+        edited_from="The fields are mapped; the open questions are in the assessment.",
+    ),
+    SeedComment(
+        uuid.UUID("00000000-0000-4000-a000-00000000c002"), TENANT_A_SLUG, "change_case", _COMMENTED_CASE, OFFICER_A,
+        "Oskar, can you confirm whether the new reporting fields change what we send for securities lending? Axel, for your awareness.",
+        datetime.timedelta(days=2, hours=1),
+        mentions=("reader@example-bank.test", "library-only@example-bank.test"),
+    ),
+    SeedComment(
+        uuid.UUID("00000000-0000-4000-a000-00000000c003"), TENANT_A_SLUG, "obligation", _COMMENTED_OBLIGATION, CONTRIBUTOR_A,
+        "Oskar, does the register also need the sub-outsourcing chain for the card processor?",
+        datetime.timedelta(days=5, hours=3),
+        mentions=("reader@example-bank.test",),
+        read_by=("reader@example-bank.test",),
+    ),
+    SeedComment(
+        uuid.UUID("00000000-0000-4000-a000-00000000c004"), TENANT_A_SLUG, "obligation", _COMMENTED_OBLIGATION, OWNER_A,
+        "Posted on the wrong record, please ignore.",
+        datetime.timedelta(days=4, hours=2),
+        deleted=True,
+    ),
+    SeedComment(
+        uuid.UUID("00000000-0000-4000-a000-00000000c005"), TENANT_B_SLUG, "obligation", _COMMENTED_OBLIGATION, "admin@second-bank.test",
+        "The register must be complete before we file it with Finanstilsynet.",
+        datetime.timedelta(days=1, hours=4),
+    ),
+)
+
+
+def comment_moment(spec: SeedComment, anchor: datetime.datetime) -> datetime.datetime:
+    return anchor - spec.before_anchor
+
+
+def seed_comments(tenants: list[Tenant]) -> int:
+    """c10-e2e-seed-comments: each comment with its mentions, its revision and its audit rows
+    through record(), and the mention notifications through notify(), the one writer, whose
+    recipient check decides who is told. Written once: a comment that exists is left as it is,
+    so a second run changes nothing."""
+    by_slug = {tenant.slug: tenant for tenant in tenants}
+    users = {user.email: user for user in User.objects.filter(email__in={login.email for login in SEED_LOGINS})}
+    for spec in EXPECTED_COMMENTS:
+        tenant = by_slug[spec.tenant_slug]
+        tenancy.activate(tenant.id)
+        if not Comment.objects.filter(pk=spec.id).exists():
+            _seed_comment(tenant, spec, users)
+    tenancy.clear_tenant()
+    return len(EXPECTED_COMMENTS)
+
+
+def _seed_comment(tenant: Tenant, spec: SeedComment, users: dict[str, User]) -> None:
+    if spec.subject_type == "change_case":
+        subject_id = ChangeCase.objects.get(change__stable_key=spec.subject_key).id
+    else:
+        subject_id = _obligation_id(spec.subject_key)
+    subject = collab_subjects.subject(spec.subject_type)
+    author = users[spec.author]
+    title = subject.title(subject.lookup(subject_id), roles_logic.language_order(author, tenant))
+    at = comment_moment(spec, case_anchor(tenant.timezone))
+    comment = Comment(id=spec.id, tenant=tenant, subject_type=spec.subject_type, subject_id=subject_id, author=author, body=spec.edited_from or spec.body, created_at=at)
+    # The raw save keeps the anchored moment rather than the seed's wall clock, as the case ledger does.
+    comment.save_base(raw=True)
+    mentioned = [users[email].id for email in spec.mentions]
+    CommentMention.objects.bulk_create(CommentMention(tenant=tenant, comment=comment, user_id=person) for person in mentioned)
+    _seed_comment_record(comment, title, "comment.added", {"commentId": str(comment.id), "mentionUserIds": [str(person) for person in mentioned]})
+    told = collab_logic.notify(
+        tenant_id=tenant.id, kind=NotificationKind.MENTION, subject_type=spec.subject_type, subject_id=subject_id,
+        candidates=[(person, "mention") for person in mentioned if person != author.id],
+    )
+    Notification.objects.filter(pk__in=[row.id for row in told]).update(created_at=at)
+    readers = {users[email].id for email in spec.read_by}
+    Notification.objects.filter(pk__in=[row.id for row in told if row.user_id in readers]).update(read_at=at + COMMENT_READ_AFTER)
+    if spec.edited_from:
+        revision = CommentRevision(tenant=tenant, comment=comment, body=spec.edited_from, edited_by=author, created_at=at + COMMENT_EDITED_AFTER)
+        revision.save_base(raw=True)
+        Comment.objects.filter(pk=comment.id).update(body=spec.body, edited_at=at + COMMENT_EDITED_AFTER)
+        _seed_comment_record(comment, title, "comment.edited", {"commentId": str(comment.id), "revisionId": str(revision.id)})
+    if spec.deleted:
+        Comment.objects.filter(pk=comment.id).update(deleted_at=at + COMMENT_DELETED_AFTER)
+        _seed_comment_record(comment, title, "comment.deleted", {"commentId": str(comment.id)})
+
+
+def _seed_comment_record(comment: Comment, title: str, action: str, after: dict[str, Any]) -> None:
+    """The audit row the comment routes write, with ids in `after` and never the text."""
+    record(
+        action=action,
+        actor=SEED_ACTOR,
+        subject_type=comment.subject_type,
+        subject_id=comment.subject_id,
+        subject_title=title,
+        summary="Seeded for E2E journeys.",
+        tenant_id=comment.tenant_id,
+        after=after,
+    )
+
+
+# --- c8-ui-departments-teams-removal (TEN-05, TEN-S5) ---------------------------------------
+def restore_leaver() -> None:
+    """TEN-S5's teardown (`manage.py e2e_restore_leaver`): the member the journey removes is
+    a member again and owns what the seed gave them, so a retry or the next journey finds
+    them as seeded. Each row put back leaves its audit row through record(). The journey's
+    own reassignment and removal events stay in the log; nothing is deleted. Refused when
+    deployed."""
+    refuse_when_deployed("e2e_restore_leaver")
+    tenant = Tenant.objects.get(slug=TENANT_A_SLUG)
+    spec = next(s for s in EXPECTED_ORG_REGISTER if s.tenant_slug == TENANT_A_SLUG)
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        membership = Membership.objects.select_related("user").get(tenant=tenant, user__email=LEAVER)
+        leaver = membership.user
+        if membership.deactivated_at is not None:
+            membership.deactivated_at = None
+            membership.save(update_fields=["deactivated_at"])
+            _seeded(tenant, "membership", membership, LEAVER, {"deactivatedAt": None})
+        for entry in spec.entries:
+            if entry.owner != LEAVER:
+                continue
+            row = TenantObligation.objects.get(obligation_id=_obligation_id(entry.obligation))
+            if row.first_line_owner_id != leaver.id or row.owner_team_id is not None:
+                TenantObligation.objects.filter(pk=row.pk).update(first_line_owner=leaver, owner_team=None, version=row.version + 1)
+                _seeded(tenant, "tenant_obligation", row, entry.obligation, {"firstLineOwnerId": str(leaver.id)})
+        for gap in spec.gaps:
+            if gap.owner != LEAVER:
+                continue
+            gap_row = Gap.objects.get(tenant_obligation__obligation_id=_obligation_id(gap.obligation), title=gap.title)
+            if gap_row.owner_id != leaver.id or gap_row.owner_team_id is not None:
+                Gap.objects.filter(pk=gap_row.pk).update(owner=leaver, owner_team=None, version=gap_row.version + 1)
+                _seeded(tenant, "gap", gap_row, gap.obligation, {"ownerId": str(leaver.id)})
+
+
+# --- c8-ui-links-history-participants (COL-04, COL-S6, COL-S7) ------------------------------
+# COL-S7: the Reader takes part in one register entry, added by the compliance officer, and
+# leaves it on their own. COL-S6: the obligation the compliance officer adds people and a
+# team to, which has no register entry until the first add creates it.
+PARTICIPATION_OBLIGATION = "obl-costs-charges"
+
+
+PARTICIPANT = "reader@example-bank.test"
+
+
+PARTICIPANT_ADDED_BY = _SARA
+
+
+NO_ENTRY_OBLIGATION = "obl-idd-demands-needs"
+
+
+def seed_participants(tenants: list[Tenant]) -> None:
+    """One live participation of the Reader on tenant A's entry, recorded through record()
+    like every seeded row. A reseed finds it live and writes nothing; after COL-S7 has left
+    it, a reseed puts it back."""
+    tenant = next(t for t in tenants if t.slug == TENANT_A_SLUG)
+    tenancy.activate(tenant.id)
+    entry = TenantObligation.objects.get(obligation_id=_obligation_id(PARTICIPATION_OBLIGATION))
+    person = User.objects.get(email=PARTICIPANT)
+    if not Participant.objects.filter(tenant_obligation=entry, user=person, removed_at__isnull=True).exists():
+        row = Participant.objects.create(
+            tenant=tenant,
+            tenant_obligation=entry,
+            user=person,
+            added_by=User.objects.get(email=PARTICIPANT_ADDED_BY),
+            added_at=_at(datetime.datetime.now(ZoneInfo(tenant.timezone)).date(), -6, tenant.timezone),
+        )
+        _seeded(tenant, "participant", row, PARTICIPATION_OBLIGATION, {"tenantObligationId": str(entry.id), "userId": str(person.id)})
+    tenancy.clear_tenant()
+
+
+# --- r2-j8-isolation (TEN-S7, J-8; NFR-01, TEN-02, TEN-03, COL-01, COL-02, COL-04, AGT-04, ACC-01, ID-08)
+# One row of each R2 record kind that tenant A holds and tenant B must never reach, by URL or in
+# a list, beside what the other blocks already give A alone (its departments, products and teams,
+# its register participant, its comments): a comment on A's case of the change both banks work
+# on, mentioning A's administrator; a support request A declined, found by its purpose; a tenant
+# agent, switched off; an agent access entry with one key; a session policy. Fixed ids where a
+# row can take one, so the journey addresses it by URL. Tenant B's own participant sits on the
+# obligation A's participant takes part in, so B's panel shows B's row and never A's.
+@dataclass(frozen=True)
+class SeedJ8Isolation:
+    case_comment: SeedComment
+    b_participant: str
+    b_participant_added_by: str
+    a_admin: str
+    grant_requester: str
+    grant_reason: str
+    entry_id: uuid.UUID
+    entry_name: str
+    entry_team: str
+    key_id: uuid.UUID
+    key_name: str
+    tenant_agent_id: uuid.UUID
+    tenant_agent_key: str
+    idle_minutes: int
+
+
+EXPECTED_J8_ISOLATION = SeedJ8Isolation(
+    case_comment=SeedComment(
+        uuid.UUID("00000000-0000-4000-a000-000000008c01"), TENANT_A_SLUG, "change_case", EXPECTED_CHUNK5_WATCH.timeline_change, OFFICER_A,
+        "Erik, the appropriateness procedure for structured products now names the new test; the evidence is attached.",
+        datetime.timedelta(days=1, hours=6),
+        mentions=("admin@example-bank.test",),
+    ),
+    b_participant="approver@second-bank.test",
+    b_participant_added_by="admin@second-bank.test",
+    a_admin="admin@example-bank.test",
+    grant_requester="platform@bleqq.test",
+    grant_reason="Checking why last week's briefing reached nobody at the bank.",
+    entry_id=uuid.UUID("00000000-0000-4000-a000-000000008c03"),
+    entry_name="Card settlement checker",
+    entry_team="cards",
+    key_id=uuid.UUID("00000000-0000-4000-a000-000000008c04"),
+    key_name="Settlement reconciliation",
+    tenant_agent_id=uuid.UUID("00000000-0000-4000-a000-000000008c05"),
+    tenant_agent_key="tenant-source-watch",
+    # Above the platform default, so no journey's session in tenant A ends sooner for it.
+    idle_minutes=45,
+)
+
+
+def seed_j8_isolation(tenants: list[Tenant]) -> None:
+    """Each row once, with its audit row through record(); a reseed finds each and writes nothing."""
+    spec = EXPECTED_J8_ISOLATION
+    by_slug = {tenant.slug: tenant for tenant in tenants}
+    users = {user.email: user for user in User.objects.filter(email__in={login.email for login in SEED_LOGINS})}
+    tenant_a, tenant_b = by_slug[TENANT_A_SLUG], by_slug[TENANT_B_SLUG]
+    today = datetime.datetime.now(ZoneInfo(tenant_a.timezone)).date()
+    admin = users[spec.a_admin]
+
+    tenancy.activate(tenant_a.id)
+    if not Comment.objects.filter(pk=spec.case_comment.id).exists():
+        _seed_comment(tenant_a, spec.case_comment, users)
+    # Through the support-access logic, as the console asks and the bank refuses: only that
+    # module loads a grant (apps/shared/tests_support_session.py).
+    if not any(grant.purpose == spec.grant_reason for grant in support_access.list_for_tenant(tenant=tenant_a, limit=100, offset=0).items):
+        requester = users[spec.grant_requester]
+        asked = support_access.request_access(
+            tenant_id=tenant_a.id,
+            requester=requester,
+            actor=Actor(kind=ActorType.USER, id=requester.id, label=requester.name),
+            body=ConsoleSupportAccessBody(purpose=spec.grant_reason, hours=4),
+        )
+        support_access.decline(tenant=tenant_a, actor=Actor(kind=ActorType.USER, id=admin.id, label=admin.name), grant_id=asked.id)
+    if not AgentAccess.objects.filter(pk=spec.entry_id).exists():
+        entry = AgentAccess.objects.create(
+            id=spec.entry_id, tenant=tenant_a, name=spec.entry_name, purpose="Reconciles the card settlement files against the ledger.",
+            owner_team=Team.objects.get(key=spec.entry_team), created_by=admin,
+        )
+        _seeded(tenant_a, "agent_access", entry, entry.name, {"ownerTeam": spec.entry_team})
+    if not ApiKey.objects.filter(pk=spec.key_id).exists():
+        _plain, prefix, key_hash = tokens.new_api_key()
+        key = ApiKey.objects.create(
+            id=spec.key_id, tenant=tenant_a, agent_access_id=spec.entry_id, name=spec.key_name, key_prefix=prefix, key_hash=key_hash,
+            scopes=["library:read"], created_by=admin, expires_at=_at(today, 60, tenant_a.timezone),
+        )
+        _seeded(tenant_a, "api_key", key, key.name, {"keyPrefix": prefix, "agentAccessId": str(spec.entry_id), "scopes": key.scopes})
+    if not TenantAgent.objects.filter(pk=spec.tenant_agent_id).exists():
+        agent = TenantAgent.objects.create(id=spec.tenant_agent_id, tenant=tenant_a, agent=_agent(spec.tenant_agent_key), updated_by=admin)
+        _seeded(tenant_a, "tenant_agent", agent, spec.tenant_agent_key, {"agentKey": spec.tenant_agent_key, "enabled": False})
+    if not SecurityPolicy.objects.filter(tenant=tenant_a).exists():
+        policy = SecurityPolicy.objects.create(tenant=tenant_a, session_idle_minutes=spec.idle_minutes, updated_by=admin)
+        _seeded(tenant_a, "security_policy", policy, tenant_a.name, {"sessionIdleMinutes": spec.idle_minutes})
+
+    tenancy.activate(tenant_b.id)
+    entry_b = TenantObligation.objects.get(obligation_id=_obligation_id(PARTICIPATION_OBLIGATION))
+    person = users[spec.b_participant]
+    if not Participant.objects.filter(tenant_obligation=entry_b, user=person, removed_at__isnull=True).exists():
+        row = Participant.objects.create(
+            tenant=tenant_b, tenant_obligation=entry_b, user=person, added_by=users[spec.b_participant_added_by],
+            added_at=_at(datetime.datetime.now(ZoneInfo(tenant_b.timezone)).date(), -3, tenant_b.timezone),
+        )
+        _seeded(tenant_b, "participant", row, PARTICIPATION_OBLIGATION, {"tenantObligationId": str(entry_b.id), "userId": str(person.id)})
+    tenancy.clear_tenant()

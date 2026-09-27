@@ -114,6 +114,10 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("DELETE", "/internal-links/{link_id}", "register.InternalLink", "internal_link"),
     # d89-scope-items-logic (OWN-01): one of the bank's own scope items.
     ("GET", "/tenant/footprint/scope-items/{scope_item_id}", "taxonomy.ScopeItem", "scope_item"),
+    # c8-participants (COL-04): a participant on a register entry for an obligation private to
+    # tenant A, so the obligation itself is invisible to tenant B.
+    ("GET", "/obligations/{obligation_id}/participants", "collab.Participant", "obligation_participant"),
+    ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}", "collab.Participant", "obligation_participant"),
 ]
 
 

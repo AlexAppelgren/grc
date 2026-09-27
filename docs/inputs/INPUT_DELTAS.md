@@ -1846,6 +1846,15 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
   answer 204 as designed; all three are published ahead of `c9-case-file`, `c9-actions`
   and `c9-evidence` and answer 501 `not_built` until those land, so their pending lines
   are gone while the logic is still to come.
+- **`startAssessment` and `saveAssessment` answer `CasesCase`**, as every move above does.
+  Saving with `applies` `no` closes a case being assessed with the bank's `not_applicable`
+  close reason, only for a holder of `cases.work` (D-92). Closed by `c9-assessment`.
+- **`Action`** has no `changeTitle` or ticket fields, a required `dueDate`, and gains
+  `doneBy` and `version`; `updateAction` and `deleteAction` read the action's own
+  `If-Match`, and every move of the case reads the case's. `deleteAction` and
+  `removeEvidence` set `removed_at` and answer 204; nothing is deleted. `addAction`
+  answers the same `Action`, and its `ownerId` stays optional as designed: left out, the
+  case's owner owns the action (c9-actions).
 
 ## 20. A proposal owned by a bank, and the bank's own queue declared (2026-09-25, d89-proposal-owner)
 
@@ -1956,3 +1965,34 @@ item open research by the bank's own agent (D-89, D-91, ADR 0059). Agents 0009 a
   into `scope_item`; the check `research_request_scope_item_kind` sets it exactly on a
   `scope_item` request, and the partial unique index `research_request_one_per_scope_item`
   researches an item once.
+
+## 20. Triage, dismissal, restore and the one-person close (2026-09-25, c9-triage)
+
+`triageChange`, `dismissChange`, `restoreChange` and `closeWithoutAction` now answer for
+real, each with the whole `CasesCase` of section 19. Where they differ from `openapi.yaml`:
+
+- **`restoreChange` also undoes a one-person close.** The design moves only `dismissed` to
+  `new`; D-92 (ADR 0060) makes the close without action restorable too, so a case closed by
+  one person with a `no_action` or `not_applicable` reason goes back to triage the same
+  way. A case a second person signed off stays closed: 409 `invalid_transition`.
+- **`closeWithoutAction` leaves `assigned` or `assessing`.** The design has `assigned to
+  closed, closeReason no_action`; the build also closes a case being assessed, with a reason
+  key whose kind is `no_action` or `not_applicable` (D-92). It never leaves `signoff`, whose
+  edge to `closed` is the sign-off's. It is gated by `cases.work`, not by role names.
+- **The owner a triage names must work cases.** `ownerId` must be an active member of the
+  bank whose roles hold `cases.work`; anyone else answers 422 `owner_required`, the same
+  code as no owner at all. A missing `ownerId` is a 422 `validation_error` naming the field.
+- **The audit row carries the keys a move names.** Every move's `case.moved` row carries
+  the status before and after and the new `version`; triage adds `ownerId` and the urgency
+  key, a dismissal and a close add `reasonKey`. The close's note is on the case and its
+  `case_transition` row, never in an audit value.
+
+## 21. The change page's case carries its assessment and close note (2026-09-25, c9-fe-triage-assessment)
+
+The case panels card has every panel read the case from `GET /changes/{changeId}`, but the
+workflow block (§19) carried neither the impact assessment nor the note of a one-person
+close, which only a write's `CasesCase` answered, so a reload lost both. `WatchCaseWorkflow`
+gains `assessment` (`CasesAssessment`, null before the case reaches assessing) and
+`closedNote`, as `CasesCase` names them. The assessment is joined to the case in the block's
+one case query, so the read costs one label query more only when the assessment names an
+effort. Both are tenant content in the bank's own zone.

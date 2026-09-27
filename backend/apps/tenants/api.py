@@ -25,7 +25,16 @@ from apps.shared.schemas import PageQuery
 from apps.taxonomy.http import actor_for, caller_tenant, caller_user, if_match
 from apps.taxonomy.reading import language_order
 from apps.taxonomy.schemas import PersonRef
-from apps.tenants import logic, organisation, people, products, reassignment, security_policy, support_access, teams
+from apps.tenants import (
+    logic,
+    organisation,
+    people,
+    products,
+    reassignment,
+    security_policy,
+    support_access,
+    teams,
+)
 from apps.tenants.schemas import (
     ConsoleReissueBody,
     ConsoleSupportAccessBody,
@@ -810,11 +819,12 @@ def get_member_open_work(request: HttpRequest, user_id: uuid.UUID = Path(..., de
     kind before anything changes.
 
     Needs `members.manage`. It changes nothing and writes no audit event. A member who holds
-    nothing is a 200 with an empty `items`.
+    nothing is a 200 with empty `items` and `teams`. A register entry counts once whether the
+    member is its first-line owner, its compliance contact or both; a closed gap and a retired
+    internal item are history and are not counted. `teams` names the teams the member is in.
 
     Errors: `not_found` (404) for somebody who is not an active member of the bank;
-    `permission_denied` (403) without `members.manage`; `unauthenticated` (401). Published
-    ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+    `permission_denied` (403) without `members.manage`; `unauthenticated` (401).
     """
     return reassignment.open_work(tenant=caller_tenant(request), user_id=user_id)
 
@@ -841,13 +851,21 @@ def remove_member(
     per item moved or ended and `member.deactivated`, each carrying the step-up assertion, in
     the same transaction. If any of it is refused, nothing changes.
 
-    Errors: `validation_error` (422) for a kind the member owns with no new owner, an owner
-    named twice or as both a person and a team, or a field the body does not name;
-    `not_found` (404) for a member, new owner or team that is not the bank's own;
-    `last_admin` (409) when the member is the bank's last administrator; `step_up_required`
-    (403) without a fresh passkey assertion; `permission_denied` (403) without
-    `members.manage`; `unauthenticated` (401). Published ahead of the logic that will fill it,
-    and answering 501 `not_built` until that ships.
+    A register entry the member is the first-line owner or compliance contact of passes those
+    places to a new person; handed to a team, the team becomes the entry's owner and the
+    places the member held are left empty, because a compliance contact is always a person.
+    Every other kind passes to exactly the person or team named. A kind named here that the
+    member holds none of is checked and then ignored.
+
+    Errors: `reassignment_required` (422) for a kind the member owns with no new owner,
+    listing in `errors` each such kind as `field` with its `count`; `validation_error` (422)
+    for a kind named twice, an owner named as both a person and a team or as neither, or a
+    field the body does not name; `unknown_member` (422) for a new owner who is not another
+    current member of the bank, the member being removed included; `unknown_key` (422) for a
+    team that is not one of the bank's active teams; `not_found` (404) for somebody who is
+    not an active member of the bank; `last_admin` (409) when the member is the bank's last
+    administrator; `step_up_required` (403) without a fresh passkey assertion;
+    `permission_denied` (403) without `members.manage`; `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return reassignment.remove_member(
@@ -856,6 +874,7 @@ def remove_member(
         user_id=user_id,
         body=body,
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+        request=request,
     )
 
 
@@ -1022,10 +1041,13 @@ def list_console_support_access(request: HttpRequest, page: PageQuery = Query(..
     audit event. A caller who never asked is a 200 with `total` 0.
 
     Errors: `validation_error` (422) for a page size above 100; `permission_denied` (403)
-    without `support_access.grant`; `unauthenticated` (401). Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    without `support_access.grant`; `unauthenticated` (401).
     """
-    return support_access.my_grants(actor=actor_for(request), limit=page.limit, offset=page.offset)
+    return support_access.my_grants(
+        principal=request.auth,  # type: ignore[attr-defined]
+        limit=page.limit,
+        offset=page.offset,
+    )
 
 
 @router.post(

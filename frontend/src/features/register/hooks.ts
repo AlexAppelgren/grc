@@ -22,6 +22,7 @@ import type {
   RegisterGapPage,
   RegisterGapPatch,
   RegisterGapQuery,
+  RegisterInternalItemPage,
   RegisterInternalLink,
   RegisterInternalLinkBody,
   RegisterInternalLinkPage,
@@ -64,6 +65,7 @@ export const registerKeys = {
   statement: (obligationId: string, entity: string, page: RegisterPageQuery) => [...registerKeys.obligation(obligationId), 'statement', entity, page] as const,
   duties: (obligationId: string, page: RegisterPageQuery) => [...registerKeys.obligation(obligationId), 'duties', page] as const,
   gapList: (filters: RegisterGapQuery, page: RegisterPageQuery) => ['register', 'gaps', filters, page] as const,
+  items: (q: string) => ['register', 'items', q] as const,
 };
 
 /** Refetches every register read, which is what a stale write's Reload does. */
@@ -101,6 +103,11 @@ export function useInterpretation(obligationId: string): UseQueryResult<Register
 
 export function useInternalLinks(obligationId: string, page: RegisterPageQuery = {}): UseQueryResult<RegisterInternalLinkPage> {
   return useQuery({ queryKey: registerKeys.links(obligationId, page), queryFn: () => register.listInternalLinks(obligationId, page) });
+}
+
+/** The link dialog's search over the bank's own items, read only while the dialog picks. */
+export function useInternalItems(q: string, enabled: boolean): UseQueryResult<RegisterInternalItemPage> {
+  return useQuery({ queryKey: registerKeys.items(q), queryFn: () => register.listInternalItems(q), enabled });
 }
 
 export function useUnits(obligationId: string, entity?: string, page: RegisterPageQuery = {}): UseQueryResult<RegisterUnitPage> {

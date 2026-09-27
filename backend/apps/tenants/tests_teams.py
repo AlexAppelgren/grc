@@ -55,7 +55,7 @@ class Bank(TestCase):
         cls.johan = factories.member(cls.tenant, user_row=factories.user(name="Johan Ek")).user
         cls.erik = factories.member(cls.tenant, user_row=factories.user(name="Erik Dahl")).user
         cls.stranger = factories.member_user(cls.other, roles=("admin",))
-        unit = factories.named_department(cls.tenant, name="Retail Banking", head=None)
+        unit = factories.department(cls.tenant, name="Retail Banking", head=None)
         cls.retail = factories.team(
             cls.tenant, key="retail-compliance", label="Retail compliance", org_unit=unit, members=(cls.johan, cls.anna, cls.erik)
         )
@@ -204,14 +204,14 @@ class SetMemberTeams(Bank):
 class HeadOf(Bank):
     def test_me_names_the_active_departments_the_caller_heads(self) -> None:
         karin = factories.member(self.tenant, user_row=factories.user(name="Karin Holm")).user
-        retail = factories.named_department(self.tenant, name="Retail Banking", head=karin)
-        legal = factories.named_department(self.tenant, name="Legal", head=karin, kind=OrgUnitKind.FUNCTION)
-        factories.named_department(self.tenant, name="Closed unit", head=karin)
+        retail = factories.department(self.tenant, name="Retail Banking", head=karin)
+        legal = factories.department(self.tenant, name="Legal", head=karin, kind=OrgUnitKind.FUNCTION)
+        factories.department(self.tenant, name="Closed unit", head=karin)
         tenancy.activate(self.tenant.id)
         OrgUnit.objects.filter(name="Closed unit").update(active=False)
-        factories.named_department(self.tenant, name="Example Bank AB", head=karin, kind=OrgUnitKind.LEGAL_ENTITY)
-        factories.named_department(self.tenant, name="Cards", head=self.anna)
-        factories.named_department(self.other, name="Their department", head=self.stranger)
+        factories.department(self.tenant, name="Example Bank AB", head=karin, kind=OrgUnitKind.LEGAL_ENTITY)
+        factories.department(self.tenant, name="Cards", head=self.anna)
+        factories.department(self.other, name="Their department", head=self.stranger)
 
         me = self.get("/me", user=karin).json()
         self.assertEqual(me["headOf"], [{"id": str(legal.id), "name": "Legal"}, {"id": str(retail.id), "name": "Retail Banking"}])
