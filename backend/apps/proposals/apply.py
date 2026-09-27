@@ -45,6 +45,7 @@ from apps.library.models import (
     Provision,
     ProvisionText,
     ProvisionVersion,
+    RecurringDuty,
     SubjectType,
     Verification,
     VerificationOutcome,
@@ -60,6 +61,7 @@ from apps.proposals.logic import (
     validated_instrument,
     validated_obligation,
     validated_provision,
+    validated_recurring_duty,
 )
 from apps.proposals.models import OriginType, Proposal, ProposalBatchRow, ProposalKind
 from apps.proposals.schemas import (
@@ -69,6 +71,7 @@ from apps.proposals.schemas import (
     ProposalObligationVersionPayload,
     ProposalProvisionPayload,
     ProposalProvisionVersionPayload,
+    ProposalRecurringDutyPayload,
     ProposalTermCreatePayload,
     ProposalTermUpdatePayload,
     ProposalVocabularyCreatePayload,
@@ -154,6 +157,9 @@ def apply(
         elif proposal.kind == ProposalKind.NEW_PROVISION_VERSION.value:
             assert isinstance(payload, ProposalProvisionVersionPayload)
             _provision_version(payload, proposal, actor, reviewer, step_up)
+        elif proposal.kind == ProposalKind.NEW_RECURRING_DUTY.value:
+            assert isinstance(payload, ProposalRecurringDutyPayload)
+            _new_recurring_duty(payload, proposal, actor, reviewer, step_up)
         elif proposal.kind == ProposalKind.OBLIGATION_SCOPE.value:
             assert isinstance(payload, ObligationScopePayload)
             _obligation_scope(payload, rows, proposal, actor, step_up)
@@ -357,6 +363,60 @@ def _new_obligation(
             "effectiveFromPrecision": payload.effective_from_precision,
             "languages": sorted(payload.summaries),
             "terms": payload.terms or [],
+            "verifiedOrigin": verified_origin,
+            "proposal": str(proposal.id),
+        },
+        step_up_assertion_id=step_up,
+    )
+
+
+def _new_recurring_duty(
+    payload: ProposalRecurringDutyPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
+) -> None:
+    """Add the recurring duty the proposal asks for to its obligation (REG-07), its only
+    door into the library.
+
+    Checked again by the function creation ran (`logic.validated_recurring_duty`), against
+    the calendar and the library as they are now: the rule still falls due within the cap
+    from today, and the obligation is still in force. Provenance names both sides, the
+    proposing agent and the confirming one, or the person who approved it, so a duty an
+    agent confirmed never reads as a person's check (INV-05, D-79). The obligation is
+    re-indexed inside this transaction, so an index that cannot be written takes the duty
+    down with it and leaves the proposal open.
+    """
+    assert proposal.target_id is not None
+    obligation = active_obligation(proposal.target_id)
+    authority = validated_recurring_duty(payload)
+    verified_origin = _verified_origin(reviewer)
+    duty = RecurringDuty.objects.create(
+        obligation=obligation,
+        title=payload.title,
+        recurrence_rule=payload.recurrence_rule,
+        due_rule_note=payload.due_rule_note,
+        recipient_authority=authority,
+        lead_days=payload.lead_days,
+        applied_by_proposal=proposal,
+        created_origin=proposal.origin,
+        created_by_agent_id=proposal.proposed_by_agent_id,
+        verified_origin=verified_origin,
+        verified_by_agent_id=reviewer.agent_id,
+        approved_by=reviewer.user,
+        approved_at=timezone.now(),
+    )
+    reindex(obligation.id)
+    record(
+        action="recurring_duty.created",
+        actor=actor,
+        subject_type="recurring_duty",
+        subject_id=duty.id,
+        subject_title=duty.title,
+        summary=f"Added a recurring duty to {obligation.stable_key} (proposal {proposal.id}).",
+        tenant_id=None,
+        after={
+            "obligation": obligation.stable_key,
+            "recurrenceRule": duty.recurrence_rule,
+            "recipientAuthority": payload.recipient_authority,
+            "leadDays": duty.lead_days,
             "verifiedOrigin": verified_origin,
             "proposal": str(proposal.id),
         },
