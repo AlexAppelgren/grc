@@ -191,23 +191,32 @@ When a tenant admin declines a second request, or nobody decides it within the r
 Then nothing was ever granted and the request can no longer be approved
 ```
 
-### TEN-S7 — J-8: tenant B cannot see tenant A `@e2e` (TEN-06, COL-04, J-8)
+### TEN-S7 — J-8: tenant B cannot see tenant A `@e2e` (NFR-01, TEN-02, TEN-03, TEN-06, COL-01, COL-02, COL-04, AGT-04, ACC-01, ID-08, J-8)
 ```gherkin
-Given seeded tenants A and B, a case with evidence, comments and a participant in A, and A watching Norway
-When B's compliance officer signs in and opens A's case URL, evidence URL and vocabulary screen
+Given seeded tenants A and B that both hold a case on one change and discuss and take part in the same obligations
+And tenant A alone holds a member, a custom role and tag, departments, products and teams, a comment on its case mentioning its administrator, a support request, one of its own agents, an agent access entry with a key and a session policy
+When A's administrator signs in
+Then each of A's records is there for A
+When B's compliance officer signs in and opens the change both banks work on
+Then B's case shows none of A's comments and lists only B's evidence
+And the comments of A's case and the download of A's evidence answer 404 by URL
+When B opens the obligation both banks discuss and the obligation both take part in
+Then B sees only its own comment and its own participant
+And B's inbox holds nothing of A's, and marking A's notification read answers 404
+When B's administrator opens A's member and A's agent access entry by URL
 Then each answers 404 and the UI shows "Not found", never the data and never a 403
-When B opens the participants of a shared obligation on which A has participants
-Then B sees only its own participants
-And B's regulatory scope screen shows no market that A watches
-And B's lists show only B's records
+And A's legal entity, department, product, team, support request, agent, agent access key and access log answer 404 by URL
+And B's members, organisation, support access, agents, agent access entries and session limits show only B's own
+And B's regulatory scope screen shows no market that A watches, none of A's terms and not A's pending request
+And B's roles and tenant tags hold none of A's
 ```
 
-> **Note — what R1 walks (tax-market-journeys).** The `@e2e` journey proves B cannot reach
-> A's member by URL and lists only its own members; that B's regulatory scope shows no
-> market A watches as watched, none of A's terms as held and neither A's pending request nor
-> its requester; and that B's roles and tenant tags hold none of A's own (the seed gives A a
-> custom role and a tag for this, `EXPECTED_TENANT_A_ONLY`). The case, evidence, comment and
-> participant steps join the journey with chunks 9 and 10, when those screens exist.
+> **Note — what the journey walks (r2-j8-isolation).** Tenant A's rows are the seed's
+> (`EXPECTED_TENANT_A_ONLY`, `EXPECTED_J8_ISOLATION`, `EXPECTED_ORG_REGISTER`,
+> `EXPECTED_COMMENTS` and the participants block in `apps/shared/e2e_seed.py`); the journey
+> reads their ids in A's own session, then reaches for each from B, in the UI where a screen
+> addresses the record by id and through the API from B's signed-in page where none does.
+> Every 404 is declared where it is expected, so any other failure still fails the journey.
 
 ### ADM-S1 — Tenant admin surfaces are gated by their own permissions `@integration` `@e2e` (ADM-01, ADM-03)
 ```gherkin
