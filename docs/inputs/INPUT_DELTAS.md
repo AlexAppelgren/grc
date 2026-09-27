@@ -990,6 +990,22 @@ Chunk 10 (the obligation row's R2 fields, c10-tag-filters-and-limits), 2026-09-2
   (`instrument`, `dutyType`, `regime`, each `term`, `tag` and `tenantTag` item), as the key
   columns are; a longer one answers 422 `validation_error` (hardening H27).
 
+acc-register-read (ACC-04, ACC-08, D-76), 2026-09-25:
+
+- `GET /register-entries` (`listRegisterEntries`) and `GET /register-entries/{obligationId}`
+  (`readRegisterEntry`) are new: the register as a bank's own agent reads it, which the
+  designed contract does not have (AGENT_ACCESS.md names the list `GET /register`, a path the
+  designed contract never declared). The per-obligation read is a separate operation rather
+  than the same one with a filter, and rather than `getRegisterEntry` taking a key: it takes
+  the obligation as a path parameter so an obligation outside the entry's scope answers 404,
+  never a filtered 200 (AGENT_ACCESS.md section 7), and it answers D-76's fields alone, where
+  a person's `getRegisterEntry` also carries the risk rating and the evidence location. Both
+  take `ApiKeyAuth` only with `tenant:read`, and answer 403 `tenant_reach_off` unless the
+  bank's tenant reach and the entry's own toggle are both on. The row shape,
+  `RegisterDecision`, is one per obligation with its legal entities and live linked items
+  nested; the list pages 20 by default and 100 at most (D-1xx, acc-register-read).
+
+
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
 **`change_case` (`c5-contract-models-cases`).** Built with R1 columns only:
@@ -1895,3 +1911,14 @@ person only, and a case only to a member holding `cases.work`.
   local week rather than the day of the send, so the same unique key that stops a second
   reminder in a day stops a second digest in a week (COL-02: "one email per user per
   week"). Every other template keeps the day of the send.
+
+## acc-entries-and-log. The access log of a bank's own agents (2026-09-25, governance 0005)
+
+`schema.sql` has no table for AGENT_ACCESS.md section 9's access log. `agent_access_call` is
+new: a tenant table under forced row-level security, append-only by the shared trigger, one
+row per call an agent access credential makes (`api_key_id`, `agent_access_id`,
+`acting_user_id`, `tool`, `filters`, `record_count`, `scopes`, `scope_narrowed`,
+`scope_terms`, `duration_ms`, `status`, `at`). The entry and the person are composite
+`(tenant_id, …)` keys; the credential is a plain key into the mixed `api_key` table. It holds
+no content column. A tenant ledger under D-53: the purge deletes a row whole ten years after
+it was written.

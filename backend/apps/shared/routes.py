@@ -53,6 +53,8 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("DELETE", "/tenant/invitations/{invitation_id}", "identity.Invitation", "invitation"),
     ("PATCH", "/tenant/roles/{key}", "identity.TenantRole", "tenant_role_key"),
     ("DELETE", "/tenant/api-keys/{key_id}", "identity.ApiKey", "api_key"),
+    ("DELETE", "/tenant/api-keys/{key_id}", "identity.ApiKey", "member_personal_token"),
+    ("DELETE", "/me/tokens/{token_id}", "identity.ApiKey", "member_personal_token"),
     ("POST", "/tenant/footprint/requests/{request_id}/approve", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/tenant/footprint/requests/{request_id}/reject", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/tenant/footprint/requests/{request_id}/withdraw", "taxonomy.FootprintChangeRequest", "footprint_request"),
@@ -69,6 +71,14 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/gaps/{gap_id}/reopen", "register.Gap", "gap"),
     # c8-reg-links-history (REG-05): a link is removed by id.
     ("DELETE", "/internal-links/{link_id}", "register.InternalLink", "internal_link"),
+    # acc-entries-and-log (ACC-01, ACC-03, ACC-08): an agent access entry, its keys and its log.
+    ("GET", "/agent-access/{uuidstr:entry_id}", "agents.AgentAccess", "agent_access_entry"),
+    ("PATCH", "/agent-access/{uuidstr:entry_id}", "agents.AgentAccess", "agent_access_entry"),
+    ("POST", "/agent-access/{uuidstr:entry_id}/revoke", "agents.AgentAccess", "agent_access_entry"),
+    ("POST", "/agent-access/{uuidstr:entry_id}/keys/{uuidstr:key_id}/revoke", "identity.ApiKey", "agent_access_key"),
+    ("GET", "/agent-access/{uuidstr:entry_id}/calls", "agents.AgentAccess", "agent_access_entry"),
+    # c11-tenant-agents-budget-scope (AGT-04)
+    ("PATCH", "/agents/{tenant_agent_id}", "agents.TenantAgent", "tenant_agent"),
     # c8-tenants-contract (TEN-02, TEN-03, TEN-05, TEN-06). The licence create is proved in
     # apps/tenants/tests_api_contract.py: it refuses this guard's empty body before it loads.
     ("PATCH", "/tenant/org-units/{org_unit_id}", "tenants.OrgUnit", "org_unit"),

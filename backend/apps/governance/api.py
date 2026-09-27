@@ -7,9 +7,10 @@ from typing import Annotated, Any, cast
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.governance import ai_log, logic, problem_reports_logic, reach
+from apps.governance import access_log, ai_log, logic, problem_reports_logic, reach
 from apps.governance.models import TenantReachRequest
 from apps.governance.schemas import (
+    AgentAccessCallPage,
     AiGenerationPage,
     AiGenerationQuery,
     AuditEventPage,
@@ -439,3 +440,43 @@ def switch_off_tenant_reach(request: HttpRequest) -> Any:
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
     )
     return reach.view(tenant.id)
+
+
+# ---------------------------------------------------------------------------------------
+# acc-entries-and-log (ACC-08): the access log of an agent the bank runs itself.
+# ---------------------------------------------------------------------------------------
+@router.get(
+    "/agent-access/{uuid:entry_id}/calls",
+    response=AgentAccessCallPage,
+    auth=SessionAuth(),
+    operation_id="listAgentAccessCalls",
+    by_alias=True,
+    summary="See every call an agent your bank runs itself has made",
+    description=(
+        "The access log of one agent access entry, newest first: every request one of its "
+        "credentials made, with the credential, the person a personal access token acts as, the "
+        "tool it reached, the filters it sent, how many records it was answered with, the scope it "
+        "was answered in, how long it took and its HTTP status. Refused calls are here too, a "
+        "write or a step-up with its 403; a call refused for its rate is in the security log "
+        "instead. It never holds content: no question or description the agent sent, no record it "
+        "was answered with. Rows are written once, after each response, and never changed; the "
+        "retention purge deletes one ten years after it was written.\n\n"
+        "A read: it changes nothing and writes no audit row. Needs `agent_access.manage` on a "
+        "person's session in the bank. An entry that has made no call is a 200 with `total` 0.\n\n"
+        "Errors: `not_found` (404) for an entry the bank has not got; `validation_error` (422) "
+        "when `limit` is above 100; `permission_denied` (403) without `agent_access.manage`; "
+        "`unauthenticated` (401) without a live session."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@answers_problems
+def list_agent_access_calls(
+    request: HttpRequest,
+    entry_id: Annotated[
+        uuid.UUID,
+        Path(description="The entry's identifier, a UUID as `GET /agent-access` lists it. An entry of another bank, or none, answers `not_found` (404)."),
+    ],
+    page: PageQuery = Query(...),
+) -> Any:
+    rows, total = access_log.list_calls(caller_tenant(request).id, entry_id, limit=page.limit, offset=page.offset)
+    return AgentAccessCallPage(items=rows, total=total)

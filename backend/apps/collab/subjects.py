@@ -20,6 +20,7 @@ from typing import Any
 
 from django.core.exceptions import ValidationError
 
+from apps.agents.models import TenantAgent
 from apps.cases.models import Action, ChangeCase
 from apps.library.models import Obligation
 from apps.library.reading import localized
@@ -72,6 +73,14 @@ def _tenant_obligation(subject_id: uuid.UUID) -> TenantObligation | None:
 
 def _tenant_obligation_title(row: TenantObligation, order: list[str]) -> str:
     return _obligation_title(row.obligation, order)
+# c11-scheduler (AGT-04): one of the bank's own agents, which the cap paused. Read by the
+# people who steer those agents, and titled by its definition's key, never typed text.
+def _tenant_agent(subject_id: uuid.UUID) -> TenantAgent | None:
+    return TenantAgent.objects.select_related("agent").filter(pk=subject_id).first()  # ordering: pk lookup, at most one row
+
+
+def _tenant_agent_title(row: TenantAgent, order: list[str]) -> str:
+    return row.agent.key
 
 
 SUBJECTS: dict[str, Subject] = {
@@ -83,6 +92,7 @@ SUBJECTS: dict[str, Subject] = {
     "tenant_obligation": Subject(
         read_permission=perms.REGISTER_READ, lookup=_tenant_obligation, title=_tenant_obligation_title
     ),
+    "tenant_agent": Subject(read_permission=perms.AGENTS_MANAGE, lookup=_tenant_agent, title=_tenant_agent_title),
 }
 
 

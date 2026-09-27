@@ -777,3 +777,30 @@ def notification(tenant: Tenant) -> SimpleNamespace:
             candidates=[(person.id, "mention")],
         )
     return SimpleNamespace(id=told.id)
+
+
+def agent_access_key(tenant: Tenant) -> SimpleNamespace:
+    """A live entry of `tenant` with one service key, addressed as the key's revoke route
+    names them (acc-entries-and-log)."""
+    entry = agent_access_entry(tenant)
+    key = entry_key(tenant, entry)
+    return SimpleNamespace(id=key.id, entry=entry, key=key, params={"uuidstr:entry_id": entry.id, "uuidstr:key_id": key.id})
+
+
+def member_personal_token(tenant: Tenant) -> SimpleNamespace:
+    """The tenant-isolation guard's record for the token routes (acc-personal-grants): a
+    token of a new compliance officer of `tenant`."""
+    return personal_token(tenant, member_user(tenant, roles=("compliance_officer",)))
+
+
+# c11-tenant-agents-budget-scope (AGT-04)
+def tenant_agent(tenant: Tenant) -> object:
+    """The tenant-isolation guard's record for `PATCH /agents/{tenant_agent_id}`: one of the
+    bank's own agents, on a tenant-scoped definition shared by every bank that asks."""
+    from apps.agents.models import TenantAgent
+    from apps.agents.testing import tenant_definition
+
+    definition = tenant_definition("isolation-bank-watch")
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantAgent.objects.create(tenant=tenant, agent=definition)

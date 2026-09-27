@@ -1,7 +1,8 @@
-import type { Page } from '@playwright/test';
+import type { APIRequestContext, Page } from '@playwright/test';
 
 import { destinations, type Destination } from '@/shared/navigation/registry';
 
+import { allowAgentAccessStepUps, allowEntryReach, confirmWithPasskey, issueEntryKey, openEntry, registerEntry, revokeEntry } from './support/agent-access';
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, BACKEND_URL, inviteLinkFrom, LOGINS, mailOutbox, mailsTo, restrictedScreen, signInAs, signOut } from './support/passkeys';
 
@@ -136,7 +137,7 @@ test.describe('governance journeys', () => {
       await expect(keyRow).toBeVisible();
       if ((await keyRow.getByRole('button', { name: 'Revoke' }).count()) > 0) {
         await keyRow.getByRole('button', { name: 'Revoke' }).click();
-        await keyRow.getByRole('button', { name: 'Revoke' }).click();
+        await page.getByRole('dialog', { name: 'Revoke Audit log evidence?' }).getByRole('button', { name: 'Revoke key' }).click();
         await expect(keyRow).toContainText('Revoked');
       }
     }
@@ -392,8 +393,84 @@ test.describe('governance journeys', () => {
     expect(secondTenantId).not.toBe(tenantId);
   });
 
-  test.fixme("ACC-S11: Tenant reach needs two people, and off means off", async () => {
-    // pending: ACC-S11 (ACC-08, AC-ACC2, chunk 11)
+  test("ACC-S11: Tenant reach needs two people, and off means off", async ({ page, browser, playwright, apiGuard }, testInfo) => {
+    // ACC-08, AC-ACC2: two members holding security.manage switch tenant reach on, one asking
+    // and the other approving, each with a passkey; either switches it off alone, and then
+    // no entry reads the register, whatever its own toggle says.
+    test.setTimeout(180_000);
+    allowFreshContext(apiGuard);
+    allowAgentAccessStepUps(apiGuard);
+    apiGuard.allow(/\/api\/v1\/tenant\/reach\/(requests(\/[^/]+\/(approve|reject))?|off)$/, 403, 'a tenant reach write answers step_up_required first and opens the prompt');
+
+    // The administrator approves on this page; the one who asks works in a context of
+    // their own beside it.
+    await signInAs(page, LOGINS.admin);
+    const asker = await browser.newContext({ baseURL: testInfo.project.use.baseURL });
+    const askerPage = await asker.newPage();
+    apiGuard.watch(askerPage);
+    const panel = (on: Page) => on.locator('[data-tenant-reach]');
+    const entryName = `ACC-S11 register reader ${Date.now()}`;
+    let entryId: string | null = null;
+    let agent: APIRequestContext | null = null;
+
+    try {
+      await signInAs(askerPage, LOGINS.securityAdmin);
+      await askerPage.goto('/admin/security');
+      await expect(panel(askerPage)).toHaveAttribute('data-tenant-reach', 'off');
+      await askerPage.getByRole('button', { name: 'Ask to switch it on' }).click();
+      await confirmWithPasskey(askerPage, askerPage.getByText('Asked. Another member holding security manage can approve it here.'));
+
+      // The asker is never offered the decision: the approval is someone else's.
+      await expect(panel(askerPage)).toHaveAttribute('data-tenant-reach', 'pending');
+      await expect(askerPage.locator('[data-reach-pending="mine"]')).toBeVisible();
+      await expect(askerPage.getByRole('button', { name: 'Approve with passkey' })).toHaveCount(0);
+
+      // The second member approves with their passkey, and reach is on.
+      await page.goto('/admin/security');
+      await expect(page.locator('[data-reach-pending="other"]')).toContainText('Magnus Öberg asked to switch this on');
+      await page.getByRole('button', { name: 'Approve with passkey' }).click();
+      await confirmWithPasskey(page, page.getByText('Approved. Entries whose own reach is on read our register decisions from their next call.'));
+      await expect(panel(page)).toHaveAttribute('data-tenant-reach', 'on');
+      await expect(panel(page)).toContainText('switched on by Erik Holm');
+
+      // An entry whose own toggle is on reads the register with its key.
+      entryId = await registerEntry(page, entryName);
+      await allowEntryReach(page, entryId);
+      const plainKey = await issueEntryKey(page, entryId, { name: `${entryName} key`, scopes: ['library:read', 'tenant:read'] });
+      agent = await playwright.request.newContext({ baseURL: BACKEND_URL, extraHTTPHeaders: { 'X-API-Key': plainKey } });
+      const reads = await agent.get('/api/v1/register-entries', { params: { limit: 1 } });
+      expect(reads.status(), await reads.text()).toBe(200);
+
+      // Either of them switches it off, alone, with a passkey.
+      await askerPage.reload();
+      await expect(panel(askerPage)).toHaveAttribute('data-tenant-reach', 'on');
+      await askerPage.getByRole('button', { name: 'Switch off' }).click();
+      await askerPage.getByRole('dialog', { name: 'Switch off reading our register?' }).getByRole('button', { name: 'Switch off' }).click();
+      await confirmWithPasskey(askerPage, askerPage.getByText('Switched off. Every entry now reads the shared library only.'));
+
+      // Off means off: the entry's own toggle still says on, and the register refuses it.
+      await openEntry(page, entryId);
+      await expect(page.locator('[data-entry-reach]').getByLabel('Reads our register decisions')).toBeChecked();
+      const refused = await agent.get('/api/v1/register-entries', { params: { limit: 1 } });
+      expect(refused.status()).toBe(403);
+      expect(((await refused.json()) as { code: string }).code).toBe('tenant_reach_off');
+    } finally {
+      // Teardown that runs on failure too: the bank's reach ends off and the entry revoked.
+      await agent?.dispose();
+      await page.goto('/admin/security');
+      const state = page.locator('[data-tenant-reach]');
+      await expect(state).toHaveAttribute('data-tenant-reach', /^(on|off|pending)$/);
+      if ((await state.getAttribute('data-tenant-reach')) === 'on') {
+        await page.getByRole('button', { name: 'Switch off' }).click();
+        await page.getByRole('dialog', { name: 'Switch off reading our register?' }).getByRole('button', { name: 'Switch off' }).click();
+        await confirmWithPasskey(page, page.getByText('Switched off. Every entry now reads the shared library only.'));
+      } else if ((await state.getAttribute('data-tenant-reach')) === 'pending') {
+        await page.getByRole('button', { name: 'Reject' }).click();
+        await confirmWithPasskey(page, page.getByText('Rejected. It stays off, and it can be asked for again.'));
+      }
+      if (entryId !== null) await revokeEntry(page, entryId);
+      await asker.close();
+    }
   });
 
   test.fixme("ADM-S18: A jurisdiction is relabelled, retired and restored by proposal, and the market that mirrors it follows", async () => {

@@ -45,6 +45,7 @@ describe('navigation registry (playbook 6.2)', () => {
       'console-sources',
       'console-tenants',
       'console-agent-keys',
+      'console-agents',
       'console-evaluation',
       'console-support-access',
     ]);
@@ -57,7 +58,7 @@ describe('navigation registry (playbook 6.2)', () => {
     // other's. Queue and Change facts share proposals.review (chunk4-T14).
     expect(visibleDestinations('console', ['proposals.review']).map((d) => d.id)).toEqual(['console-queue', 'console-change-facts']);
     expect(visibleDestinations('console', ['sources.manage']).map((d) => d.id)).toEqual(['console-sources']);
-    expect(visibleDestinations('console', ['agent_definitions.manage']).map((d) => d.id)).toEqual(['console-agent-keys']);
+    expect(visibleDestinations('console', ['agent_definitions.manage']).map((d) => d.id)).toEqual(['console-agent-keys', 'console-agents']);
     expect(visibleDestinations('console', ['eval.manage']).map((d) => d.id)).toEqual(['console-evaluation']);
   });
 
@@ -150,6 +151,7 @@ describe('navigation registry (playbook 6.2)', () => {
       'admin-api-keys',
       'admin-security-log',
       'admin-support-access',
+      'admin-security',
     ]);
     // Chunk 2: the vocabulary screen needs vocab.manage; the footprint screen
     // opens for either footprint grant and is read-only without the first.
