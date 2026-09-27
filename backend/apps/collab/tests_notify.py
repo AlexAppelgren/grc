@@ -44,9 +44,23 @@ def _change_case(tenant: Tenant) -> Any:
     return cases_build.case(tenant, watch_build.change(title=CHANGE_TITLE))
 
 
+def _action(tenant: Tenant) -> Any:
+    owner = factories.member_user(tenant, roles=("contributor",))
+    return factories.action(_change_case(tenant), owner, due_date=timezone.localdate())
+
+
+def _tenant_obligation(tenant: Tenant) -> Any:
+    return factories.register_entry(tenant, _obligation(tenant).id)
+
+
 # One builder per registered subject kind: a registry row without one fails the registry
 # test, so a kind cannot be added without proving its lookup and its title.
-BUILDERS: dict[str, Callable[[Tenant], Any]] = {"obligation": _obligation, "change_case": _change_case}
+BUILDERS: dict[str, Callable[[Tenant], Any]] = {
+    "obligation": _obligation,
+    "change_case": _change_case,
+    "action": _action,
+    "tenant_obligation": _tenant_obligation,
+}
 
 
 class NotifyTestCase(TestCase):

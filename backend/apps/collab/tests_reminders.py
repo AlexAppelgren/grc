@@ -1,4 +1,5 @@
-"""Triage reminders on the bank's own clock (COL-02; `c10-reminders-core`).
+"""Triage, action and review reminders on the bank's own clock (COL-02, HOM-05;
+`c10-reminders-core`, `c10-reminders-escalation-reviews`).
 
 What these pin:
 
@@ -14,6 +15,14 @@ What these pin:
 - **Bounded.** The query count per bank is pinned and does not grow with the lead days.
 - **One bank per task.** The beat hands each bank on by itself, and a bank's task reads
   none of another bank's cases.
+
+- **Actions.** An open action due at a lead day reminds its owner and every active member
+  of the owner's teams, once; the day after its due date it is `overdue`, once. A done or
+  removed action reminds nobody, and nor does another team's.
+- **Reviews.** A register entry or entity row whose next review is at a review lead day
+  reminds its first-line owner, its row owner and its owning team's members, once each and
+  once per entry, whatever its compliance status, in each person's language. The query
+  count for 200 review dates is pinned and does not grow with the people told.
 
 Every date is the bank's local today plus an offset, at a fixed wall time (CHUNK10_TASKS
 rule 14): the clock is frozen at the bank's send hour on that day.
@@ -32,14 +41,19 @@ from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 
 from apps.cases import testing as cases_build
-from apps.cases.models import CaseStatusCategory, ChangeCase
+from apps.cases.models import Action, CaseStatusCategory, ChangeCase
 from apps.collab import reminders, tasks
 from apps.collab.models import EmailMessage, Notification
 from apps.identity.models import Membership, User
+from apps.library import testing as library_build
+from apps.library.models import Obligation
 from apps.library.reading import today_for
+from apps.register.models import TenantObligation, TenantObligationScope
 from apps.shared import factories, tenancy
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.models import Tenant
+from apps.taxonomy.models import Team
+from apps.tenants.models import OrgUnit, OrgUnitKind
 from apps.watch import testing as watch_build
 
 HELSINKI = "Europe/Helsinki"
@@ -101,9 +115,9 @@ class ReminderTestCase(TestCase):
         tenancy.activate(self.tenant.id)
         return list(Notification.objects.order_by("created_at", "id"))
 
-    def told(self, case: ChangeCase) -> list[tuple[Any, str]]:
+    def told(self, record: Any) -> list[tuple[Any, str]]:
         tenancy.activate(self.tenant.id)
-        return sorted((row.user_id, row.kind) for row in Notification.objects.filter(subject_id=case.id))
+        return sorted((row.user_id, row.kind) for row in Notification.objects.filter(subject_id=record.id))
 
 
 class LeadDays(ReminderTestCase):
@@ -240,14 +254,15 @@ class QueryCount(ReminderTestCase):
         five = self.queries(1, 2, 3, 7, 30)
         self.assertEqual(one, three)
         self.assertEqual(one, five)
-        self.assertEqual(one, 31)
+        self.assertEqual(one, 34)
 
-    def test_a_day_with_nothing_due_costs_four_queries(self) -> None:
+    def test_a_day_with_nothing_due_costs_seven_queries(self) -> None:
         with CaptureQueriesContext(connection) as captured:
             with frozen(at(self.day(0), settings.REMINDER_SEND_HOUR)):
                 tasks.send_tenant_reminders(str(self.tenant.id))
-        # The tenant's activation, the tenant row, the bank's lock and the one case query.
-        self.assertEqual(statements(captured), 4)
+        # The tenant's activation, the tenant row, the bank's lock, the case query, the action
+        # query and the two review queries.
+        self.assertEqual(statements(captured), 7)
 
 
 class OneBankPerTask(ReminderTestCase):
@@ -262,19 +277,219 @@ class OneBankPerTask(ReminderTestCase):
         self.assertEqual(MockMailer.sent, [])
 
     def test_the_beat_hands_each_bank_on_by_itself_at_its_own_hour(self) -> None:
+        """Each bank gets its reminder task and its escalation task, fanned out side by side."""
         stockholm = factories.tenant(slug="reminders-stockholm", timezone="Europe/Stockholm")
-        moment = at(self.day(0), settings.REMINDER_SEND_HOUR)
-        with frozen(moment), mock.patch.object(tasks.send_tenant_reminders, "delay") as delay:
-            tasks.send_reminders()
-        self.assertEqual([call.args for call in delay.call_args_list], [(str(self.tenant.id),)])
-        with frozen(at(self.day(0), settings.REMINDER_SEND_HOUR, "Europe/Stockholm")), mock.patch.object(
-            tasks.send_tenant_reminders, "delay"
-        ) as delay:
-            tasks.send_reminders()
-        self.assertEqual([call.args for call in delay.call_args_list], [(str(stockholm.id),)])
+        for bank in (self.tenant, stockholm):
+            with frozen(at(self.day(0), settings.REMINDER_SEND_HOUR, bank.timezone)), mock.patch.object(
+                tasks.send_tenant_reminders, "delay"
+            ) as remind, mock.patch.object(tasks.send_tenant_escalations, "delay") as escalate:
+                tasks.send_reminders()
+            self.assertEqual([call.args for call in remind.call_args_list], [(str(bank.id),)])
+            self.assertEqual([call.args for call in escalate.call_args_list], [(str(bank.id),)])
 
     def test_a_deactivated_bank_is_not_handed_on(self) -> None:
         from apps.shared.models import TenantStatus
 
         Tenant.objects.filter(pk=self.tenant.pk).update(status=TenantStatus.DEACTIVATED.value)
         self.assertEqual(reminders.tenants_at_send_hour(at(self.day(0), settings.REMINDER_SEND_HOUR)), [])
+
+
+class ActionTestCase(ReminderTestCase):
+    """Anna owns actions and is in the team "Legal" with Karin; Erik is in another team."""
+
+    anna: User
+    karin: User
+    erik: User
+    legal: Team
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+        cls.anna = factories.member_user(cls.tenant, roles=("contributor",))
+        cls.karin = factories.member_user(cls.tenant, roles=("contributor",))
+        cls.erik = factories.member_user(cls.tenant, roles=("contributor",))
+        tenancy.activate(cls.tenant.id)
+        cls.legal = Team.objects.create(tenant=cls.tenant, key="legal")
+        other = Team.objects.create(tenant=cls.tenant, key="product")
+        factories.team_member(cls.tenant, cls.legal, cls.anna)
+        factories.team_member(cls.tenant, cls.legal, cls.karin)
+        factories.team_member(cls.tenant, other, cls.erik)
+
+    def action(self, due_offset: int, *, owner: User | None = None) -> Action:
+        return factories.action(self.case(None), owner or self.anna, due_date=self.day(due_offset))
+
+
+class ActionReminders(ActionTestCase):
+    def test_an_action_due_in_three_days_reminds_its_owner_and_the_owners_team_once(self) -> None:
+        action = self.action(3)
+        self.run_on(0)
+        self.assertEqual(self.told(action), sorted([(self.anna.id, "due_soon"), (self.karin.id, "due_soon")]))
+        self.assertEqual(
+            set(EmailMessage.objects.filter(subject_id=action.id).values_list("user_id", "template", "subject_type")),
+            {(self.anna.id, "due_soon", "action"), (self.karin.id, "due_soon", "action")},
+        )
+        self.run_on(0)
+        self.assertEqual(len(self.told(action)), 2, "the second run the same day writes no row")
+        self.assertEqual(len(MockMailer.sent), 2, "and sends no mail")
+
+    def test_the_mail_names_the_change_never_the_actions_own_text(self) -> None:
+        action = self.action(3)
+        self.run_on(0)
+        change = action.case.change
+        self.assertEqual({mailed.subject for mailed in MockMailer.sent}, {f"Due {self.day(3).isoformat()}: {change.title}"})
+        for mailed in MockMailer.sent:
+            self.assertNotIn(action.title, mailed.body)
+            self.assertIn(f"{settings.APP_BASE_URL.rstrip('/')}/watch/{change.id}", mailed.body)
+        self.assertEqual({row.title for row in Notification.objects.filter(subject_id=action.id)}, {change.title})
+
+    def test_leads_of_one_three_and_seven_remind_on_each_and_not_in_between(self) -> None:
+        self.leads(1, 3, 7)
+        action = self.action(7)
+        reminded = []
+        for offset in range(7):
+            before = len(self.told(action))
+            self.run_on(offset)
+            if len(self.told(action)) > before:
+                reminded.append(offset)
+        self.assertEqual(reminded, [0, 4, 6])
+
+    def test_an_overdue_action_is_reminded_once_the_day_after_its_due_date(self) -> None:
+        action = self.action(0)
+        self.run_on(0)
+        self.assertEqual(self.told(action), [], "due today is not overdue yet")
+        self.run_on(1)
+        self.assertEqual({kind for _user, kind in self.told(action)}, {"overdue"})
+        self.assertEqual(len(self.told(action)), 2)
+        self.run_on(2)
+        self.assertEqual(len(self.told(action)), 2, "an overdue action is reminded once, not every day")
+
+    def test_a_done_or_removed_action_never_reminds(self) -> None:
+        from django.utils import timezone
+
+        done = self.action(3)
+        removed = self.action(3)
+        Action.objects.filter(pk=done.pk).update(done_at=timezone.now(), done_by=self.anna)
+        Action.objects.filter(pk=removed.pk).update(removed_at=timezone.now(), removed_by=self.anna)
+        self.assertEqual(self.run_on(0), [])
+        self.assertEqual(MockMailer.sent, [])
+
+    def test_another_teams_member_is_not_reminded_and_an_owner_in_no_team_is_reminded_alone(self) -> None:
+        action = self.action(3, owner=self.officer)
+        self.run_on(0)
+        self.assertEqual(self.told(action), [(self.officer.id, "due_soon")])
+
+    def test_a_muted_or_deactivated_team_member_gets_nothing(self) -> None:
+        from django.utils import timezone
+
+        action = self.action(3)
+        Membership.objects.filter(user=self.karin).update(notification_prefs={"reminders": False})
+        self.run_on(0)
+        self.assertEqual(self.told(action), [(self.anna.id, "due_soon")])
+        later = self.action(4)
+        Membership.objects.filter(user=self.karin).update(notification_prefs={}, deactivated_at=timezone.now())
+        self.run_on(1)
+        self.assertEqual(self.told(later), [(self.anna.id, "due_soon")])
+        self.assertNotIn(self.karin.email, {mailed.to for mailed in MockMailer.sent})
+
+
+class ReviewTestCase(ActionTestCase):
+    """Register entries on library obligations, with their next reviews."""
+
+    fund: OrgUnit
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+        Tenant.objects.filter(pk=cls.tenant.pk).update(review_reminder_days_before=[30])
+        cls.tenant.refresh_from_db()
+        tenancy.activate(cls.tenant.id)
+        cls.fund = OrgUnit.objects.create(tenant=cls.tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name="Fund AB")
+
+    def obligation(self) -> Obligation:
+        key = f"review-{Obligation.objects.count()}"
+        on = library_build.instrument(key=f"inst-{key}", regime="regime:securities")
+        return library_build.obligation(
+            on, key=f"obl-{key}", titles={"en": "Assess suitability before advice", "sv": "Bedöm lämplighet före rådgivning"}
+        )
+
+    def entry(self, review_offset: int | None = 30, **fields: Any) -> TenantObligation:
+        return factories.register_entry(
+            self.tenant,
+            self.obligation().id,
+            next_review_date=self.day(review_offset) if review_offset is not None else None,
+            **fields,
+        )
+
+    def entity_row(self, entry: TenantObligation, owner: User, review_offset: int = 30) -> TenantObligationScope:
+        tenancy.activate(self.tenant.id)
+        return TenantObligationScope.objects.create(
+            tenant=self.tenant,
+            tenant_obligation=entry,
+            org_unit=self.fund,
+            compliance_status=entry.compliance_status,
+            owner=owner,
+            next_review_date=self.day(review_offset),
+        )
+
+
+class ReviewReminders(ReviewTestCase):
+    def test_a_compliant_obligations_review_is_reminded_to_its_first_line_owner(self) -> None:
+        """HOM-S8's mistake would be to filter the compliant rows out."""
+        entry = self.entry(status="compliant", first_line_owner=self.erik)
+        self.assertEqual(entry.compliance_status.kind, "compliant")
+        self.run_on(0)
+        self.assertEqual(self.told(entry), [(self.erik.id, "review_due")])
+
+    def test_an_entitys_row_owner_and_an_owning_teams_members_are_each_reminded_once(self) -> None:
+        entry = self.entry(first_line_owner=self.anna, owner_team=self.legal)
+        self.entity_row(entry, self.anna)
+        other = self.entry(review_offset=None)
+        self.entity_row(other, self.erik)
+        self.run_on(0)
+        self.assertEqual(self.told(entry), sorted([(self.anna.id, "review_due"), (self.karin.id, "review_due")]))
+        self.assertEqual(self.told(other), [(self.erik.id, "review_due")])
+        self.assertEqual(
+            sorted(mailed.to for mailed in MockMailer.sent), sorted([self.anna.email, self.karin.email, self.erik.email])
+        )
+        self.run_on(0)
+        self.assertEqual(len(Notification.objects.filter(kind="review_due")), 3, "nobody is reminded twice")
+        self.assertEqual(len(MockMailer.sent), 3)
+
+    def test_a_review_not_at_a_lead_day_reminds_nobody(self) -> None:
+        self.entry(review_offset=29, first_line_owner=self.anna)
+        self.entry(review_offset=31, first_line_owner=self.anna)
+        self.assertEqual(self.run_on(0), [])
+
+    def test_the_mail_is_in_each_recipients_language_and_links_to_the_obligation(self) -> None:
+        User.objects.filter(pk=self.erik.pk).update(locale=factories.language("sv"))
+        entry = self.entry(first_line_owner=self.erik, owner_team=self.legal)
+        self.run_on(0)
+        mails = {mailed.to: mailed for mailed in MockMailer.sent}
+        due = self.day(30).isoformat()
+        self.assertEqual(mails[self.erik.email].subject, f"Granskning senast {due}: Bedöm lämplighet före rådgivning")
+        self.assertEqual(mails[self.anna.email].subject, f"Review due {due}: Assess suitability before advice")
+        for mailed in mails.values():
+            self.assertIn(f"{settings.APP_BASE_URL.rstrip('/')}/inventory/obligations/{entry.obligation_id}", mailed.body)
+
+
+class ReviewQueryCount(ReviewTestCase):
+    def test_two_hundred_review_dates_cost_a_pinned_count_that_does_not_grow_with_the_people_told(self) -> None:
+        """Measured without the delivery task, which runs in the worker after commit: this
+        is the bank's reminder task alone."""
+        for _ in range(200):
+            self.entry(first_line_owner=self.anna, owner_team=self.legal)
+
+        def queries() -> int:
+            with self.settings(CELERY_TASK_ALWAYS_EAGER=False), CaptureQueriesContext(connection) as captured:
+                rows = self.run_on(0)
+            self.assertTrue(rows)
+            Notification.objects.all().delete()
+            return statements(captured)
+
+        two = queries()
+        for person in (self.erik, self.officer, self.second_officer):
+            factories.team_member(self.tenant, self.legal, person)
+        tenancy.activate(self.tenant.id)
+        five = queries()
+        self.assertEqual(two, five, "the people told add no query")
+        self.assertEqual(two, 1014)

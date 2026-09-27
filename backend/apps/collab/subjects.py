@@ -20,9 +20,10 @@ from typing import Any
 
 from django.core.exceptions import ValidationError
 
-from apps.cases.models import ChangeCase
+from apps.cases.models import Action, ChangeCase
 from apps.library.models import Obligation
 from apps.library.reading import localized
+from apps.register.models import TenantObligation
 from apps.shared import permissions as perms
 
 
@@ -51,9 +52,37 @@ def _change_case_title(row: ChangeCase, order: list[str]) -> str:
     return row.change.title
 
 
+def _action(subject_id: uuid.UUID) -> Action | None:
+    return Action.objects.select_related("case__change").filter(pk=subject_id).first()  # ordering: pk lookup, at most one row
+
+
+def _action_title(row: Action, order: list[str]) -> str:
+    # An action's own title is typed by a person, so it is titled by its case's change.
+    return row.case.change.title
+
+
+def _tenant_obligation(subject_id: uuid.UUID) -> TenantObligation | None:
+    return (
+        TenantObligation.objects.select_related("obligation")
+        .prefetch_related("obligation__titles")
+        .filter(pk=subject_id)
+        .first()  # ordering: pk lookup, at most one row
+    )
+
+
+def _tenant_obligation_title(row: TenantObligation, order: list[str]) -> str:
+    return _obligation_title(row.obligation, order)
+
+
 SUBJECTS: dict[str, Subject] = {
     "obligation": Subject(read_permission=perms.LIBRARY_READ, lookup=_obligation, title=_obligation_title),
     "change_case": Subject(read_permission=perms.CASES_READ, lookup=_change_case, title=_change_case_title),
+    # c10-reminders-escalation-reviews: an action's reminders and escalation, and a register
+    # entry's review reminder.
+    "action": Subject(read_permission=perms.CASES_READ, lookup=_action, title=_action_title),
+    "tenant_obligation": Subject(
+        read_permission=perms.REGISTER_READ, lookup=_tenant_obligation, title=_tenant_obligation_title
+    ),
 }
 
 
