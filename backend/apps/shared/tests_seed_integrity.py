@@ -104,6 +104,8 @@ from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
 # c8-ui-links-history-participants
 from apps.collab.models import Participant
 from apps.shared.e2e_seed import NO_ENTRY_OBLIGATION, PARTICIPANT, PARTICIPANT_ADDED_BY, PARTICIPATION_OBLIGATION
+# r2-j8-isolation
+from apps.shared.e2e_seed import EXPECTED_J8_ISOLATION
 # c8-seed-org-register
 from apps.register.models import ComplianceAssessment, Gap, InternalLink, Interpretation, TenantObligation, TenantObligationScope
 from apps.shared.e2e_seed import (
@@ -1068,6 +1070,8 @@ class ReseedTenantsAndScope(SeededOnce):
             created = AuditEvent.objects.filter(tenant=tenant, action="vocabulary.created")
             # TEN-S7's one tenant-A tag is the seed's work too, but not a system row.
             system = created.exclude(subject_title=f"{EXPECTED_TENANT_A_ONLY.tag_list}:{EXPECTED_TENANT_A_ONLY.tag_key}")
+            # c8-seed-org-register: each bank's own teams are the seed's work too, not system rows.
+            system = system.exclude(subject_title__in=[f"team:{team.key}" for spec in EXPECTED_ORG_REGISTER for team in spec.teams])
             self.assertEqual(system.count(), sum(len(rows) for _, rows in TENANT_SYSTEM_ROWS.values()))
             self.assertEqual(set(created.values_list("actor_label", flat=True)), {"seed_e2e"})
 
@@ -1967,7 +1971,8 @@ class SeededParticipant(SeededOnce):
         tenancy.activate(Tenant.objects.get(slug=TENANT_A_SLUG).id)
         self.assertFalse(TenantObligation.objects.filter(obligation__stable_key=NO_ENTRY_OBLIGATION).exists())
         tenancy.activate(Tenant.objects.get(slug=TENANT_B_SLUG).id)
-        self.assertFalse(Participant.objects.exists())
+        # r2-j8-isolation: tenant B's one participation is J-8's, beside A's on the same obligation.
+        self.assertEqual(list(Participant.objects.values_list("user__email", flat=True)), [EXPECTED_J8_ISOLATION.b_participant])
 
     def test_a_reseed_writes_nothing_and_puts_back_a_participation_the_journey_ended(self) -> None:
         tenant = Tenant.objects.get(slug=TENANT_A_SLUG)
@@ -1982,3 +1987,108 @@ class SeededParticipant(SeededOnce):
         self.assertEqual(Participant.objects.filter(removed_at__isnull=True).count(), 1)
         self.assertEqual(Participant.objects.count(), 2)
 # --- end c8-ui-links-history-participants -------------------------------------------------------
+
+
+# --- r2-j8-isolation ----------------------------------------------------------------------------
+class SeededJ8Isolation(SeededOnce):
+    """TEN-S7 (J-8): each tenant-A-only row the journey addresses by URL is tenant A's, is
+    invisible from tenant B, and was written once through record(); tenant B holds its own
+    participant on the obligation tenant A's participant takes part in."""
+
+    def _rows(self) -> list[tuple[str, Any]]:
+        from apps.agents.models import AgentAccess, TenantAgent
+        from apps.collab.models import Comment
+        from apps.identity.models import ApiKey
+        from apps.tenants.models import SecurityPolicy, SupportAccess
+
+        spec = EXPECTED_J8_ISOLATION
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        return [
+            ("comment", Comment.objects.filter(pk=spec.case_comment.id)),
+            ("support_access", SupportAccess.objects.filter(reason=spec.grant_reason)),
+            ("agent_access", AgentAccess.objects.filter(pk=spec.entry_id)),
+            ("api_key", ApiKey.objects.filter(pk=spec.key_id)),
+            ("tenant_agent", TenantAgent.objects.filter(pk=spec.tenant_agent_id)),
+            ("security_policy", SecurityPolicy.objects.filter(tenant=tenant_a)),
+        ]
+
+    def test_each_row_is_tenant_as_and_tenant_b_reads_none_of_them(self) -> None:
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        for name, rows in self._rows():
+            with self.subTest(row=name):
+                self.assertEqual(list(rows.values_list("tenant_id", flat=True)), [tenant_a.id])
+        tenancy.activate(Tenant.objects.get(slug=TENANT_B_SLUG).id)
+        for name, rows in self._rows():
+            with self.subTest(row=name):
+                self.assertFalse(rows.all().exists())
+
+    def test_the_rows_are_what_the_journey_expects(self) -> None:
+        from apps.agents.models import AgentAccess, TenantAgent
+        from apps.collab.models import Comment, Notification
+        from apps.identity.models import ApiKey
+        from apps.tenants.models import SecurityPolicy, SupportAccess
+
+        spec = EXPECTED_J8_ISOLATION
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        comment = Comment.objects.get(pk=spec.case_comment.id)
+        case = ChangeCase.objects.get(change__stable_key=spec.case_comment.subject_key)
+        self.assertEqual((comment.subject_type, comment.subject_id, comment.body), ("change_case", case.id, spec.case_comment.body))
+        # The mention reaches tenant A's administrator, unread, so the inbox holds an A-only row.
+        [told] = Notification.objects.filter(subject_type="change_case", subject_id=case.id, kind="mention")
+        self.assertEqual((told.user.email, told.read_at), (spec.a_admin, None))
+        grant = SupportAccess.objects.get(reason=spec.grant_reason)
+        self.assertEqual((grant.status, grant.platform_user.email, grant.ended_by.email if grant.ended_by else None), ("declined", spec.grant_requester, spec.a_admin))
+        entry = AgentAccess.objects.get(pk=spec.entry_id)
+        self.assertEqual((entry.name, entry.owner_team.key, entry.active), (spec.entry_name, spec.entry_team, True))
+        key = ApiKey.objects.get(pk=spec.key_id)
+        self.assertEqual((key.agent_access_id, key.revoked_at), (entry.id, None))
+        assert key.expires_at is not None
+        self.assertGreater(key.expires_at, timezone.now())
+        agent = TenantAgent.objects.get(pk=spec.tenant_agent_id)
+        self.assertEqual((agent.agent.key, agent.enabled), (spec.tenant_agent_key, False))
+        idle = SecurityPolicy.objects.get(tenant=tenant_a).session_idle_minutes
+        assert idle is not None
+        self.assertEqual(idle, spec.idle_minutes)
+        self.assertGreaterEqual(idle, settings.SESSION_IDLE_MINUTES_DEFAULT, "no session in tenant A ends sooner for it")
+        self.assertLessEqual(idle, settings.SESSION_IDLE_MINUTES_MAX)
+        # Tenant B holds the same case on the shared change, so the journey reads B's own.
+        tenancy.activate(Tenant.objects.get(slug=TENANT_B_SLUG).id)
+        self.assertTrue(ChangeCase.objects.filter(change__stable_key=spec.case_comment.subject_key).exists())
+        self.assertFalse(SecurityPolicy.objects.exists())
+
+    def test_tenant_b_takes_part_in_the_obligation_tenant_a_takes_part_in(self) -> None:
+        spec = EXPECTED_J8_ISOLATION
+        seen = {}
+        for slug in (TENANT_A_SLUG, TENANT_B_SLUG):
+            tenancy.activate(Tenant.objects.get(slug=slug).id)
+            seen[slug] = set(
+                Participant.objects.filter(tenant_obligation__obligation__stable_key=PARTICIPATION_OBLIGATION, removed_at__isnull=True).values_list("user__email", flat=True)
+            )
+        self.assertEqual(seen[TENANT_B_SLUG], {spec.b_participant})
+        self.assertIn(PARTICIPANT, seen[TENANT_A_SLUG])
+        self.assertFalse(seen[TENANT_A_SLUG] & seen[TENANT_B_SLUG])
+
+    def test_every_row_was_audited_once_and_a_reseed_writes_nothing(self) -> None:
+        audited = {}
+        for slug in (TENANT_A_SLUG, TENANT_B_SLUG):
+            tenant = Tenant.objects.get(slug=slug)
+            tenancy.activate(tenant.id)
+            audited[slug] = AuditEvent.objects.filter(tenant=tenant).count()
+        tenancy.activate(Tenant.objects.get(slug=TENANT_A_SLUG).id)
+        for name, rows in self._rows():
+            if name in ("comment", "support_access"):
+                continue
+            with self.subTest(row=name):
+                self.assertEqual(AuditEvent.objects.filter(action=f"{name}.seeded", subject_id=rows.get().id, actor_label="seed_e2e").count(), 1)
+        grant_id = dict(self._rows())["support_access"].get().id
+        for action in ("support_access.requested", "support_access.declined"):
+            self.assertEqual(AuditEvent.objects.filter(action=action, subject_id=grant_id).count(), 1, action)
+        self.assertEqual(AuditEvent.objects.filter(action="comment.added", after__commentId=str(EXPECTED_J8_ISOLATION.case_comment.id)).count(), 1)
+        seed_e2e()
+        for slug, count in audited.items():
+            tenant = Tenant.objects.get(slug=slug)
+            tenancy.activate(tenant.id)
+            self.assertEqual(AuditEvent.objects.filter(tenant=tenant).count(), count)
+# --- end r2-j8-isolation ------------------------------------------------------------------------

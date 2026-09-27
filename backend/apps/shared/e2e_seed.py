@@ -32,7 +32,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 
-from apps.agents.models import AgentRun, RunStatus
+from apps.agents.models import AgentAccess, AgentRun, RunStatus, TenantAgent
 from apps.agents.seeds import seed_agent_definitions
 from apps.cases import matching as case_matching
 from apps.cases.creation import CHANGE_REGISTERED
@@ -87,6 +87,9 @@ from apps.register import logic as register_logic
 from apps.register.models import ComplianceAssessment, Gap, InternalLink, Interpretation, TenantObligation, TenantObligationScope
 from apps.taxonomy.models import ComplianceStatus, GapSource, GapStatus, LinkKind, RiskRating, Team
 from apps.tenants.models import InternalItem, Licence, LicenceServiceTerm, OrgUnit, TeamMember, TenantProduct, TenantProductTerm
+from apps.tenants import support_access
+from apps.tenants.models import SecurityPolicy
+from apps.tenants.schemas import ConsoleSupportAccessBody
 # c8-ui-links-history-participants
 from apps.collab.models import Participant
 
@@ -1827,6 +1830,8 @@ def seed_e2e() -> dict[str, int]:
         seed_org_register(tenants)
         # c8-ui-links-history-participants: after the register entries it names.
         seed_participants(tenants)
+        # r2-j8-isolation: after the comments, the register entries and the teams it names.
+        seed_j8_isolation(tenants)
 
         # INV-S14, after the logins: the re-verification names a seeded library editor.
         machine_confirmed = seed_machine_confirmed()
@@ -3150,3 +3155,109 @@ def seed_participants(tenants: list[Tenant]) -> None:
         _seeded(tenant, "participant", row, PARTICIPATION_OBLIGATION, {"tenantObligationId": str(entry.id), "userId": str(person.id)})
     tenancy.clear_tenant()
 # --- end c8-ui-links-history-participants ----------------------------------------------------
+
+
+# --- r2-j8-isolation (TEN-S7, J-8; NFR-01, TEN-02, TEN-03, COL-01, COL-02, COL-04, AGT-04, ACC-01, ID-08)
+# One row of each R2 record kind that tenant A holds and tenant B must never reach, by URL or in
+# a list, beside what the other blocks already give A alone (its departments, products and teams,
+# its register participant, its comments): a comment on A's case of the change both banks work
+# on, mentioning A's administrator; a support request A declined, found by its purpose; a tenant
+# agent, switched off; an agent access entry with one key; a session policy. Fixed ids where a
+# row can take one, so the journey addresses it by URL. Tenant B's own participant sits on the
+# obligation A's participant takes part in, so B's panel shows B's row and never A's.
+@dataclass(frozen=True)
+class SeedJ8Isolation:
+    case_comment: SeedComment
+    b_participant: str
+    b_participant_added_by: str
+    a_admin: str
+    grant_requester: str
+    grant_reason: str
+    entry_id: uuid.UUID
+    entry_name: str
+    entry_team: str
+    key_id: uuid.UUID
+    key_name: str
+    tenant_agent_id: uuid.UUID
+    tenant_agent_key: str
+    idle_minutes: int
+
+
+EXPECTED_J8_ISOLATION = SeedJ8Isolation(
+    case_comment=SeedComment(
+        uuid.UUID("00000000-0000-4000-a000-000000008c01"), TENANT_A_SLUG, "change_case", EXPECTED_CHUNK5_WATCH.timeline_change, OFFICER_A,
+        "Erik, the appropriateness procedure for structured products now names the new test; the evidence is attached.",
+        datetime.timedelta(days=1, hours=6),
+        mentions=("admin@example-bank.test",),
+    ),
+    b_participant="approver@second-bank.test",
+    b_participant_added_by="admin@second-bank.test",
+    a_admin="admin@example-bank.test",
+    grant_requester="platform@bleqq.test",
+    grant_reason="Checking why last week's briefing reached nobody at the bank.",
+    entry_id=uuid.UUID("00000000-0000-4000-a000-000000008c03"),
+    entry_name="Card settlement checker",
+    entry_team="cards",
+    key_id=uuid.UUID("00000000-0000-4000-a000-000000008c04"),
+    key_name="Settlement reconciliation",
+    tenant_agent_id=uuid.UUID("00000000-0000-4000-a000-000000008c05"),
+    tenant_agent_key="tenant-source-watch",
+    # Above the platform default, so no journey's session in tenant A ends sooner for it.
+    idle_minutes=45,
+)
+
+
+def seed_j8_isolation(tenants: list[Tenant]) -> None:
+    """Each row once, with its audit row through record(); a reseed finds each and writes nothing."""
+    spec = EXPECTED_J8_ISOLATION
+    by_slug = {tenant.slug: tenant for tenant in tenants}
+    users = {user.email: user for user in User.objects.filter(email__in={login.email for login in SEED_LOGINS})}
+    tenant_a, tenant_b = by_slug[TENANT_A_SLUG], by_slug[TENANT_B_SLUG]
+    today = datetime.datetime.now(ZoneInfo(tenant_a.timezone)).date()
+    admin = users[spec.a_admin]
+
+    tenancy.activate(tenant_a.id)
+    if not Comment.objects.filter(pk=spec.case_comment.id).exists():
+        _seed_comment(tenant_a, spec.case_comment, users)
+    # Through the support-access logic, as the console asks and the bank refuses: only that
+    # module loads a grant (apps/shared/tests_support_session.py).
+    if not any(grant.purpose == spec.grant_reason for grant in support_access.list_for_tenant(tenant=tenant_a, limit=100, offset=0).items):
+        requester = users[spec.grant_requester]
+        asked = support_access.request_access(
+            tenant_id=tenant_a.id,
+            requester=requester,
+            actor=Actor(kind=ActorType.USER, id=requester.id, label=requester.name),
+            body=ConsoleSupportAccessBody(purpose=spec.grant_reason, hours=4),
+        )
+        support_access.decline(tenant=tenant_a, actor=Actor(kind=ActorType.USER, id=admin.id, label=admin.name), grant_id=asked.id)
+    if not AgentAccess.objects.filter(pk=spec.entry_id).exists():
+        entry = AgentAccess.objects.create(
+            id=spec.entry_id, tenant=tenant_a, name=spec.entry_name, purpose="Reconciles the card settlement files against the ledger.",
+            owner_team=Team.objects.get(key=spec.entry_team), created_by=admin,
+        )
+        _seeded(tenant_a, "agent_access", entry, entry.name, {"ownerTeam": spec.entry_team})
+    if not ApiKey.objects.filter(pk=spec.key_id).exists():
+        _plain, prefix, key_hash = tokens.new_api_key()
+        key = ApiKey.objects.create(
+            id=spec.key_id, tenant=tenant_a, agent_access_id=spec.entry_id, name=spec.key_name, key_prefix=prefix, key_hash=key_hash,
+            scopes=["library:read"], created_by=admin, expires_at=_at(today, 60, tenant_a.timezone),
+        )
+        _seeded(tenant_a, "api_key", key, key.name, {"keyPrefix": prefix, "agentAccessId": str(spec.entry_id), "scopes": key.scopes})
+    if not TenantAgent.objects.filter(pk=spec.tenant_agent_id).exists():
+        agent = TenantAgent.objects.create(id=spec.tenant_agent_id, tenant=tenant_a, agent=_agent(spec.tenant_agent_key), updated_by=admin)
+        _seeded(tenant_a, "tenant_agent", agent, spec.tenant_agent_key, {"agentKey": spec.tenant_agent_key, "enabled": False})
+    if not SecurityPolicy.objects.filter(tenant=tenant_a).exists():
+        policy = SecurityPolicy.objects.create(tenant=tenant_a, session_idle_minutes=spec.idle_minutes, updated_by=admin)
+        _seeded(tenant_a, "security_policy", policy, tenant_a.name, {"sessionIdleMinutes": spec.idle_minutes})
+
+    tenancy.activate(tenant_b.id)
+    entry_b = TenantObligation.objects.get(obligation_id=_obligation_id(PARTICIPATION_OBLIGATION))
+    person = users[spec.b_participant]
+    if not Participant.objects.filter(tenant_obligation=entry_b, user=person, removed_at__isnull=True).exists():
+        row = Participant.objects.create(
+            tenant=tenant_b, tenant_obligation=entry_b, user=person, added_by=users[spec.b_participant_added_by],
+            added_at=_at(datetime.datetime.now(ZoneInfo(tenant_b.timezone)).date(), -3, tenant_b.timezone),
+        )
+        _seeded(tenant_b, "participant", row, PARTICIPATION_OBLIGATION, {"tenantObligationId": str(entry_b.id), "userId": str(person.id)})
+    tenancy.clear_tenant()
+# --- end r2-j8-isolation --------------------------------------------------------------------
