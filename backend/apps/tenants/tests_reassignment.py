@@ -29,7 +29,15 @@ from apps.register.models import Gap, TenantObligation, TenantObligationScope
 from apps.shared import factories, tenancy
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.testing import sign_in
-from apps.taxonomy.models import ComplianceStatus, GapCategory, GapSource, GapStatus, LinkKind, RiskRating, Team
+from apps.taxonomy.models import (
+    ComplianceStatus,
+    GapCategory,
+    GapSource,
+    GapStatus,
+    LinkKind,
+    RiskRating,
+    Team,
+)
 from apps.tenants.models import InternalItem, OrgUnitKind, TeamMember
 
 V1 = "/api/v1"

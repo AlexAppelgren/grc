@@ -28,7 +28,6 @@ from apps.shared.models import Tenant
 from apps.taxonomy.schemas import PersonRef
 from apps.taxonomy.terms_logic import term_by_ref
 from apps.tenants.models import Licence, LicenceServiceTerm, OrgUnit, OrgUnitKind
-from apps.tenants.terms import Term, scope_terms, term_refs
 from apps.tenants.schemas import (
     OrgUnitKindValue,
     TenantLicence,
@@ -40,6 +39,7 @@ from apps.tenants.schemas import (
     TenantOrgUnitPage,
     TenantOrgUnitPatch,
 )
+from apps.tenants.terms import Term, scope_terms, term_refs
 
 ENTITY_DIMENSION = "legal_entity"
 LEI = re.compile(r"[A-Z0-9]{18}[0-9]{2}")

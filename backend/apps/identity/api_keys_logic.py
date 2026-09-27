@@ -80,9 +80,10 @@ SCOPE_BACKING: dict[str, str] = {
 
 
 def person_permissions(tenant_id: uuid.UUID, user_id: uuid.UUID) -> frozenset[str] | None:
-    """What the person holds in their bank now, or None when they are deactivated or no
-    longer an active member of it. Read with the bank activated."""
-    if not User.objects.filter(pk=user_id, deactivated_at__isnull=True).exclude(status=UserStatus.DEACTIVATED.value).exists():
+    """What the person holds in their bank now, or None when they are not active (deactivated,
+    or awaiting enrolment again after ID-05's re-enrolment) or no longer an active member of
+    it. Read with the bank activated."""
+    if not User.objects.filter(pk=user_id, deactivated_at__isnull=True, status=UserStatus.ACTIVE.value).exists():
         return None
     rows = list(
         Membership.objects.filter(tenant_id=tenant_id, user_id=user_id, deactivated_at__isnull=True).values_list(
@@ -346,6 +347,20 @@ def revoke_credential(key: ApiKey, *, user: User, now: datetime) -> None:
         user=user,
         api_key=key,
     )
+
+
+def revoke_person_tokens(*, tenant_id: uuid.UUID, person: User, revoked_by: User, now: datetime) -> int:
+    """Revoke every live personal token `person` minted in the bank, each with its security
+    log row: a token dies with its person (ACC-03), so removal and re-enrolment end it for
+    good rather than refusing it until the person is back. Answers how many."""
+    live = ApiKey.objects.filter(
+        tenant_id=tenant_id, kind=CredentialKind.PERSONAL.value, acts_as_user=person, revoked_at__isnull=True
+    ).order_by("id")
+    count = 0
+    for key in live:
+        revoke_credential(key, user=revoked_by, now=now)
+        count += 1
+    return count
 
 
 def revoke_entry_key(

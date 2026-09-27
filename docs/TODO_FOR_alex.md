@@ -2182,3 +2182,25 @@ in the package; nothing waits on you for them. Defaults taken:
       `agents.manage` only; the AI switch needs a step-up. Default: unchanged until you say.
 - [ ] **May a bank add a draft agent definition (H85)?** `tenant-source-watch` v1 is a draft,
       and every bank agent runs on it. Default: unchanged, since the E2E journeys add it.
+
+## security-review-c11-access-d89: the review of agent access and the bank's own records (2026-09-27, ACC-01 to ACC-09, INV-07, OWN-01 to OWN-04)
+
+Nothing waits for these; each has the default the review took. The review is
+`docs/reviews/CHUNK11_ACCESS_OWN_REVIEW.md`.
+
+- [ ] **A bank's own records share one key space with the shared library.** A stable key is
+      unique across both zones, so a key a bank's own agent filed (and the bank approved) cannot
+      later be used by the shared record for the same regulation. The approval now answers 409
+      `duplicate_key` rather than 500, and names no owner. Default: keys stay one space. The
+      alternative is a namespace for a bank's own keys (for example a prefix the shared grammar
+      refuses), set by the server when the bank's own proposal is filed (HARDENING H103).
+- [ ] **A bank's own agent reads the bank's layer only with `tenant:read`.** The overlay and the
+      bank's tags in the inventory, and the bank's own lists under `/vocab`, now need the
+      register's scope as well as tenant reach on for the bank and the entry, as the register
+      itself does. Say if a library-only credential should see them once reach is on.
+- [ ] **A bank's own agent does not read the source registry.** `GET /sources` and
+      `/sources/coverage` answer an agent access credential 403 `permission_denied`; the
+      platform's own agents keep them. Say if a bank's agent should read the registry.
+- [ ] **J-8's switched-off agent is tenant A's scope researcher.** J-8 and the chunk 11 seed both
+      made tenant A's source watch agent, so the merged seed let whichever ran first decide
+      whether it was on. J-8 keeps its fixed id on the scope researcher, which nothing else seeds.

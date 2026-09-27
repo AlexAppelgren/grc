@@ -23,8 +23,9 @@ retired row cannot be relabelled into life, and a system row is never retired.
 
 from __future__ import annotations
 
+import contextlib
 import uuid
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import Any
 
 from django.core.exceptions import ValidationError
@@ -229,6 +230,23 @@ def apply_reverification(
 # ---------------------------------------------------------------------------------------
 # New instruments and obligations (INV-01, INV-03, INV-05, PRO-02)
 # ---------------------------------------------------------------------------------------
+@contextlib.contextmanager
+def _key_free_in_every_zone(subject: str) -> Iterator[None]:
+    """A stable key is unique across the library, both zones (the database's unique index),
+    while `stable_key_taken` reads under row-level security and sees the caller's zone
+    alone. A key another zone holds is the same 409 `duplicate_key` a visible one answers,
+    never an unhandled error, and the savepoint leaves nothing written. The answer names
+    no zone and no owner (INV-07, D-57)."""
+    try:
+        with transaction.atomic():
+            yield
+    except IntegrityError as error:
+        constraint = getattr(getattr(error.__cause__, "diag", None), "constraint_name", "") or ""
+        if "stable_key" not in constraint:
+            raise
+        raise ValidationError(f"That key is already {subject} key.", code="duplicate_key") from None
+
+
 def _verified_origin(reviewer: Reviewer) -> str:
     """Who confirmed the change (INV-05, D-62): an independent agent, or a person. An
     agent's confirmation is machine-confirmed and never reads as a person's."""
@@ -254,28 +272,29 @@ def _new_instrument(
     the payload, and its audit row is written in that bank's zone.
     """
     refs, regime = validated_instrument(payload)
-    instrument = Instrument.objects.create(
-        owner_tenant_id=proposal.owner_tenant_id,
-        stable_key=payload.key,
-        short_name=payload.short_name,
-        official_ref=payload.official_ref,
-        eli_uri=payload.eli_uri,
-        source_url=proposal.source_url,
-        level=refs.level,
-        binding=refs.level.binding_default if payload.binding is None else payload.binding,
-        jurisdiction=refs.jurisdiction,
-        authority=refs.authority,
-        regime=regime,
-        in_force_from=payload.in_force_from,
-        in_force_from_precision=payload.in_force_from_precision,
-        in_force_to=payload.in_force_to,
-        in_force_to_precision=payload.in_force_to_precision,
-        implements_note=payload.implements_note,
-        created_origin=proposal.origin,
-        created_by_agent_run=proposal.agent_run_id,
-        verified_origin=_verified_origin(reviewer),
-        verified_by_agent_id=reviewer.agent_id,
-    )
+    with _key_free_in_every_zone("an instrument's"):
+        instrument = Instrument.objects.create(
+            owner_tenant_id=proposal.owner_tenant_id,
+            stable_key=payload.key,
+            short_name=payload.short_name,
+            official_ref=payload.official_ref,
+            eli_uri=payload.eli_uri,
+            source_url=proposal.source_url,
+            level=refs.level,
+            binding=refs.level.binding_default if payload.binding is None else payload.binding,
+            jurisdiction=refs.jurisdiction,
+            authority=refs.authority,
+            regime=regime,
+            in_force_from=payload.in_force_from,
+            in_force_from_precision=payload.in_force_from_precision,
+            in_force_to=payload.in_force_to,
+            in_force_to_precision=payload.in_force_to_precision,
+            implements_note=payload.implements_note,
+            created_origin=proposal.origin,
+            created_by_agent_run=proposal.agent_run_id,
+            verified_origin=_verified_origin(reviewer),
+            verified_by_agent_id=reviewer.agent_id,
+        )
     for language, text, is_original, is_machine in _texts(payload.titles, payload.original_language, payload.is_machine, reviewer):
         InstrumentTitle.objects.create(
             instrument=instrument, language_id=language, text=text, is_original=is_original, is_machine=is_machine
@@ -326,20 +345,21 @@ def _new_obligation(
         proposal.kind, instrument, [term.id for term in terms], proposal.field_sources, payload.ref_label, proposal.source_label
     )
     verified_origin = _verified_origin(reviewer)
-    obligation = Obligation.objects.create(
-        owner_tenant_id=owner,
-        stable_key=payload.key,
-        instrument=instrument,
-        ref_label=payload.ref_label,
-        duty_type=live_duty_type(payload.duty_type),
-        created_origin=proposal.origin,
-        created_by_agent_run=proposal.agent_run_id,
-        created_model=proposal.model,
-        source_url=proposal.source_url,
-        source_label=proposal.source_label or f"{instrument.official_ref}, {payload.ref_label}",
-        verified_origin=verified_origin,
-        verified_by_agent_id=reviewer.agent_id,
-    )
+    with _key_free_in_every_zone("an obligation's"):
+        obligation = Obligation.objects.create(
+            owner_tenant_id=owner,
+            stable_key=payload.key,
+            instrument=instrument,
+            ref_label=payload.ref_label,
+            duty_type=live_duty_type(payload.duty_type),
+            created_origin=proposal.origin,
+            created_by_agent_run=proposal.agent_run_id,
+            created_model=proposal.model,
+            source_url=proposal.source_url,
+            source_label=proposal.source_label or f"{instrument.official_ref}, {payload.ref_label}",
+            verified_origin=verified_origin,
+            verified_by_agent_id=reviewer.agent_id,
+        )
     for language, text, is_original, is_machine in _texts(payload.titles, payload.original_language, payload.is_machine, reviewer):
         ObligationTitle.objects.create(
             obligation=obligation, language_id=language, text=text, is_original=is_original, is_machine=is_machine

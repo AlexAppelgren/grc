@@ -18,7 +18,7 @@ from django.db.models import Q
 from django.http import HttpRequest
 from django.utils import timezone
 
-from apps.identity import mail, rate_limit, roles_logic, session_logic, tokens
+from apps.identity import api_keys_logic, mail, rate_limit, roles_logic, session_logic, tokens
 from apps.identity.models import (
     Invitation,
     InvitationKind,
@@ -355,6 +355,7 @@ def reissue_enrolment(
     now = timezone.now()
     revoked = session_logic.revoke_all(user, tenant_id=None, reason="reenrolment", actor=actor, request=request)
     retired = WebAuthnCredential.objects.filter(user=user, retired_at__isnull=True).update(retired_at=now)
+    tokens_revoked = api_keys_logic.revoke_person_tokens(tenant_id=tenant.id, person=user, revoked_by=actor_user, now=now)
     # Awaiting enrolment again: the next passkey registration sets her active.
     user.status = UserStatus.INVITED.value
     user.save(update_fields=["status"])
@@ -388,7 +389,13 @@ def reissue_enrolment(
         subject_title=user.name,
         summary=f"Enrolment re-issued: {revoked} session(s) revoked, {retired} passkey(s) retired.",
         tenant_id=tenant.id,
-        after={"sessionsRevoked": revoked, "passkeysRetired": retired, "invitationId": str(issued.invitation.id), **(extra_after or {})},
+        after={
+            "sessionsRevoked": revoked,
+            "passkeysRetired": retired,
+            "tokensRevoked": tokens_revoked,
+            "invitationId": str(issued.invitation.id),
+            **(extra_after or {}),
+        },
         step_up_assertion_id=step_up_assertion_id,
     )
     return issued

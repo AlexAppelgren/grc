@@ -3256,6 +3256,16 @@ def seed_org_register(tenants: list[Tenant]) -> None:
 # pending one is never queued, so it stays pending.
 
 
+# --- c9-evidence (CAS-05, CAS-S7, CAS-S16) ------------------------------------------------------
+# Evidence on the cases the journeys read: every scan state on CAS-S7's implementing case, a
+# clean file on each case waiting for sign-off (a request needs one) and on the closed case,
+# and a clean file on each bank's case for chunk 5's shared change, so CAS-S16 finds evidence
+# of both banks on one change. CAS-S8's case keeps none: its journey is the refusal without
+# evidence. A clean file's bytes are written here, through storage, into the slot's media
+# root and never committed; an infected one's never exist, as the scan deletes them, and a
+# pending one is never queued, so it stays pending.
+
+
 @dataclass(frozen=True)
 class SeedEvidence:
     """One piece of evidence on the case for `stable_key` in `tenant_slug`. A file carries
@@ -3788,7 +3798,7 @@ EXPECTED_J8_ISOLATION = SeedJ8Isolation(
     key_id=uuid.UUID("00000000-0000-4000-a000-000000008c04"),
     key_name="Settlement reconciliation",
     tenant_agent_id=uuid.UUID("00000000-0000-4000-a000-000000008c05"),
-    tenant_agent_key="tenant-source-watch",
+    tenant_agent_key="scope-researcher",
     # Above the platform default, so no journey's session in tenant A ends sooner for it.
     idle_minutes=45,
 )

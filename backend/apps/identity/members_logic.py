@@ -15,7 +15,7 @@ from django.db.models import Count, Q
 from django.http import HttpRequest
 from django.utils import timezone
 
-from apps.identity import invitation_logic, roles_logic, session_logic
+from apps.identity import api_keys_logic, invitation_logic, roles_logic, session_logic
 from apps.identity.models import Invitation, InvitationKind, Membership, MembershipRole, User, UserSession
 from apps.shared import permissions as perms
 from apps.shared.audit import Actor, record
@@ -223,6 +223,10 @@ def deactivate_member(
     membership.deactivated_at = now
     membership.save(update_fields=["deactivated_at"])
     revoked = session_logic.revoke_all(membership.user, tenant_id=tenant.id, reason="member_deactivated", actor=actor, request=request)
+    remover = None if actor.id is None else User.objects.filter(pk=actor.id).first()  # ordering: pk lookup, at most one row
+    tokens_revoked = api_keys_logic.revoke_person_tokens(
+        tenant_id=tenant.id, person=membership.user, revoked_by=remover or membership.user, now=now
+    )
     # An open invitation or re-enrolment for the address would let the person enrol back
     # into the tenant after removal; it closes with the membership (finding F7).
     closed = Invitation.objects.filter(
@@ -237,7 +241,7 @@ def deactivate_member(
         summary=f"Member deactivated; {revoked} session(s) revoked, {closed} open invitation(s) closed.",
         tenant_id=tenant.id,
         before={"deactivatedAt": None},
-        after={"deactivatedAt": membership.deactivated_at.isoformat(), "invitationsClosed": closed},
+        after={"deactivatedAt": membership.deactivated_at.isoformat(), "invitationsClosed": closed, "tokensRevoked": tokens_revoked},
         step_up_assertion_id=step_up_assertion_id,
     )
     return membership

@@ -1338,8 +1338,9 @@ class AgentsScenarioTests(TestCase):
         scope_before = (FootprintTerm.objects.count(), ScopeItem.objects.count())
         events = [
             own_finding(instrument_body(), event_id="instrument"),
-            own_finding(obligation_body(), event_id="obligation-1"),
-            own_finding(obligation_body(key=EXECUTION_DUTY, refLabel="4 kap. 3 §"), event_id="obligation-2"),
+            # A bank's own obligation sits under an instrument of its own (d89-private-records).
+            own_finding(obligation_body("own-policy"), event_id="obligation-1"),
+            own_finding(obligation_body("own-policy", key=EXECUTION_DUTY, refLabel="4 kap. 3 §"), event_id="obligation-2"),
         ]
         filed = [runner_events.apply_finding(run.id, event) for event in events]
 

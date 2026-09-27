@@ -1,7 +1,7 @@
 import type { Download, Locator, Page } from '@playwright/test';
 
 import { expect, type ApiGuard } from './api-guard';
-import { openCase as openCaseByKey } from './cases-work';
+import { BACKEND_URL } from './passkeys';
 
 // Helpers for the sign-off journeys and J-3 (c9-e2e-signoff-j3; CAS-S8 to CAS-S11,
 // CAS-S15). Each journey spends a case of its own from apps/shared/e2e_seed.py
@@ -38,12 +38,24 @@ export function casePanels(page: Page): Locator {
 }
 
 /**
- * Opens the change page of a seeded case by its stable key, through the feed's "All" tab as
- * the case journeys do (support/cases-work.ts): the "In progress" tab lists assigned cases
- * only, so a case being implemented or waiting for sign-off is on no tab of it.
+ * Opens the change page of a seeded case. Search finds obligations and provisions only since
+ * D-104 moved it into Inventory, and the feed's tabs list a case by its category, which the
+ * journeys move, so the case is found by its stable key in the signed-in bank's own feed read
+ * (the same session, refreshed as the client does) and its page opened in the UI.
  */
 export async function openCase(page: Page, seeded: SeededCase): Promise<void> {
-  await openCaseByKey(page, seeded.stableKey);
+  const refreshed = await page.request.post(`${BACKEND_URL}/api/v1/auth/refresh`);
+  expect(refreshed.status(), 'the session the UI opened refreshes').toBe(200);
+  const headers = { Authorization: `Bearer ${((await refreshed.json()) as { accessToken: string }).accessToken}` };
+  let changeId: string | undefined;
+  for (let offset = 0; changeId === undefined; offset += 100) {
+    const feed = await page.request.get(`${BACKEND_URL}/api/v1/changes?tab=all&footprint=all&limit=100&offset=${offset}`, { headers });
+    expect(feed.status(), 'the bank reads its own feed').toBe(200);
+    const { items } = (await feed.json()) as { items: { id: string; stableKey: string }[] };
+    if (items.length === 0) throw new Error(`the feed holds no change ${seeded.stableKey}`);
+    changeId = items.find((row) => row.stableKey === seeded.stableKey)?.id;
+  }
+  await page.goto(`/watch/${changeId}`);
   await expect(page.locator(`[data-change="${seeded.stableKey}"]`)).toBeVisible();
 }
 

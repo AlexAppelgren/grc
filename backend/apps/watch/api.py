@@ -145,9 +145,14 @@ def require_watch_reader(request: HttpRequest) -> None:
     `library:read` so a run knows what to check (WAT-01, AGT-02), or a library editor with
     `sources.manage` reading the console's own Sources page. The editor is named here
     because a console session has no tenant and so holds no tenant permission; without it
-    the read-only console page would call a route it could never pass (ruling 3)."""
+    the read-only console page would call a route it could never pass (ruling 3). A bank's
+    own agent (an agent access credential) reads the library and not the registry
+    (AGENT_ACCESS.md section 5): a personal token would otherwise read what its person's
+    session is refused."""
     who = principal(request)
     if who.kind is PrincipalKind.AGENT:
+        if who.is_agent_access:
+            raise ProblemError(status=403, code="permission_denied", detail="A bank's own agent reads the library, not the source registry.")
         if not who.has_scope(perms.SCOPE_LIBRARY_READ):
             raise deny(perms.SCOPE_LIBRARY_READ)
         return
@@ -234,8 +239,9 @@ def list_sources(request: HttpRequest) -> Any:
 
     The whole registry comes back in one answer, ordered by name; it is tens of rows, not
     thousands, so it does not page. An empty registry is a 200 with an empty list, never a
-    404. Errors: `permission_denied` without one of those three, `unauthenticated` without a
-    credential.
+    404. Errors: `permission_denied` without one of those three, or to a bank's own agent (an
+    agent access credential, which reads the library and not the registry); `unauthenticated`
+    without a credential.
     """
     # Ungated by design: logic-gate (watch.read in a tenant, or a key with library:read).
     require_watch_reader(request)
@@ -272,7 +278,8 @@ def get_source_coverage(request: HttpRequest) -> Any:
 
     One row per registered source, ordered by name, and no paging. A registry with nothing
     in it is a 200 with an empty list. Errors: `permission_denied` without `watch.read`,
-    `sources.manage` or the `library:read` scope; `unauthenticated` without a credential.
+    `sources.manage` or the `library:read` scope, or to a bank's own agent (an agent access
+    credential); `unauthenticated` without a credential.
     """
     # Ungated by design: logic-gate (watch.read in a tenant, or a key with library:read).
     require_watch_reader(request)

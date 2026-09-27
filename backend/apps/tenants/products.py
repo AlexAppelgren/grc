@@ -18,8 +18,14 @@ from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.tenants.models import TenantProduct, TenantProductTerm
 from apps.tenants.organisation import active_member, changed, iso, locked, org_unit_of, person, ref
+from apps.tenants.schemas import (
+    ProductStatusValue,
+    TenantProductBody,
+    TenantProductOut,
+    TenantProductPage,
+    TenantProductPatch,
+)
 from apps.tenants.terms import Term, scope_terms, term_refs
-from apps.tenants.schemas import ProductStatusValue, TenantProductBody, TenantProductOut, TenantProductPage, TenantProductPatch
 
 
 def product_of(tenant: Tenant, product_id: uuid.UUID) -> TenantProduct:

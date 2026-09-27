@@ -198,6 +198,18 @@ def require_library_reader(request: HttpRequest) -> Principal:
     return who
 
 
+def refuse_own_list_beyond_reach(who: Principal, is_library: bool) -> None:
+    """A bank's own list (its tags and their use, its teams, its reasons) is the bank's own
+    layer, so an agent access credential reads it through the register's gate, as the
+    inventory answers its tags (ACC-04, ACC-08, `register.overlay.shown_to`)."""
+    from apps.register import overlay  # the register reads taxonomy; imported where used
+
+    if not is_library and not overlay.shown_to(who):
+        raise ProblemError(
+            status=403, code="tenant_reach_off", detail="This agent does not read the bank's register, so it reads the library alone."
+        )
+
+
 def require_library_read(request: HttpRequest) -> Principal:
     """Library records (instruments, provisions, obligations) are read by a person holding
     `library.read` in their tenant, or by an agent's key with `library:read` (INV-03,
