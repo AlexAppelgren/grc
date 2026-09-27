@@ -19,7 +19,8 @@ Merge each `claude/r2wW-<package>-done` branch that exists on origin, in the ord
    - run `bash generate-types.sh` and commit openapi.json and frontend/src/types/api.generated.ts;
    - run `npm run demo:record` in frontend/ against the seeded stack and commit the recordings;
    - then run contract drift again, because a stub's explanation line can go stale once the regenerated contract counts its route as built.
-7. **Expected, not a failure.** A scenario a package left skipped with a named reason in its report is not yours to force green, and the same goes for a route it left at 501. An example is AGT-S4 until c11-agent-config-platform merges. Everything else red is yours.
+7. **main moves under you.** Another session also ships to main (for example, the public page and inventory search). Before you push the done marker, `git fetch origin` and merge origin/main again. main's decision, ADR and HARDENING numbers are already shipped and keep their numbers; yours move to the next free ones, with every reference updated by its context. Then re-record the demo, regenerate the API files and re-run the gates.
+8. **Expected, not a failure.** A scenario a package left skipped with a named reason in its report is not yours to force green, and the same goes for a route it left at 501. An example is AGT-S4 until c11-agent-config-platform merges. Everything else red is yours.
 
 ## Gates
 Run `bash scripts/prepush.sh --all` with the slot loaded. It stops at the first red gate and prints the command that reproduces it. Fix the cause and run it again until every gate that can run here is green. The container builds and their Trivy scans cannot run in this environment, because Docker cannot trust the session proxy's certificate. Name them in your report; CI on the candidate branch runs them before anything reaches main.
