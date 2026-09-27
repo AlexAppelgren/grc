@@ -8,7 +8,11 @@ another, and each is filtered by the caller's own permission rather than refused
 without `cases.triage` or `proposals.create` reads a true 0, never a 403 that would take
 the panel away (chunk 6 default). The session's tenant is already activated by the time
 this runs (`session_logic.resolve_access_token`), so every read below is under row-level
-security without activating it again."""
+security without activating it again.
+
+R2's four decision counts (x-decide-now-counts: CAS-06, REG-03, TEN-06, ACC-08) count what
+the caller may decide and never a request they made themselves, which four eyes would
+refuse them. D-75 removed applicability requests, so there is no applicability count."""
 
 from __future__ import annotations
 
@@ -21,17 +25,19 @@ from django.utils import timezone
 
 from apps.cases.models import ChangeCase
 from apps.collab.models import Notification
+from apps.governance.models import TenantReachRequest
 from apps.identity import passkey_logic, roles_logic, session_logic
 from apps.identity.models import Membership, PlatformRoleAssignment, User, UserStatus
 from apps.identity.schemas import MembershipNotificationPrefs, MembershipNotificationPrefsPatch
 from apps.library.models import Language
 from apps.proposals.models import ProposalStatus, ProposalTenant
+from apps.register.models import Gap
 from apps.shared import permissions as perms
 from apps.shared.audit import record
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.models import Tenant
-from apps.taxonomy.models import CaseStatusCategory
-from apps.tenants.models import OrgUnit, OrgUnitKind
+from apps.taxonomy.models import ApprovalStatus, CaseStatusCategory, GapCategory
+from apps.tenants.models import OrgUnit, OrgUnitKind, SupportAccess, SupportAccessLevel, SupportAccessStatus
 
 # The two categories a case has finished in (D-13): excluded from "assigned to me" so a
 # closed or dismissed case a person once owned does not sit in their queue forever. The
@@ -49,10 +55,11 @@ def _tenant_out(tenant: Tenant | None) -> dict[str, Any] | None:
 
 
 def _counts(principal: Principal) -> dict[str, int]:
-    """`MeCounts`: four independent reads, none chained behind another (a pinned query
+    """`MeCounts`: eight independent reads, none chained behind another (a pinned query
     count proves it in `tests_me_counts.py`). A count behind a permission the caller lacks
     is 0 without the query ever running, exactly as `home.logic.home_today()` skips a panel
     a reader may not see rather than reading it and hiding the answer."""
+    me = principal.subject_id
     triage = 0
     if principal.has_permission(perms.CASES_TRIAGE):
         triage = ChangeCase.objects.filter(status=CaseStatusCategory.NEW.value).count()
@@ -64,10 +71,52 @@ def _counts(principal: Principal) -> dict[str, int]:
         # rather than the proposer's current membership means a proposal counts here even
         # after its author has since left the bank.
         proposals = ProposalTenant.objects.filter(proposal__status=ProposalStatus.OPEN.value).count()
-    assigned_to_me = ChangeCase.objects.filter(owner_id=principal.subject_id).exclude(status__in=_FINISHED_CASES).count()
+    assigned_to_me = ChangeCase.objects.filter(owner_id=me).exclude(status__in=_FINISHED_CASES).count()
     # Row-level security keeps this to the session's bank; every member reads their own.
-    unread = Notification.objects.filter(user_id=principal.subject_id, read_at__isnull=True).count()
-    return {"triage": triage, "proposals": proposals, "assignedToMe": assigned_to_me, "unreadNotifications": unread}
+    unread = Notification.objects.filter(user_id=me, read_at__isnull=True).count()
+    signoffs = 0
+    if principal.has_permission(perms.CASES_SIGNOFF):
+        signoffs = ChangeCase.objects.filter(status=CaseStatusCategory.SIGNOFF.value).exclude(signoff_requested_by_id=me).count()
+    risk_acceptances = 0
+    if principal.has_permission(perms.RISK_ACCEPT_APPROVE):
+        # What `register.gaps.approve_risk_acceptance` would take: asked, not yet accepted,
+        # and in a category the approval moves from.
+        risk_acceptances = (
+            Gap.objects.filter(
+                acceptance_requested_by__isnull=False,
+                accepted_by__isnull=True,
+                status__kind__in=(GapCategory.OPEN.value, GapCategory.REMEDIATING.value),
+            )
+            .exclude(acceptance_requested_by_id=me)
+            .count()
+        )
+    support_requests = 0
+    tenant_reach_requests = 0
+    if principal.has_permission(perms.SECURITY_MANAGE):
+        # Pending as `tenants.support_access.state_of` reads it: a read-level request whose
+        # time to be decided has not run out.
+        support_requests = (
+            SupportAccess.objects.filter(
+                status=SupportAccessStatus.REQUESTED.value,
+                access_level=SupportAccessLevel.READ.value,
+                request_expires_at__gt=timezone.now(),
+            )
+            .exclude(platform_user_id=me)
+            .count()
+        )
+        tenant_reach_requests = (
+            TenantReachRequest.objects.filter(status=ApprovalStatus.PENDING.value).exclude(requested_by_id=me).count()
+        )
+    return {
+        "triage": triage,
+        "proposals": proposals,
+        "assignedToMe": assigned_to_me,
+        "unreadNotifications": unread,
+        "signoffs": signoffs,
+        "riskAcceptances": risk_acceptances,
+        "supportAccessRequests": support_requests,
+        "tenantReachRequests": tenant_reach_requests,
+    }
 
 
 def _head_of(tenant: Tenant, user: User) -> list[dict[str, Any]]:

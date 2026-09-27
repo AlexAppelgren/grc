@@ -77,6 +77,7 @@ When a user opens Today
 Then the "Coming up" list shows the next dates in order with urgency pills
 And the lead change carries the brand pill "Lead"
 And "Decide now" shows the queue counts the reader's own permissions unlock
+And each decision line (sign-offs, risk acceptances, support access requests, tenant reach requests) leads to where it is decided and never counts a request the reader made
 And "Source coverage" shows how many sources were checked and which ones failed
 And a reader without watch.read gets the page with no lead and no source panel, never a 403
 And the API answered from one fan-out of independent calls, none chained
