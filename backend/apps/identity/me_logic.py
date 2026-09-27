@@ -37,7 +37,7 @@ from apps.shared.audit import record
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.models import Tenant
 from apps.taxonomy.models import ApprovalStatus, CaseStatusCategory, GapCategory
-from apps.tenants.models import OrgUnit, OrgUnitKind, SupportAccess, SupportAccessLevel, SupportAccessStatus
+from apps.tenants.models import OrgUnit, OrgUnitKind
 
 # The two categories a case has finished in (D-13): excluded from "assigned to me" so a
 # closed or dismissed case a person once owned does not sit in their queue forever. The
@@ -93,17 +93,10 @@ def _counts(principal: Principal) -> dict[str, int]:
     support_requests = 0
     tenant_reach_requests = 0
     if principal.has_permission(perms.SECURITY_MANAGE):
-        # Pending as `tenants.support_access.state_of` reads it: a read-level request whose
-        # time to be decided has not run out.
-        support_requests = (
-            SupportAccess.objects.filter(
-                status=SupportAccessStatus.REQUESTED.value,
-                access_level=SupportAccessLevel.READ.value,
-                request_expires_at__gt=timezone.now(),
-            )
-            .exclude(platform_user_id=me)
-            .count()
-        )
+        # Pending as `tenants.support_access.state_of` reads it, counted where grants are read.
+        from apps.tenants import support_access
+
+        support_requests = support_access.pending_count(excluding_user_id=me)
         tenant_reach_requests = (
             TenantReachRequest.objects.filter(status=ApprovalStatus.PENDING.value).exclude(requested_by_id=me).count()
         )

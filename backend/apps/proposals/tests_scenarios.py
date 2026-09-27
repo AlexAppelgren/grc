@@ -653,7 +653,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         reads = [
             op.path.format(**ids)
             for op in iter_operations(api)
-            if op.method == "GET" and all(name in ids for name in re.findall(r"{(\w+)}", op.path))
+            if op.method == "GET" and all(name in ids for name in re.findall(r"{(?:\w+:)?(\w+)}", op.path))
         ]
         self.assertIn(f"/proposals/{proposal['id']}", reads, "the proposal beside the reported duty is read too")
         for person in (self.editor, factories.platform_user(roles=("platform_admin",))):

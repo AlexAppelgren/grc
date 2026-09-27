@@ -53,7 +53,7 @@ from apps.shared.migration_helpers import POLICY_NAME, TENANT_SETTING
 from apps.shared.permissions import UNGATED_BY_DESIGN, Ungated, UngatedReason, gate_of
 from apps.shared.routes import TENANT_SCOPED_ROUTES, RegisteredOperation, iter_operations
 from apps.shared.tenancy import is_tenant_task, tenant_task
-from apps.shared.testing import ScenarioTestCase, sign_in, stub_session, user_principal
+from apps.shared.testing import ScenarioTestCase, agent_principal, sign_in, stub_api_key, stub_session, user_principal
 from apps.shared.tests_production_guard import BOOT, SETTING_NAMES, _with_database
 from apps.shared.tests_rls import tenant_scoped_models
 from apps.shared.tests_tenant_isolation import EXPECTED_MINIMUM_TENANT_ROUTES, PATH_PARAMETER, fill_path
@@ -420,6 +420,7 @@ class SharedScenarioTests(ScenarioTestCase):
             subject_id=factories.member_user(tenant, roles=("admin",)).id, tenant_id=tenant.id, permissions=perms.TENANT_PERMISSIONS
         )
         platform = user_principal(permissions=perms.PLATFORM_PERMISSIONS)
+        key = agent_principal(scopes=perms.ALL_SCOPES, tenant_id=tenant.id)
 
         # Every response carries Server-Timing: app with the server time, and a request id.
         def timed(path: str, headers: dict[str, Any] | None = None) -> Any:
@@ -469,6 +470,10 @@ class SharedScenarioTests(ScenarioTestCase):
                         response = timed(url, self.as_user(principal))
                     if response.status_code != 403:
                         break
+                if response.status_code == 401:
+                    # A list only a key reads (acc-register-read): signed in with a bank's key.
+                    with stub_api_key(key):
+                        response = timed(url, self.as_agent(key))
                 self.assertEqual(response.status_code, 422, response.content)
                 self.assertEqual(response.json()["errors"][0]["field"], "query.limit")
                 refused += 1
