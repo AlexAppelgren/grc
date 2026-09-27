@@ -795,6 +795,7 @@ CASE_EVIDENCE_MAX = env_int("CASE_EVIDENCE_MAX", 200)
 # ---------------------------------------------------------------------------------------
 # ===== VOC-08 bulk tagging's cap (c10-tagging-routes) =============================
 # ---------------------------------------------------------------------------------------
+# ===== VOC-08 bulk tagging's cap (c10-tagging-routes) ====================================
 # How many distinct records one tagging preview or batch may name. A list page holds at
 # most 100 rows, so two pages' worth covers every selection a screen makes, and the one
 # audit event a batch writes stays a size a reviewer can read. Above it the preview and

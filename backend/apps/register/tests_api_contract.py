@@ -46,7 +46,7 @@ APPLICABILITY_BODY = {"applicability": "applies", "reason": "Certified", "orgUni
 MANY_BODY = {"rows": [{"obligationId": OBLIGATION, "unitId": RECORD, "applicability": "not_applicable", "reason": "No cloud services"}]}
 GAP_BODY = {"title": "Evidence of reconciliation is manual", "severity": "high", "source": "assessment", "targetDate": "2026-12-31"}
 GAP_PATCH = {"remediation": "Automate the daily reconciliation report."}
-ACCEPT_BODY = {"reason": "cost_exceeds_benefit"}
+ACCEPT_BODY = {"reason": "compensating_control"}
 INTERPRETATION_BODY = {"text": "We read this as covering every client account the bank holds, custody included."}
 LINK_BODY = {"kind": "policy", "label": "Client asset policy", "externalRef": "POL-014"}
 UNIT_BODY = {"orgUnitId": ENTITY, "reference": "A.5.1", "title": "Our information security policies"}
@@ -97,6 +97,24 @@ BUILT: set[str] = {
     "removeInternalLink",
     # c8-ui-links-history-participants: tests_links.py
     "listInternalItems",
+    # c8-reg-status (apps/register/tests_status.py)
+    "getRegisterEntry",
+    "updateRegister",
+    "updateRegisterEntity",
+    # c8-reg-gaps-risk (apps/register/tests_gaps.py)
+    "listObligationGaps",
+    "createGap",
+    "listRegisterGaps",
+    "updateGap",
+    "requestRiskAcceptance",
+    "approveRiskAcceptance",
+    "reopenGap",
+    # c8-reg-applicability (tests_applicability.py)
+    "setApplicability",
+    "setApplicabilityMany",
+    # c8-duty-occurrences (tests_duties.py)
+    "listDuties",
+    "completeDutyOccurrence",
 }
 
 
@@ -173,7 +191,7 @@ class RegisterRouteGates(TestCase):
             ("setApplicability", "put", applicability, {"applicability": "applies", "reason": ""}, {}),
             ("setApplicability", "put", applicability, {**APPLICABILITY_BODY, "unitId": RECORD}, {}),
             ("setApplicabilityMany", "post", "/api/v1/applicability", {"rows": []}, {}),
-            ("createGap", "post", f"/api/v1/obligations/{OBLIGATION}/gaps", {**GAP_BODY, "source": "rumour"}, {}),
+            ("createGap", "post", f"/api/v1/obligations/{OBLIGATION}/gaps", {**GAP_BODY, "source": "x" * 65}, {}),
             ("createGap", "post", f"/api/v1/obligations/{OBLIGATION}/gaps", {"severity": "high", "source": "audit"}, {}),
             ("listRegisterGaps", "get", "/api/v1/gaps?limit=101", None, {}),
             ("listRegisterGaps", "get", "/api/v1/gaps?targetFrom=someday", None, {}),
@@ -201,13 +219,6 @@ IF_MATCH_ROUTES = {
     "saveInterpretation",
     "updateUnit",
     "removeUnit",
-}
-
-
-# The operations whose logic has landed, each proved in its package's own tests.
-BUILT = {
-    "setApplicability", "setApplicabilityMany",  # c8-reg-applicability, tests_applicability.py
-    "listDuties", "completeDutyOccurrence",  # c8-duty-occurrences, tests_duties.py
 }
 
 

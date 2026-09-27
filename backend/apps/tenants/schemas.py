@@ -1129,11 +1129,26 @@ class TenantMemberOpenWork(CamelSchema):
     owner per kind before anything changes."""
 
     model_config = ConfigDict(
-        json_schema_extra={"examples": [{"member": _EXAMPLE_PERSON, "items": [{"kind": "register_entry", "count": 3}, {"kind": "case", "count": 2}]}]}
+        json_schema_extra={
+            "examples": [
+                {
+                    "member": _EXAMPLE_PERSON,
+                    "items": [{"kind": "register_entry", "count": 3}, {"kind": "participation", "count": 3}, {"kind": "team_membership", "count": 2}],
+                    "teams": ["cards", "legal"],
+                }
+            ]
+        }
     )
 
     member: PersonRef = Field(description="The member whose open work this is.")
     items: list[TenantOpenWork] = Field(description="One row per kind the member holds; an empty list is a 200 and means the removal moves nothing.")
+    teams: list[str] = Field(
+        description=(
+            "The keys of the teams the member is in, rows of the bank's `team` vocabulary at "
+            "`GET /vocab/team`, in that list's order; the removal takes the member out of every "
+            "one. An empty list means they are in no team."
+        )
+    )
 
 
 class TenantRemovalOwner(WriteBody):
@@ -1142,14 +1157,22 @@ class TenantRemovalOwner(WriteBody):
     model_config = ConfigDict(json_schema_extra={"examples": [{"kind": "register_entry", "teamKey": "compliance"}]})
 
     kind: ReassignableKind = Field(description=f"The kind of work being moved: {_OWNER_KINDS}. Participations and team memberships end and are never moved.")
-    user_id: uuid.UUID | None = Field(default=None, description="The new owner, a UUID of another active member of the same bank; null by default. Send this or `teamKey`, never both.")
+    user_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "The new owner, a UUID of another active member of the same bank; for `case`, a member "
+            "who may work cases (`cases.work`), or 422 `unknown_member`. Null by default. Send this "
+            "or `teamKey`, never both."
+        ),
+    )
     team_key: str | None = Field(
         default=None,
         max_length=80,
         description=(
             "The new owning team, at most 80 characters, the key of a row of the bank's `team` "
             "vocabulary, which an administrator may extend at `GET /vocab/team`; null by default. "
-            "Send this or `userId`, never both."
+            "Send this or `userId`, never both. A `case` or an `action` passes to a person only, so a "
+            "team for either answers 422 `validation_error`."
         ),
     )
 

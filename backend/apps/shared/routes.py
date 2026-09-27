@@ -57,12 +57,6 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/footprint/requests/{request_id}/reject", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/tenant/footprint/requests/{request_id}/withdraw", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/vocab/{list_name}/suggestions/{suggestion_id}/decline", "taxonomy.VocabularySuggestion", "vocabulary_suggestion"),
-    # c8-reg-links-history (REG-05): a link is removed by id.
-    ("DELETE", "/internal-links/{link_id}", "register.InternalLink", "internal_link"),
-    # c8-participants (COL-04): a participant on a register entry for an obligation private to
-    # tenant A, so the obligation itself is invisible to tenant B.
-    ("GET", "/obligations/{obligation_id}/participants", "collab.Participant", "obligation_participant"),
-    ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}", "collab.Participant", "obligation_participant"),
     # c9-case-contract: the workflow routes whose request an empty body satisfies. Each
     # loads the case under row-level security before its stub answers 501, so another
     # bank's case, action or evidence is a 404 now and stays one when the logic lands. The
@@ -79,10 +73,6 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("DELETE", "/actions/{action_id}", "cases.Action", "case_action"),
     ("GET", "/evidence/{evidence_id}/download", "cases.Evidence", "case_evidence"),
     ("DELETE", "/evidence/{evidence_id}", "cases.Evidence", "case_evidence"),
-    # c9-case-participants (COL-04): a participant on a case of tenant A, for a change tenant B
-    # has no case for, so the case itself is invisible to tenant B.
-    ("GET", "/changes/{change_id}/participants", "collab.Participant", "case_participant"),
-    ("DELETE", "/changes/{change_id}/participants/{participant_id}", "collab.Participant", "case_participant"),
     # c8-tenants-contract (TEN-02, TEN-03, TEN-05, TEN-06). The licence create is proved in
     # apps/tenants/tests_api_contract.py: it refuses this guard's empty body before it loads.
     ("PATCH", "/tenant/org-units/{org_unit_id}", "tenants.OrgUnit", "org_unit"),
@@ -95,9 +85,26 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/support-access/{grant_id}/approve", "tenants.SupportAccess", "support_access"),
     ("POST", "/tenant/support-access/{grant_id}/decline", "tenants.SupportAccess", "support_access"),
     ("POST", "/tenant/support-access/{grant_id}/revoke", "tenants.SupportAccess", "support_access"),
+    # c8-reg-status: a legal entity's register row (REG-02).
+    ("PATCH", "/obligations/{obligation_id}/register/entities/{org_unit_id}", "register.TenantObligationScope", "register_entity"),
+    # c8-reg-gaps-risk (REG-03). `POST /gaps/{gap_id}/accept-risk` needs a body the guard's
+    # empty one fails before the lookup, so apps/register/tests_gaps.py proves its 404.
+    ("PATCH", "/gaps/{gap_id}", "register.Gap", "gap"),
+    ("POST", "/gaps/{gap_id}/accept-risk/approve", "register.Gap", "gap"),
+    ("POST", "/gaps/{gap_id}/reopen", "register.Gap", "gap"),
+    # c8-reg-links-history (REG-05): a link is removed by id.
+    ("DELETE", "/internal-links/{link_id}", "register.InternalLink", "internal_link"),
+    # c8-participants (COL-04): a participant on a register entry for an obligation private to
+    # tenant A, so the obligation itself is invisible to tenant B.
+    ("GET", "/obligations/{obligation_id}/participants", "collab.Participant", "obligation_participant"),
+    ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}", "collab.Participant", "obligation_participant"),
     # c8-reg-units (REG-08): a Statement of Applicability unit, addressed by its id.
     ("PATCH", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
     ("DELETE", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
     # c8-duty-occurrences (REG-07): a dated duty occurrence, addressed by its id.
     ("POST", "/duty-occurrences/{occurrence_id}/complete", "register.DutyOccurrence", "duty_occurrence"),
+    # c9-case-participants (COL-04): a participant on a case of tenant A, for a change tenant B
+    # has no case for, so the case itself is invisible to tenant B.
+    ("GET", "/changes/{change_id}/participants", "collab.Participant", "case_participant"),
+    ("DELETE", "/changes/{change_id}/participants/{participant_id}", "collab.Participant", "case_participant"),
 ]
