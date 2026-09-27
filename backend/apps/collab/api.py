@@ -40,7 +40,7 @@ from apps.collab.schemas import (
 from apps.shared import permissions as perms
 from apps.shared.authentication import SessionAuth
 from apps.shared.permissions import requires_permission
-from apps.taxonomy.http import answers_problems, caller_tenant, caller_user, require_any
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, principal, require_any
 
 router = Router(tags=["Collab"])
 
@@ -187,14 +187,12 @@ def list_comments(request: HttpRequest, query: Query[CollabCommentQuery]) -> Any
     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
     finish enrolling, `not_found` for a platform session and for a record the bank does not
     hold or the caller may not read, and `validation_error` for a missing or malformed kind or
-    id, or a `limit` outside 1 to 100. A kind comments are not taken on is refused with a 422.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    id, or a `limit` outside 1 to 100. A kind comments are not taken on is refused with a 422
+    `unsupported_subject`.
     """
     # Ungated by design: logic-gate (the read permission of the subject's kind, per record).
     _member(request)
-    return comments.list_comments()
+    return comments.list_comments(who=principal(request), user=caller_user(request), query=query)
 
 
 @router.post(
@@ -223,18 +221,21 @@ def add_comment(request: HttpRequest, body: CollabCommentInput) -> Any:
     finish enrolling, `permission_denied` without `comments.write` (naming it in
     `requiredPermission`), `not_found` for a platform session and for a record the bank does
     not hold or the caller may not read, and `validation_error` for an empty text, a field the
-    body does not name or a malformed id. A kind comments are not taken on, a text longer than
-    the deployment allows and a mentioned id that is not a member of the bank are refused with
-    a 422.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    body does not name, a malformed id or a text of only spaces. A kind comments are not taken
+    on is refused with a 422 `unsupported_subject`, a text longer than the deployment allows
+    (4,000 characters unless configured otherwise) with a 422 `comment_too_long`, and a
+    mentioned id that is not a member of the bank with a 422 `unknown_member`, the same answer
+    for another bank's member as for an id nobody holds; each writes nothing.
     """
     # Ungated by design: logic-gate (the read permission of the subject's kind, per record);
     # comments.write is checked here so the 403 names it before the logic runs.
     require_any(request, perms.COMMENTS_WRITE)
     _member(request)
-    return comments.add_comment()
+    user = caller_user(request)
+    created = comments.add_comment(
+        who=principal(request), actor=actor_for(request, user), user=user, tenant=caller_tenant(request), payload=body
+    )
+    return 201, created
 
 
 @router.patch(
@@ -263,15 +264,22 @@ def edit_comment(
     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
     finish enrolling, `permission_denied` without `comments.write` (naming it in
     `requiredPermission`), `not_found` for a platform session and for a comment the bank does
-    not hold, and `validation_error` for an empty text or a field the body does not name. An
-    edit by someone other than the author is refused with a 403, and one after the window
-    with a 409.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    not hold or whose record the caller may not read, and `validation_error` for an empty text,
+    a text of only spaces or a field the body does not name. A text longer than the deployment
+    allows is refused with a 422 `comment_too_long`, an edit by someone other than the author
+    with a 403 `not_author`, and one after the window or of a deleted comment with a 409
+    `edit_window_closed`; each keeps nothing.
     """
     _member(request)
-    return comments.edit_comment()
+    user = caller_user(request)
+    return comments.edit_comment(
+        who=principal(request),
+        actor=actor_for(request, user),
+        user=user,
+        tenant=caller_tenant(request),
+        comment_id=comment_id,
+        body=body.body,
+    )
 
 
 @router.delete(
@@ -296,13 +304,15 @@ def delete_comment(request: HttpRequest, comment_id: uuid.UUID = Path(..., descr
     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
     finish enrolling, `permission_denied` without `comments.write` (naming it in
     `requiredPermission`), and `not_found` for a platform session and for a comment the bank
-    does not hold. A delete by someone other than the author is refused with a 403.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    does not hold or whose record the caller may not read. A delete by someone other than the
+    author is refused with a 403 `not_author`.
     """
     _member(request)
-    return comments.delete_comment()
+    user = caller_user(request)
+    comments.delete_comment(
+        who=principal(request), actor=actor_for(request, user), user=user, tenant=caller_tenant(request), comment_id=comment_id
+    )
+    return 204, None
 
 
 # ---------------------------------------------------------------------------------------

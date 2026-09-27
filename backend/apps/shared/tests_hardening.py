@@ -318,6 +318,20 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/proposals/batch.py record(logic.SUBJECT_TYPE) tenant_id=None actor=proposer.actor title=existing.title": (
         "The retry of the same platform-only batch filing: the same platform proposer and the title it filed."
     ),
+    # c10-comments-mentions: a comment on a record is always the bank's own row.
+    "apps/collab/comments.py record(subject_type) tenant_id=tenant.id actor=actor title=title": (
+        "A comment written on a record: the row always carries the writer's bank, so no other "
+        "bank reads it, and the title is the record's own title, never the comment's text."
+    ),
+    "apps/collab/comments.py record(comment.subject_type) tenant_id=tenant.id actor=actor title=title": (
+        "A comment edited or deleted by its author: the same bank's own row, titled by the "
+        "record the comment is on."
+    ),
+    # c10-e2e-seed-comments: the E2E seed writes the same rows the comment routes write.
+    "apps/shared/e2e_seed.py record(comment.subject_type) tenant_id=comment.tenant_id actor=Actor.system('seed_e2e') title=title": (
+        "A seeded comment added, edited or deleted: the row carries the comment's own bank, "
+        "the actor is the seed, and the title is the record's own title, never the comment's text."
+    ),
 }
 
 
