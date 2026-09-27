@@ -970,6 +970,28 @@ behind their real gates and answer 501 `not_built` until `collab/inbox.py`,
   `comments.write` checked by the route on the write; `PATCH` and `DELETE` carry
   `@requires_permission("comments.write")` and leave the author check to the logic. A
   platform session belongs to no bank and gets 404.
+Chunk 8 (the register contract, `c8-register-contract`), 2026-09-25:
+
+- Applicability has no request (D-75, which supersedes D-44 and ADR 0038). The designed
+  `GET /applicability-requests` (`listApplicabilityRequests`),
+  `POST /obligations/{obligationId}/applicability-requests` (`requestApplicability`),
+  `POST /applicability-requests/{requestId}/approve` (`approveApplicability`) and
+  `POST /applicability-requests/{requestId}/reject` (`rejectApplicability`) are not built,
+  and neither is the withdraw route the chunk 8 plan once added. They are replaced by
+  `setApplicability`, `PUT /obligations/{obligationId}/applicability`, which stores one
+  confirmed answer for the obligation, one legal entity or one unit, and
+  `setApplicabilityMany`, `POST /applicability`, which stores many confirmed rows in one
+  call capped by `REGISTER_BULK_MAX`. Both take `applicability.approve`, no step-up and
+  no second approver, and write one audit event per row naming the person, the value
+  before and after, and the reason. There is no `applicability_request` table and no
+  "Waiting for approval" state for applicability; the designed `Note` body and
+  `ApplicabilityRequest` shapes go with them.
+- `PATCH /obligations/{obligationId}/register` (`updateRegister`) keeps its designed fields
+  and adds `rationale`, stored on the assessment row a status change writes (REG-04), and
+  takes the status, risk and people as keys and ids. It answers `RegisterEntry`, which
+  adds `applicabilityDecidedBy`, `entities` (one row per legal entity, D-42) and `version`
+  for `If-Match` (section 4) to the designed `Register`, and returns the status and risk
+  as `{key, kind, label}` rows of the bank's own lists (section 1).
 
 Chunk 10 (the obligation row's R2 fields, c10-tag-filters-and-limits), 2026-09-25:
 
@@ -1760,6 +1782,12 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
   answer 204 as designed; all three are published ahead of `c9-case-file`, `c9-actions`
   and `c9-evidence` and answer 501 `not_built` until those land, so their pending lines
   are gone while the logic is still to come.
+## c10-digest-content. The weekly digest is keyed to its week (2026-09-25)
+
+- `email_message.sent_on` of a `weekly_digest` row is the first day (Monday) of the bank's
+  local week rather than the day of the send, so the same unique key that stops a second
+  reminder in a day stops a second digest in a week (COL-02: "one email per user per
+  week"). Every other template keeps the day of the send.
 
 ## c8-reg-gaps-risk. The gap routes as built (2026-09-25, REG-03)
 

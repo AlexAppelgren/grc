@@ -243,21 +243,12 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "CAS-05: a stored file is pending, clean, infected or error; the download serves "
         "only `clean`, and a new row starts `pending`, so an unscanned file is never shown",
     ),
-    # My work (c8-mywork-service, HOM-05, D-23). Literals in apps/home/schemas.py, because My
-    # work is computed and has no table of its own.
-    "WorkReason": (
-        "work_reason",
-        "HOM-05: owner or participant; the row's reason phrase branches on it with the person or team it names",
-    ),
-    "WorkBucket": (
-        "work_bucket",
-        "HOM-05: overdue, due soon, changes on your items (aware) or open; the service assigns each item to "
-        "the first it qualifies for and the screen draws a section per value",
-    ),
-    "WorkDateKind": (
-        "work_date_kind",
-        "HOM-05: what produced a row's date - a review, a gap target, a duty, an internal deadline, an action, "
-        "a key date, a confirmed link, an applied version or a comment; the date phrase branches on it",
+    # Chunk 8's register (c8-register-models, register 0001). `Applicability` is listed above.
+    "AssessmentMethod": (
+        "assessment_method",
+        "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
+        "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
+        "reporting branches on",
     ),
     # Chunk 10 (c10-collab-models): the notification and the mail it may send.
     "NotificationKind": (
@@ -314,18 +305,27 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "AGT-05: a request's lifecycle, queued to done, failed, rejected or cancelled; the "
         "worker and the request list branch on it",
     ),
-    # Chunk 8's register (c8-register-models, register 0001). `Applicability` is listed above.
-    "AssessmentMethod": (
-        "assessment_method",
-        "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
-        "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
-        "reporting branches on",
-    ),
     # acc-foundation (identity 0007, ACC-03, D-77, ADR 0056).
     "CredentialKind": (
         "credential_kind",
         "ACC-03: a service key or a personal access token on one api_key table; authentication, "
         "the step-up fence and the api_key CHECKs branch on it",
+    ),
+    # My work (c8-mywork-service, HOM-05, D-23). Literals in apps/home/schemas.py, because My
+    # work is computed and has no table of its own.
+    "WorkReason": (
+        "work_reason",
+        "HOM-05: owner or participant; the row's reason phrase branches on it with the person or team it names",
+    ),
+    "WorkBucket": (
+        "work_bucket",
+        "HOM-05: overdue, due soon, changes on your items (aware) or open; the service assigns each item to "
+        "the first it qualifies for and the screen draws a section per value",
+    ),
+    "WorkDateKind": (
+        "work_date_kind",
+        "HOM-05: what produced a row's date - a review, a gap target, a duty, an internal deadline, an action, "
+        "a key date, a confirmed link, an applied version or a comment; the date phrase branches on it",
     ),
     # c8-duty-occurrences (register 0004, REG-07).
     "DutyStatus": (

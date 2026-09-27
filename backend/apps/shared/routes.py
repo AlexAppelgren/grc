@@ -81,6 +81,10 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/support-access/{grant_id}/approve", "tenants.SupportAccess", "support_access"),
     ("POST", "/tenant/support-access/{grant_id}/decline", "tenants.SupportAccess", "support_access"),
     ("POST", "/tenant/support-access/{grant_id}/revoke", "tenants.SupportAccess", "support_access"),
+    # c8-participants (COL-04): a participant on a register entry for an obligation private to
+    # tenant A, so the obligation itself is invisible to tenant B.
+    ("GET", "/obligations/{obligation_id}/participants", "collab.Participant", "obligation_participant"),
+    ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}", "collab.Participant", "obligation_participant"),
     # c9-case-contract: the workflow routes whose request an empty body satisfies. Each
     # loads the case under row-level security before its stub answers 501, so another
     # bank's case, action or evidence is a 404 now and stays one when the logic lands. The
@@ -97,10 +101,6 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("DELETE", "/actions/{action_id}", "cases.Action", "case_action"),
     ("GET", "/evidence/{evidence_id}/download", "cases.Evidence", "case_evidence"),
     ("DELETE", "/evidence/{evidence_id}", "cases.Evidence", "case_evidence"),
-    # c8-participants (COL-04): a participant on a register entry for an obligation private to
-    # tenant A, so the obligation itself is invisible to tenant B.
-    ("GET", "/obligations/{obligation_id}/participants", "collab.Participant", "obligation_participant"),
-    ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}", "collab.Participant", "obligation_participant"),
     # acc-scope-and-reach (ACC-08): deciding a request for tenant reach.
     ("POST", "/tenant/reach/requests/{request_id}/approve", "governance.TenantReachRequest", "tenant_reach_request"),
     ("POST", "/tenant/reach/requests/{request_id}/reject", "governance.TenantReachRequest", "tenant_reach_request"),
@@ -110,6 +110,10 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # has no case for, so the case itself is invisible to tenant B.
     ("GET", "/changes/{change_id}/participants", "collab.Participant", "case_participant"),
     ("DELETE", "/changes/{change_id}/participants/{participant_id}", "collab.Participant", "case_participant"),
+    # security-review-c10: the two chunk 10 id routes that take no body, a comment of tenant A
+    # on its own case and a notification of one of its members.
+    ("DELETE", "/comments/{comment_id}", "collab.Comment", "comment"),
+    ("POST", "/notifications/{notification_id}/read", "collab.Notification", "notification"),
 ]
 
 

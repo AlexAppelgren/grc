@@ -6,7 +6,8 @@ halves; c8-ten-support-grants un-skips TEN-S6's grant halves. Never delete a sce
 updating app.md.
 
 Operations exercised (the audit-on-write guard reads these names): updateTenant,
-setTenantAi (its branches in tests_organisation.py),
+setTenantAi (its branches in tests_organisation.py), putMyOutOfOffice (TEN-S4, its
+refusals in tests_out_of_office.py),
 consoleReissueEnrolment (proven in identity ID-S13), requestConsoleSupportAccess,
 approveSupportAccess, declineSupportAccess, revokeSupportAccess, enterConsoleSupportAccess.
 
@@ -18,13 +19,22 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any
 from unittest import mock, skip
+import datetime
+from zoneinfo import ZoneInfo
 
-from django.db import IntegrityError, transaction
+from django.db import transaction
+
+from apps.cases import testing as case_build
+from apps.cases import tests_signoff as signoff_build
+from apps.cases.models import ChangeCase
+from apps.collab import reminders
+from apps.collab.models import Notification
+
+from django.db import IntegrityError
 from django.test import override_settings
 from django.utils import timezone
 
-from apps.cases import testing as case_build
-from apps.cases.models import Action, ChangeCase
+from apps.cases.models import Action
 from apps.collab.models import Participant
 from apps.identity.models import Membership, TenantRole
 from apps.library.models import Obligation
@@ -43,6 +53,7 @@ from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, 
 from apps.tenants import reassignment
 from apps.tenants.models import SupportAccess, TeamMember
 from apps.tenants.tests_reassignment import owned_work
+from apps.watch import testing as watch_build
 
 
 class TenantsScenarioTests(ScenarioTestCase):
@@ -223,12 +234,69 @@ class TenantsScenarioTests(ScenarioTestCase):
         page = self.client.get(f"/api/v1/changes/{team_case.change_id}", **sign_in(anna, tenant=self.tenant)).json()
         self.assertEqual((page["case"]["ownerTeam"]["key"], page["case"]["owner"]["id"]), ("cards", str(anna.id)))
 
-    @skip("pending: TEN-S4 (TEN-04, chunk 8)")
     def test_ten_s4(self) -> None:
         """TEN-S4
 
-        An out-of-office delegate receives approvals and reminders (TEN-04).
+        An out-of-office delegate receives approvals and reminders (TEN-04, COL-02).
+        Reworded to a sign-off request and a triage reminder (app.md).
+        Operations: `putMyOutOfOffice`, `requestSignoff`, `approveSignoff`.
         """
+        bank = signoff_build.Bank()
+        tenant = bank.tenant
+        absent = factories.member_user(tenant, roles=("compliance_officer", "approver"))
+        delegate = factories.member_user(tenant, roles=("approver",))
+        today = today_for(tenant)
+        next_friday = today + datetime.timedelta(days=(4 - today.weekday()) % 7 or 7)
+        # Given an approver who set out-of-office until next Friday with a delegate
+        response = self.client.put(
+            "/api/v1/me/out-of-office",
+            data={"untilDate": next_friday.isoformat(), "delegateId": str(delegate.id)},
+            content_type="application/json",
+            **sign_in(absent, tenant=tenant),
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+
+        # When a sign-off request names that approver
+        bank.ready_for_signoff(self.client)
+        # Then the delegate is notified and the approver is not. The delegate holds
+        # `cases.signoff` themself, so they are told once, on their own account (collab).
+        self.activate(tenant)
+        told = set(Notification.objects.filter(kind="signoff_requested").values_list("user_id", flat=True))
+        self.assertIn(delegate.id, told)
+        self.assertNotIn(absent.id, told)
+        # And the approver's reminders reach the delegate too
+        waiting = case_build.case(tenant, watch_build.change())
+        with transaction.atomic():
+            self.activate(tenant)
+            ChangeCase.objects.filter(pk=waiting.pk).update(
+                triage_due_at=datetime.datetime.combine(
+                    today + datetime.timedelta(days=3), datetime.time(12), tzinfo=ZoneInfo(tenant.timezone)
+                )
+            )
+            reminded = {(row.user_id, row.on_behalf_of_id) for row in reminders.send_reminders(tenant)}
+        self.assertIn((delegate.id, absent.id), reminded)
+        self.assertNotIn(absent.id, {user_id for user_id, _ in reminded})
+        # And may sign off, the audit event naming the delegate as actor and the approver as delegated
+        response = bank.post(self.client, "approve", delegate, step_up=True)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.activate(tenant)
+        approval = AuditEvent.objects.get(subject_id=bank.case.id, after__status="closed")
+        self.assertEqual(approval.actor_id, delegate.id)
+        self.assertEqual(approval.after["onBehalfOf"], [str(absent.id)])
+
+        # When the window closes
+        bank.case = case_build.case(tenant, watch_build.change(), owner=bank.owner)
+        case_build.in_category(bank.case, CaseStatusCategory.IMPLEMENTING)
+        the_day_after = datetime.datetime.combine(
+            next_friday + datetime.timedelta(days=1), datetime.time(9), tzinfo=ZoneInfo(tenant.timezone)
+        )
+        with mock.patch("django.utils.timezone.now", return_value=the_day_after.astimezone(datetime.UTC)):
+            bank.ready_for_signoff(self.client)
+        # Then the approver receives requests again
+        self.activate(tenant)
+        told = set(Notification.objects.filter(kind="signoff_requested", subject_id=bank.case.id).values_list("user_id", flat=True))
+        self.assertIn(absent.id, told)
+        self.assertIn(delegate.id, told)
 
     def test_ten_s5(self) -> None:
         """TEN-S5

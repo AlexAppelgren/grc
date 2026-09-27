@@ -204,8 +204,9 @@ def list_comments(request: HttpRequest, query: Query[CollabCommentQuery]) -> Any
     "Comments" panel. The record is named by its kind and id in the query string.
 
     A read: it changes nothing and writes no audit row. Any person's session in a bank whose
-    role can read that kind of record (`register.read` for the inventory's records,
-    `cases.read` for a case and its actions); no API key reaches it. A deleted comment keeps
+    role can read that kind of record (`library.read` for an obligation of the library,
+    `register.read` for the bank's own register entry on one, `cases.read` for a case and its
+    actions); no API key reaches it. A deleted comment keeps
     its place without its text, and `canEdit` and `canDelete` say what the caller may do with
     each one.
 

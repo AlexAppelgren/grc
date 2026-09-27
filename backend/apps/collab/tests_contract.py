@@ -140,7 +140,9 @@ class CollabRouteGates(TestCase):
         with self._member(set()):
             for name, method, url, body in READS + OWN_WRITES:
                 with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, BUILT.get(name, _answer(name)[0]))
+                    self.assertEqual(
+                        _call(self.client, method, url, body, AS_SESSION).status_code, BUILT.get(name, _answer(name)[0])
+                    )
 
     def test_a_platform_session_belongs_to_no_bank_and_gets_404(self) -> None:
         with stub_session(user_principal(permissions={perms.COMMENTS_WRITE}, subject_id=self.person.id)):

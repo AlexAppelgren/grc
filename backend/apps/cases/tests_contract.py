@@ -244,6 +244,11 @@ BUILT = frozenset(
 )
 
 
+# The operations whose module has landed, each proved by its own tests, not by a 501.
+# c9-signoff (apps/cases/tests_signoff.py).
+BUILT |= {"requestSignoff", "approveSignoff", "sendBackSignoff"}
+
+
 def _send(client: Any, route: Route, url: str, headers: dict[str, Any]) -> Any:
     if route.body is MULTIPART:
         return client.post(url, data=EVIDENCE_FORM, **headers)

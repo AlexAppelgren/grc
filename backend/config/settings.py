@@ -205,6 +205,9 @@ CELERY_RESULT_BACKEND = None
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_ACKS_LATE = True
 CELERY_TIMEZONE = "UTC"
+# The worker keeps LOGGING's JSON handler on the root logger rather than swapping in its own
+# plain one, whose tracebacks print exception messages (security-review-c10, M2).
+CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 CELERY_BEAT_SCHEDULE: dict[str, Any] = {}
 
 # ---------------------------------------------------------------------------------------
@@ -715,6 +718,17 @@ CELERY_BEAT_SCHEDULE["briefing-weekly"] = {
 }
 
 # ---------------------------------------------------------------------------------------
+# Reminders before and after a due date (COL-02, c10-reminders-core). The hour is each
+# bank's own local hour, so the entry runs every hour and hands on the banks whose clock
+# has just struck it; a daylight saving change moves the UTC hour, not the local one.
+# ---------------------------------------------------------------------------------------
+REMINDER_SEND_HOUR = env_int("REMINDER_SEND_HOUR", 7)
+CELERY_BEAT_SCHEDULE["collab-reminders"] = {
+    "task": "apps.collab.tasks.send_reminders",
+    "schedule": crontab(minute="0"),
+}
+
+# ---------------------------------------------------------------------------------------
 # ===== COL-02, TEN-01 the workflow policy's platform defaults (c10-workflow-policy) =====
 # What a bank's workflow policy starts at: a new tenant takes these, and the migration that
 # added the columns wrote them into every tenant that already existed. The bank changes its
@@ -856,6 +870,30 @@ COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)
 TENANT_LIST_MAX_ROWS = env_int("TENANT_LIST_MAX_ROWS", 500)
 if TENANT_LIST_MAX_ROWS < 1:
     raise ImproperlyConfigured("TENANT_LIST_MAX_ROWS must be at least 1.")
+
+# ---------------------------------------------------------------------------------------
+# ===== COL-02 the weekly digest's content (apps/collab/digest.py, c10-digest-content) ===
+# At most DIGEST_MAX_ITEMS of My work's rows in one digest, the most urgent, then "and N
+# more". My work's page size is at most 100, so the cap is 1 to 100, or the app refuses
+# to boot.
+# ---------------------------------------------------------------------------------------
+DIGEST_MAX_ITEMS = env_int("DIGEST_MAX_ITEMS", 20)
+if not 1 <= DIGEST_MAX_ITEMS <= 100:
+    raise ImproperlyConfigured("Refusing to boot: DIGEST_MAX_ITEMS is 1 to 100.")
+
+# ---------------------------------------------------------------------------------------
+# ===== COL-02 the weekly digest's beat (apps/collab/tasks.py, c10-digest-beat-and-journeys)
+# The digest goes out at DIGEST_SEND_HOUR on each bank's own `digest_weekday`, both read on
+# the bank's clock, so the entry runs every hour beside the reminders and hands on the banks
+# whose clock has just struck it. 0 to 23, or the app refuses to boot.
+# ---------------------------------------------------------------------------------------
+DIGEST_SEND_HOUR = env_int("DIGEST_SEND_HOUR", 7)
+if not 0 <= DIGEST_SEND_HOUR <= 23:
+    raise ImproperlyConfigured("Refusing to boot: DIGEST_SEND_HOUR is 0 to 23.")
+CELERY_BEAT_SCHEDULE["collab-digests"] = {
+    "task": "apps.collab.tasks.send_digests",
+    "schedule": crontab(minute="0"),
+}
 
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
