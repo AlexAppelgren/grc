@@ -598,9 +598,9 @@ def tenant_agent(tenant: Tenant) -> object:
     """The tenant-isolation guard's record for `PATCH /agents/{tenant_agent_id}`: one of the
     bank's own agents, on a tenant-scoped definition shared by every bank that asks."""
     from apps.agents.models import TenantAgent
-    from apps.agents.testing import tenant_definition
+    from apps.agents import testing as agent_build
 
-    definition = tenant_definition("isolation-bank-watch")
+    definition = agent_build.tenant_definition("isolation-bank-watch")
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return TenantAgent.objects.create(tenant=tenant, agent=definition)

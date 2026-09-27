@@ -544,7 +544,7 @@ _GAP_SOURCE = (
     "`incident` after something went wrong and `regulator` raised by a supervisor; the bank's "
     "admin may add or relabel rows, so read `GET /vocab/gap_source` for the live set."
 )
-_TEAM_KEY = (
+_GAP_TEAM_KEY = (
     "The key of a row in the bank's own `team` vocabulary, at most 64 characters, for a gap "
     "a team owns rather than one person. A gap has one owner kind: sending a team clears the "
     "person and sending a person clears the team, and sending both is refused. Read "
@@ -700,7 +700,7 @@ class RegisterGapBody(WriteBody):
         default=None, description="The Statement of Applicability unit the gap is in, as a UUID; absent when it is not about one unit."
     )
     owner_id: uuid.UUID | None = Field(default=None, description=f"The gap's owner. {_PERSON_ID}")
-    owner_team: str | None = Field(default=None, max_length=KEY_MAX, description=f"The team that owns the gap. {_TEAM_KEY}")
+    owner_team: str | None = Field(default=None, max_length=KEY_MAX, description=f"The team that owns the gap. {_GAP_TEAM_KEY}")
     target_date: datetime.date | None = Field(default=None, description="The plain date the bank means to close the gap by.")
     remediation: str | None = Field(default=None, max_length=NOTE_MAX, description=f"The plan, at most {NOTE_MAX} characters.")
 
@@ -717,7 +717,7 @@ class RegisterGapPatch(WriteBody):
     severity: str | None = Field(default=None, max_length=KEY_MAX, description=f"How serious the gap is. {_RISK_KEY}")
     status: str | None = Field(default=None, max_length=KEY_MAX, description=_GAP_STATUS_KEY)
     owner_id: uuid.UUID | None = Field(default=None, description=f"The gap's owner. {_PERSON_ID}")
-    owner_team: str | None = Field(default=None, max_length=KEY_MAX, description=f"The team that owns the gap. {_TEAM_KEY}")
+    owner_team: str | None = Field(default=None, max_length=KEY_MAX, description=f"The team that owns the gap. {_GAP_TEAM_KEY}")
     target_date: datetime.date | None = Field(default=None, description="The plain date the bank means to close the gap by.")
     remediation: str | None = Field(default=None, max_length=NOTE_MAX, description=f"The plan, at most {NOTE_MAX} characters.")
 

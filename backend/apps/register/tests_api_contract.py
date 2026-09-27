@@ -84,19 +84,6 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("completeDutyOccurrence", "post", f"/api/v1/duty-occurrences/{RECORD}/complete", COMPLETE_BODY, perms.REGISTER_EDIT, False),
 ]
 
-# Operations whose logic has landed, so they no longer answer 501 (one line each, so the
-# packages that build them in parallel merge mechanically). Each is proved in its own module.
-BUILT: set[str] = {
-    # c8-reg-links-history: tests_history.py, tests_links.py
-    "listAssessments",
-    "getInterpretation",
-    "saveInterpretation",
-    "listInternalLinks",
-    "addInternalLink",
-    "removeInternalLink",
-}
-
-
 def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
     if body is None:
         return getattr(client, method)(url, **headers)
@@ -201,15 +188,22 @@ IF_MATCH_ROUTES = {
 }
 
 
-# The operations whose logic has landed, each proved in its package's own tests.
+# The operations whose logic has landed, each proved in its package's own tests rather than
+# by the 501 below. One block per package, so parallel packages merge mechanically.
 BUILT = {
     "setApplicability", "setApplicabilityMany",  # c8-reg-applicability, tests_applicability.py
     # c8-reg-status (apps/register/tests_status.py)
     "getRegisterEntry",
     "updateRegister",
     "updateRegisterEntity",
-    # The operations whose logic has landed, each proved by its own package's tests rather than
-    # by the 501 below. c8-reg-gaps-risk (REG-03): apps/register/tests_gaps.py.
+    # c8-reg-links-history: tests_history.py, tests_links.py
+    "listAssessments",
+    "getInterpretation",
+    "saveInterpretation",
+    "listInternalLinks",
+    "addInternalLink",
+    "removeInternalLink",
+    # c8-reg-gaps-risk (REG-03): apps/register/tests_gaps.py.
     "listObligationGaps",
     "createGap",
     "listRegisterGaps",

@@ -875,14 +875,19 @@ class IdentityScenarioTests(ScenarioTestCase):
             # exists but that no key reaches one, so each is required to carry a gate and is
             # then probed with the all-scopes key below. Which function each may reach is
             # pinned separately by the library fence (apps/shared/tests_library_fence.py).
-            if operation.path.startswith(library_paths):
-                self.assertIsNotNone(gate, f"an ungated write under {operation.path}")
+            # c8-participants adds a bank's own write under /obligations whose gate is in its
+            # logic (leaving one's own participation needs no permission, D-19): it is declared
+            # in UNGATED_BY_DESIGN, which the route-permissions guard reviews, and it is probed
+            # with every key below like a gated one.
             ungated = perms.UNGATED_BY_DESIGN.get((operation.method, operation.path))
+            under_library = operation.path.startswith(library_paths)
+            if under_library:
+                self.assertTrue(gate is not None or ungated is not None, f"an ungated write under {operation.path}")
             if gate is not None and gate.kind == "scope":
                 # An agent-writable route: AGENT_WRITABLE_ROUTES above is the review hook.
                 scope_gated.add((operation.method, operation.path, gate.value))
                 continue
-            if gate is None and (ungated is None or ungated.reason not in session_bound):
+            if gate is None and not under_library and (ungated is None or ungated.reason not in session_bound):
                 continue  # a public bootstrap step (code request, sign-in) is no grant to anything
             with self.subTest(route=f"{operation.method} {operation.path}"):
                 url = "/api/v1" + re.sub(r"\{[^}]+\}", "00000000-0000-4000-8000-000000000001", operation.path)

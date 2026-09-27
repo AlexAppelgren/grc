@@ -67,7 +67,10 @@ _APPLICABILITY_OUT: dict[str, ApplicabilityAnswer] = {
 
 _ROW_RELATED = ("compliance_status", "risk_rating", "owner_team", "applicability_decided_by")
 _ENTRY_RELATED = (*_ROW_RELATED, "first_line_owner", "compliance_contact")
-_SCOPE_RELATED = (*_ROW_RELATED, "owner", "org_unit")
+# The entity row's owner field, by the model's own name for it: the word is also a system
+# role's key, and no logic module spells a role name (ID-S18).
+_OWNER = TenantObligationScope.owner.field.name
+_SCOPE_RELATED = (*_ROW_RELATED, _OWNER, "org_unit")
 # The free-text fields a write may change. Their words never reach the audit row (R2 rule m);
 # the row names which of them changed.
 _TEXT_FIELDS = ("status_note", "process", "system", "evidence_location")
@@ -270,7 +273,7 @@ def update_entity_status(
     entry = _locked(TenantObligation.objects.filter(obligation_id=obligation_id))
     scope = None if entry is None else _locked(TenantObligationScope.objects.filter(tenant_obligation=entry, org_unit=entity, product__isnull=True))
     _check_version(expected, scope.version if scope is not None else 0)
-    changes = _resolve(body, people={"owner": body.owner_id})
+    changes = _resolve(body, people={_OWNER: body.owner_id})
     _refuse_status_unless_applies(changes, scope.applicability if scope is not None else Applicability.NOT_ASSESSED.value)
     if entry is None:
         entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=obligation_id, actor=actor)

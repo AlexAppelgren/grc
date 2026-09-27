@@ -140,8 +140,8 @@ class CollabRouteGates(TestCase):
         with self._member(set()):
             for name, method, url, body in READS + OWN_WRITES:
                 with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, BUILT.get(name, 501))
-                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, _answer(name)[0])
+                    expected = BUILT[name] if name in BUILT else _answer(name)[0]
+                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, expected)
 
     def test_a_platform_session_belongs_to_no_bank_and_gets_404(self) -> None:
         with stub_session(user_principal(permissions={perms.COMMENTS_WRITE}, subject_id=self.person.id)):
@@ -184,8 +184,6 @@ class CollabRouteGates(TestCase):
                     if name in BUILT:
                         self.assertEqual(response.status_code, BUILT[name])
                         continue
-                    self.assertEqual(response.status_code, 501)
-                    self.assertEqual(response.json()["code"], "not_built")
                     self.assertEqual((response.status_code, response.json()["code"]), _answer(name))
                     self.assertEqual(response.headers["Content-Type"], "application/problem+json")
                     self.assertNotIn("traceback", response.content.decode().lower())
