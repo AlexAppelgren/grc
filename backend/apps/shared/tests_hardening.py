@@ -341,6 +341,12 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/proposals/batch.py record(logic.OBLIGATION_TARGET) tenant_id=None actor=reviewer.actor title=proposal.title": (
         "A rejected row of the same platform-only decision, titled by the platform-filed batch."
     ),
+    # c8-ten-reassignment (TEN-05): the subject type is one of four tenant tables, picked per kind.
+    "apps/tenants/reassignment.py record(_SUBJECT_TYPE[kind]) tenant_id=tenant.id actor=actor title=_title(kind, row, headings)": (
+        "A member's removal moving a register entry, an entity's row, a gap or an internal item: "
+        "the subject is one of those four tenant tables, never a library one, and the row is "
+        "written in the removing bank's zone under its own tenant id, by the bank's administrator."
+    ),
 }
 
 
