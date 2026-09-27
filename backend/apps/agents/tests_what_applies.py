@@ -22,6 +22,7 @@ from apps.agents.models import AgentAccess, AgentAccessDepartment
 from apps.governance.models import AgentAccessCall, TenantReach
 from apps.library import testing as library_testing
 from apps.library.models import Obligation
+from apps.library.reading import today_for
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.register.logic import ensure_register_entry
 from apps.register.models import Applicability, TenantObligation
@@ -303,7 +304,7 @@ class TheScopeStatement(TestCase):
         self.assertEqual(scope["entry"], {"id": str(self.bank.trading.id), "name": "Trading platform coding agent"})
         self.assertEqual(scope["departments"], [{"id": str(self.bank.department.id), "name": "Trading"}])
         self.assertEqual((scope["products"], scope["narrowed"]), ([], True))
-        self.assertEqual(datetime.date.fromisoformat(scope["asOf"]), timezone.localdate())
+        self.assertEqual(datetime.date.fromisoformat(scope["asOf"]), today_for(self.bank.tenant))
         self.assertEqual(json.loads(response[SCOPE_HEADER]), scope)
 
     def test_every_answer_carries_it_in_its_header_an_error_included(self) -> None:
