@@ -24,7 +24,14 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy import footprint_logic, library_lists_logic, markets_logic, reading, tagging_logic, terms_logic
+from apps.taxonomy import (
+    footprint_logic,
+    library_lists_logic,
+    markets_logic,
+    reading,
+    tagging_logic,
+    terms_logic,
+)
 from apps.taxonomy import tenant_lists_logic as lists
 from apps.taxonomy.http import (
     actor_for,
@@ -35,6 +42,7 @@ from apps.taxonomy.http import (
     if_match,
     principal,
     proposer_for,
+    refuse_own_list_beyond_reach,
     require_any,
     require_library_reader,
     require_proposer,
@@ -356,22 +364,26 @@ def list_vocabulary_rows(request: HttpRequest, list_name: ListName, query: Query
 
     A library list is read by any person's session and by an API key with the
     `library:read` scope, which is how an agent reads the values it may submit. An
-    organisation's own list is read the same ways from inside that organisation only.
+    organisation's own list is read the same ways from inside that organisation only, and by
+    a bank's own agent (an agent access credential) only when it may read the bank's
+    register: it holds `tenant:read` and tenant reach is on for the bank and its entry.
 
     Not paginated: a list is short enough to arrive whole, and a list with no values is a
     200 with an empty list. A read: it changes nothing and writes no audit event.
 
     Errors to branch on: `unauthenticated` (401) without a session or a key;
     `permission_denied` (403) for a key without `library:read`, or an organisation's list
-    read from outside any organisation; `not_found` (404) for a name that is not a
-    vocabulary list, with the valid names in `detail`; `validation_error` (422) when
-    `includeRetired` is not a boolean.
+    read from outside any organisation; `tenant_reach_off` (403) for an organisation's list
+    read by an agent access credential that may not read the bank's register; `not_found`
+    (404) for a name that is not a vocabulary list, with the valid names in `detail`;
+    `validation_error` (422) when `includeRetired` is not a boolean.
     """
     # Ungated by design: logic-gate (a person's session, or an agent's key with library:read; AGT-02).
     who = require_library_reader(request)
     entry = lists.entry_for(list_name)
     if not entry.is_library and who.tenant_id is None:
         raise deny(perms.VOCAB_MANAGE)
+    refuse_own_list_beyond_reach(who, entry.is_library)
     items = lists.rows_of(list_name, who.tenant_id, reading.language_order(request), include_retired=query.include_retired)
     return VocabularyRowPage(items=items, total=len(items))
 
@@ -464,16 +476,20 @@ def get_vocabulary_row(request: HttpRequest, list_name: ListName, key: RowKey) -
     can show what it was.
 
     Read like the list: a library value by any person's session or an API key with
-    `library:read`, an organisation's value from inside that organisation only. A read: it
+    `library:read`, an organisation's value from inside that organisation only, and by a
+    bank's own agent only when it may read the bank's register, as the list. A read: it
     changes nothing and writes no audit event.
 
     Errors to branch on: `unauthenticated` (401) without a session or a key;
-    `permission_denied` (403) for a key without `library:read`; `not_found` (404) for a name
+    `permission_denied` (403) for a key without `library:read`; `tenant_reach_off` (403) for
+    an organisation's value read by an agent access credential that may not read the bank's
+    register; `not_found` (404) for a name
     that is not a vocabulary list, a key the list does not hold, or an organisation's list
     read from outside any organisation.
     """
     # Ungated by design: logic-gate (a person's session, or an agent's key with library:read; AGT-02).
     who = require_library_reader(request)
+    refuse_own_list_beyond_reach(who, lists.entry_for(list_name).is_library)
     return lists.row_detail(list_name, key, who.tenant_id, reading.language_order(request))
 
 

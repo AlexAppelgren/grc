@@ -33,3 +33,23 @@ class TheBanksLayerNeedsTenantRead(AgentReadCase):
             with self.subTest(params=params):
                 refused = self.get(library_only, OBLIGATIONS, params)
                 self.assertEqual((refused.status_code, refused.json()["code"]), (403, "tenant_reach_off"))
+
+
+class TheBanksOwnListsFollowTheSameGate(AgentReadCase):
+    """M4: `GET /vocab/{list}` handed an agent access credential the bank's own lists (its
+    tags with their usage counts, its teams, its reasons and sub-statuses) with tenant reach
+    off, which the inventory withholds. A library list stays readable."""
+
+    def test_the_banks_own_lists_need_the_registers_gate(self) -> None:
+        w = self.world
+        library_only = factories.entry_key(w.tenant, SimpleNamespace(id=w.trading.id), scopes=("library:read",)).plain_key
+        for on, key, allowed in ((False, w.trading_key, False), (True, library_only, False), (True, w.trading_key, True)):
+            w.reach(on, w.trading)
+            for url in ("/api/v1/vocab/tenant_tag", "/api/v1/vocab/tenant_tag/desk-watch", "/api/v1/vocab/team"):
+                with self.subTest(reach=on, url=url, allowed=allowed):
+                    answer = self.get(key, url)
+                    if allowed:
+                        self.assertEqual(answer.status_code, 200, answer.content)
+                    else:
+                        self.assertEqual((answer.status_code, answer.json()["code"]), (403, "tenant_reach_off"))
+            self.assertEqual(self.get(key, "/api/v1/vocab/duty_type").status_code, 200, "a library list stays readable")
