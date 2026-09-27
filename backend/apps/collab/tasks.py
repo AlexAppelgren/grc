@@ -15,6 +15,12 @@ just reached `REMINDER_SEND_HOUR`, one `send_tenant_reminders` and one
 `send_tenant_escalations` each (fan out, never chain). Each is a `@tenant_task` that runs
 `reminders.py` or `escalation.py` for one bank inside its own transaction.
 
+`send_digests` is the weekly digest's entry on the same hourly beat and the same timezone
+rule: it hands on the banks whose local wall time has just reached `DIGEST_SEND_HOUR` on
+their own `digest_weekday`, one `send_tenant_digests` each, which runs `digest.send_all()`.
+A bank whose day has not come is not enqueued, and `deliver_mail`'s weekly key makes a
+second round in the same week send nothing.
+
 Nothing here logs a recipient's address, a subject or a body (playbook 4.7): the row's id,
 its template and its status are all that leave.
 """
@@ -23,9 +29,12 @@ from __future__ import annotations
 
 import logging
 import smtplib
+import datetime
 import uuid
+from zoneinfo import ZoneInfo
 
 from celery import shared_task
+from django.conf import settings
 from django.utils import timezone
 
 from apps.collab import digest, escalation, mail, reminders
@@ -35,7 +44,7 @@ from apps.library.reading import today_for
 from apps.shared import tenancy
 from apps.shared.adapters.mailer import get_mailer
 from apps.shared.audit import Actor, record
-from apps.shared.models import Tenant
+from apps.shared.models import Tenant, TenantStatus, Weekday
 
 logger = logging.getLogger(__name__)
 
@@ -139,3 +148,31 @@ def send_tenant_escalations(tenant_id: uuid.UUID) -> None:
     """One bank's escalations of overdue actions, in one transaction with their notifications
     and audit rows."""
     escalation.escalate(Tenant.objects.get(pk=tenant_id))
+
+
+def tenants_at_digest_hour(now: datetime.datetime) -> list[Tenant]:
+    """The active banks whose own clock reads `DIGEST_SEND_HOUR` on their `digest_weekday`."""
+    weekdays = list(Weekday)
+    banks = []
+    for tenant in Tenant.objects.filter(status=TenantStatus.ACTIVE.value).order_by("id"):
+        local = now.astimezone(ZoneInfo(tenant.timezone))
+        if local.hour == settings.DIGEST_SEND_HOUR and weekdays[local.weekday()] == tenant.digest_weekday:
+            banks.append(tenant)
+    return banks
+
+
+@shared_task
+def send_digests() -> None:
+    """The beat entry, run hourly: hand on each bank whose own clock reads its digest day and
+    hour. The count of banks is all it logs."""
+    banks = tenants_at_digest_hour(timezone.now())
+    for tenant in banks:
+        send_tenant_digests.delay(str(tenant.id))
+    logger.info("collab digests handed on for %d banks", len(banks))
+
+
+@shared_task
+@tenancy.tenant_task
+def send_tenant_digests(tenant_id: uuid.UUID) -> None:
+    """One bank's weekly digests, one per active member with something open."""
+    digest.send_all()
