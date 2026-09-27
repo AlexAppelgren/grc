@@ -180,6 +180,7 @@ test.describe('library journeys', () => {
     await expect(
       page.locator('[data-header-pills], [data-duty-panel], [data-scope-panel]').getByText('Applies', { exact: true }),
     ).toHaveCount(0);
+    await expect(page.locator('[data-applicability-panel]')).toBeVisible();
 
     // Every service selected reads "All services"; an empty list is no
     // restriction and says so in words, never as an empty row.

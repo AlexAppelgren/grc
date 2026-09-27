@@ -836,12 +836,22 @@ def _paused_agent() -> Call:
     return Call(params={"tenant_agent_id": agent.id})
 
 
-def _run_now() -> Call:
+def _room_under_cap() -> None:
     """The seeded cap leaves less than one run's most (AGENT_RUN_BUDGET_LIMIT) this month, so
     the admin raises it first, as the budget route does."""
-    call = _agent_call()
     budget.put_budget(who=user_principal(subject_id=_user(ADMIN).id), tenant=_tenant(), body=AgentBudgetInput(monthly_cap=Decimal("20.00")))
+
+
+def _run_now() -> Call:
+    call = _agent_call()
+    _room_under_cap()
     return call
+
+
+def _research_topic() -> Call:
+    """A research request starts a run of the bank's own agent, so it needs the same room."""
+    _room_under_cap()
+    return Call(body={"kind": "research_topic", "tenantAgentId": str(_tenant_agent().id), "topic": "DORA subcontracting"})
 
 
 def _open_run() -> Call:
@@ -1570,7 +1580,7 @@ ROUTES: list[PerfRoute] = [
     PerfRoute(
         "createResearchRequest",
         admin,
-        lambda: Call(body={"kind": "research_topic", "tenantAgentId": str(_tenant_agent().id), "topic": "DORA subcontracting"}),
+        _research_topic,
         status=202,
     ),
     PerfRoute("getResearchRequest", admin, _research_request),
