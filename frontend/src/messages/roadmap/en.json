@@ -19,6 +19,7 @@
   "roadmap.what.certificateAudit": "Certificate audit",
   "roadmap.what.internalDeadline": "Case deadline",
   "roadmap.what.actionDue": "Action due",
+  "roadmap.what.dutyDue": "Recurring duty due",
   "roadmap.owner.nobody": "Nobody yet",
   "roadmap.detail.what": "What",
   "roadmap.detail.owner": "Owner",

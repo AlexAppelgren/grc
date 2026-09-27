@@ -19,6 +19,7 @@
   "roadmap.what.certificateAudit": "Certifikatrevision",
   "roadmap.what.internalDeadline": "Deadline i ärendet",
   "roadmap.what.actionDue": "Åtgärd förfaller",
+  "roadmap.what.dutyDue": "Återkommande plikt förfaller",
   "roadmap.owner.nobody": "Ingen ännu",
   "roadmap.detail.what": "Vad",
   "roadmap.detail.owner": "Ägare",

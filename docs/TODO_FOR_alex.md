@@ -1190,6 +1190,7 @@ to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WA
       Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
       note says only that each national body adopts the edition under its own
       reference. A person verifies them before the note names any.
+
 ## ai-log-read: a shared "So what?" reads each bank's own review state (2026-09-23, AUD-02)
 
 - [ ] **A library "So what?" in the AI log shows the reading bank's own review, not one
@@ -1266,21 +1267,6 @@ Nothing waits for these; each has the default the build took.
       cards still to be drawn above) is drawn: `design/screens/admin-footprint.html`, state 20.
       New string `footprint.noneFollowed`: "None followed." / "Ingen följs.".
 
-
-## lib-standard-e2e-seed: the first standard exists for tests and E2E only (2026-09-23, INV-08, FP-01)
-
-- [ ] Default taken until you answer "Legal, before any standard is seeded" above:
-      ISO/IEC 27001:2022 and its one conformance duty live in
-      `backend/apps/library/fixtures/e2e_standard.json`, which only `seed_e2e`
-      loads. `prototype_data.json`, which `seed_demo` loads, holds no standard,
-      and `check_prototype_data.py` refuses one there. The edition is titled by
-      its reference alone, never its official title, and the duty's wording is
-      ours. When you answer yes, moving the rows into the prototype fixture is
-      the whole change.
-- [ ] The instrument's national-adoptions note names no adoption reference: the
-      Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
-      note says only that each national body adopts the edition under its own
-      reference. A person verifies them before the note names any.
 
 ## watch-standards: a standard's term needs a standards body, and publishers are not read (2026-09-23, WAT-07, D-45)
 
@@ -2124,3 +2110,20 @@ Defaults taken; nothing waits on them.
       `SCOPE_RESEARCH_TEXT_MAX_CHARS` (2000).** The item's description never does. The runner
       leg that calls the model (AGT-06's Agent SDK runner) reads them from
       `scope_research.run_input` and sends them only through `apps/shared/ai.py`.
+## security-review-c8: two questions from the chunk 8 security review (2026-09-27)
+
+The review is `docs/reviews/CHUNK8_REVIEW.md`. Its medium findings are fixed; these two are
+policy, each built on a default you may overrule.
+
+- [ ] **A Statement of Applicability unit's title in the audit trail (HARDENING H52).** A unit's
+      reference and title are in the bank's own words and are written into the before and
+      after values of its audit rows, as a name. R2_CROSS_CUTTING (m) keeps a person's typed
+      text out of audit values and names no exception for a title. Default if you say nothing:
+      the next package in `apps/register` keeps the reference and names the title as edited,
+      as `updateGap` does for its typed fields. The alternative is to accept a record's own
+      name in its audit values, as org units, products and gaps' `subject_title` already are.
+- [ ] **Link rows deleted when a link ends (HARDENING H64).** `team_member`,
+      `licence_service_term` and `tenant_product_term` rows are deleted when a membership or a
+      link ends, each with its before and after in the audit row. Section 5 says nothing is
+      overwritten; R2_CROSS_CUTTING (l) lists actions, internal links and units as never
+      deleted and does not list these. Default: link rows may go, the audit keeps them.

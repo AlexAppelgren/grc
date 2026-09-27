@@ -25,7 +25,7 @@ from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from apps.agents import testing as agents_testing
-from apps.identity.models import User
+from apps.identity.models import Membership, MembershipRole, TenantRole, User
 from apps.library.models import Obligation
 from apps.library.tests_reading import FOOTPRINT, URL, keys, seed_obligations, seed_reference, set_footprint
 from apps.register import overlay
@@ -203,6 +203,33 @@ class InventoryOverlay(TestCase):
             with self.subTest(params=params):
                 refused = self.client.get(URL, params, HTTP_X_API_KEY=key.plain_key)
                 self.assertEqual((refused.status_code, refused.json()["code"]), (422, "unknown_filter"))
+
+    def library_reader(self) -> User:
+        """A member of the bank whose role reads the library but not the register, as the
+        seeded `library_only` role does (security-review-c8 M3)."""
+        tenancy.activate(self.tenant.id)
+        role = TenantRole.objects.create(tenant=self.tenant, key="library-only", permissions=[perms.LIBRARY_READ])
+        person = factories.user()
+        membership = Membership.objects.create(tenant=self.tenant, user=person)
+        MembershipRole.objects.create(tenant=self.tenant, membership=membership, role=role)
+        return person
+
+    def test_a_reader_without_register_read_sees_the_library_and_none_of_the_banks_judgement(self) -> None:
+        who = self.library_reader()
+        rows = self.rows(who=who)
+        self.assertIn("obl-a-appropriateness", rows)
+        for key, row in rows.items():
+            with self.subTest(key=key):
+                self.assertEqual([row[field] for field in OVERLAY_FIELDS], ["under_assessment", None, None, None])
+        card = self.get({}, f"{URL}/{self.by_key['obl-a-appropriateness'].id}", who=who).json()
+        self.assertEqual([card[field] for field in OVERLAY_FIELDS], ["under_assessment", None, None, None])
+
+    def test_a_reader_without_register_read_cannot_probe_the_register_through_the_filters(self) -> None:
+        who = self.library_reader()
+        for params in ({"applicability": "applies"}, {"complianceStatus": "gap"}, {"owner": str(self.owner.id)}, {"ownerTeam": "compliance"}):
+            with self.subTest(params=params):
+                refused = self.get({"footprint": "all", **params}, who=who)
+                self.assertEqual((refused.status_code, refused.json()["code"]), (403, "permission_denied"))
 
     def test_no_row_waits_on_a_request(self) -> None:
         row = self.rows()["obl-a-appropriateness"]

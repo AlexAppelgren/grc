@@ -95,6 +95,7 @@ CASE_JOINS = (
     "urgency",
     "sub_status",
     "owner",
+    "owner_team",
     "triaged_by",
     "dismissed_reason",
     "dismissed_by",

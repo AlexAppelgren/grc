@@ -213,9 +213,8 @@ class SupportSessionTests(ScenarioTestCase):
             uuid.UUID(value)
 
     def test_each_request_writes_one_read_row_with_the_route_template_and_path_ids(self) -> None:
-        """In the request's own transaction, through record(): a handler that refuses a
-        request and rolls its transaction back (a 404 from `answers_problems`) takes the row
-        with it, as it takes every other write."""
+        """In the request's own transaction, through record(); a refused request keeps its
+        row too (the test below)."""
         row = grant(self.tenant, self.platform, self.admin)
         change_id = factories.case_change(self.tenant).id
         headers = self.support_headers(row)
@@ -231,6 +230,25 @@ class SupportSessionTests(ScenarioTestCase):
             self.assert_clean_read(read.after)
             self.assertEqual((read.tenant_id, read.subject_id, read.actor_id), (self.tenant.id, row.id, self.platform.id))
             self.assertNotIn("secret-question", str(read.after) + read.summary)
+
+    def test_a_read_the_route_refuses_is_still_logged(self) -> None:
+        """A refusal rolls the request's transaction back, and the read row with it, but a
+        refusal can still tell support something about the bank (which of its tags exist,
+        whether a record is there). ADR 0042 logs every request, so the row is written again
+        once the request's own transaction has ended (security-review-c8 M5)."""
+        row = grant(self.tenant, self.platform, self.admin)
+        headers = self.support_headers(row)
+        missing = self.client.get(f"/api/v1/changes/{uuid.uuid4()}", **headers)
+        self.assertEqual(missing.status_code, 404, missing.content)
+        unknown = self.client.get("/api/v1/obligations", {"tenantTag": "no-such-tag"}, **headers)
+        self.assertEqual((unknown.status_code, unknown.json()["code"]), (422, "unknown_key"))
+        self.assertEqual(self.client.get("/api/v1/changes", **headers).status_code, 200)
+        self.activate(self.tenant)
+        reads = list(AuditEvent.objects.filter(action="support_access.read").order_by("created", "id"))
+        self.assertEqual([r.after["route"] for r in reads], ["/changes/{change_id}", "/obligations", "/changes"], "one row per request, refused or not")
+        for read in reads:
+            self.assert_clean_read(read.after)
+            self.assertNotIn("no-such-tag", str(read.after) + read.summary)
 
     def test_the_read_check_fails_on_a_planted_body(self) -> None:
         planted = {"method": "GET", "route": "/changes", "pathIds": {}, "platformUserId": str(self.platform.id), "body": "a note"}

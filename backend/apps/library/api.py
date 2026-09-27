@@ -52,6 +52,7 @@ from apps.library.schemas import (
     VersionDiffQuery,
 )
 from apps.proposals.apply import apply_reverification
+from apps.register import overlay
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
@@ -293,7 +294,9 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     decided the duty applies, how it judges its compliance where it applies, and who owns it
     — beside the bank's own tags and whether the record is the bank's own rather than a
     shared fact. The overlay filters (applicability, complianceStatus, owner, ownerTeam)
-    narrow on those.
+    narrow on those. The overlay is the bank's register, so only a person holding
+    `register.read` reads it; for anyone else, an agent's key included, every row reads
+    under_assessment with no status and no owner.
 
     An agent the bank runs itself, whose key or personal token belongs to an agent access
     entry, reads narrower: only shared duties, never the bank's own; only inside the bank's
@@ -310,7 +313,8 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     markets the bank watches add, each row naming its jurisdiction.
 
     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-    (403) without library.read or the library:read scope; `unknown_filter` (422) when a
+    (403) without library.read or the library:read scope, or for an overlay filter sent by a
+    caller in a bank who does not hold `register.read`; `unknown_filter` (422) when a
     caller that belongs to no bank, such as a platform key, sends tenantTag or an overlay
     filter, since it has no tags or register of its own; `not_found` (404) when such a caller
     reads the list at all; `unknown_filter` (422) when an agent access credential sends
@@ -328,11 +332,13 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-03, AGT-02).
     require_library_read(request)
     who = principal(request)
+    register_reader = overlay.read_by_person(who)
     reading.refuse_bank_filters(who.tenant_id, query)
+    overlay.refuse_filters_without_register(query, register_reader=register_reader)
     tenant = caller_tenant(request)
     order = language_order(request, tenant=tenant)
     items, total = reading.obligation_page(tenant, order, query, limit=page.limit, offset=page.offset, reader=reading.reader_of(who))
-    return ObligationPage(items=items, total=total)
+    return ObligationPage(items=items if register_reader else [overlay.withheld(item) for item in items], total=total)
 
 
 @router.get(
@@ -360,7 +366,8 @@ def get_obligation(
     `library.read` in their bank, or an agent's key carrying the `library:read` scope.
     The record says what the rule is. Beside it the answer carries the bank's own register
     overlay, the same as the duty's row in the list: whether the bank decided it applies, how
-    it judges its compliance where it applies, and who owns it. No other bank sees it.
+    it judges its compliance where it applies, and who owns it. No other bank sees it, and
+    only a person holding `register.read` reads it; anyone else reads it empty.
 
     The duty is addressed by its id or by its stable key, which never changes and is what an
     agent cites. An agent the bank runs itself, whose key or personal token belongs to an
@@ -385,7 +392,8 @@ def get_obligation(
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-03, AGT-02).
     who = require_library_read(request)
     tenant = caller_tenant(request)
-    return reading.obligation_detail(tenant, language_order(request, tenant=tenant), obligation_id, query, reading.reader_of(who))
+    card = reading.obligation_detail(tenant, language_order(request, tenant=tenant), obligation_id, query, reading.reader_of(who))
+    return card if overlay.read_by_person(who) else overlay.withheld(card)
 
 
 @router.get(

@@ -12,11 +12,14 @@ written; with the hook removed from applicability.py no first occurrence was wri
 from __future__ import annotations
 
 import datetime
+import json
+import time
 from typing import Any
 
 from django.db import IntegrityError, transaction
 from django.test import Client
 
+from apps.library import recurrence
 from apps.library import testing as library_build
 from apps.library.models import Obligation, RecurringDuty
 from apps.register import duties
@@ -25,7 +28,7 @@ from apps.register.models import DutyOccurrence, TenantObligation, TenantObligat
 from apps.register.tests_applicability import Bank, banks_duty, seed_library
 from apps.shared import factories
 from apps.shared.audit import Actor
-from apps.shared.models import AuditEvent
+from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
 
 V1 = "/api/v1"
@@ -55,6 +58,21 @@ class NextDue(ScenarioTestCase):
         self.assertIsNone(duties.next_due(f"{QUARTERLY};COUNT=1", day("2026-12-31"), inclusive=False))
         self.assertIsNone(duties.next_due("FREQ=YEARLY;UNTIL=20261231", day("2026-12-31"), inclusive=False))
         self.assertIsNone(duties.next_due("EVERY QUARTER", day("2026-12-31"), inclusive=False))
+
+    def test_a_rule_with_no_date_from_this_start_gives_none_without_walking_to_the_year_9999(self) -> None:
+        """A rule is validated from the day it was proposed, but a bank's series starts on its
+        own day: every 35th day on a Tuesday falls due from a Tuesday and never from any other
+        day. Unbounded, dateutil walks each such start to the year 9999 (about a fifth of a
+        second each, under the request's row locks); bounded to the library's ten-year
+        horizon it answers at once (security-review-c8 M4). The bound is generous for a slow
+        machine."""
+        rule = "FREQ=DAILY;INTERVAL=35;BYDAY=TU"
+        self.assertEqual(recurrence.validated(rule, day("2026-09-29")), rule, "the library accepts the rule")
+        self.assertEqual(duties.next_due(rule, day("2026-09-29"), inclusive=True), day("2026-09-29"))
+        started = time.monotonic()
+        for offset in range(1, 6):
+            self.assertIsNone(duties.next_due(rule, day("2026-09-29") + datetime.timedelta(days=offset), inclusive=True))
+        self.assertLess(time.monotonic() - started, 0.3)
 
     def test_the_day_is_the_banks_own(self) -> None:
         stockholm = factories.tenant(slug="duty-sthlm", timezone="Europe/Stockholm")
@@ -199,6 +217,18 @@ class Completing(DutyTestCase):
         self.assertEqual(self.audit(duties.DUTY_COMPLETED), 1)
         self.activate(self.a.tenant)
         self.assertEqual(DutyOccurrence.objects.get(pk=occurrence.pk).version, 2)
+
+    def test_the_note_stays_on_the_occurrence_and_out_of_the_audit_trail_and_the_outbox(self) -> None:
+        """A completion note is the bank's own words: the audit row and its outbox event say
+        a note was left, never what it says (R2_CROSS_CUTTING (m); security-review-c8 M1)."""
+        [occurrence] = self.first()
+        response = self.complete(occurrence, note="Filed late: the regulator's portal was down")
+        self.assertEqual(response.status_code, 200, response.content)
+        event = AuditEvent.objects.get(action=duties.DUTY_COMPLETED, subject_id=occurrence.id)
+        payloads = list(OutboxEvent.objects.filter(audit_event=event).values_list("payload", flat=True))
+        written = json.dumps([event.before, event.after, event.summary, event.subject_title, payloads])
+        self.assertNotIn("portal", written)
+        self.assertIs(event.after["noted"], True)
 
     def test_a_next_occurrence_already_present_is_not_written_twice(self) -> None:
         [occurrence] = self.first()

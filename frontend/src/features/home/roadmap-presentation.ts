@@ -50,6 +50,7 @@ const WHAT: Record<RoadmapItem['itemType'], MessageKey> = {
   certificate_audit: 'roadmap.what.certificateAudit',
   internal_deadline: 'roadmap.what.internalDeadline',
   action_due: 'roadmap.what.actionDue',
+  duty_due: 'roadmap.what.dutyDue',
 };
 
 export function roadmapWhat(itemType: RoadmapItem['itemType'], t: Translate): string {
