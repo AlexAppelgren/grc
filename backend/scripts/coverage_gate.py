@@ -19,6 +19,9 @@ Measured 2026-09-19, chunk 1 close: 190 tests (334 collected, 144 scenario stubs
 skipped), aggregate 96% over 3696 statements.
 Measured 2026-09-24, R1 close (chunks 3 to 7, over the merged wave-4 batch): 2081 tests
 (1959 run, 122 scenario stubs of R2 and R3 skipped), aggregate 97.5% over 15637 statements.
+Measured 2026-09-27, R2 close (chunks 8 to 11, over the merged wave-7 batch): 4104 tests
+(4068 run, 36 scenario stubs of R3 and the named R2 cuts skipped), aggregate 97.9% over
+28864 statements. The R2 floors join below; no earlier floor moved.
 """
 
 from __future__ import annotations
@@ -143,6 +146,68 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/search/hybrid.py": (97, 100, 153, "2026-09-24"),
     "apps/search/indexing.py": (94, 97, 148, "2026-09-24"),
     "apps/search/sources.py": (95, 98, 110, "2026-09-24"),
+    # Chunk 8 (register): applicability, status per entity, gaps, internal links and units,
+    # history, the overlay and the agent's register read; the organisation, member removal
+    # and support access; My work and participants. Measured 2026-09-27 at the R2 close.
+    "apps/register/applicability.py": (95, 98, 167, "2026-09-27"),
+    "apps/register/status_logic.py": (96, 99, 173, "2026-09-27"),
+    "apps/register/gaps.py": (95, 98, 209, "2026-09-27"),
+    "apps/register/links.py": (92, 95, 100, "2026-09-27"),
+    "apps/register/units.py": (97, 100, 145, "2026-09-27"),
+    "apps/register/history.py": (96, 100, 47, "2026-09-27"),
+    "apps/register/overlay.py": (96, 100, 79, "2026-09-27"),
+    "apps/register/agent_read.py": (93, 97, 66, "2026-09-27"),
+    "apps/tenants/organisation.py": (94, 97, 176, "2026-09-27"),
+    "apps/tenants/reassignment.py": (95, 98, 130, "2026-09-27"),
+    "apps/tenants/support_access.py": (97, 100, 156, "2026-09-27"),
+    "apps/home/my_work.py": (96, 99, 299, "2026-09-27"),
+    "apps/collab/participants.py": (97, 100, 137, "2026-09-27"),
+    # Chunk 9 (case workflow): the state machine, triage, assessment, actions, evidence and
+    # its scanner, sign-off with four eyes, and the case file.
+    "apps/cases/state.py": (96, 100, 42, "2026-09-27"),
+    "apps/cases/triage.py": (95, 98, 101, "2026-09-27"),
+    "apps/cases/assessment.py": (96, 100, 87, "2026-09-27"),
+    "apps/cases/actions.py": (94, 98, 94, "2026-09-27"),
+    "apps/cases/evidence.py": (95, 98, 148, "2026-09-27"),
+    "apps/cases/signoff.py": (96, 100, 54, "2026-09-27"),
+    "apps/cases/case_file.py": (94, 97, 183, "2026-09-27"),
+    "apps/cases/logic.py": (93, 97, 72, "2026-09-27"),
+    "apps/shared/adapters/scanner.py": (94, 98, 98, "2026-09-27"),
+    # Chunk 10 (collaboration): comments and who may read them, notifications, reminders,
+    # escalation, delegation while away, and tagging.
+    "apps/collab/comments.py": (96, 100, 93, "2026-09-27"),
+    "apps/collab/subjects.py": (96, 100, 44, "2026-09-27"),
+    "apps/collab/me_comments.py": (96, 100, 42, "2026-09-27"),
+    "apps/collab/inbox.py": (91, 95, 36, "2026-09-27"),
+    "apps/collab/reminders.py": (96, 99, 133, "2026-09-27"),
+    "apps/collab/escalation.py": (96, 100, 36, "2026-09-27"),
+    "apps/collab/tasks.py": (93, 97, 80, "2026-09-27"),
+    "apps/tenants/out_of_office.py": (94, 98, 65, "2026-09-27"),
+    "apps/taxonomy/tagging_logic.py": (96, 100, 62, "2026-09-27"),
+    # Chunk 11 (agents and agent access): the runner's events, run control and the cap,
+    # research requests, a bank's agents, platform definitions, re-tag batches, the bank's own
+    # queue, what applies, entries, keys and tokens, tenant reach, the access log, the fence
+    # on an agent credential, the MCP server and the session policy.
+    "apps/agents/runner_events.py": (96, 100, 98, "2026-09-27"),
+    "apps/agents/control.py": (96, 100, 64, "2026-09-27"),
+    "apps/agents/budget.py": (96, 100, 63, "2026-09-27"),
+    "apps/agents/opener.py": (96, 100, 52, "2026-09-27"),
+    "apps/agents/requests.py": (89, 92, 234, "2026-09-27"),
+    "apps/agents/tenant_agents.py": (96, 99, 155, "2026-09-27"),
+    "apps/agents/definitions.py": (96, 100, 90, "2026-09-27"),
+    "apps/agents/scope.py": (96, 100, 65, "2026-09-27"),
+    "apps/agents/what_applies.py": (93, 97, 81, "2026-09-27"),
+    "apps/agents/agent_access.py": (92, 95, 132, "2026-09-27"),
+    "apps/proposals/batch.py": (94, 97, 217, "2026-09-27"),
+    "apps/proposals/private_controls.py": (85, 89, 44, "2026-09-27"),
+    "apps/proposals/tenant_agent.py": (90, 94, 58, "2026-09-27"),
+    "apps/identity/personal_tokens.py": (96, 100, 58, "2026-09-27"),
+    "apps/governance/access_log.py": (93, 96, 104, "2026-09-27"),
+    "apps/governance/reach.py": (93, 97, 85, "2026-09-27"),
+    "apps/shared/agent_access_guard.py": (95, 99, 83, "2026-09-27"),
+    "apps/integrations/mcp.py": (96, 99, 171, "2026-09-27"),
+    "apps/integrations/mcp_tools.py": (94, 98, 80, "2026-09-27"),
+    "apps/tenants/security_policy.py": (96, 100, 44, "2026-09-27"),
 }
 
 
