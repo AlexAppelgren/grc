@@ -33,7 +33,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| COL-01 | Comments and mentions on any record, and a person's own comments and mentions on My work, limited to records they can read. These shared comments are the notes on My work; there are no private notes (D-60) | S | R2 | pending |
+| COL-01 | Comments and mentions on any record, and a person's own comments and mentions on My work, limited to records they can read. These shared comments are the notes on My work; there are no private notes (D-60). Comment retention is AUD-04's purge, R3 | S | R2 | built |
 | COL-02 | Notifications, reminders before due dates including next reviews, notice when a change is linked to an involved obligation or a new version applies, escalation to the head of the owner's department, a weekly digest in the user's language, once per person per event | M | R2 | built |
 | COL-03 | Follow a record | C | R3 | pending |
 | COL-04 | Participants: people or teams added to a register entry or a case by someone who can edit it; participation lists and notifies, grants no access, and a participant can leave. Built for register entries (c8-participants: `participant` table, `collab/participants.py`, `/obligations/{obligationId}/participants`) and for cases through the same logic (c9-case-participants: `/changes/{changeId}/participants`, `cases.contribute` to add or remove, a closed case refused); the change page's Participants panel and the COL-S9 journey built by c9-fe-case-participants. An add tells the person or the team's members (`participant_added`, c10-producers) | M | R2 | built |

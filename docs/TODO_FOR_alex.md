@@ -2,6 +2,84 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## R2 is closed: what waits for you (2026-09-27, `r2-close-and-readiness`)
+
+R2's code (chunks 8 to 11) is on `main` and every R2 requirement reads `built` or names what
+is left of it; nothing reads `verified` until you exercise it on the test deployment. What is
+left is yours, or is a cut named below. `docs/plans/IMPLEMENTATION_STATUS.md` ("R2 close")
+holds the gate results.
+
+**Owner-blocked, before a test deploy of R2 is worth running:**
+- [ ] **clamd on Railway (D-101).** "Provision clamd on Railway" just below. Until it runs, a
+      deployed environment refuses every evidence file with 503 `scanner_unavailable`.
+- [ ] **D-07, the model key and its EU path.** Still open from R1. R2 adds two things that wait
+      on it: a bank's capped research text reaching a model (D-98), and the real agent runner
+      with the worker leg that applies its events (AGT-06, H80). Until then every agent runs on
+      the mock and the summary above what applies is the mock's.
+- [ ] **D-09, the embedding key and the retrieval baseline.** Still open from R1; unchanged.
+- [ ] **The test deployment** and **legal on standard titles.** Still open from R1; unchanged.
+
+**Your answers of 2026-09-25 and after, as the build recorded them:**
+- [x] D-98: a bank's capped research text may reach a model, a guarded second exception
+      beside Ask. Built as `c11-research-requests` and `d89-agent-research` describe; nothing
+      reaches a real model until D-07.
+- [x] D-99: a control is a REG-05 internal item of the control kind. Built by `d89-controls`
+      (OWN-05), which merged, so OWN-05 reads `built`.
+- [x] D-100: the device-bound passkey policy (ID-07, ID-S16, ID-S29) is out of R2. ID-07 reads
+      `pending` with "after R2 (D-100)"; its two scenarios stay skipped as a named cut, and
+      banks can still require passkeys, which is all there is.
+- [x] D-101: evidence arrives multipart; you provision clamd (above).
+- [x] D-102: agent definitions, versions and platform agent settings are platform
+      configuration, written by the console with a platform permission, step-up and audit.
+- [x] D-104 (inventory search and filters) and D-105 (full CodeQL analysis on a pull request)
+      are recorded in `docs/DECISIONS.md` as you gave them.
+
+**What R2 leaves, each a named cut with the chunk that delivers it:**
+- REG-06 and REG-S9, yearly attestation and waivers: chunk 13 (R3).
+- CAS-04's ticket export and INT-S3: chunk 13 (R3). The actions themselves are built.
+- The dated Statement of Applicability export, part of REP-02's inventory export: R3 (D-46).
+  `POST /exports` answers 501 `not_built` for every kind chunk 12 builds (inventory, changes,
+  cases, committee pack, audit log, configuration, tenant export); the case file, R2's one
+  export, is built. The SoA itself reads on screen (REG-08).
+- ACC-10 and ACC-S10, which application touches which register entry: chunk 13 (R3).
+- COL-03 and COL-S4, following a record: R3.
+- The `proposal_waiting` and `saved_search_hit` notifications: kinds with no producer yet
+  (saved searches are chunk 13; a waiting proposal is the console's queue, no R2 chunk).
+- Webhook delivery (INT-01) and comment retention (AUD-04's purge): chunks 13 and 12.
+- WAT-06 and private sources: chunk 13 (R3).
+- The real agent runner: waits for the D-07 EU model path (H80 before it is switched on).
+- ID-07 with ID-S16 and ID-S29: out of R2 by your D-100.
+- **Found at the close:** no route or screen puts a team in a department. A team is added
+  without one (TEN-S8 adds a team and puts people in it), and only the seed's teams carry
+  a department. TEN-02 therefore stays `in_progress` with this named in its row. Default
+  taken: a small follow-on package (`orgUnitId` on the team's create and edit, with its
+  audit row and a journey step); nothing reads a team's department for a permission, so no
+  one sees more or less than they should meanwhile.
+
+**Defaults this package took:**
+- An R2 row whose every scenario is un-skipped and green reads `built`, and what it does not
+  cover is named in its row (AGT-06's real runner, CAS-04's tickets, COL-01's retention).
+- The internal-link operations left the contract's pending list for `INPUT_DELTAS.md`: chunk
+  8 built them paged and pointing at an item, on purpose.
+- Coverage floors join for the R2 modules that let the wrong person through or mis-state a
+  decision, measured on the close's run; no existing floor moved.
+- The suite's module weights were re-measured on this session's four workers; CI deals
+  modules by their relative weight, so the machine does not matter.
+
+**Still open from the R2 packages**, each explained in its own section below (defaults taken,
+nothing blocks the build): every box under the 2026-09-25 and 2026-09-27 package headings from
+`x-hardening-proposals` to `r2-int-w567`. The ones that need a decision rather than a nod:
+- r2-perf: the roadmap has no end without `to` (H108, medium, performance): paging it or a
+  default end date as a setting.
+- security-review-c11: whether raising the agents' monthly cap needs a passkey (H83); whether
+  a bank may add a draft agent definition (H85); the runner leg before a real runner (H80).
+- security-review-c11-access-d89: a namespace for a bank's own stable keys (H103).
+- security-review-c8, -c9, -c10: the SoA unit's typed values in the audit row (H52), link rows
+  that may be deleted (H64), the owner in sign-off's four eyes (H69), reviewed mail hosts in
+  R2 (H78).
+- c11-proposal-batches-decide: whether an agent may decide a re-tag batch row (default:
+  person-only, as built).
+
 ## Provision clamd on Railway (2026-09-25, `c9-scanner-adapter`, D-101)
 
 Evidence upload scans every file with clamd before anyone can download it. Until these steps

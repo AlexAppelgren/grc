@@ -104,10 +104,10 @@ panel), the roadmap 243 / 218, the watch feed 237 / 241 and the regulatory scope
 | `design/public/index.html` | `/welcome` | public | none | shipped: `public.journey.spec.ts` green |  |
 | `me-passkeys`, `me-sessions` | `/me/passkeys`, `/me/sessions` | both | 1 | shipped | passkeys 60 / 69; sessions 65 / 51 |
 | `admin-organisation`, `admin-members`, `admin-roles`, `admin-api-keys`, `admin-security-log` | `/admin/*` | tenant | 1 | shipped | admin 8 / 13; organisation 78 / 71; members 96 / 99; roles 65 / 72; API keys 63 / 65; security log 72 / 65 |
-| `admin-vocabularies.html` | `/admin/vocabularies` | tenant | 2 | shipped (VOC-S2 to VOC-S5, VOC-S7, VOC-S11 and VOC-S15); Suggest, VOC-S6, is chunk 8 | 93 / 87 |
+| `admin-vocabularies.html` | `/admin/vocabularies` | tenant | 2 | shipped (VOC-S2 to VOC-S5, VOC-S7, VOC-S11 and VOC-S15), and the Suggested tab where an admin works the suggestions (VOC-S6, R2) | 93 / 87 |
 | `admin-vocabulary.html` | `/admin/vocabularies/[list]`; console variant `/console/vocabularies/[list]` | both | 2, 4 | shipped, both variants | console list 67 / 67 |
 | `admin-footprint.html` (on screen: Regulatory scope) | `/admin/footprint` | tenant | 2; markets panel 3 | shipped: requests with preview, four eyes and step-up (FP-S2, FP-S5), and the markets panel, card states 17 to 19 (FP-S10) | 166 / 171 |
-| `picker-create-or-suggest.html` | inside every vocabulary picker | both | 2 (near-duplicate), 8 (suggest) | shipped for Create with the near-duplicate check (VOC-S7); Suggest is chunk 8 |  |
+| `picker-create-or-suggest.html` | inside every vocabulary picker | both | 2 (near-duplicate), 8 (suggest) | shipped: Create with the near-duplicate check (VOC-S7), and Suggest for a member without `vocab.manage` (VOC-S6, R2) |  |
 | `tenant-inventory.html` | `/inventory` (Obligations, Instruments tabs) | tenant | 3 | shipped (INV-S1, INV-S3, INV-S4, FP-S4, and FP-S13 for the watched-market view) | 244 / 256 |
 | `tenant-obligation.html` | `/inventory/obligations/[obligationId]` | tenant | 3; register panels 8 | shipped (INV-S3 to INV-S7, AUD-S5, the Related changes panel walked by WAT-S6 and the machine-confirmed label by INV-S14); register panels land with chunk 8 |  |
 | `tenant-instrument.html` | `/inventory/instruments/[instrumentId]` | tenant | 3 | shipped (INV-S1, INV-S2, INV-S7 and INV-S11 for a standard's edition with no text); the Reported problems section is unit-tested here and walked end to end on the obligation card (AUD-S5) |  |
@@ -218,7 +218,7 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 | `POST /vocab/{list}` | `admin-vocabulary.html` Add a value; `picker-create-or-suggest.html` Create | tenant; console for library lists (becomes a proposal, VOC-07) | `vocab.manage`; `library_vocab.manage` via proposal | no | A, CO create; others see Suggest; 409 near_duplicate rendered in place | VOC-S2, VOC-S7, VOC-S11, VOC-S15 | shipped |
 | `PATCH /vocab/{list}/{key}` (relabel), `POST /vocab/{list}/reorder`, `POST /vocab/{list}/{key}/retire`, `/restore` (the built paths) | `admin-vocabulary.html` inline rename, drag, Retire, Restore | both | `vocab.manage`; console via proposal | no | A, CO; system rows relabel only; last value of a category has no Retire | VOC-S3, VOC-S4, VOC-S8, VOC-S15 | shipped |
 | `POST /vocab/{list}/{key}/merge` (`?dryRun=true` previews) | `admin-vocabulary.html` Merge with preview | both | `vocab.manage`; console via proposal | no | A, CO; preview shows the count moved | VOC-S5, VOC-S15 | shipped |
-| `POST /vocab/{list}/suggest`, `GET /vocab/{list}/suggestions`, `POST .../suggestions/{id}/decline`; accept is not built | `picker-create-or-suggest.html` Suggest; `admin-vocabulary.html` Suggested tab | tenant | suggest: any member; decide: `vocab.manage` | no | O, AP, C, R, AU suggest; A, CO decide | VOC-S6, VOC-S7 | later chunk 8 (VOC-03 is R2): the three routes above are on `main` with no screen |
+| `POST /vocab/{list}/suggest`, `GET /vocab/{list}/suggestions`, `POST .../suggestions/{id}/decline`; accept is not built | `picker-create-or-suggest.html` Suggest; `admin-vocabulary.html` Suggested tab | tenant | suggest: any member; decide: `vocab.manage` | no | O, AP, C, R, AU suggest; A, CO decide | VOC-S6, VOC-S7 | shipped (R2): Suggest in the picker and the Suggested tab with Decline, walked by VOC-S6; saying yes is `POST /vocab/{list}` with the suggestion's key, which answers every suggestion for it, so there is no accept route |
 
 ### Taxonomy and footprint
 
@@ -268,9 +268,9 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
-| `POST /taggings`, `DELETE /taggings` (the subject in the body) | `tenant-obligation.html` "Our tags" add and × | tenant | `vocab.manage` | no | A, CO tag; others read and may Suggest a new value | VOC-S6 | later chunk 10, designed (c10-cards-tagging) |
-| `POST /taggings/preview`, `POST /taggings/batch` | `tenant-inventory.html` Tag, preview and commit, blocks 3 to 10 | tenant | `vocab.manage` | no | A, CO; others see no selection; one audit entry per batch; `BULK_TAGGING_MAX_RECORDS` caps a call, 422 too_many_records | VOC-S12 | later chunk 10, designed (c10-cards-tagging) |
-| `GET /obligations` `tenantTag` filter and the row's `tenantTags` | `tenant-inventory.html` "Our tags" filter and the outlined pills on each row, blocks 1, 2, 11, 12 | tenant | `library.read` | no | All 7 | VOC-S12 | later chunk 10, designed (c10-cards-tagging) |
+| `POST /taggings`, `DELETE /taggings` (the subject in the body) | `tenant-obligation.html` "Our tags" add and × | tenant | `vocab.manage` | no | A, CO tag; others read and may Suggest a new value | VOC-S6 | shipped (R2), walked by VOC-S6 |
+| `POST /taggings/preview`, `POST /taggings/batch` | `tenant-inventory.html` Tag, preview and commit, blocks 3 to 10 | tenant | `vocab.manage` | no | A, CO; others see no selection; one audit entry per batch; `BULK_TAGGING_MAX_RECORDS` caps a call, 422 too_many_records | VOC-S12 | shipped (R2), walked by VOC-S12 |
+| `GET /obligations` `tenantTag` filter and the row's `tenantTags` | `tenant-inventory.html` "Our tags" filter and the outlined pills on each row, blocks 1, 2, 11, 12 | tenant | `library.read` | no | All 7 | VOC-S12 | shipped (R2), walked by VOC-S12 |
 
 ### Watch and the agent API (chunk 5)
 

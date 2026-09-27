@@ -2032,3 +2032,22 @@ internal item of the control kind. Proposals 0011 adds `new_control` to `proposa
 (choices only, no column). Its approval writes no library row: it creates, or reuses by name,
 an `internal_item` of the bank's `control` link kind and an `internal_link` to the bank's
 register entry on the obligation, in the bank's zone. No table changes.
+
+## r2-close-and-readiness. The obligation's internal links, as chunk 8 built them (2026-09-27, REG-05)
+
+`contract_drift_pending.txt` held `GET /obligations/{obligationId}/internal-links` and
+`POST /obligations/{obligationId}/internal-links` as chunk 8's to deliver. Chunk 8 delivered
+both, on purpose not in the designed shape, so they move here from the pending list:
+- `GET /obligations/{obligationId}/internal-links` answers a page, `items` and `total`, 20 by
+  default and 100 at most, not a bare array: every list in the API pages (CLAUDE.md
+  section 6).
+- A link names the bank's internal item it points at (`internalItemId`, section 18's
+  `internal_item`), and carries `externalSystem` beside `externalRef`; its `kind` is a row of
+  the bank's link-kind vocabulary returned as a key with its label, not the designed enum,
+  because kinds of this sort are rows an admin manages (CLAUDE.md section 5). A control is
+  an item of the control kind (D-99).
+- `POST /obligations/{obligationId}/internal-links` always takes `kind` (a `link_kind` key)
+  and `label`, and either an existing item's `internalItemId` of that kind or, without it,
+  the new item's `reference`, `externalSystem`, owner or owning team and the rest; it answers
+  409 `already_linked` for a second live link to the same item. Removal stays `DELETE /internal-links/{linkId}`,
+  which stamps `removed_at` and `removed_by`.
