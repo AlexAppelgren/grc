@@ -80,6 +80,9 @@ def scope_research_run(bank: Tenant) -> AgentRun:
     return tasks.open_request_run(request, requested_by=approver)
 
 
+OWN_PARENT_KEY = "own-kinds-parent"
+
+
 class OwnFindingCase(TestCase):
     def setUp(self) -> None:
         _seed_library()
@@ -89,6 +92,10 @@ class OwnFindingCase(TestCase):
         self.bank = factories.tenant(slug="own-findings-a")
         self.other = factories.tenant(slug="own-findings-b")
         self.research_run = scope_research_run(self.bank)
+        # The bank's own instrument its own duties are filed under: a bank's own duty never sits
+        # under a shared one (d89-private-records, INV-07).
+        tenancy.activate(self.bank.id)
+        library_build.instrument(key=OWN_PARENT_KEY, regime="regime:securities", owner_tenant=self.bank)
 
     def file(self, found: tenant_agent.Finding) -> Proposal:
         tenancy.activate(self.bank.id)
@@ -128,14 +135,14 @@ class FilingTheBanksOwn(OwnFindingCase):
         self.assertFalse(self.visible(None, proposal), "the console never reads it")
 
     def test_a_new_obligation_is_the_banks_own_too(self) -> None:
-        proposal = self.file(finding(obligation_body()))
+        proposal = self.file(finding(obligation_body(instrument=OWN_PARENT_KEY)))
         self.assertEqual((proposal.kind, proposal.owner_tenant_id), ("new_obligation", self.bank.id))
 
     def test_the_same_event_twice_files_one_proposal_and_another_event_a_second(self) -> None:
         first = self.file(finding(instrument_body()))
         again = self.file(finding(instrument_body()))
         self.assertEqual(again.pk, first.pk)
-        other = self.file(finding(obligation_body(), event_id="event-2"))
+        other = self.file(finding(obligation_body(instrument=OWN_PARENT_KEY), event_id="event-2"))
         self.assertNotEqual(other.pk, first.pk)
         tenancy.activate(self.bank.id)
         self.assertEqual(Proposal.objects.filter(agent_run_id=self.research_run.id).count(), 2)
