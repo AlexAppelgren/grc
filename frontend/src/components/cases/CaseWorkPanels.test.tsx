@@ -41,10 +41,10 @@ describe('casePanelsFor', () => {
 });
 
 describe('CaseWorkPanels', () => {
-  it('mounts its panels where the card places them', () => {
+  it('mounts its panels where the card places them: a signed-off case shows its sign-off', () => {
     installAdapter(() => ({ status: 200, data: { items: [], total: 0 } }));
     const { wrapper: Query } = queryWrapper();
-    const workflow = { ...at('closed', reason('signed_off')), id: 'case-1', version: 7 } as CaseWorkflow;
+    const workflow = { ...at('closed', reason('signed_off')), id: 'case-1', version: 7, signedOffBy: null, signoffRequestedBy: null } as unknown as CaseWorkflow;
     const { container } = render(
       <Query>
         <LocaleProvider locale="en">
@@ -55,5 +55,6 @@ describe('CaseWorkPanels', () => {
     const panels = container.querySelector('[data-case-panels="closed"]');
     expect(panels?.querySelector('[data-case-panel="actions"]')).not.toBeNull();
     expect(panels?.querySelector('[data-case-panel="evidence"]')).not.toBeNull();
+    expect(panels?.querySelector('[data-signoff-panel="signed_off"]')).not.toBeNull();
   });
 });

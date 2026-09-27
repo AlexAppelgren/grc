@@ -1685,3 +1685,14 @@ Built on these defaults; each stays yours to overrule.
       and a reach request is never withdrawn (the requester's colleague rejects it).
       Switching reach off needs one person and a step-up; on again takes a new request and
       a second person. `GET /tenant/reach` is readable with `security.manage` alone.
+## c9-fe-signoff-casefile: Request sign-off is disabled until the server says it can be asked for (2026-09-25)
+
+- [ ] **Disabled or enabled?** The design card leaves Request sign-off enabled and shows the
+      409 `open_actions` or `evidence_missing` under it; the package's acceptance says it
+      is disabled from `canRequestSignoff`, with the reason read off `openActionCount`.
+      Default taken: the acceptance. The button is disabled with its reason, and the two
+      409s, with the count from the server's answer, show only when the page was read
+      before the case changed. CAS-S8's journey (`@e2e`, not this package's) says "the
+      owner chooses Request sign-off" and receives the 409: with this default the journey
+      shows the disabled button and its reason instead, and proves the 409 in
+      `tests_scenarios.py`. Say if the card should win.
