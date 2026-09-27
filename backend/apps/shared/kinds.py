@@ -332,4 +332,10 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "duty_status",
         "REG-07: where a dated duty occurrence stands; completion, the roadmap and Today branch on it",
     ),
+    # d89-scope-items-model (taxonomy 0012, OWN-01, D-91).
+    "ScopeItemStatus": (
+        "scope_item_status",
+        "OWN-01: a scope item is requested, in scope, declined or removed; the request logic and "
+        "the bank's own agent's research branch on it, and no admin adds a state",
+    ),
 }

@@ -1486,8 +1486,6 @@ redirects to its change. The second keeps the case's own read check (`cases.read
       changed value in", an agent's correction without one answers 422 `source_missing`
       and applies nothing (fails safe; it can still approve as proposed or reject).
       Default if you say nothing: v3 carries that line when the confirmer next changes.
-## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-102)
-
 ## c8-mywork-service: how long a linked change stays on My work (2026-09-25, HOM-05, D-25, D-97)
 
 - [ ] **A confirmed link keeps its change under "Changes on your items" while the
@@ -1497,25 +1495,6 @@ redirects to its change. The second keeps the case's own read check (`cases.read
       key date brings it into "Due soon" first. Default if you say nothing: it stays
       so. The alternative is the same 14 days from the day the link was confirmed,
       after which the change drops off My work while the case is still open.
-
-## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-9x)
-
-- [ ] **The console's correction form gained one field.** A reviewer who changes a
-      proposal's wording, date or scope before approving now gives "Source of your
-      correction", the link or provision they read the new value in; the server refuses a
-      changed value without one (security-review-c4 L5). The design card
-      (`design/screens/console-queue.html`) shows no such field, so it was added in the
-      form's existing style below the scope. Default if you say nothing: it stays. The
-      proposer's replaced source is kept in the approval's audit row, not beside the
-      reviewer's on the queue screen; say if the queue should show both (a column on
-      `proposal`, D-103).
-- [ ] **The confirming agent's next version should name its correction's source.**
-      `backend/agents/library-confirmer/v2/prompt.md` says a correction goes through
-      `payloadOverrides` and does not mention `fieldSources`; a shipped version is never
-      edited, so it stays. Until a v3 says "name in `fieldSources` the page you read each
-      changed value in", an agent's correction without one answers 422 `source_missing`
-      and applies nothing (fails safe; it can still approve as proposed or reject).
-      Default if you say nothing: v3 carries that line when the confirmer next changes.
 
 ## R2 wave 2 integration: one CodeQL finding needs your triage (2026-09-25)
 
@@ -1937,3 +1916,27 @@ Defaults taken; nothing waits on them.
 - [ ] Default taken: the expiry hint names no day count. The maximum is the server setting
       `PERSONAL_TOKEN_MAX_DAYS`, which no route exposes; a date beyond it renders the server's
       `expiry_too_late` in place. Say if the screen should state the number.
+
+## d89-scope-items-model: what a scope item row holds (2026-09-25, OWN-01, D-91)
+
+- [ ] Default taken: a scope item names one jurisdiction, one regime term and one public
+      https address, as the package's acceptance says; PRD OWN-01 speaks of terms and
+      addresses in the plural. A bank that needs more asks for a second item. Say if one item
+      should carry several of each (a join table per list, no other change).
+- [ ] Default taken: the item row is written with the request that asks for it, as
+      `requested`, so the approver sees exactly what they approve; it is `in_scope` only after
+      the second person's passkey approval, and `declined` if the request is rejected or
+      withdrawn. No key and no agent writes one either way.
+
+## d89-scope-items-logic: scope items on the regulatory scope request (2026-09-25, OWN-01, FP-02, D-91)
+
+- [ ] Default taken: a scope item's key is derived from its name when it is asked for and is
+      never reused, so asking again after a decline gives `…_2`. The screens show the name;
+      the key is what the outbox event and the research carry. Say if a person should type
+      the key instead.
+- [ ] Default taken: `FOOTPRINT_CHANGE_MAX_TERMS` is 50 per list (terms added, terms removed,
+      items added, items removed) and the decision note is capped at 2000 characters (H24).
+      Say if either should be different.
+- [ ] Default taken: `research` reads `waiting_for_agent` for every item in scope until the
+      bank's own agent's research (d89-agent-research) reports how it stands; removing an item
+      stops nothing that agent already filed, which stays in the bank's own queue.

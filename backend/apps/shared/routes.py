@@ -124,6 +124,8 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # on its own case and a notification of one of its members.
     ("DELETE", "/comments/{comment_id}", "collab.Comment", "comment"),
     ("POST", "/notifications/{notification_id}/read", "collab.Notification", "notification"),
+    # d89-scope-items-logic (OWN-01): one of the bank's own scope items.
+    ("GET", "/tenant/footprint/scope-items/{scope_item_id}", "taxonomy.ScopeItem", "scope_item"),
 ]
 
 

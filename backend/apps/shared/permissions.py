@@ -564,6 +564,10 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # delegate check inside is the gate on what it may name (delegate_cannot_approve).
     ("GET", "/me/out-of-office"): Ungated(UngatedReason.SELF, _SELF_ME),
     ("PUT", "/me/out-of-office"): Ungated(UngatedReason.SELF, _SELF_ME),
+    # d89-scope-items-logic (OWN-01): one of the bank's own scope items, read as the scope is.
+    ("GET", "/tenant/footprint/scope-items/{scope_item_id}"): Ungated(
+        UngatedReason.CAPABILITY, "Every member reads the regulatory scope and the scope items in it (FP-03, OWN-01)."
+    ),
 }
 
 
