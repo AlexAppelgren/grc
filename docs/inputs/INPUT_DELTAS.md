@@ -1803,3 +1803,5 @@ real, each with the whole `CasesCase` of section 19. Where they differ from `ope
 - **Send-back clears the request.** `signoffRequestedBy` and `signoffRequestedAt` go back
   to null, so the next request is a fresh one; the note is kept on the case's transition
   ledger and never in the audit values.
+
+## 20. Export jobs move into R2 and carry their file's checksum (2026-09-25, x-exports-contract)

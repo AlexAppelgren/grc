@@ -62,7 +62,8 @@ class ExportJobTable(TestCase):
 
 class ExporterRegistry(TestCase):
     def test_no_builder_is_registered_by_this_package(self) -> None:
-        for kind in ExportKind:
+        # c9-case-file-export registers the case file; every other kind waits for its task.
+        for kind in set(ExportKind) - {ExportKind.CASE_FILE}:
             with self.subTest(kind=kind):
                 self.assertIsNone(exporters.lookup(kind))
 

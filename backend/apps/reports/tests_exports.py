@@ -154,10 +154,10 @@ class ExportJobs(ScenarioTestCase):
 
     def test_an_unregistered_kind_is_501_and_writes_no_row(self) -> None:
         for kind in ExportKind:
+            if exporters.lookup(kind) is not None:
+                continue  # built; its own module proves what it answers
             with self.subTest(kind=kind):
                 body = {"kind": kind.value, "format": "json"}
-                if kind is ExportKind.CASE_FILE:
-                    body["subjectId"] = str(uuid.uuid4())
                 response = self._create(body)
                 self.assertEqual(response.status_code, 501)
                 self.assertEqual(response.json()["code"], "not_built")
