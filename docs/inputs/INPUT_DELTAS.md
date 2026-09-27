@@ -1758,3 +1758,24 @@ existed; building them on `gap` as `c8-register-models` shaped it changes these 
 - A gap on a Statement of Applicability unit (`unitId`) answers 501 `not_built` until
   `c8-units-paste-soa` adds the column.
 - Not built: `triage_due_at` (`c10-workflow-policy`, ruling 6) and `owner_team`
+
+## 20. Triage, dismissal, restore and the one-person close (2026-09-25, c9-triage)
+
+`triageChange`, `dismissChange`, `restoreChange` and `closeWithoutAction` now answer for
+real, each with the whole `CasesCase` of section 19. Where they differ from `openapi.yaml`:
+
+- **`restoreChange` also undoes a one-person close.** The design moves only `dismissed` to
+  `new`; D-92 (ADR 0060) makes the close without action restorable too, so a case closed by
+  one person with a `no_action` or `not_applicable` reason goes back to triage the same
+  way. A case a second person signed off stays closed: 409 `invalid_transition`.
+- **`closeWithoutAction` leaves `assigned` or `assessing`.** The design has `assigned to
+  closed, closeReason no_action`; the build also closes a case being assessed, with a reason
+  key whose kind is `no_action` or `not_applicable` (D-92). It never leaves `signoff`, whose
+  edge to `closed` is the sign-off's. It is gated by `cases.work`, not by role names.
+- **The owner a triage names must work cases.** `ownerId` must be an active member of the
+  bank whose roles hold `cases.work`; anyone else answers 422 `owner_required`, the same
+  code as no owner at all. A missing `ownerId` is a 422 `validation_error` naming the field.
+- **The audit row carries the keys a move names.** Every move's `case.moved` row carries
+  the status before and after and the new `version`; triage adds `ownerId` and the urgency
+  key, a dismissal and a close add `reasonKey`. The close's note is on the case and its
+  `case_transition` row, never in an audit value.
