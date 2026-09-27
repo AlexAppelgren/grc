@@ -22,7 +22,6 @@ from unittest import mock
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
-from django.test import TestCase
 
 from apps.cases import testing as cases_build
 from apps.cases.models import ChangeCase
@@ -35,7 +34,9 @@ from apps.shared import factories, sentry_scrub, tenancy
 from apps.shared import tests_compliance_lint as lint
 from apps.shared.logging import JsonFormatter
 from apps.shared.models import AuditEvent, OutboxEvent
-from apps.shared.testing import AuditAssertingClient, sign_in
+from apps.collab.tests_case_participants import run_col_s9
+from apps.collab.tests_participants import run_col_s6, run_col_s7, run_col_s8
+from apps.shared.testing import AuditAssertingClient, ScenarioTestCase, sign_in
 from apps.library.reading import today_for
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.models import Tenant
@@ -63,7 +64,7 @@ def _captured_logs() -> Iterator[list[str]]:
         lines.extend(line for line in stream.getvalue().splitlines() if line.strip())
 
 
-class CollabScenarioTests(TestCase):
+class CollabScenarioTests(ScenarioTestCase):
     """Scenario tests for apps.collab, one method per @integration scenario."""
 
     # COL-S1 (c10-comments-mentions)
@@ -368,40 +369,47 @@ class CollabScenarioTests(TestCase):
         real = {"apps/collab/comments.py": Path(comments.__file__).read_text(encoding="utf-8")}
         self.assertEqual(lint.flagged(real), [])
 
-    @skip("pending: COL-S6 (COL-04, chunk 8)")
     def test_col_s6(self) -> None:
         """COL-S6
 
         A person or a team is added to a register entry, audited, and gains no access (COL-04, AC-COL1).
+        Operations: `addObligationParticipant`, `listObligationParticipants`.
         """
+        run_col_s6(self)
 
-    @skip("pending: COL-S7 (COL-04, chunk 8)")
     def test_col_s7(self) -> None:
         """COL-S7
 
         A participant leaves a register entry on their own (COL-04).
+        Operations: `removeObligationParticipant`.
         """
+        run_col_s7(self)
 
-    @skip("pending: COL-S8 (COL-04, chunk 8)")
     def test_col_s8(self) -> None:
         """COL-S8
 
         Register-entry participant routes refuse other tenants, strangers and people who cannot read (COL-04, NFR-01).
+        Operations: `addObligationParticipant`, `listObligationParticipants`, `removeObligationParticipant`.
         """
+        run_col_s8(self)
 
-    @skip("pending: COL-S9 (COL-04, chunk 9)")
     def test_col_s9(self) -> None:
         """COL-S9
 
         Case participants are managed by those who contribute, and refused across tenants (COL-04, NFR-01).
+        Operations: `addCaseParticipant`, `listCaseParticipants`, `removeCaseParticipant`.
         """
+        run_col_s9(self)
 
-    @skip("pending: COL-S10 (COL-02, COL-04, chunk 10)")
+    # COL-S10 (c10-producers)
     def test_col_s10(self) -> None:
         """COL-S10
 
         Participation, confirmed links and new versions notify the people involved, once, if they can read (COL-02, COL-04).
         """
+        from apps.collab.tests_producers import run_col_s10
+
+        run_col_s10(self)
 
     # COL-S11 (c10-reminders-escalation-reviews)
     def test_col_s11(self) -> None:

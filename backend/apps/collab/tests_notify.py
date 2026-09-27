@@ -173,6 +173,40 @@ class TheRecipientCheck(NotifyTestCase):
         self.assertEqual(self.rows_for(self.anna), [])
 
 
+# The kinds chunk 10 produces (COL-02, COL-04): each goes through the one recipient check.
+CHUNK_10_KINDS = (
+    NotificationKind.MENTION,
+    NotificationKind.DUE_SOON,
+    NotificationKind.OVERDUE,
+    NotificationKind.ESCALATION,
+    NotificationKind.REVIEW_DUE,
+    NotificationKind.PARTICIPANT_ADDED,
+    NotificationKind.INVOLVED_ITEM_CHANGED,
+)
+
+
+class EveryKindThroughTheSameCheck(NotifyTestCase):
+    """c10-producers: no kind grows a rule of its own. For every kind chunk 10 produces, on a
+    register entry (`register.read`), the four refusals hold and a reader is told once."""
+
+    def test_the_four_refusals_hold_for_every_chunk_10_kind(self) -> None:
+        entry = _tenant_obligation(self.tenant)
+        deactivated = factories.member(self.tenant, roles=("reader",))
+        Membership.objects.filter(pk=deactivated.pk).update(deactivated_at=timezone.now())
+        closed = factories.member_user(self.tenant, roles=("reader",))
+        User.objects.filter(pk=closed.pk).update(status=UserStatus.DEACTIVATED.value)
+        stranger = factories.member_user(self.other, roles=("compliance_officer",))
+        with transaction.atomic():
+            tenancy.activate(self.tenant.id)
+            TenantRole.objects.create(tenant=self.tenant, key="cases-only", permissions=[perms.CASES_READ])
+        cannot_read = factories.member_user(self.tenant, roles=("cases-only",))
+        refused = [(deactivated.user, "team"), (closed, "team"), (stranger, "team"), (cannot_read, "team")]
+        for kind in CHUNK_10_KINDS:
+            with self.subTest(kind=kind):
+                rows = self.notify(kind, "tenant_obligation", entry.id, (self.erik, "owner"), (self.erik, "team"), *refused)
+                self.assertEqual([(row.user_id, row.kind) for row in rows], [(self.erik.id, kind.value)])
+
+
 class TitlesAndLogs(NotifyTestCase):
     def test_each_recipient_reads_the_record_title_in_their_own_language(self) -> None:
         obligation = _obligation(self.tenant)

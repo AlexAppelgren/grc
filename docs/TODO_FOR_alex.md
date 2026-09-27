@@ -1538,3 +1538,20 @@ always land on Not found. Needs a choice before COL-S1's journey ("Erik finds th
 link back to the case"): either `notify()` names a case by its change (`subject_type` `change`, the
 change id), or the notification gains the change id, or the frontend adds a `/cases/{caseId}` page that
 redirects to its change. The second keeps the case's own read check (`cases.read`) on the row.
+## c10-producers: participation and linked-change notices, defaults taken (2026-09-25, COL-02, COL-04, HOM-05, D-97)
+
+Built by default; nothing waits on you. Say if any should change.
+
+- [ ] **An agent-confirmed link notifies people (D-97).** A link confirmed by an agent of
+      another definition tells the people involved exactly as a person's confirmation does.
+      Default: so, pending your answer on D-97; if only person-confirmed links should count,
+      the handler reads the confirmation's `confirmedOrigin` and stops there.
+- [ ] **Who is "involved" in an obligation.** The people My work counts: the register
+      entry's first-line owner and owning team, the owners and owning teams of its rows per
+      legal entity, and its live participants, people and teams; a team reaches its members.
+      Case participants are not told about the obligation. Default: so.
+- [ ] **Both notices stay in the product.** `participant_added` and `involved_item_changed`
+      send no mail, like every kind but the reminders, the escalation and the digest.
+      Default: so.
+- [ ] **Adding yourself tells nobody, and a confirmation naming two of your obligations
+      tells you twice** (once per register entry). Default: so.

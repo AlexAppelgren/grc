@@ -212,6 +212,19 @@ WORKFLOW = [
 ]
 
 
+# The operations whose logic has landed, one line each, so each builder adds its own. Each
+# has its own test module proving what it answers past the gates.
+BUILT = {
+    "triageChange",  # c9-triage: apps/cases/tests_triage.py
+    "dismissChange",  # c9-triage: apps/cases/tests_triage.py
+    "restoreChange",  # c9-triage: apps/cases/tests_close_paths.py
+    "closeWithoutAction",  # c9-triage: apps/cases/tests_close_paths.py
+    "startAssessment",  # c9-assessment: apps/cases/tests_assessment.py
+    "saveAssessment",  # c9-assessment: apps/cases/tests_assessment.py
+    "getCaseFile",  # c9-case-file-export: apps/cases/tests_case_file.py
+}
+
+
 def _send(client: Any, route: Route, url: str, headers: dict[str, Any]) -> Any:
     if route.body is MULTIPART:
         return client.post(url, data=EVIDENCE_FORM, **headers)
@@ -308,6 +321,8 @@ class WorkflowContract(TestCase):
         bank = _bank_with_work()
         with stub_session(bank.principal):
             for route in WORKFLOW:
+                if route.operation_id in BUILT:
+                    continue
                 with self.subTest(operation=route.operation_id):
                     response = _send(self.client, route, route.url(bank.change_id, bank.action_id, bank.evidence_id), AS_SESSION)
                     self.assertEqual(response.status_code, 501)

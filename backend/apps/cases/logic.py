@@ -1,5 +1,6 @@
 """What every case workflow module shares (CAS-02 to CAS-08): finding the caller's case,
-`If-Match`, the facts the guards read, and the one way a case changes category.
+who takes part in it, `If-Match`, the facts the guards read, and the one way a case changes
+category.
 
 Nothing else lives here. Each route's own logic is in its own module — `triage.py`,
 `assessment.py`, `actions.py`, `evidence.py`, `signoff.py`, `case_file.py` — and every
@@ -31,11 +32,13 @@ from django.db.models.functions import Coalesce
 
 from apps.cases import state
 from apps.cases.models import CASE_JOINS, Action, CaseTransition, ChangeCase, Evidence, ImpactAssessment
+from apps.collab.models import Participant
 from apps.shared.adapters.scanner import ScanState
 from apps.shared.audit import Actor, record
 from apps.shared.errors import ProblemError
 from apps.shared.kinds import CaseStatusCategory, CloseReason
 from apps.shared.models import Tenant
+from apps.taxonomy.models import Team
 
 SUBJECT_TYPE = "change_case"
 MOVED = "case.moved"
@@ -84,6 +87,27 @@ def load_evidence(tenant: Tenant, evidence_id: uuid.UUID) -> Evidence:
     if evidence is None:
         raise _not_found()
     return evidence
+
+
+# ---------------------------------------------------------------------------------------
+# Who takes part (COL-04, D-18, D-20)
+# ---------------------------------------------------------------------------------------
+def participations(case: ChangeCase) -> list[Participant]:
+    """Everyone who takes or took part in the case, people and teams, in the order they
+    were added, ended participations included, with the people and the teams' labels
+    beside them: two queries however many there are. Adding and removing them is
+    `apps/collab/participants.py`'s."""
+    return list(
+        Participant.objects.select_related("user", "team", "added_by", "removed_by")
+        .prefetch_related("team__labels")
+        .filter(case=case)
+    )
+
+
+def contributor_teams(rows: Sequence[Participant]) -> list[Team]:
+    """The assessment's contributor teams: the live team participants among `rows` (D-20).
+    `impact_assessment` stores no list of its own, so the two can never disagree."""
+    return [row.team for row in rows if row.team is not None and row.removed_at is None]
 
 
 # ---------------------------------------------------------------------------------------
@@ -169,14 +193,23 @@ def case_facts(case: ChangeCase, *, actor: uuid.UUID | None) -> state.CaseFacts:
 # ---------------------------------------------------------------------------------------
 # The one way a case changes category
 # ---------------------------------------------------------------------------------------
-def transition(case: ChangeCase, to_status: CaseStatusCategory, *, actor: Actor, user: Any, note: str = "") -> CaseTransition:
+def transition(
+    case: ChangeCase,
+    to_status: CaseStatusCategory,
+    *,
+    actor: Actor,
+    user: Any,
+    note: str = "",
+    audit: dict[str, str] | None = None,
+) -> CaseTransition:
     """Move `case` to `to_status` if the state machine allows it, or raise its refusal.
 
     The caller sets what its move changes on the case first (the owner, a reason, the
     sign-off names); this saves those fields with the new category and a raised
     `version`, and writes the `case_transition` row and the `record()` row, all in one
     transaction (CAS-08). A refusal writes nothing. The note is tenant content, so it is
-    kept on the ledger row and never in the audit values (R2_CROSS_CUTTING (m)).
+    kept on the ledger row and never in the audit values (R2_CROSS_CUTTING (m)); `audit`
+    adds the ids and keys the move names (an owner, a reason's key) to the audit row's after.
     """
     from_status = CaseStatusCategory(case.status)
     state.check_transition(from_status, to_status, case_facts(case, actor=None if user is None else user.id))
@@ -201,6 +234,6 @@ def transition(case: ChangeCase, to_status: CaseStatusCategory, *, actor: Actor,
             summary=f"{actor.label} moved a case from {from_status.value} to {to_status.value}.",
             tenant_id=case.tenant_id,
             before={"status": from_status.value},
-            after={"status": to_status.value, "version": case.version},
+            after={"status": to_status.value, "version": case.version, **(audit or {})},
         )
     return moved

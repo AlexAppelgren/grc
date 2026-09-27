@@ -241,6 +241,13 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "CAS-05: a stored file is pending, clean, infected or error; the download serves "
         "only `clean`, and a new row starts `pending`, so an unscanned file is never shown",
     ),
+    # Chunk 8's register (c8-register-models, register 0001). `Applicability` is listed above.
+    "AssessmentMethod": (
+        "assessment_method",
+        "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
+        "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
+        "reporting branches on",
+    ),
     # Chunk 10 (c10-collab-models): the notification and the mail it may send.
     "NotificationKind": (
         "notification_kind",
@@ -295,13 +302,6 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "research_request_status",
         "AGT-05: a request's lifecycle, queued to done, failed, rejected or cancelled; the "
         "worker and the request list branch on it",
-    ),
-    # Chunk 8's register (c8-register-models, register 0001). `Applicability` is listed above.
-    "AssessmentMethod": (
-        "assessment_method",
-        "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
-        "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
-        "reporting branches on",
     ),
     # acc-foundation (identity 0007, ACC-03, D-77, ADR 0056).
     "CredentialKind": (
