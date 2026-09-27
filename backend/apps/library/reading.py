@@ -773,7 +773,9 @@ def refuse_beyond(reader: Reader, footprint: FootprintFilter, *, bank_filters: b
             "An agent access credential reads inside the bank's regulatory scope only, so footprint is in.", code="unknown_filter"
         )
     if bank_filters and not reader.bank_layer:
-        raise ProblemError(status=403, code="tenant_reach_off", detail="Tenant reach is off for this agent, so it reads the library alone.")
+        raise ProblemError(
+            status=403, code="tenant_reach_off", detail="This agent does not read the bank's register, so it reads the library alone."
+        )
 
 
 def layered(reader: Reader, obligations: Iterable[Obligation]) -> list[uuid.UUID]:

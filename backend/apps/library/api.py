@@ -298,8 +298,8 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     An agent the bank runs itself, whose key or personal token belongs to an agent access
     entry, reads narrower: only shared duties, never the bank's own; only inside the bank's
     footprint, so footprint stays in; and only inside the departments and products its entry
-    names. Its rows carry the bank's overlay and tags only while tenant reach is on for the
-    bank and for the entry, and never on a duty under a standard; otherwise they read as not
+    names. Its rows carry the bank's overlay and tags only when it holds `tenant:read` and
+    tenant reach is on for the bank and for the entry, and never on a duty under a standard; otherwise they read as not
     assessed, with no status, owner or tag.
 
     Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
@@ -315,7 +315,8 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     filter, since it has no tags or register of its own; `not_found` (404) when such a caller
     reads the list at all; `unknown_filter` (422) when an agent access credential sends
     footprint all or watched; `tenant_reach_off` (403) when one sends an overlay or tenantTag
-    filter while tenant reach is off for it; `validation_error` (422) when a term filter is not written
+    filter while it may not read the bank's register (it lacks `tenant:read`, or tenant reach
+    is off for the bank or its entry); `validation_error` (422) when a term filter is not written
     dimension:key, when instrument, dutyType, complianceStatus, ownerTeam or any term, tag or
     tenantTag value is longer than 80 characters, when applicability is not applies,
     not_applicable or under_assessment, when owner is not a UUID, when more than 20 terms, tags or

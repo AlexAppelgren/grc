@@ -18,8 +18,8 @@ apply" hides the status and changes nothing: turning it back shows it again (REG
 
 The overlay is the bank's judgement, so a bank's own agent reads it only through the gate the
 register read has (ACC-04, ACC-08, D-76): `shown_to()` is true for a person and for a bank's
-key bound to no entry, and for an agent access credential only while tenant reach is on for
-the bank and for the entry it reads as. Without it the inventory answers such a credential
+key bound to no entry, and for an agent access credential only when it holds `tenant:read`
+and tenant reach is on for the bank and for the entry it reads as. Without it the inventory answers such a credential
 the library's facts alone (`library.reading.Reader`).
 """
 
@@ -34,6 +34,7 @@ from django.db.models import CharField, Case, Exists, F, IntegerField, OuterRef,
 from django.db.models.functions import Coalesce, JSONObject
 
 from apps.agents.agent_access import reach_allowed
+from apps.shared import permissions as perms
 from apps.register.models import Applicability, TenantObligation, TenantObligationScope
 from apps.register.schemas import Applicability as ApplicabilityAnswer
 from apps.register.schemas import RegisterPersonRef, RegisterVocabRef
@@ -66,9 +67,12 @@ EMPTY = Overlay(NOT_ASSESSED, None, None, None)
 
 def shown_to(principal: Principal) -> bool:
     """Whether the bank's overlay, and the bank's own tags beside it, may be answered to this
-    caller: always to anyone but an agent access credential, and to one of those only while
-    `reach_allowed` (the bank's tenant reach and the entry's own toggle, both on)."""
-    return not principal.is_agent_access or reach_allowed(principal)
+    caller: always to anyone but an agent access credential, and to one of those only when it
+    holds `tenant:read`, the register's own scope, and `reach_allowed` (the bank's tenant
+    reach and the entry's own toggle, both on; AGENT_ACCESS.md section 5)."""
+    if not principal.is_agent_access:
+        return True
+    return perms.SCOPE_TENANT_READ in principal.scopes and reach_allowed(principal)
 
 
 class OverlayFilters(NamedTuple):

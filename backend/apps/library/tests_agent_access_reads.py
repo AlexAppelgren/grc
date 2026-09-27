@@ -36,7 +36,9 @@ from apps.taxonomy.tests_entry_scope import EntryBank, seed, term
 V1 = "/api/v1"
 OBLIGATIONS = f"{V1}/obligations"
 INSTRUMENTS = f"{V1}/instruments"
-READS = ("library:read",)
+# The register's scope beside the library's, so reach alone decides the bank's layer here;
+# a library-only credential never reads it (tests_access_own_review.py).
+READS = ("library:read", "tenant:read")
 OVERLAY = ("applicability", "complianceStatus", "firstLineOwner", "ownerTeam")
 NOT_ASSESSED = {"applicability": "under_assessment", "complianceStatus": None, "firstLineOwner": None, "ownerTeam": None}
 
