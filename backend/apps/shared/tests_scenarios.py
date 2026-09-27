@@ -465,10 +465,15 @@ class SharedScenarioTests(ScenarioTestCase):
                 # is refused a page above the maximum on every list, whatever it may read.
                 url = PATH_PARAMETER.sub(lambda m: "tenant_tag" if m.group(0) == "{list_name}" else str(uuid.uuid4()), path)
                 url = f"{url.removeprefix(V1)}?limit={settings.API_PAGE_SIZE_MAX + 1}"
-                for principal in (member, platform):
-                    with stub_session(principal):
-                        response = timed(url, self.as_user(principal))
-                    if response.status_code != 403:
+                # A key-only list (the register read of a bank's own agent) is tried with a key.
+                for principal, stub, headers in (
+                    (member, stub_session, self.as_user(member)),
+                    (platform, stub_session, self.as_user(platform)),
+                    (key, stub_api_key, self.as_agent(key)),
+                ):
+                    with stub(principal):
+                        response = timed(url, headers)
+                    if response.status_code not in (401, 403):
                         break
                 if response.status_code == 401:
                     # A list only a key reads (acc-register-read): signed in with a bank's key.

@@ -653,8 +653,12 @@ class ObligationDetailTests(TestCase):
         self.assertEqual((missing.status_code, missing.json()["code"]), (404, "not_found"))
         self.assertEqual(missing.json()["detail"], reading.NOT_FOUND)
         self.assertEqual(missing.headers["Content-Type"], "application/problem+json")
-        malformed = self.client.get(f"{URL}/not-a-uuid", **sign_in(self.reader, tenant=self.tenant))
-        self.assertEqual(malformed.status_code, 422)
+        # A slug that is no UUID is read as a stable key (acc-scoped-reads), and names nothing.
+        no_such_key = self.client.get(f"{URL}/not-a-uuid", **sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual((no_such_key.status_code, no_such_key.json()["code"]), (404, "not_found"))
+        for malformed in ("not a key!", "k" * 121):
+            with self.subTest(malformed=malformed):
+                self.assertEqual(self.client.get(f"{URL}/{malformed}", **sign_in(self.reader, tenant=self.tenant)).status_code, 422)
 
     def test_a_malformed_value_fails_the_read_instead_of_reaching_the_caller(self) -> None:
         # The card is validated as it is built, natively by pydantic. A value the database or
