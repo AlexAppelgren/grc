@@ -75,8 +75,8 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it. R1 covers the feed, inventory, roadmap, briefing and search; reports apply it in chunk 12 | M | R1 | built |
 | FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | built |
 | I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data | M | R1 | built |
-| ACC-02 | An agent access entry's scope is the terms of its departments and products intersected with the tenant footprint, computed per request. It can only narrow; an empty dimension does not restrict; a record outside it answers 404, never a filtered result | M | R2 | pending |
-| OWN-01 | A scope item (name, jurisdiction and regime terms, official reference, public source addresses) is added through the regulatory scope request: `footprint.request` asks, a different person with `footprint.approve` approves with a passkey; no API key reaches it, approving widens no term, and no agent ever writes one (D-89, D-91) | M | R2 | pending |
+| OWN-01 | A scope item (name, jurisdiction and regime terms, official reference, public source addresses) is added through the regulatory scope request: `footprint.request` asks, a different person with `footprint.approve` approves with a passkey; no API key reaches it, approving widens no term, and no agent ever writes one (D-89, D-91) | M | R2 | in_progress |
+| ACC-02 | An agent access entry's scope is the terms of its departments and products intersected with the tenant footprint, computed per request. It can only narrow; an empty dimension does not restrict; a record outside it answers 404, never a filtered result | M | R2 | in_progress |
 ## 3. Acceptance criteria (from PRD, condensed)
 
 - **AC-VOC1** An admin adds a change type, a tag and a sub-status with no deploy:
@@ -560,6 +560,22 @@ When any API key, a tenant's or the platform's, asks for, approves or edits a sc
 Then the request is refused and nothing is stored
 And tenant B's fetch of the item answers 404
 ```
+
+> **Note — how a scope item rides on the request (d89-scope-items-logic).**
+> `POST /tenant/footprint/requests` takes `scopeItemAdds` (name, description, jurisdiction,
+> regime term, official reference, public https address) and `scopeItemRemoves` (keys of
+> items in scope) beside the terms, with the dry run, the one-waiting rule, four eyes and the
+> passkey unchanged. The item is stored with the request as `requested`, with a key derived
+> from its name that is never reused (`_2`, `_3` for a taken one); approval makes it
+> `in_scope` or `removed` with a history row and one `scope_item.added` or
+> `scope_item.removed` audit and outbox row carrying ids and keys only, and a rejection or
+> withdrawal makes it `declined`. `GET /tenant/footprint` lists the items in scope with
+> `research` (`waiting_for_agent` until the bank's own agent's research, d89-agent-research,
+> reports more), and `GET /tenant/footprint/scope-items/{scopeItemId}` reads one. Each list
+> of the request is capped by `FOOTPRINT_CHANGE_MAX_TERMS` and the decision note at 2000
+> characters (H24). Every route takes a person's session; `tests_scope_items.NoOtherWriter`
+> fails when any module but the request logic writes a scope item. The `@e2e` half is
+> d89-e2e-journey's.
 
 ### FP-S19 — J-12: the bank's own regulation, from scope item to "Private to us" `@e2e` (OWN-01, OWN-02, OWN-03, OWN-04, AC-OWN1, AC-OWN2, J-12)
 ```gherkin

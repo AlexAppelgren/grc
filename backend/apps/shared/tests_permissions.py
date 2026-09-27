@@ -26,6 +26,7 @@ PRD_TENANT_PERMISSIONS = {
     "register.read", "cases.read", "reports.read", "audit.read", "footprint.request", "footprint.approve",
     "cases.triage", "cases.work", "cases.contribute", "cases.signoff", "register.edit", "gaps.edit",
     "applicability.approve", "risk.accept.approve", "proposals.create",
+    "private_records.approve",
     "exports.create", "ai_log.read", "members.manage", "roles.manage", "security.manage", "vocab.manage",
     "workflow.manage", "agents.manage", "integrations.manage",
     # PRD 0.5 (ACC-01, ACC-03): a bank's own agents and personal access tokens.

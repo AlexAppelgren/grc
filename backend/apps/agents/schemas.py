@@ -294,8 +294,8 @@ class AgentRunFinish(WriteBody):
 
 
 class AgentRunOut(CamelSchema):
-    """One run as every reader sees it. A tenant reads the library's runs and its own; no
-    reader sees another tenant's (AGT-01, item 14)."""
+    """One run as every reader sees it. A tenant reads its own runs, the console the
+    library's; no reader sees another tenant's (AGT-01, item 14, ruling 9)."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_FINISHED_RUN]})
 
@@ -317,8 +317,8 @@ class AgentRunOut(CamelSchema):
     started_at: datetime = Field(
         description=(
             "When the run was opened, as a UTC timestamp in ISO 8601. The server sets it, not "
-            "the agent, so it cannot be backdated. Runs are listed oldest first by this value, "
-            "which is the order a sweep actually happened in."
+            "the agent, so it cannot be backdated. Runs are listed newest first by this value, "
+            "with the run's identifier breaking a tie so paging stays stable."
         )
     )
     finished_at: datetime | None = Field(
@@ -877,8 +877,8 @@ class AgentRunListPage(CamelSchema):
 
     items: list[AgentRunListItem] = Field(
         description=(
-            "The runs on this page, oldest first. A bank's session sees bleqq's library runs and "
-            "its own; the console sees the library's. An empty list is a 200, never an error."
+            "The runs on this page, newest first. A bank's session sees its own runs and never "
+            "one of bleqq's; the console sees the library's. An empty list is a 200, never an error."
         )
     )
     total: int = Field(description="How many runs this caller may see in total, not how many are on this page.")
@@ -919,12 +919,15 @@ class ResearchRequestOut(CamelSchema):
     model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_REQUEST]})
 
     id: uuid.UUID = Field(description="The request's identifier, a UUID. Another bank's request answers 404.")
-    kind: Literal["run_now", "check_source", "check_url", "research_topic", "retag"] = Field(
+    kind: Literal["run_now", "check_source", "check_url", "research_topic", "retag", "scope_item"] = Field(
         description=(
             "What was asked. `run_now`: run the agent once now. `check_source`: check one "
             "registered source now. `check_url`: check one web address now. `research_topic`: "
             "research the topic named. `retag`: the console's request to re-tag library "
-            "records, answered by a batch proposal and never a direct edit."
+            "records, answered by a batch proposal and never a direct edit. `scope_item`: "
+            "research a scope item a second person approved into the regulatory scope, opened "
+            "by the server and never asked for here; what it finds waits in the organisation's "
+            "own queue as proposals a person decides."
         )
     )
     tenant_agent_id: uuid.UUID | None = Field(
@@ -944,6 +947,14 @@ class ResearchRequestOut(CamelSchema):
     created_at: datetime = Field(description="When the request was made, as a UTC timestamp in ISO 8601.")
     completed_at: datetime | None = Field(
         description="When its run finished, as a UTC timestamp in ISO 8601, or null while it has not."
+    )
+    batch_proposal_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "The batch proposal a `retag` produced, as the UUID `GET /proposal-batches/{batchId}` "
+            "takes, once its run has filed it. Null while the run is working, when it filed "
+            "nothing, and for every other kind."
+        ),
     )
 
 
@@ -998,8 +1009,11 @@ class PlatformWatchLastRun(CamelSchema):
     finished_at: datetime | None = Field(
         description="When the last run finished, as a UTC timestamp in ISO 8601, or null while it is still running."
     )
-    status: Literal["running", "succeeded", "failed"] = Field(
-        description="How it ended. `running`: still going. `succeeded`: it finished. `failed`: it stopped early."
+    status: Literal["running", "succeeded", "failed", "interrupted"] = Field(
+        description=(
+            "How it ended. `running`: still going. `succeeded`: it finished. `failed`: it stopped early. "
+            "`interrupted`: it was stopped from outside before it finished."
+        )
     )
 
 

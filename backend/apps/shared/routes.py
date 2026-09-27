@@ -85,4 +85,11 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("DELETE", "/actions/{action_id}", "cases.Action", "case_action"),
     ("GET", "/evidence/{evidence_id}/download", "cases.Evidence", "case_evidence"),
     ("DELETE", "/evidence/{evidence_id}", "cases.Evidence", "case_evidence"),
+    # acc-scope-and-reach (ACC-08): deciding a request for tenant reach.
+    ("POST", "/tenant/reach/requests/{request_id}/approve", "governance.TenantReachRequest", "tenant_reach_request"),
+    ("POST", "/tenant/reach/requests/{request_id}/reject", "governance.TenantReachRequest", "tenant_reach_request"),
+    # d89-scope-items-logic (OWN-01): one of the bank's own scope items.
+    ("GET", "/tenant/footprint/scope-items/{scope_item_id}", "taxonomy.ScopeItem", "scope_item"),
+    # c11-tenant-agents-budget-scope (AGT-04)
+    ("PATCH", "/agents/{tenant_agent_id}", "agents.TenantAgent", "tenant_agent"),
 ]

@@ -75,10 +75,23 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `AGENT_ACCESS_KEY_MAX_DAYS` | api | `90` | `90` | `90` | The longest a service key of an agent access entry may live, in days (ACC-03, ADR 0056). A key is minted with an expiry no later than this; at least 1 or the app refuses to boot |
 | `PERSONAL_TOKEN_MAX_DAYS` | api | `90` | `90` | `90` | The longest a personal access token may live, in days (ACC-03, ADR 0056). A token cannot be minted without an expiry, and never one later than this; at least 1 or the app refuses to boot |
 | `AGENT_ACCESS_RATE_PER_MINUTE` | api | `60` | `60` | `60` | Requests per minute one agent access credential, a service key of an entry or a personal token, may make before it answers 429 and writes `credential_rate_limited` to the security log (ACC-09); at least 1 or the app refuses to boot |
+| `SCOPE_ITEM_DESCRIPTION_MAX_CHARS` | api | `2000` | `2000` | `2000` | The longest description a bank may give a scope item, the regulation it asks its own agent to research; a longer one is refused at the request (OWN-01, D-91). At least 1 or the app refuses to boot |
+| `FOOTPRINT_CHANGE_MAX_TERMS` | api | `50` | `50` | `50` | The most terms, and the most scope items, one regulatory scope request may add or remove, each list on its own; a longer list is refused with 422 (FP-02, OWN-01, H24). At least 1 or the app refuses to boot |
 | `ASK_RETRIEVAL_DEPTH` | api | `6` | `6` | `6` | How many passages of the reader's own ranking Ask gives the model, best first: the whole of what an answer may rest on, each one a numbered citation. From 1 to `AI_GENERATION_CITATIONS_MAX`, or the app refuses to boot (SRC-03) |
 | `ASK_MAX_TOKENS` | api | `1024` | `1024` | `1024` | The most one Ask answer may write, beneath the `LLM_MAX_TOKENS` ceiling: an answer is a few cited sentences. At least 1, or the app refuses to boot (SRC-03) |
 | `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |
 | `AGENT_RESEARCH_TOPIC_MAX_CHARS` | api | `500` | `500` | `500` | The longest topic a research request or a console re-tag request may carry, in characters (AGT-05, c11-agents-contract); a longer one answers 422 `validation_error` |
+| `AGENT_MIN_CADENCE` | api | `weekly` | `weekly` | `weekly` | The most frequent cadence a bank may give one of its own agents: `daily`, `weekly` or `monthly`, and `manual` is always allowed; a more frequent one answers 422 `above_plan_limit`. Any other value and the app refuses to boot (AGT-04, c11-tenant-agents-budget-scope) |
+| `AGENTS_PER_TENANT_MAX` | api | `3` | `3` | `3` | How many agents of its own a bank may add; one more answers 422 `above_plan_limit` (AGT-04, c11-tenant-agents-budget-scope) |
+| `AGENT_DEFAULT_RUN_HOUR` | api | `6` | `6` | `6` | The hour, from 0 to 23 in the bank's own time zone, a scheduled run of a bank's own agent starts when the bank names none; outside that range the app refuses to boot (AGT-04, c11-tenant-agents-budget-scope) |
+| `AGENT_BEAT_INTERVAL_MINUTES` | worker, beat | `15` | `15` | `15` | How often the two agent beats fire, in minutes: bleqq's agents and the banks' own; below 1 the app refuses to boot (AGT-06, c11-scheduler) |
+| `AGENT_RUNS_PER_BEAT` | worker | `5` | `5` | `5` | The most runs of bleqq's agents one beat starts, the longest-waiting first; the rest start on the next beat, and below 1 the app refuses to boot (AGT-03, c11-scheduler) |
+| `AGENT_RUN_BUDGET_LIMIT` | api, worker | `5.00` | `5.00` | `5.00` | The most one run of a bank's own agent may spend, in EUR, stored on the run; a run starts only when the month's spend plus this fits under the bank's cap, and anything but an amount above zero refuses the boot (AGT-04, c11-scheduler) |
+| `RESEARCH_REQUESTS_PER_MONTH` | api | `30` | `30` | `30` | How many research requests a bank may make in a calendar month of its own time zone; past it a request answers 429 `plan_limit_reached` (AGT-05, c11-research-requests) |
+| `SCOPE_RESEARCH_TEXT_MAX_CHARS` | worker | `2000` | `2000` | `2000` | The longest each of a scope item's text fields (its name, official reference and source address) may be when it reaches the bank's own research agent; each is cut to it before it leaves the worker (OWN-02, D-98, ADR 0061). At least 1 or the app refuses to boot |
+| `RESEARCH_URL_TIMEOUT_SECONDS` | api | `5` | `5` | `5` | The seconds one connection of a `check_url` request's fetch may take (AGT-05, c11-research-requests) |
+| `RESEARCH_URL_MAX_BYTES` | api | `1000000` | `1000000` | `1000000` | The most bytes of a fetched page a `check_url` request keeps (AGT-05, c11-research-requests) |
+| `RESEARCH_URL_MAX_REDIRECTS` | api | `3` | `3` | `3` | How many redirects a `check_url` fetch follows, each checked for a public https host first; past it the request answers 422 `url_unreachable` (AGT-05, c11-research-requests) |
 
 ## Testing, observability, budgets
 
@@ -136,6 +149,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 |---|---|---|---|---|---|
 | `NEXT_PUBLIC_API_URL` | web | `http://localhost:8000` | `http://localhost:8000` | the api's public URL | Baked at build time by Next; a change needs a rebuild |
 | `NEXT_PUBLIC_SUPPORT_CONTACT` | web | empty | empty | the address that answers access requests | An email address. The public page's "Write to us" opens a mail to it; empty hides the link. Baked at build time |
+| `NEXT_PUBLIC_RESEARCH_POLL_MS` | web | `5000` | `5000` | `5000` | How often, in milliseconds, `/admin/agents` re-reads a research request still queued or running from its status endpoint (AGT-05). Lower it and a finished request shows sooner at the cost of more reads. Baked at build time |
 
 ## Rules
 

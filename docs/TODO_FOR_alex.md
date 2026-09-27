@@ -1190,6 +1190,7 @@ to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WA
       Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
       note says only that each national body adopts the edition under its own
       reference. A person verifies them before the note names any.
+
 ## ai-log-read: a shared "So what?" reads each bank's own review state (2026-09-23, AUD-02)
 
 - [ ] **A library "So what?" in the AI log shows the reading bank's own review, not one
@@ -1221,6 +1222,7 @@ to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WA
 - [ ] **Default taken: a new instrument in the bank's library updates is never cut to the
       footprint.** A new obligation is cut like a new version; an instrument is not a duty,
       so it reaches every bank, as a change to a shared list does.
+
 ## watch-regime-required: a run's classification is logged with metadata it reports itself (2026-09-23, D-66, AUD-02, D-39)
 
 Nothing waits for these; each has the default the build took.
@@ -1244,6 +1246,7 @@ Nothing waits for these; each has the default the build took.
       footprint of the bank whose case they belong to, so no cached scope verdict moved; the
       one visible difference is that tenant B's feed now shows the AI-mapping change as
       outside its scope, since tenant B does not follow the AI and ICT regime.
+
 ## ask-screen: what a reader is told when the model cut an answer off (2026-09-23, SRC-03, AUD-02, D-82)
 
 - [ ] **An Ask answer the model stopped at its length limit (`ASK_MAX_TOKENS`, 1024 tokens)
@@ -1347,6 +1350,7 @@ needs a decision.
 - One medium finding waits as a named fix task, `merge-moved-ids` (H23): a vocabulary
   merge's audit row counts the records it moved but does not name them. Default: it is
   built with the next batch that owns `proposals/apply.py`.
+
 ## security-review-c7: the chunk 7 security review (2026-09-23, D-07, SRC-01, SRC-03)
 
 - [ ] **May a bank's search text reach the embedder and the reranker?** D-07 says the Ask
@@ -1504,3 +1508,226 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
       then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
       (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**
+## acc-scope-and-reach: an entry's scope and tenant reach, answered by default (2026-09-25, ACC-02, ACC-08, D-70, D-72)
+
+- [ ] Default taken: an opt-in dimension keeps its rule inside an entry's scope too. The
+      second pass is FP-01 unchanged against the entry's terms, so an entry narrowed to
+      Trading sees a standard's records (ISO/IEC 27001) only when a Trading product names
+      that standard. Say if a narrowed entry should instead inherit every standard the bank
+      follows.
+- [ ] Default taken: a department brings its own products and those of every active unit
+      below it; a deactivated unit cuts its branch, and a retired product derives nothing.
+      An entry that names departments or products deriving no term reads nothing
+      (`entry_scope_empty`), and an entry the session cannot see, or one revoked, fails
+      closed the same way rather than reading the whole footprint.
+- [ ] Default taken: rejecting a reach request needs a passkey step-up like approving it,
+      and a reach request is never withdrawn (the requester's colleague rejects it).
+      Switching reach off needs one person and a step-up; on again takes a new request and
+      a second person. `GET /tenant/reach` is readable with `security.manage` alone.
+
+## d89-scope-items-model: what a scope item row holds (2026-09-25, OWN-01, D-91)
+
+- [ ] Default taken: a scope item names one jurisdiction, one regime term and one public
+      https address, as the package's acceptance says; PRD OWN-01 speaks of terms and
+      addresses in the plural. A bank that needs more asks for a second item. Say if one item
+      should carry several of each (a join table per list, no other change).
+- [ ] Default taken: the item row is written with the request that asks for it, as
+      `requested`, so the approver sees exactly what they approve; it is `in_scope` only after
+      the second person's passkey approval, and `declined` if the request is rejected or
+      withdrawn. No key and no agent writes one either way.
+
+## d89-scope-items-logic: scope items on the regulatory scope request (2026-09-25, OWN-01, FP-02, D-91)
+
+- [ ] Default taken: a scope item's key is derived from its name when it is asked for and is
+      never reused, so asking again after a decline gives `…_2`. The screens show the name;
+      the key is what the outbox event and the research carry. Say if a person should type
+      the key instead.
+- [ ] Default taken: `FOOTPRINT_CHANGE_MAX_TERMS` is 50 per list (terms added, terms removed,
+      items added, items removed) and the decision note is capped at 2000 characters (H24).
+      Say if either should be different.
+- [ ] Default taken: `research` reads `waiting_for_agent` for every item in scope until the
+      bank's own agent's research (d89-agent-research) reports how it stands; removing an item
+      stops nothing that agent already filed, which stays in the bank's own queue.
+## c11-definitions-platform: publishing bleqq's agent versions, their settings and runs (2026-09-25, AGT-03, ADM-02, AGT-06)
+
+**Answered by Alex on 2026-09-25 (D-102, ADR 0059): "Platform config".** The question was
+how the console may write an agent definition, while `agent` and `agent_version` read as
+library rows that only a proposal's approval may reach.
+
+- [x] **How may the console write an agent definition?** Agent definitions, agent versions
+      and platform agent settings are platform configuration, not library rows. The console
+      writes them directly through `agents/seeds/console.py`, behind
+      `agent_definitions.manage`, a fresh passkey and a person's session, with one audit row
+      carrying no tenant and the assertion. The library fence names the three in one
+      platform-configuration list (`PlatformConfigurationGuard`) and still refuses every
+      other model, route, proposal kind and watch module. CLAUDE.md section 5 gains no
+      exception line. Built by `c11-agent-config-platform`; AGT-S4 is green.
+
+Defaults taken; nothing waits on them.
+
+- [ ] **A bank's run log no longer lists bleqq's runs.** `GET /agent-runs` from a bank's
+      session returns its own runs only; the console reads bleqq's with
+      `GET /console/agent-runs` (the default "no prompts, tools, budgets, run rows or costs"
+      under "What may a bank see of bleqq's watch?"). What a bank sees of bleqq's watch is
+      `GET /agents/platform`. Row-level security still lets a bank read a library run; the
+      narrowing is the read's. `c11-run-history` (same wave) owns that read and may have
+      taken the other reading ("platform runs never carry cost to a bank"); the integrator
+      keeps this one.
+- [ ] **A run opens on the newest version still published.** When every version is
+      retired a run is refused with 409 `no_published_version`.
+
+## c11-agent-config-platform: agent definitions as platform configuration (2026-09-25, AGT-03, D-102)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **The console keeps the database's `seed` door.** The three console writers open the
+      same door as the reference seed, which the database accepts on every inventory table,
+      because a door of their own would change the database trigger, the door lint and the
+      library database guard, none of them this package's. What keeps the writers to agent
+      rows is the fence: `agents/seeds/console.py` may name no library model but `Agent`
+      and `AgentVersion`, and only the three console routes reach it. Default: keep it so.
+      The alternative is a `platform_config` door accepted only by `agent` and
+      `agent_version`, a small hardening for a later package.
+- [ ] **The AGT-S4 journey stays `fixme`.** The integration scenario is green; the console
+      screen that publishes and retires a version is not built yet, and its journey belongs
+      to the package that builds it.
+
+## c11-proposal-batches-decide: deciding a batch row by row (2026-09-25, PRO-04, D-1xx)
+
+- [ ] **Who decides a re-tag batch an agent files.** Built: a second person holding
+      `proposals.review`, with a passkey, and never the proposer. An agent reviewer is
+      refused (409 `person_review_required`) and no API key reaches the route. Default if you
+      say nothing: it stays person-only.
+- [ ] **A large batch is slow to approve.** Each approved row re-indexes its obligation in the
+      same transaction, about 25 ms a row, so approving a full batch of 100 takes a couple of
+      seconds, over the 250 ms budget (a logged warning, not an error). Default if you say
+      nothing: it stays in one transaction, as PRO-02 asks; a background job is the change if
+      it is felt.
+
+## c11-run-history: what a bank reads of its runs and of bleqq's watch (2026-09-25, AGT-03, AGT-04)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **A bank's run history holds its own runs only.** `GET /agent-runs` in a bank's session
+      no longer lists bleqq's library runs: they reach a bank as watch items and proposals, so
+      no platform cost, token count or model is on a bank's page (the default you took on what
+      a bank sees of bleqq's watch). The console still reads the library's runs. Default:
+      naming another bank's agent in `tenantAgentId` matches no run, as the published contract
+      says, rather than the 404 the chunk 11 brief named; say if you want the 404.
+- [ ] **bleqq's agents have no display name of their own.** `GET /agents/platform` returns the
+      agent's key as `name` and its definition's description as `purpose`; the screen renders
+      the words from its catalog by key. `nextRunAt` is one cadence after the last start, now
+      when an agent never ran or is overdue, and null for a manual one. Say if you want a
+      name column on the definition instead.
+
+## c11-fe-admin-agents: the bank's agents page (2026-09-25, AGT-03, AGT-04, AGT-05, ADM-01)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **A bank cannot list the definitions it may add.** `GET /agent-definitions` is the
+      console's (`agent_definitions.manage`), and no route lists the tenant-scoped ones to a
+      bank. Default: "Add an agent" offers the two tenant-scoped definitions bleqq ships
+      (`tenant-source-watch` as "Source checker", `scope-researcher` as "Scope research"),
+      named in the `admin-agents` catalog; the server refuses any other key with
+      `unknown_key`, which the page renders. Say if you want a bank-facing list route, so a
+      newly published definition shows without a frontend change.
+- [ ] **No name or version on a bank's agent.** The card draws "Name: ours to recognise it
+      by" and a version pill, but `TenantAgentOut` carries neither. Default: an agent is named
+      by its definition and shows no version pill; each run names nothing of its version on
+      the bank's page either. Say if a bank should name its agents.
+- [ ] **Run now, Pause, Resume, Stop run and research requests still answer 501.** The page
+      draws them against the published contract; `c11-tenant-controls-cap` and
+      `c11-research-requests` (wave 5) fill the routes. The research panel shows only once the
+      bank has an agent of its own.
+## c11-fe-console-batch-retag: the batch review screen and the console re-tag (2026-09-25, PRO-04, AGT-05)
+
+- [ ] **The batch result links to no audit entry.** The card draws "Open the audit entry" on
+      a decided batch, but the only audit read, `GET /audit-events`, is a bank's: a platform
+      session reads nothing there, and no console audit screen exists. Default taken: the
+      result shows how many records changed and how many did not, who decided and when, and
+      no link. Say if the console should get a read of the library zone's audit rows (a
+      platform route and screen, not a chunk 11 package today); the link then points at the
+      batch's entry.
+- [ ] **A re-tag request is sent as one sentence.** `POST /console/research-requests` takes a
+      free-text `topic`, so the form joins the change, the term (label and `dimension:key`),
+      which obligations and why into one sentence for bleqq's agent, and does not send the
+      card's "Source" field, which the request has no place for. Default if you say
+      nothing: it stays; structured fields would be a contract change in
+      `c11-research-requests`.
+- [ ] **The console follows its re-tag through a new status read.** The brief named
+      `GET /research-requests/{requestId}`, a bank's route behind `agents.manage` and a
+      tenant, which a console session can never reach. `GET /console/research-requests/{requestId}`
+      behind `proposals.review` is declared instead, with `batchProposalId` on every
+      research request; it answers 501 until `c11-research-requests` fills it.
+
+## c11-research-requests: research requests and the console's re-tag (2026-09-27, AGT-05, PRO-04, D-98)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **A request is refused at the cap, not before it.** A research request is refused when
+      the bank has set no cap or this month's spend has reached it (`budget.at_cap`, as the
+      brief says "a bank at its cap"), while the scheduler and run now also refuse a run
+      whose `AGENT_RUN_BUDGET_LIMIT` would not fit under what is left. The run still carries
+      that limit. Default: keep it; the alternative is the stricter rule for requests too.
+- [ ] **A web address is fetched while the request is made.** `check_url` fetches the page
+      in the request itself (at most `RESEARCH_URL_TIMEOUT_SECONDS` per connection and
+      `RESEARCH_URL_MAX_REDIRECTS` redirects), so an address that is private, redirects to a
+      private one or answers nothing is refused to the person at once, and the run opens
+      with the screened text already kept. Only port 443 is fetched, and the connection goes
+      to the address that was checked. Default: keep it; the alternative is a worker task.
+- [ ] **The topic reaches a model only through the bank's own run (D-98).** This package
+      makes no model call: the topic is kept on the bank's request, screened, and never in a
+      log, audit, outbox or run row. The runner that works the request (the Agent SDK leg,
+      AGT-06) must send it through `apps.shared.ai`, the logged wrapper the bank's switch
+      stops; that leg's package owns the proof.
+- [ ] **The re-tag is answered by `watch-sweeper`, and its batch is filed through
+      `requests.file_retag`.** No runner files a batch yet: the mock runner in E2E files
+      none, so the console's re-tag form shows the request working and never a batch there.
+      AGT-S7 proves the batch at the integration level. `RESEARCH_REQUESTS_PER_MONTH` is 30.
+- [ ] **A run stopped from outside reads as `failed`**, on a research request and in "What
+      bleqq watches" (whose read broke on the `interrupted` status two merged packages
+      brought together; fixed here).
+
+## c11-tenant-controls-cap: run now, pause, resume, stop, and the cap mid-run (2026-09-25, AGT-04, AGT-06)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **Run now with AI off answers 422 `feature_off`, not 403.** The chunk 11 brief named 403
+      for the control and 422 for the scheduler's opener; run now opens through that one
+      opener (`tasks.open_tenant_run`), so it answers what the opener answers. Ask keeps its
+      403. Say if the control should answer 403.
+- [ ] **Resuming is allowed while the month's cap is reached.** The agent is paused again by
+      the cap, with a notification, when its next run is due, rather than refused on resume.
+      Default: keep it, so a person can always undo their own pause.
+- [ ] **The cap stops a run mid-way only when the spend passes it.** A runner event that takes
+      the month's spend above the cap stops the run and pauses the agent; one that reaches it
+      exactly does not, the same line `at_cap` draws for a new run. A run whose final event
+      passes the cap is not reopened to be stopped; the next due run finds the cap reached.
+- [ ] **The AGT-S6 journey switches tenant B's AI off, not tenant A's.** A bank's switch is the
+      whole bank's, and tenant A's Ask journeys run in parallel. The cap half stays tenant A's.
+      The AGT-S5 journey narrows the scope to Sweden, because the screen offers only the bank's
+      own markets (Sweden and Denmark in the seed); the integration test narrows to SE and FI.
+
+## d89-agent-research: the bank's own agent researches an approved scope item (2026-09-27, OWN-02, AGT-04, AGT-05, D-98)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **An item that cannot be researched when it is approved waits.** With no
+      `scope-researcher` of the bank's own switched on and unpaused, the bank's AI off, or its
+      cap reached, the approval opens nothing and one `scope_item.research_waiting` audit row
+      names why; the item reads "waiting for your agent". Switching the agent on later does
+      not open research on items already in scope. Default: keep it; the follow-up is a
+      "research now" action on a waiting item, or opening waiting items when the agent is
+      switched on.
+- [ ] **A duplicate is refused by stable key as well as by official reference**, each against
+      the bank's own records only (409 `already_in_our_library`). Another bank's record, and
+      the shared library's, are no duplicate of the bank's own.
+- [ ] **A duty is filed under an instrument the library already holds.** A new obligation
+      names an existing instrument, so a duty of an instrument the same run proposes cannot be
+      filed until that instrument is approved; the creation check this package reuses decides
+      which instruments a bank's own duty may name. AGT-S16's two obligations sit under a
+      shared instrument.
+- [ ] **What reaches the model is ADR 0061's three fields, each cut to
+      `SCOPE_RESEARCH_TEXT_MAX_CHARS` (2000).** The item's description never does. The runner
+      leg that calls the model (AGT-06's Agent SDK runner) reads them from
+      `scope_research.run_input` and sends them only through `apps/shared/ai.py`.

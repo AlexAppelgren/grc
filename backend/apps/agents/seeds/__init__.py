@@ -28,8 +28,14 @@ ACTOR = Actor.system(SEED_REASON)
 # globbed: a folder half-added to the tree never becomes an agent by accident. The sweeper
 # proposes and the confirmer decides (kind `review`, D-62, D-80): two definitions, so the
 # second pair of eyes on a proposal is never the definition that filed it. The third is the
-# one a bank may add for itself (AGT-04, ruling 1): bleqq's definition, a bank's agent.
-SHIPPED: tuple[tuple[str, int], ...] = (("watch-sweeper", 1), ("library-confirmer", 2), ("tenant-source-watch", 1))
+# one a bank may add for itself (AGT-04, ruling 1): bleqq's definition, a bank's agent. The
+# fourth is the bank's own researcher for a scope item the library does not cover (OWN-02).
+SHIPPED: tuple[tuple[str, int], ...] = (
+    ("watch-sweeper", 1),
+    ("library-confirmer", 2),
+    ("tenant-source-watch", 1),
+    ("scope-researcher", 1),
+)
 
 
 def definitions() -> list[Definition]:
