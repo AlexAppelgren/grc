@@ -1076,7 +1076,8 @@ class ReseedTenantsAndScope(SeededOnce):
                 tenancy.activate(tenant.id)
                 terms = {f"{row.term.dimension.key}:{row.term.key}" for row in FootprintTerm.objects.filter(tenant=tenant).select_related("term__dimension")}
                 self.assertEqual(terms, set(EXPECTED_FOOTPRINTS[expected.slug]))
-                self.assertEqual(FootprintHistory.objects.filter(tenant=tenant, action="added").count(), len(terms))
+                # The terms' own history; the seeded regulation's is its own (EXPECTED_OWN_RECORDS).
+                self.assertEqual(FootprintHistory.objects.filter(tenant=tenant, action="added", term__isnull=False).count(), len(terms))
                 for name, entry in REGISTRY.items():
                     if entry.tier == 3:
                         self.assertTrue(entry.model._default_manager.filter(tenant=tenant, is_system=True, active=True).exists(), name)
@@ -1091,12 +1092,15 @@ class ReseedTenantsAndScope(SeededOnce):
         self.assertEqual({f"{t.dimension.key}:{t.key}" for t in request.adds.all()}, set(EXPECTED_PENDING_REQUEST.adds))
         # The seeded request removes Advice, which hides the one advice-only obligation.
         self.assertEqual(request.preview["obligations"], {"hidden": 1, "revealed": 0, "available": True})
-        # Idempotent: a second run keeps one request and the same footprint rows.
+        # Idempotent: a second run keeps the same requests and the same footprint rows. Beside
+        # J-6's, one request asked for the seeded regulation and was approved (d89-e2e-journey).
         seed_e2e()
         tenancy.activate(tenant_a.id)
-        self.assertEqual(FootprintChangeRequest.objects.filter(tenant=tenant_a).count(), 1)
+        self.assertEqual(FootprintChangeRequest.objects.filter(tenant=tenant_a, scope_item_links__isnull=True).count(), 1)
+        self.assertEqual(FootprintChangeRequest.objects.filter(tenant=tenant_a, scope_item_links__isnull=False, status="approved").distinct().count(), 1)
         self.assertEqual(FootprintTerm.objects.filter(tenant=tenant_a).count(), len(EXPECTED_FOOTPRINTS[TENANT_A_SLUG]))
-        self.assertEqual(FootprintHistory.objects.filter(tenant=tenant_a).count(), len(EXPECTED_FOOTPRINTS[TENANT_A_SLUG]))
+        self.assertEqual(FootprintHistory.objects.filter(tenant=tenant_a, term__isnull=False).count(), len(EXPECTED_FOOTPRINTS[TENANT_A_SLUG]))
+        self.assertEqual(FootprintHistory.objects.filter(tenant=tenant_a, scope_item__isnull=False).count(), 1)
 
     # --- std-journeys (FP-S16) ------------------------------------------------------------
     def test_e2e_switches_the_standard_on_and_logs_it_once(self) -> None:

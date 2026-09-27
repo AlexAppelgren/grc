@@ -3294,8 +3294,9 @@ def _running_research(item_key: str) -> Any:
 def report_scope_findings(item_key: str, part: int = 1) -> list[Proposal]:
     """Play the mock runner's report for part `part` of tenant A's scope item `item_key`: file
     what `_scope_findings` says through `runner_events.apply_finding`, and return the
-    proposals, the same ones on every call. Refused when deployed; ValueError while the item
-    has no running research, which is the worker's to open after the approval."""
+    proposals: the same ones on every call until a person decides them. Refused when
+    deployed; ValueError while the item has no running research, which the worker opens
+    after the approval."""
     from apps.agents import runner_events
 
     refuse_when_deployed("e2e_scope_findings")
@@ -3353,6 +3354,7 @@ def seed_own_records(tenants: list[Tenant]) -> None:
     """Tenant A's scope researcher, the research its approval opens and what that research
     filed, approved (EXPECTED_OWN_RECORDS). A reseed finds each row and writes nothing."""
     from apps.agents import scope_research
+    from apps.library import reading as library_reading
     from apps.proposals import private_approval
     from apps.shared.models import OutboxEvent
 
@@ -3379,9 +3381,12 @@ def seed_own_records(tenants: list[Tenant]) -> None:
     if added is not None:
         scope_research.open_research(added)
     # Part 1 as the approver decided it: the instrument first, then its duties under it. A
-    # reseed after a journey stopped the research finds the records filed and files nothing.
+    # reseed finds the duties applied and reports nothing, since a record applied once is
+    # never filed again.
+    _instrument_key, duty_keys = own_record_keys(spec.item_key)
+    applied = all(library_reading.held_as_own(tenant.id, instrument=False, key=key, reference="") for key in duty_keys)
     actor = Actor(kind=ActorType.USER, id=approver.id, label=approver.name)
-    for _ in range(2 if _running_research(spec.item_key) is not None else 0):
+    for _ in range(0 if applied or _running_research(spec.item_key) is None else 2):
         for proposal in report_scope_findings(spec.item_key):
             tenancy.activate(tenant.id)
             if proposal.status == ProposalStatus.OPEN.value:
