@@ -523,6 +523,16 @@ describe('InventoryScreen', () => {
     expect(nav.replace).toHaveBeenCalledWith('/inventory?instrument=fffs-2017-2');
   });
 
+  it('reads the terms, the scope and the duty types only once the sheet opens, so the rows never wait behind them', async () => {
+    const sent = serve({ items: [research], total: 1 });
+    renderIn(<InventoryScreen />);
+    await screen.findByText('1 obligation');
+    const sheetReads = () => sent.filter((s) => ['/api/v1/taxonomy/terms', '/api/v1/tenant/footprint', '/api/v1/vocab/duty_type'].includes(s.path));
+    expect(sheetReads()).toEqual([]);
+    await openFilters();
+    await waitFor(() => expect(sheetReads().map((s) => s.path).sort()).toEqual(['/api/v1/taxonomy/terms', '/api/v1/taxonomy/terms', '/api/v1/tenant/footprint', '/api/v1/vocab/duty_type']));
+  });
+
   it('finds an instrument by its name inside the sheet', async () => {
     const lvm: Instrument = { ...fffs, id: 'in-3', stableKey: 'sfs-2007-528', shortName: 'LVM' };
     serve({ items: [research], total: 1 }, { items: [fffs, lvm], total: 2 });

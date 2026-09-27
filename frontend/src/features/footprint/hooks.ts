@@ -52,8 +52,8 @@ export function useFootprintRequests(): UseInfiniteQueryResult<{ pages: Page<Foo
   });
 }
 
-export function useTerms(dimension?: string): UseQueryResult<TaxonomyTerm[]> {
-  return useQuery({ queryKey: footprintKeys.terms(dimension), queryFn: () => footprint.listTerms(dimension), staleTime: 5 * 60_000 });
+export function useTerms(dimension?: string, enabled = true): UseQueryResult<TaxonomyTerm[]> {
+  return useQuery({ queryKey: footprintKeys.terms(dimension), queryFn: () => footprint.listTerms(dimension), staleTime: 5 * 60_000, enabled });
 }
 
 export function useDimensions(): UseQueryResult<TaxonomyDimension[]> {
