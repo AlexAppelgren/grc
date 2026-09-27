@@ -719,7 +719,8 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         A footprint change previews, waits for a second person and audits per term (FP-02, AC-FP1).
         """
         seed_authorities()
-        load_library()
+        with tenancy.platform_zone():  # the shared library, seeded as a deploy seeds it
+            load_library()
         self._set_footprint(["service_type:advice", "service_type:custody", "regime:securities"])
         # This bank's cases: one open on an advice-only change, which removing Advice hides;
         # one open on a custody change, which it keeps; one closed on another advice change,
@@ -773,7 +774,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         # The library changes while the request waits: the suitability statement now covers
         # custody too, so removing Advice no longer hides it. A waiting request is counted
         # again on every read, so the approver decides against today's library.
-        with library_write("test"):
+        with tenancy.platform_zone(), library_write("test"):
             ObligationTerm.objects.create(
                 obligation=Obligation.objects.get(stable_key="obl-suitability-statement"),
                 term=tenant_lists_logic.term_by_ref("service_type", "custody"),
@@ -835,7 +836,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         widening = {"adds": [{"dimension": "service_type", "key": "portfolio_management"}], "removes": []}
         rejected_request = self._post("/tenant/footprint/requests", widening, officer).json()
         self.assertEqual(rejected_request["preview"]["obligations"], {"hidden": 0, "revealed": 4, "available": True})
-        with library_write("test"):
+        with tenancy.platform_zone(), library_write("test"):
             ObligationTerm.objects.create(
                 obligation=Obligation.objects.get(stable_key="obl-esma-warnings"),
                 term=tenant_lists_logic.term_by_ref("service_type", "portfolio_management"),
@@ -1230,6 +1231,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
         # When a proposal filed before the mirror rule would tag an obligation with a
         # jurisdiction term, applying it answers 422 and scopes nothing.
+        tenancy.clear_tenant()  # the console's zone, as its own request has in production (proposals 0009)
         filed = Proposal.objects.create(
             kind=ProposalKind.NEW_OBLIGATION_VERSION.value,
             title="Filed before the mirror rule",

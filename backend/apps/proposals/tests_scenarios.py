@@ -109,7 +109,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
     def _obligation(self) -> Obligation:
         """An obligation to propose a new version of. Chunk 3 seeds the real library; a
         scenario needs one record, written as the seeds write theirs."""
-        with library_write("scenario"):
+        with library_write("scenario"), tenancy.platform_zone():
             instrument = Instrument.objects.create(
                 stable_key="fffs-2017-2",
                 short_name="FFFS 2017:2",
@@ -143,7 +143,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
 
     def _version_one(self, obligation: Obligation) -> ObligationVersion:
         """The version in force before the proposal: chunk 3 seeds these, a scenario needs one."""
-        with library_write("scenario"):
+        with library_write("scenario"), tenancy.platform_zone():
             version = ObligationVersion.objects.create(obligation=obligation, version_number=1, effective_from=date(2024, 1, 1))
             ObligationSummary.objects.create(version=version, language_id="sv", text=VERSION_ONE_SV, is_original=True)
             ObligationTerm.objects.create(obligation=obligation, term=self._term("legal_entity", "bank"))
@@ -434,6 +434,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         # A correction that introduces a field nobody sourced is refused, and applies
         # nothing: this proposal left the scope alone, so it named no source for it.
         unscoped = self._version_proposal(obligation, scoped=False)
+        tenancy.clear_tenant()  # the console's zone, as its own request has in production (proposals 0009)
         no_source = self._post(
             f"/proposals/{unscoped['id']}/approve",
             {"payloadOverrides": {"terms": ["legal_entity:bank", "client_category:professional"]}},
@@ -912,7 +913,9 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual(refused.status_code, 422, refused.content)
         self.assertEqual(refused.json()["code"], "standard_term_only_on_standards")
         self.assertFalse(Proposal.objects.filter(kind="new_obligation").exists())
-        waiting = self._stored(new_duty, factories.api_key(self.tenant, scopes=("proposals:write",)))
+        key = factories.api_key(self.tenant, scopes=("proposals:write",))
+        tenancy.clear_tenant()  # the console's zone, as its own request has in production (proposals 0009)
+        waiting = self._stored(new_duty, key)
         tenancy.clear_tenant()
         applied = self._post(f"/proposals/{waiting.id}/approve", {}, reviewer)
         self.assertEqual(applied.status_code, 422, applied.content)
@@ -930,6 +933,10 @@ class ProposalsScenarioTests(ScenarioTestCase):
         """PRO-S12
 
         A private proposal is approved inside the bank and never reaches the console (INV-07, PRO-03).
+
+        Drives approvePrivateProposal and rejectPrivateProposal once d89-private-records fills
+        them; until then their gate, their 404 under row-level security and their 501 are
+        apps/proposals/tests_private_contract.py (d89-proposal-owner).
         """
 
     def test_pro_s13(self) -> None:

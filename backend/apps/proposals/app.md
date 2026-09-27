@@ -133,7 +133,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | PRO-02 | Approval applies the payload, writes the version, the audit row and the re-index in one transaction; the reviewer can correct scope and wording first; never the proposer | M | R1 | built |
 | PRO-03 | The queue lives in the platform console; tenants see library updates and can report a problem, which stays inside their bank. A bank's private records are proposed and approved inside the bank and never reach the console (D-50, D-57). R1 builds the platform queue, library updates and the bank's own problem reports; a bank's private records (INV-07, PRO-S12) move to R2 with OWN-03 (PRD 0.7) | M | R1 | built |
 | PRO-04 | Batch proposals (re-tag, backfill) with a preview, approved whole or row by row | S | R2 | pending |
-| OWN-03 | The bank's own queue: approve or reject under `private_records.approve` with a passkey, never the proposer, a reason on reject; platform staff never see it (D-57, D-89) | M | R2 | pending |
+| OWN-03 | The bank's own queue: approve or reject under `private_records.approve` with a passkey, never the proposer, a reason on reject; platform staff never see it (D-57, D-89) | M | R2 | in_progress |
 
 PRO-03 is `built` for R1 (R1 close, 2026-09-24). The console queue, the bank's "Library
 updates" screen (`/inventory/updates` over `GET /library-updates`) and "This looks wrong" on
@@ -141,6 +141,16 @@ each of its rows, filed through the same report form the obligation card uses an
 inside the bank, are proven by PRO-S7 at the integration level and by its journey in the
 merged batch run. Its last clause, a bank's private records (PRO-S12, INV-07), moved to R2
 with OWN-03 in PRD 0.7 and waits for chunk 11; it is named as the cut, not built.
+
+OWN-03 is `in_progress` (d89-proposal-owner, 2026-09-25): a proposal carries `owner_tenant_id`,
+set by `logic.create` from its target or, for the bank's own new instrument or obligation,
+from the bank the database is scoped to, never from a body; `proposal` is under forced
+row-level security in the split shape, so the console reads no owned row
+(apps/shared/tests_rls.py); `private_records.approve` belongs to Compliance officer and
+Approver; and the bank's own queue, `GET /private-proposals` and `POST
+/private-proposals/{proposalId}/approve` and `/reject`, is declared and answers 501 after
+loading under row-level security (apps/proposals/tests_private_contract.py). Deciding, and
+PRO-S12 whole, are d89-private-records'.
 
 PRO-S13's journey (pro-s13-journey) runs end to end: the console mints a `library-confirmer`
 key with `agent-runs:write` and `proposals:review`, which opens a run, reads the queue and

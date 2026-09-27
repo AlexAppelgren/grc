@@ -456,10 +456,12 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
             # The reference seeds a deploy re-runs: every row exists, so each is an UPDATE of a
             # reference table the seed door opens.
             self.assertEqual((seed_languages(), seed_jurisdictions()), (Language.objects.count(), Jurisdiction.objects.count()))
+            # A shared proposal is applied from the console, with no bank active: a child of a
+            # shared record is the shared zone's to write (library 0012).
+            with transaction.atomic(), library_write("an approved proposal", door="proposal"):
+                InstrumentTitle.objects.create(instrument=self.instrument, language_id="sv", text="Lagen", is_original=False, is_machine=True)
             with transaction.atomic():
                 tenancy.activate(self.bank.id)
-                with library_write("an approved proposal", door="proposal"):
-                    InstrumentTitle.objects.create(instrument=self.instrument, language_id="sv", text="Lagen", is_original=False, is_machine=True)
                 with watch_write("a bank's own source"):
                     source = Source.objects.create(
                         name="door-guard.example", kind=SourceKind.objects.get(key="authority_site"), owner_tenant=self.bank
@@ -947,8 +949,9 @@ class RecurringDutyWritesOnlyThroughTheProposalDoor(TransactionTestCase):
             # and the census above holds the database to the same.
             with self.assertRaises(WatchWriteRefused), transaction.atomic(), watch_write("a watch step"):
                 models.QuerySet.update(RecurringDuty.objects.filter(pk=duty.pk), lead_days=0)
-            # The proposal door is the one that opens it.
-            with library_write("an approved proposal", door="proposal"):
+            # The proposal door is the one that opens it, applied as the console applies a
+            # shared proposal, outside the bank (library 0012).
+            with library_write("an approved proposal", door="proposal"), tenancy.platform_zone():
                 self._duty(title="Annual attestation", recurrence_rule="FREQ=YEARLY")
         self.assertEqual(RecurringDuty.objects.get(pk=duty.pk).lead_days, 14)
         self.assertTrue(RecurringDuty.objects.filter(title="Annual attestation").exists())

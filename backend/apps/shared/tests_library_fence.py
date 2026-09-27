@@ -411,11 +411,18 @@ REQUIRE_REVIEWER: Node = ("apps.proposals.api", "require_reviewer")
 # applied) is apps/proposals/tests_decide.py.
 ENFORCE_STEP_UP: Node = ("apps.shared.permissions", "enforce_step_up")
 # Each route that may reach a library write, and the one function opening library_write()
-# it may reach. The stamp is chunk 3's POST /obligations/{id}/verifications (INV-S8).
+# it may reach. The stamp is chunk 3's POST /obligations/{id}/verifications (INV-S8). The
+# third is the bank's own queue (D-57, ADR 0050, d89-proposal-owner): a person here approves
+# the bank's own record through the same apply code, gated as PRIVATE_ROUTE_GATE says.
 LIBRARY_WRITING_ROUTES: dict[str, Node] = {
     "approveProposal": APPLY,
     "reverifyObligation": APPLY_REVERIFICATION,
+    "approvePrivateProposal": APPLY,
 }
+# The gate of the bank's own approval: a tenant permission no platform role holds and no key
+# passes, a fresh step-up, and a person's session alone. It writes only the bank's own zone.
+PRIVATE_APPROVAL = "approvePrivateProposal"
+PRIVATE_ROUTE_GATE = perms.Gate("permission", perms.PRIVATE_RECORDS_APPROVE)
 # The watch door's routes (D-64, ruling H): an agent's key registers a change it sighted
 # and curates the facts that change carries (WAT-02, WAT-03, AGT-07), and the source
 # registry and its coverage log record where we looked and how it went (WAT-01). Each may
@@ -709,11 +716,30 @@ class ProposalDoorGuard(SimpleTestCase):
                         "approveProposal accepts a session and a key, and nothing else",
                     )
                 else:
-                    self.assertEqual(perms.gate_of(operation.view_func), perms.Gate("permission", perms.PROPOSALS_REVIEW))
+                    wanted = PRIVATE_ROUTE_GATE if operation.operation_id == PRIVATE_APPROVAL else perms.Gate("permission", perms.PROPOSALS_REVIEW)
+                    self.assertEqual(perms.gate_of(operation.view_func), wanted)
                     self.assertTrue(perms.step_up_of(operation.view_func), "a library write needs a fresh passkey assertion")
                     self.assertTrue(operation.auth, "a library write needs a signed-in person")
                     for auth in operation.auth:
                         self.assertIsInstance(auth, SessionAuth, "no API key reaches a library write")
+
+    def test_the_bank_s_own_approval_is_a_person_s_under_a_permission_no_platform_role_or_key_holds(self) -> None:
+        """The third door (D-57, ADR 0050), checked on the route as registered whether or not
+        it reaches apply yet: `private_records.approve`, a step-up and a session alone, and
+        the permission is a tenant one that no platform role holds, no key's principal passes
+        and no scope names."""
+        operation = next(op for op in iter_operations(api) if op.operation_id == PRIVATE_APPROVAL)
+        self.assertEqual(perms.gate_of(operation.view_func), PRIVATE_ROUTE_GATE)
+        self.assertTrue(perms.step_up_of(operation.view_func), "approving a bank's own record needs a fresh passkey assertion")
+        self.assertEqual({type(auth) for auth in operation.auth}, {SessionAuth}, "no API key reaches the bank's own approval")
+        self.assertIn(perms.PRIVATE_RECORDS_APPROVE, perms.TENANT_PERMISSIONS)
+        self.assertNotIn(perms.PRIVATE_RECORDS_APPROVE, perms.PLATFORM_PERMISSIONS | perms.ALL_SCOPES)
+        for key in roles_logic.PLATFORM_ROLE_LABELS:
+            self.assertNotIn(perms.PRIVATE_RECORDS_APPROVE, perms.SYSTEM_ROLES[key], f"the platform role {key!r}")
+        holders = sorted(key for key, granted in perms.SYSTEM_ROLES.items() if perms.PRIVATE_RECORDS_APPROVE in granted)
+        self.assertEqual(holders, ["approver", "compliance_officer"])
+        agent = Principal(kind=PrincipalKind.AGENT, subject_id=uuid.uuid4(), tenant_id=uuid.uuid4(), scopes=perms.ALL_SCOPES)
+        self.assertFalse(agent.has_permission(perms.PRIVATE_RECORDS_APPROVE))
 
     def test_a_reviewing_key_needs_the_scope_and_never_a_tenant_role_or_key(self) -> None:
         """The claims `require_reviewer()` rests on, checked rather than described: it names

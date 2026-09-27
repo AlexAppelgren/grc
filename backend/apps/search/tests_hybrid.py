@@ -427,7 +427,7 @@ class SearchFilterTests(CorpusMixin, TestCase):
 
     def test_terms_narrow_the_search_to_records_carrying_them(self) -> None:
         advice = TaxonomyTerm.objects.get(dimension__key="service_type", key="advice")
-        with library_write("search test corpus"):
+        with tenancy.platform_zone(), library_write("search test corpus"):
             ObligationTerm.objects.create(obligation=self.warnings, term=advice)
         indexing.reindex(self.warnings.id)
 
@@ -679,7 +679,7 @@ class SearchCallerTests(CorpusMixin, TestCase):
 
     def test_a_snippet_is_capped_and_cut_around_the_match(self) -> None:
         long_text = f"{'Inledande text om annat. ' * 20}kapitaltackning ska rapporteras. {'Slutord. ' * 20}"
-        with library_write("search test corpus"):
+        with tenancy.platform_zone(), library_write("search test corpus"):
             ObligationSummary.objects.create(
                 version=ObligationVersion.objects.get(obligation=self.warnings, version_number=1),
                 language_id="sv",

@@ -37,6 +37,10 @@ write proof both named it.
 The problem-report pin was proven to fail 2026-09-23 by adding, in a scratch copy of library
 0009, a SELECT policy reading a review setting (the set of policies was named) and, alone, a
 BEFORE UPDATE trigger (the trigger was named).
+
+The child census was proven to fail 2026-09-25 by leaving `recurring_duty` out of a scratch copy
+of library 0012: the table was named twice, for row-level security neither enabled nor forced
+and for carrying no policy.
 """
 
 from __future__ import annotations
@@ -74,6 +78,7 @@ from apps.identity.models import (
     UserSession,
 )
 from apps.library.models import ProblemReport, SubjectType
+from apps.proposals.models import Proposal
 from apps.shared import factories, tenancy
 from apps.shared.audit import ActorType
 from apps.shared.migration_helpers import (
@@ -125,6 +130,11 @@ MIXED_TABLES = {
     # agents and is its own; the console's `retag` of library records has no tenant and is
     # the library's, which every bank may read and none may write (ADR 0053).
     "research_request": "tenant_id",
+    # A proposal of a bank's own record (INV-07, OWN-03, D-57; proposals 0009,
+    # d89-proposal-owner). A shared proposal has no owner and is the console's; an owned one is
+    # its bank's alone, so the console, which has no tenant, never reads it. Beside the split,
+    # `proposal` carries one INSERT-only policy, pinned in INSERT_ONLY_POLICIES below.
+    "proposal": "owner_tenant_id",
     # The derived search index (SRC-01, H7). Its zone column is always NULL in R1, so
     # `library_rows_visible` is what every bank reads a chunk through; the FOR ALL policy
     # keeps a bank session out of the shared zone it would otherwise be able to rewrite.
@@ -148,6 +158,33 @@ WATCH_LIBRARY_TABLES = frozenset(
 # shared 0008, which refuses the app role's write to either table outside an approved
 # proposal, the re-verification stamp or a reference seed (H16, ADR 0058).
 LIBRARY_OWNED_TABLES = frozenset({"instrument", "obligation"})
+
+# Every child of those two, and the parent each follows (INV-07, OWN-04; library 0012,
+# d89-child-rls). A child holds no zone column of its own, so it carries the pair: FOR SELECT
+# where its parent is visible, and FOR ALL where the owner of its root record is the session's
+# own zone, so a bank writes no child under a shared record or another bank's. A grandchild
+# names its own parent, which follows the root in turn. A link row follows its owning end.
+# The enumeration below walks the foreign keys from both roots, so a new child without the
+# pair fails here. `change_obligation` is a watch table; its other parent, `regulatory_change`,
+# holds no zone yet, and the package that gives it one rewrites the pair with both parents.
+CHILD_TABLES = {
+    "instrument_title": "instrument",
+    "instrument_relation": "instrument",
+    "provision": "instrument",
+    "provision_version": "provision",
+    "provision_text": "provision_version",
+    "obligation_title": "obligation",
+    "obligation_version": "obligation",
+    "obligation_summary": "obligation_version",
+    "obligation_provision": "obligation",
+    "obligation_term": "obligation",
+    "obligation_tag": "obligation",
+    "obligation_relation": "obligation",
+    "recurring_duty": "obligation",
+    "change_obligation": "obligation",
+}
+CHILD_READ_POLICY = "parent_visible"
+CHILD_WRITE_POLICY = "parent_owned"
 
 # Tables that hold one bank's rows and nothing else, named here so the enumeration cannot
 # quietly stop seeing one. `change_case` and `case_obligation_link` are chunk 5's: a bank's
@@ -226,16 +263,29 @@ TENANT_ONLY_TABLES = [
 # The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the
 # queue is the platform's and a bank's link to its own filing is `proposal_tenant` above.
 # A batch's rows (proposals 0008) are library records' previews and never a bank's.
-PROPOSAL_LIBRARY_TABLES = frozenset({"proposal", "proposal_batch_row"})
+# `proposal` itself is mixed since proposals 0009 (MIXED_TABLES above).
+PROPOSAL_LIBRARY_TABLES = frozenset({"proposal_batch_row"})
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also
 # demands a key of the same zone; agents 0002 renamed its read policy to the shared name.
 # Permissive policies OR together, so any policy beside tenant_isolation widens what a
 # tenant table shows. Adding one here is a review question; the test below also demands
 # that every one of them is FOR SELECT, so a widening can never reach a write.
+# The one policy beside `tenant_isolation` that is not FOR SELECT (d89-proposal-owner,
+# proposals 0009): a bank's member files proposals to the shared library from inside the bank
+# (PRO-01, PRO-03), which are shared rows, so a bank's session may INSERT a shared proposal,
+# and only one filed inside a bank, single, open and undecided. It never updates, deletes or
+# reads. Its whole WITH CHECK is pinned below; adding one here is a review question.
+INSERT_ONLY_POLICIES = {
+    ("proposal", "shared_proposal_filed"): (
+        "((owner_tenant_id IS NULL) AND proposed_in_tenant AND (NOT is_batch) AND ((status)::text = 'open'::text) "
+        "AND (reviewed_at IS NULL) AND (applied_at IS NULL))"
+    ),
+}
 OTHER_POLICIES = frozenset(
     [(table, LIBRARY_READ_POLICY) for table in MIXED_TABLES]
     + [(table, IDENTITY_LOOKUP_POLICY) for table in IDENTITY_LOOKUP_TABLES]
+    + list(INSERT_ONLY_POLICIES)
 )
 
 # Platform-only tables (SRC-05, search 0002): no tenant column, so the enumeration above
@@ -256,6 +306,32 @@ def own_zone_rule(column: str) -> str:
     """`<column> IS NOT DISTINCT FROM <the session's tenant>` as PostgreSQL renders it back
     in pg_policies, which is with the negation on the outside."""
     return f"NOT ({column} IS DISTINCT FROM"
+
+
+def library_children() -> dict[str, set[str]]:
+    """Every table without a tenant column that reaches instrument or obligation through its
+    foreign keys, directly or through another such table, and the tables it points at on the
+    way. A tenant table is in its own zone already (`tenant_isolation`) and is left out."""
+    tenant_tables = {model._meta.db_table for model in tenant_scoped_models()}
+    found: dict[str, set[str]] = {}
+    reached = set(LIBRARY_OWNED_TABLES)
+    while True:
+        grown = False
+        for model in production_models():
+            table = model._meta.db_table
+            if table in tenant_tables or table in LIBRARY_OWNED_TABLES:
+                continue
+            parents = {
+                field.related_model._meta.db_table
+                for field in model._meta.get_fields()
+                if isinstance(field, ForeignKey) and field.related_model._meta.db_table in reached and field.related_model is not model
+            }
+            if parents - found.get(table, set()):
+                found[table] = found.get(table, set()) | parents
+                reached.add(table)
+                grown = True
+        if not grown:
+            return found
 
 
 def tenant_scoped_models() -> list[type[Model]]:
@@ -301,6 +377,7 @@ class RowLevelSecurityGuard(TestCase):
     def test_the_proposal_tables_carry_no_tenant_column(self) -> None:
         tables = {model._meta.db_table for model in tenant_scoped_models()}
         self.assertEqual(PROPOSAL_LIBRARY_TABLES & tables, set(), "a proposal table grew a tenant column (PRO-01)")
+        self.assertEqual(MIXED_TABLES["proposal"], "owner_tenant_id", "a proposal's only zone is its owner (D-57)")
         with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
             cursor.execute("SELECT relname FROM pg_class WHERE relname = ANY(%s)", [sorted(PROPOSAL_LIBRARY_TABLES)])
             found = {row[0] for row in cursor.fetchall()}
@@ -335,10 +412,13 @@ class RowLevelSecurityGuard(TestCase):
             "a second policy widens its table; update OTHER_POLICIES and say why",
         )
         self.assertEqual(
-            sorted((table, policy) for table, policy, cmd in found if cmd != "SELECT"),
+            sorted((table, policy) for table, policy, cmd in found if cmd != "SELECT" and (table, policy) not in INSERT_ONLY_POLICIES),
             [],
             f"a policy beside {POLICY_NAME} may widen a read, never a write: make it FOR SELECT",
         )
+        for (table, policy), check in INSERT_ONLY_POLICIES.items():
+            cmd, qual, with_check = self._policies(table)[policy]
+            self.assertEqual((cmd, qual, with_check), ("INSERT", "", check), f"{table}.{policy} is pinned as it stands")
 
     def test_every_tenant_table_has_forced_rls_and_a_tenant_policy(self) -> None:
         problems: list[str] = []
@@ -461,6 +541,46 @@ class RowLevelSecurityGuard(TestCase):
             problems.append(f"{sorted(carriers - PLATFORM_ONLY_TABLES)} carry {PLATFORM_ONLY_POLICY}; list them in PLATFORM_ONLY_TABLES")
         self.assertEqual(problems, [], "Platform-only tables a tenant session could reach:\n  " + "\n  ".join(problems))
 
+
+    def test_every_child_of_a_record_a_bank_may_own_is_named_with_its_parent(self) -> None:
+        found = library_children()
+        self.assertEqual(
+            sorted(found),
+            sorted(CHILD_TABLES),
+            "a child of instrument or obligation is not in CHILD_TABLES: give it the pair of "
+            "library 0012 in its own migration and name its parent here",
+        )
+        for table, parent in sorted(CHILD_TABLES.items()):
+            self.assertIn(parent, found.get(table, set()), f"{table} does not point at {parent}")
+
+    def test_every_child_carries_forced_rls_and_the_pair_and_nothing_else(self) -> None:
+        """FOR SELECT where the parent is visible, FOR ALL where the root's owner is the
+        session's own zone; a second FOR ALL policy would OR with the first and widen it."""
+        problems: list[str] = []
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute(
+                "SELECT relname, relrowsecurity, relforcerowsecurity FROM pg_class WHERE relname = ANY(%s)", [sorted(CHILD_TABLES)]
+            )
+            flags = {name: (enabled, forced) for name, enabled, forced in cursor.fetchall()}
+        for table, parent in sorted(CHILD_TABLES.items()):
+            if flags.get(table) != (True, True):
+                problems.append(f"{table}: row-level security is not enabled and forced: {flags.get(table)}")
+            policies = self._policies(table)
+            if set(policies) != {CHILD_READ_POLICY, CHILD_WRITE_POLICY}:
+                problems.append(f"{table}: policies {sorted(policies)}, not {CHILD_READ_POLICY} and {CHILD_WRITE_POLICY}")
+                continue
+            root = parent
+            while root not in LIBRARY_OWNED_TABLES:
+                root = CHILD_TABLES[root]
+            cmd, qual, _ = policies[CHILD_READ_POLICY]
+            if cmd != "SELECT" or not re.search(rf"\bFROM \(?{parent} p0\b", qual):
+                problems.append(f"{table}: {CHILD_READ_POLICY} is FOR {cmd} USING {qual}, not a read of {parent}")
+            cmd, qual, with_check = policies[CHILD_WRITE_POLICY]
+            if cmd != "ALL" or qual != with_check:
+                problems.append(f"{table}: {CHILD_WRITE_POLICY} is FOR {cmd}, or its USING and WITH CHECK differ")
+            if not re.search(rf"\b(FROM|JOIN) \(?{root} (p\d)\b.*NOT \(\2\.owner_tenant_id IS DISTINCT FROM .*{re.escape(TENANT_SETTING)}", qual, re.S):
+                problems.append(f"{table}: {CHILD_WRITE_POLICY} does not hold {root}'s owner to the session's zone: {qual}")
+        self.assertEqual(problems, [], "Children of a record a bank may own, outside its parent's zone:\n  " + "\n  ".join(problems))
 
     def test_problem_report_carries_the_mixed_shape_and_nothing_else(self) -> None:
         """AUD-03, D-50: a report is read and closed inside its own bank, so nothing may sit
@@ -659,6 +779,17 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
                 event=LoginEventKind.SIGNIN.value,
                 success=True,
             )
+        if table == "proposal":
+            # A shared row the console filed, or one of the bank's own. A bank's session may
+            # file a shared proposal of its own shape (`shared_proposal_filed`), proven in
+            # SharedProposalFiledFromABank below, but never one like this, filed in no bank.
+            return Proposal.objects.using("app").create(
+                owner_tenant_id=tenant_id,
+                proposed_in_tenant=tenant_id is not None,
+                kind="vocabulary_create",
+                title="A probe, not a proposal.",
+                origin="user",
+            )
         if table == "problem_report":
             return ProblemReport.objects.using("app").create(
                 tenant_id=tenant_id,
@@ -747,6 +878,101 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
             return {row[0] for row in cursor.fetchall()}
 
 
+class SharedProposalFiledFromABank(TransactionTestCase):
+    """`proposal` as cw_app (INV-07, PRO-03, D-57; proposals 0009, d89-proposal-owner): a
+    bank's session files a shared proposal, which the console then reads and decides, and
+    nothing else of the shared zone; the console reads no proposal a bank owns."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def setUp(self) -> None:
+        self.tenant_a = factories.tenant(slug="filed-a")
+        self.tenant_b = factories.tenant(slug="filed-b")
+
+    def _file(self, tenant_id: uuid.UUID | None, **fields: Any) -> uuid.UUID:  # compliance: allow-kwargs test helper overriding columns
+        """A proposal inserted from `tenant_id`'s session (none: the console's), shaped as a
+        bank files a shared one unless `fields` say otherwise."""
+        with transaction.atomic(using="app"):
+            if tenant_id is not None:
+                tenancy.activate(tenant_id, using="app")
+            columns: dict[str, Any] = {
+                "proposed_in_tenant": True,
+                "kind": "vocabulary_create",
+                "title": "Add the flag Client money",
+                "origin": "user",
+                **fields,
+            }
+            return Proposal.objects.using("app").create(**columns).pk
+
+    def _visible(self, tenant_id: uuid.UUID | None, *ids: uuid.UUID) -> set[uuid.UUID]:
+        with transaction.atomic(using="app"):
+            if tenant_id is not None:
+                tenancy.activate(tenant_id, using="app")
+            return set(Proposal.objects.using("app").filter(pk__in=ids).values_list("pk", flat=True))
+
+    def test_a_bank_files_a_shared_proposal_the_console_reads(self) -> None:
+        filed = self._file(self.tenant_a.id)
+        self.assertEqual(self._visible(None, filed), {filed}, "the console reads what a bank filed to the shared library")
+        self.assertEqual(self._visible(self.tenant_b.id, filed), {filed}, "a shared proposal is every bank's to read")
+
+    def test_a_bank_files_nothing_else_into_the_shared_zone(self) -> None:
+        for why, fields in (
+            ("filed in no bank", {"proposed_in_tenant": False}),
+            ("already decided", {"status": "approved"}),
+            ("already reviewed", {"reviewed_at": timezone.now()}),
+            ("already applied", {"applied_at": timezone.now()}),
+            ("a batch", {"is_batch": True, "row_count": 1}),
+        ):
+            with self.subTest(why=why), self.assertRaises(ProgrammingError):
+                self._file(self.tenant_a.id, **fields)
+
+    def test_a_bank_never_changes_or_deletes_a_shared_proposal_it_filed(self) -> None:
+        filed = self._file(self.tenant_a.id)
+        with transaction.atomic(using="app"), connections["app"].cursor() as cursor:
+            tenancy.activate(self.tenant_a.id, using="app")
+            for statement, why in (
+                ("UPDATE proposal SET status = 'approved' WHERE id = %s", "approved"),
+                ("UPDATE proposal SET owner_tenant_id = owner_tenant_id WHERE id = %s", "changed"),
+                ("DELETE FROM proposal WHERE id = %s", "deleted"),
+            ):
+                cursor.execute(statement, [filed])
+                self.assertEqual(cursor.rowcount, 0, f"a bank {why} a shared proposal: the console decides it")
+
+    def test_the_console_and_another_bank_read_no_proposal_a_bank_owns(self) -> None:
+        owned = self._file(self.tenant_a.id, owner_tenant_id=self.tenant_a.id)
+        self.assertEqual(self._visible(self.tenant_a.id, owned), {owned})
+        self.assertEqual(self._visible(None, owned), set(), "the console never reads a bank's own proposal")
+        self.assertEqual(self._visible(self.tenant_b.id, owned), set())
+        with self.assertRaises(ProgrammingError):
+            self._file(self.tenant_b.id, owner_tenant_id=self.tenant_a.id)
+        with self.assertRaises(ProgrammingError):
+            self._file(None, owner_tenant_id=self.tenant_a.id)
+
+
+class RecurringDutyIsLibraryOnly(TestCase):
+    """REG-07 (c8-recurring-duty-library): a recurring duty is a public fact about an
+    obligation, shared by every bank. It carries no tenant column, so no bank's judgement
+    can hide in it (that lives on the bank's own occurrences). What holds it is the library
+    fence, the door trigger (tests_library_db_guard.py) and, since library 0012, the pair every
+    child of an obligation carries, so a duty of a bank's own obligation is that bank's alone.
+    Adding a tenant column or another policy here is a review question."""
+
+    def test_the_table_has_no_tenant_column_and_only_the_childs_pair(self) -> None:
+        from apps.library.models import RecurringDuty
+
+        self.assertNotIn(RecurringDuty, tenant_scoped_models())
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute("SELECT to_regclass('recurring_duty') IS NOT NULL")
+            self.assertEqual(cursor.fetchone(), (True,), "the migration did not create the table")
+            cursor.execute(
+                "SELECT count(*) FROM information_schema.columns WHERE table_name = 'recurring_duty' AND column_name LIKE %s",
+                ["%tenant%"],
+            )
+            self.assertEqual(cursor.fetchone(), (0,))
+            cursor.execute("SELECT policyname FROM pg_policies WHERE tablename = 'recurring_duty' ORDER BY policyname")
+            self.assertEqual(sorted(cursor.fetchall()), sorted([(CHILD_READ_POLICY,), (CHILD_WRITE_POLICY,)]))
+
+
 class TeamRowsAreTenantOnly(TransactionTestCase):
     """The team list as cw_app (TEN-03, c8-vocab-lists-rules): each bank reads only its own
     teams and their labels, a session with no tenant reads none, and a bank cannot file a
@@ -772,25 +998,3 @@ class TeamRowsAreTenantOnly(TransactionTestCase):
                 tenancy.activate(tenant_a.id, using="app")
                 Team.objects.using("app").create(tenant_id=tenant_b.id, key="legal")
 
-
-class RecurringDutyIsLibraryOnly(TestCase):
-    """REG-07 (c8-recurring-duty-library): a recurring duty is a public fact about an
-    obligation, shared by every bank. It carries no tenant column, so no bank's judgement
-    can hide in it (that lives on the bank's own occurrences), and no policy: what holds it
-    is the library fence and the door trigger (tests_library_db_guard.py). Adding a tenant
-    column or a policy here is a review question."""
-
-    def test_the_table_has_no_tenant_column_and_no_policy(self) -> None:
-        from apps.library.models import RecurringDuty
-
-        self.assertNotIn(RecurringDuty, tenant_scoped_models())
-        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
-            cursor.execute("SELECT to_regclass('recurring_duty') IS NOT NULL")
-            self.assertEqual(cursor.fetchone(), (True,), "the migration did not create the table")
-            cursor.execute(
-                "SELECT count(*) FROM information_schema.columns WHERE table_name = 'recurring_duty' AND column_name LIKE %s",
-                ["%tenant%"],
-            )
-            self.assertEqual(cursor.fetchone(), (0,))
-            cursor.execute("SELECT count(*) FROM pg_policies WHERE tablename = 'recurring_duty'")
-            self.assertEqual(cursor.fetchone(), (0,))
