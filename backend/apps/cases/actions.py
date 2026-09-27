@@ -174,7 +174,7 @@ def _record(action: str, row: Action, actor: Actor, *, before: dict[str, Any], s
         actor=actor,
         subject_type=SUBJECT_TYPE,
         subject_id=row.id,
-        subject_title=row.title,
+        subject_title=row.case.change.title,
         summary=summary,
         tenant_id=row.tenant_id,
         before=before,

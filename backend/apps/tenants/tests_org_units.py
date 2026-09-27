@@ -273,7 +273,7 @@ class SeededTreeBudget(OrganisationCase):
         group = factories.department(cls.tenant)
         entity = factories.legal_entity(cls.tenant, parent=group, head=head, entity_term_id=entity_term().id)
         for _ in range(settings.API_PAGE_SIZE_MAX):
-            factories.department(cls.tenant, parent=entity, head=head)
+            factories.business_unit(cls.tenant, parent=entity, head=head)
 
     def test_a_full_page_stays_inside_the_budget(self) -> None:
         params = {"limit": settings.API_PAGE_SIZE_MAX}

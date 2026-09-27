@@ -1,3 +1,23 @@
 {
-  "caseActions.heading": "Actions"
+  "caseActions.heading": "Actions",
+  "caseActions.loadError": "Could not load the actions",
+  "caseActions.empty.title": "No actions yet",
+  "caseActions.empty.body": "Add what must be done, with an owner and a due date. The first action starts the implementation.",
+  "caseActions.due": "Due {date}",
+  "caseActions.doneBy": "Done {date} by {name}",
+  "caseActions.remove": "Remove",
+  "caseActions.removeTitle": "Remove \"{title}\"?",
+  "caseActions.removeBody": "It leaves the list and no longer counts as open. The case file still shows it was planned and removed.",
+  "caseActions.newTitle": "New action",
+  "caseActions.newTitlePlaceholder": "What needs to be done",
+  "caseActions.newDue": "Due",
+  "caseActions.ownerHint": "{name} owns it, as the case's owner.",
+  "caseActions.ownerHintNone": "The case's owner owns it.",
+  "caseActions.add": "Add action",
+  "caseActions.titleRequired": "Give the action a title.",
+  "caseActions.dueRequired": "Choose a due date.",
+  "caseActions.openCount": "{open} of {total} open",
+  "caseActions.locked": "Actions are locked while this case waits for sign-off. Sending it back unlocks them.",
+  "caseActions.lockedRefusal": "This case now waits for sign-off, so its actions can no longer change.",
+  "caseActions.reload": "Reload to see it"
 }

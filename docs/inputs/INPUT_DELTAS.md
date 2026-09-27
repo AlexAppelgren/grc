@@ -384,7 +384,8 @@ here names it with its backticked `METHOD /path`.
   steps[{key,done}]}}`; the patch takes `{name?, timezone?, defaultLanguage?,
   contentLanguages?}` as keys. Reminder, escalation, digest-day and triage settings land
   with the workflow policy (chunk 10, `c10-workflow-policy`, section 19) as columns of their
-  own, not chunk 9's (CHUNK9_TASKS ruling 6); retention is chunk 12's.
+  own, not chunk 9's (CHUNK9_TASKS ruling 6); retention is chunk 12's. `change_case.triage_due_at`
+  lands with `c10-case-triage-due`.
 - `GET /tenant/members` answers a page `{items, total}` (playbook 10: every list
   paginates) of `{userId, email, name, status, roles[{key,kind,label}], title,
   lastSeenAt, passkeyCount, activeSessions}` rather than a bare array of the designed
@@ -1558,31 +1559,25 @@ Also departing from v0.3:
 
 ## acc-foundation. Agent access entries and credential kinds (2026-09-25, agents 0006, identity 0007)
 
-- Every reference to another tenant row is also a composite `(tenant_id, …)` foreign key,
-  written as SQL in the migration, because PostgreSQL checks a foreign key without
-  row-level security. `org_unit`, `licence`, `tenant_product` and `internal_item` carry
-  `UNIQUE (tenant_id, id)`, and so does `link_kind`, which `internal_item.kind` points at. A
-  head or owner (`head_user_id`, `owner_user_id`, `updated_by_id`) is a key into
-  `membership (tenant_id, user_id)`, so it is always a member of the same bank; the
-  designed `owner_id` is `owner_user_id`, beside the `owner_team_id` tenants 0003 adds.
-- `org_unit.entity_term_id` must be a term of the `legal_entity` dimension (a trigger, since
-  a CHECK cannot read another table) and only a legal entity may carry one (a CHECK).
-  `org_unit` gains `version` for `If-Match`.
-- `licence.licence_type` is a taxonomy term (`licence_type_id`), not the designed free
-  text: a type is a key, never a phrase. `service_term_ids uuid[]` is the
-  `licence_service_term` table, so each term is a real foreign key. D-43's certificate
-  columns are `issuer`, `number`, `scope_statement`, `issued_on`, `valid_until`,
-  `next_audit_on` and `owner_user_id`; none of them is a term.
-- `tenant_product_term` has its own `id` rather than the designed composite primary key,
-  like every other `TenantModel`, with `UNIQUE (product_id, term_id)`.
-- Units, licences, products and items are deactivated, withdrawn or retired, never
-  deleted: each model's `delete()` refuses, and every reference is `PROTECT`.
-- `security_policy` is one row per tenant: `credential_policy`, `allowed_authenticators`
-  (a list of AAGUIDs, schema `AllowedAuthenticators`), `device_bound_from` (a date),
-  `session_idle_minutes` and `session_absolute_hours` (null means the platform default,
-  both above zero and capped by `SESSION_IDLE_MINUTES_MAX` and `SESSION_ABSOLUTE_HOURS_MAX`
-  in the write), `updated_by_id`, `updated_at`. No row means the platform defaults.
-  `CREDENTIAL_POLICY_NOTICE_DAYS` (14) is the default notice a tightening gives.
+`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
+third column the R2 plan names (`acts_as_user`), are built with these departures:
+
+- `agent_access.owner_team_id` is required, not "null until chunk 8 lands teams": the team
+  list has landed and every bank has the system team `compliance` (ACC-01 names the team).
+  `revoked_at` and `revoked_by_id` are columns, and a CHECK keeps `active` false exactly when
+  `revoked_at` is set. An entry is revoked, never deleted (`delete()` refuses).
+- Every reference is also a composite `(tenant_id, …)` key: the team, the departments
+  (`org_unit`) and products (`tenant_product`) of the joins, the creator and revoker (into
+  `membership (tenant_id, user_id)`), and on `api_key` the entry and `acts_as_user`.
+- `api_key.kind` is the tier-one kind `credential_kind` (`service`, `personal`); every key
+  before identity 0007 is `service`. CHECKs: a personal token has a tenant, a person and an
+  expiry and no agent, and only a token acts as a person; a key bound to an entry has a
+  tenant and no agent definition (it is not one of the agents we run); an entry's key and
+  every token hold only `AGENT_ACCESS_SCOPES` (`library:read`, `search:read`,
+  `upcoming:read`, `tenant:read`), so "reads and nothing else" (ADR 0055) is the
+  database's rule as well as the code's.
+- `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
+  `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
 
 ## 18. A batch proposal and its rows (2026-09-25, c11-proposal-batches-model)
 
@@ -1685,6 +1680,25 @@ departures:
   `removed_at` and `removed_by`, never deleted, with one live link per entry and item.
 
 
+## c8-home-standing-roadmap. Where we stand, and our own deadlines on the roadmap (2026-09-25, HOM-01, HOM-03)
+
+The chunk 8 brief's `c8-home-register-feeds` is built as this package, with these departures:
+
+- The roadmap is a query in `apps/home/roadmap.py`, not a database view (R2_CROSS_CUTTING
+  (j)), so there is no migration. Each branch is one query, with a count beside it for
+  Today's "Coming up"; a duty occurrence's due date is not a branch yet, because the duty
+  occurrences have no package in this wave.
+- `standing` on `GET /home` is six counts (`applying`, one per compliance category and
+  `openGaps`), not counts per legal entity: one count per obligation, in the worst category
+  of the entities it applies to, as the obligation's pill reads. It is null without
+  `register.read`.
+- A roadmap item gains `owner` (a person, a team, or both on a register entry) and `subject`
+  (the obligation, gap or licence, and the legal entity); `status`, `label` and
+  `sourceLabel` become nullable and are null on an internal item. `itemType` gains
+  `gap_target`, `certificate_expiry` and `certificate_audit`.
+- The register's two branches need `register.read`; a certificate's dates are any member's,
+  as `GET /tenant/org-units/{id}/licences` is. A gap's target is listed whatever the answer
+  on its obligation; a review is left out where the answer is "does not apply".
 ## 19. Chunk 9's case contract (2026-09-25, c9-case-contract)
 
 The eighteen workflow operations of `openapi.yaml`'s "Case workflow" tag, less the ticket
@@ -1767,46 +1781,6 @@ existed; building them on `gap` as `c8-register-models` shaped it changes these 
   without it; closing a gap clears an acceptance still waiting on it.
 - A gap on a Statement of Applicability unit (`unitId`) answers 501 `not_built` until
   `c8-units-paste-soa` adds the column.
-`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
-third column the R2 plan names (`acts_as_user`), are built with these departures:
-
-- `agent_access.owner_team_id` is required, not "null until chunk 8 lands teams": the team
-  list has landed and every bank has the system team `compliance` (ACC-01 names the team).
-  `revoked_at` and `revoked_by_id` are columns, and a CHECK keeps `active` false exactly when
-  `revoked_at` is set. An entry is revoked, never deleted (`delete()` refuses).
-- Every reference is also a composite `(tenant_id, …)` key: the team, the departments
-  (`org_unit`) and products (`tenant_product`) of the joins, the creator and revoker (into
-  `membership (tenant_id, user_id)`), and on `api_key` the entry and `acts_as_user`.
-- `api_key.kind` is the tier-one kind `credential_kind` (`service`, `personal`); every key
-  before identity 0007 is `service`. CHECKs: a personal token has a tenant, a person and an
-  expiry and no agent, and only a token acts as a person; a key bound to an entry has a
-  tenant and no agent definition (it is not one of the agents we run); an entry's key and
-  every token hold only `AGENT_ACCESS_SCOPES` (`library:read`, `search:read`,
-  `upcoming:read`, `tenant:read`), so "reads and nothing else" (ADR 0055) is the
-  database's rule as well as the code's.
-- `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
-  `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
-
-## c8-home-standing-roadmap. Where we stand, and our own deadlines on the roadmap (2026-09-25, HOM-01, HOM-03)
-
-The chunk 8 brief's `c8-home-register-feeds` is built as this package, with these departures:
-
-- The roadmap is a query in `apps/home/roadmap.py`, not a database view (R2_CROSS_CUTTING
-  (j)), so there is no migration. Each branch is one query, with a count beside it for
-  Today's "Coming up"; a duty occurrence's due date is not a branch yet, because the duty
-  occurrences have no package in this wave.
-- `standing` on `GET /home` is six counts (`applying`, one per compliance category and
-  `openGaps`), not counts per legal entity: one count per obligation, in the worst category
-  of the entities it applies to, as the obligation's pill reads. It is null without
-  `register.read`.
-- A roadmap item gains `owner` (a person, a team, or both on a register entry) and `subject`
-  (the obligation, gap or licence, and the legal entity); `status`, `label` and
-  `sourceLabel` become nullable and are null on an internal item. `itemType` gains
-  `gap_target`, `certificate_expiry` and `certificate_audit`.
-- The register's two branches need `register.read`; a certificate's dates are any member's,
-  as `GET /tenant/org-units/{id}/licences` is. A gap's target is listed whatever the answer
-  on its obligation; a review is left out where the answer is "does not apply".
-
 ## c8-support-session-guard. The support session (2026-09-25, identity 0009)
 
 ADR 0042's tranche 2 is built with these departures from `CHUNK8_TASKS.md`:
@@ -1902,7 +1876,6 @@ gains `assessment` (`CasesAssessment`, null before the case reaches assessing) a
 `closedNote`, as `CasesCase` names them. The assessment is joined to the case in the block's
 one case query, so the read costs one label query more only when the assessment names an
 effort. Both are tenant content in the bank's own zone.
-
 ## c9-owner-team-and-reassign. A team beside a case's owner, and removal covers case work (2026-09-25, cases 0005)
 
 `change_case.owner_team` (the column section 18 left unbuilt) is a nullable key to the bank's

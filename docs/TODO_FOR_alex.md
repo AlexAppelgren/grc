@@ -1458,12 +1458,6 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
          confirms one, unlike the shared library (D-62). Say if a bank may switch on a
          confirming agent for its own queue. **Answered (Alex, 2026-09-25): 1 as D-98 (the typed name may reach the bank's own agent, guarded), 2 as D-99, 3 default taken.**
 
-## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-103)
-
-         confirming agent for its own queue.
-
-## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-102)
-
 ## c8-mywork-service: how long a linked change stays on My work (2026-09-25, HOM-05, D-25, D-97)
 
 - [ ] **A confirmed link keeps its change under "Changes on your items" while the
@@ -1474,7 +1468,7 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       so. The alternative is the same 14 days from the day the link was confirmed,
       after which the change drops off My work while the case is still open.
 
-## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-9x)
+## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-103)
 
 - [ ] **The console's correction form gained one field.** A reviewer who changes a
       proposal's wording, date or scope before approving now gives "Source of your
@@ -1622,3 +1616,49 @@ policy, each built on a default you may overrule.
       link ends, each with its before and after in the audit row. Section 5 says nothing is
       overwritten; R2_CROSS_CUTTING (l) lists actions, internal links and units as never
       deleted and does not list these. Default: link rows may go, the audit keeps them.
+
+## c9-fe-signoff-casefile: Request sign-off is disabled until the server says it can be asked for (2026-09-25)
+
+- [ ] **Disabled or enabled?** The design card leaves Request sign-off enabled and shows the
+      409 `open_actions` or `evidence_missing` under it; the package's acceptance says it
+      is disabled from `canRequestSignoff`, with the reason read off `openActionCount`.
+      Default taken: the acceptance. The button is disabled with its reason, and the two
+      409s, with the count from the server's answer, show only when the page was read
+      before the case changed. CAS-S8's journey (`@e2e`, not this package's) says "the
+      owner chooses Request sign-off" and receives the 409: with this default the journey
+      shows the disabled button and its reason instead, and proves the 409 in
+      `tests_scenarios.py`. Say if the card should win.
+
+## c9-e2e-signoff-j3: the sign-off journeys and J-3 (2026-09-25)
+
+- [ ] **The feed's "In progress" tab lists assigned cases only.** It asks `GET /changes`
+      for `tab=assigned`, and the API filters one category, so a case being assessed,
+      implemented or waiting for sign-off is on no tab of the feed (the card's In progress
+      tab shows "Assessment in progress"). Default taken: not fixed here, which would widen
+      a journey package into the feed's API; the sign-off journeys and J-3 open the change
+      from Search, which finds every registered change by title. Proposed fix, for the
+      feed's owner: an `in_progress` value of `tab` covering `assigned`, `assessing`,
+      `implementing` and `signoff`, which the tab then sends.
+- [ ] **CAS-S8 reaches its two 409s from a second tab.** With Request sign-off disabled
+      until `canRequestSignoff` (c9-fe-signoff-casefile's default above), the journey
+      makes the case ready in one tab, opens a second tab, takes the first back to one
+      open action and no evidence, and the stale tab asks: `open_actions`, then, with the
+      action completed, `evidence_missing`. If the card wins, the journey can ask from one tab.
+- [ ] **CAS-S10's teardown cannot return a signed-off case to waiting.** Closed is final
+      and nothing moves it back, so every step settles on the state it finds: a retry after
+      the approval proves the audit row and the obligation on the closed case.
+
+## security-review-c9: the chunk 9 security review (2026-09-27, CAS-05, CAS-06, NFR-01)
+
+- [ ] **The c9-signoff question above is answered by its option (a).** The review rated
+      "evidence can leave a case while it waits for sign-off" medium and fixed it without
+      touching the state machine's guards: attaching or removing evidence while the case is
+      in `signoff` answers 409 `evidence_locked`, as the actions answer `actions_locked`,
+      and a removal locks the case first so it queues behind a sign-off request. The screen
+      already showed evidence read-only in that state. Say if you want (b), the
+      `clean_evidence` guard on `signoff → closed`, as well.
+- [ ] **Must the approver also differ from the case's owner?** Four eyes today compares the
+      approver with the person who asked for sign-off (AC-CAS1's words). An owner holding
+      `cases.signoff` can approve their own work when a colleague presses Request sign-off.
+      Default taken: no change, logged as H69. Say yes and the owner joins the guard and
+      the CHECK.

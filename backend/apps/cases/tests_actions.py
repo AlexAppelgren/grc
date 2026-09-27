@@ -143,6 +143,8 @@ class ActionTests(ScenarioTestCase):
         self.assertEqual(added.actor_id, self.owner.id)
         self.assertEqual(added.after["ownerId"], str(self.owner.id))
         self.assertNotIn("title", added.after, "an audit value carries no text a person typed (rule m)")
+        # security-review-c9: nor does the row's title, which the audit log lists.
+        self.assertEqual(added.subject_title, case.change.title)
 
     def test_a_second_action_leaves_the_case_where_it_is(self) -> None:
         self.assertEqual(self._add().status_code, 201)
