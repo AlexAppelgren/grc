@@ -19,7 +19,7 @@ import { ErrorState, LoadingState, NotFoundScreen } from '@/components/ui/States
 import { useFormatContext } from '@/features/identity/hooks';
 import { useInstrument, useObligations, useReportInstrumentProblem } from '@/features/library/hooks';
 import { presentInstrument } from '@/features/library/instrument-presentation';
-import { presentBindingLevel } from '@/features/library/obligation-presentation';
+import { markPrivateToUs, presentBindingLevel } from '@/features/library/obligation-presentation';
 import type { InstrumentDetail, InstrumentLineageRef, ScopeFilter } from '@/features/library/types';
 import { inForceLabel } from '@/features/library/version-presentation';
 import { useRefreshProblemReports } from '@/features/problem-reports/hooks';
@@ -193,7 +193,7 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
   }
   if (record === undefined) return <LoadingState rows={3} />;
 
-  const header = presentInstrument(
+  const pills = presentInstrument(
     {
       instrument: { key: record.stableKey, label: record.shortName },
       level: { key: record.level.key, label: record.level.label },
@@ -204,6 +204,8 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
     },
     t,
   );
+  // The bank's own instrument leads its head with "Private to us", as its obligations do (OWN-04).
+  const header = record.privateToUs ? markPrivateToUs(pills, t) : pills;
   const context: ReportContext = {};
   const sourceHref = externalHref(record.sourceUrl);
 

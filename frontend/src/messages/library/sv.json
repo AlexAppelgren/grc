@@ -63,5 +63,6 @@
   "library.watchedMarket": "Marknad vi bevakar: {jurisdiction}",
   "library.empty.watched.title": "Marknaderna vi bevakar tillför inget här",
   "library.empty.watched.body": "Marknaderna vi bevakar ger ingen skyldighet som de andra filtren tillåter. EU-regler visas redan, eftersom de når marknaderna där vi verkar.",
-  "library.empty.watchedInstruments.body": "Marknaderna vi bevakar ger ingen rättsakt som de andra filtren tillåter. EU-regler visas redan, eftersom de når marknaderna där vi verkar."
+  "library.empty.watchedInstruments.body": "Marknaderna vi bevakar ger ingen rättsakt som de andra filtren tillåter. EU-regler visas redan, eftersom de når marknaderna där vi verkar.",
+  "library.privateToUs": "Privat för oss"
 }

@@ -33,6 +33,9 @@ const serverRow = {
   tenantTags: [{ key: 'custody', label: 'Custody' }],
   privateToUs: false,
   complianceStatus: null,
+  applicability: 'under_assessment',
+  firstLineOwner: null,
+  ownerTeam: null,
 };
 
 const screenRow = {
@@ -60,6 +63,9 @@ const screenRow = {
   tenantTags: [{ key: 'custody', kind: null, label: 'Custody' }],
   privateToUs: false,
   complianceStatus: null,
+  applicability: 'under_assessment',
+  firstLineOwner: null,
+  ownerTeam: null,
 };
 
 // A seeded version nobody approved, and the provenance of one in force.
@@ -229,6 +235,10 @@ describe('library api', () => {
       tenantTags: undefined,
       privateToUs: true,
       complianceStatus: { key: 'gap', kind: 'gap', label: 'Gap' },
+      // c8-ui-inventory-overlay: the bank's owner and team, by id and name and as a row.
+      applicability: 'applies',
+      firstLineOwner: { id: 'u-7', name: 'Johan Berg' },
+      ownerTeam: { key: 'retail_compliance', kind: null, label: 'Retail compliance' },
     };
     // A dimension the record carries no term in, and a server that sends no reason at all.
     const bare = {
@@ -258,6 +268,9 @@ describe('library api', () => {
       tenantTags: [],
       privateToUs: true,
       complianceStatus: { key: 'gap', kind: 'gap', label: 'Gap' },
+      applicability: 'applies',
+      firstLineOwner: { id: 'u-7', name: 'Johan Berg' },
+      ownerTeam: { key: 'retail_compliance', kind: null, label: 'Retail compliance' },
     });
   });
 

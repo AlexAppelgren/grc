@@ -20,7 +20,7 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.proposals import batch, logic, reading, updates
+from apps.proposals import batch, logic, private_approval, reading, updates
 from apps.proposals.logic import Proposer, Reviewer
 from apps.proposals.schemas import (
     LibraryUpdatesPage,
@@ -35,6 +35,10 @@ from apps.proposals.schemas import (
     ProposalQuery,
     ProposalRejectBody,
     ProposalRow,
+    PrivateProposalApproveBody,
+    PrivateProposalPage,
+    PrivateProposalRejectBody,
+    PrivateProposalRow,
     TenantProposalPage,
     TenantProposalQuery,
 )
@@ -808,3 +812,125 @@ def decide_proposal_batch(request: HttpRequest, body: ProposalBatchDecision, bat
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
     )
     return batch.read(proposal, language_order(request))
+
+
+# ---------------------------------------------------------------------------------------
+# The bank's own queue (INV-07, OWN-03, PRO-03; D-57, ADR 0050, ADR 0059; d89-proposal-owner)
+# ---------------------------------------------------------------------------------------
+_PRIVATE_PATH = Path(
+    ...,
+    description=(
+        "The organisation's own proposal, the UUID its queue returns as `id`. Another organisation's "
+        "proposal, a proposal to the shared library, one that does not exist, and anything that is not a "
+        "UUID all answer `not_found`."
+    ),
+)
+
+
+@router.get(
+    "/private-proposals",
+    response=PrivateProposalPage,
+    auth=SESSION,
+    operation_id="listPrivateProposals",
+    by_alias=True,
+    summary="Read your organisation's own queue of records waiting for a decision",
+)
+@requires_permission(perms.PRIVATE_RECORDS_APPROVE)
+@answers_problems
+def list_private_proposals(request: HttpRequest, page: Query[PageQuery]) -> PrivateProposalPage:
+    """Every proposal of this organisation's own records: the instruments and obligations the
+    shared library does not hold, filed by a person here or found by the organisation's own
+    research agent for a regulation it added to its scope. Call it for the organisation's own
+    queue, where a second person decides each one. Nothing here is the shared library's, and
+    nothing here ever reaches the platform console or another organisation: row-level security
+    keeps each organisation's rows its own.
+
+    Reading it changes nothing and records nothing. Paginated: 20 rows by default and 100 at
+    most, with a larger limit refused rather than quietly trimmed, oldest first so the queue is
+    worked in the order it was filed. Nothing waiting is a 200 with an empty items list and a
+    total of 0, never a 404.
+
+    Needs `private_records.approve`, which the Compliance officer and Approver roles hold. It is
+    never a platform permission and never an API key scope, so no key and no platform session
+    reaches it.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
+    without `private_records.approve`; `validation_error` (422) when the page size or offset is
+    out of range; `not_built` (501) for every call. Published ahead of the logic that will fill
+    it, and answering 501 until that ships.
+    """
+    return private_approval.queue(limit=page.limit, offset=page.offset)
+
+
+@router.post(
+    "/private-proposals/{proposal_id}/approve",
+    response=PrivateProposalRow,
+    auth=SESSION,
+    operation_id="approvePrivateProposal",
+    by_alias=True,
+    summary="Approve a record of your organisation's own and add it to your own inventory",
+)
+@requires_permission(perms.PRIVATE_RECORDS_APPROVE)
+@requires_step_up
+@answers_problems
+def approve_private_proposal(request: HttpRequest, body: PrivateProposalApproveBody, proposal_id: str = _PRIVATE_PATH) -> PrivateProposalRow:
+    """The only door into this organisation's own inventory. Call it once a person here has
+    read the proposal and its sources and is satisfied the record is right. In one transaction
+    it applies the payload through the same apply code as the shared queue, writes the record
+    and its first version as the organisation's own, and writes the audit and outbox rows in
+    the organisation's own zone. The record then reads "Private to us", only to this
+    organisation, and is never indexed, embedded or sent to a model. The answer is the
+    proposal as it then stands, with `status` `approved`.
+
+    Needs `private_records.approve`, stepped up fresh with a passkey; the assertion's id is
+    written on the audit rows. The approver is never the proposer: the four-eyes constraint
+    refuses that row on its own. An agent never approves here.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
+    without `private_records.approve`; `step_up_required` (403) without a fresh passkey
+    assertion; `not_found` (404) for another organisation's proposal, a proposal to the shared
+    library, one that does not exist and anything that is not a UUID; `validation_error` (422)
+    for a field the body does not name or a note longer than 2000 characters; `not_built`
+    (501) for every proposal of this organisation's own. Published ahead of the logic that
+    will fill it, and answering 501 until that ships.
+    """
+    return private_approval.approve(
+        proposal=private_approval.by_id(uuid_or_404(proposal_id)),
+        note=body.note,
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+
+
+@router.post(
+    "/private-proposals/{proposal_id}/reject",
+    response=PrivateProposalRow,
+    auth=SESSION,
+    operation_id="rejectPrivateProposal",
+    by_alias=True,
+    summary="Turn down a record of your organisation's own with a reason",
+)
+@requires_permission(perms.PRIVATE_RECORDS_APPROVE)
+@answers_problems
+def reject_private_proposal(request: HttpRequest, body: PrivateProposalRejectBody, proposal_id: str = _PRIVATE_PATH) -> PrivateProposalRow:
+    """Close a proposal of this organisation's own as refused. Call it once a person here has
+    found the record wrong, already held or outside what the organisation needs. Nothing in the
+    organisation's inventory changes; the reason and the note are stored on the proposal, which
+    is closed for good, and the decision's audit row is written in the organisation's own zone.
+    A rejected proposal is never reopened: its proposer files a new one. The answer is the
+    proposal as it then stands, with `status` `rejected`.
+
+    Needs `private_records.approve`, with no step-up, since a rejection adds nothing. The
+    person rejecting is never the proposer.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
+    without `private_records.approve`; `not_found` (404) for another organisation's proposal, a
+    proposal to the shared library, one that does not exist and anything that is not a UUID;
+    `validation_error` (422) for a field the body does not name or a note longer than 2000
+    characters; `not_built` (501) for every proposal of this organisation's own. Published ahead
+    of the logic that will fill it, and answering 501 until that ships.
+    """
+    return private_approval.reject(
+        proposal=private_approval.by_id(uuid_or_404(proposal_id)),
+        rejection_code=body.rejection_code,
+        note=body.note,
+    )

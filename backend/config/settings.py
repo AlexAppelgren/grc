@@ -759,6 +759,14 @@ SCANNER_PORT = env_int("SCANNER_PORT", 3310)  # clamd's TCPSocket in the officia
 SCANNER_TIMEOUT_SECONDS = float(env_str("SCANNER_TIMEOUT_SECONDS", "60.0"))
 
 # ---------------------------------------------------------------------------------------
+# ===== c8-reg-applicability: REG-01, AC-REG1 many answers in one call (D-75) =====
+# ---------------------------------------------------------------------------------------
+# The most applicability answers one confirmed call stores (POST /applicability). Each row
+# is a write and an audit event in one transaction, so the cap keeps a call inside the API
+# budget; a longer call is refused whole and stores nothing.
+REGISTER_BULK_MAX = env_int("REGISTER_BULK_MAX", 100)
+
+# ---------------------------------------------------------------------------------------
 # ===== VOC-08 bulk tagging's cap (c10-tagging-routes) ====================================
 # How many distinct records one tagging preview or batch may name. A list page holds at
 # most 100 rows, so two pages' worth covers every selection a screen makes, and the one

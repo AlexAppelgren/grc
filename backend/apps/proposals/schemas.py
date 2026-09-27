@@ -1999,3 +1999,148 @@ class ProposalBatchDecision(WriteBody):
             ]
         }
     )
+
+
+# ---------------------------------------------------------------------------------------
+# The bank's own queue (INV-07, OWN-03; D-57, ADR 0050, ADR 0059; d89-proposal-owner)
+# ---------------------------------------------------------------------------------------
+_PRIVATE_EXAMPLE_ID = "5e2a7c1d-3b9f-4d6e-8a10-2c4f6b8d0e13"
+_PRIVATE_ROW_EXAMPLE: dict[str, Any] = {
+    "id": _PRIVATE_EXAMPLE_ID,
+    "kind": "new_obligation",
+    "status": "open",
+    "title": "New obligation: report outsourced functions to the board every year",
+    "origin": "agent",
+    "isMine": False,
+    "payload": {
+        "key": "obl-nordbank-outsourcing-board-report",
+        "instrument": "fffs-2026-9",
+        "titles": {"en": "Report outsourced functions to the board every year"},
+        "originalLanguage": "en",
+        "isMachine": True,
+        "refLabel": "4 kap. 5 §",
+        "dutyType": "governance",
+        "effectiveFrom": "2027-01-01",
+        "terms": ["legal_entity:bank"],
+    },
+    "fieldSources": {"titles.en": "https://www.fi.se/sv/vara-register/forfattningssamling/fffs-2026-9/"},
+    "sourceUrl": "https://www.fi.se/sv/vara-register/forfattningssamling/fffs-2026-9/",
+    "createdAt": "2026-09-24T06:40:00Z",
+}
+
+
+class PrivateProposalRow(CamelSchema):
+    """One proposal in this bank's own queue: a record of the bank's own, an instrument or an
+    obligation the shared library does not hold, waiting for a person here to decide it
+    (OWN-03). It belongs to this bank alone. The console never lists it, no other bank reads
+    it, and no platform reviewer decides it.
+
+    It is a request, not a record: until `status` is `approved` nothing of the bank's own
+    inventory changes, and even then the record reads "Private to us" and is never a fact of
+    the shared library. Whether it applies to the bank, and whether the bank complies, are
+    decided in the register afterwards, never here.
+    """
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_PRIVATE_ROW_EXAMPLE]})
+
+    id: UUID = Field(description="The proposal, as a UUID the server assigned when it was filed and never changes.")
+    kind: str = Field(
+        description=(
+            "What the proposal adds or changes. A fixed kind, not a vocabulary row: `new_instrument` adds an "
+            "instrument of the bank's own, `new_obligation` adds a duty of its own with its first version, "
+            "and `new_obligation_version` adds a version to a duty the bank already holds as its own."
+        )
+    )
+    status: str = Field(
+        description=(
+            "Where the request stands. A fixed kind: `open` is waiting for a person here to decide it, "
+            "`approved` means the bank's own inventory now carries it, `rejected` means it was refused with a "
+            "reason and changed nothing, and `superseded` means a later proposal overtook it."
+        )
+    )
+    title: str = Field(description="The one-line request as its proposer wrote it, which is what the queue lists it under.")
+    origin: str = Field(
+        description=(
+            "Who filed it. A fixed kind: `agent` means the bank's own research agent found it and a person has "
+            "not confirmed it yet, so it reads as proposed by our agent; `user` means a person here filed it."
+        )
+    )
+    is_mine: bool = Field(
+        description=(
+            "True when the reader filed it. Four eyes never lets them decide it, so a screen offers them no "
+            "approve or reject button; the server refuses them either way."
+        )
+    )
+    payload: dict[str, Any] = Field(  # schema: ProposalPayload
+        default_factory=dict,
+        description=(
+            "What was proposed, in the shape its `kind` names (`ProposalPayload`), kept exactly as it arrived. "
+            "It is the bank's own content and never leaves the bank."
+        ),
+    )
+    field_sources: dict[str, str] = Field(  # schema: ProposalFieldSources
+        default_factory=dict,
+        description=(
+            "Per field the proposal sets, where its value came from: an https link to the authority's public "
+            "page. A source is the authority's page, not the bank's reading of it."
+        ),
+    )
+    source_url: str = Field(default="", description="The https link to the authority's public page the new record is read from, which the record keeps as its own source.")
+    created_at: datetime = Field(description="When it was filed: a UTC timestamp, date and time together, so the queue can order and date it.")
+
+
+class PrivateProposalPage(CamelSchema):
+    """A page of this bank's own queue, oldest first, with the count of every proposal in it."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_PRIVATE_ROW_EXAMPLE], "total": 1}]})
+
+    items: list[PrivateProposalRow] = Field(description="This page of the bank's own proposals, oldest first, so the queue is worked in the order it was filed.")
+    total: int = Field(description="How many of the bank's own proposals there are in all, across every page, so a screen can show a count without reading them.", examples=[1])
+
+
+class PrivateProposalApproveBody(WriteBody):
+    """The body of `POST /private-proposals/{proposalId}/approve`: a person's word that this
+    record of the bank's own may enter the bank's own inventory. It needs
+    `private_records.approve` and a fresh passkey step-up, and the approver is never the
+    proposer. A field the body does not name answers 422 `validation_error`."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"note": "Checked against FFFS 2026:9, 4 kap. 5 §."}]})
+
+    note: str = Field(
+        default="",
+        max_length=2000,
+        description=(
+            "The approver's own sentence to the proposer, at most 2000 characters, stored on the proposal. "
+            "Optional. It is a comment on the request and never part of the record's text."
+        ),
+        examples=["Checked against FFFS 2026:9, 4 kap. 5 §."],
+    )
+
+
+class PrivateProposalRejectBody(WriteBody):
+    """The body of `POST /private-proposals/{proposalId}/reject`: why a person here turned a
+    proposal of the bank's own down. Nothing changes in the bank's inventory, and the
+    proposal is closed for good. A field the body does not name answers 422
+    `validation_error`."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"rejectionCode": "duplicate", "note": "We already hold this duty as our own."}]})
+
+    rejection_code: str = Field(
+        default="",
+        description=(
+            "Why the proposal is refused, as the key of a live row of the `rejection_reason` vocabulary: for "
+            "example `duplicate`, `wrong_scope`, `poor_wording` or `outside_sector_scope`. Its rows are data an "
+            "admin may extend, relabel or retire without a deploy, never a closed set, and "
+            "`GET /vocab/rejection_reason` returns the live ones; compare the key, never the label. Required."
+        ),
+        examples=["duplicate"],
+    )
+    note: str = Field(
+        default="",
+        max_length=2000,
+        description=(
+            "The person's own sentence to the proposer saying what is wrong, at most 2000 characters, stored on "
+            "the proposal. Required. It is a comment on the request and never part of any record's text."
+        ),
+        examples=["We already hold this duty as our own."],
+    )

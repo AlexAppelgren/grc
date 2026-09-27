@@ -1458,6 +1458,9 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 
 ## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-103)
 
+         confirming agent for its own queue.
+## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-9x)
+
 - [ ] **The console's correction form gained one field.** A reviewer who changes a
       proposal's wording, date or scope before approving now gives "Source of your
       correction", the link or provision they read the new value in; the server refuses a

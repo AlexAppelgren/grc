@@ -1,15 +1,15 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
+import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 
 import { InstrumentRow } from './InstrumentRow';
-import { InventoryScreen, filtersFrom, isNarrowed, queryOf, searchOf } from './InventoryScreen';
-import { ObligationRow, factsOf, metaOf } from './ObligationRow';
+import { InventoryScreen, filtersFrom, isNarrowed, queryOf, searchOf, selectedInView } from './InventoryScreen';
+import { ObligationRow, factsOf, metaOf, pillsOf } from './ObligationRow';
 import type { Instrument, Obligation } from '@/features/library/types';
 import { createT } from '@/shared/i18n';
 import { defaultFormatContext } from '@/shared/utils/format';
@@ -53,6 +53,9 @@ const research: Obligation = {
   tenantTags: [{ key: 'custody', kind: null, label: 'Custody' }],
   privateToUs: false,
   complianceStatus: null,
+  applicability: 'under_assessment',
+  firstLineOwner: null,
+  ownerTeam: null,
 };
 
 const adviceOnly: Obligation = {
@@ -137,8 +140,25 @@ describe('inventory filters in the URL', () => {
       dutyType: 'conduct',
       asOf: '2026-09-16',
       scope: 'all',
+      tenantTag: '',
+      applicability: '',
+      complianceStatus: '',
+      owner: '',
+      ownerTeam: '',
     });
-    expect(filtersFrom(new URLSearchParams(''))).toEqual({ instrument: '', regime: '', service: '', dutyType: '', asOf: '', scope: 'in' });
+    expect(filtersFrom(new URLSearchParams(''))).toEqual({
+      instrument: '',
+      regime: '',
+      service: '',
+      dutyType: '',
+      asOf: '',
+      scope: 'in',
+      tenantTag: '',
+      applicability: '',
+      complianceStatus: '',
+      owner: '',
+      ownerTeam: '',
+    });
     // Anything but one of the three values leaves the footprint filter on.
     expect(filtersFrom(new URLSearchParams('scope=outside')).scope).toBe('in');
     expect(filtersFrom(new URLSearchParams('scope=watched')).scope).toBe('watched');
@@ -182,13 +202,12 @@ describe('ObligationRow', () => {
       instrument: { key: 'fffs-2017-2', label: 'FFFS 2017:2' },
       binding: true,
       levelKind: null,
-      complianceStatus: undefined,
       openChangeCount: 1,
       libraryTags: [{ key: 'research', kind: null, label: 'Research' }],
       tenantTags: [{ key: 'custody', kind: null, label: 'Custody' }],
       privateToUs: false,
     });
-    expect(factsOf(adviceOnly)).toMatchObject({ binding: false, tenantTags: [], complianceStatus: { kind: 'gap' } });
+    expect(factsOf(adviceOnly)).toMatchObject({ binding: false, tenantTags: [] });
     expect(factsOf(adviceOnly)).not.toHaveProperty('changeWaitingForApproval');
   });
 
@@ -542,5 +561,389 @@ describe('InstrumentRow', () => {
     expect(row).toHaveAttribute('data-outside-footprint', '');
     expect(row.className).toContain('border-dashed');
     expect(within(row).getByRole('heading', { level: 3 })).toHaveTextContent('FFFS 2017:2');
+  });
+});
+
+// Bulk tagging (VOC-08; the card's blocks 1 to 12): a holder of vocab.manage selects
+// rows on the page, picks one of the bank's tags, sees the server's preview and commits
+// the ids that preview showed, in one call. Everyone reads the tags and the tag filter.
+describe('bulk tagging on the inventory', () => {
+  const third: Obligation = { ...research, id: 'ob-3', stableKey: 'obl-client-assets', refLabel: 'Client assets', title: { text: 'Keep client assets apart', language: 'en', isOriginal: true, isMachine: false }, tenantTags: [] };
+  const tagRows = [
+    { key: 'custody', kind: null, label: 'Custody', labels: { en: 'Custody' }, usageNote: '', sortOrder: 1, active: true, isSystem: false, isDefault: false, usageCount: 4, extra: {} },
+    { key: 'onboarding', kind: null, label: 'Onboarding', labels: { en: 'Onboarding' }, usageNote: '', sortOrder: 2, active: true, isSystem: false, isDefault: false, usageCount: 2, extra: {} },
+  ];
+  const custody = { key: 'custody', kind: null, label: 'Custody' };
+
+  /** The inventory's reads, the bank's tags, and whatever `write` answers for a POST. */
+  function serveBulk(items: Obligation[], write: (sent: Sent) => Answer = () => ({ status: 500 }), tags: typeof tagRows = tagRows) {
+    return installAdapter((sent) => {
+      if (sent.method === 'post') return write(sent);
+      if (sent.path === '/api/v1/obligations') return { status: 200, data: { items, total: items.length } };
+      if (sent.path === '/api/v1/instruments') return { status: 200, data: { items: [fffs], total: 1 } };
+      if (sent.path === '/api/v1/vocab/tenant_tag') return { status: 200, data: tags };
+      if (sent.path === '/api/v1/taxonomy/terms') return { status: 200, data: { items: [], total: 0 } };
+      if (sent.path === '/api/v1/me') return { status: 200, data: { user: { id: 'u1', name: 'Sara', locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, permissions: [], enrolmentPending: false } };
+      return { status: 200, data: [] };
+    });
+  }
+
+  /** Renders once and hands back a re-render over the same client, for a URL that changed. */
+  function renderScreen(permissions: readonly string[]) {
+    const { wrapper } = queryWrapper();
+    const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
+    const tree = () => (
+      <Wrapper>
+        <PermissionsProvider permissions={permissions}>
+          <LocaleProvider locale="en">
+            <InventoryScreen />
+          </LocaleProvider>
+        </PermissionsProvider>
+      </Wrapper>
+    );
+    const view = render(tree());
+    return () => view.rerender(tree());
+  }
+
+  function box(stableKey: string): HTMLInputElement {
+    return document.querySelector(`[data-obligation-select="${stableKey}"]`) as HTMLInputElement;
+  }
+
+  async function chooseTag(text: string) {
+    const dialog = await screen.findByRole('dialog');
+    const input = within(dialog).getByRole('combobox');
+    await waitFor(() => expect((input as HTMLInputElement).disabled).toBe(false));
+    fireEvent.change(input, { target: { value: text } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    return dialog;
+  }
+
+  const outcome = (gained: string[], already: string[], skipped = 0) => ({
+    status: 200,
+    data: { tag: custody, subjectType: 'obligation', gained: { count: gained.length, ids: gained }, alreadyTagged: { count: already.length, ids: already }, skipped: { count: skipped } },
+  });
+
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+    nav.search = '';
+    nav.replace.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('shows a member without vocab.manage the tags and the filter, and no checkbox, select-all or Tag', async () => {
+    serveBulk([research, adviceOnly]);
+    renderScreen(['library.read']);
+    await screen.findByText('2 obligations');
+    expect(document.querySelectorAll('input[type="checkbox"]')).toHaveLength(0);
+    expect(screen.queryByRole('button', { name: 'Tag' })).toBeNull();
+    // The bank's tag on the row is an outlined information pill, from the row's facts.
+    const pill = within(document.querySelector('[data-obligation="obl-research-payments"]') as HTMLElement).getByText('Custody').closest('[data-pill]');
+    expect(pill).toHaveAttribute('data-pill', 'information');
+    expect(pill).toHaveAttribute('data-outlined');
+    expect(await screen.findByRole('option', { name: 'Custody' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'Our tags' })).toBeTruthy();
+  });
+
+  it('previews the selection, commits the ids the preview showed in one call, and shows the server\'s counts', async () => {
+    const sent = serveBulk([research, adviceOnly, third], (s) =>
+      // The preview skips ob-3; the commit answers what it did.
+      s.path === '/api/v1/taggings/preview' ? outcome(['ob-2'], ['ob-1'], 1) : outcome(['ob-2'], ['ob-1']),
+    );
+    renderScreen(['library.read', 'vocab.manage']);
+    await screen.findByText('3 obligations');
+    fireEvent.click(box('obl-research-payments'));
+    fireEvent.click(box('obl-suitability-statement'));
+    fireEvent.click(box('obl-client-assets'));
+    expect(screen.getByRole('region', { name: 'Selection' })).toHaveTextContent('3 selected');
+    fireEvent.click(screen.getByRole('button', { name: 'Tag' }));
+    const dialog = await chooseTag('Cust');
+    expect(within(dialog).getByRole('heading', { name: 'Tag 3 obligations' })).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Preview' }));
+
+    await within(dialog).findByRole('heading', { name: 'Add "Custody" to 3 obligations?' });
+    const preview = sent.find((s) => s.path === '/api/v1/taggings/preview');
+    expect(preview?.body).toEqual({ tagKey: 'custody', subjectType: 'obligation', subjectIds: ['ob-1', 'ob-2', 'ob-3'] });
+    expect(sent.filter((s) => s.path === '/api/v1/taggings/batch')).toHaveLength(0);
+    expect(document.querySelector('[data-bulk-count="gained"]')).toHaveTextContent('1Would gain the tag');
+    expect(document.querySelector('[data-bulk-count="already"]')).toHaveTextContent('1Already carry it');
+    expect(document.querySelector('[data-bulk-count="skipped"]')).toHaveTextContent('1Skipped');
+    expect(document.querySelector('[data-bulk-preview-row="gains"]')).toHaveTextContent('Give the retail client a suitability statement before an advised trade');
+    expect(document.querySelector('[data-bulk-preview-row="carries"]')).toHaveTextContent('Pay for third-party research only under the permitted models');
+    // A skipped record is counted and never named.
+    expect(within(dialog).queryByText('Keep client assets apart')).toBeNull();
+    expect(within(dialog).getByText('1 obligation is left out: you cannot read it any more, or it cannot be tagged.')).toBeTruthy();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tag 1 obligation' }));
+    await screen.findByText('"Custody" added to 1 obligation. 1 already carried it.');
+    const batches = sent.filter((s) => s.path === '/api/v1/taggings/batch');
+    expect(batches).toHaveLength(1);
+    expect(batches[0]?.body).toEqual({ tagKey: 'custody', subjectType: 'obligation', subjectIds: ['ob-2', 'ob-1'] });
+    expect(sent.filter((s) => s.path === '/api/v1/taggings')).toHaveLength(0);
+    // The selection is cleared once the batch is in.
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(box('obl-research-payments').checked).toBe(false);
+    expect(screen.queryByRole('region', { name: 'Selection' })).toBeNull();
+  });
+
+  it('keeps the selection through a filter change on the page, counts only rows still in view, and clears it when the page changes', async () => {
+    serveBulk([research, adviceOnly]);
+    const rerender = renderScreen(['library.read', 'vocab.manage']);
+    await screen.findByText('2 obligations');
+    fireEvent.click(box('obl-research-payments'));
+    fireEvent.click(box('obl-suitability-statement'));
+    expect(screen.getByRole('region', { name: 'Selection' })).toHaveTextContent('2 selected');
+
+    // A filter that leaves one of the two in view: that one stays selected, and only it counts.
+    serveBulk([research]);
+    nav.search = 'regime=securities';
+    rerender();
+    await waitFor(() => expect(box('obl-research-payments')).not.toBeNull());
+    expect(document.querySelector('[data-obligation="obl-suitability-statement"]')).toBeNull();
+    expect(box('obl-research-payments').checked).toBe(true);
+    expect(screen.getByRole('region', { name: 'Selection' })).toHaveTextContent('1 selected');
+
+    // Another page: the Instruments tab and back. Nothing is selected any more.
+    nav.search = 'tab=instruments';
+    rerender();
+    await screen.findByRole('tab', { name: 'Instruments', selected: true });
+    nav.search = 'regime=securities';
+    rerender();
+    await waitFor(() => expect(box('obl-research-payments')).not.toBeNull());
+    expect(box('obl-research-payments').checked).toBe(false);
+    expect(screen.queryByRole('region', { name: 'Selection' })).toBeNull();
+  });
+
+  it('selects and clears every row on the page from the select-all, mixed while only some are', async () => {
+    serveBulk([research, adviceOnly]);
+    renderScreen(['library.read', 'vocab.manage']);
+    await screen.findByText('2 obligations');
+    const all = screen.getByRole('checkbox', { name: 'Select all 2 on this page' }) as HTMLInputElement;
+    fireEvent.click(box('obl-research-payments'));
+    expect(all.indeterminate).toBe(true);
+    fireEvent.click(all);
+    expect(box('obl-suitability-statement').checked).toBe(true);
+    expect(all.checked).toBe(true);
+    fireEvent.click(all);
+    expect(box('obl-research-payments').checked).toBe(false);
+    fireEvent.click(box('obl-research-payments'));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }));
+    expect(box('obl-research-payments').checked).toBe(false);
+  });
+
+  it('refuses above the cap before calling', async () => {
+    vi.stubEnv('NEXT_PUBLIC_BULK_TAGGING_MAX_RECORDS', '1');
+    const sent = serveBulk([research, adviceOnly]);
+    renderScreen(['library.read', 'vocab.manage']);
+    await screen.findByText('2 obligations');
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all 2 on this page' }));
+    const tag = screen.getByRole('button', { name: 'Tag' });
+    expect(tag).toBeDisabled();
+    expect(tag).toHaveAccessibleDescription('You can tag at most 1 obligations at a time. Clear some rows first.');
+    fireEvent.click(tag);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(sent.filter((s) => s.method === 'post')).toHaveLength(0);
+  });
+
+  it('says there is nothing to add when every selected row already carries the tag, with no commit', async () => {
+    const sent = serveBulk([research], () => outcome([], ['ob-1']));
+    renderScreen(['library.read', 'vocab.manage']);
+    await screen.findByText('1 obligation');
+    fireEvent.click(box('obl-research-payments'));
+    fireEvent.click(screen.getByRole('button', { name: 'Tag' }));
+    const dialog = await chooseTag('Cust');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Preview' }));
+    await within(dialog).findByRole('heading', { name: 'Nothing to add' });
+    expect(within(dialog).getByText('All 1 already carry "Custody".')).toBeTruthy();
+    expect(within(dialog).queryByRole('button', { name: /^Tag / })).toBeNull();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(sent.filter((s) => s.path === '/api/v1/taggings/batch')).toHaveLength(0);
+  });
+
+  it.each([
+    [422, 'too_many_records', 'Too many at once. Clear some rows and try again.'],
+    [422, 'unknown_key', '"Custody" was retired while you were choosing. Pick another tag.'],
+    [403, 'permission_denied', 'Your roles no longer include managing vocabularies. Nothing was tagged.'],
+  ])('says the server\'s %s %s in its own words', async (status, code, words) => {
+    serveBulk([research], () => ({ status, data: { type: 'about:blank', title: 'Refused', status, detail: 'server wording', code } }));
+    renderScreen(['library.read', 'vocab.manage']);
+    await screen.findByText('1 obligation');
+    fireEvent.click(box('obl-research-payments'));
+    fireEvent.click(screen.getByRole('button', { name: 'Tag' }));
+    const dialog = await chooseTag('Cust');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Preview' }));
+    expect(await within(dialog).findByText(words)).toBeTruthy();
+    expect(within(dialog).queryByText('server wording')).toBeNull();
+  });
+
+  it('offers Try again after a failed commit, and sends the same previewed ids again', async () => {
+    let batches = 0;
+    const sent = serveBulk([research, adviceOnly], (s) => {
+      if (s.path === '/api/v1/taggings/preview') return outcome(['ob-2'], ['ob-1']);
+      batches += 1;
+      return batches === 1 ? { status: 500 } : outcome(['ob-2'], ['ob-1']);
+    });
+    renderScreen(['library.read', 'vocab.manage']);
+    await screen.findByText('2 obligations');
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all 2 on this page' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tag' }));
+    const dialog = await chooseTag('Cust');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Preview' }));
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Tag 1 obligation' }));
+    expect(await within(dialog).findByText('Could not tag the obligations. Nothing was changed.')).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Try again' }));
+    await screen.findByText('"Custody" added to 1 obligation. 1 already carried it.');
+    const bodies = sent.filter((s) => s.path === '/api/v1/taggings/batch').map((s) => s.body);
+    expect(bodies).toEqual([
+      { tagKey: 'custody', subjectType: 'obligation', subjectIds: ['ob-2', 'ob-1'] },
+      { tagKey: 'custody', subjectType: 'obligation', subjectIds: ['ob-2', 'ob-1'] },
+    ]);
+  });
+
+  it('filters by one of the bank\'s tags by key, and says so when no obligation carries it', async () => {
+    serveBulk([research]);
+    const rerender = renderScreen(['library.read']);
+    await screen.findByText('1 obligation');
+    await screen.findByRole('option', { name: 'Custody' });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Our tags' }), { target: { value: 'custody' } });
+    expect(nav.replace).toHaveBeenCalledWith('/inventory?tenantTag=custody');
+
+    const sent = serveBulk([]);
+    nav.search = 'tenantTag=custody';
+    rerender();
+    expect(await screen.findByText('No obligations carry this tag')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Clear our tags' })).toHaveAttribute('href', '/inventory');
+    expect(sent.find((s) => s.path === '/api/v1/obligations')?.params).toMatchObject({ tenantTag: ['custody'] });
+    expect(queryOf(filtersFrom(new URLSearchParams('tenantTag=custody')))).toEqual({ tenantTag: ['custody'] });
+  });
+
+  it('shows the filter disabled while the bank has no tags of its own', async () => {
+    serveBulk([research], undefined, []);
+    renderScreen(['library.read']);
+    await screen.findByText('1 obligation');
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Our tags' })).toBeDisabled());
+    expect(screen.getByRole('option', { name: 'No tags of our own yet' })).toBeTruthy();
+  });
+
+  it('counts only the selected rows that are on the page', () => {
+    expect(selectedInView(new Set(['ob-1', 'gone']), [research, adviceOnly]).map((o) => o.id)).toEqual(['ob-1']);
+  });
+});
+
+// c8-ui-inventory-overlay (REG-01, REG-02, INV-03): the bank's register overlay on the row,
+// through register-presentation, and as filters kept in the URL.
+describe('the register overlay on the inventory', () => {
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+    nav.search = '';
+    nav.replace.mockReset();
+  });
+
+  const owned: Obligation = {
+    ...research,
+    id: 'ob-owned',
+    applicability: 'applies',
+    complianceStatus: { key: 'partly_compliant', kind: 'partly', label: 'Partly compliant' },
+    firstLineOwner: { id: 'u-7', name: 'Johan Berg' },
+    ownerTeam: { key: 'retail_compliance', kind: null, label: 'Retail compliance' },
+  };
+  const pills = (obligation: Obligation) => pillsOf(obligation, t).map((pill) => [pill.label, pill.tone]);
+
+  it('puts applicability and compliance status in their slots, after the level and before the open changes, each toned by its kind', () => {
+    expect(pills(owned)).toEqual([
+      ['FFFS 2017:2', 'brand'],
+      ['Applies', 'positive'],
+      ['Partly compliant', 'warning'],
+      ['1 open change', 'notice'],
+      ['Research', 'brand'],
+      ['Custody', 'information'],
+    ]);
+    expect(pills({ ...owned, binding: false, complianceStatus: { key: 'gap', kind: 'gap', label: 'Gap' } }).slice(0, 4)).toEqual([
+      ['FFFS 2017:2', 'brand'],
+      ['Guidance', 'information'],
+      ['Applies', 'positive'],
+      ['Gap', 'negative'],
+    ]);
+  });
+
+  it('says a duty does not apply with no status beside it, and never marks a change waiting for approval', () => {
+    const labels = pillsOf({ ...owned, applicability: 'not_applicable', complianceStatus: null, openChangeCount: 0 }, t).map((pill) => pill.label);
+    expect(labels).toEqual(['FFFS 2017:2', 'Does not apply', 'Research', 'Custody']);
+    expect(labels.join(' ')).not.toMatch(/pending|approval/i);
+  });
+
+  it('leaves the columns empty for a duty the bank has not answered, as for a bank with no entries', () => {
+    expect(pillsOf(research, t).map((pill) => pill.key)).toEqual(['instrument:fffs-2017-2', 'open-changes', 'library-tag:research', 'tenant-tag:custody']);
+    expect(metaOf(research, t, defaultFormatContext)).toEqual(['Advice, Portfolio management', 'Version 2, from 1 Oct 2026', 'Verified 30 Jun 2026']);
+  });
+
+  it('ends the meta line with the first-line owner and the owning team', () => {
+    expect(metaOf(owned, t, defaultFormatContext).slice(-2)).toEqual(['Johan Berg', 'Retail compliance']);
+    expect(metaOf({ ...owned, firstLineOwner: null }, t, defaultFormatContext).at(-1)).toBe('Retail compliance');
+  });
+
+  it('keeps "Private to us" first and the bank\'s tags last beside the overlay', () => {
+    expect(pillsOf({ ...owned, privateToUs: true }, t).map((pill) => pill.label)).toEqual(['Private to us', 'FFFS 2017:2', 'Applies', 'Partly compliant', '1 open change', 'Research', 'Custody']);
+  });
+
+  it('reads the overlay filters from the URL as keys, refuses an applicability it does not know, and sends them to the read', () => {
+    const filters = filtersFrom(new URLSearchParams('applicability=applies&complianceStatus=gap&owner=u-7&ownerTeam=retail_compliance'));
+    expect(filters).toMatchObject({ applicability: 'applies', complianceStatus: 'gap', owner: 'u-7', ownerTeam: 'retail_compliance' });
+    expect(filtersFrom(new URLSearchParams('applicability=pending')).applicability).toBe('');
+    expect(searchOf('obligations', filters)).toBe('applicability=applies&complianceStatus=gap&owner=u-7&ownerTeam=retail_compliance');
+    expect(queryOf(filters)).toEqual({ applicability: 'applies', complianceStatus: 'gap', owner: 'u-7', ownerTeam: 'retail_compliance' });
+    expect(isNarrowed(filtersFrom(new URLSearchParams('ownerTeam=cards')))).toBe(true);
+    expect(isNarrowed(filtersFrom(new URLSearchParams('')))).toBe(false);
+  });
+
+  it('offers the bank\'s own statuses, people and teams, and stores the key or the member id in the URL', async () => {
+    nav.search = 'asOf=2026-09-16';
+    const row = (key: string, kind: string | null, label: string) => ({ key, kind, label, labels: { en: label }, usageNote: '', sortOrder: 1, active: true, isSystem: true, isDefault: false, usageCount: 1, extra: {} });
+    const sent = installAdapter((request) => {
+      if (request.path === '/api/v1/obligations') return { status: 200, data: { items: [owned], total: 1 } };
+      if (request.path === '/api/v1/instruments') return { status: 200, data: { items: [fffs], total: 1 } };
+      if (request.path === '/api/v1/me') return { status: 200, data: { user: { id: 'u1', name: 'Sara', locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, permissions: [], enrolmentPending: false } };
+      if (request.path === '/api/v1/taxonomy/terms') return { status: 200, data: { items: [], total: 0 } };
+      if (request.path === '/api/v1/reference/people') return { status: 200, data: [{ id: 'u-7', name: 'Johan Berg' }] };
+      if (request.path === '/api/v1/vocab/compliance_status') return { status: 200, data: [row('gap', 'gap', 'Gap')] };
+      if (request.path === '/api/v1/vocab/team') return { status: 200, data: [row('retail_compliance', null, 'Retail compliance')] };
+      return { status: 200, data: [] };
+    });
+    renderIn(<InventoryScreen />);
+    const status = await screen.findByLabelText('Compliance status');
+    await waitFor(() => expect(within(status).getByRole('option', { name: 'Gap' })).toBeDefined());
+    fireEvent.change(status, { target: { value: 'gap' } });
+    expect(nav.replace).toHaveBeenLastCalledWith('/inventory?asOf=2026-09-16&complianceStatus=gap');
+    const owner = screen.getByLabelText('Owner');
+    await waitFor(() => expect(within(owner).getByRole('option', { name: 'Johan Berg' })).toBeDefined());
+    fireEvent.change(owner, { target: { value: 'u-7' } });
+    expect(nav.replace).toHaveBeenLastCalledWith('/inventory?asOf=2026-09-16&owner=u-7');
+    const team = screen.getByLabelText('Owning team');
+    await waitFor(() => expect(within(team).getByRole('option', { name: 'Retail compliance' })).toBeDefined());
+    fireEvent.change(team, { target: { value: 'retail_compliance' } });
+    expect(nav.replace).toHaveBeenLastCalledWith('/inventory?asOf=2026-09-16&ownerTeam=retail_compliance');
+    const applies = screen.getByLabelText('Applies to us');
+    expect(within(applies).getAllByRole('option').map((option) => option.textContent)).toEqual(['Applies or not', 'Applies', 'Does not apply', 'Not assessed']);
+    fireEvent.change(applies, { target: { value: 'not_applicable' } });
+    expect(nav.replace).toHaveBeenLastCalledWith('/inventory?asOf=2026-09-16&applicability=not_applicable');
+    // The row itself: the overlay's pills and its owner and team.
+    const link = document.querySelector('[data-obligation="obl-research-payments"]') as HTMLElement;
+    expect(within(link).getByText('Johan Berg')).toBeVisible();
+    expect(within(link).getByText('Partly compliant')).toHaveAttribute('data-pill', 'warning');
+    expect(sent.filter((request) => request.path === '/api/v1/obligations').at(-1)?.params).toEqual({ asOf: '2026-09-16', limit: 20, offset: 0 });
+  });
+
+  it('asks for the filtered view the URL names, and says nothing matches with the offer to look outside our scope', async () => {
+    nav.search = 'applicability=applies&ownerTeam=cards';
+    const sent = serve({ items: [], total: 0 });
+    renderIn(<InventoryScreen />);
+    expect(await screen.findByText('No obligations match')).toBeVisible();
+    expect(sent.find((request) => request.path === '/api/v1/obligations')?.params).toMatchObject({ applicability: 'applies', ownerTeam: 'cards' });
+    expect(screen.getByRole('link', { name: 'Show outside our scope' })).toHaveAttribute('href', '/inventory?scope=all&applicability=applies&ownerTeam=cards');
   });
 });

@@ -59,9 +59,17 @@ export interface VocabularyPickerProps {
   /** Selected keys, in the order they were picked. */
   value: readonly string[];
   onChange: (keys: string[]) => void;
+  /** False when the host draws the selected values itself (a record's own tags). */
+  showSelected?: boolean;
+  /**
+   * False when the caller may not put an existing value on the record: the
+   * matches are listed so the value is seen to exist, but none can be chosen,
+   * and only the last option (Suggest) acts.
+   */
+  canPick?: boolean;
 }
 
-export function VocabularyPicker({ list, tier, label, value, onChange }: VocabularyPickerProps) {
+export function VocabularyPicker({ list, tier, label, value, onChange, showSelected = true, canPick = true }: VocabularyPickerProps) {
   const t = useT();
   const id = useId();
   const permissions = usePermissions();
@@ -111,7 +119,7 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
   const choose = (index: number) => {
     const row = matches[index];
     if (row !== undefined) {
-      pick(row);
+      if (canPick) pick(row);
       return;
     }
     if (last === 'create' || last === 'suggest') {
@@ -174,7 +182,7 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
         {label}
       </label>
 
-      {value.length > 0 ? (
+      {showSelected && value.length > 0 ? (
         <ul className="m-0 flex list-none flex-wrap items-center gap-1.5 p-0" data-picker-selected="">
           {value.map((key) => {
             const row = byKey.get(key);
@@ -232,7 +240,8 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
                   id={`${id}-option-${index}`}
                   role="option"
                   aria-selected={index === active}
-                  className={cn('cursor-pointer rounded-control px-2 py-1.5', index === active && 'bg-neutral-soft')}
+                  aria-disabled={canPick ? undefined : true}
+                  className={cn('rounded-control px-2 py-1.5', canPick && 'cursor-pointer', index === active && 'bg-neutral-soft')}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => choose(index)}
                   data-picker-option={row.key}

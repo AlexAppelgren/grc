@@ -1797,3 +1797,26 @@ ADR 0042's tranche 2 is built with these departures from `CHUNK8_TASKS.md`:
   a handler that rolls a refused request back (`answers_problems`, a 404) takes the row with
   it, so the log holds every read that answered.
 
+## 18. A proposal owned by a bank, and the bank's own queue declared (2026-09-25, d89-proposal-owner)
+
+§5's private-records row, built for INV-07 and OWN-03 (D-57, D-89, ADR 0050, ADR 0059):
+
+- `proposal` gains `owner_tenant_id` (proposals 0009), null for the shared library and every
+  existing row. `apps/proposals/logic.create` sets it and nothing else does: a version takes
+  its target's owner, and a new instrument or obligation the server files as the bank's own
+  (`private=True`) takes the bank the database is scoped to, the filing session's or, in the
+  worker, the run's. A request body naming it is refused (422 `validation_error`).
+- `proposal` is a mixed table under forced row-level security in the split shape (H15):
+  `tenant_isolation` FOR ALL on the session's own zone and `library_rows_visible` FOR SELECT
+  on the shared rows, so the console, with no tenant, reads no owned row. "Insert shared or
+  own" is one extra policy, FOR INSERT only: `shared_proposal_filed` lets a bank's session
+  insert a shared row filed inside a bank, single, open and undecided, and nothing else of
+  the shared zone. The RLS guard pins its text.
+- `private_records.approve` is a tenant permission of Compliance officer and Approver, in the
+  approve set, never a platform grant or an API key scope. `GET /private-proposals`
+  (`listPrivateProposals`), `POST /private-proposals/{proposalId}/approve`
+  (`approvePrivateProposal`, step-up) and `/reject` (`rejectPrivateProposal`) are declared
+  and answer 501 until d89-private-records; approve and reject load the proposal under
+  row-level security first, so another bank's answers 404. The library fence names
+  `approvePrivateProposal` as the third route that may reach `apply`. `proposal_four_eyes`
+  is unchanged.
