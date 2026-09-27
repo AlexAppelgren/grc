@@ -108,7 +108,7 @@ describe('navigation registry (playbook 6.2)', () => {
   it('puts every visible destination that is not a tab in More, and never promotes an unranked one', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(moreDestinations('tenant', all).map((d) => d.id)).toEqual(['my-work', 'roadmap', 'gaps', 'admin']);
-    expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys', 'console-evaluation', 'console-support-access']);
+    expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys', 'console-agents', 'console-evaluation', 'console-support-access']);
 
     expect(dockDestinations('tenant', []).map((d) => d.id)).toEqual(['today']);
     // My work needs no permission (HOM-05), so even an empty list has it in More.
@@ -160,11 +160,12 @@ describe('navigation registry (playbook 6.2)', () => {
     expect(childDestinations('admin', ['footprint.approve']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-footprint', 'admin-support-access']);
     // An approver who holds nothing else still reaches /admin to find it.
     expect(visibleDestinations('tenant', ['footprint.approve']).map((d) => d.id)).toEqual(['today', 'my-work', 'admin']);
-    // Notifications (COL-02) is any member's own inbox, first in the account group.
-    expect(childDestinations(ACCOUNT_PARENT, []).map((d) => d.href)).toEqual(['/notifications', '/me/out-of-office', '/me/passkeys', '/me/sessions']);
+    // Notifications (COL-02) is any member's own inbox, first in the account group, and a
+    // member's own access tokens (ACC-03) are every member's: a token held stays revocable.
+    expect(childDestinations(ACCOUNT_PARENT, []).map((d) => d.href)).toEqual(['/notifications', '/me/out-of-office', '/me/passkeys', '/me/sessions', '/me/tokens']);
     // Calendar feeds needs the grant the roadmap needs (HOM-04), so it joins the
     // account links only for a reader who holds it, and never unlocks anything else.
-    expect(childDestinations(ACCOUNT_PARENT, ['roadmap.read']).map((d) => d.href)).toEqual(['/notifications', '/me/out-of-office', '/me/passkeys', '/me/sessions', '/me/calendar-feeds']);
+    expect(childDestinations(ACCOUNT_PARENT, ['roadmap.read']).map((d) => d.href)).toEqual(['/notifications', '/me/out-of-office', '/me/passkeys', '/me/sessions', '/me/tokens', '/me/calendar-feeds']);
     expect(visibleDestinations('tenant', ['roadmap.read']).map((d) => d.id)).toEqual(['today', 'my-work', 'roadmap']);
     // Children never reach the rail or the dock.
     const all = destinations.flatMap((d) => d.anyOfPermissions);
