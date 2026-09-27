@@ -12,25 +12,42 @@ Each class pins one finding, red before its fix:
   with its own; a database error's message holds the failing row, an address or a subject
   among it (playbook 4.7). The worker keeps the JSON handler, and the line names the task,
   its id and what happened, never the exception's text or the arguments.
+- **The planted-string sweep.** One string, planted in everything a bank types about a case
+  (a comment and its mention, each action's title, a ledger note, the assessment, an
+  unconfirmed "So what?" draft and a register entry's notes), reaches none of the sinks after a comment is written and
+  the reminder, escalation and digest jobs run for the bank: the log, what Sentry would send
+  for each log line, the audit rows, the outbox, the notification titles, the mail rows and
+  every mail's subject and body, links included.
 """
 
 from __future__ import annotations
 
+import datetime
 import io
+import json
 import logging
-from typing import Any
+from typing import Any, cast
 
 from django.db import transaction
 from django.test import TestCase
 
+from apps.cases import testing as cases_build
+from apps.cases.models import Action, CaseTransition, ImpactAssessment
 from apps.cases.tests_signoff import Bank
 from apps.cases.tests_triage import CaseMoves, triage_bank
-from apps.collab.models import Notification, NotificationKind
+from apps.collab import tasks
+from apps.collab.models import EmailMessage, Notification, NotificationKind
+from apps.home.tests_my_work import obligation
 from apps.identity.models import Membership
+from apps.register.models import TenantObligation
 from apps.library.reading import today_for
-from apps.shared import tenancy
+from apps.shared import factories, sentry_scrub, tenancy
+from apps.shared.adapters.mailer import MockMailer
 from apps.shared.logging import JsonFormatter
-from apps.shared.testing import AuditAssertingClient
+from apps.shared.models import AuditEvent, OutboxEvent
+from apps.shared.testing import AuditAssertingClient, sign_in
+from apps.taxonomy.models import CaseStatusCategory
+from apps.watch import testing as watch_build
 from config.celery import app as celery_app
 
 
@@ -95,3 +112,75 @@ class AFailedTaskLogsNoText(TestCase):
         self.assertNotIn("planted-7c4e", written)
         self.assertNotIn("anna@bank.example", written)
         self.assertNotIn("planted-args-91b2", written)
+
+
+class APlantedStringReachesNoSink(TestCase):
+    PLANTED = "planted-c10-5d9a"
+
+    def test_a_banks_text_reaches_no_log_sentry_audit_outbox_title_mail_or_link(self) -> None:
+        planted = self.PLANTED
+        watch_build.seed_watch_reference()
+        tenant = factories.tenant(slug="planted-sweep")
+        officer = factories.member_user(tenant, roles=("compliance_officer",))
+        owner = factories.member_user(tenant, roles=("compliance_officer",))
+        reader = factories.member_user(tenant, roles=("reader",))
+        case = cases_build.case(tenant, watch_build.change(title="FI amends the custody rules"), owner=owner, so_what_text=planted)
+        cases_build.in_category(case, CaseStatusCategory.IMPLEMENTING)
+        today = today_for(tenant)
+        due = [
+            today + datetime.timedelta(days=tenant.reminder_days_before[0]),  # the due-soon reminder
+            today - datetime.timedelta(days=1),  # the overdue reminder
+            today - datetime.timedelta(days=tenant.escalate_after_days),  # the escalation
+        ]
+        with transaction.atomic():
+            tenancy.activate(tenant.id)
+            for day in due:
+                Action.objects.create(tenant=tenant, case=case, title=f"{planted} action", owner=owner, due_date=day, created_by=owner)
+            CaseTransition.objects.create(tenant=tenant, case=case, from_status="assessing", to_status="implementing", by_user=owner, note=planted)
+            ImpactAssessment.objects.create(tenant=tenant, case=case, applies="yes", why=planted, what_must_change=planted)
+        # A duty of the owner's due for review, so the digest has a row to send.
+        entry = factories.register_entry(
+            tenant, obligation("Safeguard client assets").id, first_line_owner=owner, next_review_date=today + datetime.timedelta(days=3)
+        )
+        with transaction.atomic():
+            tenancy.activate(tenant.id)
+            TenantObligation.objects.filter(pk=entry.pk).update(status_note=planted, applicability_reason=planted)
+        MockMailer.reset()
+        self.addCleanup(MockMailer.reset)
+
+        stream = io.StringIO()
+        handler = logging.StreamHandler(stream)
+        handler.setFormatter(JsonFormatter())
+        loggers = [logging.getLogger(name) for name in ("", "apps", "django", "celery")]
+        for logger in loggers:
+            logger.addHandler(handler)
+            self.addCleanup(logger.removeHandler, handler)
+        client = AuditAssertingClient()
+        body = {"subjectType": "change_case", "subjectId": str(case.id), "body": f"{planted} comment", "mentionUserIds": [str(reader.id)]}
+        created = client.post("/api/v1/comments", data=body, content_type="application/json", **sign_in(officer, tenant=tenant))
+        self.assertEqual(created.status_code, 201, created.content)
+        for task in (tasks.send_tenant_reminders, tasks.send_tenant_escalations, tasks.send_tenant_digests):
+            task.apply(args=(str(tenant.id),))
+
+        tenancy.activate(tenant.id)
+        self.assertEqual(
+            set(EmailMessage.objects.values_list("template", flat=True)),
+            {"due_soon", "overdue", "escalation", "weekly_digest"},
+            "every collab mail went out, so the sweep read each of them",
+        )
+        self.assertTrue(Notification.objects.filter(kind=NotificationKind.MENTION.value).exists())
+        lines = [json.loads(line) for line in stream.getvalue().splitlines() if line.strip()]
+        sinks = {
+            "log": stream.getvalue(),
+            "sentry": json.dumps(
+                [sentry_scrub.before_send(cast(Any, {"message": line["message"], "extra": line}), {}) for line in lines]
+            ),
+            "audit": " ".join(f"{e.summary} {e.subject_title} {e.before} {e.after}" for e in AuditEvent.objects.all()),
+            "outbox": " ".join(str(p) for p in OutboxEvent.objects.values_list("payload", flat=True)),
+            "notification": " ".join(Notification.objects.values_list("title", flat=True)),
+            "mail row": " ".join(f"{m.subject} {m.to_email}" for m in EmailMessage.objects.all()),
+            "mail": " ".join(f"{m.subject} {m.body}" for m in MockMailer.sent),
+        }
+        for sink, text in sinks.items():
+            with self.subTest(sink=sink):
+                self.assertNotIn(planted, text)
