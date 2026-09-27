@@ -13,14 +13,18 @@ start date is the server's, never the rule's, so DTSTART and any second line are
 `INTERVAL` and `COUNT` are checked here because dateutil takes `INTERVAL=0` and loops for
 ever.
 
-dateutil walks a rule that matches no date to the year 9999 before it gives up. The
-Gregorian calendar repeats itself, weekdays included, every 400 years, so the expansion runs
-the same rule in the last cycle before 9999 and moves each date back: the answer is the
-same, and a rule that never matches costs a few centuries of walking, not eight millennia.
+dateutil walks a rule that matches no date to the year 9999 before it gives up. So the
+expansion runs the same rule in years as near 9999 as it can whose calendar is the span's
+own, every year the same length and every date on the same weekday, and moves each date
+back: the answer is the same, and a rule that never matches costs a few years of walking,
+not eight millennia. Whole 400-year cycles always qualify, since the Gregorian calendar
+repeats itself every 400 years; a shorter shift, as near 9999 as 28 years or less, usually
+does too.
 """
 
 from __future__ import annotations
 
+import calendar
 import datetime
 import re
 
@@ -70,7 +74,7 @@ def expand(rule: str, start: datetime.date, end: datetime.date) -> list[datetime
     `invalid_recurrence` for a rule it refuses or one that falls due more than
     `RECURRENCE_MAX_OCCURRENCES` times in that span."""
     text = normalised(rule)
-    shift = (datetime.MAXYEAR - end.year) // CYCLE_YEARS * CYCLE_YEARS
+    shift = _shift(start.year, end.year)
     try:
         parsed = rrulestr(text, dtstart=datetime.datetime(start.year, start.month, start.day), ignoretz=True)
     except (ValueError, TypeError) as exc:
@@ -99,6 +103,20 @@ def expand(rule: str, start: datetime.date, end: datetime.date) -> list[datetime
             )
         days.append(due.date().replace(year=due.year - shift))
     return days
+
+
+def _same_calendar(first: int, last: int, shift: int) -> bool:
+    return datetime.date(first, 1, 1).weekday() == datetime.date(first + shift, 1, 1).weekday() and all(
+        calendar.isleap(year) == calendar.isleap(year + shift) for year in range(first, last + 1)
+    )
+
+
+def _shift(first: int, last: int) -> int:
+    """The most years the span from `first` to `last` moves toward 9999 with its calendar
+    unchanged, the year either side included (an ISO week can straddle a new year). A
+    multiple of `CYCLE_YEARS` always qualifies, so the search ends within one cycle."""
+    first, last = max(first - 1, datetime.MINYEAR), min(last + 1, datetime.MAXYEAR)
+    return next(shift for shift in range(datetime.MAXYEAR - last, -1, -1) if _same_calendar(first, last, shift))
 
 
 def validated(rule: str, start: datetime.date) -> str:

@@ -10,7 +10,9 @@ so each refusal is a trust-boundary check, not a courtesy.
 from __future__ import annotations
 
 import time
-from datetime import date
+from datetime import date, datetime
+
+from dateutil.rrule import rrulestr
 
 from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase, override_settings
@@ -67,6 +69,25 @@ class Expansion(SimpleTestCase):
             [date(2026, 1, 30), date(2026, 2, 27), date(2026, 3, 31), date(2026, 4, 30), date(2026, 5, 29)],
         )
 
+    def test_the_dates_are_the_calendars_own_whatever_years_the_rule_runs_in(self) -> None:
+        # The expansion runs each rule in other years with the same calendar and moves the
+        # dates back; dateutil run on the real years must give the same dates, across a
+        # leap day, the century year 2100 that is not a leap year, and ISO weeks.
+        rules = (
+            "FREQ=WEEKLY;INTERVAL=5;BYDAY=MO",
+            "FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=29",
+            "FREQ=YEARLY;BYWEEKNO=1,53;BYDAY=MO",
+            "FREQ=MONTHLY;INTERVAL=2;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1",
+            "FREQ=DAILY;INTERVAL=35;BYDAY=TU",
+        )
+        for start in (START, date(2027, 12, 30), date(2095, 3, 1)):
+            end = start + recurrence.HORIZON
+            for rule in rules:
+                with self.subTest(rule=rule, start=start):
+                    real = rrulestr(rule, dtstart=datetime(start.year, start.month, start.day))
+                    expected = [due.date() for due in real.between(datetime(start.year, start.month, start.day), datetime(end.year, end.month, end.day), inc=True)]
+                    self.assertEqual(recurrence.expand(rule, start, end), expected)
+
     def test_count_and_until_end_the_duty(self) -> None:
         self.assertEqual(
             recurrence.expand("FREQ=YEARLY;COUNT=2", START, TEN_YEARS), [date(2026, 1, 15), date(2027, 1, 15)]
@@ -118,8 +139,8 @@ class Refusals(SimpleTestCase):
         self.assert_refused("FREQ=YEARLY;UNTIL=20200101", "never falls due")
 
     def test_a_rule_that_never_falls_due_is_refused_quickly(self) -> None:
-        # dateutil walks an impossible rule to the year 9999; the wrapper runs it at the end
-        # of the calendar's 400-year cycle so the walk is short.
+        # dateutil walks an impossible rule to the year 9999; the wrapper runs it in the years
+        # nearest 9999 that share the span's calendar, so the walk is short.
         began = time.monotonic()
         self.assert_refused("FREQ=DAILY;BYMONTH=2;BYMONTHDAY=30", "never falls due")
         self.assertLess(time.monotonic() - began, 1.0)
