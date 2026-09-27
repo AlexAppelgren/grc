@@ -317,6 +317,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "scope_item_status",
         "OWN-01: a scope item is requested, in scope, declined or removed; the request logic and "
         "the bank's own agent's research branch on it, and no admin adds a state",
+    ),
     # c8-duty-occurrences (register 0004, REG-07).
     "DutyStatus": (
         "duty_status",

@@ -548,6 +548,7 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # d89-scope-items-logic (OWN-01): one of the bank's own scope items, read as the scope is.
     ("GET", "/tenant/footprint/scope-items/{scope_item_id}"): Ungated(
         UngatedReason.CAPABILITY, "Every member reads the regulatory scope and the scope items in it (FP-03, OWN-01)."
+    ),
     # acc-scoped-reads (SRC-01, ACC-04, ACC-05): a bank's own agent searches the library in its scope.
     ("POST", "/search"): Ungated(
         UngatedReason.LOGIC_GATE,
