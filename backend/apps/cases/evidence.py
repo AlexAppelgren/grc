@@ -144,9 +144,17 @@ def _view(evidence: Evidence) -> CasesEvidence:
 
 
 def _refuse_when_closed(case: ChangeCase) -> None:
-    """A closed or dismissed case's evidence is what was signed off or set aside: it stays."""
+    """A closed or dismissed case's evidence is what was signed off or set aside: it stays.
+    While the case waits for sign-off its evidence is locked, as its actions are: what the
+    second person signs off is what the request was made with (CAS-06)."""
     if case.status in CLOSED_CATEGORIES:
         raise ProblemError(status=409, code="case_closed", detail="This case is closed, so its evidence cannot change.")
+    if case.status == CaseStatusCategory.SIGNOFF.value:
+        raise ProblemError(
+            status=409,
+            code="evidence_locked",
+            detail="The evidence is locked while the case waits for sign-off. Send it back to change it.",
+        )
 
 
 def _invalid(detail: str) -> ProblemError:
@@ -272,9 +280,19 @@ def download_evidence(*, tenant: Tenant, actor: Actor, user: Any, evidence_id: u
 
 
 def remove_evidence(*, tenant: Tenant, actor: Actor, user: Any, evidence_id: uuid.UUID) -> None:
-    """Remove a piece of evidence: `removed_at` is set, and the row and its hash stay."""
-    evidence = logic.load_evidence(tenant, evidence_id)
-    _refuse_when_closed(evidence.case)
+    """Remove a piece of evidence: `removed_at` is set, and the row and its hash stay. The
+    case's row is locked first and the evidence read again under it, so a removal queues
+    behind a sign-off request and a second removal of the same piece finds nothing live."""
+    case = logic.load_case(tenant, logic.load_evidence(tenant, evidence_id).case.change_id, for_update=True)
+    evidence = (
+        Evidence.objects.select_for_update(of=("self",))
+        .filter(tenant=tenant, pk=evidence_id, removed_at__isnull=True)
+        .first()  # ordering: pk lookup, at most one row
+    )
+    if evidence is None:
+        raise ProblemError(status=404, code="not_found", detail="Not found.")
+    evidence.case = case
+    _refuse_when_closed(case)
     evidence.removed_at = timezone.now()
     evidence.save(update_fields=["removed_at"])
     record(

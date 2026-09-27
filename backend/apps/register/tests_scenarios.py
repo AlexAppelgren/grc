@@ -19,7 +19,6 @@ from django.utils import timezone
 
 from apps.library import testing as library_build
 from apps.library import testing as library_testing
-from apps.library import testing as library_build
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, tenancy
 from apps.shared import permissions as perms

@@ -86,6 +86,22 @@ class RemoveEvidence(EvidenceTestCase):
         self.assertEqual(response.json()["code"], "case_closed")
         self.assertIsNone(self.row(body["id"]).removed_at)
 
+    def test_evidence_is_locked_while_the_case_waits_for_sign_off(self) -> None:
+        """security-review-c9 (CAS-06): what a second person signs off is the evidence the
+        request was made with, as the actions are; send the case back to change it."""
+        body = self.attach({"kind": "reference", "name": "Policy 12"}).json()["evidence"]
+        case_build.in_category(self.bank.case, CaseStatusCategory.SIGNOFF)
+        response = self.remove(body["id"])
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["code"], "evidence_locked")
+        self.assertIsNone(self.row(body["id"]).removed_at)
+        self.assertEqual(self.audit_rows(evidence_logic.REMOVED), [], "a refusal writes no audit row")
+
+        added = self.attach({"kind": "reference", "name": "Policy 13"})
+        self.assertEqual(added.status_code, 409, "nor can evidence join what the request was made with")
+        self.assertEqual(added.json()["code"], "evidence_locked")
+        self.assertEqual(len(self.audit_rows(evidence_logic.ATTACHED)), 1, "only the first attach is on record")
+
     def test_another_banks_removal_is_404(self) -> None:
         body = self.attach({"kind": "reference", "name": "Policy 12"}).json()["evidence"]
         other = bank_with_case()

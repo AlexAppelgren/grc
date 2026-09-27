@@ -115,7 +115,7 @@ export async function backToTriage(page: Page): Promise<void> {
 export async function triage(page: Page, owner: string, urgency?: string): Promise<void> {
   const panel = page.locator('[data-case-panel="triage"]');
   if (urgency !== undefined) await panel.getByLabel('Urgency').selectOption({ label: urgency });
-  await panel.getByLabel('Owner').selectOption({ label: owner });
+  await panel.getByLabel('Owner', { exact: true }).selectOption({ label: owner });
   await panel.getByRole('button', { name: 'Confirm and assign' }).click();
   await expect(casePanels(page)).toHaveAttribute('data-case-panels', 'assigned');
 }

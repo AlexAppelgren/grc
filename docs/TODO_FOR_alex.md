@@ -2127,3 +2127,18 @@ policy, each built on a default you may overrule.
       link ends, each with its before and after in the audit row. Section 5 says nothing is
       overwritten; R2_CROSS_CUTTING (l) lists actions, internal links and units as never
       deleted and does not list these. Default: link rows may go, the audit keeps them.
+
+## security-review-c9: the chunk 9 security review (2026-09-27, CAS-05, CAS-06, NFR-01)
+
+- [ ] **The c9-signoff question above is answered by its option (a).** The review rated
+      "evidence can leave a case while it waits for sign-off" medium and fixed it without
+      touching the state machine's guards: attaching or removing evidence while the case is
+      in `signoff` answers 409 `evidence_locked`, as the actions answer `actions_locked`,
+      and a removal locks the case first so it queues behind a sign-off request. The screen
+      already showed evidence read-only in that state. Say if you want (b), the
+      `clean_evidence` guard on `signoff → closed`, as well.
+- [ ] **Must the approver also differ from the case's owner?** Four eyes today compares the
+      approver with the person who asked for sign-off (AC-CAS1's words). An owner holding
+      `cases.signoff` can approve their own work when a colleague presses Request sign-off.
+      Default taken: no change, logged as H69. Say yes and the owner joins the guard and
+      the CHECK.

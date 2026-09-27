@@ -51,11 +51,11 @@ test.describe('cases journeys', () => {
 
     // Given a case in "Needs triage", when the officer confirms without an owner
     const panel = page.locator('[data-case-panel="triage"]');
-    await panel.getByLabel('Owner').selectOption('');
+    await panel.getByLabel('Owner', { exact: true }).selectOption('');
     await panel.getByRole('button', { name: 'Confirm and assign' }).click();
     // Then the request answers 422 naming the owner field, and the case has not moved
     await expect(panel.getByText('Choose who owns this case.')).toBeVisible();
-    await expect(panel.getByLabel('Owner')).toHaveAttribute('aria-invalid', 'true');
+    await expect(panel.getByLabel('Owner', { exact: true })).toHaveAttribute('aria-invalid', 'true');
     await expect(casePanels(page)).toHaveAttribute('data-case-panels', 'new');
 
     // When they set "Within 3 months" and an owner and confirm
