@@ -22,6 +22,7 @@ from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from apps.collab.tests_participants import run_col_s6, run_col_s7, run_col_s8
+from apps.home.tests_my_work_api import run_col_s12
 from apps.shared.testing import ScenarioTestCase
 
 from apps.cases import testing as cases_build
@@ -310,12 +311,13 @@ class CollabScenarioTests(ScenarioTestCase):
         Review reminders reach the people responsible, once (COL-02).
         """
 
-    @skip("pending: COL-S12 (COL-01, HOM-05, chunk 10)")
     def test_col_s12(self) -> None:
         """COL-S12
 
         My comments and mentions are found on My work, limited to what I can read, and never logged (COL-01, HOM-05).
+        Operations: `listMyComments`, `getMyWork`.
         """
+        run_col_s12(self)
 
     # COL-S13 (c10-notify-and-prefs)
     def test_col_s13(self) -> None:
