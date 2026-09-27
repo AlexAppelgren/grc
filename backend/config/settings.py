@@ -335,7 +335,9 @@ RESEARCH_REQUESTS_PER_MONTH = env_int("RESEARCH_REQUESTS_PER_MONTH", 30)
 RESEARCH_URL_TIMEOUT_SECONDS = env_int("RESEARCH_URL_TIMEOUT_SECONDS", 5)
 RESEARCH_URL_MAX_BYTES = env_int("RESEARCH_URL_MAX_BYTES", 1_000_000)
 RESEARCH_URL_MAX_REDIRECTS = env_int("RESEARCH_URL_MAX_REDIRECTS", 3)
-if min(RESEARCH_REQUESTS_PER_MONTH, RESEARCH_URL_TIMEOUT_SECONDS, RESEARCH_URL_MAX_BYTES) < 1 or RESEARCH_URL_MAX_REDIRECTS < 0:
+# security-review-c11: one deadline for a whole check_url fetch, every read and redirect.
+RESEARCH_URL_TOTAL_SECONDS = env_int("RESEARCH_URL_TOTAL_SECONDS", 15)
+if min(RESEARCH_REQUESTS_PER_MONTH, RESEARCH_URL_TIMEOUT_SECONDS, RESEARCH_URL_MAX_BYTES, RESEARCH_URL_TOTAL_SECONDS) < 1 or RESEARCH_URL_MAX_REDIRECTS < 0:
     raise ImproperlyConfigured("The RESEARCH_* settings must be positive, and RESEARCH_URL_MAX_REDIRECTS at least 0")
 
 MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp
@@ -888,6 +890,12 @@ SESSION_ABSOLUTE_HOURS_MAX = env_int("SESSION_ABSOLUTE_HOURS_MAX", 24)
 CREDENTIAL_POLICY_NOTICE_DAYS = env_int("CREDENTIAL_POLICY_NOTICE_DAYS", 14)
 ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 10)
 REFRESH_REPLAY_GRACE_SECONDS = env_int("REFRESH_REPLAY_GRACE_SECONDS", 30)
+# security-review-c11 (ID-08): the shortest idle limit a bank may set. A session is refreshed
+# only when its access token runs out, so an idle limit no longer than the token's life would
+# sign out people who are working; the floor must exceed ACCESS_TOKEN_TTL_MINUTES.
+SESSION_IDLE_MINUTES_MIN = env_int("SESSION_IDLE_MINUTES_MIN", 15)
+if not ACCESS_TOKEN_TTL_MINUTES < SESSION_IDLE_MINUTES_MIN <= SESSION_IDLE_MINUTES_MAX:
+    raise ImproperlyConfigured("SESSION_IDLE_MINUTES_MIN must exceed ACCESS_TOKEN_TTL_MINUTES and be at most SESSION_IDLE_MINUTES_MAX")
 STEP_UP_FRESHNESS_MINUTES = env_int("STEP_UP_FRESHNESS_MINUTES", 5)
 # The rotating refresh token's cookie (ADR 0006): HttpOnly, Secure outside DEBUG,
 # SameSite=Strict, scoped to the auth path so no other route ever receives it.

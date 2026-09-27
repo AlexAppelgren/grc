@@ -15,10 +15,11 @@ from decimal import Decimal
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from django.db.models import Sum
+from django.db.models import Case, DecimalField, F, Sum, Value, When
+from django.db.models.functions import Coalesce, Greatest
 from django.utils import timezone
 
-from apps.agents.models import AgentRun, TenantAgent, TenantAgentBudget
+from apps.agents.models import AgentRun, RunStatus, TenantAgent, TenantAgentBudget
 from apps.agents.schemas import AgentBudgetInput
 from apps.agents.tenant_agents import lock_tenant, pause
 from apps.identity.models import User
@@ -28,6 +29,8 @@ from apps.shared.models import Tenant
 
 SUBJECT_TYPE = "tenant_agent_budget"
 CAP_REASON = "budget_cap"
+# The advisory lock every reader of the spend that may start or stop a run holds.
+SPEND_LOCK = "agent_spend"
 ZERO = Decimal("0.00")
 
 
@@ -50,6 +53,28 @@ def spend(tenant: Tenant) -> Decimal:
     total = AgentRun.objects.filter(
         tenant_id=tenant.id, tenant_agent__isnull=False, started_at__gte=start, started_at__lt=end
     ).aggregate(total=Sum("cost"))["total"]
+    return ZERO if total is None else Decimal(total).quantize(ZERO)
+
+
+def held(tenant: Tenant) -> Decimal:
+    """What the month's runs of the bank's own agents have spent or may still spend: a
+    finished run its cost, an open run the more of its cost so far and its budget limit.
+    The cap before a run reads this, so runs opened one after another, before any of them
+    has reported a cost, cannot together promise more than the cap holds."""
+    start, end = month(tenant)
+    money = DecimalField(max_digits=14, decimal_places=4)
+    cost = Coalesce(F("cost"), Value(Decimal(0)), output_field=money)
+    total = AgentRun.objects.filter(
+        tenant_id=tenant.id, tenant_agent__isnull=False, started_at__gte=start, started_at__lt=end
+    ).aggregate(
+        total=Sum(
+            Case(
+                When(status=RunStatus.RUNNING.value, then=Greatest(cost, Coalesce(F("budget_limit"), Value(Decimal(0)), output_field=money))),
+                default=cost,
+                output_field=money,
+            )
+        )
+    )["total"]
     return ZERO if total is None else Decimal(total).quantize(ZERO)
 
 
