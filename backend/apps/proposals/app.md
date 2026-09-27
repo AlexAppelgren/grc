@@ -150,7 +150,7 @@ row (terms before and after), one naming every row's outcome and the re-index, i
 transaction; PRO-S8 proves it at the integration level. The proposer, who is the person who
 asked for the re-tag, is refused with 409 `four_eyes_violation`, and an agent with 409
 `person_review_required`; no API key reaches the route. The console screen and PRO-S8's
-journey are `c11-fe-console-batch-retag`'s and the console journey package's.
+journey are `c11-fe-console-batch-retag`'s and `c11-e2e-console`'s.
 
 PRO-S13's journey (pro-s13-journey) runs end to end: the console mints a `library-confirmer`
 key with `agent-runs:write` and `proposals:review`, which opens a run, reads the queue and
@@ -258,6 +258,16 @@ Then the preview lists the twelve rows with before and after
 When they reject two rows and approve the rest
 Then ten obligations change, two do not, and one audit event records the batch with each row's outcome
 ```
+
+The journey (c11-e2e-console) decides the seeded re-tag of twelve: its proposer, the second
+editor, reads it as theirs with nothing to decide; the first editor reads each row's before
+and after, rejects two with a reason and approves the rest with a passkey, and reads "10
+changed, 2 did not". The server's `four_eyes_violation` is proved on a one-row batch the
+first editor files and then tries to decide, which the second editor rejects in the
+teardown. A bank's audit log names each row's outcome on its obligation
+(`obligation.scope_changed`, `proposal.batch_row_rejected`); the one `proposal.batch_decided`
+entry belongs to no bank and no console screen reads it, so the integration test proves it.
+A retry finds the seeded batch decided and asks for its twelve rows again, turned around.
 
 ### PRO-S9 — A rejection needs a reason and is audited `@integration` `@e2e` (PRO-01)
 ```gherkin

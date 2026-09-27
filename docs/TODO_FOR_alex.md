@@ -1190,6 +1190,7 @@ to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WA
       Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
       note says only that each national body adopts the edition under its own
       reference. A person verifies them before the note names any.
+
 ## ai-log-read: a shared "So what?" reads each bank's own review state (2026-09-23, AUD-02)
 
 - [ ] **A library "So what?" in the AI log shows the reading bank's own review, not one
@@ -1221,6 +1222,7 @@ to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WA
 - [ ] **Default taken: a new instrument in the bank's library updates is never cut to the
       footprint.** A new obligation is cut like a new version; an instrument is not a duty,
       so it reaches every bank, as a change to a shared list does.
+
 ## watch-regime-required: a run's classification is logged with metadata it reports itself (2026-09-23, D-66, AUD-02, D-39)
 
 Nothing waits for these; each has the default the build took.
@@ -1244,6 +1246,7 @@ Nothing waits for these; each has the default the build took.
       footprint of the bank whose case they belong to, so no cached scope verdict moved; the
       one visible difference is that tenant B's feed now shows the AI-mapping change as
       outside its scope, since tenant B does not follow the AI and ICT regime.
+
 ## ask-screen: what a reader is told when the model cut an answer off (2026-09-23, SRC-03, AUD-02, D-82)
 
 - [ ] **An Ask answer the model stopped at its length limit (`ASK_MAX_TOKENS`, 1024 tokens)
@@ -1347,6 +1350,7 @@ needs a decision.
 - One medium finding waits as a named fix task, `merge-moved-ids` (H23): a vocabulary
   merge's audit row counts the records it moved but does not name them. Default: it is
   built with the next batch that owns `proposals/apply.py`.
+
 ## security-review-c7: the chunk 7 security review (2026-09-23, D-07, SRC-01, SRC-03)
 
 - [ ] **May a bank's search text reach the embedder and the reranker?** D-07 says the Ask
@@ -1504,6 +1508,7 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
       then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
       (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**
+
 ## c11-definitions-platform: publishing bleqq's agent versions, their settings and runs (2026-09-25, AGT-03, ADM-02, AGT-06)
 
 **Answered by Alex on 2026-09-25 (D-102, ADR 0059): "Platform config".** The question was
@@ -1615,6 +1620,7 @@ Defaults taken; nothing waits on them.
       whole bank's, and tenant A's Ask journeys run in parallel. The cap half stays tenant A's.
       The AGT-S5 journey narrows the scope to Sweden, because the screen offers only the bank's
       own markets (Sweden and Denmark in the seed); the integration test narrows to SE and FI.
+
 ## c11-fe-console-batch-retag: the batch review screen and the console re-tag (2026-09-25, PRO-04, AGT-05)
 
 - [ ] **The batch result links to no audit entry.** The card draws "Open the audit entry" on
@@ -1663,3 +1669,22 @@ Defaults taken; nothing waits on them.
 - [ ] **A run stopped from outside reads as `failed`**, on a research request and in "What
       bleqq watches" (whose read broke on the `interrupted` status two merged packages
       brought together; fixed here).
+
+## c11-e2e-console: the console's agent journeys (2026-09-25, AGT-03, AGT-04, PRO-04, ADM-02)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **The E2E stack reads its own copy of the agent definitions.** A version is published
+      only from a folder the build ships, and `backend/agents/` ships no watch-sweeper
+      folder the E2E seed has not already published, so AGT-S4's journey had nothing to
+      publish. `start-backend.sh` now copies `backend/agents/` to a scratch directory, adds
+      fixture folders v3 to v5 (v1's definition under the new number), and releases v1 in
+      the copy (`status: active`) so a bank's agents page lists bleqq's watch (AGT-S13). The
+      server reads the copy through `AGENT_DEFINITIONS_DIR`, which settings honour only
+      under `E2E_MODE` (refused when deployed). Default: keep it. Say if you would rather
+      ship a real sweeper v2 folder and release the sweeper in `backend/agents/` itself.
+- [ ] **Four journeys send requests the screen never offers.** AGT-S4, AGT-S13, PRO-S8
+      and ADM-S4 prove the server's own 403 or 409 with a direct request that reuses the
+      bearer the web app itself sent (the access token lives only in the app's memory);
+      nothing is minted, stored or set on the browser. Default: keep it, as the way a
+      journey proves a refusal the UI already prevents.
