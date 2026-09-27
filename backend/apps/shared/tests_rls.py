@@ -239,6 +239,9 @@ TENANT_ONLY_TABLES = [
     "tenant_reach",
     # c8-duty-occurrences (register 0004; REG-07): the dated occurrences of a library duty.
     "duty_occurrence",
+    # acc-entries-and-log (governance 0005, ACC-08): the access log of a bank's own agents,
+    # append-only; the entry and the person are composite keys.
+    "agent_access_call",
 ]
 
 # The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the

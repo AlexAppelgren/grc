@@ -112,6 +112,12 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # has no case for, so the case itself is invisible to tenant B.
     ("GET", "/changes/{change_id}/participants", "collab.Participant", "case_participant"),
     ("DELETE", "/changes/{change_id}/participants/{participant_id}", "collab.Participant", "case_participant"),
+    # acc-entries-and-log (ACC-01, ACC-03, ACC-08): an agent access entry, its keys and its log.
+    ("GET", "/agent-access/{uuidstr:entry_id}", "agents.AgentAccess", "agent_access_entry"),
+    ("PATCH", "/agent-access/{uuidstr:entry_id}", "agents.AgentAccess", "agent_access_entry"),
+    ("POST", "/agent-access/{uuidstr:entry_id}/revoke", "agents.AgentAccess", "agent_access_entry"),
+    ("POST", "/agent-access/{uuidstr:entry_id}/keys/{uuidstr:key_id}/revoke", "identity.ApiKey", "agent_access_key"),
+    ("GET", "/agent-access/{uuidstr:entry_id}/calls", "agents.AgentAccess", "agent_access_entry"),
 ]
 
 

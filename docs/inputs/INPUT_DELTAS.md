@@ -1896,3 +1896,14 @@ effort. Both are tenant content in the bank's own zone.
   local week rather than the day of the send, so the same unique key that stops a second
   reminder in a day stops a second digest in a week (COL-02: "one email per user per
   week"). Every other template keeps the day of the send.
+
+## acc-entries-and-log. The access log of a bank's own agents (2026-09-25, governance 0005)
+
+`schema.sql` has no table for AGENT_ACCESS.md section 9's access log. `agent_access_call` is
+new: a tenant table under forced row-level security, append-only by the shared trigger, one
+row per call an agent access credential makes (`api_key_id`, `agent_access_id`,
+`acting_user_id`, `tool`, `filters`, `record_count`, `scopes`, `scope_narrowed`,
+`scope_terms`, `duration_ms`, `status`, `at`). The entry and the person are composite
+`(tenant_id, …)` keys; the credential is a plain key into the mixed `api_key` table. It holds
+no content column. A tenant ledger under D-53: the purge deletes a row whole ten years after
+it was written.

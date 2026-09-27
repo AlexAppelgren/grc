@@ -1756,3 +1756,21 @@ Nothing waits for these; each has the default the build took.
       draws them against the published contract; `c11-tenant-controls-cap` and
       `c11-research-requests` (wave 5) fill the routes. The research panel shows only once the
       bank has an agent of its own.
+
+## acc-entries-and-log: entries, their keys and the access log, answered by default (2026-09-25, ACC-01, ACC-03, ACC-08)
+
+- [ ] Default taken: a call an agent access credential makes is logged whatever its answer,
+      a refused write or step-up with its 403 included, but a call refused for its rate is
+      not: the security log already keeps one `credential_rate_limited` row a minute for it,
+      and a runaway agent must not flood the access log. A call on a revoked or expired
+      credential is refused before it is anyone's call and is not logged either.
+- [ ] Default taken: a filter is logged as its name, and its value only when the value is a
+      key (a stable key, a vocabulary key, a UUID, a date, a number). `q`, `query`, `text`,
+      `description`, `topic` and `question` keep their name alone, so the log shows that an
+      agent searched, never for what.
+- [ ] Default taken: the log is read on the entry (`GET /agent-access/{entryId}/calls`) under
+      `agent_access.manage`, like the entry itself. Say if an auditor holding `audit.read`
+      should read it too.
+- [ ] Default taken: a key sent with no expiry lives `AGENT_ACCESS_KEY_MAX_DAYS` (90); a
+      later one is refused (`expiry_too_late`). Revoking an entry twice answers 409
+      `invalid_transition`; revoking one key twice is a safe retry.

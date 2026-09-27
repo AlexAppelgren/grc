@@ -120,6 +120,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # c8-support-session-guard: a support session reads its allow-list and nothing else.
     "apps.shared.middleware.SupportReadOnlyMiddleware",
+    # acc-entries-and-log (ACC-08): the access log row of an agent access credential's call,
+    # written after the response.
+    "apps.governance.access_log.AccessLogMiddleware",
     # Timing last so the measurement is the application's own time (playbook 10), not
     # the middleware stack above it.
     "apps.shared.middleware.ServerTimingMiddleware",
