@@ -46,6 +46,10 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `SCANNER_HOST` | api, worker | `localhost` | `localhost` | the clamd service's private host (`clamav.railway.internal`) | Private network only; clamd has no authentication |
 | `SCANNER_PORT` | api, worker | `3310` | `3310` | `3310` | clamd's TCP port in the official image |
 | `SCANNER_TIMEOUT_SECONDS` | api, worker | `60.0` | `60.0` | `60.0` | Per connect and send, and for the scan with its whole reply; a timeout is a failed scan, never a clean one |
+| `EVIDENCE_ALLOWED_TYPES` | api | the eight types | the eight types | the eight types | Comma-separated MIME types evidence may be (CAS-05): PDF, DOCX, XLSX, PPTX, PNG, JPEG, TXT and CSV. The header, the extension and the bytes must agree; anything else is refused with 422 before it is stored |
+| `EVIDENCE_MAX_BYTES` | api | `26214400` | `26214400` | `26214400` | The largest evidence file in bytes, 25 MB (CAS-05); a larger one is refused with 422 before it is stored |
+| `EVIDENCE_SCAN_RETRIES` | worker | `2` | `2` | `2` | How many more times a failed malware scan is tried before the file stays `error` and cannot be downloaded (CAS-05) |
+| `CASE_EVIDENCE_MAX` | api | `200` | `200` | `200` | Live evidence one case may hold, so one case cannot push its case file past the response budget (CAS-05) |
 | `LLM_PROVIDER` | api, worker | `mock` | `mock` | `anthropic` | `mock`, `anthropic`, `bedrock` (D-07, ADR 0007) |
 | `ANTHROPIC_API_KEY` | api, worker | unset | unset | Railway secret | Only read when `LLM_PROVIDER=anthropic` |
 | `LLM_MODEL` | api, worker | `claude-opus-5` | `claude-opus-5` | `claude-opus-5` | The Messages API model id (E3) |
@@ -75,6 +79,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `AGENT_ACCESS_KEY_MAX_DAYS` | api | `90` | `90` | `90` | The longest a service key of an agent access entry may live, in days (ACC-03, ADR 0056). A key is minted with an expiry no later than this; at least 1 or the app refuses to boot |
 | `PERSONAL_TOKEN_MAX_DAYS` | api | `90` | `90` | `90` | The longest a personal access token may live, in days (ACC-03, ADR 0056). A token cannot be minted without an expiry, and never one later than this; at least 1 or the app refuses to boot |
 | `AGENT_ACCESS_RATE_PER_MINUTE` | api | `60` | `60` | `60` | Requests per minute one agent access credential, a service key of an entry or a personal token, may make before it answers 429 and writes `credential_rate_limited` to the security log (ACC-09); at least 1 or the app refuses to boot |
+| `COMMENT_EDIT_MINUTES` | api | `15` | `15` | `15` | How many minutes after writing a comment its author may still edit it; afterwards it can only be deleted, and My work stops offering the edit (COL-01) |
 | `ASK_RETRIEVAL_DEPTH` | api | `6` | `6` | `6` | How many passages of the reader's own ranking Ask gives the model, best first: the whole of what an answer may rest on, each one a numbered citation. From 1 to `AI_GENERATION_CITATIONS_MAX`, or the app refuses to boot (SRC-03) |
 | `ASK_MAX_TOKENS` | api | `1024` | `1024` | `1024` | The most one Ask answer may write, beneath the `LLM_MAX_TOKENS` ceiling: an answer is a few cited sentences. At least 1, or the app refuses to boot (SRC-03) |
 | `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |

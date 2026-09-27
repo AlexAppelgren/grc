@@ -106,7 +106,7 @@ def save_assessment(
         assessment.version += 1
         assessment.save()
         if closes:
-            case.close_reason = ClosureReason.objects.filter(kind=CloseReason.NOT_APPLICABLE.value, active=True).first()  # ordering: Meta.ordering, the list's first
+            case.close_reason = ClosureReason.objects.filter(tenant=tenant, kind=CloseReason.NOT_APPLICABLE.value, active=True).first()  # ordering: Meta.ordering, the list's first
             case.closed_at = timezone.now()
             logic.transition(case, CaseStatusCategory.CLOSED, actor=actor, user=user)
         else:

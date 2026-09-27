@@ -920,18 +920,18 @@ def _seed_case(
     one (WAT-05)."""
     tenancy.activate(tenant.id)
     existed = ChangeCase.objects.filter(tenant=tenant, change=change).exists()
+    values = {
+        "urgency": django_apps.get_model("taxonomy", "Urgency").objects.get(key=urgency),
+        "footprint_match": footprint_match,
+        "so_what_text": change.so_what_draft,
+        "so_what_confirmed": so_what_confirmed_by is not None,
+        "so_what_confirmed_by": so_what_confirmed_by,
+        "so_what_confirmed_at": timezone_now_this_week(TENANT_A.timezone) if so_what_confirmed_by is not None else None,
+    }
+    # A reseed never moves a case back to `new`: a later seed (c9-fe-case-participants) works
+    # one through the real, audited moves, which a silent reset would make it repeat.
     case, _ = ChangeCase.objects.update_or_create(
-        tenant=tenant,
-        change=change,
-        defaults={
-            "status": CaseStatusCategory.NEW.value,
-            "urgency": django_apps.get_model("taxonomy", "Urgency").objects.get(key=urgency),
-            "footprint_match": footprint_match,
-            "so_what_text": change.so_what_draft,
-            "so_what_confirmed": so_what_confirmed_by is not None,
-            "so_what_confirmed_by": so_what_confirmed_by,
-            "so_what_confirmed_at": timezone_now_this_week(TENANT_A.timezone) if so_what_confirmed_by is not None else None,
-        },
+        tenant=tenant, change=change, defaults=values, create_defaults={**values, "status": CaseStatusCategory.NEW.value}
     )
     if not existed:
         record(
@@ -1877,12 +1877,18 @@ def seed_e2e() -> dict[str, int]:
         case_journeys = seed_case_journeys(tenants)
         # c10-e2e-seed-comments: after the cases and the logins its comments name.
         comments = seed_comments(tenants)
+        # c9-evidence: after the case journeys and chunk 5's cases it attaches to.
+        case_evidence = seed_case_evidence(tenants)
+        # c9-e2e-signoff-j3: after the case journeys, whose CAS-S10 change it links.
+        seed_signoff_spot_check_link()
         seed_watched_market_change()
         seed_standard_change()
         # c8-seed-org-register: after the logins and chunk 5's links.
         seed_org_register(tenants)
         # c8-ui-links-history-participants: after the register entries it names.
         seed_participants(tenants)
+        # c9-fe-case-participants: after the teams and the home cases it names.
+        seed_case_participants(tenants)
 
         # INV-S14, after the logins: the re-verification names a seeded library editor.
         machine_confirmed = seed_machine_confirmed()
@@ -1901,6 +1907,7 @@ def seed_e2e() -> dict[str, int]:
         "chunk5_cases": chunk5_cases,
         "case_journeys": case_journeys,
         "comments": comments,
+        "case_evidence": case_evidence,
         "machine_confirmed": machine_confirmed,
         "eval_questions": eval_questions,
         **library,
@@ -2434,6 +2441,136 @@ def _seed_comment_record(comment: Comment, title: str, action: str, after: dict[
         after=after,
     )
 # --- end c10-e2e-seed-comments ------------------------------------------------------------------
+
+
+# --- c9-evidence (CAS-05, CAS-S7, CAS-S16) ------------------------------------------------------
+# Evidence on the cases the journeys read: every scan state on CAS-S7's implementing case, a
+# clean file on each case waiting for sign-off (a request needs one) and on the closed case,
+# and a clean file on each bank's case for chunk 5's shared change, so CAS-S16 finds evidence
+# of both banks on one change. CAS-S8's case keeps none: its journey is the refusal without
+# evidence. A clean file's bytes are written here, through storage, into the slot's media
+# root and never committed; an infected one's never exist, as the scan deletes them, and a
+# pending one is never queued, so it stays pending.
+
+
+@dataclass(frozen=True)
+class SeedEvidence:
+    """One piece of evidence on the case for `stable_key` in `tenant_slug`. A file carries
+    `scan_state`; a link carries `url` and reads clean."""
+
+    stable_key: str
+    name: str
+    scan_state: str = "clean"
+    url: str = ""
+    tenant_slug: str = TENANT_A_SLUG
+
+
+EXPECTED_EVIDENCE: tuple[SeedEvidence, ...] = (
+    SeedEvidence("chg-e2e-case-evidence", "AMLR gap analysis.pdf"),
+    SeedEvidence("chg-e2e-case-evidence", "Customer due diligence checklist.pdf", scan_state="pending"),
+    SeedEvidence("chg-e2e-case-evidence", "Vendor questionnaire.pdf", scan_state="infected"),
+    SeedEvidence("chg-e2e-case-actions-locked", "Inducements policy 2026.pdf"),
+    SeedEvidence("chg-e2e-case-self-signoff", "Client categorisation procedure.pdf"),
+    SeedEvidence("chg-e2e-case-signoff", "Product governance review.pdf"),
+    SeedEvidence("chg-e2e-case-file", "Best execution report 2026.pdf"),
+    SeedEvidence("chg-e2e-case-file", "FI decision memo", url="https://intranet.example-bank.test/memo/42"),
+    SeedEvidence("chg-e2e-c5-timeline", "Research payment criteria.pdf"),
+    SeedEvidence("chg-e2e-c5-timeline", "Research payment criteria (DK).pdf", tenant_slug=TENANT_B_SLUG),
+)
+# The day after the case's first sighting each piece was attached: after the actions were
+# done and before the sign-off request (`_DONE_DAY`, `_MOVE_DAY`). Chunk 5's shared change
+# is sighted this week, so its pieces are attached at the sighting instead.
+_EVIDENCE_DAY = 11
+
+
+def seed_evidence_pdf(name: str) -> bytes:
+    """The bytes of a seeded clean file: a small, well-formed PDF, the same on every run."""
+    return f"%PDF-1.4\n% Seeded evidence: {name}\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n".encode()
+
+
+def seed_case_evidence(tenants: list[Tenant]) -> int:
+    """c9-evidence: each piece of `EXPECTED_EVIDENCE`, once per case and name. A second run
+    writes no row and no audit row; it only writes a clean file's bytes back when the media
+    root lost them, under the key the row already names."""
+    import hashlib
+
+    from apps.cases.models import Evidence, EvidenceKind
+    from apps.shared.storage import get_storage
+
+    by_slug = {tenant.slug: tenant for tenant in tenants}
+    storage = get_storage()
+    uploader = {TENANT_A_SLUG: OWNER_A, TENANT_B_SLUG: "compliance_officer@second-bank.test"}
+    for plan in EXPECTED_EVIDENCE:
+        tenant = by_slug[plan.tenant_slug]
+        tenancy.activate(tenant.id)
+        case = ChangeCase.objects.select_related("change").get(change__stable_key=plan.stable_key)
+        content = seed_evidence_pdf(plan.name)
+        row = Evidence.objects.filter(case=case, name=plan.name).first()  # ordering: Meta.ordering, one per (case, name)
+        if row is None:
+            # Eleven days after the sighting, or at the sighting for a change seen this week.
+            at = case.change.first_seen_at + datetime.timedelta(days=_EVIDENCE_DAY)
+            if at > case_anchor(tenant.timezone):
+                at = case.change.first_seen_at
+            kind = EvidenceKind.LINK if plan.url else EvidenceKind.FILE
+            row = Evidence(
+                tenant=tenant,
+                case=case,
+                kind=kind.value,
+                name=plan.name,
+                url=plan.url,
+                uploaded_by=User.objects.get(email=uploader[plan.tenant_slug]),
+                uploaded_at=at,
+                scan_state=plan.scan_state,
+                scanned_at=None if plan.scan_state == "pending" else at,
+            )
+            if kind is EvidenceKind.FILE:
+                row.storage_key = f"{tenant.id}/cases/{case.id}/evidence/{uuid.uuid4().hex}"
+                row.content_hash = "sha256:" + hashlib.sha256(content).hexdigest()
+                row.size_bytes = len(content)
+                row.mime_type = "application/pdf"
+            # The fixture path (`raw`), as for actions, so "attached on" is the anchored moment.
+            row.save_base(raw=True)
+            record(
+                action="case.evidence_attached",
+                actor=SEED_ACTOR,
+                subject_type="evidence",
+                subject_id=row.id,
+                subject_title=case.change.title,
+                summary="Seeded for E2E journeys.",
+                tenant_id=tenant.id,
+                after={"evidenceId": str(row.id), "caseId": str(case.id), "kind": row.kind, "scanState": row.scan_state},
+            )
+        if row.storage_key and row.scan_state != "infected" and not storage.exists(row.storage_key):
+            storage.write(row.storage_key, content, row.mime_type)
+    tenancy.clear_tenant()
+    return len(EXPECTED_EVIDENCE)
+# --- end c9-evidence ----------------------------------------------------------------------------
+
+
+# --- c9-e2e-signoff-j3 (CAS-S10) -----------------------------------------------------------------
+# CAS-S10 proves a sign-off changes no library or register row by reading one obligation before
+# and after it: the one its change links to. The ISK control statements duty is read by SRC-S3
+# and changed by no journey or seed, so what the journey reads twice can only move if the
+# sign-off moved it.
+SIGNOFF_SPOT_CHECK_OBLIGATION = "obl-isk-control-statements"
+
+
+def seed_signoff_spot_check_link() -> None:
+    """The CAS-S10 change's link to `SIGNOFF_SPOT_CHECK_OBLIGATION`, the sweeper's suggestion
+    confirmed by the library confirmer's own key, as every confirmation here is (D-74). A link
+    is library-zone, so no tenant is active; a second run upserts the same row."""
+    tenancy.clear_tenant()
+    sweeper, _agent_row = _sweeper_key()
+    change = django_apps.get_model("watch", "RegulatoryChange").objects.get(stable_key="chg-e2e-case-signoff")
+    watch_e2e_seed.seed_obligation_link(
+        change,
+        _obligation(SIGNOFF_SPOT_CHECK_OBLIGATION),
+        confidence=0.87,
+        suggester=sweeper,
+        confirmer=_confirmer_key(),
+        confirmed_at=change.first_seen_at + datetime.timedelta(days=1),
+    )
+# --- end c9-e2e-signoff-j3 -----------------------------------------------------------------------
 
 
 # --- c8-seed-org-register (TEN-02, TEN-03, TEN-05, HOM-05, REG-01 to REG-05) -------------
@@ -3099,3 +3236,51 @@ def seed_participants(tenants: list[Tenant]) -> None:
         _seeded(tenant, "participant", row, PARTICIPATION_OBLIGATION, {"tenantObligationId": str(entry.id), "userId": str(person.id)})
     tenancy.clear_tenant()
 # --- end c8-ui-links-history-participants ----------------------------------------------------
+
+
+# --- c9-fe-case-participants (COL-04, CAS-03, COL-S9) -----------------------------------------
+# COL-S9: tenant A's case for the securities financing change, triaged to the compliance
+# officer and being assessed, through the product's own triage and assessment logic. The team
+# Legal takes part as the assessment's contributor team (D-20), and so do the owner Johan Berg,
+# whom the contributor removes, and the Reader, who leaves; the journey puts both back.
+CASE_PARTICIPATION_CHANGE = EXPECTED_HOME.later_change
+CASE_PARTICIPATION_OWNER = _SARA
+CASE_PARTICIPATION_TEAM = "legal"
+CASE_PARTICIPANTS = (_JOHAN, "reader@example-bank.test")
+
+
+def seed_case_participants(tenants: list[Tenant]) -> None:
+    """Moves the case from `new` once, as its owner would, and names each participant once. A
+    reseed finds the case assessed and each participation live and writes nothing; after
+    COL-S9 has removed one, a reseed puts it back."""
+    from apps.cases import assessment as case_assessment
+    from apps.cases import triage as case_triage
+    from apps.cases.schemas import CasesTriageBody
+
+    tenant = next(t for t in tenants if t.slug == TENANT_A_SLUG)
+    tenancy.activate(tenant.id)
+    officer = User.objects.get(email=CASE_PARTICIPATION_OWNER)
+    case = ChangeCase.objects.select_related("change").get(tenant=tenant, change__stable_key=CASE_PARTICIPATION_CHANGE)
+    if case.status == CaseStatusCategory.NEW.value:
+        actor = Actor(kind=ActorType.USER, id=officer.id, label=officer.name)
+        order = roles_logic.language_order(officer, tenant)
+        body = CasesTriageBody(urgency=case.urgency.key, owner_id=officer.id)
+        moved = case_triage.triage_change(
+            tenant=tenant, actor=actor, user=officer, order=order, change_id=case.change_id, expected_version=case.version, body=body
+        )
+        case_assessment.start_assessment(
+            tenant=tenant, actor=actor, user=officer, order=order, change_id=case.change_id, expected_version=moved.version
+        )
+    live = Participant.objects.filter(case=case, removed_at__isnull=True)
+    today = datetime.datetime.now(ZoneInfo(tenant.timezone)).date()
+    team = Team.objects.get(key=CASE_PARTICIPATION_TEAM)
+    if not live.filter(team=team).exists():
+        row = Participant.objects.create(tenant=tenant, case=case, team=team, added_by=officer, added_at=_at(today, -3, tenant.timezone))
+        _seeded(tenant, "participant", row, CASE_PARTICIPATION_CHANGE, {"caseId": str(case.id), "teamKey": team.key})
+    for email in CASE_PARTICIPANTS:
+        person = User.objects.get(email=email)
+        if not live.filter(user=person).exists():
+            row = Participant.objects.create(tenant=tenant, case=case, user=person, added_by=officer, added_at=_at(today, -2, tenant.timezone))
+            _seeded(tenant, "participant", row, CASE_PARTICIPATION_CHANGE, {"caseId": str(case.id), "userId": str(person.id)})
+    tenancy.clear_tenant()
+# --- end c9-fe-case-participants ---------------------------------------------------------------

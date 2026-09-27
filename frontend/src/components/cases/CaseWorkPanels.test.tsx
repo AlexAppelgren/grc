@@ -2,6 +2,8 @@ import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import type { CaseVocabularyRef, CaseWorkflow } from '@/features/cases/types';
+import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
+import { installAdapter, queryWrapper } from '@/shared/testing/api-adapter';
 
 import { CaseWorkPanels, casePanelsFor } from './CaseWorkPanels';
 
@@ -39,9 +41,20 @@ describe('casePanelsFor', () => {
 });
 
 describe('CaseWorkPanels', () => {
-  it('renders its panels, which render nothing until they are built', () => {
-    const workflow = { ...at('closed', reason('signed_off')), id: 'case-1', version: 7 } as CaseWorkflow;
-    const { container } = render(<CaseWorkPanels change={{ id: 'c-1' } as never} workflow={workflow} />);
-    expect(container.querySelector('[data-case-panels="closed"]')).toBeEmptyDOMElement();
+  it('mounts its panels where the card places them: a signed-off case shows its sign-off', () => {
+    installAdapter(() => ({ status: 200, data: { items: [], total: 0 } }));
+    const { wrapper: Query } = queryWrapper();
+    const workflow = { ...at('closed', reason('signed_off')), id: 'case-1', version: 7, signedOffBy: null, signoffRequestedBy: null } as unknown as CaseWorkflow;
+    const { container } = render(
+      <Query>
+        <LocaleProvider locale="en">
+          <CaseWorkPanels change={{ id: 'c-1' } as never} workflow={workflow} />
+        </LocaleProvider>
+      </Query>,
+    );
+    const panels = container.querySelector('[data-case-panels="closed"]');
+    expect(panels?.querySelector('[data-case-panel="actions"]')).not.toBeNull();
+    expect(panels?.querySelector('[data-case-panel="evidence"]')).not.toBeNull();
+    expect(panels?.querySelector('[data-signoff-panel="signed_off"]')).toBeInTheDocument();
   });
 });

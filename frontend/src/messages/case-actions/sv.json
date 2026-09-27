@@ -1,3 +1,23 @@
 {
-  "caseActions.heading": "Åtgärder"
+  "caseActions.heading": "Åtgärder",
+  "caseActions.loadError": "Det gick inte att läsa in åtgärderna",
+  "caseActions.empty.title": "Inga åtgärder än",
+  "caseActions.empty.body": "Lägg till det som måste göras, med en ansvarig och ett förfallodatum. Den första åtgärden startar genomförandet.",
+  "caseActions.due": "Förfaller {date}",
+  "caseActions.doneBy": "Klar {date} av {name}",
+  "caseActions.remove": "Ta bort",
+  "caseActions.removeTitle": "Ta bort ”{title}”?",
+  "caseActions.removeBody": "Den försvinner från listan och räknas inte längre som öppen. Ärendeakten visar fortfarande att den planerades och togs bort.",
+  "caseActions.newTitle": "Ny åtgärd",
+  "caseActions.newTitlePlaceholder": "Vad behöver göras",
+  "caseActions.newDue": "Förfaller",
+  "caseActions.ownerHint": "{name} är ansvarig, som ärendets ägare.",
+  "caseActions.ownerHintNone": "Ärendets ägare är ansvarig.",
+  "caseActions.add": "Lägg till åtgärd",
+  "caseActions.titleRequired": "Ge åtgärden en titel.",
+  "caseActions.dueRequired": "Välj ett förfallodatum.",
+  "caseActions.openCount": "{open} av {total} öppna",
+  "caseActions.locked": "Åtgärderna är låsta medan ärendet väntar på godkännande. Skickas det tillbaka låses de upp.",
+  "caseActions.lockedRefusal": "Ärendet väntar nu på godkännande, så dess åtgärder kan inte längre ändras.",
+  "caseActions.reload": "Läs in igen för att se det"
 }

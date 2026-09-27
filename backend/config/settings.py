@@ -264,7 +264,8 @@ CORS_ALLOW_HEADERS = [
     "x-request-id",
     "x-tenant-id",
 ]
-CORS_EXPOSE_HEADERS = ["etag", "server-timing", "x-request-id"]
+# content-disposition: an evidence download is saved under the name the server chose (CAS-05).
+CORS_EXPOSE_HEADERS = ["content-disposition", "etag", "server-timing", "x-request-id"]
 
 # ---------------------------------------------------------------------------------------
 # Adapters (playbook 16). One interface each, a mock chosen by setting. A mock outside the
@@ -776,6 +777,25 @@ SCANNER_PORT = env_int("SCANNER_PORT", 3310)  # clamd's TCPSocket in the officia
 # stream before it answers, so this must cover scanning the largest evidence file.
 SCANNER_TIMEOUT_SECONDS = float(env_str("SCANNER_TIMEOUT_SECONDS", "60.0"))
 
+# ===== CAS-05 evidence on a case (apps/cases/evidence.py, tasks.py, c9-evidence) =========
+# A file is refused with 422 before a byte is stored when its type is outside this list or
+# it is larger than the cap (parallel plan §7.2). The type is what the header claims, the
+# name's extension and the bytes themselves all agree on; a type listed here that the
+# server cannot recognise in the bytes is refused rather than trusted.
+EVIDENCE_ALLOWED_TYPES = env_list(
+    "EVIDENCE_ALLOWED_TYPES",
+    "application/pdf,"
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document,"
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,"
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation,"
+    "image/png,image/jpeg,text/plain,text/csv",
+)
+EVIDENCE_MAX_BYTES = env_int("EVIDENCE_MAX_BYTES", 25 * 1024 * 1024)
+# How many more times a scan that failed is tried before the file stays `error`.
+EVIDENCE_SCAN_RETRIES = env_int("EVIDENCE_SCAN_RETRIES", 2)
+# Live evidence one case may hold, so one case cannot push its case file past the budget.
+CASE_EVIDENCE_MAX = env_int("CASE_EVIDENCE_MAX", 200)
+
 # ---------------------------------------------------------------------------------------
 # ===== c8-reg-applicability: REG-01, AC-REG1 many answers in one call (D-75) =====
 # ---------------------------------------------------------------------------------------
@@ -826,17 +846,7 @@ COMMENT_MAX_CHARS = env_int("COMMENT_MAX_CHARS", 4000)
 COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)
 
 # ---------------------------------------------------------------------------------------
-# ===== Tenant list cap (c8-vocab-register-usage, H32) ====================================
-# How many rows, retired ones included, one of a bank's own vocabulary lists may hold.
-# `GET /vocab/{list}` answers a whole list with its usage counts, so the list must stay a
-# size one read can serve inside the API budget. Adding past it answers 422 `list_full`.
-# `apps/taxonomy/tenant_lists_logic.py` reads it. There is no value that means "no limit",
-# so the process refuses to boot below 1.
-# ---------------------------------------------------------------------------------------
-TENANT_LIST_MAX_ROWS = env_int("TENANT_LIST_MAX_ROWS", 500)
-if TENANT_LIST_MAX_ROWS < 1:
-    raise ImproperlyConfigured("TENANT_LIST_MAX_ROWS must be at least 1.")
-
+# ===== Tenant list cap (c8-vocab-register-usage, H32) =============================
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
