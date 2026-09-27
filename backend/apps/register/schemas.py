@@ -873,7 +873,8 @@ _LINK_EXAMPLE: dict[str, Any] = {
     "label": "Client asset policy",
     "url": "https://intranet.example-bank.test/policies/client-assets",
     "externalRef": "POL-014",
-    "internalItemId": None,
+    "externalSystem": "ServiceNow GRC",
+    "internalItemId": "2b4d6f8a-0c1e-4a3b-9d5f-7e9a1c3b5d24",
     "createdBy": _PERSON_EXAMPLE,
     "createdAt": "2026-09-18T13:05:00Z",
 }
@@ -896,8 +897,15 @@ class RegisterInternalLink(CamelSchema):
     label: str = Field(description="The item's name as the bank calls it, such as `Client asset policy`.")
     url: str | None = Field(description="Where the item lives in the bank's own systems; null when none was given. Never fetched by the server.")
     external_ref: str | None = Field(description="The item's reference in the bank's GRC or document system, such as `POL-014`; null when none was given.")
-    internal_item_id: uuid.UUID | None = Field(
-        description="The bank's internal item this link points at, as a UUID, when it was picked from the organisation; null for an ad hoc link."
+    external_system: str | None = Field(
+        description="The name of the outside system that reference belongs to, such as `ServiceNow GRC`; null when none was given."
+    )
+    internal_item_id: uuid.UUID = Field(
+        description=(
+            "The bank's internal item this link points at, as a UUID: the one picked from its "
+            "organisation, or the one this link's call created. The item carries the kind and "
+            "survives the link's removal."
+        )
     )
     created_by: RegisterPersonRef = Field(description="The person who made the link.")
     created_at: datetime.datetime = Field(description="The UTC timestamp at which the link was made, set by the server.")
@@ -928,11 +936,36 @@ class RegisterInternalLinkBody(WriteBody):
         ),
     )
     label: str = Field(min_length=1, max_length=TITLE_MAX, description=f"The item's name as the bank calls it, 1 to {TITLE_MAX} characters.")
-    url: str | None = Field(default=None, max_length=URL_MAX, description=f"Where the item lives, a link of at most {URL_MAX} characters. Never fetched by the server.")
+    url: str | None = Field(default=None, max_length=URL_MAX, description=f"Where the item lives, an http or https address of at most {URL_MAX} characters. Never fetched by the server.")
     external_ref: str | None = Field(
         default=None, max_length=EXTERNAL_REF_MAX, description=f"The item's reference in the bank's GRC system, at most {EXTERNAL_REF_MAX} characters."
     )
-    internal_item_id: uuid.UUID | None = Field(default=None, description="An internal item of the bank's organisation to link, as a UUID; absent for an ad hoc link.")
+    internal_item_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "An internal item of the bank's organisation to link, as a UUID, whose kind must be "
+            "`kind`. Absent to create the item from this call: its kind, `label` as its name, "
+            "`url`, `externalRef` and the item fields below. Another bank's item answers 404."
+        ),
+    )
+    # The item's own fields, read only when this call creates the item (REG-05).
+    reference: str | None = Field(
+        default=None, max_length=EXTERNAL_REF_MAX, description=f"The bank's own reference for a new item, such as `POL-014`, at most {EXTERNAL_REF_MAX} characters."
+    )
+    external_system: str | None = Field(
+        default=None, max_length=100, description="The outside system a new item's `externalRef` belongs to, such as `ServiceNow GRC`, at most 100 characters."
+    )
+    owner_id: uuid.UUID | None = Field(
+        default=None, description="A new item's owner, a member of the bank by their user UUID; never together with `ownerTeamId`."
+    )
+    owner_team_id: uuid.UUID | None = Field(
+        default=None, description="A new item's owning team, one of the bank's teams by its UUID; never together with `ownerId`."
+    )
+    org_unit_id: uuid.UUID | None = Field(
+        default=None, description="The part of the bank's organisation a new item belongs to, as a UUID from its organisation."
+    )
+    last_reviewed_on: datetime.date | None = Field(default=None, description="The plain date a new item was last reviewed.")
+    next_review_on: datetime.date | None = Field(default=None, description="The plain date a new item is next due for review.")
 
 
 # ---------------------------------------------------------------------------------------
