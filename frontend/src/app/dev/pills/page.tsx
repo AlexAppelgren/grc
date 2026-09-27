@@ -1,3 +1,5 @@
+'use client';
+
 import { pillsOf } from '@/components/inventory/ObligationRow';
 import { Pill, pillToneNames } from '@/components/ui/Pill';
 import { PillRow } from '@/components/ui/PillRow';
@@ -53,7 +55,8 @@ import {
 // /dev/pills: every tone, every slot, every record type, light and dark side
 // by side (playbook 6.7). A Playwright screenshot pins it in both themes.
 // The columns carry their own theme class, so the page looks the same
-// whichever theme the visitor uses.
+// whichever theme the visitor uses. A client page, because the register entry
+// draws through the inventory row's own pills function, which lives in a client module.
 
 function Record({ children }: { children: React.ReactNode }) {
   return <div className="mb-2 rounded-card border border-line bg-surface px-4 py-3">{children}</div>;
