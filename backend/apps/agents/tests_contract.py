@@ -210,6 +210,8 @@ CONSOLE_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("updatePlatformAgentSettings", "put", f"{DEFINITIONS}/{AGENT_KEY}/settings", SETTINGS_BODY, perms.AGENT_DEFINITIONS_MANAGE, True),
     ("listPlatformRuns", "get", CONSOLE_RUNS, None, perms.AGENT_DEFINITIONS_MANAGE, False),
     ("createRetagRequest", "post", "/api/v1/console/research-requests", {"topic": "Re-tag custody records with Client money."}, perms.PROPOSALS_REVIEW, False),
+    # c11-fe-console-batch-retag: the console's re-tag form follows its request to the batch.
+    ("getRetagRequest", "get", f"/api/v1/console/research-requests/{KEY}", None, perms.PROPOSALS_REVIEW, False),
 ]
 # (name, method, url, body, permission). `{id}` is filled with a record of the caller's own
 # bank, of another bank, or with nothing, by the test that needs one.
@@ -228,6 +230,11 @@ TENANT_ROUTES: list[tuple[str, str, str, Any, str]] = [
     ("getResearchRequest", "get", f"{REQUESTS}/{{id}}", None, perms.AGENTS_MANAGE),
     ("listPlatformWatch", "get", f"{TENANT_AGENTS}/platform", None, perms.WATCH_READ),
 ]
+# The operations served for real, which answer from their logic and no longer 501:
+# `c11-tenant-agents-budget-scope` (tests_tenant_agents.py, tests_budget.py).
+SERVED = {"listTenantAgents", "createTenantAgent", "updateTenantAgent", "getAgentBudget", "putAgentBudget"}
+# c11-research-requests (tests_requests.py).
+SERVED |= {"listResearchRequests", "createResearchRequest", "getResearchRequest"}
 # Which record each id route addresses: a bank's own agent, its run, or its request.
 ID_KIND = {
     "updateTenantAgent": "agent",
@@ -345,7 +352,21 @@ class ConsoleAgentRouteGates(TestCase):
                 self.assertEqual(response.json()["code"], "step_up_required")
 
     def test_behind_the_gate_each_answers_not_built(self) -> None:
+        # Served since `c11-definitions-platform`: tests_definitions.py and tests_platform.py.
+        built = {
+            "getAgentDefinition",
+            "publishAgentVersion",
+            "retireAgentVersion",
+            "getPlatformAgentSettings",
+            "updatePlatformAgentSettings",
+            "listPlatformRuns",
+            # c11-research-requests: tests_requests.py.
+            "createRetagRequest",
+            "getRetagRequest",
+        }
         for name, method, url, body, permission, _ in CONSOLE_ROUTES:
+            if name in built:
+                continue
             with self.subTest(operation=name), stub_session(user_principal(permissions={permission}, step_up_at=timezone.now())):
                 response = _call(self.client, method, url, body, AS_SESSION)
                 self.assertEqual(response.status_code, 501, response.content)
@@ -417,6 +438,8 @@ class TenantAgentRouteGates(TestCase):
     def test_inside_its_own_bank_each_answers_not_built(self) -> None:
         with stub_session(self.bank_a.principal(frozenset({perms.AGENTS_MANAGE, perms.WATCH_READ}))):
             for name, method, url, body, _ in TENANT_ROUTES:
+                if name in SERVED or name == "listPlatformWatch":
+                    continue  # listPlatformWatch: built by c11-run-history; tests_platform_read.py proves it
                 if name == "createResearchRequest":
                     body = {**body, "tenantAgentId": str(self.bank_a.agent.id)}
                 with self.subTest(operation=name):
@@ -428,7 +451,7 @@ class TenantAgentRouteGates(TestCase):
         """Ruling 6: what bleqq watches is a member's read, gated by `watch.read` alone."""
         with stub_session(self.bank_a.principal(frozenset({perms.WATCH_READ}))):
             response = _call(self.client, "get", f"{TENANT_AGENTS}/platform", None, AS_SESSION)
-        self.assertEqual(response.status_code, 501, response.content)
+        self.assertEqual(response.status_code, 200, response.content)
 
     def test_another_banks_record_is_404_before_the_501(self) -> None:
         """AC-NFR1: the 501 is reached only inside the caller's own bank. Bank B asking for
@@ -575,9 +598,9 @@ class RunListGainsChunk11(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         return [row["id"] for row in response.json()["items"]]
 
-    def test_without_a_filter_the_bank_reads_the_librarys_runs_and_its_own(self) -> None:
+    def test_without_a_filter_the_bank_reads_its_own_runs_and_never_the_librarys(self) -> None:
         ids = self._ids("")
-        self.assertIn(str(self.library.id), ids)
+        self.assertNotIn(str(self.library.id), ids)
         self.assertIn(str(self.bank.run.id), ids)
         self.assertNotIn(str(self.other.run.id), ids)
 

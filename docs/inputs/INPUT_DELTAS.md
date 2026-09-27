@@ -1760,3 +1760,13 @@ Taxonomy 0012 builds it on the regulatory scope request rather than beside it:
   `footprint_history_term_or_scope_item` demands exactly one. The table stays append-only.
 - Every reference to a tenant row is also a composite `(tenant_id, …)` key, so
   `footprint_change_request` and `scope_item` gain `UNIQUE (tenant_id, id)`.
+## c11-research-requests. A research request keeps what it fetched (2026-09-27, agents 0008)
+
+`research_request` (schema v0.3 PART 3) gains two columns: `fetched_text`, the page a
+`check_url` request fetched, kept as text for the bank's agent and never rendered or
+followed, and `risk_flags`, the content screen's flags (AGT-07) on that text or on the
+topic, as `change_document.risk_flags` carries them. Both default to empty. The request's
+`status` is written when its run opens (`running`, or `failed` when the runner could not
+start it); after that a read answers its run's state (`succeeded` as `done`, `failed` and
+`interrupted` as `failed`), so no second writer keeps the two in step. `completed_at` is
+written when a re-tag's run files its batch.

@@ -67,6 +67,7 @@ if behaviour changes. Numbering never reuses a number.
 | [0058](0058-library-writes-refused-by-the-database.md) | The database refuses a library write that never entered a door | D-83 | accepted by default |
 | [0059](0059-a-bank-researches-what-the-library-does-not-cover.md) | A bank researches what the library does not cover, and decides it inside the bank | D-89, D-91 | accepted |
 | [0061](0061-a-banks-research-text-reaches-its-own-agent.md) | A bank's capped research text may reach its own agent, the second exception beside Ask | D-98 (amends D-07, D-32) | accepted |
+| [0059](0059-agent-definitions-are-platform-configuration.md) | Agent definitions are platform configuration, not library rows | D-102 | accepted (owner decision) |
 
 Still to write, when the playbook's Appendix C says so:
 the switch from one branch to `staging` and `main` (supersedes 0015), the

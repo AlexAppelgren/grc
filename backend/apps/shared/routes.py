@@ -90,4 +90,6 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/reach/requests/{request_id}/reject", "governance.TenantReachRequest", "tenant_reach_request"),
     # d89-scope-items-logic (OWN-01): one of the bank's own scope items.
     ("GET", "/tenant/footprint/scope-items/{scope_item_id}", "taxonomy.ScopeItem", "scope_item"),
+    # c11-tenant-agents-budget-scope (AGT-04)
+    ("PATCH", "/agents/{tenant_agent_id}", "agents.TenantAgent", "tenant_agent"),
 ]

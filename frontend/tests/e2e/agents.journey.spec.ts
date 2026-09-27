@@ -1,6 +1,7 @@
 import type { APIResponse } from '@playwright/test';
 
 import { mintAgentKey, revokeAgentKey } from './support/agent-key';
+import { askForRetag, askOurAgent } from './support/agent-requests';
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, BACKEND_URL, LOGINS, signInAs, signOut } from './support/passkeys';
 import { approveQueueProposal } from './support/watch';
@@ -66,8 +67,35 @@ test.describe('agents journeys', () => {
     // pending: AGT-S6 (AGT-04, chunk 11)
   });
 
-  test.fixme("AGT-S7: Research requests ask an agent to check, research or re-tag", async () => {
-    // pending: AGT-S7 (AGT-05, chunk 11)
+  test("AGT-S7: Research requests ask an agent to check, research or re-tag", async ({ page, apiGuard }) => {
+    // AGT-05, reworded to the split: tenant A's admin (agents.manage) asks the bank's own
+    // agent to check a source and to research a topic; a library editor asks bleqq's agent
+    // for a re-tag in the console. Each is a job whose run opens at once. The mock runner
+    // files no batch, so the re-tag stays "being prepared" here; the batch it files is
+    // proven by AGT-S7's integration test. The topic is the attempt's own, so a retry never
+    // reads an earlier attempt's request.
+    test.setTimeout(120_000);
+    allowFreshContext(apiGuard);
+    const attempt = `${Date.now()}`;
+    const topic = `DORA subcontracting ${attempt}`;
+
+    await signInAs(page, LOGINS.admin);
+    await page.goto('/admin/agents');
+    const checked = await askOurAgent(page, { source: 'fi.se sweep (E2E)' });
+    const researched = await askOurAgent(page, { topic });
+    expect([checked.kind, researched.kind]).toEqual(['check_source', 'research_topic']);
+    expect(researched.tenantAgentId).toBe(checked.tenantAgentId);
+    const ours = page.locator('[data-research-list]');
+    await expect(ours.locator(`[data-research-request="${checked.id}"]`)).toContainText('Check this source now');
+    await expect(ours.locator(`[data-research-request="${researched.id}"]`)).toContainText(topic);
+    await signOut(page);
+
+    await signInAs(page, LOGINS.editor);
+    await page.goto('/console/queue');
+    const retag = await askForRetag(page, { term: 'Custody', records: `Custody records that hold client money, attempt ${attempt}` });
+    expect([retag.kind, retag.tenantAgentId]).toEqual(['retag', null]);
+    await expect(page.locator('[data-retag-form]').getByText('Sent. The batch is being prepared.')).toBeVisible();
+    await signOut(page);
   });
 
   test("AGT-S10 J-4 @smoke: an agent registers a change and a proposal, an editor approves, the tenant sees what changed", async ({ page, browser, playwright, apiGuard }, testInfo) => {
