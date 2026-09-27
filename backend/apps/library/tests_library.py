@@ -323,16 +323,26 @@ class SharedOrMineIsolation(TransactionTestCase):
                 if zone:
                     tenancy.activate(zone.id, using="app")
                 self._provision(under, f"{under.stable_key}/{zone.slug if zone else 'library'}")
-        self.assertEqual(list(Provision.objects.using("app").values_list("stable_key", flat=True)), ["bank-a-policy/1"])
-        # Nor does the library turn a level into a standard while it cannot see where a
-        # provision sits: bank A's is at `act`, hidden from it, and `eu_guidance` is refused too.
+        # Bank A's provision is bank A's to read, and nobody else's (library 0012).
+        for zone, visible in ((self.tenant_a, ["bank-a-policy/1"]), (self.tenant_b, []), (None, [])):
+            with transaction.atomic(using="app"):
+                if zone:
+                    tenancy.activate(zone.id, using="app")
+                self.assertEqual(list(Provision.objects.using("app").values_list("stable_key", flat=True)), visible)
+        # Nor does the library turn a level into a standard while a provision sits under it,
+        # though the one at `act` is bank A's and hidden from the library: the trigger asks
+        # every zone in turn (library 0012) and leaves the session in its own.
         with (
             self.assertRaisesMessage(IntegrityError, "provision_not_under_standard"),
             transaction.atomic(using="app"),
             library_write("test"),
             tenancy.library_door("seed", using="app"),
         ):
+            InstrumentLevel.objects.using("app").filter(key="act").update(kind=InstrumentLevelKind.STANDARD.value)
+        with transaction.atomic(using="app"), library_write("test"), tenancy.library_door("seed", using="app"):
+            tenancy.activate(self.tenant_b.id, using="app")
             InstrumentLevel.objects.using("app").filter(key="eu_guidance").update(kind=InstrumentLevelKind.STANDARD.value)
+            self.assertEqual(tenancy.database_tenant_id(using="app"), self.tenant_b.id)
 
     def test_a_problem_report_stays_with_its_tenant(self) -> None:
         with transaction.atomic(using="app"):

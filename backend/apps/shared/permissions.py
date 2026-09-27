@@ -549,6 +549,14 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/tenant/footprint/scope-items/{scope_item_id}"): Ungated(
         UngatedReason.CAPABILITY, "Every member reads the regulatory scope and the scope items in it (FP-03, OWN-01)."
     ),
+    # acc-scoped-reads (SRC-01, ACC-04, ACC-05): a bank's own agent searches the library in its scope.
+    ("POST", "/search"): Ungated(
+        UngatedReason.LOGIC_GATE,
+        "search.use in the caller's tenant, or a key holding search:read, which is how an agent a bank runs "
+        "itself searches; an agent access credential's search is narrowed to its entry's scope (SRC-01, ACC-04). "
+        "The gate is apps/search/api.py:require_searcher, which branches on the principal kind and names the "
+        "scope it wanted to a key and the permission it wanted to a person.",
+    ),
 }
 
 

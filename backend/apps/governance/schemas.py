@@ -13,7 +13,7 @@ from datetime import datetime
 from typing import Literal
 
 from django.conf import settings
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, RootModel
 from pydantic.json_schema import JsonDict
 
 # `AiCitation` lives beside `AgentDecision` in apps/shared/schemas.py, which cites with it
@@ -944,3 +944,150 @@ class TenantReachView(CamelSchema):
         default=None,
         description="The request waiting for a second person, or null when none waits.",
     )
+
+
+# ---------------------------------------------------------------------------------------
+# acc-entries-and-log (ACC-08): the access log of an agent access entry. Names and keys,
+# never content: the examples are the prototype's trading coding agent.
+# ---------------------------------------------------------------------------------------
+class AgentAccessCallFilters(RootModel[dict[str, list[str]]]):
+    """Parameter or dimension names, each with the key values it carried: the `filters` and
+    `scope_terms` columns of `agent_access_call`. A value is kept only when it is a key (a
+    stable key, a vocabulary key, a UUID, a date, a number); free text is never kept, so a
+    name may map to an empty list."""
+
+
+_CALL_EXAMPLE: JsonDict = {
+    "id": "5b2e8c1a-7d3f-4e90-a1b2-c3d4e5f60718",
+    "at": "2026-09-25T09:14:03Z",
+    "credential": {"id": "0f9e8d7c-6b5a-4c3d-9e2f-1a0b9c8d7e6f", "keyPrefix": "9a1f3c7e", "kind": "service"},
+    "person": None,
+    "tool": "listObligations",
+    "filters": {"jurisdiction": ["se"], "q": []},
+    "recordCount": 12,
+    "scopes": ["library:read", "search:read"],
+    "scope": {"narrowed": True, "terms": {"product_type": ["derivatives", "securities"]}},
+    "durationMs": 84,
+    "status": 200,
+}
+
+
+class AgentAccessCredentialRef(CamelSchema):
+    """The credential a call was made with, named by its id and prefix, never its secret."""
+
+    id: uuid.UUID = Field(
+        description=(
+            "The credential's permanent identifier, a UUID, the same one the entry's `keys` list "
+            "carries. It is not the key itself and cannot sign a request."
+        ),
+        examples=["0f9e8d7c-6b5a-4c3d-9e2f-1a0b9c8d7e6f"],
+    )
+    key_prefix: str = Field(
+        description=(
+            "The eight hexadecimal characters the credential begins with after `cw_`, kept in the "
+            "clear so it can be matched to a key in a vault; not enough to call the API."
+        ),
+        examples=["9a1f3c7e"],
+    )
+    kind: Literal["service", "personal"] = Field(
+        description=(
+            "Which kind of credential made the call. `service`: a service key bound to the entry, "
+            "acting as the entry and naming no person. `personal`: a personal access token, acting "
+            "as the member who minted it, who is then named in `person`."
+        ),
+        examples=["service"],
+    )
+
+
+class AgentAccessCallScope(CamelSchema):
+    """The entry's scope the call was answered in, computed when the call was made."""
+
+    narrowed: bool = Field(
+        description=(
+            "True when the entry names departments or products, so its reads were narrowed to "
+            "their terms; false when it names none and read the whole of the bank's footprint, or "
+            "when the credential is bound to no entry."
+        ),
+        examples=[True],
+    )
+    terms: AgentAccessCallFilters = Field(
+        description=(
+            "The footprint terms the entry read in, as taxonomy dimension keys (such as "
+            "`product_type`) each mapped to term keys (such as `derivatives`). Empty when "
+            "`narrowed` is false, and empty with `narrowed` true when the entry's departments and "
+            "products derive no term, in which case it read nothing."
+        ),
+    )
+
+
+class AgentAccessCallRow(CamelSchema):
+    """One request an agent access credential made (ACC-08): who, what, how much and how long,
+    and never the content. Written once, after the response, and never changed."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_CALL_EXAMPLE]})
+
+    id: uuid.UUID = Field(description="The row's permanent identifier, a UUID the server issues.")
+    at: datetime = Field(description="When the call was made, a UTC timestamp set by the server.", examples=["2026-09-25T09:14:03Z"])
+    credential: AgentAccessCredentialRef = Field(description="The service key or personal access token the call was made with.")
+    person: PersonRef | None = Field(
+        default=None,
+        description=(
+            "The member a personal access token acts as, by id and name; null for a service key, "
+            "which acts as the entry and names no person."
+        ),
+    )
+    tool: str = Field(
+        description=(
+            "What the call reached: the operation id of the route, such as `listObligations` or "
+            "`getObligation`, or the MCP tool the server served. At most 120 characters."
+        ),
+        max_length=120,
+        examples=["listObligations"],
+    )
+    filters: AgentAccessCallFilters = Field(
+        description=(
+            "The parameters the call carried, by name, each with the key values it held. A "
+            "free-text parameter (`q`, `query`, `text`, `description`, `topic`, `question`) keeps "
+            "its name and never its value, and any other value that is not a key is dropped the "
+            "same way, so no question or description a caller sent is ever here. Paging is not a "
+            "filter and is left out."
+        ),
+    )
+    record_count: int | None = Field(
+        default=None,
+        description=(
+            "How many records the answer carried: the items of a page, or 1 for one record. Null "
+            "for an answer that was refused or carried no records."
+        ),
+        examples=[12],
+    )
+    scopes: list[str] = Field(
+        description=(
+            "The scope keys the credential held for the call, sorted: `library:read`, "
+            "`search:read`, `upcoming:read` or `tenant:read`."
+        ),
+        examples=[["library:read", "search:read"]],
+    )
+    scope: AgentAccessCallScope = Field(description="The entry's scope the call was answered in.")
+    duration_ms: int = Field(description="How long the server took, in whole milliseconds.", examples=[84])
+    status: int = Field(
+        description=(
+            "The HTTP status the call was answered with: 200 for an answer, 403 for a write or a "
+            "step-up the credential may not make, 404 for a record outside its scope."
+        ),
+        examples=[200],
+    )
+
+
+class AgentAccessCallPage(CamelSchema):
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_CALL_EXAMPLE], "total": 1}]})
+
+    items: list[AgentAccessCallRow] = Field(
+        description=(
+            "The entry's calls on this page, newest first. An empty list is a 200 and means the "
+            "entry has made no call yet."
+        )
+    )
+    total: int = Field(description="How many calls the entry has made in total, not how many are on this page.")

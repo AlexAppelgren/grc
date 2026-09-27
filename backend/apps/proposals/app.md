@@ -133,7 +133,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | PRO-02 | Approval applies the payload, writes the version, the audit row and the re-index in one transaction; the reviewer can correct scope and wording first; never the proposer | M | R1 | built |
 | PRO-03 | The queue lives in the platform console; tenants see library updates and can report a problem, which stays inside their bank. A bank's private records are proposed and approved inside the bank and never reach the console (D-50, D-57). R1 builds the platform queue, library updates and the bank's own problem reports; a bank's private records (INV-07, PRO-S12) move to R2 with OWN-03 (PRD 0.7) | M | R1 | built |
 | PRO-04 | Batch proposals (re-tag, backfill) with a preview, approved whole or row by row | S | R2 | built |
-| OWN-03 | The bank's own queue: approve or reject under `private_records.approve` with a passkey, never the proposer, a reason on reject; platform staff never see it (D-57, D-89) | M | R2 | in_progress |
+| OWN-03 | The bank's own queue: approve or reject under `private_records.approve` with a passkey, never the proposer, a reason on reject; platform staff never see it (D-57, D-89) | M | R2 | built |
 
 PRO-03 is `built` for R1 (R1 close, 2026-09-24). The console queue, the bank's "Library
 updates" screen (`/inventory/updates` over `GET /library-updates`) and "This looks wrong" on
@@ -141,16 +141,6 @@ each of its rows, filed through the same report form the obligation card uses an
 inside the bank, are proven by PRO-S7 at the integration level and by its journey in the
 merged batch run. Its last clause, a bank's private records (PRO-S12, INV-07), moved to R2
 with OWN-03 in PRD 0.7 and waits for chunk 11; it is named as the cut, not built.
-
-PRO-04 is `built` (c11-proposal-batches-decide, 2026-09-25): a re-tag batch is filed with its
-preview and decided row by row, with a rest decision, by a second person holding
-`proposals.review` with a fresh passkey. Approved rows rewrite their obligations' scope terms
-through `apply()`'s `obligation_scope` branch, inside the proposal door, with an audit row per
-row (terms before and after), one naming every row's outcome and the re-index, in one
-transaction; PRO-S8 proves it at the integration level. The proposer, who is the person who
-asked for the re-tag, is refused with 409 `four_eyes_violation`, and an agent with 409
-`person_review_required`; no API key reaches the route. The console screen and PRO-S8's
-journey are `c11-fe-console-batch-retag`'s and the console journey package's.
 
 OWN-03 is `in_progress` (d89-proposal-owner, 2026-09-25): a proposal carries `owner_tenant_id`,
 set by `logic.create` from its target or, for the bank's own new instrument or obligation,
@@ -161,6 +151,31 @@ Approver; and the bank's own queue, `GET /private-proposals` and `POST
 /private-proposals/{proposalId}/approve` and `/reject`, is declared and answers 501 after
 loading under row-level security (apps/proposals/tests_private_contract.py). Deciding, and
 PRO-S12 whole, are d89-private-records'.
+
+OWN-03 is `built` (d89-private-records, 2026-09-27): the bank's own queue lists its open
+proposals oldest first, and a person holding `private_records.approve` approves one with a
+fresh passkey or rejects it with a live reason and a note, never the proposer (409
+`four_eyes_violation` through the unchanged `proposal_four_eyes`) and never an agent (409
+`person_review_required`). Approval runs the same `logic.approve` and `apply` as the shared
+queue: a new instrument or obligation takes its owner from the proposal, a bank's own
+obligation sits only under a bank's own instrument (422 `validation_error` either way across
+the zones), a provision under a bank's own instrument is 422
+`private_provisions_not_supported`, and a bank's own obligation is never indexed. The
+decision's and the record's audit and outbox rows are written in the bank's zone with the
+passkey assertion and never the note. The console, another bank and every key are 404 or
+refused, and a support session is refused before the route runs. PRO-S12 and PRO-S15 prove
+it (apps/proposals/tests_apply_private.py, tests_private_approval.py); PRO-S15's journey is
+d89-e2e-journey's.
+
+PRO-04 is `built` (c11-proposal-batches-decide, 2026-09-25): a re-tag batch is filed with its
+preview and decided row by row, with a rest decision, by a second person holding
+`proposals.review` with a fresh passkey. Approved rows rewrite their obligations' scope terms
+through `apply()`'s `obligation_scope` branch, inside the proposal door, with an audit row per
+row (terms before and after), one naming every row's outcome and the re-index, in one
+transaction; PRO-S8 proves it at the integration level. The proposer, who is the person who
+asked for the re-tag, is refused with 409 `four_eyes_violation`, and an agent with 409
+`person_review_required`; no API key reaches the route. The console screen and PRO-S8's
+journey are `c11-fe-console-batch-retag`'s and the console journey package's.
 
 PRO-S13's journey (pro-s13-journey) runs end to end: the console mints a `library-confirmer`
 key with `agent-runs:write` and `proposals:review`, which opens a run, reads the queue and

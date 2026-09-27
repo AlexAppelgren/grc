@@ -119,6 +119,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "LoginMethod": ("login_method", "ID-11, INPUT_DELTAS §2: email_code, passkey, api_key (later oidc, saml)"),
     "LoginEventKind": ("login_event", "ID-11: what the security log records; the log is a ledger, not a picker"),
     "SupportAccessLevel": ("support_access_level", "ID-05, TEN-06: read or write support access"),
+    "SupportAccessStatus": ("support_access_status", "TEN-06: requested, approved, declined, revoked or expired; the decisions branch on it"),
     # Chunk 2 (vocabularies, taxonomy and footprint). Each is a category the rules read
     # off a vocabulary row's fixed `kind`; the row's label, translations and usage note
     # stay an admin's to change (playbook 15, INPUT_DELTAS §1).
@@ -316,5 +317,10 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "scope_item_status",
         "OWN-01: a scope item is requested, in scope, declined or removed; the request logic and "
         "the bank's own agent's research branch on it, and no admin adds a state",
+    ),
+    # c8-duty-occurrences (register 0004, REG-07).
+    "DutyStatus": (
+        "duty_status",
+        "REG-07: where a dated duty occurrence stands; completion, the roadmap and Today branch on it",
     ),
 }

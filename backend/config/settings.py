@@ -118,6 +118,14 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # c8-support-session-guard: a support session reads its allow-list and nothing else.
+    "apps.shared.middleware.SupportReadOnlyMiddleware",
+    # acc-entries-and-log (ACC-08): the access log row of an agent access credential's call,
+    # written after the response.
+    "apps.governance.access_log.AccessLogMiddleware",
+    # acc-what-applies (ACC-07): the scope statement on every answer to an agent access
+    # credential.
+    "apps.shared.agent_access_guard.ScopeStatementMiddleware",
     # Timing last so the measurement is the application's own time (playbook 10), not
     # the middleware stack above it.
     "apps.shared.middleware.ServerTimingMiddleware",
@@ -634,6 +642,16 @@ PROPOSAL_TEXT_MAX_CHARS = env_int("PROPOSAL_TEXT_MAX_CHARS", 50000)
 PROPOSAL_BATCH_MAX_ROWS = env_int("PROPOSAL_BATCH_MAX_ROWS", 100)
 
 # ---------------------------------------------------------------------------------------
+# ===== REG-07 how often a recurring duty may recur (c8-recurring-duty-proposal) ==========
+# A recurring duty's rule is an RFC 5545 RRULE a proposer writes, and every bank's
+# occurrences are expanded from it (apps/library/recurrence.py). A rule that would fall due
+# more often than this in ten years is refused when it is proposed (422
+# `invalid_recurrence`), so a bad rule cannot become a denial of service. 120 is monthly
+# for ten years; a regulatory duty recurs yearly, quarterly or monthly.
+# ---------------------------------------------------------------------------------------
+RECURRENCE_MAX_OCCURRENCES = env_int("RECURRENCE_MAX_OCCURRENCES", 120)
+
+# ---------------------------------------------------------------------------------------
 # ===== PRO-03 how far back "what changed in the library" looks ===========================
 # A reader who has never marked the library as seen has no bookmark to read from, so the
 # list falls back to this many days. Long enough that a first visit is not empty and a
@@ -828,6 +846,13 @@ BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200)
 EXPORT_RETENTION_DAYS = env_int("EXPORT_RETENTION_DAYS", 7)
 
 # ---------------------------------------------------------------------------------------
+# ===== c8-reg-applicability: REG-01, AC-REG1 many answers in one call (D-75) ============
+# The most applicability answers one confirmed call stores (POST /applicability). Each row
+# is a write and an audit event in one transaction, so the cap keeps a call inside the API
+# budget; a longer call is refused whole and stores nothing.
+REGISTER_BULK_MAX = env_int("REGISTER_BULK_MAX", 100)
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------
@@ -880,6 +905,13 @@ REFRESH_COOKIE_SECURE = not DEBUG
 # An API key's last_used_at (and its key_used security-log row) is written at most this
 # often, so a busy agent does not turn every call into a write (ID-10).
 API_KEY_LAST_USED_THROTTLE_SECONDS = env_int("API_KEY_LAST_USED_THROTTLE_SECONDS", 60)
+# ===== c8-ten-support-grants: TEN-06 support access (D-49, ADR 0042) =====
+# The longest window platform support may ask a bank for, in hours; a longer request answers
+# 422. The window starts when the bank approves.
+SUPPORT_ACCESS_MAX_HOURS = env_int("SUPPORT_ACCESS_MAX_HOURS", 4)
+# How long a request nobody decides stays open before it reads as lapsed, in hours.
+SUPPORT_ACCESS_REQUEST_TTL_HOURS = env_int("SUPPORT_ACCESS_REQUEST_TTL_HOURS", 24)
+
 # ===== acc-foundation: agent access credentials (ACC-03, ACC-09, ADRs 0055 and 0056) =====
 # The longest a service key of an agent access entry, and a personal access token, may live;
 # a token cannot be minted without an expiry. And the requests one such credential may make
@@ -891,6 +923,16 @@ if min(AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS, AGENT_ACCESS_RATE_PER
     raise ImproperlyConfigured(
         "Refusing to boot: AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS and "
         "AGENT_ACCESS_RATE_PER_MINUTE must each be at least 1."
+    )
+# ===== acc-what-applies: what applies to a bank's own agent (ACC-06, ACC-07) =====
+# The longest description `POST /agent-access/what-applies` takes, in characters, and how
+# many words a footprint term's usage note must share with it to be named as outside the
+# entry's scope (a label matches when all its words are in the description).
+AGENT_ACCESS_DESCRIPTION_MAX_CHARS = env_int("AGENT_ACCESS_DESCRIPTION_MAX_CHARS", 2000)
+AGENT_ACCESS_NOTE_MATCH_WORDS = env_int("AGENT_ACCESS_NOTE_MATCH_WORDS", 2)
+if min(AGENT_ACCESS_DESCRIPTION_MAX_CHARS, AGENT_ACCESS_NOTE_MATCH_WORDS) < 1:
+    raise ImproperlyConfigured(
+        "Refusing to boot: AGENT_ACCESS_DESCRIPTION_MAX_CHARS and AGENT_ACCESS_NOTE_MATCH_WORDS must each be at least 1."
     )
 
 # ===== d89-scope-items-model: the bank's own scope items (OWN-01, D-91) =====

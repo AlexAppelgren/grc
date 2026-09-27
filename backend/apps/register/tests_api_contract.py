@@ -84,6 +84,27 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("completeDutyOccurrence", "post", f"/api/v1/duty-occurrences/{RECORD}/complete", COMPLETE_BODY, perms.REGISTER_EDIT, False),
 ]
 
+# Operations whose logic has landed, so they no longer answer 501 (one line each, so the
+# packages that build them in parallel merge mechanically). Each is proved in its own module.
+BUILT: set[str] = {
+    # c8-reg-links-history: tests_history.py, tests_links.py
+    "listAssessments",
+    "getInterpretation",
+    "saveInterpretation",
+    "listInternalLinks",
+    "addInternalLink",
+    "removeInternalLink",
+    # c8-reg-status (apps/register/tests_status.py)
+    "getRegisterEntry",
+    "updateRegister",
+    "updateRegisterEntity",
+    "setApplicability", "setApplicabilityMany",  # c8-reg-applicability, tests_applicability.py
+    "listDuties", "completeDutyOccurrence",  # c8-duty-occurrences, tests_duties.py
+}
+# acc-register-read: the two reads of an agent access credential, key-only and outside the
+# session table below; apps/register/tests_agent_read.py proves their gates.
+AGENT_READS = {"listRegisterEntries", "readRegisterEntry"}
+
 
 def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
     if body is None:
@@ -100,7 +121,7 @@ class RegisterRouteTable(TestCase):
             for op in iter_operations(api)
             if op.view_func.__module__ == "apps.register.api"
         }
-        self.assertEqual(registered, {row[0] for row in REGISTER_ROUTES})
+        self.assertEqual(registered - AGENT_READS, {row[0] for row in REGISTER_ROUTES})
 
     def test_only_the_risk_approval_asks_for_a_step_up(self) -> None:
         """D-75: setting applicability is one person's confirmed answer, with no step-up.
@@ -120,7 +141,8 @@ class RegisterRouteGates(TestCase):
                 self.assertEqual(response.json()["code"], "unauthenticated")
 
     def test_an_agent_key_reaches_no_register_route(self) -> None:
-        """The register is a bank's judgement; no key, whatever its scopes, reaches it yet."""
+        """The register is a bank's judgement; no key, whatever its scopes, reaches a person's
+        register route. An agent's own two reads are in apps/register/tests_agent_read.py."""
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES, tenant_id=uuid.uuid4())):
             for name, method, url, body, _permission, _step_up in REGISTER_ROUTES:
                 with self.subTest(operation=name):
@@ -189,6 +211,17 @@ IF_MATCH_ROUTES = {
 }
 
 
+# Operations whose logic has landed, each with the package that built it. Past every gate they
+# answer from the logic: for this file's made-up ids, 404 `not_found` in the same problem shape.
+BUILT_ROUTES = {
+    "listUnits",  # c8-reg-units
+    "createUnit",  # c8-reg-units
+    "updateUnit",  # c8-reg-units
+    "removeUnit",  # c8-reg-units
+    "pasteUnits",  # c8-reg-units (the dry run; its commit is c8-units-paste-soa's)
+}
+
+
 class RegisterRouteStubs(TestCase):
     tenant: Any
     person: Any
@@ -218,11 +251,14 @@ class RegisterRouteStubs(TestCase):
         shape, with nothing of the server in it. Replaced row by row as each logic lands."""
         with stub_session(self._everything()):
             for name, method, url, body, _permission, _step_up in REGISTER_ROUTES:
+                if name in BUILT:
+                    continue
                 headers = {**AS_SESSION, "HTTP_IF_MATCH": '"3"'} if method in {"patch", "put", "delete"} else AS_SESSION
                 with self.subTest(operation=name):
                     response = _call(self.client, method, url, body, headers)
-                    self.assertEqual(response.status_code, 501)
+                    expected = (404, "not_found") if name in BUILT_ROUTES else (501, "not_built")
+                    self.assertEqual(response.status_code, expected[0])
                     problem = response.json()
-                    self.assertEqual(problem["code"], "not_built")
+                    self.assertEqual(problem["code"], expected[1])
                     self.assertEqual(response.headers["Content-Type"], "application/problem+json")
                     self.assertNotIn("traceback", response.content.decode().lower())

@@ -720,7 +720,8 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         A footprint change previews, waits for a second person and audits per term (FP-02, AC-FP1).
         """
         seed_authorities()
-        load_library()
+        with tenancy.platform_zone():  # the shared library, seeded as a deploy seeds it
+            load_library()
         self._set_footprint(["service_type:advice", "service_type:custody", "regime:securities"])
         # This bank's cases: one open on an advice-only change, which removing Advice hides;
         # one open on a custody change, which it keeps; one closed on another advice change,
@@ -774,7 +775,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         # The library changes while the request waits: the suitability statement now covers
         # custody too, so removing Advice no longer hides it. A waiting request is counted
         # again on every read, so the approver decides against today's library.
-        with library_write("test"):
+        with tenancy.platform_zone(), library_write("test"):
             ObligationTerm.objects.create(
                 obligation=Obligation.objects.get(stable_key="obl-suitability-statement"),
                 term=tenant_lists_logic.term_by_ref("service_type", "custody"),
@@ -840,7 +841,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         widening = {"adds": [{"dimension": "service_type", "key": "portfolio_management"}], "removes": []}
         rejected_request = self._post("/tenant/footprint/requests", widening, officer).json()
         self.assertEqual(rejected_request["preview"]["obligations"], {"hidden": 0, "revealed": 4, "available": True})
-        with library_write("test"):
+        with tenancy.platform_zone(), library_write("test"):
             ObligationTerm.objects.create(
                 obligation=Obligation.objects.get(stable_key="obl-esma-warnings"),
                 term=tenant_lists_logic.term_by_ref("service_type", "portfolio_management"),
@@ -1042,9 +1043,12 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(by_key["se"]["defaultLanguage"]["key"], "sv")
         self.assertEqual(by_key["se"]["label"], "Sweden")
         # No model column names a language or a country; the references are foreign keys.
+        # `version_no` is a number, not Norwegian (agents 0004), and is the one field named.
         for model in django_apps.get_models():
             for field in model._meta.get_fields():
                 name = field.name.lower()
+                if name == "version_no":
+                    continue
                 self.assertNotRegex(name, r"_(sv|en|da|nb|fi|no)$", f"{model._meta.label}.{field.name} names a language")
                 self.assertNotRegex(name, r"(swedish|danish|norwegian|finnish|english)", f"{model._meta.label}.{field.name} names a language")
         self.assertIsInstance(User._meta.get_field("locale"), ForeignKey)
@@ -2071,7 +2075,6 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual((fetched.status_code, fetched.json()["code"]), (404, "not_found"))
         self.assertEqual(self._footprint(member_of_b)["scopeItems"], [])
 
-    @skip("pending: ACC-S2 (ACC-02, AC-ACC1, chunk 11)")
     def test_acc_s2(self) -> None:
         """ACC-S2
 

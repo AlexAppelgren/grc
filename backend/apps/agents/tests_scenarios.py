@@ -1384,12 +1384,87 @@ class AgentsScenarioTests(TestCase):
         tenancy.activate(w.bank.id)
         self.assertEqual(Proposal.objects.filter(owner_tenant=w.bank).count(), 3)
 
-    @skip("pending: ACC-S1 (ACC-01, J-11, chunk 11)")
     def test_acc_s1(self) -> None:
         """ACC-S1
 
         An entry is registered, narrowed to a department, and revoking it stops its credentials (ACC-01, J-11).
         """
+        # acc-scoped-reads: the entry routes of acc-entries-and-log, and the library read
+        # narrowed to the entry's scope (ACC-02, ACC-07).
+        from apps.identity import tokens
+        from apps.identity.models import ApiKey, LoginEvent
+        from apps.library import testing as library_build
+        from apps.shared.testing import sign_in
+        from apps.taxonomy.tests_entry_scope import EntryBank, seed, term
+
+        seed()
+        tenant = factories.tenant(slug="acc-s1")
+        admin_user = factories.member(tenant, roles=("admin",), user_row=factories.user(name="Erik Holm")).user
+        bank = EntryBank(tenant)
+        derivatives, cards = term("product_type", "derivatives"), term("product_type", "cards")
+        bank.footprint(library_build.term("regime:securities"), library_build.term("regime:payments"), derivatives, cards)
+        trading = bank.unit("Trading")
+        bank.product("Futures", derivatives, unit=trading)
+        futures = library_build.obligation(
+            library_build.instrument(key="acc-s1-mifid", regime="regime:securities"), key="acc-s1-futures", terms=["product_type:derivatives"]
+        )
+        card_only = library_build.obligation(
+            library_build.instrument(key="acc-s1-psd", regime="regime:payments"), key="acc-s1-cards", terms=["product_type:cards"]
+        )
+
+        def admin(method: str, path: str, body: dict[str, Any] | None = None, *, step_up: bool = True) -> Any:
+            return self.client.generic(
+                method,
+                f"/api/v1/agent-access{path}",
+                json.dumps(body or {}),
+                content_type="application/json",
+                **sign_in(admin_user, tenant=tenant, step_up=step_up),
+            )
+
+        registered = admin(
+            "POST",
+            "",
+            {"name": "Trading platform coding agent", "purpose": "Builds the order router.", "ownerTeam": "compliance", "departmentIds": [str(trading.id)]},
+        )
+        self.assertEqual(registered.status_code, 201, registered.content)
+        entry = registered.json()
+        self.assertEqual([unit["name"] for unit in entry["departments"]], ["Trading"])
+
+        issued = admin("POST", f"/{entry['id']}/keys", {"name": "Order router CI", "scopes": ["library:read"]})
+        self.assertEqual(issued.status_code, 201, issued.content)
+        plain = issued.json()["plainKey"]
+        # Shown once and stored hashed; the entry lists the key with no last use.
+        tenancy.activate(tenant.id)
+        stored = ApiKey.objects.get(pk=issued.json()["id"])
+        self.assertEqual((stored.key_prefix, stored.key_hash), tokens.parse_api_key(plain))
+        self.assertNotIn(plain.rsplit("_", 1)[-1], stored.key_hash)
+        listed = admin("GET", f"/{entry['id']}", step_up=False).json()
+        self.assertEqual([(key["id"], key["lastUsedAt"]) for key in listed["keys"]], [(issued.json()["id"], None)])
+        self.assertNotIn("plainKey", listed["keys"][0])
+        self.assertNotIn(plain, json.dumps(listed))
+        # The same request without a fresh assertion.
+        stale = admin("POST", f"/{entry['id']}/keys", {"name": "Again", "scopes": ["library:read"]}, step_up=False)
+        self.assertEqual((stale.status_code, stale.json()["code"]), (403, "step_up_required"))
+
+        # The key reads the trading duty; the card-only one is the 404 another bank would get.
+        self.assertEqual(self.client.get(f"/api/v1/obligations/{futures.stable_key}", HTTP_X_API_KEY=plain).status_code, 200)
+        refused = self.client.get(f"/api/v1/obligations/{card_only.id}", HTTP_X_API_KEY=plain)
+        tenancy.activate(tenant.id)
+        private = library_build.obligation(
+            library_build.instrument(key="acc-s1-own", regime="regime:securities", owner_tenant=tenant), key="acc-s1-own-duty", owner_tenant=tenant
+        )
+        other_bank = factories.tenant(slug="acc-s1-other")
+        foreign = factories.entry_key(other_bank, factories.agent_access_entry(other_bank), scopes=("library:read",)).plain_key
+        as_another_bank = self.client.get(f"/api/v1/obligations/{private.id}", HTTP_X_API_KEY=foreign)
+        self.assertEqual((refused.status_code, refused.json()), (as_another_bank.status_code, as_another_bank.json()))
+        self.assertEqual(refused.status_code, 404)
+
+        # Revoking the entry: the next call answers 401 and the security log shows it.
+        revoked = admin("POST", f"/{entry['id']}/revoke")
+        self.assertEqual(revoked.status_code, 200, revoked.content)
+        self.assertEqual(self.client.get(f"/api/v1/obligations/{futures.stable_key}", HTTP_X_API_KEY=plain).status_code, 401)
+        tenancy.activate(tenant.id)
+        self.assertTrue(LoginEvent.objects.filter(tenant=tenant, api_key_id=issued.json()["id"], event="key_revoked").exists())
 
     @skip("pending: ACC-S5 (ACC-06, chunk 11)")
     def test_acc_s5(self) -> None:
@@ -1398,12 +1473,41 @@ class AgentsScenarioTests(TestCase):
         What applies returns a labelled summary above a full list the model never shortens (ACC-06).
         """
 
-    @skip("pending: ACC-S6 (ACC-07, AC-ACC1, chunk 11)")
     def test_acc_s6(self) -> None:
         """ACC-S6
 
         A narrowed entry never narrows silently (ACC-07, AC-ACC1).
         """
+        from apps.agents.tests_what_applies import CARD_FEATURE, TradingBank
+        from apps.shared.agent_access_guard import SCOPE_HEADER
+
+        # Given a Trading entry, and a tenant footprint that also covers card issuing and
+        # card acquiring.
+        bank = TradingBank(slug="acc-s6")
+        bank.decide(bank.card, "We issue debit cards to trading clients")
+        # When the entry asks what applies (whatApplies) to a feature that issues virtual cards.
+        response = bank.ask(self.client, bank.trading_key, CARD_FEATURE)
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        # Then the answer states the entry's name, its departments and products and its date,
+        # in the body and in the header every answer to the credential carries.
+        scope = body["scope"]
+        self.assertEqual(scope["entry"]["name"], "Trading platform coding agent")
+        self.assertEqual([unit["name"] for unit in scope["departments"]], ["Trading"])
+        self.assertEqual((scope["products"], scope["narrowed"]), ([], True))
+        self.assertTrue(scope["asOf"])
+        self.assertEqual(json.loads(response[SCOPE_HEADER]), scope)
+        # And it names "Licensed activity: Card issuing" and "Product type: Cards" among what
+        # it could not see, and says to ask compliance about them.
+        outside = [f"{row['dimension']['label']}: {row['term']['label']}" for row in body["outsideScope"]["terms"]]
+        self.assertIn("Licensed activity: Card issuing", outside)
+        self.assertIn("Product type: Cards", outside)
+        self.assertEqual(body["outsideScope"]["advice"], "ask_compliance")
+        # And no record carrying those terms appears anywhere in the response.
+        text = response.content.decode()
+        for leaked in (bank.card.stable_key, str(bank.card.id), "Authenticate card payments", "We issue debit cards"):
+            self.assertNotIn(leaked, text)
+        self.assertEqual(body["total"], 3)
 
     @skip("pending: ACC-S10 (ACC-10, chunk 13)")
     def test_acc_s10(self) -> None:

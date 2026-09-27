@@ -670,22 +670,6 @@ section. Copied here as chunk3-rest-T20 requires.
       unrelated push. That brief is `docs/plans/briefs/AGENT_ACCESS.md`, and its entry
       scope is one more reader of the footprint this reshapes (D-70).
 
-## Inventory search and filters (2026-09-25, `inventory-search-filters`)
-- [x] **Approve the chosen design** (D-104). Taken from your "Go ahead" of 2026-09-25, whose
-      message was cut off after those words; say if you meant something else. The part that
-      needs no R2 work is built: the search bar, the Filters sheet, the three quick filters,
-      filter values bounded by the scope, and Ask at `/ask`.
-- [ ] **The Instruments tab.** Its search bar finds instruments by reference or name. Say if
-      it should find provisions there instead.
-- [ ] **Team scope and the withheld reading (R2).** My scope equals the bank's scope until teams
-      (TEN-03) give each person a slice, and a record outside your teams' scope will show only
-      whether it applies once the register lands (chunk 8). Both belong in the R2 plan, next to
-      D-69's entity scope.
-- [ ] **The Windows tab-bar screenshot.** The tab bar now reads "Ask", so
-      `frontend/tests/e2e/navigation.journey.spec.ts-snapshots/tab-bar-chromium-win32.png` is stale.
-      The Linux one is re-recorded; run `npx playwright test navigation --update-snapshots` once on
-      Windows and commit the new file.
-
 ## Landed from `origin/claude/r1-integration` (2026-09-23, lost-content)
 
 Two designs lived on `origin/claude/r1-integration` and nowhere on main. Each landed
@@ -1190,7 +1174,6 @@ to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WA
       Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
       note says only that each national body adopts the edition under its own
       reference. A person verifies them before the note names any.
-
 ## ai-log-read: a shared "So what?" reads each bank's own review state (2026-09-23, AUD-02)
 
 - [ ] **A library "So what?" in the AI log shows the reading bank's own review, not one
@@ -1222,7 +1205,6 @@ to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WA
 - [ ] **Default taken: a new instrument in the bank's library updates is never cut to the
       footprint.** A new obligation is cut like a new version; an instrument is not a duty,
       so it reaches every bank, as a change to a shared list does.
-
 ## watch-regime-required: a run's classification is logged with metadata it reports itself (2026-09-23, D-66, AUD-02, D-39)
 
 Nothing waits for these; each has the default the build took.
@@ -1246,7 +1228,6 @@ Nothing waits for these; each has the default the build took.
       footprint of the bank whose case they belong to, so no cached scope verdict moved; the
       one visible difference is that tenant B's feed now shows the AI-mapping change as
       outside its scope, since tenant B does not follow the AI and ICT regime.
-
 ## ask-screen: what a reader is told when the model cut an answer off (2026-09-23, SRC-03, AUD-02, D-82)
 
 - [ ] **An Ask answer the model stopped at its length limit (`ASK_MAX_TOKENS`, 1024 tokens)
@@ -1350,7 +1331,6 @@ needs a decision.
 - One medium finding waits as a named fix task, `merge-moved-ids` (H23): a vocabulary
   merge's audit row counts the records it moved but does not name them. Default: it is
   built with the next batch that owns `proposals/apply.py`.
-
 ## security-review-c7: the chunk 7 security review (2026-09-23, D-07, SRC-01, SRC-03)
 
 - [ ] **May a bank's search text reach the embedder and the reranker?** D-07 says the Ask
@@ -1508,6 +1488,39 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
       then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
       (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**
+## c11-proposal-batches-decide: deciding a batch row by row (2026-09-25, PRO-04, D-1xx)
+
+- [ ] **Who decides a re-tag batch an agent files.** Built: a second person holding
+      `proposals.review`, with a passkey, and never the proposer. An agent reviewer is
+      refused (409 `person_review_required`) and no API key reaches the route. Default if you
+      say nothing: it stays person-only.
+- [ ] **A large batch is slow to approve.** Each approved row re-indexes its obligation in the
+      same transaction, about 25 ms a row, so approving a full batch of 100 takes a couple of
+      seconds, over the 250 ms budget (a logged warning, not an error). Default if you say
+      nothing: it stays in one transaction, as PRO-02 asks; a background job is the change if
+      it is felt.
+
+## acc-principal-guard: how an agent access credential is fenced (2026-09-25, ACC-03, ACC-09)
+
+Built on these defaults; each stays yours to overrule.
+
+- [ ] **A token whose person loses a permission is refused, not revoked.** A personal
+      access token stops on the next request when its person is deactivated, leaves
+      the bank, or loses the permission behind any one of its scopes (`library.read`,
+      `search.use`, `roadmap.read`, `register.read`); it is refused whole rather than
+      narrowed. It is a check on every request, so if the person gets the permission
+      back the token works again until it expires. Default: so. The alternative is to
+      stamp the token revoked the first time the check fails.
+- [ ] **A session-only route answers a key or token with the fence's 403.** A key of
+      an agent access entry or a token that reaches a write or a step-up route which
+      takes only a person's session is answered 403 `read_only_credential` or
+      `step_up_required`, not 401, so every such route answers the same way whichever
+      auth it takes. A read it cannot use still answers 401.
+- [ ] **The rate-limit log.** Over `AGENT_ACCESS_RATE_PER_MINUTE` a credential gets 429,
+      and the first refusal of each minute writes one `credential_rate_limited` row in
+      the security log, not one per refused request, so a runaway agent cannot flood
+      the log.
+
 ## acc-scope-and-reach: an entry's scope and tenant reach, answered by default (2026-09-25, ACC-02, ACC-08, D-70, D-72)
 
 - [ ] Default taken: an opt-in dimension keeps its rule inside an entry's scope too. The
@@ -1524,6 +1537,88 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       and a reach request is never withdrawn (the requester's colleague rejects it).
       Switching reach off needs one person and a step-up; on again takes a new request and
       a second person. `GET /tenant/reach` is readable with `security.manage` alone.
+
+## acc-entries-and-log: entries, their keys and the access log, answered by default (2026-09-25, ACC-01, ACC-03, ACC-08)
+
+- [ ] Default taken: a call an agent access credential makes is logged whatever its answer,
+      a refused write or step-up with its 403 included, but a call refused for its rate is
+      not: the security log already keeps one `credential_rate_limited` row a minute for it,
+      and a runaway agent must not flood the access log. A call on a revoked or expired
+      credential is refused before it is anyone's call and is not logged either.
+- [ ] Default taken: a filter is logged as its name, and its value only when the value is a
+      key (a stable key, a vocabulary key, a UUID, a date, a number). `q`, `query`, `text`,
+      `description`, `topic` and `question` keep their name alone, so the log shows that an
+      agent searched, never for what.
+- [ ] Default taken: the log is read on the entry (`GET /agent-access/{entryId}/calls`) under
+      `agent_access.manage`, like the entry itself. Say if an auditor holding `audit.read`
+      should read it too.
+- [ ] Default taken: a key sent with no expiry lives `AGENT_ACCESS_KEY_MAX_DAYS` (90); a
+      later one is refused (`expiry_too_late`). Revoking an entry twice answers 409
+      `invalid_transition`; revoking one key twice is a safe retry.
+
+## acc-scoped-reads: what a bank's own agent reads in the library, answered by default (2026-09-25, ACC-02, ACC-04, ACC-07)
+
+- [ ] Default taken: only an agent access credential is narrowed. A bank's own API key bound
+      to no entry (the integration keys of ID-10) reads the library, the overlay and the
+      bank's own private records as it did before. Say if those keys should be confined too.
+- [ ] Default taken: the bank's own tags on an obligation travel with the register overlay:
+      an agent reads them only while tenant reach is on for the bank and the entry, and
+      never on an obligation under a standard, like the overlay itself.
+- [ ] Default taken: a personal access token that names no entry is confined to the bank's
+      footprint and shared records, and never reads the overlay (reach needs an entry).
+- [ ] Default taken: `GET /obligations/{obligationId}` reads a stable key in the id's place,
+      so the MCP server's `get_obligation` needs no path of its own; a slug that is not a
+      UUID now answers 404 rather than 422.
+
+## acc-what-applies: what applies and what a narrowed entry could not see, answered by default (2026-09-25, ACC-06, ACC-07)
+
+- [ ] Default taken: every answer to an agent access credential, errors included, states its
+      scope in the `Agent-Access-Scope` header (entry, departments, products, as of);
+      `what-applies` carries it in its body too. Say if the other agent reads should carry it in
+      their bodies as well.
+- [ ] Default taken: a description touches a term outside an entry's scope when every word of
+      one of the term's labels is in it, or when the term's usage note shares
+      `AGENT_ACCESS_NOTE_MATCH_WORDS` (2) words with it. A word match, not pg_trgm, so it is
+      deterministic and works with AI off. A false "ask compliance" is the safe failure.
+- [ ] Default taken: what-applies answers a credential without `tenant:read`, or with reach off,
+      with the library list alone (`registerRead` says why) rather than a 403, so the list an
+      agent builds from is never withheld.
+- [ ] Default taken: the bank's own private obligations are counted (`ownRecordsLeftOut`) and never
+      listed (D-57).
+
+## d89-private-records: the bank's own queue, answered by default (2026-09-27, INV-07, OWN-03, OWN-04, D-1xx)
+
+Built on these defaults; each stays yours to overrule.
+
+- [ ] **The queue lists what waits, and nothing decided.** `GET /private-proposals` answers
+      the bank's open proposals, oldest first. Default: a decided proposal leaves the list
+      (its audit rows keep the decision). Say if the bank wants a decided tab as the
+      console has.
+- [ ] **A bank's own obligation sits under a bank's own instrument.** A private obligation
+      naming a shared instrument, or a shared one naming the bank's own, is refused (422).
+      Default: so, so that nothing of one zone ever hangs under the other. The alternative
+      is a bank's own duty under a shared law, which ADR 0059 does not ask for.
+- [ ] **A version of a bank's own obligation is not proposed in R2.** Its later wording
+      waits for a scenario that needs it; today a version is always of a shared record.
+- [ ] **Support sessions read the shared library only.** Platform support under a grant
+      never sees the bank's own records: lists leave them out and their addresses are 404,
+      as for another bank (OWN-04).
+
+## Inventory search and filters (2026-09-25, `inventory-search-filters`)
+- [x] **Approve the chosen design** (D-104). Taken from your "Go ahead" of 2026-09-25, whose
+      message was cut off after those words; say if you meant something else. The part that
+      needs no R2 work is built: the search bar, the Filters sheet, the three quick filters,
+      filter values bounded by the scope, and Ask at `/ask`.
+- [ ] **The Instruments tab.** Its search bar finds instruments by reference or name. Say if
+      it should find provisions there instead.
+- [ ] **Team scope and the withheld reading (R2).** My scope equals the bank's scope until teams
+      (TEN-03) give each person a slice, and a record outside your teams' scope will show only
+      whether it applies once the register lands (chunk 8). Both belong in the R2 plan, next to
+      D-69's entity scope.
+- [ ] **The Windows tab-bar screenshot.** The tab bar now reads "Ask", so
+      `frontend/tests/e2e/navigation.journey.spec.ts-snapshots/tab-bar-chromium-win32.png` is stale.
+      The Linux one is re-recorded; run `npx playwright test navigation --update-snapshots` once on
+      Windows and commit the new file.
 
 ## d89-scope-items-model: what a scope item row holds (2026-09-25, OWN-01, D-91)
 
@@ -1548,6 +1643,7 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 - [ ] Default taken: `research` reads `waiting_for_agent` for every item in scope until the
       bank's own agent's research (d89-agent-research) reports how it stands; removing an item
       stops nothing that agent already filed, which stays in the bank's own queue.
+
 ## c11-definitions-platform: publishing bleqq's agent versions, their settings and runs (2026-09-25, AGT-03, ADM-02, AGT-06)
 
 **Answered by Alex on 2026-09-25 (D-102, ADR 0059): "Platform config".** The question was
@@ -1592,18 +1688,6 @@ Defaults taken; nothing waits on them.
       screen that publishes and retires a version is not built yet, and its journey belongs
       to the package that builds it.
 
-## c11-proposal-batches-decide: deciding a batch row by row (2026-09-25, PRO-04, D-1xx)
-
-- [ ] **Who decides a re-tag batch an agent files.** Built: a second person holding
-      `proposals.review`, with a passkey, and never the proposer. An agent reviewer is
-      refused (409 `person_review_required`) and no API key reaches the route. Default if you
-      say nothing: it stays person-only.
-- [ ] **A large batch is slow to approve.** Each approved row re-indexes its obligation in the
-      same transaction, about 25 ms a row, so approving a full batch of 100 takes a couple of
-      seconds, over the 250 ms budget (a logged warning, not an error). Default if you say
-      nothing: it stays in one transaction, as PRO-02 asks; a background job is the change if
-      it is felt.
-
 ## c11-run-history: what a bank reads of its runs and of bleqq's watch (2026-09-25, AGT-03, AGT-04)
 
 Nothing waits for these; each has the default the build took.
@@ -1639,6 +1723,7 @@ Nothing waits for these; each has the default the build took.
       draws them against the published contract; `c11-tenant-controls-cap` and
       `c11-research-requests` (wave 5) fill the routes. The research panel shows only once the
       bank has an agent of its own.
+
 ## c11-fe-console-batch-retag: the batch review screen and the console re-tag (2026-09-25, PRO-04, AGT-05)
 
 - [ ] **The batch result links to no audit entry.** The card draws "Open the audit entry" on

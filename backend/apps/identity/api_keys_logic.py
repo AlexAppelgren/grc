@@ -7,6 +7,13 @@ Two kinds of key. A bank's own key carries its tenant and may hold only
 bound to one agent definition and is minted from the console under
 `agent_definitions.manage` (AGT-01, D-61, D-62): it is what bleqq's own agents run on, so
 it alone may hold the watch writes and the review scope.
+
+Two credential kinds share the table (ACC-03, ADR 0056). A service key bound to an agent
+access entry reads as that entry and stops the moment the entry is revoked. A personal
+access token acts as the member who minted it: it stops the moment the person, their
+membership or a permission one of its scopes stands on is gone (`SCOPE_BACKING`), checked
+on every request rather than by a sweep. `tenant:read` reaches a bank's register only
+through an entry, so a bank's credential bound to none is resolved without it.
 """
 
 from __future__ import annotations
@@ -24,7 +31,7 @@ from apps.agents import logic as agents_logic
 from apps.agents.models import AgentKind
 from apps.agents.seeds.definition import DEFINITIONS, read_definition
 from apps.identity import tokens
-from apps.identity.models import ApiKey, LoginEventKind, LoginMethod, User
+from apps.identity.models import ApiKey, CredentialKind, LoginEventKind, LoginMethod, Membership, User, UserStatus
 from apps.identity.security_log import log_event
 from apps.shared import permissions as perms
 from apps.shared import tenancy
@@ -62,6 +69,42 @@ def _carries_keys(*, active: bool, key: str, version: int) -> bool:
     return active or _declared_status(key, version) == "draft"
 
 
+# The permission a person must hold for their token to hold each scope (ACC-03): a token
+# never reads more than its person could read in their own session.
+SCOPE_BACKING: dict[str, str] = {
+    perms.SCOPE_LIBRARY_READ: perms.LIBRARY_READ,
+    perms.SCOPE_SEARCH_READ: perms.SEARCH_USE,
+    perms.SCOPE_UPCOMING_READ: perms.ROADMAP_READ,
+    perms.SCOPE_TENANT_READ: perms.REGISTER_READ,
+}
+
+
+def _person_permissions(tenant_id: uuid.UUID, user_id: uuid.UUID) -> frozenset[str] | None:
+    """What the person holds in their bank now, or None when they are deactivated or no
+    longer an active member of it. Read with the bank activated."""
+    if not User.objects.filter(pk=user_id, deactivated_at__isnull=True).exclude(status=UserStatus.DEACTIVATED.value).exists():
+        return None
+    rows = list(
+        Membership.objects.filter(tenant_id=tenant_id, user_id=user_id, deactivated_at__isnull=True).values_list(
+            "roles__permissions", flat=True
+        )
+    )
+    if not rows:
+        return None
+    return frozenset(permission for granted in rows for permission in granted or []) & perms.TENANT_PERMISSIONS
+
+
+def _backed(key: ApiKey) -> bool:
+    """A token lives while its person is an active member holding the permission behind
+    every scope it carries (ACC-03). Always true for a service key."""
+    if key.kind != CredentialKind.PERSONAL.value:
+        return True
+    if key.tenant_id is None or key.acts_as_user_id is None:  # a CHECK demands both on a token
+        return False
+    held = _person_permissions(key.tenant_id, key.acts_as_user_id)
+    return held is not None and all(SCOPE_BACKING.get(scope) in held for scope in key.scopes)
+
+
 def resolve_api_key(plain: str) -> Principal | None:
     parsed = tokens.parse_api_key(plain)
     if parsed is None:
@@ -83,23 +126,44 @@ def resolve_api_key(plain: str) -> Principal | None:
         # active": a prior tenant-scoped request in the same connection must never leak its
         # context into this one (H15).
         tenancy.clear_tenant()
+    # The entry and the person are the bank's rows, read in its zone (forced RLS).
+    entry = key.agent_access
+    if entry is not None and not entry.active:
+        return None
+    if not _backed(key):
+        return None
     held = frozenset(key.scopes)
     # A bank's key created before the watch writes became platform-only may still list one;
-    # it works without it rather than breaking the integration (D-61).
+    # it works without it rather than breaking the integration (D-61). `tenant:read` reads a
+    # bank's register only as an entry whose reach it carries, so a bank's credential bound
+    # to no entry is resolved without it (ACC-04, D-72).
     withheld = held - perms.TENANT_KEY_SCOPES if key.tenant_id is not None else frozenset()
+    if key.tenant_id is not None and entry is None:
+        withheld |= held & {perms.SCOPE_TENANT_READ}
+    personal = key.kind == CredentialKind.PERSONAL.value
+    method = LoginMethod.PERSONAL_TOKEN if personal else LoginMethod.API_KEY
     throttle = timedelta(seconds=settings.API_KEY_LAST_USED_THROTTLE_SECONDS)
     if key.last_used_at is None or now - key.last_used_at > throttle:
         key.last_used_at = now
         key.save(update_fields=["last_used_at"])
-        log_event(event=LoginEventKind.KEY_USED, method=LoginMethod.API_KEY, success=True, request=None, tenant_id=key.tenant_id, api_key=key)
+        log_event(
+            event=LoginEventKind.TOKEN_USED if personal else LoginEventKind.KEY_USED,
+            method=method,
+            success=True,
+            request=None,
+            tenant_id=key.tenant_id,
+            api_key=key,
+            user=key.acts_as_user,
+        )
         if withheld:
             log_event(
                 event=LoginEventKind.KEY_SCOPES_WITHHELD,
-                method=LoginMethod.API_KEY,
+                method=method,
                 success=False,
                 request=None,
                 tenant_id=key.tenant_id,
                 api_key=key,
+                user=key.acts_as_user,
                 failure_reason=", ".join(sorted(withheld)),
             )
     return Principal(
@@ -109,6 +173,28 @@ def resolve_api_key(plain: str) -> Principal | None:
         scopes=held - withheld,
         agent_id=key.agent_id,
         agent_label=key.agent.key if key.agent is not None else "",
+        agent_access_id=entry.id if entry is not None else None,
+        agent_access_label=entry.name if entry is not None else "",
+        acting_user_id=key.acts_as_user_id,
+        acting_user_label=key.acts_as_user.name if key.acts_as_user is not None else "",
+    )
+
+
+def log_rate_limited(principal: Principal) -> None:
+    """The first refusal of a credential's rate window, in the security log (ACC-09). The
+    bank is already activated by the credential's own resolution."""
+    key = ApiKey.objects.select_related("acts_as_user").filter(pk=principal.subject_id).first()  # ordering: pk lookup, at most one row
+    if key is None:  # pragma: no cover - the key resolved on this same request
+        return
+    log_event(
+        event=LoginEventKind.CREDENTIAL_RATE_LIMITED,
+        method=LoginMethod.PERSONAL_TOKEN if key.kind == CredentialKind.PERSONAL.value else LoginMethod.API_KEY,
+        success=False,
+        request=None,
+        tenant_id=key.tenant_id,
+        api_key=key,
+        user=key.acts_as_user,
+        failure_reason=f"over {settings.AGENT_ACCESS_RATE_PER_MINUTE} a minute",
     )
 
 
@@ -190,6 +276,109 @@ def revoke_api_key(*, tenant: Tenant, actor: Actor, key_id: uuid.UUID) -> ApiKey
         tenant_id=tenant.id,
     )
     return key
+
+
+# ---------------------------------------------------------------------------------------
+# The service keys of an agent access entry (ACC-01, ACC-03, acc-entries-and-log). Minted
+# under `agent_access.manage` with a step-up by the agents app, which has checked the entry
+# is live and the bank's; hold only `AGENT_ACCESS_SCOPES`, expire no later than
+# `AGENT_ACCESS_KEY_MAX_DAYS` from now (that far by default), and are shown once. Revoking
+# the entry revokes every credential bound to it, its keys and the tokens that name it.
+# ---------------------------------------------------------------------------------------
+def create_entry_key(
+    *,
+    tenant: Tenant,
+    entry_id: uuid.UUID,
+    actor: Actor,
+    created_by: User,
+    name: str,
+    scopes: Iterable[str],
+    expires_at: datetime | None,
+    step_up_assertion_id: uuid.UUID | None,
+) -> tuple[ApiKey, str]:
+    latest = timezone.now() + timedelta(days=settings.AGENT_ACCESS_KEY_MAX_DAYS)
+    expiry = expires_at if expires_at is not None else latest
+    cleaned_name = _checked_name(name, expiry)
+    if expiry > latest:
+        raise ValidationError(
+            f"A key of an agent access entry lives at most {settings.AGENT_ACCESS_KEY_MAX_DAYS} days.", code="expiry_too_late"
+        )
+    granted = _validate_scopes(scopes, perms.AGENT_ACCESS_SCOPES)
+    plain, prefix, key_hash = tokens.new_api_key()
+    key = ApiKey.objects.create(
+        tenant=tenant,
+        agent_access_id=entry_id,
+        name=cleaned_name,
+        key_prefix=prefix,
+        key_hash=key_hash,
+        scopes=granted,
+        created_by=created_by,
+        expires_at=expiry,
+    )
+    log_event(event=LoginEventKind.KEY_CREATED, method=LoginMethod.API_KEY, success=True, request=None, tenant_id=tenant.id, user=created_by, api_key=key)
+    record(
+        action="api_key.created",
+        actor=actor,
+        subject_type="api_key",
+        subject_id=key.id,
+        subject_title=key.name,
+        summary=f"Agent access key {key.key_prefix} created with scopes {', '.join(granted)}.",
+        tenant_id=tenant.id,
+        after={"keyPrefix": key.key_prefix, "agentAccessId": str(entry_id), "scopes": granted, "expiresAt": expiry.isoformat()},
+        step_up_assertion_id=step_up_assertion_id,
+    )
+    return key, plain
+
+
+def _revoke(key: ApiKey, *, user: User, now: datetime) -> None:
+    key.revoked_at = now
+    key.save(update_fields=["revoked_at"])
+    personal = key.kind == CredentialKind.PERSONAL.value
+    log_event(
+        event=LoginEventKind.TOKEN_REVOKED if personal else LoginEventKind.KEY_REVOKED,
+        method=LoginMethod.PERSONAL_TOKEN if personal else LoginMethod.API_KEY,
+        success=True,
+        request=None,
+        tenant_id=key.tenant_id,
+        user=user,
+        api_key=key,
+    )
+
+
+def revoke_entry_key(
+    *, tenant: Tenant, entry_id: uuid.UUID, key_id: uuid.UUID, actor: Actor, revoked_by: User, step_up_assertion_id: uuid.UUID | None
+) -> ApiKey:
+    """One credential bound to the entry, a key or a token naming it. Revoking twice is a
+    safe retry: nothing changes, and it is still audited with `before` equal to `after`."""
+    key = ApiKey.objects.select_related("acts_as_user").filter(pk=key_id, tenant=tenant, agent_access_id=entry_id).first()  # ordering: pk lookup, at most one row
+    if key is None:
+        raise ValidationError("That key is not one of this entry's.", code="not_found")
+    before = key.revoked_at
+    if before is None:
+        _revoke(key, user=revoked_by, now=timezone.now())
+    record(
+        action="api_key.revoked",
+        actor=actor,
+        subject_type="api_key",
+        subject_id=key.id,
+        subject_title=key.name,
+        summary=f"Agent access key {key.key_prefix} revoked." if before is None else f"Agent access key {key.key_prefix} was already revoked; nothing changed.",
+        tenant_id=tenant.id,
+        before={"revokedAt": before.isoformat() if before else None},
+        after={"revokedAt": key.revoked_at.isoformat() if key.revoked_at else None},
+        step_up_assertion_id=step_up_assertion_id,
+    )
+    return key
+
+
+def revoke_entry_credentials(*, tenant: Tenant, entry_id: uuid.UUID, revoked_by: User) -> list[str]:
+    """Every live credential bound to the entry, revoked at once, each with its security log
+    row; answers their prefixes for the entry's own audit row."""
+    now = timezone.now()
+    live = list(ApiKey.objects.filter(tenant=tenant, agent_access_id=entry_id, revoked_at__isnull=True).order_by("created_at", "id"))
+    for key in live:
+        _revoke(key, user=revoked_by, now=now)
+    return [key.key_prefix for key in live]
 
 
 # ---------------------------------------------------------------------------------------
