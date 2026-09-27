@@ -42,7 +42,7 @@ from apps.shared import permissions as perms
 from apps.shared.audit import Actor
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import Tenant
-from apps.taxonomy.models import CaseSubStatusLabel, ClosureReasonLabel, DismissalReasonLabel, EffortSizeLabel
+from apps.taxonomy.models import CaseSubStatusLabel, ClosureReasonLabel, DismissalReasonLabel, EffortSizeLabel, TeamLabel
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.schemas import PersonRef
 from apps.taxonomy.tenant_lists_logic import VocabularyProblem
@@ -147,6 +147,7 @@ def case_out(case: ChangeCase, *, reader: uuid.UUID | None, order: list[str]) ->
         urgency_confirmed=case.urgency_confirmed,
         footprint_match=case.footprint_match,
         owner=_person(case.owner),
+        owner_team=_ref(TeamLabel, case.owner_team, order),
         triaged_by=_person(case.triaged_by),
         triaged_at=case.triaged_at,
         dismissed_reason=_ref(DismissalReasonLabel, case.dismissed_reason, order),
@@ -173,16 +174,21 @@ def case_out(case: ChangeCase, *, reader: uuid.UUID | None, order: list[str]) ->
 def triage_change(
     *, tenant: Tenant, actor: Actor, user: Any, order: list[str], change_id: uuid.UUID, expected_version: int | None, body: CasesTriageBody
 ) -> CasesCase:
-    """`new` to `assigned`, with a confirmed urgency and an owner, who is told (CAS-02)."""
+    """`new` to `assigned`, with a confirmed urgency and an owner, who is told, and
+    optionally a team of the bank beside the owner (CAS-02, TEN-03)."""
     case = logic.load_case(tenant, change_id, for_update=True)
     logic.check_version(case, expected_version)
     case.urgency = _row("urgency", body.urgency, tenant=tenant)
     case.urgency_confirmed = True
     case.owner = _owner(tenant, body.owner_id)
+    case.owner_team = None if body.owner_team is None else _row("team", body.owner_team, tenant=tenant)
     case.sub_status = None if body.sub_status is None else _row("case_sub_status", body.sub_status, tenant=tenant, kind=C.ASSIGNED)
     case.triaged_by = user
     case.triaged_at = timezone.now()
-    logic.transition(case, C.ASSIGNED, actor=actor, user=user, audit={"ownerId": str(case.owner.id), "urgency": case.urgency.key})
+    audit = {"ownerId": str(case.owner.id), "urgency": case.urgency.key}
+    if case.owner_team is not None:
+        audit["ownerTeam"] = case.owner_team.key
+    logic.transition(case, C.ASSIGNED, actor=actor, user=user, audit=audit)
     notify(
         tenant_id=tenant.id,
         kind=NotificationKind.ASSIGNED,

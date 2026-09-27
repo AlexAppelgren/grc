@@ -31,6 +31,7 @@ function workflowOf(overrides: Partial<CaseWorkflow> = {}): CaseWorkflow {
     urgencyConfirmed: false,
     owner: null,
     ownerId: null,
+    ownerTeam: null,
     triagedBy: null,
     triagedAt: null,
     dismissedReason: null,
@@ -54,6 +55,10 @@ const LISTS: Record<string, unknown[]> = {
   dismissal_reason: [
     { key: 'out_of_scope', kind: null, label: 'Out of scope', usageNote: 'The change does not touch anything we do.' },
     { key: 'duplicate', kind: null, label: 'Duplicate', usageNote: 'Already handled in another case.' },
+  ],
+  team: [
+    { key: 'cards', kind: null, label: 'Cards compliance', usageNote: '' },
+    { key: 'old_desk', kind: null, label: 'Old desk', usageNote: '', active: false },
   ],
   close_reason: [
     { key: 'no_action', kind: 'no_action', label: 'No action needed', usageNote: 'Applies, but nothing has to change.' },
@@ -115,6 +120,30 @@ describe('triage, needs triage', () => {
     await waitFor(() => expect(writes(sent)).toHaveLength(1));
     const [post] = writes(sent);
     expect([post?.method, post?.path, post?.body]).toEqual(['post', '/api/v1/changes/c-1/triage', { urgency: 'within_3_months', ownerId: 'u-johan' }]);
+  });
+
+  it('offers the bank’s active teams beside the owner and sends the team’s key', async () => {
+    const sent = serve();
+    renderPanel(workflowOf(), ['cases.triage']);
+
+    const team = screen.getByRole('combobox', { name: 'Owner team (optional)' });
+    await within(team).findByRole('option', { name: 'Cards compliance' });
+    expect(within(team).queryByRole('option', { name: 'Old desk' })).toBeNull();
+    expect(team).toHaveValue('');
+    fireEvent.change(screen.getByRole('combobox', { name: 'Owner' }), { target: { value: 'u-sara' } });
+    fireEvent.change(team, { target: { value: 'cards' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm and assign' }));
+
+    await waitFor(() => expect(writes(sent)).toHaveLength(1));
+    expect(writes(sent)[0]?.body).toEqual({ urgency: 'act_now', ownerId: 'u-sara', ownerTeam: 'cards' });
+  });
+
+  it('renders a 422 against the team field it names', async () => {
+    serve({ status: 422, data: { code: 'validation_error', detail: 'Some fields need attention.', errors: [{ field: 'body.ownerTeam', message: 'Too long' }] } });
+    renderPanel(workflowOf(), ['cases.triage']);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm and assign' }));
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Owner team (optional)' })).toHaveAttribute('aria-invalid', 'true'));
+    expect(screen.queryByText('Some fields need attention.')).toBeNull();
   });
 
   it('renders a 422 against the owner field it names', async () => {
@@ -196,9 +225,16 @@ describe('the next step, assigned and assessing', () => {
     renderPanel(assigned, ['cases.work']);
     expect(screen.getByRole('heading', { name: 'Next step' })).toBeInTheDocument();
     expect(screen.getByText('Assigned to Sara Lindqvist by Johan Berg on 18 Sept 2026.')).toBeInTheDocument();
+    expect(screen.queryByText(/Owner team/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Start assessment' }));
     await waitFor(() => expect(writes(sent)).toHaveLength(1));
     expect([writes(sent)[0]?.method, writes(sent)[0]?.path]).toEqual(['post', '/api/v1/changes/c-1/assessment/start']);
+  });
+
+  it('names the owner team beside the owner, and nothing when there is none', () => {
+    serve();
+    renderPanel({ ...assigned, ownerTeam: { key: 'cards', kind: null, label: 'Cards compliance' } }, ['cases.work']);
+    expect(screen.getByText('Owner team: Cards compliance.')).toBeInTheDocument();
   });
 
   it('No action closes on one person’s word with a reason of the no-action kind and an optional note', async () => {

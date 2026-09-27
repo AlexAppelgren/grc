@@ -1948,3 +1948,15 @@ Taxonomy 0012 builds it on the regulatory scope request rather than beside it:
   `footprint_history_term_or_scope_item` demands exactly one. The table stays append-only.
 - Every reference to a tenant row is also a composite `(tenant_id, …)` key, so
   `footprint_change_request` and `scope_item` gain `UNIQUE (tenant_id, id)`.
+
+## c9-owner-team-and-reassign. A team beside a case's owner, and removal covers case work (2026-09-25, cases 0005)
+
+`change_case.owner_team` (the column section 18 left unbuilt) is a nullable key to the bank's
+`team` row, also a composite key `(tenant_id, owner_team_id)` into `team (tenant_id, id)`, so
+the database refuses another bank's team. It sits beside `owner` and never replaces it: the
+worked-case CHECK still requires a person. `triageChange` takes it as `ownerTeam`, a team key
+(the brief's `ownerTeamId`; D-1xx c9-owner-team-and-reassign), and the case answers
+`ownerTeam` as `{key, kind, label}`, on `CasesCase` and on the change page's `case`.
+`TenantMemberOpenWork` and the removal now count and move `case`, `action` and
+`duty_occurrence`, the kinds its contract already named: a case and an action pass to a
+person only, and a case only to a member holding `cases.work`.

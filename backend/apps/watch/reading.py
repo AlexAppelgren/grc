@@ -91,6 +91,7 @@ from apps.taxonomy.models import (
     FlagLabel,
     TaxonomyTerm,
     TaxonomyTermLabel,
+    TeamLabel,
     Urgency,
     UrgencyLabel,
     WatchedMarket,
@@ -469,9 +470,11 @@ def _workflow_of(base: WatchChangeCase, *, reader: uuid.UUID | None, order: list
     allowed = case_state.allowed_transitions(CaseStatusCategory(case.status), facts)
     dismissed = _tenant_refs(DismissalReasonLabel, [case.dismissed_reason] if case.dismissed_reason else [], order)
     closed = _tenant_refs(ClosureReasonLabel, [case.close_reason] if case.close_reason else [], order)
+    team = _tenant_refs(TeamLabel, [case.owner_team] if case.owner_team else [], order)
     return WatchCaseWorkflow(
         **dict(base),
         owner=_person(case.owner),
+        owner_team=team.get(case.owner_team_id) if case.owner_team_id else None,
         triaged_by=_person(case.triaged_by),
         triaged_at=case.triaged_at,
         dismissed_reason=dismissed.get(case.dismissed_reason_id) if case.dismissed_reason_id else None,
