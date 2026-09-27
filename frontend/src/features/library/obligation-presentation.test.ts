@@ -5,6 +5,7 @@ import { defaultFormatContext } from '@/shared/utils/format';
 
 import {
   machineConfirmedLabel,
+  markPrivateToUs,
   OBLIGATION_SLOT_ORDER,
   outsideFootprintLabel,
   presentBindingLevel,
@@ -150,6 +151,54 @@ describe('the binding slots follow the level kind (D-37)', () => {
     expect(presentBindingLevel(true, 'standard', 30, t)).toEqual({ key: 'standard', label: 'Standard', tone: 'information', order: 30 });
     expect(presentBindingLevel(true, null, 30, t).key).toBe('binding');
     expect(presentBindingLevel(false, null, 30, t).key).toBe('guidance');
+  });
+});
+
+// d89-fe-private (OWN-04, INV-07): the bank's own record wears "Private to us" first, and
+// its instrument's short name reads outlined, because a brand pill means the shared library.
+describe('"Private to us" (OWN-04)', () => {
+  const own: ObligationFacts = { ...lvm, privateToUs: true, tenantTags: [{ key: 'digital', label: 'Digital investing' }] };
+
+  it('leads the row as an outlined information pill, with the instrument outlined after it', () => {
+    expect(presentObligation(own, 'row', t).map((p) => [p.key, p.label, p.tone, p.outlined ?? false])).toEqual([
+      ['private-to-us', 'Private to us', 'information', true],
+      ['instrument:lvm', 'LVM', 'information', true],
+      ['applicability:applies', 'Applies', 'positive', false],
+      ['compliance:partly', 'Partly compliant', 'warning', false],
+      ['open-changes', '2 open changes', 'notice', false],
+      ['tenant-tag:digital', 'Digital investing', 'information', true],
+    ]);
+  });
+
+  it('leads the header too, and reads in Swedish', () => {
+    expect(presentObligation(own, 'header', sv).map((p) => [p.label, p.outlined ?? false]).slice(0, 2)).toEqual([
+      ['Privat för oss', true],
+      ['LVM', true],
+    ]);
+  });
+
+  it('is absent on a shared record, whose instrument stays brand', () => {
+    for (const view of ['row', 'header'] as const) {
+      const pills = presentObligation({ ...lvm, privateToUs: false }, view, t);
+      expect(pills.map((p) => p.key)).not.toContain('private-to-us');
+      expect(pills[0]).toMatchObject({ key: 'instrument:lvm', tone: 'brand' });
+      expect(pills[0]?.outlined).toBeUndefined();
+    }
+  });
+
+  it('marks any pill row the same way, so the instrument page head follows the obligation', () => {
+    const pills = markPrivateToUs(
+      [
+        { key: 'instrument:psd', label: 'Betaltjänstlagen', tone: 'brand', order: 10 },
+        { key: 'jurisdiction:se', label: 'Sweden', tone: 'brand', order: 40 },
+      ],
+      t,
+    );
+    expect(pills.map((p) => [p.label, p.tone, p.outlined ?? false])).toEqual([
+      ['Private to us', 'information', true],
+      ['Betaltjänstlagen', 'information', true],
+      ['Sweden', 'brand', false],
+    ]);
   });
 });
 

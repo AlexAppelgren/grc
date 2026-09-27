@@ -1,5 +1,5 @@
-"""Models of the collab app (COL-01, COL-02; schema v0.3 `comment`, `notification`,
-`email_message`; INPUT_DELTAS §1).
+"""Models of the collab app (COL-01, COL-02, COL-04; schema v0.3 `comment`, `notification`,
+`email_message`; INPUT_DELTAS §1; the participant of MY_WORK_AND_MARKETS 3.2).
 
 Five tenant tables, all `TenantModel` under enabled and forced row-level security: a
 comment on a record, the people it mentions, the text an edit replaced, a person's
@@ -29,8 +29,11 @@ No logic lives here. `notify()` in `collab/logic.py` is the only writer of a not
 from __future__ import annotations
 
 import enum
+from typing import Any
 
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 from apps.shared.audit import AppendOnlyModel
 from apps.shared.fields import CIEmailField
@@ -215,3 +218,53 @@ class EmailMessage(TenantModel):
 
     def __str__(self) -> str:
         return str(self.id)
+
+
+class Participant(TenantModel):
+    """A person or a team named on one register entry or one case of one bank (COL-04,
+    D-18), so that it reaches their My work and their notifications. It grants nothing: what
+    a participant may read or do is still their role's alone.
+
+    Exactly one subject (the register entry or the case) and exactly one participant (the
+    person or the team), both held by `num_nonnulls` CHECKs in collab 0002. Every reference
+    is also a composite `(tenant_id, …)` key there, a person's to `membership`, so the
+    database refuses another bank's entry, case, team or person, and anyone who is not a
+    member. One live row per subject and participant. Removed by stamping `removed_at` and
+    `removed_by`, never deleted, so the case file (CAS-07) and the history (REG-04) still
+    show who took part. No text column and no participant role."""
+
+    tenant_obligation = models.ForeignKey(
+        "register.TenantObligation", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    case = models.ForeignKey("cases.ChangeCase", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    team = models.ForeignKey("taxonomy.Team", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    added_by = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
+    added_at = models.DateTimeField(default=timezone.now)
+    removed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    removed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "participant"
+        # A record's list reads in the order people were added, with the id as a tiebreak.
+        ordering = ["added_at", "id"]
+        constraints = [
+            # One live row per subject and participant. The two unused columns are null on
+            # every row, so nulls count as equal here.
+            models.UniqueConstraint(
+                fields=["tenant_obligation", "case", "user", "team"],
+                condition=models.Q(removed_at__isnull=True),
+                nulls_distinct=False,
+                name="participant_live_unique",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["tenant", field], condition=models.Q(removed_at__isnull=True), name=f"participant_live_{short}_idx")
+            for field, short in (("user", "user"), ("team", "team"), ("case", "case"), ("tenant_obligation", "entry"))
+        ]
+
+    def __str__(self) -> str:
+        return str(self.id)
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:  # compliance: allow-kwargs Django Model.delete signature
+        raise ValidationError("A participant is removed by stamping removed_at, never deleted.", code="remove_not_delete")

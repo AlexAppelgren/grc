@@ -23,6 +23,14 @@ creation is audited under that tenant. The `proposal` row itself carries only th
 `proposed_in_tenant`, so the console can withhold the proposer's identity (PRO-03) without
 learning which bank they work for.
 
+A proposal of a bank's own record (INV-07, OWN-02, OWN-03; D-57, ADR 0050, ADR 0059) is the
+same row with `owner_tenant_id` set, which `create()` alone decides and never from a request
+body: from the target for a version, which follows the record it versions, and otherwise the
+bank the database is scoped to when the server files a new instrument or obligation as
+`private`: the filing session's bank, or in the worker the bank whose run it is, which
+`@tenant_task` activated. Row-level security on `proposal` then keeps the row out of the
+console and out of every other bank.
+
 Idempotency (playbook 4.3): an agent retries with the same `Idempotency-Key`. The same body
 answers the proposal it already made (200, and an audit row saying the retry happened, so
 a flapping agent shows in the log); a different body under the same key is 409
@@ -39,7 +47,7 @@ import pydantic
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -48,11 +56,13 @@ from apps.agents.models import AgentRun
 from apps.agents.screen import screen_all
 from apps.governance import ai_log
 from apps.governance.models import AiPurpose
+from apps.library import recurrence
 from apps.library.models import DatePrecision, SubjectType
 from apps.library.reading import (
     InstrumentRefs,
     active_obligation,
     active_provision,
+    authority_of,
     instrument_refs,
     live_duty_type,
     live_provision_kind,
@@ -72,6 +82,7 @@ from apps.proposals.schemas import (
     ProposalObligationVersionPayload,
     ProposalProvisionPayload,
     ProposalProvisionVersionPayload,
+    ProposalRecurringDutyPayload,
     ProposalRow,
     ProposalTermCreatePayload,
     ProposalTermUpdatePayload,
@@ -108,6 +119,7 @@ PAYLOAD_SCHEMAS: dict[str, type[pydantic.BaseModel]] = {
     ProposalKind.NEW_OBLIGATION.value: ProposalObligationPayload,
     ProposalKind.NEW_PROVISION.value: ProposalProvisionPayload,
     ProposalKind.NEW_PROVISION_VERSION.value: ProposalProvisionVersionPayload,
+    ProposalKind.NEW_RECURRING_DUTY.value: ProposalRecurringDutyPayload,
 }
 VOCABULARY_KINDS = frozenset(
     kind.value
@@ -125,6 +137,9 @@ VERSION_TARGETS = {
     ProposalKind.NEW_OBLIGATION_VERSION.value: OBLIGATION_TARGET,
     ProposalKind.NEW_PROVISION_VERSION.value: PROVISION_TARGET,
 }
+# The kinds that name the record they are for, by its target type: every version, and a
+# recurring duty, which is added to an obligation in force (REG-07).
+RECORD_TARGETS = {**VERSION_TARGETS, ProposalKind.NEW_RECURRING_DUTY.value: OBLIGATION_TARGET}
 # The kinds that bring a new record into the library. They name no target, since the record
 # does not exist yet, and every fact they carry is sourced by an https link: a new record
 # has no provision of its own to cite (PRO-01).
@@ -132,9 +147,14 @@ NEW_RECORD_KINDS = frozenset(
     {ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value, ProposalKind.NEW_PROVISION.value}
 )
 NEW_RECORD_PAYLOADS = (ProposalInstrumentPayload, ProposalObligationPayload, ProposalProvisionPayload)
+# The kinds a bank may file as a record of its own (INV-07, OWN-02): what does not exist in
+# the library yet. A version of a record follows its target's owner instead.
+PRIVATE_RECORD_KINDS = frozenset({ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value})
+# The two uniqueness constraints on a proposer's retry key (models.py).
+IDEMPOTENCY_CONSTRAINTS = frozenset({"proposal_idempotency_per_user", "proposal_idempotency_per_key"})
 # The kinds a reviewer may correct: each carries sourced facts from an authority, which a
 # reviewer checks against the same source (PRO-02).
-CORRECTABLE_KINDS = frozenset(VERSION_TARGETS) | NEW_RECORD_KINDS
+CORRECTABLE_KINDS = frozenset(RECORD_TARGETS) | NEW_RECORD_KINDS
 # The dimension an instrument's regime is a term of (D-39).
 REGIME_DIMENSION = "regime"
 # The fields of a new record's payload that say how it is written rather than what the
@@ -145,7 +165,8 @@ UNSOURCED_FIELDS = frozenset(
 TERM_KINDS = frozenset({ProposalKind.TERM_CREATE.value, ProposalKind.TERM_UPDATE.value})
 # The kinds whose applied record can say an agent confirmed it (`verified_origin` and
 # `verified_by_agent`): an obligation version, every library list row and taxonomy term
-# (taxonomy 0007), a new instrument, and a new obligation with its first version. Only these
+# (taxonomy 0007), a new instrument, a new obligation with its first version, and a
+# recurring duty (library 0010), which names its proposing agent too. Only these
 # may an independent agent approve (INV-05, D-62, D-79). A provision and its versions have no
 # such column, so `new_provision` and `new_provision_version` wait for a person, as does any
 # kind added later without that provenance.
@@ -153,7 +174,7 @@ AGENT_CONFIRMABLE_KINDS = (
     OBLIGATION_KINDS
     | VOCABULARY_KINDS
     | TERM_KINDS
-    | frozenset({ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value})
+    | frozenset({ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value, ProposalKind.NEW_RECURRING_DUTY.value})
 )
 # The payloads that name a row by key and carry labels: the key must be its own slug and
 # the labels real languages, as the vocabulary routes make them.
@@ -280,6 +301,8 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
         validated_provision(payload)
     elif isinstance(payload, ProposalProvisionVersionPayload):
         _validate_text_payload(payload)
+    elif isinstance(payload, ProposalRecurringDutyPayload):
+        validated_recurring_duty(payload)
     else:
         from apps.taxonomy.terms_logic import dimension_by_key, refuse_mirrored
 
@@ -483,26 +506,59 @@ def validated_provision(payload: ProposalProvisionPayload) -> tuple[Any, Any, An
     return instrument, parent, live_provision_kind(payload.provision_kind)
 
 
-def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUID | None) -> None:
+def validated_recurring_duty(payload: ProposalRecurringDutyPayload) -> Any:
+    """A recurring duty (REG-07): a title, a rule `apps.library.recurrence` accepts from
+    today, stored in its one spelling (422 `invalid_recurrence` otherwise), and a recipient
+    authority the library holds. Returns that authority, or None, for the apply, which runs
+    this again against the library and the calendar as they are then."""
+    payload.title = payload.title.strip()
+    if not payload.title:
+        raise ValidationError("Give the duty a title.", code="validation_error")
+    payload.recurrence_rule = recurrence.validated(payload.recurrence_rule, timezone.localdate())
+    return authority_of(payload.recipient_authority) if payload.recipient_authority else None
+
+
+def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUID | None) -> uuid.UUID | None:
     """A version proposal says which obligation or provision it versions, and that record
     is here and in force. A proposal nobody could ever apply never enters the queue. A new
-    record names no target: it does not exist until the proposal is approved."""
+    record names no target: it does not exist until the proposal is approved.
+
+    Returns the bank that owns the target, or None for a shared record and for no target:
+    a version of a bank's own record is that bank's own proposal (D-57)."""
     if kind in NEW_RECORD_KINDS and (target_type or target_id is not None):
         raise ValidationError(
             "A new record names no target: leave targetType and targetId out.", code="validation_error"
         )
-    expected = VERSION_TARGETS.get(kind)
+    expected = RECORD_TARGETS.get(kind)
     if expected is None:
-        return
+        return None
     if target_type != expected or target_id is None:
         raise ValidationError(
-            f"Say which {expected} this version belongs to: targetType {expected!r} and its id.",
+            f"Say which {expected} this proposal is for: targetType {expected!r} and its id.",
             code="validation_error",
         )
     if expected == OBLIGATION_TARGET:
-        active_obligation(target_id)
-    else:
-        active_provision(target_id)
+        return active_obligation(target_id).owner_tenant_id
+    return active_provision(target_id).instrument.owner_tenant_id
+
+
+def owner_of(kind: str, *, private: bool, target_owner: uuid.UUID | None, tenant_id: uuid.UUID | None) -> uuid.UUID | None:
+    """The bank a new proposal belongs to, or None for the shared library (INV-07, D-57).
+
+    Decided by the server alone. A proposal the server files as `private` is a new record of
+    the bank the database is scoped to, which is the filing session's bank or, in the
+    worker, the bank of the run (`@tenant_task`); anything else follows its target, so a
+    shared record's proposal stays shared whoever filed it and still reaches the console.
+    A private filing with no bank, or of a kind that is not a new record, is refused rather
+    than quietly filed as shared."""
+    if not private:
+        return target_owner
+    if tenant_id is None or kind not in PRIVATE_RECORD_KINDS:
+        raise ValidationError(
+            "Only a new instrument or a new obligation filed inside an organisation can be its own record.",
+            code="validation_error",
+        )
+    return tenant_id
 
 
 def sourced_fields(payload: pydantic.BaseModel) -> list[str]:
@@ -511,7 +567,7 @@ def sourced_fields(payload: pydantic.BaseModel) -> list[str]:
     terms. A vocabulary payload carries a label a person writes, not a sourced fact from an
     authority, so it names none (its chunk 2 rules are unchanged). A new record's are every
     fact it sets, its texts one per language, and never how it is written
-    (`UNSOURCED_FIELDS`)."""
+    (`UNSOURCED_FIELDS`). A recurring duty's are every field it sets (REG-07)."""
     if isinstance(payload, NEW_RECORD_PAYLOADS):
         fields: list[str] = []
         for name, value in payload.model_dump(by_alias=True, exclude_none=True, exclude_defaults=True).items():
@@ -519,6 +575,8 @@ def sourced_fields(payload: pydantic.BaseModel) -> list[str]:
                 continue
             fields += [f"{name}.{language}" for language in sorted(value)] if isinstance(value, dict) else [name]
         return fields
+    if isinstance(payload, ProposalRecurringDutyPayload):
+        return list(payload.model_dump(by_alias=True, exclude_none=True, exclude_defaults=True))
     if isinstance(payload, ProposalProvisionVersionPayload):
         fields = [f"texts.{language}" for language in sorted(payload.texts)]
     elif isinstance(payload, ProposalObligationVersionPayload):
@@ -537,7 +595,7 @@ def sourceable_fields(payload: pydantic.BaseModel) -> list[str]:
     are exactly the fields that need a source; for a vocabulary payload, whose wording a
     person writes, they are the payload's own fields and none of them is required. A key
     naming anything else is a source for nothing, so it is refused rather than stored."""
-    if isinstance(payload, (ProposalObligationVersionPayload, ProposalProvisionVersionPayload, *NEW_RECORD_PAYLOADS)):
+    if isinstance(payload, (ProposalObligationVersionPayload, ProposalProvisionVersionPayload, ProposalRecurringDutyPayload, *NEW_RECORD_PAYLOADS)):
         return sourced_fields(payload)
     return sorted(payload.model_dump(by_alias=True, exclude_none=True))
 
@@ -664,9 +722,13 @@ def create(
     source_label: str = "",
     source_url: str = "",
     effective_from: Any = None,
+    private: bool = False,
 ) -> tuple[Proposal, bool]:
     """Create a proposal, or answer the one an earlier identical submission made. Returns
     `(proposal, created)`.
+
+    `private` is the server's word, never a request's, that this is the bank's own new
+    record (`owner_of`); a route that files to the shared library never passes it.
 
     A key bound to an agent names an open run of its own, so every proposal an agent filed
     traces to the night that produced it (AGT-01); a run anyone else names is checked the
@@ -683,8 +745,15 @@ def create(
     if proposer.agent_id is not None or agent_run_id is not None:
         run = runs.require_open_run_of_key(proposer.api_key_id, agent_run_id)
     validated_kind(kind)
+    if kind == ProposalKind.NEW_RECURRING_DUTY.value and proposer.user is None and proposer.agent_id is None:
+        # A recurring duty names the agent that proposed it (library 0010), and a bank's own
+        # key is bound to none.
+        raise ValidationError(
+            "A recurring duty is proposed by a person or an agent, never by a key bound to no agent.",
+            code="validation_error",
+        )
     parsed = validated_payload(kind, payload)
-    _validate_obligation_target(kind, target_type, target_id)
+    target_owner = _validate_obligation_target(kind, target_type, target_id)
     sources = {field: value.strip() for field, value in (field_sources or {}).items()}
     # Before the source check, so a standard's clause pasted as a source answers
     # `licensed_text`, the rule it breaks, rather than a generic refusal (D-35).
@@ -710,6 +779,7 @@ def create(
     # What the database itself is scoped to, not a process-local mirror: this is the tenant
     # whose rows this transaction may write, so it is the tenant the link row can carry.
     tenant_id = tenancy.database_tenant_id()
+    owner_tenant_id = owner_of(kind, private=private, target_owner=target_owner, tenant_id=tenant_id)
     if idempotency_key:
         if len(idempotency_key) > IDEMPOTENCY_KEY_MAX_CHARS:
             raise ValidationError(
@@ -726,8 +796,9 @@ def create(
                 if tenant_id is not None
                 else not existing.proposed_in_tenant
             )
-            submitted = (kind, title, stored_payload, target_type, target_id, sources)
-            if not same_zone or (existing.kind, existing.title, existing.payload, existing.target_type, existing.target_id, existing.field_sources) != submitted:
+            submitted = (kind, title, stored_payload, target_type, target_id, sources, owner_tenant_id)
+            stored = (existing.kind, existing.title, existing.payload, existing.target_type, existing.target_id, existing.field_sources, existing.owner_tenant_id)
+            if not same_zone or stored != submitted:
                 raise ValidationError(
                     "This Idempotency-Key was already used for a different proposal.",
                     code="idempotency_conflict",
@@ -745,48 +816,58 @@ def create(
             return existing, False
     # The model's name too: the queue shows it as the proposer.
     risk_flags = screen_all([title, model, source_label, source_url, *_texts(stored_payload), *sources.values()])
-    with transaction.atomic():
-        if run is not None:
-            runs.spend(run, Proposal.objects.filter(agent_run_id=run.id), limit=settings.WATCH_RUN_MAX_PROPOSALS, what=("proposal", "proposals"))
-        proposal = Proposal.objects.create(
-            kind=kind,
-            title=title,
-            payload=stored_payload,
-            field_sources=sources,
-            target_type=target_type,
-            target_id=target_id,
-            change_id=change_id,
-            model=model,
-            source_label=source_label,
-            source_url=source_url,
-            risk_flags=risk_flags,
-            effective_from=effective_from,
-            origin=proposer.origin.value,
-            agent_run_id=agent_run_id,
-            proposed_by_user=proposer.user,
-            proposed_by_api_key_id=proposer.api_key_id,
-            proposed_by_agent_id=proposer.agent_id,
-            idempotency_key=idempotency_key or None,
-            status=ProposalStatus.OPEN.value,
-            proposed_in_tenant=tenant_id is not None,
-        )
-        if tenant_id is not None:
-            ProposalTenant.objects.create(tenant_id=tenant_id, proposal=proposal)
-        record(
-            action="proposal.created",
-            actor=proposer.actor,
-            subject_type=SUBJECT_TYPE,
-            subject_id=proposal.id,
-            subject_title=proposal.title,
-            summary=f"Proposed: {proposal.title}",
-            tenant_id=tenant_id,
-            after={
-                "kind": kind,
-                "payload": stored_payload,
-                "origin": proposal.origin,
-                **({"riskFlags": risk_flags} if risk_flags else {}),
-            },
-        )
+    try:
+        with transaction.atomic():
+            if run is not None:
+                runs.spend(run, Proposal.objects.filter(agent_run_id=run.id), limit=settings.WATCH_RUN_MAX_PROPOSALS, what=("proposal", "proposals"))
+            proposal = Proposal.objects.create(
+                kind=kind,
+                title=title,
+                payload=stored_payload,
+                field_sources=sources,
+                target_type=target_type,
+                target_id=target_id,
+                change_id=change_id,
+                model=model,
+                source_label=source_label,
+                source_url=source_url,
+                risk_flags=risk_flags,
+                effective_from=effective_from,
+                origin=proposer.origin.value,
+                agent_run_id=agent_run_id,
+                proposed_by_user=proposer.user,
+                proposed_by_api_key_id=proposer.api_key_id,
+                proposed_by_agent_id=proposer.agent_id,
+                idempotency_key=idempotency_key or None,
+                status=ProposalStatus.OPEN.value,
+                proposed_in_tenant=tenant_id is not None,
+                owner_tenant_id=owner_tenant_id,
+            )
+            if tenant_id is not None:
+                ProposalTenant.objects.create(tenant_id=tenant_id, proposal=proposal)
+            record(
+                action="proposal.created",
+                actor=proposer.actor,
+                subject_type=SUBJECT_TYPE,
+                subject_id=proposal.id,
+                subject_title=proposal.title,
+                summary=f"Proposed: {proposal.title}",
+                tenant_id=tenant_id,
+                after={
+                    "kind": kind,
+                    "payload": stored_payload,
+                    "origin": proposal.origin,
+                    **({"riskFlags": risk_flags} if risk_flags else {}),
+                },
+            )
+    except IntegrityError as error:
+        # The same proposer's retry key already filed a proposal this session cannot read: a
+        # bank's own proposal, seen from another bank or from the console (D-57). It is a
+        # conflict, as it is when the proposal is in sight, and never a replay of a row the
+        # caller may not read.
+        if getattr(getattr(error.__cause__, "diag", None), "constraint_name", None) not in IDEMPOTENCY_CONSTRAINTS:
+            raise
+        raise ValidationError("This Idempotency-Key was already used for a different proposal.", code="idempotency_conflict") from error
     return proposal, True
 
 

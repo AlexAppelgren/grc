@@ -1,7 +1,8 @@
 import type { Page } from '@playwright/test';
 
 import { expect, test } from './support/api-guard';
-import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
+import { allowFreshContext, LOGINS, signInAs, signOut } from './support/passkeys';
+import { lockTenantAScope, unlockTenantAScope } from './support/tenant-scope';
 
 // library: the @e2e scenarios from backend/apps/library/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
@@ -30,6 +31,11 @@ function tenantToday(): string {
 const RESEARCH = 'obl-research-payments';
 const DORA = 'obl-dora-ict-register';
 const ESMA = 'obl-esma-warnings';
+// c8-ui-inventory-overlay: a duty both seeded banks keep in their register, each its own
+// way (tenant A partly compliant, owned by its compliance officer; tenant B compliant,
+// owned by a team), and one tenant A's retail compliance team owns.
+const COSTS = 'obl-costs-charges';
+const SUITABILITY = 'obl-suitability';
 
 async function openInventory(page: Page): Promise<void> {
   await page.goto(`/inventory?asOf=${AS_OF}`);
@@ -166,9 +172,11 @@ test.describe('library journeys', () => {
     await expect(duty.getByText('Type')).toBeVisible();
     await expect(duty.getByText('Record retention')).toBeVisible();
     await expect(page.locator('[data-scope-panel] [data-pill]').first()).toHaveAttribute('data-pill', 'brand');
-    // Being on this card is not the judgement that the duty reaches this bank:
-    // the header above carries no compliance status, and nothing reads "Applies".
-    await expect(page.getByText('Applies', { exact: true })).toHaveCount(0);
+    // Being on this card is not the judgement that the duty reaches this bank: the
+    // library's header above carries none, and "Applies" reads only in the bank's own
+    // applicability panel, once the bank has answered (c8-ui-inventory-overlay, REG-01).
+    await expect(page.locator('[data-applicability-panel]')).toBeVisible();
+    await expect(headerPills(page).getByText('Applies', { exact: true })).toHaveCount(0);
 
     // Every service selected reads "All services"; an empty list is no
     // restriction and says so in words, never as an empty row.
@@ -180,6 +188,49 @@ test.describe('library journeys', () => {
     await openObligation(page, ESMA);
     await expect(headerPills(page).getByText('Guidance, comply or explain')).toBeVisible();
     await expect(headerPills(page).getByText('Guidance, comply or explain')).toHaveAttribute('data-pill', 'warning');
+
+    // c8-ui-inventory-overlay (REG-01, REG-02): on the inventory the row carries the bank's
+    // own judgement in the applicability and compliance slots, toned by kind, and its owner
+    // ends the meta line. Statuses are the bank's rows, so the filter sends the key.
+    await page.goto(`/inventory?asOf=${AS_OF}&complianceStatus=partly_compliant`);
+    const costs = page.locator(`[data-obligation-rows] [data-obligation="${COSTS}"]`);
+    await expect(costs.getByText('Applies', { exact: true })).toHaveAttribute('data-pill', 'positive');
+    await expect(costs.locator('[data-pill="warning"]')).toHaveCount(1);
+    await expect(costs).toContainText('Sara Lindqvist');
+    // Tenant tags and "Private to us" keep their places: no row here waits for approval.
+    await expect(page.locator('[data-obligation-rows]').getByText(/pending|approval/i)).toHaveCount(0);
+    await expect(page.getByLabel('Compliance status')).toHaveValue('partly_compliant');
+
+    // The filters live in the URL: choosing whether it applies adds its key beside the rest.
+    await page.getByLabel('Applies to us').selectOption('applies');
+    await expect(page).toHaveURL(/[?&]complianceStatus=partly_compliant(&|$)/);
+    await expect(page).toHaveURL(/[?&]applicability=applies(&|$)/);
+    await expect(costs).toBeVisible();
+    await page.getByLabel('Applies to us').selectOption('not_applicable');
+    await expect(page).toHaveURL(/[?&]applicability=not_applicable(&|$)/);
+    await expect(page.locator('[data-obligation-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+    await expect(costs).toHaveCount(0);
+
+    // The owning team's filter, by key: the duty the retail compliance team owns, and not
+    // the one its officer owns alone.
+    await page.goto(`/inventory?asOf=${AS_OF}&ownerTeam=retail_compliance`);
+    await expect(page.locator(`[data-obligation-rows] [data-obligation="${SUITABILITY}"]`)).toBeVisible();
+    await expect(page.locator(`[data-obligation-rows] [data-obligation="${COSTS}"]`)).toHaveCount(0);
+    await signOut(page);
+
+    // The other bank reads the same shared duty with its own judgement and none of tenant
+    // A's, and a duty it has no entry for shows empty columns: no applicability, no status
+    // and no owner.
+    await signInAs(page, LOGINS.secondBankAdmin);
+    await page.goto(`/inventory?asOf=${AS_OF}&scope=all&complianceStatus=compliant`);
+    const theirs = page.locator(`[data-obligation-rows] [data-obligation="${COSTS}"]`);
+    await expect(theirs.locator('[data-pill="positive"]')).toHaveCount(2);
+    await expect(theirs).not.toContainText('Sara Lindqvist');
+    await page.goto(`/inventory?asOf=${AS_OF}&scope=all&instrument=fffs-2017-2`);
+    const unworked = page.locator(`[data-obligation-rows] [data-obligation="${RESEARCH}"]`);
+    await expect(unworked).toBeVisible();
+    await expect(unworked.getByText('Applies', { exact: true })).toHaveCount(0);
+    await expect(unworked.locator('[data-pill="positive"], [data-pill="warning"], [data-pill="negative"]')).toHaveCount(0);
   });
 
   test("INV-S4: \"As of\" returns the version in force on a date", async ({ page, apiGuard }) => {
@@ -204,6 +255,17 @@ test.describe('library journeys', () => {
     // Back to today, and the address stays the record's own.
     await page.getByRole('button', { name: 'Back to today' }).click();
     await expect(page.locator('[data-as-of]')).toHaveCount(0);
+
+    // c8-ui-inventory-overlay: on the inventory "as of" re-reads the wording, never the
+    // bank's judgement, and the overlay filters stay in the URL beside the date.
+    await page.goto('/inventory?applicability=applies&complianceStatus=partly_compliant&asOf=2026-06-30');
+    const costs = page.locator(`[data-obligation-rows] [data-obligation="${COSTS}"]`);
+    await expect(costs.getByText('Applies', { exact: true })).toHaveAttribute('data-pill', 'positive');
+    await page.locator('[data-inventory-filters]').getByLabel('As of').fill('2026-10-01');
+    await expect(page.locator('[data-as-of="2026-10-01"]')).toBeVisible();
+    await expect(page).toHaveURL(/[?&]applicability=applies&complianceStatus=partly_compliant(&|$)/);
+    await expect(costs.getByText('Applies', { exact: true })).toHaveAttribute('data-pill', 'positive');
+    await expect(costs.locator('[data-pill="warning"]')).toHaveCount(1);
   });
 
   test("INV-S5: The diff between two versions is at sentence level", async ({ page, apiGuard }) => {
@@ -299,6 +361,8 @@ const STANDARD_INSTRUMENT = 'iso-iec-27001-2022';
 const STANDARD_OBLIGATION = 'iso-iec-27001-2022-conformance';
 
 test.describe('standards in the library', () => {
+  test.beforeEach(lockTenantAScope);
+  test.afterEach(unlockTenantAScope);
   test("INV-S11: An edition of a standard is an instrument with public facts and no text", async ({ page, apiGuard }) => {
     // INV-S11 (INV-01, INV-02, INV-08). The API's bindingLevel and the single obligation
     // with no provision are proved by the backend's INV-S11 test; here, the screens.

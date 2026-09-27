@@ -119,6 +119,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "LoginMethod": ("login_method", "ID-11, INPUT_DELTAS §2: email_code, passkey, api_key (later oidc, saml)"),
     "LoginEventKind": ("login_event", "ID-11: what the security log records; the log is a ledger, not a picker"),
     "SupportAccessLevel": ("support_access_level", "ID-05, TEN-06: read or write support access"),
+    "SupportAccessStatus": ("support_access_status", "TEN-06: requested, approved, declined, revoked or expired; the decisions branch on it"),
     # Chunk 2 (vocabularies, taxonomy and footprint). Each is a category the rules read
     # off a vocabulary row's fixed `kind`; the row's label, translations and usage note
     # stay an admin's to change (playbook 15, INPUT_DELTAS §1).
@@ -207,7 +208,8 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "RoadmapItemType": (
         "roadmap_item_type",
         "HOM-03, HOM-04: what produced the date - a change's key date, an internal deadline, "
-        "an action due or a review due; the card and the calendar builder branch on it",
+        "an action due, a review due, a gap target, a duty due, or a certificate's expiry or audit; the card "
+        "and the calendar builder branch on it",
     ),
     # Chunk 8 organisation and chunk 11 security policy (c8-org-models, tenants 0002).
     "OrgUnitKind": (
@@ -308,5 +310,26 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "credential_kind",
         "ACC-03: a service key or a personal access token on one api_key table; authentication, "
         "the step-up fence and the api_key CHECKs branch on it",
+    ),
+    # My work (c8-mywork-service, HOM-05, D-23). Literals in apps/home/schemas.py, because My
+    # work is computed and has no table of its own.
+    "WorkReason": (
+        "work_reason",
+        "HOM-05: owner or participant; the row's reason phrase branches on it with the person or team it names",
+    ),
+    "WorkBucket": (
+        "work_bucket",
+        "HOM-05: overdue, due soon, changes on your items (aware) or open; the service assigns each item to "
+        "the first it qualifies for and the screen draws a section per value",
+    ),
+    "WorkDateKind": (
+        "work_date_kind",
+        "HOM-05: what produced a row's date - a review, a gap target, a duty, an internal deadline, an action, "
+        "a key date, a confirmed link, an applied version or a comment; the date phrase branches on it",
+    ),
+    # c8-duty-occurrences (register 0004, REG-07).
+    "DutyStatus": (
+        "duty_status",
+        "REG-07: where a dated duty occurrence stands; completion, the roadmap and Today branch on it",
     ),
 }

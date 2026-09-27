@@ -482,12 +482,35 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(unmapped.json()["code"], "unknown_key")
         self.assertIn("low, medium, high", unmapped.json()["detail"])
 
-    @skip("pending: VOC-S10 (VOC-06, R2)")
     def test_voc_s10(self) -> None:
         """VOC-S10
 
-        Reason lists drive dismissal, closure and risk acceptance (VOC-06).
+        Reason lists drive dismissal, closure and risk acceptance (VOC-06). The dismissal
+        and closure half (c9-triage); risk acceptance is the register's gap work (REG-03).
         """
+        officer = sign_in(self.officer, tenant=self.tenant)
+        dismissed = cases_build.case_on_a_new_change(self.tenant)
+        closed = cases_build.case_on_a_new_change(self.tenant)
+        cases_build.in_category(closed, CaseStatusCategory.ASSIGNED)
+
+        answer = self._post(f"/changes/{dismissed.change_id}/dismiss", {"reasonKey": "out_of_scope"}, officer, HTTP_IF_MATCH="1")
+        self.assertEqual(answer.status_code, 200, answer.content)
+        self.assertEqual(answer.json()["dismissedReason"], {"key": "out_of_scope", "kind": None, "label": "Out of scope"})
+        self.activate(self.tenant)
+        self.assertEqual(ChangeCase.objects.filter(pk=dismissed.id).values_list("dismissed_reason__key", flat=True).get(), "out_of_scope", "the case stores the key")
+
+        for path, body, vocabulary in (
+            (f"/changes/{closed.change_id}/dismiss", {"reasonKey": "not_a_reason"}, "dismissal_reason"),
+            (f"/changes/{closed.change_id}/close", {"reasonKey": "not_a_reason"}, "close_reason"),
+        ):
+            with self.subTest(vocabulary=vocabulary):
+                refused = self._post(path, body, officer, HTTP_IF_MATCH="1")
+                self.assertEqual(refused.status_code, 422, refused.content)
+                self.assertEqual(refused.json()["code"], "unknown_key")
+                self.assertEqual(refused.json()["vocabulary"], vocabulary)
+                self.activate(self.tenant)
+                valid = set(REGISTRY[vocabulary].model.objects.filter(tenant=self.tenant, active=True).values_list("key", flat=True))
+                self.assertEqual(set(refused.json()["validKeys"]), valid)
 
     def test_voc_s11(self) -> None:
         """VOC-S11
@@ -818,6 +841,10 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(decision.after["preview"]["cases"], {"hidden": 1, "revealed": 0, "available": True})
         self.assertEqual(approved.json()["preview"], decision.after["preview"])
         self.assertEqual(FootprintChangeRequest.objects.get(pk=request["id"]).preview, decision.after["preview"])
+        # The decision note a person typed stays on the request row; the audit value carries
+        # no tenant text (CHUNK10_TASKS rule 13).
+        self.assertNotIn("note", decision.after)
+        self.assertEqual(FootprintChangeRequest.objects.get(pk=request["id"]).decision_note, "Advice was wound down in June.")
         # Nothing else can happen to a decided request.
         twice = self._post(f"/tenant/footprint/requests/{request['id']}/approve", {}, approver, HTTP_IF_MATCH="2")
         self.assertEqual(twice.status_code, 409)
@@ -1037,9 +1064,12 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(by_key["se"]["defaultLanguage"]["key"], "sv")
         self.assertEqual(by_key["se"]["label"], "Sweden")
         # No model column names a language or a country; the references are foreign keys.
+        # `version_no` is a number, not Norwegian (agents 0004), and is the one field named.
         for model in django_apps.get_models():
             for field in model._meta.get_fields():
                 name = field.name.lower()
+                if name == "version_no":
+                    continue
                 self.assertNotRegex(name, r"_(sv|en|da|nb|fi|no)$", f"{model._meta.label}.{field.name} names a language")
                 self.assertNotRegex(name, r"(swedish|danish|norwegian|finnish|english)", f"{model._meta.label}.{field.name} names a language")
         self.assertIsInstance(User._meta.get_field("locale"), ForeignKey)
@@ -1230,6 +1260,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
         # When a proposal filed before the mirror rule would tag an obligation with a
         # jurisdiction term, applying it answers 422 and scopes nothing.
+        tenancy.clear_tenant()  # the console's zone, as its own request has in production (proposals 0009)
         filed = Proposal.objects.create(
             kind=ProposalKind.NEW_OBLIGATION_VERSION.value,
             title="Filed before the mirror rule",
@@ -2007,12 +2038,73 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         A scope item the library does not cover is requested by one person and approved by another with a passkey (OWN-01, FP-02, AC-OWN2).
         """
 
-    @skip("pending: ACC-S2 (ACC-02, AC-ACC1, chunk 11)")
     def test_acc_s2(self) -> None:
         """ACC-S2
 
         An entry's scope narrows the footprint and can never widen it (ACC-02, AC-ACC1).
         """
+        # acc-scope-and-reach: the entry's terms are derived in the database (taxonomy 0011)
+        # and a list filters with the same function it answers one record with.
+        from django.db.models import BooleanField, Func, UUIDField, Value
+
+        from apps.library.reading import scope_term_ids
+        from apps.taxonomy import entry_scope, matching
+        from apps.taxonomy.tests_entry_scope import EntryBank, term
+
+        derivatives, securities = term("product_type", "derivatives"), term("product_type", "securities")
+        cards, advice = term("product_type", "cards"), term("service_type", "advice")
+        bank = EntryBank(self.tenant)
+        regimes = [library_build.term("regime:securities"), library_build.term("regime:payments")]
+        bank.footprint(*regimes, derivatives, securities, cards)
+        trading = bank.unit("Trading")
+        bank.product("Futures", derivatives, unit=trading)
+        bank.product("Equities", securities, unit=bank.unit("Equity desk", parent=trading))
+        mifid = library_build.instrument(key="acc-s2-mifid", regime="regime:securities")
+        psd = library_build.instrument(key="acc-s2-psd", regime="regime:payments")
+        untagged = library_build.obligation(mifid, key="acc-s2-untagged")
+        futures = library_build.obligation(mifid, key="acc-s2-futures", terms=["product_type:derivatives"])
+        card_only = library_build.obligation(psd, key="acc-s2-cards", terms=["product_type:cards"])
+        ours = {untagged.stable_key, futures.stable_key, card_only.stable_key}
+
+        def reads(entry: Any) -> set[str]:
+            self.activate(self.tenant)
+            admitted = Func(
+                Value(self.tenant.id, output_field=UUIDField()),
+                Value(entry.id, output_field=UUIDField()),
+                scope_term_ids(),
+                function="taxonomy_entry_admits",
+                output_field=BooleanField(),
+            )
+            return set(Obligation.objects.filter(admitted, stable_key__in=ours).values_list("stable_key", flat=True))
+
+        # Named Trading: its products and those of the desk below it, and no card term.
+        entry = bank.entry(departments=[trading], name="Trading platform coding agent")
+        scope = bank.scope(entry)
+        self.assertEqual(scope.terms["product_type"], {"derivatives", "securities"})
+        self.assertNotIn("cards", scope.terms["product_type"])
+        # No product type at all is in scope (an empty dimension does not restrict); card only is not.
+        self.assertEqual(reads(entry), {untagged.stable_key, futures.stable_key})
+        # A named product whose term is outside the footprint adds nothing to the scope.
+        outside = bank.product("Advisory desk", advice)
+        widened = bank.entry(departments=[trading], products=[outside], name="Wider")
+        self.assertNotIn("service_type", bank.scope(widened).terms)
+        self.assertEqual(reads(widened), reads(entry))
+        # Naming nothing: the footprint exactly, through the same function.
+        general = bank.entry(name="Staff assistant")
+        self.assertFalse(bank.scope(general).narrowed)
+        self.assertEqual(
+            {dimension: set(keys) for dimension, keys in bank.scope(general).terms.items()},
+            matching.footprint_of(self.tenant.id),
+        )
+        in_footprint = Obligation.objects.filter(
+            matching.in_footprint_expression(self.tenant.id, scope_term_ids()), stable_key__in=ours
+        )
+        self.assertEqual(reads(general), set(in_footprint.values_list("stable_key", flat=True)))
+        self.assertEqual(reads(general), ours)
+        # Naming what derives nothing reads nothing, and says why.
+        back_office = bank.entry(departments=[bank.unit("Back office")], name="Back office")
+        self.assertEqual(bank.scope(back_office).empty_reason, entry_scope.EMPTY_SCOPE)
+        self.assertEqual(reads(back_office), set())
 
 
 class HeldStandardInScope(ScenarioTestCase):

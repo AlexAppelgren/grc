@@ -28,6 +28,7 @@ export type RegisterInterpretationBody = Schemas['RegisterInterpretationBody'];
 export type RegisterInternalLink = Schemas['RegisterInternalLink'];
 export type RegisterInternalLinkPage = Schemas['RegisterInternalLinkPage'];
 export type RegisterInternalLinkBody = Schemas['RegisterInternalLinkBody'];
+export type RegisterInternalItemPage = Schemas['RegisterInternalItemPage'];
 export type RegisterUnit = Schemas['RegisterUnit'];
 export type RegisterUnitPage = Schemas['RegisterUnitPage'];
 export type RegisterUnitBody = Schemas['RegisterUnitBody'];
@@ -44,3 +45,8 @@ export interface RegisterPageQuery {
   limit?: number;
   offset?: number;
 }
+
+// c8-ui-applicability-status: the legal entities an answer can be given for, and a member
+// as the owner and contact pickers offer them (GET /reference/people).
+export type RegisterSpannedEntity = Schemas['RegisterSpannedEntity'];
+export type RegisterPerson = Schemas['PersonRef'];

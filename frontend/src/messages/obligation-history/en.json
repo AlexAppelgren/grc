@@ -1,3 +1,25 @@
 {
-  "obligationHistory.heading": "How we read this rule"
+  "obligationHistory.heading": "How we read this rule",
+  "obligationHistory.readingEmpty": "No reading recorded. Write down how we read the rule where the text leaves room, so the next person does not start over.",
+  "obligationHistory.readingError": "How we read this rule could not be loaded",
+  "obligationHistory.readingBy": "Version {version}, written by {name}, {date}",
+  "obligationHistory.writeFirst": "Write how we read it",
+  "obligationHistory.writeNew": "Write a new version",
+  "obligationHistory.earlier": "{count, plural, one {Earlier version of how we read this rule, #} other {Earlier versions of how we read this rule, #}}",
+  "obligationHistory.editorLabel": "Our reading",
+  "obligationHistory.editorHint": "Saved as version {version} in your name. Earlier versions stay readable.",
+  "obligationHistory.save": "Save version",
+  "obligationHistory.stale": "Someone saved a new version while you were writing. Reload to read it; what you wrote here is not saved.",
+  "obligationHistory.reload": "Reload",
+  "obligationHistory.historyTitle": "Assessment history",
+  "obligationHistory.historyEmpty": "No assessment yet. The first status starts the history.",
+  "obligationHistory.historyError": "The assessment history could not be loaded",
+  "obligationHistory.newer": "Newer",
+  "obligationHistory.older": "Older",
+  "obligationHistory.range": "{from} to {to} of {total}",
+  "obligationHistory.method.selfAssessment": "Self-assessment",
+  "obligationHistory.method.secondLineReview": "Second-line review",
+  "obligationHistory.method.internalAudit": "Internal audit",
+  "obligationHistory.method.externalAudit": "External audit",
+  "obligationHistory.method.regulator": "Regulator"
 }

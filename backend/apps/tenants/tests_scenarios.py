@@ -1,27 +1,48 @@
 """Scenario tests for the tenants app (playbook 4.1, Appendix B): one method per
 `@integration` scenario in app.md, each carrying its ID. Chunk 1 un-skips TEN-S1, ADM-S1
-and ADM-S3; TEN-S2 to S6 stay skipped (R2, chunk 8). Never delete a scenario without
+and ADM-S3. c8-ten-organisation un-skips TEN-S2 and TEN-S10; `c8-ten-reassignment` un-skips
+TEN-S5 and TEN-S9 and TEN-S3's register half; `c9-owner-team-and-reassign` adds their case
+halves; c8-ten-support-grants un-skips TEN-S6's grant halves. Never delete a scenario without
 updating app.md.
 
 Operations exercised (the audit-on-write guard reads these names): updateTenant,
 setTenantAi (its branches in tests_organisation.py),
-consoleReissueEnrolment (proven in identity ID-S13).
+consoleReissueEnrolment (proven in identity ID-S13), requestConsoleSupportAccess,
+approveSupportAccess, declineSupportAccess, revokeSupportAccess, enterConsoleSupportAccess.
 
 Prefixes hosted: ADM, TEN.
 """
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
-from unittest import skip
+from unittest import mock, skip
 
-from apps.identity.models import TenantRole
+from django.db import IntegrityError, transaction
+from django.test import override_settings
+from django.utils import timezone
+
+from apps.cases import testing as case_build
+from apps.cases.models import Action, ChangeCase
+from apps.collab.models import Participant
+from apps.identity.models import Membership, TenantRole
+from apps.library.models import Obligation
+from apps.library.reading import today_for
 from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.register.models import TenantObligation
 from apps.shared import factories, permissions as perms
+from apps.shared.adapters.mailer import MockMailer
+from apps.shared.kinds import CaseStatusCategory
+from apps.shared.models import AuditEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy import tenant_lists_logic
-from apps.taxonomy.models import FootprintTerm
+from apps.taxonomy.models import FootprintTerm, TaxonomyTerm, TermDimensionKind
+from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+from apps.tenants import reassignment
+from apps.tenants.models import SupportAccess, TeamMember
+from apps.tenants.tests_reassignment import owned_work
 
 
 class TenantsScenarioTests(ScenarioTestCase):
@@ -90,20 +111,117 @@ class TenantsScenarioTests(ScenarioTestCase):
         self.assertTrue(steps["footprint"])
         self.assertFalse(steps["vocabularies"])
 
-    @skip("pending: TEN-S2 (TEN-02, chunk 8)")
+    def _seed_terms(self) -> None:
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+
     def test_ten_s2(self) -> None:
         """TEN-S2
 
         Legal entities and products are scoped like obligations (TEN-02).
         Operations: `createOrgUnit`, `createLicence`, `createProduct`, `updateProduct`.
-        """
 
-    @skip("pending: TEN-S3 (TEN-03, chunk 8)")
+        c8-ten-organisation. The register's line (a compliance status per entity) is the
+        register's to prove once it holds one; here the entity is a unit whose id a register
+        row points at, carrying its legal-entity term.
+        """
+        self._seed_terms()
+        headers = self._member_with(perms.VOCAB_MANAGE)
+        owner = factories.member_user(self.tenant)
+        entity = self.client.post(
+            "/api/v1/tenant/org-units", data={"kind": "legal_entity", "name": "Bank AB", "entityTerm": "bank"}, content_type="application/json", **headers
+        )
+        self.assertEqual(entity.status_code, 201, entity.content)
+        unit_id = entity.json()["id"]
+        today = today_for(self.tenant)
+        licence = self.client.post(
+            f"/api/v1/tenant/org-units/{unit_id}/licences",
+            data={"licenceType": "bank", "reference": "FI 12-3456", "grantedOn": (today - timedelta(days=3650)).isoformat(), "serviceTerms": ["custody"]},
+            content_type="application/json",
+            **headers,
+        )
+        self.assertEqual(licence.status_code, 201, licence.content)
+        product = self.client.post(
+            "/api/v1/tenant/products", data={"name": "Custody", "orgUnitId": unit_id, "terms": ["custody", "retail"]}, content_type="application/json", **headers
+        )
+        self.assertEqual(product.status_code, 201, product.content)
+        # Both carry terms of the dimensions obligations are scoped with: the dimensions are
+        # read from the rows the registry serves, by kind, never from a list of keys here.
+        scope_dimensions = set(
+            REGISTRY["term_dimension"].model.objects.filter(kind__in=[TermDimensionKind.SCOPE.value, TermDimensionKind.OPT_IN.value]).values_list("key", flat=True)
+        )
+        carried = [entity.json()["entityTerm"]["key"], licence.json()["licenceType"]["key"]]
+        carried += [term["key"] for term in licence.json()["serviceTerms"] + product.json()["terms"]]
+        dimensions = set(TaxonomyTerm.objects.filter(key__in=carried).values_list("dimension__key", flat=True))
+        self.assertLessEqual(dimensions, scope_dimensions)
+        # A licence row may also hold a certificate with its validity, next audit and owner;
+        # those carry no term.
+        certificate = self.client.patch(
+            f"/api/v1/tenant/licences/{licence.json()['id']}",
+            data={"validUntil": (today + timedelta(days=365)).isoformat(), "nextAuditOn": (today + timedelta(days=90)).isoformat(), "ownerUserId": str(owner.id)},
+            content_type="application/json",
+            HTTP_IF_MATCH='"1"',
+            **headers,
+        )
+        self.assertEqual(certificate.status_code, 200, certificate.content)
+        self.assertEqual(certificate.json()["owner"]["id"], str(owner.id))
+        self.assertEqual([term["key"] for term in certificate.json()["serviceTerms"]], ["custody"])
+        # Retiring the product is a status; the row stays.
+        retired = self.client.patch(
+            f"/api/v1/tenant/products/{product.json()['id']}", data={"status": "retired"}, content_type="application/json", HTTP_IF_MATCH='"1"', **headers
+        )
+        self.assertEqual((retired.status_code, retired.json()["status"]), (200, "retired"))
+        self.assertEqual([row["id"] for row in self.client.get("/api/v1/tenant/products", **headers).json()["items"]], [product.json()["id"]])
+
+    def _erik(self) -> tuple[Any, Any, Any, Any]:
+        """TEN-S9's Erik and the work he holds (tests_reassignment.owned_work), Anna who takes
+        it over, and the admin's step-up headers."""
+        officer = factories.member_user(self.tenant, roles=("compliance_officer",))
+        erik = factories.member(self.tenant, roles=("compliance_officer",), user_row=factories.user(name="Erik Dahl")).user
+        anna = factories.member_user(self.tenant, roles=("compliance_officer",))
+        return erik, anna, owned_work(self.tenant, erik, officer), sign_in(self.admin, tenant=self.tenant, step_up=True)
+
+    def _cases(self, owner: Any, *, team: Any = None, count: int = 2) -> list[Any]:
+        """`count` cases in assessment owned by `owner`, with `team` beside, each with an open
+        action `owner` owns (c9-owner-team-and-reassign)."""
+        cases = [case_build.case_on_a_new_change(self.tenant) for _ in range(count)]
+        self.activate(self.tenant)
+        ChangeCase.objects.filter(pk__in=[c.pk for c in cases]).update(status=CaseStatusCategory.ASSESSING.value, owner=owner, owner_team=team)
+        for case in cases:
+            Action.objects.create(tenant=self.tenant, case=case, title="Update the policy", owner=owner, due_date=case.created_at.date(), created_by=owner)
+        return cases
+
+    def _remove(self, erik: Any, owners: list[dict[str, Any]], headers: dict[str, Any]) -> Any:
+        return self.client.post(
+            f"/api/v1/tenant/members/{erik.id}/remove", data={"owners": owners}, content_type="application/json", **headers
+        )
+
     def test_ten_s3(self) -> None:
         """TEN-S3
 
-        A team can own work and the ownership survives a member leaving (TEN-03).
+        A team can own work and the ownership survives a member leaving (TEN-03). The
+        register half: the team "Cards" owns an entry and takes part in another, and neither
+        moves when Erik, one of its members, is removed. The case half
+        (`c9-owner-team-and-reassign`): "Cards" owns a case beside Anna, and the case
+        still lists the team, with nothing to reassign on it, after Erik leaves.
         """
+        erik, anna, work, headers = self._erik()
+        [team_case] = self._cases(anna, team=work.cards, count=1)
+        preview = self.client.get(f"/api/v1/tenant/members/{erik.id}/open-work", **headers).json()
+        self.assertNotIn(str(work.team_owned.id), str(preview))
+        self.assertNotIn("case", {row["kind"] for row in preview["items"]})
+        owners = [{"kind": kind, "userId": str(anna.id)} for kind in ("register_entry", "register_entity", "gap", "internal_item")]
+        self.assertEqual(self._remove(erik, owners, headers).status_code, 204)
+        self.activate(self.tenant)
+        entry = TenantObligation.objects.get(pk=work.team_owned.pk)
+        self.assertEqual((entry.owner_team_id, entry.first_line_owner_id, entry.version), (work.cards.id, None, 1))
+        self.assertIsNone(Participant.objects.get(pk=work.team_part.pk).removed_at)
+        self.assertFalse(AuditEvent.objects.filter(subject_id=work.team_owned.id, action="register_entry.reassigned").exists())
+        self.assertFalse(AuditEvent.objects.filter(subject_id=team_case.id).exclude(action="session.created").exists())
+        page = self.client.get(f"/api/v1/changes/{team_case.change_id}", **sign_in(anna, tenant=self.tenant)).json()
+        self.assertEqual((page["case"]["ownerTeam"]["key"], page["case"]["owner"]["id"]), ("cards", str(anna.id)))
 
     @skip("pending: TEN-S4 (TEN-04, chunk 8)")
     def test_ten_s4(self) -> None:
@@ -112,22 +230,121 @@ class TenantsScenarioTests(ScenarioTestCase):
         An out-of-office delegate receives approvals and reminders (TEN-04).
         """
 
-    @skip("pending: TEN-S5 (TEN-05, chunk 8)")
     def test_ten_s5(self) -> None:
         """TEN-S5
 
-        Removing a member with open work offers bulk reassignment (TEN-05).
-        Operations: `removeMember`.
+        Removing a member with open work offers bulk reassignment (TEN-05). Erik owns register
+        entries, an entity's row, a gap and an internal item, and two open cases with an
+        action each (the case half, `c9-owner-team-and-reassign`).
+        Operations: `getMemberOpenWork`, `removeMember`, `deactivateMember`.
         """
+        erik, anna, work, headers = self._erik()
+        cases = self._cases(erik)
+        kinds = ("register_entry", "register_entity", "gap", "internal_item", "case", "action")
+        preview = self.client.get(f"/api/v1/tenant/members/{erik.id}/open-work", **headers)
+        self.assertEqual(preview.status_code, 200)
+        owned = {row["kind"]: row["count"] for row in preview.json()["items"]}
+        self.assertEqual({k: owned[k] for k in kinds}, {"register_entry": 3, "register_entity": 1, "gap": 1, "internal_item": 1, "case": 2, "action": 2})
+        # Nothing changes until the admin confirms: the plain removal is refused with the counts.
+        refused = self.client.delete(f"/api/v1/tenant/members/{erik.id}", **headers)
+        self.assertEqual((refused.status_code, refused.json()["code"]), (422, "reassignment_required"))
+        self.activate(self.tenant)
+        self.assertEqual(TenantObligation.objects.filter(first_line_owner=erik).count(), 2)
+        self.assertEqual(ChangeCase.objects.filter(owner=erik).count(), 2)
+        self.assertIsNone(Membership.objects.get(user=erik).deactivated_at)
 
-    @skip("pending: TEN-S6 (TEN-06, chunk 8)")
+        owners = [{"kind": kind, "userId": str(anna.id)} for kind in kinds]
+        self.assertEqual(self._remove(erik, owners, headers).status_code, 204)
+        self.activate(self.tenant)
+        self.assertEqual(reassignment.open_work_counts(self.tenant.id, erik.id), [])
+        self.assertEqual(TenantObligation.objects.filter(first_line_owner=anna).count(), 2)
+        self.assertEqual(set(ChangeCase.objects.filter(owner=anna).values_list("id", flat=True)), {c.id for c in cases})
+        self.assertEqual(Action.objects.filter(case__in=cases, owner=anna).count(), 2)
+        self.assertIsNotNone(Membership.objects.get(user=erik).deactivated_at)
+        for action, count in (
+            ("register_entry.reassigned", 3),
+            ("register_entity.reassigned", 1),
+            ("gap.reassigned", 1),
+            ("internal_item.reassigned", 1),
+            ("case.reassigned", 2),
+            ("action.reassigned", 2),
+            ("member.deactivated", 1),
+        ):
+            self.assertEqual(AuditEvent.objects.filter(action=action, tenant_id=self.tenant.id).count(), count, action)
+
     def test_ten_s6(self) -> None:
         """TEN-S6
 
         Support access is requested by the platform, approved by the bank and time-boxed (TEN-06).
         Operations: `requestConsoleSupportAccess`, `approveSupportAccess`, `declineSupportAccess`,
-        `revokeSupportAccess`, `enterConsoleSupportAccess`.
+        `revokeSupportAccess`, `enterConsoleSupportAccess`: the request and the decisions
+        (c8-ten-support-grants), then entering, the logged reads, the 403 on a write and the
+        401 after a revoke and after the window (c8-support-session-guard).
         """
+        MockMailer.reset()
+        platform = factories.platform_user()
+        console = sign_in(platform, tenant=None)
+        bank = sign_in(self.admin, tenant=self.tenant, step_up=True)
+        url = f"/api/v1/console/tenants/{self.tenant.id}/support-access"
+        body = {"purpose": "The bank reports that its watch feed stopped updating.", "hours": 2}
+
+        # Given a platform admin without any grant, the bank's reads answer 404.
+        self.assertEqual(self.client.get("/api/v1/tenant/support-access", **console).status_code, 404)
+        # They request two hours with a purpose: nothing is granted and security.manage hears.
+        requested = self.client.post(url, data=body, content_type="application/json", **console)
+        self.assertEqual(requested.status_code, 201, requested.content)
+        self.assertEqual(requested.json()["state"], "pending")
+        self.assertEqual(self.client.get("/api/v1/tenant/support-access", **console).status_code, 404)
+        self.assertEqual([mail.to for mail in MockMailer.sent], [self.admin.email])
+        grant = requested.json()["id"]
+
+        # A tenant admin approves with a fresh step-up; the panel shows purpose, person and end.
+        approved = self.client.post(f"/api/v1/tenant/support-access/{grant}/approve", **bank)
+        self.assertEqual(approved.status_code, 200, approved.content)
+        panel = self.client.get("/api/v1/tenant/support-access", **bank).json()["items"][0]
+        self.assertEqual(panel["state"], "active")
+        self.assertEqual(panel["purpose"], body["purpose"])
+        self.assertEqual(panel["platformPerson"]["id"], str(platform.id))
+        self.assertIsNotNone(panel["endsAt"])
+
+        # The platform person enters with a fresh step-up; every read lands in the bank's audit
+        # log as support_access.read, with the route and the platform user.
+        support = self._enter(platform, grant)
+        self.assertEqual(self.client.get("/api/v1/changes", **support).status_code, 200)
+        self.activate(self.tenant)
+        read = AuditEvent.objects.filter(action="support_access.read").get()
+        self.assertEqual((read.actor_id, read.after["route"], read.after["platformUserId"]), (platform.id, "/changes", str(platform.id)))
+        # A write under it answers 403 support_read_only.
+        refused = self.client.patch("/api/v1/tenant/workflow", data={"escalateAfterDays": 7}, content_type="application/json", **support)
+        self.assertEqual((refused.status_code, refused.json()["code"]), (403, "support_read_only"))
+
+        # The tenant admin revokes it.
+        revoked = self.client.post(f"/api/v1/tenant/support-access/{grant}/revoke", **bank)
+        self.assertEqual(revoked.status_code, 200, revoked.content)
+        self.assertEqual(revoked.json()["state"], "revoked")
+        # The next request answers 401, and the platform person's reads are 404 again.
+        ended = self.client.get("/api/v1/changes", **support)
+        self.assertEqual((ended.status_code, ended.json()["code"]), (401, "support_access_ended"))
+        console = sign_in(platform, tenant=None)
+        self.assertEqual(self.client.get("/api/v1/tenant/support-access", **console).status_code, 404)
+
+        # A grant nobody revokes ends the same way when its two hours pass.
+        third = self.client.post(url, data=body, content_type="application/json", **console).json()["id"]
+        self.assertEqual(self.client.post(f"/api/v1/tenant/support-access/{third}/approve", **bank).status_code, 200)
+        with override_settings(ACCESS_TOKEN_TTL_MINUTES=6 * 60):
+            support = self._enter(platform, third)
+        self.assertEqual(self.client.get("/api/v1/changes", **support).status_code, 200)
+        with mock.patch("django.utils.timezone.now", return_value=timezone.now() + timedelta(hours=2, minutes=1)):
+            ended = self.client.get("/api/v1/changes", **support)
+        self.assertEqual((ended.status_code, ended.json()["code"]), (401, "support_access_ended"))
+        console = sign_in(platform, tenant=None)
+        self.assertEqual(self.client.get("/api/v1/tenant/support-access", **console).status_code, 404)
+
+        # And a second request the bank does not want is declined, granting nothing.
+        second = self.client.post(url, data=body, content_type="application/json", **console).json()["id"]
+        declined = self.client.post(f"/api/v1/tenant/support-access/{second}/decline", **bank)
+        self.assertEqual(declined.json()["state"], "declined")
+        self.assertEqual(self.client.post(f"/api/v1/tenant/support-access/{second}/approve", **bank).status_code, 422)
 
     def test_adm_s1(self) -> None:
         """ADM-S1
@@ -188,35 +405,189 @@ class TenantsScenarioTests(ScenarioTestCase):
         allowed = self.client.patch("/api/v1/tenant/workflow", data={"escalateAfterDays": 7}, content_type="application/json", **config_admin)
         self.assertEqual((allowed.status_code, allowed.json()["workflow"]["escalateAfterDays"]), (200, 7))
 
-    @skip("pending: TEN-S8 (TEN-02, TEN-03, chunk 8)")
     def test_ten_s8(self) -> None:
         """TEN-S8
 
         A department has a head and teams, and team membership is set on the member row (TEN-02, TEN-03).
-        Operations: `createOrgUnit`, `updateOrgUnit`.
-        """
+        Operations: `createOrgUnit`, `updateOrgUnit`, `setMemberTeams`.
 
-    @skip("pending: TEN-S9 (TEN-05, COL-04, chunk 8)")
+        c8-ten-teams-people: the department and its team are rows here, because adding them
+        through `createOrgUnit` and `/vocab/team` is TEN-S2's and VOC-02's to prove; the
+        database's refusal of another bank's member, department or head is proven as `cw_app`
+        in tests_team_models.py and tests_models.py.
+        """
+        karin = factories.member(self.tenant, user_row=factories.user(name="Karin Holm")).user
+        anna = factories.member(self.tenant, user_row=factories.user(name="Anna Berg")).user
+        johan = factories.member(self.tenant, user_row=factories.user(name="Johan Ek")).user
+        retail = factories.department(self.tenant, name="Retail Banking", head=karin)
+        factories.team(self.tenant, key="retail-compliance", label="Retail compliance", org_unit=retail)
+
+        me = self.client.get("/api/v1/me", **sign_in(karin, tenant=self.tenant)).json()
+        self.assertIn({"id": str(retail.id), "name": "Retail Banking"}, me["headOf"])
+
+        admin = sign_in(self.admin, tenant=self.tenant)
+        for person in (anna, johan):
+            url = f"/api/v1/tenant/members/{person.id}/teams"
+            response = self.client.put(url, data={"teams": ["retail-compliance"]}, content_type="application/json", **admin)
+            self.assertEqual(response.status_code, 200, response.content)
+            self.assertEqual(response.json()["teams"], ["retail-compliance"])
+            self.activate(self.tenant)
+            membership = Membership.objects.get(tenant=self.tenant, user=person)
+            event = AuditEvent.objects.get(action="member.teams_changed", subject_id=membership.id)
+            self.assertEqual((event.before, event.after), ({"teams": []}, {"teams": ["retail-compliance"]}))
+        members = self.client.get("/api/v1/tenant/teams/retail-compliance/members", **admin).json()
+        self.assertEqual([row["name"] for row in members["items"]], ["Anna Berg", "Johan Ek"])
+
+        other = factories.tenant(slug="elsewhere")
+        stranger = factories.member_user(other)
+        refused = self.client.put(
+            f"/api/v1/tenant/members/{stranger.id}/teams", data={"teams": ["retail-compliance"]}, content_type="application/json", **admin
+        )
+        self.assertEqual((refused.status_code, refused.json()["code"]), (422, "unknown_member"))
+
+        without = self._member_with(perms.CASES_READ)
+        denied = self.client.put(
+            f"/api/v1/tenant/members/{anna.id}/teams", data={"teams": []}, content_type="application/json", **without
+        )
+        self.assertEqual(denied.status_code, 403)
+
     def test_ten_s9(self) -> None:
         """TEN-S9
 
         Removing a member ends their participations and team memberships (TEN-05, COL-04).
+        Erik takes part in three entries and is in "Legal" and "Cards"; the case
+        participations are `c9-owner-team-and-reassign`'s.
         """
+        erik, anna, work, headers = self._erik()
+        preview = self.client.get(f"/api/v1/tenant/members/{erik.id}/open-work", **headers).json()
+        held = {row["kind"]: row["count"] for row in preview["items"]}
+        self.assertEqual((held["participation"], held["team_membership"]), (3, 2))
+        self.assertEqual(sorted(preview["teams"]), ["cards", "legal"])
+        self.activate(self.tenant)
+        self.assertEqual(Participant.objects.filter(user=erik, removed_at__isnull=True).count(), 3)
 
-    @skip("pending: TEN-S10 (TEN-02, chunk 8)")
+        owners = [{"kind": kind, "userId": str(anna.id)} for kind in ("register_entry", "register_entity", "gap", "internal_item")]
+        self.assertEqual(self._remove(erik, owners, headers).status_code, 204)
+        self.activate(self.tenant)
+        self.assertFalse(Participant.objects.filter(user=erik, removed_at__isnull=True).exists())
+        self.assertEqual(Participant.objects.filter(user=erik).count(), 3)
+        self.assertFalse(TeamMember.objects.filter(user=erik).exists())
+        self.assertIsNone(Participant.objects.get(pk=work.team_part.pk).removed_at)
+        self.assertEqual(AuditEvent.objects.filter(action="participant.removed", tenant_id=self.tenant.id).count(), 3)
+        self.assertEqual(AuditEvent.objects.filter(action="team_member.removed", tenant_id=self.tenant.id).count(), 2)
+
     def test_ten_s10(self) -> None:
         """TEN-S10
 
         A legal entity records a certificate it holds (TEN-02, AC-TEN1).
         Operations: `createLicence`, `updateLicence`.
-        """
 
-    @skip("pending: TEN-S11 (TEN-06, chunk 8)")
+        c8-ten-organisation. The entity screen's section is the organisation journey's; here
+        the list that screen reads carries the row with its validity and next audit.
+        """
+        self._seed_terms()
+        headers = self._member_with(perms.VOCAB_MANAGE)
+        owner = factories.member_user(self.tenant)
+        entity = self.client.post(
+            "/api/v1/tenant/org-units", data={"kind": "legal_entity", "name": "Example Bank AB", "entityTerm": "bank"}, content_type="application/json", **headers
+        ).json()
+        self.activate(self.tenant)
+        footprint = list(FootprintTerm.objects.filter(tenant=self.tenant).values_list("term_id", flat=True))
+        obligations = Obligation.objects.count()
+        today = today_for(self.tenant)
+        dates = {
+            "issuedOn": (today - timedelta(days=200)).isoformat(),
+            "validUntil": (today + timedelta(days=895)).isoformat(),
+            "nextAuditOn": (today + timedelta(days=165)).isoformat(),
+        }
+        created = self.client.post(
+            f"/api/v1/tenant/org-units/{entity['id']}/licences",
+            data={
+                "licenceType": "iso_iec_27001",
+                "issuer": "Example Certification AB",
+                "number": "EC-2026-0142",
+                "scopeStatement": "Information security management for payment services.",
+                "ownerUserId": str(owner.id),
+                **dates,
+            },
+            content_type="application/json",
+            **headers,
+        )
+        self.assertEqual(created.status_code, 201, created.content)
+        listed = self.client.get(f"/api/v1/tenant/org-units/{entity['id']}/licences", **headers).json()
+        [row] = [row for row in listed["items"] if row["id"] == created.json()["id"]]
+        self.assertEqual({key: row[key] for key in dates}, dates)
+        self.assertEqual((row["issuer"], row["number"], row["owner"]["id"], row["withdrawnOn"]), ("Example Certification AB", "EC-2026-0142", str(owner.id), None))
+        # The write is audited with before and after values, and nothing else moved.
+        self.activate(self.tenant)
+        [event] = AuditEvent.objects.filter(tenant=self.tenant, subject_id=row["id"])
+        self.assertEqual((event.action, event.before), ("licence.created", {}))
+        self.assertEqual({key: event.after[key] for key in dates}, dates)
+        self.assertEqual(event.after["ownerUserId"], str(owner.id))
+        self.assertEqual(list(FootprintTerm.objects.filter(tenant=self.tenant).values_list("term_id", flat=True)), footprint)
+        self.assertEqual(Obligation.objects.count(), obligations)
+        # A withdrawal date: the row reads as withdrawn and stays in the history.
+        withdrawn_on = today.isoformat()
+        withdrawn = self.client.patch(
+            f"/api/v1/tenant/licences/{row['id']}", data={"withdrawnOn": withdrawn_on}, content_type="application/json", HTTP_IF_MATCH='"1"', **headers
+        )
+        self.assertEqual((withdrawn.status_code, withdrawn.json()["withdrawnOn"]), (200, withdrawn_on))
+        listed = self.client.get(f"/api/v1/tenant/org-units/{entity['id']}/licences", **headers).json()
+        self.assertEqual([(item["id"], item["withdrawnOn"]) for item in listed["items"]], [(row["id"], withdrawn_on)])
+        self.activate(self.tenant)
+        update = AuditEvent.objects.get(tenant=self.tenant, subject_id=row["id"], action="licence.updated")
+        self.assertEqual((update.before, update.after), ({"withdrawnOn": None}, {"withdrawnOn": withdrawn_on, "rewritten": []}))
+
+    def _enter(self, platform: Any, grant: str) -> dict[str, Any]:
+        """Headers of the support session `platform` opens under `grant`, with a fresh step-up."""
+        entered = self.client.post(f"/api/v1/console/support-access/{grant}/enter", **sign_in(platform, tenant=None, step_up=True))
+        self.assertEqual(entered.status_code, 200, entered.content)
+        self.assertEqual(entered.json()["sessionKind"], "support")
+        return {"HTTP_AUTHORIZATION": f"Bearer {entered.json()['accessToken']}"}
+
     def test_ten_s11(self) -> None:
         """TEN-S11
 
         A support session reads and never writes, and never approves itself (TEN-06).
+        Operations: `enterConsoleSupportAccess`; the refusals are proven over every route in
+        apps/shared/tests_support_routes.py.
         """
+        platform = factories.platform_user()
+        console = sign_in(platform, tenant=None)
+        bank = sign_in(self.admin, tenant=self.tenant, step_up=True)
+        body = {"purpose": "The bank's briefing did not arrive.", "hours": 1}
+        grant = self.client.post(
+            f"/api/v1/console/tenants/{self.tenant.id}/support-access", data=body, content_type="application/json", **console
+        ).json()["id"]
+        self.assertEqual(self.client.post(f"/api/v1/tenant/support-access/{grant}/approve", **bank).status_code, 200)
+        support = self._enter(platform, grant)
+        self.activate(self.tenant)
+        written = AuditEvent.objects.count()
+
+        # Any write, an evidence download or an export: 403 support_read_only, nothing written.
+        refusals = [
+            ("POST", f"/api/v1/tenant/support-access/{grant}/revoke"),
+            ("PATCH", "/api/v1/tenant"),
+            ("DELETE", f"/api/v1/tenant/members/{self.admin.id}"),
+            ("GET", f"/api/v1/evidence/{grant}/download"),
+            # Search and Ask would spend the bank's AI budget.
+            ("POST", "/api/v1/search"),
+            ("POST", "/api/v1/ask"),
+        ]
+        for method, path in refusals:
+            with self.subTest(route=f"{method} {path}"):
+                response = self.client.generic(method, path, data="{}", content_type="application/json", **support)
+                self.assertEqual((response.status_code, response.json()["code"]), (403, "support_read_only"))
+        self.activate(self.tenant)
+        self.assertEqual(AuditEvent.objects.count(), written, "a refused request writes nothing")
+
+        # The platform person who asked can never approve the grant: the database refuses it.
+        requested = SupportAccess.objects.create(
+            tenant=self.tenant, platform_user=platform, reason="Check the feed.", hours=1, status="requested"
+        )
+        requested.approved_by = platform
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            requested.save(update_fields=["approved_by"])
 
     @skip("pending: TEN-S12 (REP-04, chunk 12)")
     def test_ten_s12(self) -> None:

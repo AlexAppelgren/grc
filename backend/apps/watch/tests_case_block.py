@@ -26,12 +26,12 @@ from django.utils import timezone
 
 from apps.cases import logic, state
 from apps.cases import testing as cases_build
-from apps.cases.models import Action, ChangeCase, Evidence, EvidenceKind
+from apps.cases.models import Action, ChangeCase, Evidence, EvidenceKind, ImpactAssessment
 from apps.identity.models import User
 from apps.shared import factories, tenancy
 from apps.shared.models import Tenant
 from apps.shared.testing import sign_in
-from apps.taxonomy.models import CaseStatusCategory, CaseSubStatus, ClosureReason, DismissalReason
+from apps.taxonomy.models import CaseStatusCategory, CaseSubStatus, ClosureReason, DismissalReason, EffortSize
 from apps.watch import testing as build
 
 C = CaseStatusCategory
@@ -187,6 +187,66 @@ class WorkflowBlockTests(CaseBlockFixture):
             response = self.client.get(url, **headers)
         self.assertEqual(response.json()["case"]["openActionCount"], 3)
         self.assertEqual(len(busy), len(bare), "actions and evidence are counted, never read one by one (NFR-02)")
+
+
+class AssessmentOnTheBlockTests(CaseBlockFixture):
+    """c9-fe-triage-assessment: the assessment panel and the closed panel read the saved
+    assessment and the close note from the change page, as every case panel reads its case
+    (design/screens/tenant-change.html), rather than from a write's answer only."""
+
+    def save_assessment(self, *, effort: str | None) -> None:
+        with transaction.atomic():
+            tenancy.activate(self.tenant.id)
+            ImpactAssessment.objects.create(
+                tenant=self.tenant,
+                case=self.case,
+                applies="partly",
+                why="We pay two research providers from our own account.",
+                what_must_change="Written criteria for the annual assessment.",
+                internal_deadline=timezone.localdate(),
+                effort=None if effort is None else EffortSize.objects.get(tenant=self.tenant, key=effort),
+                saved=True,
+                saved_by=self.officer,
+                saved_at=timezone.now(),
+                version=2,
+            )
+
+    def test_no_assessment_and_no_note_before_there_is_one(self) -> None:
+        case = self.block()
+        self.assertIsNone(case["assessment"])
+        self.assertIsNone(case["closedNote"])
+
+    def test_the_saved_assessment_is_on_the_block(self) -> None:
+        cases_build.in_category(self.case, C.ASSESSING)
+        self.save_assessment(effort="m")
+        assessment = self.block()["assessment"]
+        self.assertEqual(assessment["applies"], "partly")
+        self.assertEqual(assessment["why"], "We pay two research providers from our own account.")
+        self.assertEqual(assessment["whatMustChange"], "Written criteria for the annual assessment.")
+        self.assertEqual(assessment["internalDeadline"], timezone.localdate().isoformat())
+        self.assertEqual(assessment["effort"]["key"], "m")
+        self.assertTrue(assessment["saved"])
+        self.assertEqual(assessment["savedBy"], {"id": str(self.officer.id), "name": self.officer.name})
+        self.assertEqual(assessment["version"], 2)
+
+    def test_the_close_note_is_on_the_block(self) -> None:
+        with transaction.atomic():
+            tenancy.activate(self.tenant.id)
+            reason = ClosureReason.objects.get(tenant=self.tenant, key="no_action")
+        cases_build.in_category(self.case, C.CLOSED)
+        self.set_case(close_reason=reason, closed_at=timezone.now(), closed_note="Paid from client charges already.")
+        self.assertEqual(self.block()["closedNote"], "Paid from client charges already.")
+
+    def test_an_assessment_costs_no_query_beyond_its_effort_label(self) -> None:
+        cases_build.in_category(self.case, C.ASSESSING)
+        headers = sign_in(self.officer, tenant=self.tenant)
+        url = f"{CHANGES}/{self.case.change_id}"
+        with CaptureQueriesContext(connection) as without:
+            self.client.get(url, **headers)
+        self.save_assessment(effort=None)
+        with CaptureQueriesContext(connection) as saved:
+            self.client.get(url, **headers)
+        self.assertEqual(len(saved), len(without), "the assessment is joined to the case, never read on its own")
 
 
 class FeedRowTests(CaseBlockFixture):

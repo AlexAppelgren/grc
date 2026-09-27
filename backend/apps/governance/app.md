@@ -73,7 +73,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | AUD-03 | A problem report stays inside the bank that filed it and nobody outside reads it; the loop to the library is closed by the watch agents' re-check, which proposes the correction (D-50) | S | R1 | built |
 | AUD-04 | Retention: a record is deleted ten years after its last use. The purge never updates an append-only row, deletes one only past that age, and runs through one database-guarded path (D-53) | S | R3 | pending |
 | ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, evaluation sets, tenants and plans, support access, system health (coverage, runs, outbox lag, failed jobs with retry, and each bank's usage figures through one audited read of numbers only). No problem-report surface (D-50, D-59). R1 built the proposal queue, library vocabularies, Change facts, sources, evaluation sets, tenants and agent keys; agent definitions come in chunk 11 and support access in chunk 8 (R2), languages and jurisdictions in R2 (jurisdictions read-only on the vocabularies screen until then), plans and system health in chunk 14 (R3) | M | R1 to R3 | in_progress |
-| ACC-08 | Tenant reach is requested and approved by two different people holding `security.manage`, each with a passkey; a tenant admin then enables it per entry. Off means off for every entry. Every call is logged with its credential, entry, tool, filters, record count, scope and timing, never content | M | R2 | pending |
+| ACC-08 | Tenant reach is requested and approved by two different people holding `security.manage`, each with a passkey; a tenant admin then enables it per entry. Off means off for every entry. Every call is logged with its credential, entry, tool, filters, record count, scope and timing, never content | M | R2 | in_progress |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -348,3 +348,15 @@ Then it is refused with "jurisdiction_term_mirrored" when proposed and again whe
 ```
 Languages stay a read-only list the reference seed files (D-94). The console screen that
 makes these proposals is `x-console-jurisdictions-fe`'s, which un-fixmes the journey.
+
+### ACC-S14 — Tenant reach is switched on by two people and off by one `@integration` (ACC-08)
+```gherkin
+Given two members holding security.manage and a bank whose tenant reach is off
+When one of them requests tenant reach with a fresh passkey assertion and tries to approve it themselves
+Then the approval answers 409 "four_eyes_violation" and reach stays off
+When the second approves it with a fresh passkey assertion
+Then reach is on, and the request's and the approval's audit rows each name their person and assertion
+When either of them switches it off with a fresh passkey assertion
+Then reach is off from the next read, with no second person
+And a new request rejected by the second person leaves it off
+```

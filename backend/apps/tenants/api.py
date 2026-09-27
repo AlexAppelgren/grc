@@ -12,7 +12,7 @@ which RFC 9457 `code` to branch on. The standard is
 import uuid
 from typing import Any, cast
 
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from ninja import Path, Query, Router
 
 from apps.identity.models import User
@@ -22,7 +22,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import Principal, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, caller_tenant, if_match
+from apps.taxonomy.http import actor_for, caller_tenant, caller_user, if_match
 from apps.taxonomy.reading import language_order
 from apps.taxonomy.schemas import PersonRef
 from apps.tenants import logic, organisation, people, products, reassignment, support_access, teams
@@ -433,8 +433,7 @@ def list_org_units(request: HttpRequest, page: PageQuery = Query(...)) -> Any:
 
     Errors: `unauthenticated` (401) without a session; `not_found` (404) for a session that
     belongs to no bank, which is what a console session gets; `validation_error` (422) for a
-    page size above 100. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    page size above 100.
     """
     # Ungated by design: capability (any member of the tenant).
     tenant = caller_tenant(request)
@@ -459,15 +458,17 @@ def create_org_unit(request: HttpRequest, body: TenantOrgUnitBody) -> Any:
     administration (ADM-03). No step-up. Recorded in the audit log as `org_unit.created` with
     the new unit, in the same transaction as the write.
 
-    Errors: `validation_error` (422) for a blank or multi-line name, an unknown kind or a field
-    the body does not name; `unknown_key` (422) for a term that is not a legal-entity term,
-    and `not_found` (404) for a parent or head that is not the bank's own;
-    `permission_denied` (403) without `vocab.manage`, naming it in `requiredPermission`;
-    `unauthenticated` (401) without a session. Published ahead of the logic that will fill
-    it, and answering 501 `not_built` until that ships.
+    Errors: `validation_error` (422) for a blank or multi-line name, an unknown kind, a field
+    the body does not name, an LEI that is not 20 letters and digits, a country that is not
+    two letters, or a registration number, LEI, country or term on a unit that is not a
+    legal entity; `unknown_key` (422) for a term that is not a legal-entity term;
+    `unknown_member` (422) for a head who is not an active member of the bank; `not_found`
+    (404) for a parent that is not the bank's own; `permission_denied` (403) without
+    `vocab.manage`, naming it in `requiredPermission`; `unauthenticated` (401) without a
+    session.
     """
     tenant = caller_tenant(request)
-    return organisation.create_org_unit(tenant=tenant, actor=actor_for(request), order=language_order(request, tenant=tenant), body=body)
+    return 201, organisation.create_org_unit(tenant=tenant, actor=actor_for(request), order=language_order(request, tenant=tenant), body=body)
 
 
 @router.patch(
@@ -490,12 +491,13 @@ def update_org_unit(
     between is refused and nothing is merged. Recorded in the audit log as `org_unit.updated`
     with every changed field before and after. No step-up.
 
-    Errors: `not_found` (404) for a unit, parent or head that is not the bank's own;
+    Errors: `not_found` (404) for a unit or parent that is not the bank's own;
     `stale_write` (409) when `If-Match` is not the current version; `validation_error` (422)
-    for an `If-Match` that is not a version or a body the schema refuses; `unknown_key` (422)
-    for an unknown term; `permission_denied` (403) without `vocab.manage`; `unauthenticated`
-    (401). Published ahead of the logic that will fill it, and answering 501 `not_built`
-    until that ships.
+    for an `If-Match` that is not a version, a body the schema refuses, a parent that is the
+    unit itself or sits under it, or a legal entity's field on another kind of unit;
+    `unknown_key` (422) for an unknown term; `unknown_member` (422) for a head who is not an
+    active member of the bank; `permission_denied` (403) without `vocab.manage`;
+    `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return organisation.update_org_unit(
@@ -529,8 +531,7 @@ def list_licences(
     that holds none is a 200 with `total` 0.
 
     Errors: `not_found` (404) for a unit that is not the bank's own; `validation_error` (422)
-    for a page size above 100; `unauthenticated` (401). Published ahead of the logic that will
-    fill it, and answering 501 `not_built` until that ships.
+    for a page size above 100; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     tenant = caller_tenant(request)
@@ -557,17 +558,18 @@ def create_licence(
     applicability changes.
 
     Needs `vocab.manage`. No step-up. Recorded in the audit log as `licence.created` with the
-    new row, in the same transaction as the write.
+    new row, in the same transaction as the write; the scope note and statement a person
+    typed are named in `rewritten`, never copied.
 
-    Errors: `not_found` (404) for a unit or owner that is not the bank's own;
-    `validation_error` (422) for a unit that is not a legal entity, a missing type or a field
-    the body does not name; `unknown_key` (422) for a type or service term the library does
-    not hold; `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401).
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    Errors: `not_found` (404) for a unit that is not the bank's own; `validation_error` (422)
+    for a unit that is not a legal entity, a missing type, a field the body does not name, or
+    a withdrawal or validity end before the date it starts from; `unknown_key` (422) for a
+    type or service term that is not a term obligations are scoped with; `unknown_member`
+    (422) for an owner who is not an active member of the bank; `permission_denied` (403)
+    without `vocab.manage`; `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
-    return organisation.create_licence(
+    return 201, organisation.create_licence(
         tenant=tenant, actor=actor_for(request), order=language_order(request, tenant=tenant), org_unit_id=org_unit_id, body=body
     )
 
@@ -590,14 +592,15 @@ def update_licence(
 
     Needs `vocab.manage`. Send `If-Match` with the `version` last read; a row changed in
     between is refused. Recorded in the audit log as `licence.updated` with every changed
-    field before and after. No step-up.
+    field before and after, the scope note and statement named in `rewritten`, never copied.
+    No step-up.
 
-    Errors: `not_found` (404) for a licence or owner that is not the bank's own;
-    `stale_write` (409) when `If-Match` is not the current version; `validation_error` (422)
-    for an `If-Match` that is not a version or a body the schema refuses; `unknown_key` (422)
-    for an unknown term; `permission_denied` (403) without `vocab.manage`; `unauthenticated`
-    (401). Published ahead of the logic that will fill it, and answering 501 `not_built`
-    until that ships.
+    Errors: `not_found` (404) for a licence that is not the bank's own; `stale_write` (409)
+    when `If-Match` is not the current version; `validation_error` (422) for an `If-Match`
+    that is not a version, a body the schema refuses, or an end date before its start;
+    `unknown_key` (422) for an unknown term; `unknown_member` (422) for an owner who is not
+    an active member of the bank; `permission_denied` (403) without `vocab.manage`;
+    `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return organisation.update_licence(
@@ -627,8 +630,7 @@ def list_products(request: HttpRequest, page: PageQuery = Query(...)) -> Any:
     with no product is a 200 with `total` 0.
 
     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a session
-    that belongs to no bank; `unauthenticated` (401). Published ahead of the logic that will
-    fill it, and answering 501 `not_built` until that ships.
+    that belongs to no bank; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     tenant = caller_tenant(request)
@@ -650,16 +652,17 @@ def create_product(request: HttpRequest, body: TenantProductBody) -> Any:
     be scoped before it launches.
 
     Needs `vocab.manage`. No step-up. Recorded in the audit log as `product.created` with the
-    new row, in the same transaction as the write.
+    new row, in the same transaction as the write; the description is named in `rewritten`,
+    never copied.
 
     Errors: `validation_error` (422) for a blank or multi-line name, a name the bank already
     uses, an unknown status or a field the body does not name; `unknown_key` (422) for a term
-    the library does not hold; `not_found` (404) for a unit or owner that is not the bank's
-    own; `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401). Published
-    ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+    that is not a term obligations are scoped with; `unknown_member` (422) for an owner who
+    is not an active member of the bank; `not_found` (404) for a unit that is not the bank's
+    own; `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
-    return products.create_product(tenant=tenant, actor=actor_for(request), order=language_order(request, tenant=tenant), body=body)
+    return 201, products.create_product(tenant=tenant, actor=actor_for(request), order=language_order(request, tenant=tenant), body=body)
 
 
 @router.patch(
@@ -680,14 +683,14 @@ def update_product(
 
     Needs `vocab.manage`. Send `If-Match` with the `version` last read; a product changed in
     between is refused. Recorded in the audit log as `product.updated` with every changed
-    field before and after. No step-up.
+    field before and after, the description named in `rewritten`, never copied. No step-up.
 
-    Errors: `not_found` (404) for a product, unit or owner that is not the bank's own;
+    Errors: `not_found` (404) for a product or unit that is not the bank's own;
     `stale_write` (409) when `If-Match` is not the current version; `validation_error` (422)
-    for an `If-Match` that is not a version or a body the schema refuses; `unknown_key` (422)
-    for an unknown term; `permission_denied` (403) without `vocab.manage`; `unauthenticated`
-    (401). Published ahead of the logic that will fill it, and answering 501 `not_built`
-    until that ships.
+    for an `If-Match` that is not a version, a body the schema refuses or a name the bank
+    already uses; `unknown_key` (422) for an unknown term; `unknown_member` (422) for an
+    owner who is not an active member of the bank; `permission_denied` (403) without
+    `vocab.manage`; `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return products.update_product(
@@ -718,8 +721,7 @@ def list_teams(request: HttpRequest, page: PageQuery = Query(...)) -> Any:
     Any member of the bank may call it. It changes nothing and writes no audit event.
 
     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a
-    session that belongs to no bank; `unauthenticated` (401). Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    session that belongs to no bank; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     tenant = caller_tenant(request)
@@ -744,8 +746,7 @@ def list_team_members(
     with nobody in it is a 200 with `total` 0.
 
     Errors: `not_found` (404) for a team key the bank does not have; `validation_error` (422)
-    for a page size above 100; `unauthenticated` (401). Published ahead of the logic that will
-    fill it, and answering 501 `not_built` until that ships.
+    for a page size above 100; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     return teams.list_team_members(tenant=caller_tenant(request), key=key, limit=page.limit, offset=page.offset)
@@ -783,9 +784,8 @@ def list_people(
 
     Errors: `unknown_key` (422) for a permission that is not one of a bank's;
     `validation_error` (422) for a permission longer than 64 characters; `not_found` (404) for
-    a session that belongs to no bank; `unauthenticated` (401) without a member session.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    a session that belongs to no bank; `unauthenticated` (401) without a member session;
+    `enrolment_only` (403) from an enrolment session.
     """
     # Ungated by design: capability (a member session, never an enrolment session).
     return people.list_people(tenant=caller_tenant(request), permission=permission)
@@ -808,11 +808,12 @@ def get_member_open_work(request: HttpRequest, user_id: uuid.UUID = Path(..., de
     kind before anything changes.
 
     Needs `members.manage`. It changes nothing and writes no audit event. A member who holds
-    nothing is a 200 with an empty `items`.
+    nothing is a 200 with empty `items` and `teams`. A register entry counts once whether the
+    member is its first-line owner, its compliance contact or both; a closed gap and a retired
+    internal item are history and are not counted. `teams` names the teams the member is in.
 
     Errors: `not_found` (404) for somebody who is not an active member of the bank;
-    `permission_denied` (403) without `members.manage`; `unauthenticated` (401). Published
-    ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+    `permission_denied` (403) without `members.manage`; `unauthenticated` (401).
     """
     return reassignment.open_work(tenant=caller_tenant(request), user_id=user_id)
 
@@ -839,13 +840,21 @@ def remove_member(
     per item moved or ended and `member.deactivated`, each carrying the step-up assertion, in
     the same transaction. If any of it is refused, nothing changes.
 
-    Errors: `validation_error` (422) for a kind the member owns with no new owner, an owner
-    named twice or as both a person and a team, or a field the body does not name;
-    `not_found` (404) for a member, new owner or team that is not the bank's own;
-    `last_admin` (409) when the member is the bank's last administrator; `step_up_required`
-    (403) without a fresh passkey assertion; `permission_denied` (403) without
-    `members.manage`; `unauthenticated` (401). Published ahead of the logic that will fill it,
-    and answering 501 `not_built` until that ships.
+    A register entry the member is the first-line owner or compliance contact of passes those
+    places to a new person; handed to a team, the team becomes the entry's owner and the
+    places the member held are left empty, because a compliance contact is always a person.
+    Every other kind passes to exactly the person or team named. A kind named here that the
+    member holds none of is checked and then ignored.
+
+    Errors: `reassignment_required` (422) for a kind the member owns with no new owner,
+    listing in `errors` each such kind as `field` with its `count`; `validation_error` (422)
+    for a kind named twice, an owner named as both a person and a team or as neither, or a
+    field the body does not name; `unknown_member` (422) for a new owner who is not another
+    current member of the bank, the member being removed included; `unknown_key` (422) for a
+    team that is not one of the bank's active teams; `not_found` (404) for somebody who is
+    not an active member of the bank; `last_admin` (409) when the member is the bank's last
+    administrator; `step_up_required` (403) without a fresh passkey assertion;
+    `permission_denied` (403) without `members.manage`; `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return reassignment.remove_member(
@@ -854,6 +863,7 @@ def remove_member(
         user_id=user_id,
         body=body,
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+        request=request,
     )
 
 
@@ -877,8 +887,7 @@ def list_tenant_support_access(request: HttpRequest, page: PageQuery = Query(...
     never asked is a 200 with `total` 0.
 
     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a
-    session that belongs to no bank; `unauthenticated` (401). Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    session that belongs to no bank; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     return support_access.list_for_tenant(tenant=caller_tenant(request), limit=page.limit, offset=page.offset)
@@ -905,10 +914,10 @@ def approve_support_access(request: HttpRequest, grant_id: uuid.UUID = Path(...,
     assertion, in the same transaction.
 
     Errors: `not_found` (404) for a request that is not the bank's own; `four_eyes_violation`
-    (409) when the approver is the person who asked; `step_up_required` (403) without a fresh
-    passkey assertion;
-    `permission_denied` (403) without `security.manage`; `unauthenticated` (401). Published
-    ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+    (409) when the approver is the person who asked; `invalid_transition` (422) for a request
+    that is no longer pending, because it was decided or lapsed; `step_up_required` (403)
+    without a fresh passkey assertion; `permission_denied` (403) without `security.manage`;
+    `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return support_access.approve(
@@ -934,10 +943,9 @@ def decline_support_access(request: HttpRequest, grant_id: uuid.UUID = Path(...,
 
     Needs `security.manage`. Recorded in the audit log as `support_access.declined`.
 
-    Errors: `not_found` (404) for a request that is not the bank's own;
-    `permission_denied` (403) without `security.manage`;
-    `unauthenticated` (401). Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    Errors: `not_found` (404) for a request that is not the bank's own; `invalid_transition`
+    (422) for a request that is no longer pending, because it was decided or lapsed;
+    `permission_denied` (403) without `security.manage`; `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return support_access.decline(tenant=tenant, actor=actor_for(request), grant_id=grant_id)
@@ -959,10 +967,10 @@ def revoke_support_access(request: HttpRequest, grant_id: uuid.UUID = Path(..., 
 
     Needs `security.manage`. Recorded in the audit log as `support_access.revoked`.
 
-    Errors: `not_found` (404) for a request that is not the bank's own;
-    `permission_denied` (403) without `security.manage`;
-    `unauthenticated` (401). Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    Errors: `not_found` (404) for a request that is not the bank's own; `invalid_transition`
+    (422) for a grant that is not open, because it is still pending, was declined or revoked,
+    or its window passed; `permission_denied` (403) without `security.manage`;
+    `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return support_access.revoke(tenant=tenant, actor=actor_for(request), grant_id=grant_id)
@@ -997,10 +1005,11 @@ def request_console_support_access(
     Errors: `validation_error` (422) for a blank purpose, a window under an hour or above the
     maximum, or a field the body does not name; `not_found` (404) for a bank that does not
     exist; `permission_denied` (403) without `support_access.grant`; `unauthenticated` (401).
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return support_access.request_access(tenant_id=tenant_id, actor=actor_for(request), body=body)
+    requester = caller_user(request)
+    return support_access.request_access(
+        tenant_id=tenant_id, requester=requester, actor=actor_for(request, requester), body=body
+    )
 
 
 @router.get(
@@ -1021,10 +1030,13 @@ def list_console_support_access(request: HttpRequest, page: PageQuery = Query(..
     audit event. A caller who never asked is a 200 with `total` 0.
 
     Errors: `validation_error` (422) for a page size above 100; `permission_denied` (403)
-    without `support_access.grant`; `unauthenticated` (401). Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    without `support_access.grant`; `unauthenticated` (401).
     """
-    return support_access.my_grants(actor=actor_for(request), limit=page.limit, offset=page.offset)
+    return support_access.my_grants(
+        principal=request.auth,  # type: ignore[attr-defined]
+        limit=page.limit,
+        offset=page.offset,
+    )
 
 
 @router.post(
@@ -1039,26 +1051,30 @@ def list_console_support_access(request: HttpRequest, page: PageQuery = Query(..
 @requires_step_up
 def enter_console_support_access(
     request: HttpRequest,
+    response: HttpResponse,
     grant_id: uuid.UUID = Path(
         ..., description="One of the caller's own approved grants, as a UUID; anybody else's, or one that is not active, answers 404."
     ),
 ) -> Any:
     """Replaces the caller's console session with a support session in the bank that approved
-    the grant, and answers with its access token. The session reads under the bank's own
-    row-level security, never writes, and ends with the grant's window or the bank's
+    the grant, and answers with its access token; the refresh token arrives as a cookie in the
+    same response, and the console session is signed out. The session reads under the bank's
+    own row-level security, never writes, and ends with the grant's window or the bank's
     revocation; every request under it is written to the bank's audit log as
-    `support_access.read`.
+    `support_access.read`. A route it may not read answers 403 `support_read_only`, and once
+    the grant has ended every request answers 401 `support_access_ended`.
 
     Needs the platform permission `support_access.grant` and a fresh passkey step-up.
     Recorded in the bank's audit log as `support_access.entered` with the step-up assertion.
 
     Errors: `not_found` (404) for a grant that is not the caller's own or not active;
     `step_up_required` (403) without a fresh passkey assertion; `permission_denied` (403)
-    without `support_access.grant`; `unauthenticated` (401). Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    without `support_access.grant`; `unauthenticated` (401).
     """
     return support_access.enter(
-        actor=actor_for(request),
+        principal=request.auth,  # type: ignore[attr-defined]
         grant_id=grant_id,
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+        request=request,
+        response=response,
     )

@@ -379,6 +379,8 @@ COMPOSITE_KEYS = [
     ("change_case", "dismissed_by_id", "membership"),
     ("change_case", "signoff_requested_by_id", "membership"),
     ("change_case", "signed_off_by_id", "membership"),
+    # cases 0005 (c9-owner-team-and-reassign): the team beside the owner, a team of this bank.
+    ("change_case", "owner_team_id", "team"),
     ("case_obligation_link", "case_id", "change_case"),
     ("case_obligation_link", "decided_by_id", "membership"),
     ("impact_assessment", "case_id", "change_case"),

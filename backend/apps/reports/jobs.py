@@ -34,7 +34,15 @@ EXPORT_REQUESTED = "export.requested"
 EXPORT_DOWNLOADED = "export.downloaded"
 
 
-def create(*, tenant: Tenant, user: User, actor: Actor, body: ExportInput, step_up_assertion_id: uuid.UUID | None) -> ExportJob:
+def create(
+    *,
+    tenant: Tenant,
+    user: User,
+    actor: Actor,
+    permissions: frozenset[str],
+    body: ExportInput,
+    step_up_assertion_id: uuid.UUID | None,
+) -> ExportJob:
     kind = ExportKind(body.kind)
     exporter = exporters.lookup(kind)
     if exporter is None:
@@ -55,6 +63,8 @@ def create(*, tenant: Tenant, user: User, actor: Actor, body: ExportInput, step_
             code="validation_error",
             detail="A case file names its case in subjectId, and no other export names one.",
         )
+    if exporter.check is not None:
+        exporter.check(tenant=tenant, permissions=permissions, subject_id=body.subject_id)
     job = ExportJob.objects.create(
         tenant=tenant,
         kind=kind.value,
@@ -91,10 +101,13 @@ def page(*, tenant: Tenant, limit: int, offset: int) -> tuple[list[ExportJob], i
     return list(jobs.order_by("-created_at", "id")[offset : offset + limit]), jobs.count()
 
 
-def download(*, tenant: Tenant, actor: Actor, job_id: uuid.UUID) -> tuple[ExportJob, IO[bytes]]:
+def download(*, tenant: Tenant, actor: Actor, permissions: frozenset[str], job_id: uuid.UUID) -> tuple[ExportJob, IO[bytes]]:
     job = ExportJob.objects.select_for_update().filter(pk=job_id, tenant=tenant).first()  # ordering: pk lookup, at most one row
     if job is None:
         raise ProblemError(status=404, code="not_found", detail="No export with that id.")
+    exporter = exporters.lookup(ExportKind(job.kind))
+    if exporter is not None and exporter.check is not None:
+        exporter.check(tenant=tenant, permissions=permissions, subject_id=job.subject_id)
     if job.status != JobStatus.SUCCEEDED.value or job.storage_key is None:
         raise ProblemError(status=409, code="export_not_ready", detail="This export has no file yet. Check its status and try again.")
     now = timezone.now()

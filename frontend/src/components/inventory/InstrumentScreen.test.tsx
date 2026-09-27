@@ -75,6 +75,9 @@ const researchObligation: Obligation = {
   tenantTags: [],
   privateToUs: false,
   complianceStatus: null,
+  applicability: 'under_assessment',
+  firstLineOwner: null,
+  ownerTeam: null,
 };
 
 const ME = {
@@ -164,6 +167,18 @@ describe('InstrumentScreen', () => {
     expect([...row.querySelectorAll('[data-pill]')].map((pill) => [pill.textContent, pill.getAttribute('data-pill')])).toEqual([
       ['ISO/IEC 27001:2022', 'brand'],
       ['Standard', 'information'],
+    ]);
+  });
+
+  it('leads the head of the bank\'s own instrument with "Private to us", its short name outlined (OWN-04)', async () => {
+    serve({ ...fffs, privateToUs: true });
+    renderIn(<InstrumentScreen instrumentId="in-1" />);
+    await screen.findByRole('heading', { level: 1, name: 'FFFS 2017:2 om värdepappersrörelse' });
+    const header = document.querySelectorAll('[data-header-pills] [data-pill]');
+    expect([...header].slice(0, 3).map((pill) => [pill.textContent, pill.getAttribute('data-pill'), pill.hasAttribute('data-outlined')])).toEqual([
+      ['Private to us', 'information', true],
+      ['FFFS 2017:2', 'information', true],
+      ['Supervisory regulation', 'information', false],
     ]);
   });
 

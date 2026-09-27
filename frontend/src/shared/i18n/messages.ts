@@ -4,6 +4,8 @@ import enBriefing from '@/messages/briefing/en.json';
 import svBriefing from '@/messages/briefing/sv.json';
 import enCalendarFeeds from '@/messages/calendar-feeds/en.json';
 import svCalendarFeeds from '@/messages/calendar-feeds/sv.json';
+import enCollab from '@/messages/collab/en.json';
+import svCollab from '@/messages/collab/sv.json';
 import enCommon from '@/messages/common/en.json';
 import svCommon from '@/messages/common/sv.json';
 import enConsole from '@/messages/console/en.json';
@@ -18,6 +20,9 @@ import enDev from '@/messages/dev/en.json';
 import svDev from '@/messages/dev/sv.json';
 import enFootprint from '@/messages/footprint/en.json';
 import svFootprint from '@/messages/footprint/sv.json';
+// c8-ui-gaps-risk: the gaps screen and the gap record.
+import enGaps from '@/messages/gaps/en.json';
+import svGaps from '@/messages/gaps/sv.json';
 import enInventory from '@/messages/inventory/en.json';
 import svInventory from '@/messages/inventory/sv.json';
 import enLibrary from '@/messages/library/en.json';
@@ -43,12 +48,17 @@ import enObligationHistory from '@/messages/obligation-history/en.json';
 import svObligationHistory from '@/messages/obligation-history/sv.json';
 import enObligationTags from '@/messages/obligation-tags/en.json';
 import svObligationTags from '@/messages/obligation-tags/sv.json';
+// d89-fe-private: the bank's own queue.
+import enPrivateRecords from '@/messages/private-records/en.json';
+import svPrivateRecords from '@/messages/private-records/sv.json';
 import enPublic from '@/messages/public/en.json';
 import svPublic from '@/messages/public/sv.json';
 import enRoadmap from '@/messages/roadmap/en.json';
 import svRoadmap from '@/messages/roadmap/sv.json';
 import enSearch from '@/messages/search/en.json';
 import svSearch from '@/messages/search/sv.json';
+import enSupportAccess from '@/messages/support-access/en.json';
+import svSupportAccess from '@/messages/support-access/sv.json';
 import enTenantAdmin from '@/messages/tenant-admin/en.json';
 import svTenantAdmin from '@/messages/tenant-admin/sv.json';
 import enToday from '@/messages/today/en.json';
@@ -60,6 +70,26 @@ import svWatch from '@/messages/watch/sv.json';
 // c10-fe-workflow-policy: the workflow policy page (COL-02, TEN-01).
 import enWorkflow from '@/messages/workflow/en.json';
 import svWorkflow from '@/messages/workflow/sv.json';
+// The case panels' catalogs (c9-fe-cases-shell).
+import enCases from '@/messages/cases/en.json';
+import svCases from '@/messages/cases/sv.json';
+import enCaseTriage from '@/messages/case-triage/en.json';
+import svCaseTriage from '@/messages/case-triage/sv.json';
+import enCaseAssessment from '@/messages/case-assessment/en.json';
+import svCaseAssessment from '@/messages/case-assessment/sv.json';
+import enCaseActions from '@/messages/case-actions/en.json';
+import svCaseActions from '@/messages/case-actions/sv.json';
+import enCaseEvidence from '@/messages/case-evidence/en.json';
+import svCaseEvidence from '@/messages/case-evidence/sv.json';
+import enCaseSignoff from '@/messages/case-signoff/en.json';
+import svCaseSignoff from '@/messages/case-signoff/sv.json';
+import enCaseFile from '@/messages/case-file/en.json';
+import svCaseFile from '@/messages/case-file/sv.json';
+import enCaseParticipants from '@/messages/case-participants/en.json';
+import svCaseParticipants from '@/messages/case-participants/sv.json';
+// c8-ui-mywork: My work.
+import enWork from '@/messages/work/en.json';
+import svWork from '@/messages/work/sv.json';
 
 // One catalog per UI language (playbook 6.5), stored as one file pair per
 // feature namespace under src/messages/<namespace>/ so that packages owning
@@ -71,6 +101,7 @@ const en = {
   ...enAuth,
   ...enBriefing,
   ...enCalendarFeeds,
+  ...enCollab,
   ...enCommon,
   ...enConsole,
   ...enConsoleAgentKeys,
@@ -78,6 +109,8 @@ const en = {
   ...enConsoleSources,
   ...enDev,
   ...enFootprint,
+  // c8-ui-gaps-risk
+  ...enGaps,
   ...enInventory,
   ...enLibrary,
   ...enMe,
@@ -91,20 +124,34 @@ const en = {
   ...enObligationUnits,
   ...enObligationHistory,
   ...enObligationTags,
+  // d89-fe-private
+  ...enPrivateRecords,
   ...enPublic,
   ...enRoadmap,
   ...enSearch,
+  ...enSupportAccess,
   ...enTenantAdmin,
   ...enToday,
   ...enVocabularies,
   ...enWatch,
   ...enWorkflow,
+  ...enCases,
+  ...enCaseTriage,
+  ...enCaseAssessment,
+  ...enCaseActions,
+  ...enCaseEvidence,
+  ...enCaseSignoff,
+  ...enCaseFile,
+  ...enCaseParticipants,
+  // c8-ui-mywork
+  ...enWork,
 };
 
 const sv = {
   ...svAuth,
   ...svBriefing,
   ...svCalendarFeeds,
+  ...svCollab,
   ...svCommon,
   ...svConsole,
   ...svConsoleAgentKeys,
@@ -112,6 +159,8 @@ const sv = {
   ...svConsoleSources,
   ...svDev,
   ...svFootprint,
+  // c8-ui-gaps-risk
+  ...svGaps,
   ...svInventory,
   ...svLibrary,
   ...svMe,
@@ -125,14 +174,27 @@ const sv = {
   ...svObligationUnits,
   ...svObligationHistory,
   ...svObligationTags,
+  // d89-fe-private
+  ...svPrivateRecords,
   ...svPublic,
   ...svRoadmap,
   ...svSearch,
+  ...svSupportAccess,
   ...svTenantAdmin,
   ...svToday,
   ...svVocabularies,
   ...svWatch,
   ...svWorkflow,
+  ...svCases,
+  ...svCaseTriage,
+  ...svCaseAssessment,
+  ...svCaseActions,
+  ...svCaseEvidence,
+  ...svCaseSignoff,
+  ...svCaseFile,
+  ...svCaseParticipants,
+  // c8-ui-mywork
+  ...svWork,
 };
 
 export const locales = ['en', 'sv'] as const;

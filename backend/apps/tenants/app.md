@@ -43,12 +43,23 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | TEN-01 | Tenant profile, timezone, default languages, onboarding checklist | M | R1 | built |
 | TEN-02 | Legal entities with licences and certificates (issuer, reference, scope, validity, next audit, owner), departments with a head and the teams in them, and products described the way obligations are scoped | M | R2 | pending |
-| TEN-03 | Teams as owners and participants, so ownership survives a person leaving | M | R2 | pending |
+| TEN-03 | Teams as owners and participants, so ownership survives a person leaving | M | R2 | built |
 | TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | pending |
-| TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | pending |
-| TEN-06 | Support access grants: requested by the platform, approved by a tenant admin with a passkey, read-only, visible to the tenant, time-boxed, revocable and logged in the bank (D-49) | M | R2 | pending |
+| TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | in_progress |
+| TEN-06 | Support access grants: requested by the platform, approved by a tenant admin with a passkey, read-only, visible to the tenant, time-boxed, revocable and logged in the bank (D-49) | M | R2 | built |
 | ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
 | ADM-03 | Admin duties are separate permissions | M | R1 | built |
+
+**TEN-05's backend is built; the dialog is not, which is why it is `in_progress`.** `GET
+/tenant/members/{userId}/open-work`, the refusal of a plain removal (422
+`reassignment_required`) and `POST /tenant/members/{userId}/remove` move register entries,
+legal entities' rows, gaps and internal items (`c8-ten-reassignment`), and open duty
+occurrences, open cases and live actions (`c9-owner-team-and-reassign`), end the member's
+participations, case ones included, and team memberships, and deactivate them in one step-up
+transaction with one audit event per item (TEN-S5, TEN-S9, TEN-S3). A case or an action passes
+to a person, never a team, and a case only to a member who works cases; the team a triage names
+beside a case's owner stays with the case. The removal dialog and TEN-S5's journey are
+`c8-ui-departments-teams-removal`'s.
 
 **ADM-01 is built in part, which is why it stays `in_progress`.** The R1 slice on `main`:
 the organisation profile with its onboarding checklist (TEN-S1); members and invitations,
@@ -56,7 +67,9 @@ roles, and each admin screen gated by its own permission (ADM-S1 to ADM-S3); an 
 passkey re-enrolment of a member and the sessions a person sees and revokes (ID-S12,
 ID-S11); the bank's own API keys; the security log; the audit log; the regulatory scope with
 its change requests and its markets panel (FP-S10); and the vocabularies. What remains, each
-with the Build_Plan.md chunk that delivers it: departments with a head, teams, and team membership on the member row (TEN-02, TEN-03, chunk 8); the
+with the Build_Plan.md chunk that delivers it: putting a team in a department, which no
+route writes yet (TEN-02, chunk 8; departments with their heads, teams and team membership on
+the member row came with c8-ten-organisation and c8-ui-departments-teams-removal); the
 workflow policy's reminders and escalation (COL-02, chunk 10); the agents a bank adds for
 itself (AGT-04, chunk 11); data, meaning exports, import, retention and tenant exit (REP-02
 to REP-04, AUD-04, chunk 12); and integrations beyond the API keys, with the security
@@ -112,6 +125,19 @@ And a licence row may also hold a certificate with its validity, next audit and 
 And the register can hold a compliance status for "Bank AB" separately from another entity
 ```
 
+> **c8-ten-organisation (TEN-02, ADM-01).** The organisation and product routes answer for
+> real: units with their tree, kind, legal-entity term, registration number, LEI, country and
+> head; licences and certificates per legal entity; products with status, launch date, owner,
+> unit and scope terms. Writes need `vocab.manage`, check `If-Match` against the row's
+> `version`, answer 422 `unknown_key` for a term outside the dimensions obligations are scoped
+> with (read from the dimension rows by kind, never listed) and 422 `unknown_member` for a
+> head or owner who is not an active member, and are audited with the fields they changed
+> before and after; a scope note, statement or description is named in `rewritten`, never
+> copied. Units deactivate and licences withdraw; nothing is deleted. TEN-S2's register line
+> (a compliance status per entity) is the register's to prove, with `c8-reg-entity-status`;
+> the teams inside a department come with the teams packages, and the certificate's two
+> roadmap branches (AC-TEN1) with the roadmap, which is why TEN-02 stays `in_progress`.
+
 ### TEN-S3 — A team can own work and the ownership survives a member leaving `@integration` (TEN-03)
 ```gherkin
 Given the team "Compliance operations" owns an obligation and a case
@@ -141,6 +167,13 @@ Then every item is reassigned and the member removed in one transaction with one
 ```
 
 ### TEN-S6 — Support access is requested by the platform, approved by the bank and time-boxed `@integration` `@e2e` (TEN-06)
+
+Which package makes each half green: the request, approve, decline and revoke halves are
+`c8-ten-support-grants`; entering, the logged reads, the 403 on a write and the 401 after a
+revoke or the end of the window are `c8-support-session-guard`; both are green in
+`test_ten_s6`. "The ones after that answer 404" is the platform person's next console
+session reading the bank. The journey is `c8-ui-support-console`.
+
 ```gherkin
 Given a platform admin without any grant
 When they read a tenant's cases
@@ -150,10 +183,13 @@ Then nothing is granted, the reads still answer 404, and the holders of security
 When a tenant admin approves the request with a fresh step-up assertion
 Then the grant appears on the tenant's Support access panel with the purpose, the person and the end of the window
 And every read under it lands in the bank's audit log as "support_access.read" with the route and the platform user
+And a write under it answers 403 "support_read_only"
 When the tenant admin revokes the grant
 Then the next request answers 401 "support_access_ended" and the ones after that answer 404
 When the two hours pass without a revocation
 Then the grant ends the same way and the reads answer 404 again
+When a tenant admin declines a second request, or nobody decides it within the request's lifetime
+Then nothing was ever granted and the request can no longer be approved
 ```
 
 ### TEN-S7 — J-8: tenant B cannot see tenant A `@e2e` (TEN-06, COL-04, J-8)
@@ -239,6 +275,12 @@ And no obligation, scope row or applicability changes
 When they set a withdrawal date
 Then the row reads as withdrawn and stays in the history
 ```
+
+> **c8-ui-organisation (TEN-02, ADM-01).** `/admin/organisation` draws the legal entities as a
+> tree under the group, each entity's licences and certificates, and the products, with Add
+> and Edit for `vocab.manage` only; `stale_write`, `unknown_member`, `unknown_key` and a 422's
+> named fields render where they belong. The departments and teams sections are mounted as
+> stubs for their own package. TEN-S2 and TEN-S10 are journeys in `tenants.journey.spec.ts`.
 
 ### TEN-S11 — A support session reads and never writes, and never approves itself `@integration` (TEN-06)
 ```gherkin

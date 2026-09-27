@@ -411,7 +411,9 @@ def create_vocabulary_row(request: HttpRequest, list_name: ListName, body: Vocab
     unknown language, a kind the list does not take or a missing required kind, or a
     reference in `extra` to a value that does not exist; `validation_error` (422) for no
     label, a key that normalises to nothing, a bad `extra` value, a library list that is
-    reference data, or a field the body does not name.
+    reference data, or a field the body does not name; `list_full` (422) when one of the
+    organisation's own lists already holds `TENANT_LIST_MAX_ROWS` values, retired ones
+    included (500 unless the operator set another number), and nothing is added.
     """
     # Ungated by design: logic-gate (vocab.manage for a tenant list; a proposal for a library list, VOC-07).
     entry = lists.entry_for(list_name)
@@ -572,9 +574,12 @@ def retire_vocabulary_row(request: HttpRequest, list_name: ListName, key: RowKey
     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
     (403) without the permission above; `not_found` (404) for an unknown list or key;
     `system_row` (409) for a system value; `in_use` (409) when records carry the value and
-    `confirm` is not true, with the count in `usageCount`; `invalid_transition` (409) when
-    the value is already retired; `validation_error` (422) for a library list that is
-    reference data or a field the body does not name.
+    `confirm` is not true, with the count in `usageCount`; `open_work` (409) for a team
+    that still owns open work (a register entry or entity row, a gap not closed, a licence
+    not withdrawn or an active internal item), whatever `confirm` says, with the count per
+    table in `openWork`; `invalid_transition` (409) when the value is already retired;
+    `validation_error` (422) for a library list that is reference data or a field the body
+    does not name.
     """
     # Ungated by design: logic-gate (vocab.manage for a tenant list; a proposal for a library list, VOC-07).
     entry = lists.entry_for(list_name)
@@ -640,8 +645,12 @@ def merge_vocabulary_row(
     then retires the value in the path, in one transaction. Preview it first with
     `dryRun=true`: a 200 with how many records carry the value and how many would move,
     which changes nothing and writes no audit event, on a library list as on the
-    organisation's own. Today only the organisation's tags have records to move; on the
-    other lists `repointed` is 0 and the merge retires the value.
+    organisation's own. On the organisation's own lists the records are its tagged records,
+    register entries and their entity rows, gaps, internal items, licences, team members
+    and participants; a record already carrying the value kept keeps one link and is not
+    counted, and a participant so doubled is stamped removed, never deleted. The status
+    history keeps the value each assessment named. A list no record uses moves nothing and
+    the merge only retires the value.
 
     Without `dryRun`, on one of the organisation's own lists the merge is made at once: 200
     with the counts and `dryRun` false. On a shared library list nothing changes yet: 202
@@ -657,8 +666,11 @@ def merge_vocabulary_row(
     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
     (403) without the permission above; `not_found` (404) for an unknown list, or a key or
     `into` the list does not hold; `system_row` (409) when the value in the path is a system
-    value; `validation_error` (422) when `into` is the value itself, for a library list that
-    is reference data, or for a field the body does not name.
+    value; `duplicate_key` (409) when an internal item under the value would share its name
+    with one already under `into`, and nothing moves; `validation_error` (422) when `into`
+    is the value itself or sits in another fixed category (a compliance status, a risk
+    level, a gap state), for a library list that is reference data, or for a field the body
+    does not name.
     """
     # Ungated by design: logic-gate (vocab.manage for a tenant list; a proposal for a library list, VOC-07).
     entry = lists.entry_for(list_name)
@@ -1317,7 +1329,7 @@ def tag_record(request: HttpRequest, body: TaggingBody) -> TaggingRecordTags:
 
     Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
     refused. The caller must also be able to read the record. Errors: `unsupported_subject`
-    (422) for a kind other than obligation, change or change_case; `unknown_key` (422)
+    (422) for a kind other than obligation, change, change_case or tenant_obligation; `unknown_key` (422)
     for a tag the bank does not have or has retired; `not_found` (404) for a record that does
     not exist, is another bank's or the caller may not read; `permission_denied` (403)
     without `vocab.manage`; `unauthenticated` (401) without a session; `validation_error`
@@ -1351,8 +1363,8 @@ def untag_record(request: HttpRequest, body: TaggingBody) -> TaggingRecordTags:
     anything changed.
 
     Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
-    refused. Errors: `unsupported_subject` (422) for a kind other than obligation, change
-    or change_case; `unknown_key` (422) for a tag the bank does not have; `not_found` (404)
+    refused. Errors: `unsupported_subject` (422) for a kind other than obligation, change,
+    change_case or tenant_obligation; `unknown_key` (422) for a tag the bank does not have; `not_found` (404)
     for a record that does not exist, is another bank's or the caller may not read;
     `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401) without a
     session; `validation_error` (422) for a body the schema rejects.
@@ -1386,7 +1398,7 @@ def preview_tagging(request: HttpRequest, body: TaggingBatchBody) -> TaggingBatc
     Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
     refused. At most `BULK_TAGGING_MAX_RECORDS` distinct ids, 200 unless the operator set
     another number. Errors: `too_many_records` (422) above that cap; `unsupported_subject`
-    (422) for a kind other than obligation, change or change_case; `unknown_key`
+    (422) for a kind other than obligation, change, change_case or tenant_obligation; `unknown_key`
     (422) for a tag the bank does not have or has retired; `permission_denied` (403)
     without `vocab.manage`; `unauthenticated` (401) without a session; `validation_error`
     (422) for a body the schema rejects, such as an empty selection.
@@ -1420,8 +1432,8 @@ def tag_records(request: HttpRequest, body: TaggingBatchBody) -> TaggingBatchOut
     Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
     refused. At most `BULK_TAGGING_MAX_RECORDS` distinct ids, 200 unless the operator set
     another number. Errors: `too_many_records` (422) above that cap, and nothing is tagged;
-    `unsupported_subject` (422) for a kind other than obligation, change or
-    change_case; `unknown_key` (422) for a tag the bank does not have or has retired;
+    `unsupported_subject` (422) for a kind other than obligation, change,
+    change_case or tenant_obligation; `unknown_key` (422) for a tag the bank does not have or has retired;
     `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401) without a
     session; `validation_error` (422) for a body the schema rejects, such as an empty
     selection.

@@ -324,8 +324,13 @@ def console_reissue_enrolment(
     if tenant is None:
         raise ValidationError("Not found.", code="not_found")
     # Platform staff have no bypass (playbook 14): the support access row is the door,
-    # written first, then the tenant is activated for the one action it covers.
+    # written before the one action it covers.
     tenancy.activate(tenant.id)
+    # The person is found before anything is written, so a refused recovery leaves no
+    # support access row and no audit row behind it (security-review-c8 M6).
+    membership = Membership.objects.filter(tenant=tenant, user_id=user_id, deactivated_at__isnull=True).select_related("user").first()  # ordering: unique (tenant, user), at most one row
+    if membership is None:
+        raise ValidationError("Not found.", code="not_found")
     now = timezone.now()
     access = SupportAccess.objects.create(
         tenant=tenant,
@@ -347,9 +352,6 @@ def console_reissue_enrolment(
         after={"reason": access.reason, "ticketRef": access.ticket_ref, "outOfBandCheck": out_of_band_check.strip()},
         step_up_assertion_id=step_up_assertion_id,
     )
-    membership = Membership.objects.filter(tenant=tenant, user_id=user_id, deactivated_at__isnull=True).select_related("user").first()  # ordering: unique (tenant, user), at most one row
-    if membership is None:
-        raise ValidationError("Not found.", code="not_found")
     invitation_logic.reissue_enrolment(
         tenant=tenant,
         user=membership.user,

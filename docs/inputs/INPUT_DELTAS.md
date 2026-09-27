@@ -1558,25 +1558,31 @@ Also departing from v0.3:
 
 ## acc-foundation. Agent access entries and credential kinds (2026-09-25, agents 0006, identity 0007)
 
-`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
-third column the R2 plan names (`acts_as_user`), are built with these departures:
-
-- `agent_access.owner_team_id` is required, not "null until chunk 8 lands teams": the team
-  list has landed and every bank has the system team `compliance` (ACC-01 names the team).
-  `revoked_at` and `revoked_by_id` are columns, and a CHECK keeps `active` false exactly when
-  `revoked_at` is set. An entry is revoked, never deleted (`delete()` refuses).
-- Every reference is also a composite `(tenant_id, …)` key: the team, the departments
-  (`org_unit`) and products (`tenant_product`) of the joins, the creator and revoker (into
-  `membership (tenant_id, user_id)`), and on `api_key` the entry and `acts_as_user`.
-- `api_key.kind` is the tier-one kind `credential_kind` (`service`, `personal`); every key
-  before identity 0007 is `service`. CHECKs: a personal token has a tenant, a person and an
-  expiry and no agent, and only a token acts as a person; a key bound to an entry has a
-  tenant and no agent definition (it is not one of the agents we run); an entry's key and
-  every token hold only `AGENT_ACCESS_SCOPES` (`library:read`, `search:read`,
-  `upcoming:read`, `tenant:read`), so "reads and nothing else" (ADR 0055) is the
-  database's rule as well as the code's.
-- `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
-  `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
+- Every reference to another tenant row is also a composite `(tenant_id, …)` foreign key,
+  written as SQL in the migration, because PostgreSQL checks a foreign key without
+  row-level security. `org_unit`, `licence`, `tenant_product` and `internal_item` carry
+  `UNIQUE (tenant_id, id)`, and so does `link_kind`, which `internal_item.kind` points at. A
+  head or owner (`head_user_id`, `owner_user_id`, `updated_by_id`) is a key into
+  `membership (tenant_id, user_id)`, so it is always a member of the same bank; the
+  designed `owner_id` is `owner_user_id`, beside the `owner_team_id` tenants 0003 adds.
+- `org_unit.entity_term_id` must be a term of the `legal_entity` dimension (a trigger, since
+  a CHECK cannot read another table) and only a legal entity may carry one (a CHECK).
+  `org_unit` gains `version` for `If-Match`.
+- `licence.licence_type` is a taxonomy term (`licence_type_id`), not the designed free
+  text: a type is a key, never a phrase. `service_term_ids uuid[]` is the
+  `licence_service_term` table, so each term is a real foreign key. D-43's certificate
+  columns are `issuer`, `number`, `scope_statement`, `issued_on`, `valid_until`,
+  `next_audit_on` and `owner_user_id`; none of them is a term.
+- `tenant_product_term` has its own `id` rather than the designed composite primary key,
+  like every other `TenantModel`, with `UNIQUE (product_id, term_id)`.
+- Units, licences, products and items are deactivated, withdrawn or retired, never
+  deleted: each model's `delete()` refuses, and every reference is `PROTECT`.
+- `security_policy` is one row per tenant: `credential_policy`, `allowed_authenticators`
+  (a list of AAGUIDs, schema `AllowedAuthenticators`), `device_bound_from` (a date),
+  `session_idle_minutes` and `session_absolute_hours` (null means the platform default,
+  both above zero and capped by `SESSION_IDLE_MINUTES_MAX` and `SESSION_ABSOLUTE_HOURS_MAX`
+  in the write), `updated_by_id`, `updated_at`. No row means the platform defaults.
+  `CREDENTIAL_POLICY_NOTICE_DAYS` (14) is the default notice a tightening gives.
 
 ## 18. A batch proposal and its rows (2026-09-25, c11-proposal-batches-model)
 
@@ -1678,6 +1684,7 @@ departures:
   carrying the designed `kind`: the item carries the kind. It is removed by stamping
   `removed_at` and `removed_by`, never deleted, with one live link per entry and item.
 
+
 ## 19. Chunk 9's case contract (2026-09-25, c9-case-contract)
 
 The eighteen workflow operations of `openapi.yaml`'s "Case workflow" tag, less the ticket
@@ -1716,10 +1723,15 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
 - **`Assessment` has no `contributors`** (ruling 2, section 18) and gains `version`;
   `effort` is the bank's `effort_size` row, `{key, kind, label}` on a read and a key on a
   write, rather than the enum `S`, `M`, `L`.
+- **`startAssessment` and `saveAssessment` answer `CasesCase`**, as every move above does.
+  Saving with `applies` `no` closes a case being assessed with the bank's `not_applicable`
+  close reason, only for a holder of `cases.work` (D-92). Closed by `c9-assessment`.
 - **`Action`** has no `changeTitle` or ticket fields, a required `dueDate`, and gains
   `doneBy` and `version`; `updateAction` and `deleteAction` read the action's own
   `If-Match`, and every move of the case reads the case's. `deleteAction` and
-  `removeEvidence` set `removed_at` and answer 204; nothing is deleted.
+  `removeEvidence` set `removed_at` and answer 204; nothing is deleted. `addAction`
+  answers the same `Action`, and its `ownerId` stays optional as designed: left out, the
+  case's owner owns the action (c9-actions).
 - **`Evidence`** gains `contentHash` and `scanState`; a link and a reference have no bytes
   and are recorded `clean`.
 - **The two lists page.** `listActions` and `listEvidence` answer `{items, total}` with
@@ -1734,3 +1746,171 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
   answer 204 as designed; all three are published ahead of `c9-case-file`, `c9-actions`
   and `c9-evidence` and answer 501 `not_built` until those land, so their pending lines
   are gone while the logic is still to come.
+
+## c8-reg-gaps-risk. The gap routes as built (2026-09-25, REG-03)
+
+The register contract (`c8-register-contract`) declared the gap routes before the tables
+existed; building them on `gap` as `c8-register-models` shaped it changes these points:
+
+- A gap's `source` is a row of the bank's own `gap_source` list, as the column is: written
+  as a key and answered as `{key, kind, label}`, not the fixed five-value enum the contract
+  first published. The five seeded keys are unchanged.
+- `RegisterGap`, `RegisterGapBody` and `RegisterGapPatch` gain `ownerTeam`, a key of the
+  bank's `team` list (TEN-03): a gap is owned by a person or a team, never both, as the
+  `gap_one_owner_kind` CHECK says.
+- Four eyes on risk acceptance compare the approver with the person who asked for the
+  acceptance (`gap_four_eyes`), not with the person who recorded the gap; REG-S6 is amended
+  to match.
+- `createGap` answers 409 `does_not_apply` for an obligation, or a legal entity's answer on
+  it, that does not apply; `requestRiskAcceptance` answers 409 `request_pending` while an
+  acceptance already waits; `updateGap` requires `If-Match` and answers 409 `stale_write`
+  without it; closing a gap clears an acceptance still waiting on it.
+- A gap on a Statement of Applicability unit (`unitId`) answers 501 `not_built` until
+  `c8-units-paste-soa` adds the column.
+`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
+third column the R2 plan names (`acts_as_user`), are built with these departures:
+
+- `agent_access.owner_team_id` is required, not "null until chunk 8 lands teams": the team
+  list has landed and every bank has the system team `compliance` (ACC-01 names the team).
+  `revoked_at` and `revoked_by_id` are columns, and a CHECK keeps `active` false exactly when
+  `revoked_at` is set. An entry is revoked, never deleted (`delete()` refuses).
+- Every reference is also a composite `(tenant_id, …)` key: the team, the departments
+  (`org_unit`) and products (`tenant_product`) of the joins, the creator and revoker (into
+  `membership (tenant_id, user_id)`), and on `api_key` the entry and `acts_as_user`.
+- `api_key.kind` is the tier-one kind `credential_kind` (`service`, `personal`); every key
+  before identity 0007 is `service`. CHECKs: a personal token has a tenant, a person and an
+  expiry and no agent, and only a token acts as a person; a key bound to an entry has a
+  tenant and no agent definition (it is not one of the agents we run); an entry's key and
+  every token hold only `AGENT_ACCESS_SCOPES` (`library:read`, `search:read`,
+  `upcoming:read`, `tenant:read`), so "reads and nothing else" (ADR 0055) is the
+  database's rule as well as the code's.
+- `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
+  `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
+
+## c8-home-standing-roadmap. Where we stand, and our own deadlines on the roadmap (2026-09-25, HOM-01, HOM-03)
+
+The chunk 8 brief's `c8-home-register-feeds` is built as this package, with these departures:
+
+- The roadmap is a query in `apps/home/roadmap.py`, not a database view (R2_CROSS_CUTTING
+  (j)), so there is no migration. Each branch is one query, with a count beside it for
+  Today's "Coming up"; a duty occurrence's due date is not a branch yet, because the duty
+  occurrences have no package in this wave.
+- `standing` on `GET /home` is six counts (`applying`, one per compliance category and
+  `openGaps`), not counts per legal entity: one count per obligation, in the worst category
+  of the entities it applies to, as the obligation's pill reads. It is null without
+  `register.read`.
+- A roadmap item gains `owner` (a person, a team, or both on a register entry) and `subject`
+  (the obligation, gap or licence, and the legal entity); `status`, `label` and
+  `sourceLabel` become nullable and are null on an internal item. `itemType` gains
+  `gap_target`, `certificate_expiry` and `certificate_audit`.
+- The register's two branches need `register.read`; a certificate's dates are any member's,
+  as `GET /tenant/org-units/{id}/licences` is. A gap's target is listed whatever the answer
+  on its obligation; a review is left out where the answer is "does not apply".
+
+## c8-support-session-guard. The support session (2026-09-25, identity 0009)
+
+ADR 0042's tranche 2 is built with these departures from `CHUNK8_TASKS.md`:
+
+- `user_session.kind` gains `support`, beside the `support_access` column the brief names,
+  so the signed access token carries the kind and the read-only guard
+  (`SupportReadOnlyMiddleware`) refuses a route off the allow-list before any row is read,
+  whatever auth class the route takes. A CHECK keeps the kind and the grant together, and
+  `(tenant_id, support_access_id)` is a composite key to `support_access (tenant_id, id)`,
+  which gains that unique constraint; no policy is added anywhere.
+- Beside `SUPPORT_READ_ROUTES`, `SUPPORT_SESSION_ROUTES` lets the session call
+  `POST /auth/refresh` and `POST /auth/sign-out`, which act on its refresh cookie alone; the
+  web client sends its bearer on sign-out. A refresh on an ended grant revokes the session
+  and answers 401 `support_access_ended`.
+- Entering signs the console session out ("replaces" it), so "the ones after that answer
+  404" in TEN-S6 is the platform person's next console session.
+- The route sweep accepts 501 `not_built` on a listed read whose logic has not landed
+  (chunk 9's `listActions`, `listEvidence`, `getCaseFile`), beside 2xx and 404.
+- The `support_access.read` row is written in the request's transaction, as the brief says;
+  a handler that rolls a refused request back (`answers_problems`, a 404) takes the row with
+  it, so the log holds every read that answered.
+
+## 18. A proposal owned by a bank, and the bank's own queue declared (2026-09-25, d89-proposal-owner)
+
+§5's private-records row, built for INV-07 and OWN-03 (D-57, D-89, ADR 0050, ADR 0059):
+
+- `proposal` gains `owner_tenant_id` (proposals 0009), null for the shared library and every
+  existing row. `apps/proposals/logic.create` sets it and nothing else does: a version takes
+  its target's owner, and a new instrument or obligation the server files as the bank's own
+  (`private=True`) takes the bank the database is scoped to, the filing session's or, in the
+  worker, the run's. A request body naming it is refused (422 `validation_error`).
+- `proposal` is a mixed table under forced row-level security in the split shape (H15):
+  `tenant_isolation` FOR ALL on the session's own zone and `library_rows_visible` FOR SELECT
+  on the shared rows, so the console, with no tenant, reads no owned row. "Insert shared or
+  own" is one extra policy, FOR INSERT only: `shared_proposal_filed` lets a bank's session
+  insert a shared row filed inside a bank, single, open and undecided, and nothing else of
+  the shared zone. The RLS guard pins its text.
+- `private_records.approve` is a tenant permission of Compliance officer and Approver, in the
+  approve set, never a platform grant or an API key scope. `GET /private-proposals`
+  (`listPrivateProposals`), `POST /private-proposals/{proposalId}/approve`
+  (`approvePrivateProposal`, step-up) and `/reject` (`rejectPrivateProposal`) are declared
+  and answer 501 until d89-private-records; approve and reject load the proposal under
+  row-level security first, so another bank's answers 404. The library fence names
+  `approvePrivateProposal` as the third route that may reach `apply`. `proposal_four_eyes`
+  is unchanged.
+
+## Sign-off answers the case, and its refusals carry counts (2026-09-25, c9-signoff)
+
+- **`requestSignoff`, `approveSignoff` and `sendBackSignoff`** answer `CasesCase` (section
+  19), not the designed `Case`: no `actions`, `evidence` or `soWhat`, plus `changeId`,
+  `subStatus`, `urgencyConfirmed`, `dismissedAt` and `version`.
+- **The request's two refusals carry counts.** `open_actions` and `evidence_missing` answer
+  409 with `openActionCount` and `cleanEvidenceCount` beside the code (playbook 4.4), so
+  the screen says what is missing without a second read. Evidence the scanner has not
+  passed, or that was removed, does not count.
+- **The approver is told, not the requester.** The request notifies the bank's active
+  members holding `cases.signoff` through `notify()`, leaving the requester out: they can
+  never sign off what they asked for.
+- **The approval is the sign-off edge only.** From any category but `signoff` it answers
+  409 `invalid_transition`, although `assigned` and `assessing` reach `closed` by the
+  one-person close (D-92), which is its own route with its own reasons.
+- **Send-back clears the request.** `signoffRequestedBy` and `signoffRequestedAt` go back
+  to null, so the next request is a fresh one; the note is kept on the case's transition
+  ledger and never in the audit values.
+
+## 20. Triage, dismissal, restore and the one-person close (2026-09-25, c9-triage)
+
+`triageChange`, `dismissChange`, `restoreChange` and `closeWithoutAction` now answer for
+real, each with the whole `CasesCase` of section 19. Where they differ from `openapi.yaml`:
+
+- **`restoreChange` also undoes a one-person close.** The design moves only `dismissed` to
+  `new`; D-92 (ADR 0060) makes the close without action restorable too, so a case closed by
+  one person with a `no_action` or `not_applicable` reason goes back to triage the same
+  way. A case a second person signed off stays closed: 409 `invalid_transition`.
+- **`closeWithoutAction` leaves `assigned` or `assessing`.** The design has `assigned to
+  closed, closeReason no_action`; the build also closes a case being assessed, with a reason
+  key whose kind is `no_action` or `not_applicable` (D-92). It never leaves `signoff`, whose
+  edge to `closed` is the sign-off's. It is gated by `cases.work`, not by role names.
+- **The owner a triage names must work cases.** `ownerId` must be an active member of the
+  bank whose roles hold `cases.work`; anyone else answers 422 `owner_required`, the same
+  code as no owner at all. A missing `ownerId` is a 422 `validation_error` naming the field.
+- **The audit row carries the keys a move names.** Every move's `case.moved` row carries
+  the status before and after and the new `version`; triage adds `ownerId` and the urgency
+  key, a dismissal and a close add `reasonKey`. The close's note is on the case and its
+  `case_transition` row, never in an audit value.
+
+## 21. The change page's case carries its assessment and close note (2026-09-25, c9-fe-triage-assessment)
+
+The case panels card has every panel read the case from `GET /changes/{changeId}`, but the
+workflow block (§19) carried neither the impact assessment nor the note of a one-person
+close, which only a write's `CasesCase` answered, so a reload lost both. `WatchCaseWorkflow`
+gains `assessment` (`CasesAssessment`, null before the case reaches assessing) and
+`closedNote`, as `CasesCase` names them. The assessment is joined to the case in the block's
+one case query, so the read costs one label query more only when the assessment names an
+effort. Both are tenant content in the bank's own zone.
+
+## c9-owner-team-and-reassign. A team beside a case's owner, and removal covers case work (2026-09-25, cases 0005)
+
+`change_case.owner_team` (the column section 18 left unbuilt) is a nullable key to the bank's
+`team` row, also a composite key `(tenant_id, owner_team_id)` into `team (tenant_id, id)`, so
+the database refuses another bank's team. It sits beside `owner` and never replaces it: the
+worked-case CHECK still requires a person. `triageChange` takes it as `ownerTeam`, a team key
+(the brief's `ownerTeamId`; D-1xx c9-owner-team-and-reassign), and the case answers
+`ownerTeam` as `{key, kind, label}`, on `CasesCase` and on the change page's `case`.
+`TenantMemberOpenWork` and the removal now count and move `case`, `action` and
+`duty_occurrence`, the kinds its contract already named: a case and an action pass to a
+person only, and a case only to a member holding `cases.work`.

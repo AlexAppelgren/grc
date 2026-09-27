@@ -34,11 +34,11 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| HOM-01 | Timeline home: next dates as a short list on every screen size, the lead item, what needs a decision, compliance standing, source health. R1 builds every part but compliance standing, which needs the register and is cut to chunk 8 | M | R1 | built |
+| HOM-01 | Timeline home: next dates as a short list on every screen size, the lead item, what needs a decision, compliance standing, source health. R1 built every part but compliance standing, which `c8-home-standing-roadmap` added with the register | M | R1 | built |
 | HOM-02 | Weekly briefing, reachable from home with part of it shown there, snapshotted when emailed | M | R1 | built |
-| HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place; from R2 a certificate's expiry and next audit are our deadlines and never reach the calendar feed. R1 builds the regulatory branch; our own deadlines join with the register and the cases (chunks 8 and 9), and certificates with TEN-02 (chunk 8, HOM-S15) | M | R1 | in_progress |
+| HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place; from R2 a certificate's expiry and next audit are our deadlines and never reach the calendar feed. R1 built the regulatory branch; `c8-home-standing-roadmap` added next reviews, gap targets and certificates (HOM-S15); `x-roadmap-case-deadlines` added duty occurrences, an open case's internal deadline and its actions' due dates, and keeps a month, quarter or year date until its period ends (H22) | M | R1 | built |
 | HOM-04 | Upcoming changes as public facts for agents and newsletters, and a revocable calendar feed | S | R1 | built |
-| HOM-05 | My work: what a person or their teams are responsible for or take part in, as overdue, due soon, changes on those items and the rest, with next reviews and a department head's view; permission-filtered rows and counts; the footprint never hides a person's own items | M | R2 | pending |
+| HOM-05 | My work: what a person or their teams are responsible for or take part in, as overdue, due soon, changes on those items and the rest, with next reviews and a department head's view; permission-filtered rows and counts; the footprint never hides a person's own items | M | R2 | built |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -77,19 +77,24 @@ When a user opens Today
 Then the "Coming up" list shows the next dates in order with urgency pills
 And the lead change carries the brand pill "Lead"
 And "Decide now" shows the queue counts the reader's own permissions unlock
+And each decision line (sign-offs, risk acceptances, support access requests, tenant reach requests) leads to where it is decided and never counts a request the reader made
 And "Source coverage" shows how many sources were checked and which ones failed
 And a reader without watch.read gets the page with no lead and no source panel, never a 403
 And the API answered from one fan-out of independent calls, none chained
 ```
 Where the bank stands is the note below.
 
-> **Note — where we stand on Today.** The standing panel counts obligations that apply, that
-> the bank complies with and that it has gaps against. All three are read from the obligation
-> register, and `tenant_obligation` does not exist in R1, so a panel built now could only show
-> zeros — and "0 gaps" before a register exists is a false statement about a bank's compliance,
-> shown on the first screen a compliance officer opens. `c8-home-register-feeds` adds the panel
-> with the register it reads (parallel plan ruling 20). What needs a decision does exist: it is
-> the `counts` object on `GET /me` (D-23), which `f03-T48` builds, so one number has one source.
+> **Note — where we stand on Today** (`c8-home-standing-roadmap`). `standing` on `GET /home`
+> counts the obligations inside the regulatory scope that apply, to the bank or to one of its
+> legal entities, each once in the worst category of the entities it applies to (the rule
+> behind the obligation's pill), and the gaps that are open or being remediated. It is null for
+> a reader without `register.read`, never a 403. A standard's one conformance obligation counts
+> once however many entities follow it. What needs a decision is the `counts` object on
+> `GET /me` (D-23), so one number has one source. Today draws it as "Where we stand"
+> (`c8-ui-home-register`): each category leads to the inventory filtered to the obligations
+> that apply in the bank's status of that category, the open gaps to `/gaps`, and a bank
+> with nothing in its register sees a sentence and the way to the inventory. HOM-S1's
+> journey follows the links.
 
 ### HOM-S2 — The same short list appears on a phone `@e2e` (HOM-01)
 ```gherkin
@@ -136,19 +141,27 @@ Given a regulatory date with urgency "6+ months"
 When the roadmap renders it
 Then it shows "6+ months" as a notice pill, followed by the date and days left as text
 ```
-The "Our deadline" half is the note below; `roadmap-presentation.test.ts` already pins
-that pill's tone, so the rule is proved before a branch produces a row for it.
+The "Our deadline" half is the note below; `roadmap-presentation.test.ts` pins that pill's
+tone, and HOM-S6's journey shows it in the brand tone on the seeded gap's target.
 
 > **Note — our own deadlines on the roadmap.** A roadmap item is either a date the outside
-> world set or one this bank set for itself. Only the first has a producer in R1: the three
-> internal branches read an impact assessment, an action, a next review or a gap target, and
-> none of those tables exists yet, so a scenario asking for an "Our deadline" pill now could
-> only be met by inventing a row. Each branch is proved by the task that builds it:
-> `c8-home-register-feeds` for next reviews and gap targets, chunk 9 for assessment
-> deadlines and actions, and `f03-T74` for a certificate's expiry and next audit (D-43,
-> AC-TEN1, proved by HOM-S15). Until then `kind=internal` is a real filter that answers an
-> empty list, and HOM-03 stays `in_progress` for that reason (confirmed at the R1 close,
-> 2026-09-24).
+> world set or one this bank set for itself, which the screen marks "Our deadline" with its
+> owner. The internal branches, each with its owner and its record:
+> - next reviews of register entries and entity rows, compliant ones included, targets of
+>   open or remediating gaps, and the open occurrence of a recurring duty (REG-07), dropped
+>   when it is completed and replaced by the next; all inside the regulatory scope, left out
+>   where the answer is "does not apply", and only for a reader holding `register.read`
+>   (`c8-home-standing-roadmap`, `x-roadmap-case-deadlines`; `tests_roadmap.py`,
+>   `tests_roadmap_cases.py`);
+> - an open case's internal deadline (CAS-03) and the due date of each of its actions that
+>   is neither done nor removed (CAS-04), on cases inside the regulatory scope and only for a
+>   reader holding `cases.read`; they link to the case by `changeId`
+>   (`x-roadmap-case-deadlines`, `tests_roadmap_cases.py`);
+> - a certificate's expiry and next audit, left out once withdrawn (D-43, AC-TEN1, HOM-S15).
+>
+> None reaches the calendar feed, proved per branch on the document in `tests_feed.py`. A
+> regulatory date stated as a month, a quarter or a year stays on the roadmap and in "Coming
+> up" until that period has ended (H22).
 
 ### HOM-S7 — My work lists what I'm responsible for or take part in, most urgent first `@integration` `@e2e` (HOM-05, AC-HOM1)
 ```gherkin
@@ -205,17 +218,17 @@ When Anna opens My work
 Then the obligation is listed like any other
 ```
 
-### HOM-S11 — Changes on your items are confirmed links and new versions only `@integration` (HOM-05)
+### HOM-S11 — Changes on your items are confirmed links, new versions and colleagues' comments only `@integration` (HOM-05)
 ```gherkin
 Given Anna owns an obligation
-And an agent suggested a link from a new change to it that no person has confirmed
+And an agent suggested a link from a new change to it that nobody has confirmed
 When Anna opens My work
 Then the change is not under "Changes on your items"
-When a compliance officer confirms the link
+When the link is confirmed, by a person or by an agent independent of the one that suggested it
 Then the change's open case is listed there, naming Anna's obligation
-When a new version of the obligation is applied
+When a new version of another of her obligations is applied, or a colleague comments on one
 Then it is listed there until 14 days have passed
-And nothing Anna did herself is listed there
+And nothing Anna did herself, neither an approval nor a comment, is listed there
 ```
 
 ### HOM-S12 — My work answers within budget for a fifty-member department `@integration` (HOM-05, NFR-02)
@@ -237,6 +250,15 @@ And Karin's department view lists it with Anna named as responsible
 When Erik chooses "Leave"
 Then the obligation leaves Erik's My work and the audit log holds both events
 ```
+
+The journeys run on the seeded people, not these names (c8-ui-mywork): Anna is the owner
+login, Johan Berg (`J9_OWNER` in `apps/shared/e2e_seed.py`), whose overdue review is the
+research-payments obligation and whose DORA register carries the independently confirmed
+change; Erik is the J-9 contributor, Viktor Hedlund (`participant@example-bank.test`); Karin is
+the head of Retail Banking, Karin Ek (`head@example-bank.test`). HOM-S7 and HOM-S9 read the
+same people; in HOM-S9 Johan stands for the scenario's Johan and opens the department by its
+address (`/work?unit=`), since only a head gets the switch. Erik's deactivation in HOM-S9 is
+proved by `test_hom_s9` alone.
 
 ### HOM-S14 — Case work reaches My work `@integration` (HOM-05)
 ```gherkin
@@ -262,3 +284,7 @@ And the user's calendar feed contains neither item
 When the licence is withdrawn
 Then neither date appears on the roadmap
 ```
+The journey reads the seeded certificate of Example Bank AB, its dates anchored to the bank's
+today, on the roadmap and in a new calendar feed (`c8-ui-home-register`). Withdrawing it is
+proved by `@integration` only: no screen withdraws a certificate yet, and a journey never
+writes around the UI.
