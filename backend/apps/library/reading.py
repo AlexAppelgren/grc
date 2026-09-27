@@ -463,6 +463,21 @@ def stable_key_taken(subject: str, key: str) -> bool:
     return bool(models.get(subject, Obligation).objects.filter(stable_key__iexact=key).exists())
 
 
+def held_as_own(tenant_id: uuid.UUID, *, instrument: bool, key: str, reference: str, instrument_key: str = "") -> bool:
+    """Whether bank `tenant_id` already holds, as a record of its own, the instrument (or
+    else the obligation) a finding of its own agent names (OWN-02, D-57): by stable key, or
+    by its official reference, an instrument's `official_ref` or an obligation's `ref_label`
+    under the same instrument, case-insensitively. The database answers; nothing of the
+    bank's records leaves here but the answer, so the agent never reads them back."""
+    if instrument:
+        return Instrument.objects.filter(owner_tenant_id=tenant_id).filter(
+            Q(stable_key__iexact=key) | Q(official_ref__iexact=reference)
+        ).exists()
+    return Obligation.objects.filter(owner_tenant_id=tenant_id).filter(
+        Q(stable_key__iexact=key) | Q(instrument__stable_key=instrument_key, ref_label__iexact=reference)
+    ).exists()
+
+
 # ---------------------------------------------------------------------------------------
 # What a provision proposal names (PRO-01, INV-02)
 # ---------------------------------------------------------------------------------------

@@ -2006,3 +2006,14 @@ topic, as `change_document.risk_flags` carries them. Both default to empty. The 
 start it); after that a read answers its run's state (`succeeded` as `done`, `failed` and
 `interrupted` as `failed`), so no second writer keeps the two in step. `completed_at` is
 written when a re-tag's run files its batch.
+## d89-agent-research. A research request names the scope item it researches (2026-09-27, agents 0009)
+
+Schema v0.3's `research_request` has no scope item: PRD 0.7's OWN-02 has an approved scope
+item open research by the bank's own agent (D-89, D-91, ADR 0059). Agents 0009 adds:
+
+- `research_request_kind` gains `scope_item`, which only the worker opens, from the outbox
+  event of the item's approval; the route a bank asks through refuses it.
+- `research_request.scope_item_id`, nullable, a composite `(tenant_id, scope_item_id)` key
+  into `scope_item`; the check `research_request_scope_item_kind` sets it exactly on a
+  `scope_item` request, and the partial unique index `research_request_one_per_scope_item`
+  researches an item once.

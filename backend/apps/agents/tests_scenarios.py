@@ -22,23 +22,32 @@ from typing import Any
 from unittest import mock, skip
 
 import yaml
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
+from apps.agents import runner_events, scope_research
 from apps.agents import scope as run_scope
 from apps.agents import tasks as agent_tasks
 from apps.agents import testing as agent_build, tests_flow as agent_flow
-from apps.agents.models import Agent, AgentRun, RunStatus, RunTrigger, TenantAgent, TenantAgentBudget
+from apps.agents.models import Agent, AgentRun, ResearchRequest, RunStatus, RunTrigger, TenantAgent, TenantAgentBudget
 from apps.agents.screen import EMBEDDED_INSTRUCTIONS
 from apps.agents.seeds import SHIPPED, seed_agent_definitions
 from apps.agents.seeds.definition import DEFINITIONS
+from apps.agents.tests_scope_research import approve_item
+from apps.agents.tests_scope_research import world as scope_world
 from apps.governance.models import AiGeneration
-from apps.library.models import Jurisdiction, ObligationVersion
+from apps.library import testing as library_build
+from apps.library.models import Instrument, Jurisdiction, Obligation, ObligationVersion
 from apps.proposals.models import Proposal
+from apps.proposals.tests_kinds import EXECUTION_DUTY, instrument_body, obligation_body
+from apps.proposals.tests_tenant_agent import finding as own_finding
+from apps.search.models import SearchChunk
 from apps.shared import factories, permissions as perms, tenancy
+from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.tenancy import is_tenant_task, library_write
-from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, stub_session, user_principal
-from apps.taxonomy.models import FootprintTerm, Flag, TaxonomyTerm, WatchedMarket
+from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, sign_in, stub_session, user_principal
+from apps.taxonomy.models import FootprintTerm, Flag, ScopeItem, TaxonomyTerm, WatchedMarket
 from apps.taxonomy.registry import REGISTRY
 from apps.watch import registration, sources, testing as watch_build
 from apps.watch.models import ChangeDocument, RegulatoryChange, SourceCheck
@@ -1119,12 +1128,68 @@ class AgentsScenarioTests(TestCase):
         self.assertEqual(self._bank_runs(world), [])
         self.assertEqual(AgentRun.objects.filter(agent=world.bleqq, tenant__isnull=True).count(), 2)
 
-    @skip("pending: AGT-S14 (AGT-04, AGT-05, OWN-02, chunk 11)")
     def test_agt_s14(self) -> None:
         """AGT-S14
 
         A bank's own agent writes only in its own zone (AGT-04, AGT-05, OWN-02).
         """
+        # Given an agent tenant A switched on for itself, whose run the worker opened with no API key
+        w = scope_world("agt-s14")
+        item = approve_item(self, w)
+        tenancy.activate(w.bank.id)
+        run = AgentRun.objects.get(research_request__scope_item=item)
+        self.assertIsNone(run.api_key_id)
+
+        # When the run's runner events carry a change or a proposal against a shared library record
+        tenancy.clear_tenant()
+        shared = library_build.obligation(w.parent, key="obl-agt-s14-shared")
+        library_before = (Instrument.objects.count(), Obligation.objects.count(), ObligationVersion.objects.count())
+        against_shared = {
+            "a change": {**instrument_body(), "kind": "change"},
+            "a new version of a shared duty": {**obligation_body(), "kind": "new_obligation_version", "targetType": "obligation", "targetId": str(shared.id)},
+            "a finding naming a shared record": {**obligation_body(), "targetType": "obligation", "targetId": str(shared.id)},
+            "a re-tag": {**instrument_body(), "kind": "obligation_scope"},
+        }
+        # Then the worker refuses them and writes nothing, because a tenant run never writes the shared library
+        for what, body in against_shared.items():
+            with self.subTest(event=what):
+                tenancy.activate(w.bank.id)
+                with self.assertRaises(ValidationError) as refused:
+                    runner_events.apply_finding(run.id, own_finding(body, event_id=what.replace(" ", "-")))
+                self.assertEqual(refused.exception.code, "not_own_record")
+        tenancy.activate(w.bank.id)
+        self.assertFalse(Proposal.objects.filter(agent_run_id=run.id).exists())
+        tenancy.clear_tenant()
+        self.assertEqual((Instrument.objects.count(), Obligation.objects.count(), ObligationVersion.objects.count()), library_before)
+
+        # When the run's runner events carry what it found for tenant A's approved scope item
+        tenancy.activate(w.bank.id)
+        found = runner_events.apply_finding(run.id, own_finding(instrument_body()))
+
+        # Then each proposal carries owner_tenant_id A, set from the run, and tenant B never sees it
+        self.assertEqual(found.owner_tenant_id, w.bank.id)
+        tenancy.activate(w.other.id)
+        self.assertFalse(Proposal.objects.filter(pk=found.pk).exists())
+        tenancy.clear_tenant()
+        self.assertFalse(Proposal.objects.filter(pk=found.pk).exists(), "nor does the console")
+
+        # When tenant A asks for a re-tag of library records
+        admin = factories.member_user(w.bank, roles=("admin",))
+        asked = self.client.post(
+            "/api/v1/research-requests",
+            data={"kind": "retag", "tenantAgentId": str(w.agent.id), "topic": "Re-tag custody duties"},
+            content_type="application/json",
+            **sign_in(admin, tenant=w.bank),
+        )
+        console = self.client.post(
+            "/api/v1/console/research-requests", data={"topic": "Re-tag custody duties"}, content_type="application/json", **sign_in(admin, tenant=w.bank)
+        )
+
+        # Then the request is refused, because re-tagging the library is asked in the console
+        self.assertEqual(asked.status_code, 422, asked.content)
+        self.assertIn(console.status_code, (401, 403), console.content)
+        tenancy.clear_tenant()
+        self.assertFalse(ResearchRequest.objects.filter(kind="retag").exists())
 
     def test_agt_s15(self) -> None:
         """AGT-S15
@@ -1235,12 +1300,89 @@ class AgentsScenarioTests(TestCase):
         )
         self.assertEqual(confirmer.propose(review_id, obligation_id=world.obligation.id).status_code, 403)
 
-    @skip("pending: AGT-S16 (OWN-02, AGT-04, AGT-05, AGT-06, chunk 11)")
     def test_agt_s16(self) -> None:
         """AGT-S16
 
         An approved scope item opens research, and the findings arrive as the bank's own proposals (OWN-02, AGT-04, AGT-05, AGT-06).
         """
+        # Given tenant A switched on its own agent, a bleqq-authored tenant-scoped definition
+        w = scope_world("agt-s16")
+        self.assertEqual((w.agent.agent.scope, w.agent.agent.tenant_configurable), ("tenant", True))
+        tenancy.activate(w.bank.id)
+        library_build.instrument(key="own-policy", official_ref="Intern policy 2026:4", regime="regime:securities", owner_tenant=w.bank)
+
+        # When a scope item in tenant A's regulatory scope is approved
+        item = approve_item(self, w)
+
+        # Then one research request is opened for that agent naming the item
+        tenancy.activate(w.bank.id)
+        [request] = ResearchRequest.objects.filter(tenant=w.bank)
+        self.assertEqual((request.kind, request.scope_item_id, request.tenant_agent_id), ("scope_item", item.id, w.agent.id))
+
+        # When the worker starts the run on the mock runner, with no API key
+        [run] = list(request.runs.all())
+        self.assertEqual((run.api_key_id, run.status, run.external_session_id), (None, "running", f"mock-{run.id}"))
+
+        # Then the model input carries the item's keys and, under D-98, its capped name,
+        # reference and address, never its description or any of tenant A's own records
+        given = scope_research.run_input(run.id)
+        self.assertEqual(given["keys"], {"scopeItemId": str(item.id), "scopeItem": item.key, "jurisdiction": "se", "regime": "securities"})
+        self.assertEqual(set(given["text"]), {"name", "officialReference", "sourceAddresses"})
+        self.assertNotIn(item.description, json.dumps(given))
+        self.assertNotIn("Intern policy 2026:4", json.dumps(given))
+
+        # When the run's runner events carry an instrument and two obligations, each with a source per field
+        tenancy.clear_tenant()
+        shared_before = (Instrument.objects.filter(owner_tenant__isnull=True).count(), Obligation.objects.filter(owner_tenant__isnull=True).count(), SearchChunk.objects.count())
+        tenancy.activate(w.bank.id)
+        scope_before = (FootprintTerm.objects.count(), ScopeItem.objects.count())
+        events = [
+            own_finding(instrument_body(), event_id="instrument"),
+            own_finding(obligation_body(), event_id="obligation-1"),
+            own_finding(obligation_body(key=EXECUTION_DUTY, refLabel="4 kap. 3 §"), event_id="obligation-2"),
+        ]
+        filed = [runner_events.apply_finding(run.id, event) for event in events]
+
+        # Then the worker applies them as three proposals owned by tenant A, set from the run and never from the event
+        self.assertEqual([p.kind for p in filed], ["new_instrument", "new_obligation", "new_obligation"])
+        self.assertEqual({p.owner_tenant_id for p in filed}, {w.bank.id})
+        self.assertEqual({(p.origin, p.proposed_by_agent_id, p.agent_run_id, p.model) for p in filed}, {("agent", run.agent_id, run.id, "claude-opus-5")})
+
+        # And they wait in tenant A's own queue, and no shared library row, regulatory scope row or search chunk changed
+        self.assertEqual({p.status for p in Proposal.objects.filter(owner_tenant=w.bank)}, {"open"})
+        self.assertEqual((FootprintTerm.objects.count(), ScopeItem.objects.count()), scope_before)
+        tenancy.clear_tenant()
+        self.assertEqual(
+            (Instrument.objects.filter(owner_tenant__isnull=True).count(), Obligation.objects.filter(owner_tenant__isnull=True).count(), SearchChunk.objects.count()),
+            shared_before,
+        )
+        self.assertFalse(Proposal.objects.filter(pk__in=[p.pk for p in filed]).exists(), "the console reads none of them")
+
+        # When a runner event carries an instrument whose official reference tenant A already holds as its own record
+        tenancy.activate(w.bank.id)
+        duplicate = own_finding(instrument_body(key="intern-policy-again", officialRef="Intern policy 2026:4"), event_id="duplicate")
+        with self.assertRaises(ProblemError) as refused:
+            runner_events.apply_finding(run.id, duplicate)
+
+        # Then it is refused with 409 "already_in_our_library" and nothing is stored
+        self.assertEqual((refused.exception.status, refused.exception.code), (409, "already_in_our_library"))
+        tenancy.activate(w.bank.id)
+        self.assertEqual(Proposal.objects.filter(owner_tenant=w.bank).count(), 3)
+
+        # And no API key of any scope files a proposal into tenant A's own queue
+        bank_key = factories.api_key(w.bank, scopes=sorted(perms.TENANT_KEY_SCOPES))
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        for key in (bank_key, agent_build.agent_key(scopes=sorted(perms.ALL_SCOPES))):
+            with self.subTest(key=key.row.tenant_id):
+                answer = self.client.post(
+                    "/api/v1/proposals",
+                    data={**instrument_body(key="by-a-key"), "agentRunId": str(run.id)},
+                    content_type="application/json",
+                    HTTP_X_API_KEY=key.plain_key,
+                )
+                self.assertEqual(answer.status_code, 404, answer.content)
+        tenancy.activate(w.bank.id)
+        self.assertEqual(Proposal.objects.filter(owner_tenant=w.bank).count(), 3)
 
     def test_acc_s1(self) -> None:
         """ACC-S1

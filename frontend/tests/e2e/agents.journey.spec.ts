@@ -139,8 +139,8 @@ test.describe('agents journeys', () => {
     }
   });
 
-  // AGT-S5 and AGT-S6 steer tenant A's one seeded agent and its cap, so they run one
-  // after the other rather than beside each other.
+  // AGT-S5 and AGT-S6 steer tenant A's one seeded agent and its cap, and AGT-S7's requests
+  // open runs of that agent, so they run one after the other rather than beside each other.
   test.describe('a bank steers its own agent', () => {
     test.describe.configure({ mode: 'serial' });
 
@@ -252,17 +252,51 @@ test.describe('agents journeys', () => {
         await expect(page.locator('[data-ai-enabled="false"]')).toContainText('so our own agents do not run. What bleqq watches keeps running.');
 
         // Ask answers feature_off before a model is asked.
-        await page.goto('/search?mode=ask');
+        await page.goto('/ask');
         const asked = page.waitForResponse((r) => r.url().endsWith('/api/v1/ask') && r.request().method() === 'POST');
         await page.getByRole('searchbox', { name: 'Question' }).fill('What must we disclose about costs and charges?');
         await page.getByRole('button', { name: 'Ask', exact: true }).click();
         const answer = await asked;
         expect(answer.status()).toBe(403);
         expect(((await answer.json()) as { code: string }).code).toBe('feature_off');
-        await expect(page.locator('[data-ask-feature-off]')).toContainText('Ask is switched off for your organisation. Search still works.');
+        await expect(page.locator('[data-ask-feature-off]')).toContainText('Ask is switched off for your organisation. Search in the inventory still works.');
       } finally {
         await setBankAi(page, true);
       }
+    });
+
+    test("AGT-S7: Research requests ask an agent to check, research or re-tag", async ({ page, apiGuard }) => {
+      // AGT-05, reworded to the split: tenant A's admin (agents.manage) asks the bank's own
+      // agent to check a source and to research a topic; a library editor asks bleqq's agent
+      // for a re-tag in the console. Each is a job whose run opens at once. The mock runner
+      // files no batch, so the re-tag stays "being prepared" here; the batch it files is
+      // proven by AGT-S7's integration test. The topic is the attempt's own, so a retry never
+      // reads an earlier attempt's request.
+      test.setTimeout(120_000);
+      allowFreshContext(apiGuard);
+      const attempt = `${Date.now()}`;
+      const topic = `DORA subcontracting ${attempt}`;
+
+      await signInAs(page, LOGINS.admin);
+      await page.goto('/admin/agents');
+      const checked = await askOurAgent(page, { source: 'fi.se sweep (E2E)' });
+      const researched = await askOurAgent(page, { topic });
+      expect([checked.kind, researched.kind]).toEqual(['check_source', 'research_topic']);
+      expect(researched.tenantAgentId).toBe(checked.tenantAgentId);
+      const ours = page.locator('[data-research-list]');
+      await expect(ours.locator(`[data-research-request="${checked.id}"]`)).toContainText('Check this source now');
+      await expect(ours.locator(`[data-research-request="${researched.id}"]`)).toContainText(topic);
+      // Each request opened a run of tenant A's one seeded agent: stop them, so the agent is
+      // as seeded for the journeys that steer it.
+      await restoreSeededAgent(page);
+      await signOut(page);
+
+      await signInAs(page, LOGINS.editor);
+      await page.goto('/console/queue');
+      const retag = await askForRetag(page, { term: 'Custody', records: `Custody records that hold client money, attempt ${attempt}` });
+      expect([retag.kind, retag.tenantAgentId]).toEqual(['retag', null]);
+      await expect(page.locator('[data-retag-form]').getByText('Sent. The batch is being prepared.')).toBeVisible();
+      await signOut(page);
     });
   });
 
@@ -309,37 +343,6 @@ test.describe('agents journeys', () => {
     const after = await answered<typeof before>(api.get('/agents/platform?limit=100'), 200);
     const pick = (page: typeof before) => page.items.filter((item) => item.key === 'watch-sweeper').map(({ key, cadence, jurisdictions }) => ({ key, cadence, jurisdictions }));
     expect(pick(after)).toEqual(pick(before));
-  });
-
-  test("AGT-S7: Research requests ask an agent to check, research or re-tag", async ({ page, apiGuard }) => {
-    // AGT-05, reworded to the split: tenant A's admin (agents.manage) asks the bank's own
-    // agent to check a source and to research a topic; a library editor asks bleqq's agent
-    // for a re-tag in the console. Each is a job whose run opens at once. The mock runner
-    // files no batch, so the re-tag stays "being prepared" here; the batch it files is
-    // proven by AGT-S7's integration test. The topic is the attempt's own, so a retry never
-    // reads an earlier attempt's request.
-    test.setTimeout(120_000);
-    allowFreshContext(apiGuard);
-    const attempt = `${Date.now()}`;
-    const topic = `DORA subcontracting ${attempt}`;
-
-    await signInAs(page, LOGINS.admin);
-    await page.goto('/admin/agents');
-    const checked = await askOurAgent(page, { source: 'fi.se sweep (E2E)' });
-    const researched = await askOurAgent(page, { topic });
-    expect([checked.kind, researched.kind]).toEqual(['check_source', 'research_topic']);
-    expect(researched.tenantAgentId).toBe(checked.tenantAgentId);
-    const ours = page.locator('[data-research-list]');
-    await expect(ours.locator(`[data-research-request="${checked.id}"]`)).toContainText('Check this source now');
-    await expect(ours.locator(`[data-research-request="${researched.id}"]`)).toContainText(topic);
-    await signOut(page);
-
-    await signInAs(page, LOGINS.editor);
-    await page.goto('/console/queue');
-    const retag = await askForRetag(page, { term: 'Custody', records: `Custody records that hold client money, attempt ${attempt}` });
-    expect([retag.kind, retag.tenantAgentId]).toEqual(['retag', null]);
-    await expect(page.locator('[data-retag-form]').getByText('Sent. The batch is being prepared.')).toBeVisible();
-    await signOut(page);
   });
 
   test("AGT-S10 J-4 @smoke: an agent registers a change and a proposal, an editor approves, the tenant sees what changed", async ({ page, browser, playwright, apiGuard }, testInfo) => {

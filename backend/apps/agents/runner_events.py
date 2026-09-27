@@ -14,6 +14,11 @@ month's spend past the bank's monthly cap stops the run through the runner and p
 agent with the reason `budget_cap`, notifying the people who hold `agents.manage`, as the
 scheduler does before a run starts. A platform run has no cap of a bank's to meet.
 
+What a bank's own agent finds for an approved scope item arrives as findings (OWN-02, ADR
+0059): `apply_finding` checks the run is that research, running, in the zone applying it,
+and hands each to `proposals.tenant_agent`, which files it as the bank's own proposal or
+refuses it. It is the only way a tenant run files anything; no API key reaches it.
+
 A finished run is a finished account and takes no more events. `cost` and the token counts
 are totals so far, so they never go down. The error text is stored on the run for the
 people who operate the agents, and never logged or written to an audit or outbox row.
@@ -21,6 +26,7 @@ people who operate the agents, and never logged or written to an audit or outbox
 
 from __future__ import annotations
 
+import uuid
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -29,9 +35,11 @@ from django.utils import timezone
 from pydantic import ValidationError as SchemaError
 
 from apps.agents import budget, control, tenant_agents
-from apps.agents.models import AgentRun, RunStatus
+from apps.agents.models import AgentRun, ResearchRequestKind, RunStatus
 from apps.agents.tasks import _notify_cap as notify_cap  # the scheduler's own notice, never a copy
 from apps.agents.schemas import AgentRunFinish, AgentRunStats
+from apps.proposals import tenant_agent
+from apps.proposals.models import Proposal
 from apps.shared import tenancy
 from apps.shared.adapters.agent_runner import RunnerEvent
 from apps.shared.audit import Actor, record
@@ -50,28 +58,51 @@ ERROR_MAX = next(
 )
 
 
+def _open_run(run_id: uuid.UUID) -> AgentRun:
+    """The running run `run_id` of the caller's zone, locked for the caller's transaction."""
+    # Read, then lock: a platform run every bank reads is found from a bank's zone and
+    # refused by name, while row-level security hides a bank's run from every other zone.
+    zones = list(AgentRun.objects.filter(pk=run_id).values_list("tenant_id", flat=True))
+    if not zones:
+        raise ValidationError("No run has that id.", code="not_found")
+    if zones[0] != tenancy.active_tenant_id():
+        raise ValidationError(
+            "That run belongs to another zone than the one applying its event.",
+            code="wrong_zone",
+        )
+    run = (
+        AgentRun.objects.select_for_update(of=("self",))
+        .select_related("agent", "research_request")
+        .get(pk=run_id)
+    )
+    if run.status != RunStatus.RUNNING.value:
+        raise ValidationError(
+            "That run has finished, so it takes no more events.", code="run_finished"
+        )
+    return run
+
+
+def apply_finding(run_id: uuid.UUID, finding: tenant_agent.Finding) -> Proposal:
+    """Apply one finding a bank's own agent reported (OWN-02, ADR 0059), in the caller's zone,
+    and return the proposal it filed. Only a running scope-item research run of the bank's
+    own agent files anything this way: a platform run, and every other run of a bank's, is
+    refused with `not_own_record` and nothing is stored. What the finding may say is
+    `proposals.tenant_agent`'s to check."""
+    with transaction.atomic():
+        run = _open_run(run_id)
+        request = run.research_request
+        if run.tenant_id is None or request is None or request.kind != ResearchRequestKind.SCOPE_ITEM.value:
+            raise ValidationError(
+                "Only a bank's own research of a scope item files proposals through the runner.",
+                code="not_own_record",
+            )
+        return tenant_agent.file_finding(run, finding)
+
+
 def apply_event(event: RunnerEvent) -> AgentRun:
     """Apply one runner event to its run, in the caller's zone, and return the run."""
     with transaction.atomic():
-        # Read, then lock: a platform run every bank reads is found from a bank's zone and
-        # refused by name, while row-level security hides a bank's run from every other zone.
-        zones = list(AgentRun.objects.filter(pk=event.run_id).values_list("tenant_id", flat=True))
-        if not zones:
-            raise ValidationError("No run has that id.", code="not_found")
-        if zones[0] != tenancy.active_tenant_id():
-            raise ValidationError(
-                "That run belongs to another zone than the one applying its event.",
-                code="wrong_zone",
-            )
-        run = (
-            AgentRun.objects.select_for_update(of=("self",))
-            .select_related("agent")
-            .get(pk=event.run_id)
-        )
-        if run.status != RunStatus.RUNNING.value:
-            raise ValidationError(
-                "That run has finished, so it takes no more events.", code="run_finished"
-            )
+        run = _open_run(event.run_id)
         status, stats = _validated(run, event)
         before = _state(run)
         run.status = status.value

@@ -10,6 +10,8 @@ import { expect } from './api-guard';
 /** Tenant A's own agent and its seeded state. */
 export const SEEDED_AGENT = 'tenant-source-watch';
 export const SEEDED_CAP = '7.00';
+// The most runs the journeys leave open on tenant A's agent at once: run now and two requests.
+const SEEDED_RUNS_AT_MOST = 5;
 /** Tenant A's markets as the screen offers them: operating first, then watched. */
 export const SEEDED_MARKETS = ['Sweden', 'Denmark'] as const;
 
@@ -45,15 +47,19 @@ export async function changeSchedule(card: Locator, cadence: string, markets: re
 }
 
 /** Put tenant A's agent and cap back as seeded: no run left open, on, not paused,
- * weekly over both markets, and the seeded cap. Safe to call from any state. */
+ * weekly over both markets, and the seeded cap. Safe to call from any state. Every open
+ * run is stopped, one at a time: each research request opens a run of its own. */
 export async function restoreSeededAgent(page: Page): Promise<void> {
   const card = await openAgents(page);
   await expect(card.locator('[data-run-id]').first()).toBeVisible();
   const stop = card.getByRole('button', { name: 'Stop run' });
-  if (await stop.isVisible()) {
+  for (let open = 0; open < SEEDED_RUNS_AT_MOST && (await stop.isVisible()); open += 1) {
+    const stopped = page.waitForResponse((r) => /\/api\/v1\/agent-runs\/[^/]+\/interrupt$/.test(r.url()) && r.request().method() === 'POST');
     await stop.click();
     await card.getByRole('button', { name: 'Stop the run' }).click();
+    const runId = /agent-runs\/([^/]+)\/interrupt$/.exec((await stopped).url())?.[1] ?? '';
     await expect(card.getByText('Stopped. The run shows as stopped under Recent runs.')).toBeVisible();
+    await expect(card.locator(`[data-run-id="${runId}"]`)).not.toHaveAttribute('data-run-state', 'running');
   }
   const switchOn = card.getByRole('button', { name: 'Switch on' });
   if (await switchOn.isVisible()) {

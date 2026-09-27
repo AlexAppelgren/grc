@@ -34,6 +34,7 @@ const KIND_KEY = {
   check_url: 'adminAgents.research.kind.checkUrl',
   research_topic: 'adminAgents.research.kind.researchTopic',
   retag: 'adminAgents.research.kind.retag',
+  scope_item: 'adminAgents.research.kind.scopeItem',
 } as const satisfies Record<ResearchRequest['kind'], MessageKey>;
 
 function RequestRow({ listed, agents }: { listed: ResearchRequest; agents: readonly TenantAgent[] }) {

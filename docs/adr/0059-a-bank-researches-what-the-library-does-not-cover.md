@@ -96,3 +96,13 @@ bank's own agent.
 | 2 | ADR 0050's tranches 1 and 2: ownership, the bank's own queue, child-table policies (PRO-S12, PRO-S15, INV-S9, INV-S13, INV-S15) | Chunk 11 |
 | 3 | The research request and the runner-event write path (AGT-S14, AGT-S16) | Chunk 11, with the runner adapter |
 | 4 | The register on the bank's own obligations and their controls (REG-S17), then J-12 (FP-S19) | Chunk 11, after chunk 8's register |
+
+**Tranche 3 built (d89-agent-research, 2026-09-27).** `scope_item.added` opens the research
+through an outbox handler (`apps/agents/scope_research.py`) and its run with no key; the
+model input is ADR 0061's named fields (`scope_research.run_input`); findings arrive through
+`runner_events.apply_finding` and are filed by `apps/proposals/tenant_agent.py`, owned by the
+run's bank. Two details the text above left open, each by default: a duplicate is also
+refused by stable key, not only by official reference; and an item approved while the bank
+has no researcher on, its AI off or its cap reached opens nothing and records why, and waits
+(a later switch-on does not open it by itself; see `docs/TODO_FOR_alex.md`,
+d89-agent-research).
