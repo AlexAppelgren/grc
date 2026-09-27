@@ -100,7 +100,8 @@ class ChunkElevenSeed(TestCase):
     def test_tenant_a_runs_its_own_weekly_agent_with_a_scope_just_under_its_cap(self) -> None:
         now = datetime.datetime.now(datetime.UTC)
         tenancy.activate(self.tenant_a.id)
-        agent = TenantAgent.objects.select_related("agent").get()
+        # Tenant A also holds J-8's switched-off scope researcher (r2-j8-isolation).
+        agent = TenantAgent.objects.select_related("agent").get(agent__key=EXPECTED_CHUNK11.tenant_agent)
         self.assertEqual(agent.agent.key, EXPECTED_CHUNK11.tenant_agent)
         self.assertEqual((agent.enabled, agent.cadence, agent.scope), (True, "weekly", EXPECTED_CHUNK11.scope))
         assert agent.next_run_at is not None

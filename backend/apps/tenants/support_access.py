@@ -61,6 +61,20 @@ def state_of(grant: SupportAccess, now: datetime.datetime) -> SupportAccessState
     return "declined" if grant.status == SupportAccessStatus.DECLINED.value else "revoked"
 
 
+def waiting_count(*, excluding_user_id: uuid.UUID) -> int:
+    """How many read-level requests of the active bank wait for a decision, as `state_of`
+    reads them (time left to decide), leaving out any the person asked for: GET /me's count."""
+    return (
+        SupportAccess.objects.filter(
+            status=SupportAccessStatus.REQUESTED.value,
+            access_level=SupportAccessLevel.READ.value,
+            request_expires_at__gt=timezone.now(),
+        )
+        .exclude(platform_user_id=excluding_user_id)
+        .count()
+    )
+
+
 def _person(user: User | None) -> PersonRef | None:
     return None if user is None else PersonRef(id=user.id, name=user.name)
 

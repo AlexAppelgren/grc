@@ -3169,6 +3169,16 @@ def switch_reach_off() -> int:
 # --- end acc-e2e-seed ----------------------------------------------------------------------
 
 
+# --- c9-evidence (CAS-05, CAS-S7, CAS-S16) ------------------------------------------------------
+# Evidence on the cases the journeys read: every scan state on CAS-S7's implementing case, a
+# clean file on each case waiting for sign-off (a request needs one) and on the closed case,
+# and a clean file on each bank's case for chunk 5's shared change, so CAS-S16 finds evidence
+# of both banks on one change. CAS-S8's case keeps none: its journey is the refusal without
+# evidence. A clean file's bytes are written here, through storage, into the slot's media
+# root and never committed; an infected one's never exist, as the scan deletes them, and a
+# pending one is never queued, so it stays pending.
+
+
 @dataclass(frozen=True)
 class SeedEvidence:
     """One piece of evidence on the case for `stable_key` in `tenant_slug`. A file carries
@@ -3193,8 +3203,6 @@ EXPECTED_EVIDENCE: tuple[SeedEvidence, ...] = (
     SeedEvidence("chg-e2e-c5-timeline", "Research payment criteria.pdf"),
     SeedEvidence("chg-e2e-c5-timeline", "Research payment criteria (DK).pdf", tenant_slug=TENANT_B_SLUG),
 )
-
-
 # The day after the case's first sighting each piece was attached: after the actions were
 # done and before the sign-off request (`_DONE_DAY`, `_MOVE_DAY`). Chunk 5's shared change
 # is sighted this week, so its pieces are attached at the sighting instead.
@@ -3262,6 +3270,7 @@ def seed_case_evidence(tenants: list[Tenant]) -> int:
             storage.write(row.storage_key, content, row.mime_type)
     tenancy.clear_tenant()
     return len(EXPECTED_EVIDENCE)
+# --- end c9-evidence ----------------------------------------------------------------------------
 
 
 # --- c9-e2e-signoff-j3 (CAS-S10) -----------------------------------------------------------------
@@ -3287,6 +3296,7 @@ def seed_signoff_spot_check_link() -> None:
         confirmer=_confirmer_key(),
         confirmed_at=change.first_seen_at + datetime.timedelta(days=1),
     )
+# --- end c9-e2e-signoff-j3 -----------------------------------------------------------------------
 
 
 # --- c10-e2e-seed-comments (COL-01, COL-02) -----------------------------------------------------
@@ -3296,18 +3306,10 @@ def seed_signoff_spot_check_link() -> None:
 # the case and told nothing about it; tenant B's one comment on the obligation tenant A discusses,
 # so J-8 proves the two never meet. Every moment is the bank's own anchor less a fixed offset.
 COMMENT_EDITED_AFTER = datetime.timedelta(minutes=10)
-
-
 COMMENT_DELETED_AFTER = datetime.timedelta(minutes=5)
-
-
 COMMENT_READ_AFTER = datetime.timedelta(hours=1)
-
-
 # A home case, not a case journey's, whose trail c9-e2e-seed counts row by row.
 _COMMENTED_CASE = EXPECTED_HOME.later_change
-
-
 _COMMENTED_OBLIGATION = "obl-dora-ict-register"
 
 
@@ -3428,6 +3430,7 @@ def _seed_comment_record(comment: Comment, title: str, action: str, after: dict[
         tenant_id=comment.tenant_id,
         after=after,
     )
+# --- end c10-e2e-seed-comments ------------------------------------------------------------------
 
 
 # --- c8-ui-departments-teams-removal (TEN-05, TEN-S5) ---------------------------------------
@@ -3462,6 +3465,7 @@ def restore_leaver() -> None:
             if gap_row.owner_id != leaver.id or gap_row.owner_team_id is not None:
                 Gap.objects.filter(pk=gap_row.pk).update(owner=leaver, owner_team=None, version=gap_row.version + 1)
                 _seeded(tenant, "gap", gap_row, gap.obligation, {"ownerId": str(leaver.id)})
+# --- end c8-ui-departments-teams-removal ------------------------------------------------------
 
 
 # --- c8-ui-links-history-participants (COL-04, COL-S6, COL-S7) ------------------------------
@@ -3469,14 +3473,8 @@ def restore_leaver() -> None:
 # leaves it on their own. COL-S6: the obligation the compliance officer adds people and a
 # team to, which has no register entry until the first add creates it.
 PARTICIPATION_OBLIGATION = "obl-costs-charges"
-
-
 PARTICIPANT = "reader@example-bank.test"
-
-
 PARTICIPANT_ADDED_BY = _SARA
-
-
 NO_ENTRY_OBLIGATION = "obl-idd-demands-needs"
 
 
@@ -3498,6 +3496,7 @@ def seed_participants(tenants: list[Tenant]) -> None:
         )
         _seeded(tenant, "participant", row, PARTICIPATION_OBLIGATION, {"tenantObligationId": str(entry.id), "userId": str(person.id)})
     tenancy.clear_tenant()
+# --- end c8-ui-links-history-participants ----------------------------------------------------
 
 
 # --- r2-j8-isolation (TEN-S7, J-8; NFR-01, TEN-02, TEN-03, COL-01, COL-02, COL-04, AGT-04, ACC-01, ID-08)
@@ -3544,7 +3543,7 @@ EXPECTED_J8_ISOLATION = SeedJ8Isolation(
     key_id=uuid.UUID("00000000-0000-4000-a000-000000008c04"),
     key_name="Settlement reconciliation",
     tenant_agent_id=uuid.UUID("00000000-0000-4000-a000-000000008c05"),
-    tenant_agent_key="tenant-source-watch",
+    tenant_agent_key="scope-researcher",
     # Above the platform default, so no journey's session in tenant A ends sooner for it.
     idle_minutes=45,
 )
@@ -3603,3 +3602,4 @@ def seed_j8_isolation(tenants: list[Tenant]) -> None:
         )
         _seeded(tenant_b, "participant", row, PARTICIPATION_OBLIGATION, {"tenantObligationId": str(entry_b.id), "userId": str(person.id)})
     tenancy.clear_tenant()
+# --- end r2-j8-isolation --------------------------------------------------------------------

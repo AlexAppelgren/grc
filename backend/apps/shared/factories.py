@@ -363,10 +363,10 @@ def tenant_reach_request(tenant: Tenant) -> TenantReachRequest:
 def tenant_agent(tenant: Tenant) -> object:
     """The tenant-isolation guard's record for `PATCH /agents/{tenant_agent_id}`: one of the
     bank's own agents, on a tenant-scoped definition shared by every bank that asks."""
+    from apps.agents import testing as agent_build
     from apps.agents.models import TenantAgent
-    from apps.agents.testing import tenant_definition
 
-    definition = tenant_definition("isolation-bank-watch")
+    definition = agent_build.tenant_definition("isolation-bank-watch")
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return TenantAgent.objects.create(tenant=tenant, agent=definition)
@@ -625,13 +625,9 @@ def department(
         return OrgUnit.objects.create(
             tenant=tenant, kind=kind.value, name=name or f"Unit {next(_counter)}", parent=parent, head_user=head
         )
-# acc-scope-and-reach (ACC-08): the tenant-isolation guard's record for tenant reach routes.
 
 
-# c11-tenant-agents-budget-scope (AGT-04). The definition is a library row, so
-# `apps/agents/testing.py` (the fence exempts it) builds it, as the case builders above do.
-
-
+# c8-participants (COL-04)
 def obligation_participant(tenant: Tenant) -> SimpleNamespace:
     """The tenant-isolation guard's record for the register-entry participant routes: a
     person taking part in `tenant`'s register entry for an obligation private to `tenant`.
