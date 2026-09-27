@@ -50,6 +50,8 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   'admin-security': { ready: '[data-session-policy]' },
   'console-agents': { ready: `[data-agent-definitions] [data-agent-definition]${OR_EMPTY}` },
   'admin-workflow': { ready: '[data-workflow-form] [data-workflow-field]' },
+  // The seed may hold no notification for the reader measured: the empty inbox is an answer too.
+  notifications: { ready: `[data-notifications-list] [data-notification-id]${OR_EMPTY}` },
   'me-passkeys': { ready: '[data-passkey-id]' },
   'me-sessions': { ready: '[data-session-id]' },
   'me-calendar-feeds': { ready: `[data-feeds-list] [data-feed-id]${OR_EMPTY}` },

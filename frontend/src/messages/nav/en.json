@@ -38,5 +38,6 @@
   "sidebar.collapse": "Minimise menu",
   "sidebar.expand": "Expand menu",
   "nav.admin.vocabularies": "Vocabularies",
-  "nav.admin.footprint": "Regulatory scope"
+  "nav.admin.footprint": "Regulatory scope",
+  "nav.notifications": "Notifications"
 }
