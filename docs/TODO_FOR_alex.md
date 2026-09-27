@@ -1457,6 +1457,8 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
          confirming agent for its own queue. **Answered (Alex, 2026-09-25): 1 as D-98 (the typed name may reach the bank's own agent, guarded), 2 as D-99, 3 default taken.**
 
 ## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-103)
+         confirming agent for its own queue.
+## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-9x)
 
 - [ ] **The console's correction form gained one field.** A reviewer who changes a
       proposal's wording, date or scope before approving now gives "Source of your

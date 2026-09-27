@@ -106,7 +106,8 @@ class MeCounts(TestCase):
         _open_proposal(tenant=self.other_tenant, proposer=outsider)
         closed = _open_proposal(tenant=self.tenant, proposer=self.officer)
         closed.status = ProposalStatus.APPROVED.value
-        closed.save(update_fields=["status"])
+        with tenancy.platform_zone():  # the console decides a shared proposal (proposals 0009)
+            closed.save(update_fields=["status"])
 
         self.assertEqual(self.me(self.officer)["counts"]["proposals"], 1)
         self.assertEqual(self.me(self.reader)["counts"]["proposals"], 0, "the reader lacks proposals.create: a true 0, not a refusal")
