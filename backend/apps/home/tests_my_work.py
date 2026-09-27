@@ -782,3 +782,16 @@ class QueryCount(TestCase):
         self.assertEqual(self.queries(scope="unit", unit=self.bank.retail.id), one_unit)
         self.assertEqual(self.bank.read(self.bank.anna).total, 13 * 3)
 
+    def test_only_the_page_s_obligations_are_titled(self) -> None:
+        """r2-perf (NFR-02): a department's list holds hundreds of obligations and a page
+        shows twenty, so the headings are read for the page's rows and the obligations a
+        case on it came through, never for the whole list."""
+        self.add(13)
+        with mock.patch.object(my_work, "obligation_headings", wraps=my_work.obligation_headings) as headings:
+            shown = self.bank.read(self.bank.anna, limit=2)
+        asked, _order = headings.call_args.args
+        on_page = {item.subject.obligation_id for item in shown.items if item.subject.obligation_id}
+        on_page |= {reason.via.obligation_id for item in shown.items for reason in item.reasons if reason.via}
+        self.assertEqual(headings.call_count, 1)
+        self.assertEqual(set(asked), on_page)
+        self.assertTrue(all(item.subject.title for item in shown.items))

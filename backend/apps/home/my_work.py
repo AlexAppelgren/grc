@@ -158,7 +158,7 @@ def page(
 ) -> HomeWorkPage:
     """One page of My work for `principal` in the activated `tenant`, labels in `order`."""
     who = _mine(principal) if query.unit is None else _department(query.unit)
-    rows, titles = _rows(tenant, principal, order, who)
+    rows = _rows(tenant, principal, who)
     today = today_for(tenant)
     placed = []
     for row in rows:
@@ -169,6 +169,7 @@ def page(
     for bucket, _date, _row in placed:
         counts[bucket] += 1
     wanted = [entry for entry in placed if query.bucket in (None, entry[0])]
+    shown = wanted[query.offset : query.offset + query.limit]
     return HomeWorkPage(
         scope=query.scope,
         unit=query.unit,
@@ -179,7 +180,7 @@ def page(
             open=counts["open"],
         ),
         permission_limited=_limited(principal),
-        items=_items(wanted[query.offset : query.offset + query.limit], order, titles),
+        items=_items(shown, order, _titles(shown, order)),
         total=len(wanted),
     )
 
@@ -251,27 +252,18 @@ def _named(
 # ---------------------------------------------------------------------------------------
 # What: the sources, each one query
 # ---------------------------------------------------------------------------------------
-def _rows(
-    tenant: Tenant, principal: Principal, order: list[str], who: _Who
-) -> tuple[list[_Row], dict[uuid.UUID, str]]:
-    """Every row the caller may read, and the titles of the obligations among them."""
+def _rows(tenant: Tenant, principal: Principal, who: _Who) -> list[_Row]:
+    """Every row the caller may read, an obligation's still untitled (`_titles`)."""
     register: dict[uuid.UUID, _Row] = {}
-    titles: dict[uuid.UUID, str] = {}
     rows: list[_Row] = []
     if principal.has_permission(REGISTER_READ):
         register = _register(who)
-        titles = {
-            obligation_id: heading.title
-            for obligation_id, heading in obligation_headings(list(register), order).items()
-        }
-        for obligation_id, row in register.items():
-            row.title = titles[obligation_id]
         _versions(tenant, principal, register)
         rows += [*register.values(), *_internal_items(who)]
     if principal.has_permission(CASES_READ):
         rows += _cases(tenant, principal, who, register)
     _comments(tenant, principal, rows)
-    return rows, titles
+    return rows
 
 
 def _register(who: _Who) -> dict[uuid.UUID, _Row]:
@@ -561,6 +553,20 @@ def _sort_key(
 # ---------------------------------------------------------------------------------------
 # The rows of one page, named in a fixed number of queries
 # ---------------------------------------------------------------------------------------
+def _titles(shown: list[tuple[WorkBucket, _Date | None, _Row]], order: list[str]) -> dict[uuid.UUID, str]:
+    """The titles of the obligations the page shows, as rows and as the way a case came in.
+    A department's list holds hundreds and a page twenty, and the order never reads a title,
+    so only these are read (r2-perf, NFR-02)."""
+    rows = [row for _bucket, _date, row in shown]
+    wanted = {row.subject_id for row in rows if row.kind == OBLIGATION}
+    wanted |= {reason.via for row in rows for reason in row.reasons if reason.via}
+    titles = {obligation_id: heading.title for obligation_id, heading in obligation_headings(list(wanted), order).items()}
+    for row in rows:
+        if row.kind == OBLIGATION:
+            row.title = titles[row.subject_id]
+    return titles
+
+
 def _items(
     shown: list[tuple[WorkBucket, _Date | None, _Row]],
     order: list[str],
