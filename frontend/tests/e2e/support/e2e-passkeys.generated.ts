@@ -104,4 +104,10 @@ export const E2E_PASSKEYS_GENERATED: Readonly<Record<string, SeededPasskey>> = {
     privateKey: 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgqp4keK1CVCmUqb6cuZmxD4PZsm4iHTiQkEIDgB8CBTmhRANCAAQItrG7COh7F-vyB9XMk6g-gn4Jp6BtV6O3663YP4y-LUtTEc-4zlyk0tFyDvnF9JlXLtLIOE8vHq82uz9Z-763',
     publicKey: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAECLaxuwjoexfr8gfVzJOoPoJ-CaegbVejt-ut2D-Mvi1LUxHPuM5cpNLRcg75xfSZVy7SyDhPLx6vNrs_Wfu-tw',
   },
+  'security@example-bank.test': {
+    id: 'aSLzP-GfONXmqmvNJM1Dpw',
+    userHandle: 'AAAAAAAAQACAAAAAAAABGQ',
+    privateKey: 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgg1kUBoO5_m0c7zOY4kr50wOr2FSyQrNHGxCPBHPbtrihRANCAASvryEB2X0sX6NPh4_KCL1e9ZdxMt3ZLocRd3LYmFnpKFIds0MFn9PLguJvYfzOGe9T0t39UxBNuPTpfR9QykB4',
+    publicKey: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEr68hAdl9LF-jT4ePygi9XvWXcTLd2S6HEXdy2JhZ6ShSHbNDBZ_Ty4Lib2H8zhnvU9Ld_VMQTbj06X0fUMpAeA',
+  },
 };

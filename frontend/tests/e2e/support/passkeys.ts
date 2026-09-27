@@ -82,7 +82,7 @@ export const LOGINS = {
   ownerApprover: 'owner-approver@example-bank.test',
   /** Reserved for COL-S2: a Swedish-speaking team member. */
   svMember: 'sv-member@example-bank.test',
-  /** Reserved for ACC-S11: the second member holding security.manage. */
+  /** Reserved for ACC-S11 and ACC-S13 (J-11): the second member holding security.manage. */
   securityAdmin: 'security@example-bank.test',
   /** Reserved for ACC-S3: the compliance officer who mints a personal access token. */
   tokens: 'tokens@example-bank.test',
