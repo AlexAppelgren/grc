@@ -51,8 +51,8 @@ from apps.shared.errors import ProblemError
 
 SUBJECT_TYPE = "agent_run"
 
-# The three values `RunStatus` fixes, as the schema publishes them.
-RunState = Literal["running", "succeeded", "failed"]
+# The four values `RunStatus` fixes, as the schema publishes them.
+RunState = Literal["running", "succeeded", "failed", "interrupted"]
 
 
 # ---------------------------------------------------------------------------------------
@@ -66,8 +66,8 @@ def row(run: AgentRun) -> AgentRunOut:
         agent=run.agent.key,
         started_at=run.started_at,
         finished_at=run.finished_at,
-        # A kind in code (`RunStatus`): the column holds one of its three values and the
-        # schema publishes the same three, so the cast states what the choices already fix.
+        # A kind in code (`RunStatus`): the column holds one of its four values and the
+        # schema publishes the same four, so the cast states what the choices already fix.
         status=cast(RunState, run.status),
         model=run.model,
         pipeline_version=run.pipeline_version,

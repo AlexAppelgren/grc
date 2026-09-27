@@ -186,7 +186,12 @@ class KeysFollowTheirAgent(ScenarioTestCase):
             for key, status in (("retired-sweeper", "retired"), ("draft-sweeper", "draft")):
                 path = Path(folder) / key / "v1" / "definition.yaml"
                 path.parent.mkdir(parents=True)
-                path.write_text(f"id: {key}\nversion: 1\nkind: watch\nstatus: {status}\ndescription: A test sweeper.\n", encoding="utf-8")
+                path.write_text(
+                    f"id: {key}\nversion: 1\nkind: watch\nstatus: {status}\ndescription: A test sweeper.\n"
+                    "scope: platform\ntenant_configurable: false\nwrites_to: library\nmodel: claude-opus-5\n"
+                    "change_note: The first version.\nprompt: prompt.md\ntools:\n  - name: fetch\n",
+                    encoding="utf-8",
+                )
             api_keys_logic._declared_status.cache_clear()
             self.addCleanup(api_keys_logic._declared_status.cache_clear)
             with mock.patch.object(api_keys_logic, "DEFINITIONS", Path(folder)):

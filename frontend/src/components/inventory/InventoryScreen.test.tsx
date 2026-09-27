@@ -50,7 +50,8 @@ const research: Obligation = {
   lastVerifiedAt: '2026-06-30',
   verifiedBy: null,
   openChangeCount: 1,
-  pendingApplicability: null,
+  tenantTags: [{ key: 'custody', kind: null, label: 'Custody' }],
+  privateToUs: false,
   complianceStatus: null,
 };
 
@@ -69,7 +70,7 @@ const adviceOnly: Obligation = {
   outsideReason: [{ dimension: { key: 'service_type', kind: null, label: 'Service' }, terms: [{ key: 'advice', kind: null, label: 'Advice' }] }],
   lastVerifiedAt: null,
   openChangeCount: 0,
-  pendingApplicability: true,
+  tenantTags: [],
   complianceStatus: { key: 'gap', kind: 'gap', label: 'Gap' },
 };
 
@@ -101,6 +102,7 @@ const fffs: Instrument = {
   implementsNote: 'MiFID II delegated directive (EU) 2017/593',
   obligationCount: 2,
   inFootprint: true,
+  privateToUs: false,
   lastVerifiedAt: '2026-06-30',
   sourceUrl: 'https://www.fi.se/en/published/regulations/2017/fffs-20172/',
 };
@@ -181,11 +183,13 @@ describe('ObligationRow', () => {
       binding: true,
       levelKind: null,
       complianceStatus: undefined,
-      changeWaitingForApproval: false,
       openChangeCount: 1,
       libraryTags: [{ key: 'research', kind: null, label: 'Research' }],
+      tenantTags: [{ key: 'custody', kind: null, label: 'Custody' }],
+      privateToUs: false,
     });
-    expect(factsOf(adviceOnly)).toMatchObject({ binding: false, changeWaitingForApproval: true, complianceStatus: { kind: 'gap' } });
+    expect(factsOf(adviceOnly)).toMatchObject({ binding: false, tenantTags: [], complianceStatus: { kind: 'gap' } });
+    expect(factsOf(adviceOnly)).not.toHaveProperty('changeWaitingForApproval');
   });
 
   it('puts the scope terms, the version coming next and the verified date in the meta line', () => {
@@ -234,7 +238,7 @@ describe('ObligationRow', () => {
     expect(row.className).not.toContain('border-dashed');
     expect(within(row).getByText('Market we watch: Denmark')).toBeVisible();
     expect(within(row).queryByText(/Outside our scope/)).toBeNull();
-    expect([...row.querySelectorAll('[data-pill]')].map((pill) => pill.getAttribute('data-pill'))).toEqual(['brand', 'information', 'negative', 'warning']);
+    expect([...row.querySelectorAll('[data-pill]')].map((pill) => pill.getAttribute('data-pill'))).toEqual(['brand', 'information', 'negative']);
   });
 
   it('renders the pills of the row slot order and links to the obligation', async () => {
@@ -250,6 +254,7 @@ describe('ObligationRow', () => {
       ['brand', 'FFFS 2017:2'],
       ['notice', '1 open change'],
       ['brand', 'Research'],
+      ['information', 'Custody'],
     ]);
   });
 
@@ -261,8 +266,8 @@ describe('ObligationRow', () => {
     expect(row.className).toContain('border-dashed');
     expect(within(row).getByRole('heading', { level: 3 })).toHaveTextContent('9 kap.');
     expect(within(row).getByText('Outside our scope: Advice')).toBeVisible();
-    // Not binding, an applicability change waiting, and a gap: each pill from its slot or kind.
-    expect([...row.querySelectorAll('[data-pill]')].map((pill) => pill.getAttribute('data-pill'))).toEqual(['brand', 'information', 'negative', 'warning']);
+    // Not binding and a gap, each pill from its slot or kind; no change waits for approval (D-75).
+    expect([...row.querySelectorAll('[data-pill]')].map((pill) => pill.getAttribute('data-pill'))).toEqual(['brand', 'information', 'negative']);
   });
 });
 

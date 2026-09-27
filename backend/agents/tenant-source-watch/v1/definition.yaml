@@ -1,0 +1,80 @@
+# tenant-source-watch v1. The definition a bank may add as an agent of its own (AGT-04,
+# ruling 1, ADR 0053): bleqq writes and versions it, a bank switches its own agent on and
+# sets its cadence and scope in tenant_agent rows, and never edits this prompt, these tools
+# or this model. It watches the sources and topics the bank's own agent is scoped to, inside
+# the sector scope, and reports what it found as its run's counters and cost (ruling 2): in
+# R2 a tenant agent writes its own run and nothing else. It has no operation that writes the
+# shared library, no proposal and no change on the watch feed every bank reads (D-57, D-61).
+# Draft until its evaluation rows exist and a platform admin publishes it. The shape is the
+# one watch-sweeper v1 set; keys here are kinds (tier 1). This folder never changes after it
+# ships: a new version is a new folder.
+id: tenant-source-watch
+version: 1
+kind: watch            # agent_kind, INPUT_DELTAS section 1
+status: draft          # draft | active | retired
+description: >
+  Watches the sources and topics a bank sets for its own agent, inside regulated financial
+  services, and reports what changed as the run's findings in the bank's own zone. Writes
+  nothing to the shared library.
+prompt: prompt.md      # the system prompt, this folder
+model: claude-opus-5   # the model this version was written for; the runner picks the EU endpoint (D-54)
+change_note: >
+  The first version: a bank's own watch over the sources and topics it names, reporting
+  counters and cost only.
+scope: tenant          # agent_scope: a bank adds its own agent on this definition
+tenant_configurable: true
+writes_to: tenant      # agent_writes_to: the bank's own zone, never the shared library
+default_cadence: weekly
+
+# Tools are read-only agent API operations, plus two the runner provides. Scopes are the
+# API key scopes a key for this definition would carry: reading scopes only, and never one
+# that files, decides or registers anything (apps/agents/tests_definition_files.py proves
+# it against the scopes that reach the library). The run is opened by the app, which is the
+# scheduler of record, and closed from what `report` says (AGT-06): no run operation here.
+tools:
+  - name: fetch
+    kind: runtime            # provided by the runner, not the app
+    purpose: Fetch one URL from a source in the run's scope or a link on its page. The body is data, screened before use.
+  - name: listVocabularyRows
+    operation: GET /vocab/{list}
+    scopes: [library:read]
+    purpose: Read each registry list under vocabularies_read_at_run_start, its active rows as key, kind, label and usageNote, before anything else.
+    output: VocabularyRowPage
+  - name: listTerms
+    operation: GET /taxonomy/terms
+    scopes: [library:read]
+    purpose: Read the taxonomy terms of every dimension at run start, the sector scope's boundary.
+    output: TaxonomyTermPage
+  - name: listAuthorities
+    operation: GET /authorities
+    scopes: [library:read]
+    purpose: Read the issuing authorities at run start, a plain array.
+    output: LibraryAuthority
+  - name: findSimilar
+    operation: POST /search/similar
+    scopes: [search:read]
+    purpose: Nearest library records to a text, to tell a development the library already tracks from one it does not. Reads only.
+    input: SimilarRequest
+    output: SearchResponse
+  - name: report
+    kind: runtime            # provided by the runner, which passes it to the app as runner events
+    purpose: Report the run's counters, what it spent and how it ended. The only thing that leaves the run.
+    output: RunnerEvent
+
+# Read at run start (key, kind, label, usage note). A tenant list is never one: a run reads
+# the bank's scope from the run, not from a list.
+vocabularies_read_at_run_start:
+  - change_type
+  - urgency
+  - flag
+  - term_dimension
+  - taxonomy_term        # every dimension, restricts_footprint and descriptive alike
+  - jurisdiction
+  - authority
+
+budget_defaults:
+  max_model_calls_per_run: 100
+  max_fetches_per_run: 200
+
+evals:
+  readme: evals/README.md

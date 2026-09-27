@@ -62,6 +62,10 @@ export interface Obligation {
   binding: boolean;
   dutyType: LibraryRef;
   tags: LibraryRef[];
+  /** The bank's own tags on the record, never another bank's (VOC-08). */
+  tenantTags: LibraryRef[];
+  /** True only on a record the caller's bank owns rather than a shared library fact. */
+  privateToUs: boolean;
   scope: ScopeDimension[];
   /** The version in force on the read's date, and the next one after it. */
   version: ObligationVersion | null;
@@ -74,8 +78,6 @@ export interface Obligation {
   /** The named person behind `lastVerifiedAt`, or null when nobody signed it. */
   verifiedBy: PersonRef | null;
   openChangeCount: number;
-  /** An applicability change waiting for approval; null until the register overlay lands (chunk 8). */
-  pendingApplicability: boolean | null;
   complianceStatus: KindRef<ComplianceKind> | null;
 }
 
@@ -95,6 +97,9 @@ export interface ObligationQuery {
   instrument?: string;
   dutyType?: string;
   term?: string[];
+  /** Library tag keys and the bank's own tag keys; every one named must be on the record. */
+  tag?: string[];
+  tenantTag?: string[];
   q?: string;
   asOf?: string;
   footprint?: ScopeFilter;
@@ -185,6 +190,8 @@ export interface ObligationDetail {
   retention: string;
   sanctionExposure: string;
   tags: LibraryRef[];
+  tenantTags: LibraryRef[];
+  privateToUs: boolean;
   scope: ScopeDimension[];
   inFootprint: boolean;
   outsideReason: OutsideReason[];
@@ -254,6 +261,7 @@ export interface Instrument {
   implementsNote: string;
   obligationCount: number;
   inFootprint: boolean;
+  privateToUs: boolean;
   lastVerifiedAt: string | null;
   sourceUrl: string;
 }
@@ -325,5 +333,6 @@ export interface InstrumentDetail {
   sourceUrl: string;
   lastVerifiedAt: string | null;
   verifiedBy: PersonRef | null;
+  privateToUs: boolean;
   lineage: InstrumentLineageRef[];
 }

@@ -44,7 +44,11 @@ from apps.proposals.schemas import (
 from apps.taxonomy.models import InstrumentLevelKind, TaxonomyTerm, TermDimensionKind
 
 PROVISION_KINDS = frozenset({ProposalKind.NEW_PROVISION.value, ProposalKind.NEW_PROVISION_VERSION.value})
-OBLIGATION_KINDS = frozenset({ProposalKind.NEW_OBLIGATION.value, ProposalKind.NEW_OBLIGATION_VERSION.value})
+# The kinds that set an obligation's scope, which under a standard keeps exactly one standard
+# term: a new obligation, a new version, and a batch's re-tag (PRO-04).
+OBLIGATION_KINDS = frozenset(
+    {ProposalKind.NEW_OBLIGATION.value, ProposalKind.NEW_OBLIGATION_VERSION.value, ProposalKind.OBLIGATION_SCOPE.value}
+)
 
 STANDARD_TERM_REFUSAL = (
     "A standard's term sits only on a standard's own obligation: on a law's obligation it would hide "

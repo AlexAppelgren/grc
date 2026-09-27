@@ -49,6 +49,7 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   'admin-agents': { ready: `[data-platform-watch] [data-platform-agent]${OR_EMPTY}` },
   'admin-security': { ready: '[data-session-policy]' },
   'console-agents': { ready: `[data-agent-definitions] [data-agent-definition]${OR_EMPTY}` },
+  'admin-workflow': { ready: '[data-workflow-form] [data-workflow-field]' },
   'me-passkeys': { ready: '[data-passkey-id]' },
   'me-sessions': { ready: '[data-session-id]' },
   'me-calendar-feeds': { ready: `[data-feeds-list] [data-feed-id]${OR_EMPTY}` },

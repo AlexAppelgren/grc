@@ -288,11 +288,15 @@ def _contracted_model() -> embedder.EmbedderAdapter | None:
 def _unembedded_ids(limit: int | None) -> list[uuid.UUID]:
     """The chunks still owing a vector, at most `limit` of them, in the shared zone where
     every chunk is. Ids and not rows: the text is read again under the lock in `_embed()`,
-    by which time another worker may have filled some of them."""
+    by which time another worker may have filled some of them.
+
+    Shared chunks only, in the query as well as by the policy (INV-07, D-57): a bank's own
+    record never reaches a model, so a chunk a bank owns, however it came to be written,
+    is never read here, and a read run in a bank's zone by mistake is no wider for it."""
     from apps.search.models import SearchChunk
 
     with tenancy.platform_zone():
-        ids = SearchChunk.objects.filter(embedding__isnull=True).values_list("id", flat=True)
+        ids = SearchChunk.objects.filter(embedding__isnull=True, owner_tenant__isnull=True).values_list("id", flat=True)
         return list(ids if limit is None else ids[:limit])
 
 
@@ -310,7 +314,9 @@ def _embed(adapter: embedder.EmbedderAdapter, ids: list[uuid.UUID]) -> int:
         return 0
     with tenancy.platform_zone():
         batch = list(
-            SearchChunk.objects.filter(id__in=ids, embedding__isnull=True).select_for_update(skip_locked=True)
+            SearchChunk.objects.filter(id__in=ids, embedding__isnull=True, owner_tenant__isnull=True).select_for_update(
+                skip_locked=True
+            )
         )
         if not batch:
             return 0

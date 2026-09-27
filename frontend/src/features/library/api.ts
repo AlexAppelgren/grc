@@ -52,6 +52,11 @@ export function refOf(raw: Schemas['LibraryRef']): LibraryRef {
   return { key: raw.key, kind: raw.kind ?? null, label: raw.label };
 }
 
+/** One of the bank's own tags: the same shape as a library reference, with no kind of its own. */
+function tenantTagOf(raw: Schemas['TaggingTagRef']): LibraryRef {
+  return { key: raw.key, kind: raw.kind ?? null, label: raw.label };
+}
+
 export function textOf(raw: Schemas['LocalizedText'] | null | undefined): LocalizedText | null {
   if (raw === null || raw === undefined) return null;
   return { text: raw.text, language: raw.language, isOriginal: raw.isOriginal, isMachine: raw.isMachine };
@@ -108,6 +113,8 @@ export function obligationOf(raw: Schemas['ObligationRow']): Obligation {
     binding: raw.binding,
     dutyType: refOf(raw.dutyType),
     tags: (raw.tags ?? []).map(refOf),
+    tenantTags: (raw.tenantTags ?? []).map(tenantTagOf),
+    privateToUs: raw.privateToUs,
     scope: (raw.scope ?? []).map(scopeOf),
     version: versionOf(raw.version),
     upcomingVersion: versionOf(raw.upcomingVersion),
@@ -117,7 +124,6 @@ export function obligationOf(raw: Schemas['ObligationRow']): Obligation {
     lastVerifiedAt: raw.lastVerifiedAt,
     verifiedBy: raw.verifiedBy === null || raw.verifiedBy === undefined ? null : { id: raw.verifiedBy.id, name: raw.verifiedBy.name },
     openChangeCount: raw.openChangeCount,
-    pendingApplicability: raw.pendingApplicability,
     complianceStatus: complianceOf(raw.complianceStatus),
   };
 }
@@ -202,6 +208,8 @@ export function detailOf(raw: Schemas['ObligationDetail']): ObligationDetail {
     retention: raw.retention,
     sanctionExposure: raw.sanctionExposure,
     tags: (raw.tags ?? []).map(refOf),
+    tenantTags: (raw.tenantTags ?? []).map(tenantTagOf),
+    privateToUs: raw.privateToUs,
     scope: (raw.scope ?? []).map(scopeOf),
     inFootprint: raw.inFootprint,
     outsideReason: (raw.outsideReason ?? []).map(reasonOf),
@@ -284,6 +292,7 @@ export function instrumentOf(raw: Schemas['InstrumentRow']): Instrument {
     implementsNote: raw.implementsNote,
     obligationCount: raw.obligationCount,
     inFootprint: raw.inFootprint,
+    privateToUs: raw.privateToUs,
     lastVerifiedAt: raw.lastVerifiedAt,
     sourceUrl: raw.sourceUrl,
   };
@@ -323,6 +332,7 @@ export function instrumentDetailOf(raw: Schemas['InstrumentDetail']): Instrument
     sourceUrl: raw.sourceUrl,
     lastVerifiedAt: raw.lastVerifiedAt,
     verifiedBy: raw.verifiedBy === null || raw.verifiedBy === undefined ? null : { id: raw.verifiedBy.id, name: raw.verifiedBy.name },
+    privateToUs: raw.privateToUs,
     lineage: (raw.lineage ?? []).map(lineageOf),
   };
 }

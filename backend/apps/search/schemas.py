@@ -179,8 +179,9 @@ class SearchFilters(WriteBody):
         default=None,
         description=(
             "Narrow the search to the law of one jurisdiction, by key. The keys are rows "
-            "in the shared library's `jurisdiction` vocabulary; the platform seeds and "
-            "maintains them (they are reference data, not proposable), and on day one they "
+            "in the shared library's `jurisdiction` vocabulary; the platform seeds them and "
+            "its library editors relabel, retire and restore them through approved proposals, "
+            "never changing a key, and on day one they "
             "are `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and "
             "`fi` (Finland). Source: the shared library. Do not read `se` as excluding EU "
             "law that binds a Swedish bank: an EU regulation is filed under `eu` and still "

@@ -76,6 +76,19 @@ class WorkflowPolicy(ScenarioTestCase):
         self.assertEqual(set(workflow["escalateToRole"]), {"key", "kind", "label"})
         self.assertTrue(workflow["escalateToRole"]["label"])
 
+    def test_the_profile_carries_the_platform_defaults_beside_the_policy_so_a_bank_sees_what_it_changes_from(self) -> None:
+        self.assertEqual(self._patch({"escalateAfterDays": 9, "escalateToRole": "admin"}).status_code, 200)
+        with self.settings(WORKFLOW_ESCALATE_AFTER_DAYS=12, WORKFLOW_DIGEST_WEEKDAY="friday"):
+            response = self.client.get(f"{V1}/tenant", **sign_in(self.officer, tenant=self.tenant))
+            expected = _defaults()
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        self.assertEqual(_flat(body["workflowDefaults"]), expected)
+        self.assertEqual((expected["escalateAfterDays"], expected["digestWeekday"]), (12, "friday"))
+        self.assertEqual((body["workflow"]["escalateAfterDays"], body["workflow"]["escalateToRole"]["key"]), (9, "admin"))
+        self.assertEqual(set(body["workflowDefaults"]["escalateToRole"]), {"key", "kind", "label"})
+        self.assertTrue(body["workflowDefaults"]["escalateToRole"]["label"])
+
     def test_the_defaults_follow_the_settings_rather_than_a_literal(self) -> None:
         with self.settings(WORKFLOW_REMINDER_DAYS_BEFORE=[7, 1], WORKFLOW_TRIAGE_TARGET_HOURS=24, WORKFLOW_DIGEST_WEEKDAY="friday"):
             row = factories.tenant(slug="later-bank")

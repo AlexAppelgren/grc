@@ -296,6 +296,13 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "AGT-05: a request's lifecycle, queued to done, failed, rejected or cancelled; the "
         "worker and the request list branch on it",
     ),
+    # Chunk 8's register (c8-register-models, register 0001). `Applicability` is listed above.
+    "AssessmentMethod": (
+        "assessment_method",
+        "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
+        "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
+        "reporting branches on",
+    ),
     # acc-foundation (identity 0007, ACC-03, D-77, ADR 0056).
     "CredentialKind": (
         "credential_kind",

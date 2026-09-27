@@ -253,6 +253,17 @@ class TheWeeklyJob(TestCase):
             sorted(sent.to for sent in MockMailer.sent), sorted([self.reader.email, self.swede.email])
         )
 
+    def test_a_member_who_switched_the_briefing_off_gets_no_mail(self) -> None:
+        """COL-02: `weeklyBriefing` off leaves that person out; an explicit true and a key
+        never set both still get the mail."""
+        tenancy.activate(self.tenant.id)
+        Membership.objects.filter(tenant=self.tenant, user=self.swede).update(notification_prefs={"weeklyBriefing": False})
+        Membership.objects.filter(tenant=self.tenant, user=self.reader).update(notification_prefs={"weeklyBriefing": True, "mentions": False})
+
+        self.run_job()
+
+        self.assertEqual([sent.to for sent in MockMailer.sent], [self.reader.email])
+
     def test_each_person_gets_their_own_language(self) -> None:
         self.run_job()
         by_address = {sent.to: sent for sent in MockMailer.sent}

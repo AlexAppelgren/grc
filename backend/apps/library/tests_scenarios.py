@@ -38,14 +38,14 @@ import logging
 import uuid
 from collections.abc import Iterator
 from typing import Any
-from unittest import skip
+from unittest import mock, skip
 
 from django.conf import settings
 from django.db import DatabaseError, connection, transaction
 
 from apps.identity.models import User
 from apps.library import reading, testing as build
-from apps.library.models import Instrument, Obligation, ObligationVersion, ProblemReport, Verification
+from apps.library.models import Instrument, Obligation, ObligationVersion, ProblemReport, Provision, Verification
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import load_library, seed_authorities
 from apps.shared import factories, permissions as perms, tenancy
@@ -624,12 +624,111 @@ class LibraryScenarioTests(ScenarioTestCase):
         self.assertEqual(Proposal.objects.get(pk=proposal.pk).status, ProposalStatus.OPEN.value)
         self.assertFalse(AuditEvent.objects.filter(action="instrument.created").exists())
 
-    @skip("pending: INV-S13 (INV-07, chunk 11)")
     def test_inv_s13(self) -> None:
         """INV-S13
 
         A private record's text never reaches a model, the index or another bank (INV-07).
         """
+        from apps.governance.models import AiGeneration, AiPurpose
+        from apps.search import indexing
+        from apps.search.models import SearchChunk
+        from apps.shared import ai, outbox
+        from apps.shared.adapters import embedder, reranker
+        from apps.watch.models import RegulatoryChange
+
+        # Tenant A's private instrument, its obligation and their version rows, each text
+        # carrying one sentence no shared record holds.
+        own_words = "Vår egen tolkning av kundkännedomen, som ingen annan bank läser."
+        tenancy.activate(self.tenant.id)
+        own_instrument = build.instrument(
+            key="inv-s13-own", short_name=own_words, regime="regime:securities", owner_tenant=self.tenant
+        )
+        own = build.obligation(
+            own_instrument,
+            key="obl-inv-s13-own",
+            titles={"sv": own_words},
+            versions=((None, {"sv": own_words}),),
+            owner_tenant=self.tenant,
+        )
+        provision = build.provision(own_instrument, key="inv-s13-own-1", heading=own_words)
+        build.provision_version(provision, texts={"sv": own_words})
+        tenancy.clear_tenant()
+
+        embedded: list[str] = []
+        judged: list[str] = []
+        embed, rerank = embedder.MockEmbedder.embed, reranker.MockReranker.rerank
+
+        def seen_embed(adapter: embedder.MockEmbedder, texts: list[str]) -> list[list[float]]:
+            embedded.extend(texts)
+            return embed(adapter, texts)
+
+        def seen_rerank(adapter: reranker.MockReranker, *, query: str, documents: list[str]) -> Any:
+            judged.extend(documents)
+            return rerank(adapter, query=query, documents=documents)
+
+        with (
+            mock.patch.object(embedder.MockEmbedder, "embed", seen_embed),
+            mock.patch.object(reranker.MockReranker, "rerank", seen_rerank),
+        ):
+            # When the indexer runs and the worker dispatches its outbox events, no chunk
+            # and no embedding carries their text; the shared library is indexed as always.
+            with transaction.atomic():
+                indexing.reindex_all()
+            outbox.deliver_batch()
+            indexing.embed_backlog()
+            with tenancy.platform_zone():
+                self.assertTrue(SearchChunk.objects.exists())
+                self.assertFalse(SearchChunk.objects.filter(owner_tenant__isnull=False).exists())
+            self.assertFalse(SearchChunk.objects.filter(body__contains=own_words).exists())
+            self.assertFalse(SearchChunk.objects.filter(title__contains=own_words).exists())
+            self.assertTrue(embedded, "the shared library was embedded")
+            self.assertFalse([text for text in embedded if own_words in text])
+
+            # When tenant A asks for similar records — through its own key, since
+            # find-similar is an API key's read and no person's — with its own record's
+            # words beside a shared record's, find-similar returns shared records only and
+            # no rerank call carries the private text.
+            key = factories.api_key(self.tenant, scopes=(perms.SCOPE_SEARCH_READ,))
+            tenancy.clear_tenant()
+            similar = self.client.post(
+                f"{V1}/search/similar",
+                data={"text": f"{own_words} {FIRST_SUMMARY}"},
+                content_type="application/json",
+                HTTP_X_API_KEY=key.plain_key,
+            )
+        self.assertEqual(similar.status_code, 200, similar.content)
+        self.assertTrue(similar.json()["items"], "the shared library still answers")
+        with tenancy.platform_zone():
+            shared_ids = {str(row) for row in Obligation.objects.filter(owner_tenant__isnull=True).values_list("id", flat=True)}
+            shared_ids |= {
+                str(row) for row in Provision.objects.filter(instrument__owner_tenant__isnull=True).values_list("id", flat=True)
+            }
+            shared_ids |= {str(row) for row in RegulatoryChange.objects.values_list("id", flat=True)}
+        self.assertLessEqual({hit["id"] for hit in similar.json()["items"]}, shared_ids)
+        self.assertNotIn(str(own.id), {hit["id"] for hit in similar.json()["items"]})
+        self.assertTrue(judged, "the reranker judged the shared candidates")
+        self.assertFalse([document for document in judged if own_words in document])
+
+        # When a change to the private record is opened, it carries no AI-drafted "So
+        # what?": a registered change belongs to no bank in R2, so a "So what?" about the
+        # bank's own record could only be a model call about it, and the one door to a
+        # model refuses that before any model is asked, leaving no draft behind.
+        tenancy.activate(self.tenant.id)
+        model = mock.Mock()
+        with self.assertRaises(ai.PrivateRecordRefused):
+            ai.generate(
+                purpose=AiPurpose.SO_WHAT,
+                system="Say what this means for the bank.",
+                prompt=own_words,
+                prompt_template="so-what/v1",
+                citations=[],
+                tenant_id=self.tenant.id,
+                subject_type="obligation",
+                subject_id=own.id,
+                llm=model,
+            )
+        model.complete.assert_not_called()
+        self.assertFalse(AiGeneration.objects.filter(subject_id=own.id).exists())
 
     def test_inv_s14(self) -> None:
         """INV-S14

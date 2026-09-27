@@ -7,6 +7,12 @@ The requirements coverage gate (scripts/requirements_coverage.py) fails
 when a scenario here and a heading in app.md drift apart.
 
 Prefixes hosted: CAS.
+
+Operations each pending scenario exercises once its logic lands (the audit-on-write guard
+reads these names; c9-case-contract declared them): CAS-S2 triageChange, CAS-S3
+dismissChange and restoreChange, CAS-S4 startAssessment, saveAssessment and
+closeWithoutAction, CAS-S6 addAction, updateAction and deleteAction, CAS-S7 addEvidence and
+removeEvidence, CAS-S8 requestSignoff, CAS-S10 approveSignoff, CAS-S18 sendBackSignoff.
 """
 
 from unittest import skip

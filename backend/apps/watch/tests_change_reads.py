@@ -59,8 +59,9 @@ EARLIER = D(2026, 8, 1)
 # obligation links with their obligations, and those obligations' titles (2); the urgency
 # rows the change and the case name, with their labels (2); the change type's labels (1);
 # its timeline (1); its pages (1); the bank's own decisions about the links (1); the
-# jurisdiction terms its authority reaches (1, FP-04).
-CHANGE_QUERIES = 2 + 6 + 2 + 2 + 1 + 3 + 2 + 2 + 1 + 1 + 1 + 1 + 1
+# jurisdiction terms its authority reaches (1, FP-04); the case's workflow block, the case
+# with its people and reasons joined and the guards' facts (2, c9-case-contract).
+CHANGE_QUERIES = 2 + 6 + 2 + 2 + 1 + 3 + 2 + 2 + 1 + 1 + 1 + 1 + 1 + 2
 
 # Queries per related-changes read, measured the same way: the savepoint pair (2); the
 # session (6); the caller's tenant and locale (2); the footprint and its restricting

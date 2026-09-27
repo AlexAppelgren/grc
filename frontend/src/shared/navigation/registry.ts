@@ -84,6 +84,9 @@ export const destinations: readonly Destination[] = [
   // acc-fe-admin (ACC-01, ACC-03, ACC-08): the Access tab of Agents, reached from that page's tabs,
   // never listed on the Admin index. An entry exposes its credentials and log, so reading needs the grant too.
   { id: 'admin-agents-access', href: '/admin/agents/access', labelKey: 'nav.admin.agentsAccess', surface: 'tenant', anyOfPermissions: ['agent_access.manage'], group: 'admin', parent: 'admin-agents' },
+  // The bank's workflow policy (COL-02, TEN-01): its own section, gated by
+  // workflow.manage rather than by the organisation profile's grants.
+  { id: 'admin-workflow', href: '/admin/workflow', labelKey: 'nav.admin.workflow', surface: 'tenant', anyOfPermissions: ['workflow.manage'], group: 'admin', parent: 'admin' },
   // Account: any signed-in person, from the who panel.
   { id: 'me-passkeys', href: '/me/passkeys', labelKey: 'nav.me.passkeys', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-sessions', href: '/me/sessions', labelKey: 'nav.me.sessions', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },

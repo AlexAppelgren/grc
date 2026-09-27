@@ -4,6 +4,53 @@
  */
 
 export interface paths {
+    "/api/v1/actions/{action_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove an action that is no longer needed
+         * @description Removes an action from the case's work. Despite the method nothing is deleted: the
+         *     action is marked removed with the person and the time, drops out of the list and the open
+         *     count, and stays in the case file and the audit trail. Actions cannot be removed while the
+         *     case waits for sign-off.
+         *
+         *     A person's session holding `cases.work` in their own bank. No request body. It writes the
+         *     action and one audit row naming the person, and answers 204 with no content. Send the
+         *     action's own `version` in `If-Match`: without it, or with an older one, the removal is
+         *     refused with 409 `stale_write`.
+         *
+         *     Errors: `not_found` when no live action of this bank has that id; `permission_denied`
+         *     without `cases.work`; `unauthenticated` without a session, including any API key;
+         *     `stale_write` for a missing or old `If-Match`. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        delete: operations["deleteAction"];
+        options?: never;
+        head?: never;
+        /**
+         * Change, complete or reopen an action
+         * @description Changes the fields sent and leaves the rest: the title, the owner, the due date, or
+         *     `done` to complete or reopen it. Call it from the actions panel. Actions cannot be
+         *     changed while the case waits for sign-off.
+         *
+         *     A person's session holding `cases.contribute` in their own bank. It writes the action and
+         *     one audit row naming the person. Send the action's own `version` in `If-Match`: without
+         *     it, or with an older one, the write is refused with 409 `stale_write`.
+         *
+         *     Errors: `not_found` when no live action of this bank has that id; `permission_denied`
+         *     without `cases.contribute`; `unauthenticated` without a session, including any API key;
+         *     `stale_write` for a missing or old `If-Match`; `validation_error` for a body the schema
+         *     refuses or an owner who is not a member of this bank. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        patch: operations["updateAction"];
+        trace?: never;
+    };
     "/api/v1/agent-definitions": {
         parameters: {
             query?: never;
@@ -15,8 +62,10 @@ export interface paths {
          * See which agents the platform ships, to bind a key to one
          * @description Returns the platform's agent definitions, ordered by key, one page at a time: each
          *     one's identifier, stable key, what it does, the version this build loaded and whether
-         *     it is released. Call it from the platform console before creating an agent key, to
-         *     pick the agent the key will act as; `POST /agent-keys` takes the `id` as `agentId`.
+         *     it is released, whether it is one of bleqq's agents or one a bank may add as its own,
+         *     and when its current version was published. Call it from the platform console before
+         *     creating an agent key, to pick the agent the key will act as (`POST /agent-keys` takes
+         *     the `id` as `agentId`), and to find the definition whose versions and settings to open.
          *
          *     A person's session only, holding the platform permission `agent_definitions.manage`,
          *     which only a platform administrator holds; no session inside a bank and no API key can
@@ -31,6 +80,147 @@ export interface paths {
         get: operations["listAgentDefinitions"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-definitions/{agent_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Open one agent definition with every version it has published
+         * @description Returns one definition as the list shows it, with every version it has published,
+         *     newest first and retired ones included, so the console can show which version each past
+         *     run used and publish or retire the next one.
+         *
+         *     A person's session in the platform console holding `agent_definitions.manage`; no
+         *     session inside a bank and no API key reaches a definition, in any release (AGT-03). It
+         *     reads and writes nothing to the audit log.
+         *
+         *     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
+         *     `agent_definitions.manage`; `not_found` (404) for a key no definition has.
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until
+         *     that ships.
+         */
+        get: operations["getAgentDefinition"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-definitions/{agent_key}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See how often one of bleqq's agents runs, where it looks and its budget
+         * @description Returns the settings one of bleqq's own agents runs with: its cadence, the
+         *     jurisdictions it sweeps and its monthly budget. They are the same for every bank and
+         *     carry no bank's figure.
+         *
+         *     A person's session in the platform console holding `agent_definitions.manage`. It
+         *     reads and writes nothing to the audit log.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
+         *     `agent_definitions.manage`; `not_found` (404) for a key no platform agent has.
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until
+         *     that ships.
+         */
+        get: operations["getPlatformAgentSettings"];
+        /**
+         * Change how one of bleqq's agents runs, for every bank
+         * @description Replaces the cadence, jurisdictions and monthly budget of one of bleqq's own agents.
+         *     The change applies to every bank at once, which is why no bank can make it.
+         *
+         *     A person's session in the platform console holding `agent_definitions.manage`, with a
+         *     fresh passkey step-up. Records one audit event with the settings before and after, the
+         *     person and the assertion, and no bank.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
+         *     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
+         *     `not_found` (404) for a key no platform agent has; `unknown_key` (422) for a
+         *     jurisdiction the vocabulary does not hold, with the valid keys; `validation_error`
+         *     (422). Published ahead of the logic that will fill it, and answering 501 `not_built`
+         *     until that ships.
+         */
+        put: operations["updatePlatformAgentSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-definitions/{agent_key}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish a new version of one of the platform's agents
+         * @description Publishes the version folder this build ships for the definition, with a note of
+         *     what changed. Runs opened from now on run it; a run already open keeps the version it
+         *     opened with, and every earlier run still names the version it used. The prompt, tools
+         *     and model come from the shipped folder and never from this request.
+         *
+         *     A person's session in the platform console holding `agent_definitions.manage`, with a
+         *     fresh passkey step-up, because a new version changes what runs for every bank at once.
+         *     Records one audit event naming the person, the definition, the version and the
+         *     assertion.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
+         *     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
+         *     `not_found` (404) for a key no definition has; `validation_error` (422) for a version
+         *     number the build does not ship or a missing note. Published ahead of the logic that
+         *     will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["publishAgentVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-definitions/{agent_key}/versions/{version_no}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retire a version so no new run starts on it
+         * @description Retires one published version: no new run starts on it, and every run that used it
+         *     keeps pointing at it, because a published version is never rewritten or deleted.
+         *
+         *     A person's session in the platform console holding `agent_definitions.manage`, with a
+         *     fresh passkey step-up. Records one audit event naming the person, the version and the
+         *     assertion.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
+         *     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
+         *     `not_found` (404) for a definition or version that does not exist. Published ahead of
+         *     the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["retireAgentVersion"];
         delete?: never;
         options?: never;
         head?: never;
@@ -149,16 +339,19 @@ export interface paths {
         /**
          * Read what the agents have been doing
          * @description Returns the agent runs the caller may see, oldest first, one page at a time: when
-         *     each ran, which agent and which model, how it ended, and what it counted. Call it to
-         *     show a bank that its watch is alive — that its sources were swept last night, and what
-         *     came of it — and to investigate a run whose findings are being questioned.
+         *     each ran, which agent, which version and which model, what started it and who asked,
+         *     how it ended, what it counted and what it cost. Call it to show a bank that its watch is
+         *     alive — that its sources were swept last night, and what came of it — to show the
+         *     history of one of the bank's own agents with `tenantAgentId`, the runs a person asked for
+         *     with `mine`, and to investigate a run whose findings are being questioned.
          *
          *     A person's session only; an API key cannot read this, so an agent cannot read its own
          *     history. Inside a bank it needs `agents.manage`, in the platform console
          *     `system.health`; a member with neither is refused. A bank sees the platform's own
          *     library runs, because those are what feed the shared inventory it relies on, and its
          *     own runs. It never sees another bank's runs, and no run of any bank is visible to
-         *     another.
+         *     another; the two filters only narrow that, and naming another bank's agent matches no
+         *     run rather than answering an error.
          *
          *     bleqq's own agents are part of the base package: a bank reads their history here but
          *     cannot switch one off, pause it, or change its cadence, scope or budget. A bank's own
@@ -166,9 +359,9 @@ export interface paths {
          *     nothing to the audit log. An empty list is a 200 with `total` 0 and means nothing has
          *     run yet, not that something is wrong.
          *
-         *     Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
-         *     depth; `permission_denied` with neither `agents.manage` nor `system.health`;
-         *     `unauthenticated` without a session.
+         *     Errors: `validation_error` when `limit` is above 100, `offset` beyond the accepted
+         *     depth or `tenantAgentId` is not a UUID; `permission_denied` with neither
+         *     `agents.manage` nor `system.health`; `unauthenticated` without a session.
          */
         get: operations["listAgentRuns"];
         put?: never;
@@ -264,6 +457,36 @@ export interface paths {
         patch: operations["finishAgentRun"];
         trace?: never;
     };
+    "/api/v1/agent-runs/{run_id}/interrupt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop a run of your bank's agent
+         * @description Stops an open run of one of the bank's own agents. What it filed before the stop
+         *     stays, and the run reads as interrupted, with when and by whom. bleqq's library runs
+         *     appear in the bank's run log but are never the bank's to stop.
+         *
+         *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
+         *     event naming the person.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
+         *     naming `agent_definitions.manage` for a run of one of bleqq's agents; `not_found` (404)
+         *     for a run the bank cannot see. Published ahead of the logic that will fill it, and
+         *     answering 501 `not_built` until that ships.
+         */
+        post: operations["interruptAgentRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/agent-runs/{run_id}/source-checks": {
         parameters: {
             query?: never;
@@ -310,6 +533,180 @@ export interface paths {
          *     `unauthenticated` (401) without a key.
          */
         post: operations["recordSourceCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See the agents your bank added for itself
+         * @description Returns the agents the bank added for itself, with each one's switch, cadence, scope,
+         *     next run and pause. bleqq's agents are not here: `GET /agents/platform` shows them.
+         *
+         *     A person's session in a bank holding `agents.manage`; no API key. It reads and writes
+         *     nothing to the audit log. An empty list is a 200 and means the bank has added none.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
+         *     `validation_error` (422) when `limit` is above 100. Published ahead of the logic that
+         *     will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["listTenantAgents"];
+        put?: never;
+        /**
+         * Add an agent of your bank's own
+         * @description Adds an agent of the bank's own from a definition bleqq offers banks, with its
+         *     cadence and scope; it starts switched off. What it finds stays in the bank's own zone:
+         *     it never writes the shared library.
+         *
+         *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
+         *     event naming the person and the definition.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
+         *     naming `agent_definitions.manage` when the definition is one of bleqq's own agents,
+         *     which no bank adds or steers; `unknown_key` (422) for a definition key that does not
+         *     exist; `validation_error` (422). Published ahead of the logic that will fill it, and
+         *     answering 501 `not_built` until that ships.
+         */
+        post: operations["createTenantAgent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agents/platform": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what bleqq's own agents watch for every bank
+         * @description Returns bleqq's own agents, read-only: each one's name, purpose, the jurisdictions it
+         *     sweeps, its cadence, when it next runs and how its last run ended. They are the base
+         *     package, the same for every bank, and keep running when a bank switches its own AI
+         *     features off, because they read public sources only. Nothing else about them is here:
+         *     no prompt, tool, model, version, budget, cost or finding.
+         *
+         *     A person's session in a bank holding `watch.read`, which every member has; no API key.
+         *     It reads and writes nothing to the audit log.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `watch.read`;
+         *     `validation_error` (422) when `limit` is above 100. Published ahead of the logic that
+         *     will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["listPlatformWatch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agents/{tenant_agent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Switch your bank's agent on or off, or change its cadence or scope
+         * @description Changes what the body sends on one of the bank's own agents: its switch, cadence,
+         *     run day and hour, or scope, and nothing else. Its instructions and tools are never the
+         *     bank's to change.
+         *
+         *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
+         *     event with the fields before and after.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
+         *     `not_found` (404) for an agent the bank does not have; `unknown_key` (422) for a scope
+         *     key the vocabulary does not hold; `validation_error` (422). Published ahead of the logic
+         *     that will fill it, and answering 501 `not_built` until that ships.
+         */
+        patch: operations["updateTenantAgent"];
+        trace?: never;
+    };
+    "/api/v1/agents/{tenant_agent_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pause your bank's agent
+         * @description Pauses one of the bank's own agents: it starts no run until someone resumes it, and
+         *     it keeps its settings and its history. A run already open is not stopped; use
+         *     `POST /agent-runs/{runId}/interrupt` for that.
+         *
+         *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
+         *     event naming the person.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
+         *     `not_found` (404) for an agent the bank does not have. Published ahead of the logic that
+         *     will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["pauseTenantAgent"];
+        /**
+         * Resume your bank's paused agent
+         * @description Lifts the pause on one of the bank's own agents, so it runs on its cadence again.
+         *     Nothing is deleted: the pause stays in the audit log.
+         *
+         *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
+         *     event naming the person.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
+         *     `not_found` (404) for an agent the bank does not have. Published ahead of the logic that
+         *     will fill it, and answering 501 `not_built` until that ships.
+         */
+        delete: operations["resumeTenantAgent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agents/{tenant_agent_id}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run your bank's agent now
+         * @description Queues one run of the bank's own agent now, outside its cadence, and returns it; the
+         *     run is a job, so follow it in `GET /agent-runs`. It counts against the bank's monthly
+         *     cap like any other run.
+         *
+         *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
+         *     event naming the person.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
+         *     `not_found` (404) for an agent the bank does not have. Published ahead of the logic that
+         *     will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["runTenantAgentNow"];
         delete?: never;
         options?: never;
         head?: never;
@@ -895,7 +1292,8 @@ export interface paths {
          *     30 seconds of its rotation gets a fresh access token without rotating
          *     again. Presented any later it is treated as stolen, the whole session is revoked and the
          *     replay is written to the security log. A session also ends after 30 minutes
-         *     without a refresh or 12 hours after sign-in, and a revoked one cannot be
+         *     without a refresh or 12 hours after sign-in (the defaults; the bank's
+         *     security policy may set its own limits, which apply here), and a revoked one cannot be
          *     refreshed.
          *
          *     Writes the audit event `session.refreshed`; a session that ends here writes
@@ -1436,8 +1834,12 @@ export interface paths {
          * @description The whole change page: the reform's sourced facts — its type, its flags, its scope,
          *     its timeline from consultation to in force, the pages it was found on and the obligations
          *     it affects — and beside them the reader's own bank's case, with its urgency, its
-         *     footprint verdict and its "So what?". Call it when a person opens a change from the feed,
-         *     a briefing or an obligation.
+         *     footprint verdict, its "So what?" and its workflow block: who owns, triaged, dismissed,
+         *     asked for and gave sign-off and when, the close reason, the open action count, whether
+         *     sign-off can be asked for, the moves open to this reader and the `version` every
+         *     workflow write sends in `If-Match`. Call it when a person opens a change from the feed,
+         *     a briefing or an obligation. The moves come from the case state machine; a screen never
+         *     guesses one.
          *
          *     A read: it changes nothing and writes no audit row. A person's session holding
          *     `watch.read` in their own bank. Everything outside `case` is a library fact shared by
@@ -1531,6 +1933,140 @@ export interface paths {
         patch: operations["updateChange"];
         trace?: never;
     };
+    "/api/v1/changes/{change_id}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what must be done for a case, and by whom
+         * @description One page of the case's live actions, earliest due date first, each with its owner, due
+         *     date and whether it is done. Call it for the actions panel.
+         *
+         *     A read: it changes nothing and writes no audit row. A person's session holding
+         *     `cases.read` in their own bank. A removed action is not listed; it stays in the case
+         *     file. A case with no actions answers 200 with an empty page.
+         *
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `validation_error` for a page size or offset outside
+         *     its limits. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["listActions"];
+        put?: never;
+        /**
+         * Add something that must be done for a case, with an owner and a due date
+         * @description Adds an action to the case. The first action added to an assessing case moves it to
+         *     `implementing`, which needs the assessment's `why` saved. Actions cannot be added while
+         *     the case waits for sign-off.
+         *
+         *     A person's session holding `cases.work` in their own bank. It writes one action and one
+         *     audit row naming the person, and a row in the case's transition ledger when the case moves. Answers
+         *     201 with the stored action. Send the case's `version` in `If-Match`: without it, or with an older one, the write is refused with 409 `stale_write` carrying `currentVersion`, and nothing changes.
+         *
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `invalid_transition` when the case is not in a category this move leaves from; `stale_write` for a missing or old `If-Match`; `why_required` when the move
+         *     to implementing finds no saved `why`; `validation_error` for a body the schema refuses or
+         *     an owner who is not a member of this bank. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["addAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/assessment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save whether a change applies to your bank, why, and what must change
+         * @description Replaces the case's impact assessment with the one sent: whether the change applies,
+         *     why, what must change, the bank's own deadline and the effort. Call it from the
+         *     assessment panel of a case being assessed or implemented. Saving moves the case to no
+         *     other category; adding the first action does that.
+         *
+         *     A person's session holding `cases.contribute` in their own bank. It writes that bank's
+         *     assessment and one audit row naming the person, never the texts, which are tenant
+         *     content and never reach a log or a model. `applies: no` records the verdict; closing on
+         *     it is `POST /changes/{changeId}/close`. An optional `subStatus` places the case inside
+         *     its category. Send the case's `version` in `If-Match`: without it, or with an older one, the write is refused with 409 `stale_write` carrying `currentVersion`, and nothing changes.
+         *
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `invalid_transition` when the case is not being
+         *     assessed or implemented; `stale_write` for a missing or old `If-Match`, which is what the
+         *     second of two people saving the same version gets; `unknown_key` for an effort or
+         *     sub-status key the lists do not hold; `validation_error` for a body the schema refuses,
+         *     including an empty `why`. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        put: operations["saveAssessment"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/assessment/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start working out what a change means for your bank
+         * @description Moves this bank's case from `assigned` to `assessing` and opens an empty impact
+         *     assessment. Call it when the owner begins the assessment; saving it is
+         *     `PUT /changes/{changeId}/assessment`.
+         *
+         *     A person's session holding `cases.work` in their own bank. No request body. It writes
+         *     that bank's case and its assessment, one row in the case's transition ledger and one audit row naming
+         *     the person. Send the case's `version` in `If-Match`: without it, or with an older one, the write is refused with 409 `stale_write` carrying `currentVersion`, and nothing changes.
+         *
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `invalid_transition` when the case is not in a category this move leaves from; `stale_write` for a missing or old `If-Match`. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["startAssessment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/case-file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a case's whole story as one text that stands alone
+         * @description The case file as UTF-8 `text/plain`: the change, the bank's confirmed "So what?", the
+         *     assessment, the actions with their completion, the evidence with hashes and scan states,
+         *     both sign-off names and every date. It reads without the product beside it, for an
+         *     auditor or a file. An unconfirmed AI draft is labelled as one, never presented as the
+         *     bank's text.
+         *
+         *     A person's session holding `cases.read` in their own bank. It changes nothing on the
+         *     case. The same content as a downloadable file is an export job.
+         *
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["getCaseFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/changes/{change_id}/case/obligation-links": {
         parameters: {
             query?: never;
@@ -1595,6 +2131,39 @@ export interface paths {
          *     session.
          */
         delete: operations["removeCaseObligationLink"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close a case that needs no work, with a reason
+         * @description Closes an assigned or assessing case on one person's word, with a close reason whose
+         *     kind is "no_action" or "not_applicable" (D-92). Call it when the change applies but
+         *     nothing has to change, or the assessment found it does not apply. A case that needed
+         *     work is closed by a second person through sign-off instead.
+         *
+         *     A person's session holding `cases.work` in their own bank. It writes that bank's case,
+         *     one row in the case's transition ledger carrying the note, and one audit row naming the person and the
+         *     reason's key, never the note. The close can be undone with
+         *     `POST /changes/{changeId}/restore`. Send the case's `version` in `If-Match`: without it, or with an older one, the write is refused with 409 `stale_write` carrying `currentVersion`, and nothing changes.
+         *
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `invalid_transition` when the case is not in a category this move leaves from; `stale_write` for a missing or old `If-Match`; `four_eyes_violation` for a
+         *     reason of the "signed_off" kind, which needs a second person; `reason_required` when no
+         *     reason is given; `unknown_key` for a reason key the list does not hold;
+         *     `validation_error` for a body the schema refuses. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["closeWithoutAction"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1665,6 +2234,37 @@ export interface paths {
          *     credential.
          */
         post: operations["confirmChangeCuration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set a change aside as not relevant to your bank, with a reason
+         * @description Moves this bank's case from `new` to `dismissed` with a reason from the bank's own
+         *     dismissal reasons. Call it when the change does not concern the bank; the case stays and
+         *     can be restored with `POST /changes/{changeId}/restore`.
+         *
+         *     A person's session holding `cases.triage` in their own bank. It writes that bank's case,
+         *     one row in the case's transition ledger and one audit row naming the person and the reason's key. A
+         *     dismissal says the bank looked and decided; it never says an obligation does not apply,
+         *     which is a separate fact in the register. Send the case's `version` in `If-Match`: without it, or with an older one, the write is refused with 409 `stale_write` carrying `currentVersion`, and nothing changes.
+         *
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `invalid_transition` when the case is not in a category this move leaves from; `stale_write` for a missing or old `If-Match`; `reason_required` when no
+         *     reason is given; `unknown_key` for a reason key the list does not hold;
+         *     `validation_error` for a body the schema refuses. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["dismissChange"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1802,6 +2402,53 @@ export interface paths {
         patch: operations["updateChangeEvent"];
         trace?: never;
     };
+    "/api/v1/changes/{change_id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See the evidence attached to a case, and whether each file passed the scan
+         * @description One page of the case's live evidence, newest first, each with its kind, its hash and
+         *     where the malware scan stands. Call it for the evidence panel.
+         *
+         *     A read: it changes nothing and writes no audit row. A person's session holding
+         *     `cases.read` in their own bank. Removed evidence is not listed; it stays in the case file
+         *     with its hash. A case with no evidence answers 200 with an empty page.
+         *
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `validation_error` for a page size or offset outside
+         *     its limits. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["listEvidence"];
+        put?: never;
+        /**
+         * Attach a file, a link or a reference to a case as evidence
+         * @description Attaches evidence to the case, sent as `multipart/form-data`: the fields `kind`,
+         *     `name` and `url`, and for a file the bytes in the `file` part. There is no separate upload
+         *     address: the server checks the file's type and size before storing a byte, hashes it,
+         *     stores it privately and queues the malware scan before it answers, and the file cannot be
+         *     downloaded until the scan passes.
+         *
+         *     A person's session holding `cases.contribute` in their own bank. It writes one evidence
+         *     row and one audit row naming the person and the file's hash, never its contents. Answers
+         *     201 with the stored evidence, a file `pending` its scan. Evidence can be added in every
+         *     open category; sign-off counts only clean evidence.
+         *
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `validation_error` for fields the schema refuses, a
+         *     file part missing for `file` or sent for another kind, a file type outside the allowed
+         *     list or a file over the size limit — each refused before anything is stored. When the
+         *     malware scanner is unavailable the request is refused with 503 and nothing is stored.
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["addEvidence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/changes/{change_id}/obligations": {
         parameters: {
             query?: never;
@@ -1859,6 +2506,128 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/changes/{change_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bring a dismissed change back to triage
+         * @description Moves a dismissed case, or one a single person closed without action, back to `new`
+         *     so it is triaged again. Call it when a dismissal or a one-person close was wrong. A case
+         *     a second person signed off stays closed.
+         *
+         *     A person's session holding `cases.triage` in their own bank. No request body. It writes
+         *     that bank's case, one row in the case's transition ledger and one audit row naming the person; the
+         *     earlier decision stays in the case's history. Send the case's `version` in `If-Match`: without it, or with an older one, the write is refused with 409 `stale_write` carrying `currentVersion`, and nothing changes.
+         *
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `invalid_transition` when the case is not in a category this move leaves from; `stale_write` for a missing or old `If-Match`, including a case that was
+         *     signed off. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["restoreChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/signoff/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign off a case someone else worked, confirming with your passkey
+         * @description Closes a case waiting for sign-off with the close reason "signed_off", in the name of
+         *     a second person. Call it from the sign-off panel after reading the case file.
+         *
+         *     A person's session holding `cases.signoff` in their own bank, with a passkey assertion
+         *     younger than the step-up window. It writes that bank's case, one row in the case's transition ledger
+         *     carrying the note and one audit row naming the person and the step-up, never the note.
+         *     The approver is never the requester: the state machine refuses it and the database's
+         *     check constraint refuses it again. Signing off changes no inventory row and says nothing
+         *     about whether the bank complies (REG-02). Send the case's `version` in `If-Match`: without it, or with an older one, the write is refused with 409 `stale_write` carrying `currentVersion`, and nothing changes.
+         *
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `step_up_required` without a fresh passkey assertion,
+         *     answered before anything is read; `invalid_transition` when the case is not in a category this move leaves from; `stale_write` for a missing or old `If-Match`; `four_eyes_violation` when
+         *     the caller asked for the sign-off themself; `validation_error` for a body the schema
+         *     refuses. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["approveSignoff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/signoff/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask a second person to sign off a case
+         * @description Moves an implementing case to `signoff`, naming the caller as the requester, and
+         *     notifies the people who may sign off. Call it when every action is done and the evidence
+         *     is attached; `canRequestSignoff` on the case says whether it will be accepted. The
+         *     actions are locked while the case waits.
+         *
+         *     A person's session holding `cases.work` in their own bank. No request body. It writes
+         *     that bank's case, one row in the case's transition ledger and one audit row naming the person. The
+         *     requester can never be the person who signs off. Send the case's `version` in `If-Match`: without it, or with an older one, the write is refused with 409 `stale_write` carrying `currentVersion`, and nothing changes.
+         *
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `invalid_transition` when the case is not in a category this move leaves from; `stale_write` for a missing or old `If-Match`; `open_actions` while an
+         *     action is not done; `evidence_missing` without at least one piece of evidence that passed
+         *     the scan. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["requestSignoff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/signoff/send-back": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a case back for more work instead of signing it off
+         * @description Moves a case waiting for sign-off back to `implementing`, unlocking its actions, with
+         *     the second person's note on what is missing. No step-up: sending back is the safe
+         *     direction.
+         *
+         *     A person's session holding `cases.signoff` in their own bank. It writes that bank's case,
+         *     one row in the case's transition ledger carrying the note and one audit row naming the person, never
+         *     the note. Send the case's `version` in `If-Match`: without it, or with an older one, the write is refused with 409 `stale_write` carrying `currentVersion`, and nothing changes.
+         *
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `invalid_transition` when the case is not in a category this move leaves from; `stale_write` for a missing or old `If-Match`; `validation_error` for a body
+         *     the schema refuses. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["sendBackSignoff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/changes/{change_id}/so-what": {
         parameters: {
             query?: never;
@@ -1881,8 +2650,9 @@ export interface paths {
          *     text is tenant content: it stays in the bank's zone and never reaches a log, Sentry or a
          *     model endpoint. The save is recorded in the audit log with the person named.
          *
-         *     No `If-Match` and no step-up: the case carries no version in R1, so the last save wins
-         *     until the case workflow lands. Errors: `not_found` when no change has that id or this
+         *     No `If-Match` and no step-up: the last save wins. The save still raises the case's
+         *     `version`, so a workflow write made from an older copy of the case is refused with
+         *     `stale_write` and reloads. Errors: `not_found` when no change has that id or this
          *     bank has no case for it; `permission_denied` without `cases.work`; `unauthenticated`
          *     without a session; `validation_error` for empty text or text over the cap.
          */
@@ -1916,11 +2686,192 @@ export interface paths {
          *     confirms it (WAT-05). No library row moves, and another bank's copy is untouched. The
          *     confirmation is recorded in the audit log with the person named.
          *
-         *     No request body, no `If-Match` and no step-up. Errors: `not_found` when no change has
+         *     No request body, no `If-Match` and no step-up; the confirmation still raises the case's
+         *     `version`, like a save. Errors: `not_found` when no change has
          *     that id, this bank has no case for it, or the case holds no draft to confirm;
          *     `permission_denied` without `cases.work`; `unauthenticated` without a session.
          */
         post: operations["confirmSoWhat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/triage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide how urgent a change is for your bank and who owns it
+         * @description Moves this bank's case from `new` to `assigned`: the urgency becomes the bank's own
+         *     decision rather than the agent's suggestion, and the named owner takes the case on. Call
+         *     it from the triage panel of a change that needs triage.
+         *
+         *     A person's session holding `cases.triage` in their own bank. It writes that bank's case,
+         *     one row in the case's transition ledger and one audit row naming the person, and notifies the owner.
+         *     No library row moves. An optional `subStatus` places the case inside `assigned`.
+         *     Send the case's `version` in `If-Match`: without it, or with an older one, the write is refused with 409 `stale_write` carrying `currentVersion`, and nothing changes.
+         *
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `invalid_transition` when the case is not in a category this move leaves from; `stale_write` for a missing or old `If-Match`; `owner_required` when no
+         *     owner is named; `unknown_key` for an urgency or sub-status key the lists do not hold;
+         *     `validation_error` for a body the schema refuses. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["triageChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the comments on a record
+         * @description The comments on one record of the caller's bank, oldest first, for the record's
+         *     "Comments" panel. The record is named by its kind and id in the query string.
+         *
+         *     A read: it changes nothing and writes no audit row. Any person's session in a bank whose
+         *     role can read that kind of record (`register.read` for the inventory's records,
+         *     `cases.read` for a case and its actions); no API key reaches it. A deleted comment keeps
+         *     its place without its text, and `canEdit` and `canDelete` say what the caller may do with
+         *     each one.
+         *
+         *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. A record nobody has
+         *     commented on is a 200 with an empty `items`.
+         *
+         *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+         *     finish enrolling, `not_found` for a platform session and for a record the bank does not
+         *     hold or the caller may not read, and `validation_error` for a missing or malformed kind or
+         *     id, or a `limit` outside 1 to 100. A kind comments are not taken on is refused with a 422.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["listComments"];
+        put?: never;
+        /**
+         * Comment on a record and mention people
+         * @description Write a comment on one record of the caller's bank, optionally naming people, for the
+         *     record's "Comments" panel and My work's composer. Everyone in the bank who can read the
+         *     record can read the comment: there are no private comments.
+         *
+         *     Needs a person's session in a bank holding `comments.write` and a role that can read the
+         *     record's kind; no API key reaches it. It stores the comment and one row per person
+         *     mentioned and records one audit event holding the comment's id and the mentioned people's
+         *     ids — never the text, which reaches no log, notification, mail or model. Each mentioned
+         *     member who can read the record is notified once; the others are returned in
+         *     `undeliveredMentions` by name so the composer can say the mention did not reach them.
+         *     Answers 201 with the comment.
+         *
+         *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+         *     finish enrolling, `permission_denied` without `comments.write` (naming it in
+         *     `requiredPermission`), `not_found` for a platform session and for a record the bank does
+         *     not hold or the caller may not read, and `validation_error` for an empty text, a field the
+         *     body does not name or a malformed id. A kind comments are not taken on, a text longer than
+         *     the deployment allows and a mentioned id that is not a member of the bank are refused with
+         *     a 422.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        post: operations["addComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/comments/{comment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete your own comment
+         * @description Take back a comment the caller wrote. Nobody else may delete it, and no role grants
+         *     that.
+         *
+         *     Needs a person's session in a bank holding `comments.write`; no API key reaches it. Only
+         *     the author may delete. The comment is kept and marked deleted rather than removed, so the
+         *     thread still reads; its text is no longer returned. One audit event records the comment's
+         *     id and never its text. Deleting it again changes nothing. Answers 204 with no body.
+         *
+         *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+         *     finish enrolling, `permission_denied` without `comments.write` (naming it in
+         *     `requiredPermission`), and `not_found` for a platform session and for a comment the bank
+         *     does not hold. A delete by someone other than the author is refused with a 403.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        delete: operations["deleteComment"];
+        options?: never;
+        head?: never;
+        /**
+         * Correct your own comment
+         * @description Change the text of a comment the caller wrote, shortly after writing it. Nobody else
+         *     may edit it, and no role grants that.
+         *
+         *     Needs a person's session in a bank holding `comments.write`; no API key reaches it. Only
+         *     the author may edit, and only within the deployment's edit window after writing (15
+         *     minutes unless configured otherwise). The text it replaces is kept by the bank, never
+         *     overwritten and returned by no call, and one audit event records the comment's id — never
+         *     either text. Who was mentioned does not change, so an edit notifies nobody new. Answers
+         *     200 with the comment.
+         *
+         *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+         *     finish enrolling, `permission_denied` without `comments.write` (naming it in
+         *     `requiredPermission`), `not_found` for a platform session and for a comment the bank does
+         *     not hold, and `validation_error` for an empty text or a field the body does not name. An
+         *     edit by someone other than the author is refused with a 403, and one after the window
+         *     with a 409.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        patch: operations["editComment"];
+        trace?: never;
+    };
+    "/api/v1/console/agent-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read what bleqq's own agents have been doing
+         * @description Returns the runs of bleqq's own agents, oldest first, one page at a time, with the
+         *     version each ran, what it cost and how it ended, for the console's agent pages. A
+         *     platform run reads no bank's row, so no bank's name or figure is in it.
+         *
+         *     A person's session in the platform console holding `agent_definitions.manage`. It reads
+         *     and writes nothing to the audit log. An empty list is a 200 with `total` 0.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
+         *     `agent_definitions.manage`; `validation_error` (422) when `limit` is above 100 or
+         *     `offset` beyond the accepted depth. Published ahead of the logic that will fill it, and
+         *     answering 501 `not_built` until that ships.
+         */
+        get: operations["listPlatformRuns"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1955,6 +2906,98 @@ export interface paths {
         get: operations["listConsoleChanges"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/console/research-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for library records to be re-tagged, as a batch to review
+         * @description Asks bleqq's agents to re-tag library records, such as "re-tag custody records with
+         *     Client money". The answer is one batch proposal with a before-and-after preview,
+         *     decided in the queue like any proposal; nothing in the library changes until an
+         *     independent reviewer approves it. The request itself is a job: read its status later.
+         *
+         *     A person's session in the platform console holding `proposals.review`; a bank asks its
+         *     own agents with `POST /research-requests` and never re-tags the library. Records one
+         *     audit event naming the person.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`;
+         *     `validation_error` (422) for a topic that is empty or too long. Published ahead of the
+         *     logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["createRetagRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/console/support-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See your own support access requests and grants
+         * @description The caller's own requests across banks, newest first, each with the bank's organisation
+         *     name, the purpose, the ticket, the window, the state and the time of the bank's decision.
+         *     Never another platform person's request, and never the name of anyone at a bank.
+         *
+         *     Needs the platform permission `support_access.grant`. It changes nothing and writes no
+         *     audit event. A caller who never asked is a 200 with `total` 0.
+         *
+         *     Errors: `validation_error` (422) for a page size above 100; `permission_denied` (403)
+         *     without `support_access.grant`; `unauthenticated` (401). Published ahead of the logic that
+         *     will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["listConsoleSupportAccess"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/console/support-access/{grant_id}/enter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enter a bank read-only under a grant it approved
+         * @description Replaces the caller's console session with a support session in the bank that approved
+         *     the grant, and answers with its access token. The session reads under the bank's own
+         *     row-level security, never writes, and ends with the grant's window or the bank's
+         *     revocation; every request under it is written to the bank's audit log as
+         *     `support_access.read`.
+         *
+         *     Needs the platform permission `support_access.grant` and a fresh passkey step-up.
+         *     Recorded in the bank's audit log as `support_access.entered` with the step-up assertion.
+         *
+         *     Errors: `not_found` (404) for a grant that is not the caller's own or not active;
+         *     `step_up_required` (403) without a fresh passkey assertion; `permission_denied` (403)
+         *     without `support_access.grant`; `unauthenticated` (401). Published ahead of the logic that
+         *     will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["enterConsoleSupportAccess"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2055,6 +3098,40 @@ export interface paths {
          *     `support_access.grant`.
          */
         post: operations["consoleReissueEnrolment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/console/tenants/{tenant_id}/support-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask a bank to let you read its data for a stated purpose
+         * @description Asks one bank for read-only access for a purpose, an optional ticket and a window of at
+         *     most `SUPPORT_ACCESS_MAX_HOURS` hours, and answers 201 with the request, `pending`. The
+         *     request grants nothing: every read of the bank still answers 404 until one of its
+         *     administrators approves it, and the holders of `security.manage` are told. A request
+         *     nobody decides lapses.
+         *
+         *     Needs the platform permission `support_access.grant`. No step-up, because a request grants
+         *     nothing; entering an approved grant takes one. Recorded in the bank's own audit log as
+         *     `support_access.requested`.
+         *
+         *     Errors: `validation_error` (422) for a blank purpose, a window under an hour or above the
+         *     maximum, or a field the body does not name; `not_found` (404) for a bank that does not
+         *     exist; `permission_denied` (403) without `support_access.grant`; `unauthenticated` (401).
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        post: operations["requestConsoleSupportAccess"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2241,6 +3318,64 @@ export interface paths {
          *     depth; `permission_denied` without `eval.manage`; `unauthenticated` without a session.
          */
         get: operations["listEvalRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/evidence/{evidence_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a piece of evidence from a case
+         * @description Removes a piece of evidence from the case's work. Despite the method nothing is
+         *     deleted: the row is marked removed and keeps its name and hash for the case file and the
+         *     audit trail, and it no longer counts towards sign-off.
+         *
+         *     A person's session holding `cases.work` in their own bank. No request body. It writes the
+         *     evidence row and one audit row naming the person, and answers 204 with no content.
+         *
+         *     Errors: `not_found` when no live evidence of this bank has that id; `permission_denied`
+         *     without `cases.work`; `unauthenticated` without a session, including any API key. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        delete: operations["removeEvidence"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/evidence/{evidence_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a file attached to a case as evidence
+         * @description Streams the bytes of a file that passed the malware scan, as an attachment of its
+         *     stored type and marked `no-store`. There is no presigned address: every download passes
+         *     this permission check (D-11).
+         *
+         *     A person's session holding `cases.read` in their own bank, which every role holds, so a
+         *     reader and an auditor download like everyone else. Every download writes one audit row
+         *     naming the person and the evidence. A file whose scan is still running is refused with
+         *     409, one that failed the scan with 422, and a link or a reference has no bytes to download.
+         *
+         *     Errors: `not_found` when no live evidence of this bank has that id; `permission_denied`
+         *     without `cases.read`; `unauthenticated` without a session, including any API key. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["downloadEvidence"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2592,8 +3727,8 @@ export interface paths {
          *     platform key without the scope gets this; `not_found` (404) when the caller is a
          *     platform key carrying the scope, since it belongs to no bank; `validation_error` (422)
          *     when footprint is not in, all or watched, when the retired outsideFootprint is sent,
-         *     when the phrase is longer than 200 characters or the page size or offset is out of
-         *     range.
+         *     when regime is longer than 80 characters, when the phrase is longer than 200 characters
+         *     or the page size or offset is out of range.
          */
         get: operations["listInstruments"];
         put?: never;
@@ -2819,22 +3954,64 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Change your name or reading language
-         * @description Updates the caller's own name, preferred language or both, and answers with the whole
-         *     of `GET /me` as it now stands. Send only what changes: an omitted or null field is left
-         *     alone. The name belongs to the account, so every bank the person is in shows the new
-         *     one; the language decides which language their screens and labels use.
+         * Change your name, reading language or notification switches
+         * @description Updates the caller's own name, preferred language, notification switches or any of
+         *     them, and answers with the whole of `GET /me` as it now stands. Send only what changes:
+         *     an omitted or null field, or switch, is left alone. The name belongs to the account, so
+         *     every bank the person is in shows the new one; the language decides which language
+         *     their screens and labels use; the switches belong to the person's membership of the
+         *     bank this session is signed in to.
          *
          *     Self-service: it needs a full session and no permission, and reaches no one else's
-         *     account. It writes the audit event `user.updated` with the name and language before and
-         *     after.
+         *     account. It writes one audit event `user.updated` with the name, language and, when
+         *     they were sent, the switches before and after.
          *
          *     Errors: `name_required` (422) for a blank name; `unknown_key` (422) for a language key
-         *     that is not an active language; `validation_error` (422) for a name over 200 characters
-         *     or a language key over 8; `unauthenticated` (401) without a live session;
-         *     `enrolment_only` (403) from an enrolment session.
+         *     that is not an active language or a switch that does not exist, and then nothing is
+         *     saved; `not_found` (404) for switches sent from a platform session, which belongs to no
+         *     bank; `validation_error` (422) for a name over 200 characters, a language key over 8 or
+         *     a switch that is not true, false or null; `unauthenticated` (401) without a live
+         *     session; `enrolment_only` (403) from an enrolment session.
          */
         patch: operations["updateMe"];
+        trace?: never;
+    };
+    "/api/v1/me/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find your comments and the ones that mention you
+         * @description The caller's own comments, or other people's comments that mention them, newest
+         *     first, for My work's "Comments and mentions" panel. These shared comments are the notes on
+         *     My work: everyone in the bank who can read a record can read its comments.
+         *
+         *     A read: it changes nothing and writes no audit row. Any person's session in a bank; no API
+         *     key reaches it. Only comments on records the caller can read today are listed; the kinds
+         *     of record the caller's role cannot read are named in `permissionLimitedKinds`, never the
+         *     records themselves.
+         *
+         *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. Nothing to show is a
+         *     200 with an empty `items`.
+         *
+         *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+         *     finish enrolling, `not_found` for a platform session, which belongs to no bank, and
+         *     `validation_error` for an `about` other than `written` or `mentioned`, or a `limit`
+         *     outside 1 to 100.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["listMyComments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/me/passkeys": {
@@ -3018,6 +4195,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what you have been told about
+         * @description The caller's own notifications in their bank, newest first: mentions, assignments,
+         *     reminders, escalations and the records they take part in. Call it for the inbox and, with
+         *     `unread=true`, for the count on the bell.
+         *
+         *     A read: it changes nothing and writes no audit row. Any person's session in a bank; no
+         *     API key reaches it. It lists the caller's own rows only and takes no parameter that could
+         *     name anyone else's. A notification whose record the caller can no longer read is still
+         *     listed with the title it was sent with, and its link answers 404 when followed.
+         *
+         *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. Nothing to tell is a
+         *     200 with an empty `items`, never a 404.
+         *
+         *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+         *     finish enrolling, `not_found` for a platform session, which belongs to no bank, and
+         *     `validation_error` for a `limit` above the maximum or below 1.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["listNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark all your notifications read
+         * @description Mark every unread notification of the caller in their bank read at once, for the
+         *     inbox's "Mark all read". Other people's notifications are untouched, whatever the
+         *     caller's role.
+         *
+         *     Sets the read time on the caller's unread rows in one statement and records one audit
+         *     event naming the caller, with ids and never a title. Any person's session in a bank; no
+         *     API key reaches it. Answers 204 with no body, also when nothing was unread.
+         *
+         *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+         *     finish enrolling, and `not_found` for a platform session, which belongs to no bank.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        post: operations["markAllNotificationsRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark one notification read
+         * @description Mark one of the caller's notifications read, when they open it from the inbox.
+         *
+         *     Sets its read time once and records an audit event holding ids only; marking it again
+         *     changes nothing and still answers 204. Any person's session in a bank; no API key reaches
+         *     it. Answers 204 with no body.
+         *
+         *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+         *     finish enrolling, and `not_found` for a platform session or for a notification that is
+         *     not the caller's own, in their bank.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        post: operations["markNotificationRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/obligations": {
         parameters: {
             query?: never;
@@ -3028,8 +4305,8 @@ export interface paths {
         /**
          * Browse the duties the bank has to keep
          * @description The obligations inventory: every duty of the shared library whose scope overlaps this
-         *     bank's footprint, as it stood on a date, narrowed by instrument, duty type, scope terms
-         *     or a phrase. Call it for the inventory screen, for a picker that has to name a duty, and
+         *     bank's footprint, as it stood on a date, narrowed by instrument, duty type, scope terms,
+         *     the library's tags, the bank's own tags or a phrase. Call it for the inventory screen, for a picker that has to name a duty, and
          *     from an agent run that needs the duties an instrument carries.
          *
          *     A read: it changes nothing and writes no audit row. It takes a person's session holding
@@ -3037,7 +4314,8 @@ export interface paths {
          *     rows are shared library facts, the same for every bank and changed only through an
          *     approved proposal. Whether a duty applies to this bank, and whether the bank complies
          *     with it, are separate facts a person records elsewhere; a row appearing here decides
-         *     neither.
+         *     neither. Each row also carries the bank's own tags on it, which no other bank sees, and
+         *     whether the record is the bank's own rather than a shared fact.
          *
          *     Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
          *     quietly trimmed, and rows ordered by their stable key so paging is repeatable. Nothing
@@ -3047,11 +4325,16 @@ export interface paths {
          *     markets the bank watches add, each row naming its jurisdiction.
          *
          *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-         *     (403) without library.read or the library:read scope; `validation_error` (422) when a
-         *     term filter is not written dimension:key, when footprint is not in, all or watched,
-         *     when the retired outsideFootprint is sent, when the phrase is longer than 200 characters
-         *     or when the page size or offset is out of range; `unknown_key` (422) when a term filter
-         *     names no active term, listing every one that was not found.
+         *     (403) without library.read or the library:read scope; `unknown_filter` (422) when a
+         *     caller that belongs to no bank, such as a platform key, sends tenantTag, since it has no
+         *     tags of its own; `not_found` (404) when such a caller reads the list at all; `validation_error` (422)
+         *     when a term filter is not written dimension:key, when instrument, dutyType or any term,
+         *     tag or tenantTag value is longer than 80 characters, when more than 20 terms, tags or
+         *     tenant tags are sent, when footprint is not in, all or watched, when the retired
+         *     outsideFootprint is sent, when the phrase is longer than 200 characters or when the page
+         *     size or offset is out of range; `unknown_key` (422) when a term filter names no active
+         *     term, a tag filter no library tag or a tenantTag filter none of the bank's own tags,
+         *     listing every one that was not found.
          */
         get: operations["listObligations"];
         put?: never;
@@ -3751,6 +5034,143 @@ export interface paths {
         patch: operations["closeProblemReport"];
         trace?: never;
     };
+    "/api/v1/proposal-batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for one change to many library records at once, as one batch with a preview
+         * @description File a batch: one request that changes many shared library records the same way,
+         *     such as putting a scope term on every duty it belongs on. Call it from the console's
+         *     re-tag form, or from a platform agent's run that found a re-tag the library needs. The
+         *     batch is one proposal in the queue, listed once with `isBatch` and `rowCount`, with a
+         *     row per record carrying its preview: the record's fields before, as the library holds
+         *     them now, and after, as approving the row would leave them. Nothing in the library
+         *     changes until a second, independent reviewer approves a row.
+         *
+         *     `kind` is "obligation_scope", a re-tag, the only batch kind today: per obligation, the
+         *     scope terms to add and to take off, and the source for the new scope. It is checked in
+         *     full before anything is stored: every obligation a library one in force, every term a
+         *     live term and none of a dimension mirroring the jurisdiction list, every source an
+         *     https link or a provision's stable key, and the standards rule: a standard's term only
+         *     on a standard's obligation, which keeps exactly one, sourced by links alone. A batch
+         *     holds at most `PROPOSAL_BATCH_MAX_ROWS` rows (100 unless the platform sets another
+         *     number). The batch, its rows and its audit row are written in one transaction.
+         *
+         *     Needs the platform permission `proposals.review` from a person, with no step-up since
+         *     filing lets nothing in, or the scope `proposals:write` from a platform key, which names
+         *     in `agentRunId` an open run of its own. No bank role and no bank's key reaches it:
+         *     re-tagging the shared library is the platform's. Whoever files a batch never decides
+         *     it, which the database enforces.
+         *
+         *     Send an `Idempotency-Key`, because an agent retries: the same key with the same body
+         *     answers **200** with the batch it already made and records the retry. A new batch
+         *     answers **201**. Every text it arrives with is read by the injection screen and stored
+         *     as it arrived; what the screen finds is returned in `riskFlags`.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session or a key;
+         *     `permission_denied` (403) without `proposals.review` or `proposals:write`, and for a
+         *     bank's session or key; `batch_too_large` (422) above `PROPOSAL_BATCH_MAX_ROWS` rows;
+         *     `unknown_key` (422) for a kind that is not a batch kind, an obligation the library does
+         *     not hold in force, or a term that is not a live term; `jurisdiction_term_mirrored`
+         *     (422) for a term of a dimension that mirrors the jurisdiction list; `source_missing`
+         *     (422) for an entry without a source; `standard_term_only_on_standards` (422) when a
+         *     standard's term would sit on a law's obligation; `standard_term_required` (422) when a
+         *     standard's obligation would carry no standard term or more than one; `licensed_text`
+         *     (422) for a source on a standard's obligation that is not an https link, or a
+         *     `sourceLabel` under a standard that is not its official reference; `run_not_open`
+         *     (422) when a key names no run or a closed one; `run_budget_exhausted` (422) when the
+         *     run has filed as many proposals as one run may; `not_found` (404) when the run is not
+         *     one this key opened; `idempotency_conflict` (409) when the same proposer's
+         *     `Idempotency-Key` arrives with a different body; `validation_error` (422) for a body
+         *     the schema refuses, an obligation named twice, a term both added and removed, an entry
+         *     that changes nothing, a source that is neither a link nor a provision's key, a
+         *     `sourceUrl` that is not an https link, or an `Idempotency-Key` longer than 200
+         *     characters.
+         */
+        post: operations["createProposalBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proposal-batches/{batch_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Open a batch proposal and read every record it would change, before and after
+         * @description A batch as a reviewer decides it: the proposal the queue lists, and every row beneath
+         *     it with the record it would change, by its own title and reference, the record's fields
+         *     before and after, the source behind the change and where the row stands. Call it before
+         *     deciding a batch, whole or row by row.
+         *
+         *     The preview is what was computed when the batch was filed, never recomputed, so the
+         *     reviewer decides on what was proposed. A pending row whose record has changed since is
+         *     marked `stale`: it was previewed against another scope and cannot be approved. Every
+         *     row comes back in one answer, since a batch holds at most `PROPOSAL_BATCH_MAX_ROWS`.
+         *     Reading it changes nothing and records nothing; until a row is approved the library
+         *     still says what it said.
+         *
+         *     Needs the platform permission `proposals.review`. No bank role reaches it.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without `proposals.review`; `not_found` (404) for a batch that does not exist, a
+         *     proposal that is not a batch, and anything that is not a UUID.
+         */
+        get: operations["getProposalBatch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proposal-batches/{batch_id}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or reject a batch's rows, one by one or all the rest at once
+         * @description Decide a batch: approve or reject the rows named in `rows`, and give every row still
+         *     pending one decision in `rest`, so a reviewer rejects the few that are wrong and
+         *     approves the others in one call. An approved row writes its record's new fields into the
+         *     library; a rejected one needs a reason from the "rejection_reason" list and changes
+         *     nothing. Every row decision and the batch's own outcome are written to the audit trail
+         *     in the same transaction as the library write, and a row is decided once. A stale row
+         *     cannot be approved. The answer is the batch as it then stands.
+         *
+         *     Needs the platform permission `proposals.review` from a person, stepped up fresh with a
+         *     passkey. The reviewer is never the batch's proposer, which the database enforces.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without `proposals.review`; `step_up_required` (403) without a fresh passkey
+         *     assertion; `not_found` (404) for a batch that does not exist, a proposal that is not a
+         *     batch, and anything that is not a UUID; `not_built` (501) for every batch that exists.
+         *     Published ahead of the logic that will fill it, and answering 501 until that ships.
+         */
+        post: operations["decideProposalBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/proposals": {
         parameters: {
             query?: never;
@@ -3983,7 +5403,8 @@ export interface paths {
          *     `riskFlags` is not empty, or corrects it with text the injection screen flags, which
          *     waits for a person who reads the flag; `invalid_transition` when the proposal was
          *     already approved or rejected, which is also what a repeated or simultaneous second call
-         *     answers, since nothing is ever applied twice; `source_missing` when a correction
+         *     answers, since nothing is ever applied twice, and for a batch, which is decided row by
+         *     row through `POST /proposal-batches/{batchId}/decide`; `source_missing` when a correction
          *     introduces a field the proposal never sourced, or changes a value without its fresh
          *     source in `fieldSources`; `validation_error` when a key sends no
          *     `decision` or a person sends one or names a run, and when a correction is offered on a
@@ -4044,7 +5465,8 @@ export interface paths {
          *     `validation_error` (422) when a key sends no `decision`, when a person sends one or
          *     names a run, and for a field the body does not name; `four_eyes_violation` (409) when
          *     the reviewer is the person, key or agent who made the proposal; `invalid_transition`
-         *     (409) when the proposal was already approved or rejected.
+         *     (409) when the proposal was already approved or rejected, or is a batch, which is
+         *     decided row by row through `POST /proposal-batches/{batchId}/decide`.
          */
         post: operations["rejectProposal"];
         delete?: never;
@@ -4161,6 +5583,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reference/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pick a person from your bank
+         * @description The bank's active members as ids and names, by name, and nothing else about them: no
+         *     address, no role, no title. Every owner and participant picker, the mention control and
+         *     the approver picker read it. `GET /tenant/members`, with everything about a member, stays
+         *     under `members.manage`.
+         *
+         *     Any member's session may call it; an enrolment session may not. It changes nothing and
+         *     writes no audit event. Nobody matching is a 200 with an empty list.
+         *
+         *     Errors: `unknown_key` (422) for a permission that is not one of a bank's;
+         *     `validation_error` (422) for a permission longer than 64 characters; `not_found` (404) for
+         *     a session that belongs to no bank; `unauthenticated` (401) without a member session.
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["listPeople"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reference/permissions": {
         parameters: {
             query?: never;
@@ -4209,6 +5663,77 @@ export interface paths {
          *     is no error for a caller to branch on.
          */
         get: operations["getProduct"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/research-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what your bank has asked its agents to do
+         * @description Returns the bank's research requests, newest first, with each one's status. An empty
+         *     list is a 200.
+         *
+         *     A person's session in a bank holding `agents.manage`; no API key. It reads and writes
+         *     nothing to the audit log.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
+         *     `validation_error` (422) when `limit` is above 100. Published ahead of the logic that
+         *     will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["listResearchRequests"];
+        put?: never;
+        /**
+         * Ask your bank's agent to check a source or research a topic
+         * @description Asks one of the bank's own agents to run now, check a registered source or a web
+         *     address now, or research a topic. The request is a job: it is queued and returned at
+         *     once, and its run follows. It counts against the bank's monthly cap, and what the agent
+         *     finds stays in the bank's own zone.
+         *
+         *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
+         *     event naming the person and the kind, never the topic's text.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
+         *     `not_found` (404) for an agent the bank does not have; `validation_error` (422) for a
+         *     topic or address that is empty, too long or missing for its kind. Published ahead of
+         *     the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["createResearchRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/research-requests/{request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See where one of your bank's research requests stands
+         * @description Returns one of the bank's research requests with its status, for a screen following
+         *     it until its run finishes.
+         *
+         *     A person's session in a bank holding `agents.manage`; no API key. It reads and writes
+         *     nothing to the audit log.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
+         *     `not_found` (404) for a request the bank does not have. Published ahead of the logic
+         *     that will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["getResearchRequest"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4812,6 +6337,48 @@ export interface paths {
         patch: operations["updateTenant"];
         trace?: never;
     };
+    "/api/v1/tenant/agent-budget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See your bank's monthly cap on its own agents and this month's spend
+         * @description Returns the bank's one monthly cap on its own agents and what they have spent this
+         *     calendar month in the bank's time zone. bleqq's own agents run at bleqq's cost and are
+         *     never in the figure.
+         *
+         *     A person's session in a bank holding `agents.manage`; no API key. It reads and writes
+         *     nothing to the audit log.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`.
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until
+         *     that ships.
+         */
+        get: operations["getAgentBudget"];
+        /**
+         * Set your bank's monthly cap on its own agents
+         * @description Sets the bank's monthly cap on its own agents. A run that would pass the cap does not
+         *     start, and a cap set below this month's spend pauses the bank's agents until the month
+         *     turns or the cap rises.
+         *
+         *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
+         *     event with the cap before and after.
+         *
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
+         *     `validation_error` (422) for a negative or malformed amount. Published ahead of the
+         *     logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        put: operations["putAgentBudget"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tenant/ai": {
         parameters: {
             query?: never;
@@ -5301,6 +6868,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tenant/licences/{licence_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change or withdraw a licence or certificate
+         * @description Changes the fields the body sends and answers with the row as it now stands. A licence
+         *     is withdrawn by setting `withdrawnOn`, never deleted, and the withdrawn row stays in the
+         *     history.
+         *
+         *     Needs `vocab.manage`. Send `If-Match` with the `version` last read; a row changed in
+         *     between is refused. Recorded in the audit log as `licence.updated` with every changed
+         *     field before and after. No step-up.
+         *
+         *     Errors: `not_found` (404) for a licence or owner that is not the bank's own;
+         *     `stale_write` (409) when `If-Match` is not the current version; `validation_error` (422)
+         *     for an `If-Match` that is not a version or a body the schema refuses; `unknown_key` (422)
+         *     for an unknown term; `permission_denied` (403) without `vocab.manage`; `unauthenticated`
+         *     (401). Published ahead of the logic that will fill it, and answering 501 `not_built`
+         *     until that ships.
+         */
+        patch: operations["updateLicence"];
+        trace?: never;
+    };
     "/api/v1/tenant/members": {
         parameters: {
             query?: never;
@@ -5408,6 +7008,37 @@ export interface paths {
         patch: operations["updateMember"];
         trace?: never;
     };
+    "/api/v1/tenant/members/{user_id}/open-work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what a member owns before you remove them
+         * @description What a member holds, counted by kind: the register entries, entity rows, gaps, dated
+         *     duties, internal items, cases and actions they own, which a removal moves to a new owner,
+         *     and the items they take part in and the teams they are in, which a removal ends. Call it
+         *     when an administrator opens a member's removal, so the screen can ask for a new owner per
+         *     kind before anything changes.
+         *
+         *     Needs `members.manage`. It changes nothing and writes no audit event. A member who holds
+         *     nothing is a 200 with an empty `items`.
+         *
+         *     Errors: `not_found` (404) for somebody who is not an active member of the bank;
+         *     `permission_denied` (403) without `members.manage`; `unauthenticated` (401). Published
+         *     ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["getMemberOpenWork"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tenant/members/{user_id}/reissue-enrolment": {
         parameters: {
             query?: never;
@@ -5440,6 +7071,41 @@ export interface paths {
          *     live session.
          */
         post: operations["reissueEnrolment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/members/{user_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove a member and hand their work to new owners
+         * @description Removes a member from the bank in one transaction: every kind of work they own moves to
+         *     the person or team the body names for it, their participations and team memberships end,
+         *     their sessions are revoked and their membership is deactivated. The participations of
+         *     their teams are untouched. Answers 204 with no body.
+         *
+         *     Needs `members.manage` and a fresh passkey step-up. Recorded in the audit log as one event
+         *     per item moved or ended and `member.deactivated`, each carrying the step-up assertion, in
+         *     the same transaction. If any of it is refused, nothing changes.
+         *
+         *     Errors: `validation_error` (422) for a kind the member owns with no new owner, an owner
+         *     named twice or as both a person and a team, or a field the body does not name;
+         *     `not_found` (404) for a member, new owner or team that is not the bank's own;
+         *     `last_admin` (409) when the member is the bank's last administrator; `step_up_required`
+         *     (403) without a fresh passkey assertion; `permission_denied` (403) without
+         *     `members.manage`; `unauthenticated` (401). Published ahead of the logic that will fill it,
+         *     and answering 501 `not_built` until that ships.
+         */
+        post: operations["removeMember"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5490,6 +7156,213 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/org-units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See your bank's groups, legal entities and departments
+         * @description Every unit of the bank's organisation, one page at a time by name: the group, the legal
+         *     entities with their registration number, LEI, country and legal-entity term, and the
+         *     business areas, units and functions with their head. Call it to draw the organisation
+         *     screen, to fill an entity or department picker, or to learn which legal entities an
+         *     obligation can be assessed for. Deactivated units are listed and marked.
+         *
+         *     Any member of the bank may call it; beyond a session no permission is needed. It changes
+         *     nothing and writes no audit event. An empty organisation is a 200 with `total` 0.
+         *
+         *     Errors: `unauthenticated` (401) without a session; `not_found` (404) for a session that
+         *     belongs to no bank, which is what a console session gets; `validation_error` (422) for a
+         *     page size above 100. Published ahead of the logic that will fill it, and answering 501
+         *     `not_built` until that ships.
+         */
+        get: operations["listOrgUnits"];
+        put?: never;
+        /**
+         * Add a legal entity or department to your bank's organisation
+         * @description Adds one unit under the parent the body names and answers 201 with it. A legal entity
+         *     carries the legal-entity term obligations are scoped with and may then hold licences; a
+         *     business area, unit or function with a head is a department, whose head sees its work.
+         *
+         *     Needs `vocab.manage`, the business-configuration permission, kept apart from member
+         *     administration (ADM-03). No step-up. Recorded in the audit log as `org_unit.created` with
+         *     the new unit, in the same transaction as the write.
+         *
+         *     Errors: `validation_error` (422) for a blank or multi-line name, an unknown kind or a field
+         *     the body does not name; `unknown_key` (422) for a term that is not a legal-entity term,
+         *     and `not_found` (404) for a parent or head that is not the bank's own;
+         *     `permission_denied` (403) without `vocab.manage`, naming it in `requiredPermission`;
+         *     `unauthenticated` (401) without a session. Published ahead of the logic that will fill
+         *     it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["createOrgUnit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/org-units/{org_unit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Rename, move, re-head or deactivate a unit of your bank
+         * @description Changes the fields the body sends and answers with the unit as it now stands. A unit's
+         *     kind never changes; deactivating is `active: false`, and a unit is never deleted, so its
+         *     licences and register rows stay readable.
+         *
+         *     Needs `vocab.manage`. Send `If-Match` with the `version` last read; a unit changed in
+         *     between is refused and nothing is merged. Recorded in the audit log as `org_unit.updated`
+         *     with every changed field before and after. No step-up.
+         *
+         *     Errors: `not_found` (404) for a unit, parent or head that is not the bank's own;
+         *     `stale_write` (409) when `If-Match` is not the current version; `validation_error` (422)
+         *     for an `If-Match` that is not a version or a body the schema refuses; `unknown_key` (422)
+         *     for an unknown term; `permission_denied` (403) without `vocab.manage`; `unauthenticated`
+         *     (401). Published ahead of the logic that will fill it, and answering 501 `not_built`
+         *     until that ships.
+         */
+        patch: operations["updateOrgUnit"];
+        trace?: never;
+    };
+    "/api/v1/tenant/org-units/{org_unit_id}/licences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See the licences and certificates a legal entity holds
+         * @description The licences and certificates one legal entity holds, withdrawn ones included and
+         *     marked: the type as a term, the authority's reference, the grant and withdrawal dates,
+         *     and a certificate's issuer, number, scope, validity, next audit and owner. A certificate's
+         *     validity and next audit are the bank's own deadlines on its roadmap; they carry no term
+         *     and change no obligation's scope.
+         *
+         *     Any member of the bank may call it. It changes nothing and writes no audit event. A unit
+         *     that holds none is a 200 with `total` 0.
+         *
+         *     Errors: `not_found` (404) for a unit that is not the bank's own; `validation_error` (422)
+         *     for a page size above 100; `unauthenticated` (401). Published ahead of the logic that will
+         *     fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["listLicences"];
+        put?: never;
+        /**
+         * Record a licence or certificate a legal entity holds
+         * @description Records a licence an authority granted, or a certificate such as ISO/IEC 27001 with its
+         *     issuer, number, scope statement, validity, next audit and owner, on one legal entity, and
+         *     answers 201 with it. Nothing about the bank's scope, its obligations or their
+         *     applicability changes.
+         *
+         *     Needs `vocab.manage`. No step-up. Recorded in the audit log as `licence.created` with the
+         *     new row, in the same transaction as the write.
+         *
+         *     Errors: `not_found` (404) for a unit or owner that is not the bank's own;
+         *     `validation_error` (422) for a unit that is not a legal entity, a missing type or a field
+         *     the body does not name; `unknown_key` (422) for a type or service term the library does
+         *     not hold; `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401).
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        post: operations["createLicence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See the products your bank offers and how each is scoped
+         * @description The bank's products, one page at a time by name, planned, live and retired, each with
+         *     its scope in the terms obligations are scoped with, the unit that offers it and its owner.
+         *     Call it to draw the products screen or to fill a product picker.
+         *
+         *     Any member of the bank may call it. It changes nothing and writes no audit event. A bank
+         *     with no product is a 200 with `total` 0.
+         *
+         *     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a session
+         *     that belongs to no bank; `unauthenticated` (401). Published ahead of the logic that will
+         *     fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["listProducts"];
+        put?: never;
+        /**
+         * Add a product and describe its scope
+         * @description Adds a product with its scope in the library's terms and answers 201 with it. A product
+         *     is how an obligation's scope meets what the bank actually sells, so a planned product can
+         *     be scoped before it launches.
+         *
+         *     Needs `vocab.manage`. No step-up. Recorded in the audit log as `product.created` with the
+         *     new row, in the same transaction as the write.
+         *
+         *     Errors: `validation_error` (422) for a blank or multi-line name, a name the bank already
+         *     uses, an unknown status or a field the body does not name; `unknown_key` (422) for a term
+         *     the library does not hold; `not_found` (404) for a unit or owner that is not the bank's
+         *     own; `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401). Published
+         *     ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["createProduct"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/products/{product_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change, rescope or retire a product
+         * @description Changes the fields the body sends and answers with the product as it now stands. A
+         *     product is retired with `status: retired`, never deleted, and a retired product scopes
+         *     nothing.
+         *
+         *     Needs `vocab.manage`. Send `If-Match` with the `version` last read; a product changed in
+         *     between is refused. Recorded in the audit log as `product.updated` with every changed
+         *     field before and after. No step-up.
+         *
+         *     Errors: `not_found` (404) for a product, unit or owner that is not the bank's own;
+         *     `stale_write` (409) when `If-Match` is not the current version; `validation_error` (422)
+         *     for an `If-Match` that is not a version or a body the schema refuses; `unknown_key` (422)
+         *     for an unknown term; `permission_denied` (403) without `vocab.manage`; `unauthenticated`
+         *     (401). Published ahead of the logic that will fill it, and answering 501 `not_built`
+         *     until that ships.
+         */
+        patch: operations["updateProduct"];
         trace?: never;
     };
     "/api/v1/tenant/proposals": {
@@ -5672,6 +7545,186 @@ export interface paths {
          *     without a live session; `enrolment_only` (403) from an enrolment session.
          */
         get: operations["listSecurityLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/support-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See who from platform support asked to look in, and who was let in
+         * @description Every support access request the bank has had, newest first: pending requests waiting
+         *     for a decision, the live grant with its window, and the past ones, each with its purpose,
+         *     ticket, the platform person, who decided and when, and the one-off administrator
+         *     recoveries platform support carried out. Every read under a grant is in the bank's own
+         *     audit log as `support_access.read`.
+         *
+         *     Any member of the bank may call it; platform staff have no bypass, and the bank sees
+         *     everything they asked for. It changes nothing and writes no audit event. A bank support
+         *     never asked is a 200 with `total` 0.
+         *
+         *     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a
+         *     session that belongs to no bank; `unauthenticated` (401). Published ahead of the logic
+         *     that will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["listTenantSupportAccess"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/support-access/{grant_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Let platform support read your bank for the window it asked for
+         * @description Approves a pending request and answers with it, now `active`: the window of the hours it
+         *     asked for starts now, and the platform person may enter the bank read-only until it ends
+         *     or the bank revokes it. They can never write, search, ask, or download evidence or an
+         *     export.
+         *
+         *     Needs `security.manage` and a fresh passkey step-up. The approver is never the platform
+         *     person who asked. Recorded in the audit log as `support_access.approved` with the step-up
+         *     assertion, in the same transaction.
+         *
+         *     Errors: `not_found` (404) for a request that is not the bank's own; `four_eyes_violation`
+         *     (409) when the approver is the person who asked; `step_up_required` (403) without a fresh
+         *     passkey assertion;
+         *     `permission_denied` (403) without `security.manage`; `unauthenticated` (401). Published
+         *     ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         */
+        post: operations["approveSupportAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/support-access/{grant_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refuse platform support's request to read your bank
+         * @description Declines a pending request and answers with it, now `declined`; nothing was ever
+         *     granted. No step-up, because a refusal never needs one.
+         *
+         *     Needs `security.manage`. Recorded in the audit log as `support_access.declined`.
+         *
+         *     Errors: `not_found` (404) for a request that is not the bank's own;
+         *     `permission_denied` (403) without `security.manage`;
+         *     `unauthenticated` (401). Published ahead of the logic that will fill it, and answering 501
+         *     `not_built` until that ships.
+         */
+        post: operations["declineSupportAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/support-access/{grant_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * End platform support's access to your bank now
+         * @description Ends an active grant at once and answers with it, now `revoked`: the support session's
+         *     next request answers 401 and the ones after it 404. No step-up, because ending access never
+         *     needs one.
+         *
+         *     Needs `security.manage`. Recorded in the audit log as `support_access.revoked`.
+         *
+         *     Errors: `not_found` (404) for a request that is not the bank's own;
+         *     `permission_denied` (403) without `security.manage`;
+         *     `unauthenticated` (401). Published ahead of the logic that will fill it, and answering 501
+         *     `not_built` until that ships.
+         */
+        post: operations["revokeSupportAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See your bank's teams and how many people are in each
+         * @description The bank's teams in the list's order, active and retired, each with its department,
+         *     its shared mailbox and how many active members it has. A team can own work and take part
+         *     in it, so ownership survives a person leaving. Creating, renaming and retiring a team is
+         *     the bank's `team` list at `/vocab/team`, under `vocab.manage`; putting people in a team
+         *     is the member's own route, under `members.manage`.
+         *
+         *     Any member of the bank may call it. It changes nothing and writes no audit event.
+         *
+         *     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a
+         *     session that belongs to no bank; `unauthenticated` (401). Published ahead of the logic
+         *     that will fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["listTeams"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/teams/{key}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See who is in a team
+         * @description The active members of one team, by name, as ids and names only. Call it to show a team
+         *     on the organisation screen or to preview what a member's removal ends.
+         *
+         *     Any member of the bank may call it. It changes nothing and writes no audit event. A team
+         *     with nobody in it is a 200 with `total` 0.
+         *
+         *     Errors: `not_found` (404) for a team key the bank does not have; `validation_error` (422)
+         *     for a page size above 100; `unauthenticated` (401). Published ahead of the logic that will
+         *     fill it, and answering 501 `not_built` until that ships.
+         */
+        get: operations["listTeamMembers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6242,6 +8295,48 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * AgentBudget
+         * @description The bank's one monthly cap on its own agents, and what they spent this month
+         *     (AGT-04, ruling 3). bleqq's own agents run at bleqq's cost and are never in it.
+         * @example {
+         *       "currency": "EUR",
+         *       "monthlyCap": "500.00",
+         *       "spentThisMonth": "212.40"
+         *     }
+         */
+        AgentBudget: {
+            /**
+             * Currency
+             * @description The currency of every amount here: `EUR`, the one currency agents are billed in.
+             * @constant
+             */
+            currency: "EUR";
+            /**
+             * Monthlycap
+             * @description The cap, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in. Null when the bank has set none.
+             */
+            monthlyCap: string | null;
+            /**
+             * Spentthismonth
+             * @description What the bank's own agents cost in the current calendar month of the bank's time zone, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in. No run of bleqq's own agents is in it.
+             */
+            spentThisMonth: string;
+        };
+        /**
+         * AgentBudgetInput
+         * @description `PUT /tenant/agent-budget`: set the bank's monthly cap.
+         * @example {
+         *       "monthlyCap": "500.00"
+         *     }
+         */
+        AgentBudgetInput: {
+            /**
+             * Monthlycap
+             * @description The new cap, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in, with a minimum of 0. A run that would pass it does not start.
+             */
+            monthlyCap: number | string;
+        };
+        /**
          * AgentDecision
          * @description The model call behind a confirming agent's decision on another agent's work:
          *     approving, correcting or rejecting a proposal, or confirming a watch item's curation.
@@ -6308,6 +8403,82 @@ export interface components {
             promptTemplate?: string | null;
         };
         /**
+         * AgentDefinitionDetail
+         * @description One definition with every version it has published, newest first (AGT-03).
+         * @example {
+         *       "active": false,
+         *       "currentVersion": 1,
+         *       "description": "Checks registered sources for new or changed regulatory documents, registers one change per reform with a stable key, and proposes obligation links.",
+         *       "id": "3c9e1f27-58b4-4d6a-a0e2-6f41b7c8d953",
+         *       "key": "watch-sweeper",
+         *       "publishedAt": "2026-09-20T08:00:00Z",
+         *       "scope": "platform",
+         *       "tenantConfigurable": false,
+         *       "versions": [
+         *         {
+         *           "changeNote": "Reads the new FFFS index page.",
+         *           "model": "regwatch-2026-08",
+         *           "publishedAt": "2026-09-24T09:12:00Z",
+         *           "publishedBy": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Sara Lindqvist"
+         *           },
+         *           "retiredAt": null,
+         *           "versionNo": 2
+         *         }
+         *       ]
+         *     }
+         */
+        AgentDefinitionDetail: {
+            /**
+             * Active
+             * @description Whether the definition is released for scheduled runs. True for an active definition; false while it is a draft or after it is retired. A key can be bound to a draft so that its runner can be tried before release.
+             */
+            active: boolean;
+            /**
+             * Currentversion
+             * @description The version of the definition this build loaded — its prompt, tools and budgets — counting from 1. Runs started from now on run it.
+             */
+            currentVersion: number;
+            /**
+             * Description
+             * @description What the agent does, in the words of its definition file. It says what the agent is for and grants nothing: what a key bound to it may do is the key's scopes.
+             */
+            description: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The definition's permanent identifier, a UUID. It is what `POST /agent-keys` takes as `agentId` to bind a key to this agent.
+             */
+            id: string;
+            /**
+             * Key
+             * @description The definition's stable key, such as `watch-sweeper`: what a run names in `POST /agent-runs` and what the audit trail records as the actor. It is issued once and never changes; a new version keeps the key and raises `currentVersion`.
+             */
+            key: string;
+            /**
+             * Publishedat
+             * @description When the current version was published, as a UTC timestamp in ISO 8601. Null when no version row has been published for it yet, as for a definition the build loaded before versions were kept as rows.
+             */
+            publishedAt: string | null;
+            /**
+             * Scope
+             * @description Whose agent this definition makes. `platform`: one of bleqq's own agents, part of the base package, run by the platform for every bank at once; no bank switches it off, pauses it or changes its cadence, scope or budget. `tenant`: a definition a bank may add as its own agent, which then writes only in that bank's zone. Either way the definition itself, its prompt and its tools, is bleqq's.
+             * @enum {string}
+             */
+            scope: "platform" | "tenant";
+            /**
+             * Tenantconfigurable
+             * @description Whether a bank may add this definition as its own agent and set its switch, cadence and scope. Always false on a `platform` definition, which the database refuses otherwise; true on a `tenant` definition released for banks to add.
+             */
+            tenantConfigurable: boolean;
+            /**
+             * Versions
+             * @description Every version of the definition, newest first, retired ones included, so the console shows which version each past run used. Empty when none has been published.
+             */
+            versions: components["schemas"]["AgentVersionOut"][];
+        };
+        /**
          * AgentDefinitionOut
          * @description One agent definition as the platform ships it, loaded from its versioned folder.
          * @example {
@@ -6315,7 +8486,10 @@ export interface components {
          *       "currentVersion": 1,
          *       "description": "Checks registered sources for new or changed regulatory documents, registers one change per reform with a stable key, and proposes obligation links.",
          *       "id": "3c9e1f27-58b4-4d6a-a0e2-6f41b7c8d953",
-         *       "key": "watch-sweeper"
+         *       "key": "watch-sweeper",
+         *       "publishedAt": "2026-09-20T08:00:00Z",
+         *       "scope": "platform",
+         *       "tenantConfigurable": false
          *     }
          */
         AgentDefinitionOut: {
@@ -6345,6 +8519,22 @@ export interface components {
              * @description The definition's stable key, such as `watch-sweeper`: what a run names in `POST /agent-runs` and what the audit trail records as the actor. It is issued once and never changes; a new version keeps the key and raises `currentVersion`.
              */
             key: string;
+            /**
+             * Publishedat
+             * @description When the current version was published, as a UTC timestamp in ISO 8601. Null when no version row has been published for it yet, as for a definition the build loaded before versions were kept as rows.
+             */
+            publishedAt: string | null;
+            /**
+             * Scope
+             * @description Whose agent this definition makes. `platform`: one of bleqq's own agents, part of the base package, run by the platform for every bank at once; no bank switches it off, pauses it or changes its cadence, scope or budget. `tenant`: a definition a bank may add as its own agent, which then writes only in that bank's zone. Either way the definition itself, its prompt and its tools, is bleqq's.
+             * @enum {string}
+             */
+            scope: "platform" | "tenant";
+            /**
+             * Tenantconfigurable
+             * @description Whether a bank may add this definition as its own agent and set its switch, cadence and scope. Always false on a `platform` definition, which the database refuses otherwise; true on a `tenant` definition released for banks to add.
+             */
+            tenantConfigurable: boolean;
         };
         /**
          * AgentDefinitionPage
@@ -6356,7 +8546,10 @@ export interface components {
          *           "currentVersion": 1,
          *           "description": "Checks registered sources for new or changed regulatory documents, registers one change per reform with a stable key, and proposes obligation links.",
          *           "id": "3c9e1f27-58b4-4d6a-a0e2-6f41b7c8d953",
-         *           "key": "watch-sweeper"
+         *           "key": "watch-sweeper",
+         *           "publishedAt": "2026-09-20T08:00:00Z",
+         *           "scope": "platform",
+         *           "tenantConfigurable": false
          *         }
          *       ],
          *       "total": 1
@@ -6684,6 +8877,172 @@ export interface components {
             pipelineVersion: string;
         };
         /**
+         * AgentRunListItem
+         * @description One run in the run log, with what chunk 11 adds: which of the bank's agents ran, which
+         *     version, what started it, who asked, what it cost, and whether it was stopped.
+         * @example {
+         *       "agent": "bank-source-watch",
+         *       "agentVersion": 1,
+         *       "cost": "1.84",
+         *       "error": null,
+         *       "finishedAt": "2026-09-20T02:18:41Z",
+         *       "id": "5f1c2a80-3b6e-4a1e-9d21-0a2b8c7d4e10",
+         *       "interruptedAt": null,
+         *       "model": "regwatch-2026-08",
+         *       "outputRef": "runs/2026-09-20/watch-sweeper/5f1c2a80.jsonl",
+         *       "pipelineVersion": "watch-1.4.2",
+         *       "requestedBy": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Sara Lindqvist"
+         *       },
+         *       "startedAt": "2026-09-20T02:00:03Z",
+         *       "stats": {
+         *         "changesRegistered": 2,
+         *         "correctionsProposed": 1,
+         *         "fetches": 118,
+         *         "modelCalls": 42,
+         *         "outOfScope": 3,
+         *         "proposalsSubmitted": 5,
+         *         "recordsRechecked": 12,
+         *         "sourcesChecked": 31
+         *       },
+         *       "status": "succeeded",
+         *       "tenantAgentId": "0b7d2f64-1c3e-4a58-9d2b-6e4f8a1c3b57",
+         *       "trigger": "manual"
+         *     }
+         */
+        AgentRunListItem: {
+            /**
+             * Agent
+             * @description The stable key of the agent definition that executed, such as `watch-sweeper`. The key and never the label. It does not tell you which version ran: read `pipelineVersion` for that.
+             */
+            agent: string;
+            /**
+             * Agentversion
+             * @description The number of the definition version the run opened with, or null for a run opened before versions were kept.
+             */
+            agentVersion: number | null;
+            /**
+             * Cost
+             * @description What the run cost, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in. Null while it runs or when nothing was reported.
+             */
+            cost: string | null;
+            /**
+             * Error
+             * @description Why the run failed, as the agent reported it, in terms meant for the people who operate the agents. Null on a run that is still open or that succeeded. A run can fail with nothing here, so null is not proof that nothing went wrong — read `status` for that.
+             */
+            error: string | null;
+            /**
+             * Finishedat
+             * @description When the run was closed, as a UTC timestamp in ISO 8601, set by the server. Null while the run is still open. A run that has been null for far longer than its cadence is a stuck run and not a successful one, so do not read null as 'still going well'.
+             */
+            finishedAt: string | null;
+            /**
+             * Id
+             * Format: uuid
+             * @description The run's permanent identifier, a UUID the server issues when the run opens. Every change, proposal and source check the agent files carries it, so it is the thread a reviewer pulls to see everything one execution did and where each claim came from.
+             */
+            id: string;
+            /**
+             * Interruptedat
+             * @description When someone stopped the run, as a UTC timestamp in ISO 8601, or null when nobody did.
+             */
+            interruptedAt: string | null;
+            /**
+             * Model
+             * @description The language model this run used, as the runner named it — `regwatch-2026-08`. Recorded so any fact an agent produced can be traced to the model behind it, and so a change in quality can be read against a change of model.
+             */
+            model: string;
+            /**
+             * Outputref
+             * @description Where the run's full working output was stored, a pointer for the engineers who operate the agents rather than anything a bank's screen shows. Null when the run kept no output or has not closed yet.
+             */
+            outputRef: string | null;
+            /**
+             * Pipelineversion
+             * @description The version of the agent pipeline that executed — `watch-1.4.2`. With `model` it is what an evaluation compares runs across. It is the running code's version and not the agent definition's own version number.
+             */
+            pipelineVersion: string;
+            /** @description The person who asked for the run, by id and name, or null when nobody did (a schedule or a key). */
+            requestedBy: components["schemas"]["PersonRef"] | null;
+            /**
+             * Startedat
+             * Format: date-time
+             * @description When the run was opened, as a UTC timestamp in ISO 8601. The server sets it, not the agent, so it cannot be backdated. Runs are listed oldest first by this value, which is the order a sweep actually happened in.
+             */
+            startedAt: string;
+            /** @description What this run did, counted against the budgets in the agent's definition. All zeroes while the run is open, because an agent files its counters when it closes; zeroes on a closed run mean the run genuinely did nothing. */
+            stats: components["schemas"]["AgentRunStats"];
+            /**
+             * Status
+             * @description Where the run stands. `running`: the agent is working and the server has heard nothing more. `succeeded`: the agent closed the run having filed what it found. `failed`: it closed early, and what it filed before that still counts. `interrupted`: it was stopped from outside before it finished, by a person or by the budget cap it would have passed, and what it filed before that still counts. This is a statement about the execution and never about the findings — everything an agent filed stays labelled as machine output until a person at the bank confirms it.
+             * @enum {string}
+             */
+            status: "running" | "succeeded" | "failed" | "interrupted";
+            /**
+             * Tenantagentid
+             * @description The bank's own agent that ran, as a UUID, or null for one of bleqq's library runs.
+             */
+            tenantAgentId: string | null;
+            /**
+             * Trigger
+             * @description What started the run. `schedule`: its cadence. `manual`: a person chose run now. `request`: a research request. `api`: a platform agent's key opened it.
+             * @enum {string}
+             */
+            trigger: "schedule" | "manual" | "request" | "api";
+        };
+        /**
+         * AgentRunListPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "agent": "bank-source-watch",
+         *           "agentVersion": 1,
+         *           "cost": "1.84",
+         *           "error": null,
+         *           "finishedAt": "2026-09-20T02:18:41Z",
+         *           "id": "5f1c2a80-3b6e-4a1e-9d21-0a2b8c7d4e10",
+         *           "interruptedAt": null,
+         *           "model": "regwatch-2026-08",
+         *           "outputRef": "runs/2026-09-20/watch-sweeper/5f1c2a80.jsonl",
+         *           "pipelineVersion": "watch-1.4.2",
+         *           "requestedBy": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Sara Lindqvist"
+         *           },
+         *           "startedAt": "2026-09-20T02:00:03Z",
+         *           "stats": {
+         *             "changesRegistered": 2,
+         *             "correctionsProposed": 1,
+         *             "fetches": 118,
+         *             "modelCalls": 42,
+         *             "outOfScope": 3,
+         *             "proposalsSubmitted": 5,
+         *             "recordsRechecked": 12,
+         *             "sourcesChecked": 31
+         *           },
+         *           "status": "succeeded",
+         *           "tenantAgentId": "0b7d2f64-1c3e-4a58-9d2b-6e4f8a1c3b57",
+         *           "trigger": "manual"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        AgentRunListPage: {
+            /**
+             * Items
+             * @description The runs on this page, oldest first. A bank's session sees bleqq's library runs and its own; the console sees the library's. An empty list is a 200, never an error.
+             */
+            items: components["schemas"]["AgentRunListItem"][];
+            /**
+             * Total
+             * @description How many runs this caller may see in total, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
          * AgentRunOut
          * @description One run as every reader sees it. A tenant reads the library's runs and its own; no
          *     reader sees another tenant's (AGT-01, item 14).
@@ -6756,52 +9115,10 @@ export interface components {
             stats: components["schemas"]["AgentRunStats"];
             /**
              * Status
-             * @description Where the run stands. `running`: the agent is working and the server has heard nothing more. `succeeded`: the agent closed the run having filed what it found. `failed`: it closed early, and what it filed before that still counts. This is a statement about the execution and never about the findings — everything an agent filed stays labelled as machine output until a person at the bank confirms it.
+             * @description Where the run stands. `running`: the agent is working and the server has heard nothing more. `succeeded`: the agent closed the run having filed what it found. `failed`: it closed early, and what it filed before that still counts. `interrupted`: it was stopped from outside before it finished, by a person or by the budget cap it would have passed, and what it filed before that still counts. This is a statement about the execution and never about the findings — everything an agent filed stays labelled as machine output until a person at the bank confirms it.
              * @enum {string}
              */
-            status: "running" | "succeeded" | "failed";
-        };
-        /**
-         * AgentRunPage
-         * @description `{items, total}` with `limit` and `offset`, not the designed cursor page (playbook 10).
-         * @example {
-         *       "items": [
-         *         {
-         *           "agent": "watch-sweeper",
-         *           "error": null,
-         *           "finishedAt": "2026-09-20T02:18:41Z",
-         *           "id": "5f1c2a80-3b6e-4a1e-9d21-0a2b8c7d4e10",
-         *           "model": "regwatch-2026-08",
-         *           "outputRef": "runs/2026-09-20/watch-sweeper/5f1c2a80.jsonl",
-         *           "pipelineVersion": "watch-1.4.2",
-         *           "startedAt": "2026-09-20T02:00:03Z",
-         *           "stats": {
-         *             "changesRegistered": 2,
-         *             "correctionsProposed": 1,
-         *             "fetches": 118,
-         *             "modelCalls": 42,
-         *             "outOfScope": 3,
-         *             "proposalsSubmitted": 5,
-         *             "recordsRechecked": 12,
-         *             "sourcesChecked": 31
-         *           },
-         *           "status": "succeeded"
-         *         }
-         *       ],
-         *       "total": 1
-         *     }
-         */
-        AgentRunPage: {
-            /**
-             * Items
-             * @description The runs on this page, oldest first, so a reader follows a sweep in the order it happened. A person signed in to a bank sees the platform's own library runs and that bank's own runs, never another bank's. An empty list is a 200 and means nothing has run yet; it is never an error.
-             */
-            items: components["schemas"]["AgentRunOut"][];
-            /**
-             * Total
-             * @description How many runs this caller may see in total, not how many are on this page — use it to size a pager. It counts only what this caller is allowed to read, so two banks asking the same question will get different totals for the same platform.
-             */
-            total: number;
+            status: "running" | "succeeded" | "failed" | "interrupted";
         };
         /**
          * AgentRunStats
@@ -6870,6 +9187,72 @@ export interface components {
              * @default 0
              */
             sourcesChecked: number;
+        };
+        /**
+         * AgentVersionInput
+         * @description `POST /agent-definitions/{agentKey}/versions`: publish a version folder the build ships.
+         * @example {
+         *       "changeNote": "Reads the new FFFS index page.",
+         *       "versionNo": 2
+         *     }
+         */
+        AgentVersionInput: {
+            /**
+             * Changenote
+             * @description What changed in this version and why, between 1 and 2000 characters, kept with the version for good. Name the change, not a bank: this note is platform text.
+             */
+            changeNote: string;
+            /**
+             * Versionno
+             * @description The number of the version to publish, a whole number with a minimum of 1: the `v<n>` folder this build ships for the definition. Its prompt, tools and model are read from that folder, never from this request, so no prompt text travels here.
+             */
+            versionNo: number;
+        };
+        /**
+         * AgentVersionOut
+         * @description One published version of a definition (AGT-03). Published once and never rewritten: a
+         *     run points at the version it opened with, so retiring one only stops new runs.
+         * @example {
+         *       "changeNote": "Reads the new FFFS index page.",
+         *       "model": "regwatch-2026-08",
+         *       "publishedAt": "2026-09-24T09:12:00Z",
+         *       "publishedBy": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Sara Lindqvist"
+         *       },
+         *       "retiredAt": null,
+         *       "versionNo": 2
+         *     }
+         */
+        AgentVersionOut: {
+            /**
+             * Changenote
+             * @description What changed in this version and why, in the words of the platform administrator who published it. Empty for a first version the build loaded.
+             */
+            changeNote: string;
+            /**
+             * Model
+             * @description The language model this version runs, as its definition file names it, such as `regwatch-2026-08`. It names the model and does not approve an endpoint.
+             */
+            model: string;
+            /**
+             * Publishedat
+             * Format: date-time
+             * @description When the version was published, as a UTC timestamp in ISO 8601, set by the server.
+             */
+            publishedAt: string;
+            /** @description The platform administrator who published the version, by id and name. Null for a first version the build loaded, which nobody published by hand. */
+            publishedBy: components["schemas"]["PersonRef"] | null;
+            /**
+             * Retiredat
+             * @description When the version was retired, as a UTC timestamp in ISO 8601, or null while it may still run. A retired version starts no new run; runs that used it keep pointing at it.
+             */
+            retiredAt: string | null;
+            /**
+             * Versionno
+             * @description The version's number, counting from 1 within its definition. It is the `v<n>` folder the build ships for the definition, and it never changes once published.
+             */
+            versionNo: number;
         };
         /**
          * AiCitation
@@ -7926,6 +10309,708 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * CasesAction
+         * @description One thing that must be done for a case, with an owner and a due date (CAS-04). The
+         *     bank's own zone. Removed actions are not listed; they stay in the case file.
+         * @example {
+         *       "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *       "createdAt": "2026-09-18T10:12:00Z",
+         *       "done": false,
+         *       "doneAt": null,
+         *       "doneBy": null,
+         *       "dueDate": "2026-10-10",
+         *       "id": "2f4a6c8e-1b3d-4f5a-8c7e-9d0b1a2c3e4f",
+         *       "owner": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Sara Lind"
+         *       },
+         *       "title": "Document the annual research quality criteria",
+         *       "version": 1
+         *     }
+         */
+        CasesAction: {
+            /**
+             * Changeid
+             * Format: uuid
+             * @description The library change whose case the action belongs to, as a UUID.
+             * @example c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19
+             */
+            changeId: string;
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When it was added, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Set by the server.
+             * @example 2026-09-18T10:12:00Z
+             */
+            createdAt: string;
+            /**
+             * Done
+             * @description Whether the action is done. Sign-off waits until every live action is.
+             * @example false
+             */
+            done: boolean;
+            /**
+             * Doneat
+             * @description When it was marked done, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null while open.
+             * @example null
+             */
+            doneAt: string | null;
+            /** @description Who marked it done. A person in this bank, as their id and display name; the only personal data a case carries about them. Null while open. */
+            doneBy: components["schemas"]["PersonRef"] | null;
+            /**
+             * Duedate
+             * Format: date
+             * @description When it is due, as a plain calendar date (`2026-10-10`) the bank chose. Overdue is judged in the bank's own time zone.
+             * @example 2026-10-10
+             */
+            dueDate: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The action, as a UUID; the address of `PATCH` and `DELETE /actions/{actionId}`.
+             * @example 2f4a6c8e-1b3d-4f5a-8c7e-9d0b1a2c3e4f
+             */
+            id: string;
+            /** @description Who must do it. A person in this bank, as their id and display name; the only personal data a case carries about them. */
+            owner: components["schemas"]["PersonRef"];
+            /**
+             * Title
+             * @description What must be done, at most 500 characters. Tenant content.
+             * @example Document the annual research quality criteria
+             */
+            title: string;
+            /**
+             * Version
+             * @description The action's version, starting at 1 and raised by every edit. Send it in `If-Match` on `PATCH /actions/{actionId}`.
+             * @example 1
+             */
+            version: number;
+        };
+        /**
+         * CasesActionBody
+         * @description `POST /changes/{changeId}/actions` (CAS-04): a new action. Adding the first one
+         *     moves an assessing case to implementing.
+         * @example {
+         *       "dueDate": "2026-10-10",
+         *       "ownerId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *       "title": "Document the annual research quality criteria"
+         *     }
+         */
+        CasesActionBody: {
+            /**
+             * Duedate
+             * Format: date
+             * @description When it is due, as a plain calendar date (`2026-10-10`).
+             * @example 2026-10-10
+             */
+            dueDate: string;
+            /**
+             * Ownerid
+             * Format: uuid
+             * @description Who must do it, as a UUID of a member of this bank; anyone else is refused.
+             * @example 8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60
+             */
+            ownerId: string;
+            /**
+             * Title
+             * @description What must be done, 1 to 500 characters. Tenant content.
+             * @example Document the annual research quality criteria
+             */
+            title: string;
+        };
+        /**
+         * CasesActionPage
+         * @description `GET /changes/{changeId}/actions`: one page of the case's live actions.
+         * @example {
+         *       "items": [
+         *         {
+         *           "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *           "createdAt": "2026-09-18T10:12:00Z",
+         *           "done": false,
+         *           "doneAt": null,
+         *           "doneBy": null,
+         *           "dueDate": "2026-10-10",
+         *           "id": "2f4a6c8e-1b3d-4f5a-8c7e-9d0b1a2c3e4f",
+         *           "owner": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Sara Lind"
+         *           },
+         *           "title": "Document the annual research quality criteria",
+         *           "version": 1
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        CasesActionPage: {
+            /**
+             * Items
+             * @description The actions of this page, earliest due date first, removed ones left out. An empty page is a 200.
+             */
+            items: components["schemas"]["CasesAction"][];
+            /**
+             * Total
+             * @description How many live actions the case has, across every page.
+             * @example 1
+             */
+            total: number;
+        };
+        /**
+         * CasesActionPatch
+         * @description `PATCH /actions/{actionId}` (CAS-04): change what is sent and leave the rest.
+         *     Marking done and reopening are `done: true` and `done: false`.
+         * @example {
+         *       "done": true
+         *     }
+         */
+        CasesActionPatch: {
+            /**
+             * Done
+             * @description True marks the action done in the caller's name, false reopens it; left out keeps it as it is.
+             * @example true
+             */
+            done?: boolean | null;
+            /**
+             * Duedate
+             * @description A new due date, as a plain calendar date (`2026-10-17`), or left out to keep it.
+             * @example 2026-10-17
+             */
+            dueDate?: string | null;
+            /**
+             * Ownerid
+             * @description A new owner, as a UUID of a member of this bank, or left out to keep the owner.
+             * @example 8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60
+             */
+            ownerId?: string | null;
+            /**
+             * Title
+             * @description A new title, 1 to 500 characters, or left out to keep it.
+             * @example Document and sign the research quality criteria
+             */
+            title?: string | null;
+        };
+        /**
+         * CasesAssessment
+         * @description The case's impact assessment (CAS-03): whether the change applies to the bank, why,
+         *     what must change, the bank's own deadline and the effort. The bank's own zone, never
+         *     shared and never sent to a model endpoint. There are no contributors here: the teams
+         *     that contribute are the case's team participants (D-20).
+         * @example {
+         *       "applies": "yes",
+         *       "effort": {
+         *         "key": "m",
+         *         "kind": null,
+         *         "label": "M"
+         *       },
+         *       "internalDeadline": "2026-10-15",
+         *       "saved": true,
+         *       "savedAt": "2026-09-18T10:04:00Z",
+         *       "savedBy": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Sara Lind"
+         *       },
+         *       "version": 2,
+         *       "whatMustChange": "Document the annual research quality criteria and have the desk sign them.",
+         *       "why": "Self-directed trading and Guided investing both pay for external research."
+         *     }
+         */
+        CasesAssessment: {
+            /**
+             * Applies
+             * @description Whether the change applies to the bank, a fixed kind: `yes` (it applies and work follows), `partly` (it applies to part of the business) or `no` (it does not apply; the case can be closed by one person with that reason). It says the change applies; it never says the bank complies, which is a separate fact in the register (REG-01, REG-02).
+             * @example yes
+             * @enum {string}
+             */
+            applies: "yes" | "partly" | "no";
+            /** @description How big the work is, from the bank's `effort_size` vocabulary, `s`, `m` and `l` on day one. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. Null when nobody has sized it. */
+            effort: components["schemas"]["CasesVocabularyRef"] | null;
+            /**
+             * Internaldeadline
+             * @description The bank's own deadline for the work, as a plain calendar date (`2026-10-15`). The bank's judgement, not the regulator's date, which is the change's key date. Null when none is set.
+             * @example 2026-10-15
+             */
+            internalDeadline: string | null;
+            /**
+             * Saved
+             * @description Whether a person has saved the assessment. False while it is an empty form the case opened with when the assessment started.
+             * @example true
+             */
+            saved: boolean;
+            /**
+             * Savedat
+             * @description When it was last saved, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null until it is saved.
+             * @example 2026-09-18T10:04:00Z
+             */
+            savedAt: string | null;
+            /** @description Who last saved it. A person in this bank, as their id and display name; the only personal data a case carries about them. Null until it is saved. */
+            savedBy: components["schemas"]["PersonRef"] | null;
+            /**
+             * Version
+             * @description The assessment's own version, starting at 1 and raised by every save. Informational: a save sends the case's `version` in `If-Match`, never this one.
+             * @example 2
+             */
+            version: number;
+            /**
+             * Whatmustchange
+             * @description What the bank must change, in its own words, at most 4000 characters. Tenant content. Null when nobody has written it.
+             * @example Document the annual research quality criteria and have the desk sign them.
+             */
+            whatMustChange: string | null;
+            /**
+             * Why
+             * @description Why the change matters to the bank, in its own words, at most 4000 characters. Tenant content. Null until someone writes it; a saved assessment always has one, and the case cannot move to implementing without it.
+             * @example Self-directed trading and Guided investing both pay for external research.
+             */
+            why: string | null;
+        };
+        /**
+         * CasesAssessmentBody
+         * @description `PUT /changes/{changeId}/assessment` (CAS-03): the whole assessment, replacing what
+         *     was saved. It moves the case to no other category.
+         * @example {
+         *       "applies": "yes",
+         *       "effort": "m",
+         *       "internalDeadline": "2026-10-15",
+         *       "subStatus": null,
+         *       "whatMustChange": "Document the annual research quality criteria and have the desk sign them.",
+         *       "why": "Self-directed trading and Guided investing both pay for external research."
+         *     }
+         */
+        CasesAssessmentBody: {
+            /**
+             * Applies
+             * @description Whether the change applies to the bank, a fixed kind: `yes` (it applies and work follows), `partly` (it applies to part of the business) or `no` (it does not apply; closing on that is `POST /changes/{changeId}/close`). It never says the bank complies.
+             * @example yes
+             * @enum {string}
+             */
+            applies: "yes" | "partly" | "no";
+            /**
+             * Effort
+             * @description How big the work is, as a key of the bank's `effort_size` vocabulary, `s`, `m` and `l` on day one. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. At most 64 characters; null for unsized, and an unknown key answers 422 `unknown_key`.
+             * @example m
+             */
+            effort?: string | null;
+            /**
+             * Internaldeadline
+             * @description The bank's own deadline for the work, as a plain calendar date (`2026-10-15`), or null for none.
+             * @example 2026-10-15
+             */
+            internalDeadline?: string | null;
+            /**
+             * Substatus
+             * @description An optional sub-status inside the case's current category, as a key of the bank's `case_sub_status` vocabulary. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. At most 64 characters. Null or left out for none; an unknown key, or one of another category, answers 422 `unknown_key`.
+             * @example null
+             */
+            subStatus?: string | null;
+            /**
+             * Whatmustchange
+             * @description What the bank must change, at most 4000 characters, empty by default. Tenant content, kept like `why`.
+             * @default
+             * @example Document the annual research quality criteria and have the desk sign them.
+             */
+            whatMustChange: string;
+            /**
+             * Why
+             * @description Why the change matters to the bank, 1 to 4000 characters, in its own words. Tenant content: never logged, audited as text or sent to a model.
+             * @example Self-directed trading and Guided investing both pay for external research.
+             */
+            why: string;
+        };
+        /**
+         * CasesCase
+         * @description One bank's case for one regulatory change, as every workflow move answers it
+         *     (CAS-02 to CAS-08). The bank's own zone under row-level security: no other bank and no
+         *     bleqq person sees it, and none of it reaches a model endpoint. The actions and the
+         *     evidence are read from their own lists.
+         * @example {
+         *       "allowedTransitions": [
+         *         "implementing",
+         *         "closed"
+         *       ],
+         *       "assessment": {
+         *         "applies": "yes",
+         *         "effort": {
+         *           "key": "m",
+         *           "kind": null,
+         *           "label": "M"
+         *         },
+         *         "internalDeadline": "2026-10-15",
+         *         "saved": true,
+         *         "savedAt": "2026-09-18T10:04:00Z",
+         *         "savedBy": {
+         *           "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *           "name": "Sara Lind"
+         *         },
+         *         "version": 2,
+         *         "whatMustChange": "Document the annual research quality criteria and have the desk sign them.",
+         *         "why": "Self-directed trading and Guided investing both pay for external research."
+         *       },
+         *       "canRequestSignoff": false,
+         *       "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *       "closeReason": null,
+         *       "closedAt": null,
+         *       "closedNote": null,
+         *       "dismissedAt": null,
+         *       "dismissedBy": null,
+         *       "dismissedReason": null,
+         *       "footprintMatch": true,
+         *       "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *       "openActionCount": 0,
+         *       "owner": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Sara Lind"
+         *       },
+         *       "signedOffBy": null,
+         *       "signoffRequestedAt": null,
+         *       "signoffRequestedBy": null,
+         *       "status": "assessing",
+         *       "subStatus": null,
+         *       "triagedAt": "2026-09-17T08:40:00Z",
+         *       "triagedBy": {
+         *         "id": "5b7e2c1a-9d3f-4e8b-a6c4-0f1e2d3c4b5a",
+         *         "name": "Johan Berg"
+         *       },
+         *       "urgency": {
+         *         "key": "within_3_months",
+         *         "kind": null,
+         *         "label": "Within 3 months"
+         *       },
+         *       "urgencyConfirmed": true,
+         *       "version": 4
+         *     }
+         */
+        CasesCase: {
+            /**
+             * Allowedtransitions
+             * @description The categories this case may move to next for the person reading it, computed by the server from the state machine and its guards; each is one of `new` (registered, nobody has looked yet; the screen reads 'Needs triage'), `assigned` (triaged with an urgency and an owner), `assessing` (the owner is working out what the change means for the bank), `implementing` (actions are being done), `signoff` (waiting for a second person to sign it off with a passkey), `closed` (signed off, or closed by one person with a reason that needs no work) and `dismissed` (not for this bank, with a reason, and restorable). Empty means no move is open to this reader now. A move that needs something the request supplies (an owner, a reason) is listed, and refused if the request leaves it out.
+             * @example [
+             *       "implementing",
+             *       "closed"
+             *     ]
+             */
+            allowedTransitions: ("new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed")[];
+            /** @description The impact assessment, once it has started. Null before the case reaches assessing. */
+            assessment: components["schemas"]["CasesAssessment"] | null;
+            /**
+             * Canrequestsignoff
+             * @description Computed by the server: true when the case is implementing, no action is open and at least one piece of evidence has passed the malware scan. It is the same rule the sign-off request itself checks, so a screen never guesses it.
+             * @example false
+             */
+            canRequestSignoff: boolean;
+            /**
+             * Changeid
+             * Format: uuid
+             * @description The library change the case is about, as a UUID, and the address of every workflow route: the change is shared by every bank, the case is not.
+             * @example c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19
+             */
+            changeId: string;
+            /** @description Why the case was closed, from the bank's `close_reason` vocabulary, whose `kind` is one of `signed_off` (a second person signed it off), `no_action` or `not_applicable` (one person closed it, audited). The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. Null while the case is open. */
+            closeReason: components["schemas"]["CasesVocabularyRef"] | null;
+            /**
+             * Closedat
+             * @description When the case was closed, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null while it is open.
+             * @example null
+             */
+            closedAt: string | null;
+            /**
+             * Closednote
+             * @description The note written at the close, at most 2000 characters. Tenant content. Null when none was written.
+             * @example null
+             */
+            closedNote: string | null;
+            /**
+             * Dismissedat
+             * @description When it was dismissed, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null unless it was dismissed.
+             * @example null
+             */
+            dismissedAt: string | null;
+            /** @description Who dismissed it. A person in this bank, as their id and display name; the only personal data a case carries about them. Null unless it was dismissed. */
+            dismissedBy: components["schemas"]["PersonRef"] | null;
+            /** @description Why the bank dismissed the change, from its `dismissal_reason` vocabulary, `out_of_scope`, `duplicate` and `already_covered` on day one. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. Null unless the case is or was dismissed. */
+            dismissedReason: components["schemas"]["CasesVocabularyRef"] | null;
+            /**
+             * Footprintmatch
+             * @description Whether the change's scope matches this bank's footprint, computed by the server. It says the change is in scope to look at, never that it applies or that the bank complies.
+             * @example true
+             */
+            footprintMatch: boolean;
+            /**
+             * Id
+             * Format: uuid
+             * @description This bank's case, as a UUID. One per bank per change (CAS-01), and never another bank's.
+             * @example 9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46
+             */
+            id: string;
+            /**
+             * Openactioncount
+             * @description How many live actions are not done yet, counted by the server. Sign-off can be requested only at 0. A removed action is not counted.
+             * @example 0
+             */
+            openActionCount: number;
+            /** @description Who owns the case, named at triage. A person in this bank, as their id and display name; the only personal data a case carries about them. Null before triage. */
+            owner: components["schemas"]["PersonRef"] | null;
+            /** @description The second person who signed the case off with a passkey. A person in this bank, as their id and display name; the only personal data a case carries about them. Never the person who asked, which the database itself refuses. Null until it is signed off. */
+            signedOffBy: components["schemas"]["PersonRef"] | null;
+            /**
+             * Signoffrequestedat
+             * @description When sign-off was asked for, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null until someone asks.
+             * @example null
+             */
+            signoffRequestedAt: string | null;
+            /** @description Who asked for sign-off; this person can never sign it off. A person in this bank, as their id and display name; the only personal data a case carries about them. Null until someone asks. */
+            signoffRequestedBy: components["schemas"]["PersonRef"] | null;
+            /**
+             * Status
+             * @description Where the case stands, one of seven fixed categories the state machine reads: `new` (registered, nobody has looked yet; the screen reads 'Needs triage'), `assigned` (triaged with an urgency and an owner), `assessing` (the owner is working out what the change means for the bank), `implementing` (actions are being done), `signoff` (waiting for a second person to sign it off with a passkey), `closed` (signed off, or closed by one person with a reason that needs no work) and `dismissed` (not for this bank, with a reason, and restorable). A bank's sub-status sits inside a category and changes nothing a guard decides.
+             * @example assessing
+             * @enum {string}
+             */
+            status: "new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed";
+            /** @description The bank's own finer step inside the category, from its `case_sub_status` vocabulary, whose `kind` is the category it sits in; day one seeds one per category, keyed like it. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. Null when the bank uses none here. */
+            subStatus: components["schemas"]["CasesVocabularyRef"] | null;
+            /**
+             * Triagedat
+             * @description When the case was triaged, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null before triage.
+             * @example 2026-09-17T08:40:00Z
+             */
+            triagedAt: string | null;
+            /** @description Who triaged the case. A person in this bank, as their id and display name; the only personal data a case carries about them. Null before triage. */
+            triagedBy: components["schemas"]["PersonRef"] | null;
+            /** @description How soon this bank must act, as `{key, kind, label}` from the `urgency` library vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or `no_action` on day one, a vocabulary a platform admin may extend. It is the agent's suggestion until `urgencyConfirmed` is true. */
+            urgency: components["schemas"]["LibraryRef"];
+            /**
+             * Urgencyconfirmed
+             * @description Whether a person in this bank confirmed the urgency at triage. False means the value is still the agent's suggestion and must not be reported as the bank's decision.
+             * @example true
+             */
+            urgencyConfirmed: boolean;
+            /**
+             * Version
+             * @description The case's version, starting at 1 and raised by every write to it, including the 'So what?'. Send it back in `If-Match` on every workflow write; an older value answers 409 `stale_write` with the current one.
+             * @example 4
+             */
+            version: number;
+        };
+        /**
+         * CasesCloseBody
+         * @description `POST /changes/{changeId}/close` (CAS-02, CAS-03): one person closes a case that needs
+         *     no work, with a reason, audited (D-92).
+         * @example {
+         *       "note": "Covered by the 2025 research policy review.",
+         *       "reasonKey": "no_action"
+         *     }
+         */
+        CasesCloseBody: {
+            /**
+             * Note
+             * @description An optional note for the case file, at most 2000 characters. Tenant content: it stays in the bank's zone and never reaches the audit values, a log or a model.
+             * @default
+             * @example Covered by the 2025 research policy review.
+             */
+            note: string;
+            /**
+             * Reasonkey
+             * @description Why the case closes, as a key of the bank's `close_reason` vocabulary. Only a row whose kind is `no_action` or `not_applicable` closes on one person's word; one of kind `signed_off` needs the sign-off route and answers 409 `four_eyes_violation` here. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. At most 64 characters; an unknown key answers 422 `unknown_key`.
+             * @example no_action
+             */
+            reasonKey: string;
+        };
+        /**
+         * CasesEvidence
+         * @description One piece of evidence on a case (CAS-05): a file, a link or a reference to an
+         *     internal document. The bank's own zone. A file is invisible to a download until the
+         *     malware scan passes; removed evidence is not listed and stays in the case file.
+         * @example {
+         *       "contentHash": "sha256:9f2c4e6a8b0d1f3e5a7c9b1d3f5e7a9c2b4d6f8a0c2e4b6d8f0a2c4e6b8d0f2a",
+         *       "id": "7e9c1a3b-5d2f-4a6e-8b0c-1d3f5a7c9e2b",
+         *       "kind": "file",
+         *       "mimeType": "application/pdf",
+         *       "name": "Research quality criteria 2026.pdf",
+         *       "scanState": "clean",
+         *       "sizeBytes": 184320,
+         *       "uploadedAt": "2026-09-19T13:20:00Z",
+         *       "uploadedBy": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Sara Lind"
+         *       },
+         *       "url": null
+         *     }
+         */
+        CasesEvidence: {
+            /**
+             * Contenthash
+             * @description A file's SHA-256, computed by the server from the bytes it stored, as `sha256:` and 64 hex digits. Null for a link or a reference.
+             * @example sha256:9f2c4e6a8b0d1f3e5a7c9b1d3f5e7a9c2b4d6f8a0c2e4b6d8f0a2c4e6b8d0f2a
+             */
+            contentHash: string | null;
+            /**
+             * Id
+             * Format: uuid
+             * @description The evidence, as a UUID; the address of its download and its removal.
+             * @example 7e9c1a3b-5d2f-4a6e-8b0c-1d3f5a7c9e2b
+             */
+            id: string;
+            /**
+             * Kind
+             * @description What the evidence is, a fixed kind: `file` (bytes the bank uploaded, scanned and hashed, downloadable once clean), `link` (an address the bank recorded, never fetched by the server) or `reference` (the name of an internal document, with no bytes and no address).
+             * @example file
+             * @enum {string}
+             */
+            kind: "file" | "link" | "reference";
+            /**
+             * Mimetype
+             * @description A file's type as the server identified it, such as `application/pdf`. Null for a link or a reference.
+             * @example application/pdf
+             */
+            mimeType: string | null;
+            /**
+             * Name
+             * @description What the evidence is called, at most 500 characters. Tenant content.
+             * @example Research quality criteria 2026.pdf
+             */
+            name: string;
+            /**
+             * Scanstate
+             * @description Where the malware scan stands, a fixed kind: `pending` (not scanned yet; a download is refused), `clean` (passed; downloadable and counted for sign-off), `infected` (malware found; the bytes are deleted and the row stays) or `error` (the scan failed; a download is refused). A link or a reference has no bytes and reads `clean`.
+             * @example clean
+             * @enum {string}
+             */
+            scanState: "pending" | "clean" | "infected" | "error";
+            /**
+             * Sizebytes
+             * @description A file's size in bytes. Null for a link or a reference.
+             * @example 184320
+             */
+            sizeBytes: number | null;
+            /**
+             * Uploadedat
+             * Format: date-time
+             * @description When it was added, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Set by the server.
+             * @example 2026-09-19T13:20:00Z
+             */
+            uploadedAt: string;
+            /** @description Who added it. A person in this bank, as their id and display name; the only personal data a case carries about them. */
+            uploadedBy: components["schemas"]["PersonRef"];
+            /**
+             * Url
+             * @description The address a link points at. Null for a file or a reference. The server never fetches it.
+             * @example null
+             */
+            url: string | null;
+        };
+        /**
+         * CasesEvidenceCreated
+         * @description What `POST /changes/{changeId}/evidence` answers: the stored evidence. There is no
+         *     upload address: the bytes arrive in the same request, and a file starts `pending`.
+         * @example {
+         *       "evidence": {
+         *         "contentHash": "sha256:9f2c4e6a8b0d1f3e5a7c9b1d3f5e7a9c2b4d6f8a0c2e4b6d8f0a2c4e6b8d0f2a",
+         *         "id": "7e9c1a3b-5d2f-4a6e-8b0c-1d3f5a7c9e2b",
+         *         "kind": "file",
+         *         "mimeType": "application/pdf",
+         *         "name": "Research quality criteria 2026.pdf",
+         *         "scanState": "pending",
+         *         "sizeBytes": 184320,
+         *         "uploadedAt": "2026-09-19T13:20:00Z",
+         *         "uploadedBy": {
+         *           "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *           "name": "Sara Lind"
+         *         },
+         *         "url": null
+         *       }
+         *     }
+         */
+        CasesEvidenceCreated: {
+            /** @description The evidence as stored. A file is `pending` until the scan finishes, and cannot be downloaded until it is `clean`. */
+            evidence: components["schemas"]["CasesEvidence"];
+        };
+        /**
+         * CasesEvidenceForm
+         * @description The form fields of `POST /changes/{changeId}/evidence` (CAS-05), sent as
+         *     `multipart/form-data` beside the `file` part when the kind is `file`.
+         * @example {
+         *       "kind": "link",
+         *       "name": "FI decision memo",
+         *       "url": "https://intranet.example.com/memo/42"
+         *     }
+         */
+        CasesEvidenceForm: {
+            /**
+             * Kind
+             * @description What is being added, a fixed kind: `file` (send the bytes in the `file` part), `link` (send `url`) or `reference` (the name of an internal document, nothing else).
+             * @example link
+             * @enum {string}
+             */
+            kind: "file" | "link" | "reference";
+            /**
+             * Name
+             * @description What the evidence is called, 1 to 500 characters. Tenant content.
+             * @example FI decision memo
+             */
+            name: string;
+            /**
+             * Url
+             * @description The address of a link, an https URL of at most 2000 characters; empty by default and for the other kinds. The server stores it and never fetches it.
+             * @default
+             * @example https://intranet.example.com/memo/42
+             */
+            url: string;
+        };
+        /**
+         * CasesEvidencePage
+         * @description `GET /changes/{changeId}/evidence`: one page of the case's live evidence.
+         * @example {
+         *       "items": [
+         *         {
+         *           "contentHash": "sha256:9f2c4e6a8b0d1f3e5a7c9b1d3f5e7a9c2b4d6f8a0c2e4b6d8f0a2c4e6b8d0f2a",
+         *           "id": "7e9c1a3b-5d2f-4a6e-8b0c-1d3f5a7c9e2b",
+         *           "kind": "file",
+         *           "mimeType": "application/pdf",
+         *           "name": "Research quality criteria 2026.pdf",
+         *           "scanState": "clean",
+         *           "sizeBytes": 184320,
+         *           "uploadedAt": "2026-09-19T13:20:00Z",
+         *           "uploadedBy": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Sara Lind"
+         *           },
+         *           "url": null
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        CasesEvidencePage: {
+            /**
+             * Items
+             * @description The evidence of this page, newest first, removed pieces left out. An empty page is a 200.
+             */
+            items: components["schemas"]["CasesEvidence"][];
+            /**
+             * Total
+             * @description How many live pieces of evidence the case has, across every page.
+             * @example 1
+             */
+            total: number;
+        };
+        /**
+         * CasesNoteBody
+         * @description `POST /changes/{changeId}/signoff/approve` and `/signoff/send-back` (CAS-06): the
+         *     second person's optional word on the decision.
+         * @example {
+         *       "note": "Criteria checked against the desk's sign-off."
+         *     }
+         */
+        CasesNoteBody: {
+            /**
+             * Note
+             * @description An optional note stored with the move, at most 2000 characters. Tenant content: it stays in the bank's zone and never reaches the audit values, a log or a model.
+             * @default
+             * @example Criteria checked against the desk's sign-off.
+             */
+            note: string;
+        };
+        /**
          * CasesObligationLink
          * @description One obligation-link decision of this bank. The bank's own zone: the shared library's
          *     own link, its origin and its confidence are unchanged by anything here, and another
@@ -8006,6 +11091,21 @@ export interface components {
             obligationId: string;
         };
         /**
+         * CasesReasonBody
+         * @description `POST /changes/{changeId}/dismiss` (CAS-02): why the bank is not taking the change on.
+         * @example {
+         *       "reasonKey": "out_of_scope"
+         *     }
+         */
+        CasesReasonBody: {
+            /**
+             * Reasonkey
+             * @description Why the change is dismissed, as a key of the bank's `dismissal_reason` vocabulary, `out_of_scope`, `duplicate` and `already_covered` on day one. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. At most 64 characters; an unknown key answers 422 `unknown_key`.
+             * @example out_of_scope
+             */
+            reasonKey: string;
+        };
+        /**
          * CasesSoWhat
          * @description The "So what?" as this bank holds it, answered by both the save and the confirm.
          *     A bank's own zone: another bank reading the same change sees its own copy, still an AI
@@ -8084,6 +11184,68 @@ export interface components {
             text: string;
         };
         /**
+         * CasesTriageBody
+         * @description `POST /changes/{changeId}/triage` (CAS-02): the bank decides how urgent the change is
+         *     and who owns it.
+         * @example {
+         *       "ownerId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *       "subStatus": null,
+         *       "urgency": "within_3_months"
+         *     }
+         */
+        CasesTriageBody: {
+            /**
+             * Ownerid
+             * Format: uuid
+             * @description The person in this bank who will own the case, as a UUID. It must be a member of this bank who may work a case; anyone else is refused.
+             * @example 8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60
+             */
+            ownerId: string;
+            /**
+             * Substatus
+             * @description An optional sub-status inside `assigned`, as a key of the bank's `case_sub_status` vocabulary, whose rows the bank's admin may extend. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. At most 64 characters. Null or left out for none; an unknown key, or one of another category, answers 422 `unknown_key`.
+             * @example null
+             */
+            subStatus?: string | null;
+            /**
+             * Urgency
+             * @description The urgency the bank confirms, as a key of the `urgency` library vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or `no_action` on day one, a vocabulary a platform admin may extend; read `GET /vocab/urgency` for the live set. At most 64 characters; an unknown key answers 422 `unknown_key`.
+             * @example within_3_months
+             */
+            urgency: string;
+        };
+        /**
+         * CasesVocabularyRef
+         * @description A value from one of the bank's own lists as a read answers it: key and kind, and the
+         *     label in the reader's language. The bank's own zone: its admin manages these rows, and
+         *     no other bank sees them.
+         * @example {
+         *       "key": "out_of_scope",
+         *       "kind": null,
+         *       "label": "Out of scope"
+         *     }
+         */
+        CasesVocabularyRef: {
+            /**
+             * Key
+             * @description The row's immutable key, and the only part of this reference to store, compare or send back. It is drawn from the bank's own vocabulary that the field carrying it names; an admin may extend, relabel or retire those rows without a deploy, so a key you have not seen before is new data and not an error.
+             * @example out_of_scope
+             */
+            key: string;
+            /**
+             * Kind
+             * @description The fixed category the row sits in, where its list has one: a sub-status names the case category it belongs to (`new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed` or `dismissed`), and a close reason one of `signed_off`, `no_action` or `not_applicable`. Null for a list without categories, such as dismissal reasons and effort sizes. Never a tone: a pill's tone follows its slot.
+             * @example null
+             */
+            kind: string | null;
+            /**
+             * Label
+             * @description The value's name in the reader's language, falling back to the bank's default language and then to the key. For display only: an admin may reword it at any time, so nothing may match on it.
+             * @example Out of scope
+             */
+            label: string;
+        };
+        /**
          * CodeRequestBody
          * @description Asking for a one-time enrolment code by email, the "First time here?" path. The code
          *     opens only an enrolment session that can register a passkey, never a full sign-in.
@@ -8119,6 +11281,629 @@ export interface components {
             email: string;
         };
         /**
+         * CollabComment
+         * @description A comment on one record of one bank (COL-01), shared with everyone in that bank who can
+         *     read the record. There are no private comments (D-22, D-60).
+         * @example {
+         *       "author": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Anna Berg"
+         *       },
+         *       "body": "@Erik Holm can you check the custody angle before Friday?",
+         *       "canDelete": true,
+         *       "canEdit": true,
+         *       "createdAt": "2026-09-24T08:15:00Z",
+         *       "deletedAt": null,
+         *       "editedAt": null,
+         *       "id": "c0a1b2c3-d4e5-4f60-8a7b-9c0d1e2f3a4b",
+         *       "mentions": [
+         *         {
+         *           "id": "3f6b2d1c-7e8a-4b90-8c1d-2e3f4a5b6c7d",
+         *           "name": "Erik Holm"
+         *         }
+         *       ],
+         *       "subjectId": "11111111-1111-4111-8111-111111111111",
+         *       "subjectType": "change_case"
+         *     }
+         */
+        CollabComment: {
+            /** @description The person who wrote the comment. Only they may edit or delete it. */
+            author: components["schemas"]["PersonRef"];
+            /**
+             * Body
+             * @description What the author wrote, as plain text, or null once the comment was deleted: a deleted comment keeps its place in the thread so the conversation still reads, but its text is no longer returned. The bank's own text, visible to everyone in the bank who can read the record; it never leaves the bank.
+             * @example @Erik Holm can you check the custody angle before Friday?
+             */
+            body: string | null;
+            /**
+             * Candelete
+             * @description Whether the caller may delete it: true only for the author while it stands. No role grants deleting someone else's comment. Computed by the server for this caller.
+             * @example true
+             */
+            canDelete: boolean;
+            /**
+             * Canedit
+             * @description Whether the caller may change the text now: true only for the author, only while the comment stands and only within the deployment's edit window after writing it. Computed by the server for this caller; a screen shows the edit control from it.
+             * @example true
+             */
+            canEdit: boolean;
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When it was written, as an RFC 3339 timestamp in UTC (`2026-09-24T08:15:00Z`). Set by the server.
+             * @example 2026-09-24T08:15:00Z
+             */
+            createdAt: string;
+            /**
+             * Deletedat
+             * @description When the author deleted it, as an RFC 3339 timestamp in UTC, or null while it stands. A deleted comment is kept, without its text, rather than removed.
+             * @example null
+             */
+            deletedAt: string | null;
+            /**
+             * Editedat
+             * @description When the author last changed the text, as an RFC 3339 timestamp in UTC, or null if it was never edited. The text an edit replaced is kept by the bank and returned by no call.
+             * @example null
+             */
+            editedAt: string | null;
+            /**
+             * Id
+             * Format: uuid
+             * @description The comment's identifier, as a uuid, which the edit and delete calls take.
+             * @example c0a1b2c3-d4e5-4f60-8a7b-9c0d1e2f3a4b
+             */
+            id: string;
+            /**
+             * Mentions
+             * @description The people the author named when writing it, fixed at that moment: an edit does not change who was mentioned, so an edit can never notify anyone new. Someone mentioned is not necessarily notified; only those who could read the record were.
+             */
+            mentions: components["schemas"]["PersonRef"][];
+            /**
+             * Subjectid
+             * Format: uuid
+             * @description The record's identifier, as a uuid. Together with the kind it names exactly one record; a record this bank does not hold, or one the caller may not read, answers 404 as if it did not exist.
+             * @example 11111111-1111-4111-8111-111111111111
+             */
+            subjectId: string;
+            /**
+             * Subjecttype
+             * @description The kind of record, as a fixed lowercase code of at most 64 characters. Comments are taken on four kinds: `obligation` (an obligation in the shared library, as this bank sees it), `tenant_obligation` (an item the bank keeps in its own inventory), `change_case` (the bank's own case on a regulatory change) and `action` (a piece of work on a case). A kind outside those four is refused with a 422. A code, not a label: store and compare it, never show it.
+             * @example change_case
+             */
+            subjectType: string;
+        };
+        /**
+         * CollabCommentCreated
+         * @description The comment just written, plus who it mentioned but could not reach (COL-01).
+         * @example {
+         *       "author": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Anna Berg"
+         *       },
+         *       "body": "@Erik Holm can you check the custody angle before Friday?",
+         *       "canDelete": true,
+         *       "canEdit": true,
+         *       "createdAt": "2026-09-24T08:15:00Z",
+         *       "deletedAt": null,
+         *       "editedAt": null,
+         *       "id": "c0a1b2c3-d4e5-4f60-8a7b-9c0d1e2f3a4b",
+         *       "mentions": [
+         *         {
+         *           "id": "3f6b2d1c-7e8a-4b90-8c1d-2e3f4a5b6c7d",
+         *           "name": "Erik Holm"
+         *         }
+         *       ],
+         *       "subjectId": "11111111-1111-4111-8111-111111111111",
+         *       "subjectType": "change_case",
+         *       "undeliveredMentions": []
+         *     }
+         */
+        CollabCommentCreated: {
+            /** @description The person who wrote the comment. Only they may edit or delete it. */
+            author: components["schemas"]["PersonRef"];
+            /**
+             * Body
+             * @description What the author wrote, as plain text, or null once the comment was deleted: a deleted comment keeps its place in the thread so the conversation still reads, but its text is no longer returned. The bank's own text, visible to everyone in the bank who can read the record; it never leaves the bank.
+             * @example @Erik Holm can you check the custody angle before Friday?
+             */
+            body: string | null;
+            /**
+             * Candelete
+             * @description Whether the caller may delete it: true only for the author while it stands. No role grants deleting someone else's comment. Computed by the server for this caller.
+             * @example true
+             */
+            canDelete: boolean;
+            /**
+             * Canedit
+             * @description Whether the caller may change the text now: true only for the author, only while the comment stands and only within the deployment's edit window after writing it. Computed by the server for this caller; a screen shows the edit control from it.
+             * @example true
+             */
+            canEdit: boolean;
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When it was written, as an RFC 3339 timestamp in UTC (`2026-09-24T08:15:00Z`). Set by the server.
+             * @example 2026-09-24T08:15:00Z
+             */
+            createdAt: string;
+            /**
+             * Deletedat
+             * @description When the author deleted it, as an RFC 3339 timestamp in UTC, or null while it stands. A deleted comment is kept, without its text, rather than removed.
+             * @example null
+             */
+            deletedAt: string | null;
+            /**
+             * Editedat
+             * @description When the author last changed the text, as an RFC 3339 timestamp in UTC, or null if it was never edited. The text an edit replaced is kept by the bank and returned by no call.
+             * @example null
+             */
+            editedAt: string | null;
+            /**
+             * Id
+             * Format: uuid
+             * @description The comment's identifier, as a uuid, which the edit and delete calls take.
+             * @example c0a1b2c3-d4e5-4f60-8a7b-9c0d1e2f3a4b
+             */
+            id: string;
+            /**
+             * Mentions
+             * @description The people the author named when writing it, fixed at that moment: an edit does not change who was mentioned, so an edit can never notify anyone new. Someone mentioned is not necessarily notified; only those who could read the record were.
+             */
+            mentions: components["schemas"]["PersonRef"][];
+            /**
+             * Subjectid
+             * Format: uuid
+             * @description The record's identifier, as a uuid. Together with the kind it names exactly one record; a record this bank does not hold, or one the caller may not read, answers 404 as if it did not exist.
+             * @example 11111111-1111-4111-8111-111111111111
+             */
+            subjectId: string;
+            /**
+             * Subjecttype
+             * @description The kind of record, as a fixed lowercase code of at most 64 characters. Comments are taken on four kinds: `obligation` (an obligation in the shared library, as this bank sees it), `tenant_obligation` (an item the bank keeps in its own inventory), `change_case` (the bank's own case on a regulatory change) and `action` (a piece of work on a case). A kind outside those four is refused with a 422. A code, not a label: store and compare it, never show it.
+             * @example change_case
+             */
+            subjectType: string;
+            /**
+             * Undeliveredmentions
+             * @description The mentioned people who were not notified because they cannot read this record, so the composer can say by name that the mention did not reach them. It never says why. Empty when everyone mentioned was notified.
+             */
+            undeliveredMentions: components["schemas"]["PersonRef"][];
+        };
+        /**
+         * CollabCommentInput
+         * @description A new comment on one record. A field the schema does not name answers 422.
+         * @example {
+         *       "body": "@Erik Holm can you check the custody angle before Friday?",
+         *       "mentionUserIds": [
+         *         "3f6b2d1c-7e8a-4b90-8c1d-2e3f4a5b6c7d"
+         *       ],
+         *       "subjectId": "11111111-1111-4111-8111-111111111111",
+         *       "subjectType": "change_case"
+         *     }
+         */
+        CollabCommentInput: {
+            /**
+             * Body
+             * @description What the person writes, as plain text, at least 1 character long; the deployment sets the longest accepted (4,000 characters unless configured otherwise), and a longer text or one of only spaces is refused with a 422. Everyone in the bank who can read the record can read it, so it is never private. It is the bank's own text: it never leaves the bank, never reaches a log, a notification, a mail or an audit record, and never reaches a model.
+             * @example @Erik Holm can you check the custody angle before Friday?
+             */
+            body: string;
+            /**
+             * Mentionuserids
+             * @description The people the author names, as the uuids of members of this bank; empty by default. The screen's picker fills it; the server does not read names out of the text. Each one who can read the record is notified once; one who cannot is stored on the comment, notified of nothing and returned in `undeliveredMentions`. A uuid that is not a member of this bank is refused with a 422.
+             * @example [
+             *       "3f6b2d1c-7e8a-4b90-8c1d-2e3f4a5b6c7d"
+             *     ]
+             */
+            mentionUserIds?: string[];
+            /**
+             * Subjectid
+             * Format: uuid
+             * @description The record's identifier, as a uuid. Together with the kind it names exactly one record; a record this bank does not hold, or one the caller may not read, answers 404 as if it did not exist.
+             * @example 11111111-1111-4111-8111-111111111111
+             */
+            subjectId: string;
+            /**
+             * Subjecttype
+             * @description The kind of record, as a fixed lowercase code of at most 64 characters. Comments are taken on four kinds: `obligation` (an obligation in the shared library, as this bank sees it), `tenant_obligation` (an item the bank keeps in its own inventory), `change_case` (the bank's own case on a regulatory change) and `action` (a piece of work on a case). A kind outside those four is refused with a 422. A code, not a label: store and compare it, never show it.
+             * @example change_case
+             */
+            subjectType: string;
+        };
+        /**
+         * CollabCommentPage
+         * @description `{items, total}` with `limit` and `offset`, not the designed bare array: a busy case
+         *     would otherwise return every comment ever written (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "author": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Anna Berg"
+         *           },
+         *           "body": "@Erik Holm can you check the custody angle before Friday?",
+         *           "canDelete": true,
+         *           "canEdit": true,
+         *           "createdAt": "2026-09-24T08:15:00Z",
+         *           "deletedAt": null,
+         *           "editedAt": null,
+         *           "id": "c0a1b2c3-d4e5-4f60-8a7b-9c0d1e2f3a4b",
+         *           "mentions": [
+         *             {
+         *               "id": "3f6b2d1c-7e8a-4b90-8c1d-2e3f4a5b6c7d",
+         *               "name": "Erik Holm"
+         *             }
+         *           ],
+         *           "subjectId": "11111111-1111-4111-8111-111111111111",
+         *           "subjectType": "change_case"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        CollabCommentPage: {
+            /**
+             * Items
+             * @description The record's comments on this page, oldest first, so the thread reads as it was written. Deleted comments stay in place without their text. An empty list is a 200: nobody has commented yet.
+             */
+            items: components["schemas"]["CollabComment"][];
+            /**
+             * Total
+             * @description How many comments the record has in total, deleted ones included, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * CollabCommentPatch
+         * @description The new text of one's own comment. A field the schema does not name answers 422.
+         * @example {
+         *       "body": "@Erik Holm can you check the custody angle before Thursday?"
+         *     }
+         */
+        CollabCommentPatch: {
+            /**
+             * Body
+             * @description What the person writes, as plain text, at least 1 character long; the deployment sets the longest accepted (4,000 characters unless configured otherwise), and a longer text or one of only spaces is refused with a 422. Everyone in the bank who can read the record can read it, so it is never private. It is the bank's own text: it never leaves the bank, never reaches a log, a notification, a mail or an audit record, and never reaches a model.
+             * @example @Erik Holm can you check the custody angle before Thursday?
+             */
+            body: string;
+        };
+        /**
+         * CollabCommentQuery
+         * @description Which record's comments to read, and the shared `limit` and `offset`: 20 by default and
+         *     100 at most. Kinds and ids ride in the query string; a comment's text never does.
+         */
+        CollabCommentQuery: {
+            /**
+             * Limit
+             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+             * @default 20
+             * @example 20
+             */
+            limit: number;
+            /**
+             * Offset
+             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+             * @default 0
+             * @example 0
+             */
+            offset: number;
+            /**
+             * Subjectid
+             * Format: uuid
+             * @description The record's identifier, as a uuid. Together with the kind it names exactly one record; a record this bank does not hold, or one the caller may not read, answers 404 as if it did not exist.
+             * @example 11111111-1111-4111-8111-111111111111
+             */
+            subjectId: string;
+            /**
+             * Subjecttype
+             * @description The kind of record, as a fixed lowercase code of at most 64 characters. Comments are taken on four kinds: `obligation` (an obligation in the shared library, as this bank sees it), `tenant_obligation` (an item the bank keeps in its own inventory), `change_case` (the bank's own case on a regulatory change) and `action` (a piece of work on a case). A kind outside those four is refused with a 422. A code, not a label: store and compare it, never show it.
+             * @example change_case
+             */
+            subjectType: string;
+        };
+        /**
+         * CollabMyComment
+         * @description One comment on My work's "Comments and mentions" panel: the comment and the title of
+         *     the record it is on, so the row can link there (COL-01, HOM-05).
+         * @example {
+         *       "author": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Anna Berg"
+         *       },
+         *       "body": "@Erik Holm can you check the custody angle before Friday?",
+         *       "canDelete": true,
+         *       "canEdit": true,
+         *       "createdAt": "2026-09-24T08:15:00Z",
+         *       "deletedAt": null,
+         *       "editedAt": null,
+         *       "id": "c0a1b2c3-d4e5-4f60-8a7b-9c0d1e2f3a4b",
+         *       "mentions": [
+         *         {
+         *           "id": "3f6b2d1c-7e8a-4b90-8c1d-2e3f4a5b6c7d",
+         *           "name": "Erik Holm"
+         *         }
+         *       ],
+         *       "subjectId": "11111111-1111-4111-8111-111111111111",
+         *       "subjectTitle": "FI adopts amended rules on paying for investment research",
+         *       "subjectType": "change_case"
+         *     }
+         */
+        CollabMyComment: {
+            /** @description The person who wrote the comment. Only they may edit or delete it. */
+            author: components["schemas"]["PersonRef"];
+            /**
+             * Body
+             * @description What the author wrote, as plain text, or null once the comment was deleted: a deleted comment keeps its place in the thread so the conversation still reads, but its text is no longer returned. The bank's own text, visible to everyone in the bank who can read the record; it never leaves the bank.
+             * @example @Erik Holm can you check the custody angle before Friday?
+             */
+            body: string | null;
+            /**
+             * Candelete
+             * @description Whether the caller may delete it: true only for the author while it stands. No role grants deleting someone else's comment. Computed by the server for this caller.
+             * @example true
+             */
+            canDelete: boolean;
+            /**
+             * Canedit
+             * @description Whether the caller may change the text now: true only for the author, only while the comment stands and only within the deployment's edit window after writing it. Computed by the server for this caller; a screen shows the edit control from it.
+             * @example true
+             */
+            canEdit: boolean;
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When it was written, as an RFC 3339 timestamp in UTC (`2026-09-24T08:15:00Z`). Set by the server.
+             * @example 2026-09-24T08:15:00Z
+             */
+            createdAt: string;
+            /**
+             * Deletedat
+             * @description When the author deleted it, as an RFC 3339 timestamp in UTC, or null while it stands. A deleted comment is kept, without its text, rather than removed.
+             * @example null
+             */
+            deletedAt: string | null;
+            /**
+             * Editedat
+             * @description When the author last changed the text, as an RFC 3339 timestamp in UTC, or null if it was never edited. The text an edit replaced is kept by the bank and returned by no call.
+             * @example null
+             */
+            editedAt: string | null;
+            /**
+             * Id
+             * Format: uuid
+             * @description The comment's identifier, as a uuid, which the edit and delete calls take.
+             * @example c0a1b2c3-d4e5-4f60-8a7b-9c0d1e2f3a4b
+             */
+            id: string;
+            /**
+             * Mentions
+             * @description The people the author named when writing it, fixed at that moment: an edit does not change who was mentioned, so an edit can never notify anyone new. Someone mentioned is not necessarily notified; only those who could read the record were.
+             */
+            mentions: components["schemas"]["PersonRef"][];
+            /**
+             * Subjectid
+             * Format: uuid
+             * @description The record's identifier, as a uuid. Together with the kind it names exactly one record; a record this bank does not hold, or one the caller may not read, answers 404 as if it did not exist.
+             * @example 11111111-1111-4111-8111-111111111111
+             */
+            subjectId: string;
+            /**
+             * Subjecttitle
+             * @description The title of the record the comment is on, as the caller reads it today, for the row and its link. A record's title, never text a person typed in a comment.
+             * @example FI adopts amended rules on paying for investment research
+             */
+            subjectTitle: string;
+            /**
+             * Subjecttype
+             * @description The kind of record, as a fixed lowercase code of at most 64 characters. Comments are taken on four kinds: `obligation` (an obligation in the shared library, as this bank sees it), `tenant_obligation` (an item the bank keeps in its own inventory), `change_case` (the bank's own case on a regulatory change) and `action` (a piece of work on a case). A kind outside those four is refused with a 422. A code, not a label: store and compare it, never show it.
+             * @example change_case
+             */
+            subjectType: string;
+        };
+        /**
+         * CollabMyCommentPage
+         * @description `{items, total}` on the shared paging, plus the kinds of record the caller could not
+         *     see, so the panel can say so without naming a record (COL-S12).
+         * @example {
+         *       "items": [
+         *         {
+         *           "author": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Anna Berg"
+         *           },
+         *           "body": "@Erik Holm can you check the custody angle before Friday?",
+         *           "canDelete": true,
+         *           "canEdit": true,
+         *           "createdAt": "2026-09-24T08:15:00Z",
+         *           "deletedAt": null,
+         *           "editedAt": null,
+         *           "id": "c0a1b2c3-d4e5-4f60-8a7b-9c0d1e2f3a4b",
+         *           "mentions": [
+         *             {
+         *               "id": "3f6b2d1c-7e8a-4b90-8c1d-2e3f4a5b6c7d",
+         *               "name": "Erik Holm"
+         *             }
+         *           ],
+         *           "subjectId": "11111111-1111-4111-8111-111111111111",
+         *           "subjectTitle": "FI adopts amended rules on paying for investment research",
+         *           "subjectType": "change_case"
+         *         }
+         *       ],
+         *       "permissionLimitedKinds": [],
+         *       "total": 1
+         *     }
+         */
+        CollabMyCommentPage: {
+            /**
+             * Items
+             * @description The caller's comments or mentions on this page, newest first, only on records the caller can read today. An empty list is a 200.
+             */
+            items: components["schemas"]["CollabMyComment"][];
+            /**
+             * Permissionlimitedkinds
+             * @description The kinds of record, as the same codes `subjectType` carries (`obligation`, `tenant_obligation`, `change_case`, `action`), that the caller's role cannot read, so comments on them were left out. It names kinds only, never a record, and it is empty when nothing was held back.
+             * @example [
+             *       "change_case"
+             *     ]
+             */
+            permissionLimitedKinds: string[];
+            /**
+             * Total
+             * @description How many comments match in total among the records the caller can read, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * CollabMyCommentQuery
+         * @description Which half of the panel to read, and the shared `limit` and `offset`: 20 by default and
+         *     100 at most.
+         */
+        CollabMyCommentQuery: {
+            /**
+             * About
+             * @description Which comments to list: `written`, the comments the caller wrote, on any record; `mentioned`, other people's comments that name the caller. Any other value is refused with a 422.
+             * @example mentioned
+             * @enum {string}
+             */
+            about: "written" | "mentioned";
+            /**
+             * Limit
+             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+             * @default 20
+             * @example 20
+             */
+            limit: number;
+            /**
+             * Offset
+             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+             * @default 0
+             * @example 0
+             */
+            offset: number;
+        };
+        /**
+         * CollabNotification
+         * @description One thing one person is told about one record (COL-02): a mention, an assignment, a
+         *     reminder, an escalation. The caller's own and nobody else's, in their own bank.
+         * @example {
+         *       "createdAt": "2026-09-24T08:15:00Z",
+         *       "id": "5e4d3c2b-1a09-4f8e-9d7c-6b5a4f3e2d1c",
+         *       "kind": "mention",
+         *       "readAt": null,
+         *       "subjectId": "11111111-1111-4111-8111-111111111111",
+         *       "subjectType": "change_case",
+         *       "title": "FI adopts amended rules on paying for investment research"
+         *     }
+         */
+        CollabNotification: {
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When the person was told, as an RFC 3339 timestamp in UTC (`2026-09-24T08:15:00Z`). Set by the server.
+             * @example 2026-09-24T08:15:00Z
+             */
+            createdAt: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The notification's identifier, as a uuid, which `POST /notifications/{notificationId}/read` takes. It says nothing about the record it points at.
+             * @example 5e4d3c2b-1a09-4f8e-9d7c-6b5a4f3e2d1c
+             */
+            id: string;
+            /**
+             * Kind
+             * @description Why the person is told, a fixed code the screen turns into its own words: `assigned`, a record was given to them to own or work on; `mention`, someone named them in a comment; `signoff_requested`, a case waits for their sign-off; `approval_requested`, a change waits for their approval; `due_soon`, something they own falls due within the bank's reminder lead; `overdue`, something they own is past its due date; `escalation`, overdue work of their department reached the bank's escalation threshold; `proposal_waiting`, a proposal waits for review (not produced yet); `saved_search_hit`, a saved search found something new (not produced yet); `participant_added`, they were added as a participant on a record; `involved_item_changed`, a record they are involved in was linked to a change or given a new version; `review_due`, a record they are responsible for is due for its periodic review. New codes may be added, so a screen shows an unknown one generically rather than failing.
+             * @example mention
+             * @enum {string}
+             */
+            kind: "assigned" | "mention" | "signoff_requested" | "approval_requested" | "due_soon" | "overdue" | "escalation" | "proposal_waiting" | "saved_search_hit" | "participant_added" | "involved_item_changed" | "review_due";
+            /**
+             * Readat
+             * @description When the person marked it read, as an RFC 3339 timestamp in UTC (`2026-09-24T09:00:00Z`), or null while it is unread. Reading the record itself does not set it; only the two mark-read calls do.
+             * @example null
+             */
+            readAt: string | null;
+            /**
+             * Subjectid
+             * Format: uuid
+             * @description The record the notification points at, as a uuid. The notification stays listed if the person later loses access to the record; following the link then answers 404.
+             * @example 11111111-1111-4111-8111-111111111111
+             */
+            subjectId: string;
+            /**
+             * Subjecttype
+             * @description The kind of record the notification points at, as a fixed lowercase code of at most 64 characters, such as `change_case`, `obligation`, `tenant_obligation` or `action`. A code, not a label: branch on it to build the link, never show it.
+             * @example change_case
+             */
+            subjectType: string;
+            /**
+             * Title
+             * @description The record's title as it read when the person was told, for the inbox line. Always a record's title and never anything a person typed in a comment or a note, so it is safe to show in a notification list. It is not updated when the record is renamed.
+             * @example FI adopts amended rules on paying for investment research
+             */
+            title: string;
+        };
+        /**
+         * CollabNotificationPage
+         * @description `{items, total}` with `limit` and `offset`, not the designed cursor page (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "createdAt": "2026-09-24T08:15:00Z",
+         *           "id": "5e4d3c2b-1a09-4f8e-9d7c-6b5a4f3e2d1c",
+         *           "kind": "mention",
+         *           "readAt": null,
+         *           "subjectId": "11111111-1111-4111-8111-111111111111",
+         *           "subjectType": "change_case",
+         *           "title": "FI adopts amended rules on paying for investment research"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        CollabNotificationPage: {
+            /**
+             * Items
+             * @description The caller's own notifications on this page, newest first. Never another person's, whatever the caller's role. An empty list is a 200 and means there is nothing to tell them.
+             */
+            items: components["schemas"]["CollabNotification"][];
+            /**
+             * Total
+             * @description How many notifications match the filter in total, not how many are on this page; with `unread=true` it is the unread count the bell shows.
+             */
+            total: number;
+        };
+        /**
+         * CollabNotificationQuery
+         * @description The filter and paging of `GET /notifications`: the shared `limit` and `offset`, 20 by
+         *     default and 100 at most, and `unread`. A query parameter the route does not name is
+         *     ignored rather than refused.
+         */
+        CollabNotificationQuery: {
+            /**
+             * Limit
+             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+             * @default 20
+             * @example 20
+             */
+            limit: number;
+            /**
+             * Offset
+             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+             * @default 0
+             * @example 0
+             */
+            offset: number;
+            /**
+             * Unread
+             * @description `true` to list only the notifications not yet marked read, for the bell; false by default, which lists read and unread alike, newest first.
+             * @default false
+             * @example true
+             */
+            unread: boolean;
+        };
+        /**
          * ConsoleReissueBody
          * @description Why platform support is entering a bank to re-issue an administrator's enrolment,
          *     and how that person was proved to be who they claim. Both answers are written where
@@ -8148,6 +11933,140 @@ export interface components {
             ticketRef: string;
         };
         /**
+         * ConsoleSupportAccessBody
+         * @description Platform support asks one bank to let it read, for a purpose and a limited time. The
+         *     request grants nothing until a tenant admin approves it.
+         * @example {
+         *       "hours": 2,
+         *       "purpose": "The bank reports that its watch feed stopped updating on Monday.",
+         *       "ticketRef": "SUP-2511"
+         *     }
+         */
+        ConsoleSupportAccessBody: {
+            /**
+             * Hours
+             * @description How long the window should be, in whole hours, at least 1 and at most the platform's `SUPPORT_ACCESS_MAX_HOURS` (4 by default); a longer one answers `validation_error`. The window starts when the bank approves, not when support asks.
+             */
+            hours: number;
+            /**
+             * Purpose
+             * @description Why support needs to look, at most 1000 characters, written for the bank, which reads it before it decides; blank is refused with a 422.
+             */
+            purpose: string;
+            /**
+             * Ticketref
+             * @description The support ticket, at most 100 characters of one line; empty by default.
+             * @default
+             */
+            ticketRef: string;
+        };
+        /**
+         * ConsoleSupportAccessGrant
+         * @description One of the caller's own requests, as the console lists it: the bank by its name and
+         *     never a member's name; the approval is a time, not a person.
+         * @example {
+         *       "decidedAt": "2026-09-24T08:20:00Z",
+         *       "endsAt": "2026-09-24T10:20:00Z",
+         *       "hours": 2,
+         *       "id": "2e4a6c8e-0b1d-4f3a-8c5e-7a9b1c3d5e71",
+         *       "purpose": "The bank reports that its watch feed stopped updating on Monday.",
+         *       "requestedAt": "2026-09-24T08:05:00Z",
+         *       "state": "active",
+         *       "tenantId": "0c2e4a6c-8e0b-4d1f-9a3c-5e7a9b1c3d52",
+         *       "tenantName": "Example Bank AB",
+         *       "ticketRef": "SUP-2511"
+         *     }
+         */
+        ConsoleSupportAccessGrant: {
+            /**
+             * Decidedat
+             * @description When the bank decided, a UTC timestamp, or null; who decided is the bank's to know.
+             */
+            decidedAt: string | null;
+            /**
+             * Endsat
+             * @description When an approved window closes or closed, a UTC timestamp, or null.
+             */
+            endsAt: string | null;
+            /**
+             * Hours
+             * @description The window asked for, in hours.
+             */
+            hours: number;
+            /**
+             * Id
+             * Format: uuid
+             * @description The request's identifier, a UUID; the one to enter with.
+             */
+            id: string;
+            /**
+             * Purpose
+             * @description The purpose the caller gave.
+             */
+            purpose: string;
+            /**
+             * Requestedat
+             * Format: date-time
+             * @description When the caller asked, a UTC timestamp.
+             */
+            requestedAt: string;
+            /**
+             * State
+             * @description Where the request stands: `pending` (asked for by platform support and granting nothing yet), `active` (approved by the bank; the window is open and support may read, never write), `declined` (refused by the bank), `revoked` (ended by the bank before its window closed), `ended` (its window passed), `lapsed` (never decided before the request expired) or `recovery` (a one-off last-administrator recovery platform support carried out, recorded here and granting no reading at all).
+             * @enum {string}
+             */
+            state: "pending" | "active" | "declined" | "revoked" | "ended" | "lapsed" | "recovery";
+            /**
+             * Tenantid
+             * Format: uuid
+             * @description The identifier of the bank asked, a UUID.
+             */
+            tenantId: string;
+            /**
+             * Tenantname
+             * @description The bank's organisation name, for display; no member of the bank is ever named here.
+             */
+            tenantName: string;
+            /**
+             * Ticketref
+             * @description The ticket the caller gave; empty when there is none.
+             */
+            ticketRef: string;
+        };
+        /**
+         * ConsoleSupportAccessPage
+         * @description One page of the caller's own support access requests, newest first.
+         * @example {
+         *       "items": [
+         *         {
+         *           "decidedAt": "2026-09-24T08:20:00Z",
+         *           "endsAt": "2026-09-24T10:20:00Z",
+         *           "hours": 2,
+         *           "id": "2e4a6c8e-0b1d-4f3a-8c5e-7a9b1c3d5e71",
+         *           "purpose": "The bank reports that its watch feed stopped updating on Monday.",
+         *           "requestedAt": "2026-09-24T08:05:00Z",
+         *           "state": "active",
+         *           "tenantId": "0c2e4a6c-8e0b-4d1f-9a3c-5e7a9b1c3d52",
+         *           "tenantName": "Example Bank AB",
+         *           "ticketRef": "SUP-2511"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        ConsoleSupportAccessPage: {
+            /**
+             * Items
+             * @description The caller's requests on this page, newest first; an empty list is a 200.
+             */
+            items: components["schemas"]["ConsoleSupportAccessGrant"][];
+            /**
+             * Total
+             * @description How many requests the caller has made in total, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
          * ConsoleTenantCreateBody
          * @description Create a bank and invite its first administrator in one action (ADM-02, ID-01).
          *     The address must be the administrator's own: platform staff are separate accounts.
@@ -8174,7 +12093,7 @@ export interface components {
             firstAdminTitle: string;
             /**
              * Name
-             * @description The organisation's name as the bank itself will see it, at most 200 characters — 'Example Bank AB'. It is the bank's own from the moment it exists and its administrators reword it themselves afterwards. Blank is refused with a 422. Its short name is derived from this and never typed by a person: letters such as ø, æ and å spelled out, lower-cased, hyphenated, cut to at most 80 characters, and given a numeric suffix if another tenant already has the same one, even one created at the same moment, so the call is never refused over it.
+             * @description The organisation's name as the bank itself will see it, at most 200 characters of one line of visible text — 'Example Bank AB'; a line break, a tab or an invisible character is refused with a 422. It is the bank's own from the moment it exists and its administrators reword it themselves afterwards. Blank is refused with a 422. Its short name is derived from this and never typed by a person: letters such as ø, æ and å spelled out, lower-cased, hyphenated, cut to at most 80 characters, and given a numeric suffix if another tenant already has the same one, even one created at the same moment, so the call is never refused over it.
              */
             name: string;
         };
@@ -9368,7 +13287,7 @@ export interface components {
             dimension: string;
             /**
              * Key
-             * @description The value's immutable key, such as `advice` for a taxonomy term, `no` for Norway or `sv` for Swedish, and the only part of this reference to store, compare or send back. It is a row of a vocabulary: a taxonomy term (the shared library's terms, which an administrator may extend through an approved proposal; `GET /taxonomy/terms`), a jurisdiction (which the platform's library editors may add; `GET /reference/jurisdictions`), a language (the platform's own list, which no bank admin can extend) or an urgency (the shared library's `urgency` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/urgency`). A key you have not seen before is new data, not an error. A key never changes once issued.
+             * @description The value's immutable key, such as `advice` for a taxonomy term, `no` for Norway or `sv` for Swedish, and the only part of this reference to store, compare or send back. It is a row of a vocabulary: a taxonomy term (the shared library's terms, which an administrator may extend through an approved proposal; `GET /taxonomy/terms`), a jurisdiction (which the platform seeds and its library editors relabel, retire and restore by proposal; `GET /reference/jurisdictions`), a language (the platform's own list, which no bank admin can extend) or an urgency (the shared library's `urgency` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/urgency`). A key you have not seen before is new data, not an error. A key never changes once issued.
              * @example advice
              */
             key: string;
@@ -9565,7 +13484,6 @@ export interface components {
          *         "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
          *         "authorityLabel": "Finansinspektionen",
          *         "case": {
-         *           "allowedTransitions": [],
          *           "category": "new",
          *           "footprintMatch": true,
          *           "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
@@ -9575,6 +13493,7 @@ export interface components {
          *           "soWhatConfirmedAt": null,
          *           "soWhatConfirmedByName": null,
          *           "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *           "subStatus": null,
          *           "urgency": {
          *             "key": "act_now",
          *             "kind": null,
@@ -9752,7 +13671,6 @@ export interface components {
          *           "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
          *           "authorityLabel": "Finansinspektionen",
          *           "case": {
-         *             "allowedTransitions": [],
          *             "category": "new",
          *             "footprintMatch": true,
          *             "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
@@ -9762,6 +13680,7 @@ export interface components {
          *             "soWhatConfirmedAt": null,
          *             "soWhatConfirmedByName": null,
          *             "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *             "subStatus": null,
          *             "urgency": {
          *               "key": "act_now",
          *               "kind": null,
@@ -9843,7 +13762,6 @@ export interface components {
          *         "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
          *         "authorityLabel": "Finansinspektionen",
          *         "case": {
-         *           "allowedTransitions": [],
          *           "category": "new",
          *           "footprintMatch": true,
          *           "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
@@ -9853,6 +13771,7 @@ export interface components {
          *           "soWhatConfirmedAt": null,
          *           "soWhatConfirmedByName": null,
          *           "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *           "subStatus": null,
          *           "urgency": {
          *             "key": "act_now",
          *             "kind": null,
@@ -10517,6 +14436,7 @@ export interface components {
          *         "text": "FFFS 2017:2 om värdepappersrörelse"
          *       },
          *       "officialRef": "FFFS 2017:2",
+         *       "privateToUs": false,
          *       "regime": {
          *         "key": "securities",
          *         "kind": null,
@@ -10583,6 +14503,12 @@ export interface components {
              * @example FFFS 2017:2
              */
             officialRef: string;
+            /**
+             * Privatetous
+             * @description Whether this record is the bank's own rather than a shared library fact: true only when the caller's bank owns it, proposed and approved inside that bank, so no other bank and nobody at bleqq can read it. False on every shared record, which is every record until a bank's own records arrive in a later release. A key that belongs to no bank reads no record at all.
+             * @example false
+             */
+            privateToUs: boolean;
             /** @description Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits, beside the jurisdictions the instrument's rules reach, which are derived from `jurisdiction` when the record is read and never stored. Never null: the library refuses an instrument without one, and a standard takes the regime of the family of law it serves. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
             regime: components["schemas"]["LibraryRef"];
             /**
@@ -10682,6 +14608,7 @@ export interface components {
          *           },
          *           "obligationCount": 2,
          *           "officialRef": "FFFS 2017:2",
+         *           "privateToUs": false,
          *           "regime": {
          *             "key": "securities",
          *             "kind": null,
@@ -10753,7 +14680,7 @@ export interface components {
             q?: string | null;
             /**
              * Regime
-             * @description Only the instruments of this regime, by the regime term's key: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. A key no regime has matches nothing and answers 200 with an empty page.
+             * @description Only the instruments of this regime, by the regime term's key: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. A key no regime has matches nothing and answers 200 with an empty page. At most 80 characters; a longer one is refused with 422 `validation_error`.
              * @example securities
              */
             regime?: string | null;
@@ -10797,6 +14724,7 @@ export interface components {
          *       },
          *       "obligationCount": 2,
          *       "officialRef": "FFFS 2017:2",
+         *       "privateToUs": false,
          *       "regime": {
          *         "key": "securities",
          *         "kind": null,
@@ -10863,6 +14791,12 @@ export interface components {
              * @example FFFS 2017:2
              */
             officialRef: string;
+            /**
+             * Privatetous
+             * @description Whether this record is the bank's own rather than a shared library fact: true only when the caller's bank owns it, proposed and approved inside that bank, so no other bank and nobody at bleqq can read it. False on every shared record, which is every record until a bank's own records arrive in a later release. A key that belongs to no bank reads no record at all.
+             * @example false
+             */
+            privateToUs: boolean;
             /** @description Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits, beside the jurisdictions the instrument's rules reach, which are derived from `jurisdiction` when the record is read and never stored. Never null: the library refuses an instrument without one, and a standard takes the regime of the family of law it serves. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
             regime: components["schemas"]["LibraryRef"];
             /**
@@ -11581,10 +15515,18 @@ export interface components {
          *       "counts": {
          *         "assignedToMe": 1,
          *         "proposals": 2,
-         *         "triage": 3
+         *         "triage": 3,
+         *         "unreadNotifications": 4
          *       },
          *       "enrolmentPending": false,
          *       "lastVisitAt": "2026-09-18T07:00:00Z",
+         *       "notificationPrefs": {
+         *         "assignments": true,
+         *         "mentions": false,
+         *         "reminders": true,
+         *         "weeklyBriefing": true,
+         *         "weeklyDigest": true
+         *       },
          *       "passkeyCount": 2,
          *       "permissions": [
          *         "ai_log.read",
@@ -11649,6 +15591,8 @@ export interface components {
              * @example 2026-09-18T07:00:00Z
              */
             lastVisitAt: string | null;
+            /** @description What the person has chosen to be told about in this bank, each switch on unless they turned it off, or null for a platform session, which belongs to no bank. `PATCH /me` changes it. */
+            notificationPrefs: components["schemas"]["MembershipNotificationPrefs"] | null;
             /**
              * Passkeycount
              * @description How many live passkeys the person holds: 0 during first enrolment and at least 1 afterwards, because the last one cannot be removed. Retired passkeys are not counted. A screen uses it to suggest adding a second passkey.
@@ -11704,13 +15648,23 @@ export interface components {
              * @example 3
              */
             triage: number;
+            /**
+             * Unreadnotifications
+             * @description How many of the caller's own notifications in this bank are still unread, 0 or more. Every member reads their own, so no permission is needed.
+             * @example 4
+             */
+            unreadNotifications: number;
         };
         /**
          * MePatch
-         * @description Changing your own name or reading language. Send only what changes.
+         * @description Changing your own name, reading language or notification switches. Send only what
+         *     changes.
          * @example {
          *       "locale": "sv",
-         *       "name": "Sara Lindqvist"
+         *       "name": "Sara Lindqvist",
+         *       "notificationPrefs": {
+         *         "mentions": false
+         *       }
          *     }
          */
         MePatch: {
@@ -11724,6 +15678,8 @@ export interface components {
              * @description Your new name, at most 200 characters, surrounding spaces trimmed. Omit it or send null to leave the name as it is; a blank one is refused with `name_required`. Every bank you belong to shows the same name.
              */
             name?: string | null;
+            /** @description The notification switches to change in the bank this session is signed in to, only the ones that change. Omit it or send null to leave them all as they are. A key that is not a switch is refused with `unknown_key`; a platform session has no bank and is refused with `not_found`. */
+            notificationPrefs?: components["schemas"]["MembershipNotificationPrefsPatch"] | null;
         };
         /**
          * MeTenant
@@ -11940,6 +15896,89 @@ export interface components {
             total: number;
         };
         /**
+         * MembershipNotificationPrefs
+         * @description What one person has chosen to be told about in this bank (COL-02). Each switch is on
+         *     unless the person turned it off, and a switch never hides the record itself. An
+         *     escalation is the bank's control and not the person's, so no switch mutes it.
+         * @example {
+         *       "assignments": true,
+         *       "mentions": true,
+         *       "reminders": false,
+         *       "weeklyBriefing": true,
+         *       "weeklyDigest": true
+         *     }
+         */
+        MembershipNotificationPrefs: {
+            /**
+             * Assignments
+             * @description True to be told when work is assigned to you; true unless you turned it off.
+             * @default true
+             */
+            assignments: boolean;
+            /**
+             * Mentions
+             * @description True to be told when a colleague mentions you in a comment; true unless you turned it off. The comment still lists you either way.
+             * @default true
+             */
+            mentions: boolean;
+            /**
+             * Reminders
+             * @description True to be told when work you are responsible for is due soon or overdue; true unless you turned it off. It never mutes an escalation.
+             * @default true
+             */
+            reminders: boolean;
+            /**
+             * Weeklybriefing
+             * @description True to receive the weekly regulatory briefing mail; true unless you turned it off.
+             * @default true
+             */
+            weeklyBriefing: boolean;
+            /**
+             * Weeklydigest
+             * @description True to receive the weekly digest mail of your open work; true unless you turned it off.
+             * @default true
+             */
+            weeklyDigest: boolean;
+        };
+        /**
+         * MembershipNotificationPrefsPatch
+         * @description The notification switches to change. Send only the ones that change; the others stay
+         *     as they are. A key that is not one of the five switches is refused with `unknown_key`
+         *     and nothing is saved.
+         * @example {
+         *       "mentions": false
+         *     }
+         */
+        MembershipNotificationPrefsPatch: {
+            /**
+             * Assignments
+             * @description True or false to switch assignment notifications on or off; omit or send null to leave it.
+             */
+            assignments?: boolean | null;
+            /**
+             * Mentions
+             * @description True or false to switch mention notifications on or off; omit or send null to leave it.
+             */
+            mentions?: boolean | null;
+            /**
+             * Reminders
+             * @description True or false to switch due-soon and overdue reminders on or off; omit or send null to leave it.
+             */
+            reminders?: boolean | null;
+            /**
+             * Weeklybriefing
+             * @description True or false to switch the weekly briefing mail on or off; omit or send null to leave it.
+             */
+            weeklyBriefing?: boolean | null;
+            /**
+             * Weeklydigest
+             * @description True or false to switch the weekly digest mail on or off; omit or send null to leave it.
+             */
+            weeklyDigest?: boolean | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
          * ObligationAsOfQuery
          * @description `asOf` on the obligation read: the version in force on that date, today in the
          *     tenant's time zone by default (AC-INV1).
@@ -11984,6 +16023,7 @@ export interface components {
          *         "shortName": "FFFS 2017:2"
          *       },
          *       "outsideReason": [],
+         *       "privateToUs": false,
          *       "productScope": "Third-party research",
          *       "provenance": {
          *         "confirmedByAgent": null,
@@ -12201,6 +16241,13 @@ export interface components {
          *           "label": "third-party payments"
          *         }
          *       ],
+         *       "tenantTags": [
+         *         {
+         *           "key": "custody",
+         *           "kind": null,
+         *           "label": "Custody"
+         *         }
+         *       ],
          *       "title": {
          *         "isMachine": false,
          *         "isOriginal": true,
@@ -12300,6 +16347,12 @@ export interface components {
              */
             outsideReason: components["schemas"]["OutsideReason"][];
             /**
+             * Privatetous
+             * @description Whether this record is the bank's own rather than a shared library fact: true only when the caller's bank owns it, proposed and approved inside that bank, so no other bank and nobody at bleqq can read it. False on every shared record, which is every record until a bank's own records arrive in a later release. A key that belongs to no bank reads no record at all.
+             * @example false
+             */
+            privateToUs: boolean;
+            /**
              * Productscope
              * @description Which products the duty covers, in the library's words, for a reader who wants the sentence rather than the facets. Free text, an empty string when nothing was recorded; the scope a filter can act on is `scope`, and the two are written separately.
              * @example Third-party research
@@ -12355,6 +16408,11 @@ export interface components {
              * @description The library's own keywords for this duty, as key, kind and label — `research`, `inducements`, `costs` and the rest of the rows seeded on day one. They are vocabulary rows a platform admin may extend, relabel or retire without a deploy, so read `GET /vocab/library_tag` for the live set and match on the key. They describe the duty for a reader and never narrow the footprint: a tag is not a scope term.
              */
             tags: components["schemas"]["LibraryRef"][];
+            /**
+             * Tenanttags
+             * @description The bank's own tags on this duty, as key, kind and label, in the tag list's own order: what the bank's people put on the record to find it again, such as `custody`. They are rows of this bank's own `tenant_tag` vocabulary, which its admin may extend, relabel or retire without a deploy, so read `GET /vocab/tenant_tag` for the live set and match on the key. Held in the bank's own zone: another bank never sees them, and they never change the shared record. Empty when the bank has tagged nothing here. Kept apart from `tags`, the library's own keywords, which are the same for every bank.
+             */
+            tenantTags: components["schemas"]["TaggingTagRef"][];
             /** @description The duty in one line, in the best language this reader can be served: their own first, then their bank's default, then English, then whatever the record has. Null only when the record carries no title in any language at all. */
             title: components["schemas"]["LocalizedText"] | null;
             /**
@@ -12461,7 +16519,7 @@ export interface components {
          *           "lastVerifiedAt": "2026-06-30T07:12:44Z",
          *           "openChangeCount": 0,
          *           "outsideReason": [],
-         *           "pendingApplicability": null,
+         *           "privateToUs": false,
          *           "refLabel": "Third-party payments",
          *           "scope": [
          *             {
@@ -12622,6 +16680,13 @@ export interface components {
          *               "label": "third-party payments"
          *             }
          *           ],
+         *           "tenantTags": [
+         *             {
+         *               "key": "custody",
+         *               "kind": null,
+         *               "label": "Custody"
+         *             }
+         *           ],
          *           "title": {
          *             "isMachine": false,
          *             "isOriginal": true,
@@ -12772,7 +16837,9 @@ export interface components {
         /**
          * ObligationQuery
          * @description The filters of `GET /obligations`. `instrument` and `dutyType` are keys; `term` is
-         *     `dimension:key` and repeats, every term must be in the obligation's scope. `asOf`
+         *     `dimension:key` and repeats, every term must be in the obligation's scope; `tag` and
+         *     `tenantTag` repeat, every tag must be on the obligation. Each string is at most 80
+         *     characters (H27). `asOf`
          *     defaults to today in the tenant's time zone. `footprint` is one value: `in`, `all`, which
          *     lifts the footprint filter and reports why each hidden row would be hidden, or
          *     `watched`, which lists only what the watched markets add (FP-03, FP-04).
@@ -12786,7 +16853,7 @@ export interface components {
             asOf?: string | null;
             /**
              * Dutytype
-             * @description Only the duties of this kind, by the duty type's key. `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical` are seeded on day one, and they are vocabulary rows rather than a closed set: a platform admin may extend, relabel or retire the list without a deploy. Read `GET /vocab/duty_type` for the live set and send the key, never the label. A key no duty type has matches nothing and answers 200 with an empty page.
+             * @description Only the duties of this kind, by the duty type's key. `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical` are seeded on day one, and they are vocabulary rows rather than a closed set: a platform admin may extend, relabel or retire the list without a deploy. Read `GET /vocab/duty_type` for the live set and send the key, never the label. A key no duty type has matches nothing and answers 200 with an empty page. At most 80 characters; a longer one is refused with 422 `validation_error`.
              * @example governance
              */
             dutyType?: string | null;
@@ -12800,7 +16867,7 @@ export interface components {
             footprint: "in" | "all" | "watched";
             /**
              * Instrument
-             * @description Only the duties broken out of this instrument, by the instrument's stable key: `fffs-2017-2` for FFFS 2017:2. A key no instrument has is not an error — it matches nothing, and the call answers 200 with an empty page.
+             * @description Only the duties broken out of this instrument, by the instrument's stable key: `fffs-2017-2` for FFFS 2017:2. A key no instrument has is not an error — it matches nothing, and the call answers 200 with an empty page. At most 80 characters; a longer one is refused with 422 `validation_error`.
              * @example fffs-2017-2
              */
             instrument?: string | null;
@@ -12818,8 +16885,24 @@ export interface components {
              */
             q?: string | null;
             /**
+             * Tag
+             * @description Only the duties carrying every one of these library tags, by key: the library's own keywords a row shows in `tags`, the same for every bank. Repeat the parameter for more than one; they are combined with AND, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`, the cap every repeated filter here shares). The tags are vocabulary rows a platform admin may extend, relabel or retire without a deploy, so read `GET /vocab/library_tag` for the live set and match on the key. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`, and a key no library tag has with 422 `unknown_key` naming every one that was not found.
+             * @example [
+             *       "research"
+             *     ]
+             */
+            tag?: string[];
+            /**
+             * Tenanttag
+             * @description Only the duties carrying every one of these tags of the caller's own bank, by key: what a row shows in `tenantTags`. Repeat the parameter for more than one; they are combined with AND, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The tags are rows of the bank's own `tenant_tag` vocabulary, which its admin may extend, relabel or retire without a deploy, so read `GET /vocab/tenant_tag` for the live set and match on the key; another bank's tags are never matched. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`, a key the bank has no tag for with 422 `unknown_key` naming every one that was not found, and the filter itself with 422 `unknown_filter` when the caller belongs to no bank, such as a platform key.
+             * @example [
+             *       "custody"
+             *     ]
+             */
+            tenantTag?: string[];
+            /**
              * Term
-             * @description Only the duties whose scope carries every one of these terms, each written `dimension:key`. Repeat the parameter for more than one; they are combined with AND, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The terms are taxonomy vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. A value with no colon is refused with 422 `validation_error`, and one that names no active term with 422 `unknown_key` naming every term that was not found.
+             * @description Only the duties whose scope carries every one of these terms, each written `dimension:key`. Repeat the parameter for more than one; they are combined with AND, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The terms are taxonomy vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. Each value is at most 80 characters. A longer one, or one with no colon, is refused with 422 `validation_error`, and one that names no active term with 422 `unknown_key` naming every term that was not found.
              * @example [
              *       "service_type:advice",
              *       "account_type:isk"
@@ -12830,9 +16913,10 @@ export interface components {
         /**
          * ObligationRow
          * @description One row of `GET /obligations` (INV-03). `version` is the one in force on the read's
-         *     date and `upcomingVersion` the next one after it. The register overlay arrives later:
-         *     `openChangeCount` with the watch feed (chunk 5), `pendingApplicability` and
-         *     `complianceStatus` with the register (chunk 8).
+         *     date and `upcomingVersion` the next one after it. `tenantTags` and `privateToUs` are the
+         *     caller's bank's own. The register overlay arrives later: `openChangeCount` with the
+         *     watch feed and `complianceStatus` with the register. No request is waiting on a row:
+         *     an applicability change is decided by one person, so there is none to wait for (D-75).
          */
         ObligationRow: {
             /**
@@ -12882,10 +16966,11 @@ export interface components {
              */
             outsideReason: components["schemas"]["OutsideReason"][];
             /**
-             * Pendingapplicability
-             * @description Whether a change to this duty's applicability is waiting for a second person in this bank to approve it. Null means the question is not answered on this row, never that the answer is no: the applicability register arrives in a later release and every row answers null until it does.
+             * Privatetous
+             * @description Whether this record is the bank's own rather than a shared library fact: true only when the caller's bank owns it, proposed and approved inside that bank, so no other bank and nobody at bleqq can read it. False on every shared record, which is every record until a bank's own records arrive in a later release. A key that belongs to no bank reads no record at all.
+             * @example false
              */
-            pendingApplicability: boolean | null;
+            privateToUs: boolean;
             /**
              * Reflabel
              * @description How the duty is cited inside its instrument, in the words the source itself uses — a chapter, a section or the heading the authority gave it. It is there for a reader to recognise the place in the rule book, not a structured reference to parse.
@@ -12908,6 +16993,11 @@ export interface components {
              * @description The library's own keywords for this duty, as key, kind and label — `research`, `inducements`, `costs` and the rest of the rows seeded on day one. They are vocabulary rows a platform admin may extend, relabel or retire without a deploy, so read `GET /vocab/library_tag` for the live set and match on the key. They describe the duty for a reader and never narrow the footprint: a tag is not a scope term.
              */
             tags: components["schemas"]["LibraryRef"][];
+            /**
+             * Tenanttags
+             * @description The bank's own tags on this duty, as key, kind and label, in the tag list's own order: what the bank's people put on the record to find it again, such as `custody`. They are rows of this bank's own `tenant_tag` vocabulary, which its admin may extend, relabel or retire without a deploy, so read `GET /vocab/tenant_tag` for the live set and match on the key. Held in the bank's own zone: another bank never sees them, and they never change the shared record. Empty when the bank has tagged nothing here. Kept apart from `tags`, the library's own keywords, which are the same for every bank.
+             */
+            tenantTags: components["schemas"]["TaggingTagRef"][];
             /** @description The duty in one line, in the best language this reader can be served: their own first, then their bank's default, then English, then whatever the record has. Null only when the record carries no title in any language at all. */
             title: components["schemas"]["LocalizedText"] | null;
             /** @description The next version due to take effect after the date the list was read, so a row can say new wording is coming. Null when none is waiting. Its presence is not work the bank owes: what to do about a change belongs to the watch feed and the case, never to the library record. */
@@ -12916,6 +17006,70 @@ export interface components {
             verifiedBy: components["schemas"]["PersonRef"] | null;
             /** @description The version of the summary in force on the date the list was read, by number and effective date. Null when every version of this duty starts after that date, which is a duty recorded before it begins to bind anyone. */
             version: components["schemas"]["ObligationVersionRef"] | null;
+        };
+        /**
+         * ObligationScopeChange
+         * @description One obligation's part of a re-tag: the scope terms to add to it and the ones to take
+         *     off it, with the source that says why. The rest of its scope stays as it is.
+         */
+        ObligationScopeChange: {
+            /**
+             * Add
+             * @description Scope terms to put on the obligation, each written `dimension:key` as `GET /taxonomy/terms` lists them, at most 20. Every one must be a live term, else 422 `unknown_key`; a term of a dimension that mirrors the jurisdiction list answers 422 `jurisdiction_term_mirrored`, because an obligation's market comes from its instrument. A term the obligation already carries changes nothing.
+             * @example [
+             *       "service_type:custody"
+             *     ]
+             */
+            add?: string[];
+            /**
+             * Obligationid
+             * Format: uuid
+             * @description The shared library obligation to re-tag, as the UUID `GET /obligations` returns. It must be in force and one of the library's own, else 422 `unknown_key`; a bank's private obligation never enters a batch. Each obligation appears once in a batch, else 422 `validation_error`.
+             * @example 3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44
+             */
+            obligationId: string;
+            /**
+             * Remove
+             * @description Scope terms to take off the obligation, written and checked as `add` is, at most 20. A term the obligation does not carry changes nothing; one named in both `add` and `remove` answers 422 `validation_error`.
+             * @example [
+             *       "service_type:execution_only"
+             *     ]
+             */
+            remove?: string[];
+            /**
+             * Source
+             * @description Where the new scope comes from: an https link to the authority's page or the stable key of a provision the library holds, at most 2000 characters. Missing or blank answers 422 `source_missing`; anything else that is neither answers 422 `validation_error`. On a standard's obligation it is an https link only, else 422 `licensed_text`.
+             * @example https://www.fi.se/en/published/news/2026/client-money/
+             */
+            source: string;
+        };
+        /**
+         * ObligationScopePayload
+         * @description The payload of the `obligation_scope` kind (PRO-04, AGT-05): a re-tag of many
+         *     obligations, each changing only its scope terms, filed as one batch. Every obligation
+         *     gets one row in the batch, previewed as its scope before and after. Checked in full when
+         *     the batch is filed, as every other kind's payload is: live obligations, live terms, no
+         *     mirrored jurisdiction term, and the standards rule (a standard's term only on a
+         *     standard's obligation, which keeps exactly one).
+         * @example {
+         *       "changes": [
+         *         {
+         *           "add": [
+         *             "service_type:custody"
+         *           ],
+         *           "obligationId": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *           "remove": [],
+         *           "source": "https://www.fi.se/en/published/news/2026/client-money/"
+         *         }
+         *       ]
+         *     }
+         */
+        ObligationScopePayload: {
+            /**
+             * Changes
+             * @description One entry per obligation to re-tag, at least one and at most 100 (`PROPOSAL_BATCH_MAX_ROWS`); more answers 422 `batch_too_large`, so a larger re-tag is filed as more than one batch. An entry that would leave its obligation's scope exactly as it is answers 422 `validation_error`.
+             */
+            changes: components["schemas"]["ObligationScopeChange"][];
         };
         /**
          * ObligationVersionRef
@@ -13415,6 +17569,188 @@ export interface components {
             name: string;
         };
         /**
+         * PlatformAgentSettings
+         * @description What one of bleqq's agents runs with (AGT-03): the same for every bank, and carrying
+         *     no tenant figure. A platform agent's settings live on its definition row.
+         * @example {
+         *       "agentKey": "watch-sweeper",
+         *       "cadence": "daily",
+         *       "jurisdictions": [
+         *         "se",
+         *         "eu"
+         *       ],
+         *       "monthlyBudget": "250.00"
+         *     }
+         */
+        PlatformAgentSettings: {
+            /**
+             * Agentkey
+             * @description The stable key of the agent these settings belong to, such as `watch-sweeper`.
+             */
+            agentKey: string;
+            /**
+             * Cadence
+             * @description How often the platform starts the agent. `daily`, `weekly` and `monthly` start a run on that rhythm; `manual` starts none on a schedule, so the agent runs only when someone asks for a run.
+             * @enum {string}
+             */
+            cadence: "daily" | "weekly" | "monthly" | "manual";
+            /**
+             * Jurisdictions
+             * @description The jurisdictions the agent sweeps. Jurisdiction keys from the jurisdiction vocabulary (`GET /vocab/jurisdiction`), such as `se` or `eu`: keys and never labels, each one an active row; an unknown key is refused with `unknown_key` and the valid keys. The platform's editors add rows to that list through the proposal queue, so its members are not fixed here.
+             */
+            jurisdictions: string[];
+            /**
+             * Monthlybudget
+             * @description What the agent may spend in a calendar month, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in. Null when no budget is set.
+             */
+            monthlyBudget: string | null;
+        };
+        /**
+         * PlatformAgentSettingsInput
+         * @description `PUT /agent-definitions/{agentKey}/settings`: the whole setting, for every bank at once.
+         * @example {
+         *       "cadence": "daily",
+         *       "jurisdictions": [
+         *         "se",
+         *         "eu"
+         *       ],
+         *       "monthlyBudget": "250.00"
+         *     }
+         */
+        PlatformAgentSettingsInput: {
+            /**
+             * Cadence
+             * @description How often the platform starts the agent. `daily`, `weekly` and `monthly` start a run on that rhythm; `manual` starts none on a schedule, so the agent runs only when someone asks for a run.
+             * @enum {string}
+             */
+            cadence: "daily" | "weekly" | "monthly" | "manual";
+            /**
+             * Jurisdictions
+             * @description The jurisdictions the agent sweeps, between 1 and 100 of them. Jurisdiction keys from the jurisdiction vocabulary (`GET /vocab/jurisdiction`), such as `se` or `eu`: keys and never labels, each one an active row; an unknown key is refused with `unknown_key` and the valid keys. The platform's editors add rows to that list through the proposal queue, so its members are not fixed here.
+             */
+            jurisdictions: string[];
+            /**
+             * Monthlybudget
+             * @description What the agent may spend in a calendar month, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in, with a minimum of 0. Null removes the budget.
+             */
+            monthlyBudget: number | string | null;
+        };
+        /**
+         * PlatformWatchItem
+         * @description What one of bleqq's agents watches, as any member reads it (ruling 6): public facts
+         *     about the platform's coverage and never a prompt, tool, model, version, budget, cost,
+         *     finding, proposal count or setting.
+         * @example {
+         *       "cadence": "daily",
+         *       "jurisdictions": [
+         *         "se",
+         *         "dk",
+         *         "no",
+         *         "fi",
+         *         "eu"
+         *       ],
+         *       "key": "watch-sweeper",
+         *       "lastRun": {
+         *         "finishedAt": "2026-09-24T02:18:41Z",
+         *         "status": "succeeded"
+         *       },
+         *       "name": "Nordic and EU regulatory watch",
+         *       "nextRunAt": "2026-09-25T02:00:00Z",
+         *       "purpose": "Checks the registered sources for new or changed regulation every night."
+         *     }
+         */
+        PlatformWatchItem: {
+            /**
+             * Cadence
+             * @description How often it runs. `daily`, `weekly` and `monthly` start a run on that rhythm; `manual` starts none on a schedule, so the agent runs only when someone asks for a run.
+             * @enum {string}
+             */
+            cadence: "daily" | "weekly" | "monthly" | "manual";
+            /**
+             * Jurisdictions
+             * @description The jurisdictions it sweeps. Jurisdiction keys from the jurisdiction vocabulary (`GET /vocab/jurisdiction`), such as `se` or `eu`: keys and never labels, each one an active row; an unknown key is refused with `unknown_key` and the valid keys. The platform's editors add rows to that list through the proposal queue, so its members are not fixed here.
+             */
+            jurisdictions: string[];
+            /**
+             * Key
+             * @description The agent's stable key, such as `watch-sweeper`.
+             */
+            key: string;
+            /** @description How its last run ended, or null when it has never run. */
+            lastRun: components["schemas"]["PlatformWatchLastRun"] | null;
+            /**
+             * Name
+             * @description The agent's name as a screen shows it, for display only.
+             */
+            name: string;
+            /**
+             * Nextrunat
+             * @description When its next run starts, as a UTC timestamp in ISO 8601, or null when none is scheduled.
+             */
+            nextRunAt: string | null;
+            /**
+             * Purpose
+             * @description What the agent watches for, in one or two sentences, for display only.
+             */
+            purpose: string;
+        };
+        /**
+         * PlatformWatchLastRun
+         * @description How the last run of one of bleqq's agents ended, and nothing else about it.
+         */
+        PlatformWatchLastRun: {
+            /**
+             * Finishedat
+             * @description When the last run finished, as a UTC timestamp in ISO 8601, or null while it is still running.
+             */
+            finishedAt: string | null;
+            /**
+             * Status
+             * @description How it ended. `running`: still going. `succeeded`: it finished. `failed`: it stopped early.
+             * @enum {string}
+             */
+            status: "running" | "succeeded" | "failed";
+        };
+        /**
+         * PlatformWatchPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "cadence": "daily",
+         *           "jurisdictions": [
+         *             "se",
+         *             "dk",
+         *             "no",
+         *             "fi",
+         *             "eu"
+         *           ],
+         *           "key": "watch-sweeper",
+         *           "lastRun": {
+         *             "finishedAt": "2026-09-24T02:18:41Z",
+         *             "status": "succeeded"
+         *           },
+         *           "name": "Nordic and EU regulatory watch",
+         *           "nextRunAt": "2026-09-25T02:00:00Z",
+         *           "purpose": "Checks the registered sources for new or changed regulation every night."
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        PlatformWatchPage: {
+            /**
+             * Items
+             * @description bleqq's agents on this page, by key. The same for every bank.
+             */
+            items: components["schemas"]["PlatformWatchItem"][];
+            /**
+             * Total
+             * @description How many of bleqq's agents there are in total, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
          * ProblemReportBody
          * @description "This looks wrong" (INV-06). `description` is what the reader believes is wrong;
          *     `versionNumber` and `language` say which words were on their screen, so a colleague
@@ -13905,6 +18241,463 @@ export interface components {
             } | null;
         };
         /**
+         * ProposalBatch
+         * @description A batch proposal as a reviewer reads it: the one proposal the queue lists, and every
+         *     row beneath it with its preview. `isBatch` is true and `rowCount` counts `rows`. Every
+         *     row is returned in one answer, since a batch holds at most `PROPOSAL_BATCH_MAX_ROWS`.
+         *     Reading it changes nothing: until a row is approved the library says what it said.
+         * @example {
+         *       "createdAt": "2026-09-25T08:30:00Z",
+         *       "fromOrganisation": false,
+         *       "id": "6d0c4b1a-2f7e-4c3d-9a8b-1e5f7a9c3b20",
+         *       "isBatch": true,
+         *       "kind": "obligation_scope",
+         *       "origin": "user",
+         *       "payload": {
+         *         "changes": [
+         *           {
+         *             "add": [
+         *               "service_type:custody"
+         *             ],
+         *             "obligationId": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *             "remove": [],
+         *             "source": "https://www.fi.se/en/published/news/2026/client-money/"
+         *           }
+         *         ]
+         *       },
+         *       "proposedBy": {
+         *         "id": "0b6f2c4e-8d1a-4f3b-9e27-5c8a1d3f6b90",
+         *         "name": "Kari Nygaard"
+         *       },
+         *       "rowCount": 1,
+         *       "rows": [
+         *         {
+         *           "after": {
+         *             "terms": [
+         *               "client_category:retail",
+         *               "service_type:custody"
+         *             ]
+         *           },
+         *           "before": {
+         *             "terms": [
+         *               "client_category:retail"
+         *             ]
+         *           },
+         *           "decidedAt": null,
+         *           "decidedBy": null,
+         *           "decision": "pending",
+         *           "id": "e4a7c2d9-5b1f-4e6a-8c3d-7f9b2a4c6e81",
+         *           "rejectionCode": "",
+         *           "source": "https://www.fi.se/en/published/news/2026/client-money/",
+         *           "stale": false,
+         *           "subjectId": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *           "subjectType": "obligation",
+         *           "target": {
+         *             "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *             "instrumentShortName": "FFFS 2017:2",
+         *             "referenceLabel": "8 kap. 1 §",
+         *             "title": "Keep client money apart from the firm's own"
+         *           }
+         *         }
+         *       ],
+         *       "sourceLabel": "Finansinspektionen, client money guidance 2026",
+         *       "sourceUrl": "https://www.fi.se/en/published/news/2026/client-money/",
+         *       "status": "open",
+         *       "title": "Re-tag the client asset duties with custody"
+         *     }
+         */
+        ProposalBatch: {
+            /**
+             * Agentrunid
+             * @description The agent run that produced the proposal, as a UUID the run log addresses. Null for a person's proposal.
+             */
+            agentRunId?: string | null;
+            /**
+             * Appliedat
+             * @description When the change reached the library: a UTC timestamp, date and time together, which is the moment of approval. Null unless the status is `approved`.
+             */
+            appliedAt?: string | null;
+            /**
+             * Changeid
+             * @description The regulatory change that prompted this, as a UUID, when an agent's watch run found one. Null means nobody linked one, not that no change exists.
+             */
+            changeId?: string | null;
+            /** @description The person who corrected the payload on the way to approving it, which is always the person who approved it. Null when nobody corrected it, and null when the approving agent did, which `correctedByAgent` then names. */
+            correctedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
+            correctedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When the proposal was filed: a UTC timestamp, date and time together. Not the legal date of the change, which is `effectiveFrom`.
+             */
+            createdAt: string;
+            /**
+             * Effectivefrom
+             * @description The legal date the proposed change comes into force, as the proposal states it. A plain date, never a timestamp, and null when the proposal names none. Read the library record for the dates actually in force.
+             */
+            effectiveFrom?: string | null;
+            /**
+             * Fieldsources
+             * @description Per changed field, where its value came from: an https link or the stable key of a provision the library holds, at most 2000 characters. An obligation proposal carries one for every field it changes or it is refused; the vocabulary kinds, whose wording a person writes, carry none. A source is the authority's page, not our reading of it.
+             */
+            fieldSources?: {
+                [key: string]: string;
+            };
+            /**
+             * Fromorganisation
+             * @description True when the proposal was made inside a bank, by one of its people or by an agent of theirs, in which case `proposedBy` is null however the reader is signed in: a bank member's name and id never reach the platform console, and which bank it was is not told either. False means it was made by platform staff or by a platform agent, and `proposedBy` is then the person, or null for an agent.
+             * @default false
+             * @example false
+             */
+            fromOrganisation: boolean;
+            /**
+             * Id
+             * Format: uuid
+             * @description The proposal, as the console addresses it: a UUID the server assigns once and never changes.
+             */
+            id: string;
+            /**
+             * Isbatch
+             * @description True when the proposal is a batch: one request that changes many library records, with a row per record read through `GET /proposal-batches/{batchId}`. The queue lists a batch once, as this row. False for a proposal that changes one record or creates one.
+             * @default false
+             * @example false
+             */
+            isBatch: boolean;
+            /**
+             * Kind
+             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as one batch (`isBatch`). The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
+             */
+            kind: string;
+            /**
+             * Model
+             * @description The model that drafted the text, recorded because AI output is labelled until a person confirms it (AUD-02). Empty means no model was named, not that no model was used.
+             * @default
+             */
+            model: string;
+            /**
+             * Origin
+             * @description Who made it. A fixed kind: `agent` means a watch or research agent drafted it, which is AI output and stays labelled: a person's approval confirms it, and an independent agent's approval leaves the record machine-confirmed, naming both agents, never confirmed by a person. `user` means a person typed it. Neither tells a reader whether the facts are right.
+             */
+            origin: string;
+            /**
+             * Payload
+             * @description What was proposed, in the shape its `kind` names (`ProposalPayload`). This is the request as it arrived, kept unchanged for the audit trail even when a reviewer corrected it before approving: it is not necessarily what the library now holds.
+             */
+            payload?: {
+                [key: string]: unknown;
+            };
+            /** @description The platform person who made the proposal. Null for an agent's proposal, which `proposedByAgent` names instead, and null for one made inside a bank: a bank member's name and id never reach the console. A reader must not read null as "nobody". */
+            proposedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /** @description The platform agent that filed the proposal, by definition key, when the key it called with is bound to one. Null for a person's proposal, for one made inside a bank, whichever of its people or keys filed it, and for a key bound to no agent. Four eyes compares this with the reviewing agent: no key of the same definition may decide it. */
+            proposedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
+            /**
+             * Rejectioncode
+             * @description Why it was refused: the key of a row of the `rejection_reason` library list, which an admin may extend, so a client stores and compares the key and shows the label the list gives. The keys seeded on day one are `wrong_fact`, `wrong_scope`, `bad_source`, `duplicate`, `not_relevant`, `outside_sector_scope`, `poor_wording` and `other`. Empty unless the status is `rejected`.
+             * @default
+             */
+            rejectionCode: string;
+            /**
+             * Reviewnote
+             * @description The reviewer's own sentence to the proposer, on an approval or a rejection: a platform person's words, or the deciding agent's output when an agent decided, which is AI output like any other. It is not part of the library record.
+             * @default
+             */
+            reviewNote: string;
+            /**
+             * Reviewedat
+             * @description When the decision was made, by a person or by an agent: a UTC timestamp, date and time together. Null while the proposal is open.
+             */
+            reviewedAt?: string | null;
+            /** @description The platform person who decided it, never the person who proposed it, which the database enforces. Null while the proposal is open, and null when an independent agent decided it, which `reviewedByAgent` then names: a decided proposal names exactly one of the two. */
+            reviewedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /** @description The independent agent that decided it, by definition key: never the proposing key and never another key of the proposing agent's definition, which the database enforces. Null while the proposal is open and when a person decided it. An agent's approval is machine-confirmed: the record it applied reads as confirmed by that agent and never as verified by a person. */
+            reviewedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
+            /**
+             * Riskflags
+             * @description What the injection screen found in the texts the proposal arrived with: its title, every text of its payload, its field sources, its source and its model. Empty when it found nothing; otherwise `embedded_instructions`, text that reads as an instruction to an AI rather than a fact from the authority. The texts are stored exactly as they arrived and are never followed. While the list is not empty no agent may approve the proposal, which answers 409 `risk_flagged`: a person reads the flag and decides, and may still approve.
+             * @example []
+             * @example [
+             *       "embedded_instructions"
+             *     ]
+             */
+            riskFlags?: string[];
+            /**
+             * Rowcount
+             * @description How many records a batch would change, one row each, at most `PROPOSAL_BATCH_MAX_ROWS`. Always 0 when `isBatch` is false.
+             * @default 0
+             * @example 0
+             */
+            rowCount: number;
+            /**
+             * Rows
+             * @description Every row of the batch, at most 100, ordered by the record it changes so the order is the same on every read.
+             */
+            rows?: components["schemas"]["ProposalBatchRow"][];
+            /**
+             * Scopesuggestion
+             * @description Scope terms an agent suggests for a record it is creating. Always empty today, since the kinds that would carry one are not built: an empty list is not a claim that a record has no scope.
+             */
+            scopeSuggestion?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Sourcelabel
+             * @description How the proposal names its source in a sentence a reviewer can read, for example "Finansinspektionen, board decision 15 September 2026". Written by the proposer, so it is a claim to check against `sourceUrl`, not a verified fact.
+             * @default
+             */
+            sourceLabel: string;
+            /**
+             * Sourceurl
+             * @description The page the proposal was drawn from, for a reviewer to open. An agent wrote it; that the link resolves says nothing about whether it supports the change.
+             * @default
+             */
+            sourceUrl: string;
+            /**
+             * Status
+             * @description Where the request stands. A fixed kind: `open` is waiting for a reviewer, `approved` means the library carries it and `appliedAt` says when, `rejected` means it was refused with a reason and changed nothing, and `superseded` means a later proposal overtook it. Only `approved` says anything about what the library holds.
+             */
+            status: string;
+            /**
+             * Targetid
+             * @description The library record the proposal changes, as a UUID, or null when it creates one. Read the record itself for what it currently says.
+             */
+            targetId?: string | null;
+            /**
+             * Targettype
+             * @description What the proposal changes, when it changes one record that already exists: `obligation` today, empty for a proposal that creates something and for a batch, whose rows name their records.
+             * @default
+             */
+            targetType: string;
+            /**
+             * Title
+             * @description The one-line request as its author wrote it: an agent's own wording, or a platform editor's. It is never a bank member's words, because a proposal made inside a bank reaches the console without its proposer, and it is not the library record's title.
+             */
+            title: string;
+        };
+        /**
+         * ProposalBatchDecision
+         * @description The body of `POST /proposal-batches/{batchId}/decide`: decisions on named rows, and
+         *     one decision for every row left pending, so a reviewer rejects a few and approves the
+         *     rest in one call.
+         * @example {
+         *       "note": "This duty concerns the firm's own assets, not client money.",
+         *       "rest": "approved",
+         *       "restRejectionCode": "",
+         *       "rows": [
+         *         {
+         *           "decision": "rejected",
+         *           "rejectionCode": "wrong_scope",
+         *           "rowId": "e4a7c2d9-5b1f-4e6a-8c3d-7f9b2a4c6e81"
+         *         }
+         *       ]
+         *     }
+         */
+        ProposalBatchDecision: {
+            /**
+             * Note
+             * @description The reviewer's own sentence to the proposer about the batch, at most 2000 characters. It is never part of any library record.
+             * @default
+             * @example This duty concerns the firm's own assets, not client money.
+             */
+            note: string;
+            /**
+             * Rest
+             * @description One decision for every row this call does not name and that is still pending: `approved` or `rejected`, the same fixed kind a row's decision takes. Null leaves those rows pending.
+             * @example approved
+             */
+            rest?: string | null;
+            /**
+             * Restrejectioncode
+             * @description Why the rest are refused when `rest` is `rejected`: the key of a live row of the `rejection_reason` library list. Left empty otherwise.
+             * @default
+             * @example
+             */
+            restRejectionCode: string;
+            /**
+             * Rows
+             * @description The rows decided one by one, at most 100, each named once.
+             */
+            rows?: components["schemas"]["ProposalBatchRowDecision"][];
+        };
+        /**
+         * ProposalBatchInput
+         * @description The body of `POST /proposal-batches`: one request that changes many library records
+         *     the same way, filed as one proposal with a row per record. Nothing in the library changes
+         *     when it is accepted; each row waits for a second, independent reviewer. A field the body
+         *     does not name answers 422 `validation_error` rather than being dropped.
+         * @example {
+         *       "kind": "obligation_scope",
+         *       "payload": {
+         *         "changes": [
+         *           {
+         *             "add": [
+         *               "service_type:custody"
+         *             ],
+         *             "obligationId": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *             "remove": [],
+         *             "source": "https://www.fi.se/en/published/news/2026/client-money/"
+         *           }
+         *         ]
+         *       },
+         *       "sourceLabel": "Finansinspektionen, client money guidance 2026",
+         *       "sourceUrl": "https://www.fi.se/en/published/news/2026/client-money/",
+         *       "title": "Re-tag the client asset duties with custody"
+         *     }
+         */
+        ProposalBatchInput: {
+            /**
+             * Agentrunid
+             * @description The open run of the calling key the batch is filed under, as the UUID `POST /agent-runs` returned. Required from a key (none, or a closed run, answers 422 `run_not_open`; another key's run answers 404 `not_found`), and left out by a person.
+             * @example 3c2a9f1e-6b7d-4e58-a1c4-0f9d8e7b6a52
+             */
+            agentRunId?: string | null;
+            /**
+             * Kind
+             * @description What the batch changes. A fixed kind: `obligation_scope`, a re-tag of obligations' scope terms, is the only batch kind today; any other value answers 422 `unknown_key`.
+             * @example obligation_scope
+             */
+            kind: string;
+            /**
+             * Model
+             * @description The model that drafted the request, at most 200 characters, when an agent did. Left empty by a person.
+             * @default
+             * @example
+             */
+            model: string;
+            /** @description The change per record, in the shape `kind` names. */
+            payload: components["schemas"]["ObligationScopePayload"];
+            /**
+             * Sourcelabel
+             * @description The batch's source in words, as a reviewer reads it beside the link, at most 500 characters. Under a standard it is the standard's official reference or empty, else 422 `licensed_text`.
+             * @default
+             * @example Finansinspektionen, client money guidance 2026
+             */
+            sourceLabel: string;
+            /**
+             * Sourceurl
+             * @description The authority's page the request was read from, at most 2000 characters, as an https link or left out; any other scheme answers 422 `validation_error`.
+             * @default
+             * @example https://www.fi.se/en/published/news/2026/client-money/
+             */
+            sourceUrl: string;
+            /**
+             * Title
+             * @description The request in one line, as the reviewer reads it in the queue, at most 500 characters and never blank (422 `validation_error`).
+             * @example Re-tag the client asset duties with custody
+             */
+            title: string;
+        };
+        /**
+         * ProposalBatchRow
+         * @description One record a batch would change, with the preview the reviewer decides on and the
+         *     decision made on it. Library data from the platform queue: no bank's judgement and no
+         *     tenant content is ever on a row.
+         */
+        ProposalBatchRow: {
+            /** @description The same fields as approving this row would leave them. Nothing is written until then. */
+            after: components["schemas"]["ProposalBatchRowPayload"];
+            /** @description The record's fields that would change, as the library held them when the batch was filed. */
+            before: components["schemas"]["ProposalBatchRowPayload"];
+            /**
+             * Decidedat
+             * @description When the row was decided: a UTC timestamp, date and time together. Null while pending.
+             */
+            decidedAt?: string | null;
+            /** @description The platform person who decided the row, never the batch's proposer, which the database enforces. Null while pending. */
+            decidedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /**
+             * Decision
+             * @description Where the row stands. A fixed kind: `pending` waits for a reviewer, `approved` means the library carries its `after`, and `rejected` means it was refused with a reason and changed nothing. A row is decided once and never again.
+             * @example pending
+             */
+            decision: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The row, as a UUID the server assigns once. A decision on the batch names rows by this id.
+             * @example e4a7c2d9-5b1f-4e6a-8c3d-7f9b2a4c6e81
+             */
+            id: string;
+            /**
+             * Rejectioncode
+             * @description Why the row was refused: the key of a row of the `rejection_reason` library list, which an admin may extend, so compare the key and show the label `GET /vocab/rejection_reason` gives. Empty unless `decision` is `rejected`.
+             * @default
+             * @example
+             */
+            rejectionCode: string;
+            /**
+             * Source
+             * @description Where the change comes from, as the proposer gave it: an https link or a provision's stable key. It is a claim for the reviewer to open and check, not a verified fact.
+             * @default
+             * @example https://www.fi.se/en/published/news/2026/client-money/
+             */
+            source: string;
+            /**
+             * Stale
+             * @description True when the record has changed since the batch was filed, so `before` no longer says what the library holds: the row was previewed against another scope, and it cannot be approved; the batch is filed again instead. Computed when read, and only for a row still pending. False for a decided row, whatever the library says now.
+             * @default false
+             * @example false
+             */
+            stale: boolean;
+            /**
+             * Subjectid
+             * Format: uuid
+             * @description The library record the row changes, as a UUID, which is the id `GET /obligations/{obligationId}` takes.
+             * @example 3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44
+             */
+            subjectId: string;
+            /**
+             * Subjecttype
+             * @description What kind of library record the row changes. A fixed kind: `obligation`, a duty's scope, is the only one a batch changes today.
+             * @example obligation
+             */
+            subjectType: string;
+            /** @description The record by its own title and reference, as the queue names a proposal's target. Null only if the record can no longer be read. */
+            target?: components["schemas"]["ProposalTarget"] | null;
+        };
+        /**
+         * ProposalBatchRowDecision
+         * @description A reviewer's decision on one row of a batch.
+         */
+        ProposalBatchRowDecision: {
+            /**
+             * Decision
+             * @description The decision. A fixed kind: `approved` lets the row's `after` into the library, `rejected` refuses it with `rejectionCode`.
+             * @example rejected
+             */
+            decision: string;
+            /**
+             * Rejectioncode
+             * @description Why the row is refused, as the key of a live row of the `rejection_reason` library list, for example `wrong_scope`; its rows are data an admin may extend, and `GET /vocab/rejection_reason` returns the live ones. Required for a rejection and left empty for an approval.
+             * @default
+             * @example wrong_scope
+             */
+            rejectionCode: string;
+            /**
+             * Rowid
+             * Format: uuid
+             * @description The row decided, as the UUID `ProposalBatchRow.id` names it.
+             * @example e4a7c2d9-5b1f-4e6a-8c3d-7f9b2a4c6e81
+             */
+            rowId: string;
+        };
+        /**
+         * ProposalBatchRowPayload
+         * @description One side of a batch row's preview: the fields of the record that would change, and
+         *     nothing else. For a re-tag that is the obligation's scope.
+         */
+        ProposalBatchRowPayload: {
+            /**
+             * Terms
+             * @description The obligation's scope terms, each `dimension:key`, sorted. On `before` it is the scope the obligation carried when the batch was filed, read from the library then; on `after` the scope approving the row would leave it with. It is a preview: until the row is approved the library keeps the scope it has.
+             * @example [
+             *       "client_category:retail",
+             *       "service_type:custody"
+             *     ]
+             */
+            terms?: string[];
+        };
+        /**
          * ProposalCreateBody
          * @description The body of `POST /proposals`: one change somebody wants made to the shared library,
          *     with the source behind every value it would write. Nothing in the library changes when
@@ -14027,6 +18820,7 @@ export interface components {
          *       },
          *       "fromOrganisation": false,
          *       "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+         *       "isBatch": false,
          *       "kind": "new_obligation_version",
          *       "model": "agent pipeline 0.4",
          *       "origin": "agent",
@@ -14050,6 +18844,7 @@ export interface components {
          *       "reviewedAt": null,
          *       "reviewedBy": null,
          *       "reviewedByAgent": null,
+         *       "rowCount": 0,
          *       "scopeSuggestion": [],
          *       "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
          *       "sourceUrl": "https://www.fi.se/",
@@ -14120,6 +18915,13 @@ export interface components {
              */
             id: string;
             /**
+             * Isbatch
+             * @description True when the proposal is a batch: one request that changes many library records, with a row per record read through `GET /proposal-batches/{batchId}`. The queue lists a batch once, as this row. False for a proposal that changes one record or creates one.
+             * @default false
+             * @example false
+             */
+            isBatch: boolean;
+            /**
              * Ismine
              * @description True when the reader filed this proposal themselves, worked out by the server from who called and never sent by the client: for a person, the person who filed it; for an agent's key, the same key or any key of the same agent definition. Four eyes means the reader may not decide it, and their approval answers 409 `four_eyes_violation`, so a screen hides the control rather than offering a refusal. Always false for a proposal made inside a bank, which no platform reader filed, and exactly the rows `notMine` drops.
              * @default false
@@ -14128,7 +18930,7 @@ export interface components {
             isMine: boolean;
             /**
              * Kind
-             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
+             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as one batch (`isBatch`). The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
              */
             kind: string;
             /**
@@ -14199,6 +19001,13 @@ export interface components {
              */
             riskFlags?: string[];
             /**
+             * Rowcount
+             * @description How many records a batch would change, one row each, at most `PROPOSAL_BATCH_MAX_ROWS`. Always 0 when `isBatch` is false.
+             * @default 0
+             * @example 0
+             */
+            rowCount: number;
+            /**
              * Scopeafter
              * @description The scope the proposal would leave, in the same spelling, which replaces the list above whole rather than adding to it. Null means the proposal leaves the scope alone, which is not the same as an empty list: an empty list would clear it.
              */
@@ -14250,7 +19059,7 @@ export interface components {
             targetId?: string | null;
             /**
              * Targettype
-             * @description What the proposal changes, when it changes a record that already exists: `obligation` today, empty for a proposal that creates something.
+             * @description What the proposal changes, when it changes one record that already exists: `obligation` today, empty for a proposal that creates something and for a batch, whose rows name their records.
              * @default
              */
             targetType: string;
@@ -14400,6 +19209,7 @@ export interface components {
          *       },
          *       "fromOrganisation": false,
          *       "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+         *       "isBatch": false,
          *       "kind": "new_obligation_version",
          *       "model": "agent pipeline 0.4",
          *       "origin": "agent",
@@ -14423,6 +19233,7 @@ export interface components {
          *       "reviewedAt": null,
          *       "reviewedBy": null,
          *       "reviewedByAgent": null,
+         *       "rowCount": 0,
          *       "scopeSuggestion": [],
          *       "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
          *       "sourceUrl": "https://www.fi.se/",
@@ -14484,6 +19295,13 @@ export interface components {
              */
             id: string;
             /**
+             * Isbatch
+             * @description True when the proposal is a batch: one request that changes many library records, with a row per record read through `GET /proposal-batches/{batchId}`. The queue lists a batch once, as this row. False for a proposal that changes one record or creates one.
+             * @default false
+             * @example false
+             */
+            isBatch: boolean;
+            /**
              * Ismine
              * @description True when the reader filed this proposal themselves, worked out by the server from who called and never sent by the client: for a person, the person who filed it; for an agent's key, the same key or any key of the same agent definition. Four eyes means the reader may not decide it, and their approval answers 409 `four_eyes_violation`, so a screen hides the control rather than offering a refusal. Always false for a proposal made inside a bank, which no platform reader filed, and exactly the rows `notMine` drops.
              * @default false
@@ -14492,7 +19310,7 @@ export interface components {
             isMine: boolean;
             /**
              * Kind
-             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
+             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as one batch (`isBatch`). The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
              */
             kind: string;
             /**
@@ -14548,6 +19366,13 @@ export interface components {
              */
             riskFlags?: string[];
             /**
+             * Rowcount
+             * @description How many records a batch would change, one row each, at most `PROPOSAL_BATCH_MAX_ROWS`. Always 0 when `isBatch` is false.
+             * @default 0
+             * @example 0
+             */
+            rowCount: number;
+            /**
              * Scopesuggestion
              * @description Scope terms an agent suggests for a record it is creating. Always empty today, since the kinds that would carry one are not built: an empty list is not a claim that a record has no scope.
              */
@@ -14580,7 +19405,7 @@ export interface components {
             targetId?: string | null;
             /**
              * Targettype
-             * @description What the proposal changes, when it changes a record that already exists: `obligation` today, empty for a proposal that creates something.
+             * @description What the proposal changes, when it changes one record that already exists: `obligation` today, empty for a proposal that creates something and for a batch, whose rows name their records.
              * @default
              */
             targetType: string;
@@ -14676,6 +19501,7 @@ export interface components {
          *       },
          *       "fromOrganisation": false,
          *       "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+         *       "isBatch": false,
          *       "kind": "new_obligation_version",
          *       "model": "agent pipeline 0.4",
          *       "origin": "agent",
@@ -14699,6 +19525,7 @@ export interface components {
          *       "reviewedAt": null,
          *       "reviewedBy": null,
          *       "reviewedByAgent": null,
+         *       "rowCount": 0,
          *       "scopeSuggestion": [],
          *       "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
          *       "sourceUrl": "https://www.fi.se/",
@@ -14760,8 +19587,15 @@ export interface components {
              */
             id: string;
             /**
+             * Isbatch
+             * @description True when the proposal is a batch: one request that changes many library records, with a row per record read through `GET /proposal-batches/{batchId}`. The queue lists a batch once, as this row. False for a proposal that changes one record or creates one.
+             * @default false
+             * @example false
+             */
+            isBatch: boolean;
+            /**
              * Kind
-             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
+             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as one batch (`isBatch`). The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
              */
             kind: string;
             /**
@@ -14817,6 +19651,13 @@ export interface components {
              */
             riskFlags?: string[];
             /**
+             * Rowcount
+             * @description How many records a batch would change, one row each, at most `PROPOSAL_BATCH_MAX_ROWS`. Always 0 when `isBatch` is false.
+             * @default 0
+             * @example 0
+             */
+            rowCount: number;
+            /**
              * Scopesuggestion
              * @description Scope terms an agent suggests for a record it is creating. Always empty today, since the kinds that would carry one are not built: an empty list is not a claim that a record has no scope.
              */
@@ -14847,7 +19688,7 @@ export interface components {
             targetId?: string | null;
             /**
              * Targettype
-             * @description What the proposal changes, when it changes a record that already exists: `obligation` today, empty for a proposal that creates something.
+             * @description What the proposal changes, when it changes one record that already exists: `obligation` today, empty for a proposal that creates something and for a batch, whose rows name their records.
              * @default
              */
             targetType: string;
@@ -15050,7 +19891,7 @@ export interface components {
             accessToken: string;
             /**
              * Expiresin
-             * @description How many seconds the new access token is good for: 600 by default (a setting). It never outlives the session, which still ends after 30 idle minutes or 12 hours after sign-in.
+             * @description How many seconds the new access token is good for: 600 by default (a setting). It never outlives the session, which still ends after 30 idle minutes or 12 hours after sign-in by default, or at the limits of the bank's security policy, which apply at the next refresh.
              */
             expiresIn: number;
         };
@@ -16968,6 +21809,167 @@ export interface components {
             title: components["schemas"]["LocalizedText"] | null;
         };
         /**
+         * ResearchRequestInput
+         * @description `POST /research-requests`: ask one of the bank's own agents for work (AGT-05).
+         * @example {
+         *       "kind": "research_topic",
+         *       "tenantAgentId": "0b7d2f64-1c3e-4a58-9d2b-6e4f8a1c3b57",
+         *       "topic": "DORA subcontracting"
+         *     }
+         */
+        ResearchRequestInput: {
+            /**
+             * Kind
+             * @description What to ask for. `run_now`: run the agent once now. `check_source`: check the registered source in `sourceId`. `check_url`: check the web address in `url`. `research_topic`: research the text in `topic`.
+             * @enum {string}
+             */
+            kind: "run_now" | "check_source" | "check_url" | "research_topic";
+            /**
+             * Sourceid
+             * @description The registered source for `check_source`, as a UUID; by default null.
+             */
+            sourceId?: string | null;
+            /**
+             * Tenantagentid
+             * Format: uuid
+             * @description The bank's own agent to ask, as a UUID. Another bank's agent answers 404.
+             */
+            tenantAgentId: string;
+            /**
+             * Topic
+             * @description The topic for `research_topic`, between 1 and 500 characters; by default null. It is the bank's own text: it is never logged.
+             */
+            topic?: string | null;
+            /**
+             * Url
+             * @description The https web address for `check_url`, at most 2000 characters; by default null.
+             */
+            url?: string | null;
+        };
+        /**
+         * ResearchRequestOut
+         * @description A request for work by one of the bank's own agents (AGT-05).
+         * @example {
+         *       "completedAt": null,
+         *       "createdAt": "2026-09-24T09:12:00Z",
+         *       "id": "4e2a9c71-6b3d-4f18-8a5e-2c7d1b9f0e36",
+         *       "kind": "research_topic",
+         *       "requestedBy": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Sara Lindqvist"
+         *       },
+         *       "sourceId": null,
+         *       "status": "queued",
+         *       "tenantAgentId": "0b7d2f64-1c3e-4a58-9d2b-6e4f8a1c3b57",
+         *       "topic": "DORA subcontracting",
+         *       "url": null
+         *     }
+         */
+        ResearchRequestOut: {
+            /**
+             * Completedat
+             * @description When its run finished, as a UTC timestamp in ISO 8601, or null while it has not.
+             */
+            completedAt: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When the request was made, as a UTC timestamp in ISO 8601.
+             */
+            createdAt: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The request's identifier, a UUID. Another bank's request answers 404.
+             */
+            id: string;
+            /**
+             * Kind
+             * @description What was asked. `run_now`: run the agent once now. `check_source`: check one registered source now. `check_url`: check one web address now. `research_topic`: research the topic named. `retag`: the console's request to re-tag library records, answered by a batch proposal and never a direct edit.
+             * @enum {string}
+             */
+            kind: "run_now" | "check_source" | "check_url" | "research_topic" | "retag";
+            /** @description The person who made the request, by id and name. */
+            requestedBy: components["schemas"]["PersonRef"];
+            /**
+             * Sourceid
+             * @description The registered source to check, as a UUID, or null for another kind.
+             */
+            sourceId: string | null;
+            /**
+             * Status
+             * @description Where the request stands. `queued`: waiting for its run. `running`: its run is open. `done`: the run finished. `failed`: the run failed. `rejected`: refused before it ran, such as at the budget cap. `cancelled`: withdrawn before it ran.
+             * @enum {string}
+             */
+            status: "queued" | "running" | "done" | "failed" | "rejected" | "cancelled";
+            /**
+             * Tenantagentid
+             * @description The bank's own agent asked to do it, as a UUID, or null for the console's `retag`, which has none.
+             */
+            tenantAgentId: string | null;
+            /**
+             * Topic
+             * @description The topic to research, as the bank wrote it, or null for another kind.
+             */
+            topic: string | null;
+            /**
+             * Url
+             * @description The web address to check, an https URL, or null for another kind.
+             */
+            url: string | null;
+        };
+        /**
+         * ResearchRequestPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "completedAt": null,
+         *           "createdAt": "2026-09-24T09:12:00Z",
+         *           "id": "4e2a9c71-6b3d-4f18-8a5e-2c7d1b9f0e36",
+         *           "kind": "research_topic",
+         *           "requestedBy": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Sara Lindqvist"
+         *           },
+         *           "sourceId": null,
+         *           "status": "queued",
+         *           "tenantAgentId": "0b7d2f64-1c3e-4a58-9d2b-6e4f8a1c3b57",
+         *           "topic": "DORA subcontracting",
+         *           "url": null
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        ResearchRequestPage: {
+            /**
+             * Items
+             * @description The bank's research requests on this page, newest first.
+             */
+            items: components["schemas"]["ResearchRequestOut"][];
+            /**
+             * Total
+             * @description How many requests the bank has made in total, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * RetagRequestInput
+         * @description `POST /console/research-requests`: ask for library records to be re-tagged (AGT-05).
+         *     The answer is a batch proposal with a preview, never a direct edit.
+         * @example {
+         *       "topic": "Re-tag custody records with Client money."
+         *     }
+         */
+        RetagRequestInput: {
+            /**
+             * Topic
+             * @description Which library records to re-tag and with what, between 1 and 500 characters, such as "Re-tag custody records with Client money". Platform text about public records, never a bank's.
+             */
+            topic: string;
+        };
+        /**
          * ReverificationBody
          * @description A check of a record against its source (INV-06, INV-S8). `outcome` is a
          *     VerificationOutcome key; the note says what the checker saw, and belongs to the check
@@ -17208,7 +22210,7 @@ export interface components {
             instrumentId?: string | null;
             /**
              * Jurisdiction
-             * @description Narrow the search to the law of one jurisdiction, by key. The keys are rows in the shared library's `jurisdiction` vocabulary; the platform seeds and maintains them (they are reference data, not proposable), and on day one they are `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland). Source: the shared library. Do not read `se` as excluding EU law that binds a Swedish bank: an EU regulation is filed under `eu` and still applies, so filtering to one jurisdiction hides law the bank must follow.
+             * @description Narrow the search to the law of one jurisdiction, by key. The keys are rows in the shared library's `jurisdiction` vocabulary; the platform seeds them and its library editors relabel, retire and restore them through approved proposals, never changing a key, and on day one they are `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland). Source: the shared library. Do not read `se` as excluding EU law that binds a Swedish bank: an EU regulation is filed under `eu` and still applies, so filtering to one jurisdiction hides law the bank must follow.
              */
             jurisdiction?: string | null;
             /**
@@ -17572,7 +22574,7 @@ export interface components {
             /**
              * Createdat
              * Format: date-time
-             * @description When the person signed in on this device, as a UTC timestamp. The session ends 12 hours after it at the latest (a setting).
+             * @description When the person signed in on this device, as a UTC timestamp. The session ends 12 hours after it at the latest by default (a setting), or at the bank's own limit, never later than 24 hours.
              */
             createdAt: string;
             /**
@@ -17594,7 +22596,7 @@ export interface components {
             /**
              * Lastseenat
              * Format: date-time
-             * @description When the session last refreshed its access token, as a UTC timestamp: a sign of recent use that lags real activity by up to the access token's 10-minute lifetime. After 30 minutes without a refresh the session ends.
+             * @description When the session last refreshed its access token, as a UTC timestamp: a sign of recent use that lags real activity by up to the access token's 10-minute lifetime. After 30 minutes without a refresh the session ends, or after the bank's own idle limit, never longer than 480 minutes.
              */
             lastSeenAt: string;
             /**
@@ -17621,7 +22623,7 @@ export interface components {
             accessToken: string;
             /**
              * Expiresin
-             * @description How many seconds the access token is good for from now: 600 by default (a setting). Refresh a little before it runs out. The session itself lasts longer: it ends after 30 minutes without a refresh or 12 hours after sign-in, whichever comes first.
+             * @description How many seconds the access token is good for from now: 600 by default (a setting). Refresh a little before it runs out. The session itself lasts longer: it ends after 30 minutes without a refresh or 12 hours after sign-in, whichever comes first. Those are the defaults; a bank's security policy may set its own limits, never above 480 minutes and 24 hours.
              */
             expiresIn: number;
             /**
@@ -17686,6 +22688,117 @@ export interface components {
              * @description Until when, as a UTC timestamp, the assertion counts as fresh: 5 minutes after it was made by default (a setting). Until then every sensitive action on this session may proceed; after it they answer 403 `step_up_required` again. It belongs to this session only.
              */
             expiresAt: string;
+        };
+        /**
+         * SupportAccessGrant
+         * @description A request by platform support to read the bank's data, and what became of it (TEN-06,
+         *     D-49). The bank reads every one; support never writes under a grant.
+         * @example {
+         *       "decidedAt": "2026-09-24T08:20:00Z",
+         *       "decidedBy": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Karin Holm"
+         *       },
+         *       "endsAt": "2026-09-24T10:20:00Z",
+         *       "hours": 2,
+         *       "id": "2e4a6c8e-0b1d-4f3a-8c5e-7a9b1c3d5e71",
+         *       "platformPerson": {
+         *         "id": "9b1d3f5a-7c2e-4a6b-8d0f-1e3a5c7e9b24",
+         *         "name": "Jonas Berg"
+         *       },
+         *       "purpose": "The bank reports that its watch feed stopped updating on Monday.",
+         *       "requestedAt": "2026-09-24T08:05:00Z",
+         *       "state": "active",
+         *       "ticketRef": "SUP-2511"
+         *     }
+         */
+        SupportAccessGrant: {
+            /**
+             * Decidedat
+             * @description When the bank last decided on it, a UTC timestamp, or null.
+             */
+            decidedAt: string | null;
+            /** @description The member who approved, declined or revoked it, or null while it is pending or once it lapsed. */
+            decidedBy: components["schemas"]["PersonRef"] | null;
+            /**
+             * Endsat
+             * @description When an approved window closes or closed, a UTC timestamp, or null until it is approved.
+             */
+            endsAt: string | null;
+            /**
+             * Hours
+             * @description How long the window asked for is, in hours; the window starts when the bank approves.
+             */
+            hours: number;
+            /**
+             * Id
+             * Format: uuid
+             * @description The request's identifier, a UUID that never changes.
+             */
+            id: string;
+            /** @description The platform support person who asked; their name and id, nothing else. */
+            platformPerson: components["schemas"]["PersonRef"];
+            /**
+             * Purpose
+             * @description Why platform support asked, in their own words, written for the bank.
+             */
+            purpose: string;
+            /**
+             * Requestedat
+             * Format: date-time
+             * @description When the request was made, a UTC timestamp.
+             */
+            requestedAt: string;
+            /**
+             * State
+             * @description Where the request stands: `pending` (asked for by platform support and granting nothing yet), `active` (approved by the bank; the window is open and support may read, never write), `declined` (refused by the bank), `revoked` (ended by the bank before its window closed), `ended` (its window passed), `lapsed` (never decided before the request expired) or `recovery` (a one-off last-administrator recovery platform support carried out, recorded here and granting no reading at all).
+             * @enum {string}
+             */
+            state: "pending" | "active" | "declined" | "revoked" | "ended" | "lapsed" | "recovery";
+            /**
+             * Ticketref
+             * @description The support ticket it was asked under, such as `SUP-2511`; empty when there is none.
+             */
+            ticketRef: string;
+        };
+        /**
+         * SupportAccessPage
+         * @description One page of the bank's support access requests, newest first.
+         * @example {
+         *       "items": [
+         *         {
+         *           "decidedAt": "2026-09-24T08:20:00Z",
+         *           "decidedBy": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Karin Holm"
+         *           },
+         *           "endsAt": "2026-09-24T10:20:00Z",
+         *           "hours": 2,
+         *           "id": "2e4a6c8e-0b1d-4f3a-8c5e-7a9b1c3d5e71",
+         *           "platformPerson": {
+         *             "id": "9b1d3f5a-7c2e-4a6b-8d0f-1e3a5c7e9b24",
+         *             "name": "Jonas Berg"
+         *           },
+         *           "purpose": "The bank reports that its watch feed stopped updating on Monday.",
+         *           "requestedAt": "2026-09-24T08:05:00Z",
+         *           "state": "active",
+         *           "ticketRef": "SUP-2511"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        SupportAccessPage: {
+            /**
+             * Items
+             * @description The requests on this page, newest first; an empty list is a 200 and means support never asked.
+             */
+            items: components["schemas"]["SupportAccessGrant"][];
+            /**
+             * Total
+             * @description How many requests the bank has had in total, not how many are on this page.
+             */
+            total: number;
         };
         /**
          * TaggingBatchBody
@@ -18220,6 +23333,230 @@ export interface components {
             version: number;
         };
         /**
+         * TenantAgentInput
+         * @description `POST /agents`: the bank adds an agent of its own from a tenant-scoped definition.
+         * @example {
+         *       "agent": "bank-source-watch",
+         *       "cadence": "weekly",
+         *       "runHour": 6,
+         *       "runWeekday": 1,
+         *       "scope": {
+         *         "jurisdictions": [
+         *           "se",
+         *           "fi"
+         *         ],
+         *         "terms": [
+         *           "payments"
+         *         ]
+         *       }
+         *     }
+         */
+        TenantAgentInput: {
+            /**
+             * Agent
+             * @description The stable key of the definition to add, between 1 and 80 characters, from `GET /agent-definitions` rows whose `scope` is `tenant`. One of bleqq's own agents is refused with `permission_denied` naming `agent_definitions.manage`; a key no definition has is refused with `unknown_key`.
+             */
+            agent: string;
+            /**
+             * Cadence
+             * @description How often the agent runs, by default `weekly`. `daily`, `weekly` and `monthly` start a run on that rhythm; `manual` starts none on a schedule, so the agent runs only when someone asks for a run.
+             * @default weekly
+             * @enum {string}
+             */
+            cadence: "daily" | "weekly" | "monthly" | "manual";
+            /**
+             * Runhour
+             * @description The hour, in the bank's own time zone, a scheduled run starts, a minimum of 0 and a maximum of 23; by default null.
+             */
+            runHour?: number | null;
+            /**
+             * Runweekday
+             * @description The day a weekly or monthly run starts, a minimum of 1 (Monday) and a maximum of 7 (Sunday); by default null.
+             */
+            runWeekday?: number | null;
+            /** @description What the agent looks at, by keys; by default empty, which means the bank's markets. */
+            scope?: components["schemas"]["TenantAgentScope"];
+        };
+        /**
+         * TenantAgentOut
+         * @description One of the bank's own agents (AGT-04): its switch, cadence, scope and pause.
+         * @example {
+         *       "agent": "bank-source-watch",
+         *       "cadence": "weekly",
+         *       "enabled": true,
+         *       "id": "0b7d2f64-1c3e-4a58-9d2b-6e4f8a1c3b57",
+         *       "nextRunAt": "2026-09-28T04:00:00Z",
+         *       "pausedAt": null,
+         *       "pausedBy": null,
+         *       "runHour": 6,
+         *       "runWeekday": 1,
+         *       "scope": {
+         *         "jurisdictions": [
+         *           "se",
+         *           "fi"
+         *         ],
+         *         "terms": [
+         *           "payments"
+         *         ]
+         *       },
+         *       "updatedAt": "2026-09-24T09:12:00Z"
+         *     }
+         */
+        TenantAgentOut: {
+            /**
+             * Agent
+             * @description The stable key of the tenant-scoped definition the bank added, such as `bank-source-watch`.
+             */
+            agent: string;
+            /**
+             * Cadence
+             * @description How often the agent runs. `daily`, `weekly` and `monthly` start a run on that rhythm; `manual` starts none on a schedule, so the agent runs only when someone asks for a run.
+             * @enum {string}
+             */
+            cadence: "daily" | "weekly" | "monthly" | "manual";
+            /**
+             * Enabled
+             * @description Whether the agent is switched on. Off, it starts no run on its cadence.
+             */
+            enabled: boolean;
+            /**
+             * Id
+             * Format: uuid
+             * @description The bank's agent's identifier, a UUID. Another bank's agent answers 404.
+             */
+            id: string;
+            /**
+             * Nextrunat
+             * @description When the next scheduled run starts, as a UTC timestamp in ISO 8601. Null when none is scheduled.
+             */
+            nextRunAt: string | null;
+            /**
+             * Pausedat
+             * @description When the agent was paused, as a UTC timestamp in ISO 8601, or null when it is not. A paused agent starts no run until someone resumes it.
+             */
+            pausedAt: string | null;
+            /** @description The person who paused the agent. Null when it is not paused, or when the budget cap paused it rather than a person. */
+            pausedBy: components["schemas"]["PersonRef"] | null;
+            /**
+             * Runhour
+             * @description The hour a scheduled run starts, a whole number with a minimum of 0 and a maximum of 23, in the bank's own time zone. Null for manual.
+             */
+            runHour: number | null;
+            /**
+             * Runweekday
+             * @description The day a weekly or monthly run starts, a whole number with a minimum of 1 (Monday) and a maximum of 7 (Sunday), in the bank's own time zone. Null for daily and manual.
+             */
+            runWeekday: number | null;
+            /** @description What the agent looks at, by keys. Empty lists mean the default markets. */
+            scope: components["schemas"]["TenantAgentScope"];
+            /**
+             * Updatedat
+             * Format: date-time
+             * @description When the agent's settings last changed, as a UTC timestamp in ISO 8601.
+             */
+            updatedAt: string;
+        };
+        /**
+         * TenantAgentPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "agent": "bank-source-watch",
+         *           "cadence": "weekly",
+         *           "enabled": true,
+         *           "id": "0b7d2f64-1c3e-4a58-9d2b-6e4f8a1c3b57",
+         *           "nextRunAt": "2026-09-28T04:00:00Z",
+         *           "pausedAt": null,
+         *           "pausedBy": null,
+         *           "runHour": 6,
+         *           "runWeekday": 1,
+         *           "scope": {
+         *             "jurisdictions": [
+         *               "se",
+         *               "fi"
+         *             ],
+         *             "terms": [
+         *               "payments"
+         *             ]
+         *           },
+         *           "updatedAt": "2026-09-24T09:12:00Z"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        TenantAgentPage: {
+            /**
+             * Items
+             * @description The bank's own agents on this page, by definition key. bleqq's agents are never listed here.
+             */
+            items: components["schemas"]["TenantAgentOut"][];
+            /**
+             * Total
+             * @description How many agents the bank has added in total, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * TenantAgentScope
+         * @description A bank's own agent's scope: keys only, never free text (AGT-04). Empty lists mean the
+         *     default: the bank's operating markets first, then the watched ones.
+         * @example {
+         *       "jurisdictions": [
+         *         "se",
+         *         "fi"
+         *       ],
+         *       "terms": [
+         *         "payments"
+         *       ]
+         *     }
+         */
+        TenantAgentScope: {
+            /**
+             * Jurisdictions
+             * @description The jurisdictions the agent looks at, at most 100, by default none. Jurisdiction keys from the jurisdiction vocabulary (`GET /vocab/jurisdiction`), such as `se` or `eu`: keys and never labels, each one an active row; an unknown key is refused with `unknown_key` and the valid keys. The platform's editors add rows to that list through the proposal queue, so its members are not fixed here. None means the bank's operating markets first, then the ones it watches.
+             */
+            jurisdictions?: string[];
+            /**
+             * Terms
+             * @description Taxonomy term keys the agent narrows to, at most 100, by default none, from `GET /taxonomy/terms`: keys and never labels, each an active row; an unknown key is refused with `unknown_key`. The platform's editors extend the taxonomy through the proposal queue. None means no narrowing by term.
+             */
+            terms?: string[];
+        };
+        /**
+         * TenantAgentUpdate
+         * @description `PATCH /agents/{tenantAgentId}`: change what the body sends and nothing else.
+         * @example {
+         *       "cadence": "daily",
+         *       "enabled": true
+         *     }
+         */
+        TenantAgentUpdate: {
+            /**
+             * Cadence
+             * @description The new cadence; by default null, which leaves it. `daily`, `weekly` and `monthly` start a run on that rhythm; `manual` starts none on a schedule, so the agent runs only when someone asks for a run.
+             */
+            cadence?: ("daily" | "weekly" | "monthly" | "manual") | null;
+            /**
+             * Enabled
+             * @description Switch the agent on or off; by default null, which leaves it.
+             */
+            enabled?: boolean | null;
+            /**
+             * Runhour
+             * @description The new run hour, a minimum of 0 and a maximum of 23; by default null, which leaves it.
+             */
+            runHour?: number | null;
+            /**
+             * Runweekday
+             * @description The new run day, a minimum of 1 (Monday) and a maximum of 7 (Sunday); by default null, which leaves it.
+             */
+            runWeekday?: number | null;
+            /** @description The new scope, whole; by default null, which leaves it. */
+            scope?: components["schemas"]["TenantAgentScope"] | null;
+        };
+        /**
          * TenantAiBody
          * @description Switch this bank's own AI features on or off. The body holds the one field and
          *     nothing else; any other field is refused.
@@ -18233,6 +23570,614 @@ export interface components {
              * @description `false` switches this bank's AI features off: Ask and the drafts a model writes for the bank's members answer `feature_off` from then on. `true` switches them back on. A JSON boolean, never a string. Sending the value the bank already has changes nothing and is still recorded in the audit log.
              */
             enabled: boolean;
+        };
+        /**
+         * TenantLicence
+         * @description A licence or certificate a legal entity holds (TEN-02, D-43). A certificate's validity
+         *     and next audit are the bank's own deadlines; they carry no term and decide no span.
+         * @example {
+         *       "grantedOn": "2014-03-01",
+         *       "id": "5b7d9e1f-3a2c-4e6b-8d0f-2a4c6e8b0d13",
+         *       "issuedOn": null,
+         *       "issuer": "",
+         *       "licenceType": {
+         *         "key": "bank",
+         *         "kind": null,
+         *         "label": "Bank"
+         *       },
+         *       "nextAuditOn": null,
+         *       "number": "",
+         *       "orgUnitId": "3f6a2c1d-8b4e-4d7a-9c5f-0e1d2c3b4a59",
+         *       "owner": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Karin Holm"
+         *       },
+         *       "reference": "FI 12-3456",
+         *       "scopeNote": "",
+         *       "scopeStatement": "",
+         *       "serviceTerms": [],
+         *       "validUntil": null,
+         *       "version": 1,
+         *       "withdrawnOn": null
+         *     }
+         */
+        TenantLicence: {
+            /**
+             * Grantedon
+             * @description The date the licence was granted, a plain date, or null when unknown.
+             */
+            grantedOn: string | null;
+            /**
+             * Id
+             * Format: uuid
+             * @description The licence's identifier, a UUID that never changes.
+             */
+            id: string;
+            /**
+             * Issuedon
+             * @description The date a certificate was issued, a plain date, or null.
+             */
+            issuedOn: string | null;
+            /**
+             * Issuer
+             * @description Who issued a certificate, such as `Example Certification AB`; empty for a licence an authority granted.
+             */
+            issuer: string;
+            /** @description What the licence or certificate is, as a term of the shared library, the same terms obligations are scoped with; a vocabulary an administrator may extend only through an approved proposal (`GET /taxonomy/terms`). A type is a key, never a phrase. */
+            licenceType: components["schemas"]["TermRef"];
+            /**
+             * Nextauditon
+             * @description The date of a certificate's next audit, a plain date, or null; the bank's own deadline, like the validity.
+             */
+            nextAuditOn: string | null;
+            /**
+             * Number
+             * @description A certificate's number as its issuer prints it; empty when there is none.
+             */
+            number: string;
+            /**
+             * Orgunitid
+             * Format: uuid
+             * @description The identifier of the legal entity that holds it, a UUID of the same bank.
+             */
+            orgUnitId: string;
+            /** @description The member who owns the licence or certificate and its deadlines, or null. */
+            owner: components["schemas"]["PersonRef"] | null;
+            /**
+             * Reference
+             * @description The authority's own reference for the licence, such as `FI 12-3456`; empty when there is none.
+             */
+            reference: string;
+            /**
+             * Scopenote
+             * @description The bank's own note on what the licence covers, as the bank wrote it; empty when there is none.
+             */
+            scopeNote: string;
+            /**
+             * Scopestatement
+             * @description A certificate's scope statement as its issuer wrote it; empty when there is none.
+             */
+            scopeStatement: string;
+            /**
+             * Serviceterms
+             * @description The services the licence covers, as terms of the shared library, a vocabulary an administrator may extend only through an approved proposal; an empty list when none are recorded.
+             */
+            serviceTerms: components["schemas"]["TermRef"][];
+            /**
+             * Validuntil
+             * @description The last date a certificate is valid, a plain date, or null; it shows on the roadmap as the bank's own deadline and never in the calendar feed.
+             */
+            validUntil: string | null;
+            /**
+             * Version
+             * @description The licence's version; send it back in `If-Match` on a change, and a stale one is refused with `stale_write`.
+             */
+            version: number;
+            /**
+             * Withdrawnon
+             * @description The date it was withdrawn, a plain date, or null while it stands; a withdrawn row reads as withdrawn and stays in the history.
+             */
+            withdrawnOn: string | null;
+        };
+        /**
+         * TenantLicenceBody
+         * @description A licence or certificate a legal entity holds. A field the schema does not name is refused.
+         * @example {
+         *       "grantedOn": "2014-03-01",
+         *       "licenceType": "bank",
+         *       "reference": "FI 12-3456"
+         *     }
+         */
+        TenantLicenceBody: {
+            /**
+             * Grantedon
+             * @description The date the licence was granted, a plain date; null by default.
+             */
+            grantedOn?: string | null;
+            /**
+             * Issuedon
+             * @description The date a certificate was issued, a plain date; null by default.
+             */
+            issuedOn?: string | null;
+            /**
+             * Issuer
+             * @description Who issued a certificate, at most 200 characters of one line of visible text; empty by default.
+             * @default
+             */
+            issuer: string;
+            /**
+             * Licencetype
+             * @description What the licence or certificate is, at most 80 characters: the key of a term of the shared library, the same terms obligations are scoped with; a vocabulary an administrator may extend only through an approved proposal, read `GET /taxonomy/terms` for the live set. An unknown key answers `unknown_key`.
+             */
+            licenceType: string;
+            /**
+             * Nextauditon
+             * @description The date of a certificate's next audit, a plain date; null by default.
+             */
+            nextAuditOn?: string | null;
+            /**
+             * Number
+             * @description A certificate's number, at most 100 characters; empty by default.
+             * @default
+             */
+            number: string;
+            /**
+             * Owneruserid
+             * @description The identifier of the owning member, a UUID of an active member of the same bank; null by default.
+             */
+            ownerUserId?: string | null;
+            /**
+             * Reference
+             * @description The authority's reference, at most 200 characters; empty by default.
+             * @default
+             */
+            reference: string;
+            /**
+             * Scopenote
+             * @description The bank's note on what it covers, at most 4000 characters; empty by default.
+             * @default
+             */
+            scopeNote: string;
+            /**
+             * Scopestatement
+             * @description A certificate's scope statement, at most 4000 characters; empty by default.
+             * @default
+             */
+            scopeStatement: string;
+            /**
+             * Serviceterms
+             * @description The services it covers, at most 50 keys, each a term of the shared library, the same terms obligations are scoped with; a vocabulary an administrator may extend only through an approved proposal, read `GET /taxonomy/terms` for the live set. An unknown key answers `unknown_key`; empty by default.
+             */
+            serviceTerms?: string[];
+            /**
+             * Validuntil
+             * @description The last date a certificate is valid, a plain date; null by default.
+             */
+            validUntil?: string | null;
+            /**
+             * Withdrawnon
+             * @description The date it was withdrawn, a plain date; null by default.
+             */
+            withdrawnOn?: string | null;
+        };
+        /**
+         * TenantLicencePage
+         * @description One page of a legal entity's licences and certificates.
+         * @example {
+         *       "items": [
+         *         {
+         *           "grantedOn": "2014-03-01",
+         *           "id": "5b7d9e1f-3a2c-4e6b-8d0f-2a4c6e8b0d13",
+         *           "issuedOn": null,
+         *           "issuer": "",
+         *           "licenceType": {
+         *             "key": "bank",
+         *             "kind": null,
+         *             "label": "Bank"
+         *           },
+         *           "nextAuditOn": null,
+         *           "number": "",
+         *           "orgUnitId": "3f6a2c1d-8b4e-4d7a-9c5f-0e1d2c3b4a59",
+         *           "owner": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Karin Holm"
+         *           },
+         *           "reference": "FI 12-3456",
+         *           "scopeNote": "",
+         *           "scopeStatement": "",
+         *           "serviceTerms": [],
+         *           "validUntil": null,
+         *           "version": 1,
+         *           "withdrawnOn": null
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        TenantLicencePage: {
+            /**
+             * Items
+             * @description The licences and certificates on this page, withdrawn ones included; an empty list is a 200.
+             */
+            items: components["schemas"]["TenantLicence"][];
+            /**
+             * Total
+             * @description How many the legal entity holds in total, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * TenantLicencePatch
+         * @description A change to a licence or certificate. Send only the fields you are changing.
+         * @example {
+         *       "withdrawnOn": "2026-12-31"
+         *     }
+         */
+        TenantLicencePatch: {
+            /**
+             * Grantedon
+             * @description A new grant date, a plain date; null by default, which leaves it alone.
+             */
+            grantedOn?: string | null;
+            /**
+             * Issuedon
+             * @description A new issue date, a plain date; null by default, which leaves it alone.
+             */
+            issuedOn?: string | null;
+            /**
+             * Issuer
+             * @description A new issuer, at most 200 characters of one line of visible text; null by default, which leaves it alone.
+             */
+            issuer?: string | null;
+            /**
+             * Licencetype
+             * @description A new type, at most 80 characters, the key of a term of the shared library, the same terms obligations are scoped with; a vocabulary an administrator may extend only through an approved proposal, read `GET /taxonomy/terms` for the live set. An unknown key answers `unknown_key`; null by default, which leaves it alone.
+             */
+            licenceType?: string | null;
+            /**
+             * Nextauditon
+             * @description A new next audit date, a plain date; null by default, which leaves it alone.
+             */
+            nextAuditOn?: string | null;
+            /**
+             * Number
+             * @description A new certificate number, at most 100 characters; null by default, which leaves it alone.
+             */
+            number?: string | null;
+            /**
+             * Owneruserid
+             * @description A new owner, a UUID of an active member of the same bank; null by default, which leaves it alone.
+             */
+            ownerUserId?: string | null;
+            /**
+             * Reference
+             * @description A new reference, at most 200 characters; null by default, which leaves it alone.
+             */
+            reference?: string | null;
+            /**
+             * Scopenote
+             * @description A new note, at most 4000 characters; null by default, which leaves it alone.
+             */
+            scopeNote?: string | null;
+            /**
+             * Scopestatement
+             * @description A new scope statement, at most 4000 characters; null by default, which leaves it alone.
+             */
+            scopeStatement?: string | null;
+            /**
+             * Serviceterms
+             * @description The complete new list of services, at most 50 keys, each a term of the shared library, the same terms obligations are scoped with; a vocabulary an administrator may extend only through an approved proposal, read `GET /taxonomy/terms` for the live set. An unknown key answers `unknown_key`; null by default, which leaves it alone.
+             */
+            serviceTerms?: string[] | null;
+            /**
+             * Validuntil
+             * @description A new validity end, a plain date; null by default, which leaves it alone.
+             */
+            validUntil?: string | null;
+            /**
+             * Withdrawnon
+             * @description The date it was withdrawn, a plain date; null by default, which leaves it alone.
+             */
+            withdrawnOn?: string | null;
+        };
+        /**
+         * TenantMemberOpenWork
+         * @description Everything a member owns or takes part in, by kind, so a removal can ask for a new
+         *     owner per kind before anything changes.
+         * @example {
+         *       "items": [
+         *         {
+         *           "count": 3,
+         *           "kind": "register_entry"
+         *         },
+         *         {
+         *           "count": 2,
+         *           "kind": "case"
+         *         }
+         *       ],
+         *       "member": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Karin Holm"
+         *       }
+         *     }
+         */
+        TenantMemberOpenWork: {
+            /**
+             * Items
+             * @description One row per kind the member holds; an empty list is a 200 and means the removal moves nothing.
+             */
+            items: components["schemas"]["TenantOpenWork"][];
+            /** @description The member whose open work this is. */
+            member: components["schemas"]["PersonRef"];
+        };
+        /**
+         * TenantMemberRemoveBody
+         * @description The removal of a member, with a new owner for each kind of work they own.
+         * @example {
+         *       "owners": [
+         *         {
+         *           "kind": "register_entry",
+         *           "teamKey": "compliance"
+         *         },
+         *         {
+         *           "kind": "case",
+         *           "userId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60"
+         *         }
+         *       ]
+         *     }
+         */
+        TenantMemberRemoveBody: {
+            /**
+             * Owners
+             * @description One new owner per kind of work the member owns, at most 10, empty by default for a member who owns nothing. A kind the member owns with no owner named here answers `validation_error` and nothing changes.
+             */
+            owners?: components["schemas"]["TenantRemovalOwner"][];
+        };
+        /**
+         * TenantOpenWork
+         * @description One kind of open work a member holds, counted, before their removal (TEN-05).
+         * @example {
+         *       "count": 3,
+         *       "kind": "register_entry"
+         *     }
+         */
+        TenantOpenWork: {
+            /**
+             * Count
+             * @description How many of that kind the member holds at the moment of the call, at least one; a kind they hold none of is not listed.
+             */
+            count: number;
+            /**
+             * Kind
+             * @description What the member holds. Moved to a new owner on removal: `register_entry` (an obligation's register entry the person owns), `register_entity` (a legal entity's row on an entry), `gap`, `duty_occurrence` (a dated recurring duty), `internal_item` (a policy, procedure, control, process or system), `case` or `action`. Ended on removal: `participation` (items the person takes part in without owning them) and `team_membership` (the teams the person is in); both end with the removal and move to nobody.
+             * @enum {string}
+             */
+            kind: "register_entry" | "register_entity" | "gap" | "duty_occurrence" | "internal_item" | "case" | "action" | "participation" | "team_membership";
+        };
+        /**
+         * TenantOrgUnit
+         * @description One unit of the bank's organisation: a group, a legal entity or a department (TEN-02,
+         *     D-21). The bank's own record, never shared with another bank.
+         * @example {
+         *       "active": true,
+         *       "countryCode": "SE",
+         *       "entityTerm": {
+         *         "key": "bank",
+         *         "kind": null,
+         *         "label": "Bank"
+         *       },
+         *       "head": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Karin Holm"
+         *       },
+         *       "id": "3f6a2c1d-8b4e-4d7a-9c5f-0e1d2c3b4a59",
+         *       "kind": "legal_entity",
+         *       "lei": "5493000EXAMPLE000000",
+         *       "name": "Example Bank AB",
+         *       "orgNumber": "556000-0000",
+         *       "parentId": null,
+         *       "version": 3
+         *     }
+         */
+        TenantOrgUnit: {
+            /**
+             * Active
+             * @description False once the unit is deactivated; a unit is deactivated and never deleted, so its history stays readable.
+             */
+            active: boolean;
+            /**
+             * Countrycode
+             * @description The two-letter ISO 3166 country a legal entity is registered in, such as `SE`; empty for any other unit.
+             */
+            countryCode: string;
+            /** @description The term of the shared library's `legal_entity` dimension a legal entity is scoped with, the same term obligations are scoped with, so an obligation can be assessed per entity. The terms are a vocabulary of the shared library, which an administrator may extend only through an approved proposal; read `GET /taxonomy/terms` for the live set. Null for every unit that is not a legal entity. */
+            entityTerm: components["schemas"]["TermRef"] | null;
+            /** @description The member who heads the unit, an active member of the same bank, or null when nobody does; a department's head is told about its work. */
+            head: components["schemas"]["PersonRef"] | null;
+            /**
+             * Id
+             * Format: uuid
+             * @description The unit's identifier, a UUID that never changes; licences and register rows point at it.
+             */
+            id: string;
+            /**
+             * Kind
+             * @description What the unit is: `group` (the banking group at the top of the tree), `legal_entity` (a company that holds licences and carries the legal-entity scope term, so an obligation can be assessed per entity), `business_area`, `business_unit` and `function` (the last three, with a head, are what screens call a department). A kind is fixed in code and never added by an administrator.
+             * @enum {string}
+             */
+            kind: "group" | "legal_entity" | "business_area" | "business_unit" | "function";
+            /**
+             * Lei
+             * @description The legal entity identifier (ISO 17442, 20 characters) a legal entity carries; empty when it has none or for any other unit.
+             */
+            lei: string;
+            /**
+             * Name
+             * @description The unit's name as the bank wrote it, for display; a person may rename it, so match on the id.
+             */
+            name: string;
+            /**
+             * Orgnumber
+             * @description The company registration number a legal entity carries, such as `556000-0000`; empty for any other unit.
+             */
+            orgNumber: string;
+            /**
+             * Parentid
+             * @description The identifier of the unit this one sits under, a UUID of the same bank, or null at the top of the tree.
+             */
+            parentId: string | null;
+            /**
+             * Version
+             * @description The unit's version; send it back in `If-Match` on a change, and a stale one is refused with `stale_write`.
+             */
+            version: number;
+        };
+        /**
+         * TenantOrgUnitBody
+         * @description A new unit of the bank's organisation. A field the schema does not name is refused.
+         * @example {
+         *       "headUserId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *       "kind": "business_area",
+         *       "name": "Retail Banking",
+         *       "parentId": "3f6a2c1d-8b4e-4d7a-9c5f-0e1d2c3b4a59"
+         *     }
+         */
+        TenantOrgUnitBody: {
+            /**
+             * Countrycode
+             * @description A legal entity's two-letter ISO 3166 country, at most 2 characters, such as `SE`; empty by default.
+             * @default
+             */
+            countryCode: string;
+            /**
+             * Entityterm
+             * @description The key of the `legal_entity` dimension term a legal entity is scoped with, at most 80 characters, such as `bank`; null by default. The terms are a vocabulary of the shared library, which an administrator may extend only through an approved proposal; read `GET /taxonomy/terms` for the live set. Only a legal entity may carry one; an unknown key answers `unknown_key`.
+             */
+            entityTerm?: string | null;
+            /**
+             * Headuserid
+             * @description The identifier of the member who heads the unit, a UUID of an active member of the same bank; null by default.
+             */
+            headUserId?: string | null;
+            /**
+             * Kind
+             * @description What the unit is, fixed once it exists: `group` (the banking group at the top of the tree), `legal_entity` (a company that holds licences and carries the legal-entity scope term, so an obligation can be assessed per entity), `business_area`, `business_unit` and `function` (the last three, with a head, are what screens call a department). A kind is fixed in code and never added by an administrator. Any other value is refused with a 422.
+             * @enum {string}
+             */
+            kind: "group" | "legal_entity" | "business_area" | "business_unit" | "function";
+            /**
+             * Lei
+             * @description A legal entity's legal entity identifier, at most 20 characters; empty by default.
+             * @default
+             */
+            lei: string;
+            /**
+             * Name
+             * @description The unit's name, at most 200 characters of one line of visible text; blank, a line break, a tab or an invisible character is refused with a 422.
+             */
+            name: string;
+            /**
+             * Orgnumber
+             * @description A legal entity's company registration number, at most 40 characters; empty by default.
+             * @default
+             */
+            orgNumber: string;
+            /**
+             * Parentid
+             * @description The identifier of the unit this one sits under, a UUID of the same bank; null by default, at the top of the tree.
+             */
+            parentId?: string | null;
+        };
+        /**
+         * TenantOrgUnitPage
+         * @description One page of the bank's organisation, ordered by name.
+         * @example {
+         *       "items": [
+         *         {
+         *           "active": true,
+         *           "countryCode": "SE",
+         *           "entityTerm": {
+         *             "key": "bank",
+         *             "kind": null,
+         *             "label": "Bank"
+         *           },
+         *           "head": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Karin Holm"
+         *           },
+         *           "id": "3f6a2c1d-8b4e-4d7a-9c5f-0e1d2c3b4a59",
+         *           "kind": "legal_entity",
+         *           "lei": "5493000EXAMPLE000000",
+         *           "name": "Example Bank AB",
+         *           "orgNumber": "556000-0000",
+         *           "parentId": null,
+         *           "version": 3
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        TenantOrgUnitPage: {
+            /**
+             * Items
+             * @description The units on this page, by name; an empty list is a 200 and means the bank has recorded none.
+             */
+            items: components["schemas"]["TenantOrgUnit"][];
+            /**
+             * Total
+             * @description How many units the bank has in total, active and deactivated, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * TenantOrgUnitPatch
+         * @description A change to a unit. Send only the fields you are changing; its kind never changes.
+         * @example {
+         *       "headUserId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *       "name": "Retail and Private Banking"
+         *     }
+         */
+        TenantOrgUnitPatch: {
+            /**
+             * Active
+             * @description False deactivates the unit and true restores it; null by default, which leaves it alone.
+             */
+            active?: boolean | null;
+            /**
+             * Countrycode
+             * @description A new two-letter country, at most 2 characters; null by default, which leaves it alone.
+             */
+            countryCode?: string | null;
+            /**
+             * Entityterm
+             * @description A new `legal_entity` term key, at most 80 characters; null by default, which leaves it alone. A vocabulary of the shared library an administrator may extend only through an approved proposal; read `GET /taxonomy/terms` for the live set.
+             */
+            entityTerm?: string | null;
+            /**
+             * Headuserid
+             * @description A new head, a UUID of an active member of the same bank; null by default, which leaves it alone.
+             */
+            headUserId?: string | null;
+            /**
+             * Lei
+             * @description A new legal entity identifier, at most 20 characters; null by default, which leaves it alone.
+             */
+            lei?: string | null;
+            /**
+             * Name
+             * @description A new name, at most 200 characters of one line of visible text; null by default, which leaves it alone. Blank is refused with a 422.
+             */
+            name?: string | null;
+            /**
+             * Orgnumber
+             * @description A new registration number, at most 40 characters; null by default, which leaves it alone.
+             */
+            orgNumber?: string | null;
+            /**
+             * Parentid
+             * @description A new parent unit, a UUID of the same bank; null by default, which leaves it alone.
+             */
+            parentId?: string | null;
         };
         /**
          * TenantOut
@@ -18302,6 +24247,22 @@ export interface components {
          *           30
          *         ],
          *         "triageTargetHours": 48
+         *       },
+         *       "workflowDefaults": {
+         *         "digestWeekday": "monday",
+         *         "escalateAfterDays": 5,
+         *         "escalateToRole": {
+         *           "key": "compliance_officer",
+         *           "kind": null,
+         *           "label": "Compliance officer"
+         *         },
+         *         "reminderDaysBefore": [
+         *           3
+         *         ],
+         *         "reviewReminderDaysBefore": [
+         *           30
+         *         ],
+         *         "triageTargetHours": 48
          *       }
          *     }
          */
@@ -18348,6 +24309,8 @@ export interface components {
             timezone: string;
             /** @description The bank's workflow policy: reminder lead days, when overdue work escalates and to which role, the digest's weekday and the triage target. Every member may read it; only `PATCH /tenant/workflow`, with `workflow.manage`, changes it, and the profile edit ignores it. */
             workflow: components["schemas"]["TenantWorkflow"];
+            /** @description The platform defaults a bank's workflow policy starts at, in the same shape as `workflow`, so the bank can see what it is changing from and go back to it. They are the platform's settings, not the bank's: nothing here changes them, and changing them later moves no bank's own policy. */
+            workflowDefaults: components["schemas"]["TenantWorkflow"];
         };
         /**
          * TenantPatch
@@ -18375,7 +24338,7 @@ export interface components {
             defaultLanguage?: string | null;
             /**
              * Name
-             * @description A new name for the organisation, at most 200 characters. Omit the field to leave the name alone; sending it blank does not clear it, it is refused with a 422, because an organisation without a name cannot be told apart in an audit trail.
+             * @description A new name for the organisation, at most 200 characters of one line of visible text: a line break, a tab or an invisible character is refused with a 422. Omit the field to leave the name alone; sending it blank does not clear it, it is refused with a 422, because an organisation without a name cannot be told apart in an audit trail.
              */
             name?: string | null;
             /**
@@ -18383,6 +24346,237 @@ export interface components {
              * @description A new IANA timezone for the organisation, such as `Europe/Copenhagen`, at most 64 characters. Omit the field to leave it alone. The name is checked against the IANA database the server runs on and an unknown one is refused with `unknown_key`. Changing it moves the local day every deadline is counted in, so dates already on screen are re-read in the new zone; the stored instants themselves do not move.
              */
             timezone?: string | null;
+        };
+        /**
+         * TenantPeoplePage
+         * @description One page of people: ids and names, nothing else about them.
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *           "name": "Karin Holm"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        TenantPeoplePage: {
+            /**
+             * Items
+             * @description The people on this page, by name; an empty list is a 200 and means nobody is in it.
+             */
+            items: components["schemas"]["PersonRef"][];
+            /**
+             * Total
+             * @description How many people there are in total, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * TenantProductBody
+         * @description A new product. A field the schema does not name is refused.
+         * @example {
+         *       "name": "Custody",
+         *       "status": "live",
+         *       "terms": [
+         *         "custody"
+         *       ]
+         *     }
+         */
+        TenantProductBody: {
+            /**
+             * Description
+             * @description The bank's description, at most 4000 characters; empty by default.
+             * @default
+             */
+            description: string;
+            /**
+             * Launchdate
+             * @description The launch date, a plain date; null by default.
+             */
+            launchDate?: string | null;
+            /**
+             * Name
+             * @description The product's name, unique within the bank, at most 200 characters of one line of visible text; blank or a line break is refused with a 422.
+             */
+            name: string;
+            /**
+             * Orgunitid
+             * @description The unit that offers it, a UUID of the same bank; null by default.
+             */
+            orgUnitId?: string | null;
+            /**
+             * Owneruserid
+             * @description The owning member, a UUID of an active member of the same bank; null by default.
+             */
+            ownerUserId?: string | null;
+            /**
+             * Status
+             * @description Where the product stands, `live` by default: `planned` (not yet offered, already scoped so the work can start), `live` (offered to customers today) or `retired` (withdrawn; a product is retired and never deleted, and a retired product scopes nothing).
+             * @default live
+             * @enum {string}
+             */
+            status: "planned" | "live" | "retired";
+            /**
+             * Terms
+             * @description The product's scope, at most 50 keys, each a term of the shared library, the same terms obligations are scoped with; a vocabulary an administrator may extend only through an approved proposal, read `GET /taxonomy/terms` for the live set. An unknown key answers `unknown_key`; empty by default.
+             */
+            terms?: string[];
+        };
+        /**
+         * TenantProductOut
+         * @description A product the bank offers, described the way obligations are scoped (TEN-02).
+         * @example {
+         *       "description": "Safekeeping of securities for retail and institutional clients.",
+         *       "id": "7c9e1a3b-5d2f-4a8c-9e0b-4d6f8a0c2e57",
+         *       "launchDate": "2019-05-01",
+         *       "name": "Custody",
+         *       "orgUnitId": "3f6a2c1d-8b4e-4d7a-9c5f-0e1d2c3b4a59",
+         *       "owner": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Karin Holm"
+         *       },
+         *       "status": "live",
+         *       "terms": [
+         *         {
+         *           "key": "custody",
+         *           "kind": null,
+         *           "label": "Custody"
+         *         }
+         *       ],
+         *       "version": 2
+         *     }
+         */
+        TenantProductOut: {
+            /**
+             * Description
+             * @description The bank's own description of the product; empty when there is none.
+             */
+            description: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The product's identifier, a UUID that never changes.
+             */
+            id: string;
+            /**
+             * Launchdate
+             * @description The date the product went or goes live, a plain date, or null.
+             */
+            launchDate: string | null;
+            /**
+             * Name
+             * @description The product's name as the bank wrote it, unique within the bank; match on the id.
+             */
+            name: string;
+            /**
+             * Orgunitid
+             * @description The identifier of the unit that offers it, a UUID of the same bank, or null.
+             */
+            orgUnitId: string | null;
+            /** @description The member who owns the product, or null. */
+            owner: components["schemas"]["PersonRef"] | null;
+            /**
+             * Status
+             * @description Where the product stands: `planned` (not yet offered, already scoped so the work can start), `live` (offered to customers today) or `retired` (withdrawn; a product is retired and never deleted, and a retired product scopes nothing).
+             * @enum {string}
+             */
+            status: "planned" | "live" | "retired";
+            /**
+             * Terms
+             * @description The product's scope as terms of the shared library, the same terms obligations are scoped with; a vocabulary an administrator may extend only through an approved proposal. An empty list when it is not scoped yet.
+             */
+            terms: components["schemas"]["TermRef"][];
+            /**
+             * Version
+             * @description The product's version; send it back in `If-Match` on a change, and a stale one is refused with `stale_write`.
+             */
+            version: number;
+        };
+        /**
+         * TenantProductPage
+         * @description One page of the bank's products, ordered by name.
+         * @example {
+         *       "items": [
+         *         {
+         *           "description": "Safekeeping of securities for retail and institutional clients.",
+         *           "id": "7c9e1a3b-5d2f-4a8c-9e0b-4d6f8a0c2e57",
+         *           "launchDate": "2019-05-01",
+         *           "name": "Custody",
+         *           "orgUnitId": "3f6a2c1d-8b4e-4d7a-9c5f-0e1d2c3b4a59",
+         *           "owner": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Karin Holm"
+         *           },
+         *           "status": "live",
+         *           "terms": [
+         *             {
+         *               "key": "custody",
+         *               "kind": null,
+         *               "label": "Custody"
+         *             }
+         *           ],
+         *           "version": 2
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        TenantProductPage: {
+            /**
+             * Items
+             * @description The products on this page, retired ones included; an empty list is a 200.
+             */
+            items: components["schemas"]["TenantProductOut"][];
+            /**
+             * Total
+             * @description How many products the bank has in total, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * TenantProductPatch
+         * @description A change to a product. Send only the fields you are changing; retiring is a status.
+         * @example {
+         *       "status": "retired"
+         *     }
+         */
+        TenantProductPatch: {
+            /**
+             * Description
+             * @description A new description, at most 4000 characters; null by default, which leaves it alone.
+             */
+            description?: string | null;
+            /**
+             * Launchdate
+             * @description A new launch date, a plain date; null by default, which leaves it alone.
+             */
+            launchDate?: string | null;
+            /**
+             * Name
+             * @description A new name, at most 200 characters of one line of visible text; null by default, which leaves it alone.
+             */
+            name?: string | null;
+            /**
+             * Orgunitid
+             * @description A new offering unit, a UUID of the same bank; null by default, which leaves it alone.
+             */
+            orgUnitId?: string | null;
+            /**
+             * Owneruserid
+             * @description A new owner, a UUID of an active member of the same bank; null by default, which leaves it alone.
+             */
+            ownerUserId?: string | null;
+            /**
+             * Status
+             * @description A new status, null by default, which leaves it alone: `planned` (not yet offered, already scoped so the work can start), `live` (offered to customers today) or `retired` (withdrawn; a product is retired and never deleted, and a retired product scopes nothing).
+             */
+            status?: ("planned" | "live" | "retired") | null;
+            /**
+             * Terms
+             * @description The complete new scope, at most 50 keys, each a term of the shared library, the same terms obligations are scoped with; a vocabulary an administrator may extend only through an approved proposal, read `GET /taxonomy/terms` for the live set. An unknown key answers `unknown_key`; null by default, which leaves it alone.
+             */
+            terms?: string[] | null;
         };
         /**
          * TenantProposalPage
@@ -18478,6 +24672,138 @@ export interface components {
              * @description The one-line request as the person here who filed it wrote it, which is what the screen lists it under.
              */
             title: string;
+        };
+        /**
+         * TenantRemovalOwner
+         * @description Who takes over one kind of the removed member's work: a person or a team, exactly one.
+         * @example {
+         *       "kind": "register_entry",
+         *       "teamKey": "compliance"
+         *     }
+         */
+        TenantRemovalOwner: {
+            /**
+             * Kind
+             * @description The kind of work being moved: `register_entry` (an obligation's register entry the person owns), `register_entity` (a legal entity's row on an entry), `gap`, `duty_occurrence` (a dated recurring duty), `internal_item` (a policy, procedure, control, process or system), `case` or `action`. Participations and team memberships end and are never moved.
+             * @enum {string}
+             */
+            kind: "register_entry" | "register_entity" | "gap" | "duty_occurrence" | "internal_item" | "case" | "action";
+            /**
+             * Teamkey
+             * @description The new owning team, at most 80 characters, the key of a row of the bank's `team` vocabulary, which an administrator may extend at `GET /vocab/team`; null by default. Send this or `userId`, never both.
+             */
+            teamKey?: string | null;
+            /**
+             * Userid
+             * @description The new owner, a UUID of another active member of the same bank; null by default. Send this or `teamKey`, never both.
+             */
+            userId?: string | null;
+        };
+        /**
+         * TenantRunQuery
+         * @description `GET /agent-runs`: the shared page, narrowed to one of the bank's agents or the
+         *     caller's own requests (ruling 9).
+         */
+        TenantRunQuery: {
+            /**
+             * Limit
+             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+             * @default 20
+             * @example 20
+             */
+            limit: number;
+            /**
+             * Mine
+             * @description Only the runs the caller asked for with run now or a research request; by default false, which filters nothing.
+             * @default false
+             */
+            mine: boolean;
+            /**
+             * Offset
+             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+             * @default 0
+             * @example 0
+             */
+            offset: number;
+            /**
+             * Tenantagentid
+             * @description Only the runs of this one of the bank's own agents, by its UUID identifier; by default null, which filters nothing. Another bank's agent matches no run.
+             */
+            tenantAgentId?: string | null;
+        };
+        /**
+         * TenantTeam
+         * @description A team of the bank, which can own work and take part in it (TEN-03). A team is a row
+         *     of the bank's `team` list, so creating, renaming and retiring one is `/vocab/team`.
+         * @example {
+         *       "active": true,
+         *       "email": "compliance@example-bank.test",
+         *       "key": "compliance",
+         *       "label": "Compliance",
+         *       "memberCount": 4,
+         *       "orgUnitId": null
+         *     }
+         */
+        TenantTeam: {
+            /**
+             * Active
+             * @description False once the team is retired; a retired team keeps what it owns until someone moves it.
+             */
+            active: boolean;
+            /**
+             * Email
+             * @description The team's shared mailbox, where the bank gave one; empty otherwise.
+             */
+            email: string;
+            /**
+             * Key
+             * @description The team's immutable key, such as `compliance`, the only part to store or send back. A row of the bank's own `team` vocabulary, which an administrator with `vocab.manage` may extend at `GET /vocab/team`; `compliance` is seeded for every bank.
+             */
+            key: string;
+            /**
+             * Label
+             * @description The team's name in the reader's language, for display only; it may be reworded at any time.
+             */
+            label: string;
+            /**
+             * Membercount
+             * @description How many active members are in the team at the moment of the call.
+             */
+            memberCount: number;
+            /**
+             * Orgunitid
+             * @description The identifier of the department the team sits in, a UUID of the same bank, or null.
+             */
+            orgUnitId: string | null;
+        };
+        /**
+         * TenantTeamPage
+         * @description One page of the bank's teams.
+         * @example {
+         *       "items": [
+         *         {
+         *           "active": true,
+         *           "email": "compliance@example-bank.test",
+         *           "key": "compliance",
+         *           "label": "Compliance",
+         *           "memberCount": 4,
+         *           "orgUnitId": null
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        TenantTeamPage: {
+            /**
+             * Items
+             * @description The teams on this page, in the list's order; an empty list is a 200.
+             */
+            items: components["schemas"]["TenantTeam"][];
+            /**
+             * Total
+             * @description How many teams the bank has in total, not how many are on this page.
+             */
+            total: number;
         };
         /**
          * TenantWorkflow
@@ -18586,7 +24912,7 @@ export interface components {
         TermRef: {
             /**
              * Key
-             * @description The value's immutable key, such as `advice` for a taxonomy term, `no` for Norway or `sv` for Swedish, and the only part of this reference to store, compare or send back. It is a row of a vocabulary: a taxonomy term (the shared library's terms, which an administrator may extend through an approved proposal; `GET /taxonomy/terms`), a jurisdiction (which the platform's library editors may add; `GET /reference/jurisdictions`), a language (the platform's own list, which no bank admin can extend) or an urgency (the shared library's `urgency` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/urgency`). A key you have not seen before is new data, not an error. A key never changes once issued.
+             * @description The value's immutable key, such as `advice` for a taxonomy term, `no` for Norway or `sv` for Swedish, and the only part of this reference to store, compare or send back. It is a row of a vocabulary: a taxonomy term (the shared library's terms, which an administrator may extend through an approved proposal; `GET /taxonomy/terms`), a jurisdiction (which the platform seeds and its library editors relabel, retire and restore by proposal; `GET /reference/jurisdictions`), a language (the platform's own list, which no bank admin can extend) or an urgency (the shared library's `urgency` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/urgency`). A key you have not seen before is new data, not an error. A key never changes once issued.
              * @example advice
              */
             key: string;
@@ -18915,7 +25241,7 @@ export interface components {
             list: string;
             /**
              * Proposable
-             * @description False for a library list that is reference data, seeded with every deploy and never changed through the API (`instrument_level` and `jurisdiction`): a create, suggestion, change, retire, restore or merge on it answers 422 `validation_error`. True for every other list, a bank's own lists included, which change directly rather than by proposal.
+             * @description False for a library list that is reference data, seeded with every deploy and never changed through the API: a create, suggestion, change, retire, restore or merge on it answers 422 `validation_error`. True for every other list, a bank's own lists included, which change directly rather than by proposal. `jurisdiction` is true with fixed keys: a proposal relabels, retires or restores a jurisdiction, and a create or a merge on it answers 422 `validation_error`.
              * @example true
              */
             proposable: boolean;
@@ -19697,6 +26023,189 @@ export interface components {
             obligationId: string;
         };
         /**
+         * WatchCaseWorkflow
+         * @description `GET /changes/{changeId}`'s `case`: everything a feed row says about the bank's case,
+         *     plus the workflow block the change page works it from — who triaged, dismissed, asked
+         *     for and gave sign-off and when, why it was closed, how many actions are open, whether
+         *     sign-off can be asked for, and the moves this reader may make now. Every value is
+         *     computed by the server from the case and the state machine; a screen never guesses a
+         *     move. The bank's own zone: no other bank, no bleqq person and no model endpoint sees it.
+         * @example {
+         *       "allowedTransitions": [
+         *         "implementing",
+         *         "closed"
+         *       ],
+         *       "canRequestSignoff": false,
+         *       "category": "assessing",
+         *       "closeReason": null,
+         *       "closedAt": null,
+         *       "dismissedAt": null,
+         *       "dismissedBy": null,
+         *       "dismissedReason": null,
+         *       "footprintMatch": true,
+         *       "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *       "obligationDecisions": [],
+         *       "openActionCount": 2,
+         *       "owner": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Sara Lind"
+         *       },
+         *       "ownerId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *       "signedOffBy": null,
+         *       "signoffRequestedAt": null,
+         *       "signoffRequestedBy": null,
+         *       "soWhatConfirmed": false,
+         *       "soWhatConfirmedAt": null,
+         *       "soWhatConfirmedByName": null,
+         *       "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *       "subStatus": null,
+         *       "triagedAt": "2026-09-17T08:40:00Z",
+         *       "triagedBy": {
+         *         "id": "5b7e2c1a-9d3f-4e8b-a6c4-0f1e2d3c4b5a",
+         *         "name": "Johan Berg"
+         *       },
+         *       "urgency": {
+         *         "key": "within_3_months",
+         *         "kind": null,
+         *         "label": "Within 3 months"
+         *       },
+         *       "urgencyConfirmed": true,
+         *       "version": 4
+         *     }
+         */
+        WatchCaseWorkflow: {
+            /**
+             * Allowedtransitions
+             * @description The categories this reader may move the case to now, computed by the server from the state machine and its guards; each is a fixed kind in code, one of: `new`, registered and nobody has looked; `assigned`, triaged with an urgency and an owner; `assessing`, the owner is working out what it means for the bank; `implementing`, actions are being done; `signoff`, waiting for a second person to sign it off with a passkey; `closed`, signed off or closed with a reason; and `dismissed`, not for this bank, with a reason, and restorable. A move that needs something its request supplies (an owner, a reason) is listed and refused if the request leaves it out. Empty means no move is open to this reader now; the reader's permissions are checked by the move itself.
+             * @example [
+             *       "implementing",
+             *       "closed"
+             *     ]
+             */
+            allowedTransitions: ("new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed")[];
+            /**
+             * Canrequestsignoff
+             * @description Computed by the server from the state machine: true when the case is implementing, no action is open and at least one piece of evidence passed the malware scan.
+             * @example false
+             */
+            canRequestSignoff: boolean;
+            /**
+             * Category
+             * @description Where the case stands, one of the seven fixed categories the state machine reads (D-13): `new` (registered, nobody has looked — the screen reads 'Needs triage'), `assigned` (triaged with an urgency and an owner), `assessing` (the owner is working out what it means), `implementing` (actions are open), `signoff` (waiting for a second person), `closed` and `dismissed` (not for us, with a reason, and restorable). A bank may name sub-statuses inside a category, answered in `subStatus`; the guards read the category alone.
+             * @example new
+             * @enum {string}
+             */
+            category: "new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed";
+            /** @description Why the case was closed, from the bank's `close_reason` vocabulary, whose `kind` is one of `signed_off` (a second person signed it off), `no_action` or `not_applicable` (one person closed it, audited); rows the bank's admin may extend, so read `GET /vocab/close_reason` for the live set and match on the key. Null while open. */
+            closeReason: components["schemas"]["CasesVocabularyRef"] | null;
+            /**
+             * Closedat
+             * @description When the case was closed, as an RFC 3339 timestamp in UTC. Null while it is open.
+             * @example null
+             */
+            closedAt: string | null;
+            /**
+             * Dismissedat
+             * @description When it was dismissed, as an RFC 3339 timestamp in UTC. Null unless it was dismissed.
+             * @example null
+             */
+            dismissedAt: string | null;
+            /** @description Who dismissed it. A person in this bank, as their id and display name; the only personal data this read carries about them. Null unless it was dismissed. */
+            dismissedBy: components["schemas"]["PersonRef"] | null;
+            /** @description Why the bank dismissed the change, from its `dismissal_reason` vocabulary, `out_of_scope`, `duplicate` and `already_covered` on day one; rows the bank's admin may extend, so read `GET /vocab/dismissal_reason` for the live set and match on the key. Null unless the case is or was dismissed. */
+            dismissedReason: components["schemas"]["CasesVocabularyRef"] | null;
+            /**
+             * Footprintmatch
+             * @description Whether the change's scope terms match this bank's footprint, computed by the server when the case was created and recomputed when either side moves. It says the change is in scope to look at; it does not say the obligation applies or that the bank complies — those are separate facts (REG-01, REG-02).
+             * @example true
+             */
+            footprintMatch: boolean;
+            /**
+             * Id
+             * Format: uuid
+             * @description This bank's case for the change, as a UUID. One per bank per change (CAS-01), and never another bank's.
+             * @example 9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46
+             */
+            id: string;
+            /**
+             * Obligationdecisions
+             * @description What this bank decided about the suggested obligation links. An empty list means it has decided nothing yet.
+             */
+            obligationDecisions: components["schemas"]["WatchCaseObligationDecision"][];
+            /**
+             * Openactioncount
+             * @description How many live actions are not done yet, counted by the server. A removed action is not counted.
+             * @example 2
+             */
+            openActionCount: number;
+            /** @description Who owns the case, named at triage. A person in this bank, as their id and display name; the only personal data this read carries about them. Null before triage. */
+            owner: components["schemas"]["PersonRef"] | null;
+            /**
+             * Ownerid
+             * @description The person in this bank who owns the case, as a UUID, once triage names one. Null before triage, and kept after a dismissal only if one was named. Never a person of another bank.
+             * @example null
+             */
+            ownerId: string | null;
+            /** @description The second person who signed the case off with a passkey, never the one who asked. A person in this bank, as their id and display name; the only personal data this read carries about them. Null until then. */
+            signedOffBy: components["schemas"]["PersonRef"] | null;
+            /**
+             * Signoffrequestedat
+             * @description When sign-off was asked for, as an RFC 3339 timestamp in UTC. Null until someone asks.
+             * @example null
+             */
+            signoffRequestedAt: string | null;
+            /** @description Who asked for sign-off; this person can never give it. A person in this bank, as their id and display name; the only personal data this read carries about them. Null until someone asks. */
+            signoffRequestedBy: components["schemas"]["PersonRef"] | null;
+            /**
+             * Sowhatconfirmed
+             * @description Whether a person in this bank confirmed or rewrote the wording. False means it is still an AI draft and the screen labels it so (WAT-05). Another bank's copy is unaffected either way.
+             * @example false
+             */
+            soWhatConfirmed: boolean;
+            /**
+             * Sowhatconfirmedat
+             * @description When a person in this bank confirmed the wording, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null while it is still an AI draft.
+             * @example null
+             */
+            soWhatConfirmedAt: string | null;
+            /**
+             * Sowhatconfirmedbyname
+             * @description The display name of the person in this bank who confirmed or rewrote the wording, for the screen's 'Confirmed by' line, read in the same query as the case. Null while it is still an AI draft, exactly when `soWhatConfirmed` is false. A name is the only personal data this read carries about the confirmation (playbook 4.7).
+             * @example null
+             */
+            soWhatConfirmedByName: string | null;
+            /**
+             * Sowhattext
+             * @description This bank's copy of the 'So what?', at most 4000 characters. It starts as the library's draft and is this bank's to rewrite. Null when no draft exists yet.
+             * @example Teams that pay for external research should confirm that documented criteria exist.
+             */
+            soWhatText: string | null;
+            /** @description The bank's own finer step inside `category`, from its `case_sub_status` vocabulary, whose `kind` is the category the row sits in; day one seeds one per category, keyed like it. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/case_sub_status` for the live set and match on the key, never on the label. It changes nothing a guard decides. Null when the bank uses none here. */
+            subStatus: components["schemas"]["CasesVocabularyRef"] | null;
+            /**
+             * Triagedat
+             * @description When the case was triaged, as an RFC 3339 timestamp in UTC (`2026-09-17T08:40:00Z`). Null before triage.
+             * @example 2026-09-17T08:40:00Z
+             */
+            triagedAt: string | null;
+            /** @description Who triaged the case. A person in this bank, as their id and display name; the only personal data this read carries about them. Null before triage. */
+            triagedBy: components["schemas"]["PersonRef"] | null;
+            /** @description How soon this bank must act, as `{key, kind, label}` from the `urgency` library vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or `no_action` on day one. It starts as the change's suggested urgency and stays a suggestion until `urgencyConfirmed` is true. Null only where no suggestion was made. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
+            urgency: components["schemas"]["LibraryRef"] | null;
+            /**
+             * Urgencyconfirmed
+             * @description Whether a person in this bank confirmed the urgency at triage. False means the value above is still the agent's suggestion; the screen says so. A reader must not report an unconfirmed urgency as this bank's decision.
+             * @example false
+             */
+            urgencyConfirmed: boolean;
+            /**
+             * Version
+             * @description The case's version, starting at 1 and raised by every write to it. Send it in `If-Match` on every workflow write; an older value answers 409 `stale_write`.
+             * @example 4
+             */
+            version: number;
+        };
+        /**
          * WatchChange
          * @description A library record: sourced facts, shared by every tenant. No tenant judgement, no
          *     case and no "So what?" confirmation is here; those sit on the tenant's own case.
@@ -19955,7 +26464,6 @@ export interface components {
          *     in the bank's zone under row-level security. No other bank and no bleqq person sees it,
          *     and none of it reaches a model endpoint (NFR-01, NFR-04, D-07).
          * @example {
-         *       "allowedTransitions": [],
          *       "category": "new",
          *       "footprintMatch": true,
          *       "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
@@ -19965,6 +26473,7 @@ export interface components {
          *       "soWhatConfirmedAt": null,
          *       "soWhatConfirmedByName": null,
          *       "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *       "subStatus": null,
          *       "urgency": {
          *         "key": "act_now",
          *         "kind": null,
@@ -19975,14 +26484,8 @@ export interface components {
          */
         WatchChangeCase: {
             /**
-             * Allowedtransitions
-             * @description The categories this case may move to next, computed by the server from the state machine's guards. A fixed kind in code, not a vocabulary an admin extends, and the seven members are: `new`, registered and nobody has looked; `assigned`, triaged with an urgency and an owner; `assessing`, the owner is working out what it means for the bank; `implementing`, actions are open; `signoff`, waiting for a second person to sign it off with a passkey; `closed`, signed off or closed with a reason; and `dismissed`, not for this bank, with a reason, and restorable. Always empty in R1, because the workflow that would move a case is chunk 9; empty means 'no move is offered here yet', never 'the case is stuck'.
-             * @example []
-             */
-            allowedTransitions: ("new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed")[];
-            /**
              * Category
-             * @description Where the case stands, one of the seven fixed categories the state machine reads (D-13): `new` (registered, nobody has looked — the screen reads 'Needs triage'), `assigned` (triaged with an urgency and an owner), `assessing` (the owner is working out what it means), `implementing` (actions are open), `signoff` (waiting for a second person), `closed` and `dismissed` (not for us, with a reason, and restorable). A bank may name sub-statuses inside a category; the guards read the category alone. In R1 every case is `new`: triage onwards is chunk 9.
+             * @description Where the case stands, one of the seven fixed categories the state machine reads (D-13): `new` (registered, nobody has looked — the screen reads 'Needs triage'), `assigned` (triaged with an urgency and an owner), `assessing` (the owner is working out what it means), `implementing` (actions are open), `signoff` (waiting for a second person), `closed` and `dismissed` (not for us, with a reason, and restorable). A bank may name sub-statuses inside a category, answered in `subStatus`; the guards read the category alone.
              * @example new
              * @enum {string}
              */
@@ -20007,7 +26510,7 @@ export interface components {
             obligationDecisions: components["schemas"]["WatchCaseObligationDecision"][];
             /**
              * Ownerid
-             * @description The person in this bank who owns the case, as a UUID, once triage names one. Null before triage, which is where every case sits in R1. Never a person of another bank.
+             * @description The person in this bank who owns the case, as a UUID, once triage names one. Null before triage, and kept after a dismissal only if one was named. Never a person of another bank.
              * @example null
              */
             ownerId: string | null;
@@ -20035,6 +26538,8 @@ export interface components {
              * @example Teams that pay for external research should confirm that documented criteria exist.
              */
             soWhatText: string | null;
+            /** @description The bank's own finer step inside `category`, from its `case_sub_status` vocabulary, whose `kind` is the category the row sits in; day one seeds one per category, keyed like it. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/case_sub_status` for the live set and match on the key, never on the label. It changes nothing a guard decides. Null when the bank uses none here. */
+            subStatus: components["schemas"]["CasesVocabularyRef"] | null;
             /** @description How soon this bank must act, as `{key, kind, label}` from the `urgency` library vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or `no_action` on day one. It starts as the change's suggested urgency and stays a suggestion until `urgencyConfirmed` is true. Null only where no suggestion was made. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
             urgency: components["schemas"]["LibraryRef"] | null;
             /**
@@ -20065,22 +26570,46 @@ export interface components {
          *       "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
          *       "authorityLabel": "Finansinspektionen",
          *       "case": {
-         *         "allowedTransitions": [],
-         *         "category": "new",
+         *         "allowedTransitions": [
+         *           "implementing",
+         *           "closed"
+         *         ],
+         *         "canRequestSignoff": false,
+         *         "category": "assessing",
+         *         "closeReason": null,
+         *         "closedAt": null,
+         *         "dismissedAt": null,
+         *         "dismissedBy": null,
+         *         "dismissedReason": null,
          *         "footprintMatch": true,
          *         "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
          *         "obligationDecisions": [],
-         *         "ownerId": null,
+         *         "openActionCount": 2,
+         *         "owner": {
+         *           "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *           "name": "Sara Lind"
+         *         },
+         *         "ownerId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "signedOffBy": null,
+         *         "signoffRequestedAt": null,
+         *         "signoffRequestedBy": null,
          *         "soWhatConfirmed": false,
          *         "soWhatConfirmedAt": null,
          *         "soWhatConfirmedByName": null,
          *         "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
-         *         "urgency": {
-         *           "key": "act_now",
-         *           "kind": null,
-         *           "label": "Act now"
+         *         "subStatus": null,
+         *         "triagedAt": "2026-09-17T08:40:00Z",
+         *         "triagedBy": {
+         *           "id": "5b7e2c1a-9d3f-4e8b-a6c4-0f1e2d3c4b5a",
+         *           "name": "Johan Berg"
          *         },
-         *         "urgencyConfirmed": false
+         *         "urgency": {
+         *           "key": "within_3_months",
+         *           "kind": null,
+         *           "label": "Within 3 months"
+         *         },
+         *         "urgencyConfirmed": true,
+         *         "version": 4
          *       },
          *       "changeType": {
          *         "key": "adopted",
@@ -20224,8 +26753,8 @@ export interface components {
              * @example Finansinspektionen
              */
             authorityLabel: string;
-            /** @description The reader's own bank's case, or null when there is none. Never another bank's, and never present for a console session. */
-            case: components["schemas"]["WatchChangeCase"] | null;
+            /** @description The reader's own bank's case with its workflow block, or null when there is none. Never another bank's, and never present for a console session. */
+            case: components["schemas"]["WatchCaseWorkflow"] | null;
             /** @description The kind of change, as `{key, kind, label}` from the `change_type` library vocabulary; the label is in the reader's language. The `kind` member is the `change_lifecycle_kind` the rules branch on. Never a phrase to match and never a tone. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
             changeType: components["schemas"]["LibraryRef"];
             /** @description The change's type as a fact, exactly as a feed row answers its `changeType`: `ref` is the same row as `changeType`, beside the agent's confidence, whether it is still a suggestion and who suggested and who confirmed it. This read always sends it; the default of null exists only because the property was added after `changeType`, which stays a bare reference so a client reading it keeps working. A type an independent agent confirmed reads machine-confirmed, never as a person's verification (WAT-03, D-74). */
@@ -20844,7 +27373,6 @@ export interface components {
          *           "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
          *           "authorityLabel": "Finansinspektionen",
          *           "case": {
-         *             "allowedTransitions": [],
          *             "category": "new",
          *             "footprintMatch": true,
          *             "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
@@ -20854,6 +27382,7 @@ export interface components {
          *             "soWhatConfirmedAt": null,
          *             "soWhatConfirmedByName": null,
          *             "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *             "subStatus": null,
          *             "urgency": {
          *               "key": "act_now",
          *               "kind": null,
@@ -21103,7 +27632,7 @@ export interface components {
             status?: ("active" | "superseded" | "withdrawn") | null;
             /**
              * Tab
-             * @description Which case category to show, a fixed kind: `all`, or one of the seven categories `new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed`, `dismissed`. It filters on this bank's own cases, so a tab other than `all` answers nothing for a caller with no case. In R1 every case is `new`.
+             * @description Which case category to show, a fixed kind: `all`, or one of the seven categories `new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed`, `dismissed`. It filters on this bank's own cases, so a tab other than `all` answers nothing for a caller with no case. Triage, assessment and sign-off move a case between them.
              * @default all
              * @example all
              * @enum {string}
@@ -21145,7 +27674,6 @@ export interface components {
          *       "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
          *       "authorityLabel": "Finansinspektionen",
          *       "case": {
-         *         "allowedTransitions": [],
          *         "category": "new",
          *         "footprintMatch": true,
          *         "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
@@ -21155,6 +27683,7 @@ export interface components {
          *         "soWhatConfirmedAt": null,
          *         "soWhatConfirmedByName": null,
          *         "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *         "subStatus": null,
          *         "urgency": {
          *           "key": "act_now",
          *           "kind": null,
@@ -21768,7 +28297,6 @@ export interface components {
          *           "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
          *           "authorityLabel": "Finansinspektionen",
          *           "case": {
-         *             "allowedTransitions": [],
          *             "category": "new",
          *             "footprintMatch": true,
          *             "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
@@ -21778,6 +28306,7 @@ export interface components {
          *             "soWhatConfirmedAt": null,
          *             "soWhatConfirmedByName": null,
          *             "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *             "subStatus": null,
          *             "urgency": {
          *               "key": "act_now",
          *               "kind": null,
@@ -22636,6 +29165,54 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    deleteAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The action, as a UUID. It is loaded with its case in the caller's own bank, so an action of another bank, and one already removed, answer 404. */
+                action_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The action, as a UUID. It is loaded with its case in the caller's own bank, so an action of another bank, and one already removed, answer 404. */
+                action_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CasesActionPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesAction"];
+                };
+            };
+        };
+    };
     listAgentDefinitions: {
         parameters: {
             query?: {
@@ -22663,6 +29240,131 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentDefinitionPage"];
+                };
+            };
+        };
+    };
+    getAgentDefinition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The stable key of one of the platform's agent definitions, such as `watch-sweeper`, as `GET /agent-definitions` lists it. A key never changes; a new version keeps it. */
+                agent_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentDefinitionDetail"];
+                };
+            };
+        };
+    };
+    getPlatformAgentSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The stable key of one of the platform's agent definitions, such as `watch-sweeper`, as `GET /agent-definitions` lists it. A key never changes; a new version keeps it. */
+                agent_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformAgentSettings"];
+                };
+            };
+        };
+    };
+    updatePlatformAgentSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The stable key of one of the platform's agent definitions, such as `watch-sweeper`, as `GET /agent-definitions` lists it. A key never changes; a new version keeps it. */
+                agent_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformAgentSettingsInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformAgentSettings"];
+                };
+            };
+        };
+    };
+    publishAgentVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The stable key of one of the platform's agent definitions, such as `watch-sweeper`, as `GET /agent-definitions` lists it. A key never changes; a new version keeps it. */
+                agent_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentVersionInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentVersionOut"];
+                };
+            };
+        };
+    };
+    retireAgentVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The stable key of one of the platform's agent definitions, such as `watch-sweeper`, as `GET /agent-definitions` lists it. A key never changes; a new version keeps it. */
+                agent_key: string;
+                /** @description The number of the version to retire, counting from 1 within its definition. */
+                version_no: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentVersionOut"];
                 };
             };
         };
@@ -22758,6 +29460,10 @@ export interface operations {
                  * @example 0
                  */
                 offset?: number;
+                /** @description Only the runs of this one of the bank's own agents, by its UUID identifier; by default null, which filters nothing. Another bank's agent matches no run. */
+                tenantAgentId?: string | null;
+                /** @description Only the runs the caller asked for with run now or a research request; by default false, which filters nothing. */
+                mine?: boolean;
             };
             header?: never;
             path?: never;
@@ -22771,7 +29477,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AgentRunPage"];
+                    "application/json": components["schemas"]["AgentRunListPage"];
                 };
             };
         };
@@ -22833,6 +29539,29 @@ export interface operations {
             };
         };
     };
+    interruptAgentRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The run to stop, as a UUID. Another bank's run answers 404; one of bleqq's runs answers 403. */
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRunListItem"];
+                };
+            };
+        };
+    };
     recordSourceCheck: {
         parameters: {
             query?: never;
@@ -22858,6 +29587,188 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    listTenantAgents: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantAgentPage"];
+                };
+            };
+        };
+    };
+    createTenantAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantAgentInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantAgentOut"];
+                };
+            };
+        };
+    };
+    listPlatformWatch: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformWatchPage"];
+                };
+            };
+        };
+    };
+    updateTenantAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description One of the bank's own agents, as a UUID. Another bank's agent answers 404, never 403. */
+                tenant_agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantAgentUpdate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantAgentOut"];
+                };
+            };
+        };
+    };
+    pauseTenantAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description One of the bank's own agents, as a UUID. Another bank's agent answers 404, never 403. */
+                tenant_agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantAgentOut"];
+                };
+            };
+        };
+    };
+    resumeTenantAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description One of the bank's own agents, as a UUID. Another bank's agent answers 404, never 403. */
+                tenant_agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantAgentOut"];
+                };
+            };
+        };
+    };
+    runTenantAgentNow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description One of the bank's own agents, as a UUID. Another bank's agent answers 404, never 403. */
+                tenant_agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRunListItem"];
+                };
             };
         };
     };
@@ -23547,7 +30458,7 @@ export interface operations {
                  */
                 offset?: number;
                 /**
-                 * @description Which case category to show, a fixed kind: `all`, or one of the seven categories `new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed`, `dismissed`. It filters on this bank's own cases, so a tab other than `all` answers nothing for a caller with no case. In R1 every case is `new`.
+                 * @description Which case category to show, a fixed kind: `all`, or one of the seven categories `new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed`, `dismissed`. It filters on this bank's own cases, so a tab other than `all` answers nothing for a caller with no case. Triage, assessment and sign-off move a case between them.
                  * @example all
                  */
                 tab?: "all" | "new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed";
@@ -23711,6 +30622,146 @@ export interface operations {
             };
         };
     };
+    listActions: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesActionPage"];
+                };
+            };
+        };
+    };
+    addAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CasesActionBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesAction"];
+                };
+            };
+        };
+    };
+    saveAssessment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CasesAssessmentBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesCase"];
+                };
+            };
+        };
+    };
+    startAssessment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesCase"];
+                };
+            };
+        };
+    };
+    getCaseFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example Case file: FI adopts amended rules on paying for investment research
+                     *     Status: closed (signed off)
+                     *     Owner: Sara Lind
+                     *     Signed off by Johan Berg on 2026-10-02, requested by Sara Lind on 2026-10-01
+                     */
+                    "text/plain": string;
+                };
+            };
+        };
+    };
     acceptCaseObligationLink: {
         parameters: {
             query?: never;
@@ -23763,6 +30814,33 @@ export interface operations {
             };
         };
     };
+    closeWithoutAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CasesCloseBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesCase"];
+                };
+            };
+        };
+    };
     confirmChangeCuration: {
         parameters: {
             query?: never;
@@ -23789,6 +30867,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WatchConsoleChangeRow"];
+                };
+            };
+        };
+    };
+    dismissChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CasesReasonBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesCase"];
                 };
             };
         };
@@ -23885,6 +30990,100 @@ export interface operations {
             };
         };
     };
+    listEvidence: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesEvidencePage"];
+                };
+            };
+        };
+    };
+    addEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "kind": "link",
+                 *       "name": "FI decision memo",
+                 *       "url": "https://intranet.example.com/memo/42"
+                 *     }
+                 */
+                "multipart/form-data": {
+                    /**
+                     * File
+                     * @description The evidence's bytes, as the `file` part of the multipart form: required when `kind` is `file` and refused for the other kinds. Checked for its type and size before a byte is stored, hashed with SHA-256, kept privately and scanned for malware before it can be downloaded. Tenant content: its contents never reach a log, the audit values or a model.
+                     */
+                    file?: string | null;
+                    /**
+                     * Kind
+                     * @description What is being added, a fixed kind: `file` (send the bytes in the `file` part), `link` (send `url`) or `reference` (the name of an internal document, nothing else).
+                     * @example link
+                     * @enum {string}
+                     */
+                    kind: "file" | "link" | "reference";
+                    /**
+                     * Name
+                     * @description What the evidence is called, 1 to 500 characters. Tenant content.
+                     * @example FI decision memo
+                     */
+                    name: string;
+                    /**
+                     * Url
+                     * @description The address of a link, an https URL of at most 2000 characters; empty by default and for the other kinds. The server stores it and never fetches it.
+                     * @default
+                     * @example https://intranet.example.com/memo/42
+                     */
+                    url?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesEvidenceCreated"];
+                };
+            };
+        };
+    };
     replaceChangeObligations: {
         parameters: {
             query?: never;
@@ -23942,6 +31141,106 @@ export interface operations {
             };
         };
     };
+    restoreChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesCase"];
+                };
+            };
+        };
+    };
+    approveSignoff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CasesNoteBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesCase"];
+                };
+            };
+        };
+    };
+    requestSignoff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesCase"];
+                };
+            };
+        };
+    };
+    sendBackSignoff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CasesNoteBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesCase"];
+                };
+            };
+        };
+    };
     saveSoWhat: {
         parameters: {
             query?: never;
@@ -23992,6 +31291,177 @@ export interface operations {
             };
         };
     };
+    triageChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CasesTriageBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesCase"];
+                };
+            };
+        };
+    };
+    listComments: {
+        parameters: {
+            query: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+                /**
+                 * @description The kind of record, as a fixed lowercase code of at most 64 characters. Comments are taken on four kinds: `obligation` (an obligation in the shared library, as this bank sees it), `tenant_obligation` (an item the bank keeps in its own inventory), `change_case` (the bank's own case on a regulatory change) and `action` (a piece of work on a case). A kind outside those four is refused with a 422. A code, not a label: store and compare it, never show it.
+                 * @example change_case
+                 */
+                subjectType: string;
+                /**
+                 * @description The record's identifier, as a uuid. Together with the kind it names exactly one record; a record this bank does not hold, or one the caller may not read, answers 404 as if it did not exist.
+                 * @example 11111111-1111-4111-8111-111111111111
+                 */
+                subjectId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollabCommentPage"];
+                };
+            };
+        };
+    };
+    addComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollabCommentInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollabCommentCreated"];
+                };
+            };
+        };
+    };
+    deleteComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The comment, as a uuid from `GET /comments`. A comment in another bank answers 404, never 403, so no id can be probed. */
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    editComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The comment, as a uuid from `GET /comments`. A comment in another bank answers 404, never 403, so no id can be probed. */
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollabCommentPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollabComment"];
+                };
+            };
+        };
+    };
+    listPlatformRuns: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRunListPage"];
+                };
+            };
+        };
+    };
     listConsoleChanges: {
         parameters: {
             query?: {
@@ -24034,6 +31504,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WatchConsoleChangePage"];
+                };
+            };
+        };
+    };
+    createRetagRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetagRequestInput"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchRequestOut"];
+                };
+            };
+        };
+    };
+    listConsoleSupportAccess: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleSupportAccessPage"];
+                };
+            };
+        };
+    };
+    enterConsoleSupportAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description One of the caller's own approved grants, as a UUID; anybody else's, or one that is not active, answers 404. */
+                grant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionTokens"];
                 };
             };
         };
@@ -24118,6 +31666,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Empty"];
+                };
+            };
+        };
+    };
+    requestConsoleSupportAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The bank being asked, the UUID the console's tenant list returns as `id`; a bank that does not exist answers 404. */
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsoleSupportAccessBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleSupportAccessGrant"];
                 };
             };
         };
@@ -24285,6 +31860,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvalRunPage"];
+                };
+            };
+        };
+    };
+    removeEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The piece of evidence, as a UUID. It is loaded with its case in the caller's own bank, so evidence of another bank, and a piece already removed, answer 404. */
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    downloadEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The piece of evidence, as a UUID. It is loaded with its case in the caller's own bank, so evidence of another bank, and a piece already removed, answer 404. */
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example %PDF-1.7 … */
+                    "application/octet-stream": string;
                 };
             };
         };
@@ -24580,7 +32200,7 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Only the instruments of this regime, by the regime term's key: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. A key no regime has matches nothing and answers 200 with an empty page.
+                 * @description Only the instruments of this regime, by the regime term's key: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. A key no regime has matches nothing and answers 200 with an empty page. At most 80 characters; a longer one is refused with 422 `validation_error`.
                  * @example securities
                  */
                 regime?: string | null;
@@ -24895,6 +32515,42 @@ export interface operations {
             };
         };
     };
+    listMyComments: {
+        parameters: {
+            query: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+                /**
+                 * @description Which comments to list: `written`, the comments the caller wrote, on any record; `mentioned`, other people's comments that name the caller. Any other value is refused with a 422.
+                 * @example mentioned
+                 */
+                about: "written" | "mentioned";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollabMyCommentPage"];
+                };
+            };
+        };
+    };
     listMyPasskeys: {
         parameters: {
             query?: never;
@@ -25070,27 +32726,116 @@ export interface operations {
             };
         };
     };
+    listNotifications: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+                /**
+                 * @description `true` to list only the notifications not yet marked read, for the bell; false by default, which lists read and unread alike, newest first.
+                 * @example true
+                 */
+                unread?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollabNotificationPage"];
+                };
+            };
+        };
+    };
+    markAllNotificationsRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    markNotificationRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The notification to mark read, as a uuid from `GET /notifications`. Another person's notification, or one in another bank, answers 404, never 403, so no id can be probed. */
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     listObligations: {
         parameters: {
             query?: {
                 /**
-                 * @description Only the duties broken out of this instrument, by the instrument's stable key: `fffs-2017-2` for FFFS 2017:2. A key no instrument has is not an error — it matches nothing, and the call answers 200 with an empty page.
+                 * @description Only the duties broken out of this instrument, by the instrument's stable key: `fffs-2017-2` for FFFS 2017:2. A key no instrument has is not an error — it matches nothing, and the call answers 200 with an empty page. At most 80 characters; a longer one is refused with 422 `validation_error`.
                  * @example fffs-2017-2
                  */
                 instrument?: string | null;
                 /**
-                 * @description Only the duties of this kind, by the duty type's key. `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical` are seeded on day one, and they are vocabulary rows rather than a closed set: a platform admin may extend, relabel or retire the list without a deploy. Read `GET /vocab/duty_type` for the live set and send the key, never the label. A key no duty type has matches nothing and answers 200 with an empty page.
+                 * @description Only the duties of this kind, by the duty type's key. `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical` are seeded on day one, and they are vocabulary rows rather than a closed set: a platform admin may extend, relabel or retire the list without a deploy. Read `GET /vocab/duty_type` for the live set and send the key, never the label. A key no duty type has matches nothing and answers 200 with an empty page. At most 80 characters; a longer one is refused with 422 `validation_error`.
                  * @example governance
                  */
                 dutyType?: string | null;
                 /**
-                 * @description Only the duties whose scope carries every one of these terms, each written `dimension:key`. Repeat the parameter for more than one; they are combined with AND, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The terms are taxonomy vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. A value with no colon is refused with 422 `validation_error`, and one that names no active term with 422 `unknown_key` naming every term that was not found.
+                 * @description Only the duties whose scope carries every one of these terms, each written `dimension:key`. Repeat the parameter for more than one; they are combined with AND, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The terms are taxonomy vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. Each value is at most 80 characters. A longer one, or one with no colon, is refused with 422 `validation_error`, and one that names no active term with 422 `unknown_key` naming every term that was not found.
                  * @example [
                  *       "service_type:advice",
                  *       "account_type:isk"
                  *     ]
                  */
                 term?: string[];
+                /**
+                 * @description Only the duties carrying every one of these library tags, by key: the library's own keywords a row shows in `tags`, the same for every bank. Repeat the parameter for more than one; they are combined with AND, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`, the cap every repeated filter here shares). The tags are vocabulary rows a platform admin may extend, relabel or retire without a deploy, so read `GET /vocab/library_tag` for the live set and match on the key. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`, and a key no library tag has with 422 `unknown_key` naming every one that was not found.
+                 * @example [
+                 *       "research"
+                 *     ]
+                 */
+                tag?: string[];
+                /**
+                 * @description Only the duties carrying every one of these tags of the caller's own bank, by key: what a row shows in `tenantTags`. Repeat the parameter for more than one; they are combined with AND, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The tags are rows of the bank's own `tenant_tag` vocabulary, which its admin may extend, relabel or retire without a deploy, so read `GET /vocab/tenant_tag` for the live set and match on the key; another bank's tags are never matched. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`, a key the bank has no tag for with 422 `unknown_key` naming every one that was not found, and the filter itself with 422 `unknown_filter` when the caller belongs to no bank, such as a platform key.
+                 * @example [
+                 *       "custody"
+                 *     ]
+                 */
+                tenantTag?: string[];
                 /**
                  * @description Find the duties whose title or citation contains these words, ignoring case: a phrase to look for, never a document. At most 200 characters (`MAX_QUERY_LENGTH`); a longer one is refused with 422 `validation_error`. It narrows this list and is not the product's search: ranking, synonyms and the text of the summaries belong to `GET /search`.
                  * @example research
@@ -25864,6 +33609,89 @@ export interface operations {
             };
         };
     };
+    createProposalBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposalBatchInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalBatch"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalBatch"];
+                };
+            };
+        };
+    };
+    getProposalBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The batch, the UUID `POST /proposal-batches` returned and the queue lists as the proposal's `id`. A batch that does not exist, a proposal that is not a batch, and anything that is not a UUID answer `not_found`. */
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalBatch"];
+                };
+            };
+        };
+    };
+    decideProposalBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The batch, the UUID `POST /proposal-batches` returned and the queue lists as the proposal's `id`. A batch that does not exist, a proposal that is not a batch, and anything that is not a UUID answer `not_found`. */
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposalBatchDecision"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalBatch"];
+                };
+            };
+        };
+    };
     listProposals: {
         parameters: {
             query?: {
@@ -26208,6 +34036,37 @@ export interface operations {
             };
         };
     };
+    listPeople: {
+        parameters: {
+            query?: {
+                /** @description A permission key, at most 64 characters, such as `cases.signoff`: only the active members whose roles hold it are listed, so an approver picker offers only people who may approve. Omitted by default, which lists every active member. A key that is not one of a bank's permissions (`GET /reference/permissions`) answers `unknown_key`. */
+                permission?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+                     *         "name": "Karin Holm"
+                     *       }
+                     *     ]
+                     */
+                    "application/json": components["schemas"]["PersonRef"][];
+                };
+            };
+        };
+    };
     listPermissions: {
         parameters: {
             query?: never;
@@ -26258,6 +34117,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProductInfo"];
+                };
+            };
+        };
+    };
+    listResearchRequests: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchRequestPage"];
+                };
+            };
+        };
+    };
+    createResearchRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResearchRequestInput"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchRequestOut"];
+                };
+            };
+        };
+    };
+    getResearchRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The research request, as a UUID. Another bank's request answers 404. */
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchRequestOut"];
                 };
             };
         };
@@ -26826,6 +34763,50 @@ export interface operations {
             };
         };
     };
+    getAgentBudget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentBudget"];
+                };
+            };
+        };
+    };
+    putAgentBudget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentBudgetInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentBudget"];
+                };
+            };
+        };
+    };
     setTenantAi: {
         parameters: {
             query?: never;
@@ -27243,6 +35224,33 @@ export interface operations {
             };
         };
     };
+    updateLicence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The licence or certificate, as a UUID. Another bank's licence answers 404, never 403. */
+                licence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantLicencePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantLicence"];
+                };
+            };
+        };
+    };
     listMembers: {
         parameters: {
             query?: {
@@ -27346,6 +35354,29 @@ export interface operations {
             };
         };
     };
+    getMemberOpenWork: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The member, as the UUID a member list returns as `id`. Somebody who is not an active member of the caller's bank answers 404, never 403. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantMemberOpenWork"];
+                };
+            };
+        };
+    };
     reissueEnrolment: {
         parameters: {
             query?: never;
@@ -27367,6 +35398,31 @@ export interface operations {
                     /** @example {} */
                     "application/json": components["schemas"]["Empty"];
                 };
+            };
+        };
+    };
+    removeMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The member, as the UUID a member list returns as `id`. Somebody who is not an active member of the caller's bank answers 404, never 403. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantMemberRemoveBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -27423,6 +35479,231 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    listOrgUnits: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantOrgUnitPage"];
+                };
+            };
+        };
+    };
+    createOrgUnit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantOrgUnitBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantOrgUnit"];
+                };
+            };
+        };
+    };
+    updateOrgUnit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unit of the bank's organisation, as a UUID. Another bank's unit answers 404, never 403. */
+                org_unit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantOrgUnitPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantOrgUnit"];
+                };
+            };
+        };
+    };
+    listLicences: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The unit of the bank's organisation, as a UUID. Another bank's unit answers 404, never 403. */
+                org_unit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantLicencePage"];
+                };
+            };
+        };
+    };
+    createLicence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unit of the bank's organisation, as a UUID. Another bank's unit answers 404, never 403. */
+                org_unit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantLicenceBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantLicence"];
+                };
+            };
+        };
+    };
+    listProducts: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantProductPage"];
+                };
+            };
+        };
+    };
+    createProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantProductBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantProductOut"];
+                };
+            };
+        };
+    };
+    updateProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The product, as a UUID. Another bank's product answers 404, never 403. */
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantProductPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantProductOut"];
+                };
             };
         };
     };
@@ -27639,6 +35920,171 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SecurityLogPage"];
+                };
+            };
+        };
+    };
+    listTenantSupportAccess: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccessPage"];
+                };
+            };
+        };
+    };
+    approveSupportAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The support access request, as a UUID. Another bank's request answers 404, never 403. */
+                grant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccessGrant"];
+                };
+            };
+        };
+    };
+    declineSupportAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The support access request, as a UUID. Another bank's request answers 404, never 403. */
+                grant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccessGrant"];
+                };
+            };
+        };
+    };
+    revokeSupportAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The support access request, as a UUID. Another bank's request answers 404, never 403. */
+                grant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccessGrant"];
+                };
+            };
+        };
+    };
+    listTeams: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantTeamPage"];
+                };
+            };
+        };
+    };
+    listTeamMembers: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The team's key, a row of the bank's `team` vocabulary, which an administrator may extend at `GET /vocab/team`, such as `compliance`. A key the bank has no team for answers 404. At most 80 characters. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantPeoplePage"];
                 };
             };
         };

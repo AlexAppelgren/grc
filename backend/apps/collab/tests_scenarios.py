@@ -13,6 +13,15 @@ from unittest import skip
 
 from django.test import TestCase
 
+from apps.cases import testing as cases_build
+from apps.cases.models import ChangeCase
+from apps.collab.logic import notify
+from apps.collab.models import Comment, CommentMention, EmailMessage, Notification, NotificationKind
+from apps.identity.models import User
+from apps.shared import factories, tenancy
+from apps.shared.testing import sign_in
+from apps.watch import testing as watch_build
+
 
 class CollabScenarioTests(TestCase):
     """Scenario tests for apps.collab, one method per @integration scenario."""
@@ -22,6 +31,7 @@ class CollabScenarioTests(TestCase):
         """COL-S1
 
         A comment with a mention notifies the mentioned person (COL-01).
+        Operations: `addComment`, `markNotificationRead`, `markAllNotificationsRead`.
         """
 
     @skip("pending: COL-S2")
@@ -50,6 +60,7 @@ class CollabScenarioTests(TestCase):
         """COL-S5
 
         Comment text never reaches a log (COL-01).
+        Operations: `addComment`, `editComment`, `deleteComment`.
         """
 
     @skip("pending: COL-S6 (COL-04, chunk 8)")
@@ -100,3 +111,79 @@ class CollabScenarioTests(TestCase):
 
         My comments and mentions are found on My work, limited to what I can read, and never logged (COL-01, HOM-05).
         """
+
+    # COL-S13 (c10-notify-and-prefs)
+    def test_col_s13(self) -> None:
+        """COL-S13
+
+        Notification preferences mute a kind for one person, never an escalation (COL-02).
+
+        The comment is written as the comments producer will write it (the rows, then
+        notify() in the same transaction); the escalation goes through notify(kind=escalation)
+        on the case Anna owns, the subject an escalation names until chunk 9 registers the
+        action.
+        """
+        watch_build.seed_watch_reference()
+        tenant = factories.tenant(slug="col-s13")
+        anna = factories.member_user(tenant, roles=("contributor",))
+        erik = factories.member_user(tenant, roles=("contributor",))
+        case = cases_build.case(tenant, watch_build.change(title="FI amends the research payment rules"), owner=anna)
+        anna_headers = sign_in(anna, tenant=tenant)
+
+        def switch(prefs: dict[str, bool]) -> None:
+            response = self.client.patch(
+                "/api/v1/me", data={"notificationPrefs": prefs}, content_type="application/json", **anna_headers
+            )
+            self.assertEqual(response.status_code, 200, response.content)
+
+        def mention(*people: User) -> Comment:
+            tenancy.activate(tenant.id)
+            comment = Comment.objects.create(tenant=tenant, subject_type="change_case", subject_id=case.id, author=erik, body="Please look.")
+            for person in people:
+                CommentMention.objects.create(tenant=tenant, comment=comment, user=person)
+            notify(
+                tenant_id=tenant.id,
+                kind=NotificationKind.MENTION,
+                subject_type="change_case",
+                subject_id=case.id,
+                candidates=[(person.id, "mention") for person in people],
+            )
+            return comment
+
+        def told(person: User, kind: NotificationKind) -> int:
+            tenancy.activate(tenant.id)
+            return Notification.objects.filter(user=person, kind=kind.value, subject_id=case.id).count()
+
+        # Given Anna has turned mentions off (and reminders) and Erik has not
+        switch({"mentions": False, "reminders": False})
+
+        # When Erik mentions them both on a case
+        comment = mention(anna, erik)
+
+        # Then Anna receives no notification and no mail, and Erik's own row is written
+        self.assertEqual(told(anna, NotificationKind.MENTION), 0)
+        self.assertFalse(EmailMessage.objects.filter(user=anna).exists())
+        self.assertEqual(told(erik, NotificationKind.MENTION), 1)
+        # And the comment still lists both mentions, and the case is unchanged for Anna
+        self.assertEqual(
+            set(CommentMention.objects.filter(comment=comment).values_list("user_id", flat=True)), {anna.id, erik.id}
+        )
+        self.assertEqual(ChangeCase.objects.get(pk=case.pk).owner_id, anna.id)
+
+        # When an action Anna owns passes the escalation threshold
+        tenancy.activate(tenant.id)
+        notify(
+            tenant_id=tenant.id,
+            kind=NotificationKind.ESCALATION,
+            subject_type="change_case",
+            subject_id=case.id,
+            candidates=[(anna.id, "owner")],
+        )
+        # Then Anna is notified although reminders are off
+        self.assertEqual(told(anna, NotificationKind.ESCALATION), 1)
+
+        # When Anna turns mentions back on
+        switch({"mentions": True})
+        mention(anna)
+        # Then the next mention reaches her, and the muted one is not replayed
+        self.assertEqual(told(anna, NotificationKind.MENTION), 1)

@@ -123,6 +123,15 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
         {"name": "Watch sweeper", "agentId": str(_ANY_ID), "scopes": ["changes:write"]},
     ),
     "revokeAgentKey": ("POST", f"/agent-keys/{_ANY_ID}/revoke", {}),
+    # Support access (TEN-06, D-49, c8-tenants-contract) is the platform admin's alone: a
+    # library editor is refused. Entering also needs a passkey, a different refusal.
+    "requestConsoleSupportAccess": (
+        "POST",
+        f"/console/tenants/{_ANY_ID}/support-access",
+        {"purpose": "The bank reports that its watch feed stopped updating on Monday.", "ticketRef": "SUP-2511", "hours": 2},
+    ),
+    "listConsoleSupportAccess": ("GET", "/console/support-access", None),
+    "enterConsoleSupportAccess": ("POST", f"/console/support-access/{_ANY_ID}/enter", {}),
     # The definitions a key is bound to, read under the same permission (ID-10, AGT-01).
     "listAgentDefinitions": ("GET", "/agent-definitions", None),
     # The re-verification stamp (chunk 3, INV-S8): a console action on a library record,
@@ -152,6 +161,10 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
     ),
     "listPlatformRuns": ("GET", "/console/agent-runs", None),
     "createRetagRequest": ("POST", "/console/research-requests", {"topic": "Re-tag custody records with Client money."}),
+    # A batch proposal (PRO-04, c11-proposal-batches-create): read and decided by a library
+    # editor, deciding behind a passkey too, so a platform admin is refused both.
+    "getProposalBatch": ("GET", f"/proposal-batches/{_ANY_ID}", None),
+    "decideProposalBatch": ("POST", f"/proposal-batches/{_ANY_ID}/decide", {"rest": "approved"}),
 }
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a
@@ -163,6 +176,13 @@ LOGIC_GATED_PLATFORM_ROUTES: dict[str, tuple[str, str, dict[str, Any] | None, st
         "POST",
         "/proposals",
         {"kind": "vocabulary_create", "title": "Add a flag", "payload": {"list": "flag", "key": "x", "labels": {"en": "X"}}},
+        "platform_admin",
+    ),
+    # Filing a batch is a library editor's, never a platform admin's (PRO-04, c11-proposal-batches-create).
+    "createProposalBatch": (
+        "POST",
+        "/proposal-batches",
+        {"kind": "obligation_scope", "title": "Re-tag", "payload": {"changes": [{"obligationId": str(_ANY_ID), "add": [], "source": "https://www.fi.se/"}]}},
         "platform_admin",
     ),
 }
@@ -731,6 +751,21 @@ class GovernanceScenarioTests(ScenarioTestCase):
         self.assertEqual(after["timezone"], "Europe/Copenhagen")
         self.assertEqual(after["defaultLanguage"]["key"], "da")
         self.assertTrue(next(step for step in after["onboarding"]["steps"] if step["key"] == "profile")["done"])
+
+    def test_adm_s18(self) -> None:
+        """ADM-S18
+
+        A jurisdiction is relabelled, retired and restored by proposal, and the market that
+        mirrors it follows (ADM-02, VOC-07, FP-04, I18N-01, D-94).
+
+        Proven by the proposal apply's own classes, through the real routes: a person's relabel
+        and an agent's, each moving the mirrored term in the same approval with its stamp, a
+        retire the reference seeds leave standing and a restore, no key added or merged away,
+        and the mirrored dimension row closed at propose and at apply (H28).
+        """
+        from apps.proposals import tests_apply
+
+        self._prove(tests_apply.JurisdictionsByProposal, tests_apply.MirroredDimensionRowAndMergesWithoutLinks)
 
     @skip("pending: AUD-S8 (AUD-04, chunk 12)")
     def test_aud_s8(self) -> None:
