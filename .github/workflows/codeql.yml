@@ -109,6 +109,14 @@ jobs:
     if: needs.changes.outputs.languages != '[]'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      # A pull request gets the whole analysis, not only the lines its diff
+      # touches (D-105). The action's diff-informed queries, on by default for
+      # pull_request events, report findings in the diff alone, so every accepted
+      # finding elsewhere read as stale and codeql_gate.py failed a clean change.
+      # The same analysis as push, schedule and workflow_dispatch; nothing is
+      # skipped (Verification_Log, 2026-09-27).
+      CODEQL_ACTION_DIFF_INFORMED_QUERIES: "false"
     permissions:
       contents: read
       # Upload SARIF to code scanning.

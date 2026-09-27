@@ -64,14 +64,14 @@ function serve(script: (sent: Sent) => Answer = () => ({ status: 204 })): Sent[]
   });
 }
 
-function renderPanel({ asOf = '', lang = '' }: { asOf?: string; lang?: string } = {}): void {
+function renderPanel({ asOf = '' }: { asOf?: string } = {}): void {
   const { wrapper: Query } = queryWrapper();
   const shell = (children: ReactNode) => (
     <Query>
       <LocaleProvider locale="en">{children}</LocaleProvider>
     </Query>
   );
-  render(shell(<AskPanel asOf={asOf} lang={lang} onSearchInstead={onSearchInstead} />));
+  render(shell(<AskPanel asOf={asOf} onSearchInstead={onSearchInstead} />));
 }
 
 function ask(question = QUESTION): void {
@@ -102,13 +102,13 @@ describe('AskPanel', () => {
     expect(requests).toHaveLength(0);
   });
 
-  it('sends the question with the carried "as of" and language, and nothing else', async () => {
+  it('sends the question with the carried "as of", and nothing else', async () => {
     serve();
     const requests = stubFetch(() => sseResponse(answered()));
-    renderPanel({ asOf: '2026-06-01', lang: 'sv' });
+    renderPanel({ asOf: '2026-06-01' });
     ask();
     await screen.findByText(STATEMENT.text);
-    expect(await requests[0]?.json()).toEqual({ question: QUESTION, asOf: '2026-06-01', lang: 'sv' });
+    expect(await requests[0]?.json()).toEqual({ question: QUESTION, asOf: '2026-06-01' });
   });
 
   it('shows the loading state until the first statement arrives', async () => {
@@ -189,8 +189,8 @@ describe('AskPanel', () => {
     expect(await screen.findByRole('heading', { name: 'No answer in the inventory' })).toBeVisible();
     expect(document.querySelectorAll('[data-ask-statement]')).toHaveLength(0);
     expect(screen.queryByRole('button', { name: 'Helpful' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Search instead' }));
-    expect(onSearchInstead).toHaveBeenCalledWith('Do we need a licence for crypto custody?');
+    fireEvent.click(screen.getByRole('button', { name: 'Search the inventory' }));
+    expect(onSearchInstead).toHaveBeenCalledOnce();
   });
 
   it('says Ask is switched off, that search still works, and offers it', async () => {
@@ -199,9 +199,9 @@ describe('AskPanel', () => {
     renderPanel();
     ask();
 
-    expect(await screen.findByText('Ask is switched off for your organisation. Search still works.')).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Search instead' }));
-    expect(onSearchInstead).toHaveBeenCalledWith(QUESTION);
+    expect(await screen.findByText('Ask is switched off for your organisation. Search in the inventory still works.')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Search the inventory' }));
+    expect(onSearchInstead).toHaveBeenCalledOnce();
   });
 
   it('shows the restricted screen to a reader without the permission', async () => {

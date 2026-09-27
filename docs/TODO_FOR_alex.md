@@ -670,6 +670,22 @@ section. Copied here as chunk3-rest-T20 requires.
       unrelated push. That brief is `docs/plans/briefs/AGENT_ACCESS.md`, and its entry
       scope is one more reader of the footprint this reshapes (D-70).
 
+## Inventory search and filters (2026-09-25, `inventory-search-filters`)
+- [x] **Approve the chosen design** (D-104). Taken from your "Go ahead" of 2026-09-25, whose
+      message was cut off after those words; say if you meant something else. The part that
+      needs no R2 work is built: the search bar, the Filters sheet, the three quick filters,
+      filter values bounded by the scope, and Ask at `/ask`.
+- [ ] **The Instruments tab.** Its search bar finds instruments by reference or name. Say if
+      it should find provisions there instead.
+- [ ] **Team scope and the withheld reading (R2).** My scope equals the bank's scope until teams
+      (TEN-03) give each person a slice, and a record outside your teams' scope will show only
+      whether it applies once the register lands (chunk 8). Both belong in the R2 plan, next to
+      D-69's entity scope.
+- [ ] **The Windows tab-bar screenshot.** The tab bar now reads "Ask", so
+      `frontend/tests/e2e/navigation.journey.spec.ts-snapshots/tab-bar-chromium-win32.png` is stale.
+      The Linux one is re-recorded; run `npx playwright test navigation --update-snapshots` once on
+      Windows and commit the new file.
+
 ## Landed from `origin/claude/r1-integration` (2026-09-23, lost-content)
 
 Two designs lived on `origin/claude/r1-integration` and nowhere on main. Each landed
@@ -1599,7 +1615,7 @@ Nothing waits for these; each has the default the build took.
       when an agent never ran or is overdue, and null for a manual one. Say if you want a
       name column on the definition instead.
 
-## c11-proposal-batches-decide: deciding a batch row by row (2026-09-25, PRO-04, D-105)
+## c11-proposal-batches-decide: deciding a batch row by row (2026-09-25, PRO-04, D-107)
 
 - [ ] **Who decides a re-tag batch an agent files.** Built: a second person holding
       `proposals.review`, with a passkey, and never the proposer. An agent reviewer is

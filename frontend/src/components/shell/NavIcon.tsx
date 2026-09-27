@@ -1,4 +1,5 @@
-// Navigation icons keyed by destination id: small stroke icons on
+// Navigation icons keyed by destination id, plus the few controls that share
+// them (close, filters): small stroke icons on
 // currentColor, seb.io's "small icon plus a label". The first four and `more`
 // (three dots) are the prototype's own. A destination without an icon here
 // gets a quiet dot, so the collapsed rail never shows an empty square when the
@@ -9,6 +10,7 @@ const ICONS: Record<string, readonly string[]> = {
   watch: ['M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0', 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z'],
   inventory: ['M5 4h11l3 3v13H5z', 'M8 10h8M8 14h8'],
   search: ['M11 11m-6 0a6 6 0 1 0 12 0a6 6 0 1 0-12 0', 'M20 20l-4-4'],
+  ask: ['M4 5h16v11H9l-5 4z'],
   roadmap: ['M4 6h16v14H4z', 'M4 10h16', 'M8 3v4M16 3v4'],
   admin: ['M4 7h9M17 7h3M4 17h3M11 17h9', 'M15 7m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0', 'M9 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0'],
   'console-queue': ['M4 13l2-8h12l2 8v6H4z', 'M4 13h5l1 2h4l1-2h5'],
@@ -21,6 +23,7 @@ const ICONS: Record<string, readonly string[]> = {
   'sidebar-expand': ['M4 5h16v14H4z', 'M9 5v14', 'M13 10l2 2-2 2'],
   more: ['M5 12m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0', 'M12 12m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0', 'M19 12m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0'],
   close: ['M6 6l12 12M18 6L6 18'],
+  filters: ['M4 7h9M17 7h3M4 17h3M11 17h9', 'M15 7m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0', 'M9 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0'],
 };
 
 const SIZE = { row: 'size-4', tab: 'size-5' } as const;

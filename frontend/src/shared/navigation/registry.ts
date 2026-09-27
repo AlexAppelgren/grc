@@ -63,7 +63,7 @@ export const destinations: readonly Destination[] = [
   // which is what keeps this out of every list while still giving the two
   // /briefing pages one typed permission to gate on, instead of a literal.
   { id: 'briefing', href: '/briefing', labelKey: 'nav.briefing', surface: 'tenant', anyOfPermissions: ['watch.read'], group: 'secondary', parent: 'today' },
-  { id: 'search', href: '/search', labelKey: 'nav.search', shortLabelKey: 'nav.search.short', surface: 'tenant', anyOfPermissions: ['search.use'], dockRank: 4, group: 'primary' },
+  { id: 'ask', href: '/ask', labelKey: 'nav.ask', surface: 'tenant', anyOfPermissions: ['search.use'], dockRank: 4, group: 'primary' },
   { id: 'admin', href: '/admin', labelKey: 'nav.admin', surface: 'tenant', anyOfPermissions: TENANT_ADMIN_PERMISSIONS, group: 'admin' },
   // Admin sections (ADM-03): each gated by its own permission. The
   // organisation profile is readable by any member; the server refuses edits.

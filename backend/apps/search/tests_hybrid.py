@@ -13,8 +13,8 @@ What these tests hold in place, in the order a reviewer would ask about it:
    own configuration, the kinds, the instrument, the terms, binding, jurisdiction and duty
    type. Renaming a vocabulary row changes nothing a caller sent.
 4. **Narrower, never wider.** Only shared chunks are read, the bank's regulatory scope is
-   chunk 3's one rule, and `inFootprint: false` is the reader asking to see what the scope
-   held back.
+   chunk 3's one rule, `footprint: all` is the reader lifting it, and `footprint: watched`
+   is what the watched markets add, asked of the inventory's own rule.
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ from apps.shared.models import Tenant
 from apps.shared import tenancy
 from apps.shared.tenancy import library_write
 from apps.shared.testing import sign_in
-from apps.taxonomy.models import DutyType, FootprintTerm, InstrumentLevel, ProvisionKind, TaxonomyTerm
+from apps.taxonomy.models import DutyType, FootprintTerm, InstrumentLevel, ProvisionKind, TaxonomyTerm, WatchedMarket
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.watch import testing as watch
 from apps.watch.models import RegulatoryChange
@@ -420,7 +420,7 @@ class SearchFilterTests(CorpusMixin, TestCase):
 
     def test_binding_and_the_instrument_narrow_the_search(self) -> None:
         guidance = search("report", tenant=self.tenant, filters=SearchFilters(binding=False))
-        one_instrument = search("report", tenant=self.tenant, filters=SearchFilters(instrument_id=self.fffs.id))
+        one_instrument = search("report", tenant=self.tenant, filters=SearchFilters(instrument=self.fffs.stable_key))
 
         self.assertEqual(titles_of(guidance), [EU_REPORTING_TITLE])
         self.assertNotIn(EU_REPORTING_TITLE, titles_of(one_instrument))
@@ -431,9 +431,20 @@ class SearchFilterTests(CorpusMixin, TestCase):
             ObligationTerm.objects.create(obligation=self.warnings, term=advice)
         indexing.reindex(self.warnings.id)
 
-        response = search("assessment", tenant=self.tenant, filters=SearchFilters(term_ids=[advice.id]))
+        response = search("assessment", tenant=self.tenant, filters=SearchFilters(term=["service_type:advice"]))
 
         self.assertEqual(titles_of(response), [WARNINGS_TITLE])
+
+    def test_a_key_no_instrument_has_matches_nothing(self) -> None:
+        response = search("report", tenant=self.tenant, filters=SearchFilters(instrument="no-such-instrument"))
+
+        self.assertEqual(titles_of(response), [])
+
+    def test_a_term_that_is_not_one_is_refused_as_the_list_refuses_it(self) -> None:
+        with self.assertRaises(ValidationError) as caught:
+            search("report", tenant=self.tenant, filters=SearchFilters(term=["regime:no-such-regime"]))
+
+        self.assertEqual(caught.exception.code, "unknown_key")
 
     def test_types_narrow_the_search_to_one_kind_of_record(self) -> None:
         response = search("information om kostnader", tenant=self.tenant, lang="sv", types=[SearchHitType.PROVISION])
@@ -498,8 +509,16 @@ class SearchScopeTests(CorpusMixin, TestCase):
         self.assertIn(REPORTING_TITLE, titles_of(response))
         self.assertNotIn(EU_REPORTING_TITLE, titles_of(response), "the bank does not do insurance")
 
-    def test_looking_outside_the_scope_shows_what_was_held_back(self) -> None:
-        response = search("report", tenant=self.tenant, filters=SearchFilters(in_footprint=False))
+    def test_show_all_items_lifts_the_scope(self) -> None:
+        response = search("report", tenant=self.tenant, filters=SearchFilters(footprint="all"))
+
+        self.assertIn(REPORTING_TITLE, titles_of(response))
+        self.assertIn(EU_REPORTING_TITLE, titles_of(response), "what the scope held back is there too")
+
+    def test_a_regime_term_matches_through_the_instrument_as_the_list_matches_it(self) -> None:
+        """A regime is the instrument's, never an obligation's own term, so the filter reads
+        the record's whole scope: the inventory's search and its list keep the same rows."""
+        response = search("report", tenant=self.tenant, filters=SearchFilters(term=["regime:insurance"], footprint="all"))
 
         self.assertEqual(titles_of(response), [EU_REPORTING_TITLE])
 
@@ -556,18 +575,37 @@ class SearchJurisdictionTests(CorpusMixin, TestCase):
 
     def test_a_bank_in_norway_finds_the_unions_rules_and_not_swedens(self) -> None:
         inside = titles_of(search("report", tenant=self.tenant, as_of=MIDSUMMER))
-        outside = titles_of(search("report", tenant=self.tenant, as_of=MIDSUMMER, filters=SearchFilters(in_footprint=False)))
+        everything = titles_of(search("report", tenant=self.tenant, as_of=MIDSUMMER, filters=SearchFilters(footprint="all")))
 
-        self.assertEqual((inside, outside), ([EU_REPORTING_TITLE], [REPORTING_TITLE]))
+        self.assertEqual(inside, [EU_REPORTING_TITLE])
+        self.assertCountEqual(everything, [EU_REPORTING_TITLE, REPORTING_TITLE])
 
     def test_a_provision_is_judged_by_its_instruments_jurisdiction(self) -> None:
         provisions = [SearchHitType.PROVISION]
         inside = search("information om kostnader", tenant=self.tenant, lang="sv", types=provisions)
-        outside = search(
-            "information om kostnader", tenant=self.tenant, lang="sv", types=provisions, filters=SearchFilters(in_footprint=False)
+        everything = search(
+            "information om kostnader", tenant=self.tenant, lang="sv", types=provisions, filters=SearchFilters(footprint="all")
         )
 
-        self.assertEqual((titles_of(inside), titles_of(outside)), ([], [PROVISION_HEADING]))
+        self.assertEqual((titles_of(inside), titles_of(everything)), ([], [PROVISION_HEADING]))
+
+    def test_markets_we_watch_add_what_the_inventory_says_they_add(self) -> None:
+        """FP-04 by the inventory's own rule: watching Sweden adds the Swedish duty and the
+        Swedish provision, and never the Union's rule, which already reaches Norway."""
+        WatchedMarket.objects.create(tenant=self.tenant, jurisdiction=Jurisdiction.objects.get(key="se"))
+        watched = SearchFilters(footprint="watched")
+
+        duties = titles_of(search("report", tenant=self.tenant, as_of=MIDSUMMER, filters=watched))
+        provisions = titles_of(
+            search("information om kostnader", tenant=self.tenant, lang="sv", types=[SearchHitType.PROVISION], filters=watched)
+        )
+
+        self.assertEqual((duties, provisions), ([REPORTING_TITLE], [PROVISION_HEADING]))
+
+    def test_markets_we_watch_add_nothing_while_none_is_watched(self) -> None:
+        response = search("report", tenant=self.tenant, as_of=MIDSUMMER, filters=SearchFilters(footprint="watched"))
+
+        self.assertEqual(titles_of(response), [])
 
 
 class SearchTieBreakTests(TestCase):

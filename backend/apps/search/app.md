@@ -175,3 +175,13 @@ When the index is rebuilt and a user of tenant A asks a question
 Then no search chunk, embedding input or AI-generation input contains text from any of those rows
 And a user of tenant B searching those titles finds nothing and receives 404 for the rows
 ```
+
+### SRC-S14 — The inventory's search runs inside its filters and its scope `@integration` (SRC-01, SRC-02, FP-03, FP-04)
+```gherkin
+Given the bank's regulatory scope holds the securities regime and the ESMA guidance is insurance law
+When a reader searches the inventory for "report" with the instrument "fffs-2017-2", the term "regime:securities" and the duty type "reporting"
+Then only that instrument's reporting duty comes back, judged by the same scope the obligations list uses
+And with the default scope the insurance guidance is held back
+And with "Show all items", footprint "all", it comes back as it does on the list
+And "Markets we watch" adds only what the watched markets add, by the list's own rule
+```

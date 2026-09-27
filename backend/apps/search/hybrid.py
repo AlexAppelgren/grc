@@ -23,7 +23,9 @@ as by the policy, so a row a bank owns cannot be reached by a query written befo
 row existed (D-10, H7). The regulatory scope is chunk 3's one rule — `taxonomy_in_footprint`
 over the record's own terms plus its instrument's regime and the jurisdictions its rules
 reach, from the SQL twins the obligations list hands the same function — and never a second
-copy of it here. Every filter compares a key or an id, so renaming a vocabulary row changes
+copy of it here. The filters are the obligations list's own (`instrument`, `term`,
+`dutyType`, `footprint`), judged the same way, so the inventory hands its search exactly
+what it hands its list. Every filter compares a key, so renaming a vocabulary row changes
 nothing a caller sent.
 
 **Ties are broken on what a rebuild keeps.** Two chunks may score the same on a leg, and
@@ -67,6 +69,7 @@ from typing import Any
 
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.lookups import DataContains
 from django.contrib.postgres.search import SearchQuery, SearchRank
 from django.core.exceptions import ValidationError
 from django.db.models import (
@@ -75,7 +78,6 @@ from django.db.models import (
     Exists,
     F,
     FloatField,
-    Func,
     OuterRef,
     Q,
     QuerySet,
@@ -92,7 +94,7 @@ from django.utils import timezone
 from pgvector.django import CosineDistance
 
 from apps.library.models import Instrument, Obligation, ObligationTitle, ObligationVersion, Provision
-from apps.library.reading import instrument_scope_term_ids, scope_term_ids, today_for
+from apps.library.reading import in_view, instrument_scope_term_ids, scope_term_ids, terms_of, today_for
 from apps.search import limits
 from apps.search.models import TEXT_SEARCH_CONFIGS, SearchChunk, SearchSource
 from apps.search.schemas import (
@@ -323,16 +325,17 @@ def _filtered(
     rows = rows.filter(Q(valid_to__isnull=True) | Q(valid_to__gte=as_of))
     if types:
         rows = rows.filter(source_type__in=[SOURCE_OF_HIT[kind] for kind in types])
-    if filters.instrument_id is not None:
-        rows = rows.filter(metadata__instrument_id=str(filters.instrument_id))
+    if filters.instrument is not None:
+        rows = rows.filter(Exists(Instrument.objects.filter(id=_outer_metadata_uuid("instrument_id"), stable_key=filters.instrument)))
     if filters.jurisdiction is not None:
         rows = rows.filter(metadata__jurisdiction=filters.jurisdiction)
     if filters.duty_type is not None:
         rows = rows.filter(metadata__duty_type=filters.duty_type)
     if filters.binding is not None:
         rows = rows.filter(metadata__binding=filters.binding)
-    if filters.term_ids:
-        rows = rows.filter(metadata__term_ids__contains=[str(term_id) for term_id in filters.term_ids])
+    if filters.term:
+        wanted = Value([term.id for term in terms_of(filters.term)], output_field=ArrayField(UUIDField()))
+        rows = rows.filter(DataContains(_record_scope(), wanted))
     if not standards:
         rows = rows.exclude(
             Exists(
@@ -341,38 +344,42 @@ def _filtered(
                 )
             )
         )
-    if tenant is None:
-        # The agents' read. An API key belongs to no bank, so there is no regulatory scope
-        # to apply — not a wider read, because `owner_tenant_id IS NULL` above has already
-        # confined it to the shared library, which is what an agent is asking about.
+    if tenant is None or filters.footprint == "all":
+        # The agents' read, or a reader who lifted the scope. An API key belongs to no bank,
+        # so there is no regulatory scope to apply — not a wider read, because
+        # `owner_tenant_id IS NULL` above has already confined it to the shared library.
         return rows
-    rows = rows.annotate(in_scope=_in_footprint(tenant))
-    # Absent and true are both the bank's standing scope; false is the reader asking to see
-    # what the scope holds back, which is the screen's "Search outside our scope".
-    return rows.filter(in_scope=filters.in_footprint is not False)
+    if filters.footprint == "in":
+        return rows.annotate(in_scope=matching.in_footprint_expression(tenant.id, _record_scope())).filter(in_scope=True)
+    # `watched`: what the watched markets add, asked of the inventory's own rule for the
+    # chunk's own record, so the search and the list can never disagree (FP-04).
+    obligations = in_view(Obligation.objects.filter(id=_outer_metadata_uuid("obligation_id")), tenant, "watched")
+    instruments = in_view(Instrument.objects.filter(id=_outer_metadata_uuid("instrument_id")), tenant, "watched")
+    return rows.filter(
+        Q(source_type=SOURCE_OF_HIT[SearchHitType.OBLIGATION]) & Exists(obligations)
+        | Q(source_type=SOURCE_OF_HIT[SearchHitType.PROVISION]) & Exists(instruments)
+    )
 
 
-def _in_footprint(tenant: Tenant) -> Func:
-    """FP-03's verdict, from the database function the obligations list and the watch feed
-    use, over the scope the inventory hands it: `library.reading`'s SQL twins, read for the
-    chunk's own record and never copied here. An obligation's chunk is judged by the
+def _record_scope() -> Coalesce:
+    """The scope the inventory judges the chunk's own record by: `library.reading`'s SQL
+    twins, read for that record and never copied here. An obligation's chunk carries the
     obligation's own terms plus its instrument's scope; a provision's, which has no terms of
-    its own, by its instrument's scope alone; a registered change's by the scope the watch
-    feed judges it by (`watch.reading`); a chunk that names none of them carries no scope
-    and matches every bank. So the regime and the jurisdictions an
-    instrument's rules reach (D-28, D-29) narrow a search exactly as they narrow the
-    inventory."""
+    its own, its instrument's scope alone; a registered change's the scope the watch feed
+    judges it by (`watch.reading`); a chunk that names none of them carries no scope and
+    matches every bank. So the regime and the jurisdictions an instrument's rules reach
+    (D-28, D-29) narrow a search, by FP-03's verdict or a term filter, exactly as they
+    narrow the inventory."""
     obligation = Obligation.objects.filter(id=_outer_metadata_uuid("obligation_id")).values(scope=scope_term_ids())
     instrument = Instrument.objects.filter(id=_outer_metadata_uuid("instrument_id")).values(scope=instrument_scope_term_ids())
     change = RegulatoryChange.objects.filter(id=OuterRef("source_id")).values(scope=change_scope_term_ids())
-    scope = Coalesce(
+    return Coalesce(
         Subquery(obligation[:1]),
         Subquery(instrument[:1]),
         Subquery(change[:1]),
         Value([], output_field=ArrayField(UUIDField())),
         output_field=ArrayField(UUIDField()),
     )
-    return matching.in_footprint_expression(tenant.id, scope)
 
 
 def _similarity(query: str) -> Any:

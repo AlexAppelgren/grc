@@ -59,7 +59,7 @@ from apps.shared.adapters import llm, reranker
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.tenancy import library_write
 from apps.shared.testing import sign_in
-from apps.taxonomy.models import DutyType, InstrumentLevel, InstrumentLevelKind
+from apps.taxonomy.models import DutyType, FootprintTerm, InstrumentLevel, InstrumentLevelKind, TaxonomyTerm
 from apps.watch import testing as watch
 from apps.watch.models import ChangeObligation
 from apps.watch.write import watch_write
@@ -360,6 +360,32 @@ class HybridSearchScenarioTests(CorpusMixin, TestCase):
             DutyType.objects.get(key="reporting").labels.filter(language="en").update(text="Supervisory returns")
 
         self.assertEqual(self.search(body), answer, "the filter carried a key, so a new label changes nothing")
+
+    def test_src_s14(self) -> None:
+        """SRC-S14
+
+        The inventory's search runs inside its filters and its scope (SRC-01, SRC-02, FP-03, FP-04).
+
+        With the bank's scope set to securities and the ESMA guidance filed under insurance,
+        the inventory's own filters (the instrument by stable key, the regime as
+        `regime:securities`, the duty type) keep only FFFS 2017:2's reporting duty. The
+        default scope holds the insurance guidance back and "Show all items" brings it back,
+        as the obligations list does; "Markets we watch" is covered in `tests_hybrid`.
+        """
+        with library_write("SRC-S14: the guidance is insurance law"):
+            self.esma.regime = TaxonomyTerm.objects.get(dimension__key="regime", key="insurance")
+            self.esma.save()
+        indexing.reindex_all()
+        FootprintTerm.objects.create(tenant=self.tenant, term=TaxonomyTerm.objects.get(dimension__key="regime", key="securities"))
+        filters = {"instrument": "fffs-2017-2", "term": ["regime:securities"], "dutyType": "reporting"}
+
+        filtered = [hit["title"] for hit in self.search({"q": "report", "filters": filters})["items"]]
+        in_scope = [hit["title"] for hit in self.search({"q": "report"})["items"]]
+        everything = [hit["title"] for hit in self.search({"q": "report", "filters": {"footprint": "all"}})["items"]]
+
+        self.assertEqual(filtered, [REPORTING_TITLE])
+        self.assertNotIn(EU_REPORTING_TITLE, in_scope, "the bank does not do insurance")
+        self.assertIn(EU_REPORTING_TITLE, everything)
 
 
 # ---------------------------------------------------------------------------------------

@@ -342,15 +342,13 @@ class ChangeSearch(TestCase):
 
     def test_a_change_is_held_back_by_the_banks_scope_like_the_feed_holds_it_back(self) -> None:
         inside = {hit.id for hit in search("insurance distribution guidance", tenant=self.tenant).items}
-        outside = {
+        everything = {
             hit.id
-            for hit in search(
-                "insurance distribution guidance", tenant=self.tenant, filters=SearchFilters(in_footprint=False)
-            ).items
+            for hit in search("insurance distribution guidance", tenant=self.tenant, filters=SearchFilters(footprint="all")).items
         }
 
         self.assertNotIn(self.insurance.id, inside, "the bank does not do insurance")
-        self.assertIn(self.insurance.id, outside)
+        self.assertIn(self.insurance.id, everything)
 
     def test_a_change_is_not_found_before_it_was_published(self) -> None:
         body = SearchRequest(

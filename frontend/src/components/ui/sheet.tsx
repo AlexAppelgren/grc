@@ -9,8 +9,9 @@ import { cn } from '@/shared/utils/cn';
 // More sheet renders, written by hand with shadcn's names on the Radix Dialog
 // we already ship (ADR 0004, design/system/navigation.md 3). Radix gives the
 // dialog role, aria-modal, the focus trap, the page hidden from assistive
-// technology, scroll lock and Escape returning focus to the trigger. Only the
-// bottom side is built, and nothing animates, like Modal.
+// technology, scroll lock and Escape returning focus to the trigger. Two sides
+// are built, and nothing animates, like Modal: the More sheet's bottom, and
+// the Filters sheet's end (foundations.md "Filters sheet").
 
 export const Sheet = Dialog.Root;
 export const SheetTrigger = Dialog.Trigger;
@@ -20,12 +21,18 @@ export function SheetTitle({ className, ...props }: ComponentProps<typeof Dialog
   return <Dialog.Title data-slot="sheet-title" className={cn('text-title', className)} {...props} />;
 }
 
+const SIDE = {
+  // The full width of a phone, centred at Modal's 560px from 592px.
+  bottom: 'inset-x-0 bottom-0 max-h-[85svh] rounded-t-overlay border-t min-[37rem]:mx-auto min-[37rem]:max-w-[560px] min-[37rem]:border-x',
+  // A bottom sheet below the rail's breakpoint, a 440px panel on the right edge from it.
+  end: 'inset-x-0 bottom-0 max-h-[85svh] rounded-t-overlay border-t lg:inset-y-0 lg:left-auto lg:max-h-none lg:w-[440px] lg:rounded-none lg:border-t-0 lg:border-l',
+} as const;
+
 /**
- * A bottom sheet: the full width of a phone, centred at Modal's 560px from
- * 592px, over Modal's scrim. At most 85svh with its content scrolling
- * inside, and its bottom edge clear of the home indicator.
+ * A sheet over Modal's scrim: at most 85svh on a phone with its content
+ * scrolling inside, and its bottom edge clear of the home indicator.
  */
-export function SheetContent({ className, children, ...props }: ComponentProps<typeof Dialog.Content>) {
+export function SheetContent({ className, children, side = 'bottom', ...props }: ComponentProps<typeof Dialog.Content> & { side?: keyof typeof SIDE }) {
   return (
     <Dialog.Portal>
       <Dialog.Overlay data-slot="sheet-overlay" className="fixed inset-0 z-40 bg-fg/60" />
@@ -36,8 +43,8 @@ export function SheetContent({ className, children, ...props }: ComponentProps<t
         aria-modal="true"
         aria-describedby={undefined}
         className={cn(
-          'fixed inset-x-0 bottom-0 z-50 flex max-h-[85svh] flex-col rounded-t-overlay border-t border-line bg-surface pb-[max(16px,env(safe-area-inset-bottom))] text-fg',
-          'min-[37rem]:mx-auto min-[37rem]:max-w-[560px] min-[37rem]:border-x',
+          'fixed z-50 flex flex-col border-line bg-surface pb-[max(16px,env(safe-area-inset-bottom))] text-fg',
+          SIDE[side],
           className,
         )}
         {...props}
