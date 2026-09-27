@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -92,5 +92,58 @@ describe('MyCommentsPanel', () => {
     render(shell(<MyCommentsPanel />));
 
     expect(await screen.findByText('Cases are not shown here, because your role cannot open them')).toBeInTheDocument();
+  });
+
+  it('names a comment on a record with no page of its own without a link', async () => {
+    const internal = comment('c-3', { subjectType: 'internal_item', subjectId: 'ii-1', subjectTitle: 'Complaints procedure' });
+    installAdapter(() => ({ status: 200, data: { items: [internal], total: 1, permissionLimitedKinds: [] } }));
+    render(shell(<MyCommentsPanel />));
+
+    const row = await screen.findByText('Complaints procedure');
+    expect(row.tagName).toBe('H3');
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('says there is nothing yet on an empty tab, and goes back to Mentions from My comments', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: { items: [], total: 0, permissionLimitedKinds: [] } }));
+    render(shell(<MyCommentsPanel />));
+
+    expect(await screen.findByText('No comments yet')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'My comments' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'My comments' })).toHaveAttribute('aria-selected', 'true'));
+    fireEvent.click(screen.getByRole('tab', { name: 'Mentions' }));
+    expect(screen.getByRole('tab', { name: 'Mentions' })).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByText('No comments yet')).toBeInTheDocument();
+    // Back on Mentions the cached page shows at once and is read again.
+    expect(sent.map((s) => (s.params as { about: string }).about)).toEqual(['mentioned', 'written', 'mentioned']);
+  });
+
+  it('offers a retry when the comments cannot be read, and lists them once it succeeds', async () => {
+    let failing = true;
+    installAdapter(() =>
+      failing ? { status: 503, data: { code: 'unavailable', detail: 'Down in this test.' } } : { status: 200, data: { items: [onCase], total: 1, permissionLimitedKinds: [] } },
+    );
+    render(shell(<MyCommentsPanel />));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not load the comments. Check your connection and try again.');
+    failing = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByRole('link', { name: onCase.subjectTitle })).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('shows more from the next page while the total runs past what is loaded', async () => {
+    const sent = installAdapter((s) => {
+      if (s.path !== '/api/v1/me/comments') return { status: 404, data: { code: 'not_found', detail: 'Not for this test.' } };
+      const offset = (s.params as { offset: number }).offset;
+      return { status: 200, data: { items: [offset === 0 ? onCase : { ...mine, id: 'c-21', subjectTitle: 'Second page comment' }], total: 21, permissionLimitedKinds: [] } };
+    });
+    render(shell(<MyCommentsPanel />));
+
+    await screen.findByRole('link', { name: onCase.subjectTitle });
+    fireEvent.click(screen.getByRole('button', { name: 'Show more' }));
+    expect(await screen.findByRole('link', { name: 'Second page comment' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: onCase.subjectTitle })).toBeInTheDocument();
+    expect(sent.filter((s) => s.path === '/api/v1/me/comments').map((s) => (s.params as { offset: number }).offset)).toEqual([0, 1]);
   });
 });
