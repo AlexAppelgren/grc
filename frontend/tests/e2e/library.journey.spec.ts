@@ -167,8 +167,12 @@ test.describe('library journeys', () => {
     await expect(duty.getByText('Record retention')).toBeVisible();
     await expect(page.locator('[data-scope-panel] [data-pill]').first()).toHaveAttribute('data-pill', 'brand');
     // Being on this card is not the judgement that the duty reaches this bank:
-    // the header above carries no compliance status, and nothing reads "Applies".
-    await expect(page.getByText('Applies', { exact: true })).toHaveCount(0);
+    // the header, the duty and its scope carry no compliance status and never
+    // read "Applies". The bank's own answer lives only in its applicability
+    // panel (REG-01), which an earlier journey on the same run may have set.
+    await expect(
+      page.locator('[data-header-pills], [data-duty-panel], [data-scope-panel]').getByText('Applies', { exact: true }),
+    ).toHaveCount(0);
 
     // Every service selected reads "All services"; an empty list is no
     // restriction and says so in words, never as an empty row.
