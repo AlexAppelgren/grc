@@ -2,6 +2,7 @@ import type { Browser, Page, TestInfo } from '@playwright/test';
 
 import { expect, test, type ApiGuard } from './support/api-guard';
 import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
+import { lockTenantAScope, unlockTenantAScope } from './support/tenant-scope';
 import { approveQueueProposal } from './support/watch';
 
 // taxonomy: the @e2e scenarios from backend/apps/taxonomy/app.md (playbook Appendix B).
@@ -428,6 +429,8 @@ test.describe('taxonomy journeys', () => {
     // worker. FP-S2 and FP-S5 settle on whether a request is already waiting
     // (the seed leaves one for J-6) before they branch.
     test.describe.configure({ mode: 'default' });
+    test.beforeEach(lockTenantAScope);
+    test.afterEach(unlockTenantAScope);
 
     /** Opens the scope as the officer, withdrawing a request of theirs that is still waiting. */
     async function officerStartsClean(page: Page): Promise<void> {
@@ -809,6 +812,8 @@ test.describe('taxonomy journeys', () => {
 // that builds it lands. The opt-in standards dimension (INV-08), FP-S16, changes
 // tenant A's scope, so it runs with the footprint journeys above.
 test.describe('regulatory scope, markets and standards', () => {
+  test.beforeEach(lockTenantAScope);
+  test.afterEach(unlockTenantAScope);
   test("FP-S7: Members without scope permissions cannot open the regulatory scope page", async ({ page, browser, apiGuard }, testInfo) => {
     // FP-02, ADM-01. Only reads: the footprint journeys above file and decide
     // requests against tenant A's one scope in another worker, so each login

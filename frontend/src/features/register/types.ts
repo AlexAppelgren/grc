@@ -44,3 +44,8 @@ export interface RegisterPageQuery {
   limit?: number;
   offset?: number;
 }
+
+// c8-ui-applicability-status: the legal entities an answer can be given for, and a member
+// as the owner and contact pickers offer them (GET /reference/people).
+export type RegisterSpannedEntity = Schemas['RegisterSpannedEntity'];
+export type RegisterPerson = Schemas['PersonRef'];

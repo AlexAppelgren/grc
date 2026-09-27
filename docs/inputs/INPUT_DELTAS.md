@@ -1471,6 +1471,7 @@ forced row-level security, each child's case a composite key `(tenant_id, case_i
   carries its hash, size and type with it; a link carries a url.
 
 ## 19. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
+## 18. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
 
 The designed `tenant.settings` blob is six columns on `tenant` (shared 0009):
 `reminder_days_before` and `review_reminder_days_before` (one to five day counts, each 1 to
@@ -1734,3 +1735,43 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
   answer 204 as designed; all three are published ahead of `c9-case-file`, `c9-actions`
   and `c9-evidence` and answer 501 `not_built` until those land, so their pending lines
   are gone while the logic is still to come.
+## c8-reg-gaps-risk. The gap routes as built (2026-09-25, REG-03)
+
+The register contract (`c8-register-contract`) declared the gap routes before the tables
+existed; building them on `gap` as `c8-register-models` shaped it changes these points:
+
+- A gap's `source` is a row of the bank's own `gap_source` list, as the column is: written
+  as a key and answered as `{key, kind, label}`, not the fixed five-value enum the contract
+  first published. The five seeded keys are unchanged.
+- `RegisterGap`, `RegisterGapBody` and `RegisterGapPatch` gain `ownerTeam`, a key of the
+  bank's `team` list (TEN-03): a gap is owned by a person or a team, never both, as the
+  `gap_one_owner_kind` CHECK says.
+- Four eyes on risk acceptance compare the approver with the person who asked for the
+  acceptance (`gap_four_eyes`), not with the person who recorded the gap; REG-S6 is amended
+  to match.
+- `createGap` answers 409 `does_not_apply` for an obligation, or a legal entity's answer on
+  it, that does not apply; `requestRiskAcceptance` answers 409 `request_pending` while an
+  acceptance already waits; `updateGap` requires `If-Match` and answers 409 `stale_write`
+  without it; closing a gap clears an acceptance still waiting on it.
+- A gap on a Statement of Applicability unit (`unitId`) answers 501 `not_built` until
+  `c8-units-paste-soa` adds the column.
+
+## c8-home-standing-roadmap. Where we stand, and our own deadlines on the roadmap (2026-09-25, HOM-01, HOM-03)
+
+The chunk 8 brief's `c8-home-register-feeds` is built as this package, with these departures:
+
+- The roadmap is a query in `apps/home/roadmap.py`, not a database view (R2_CROSS_CUTTING
+  (j)), so there is no migration. Each branch is one query, with a count beside it for
+  Today's "Coming up"; a duty occurrence's due date is not a branch yet, because the duty
+  occurrences have no package in this wave.
+- `standing` on `GET /home` is six counts (`applying`, one per compliance category and
+  `openGaps`), not counts per legal entity: one count per obligation, in the worst category
+  of the entities it applies to, as the obligation's pill reads. It is null without
+  `register.read`.
+- A roadmap item gains `owner` (a person, a team, or both on a register entry) and `subject`
+  (the obligation, gap or licence, and the legal entity); `status`, `label` and
+  `sourceLabel` become nullable and are null on an internal item. `itemType` gains
+  `gap_target`, `certificate_expiry` and `certificate_audit`.
+- The register's two branches need `register.read`; a certificate's dates are any member's,
+  as `GET /tenant/org-units/{id}/licences` is. A gap's target is listed whatever the answer
+  on its obligation; a review is left out where the answer is "does not apply".

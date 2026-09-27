@@ -24,7 +24,9 @@ import type {
   RegisterInterpretationBody,
   RegisterPageQuery,
   RegisterPatch,
+  RegisterPerson,
   RegisterRiskAcceptanceBody,
+  RegisterSpannedEntity,
   RegisterStatementOfApplicability,
   RegisterUnit,
   RegisterUnitBody,
@@ -162,4 +164,15 @@ export async function listDuties(obligationId: string, page: RegisterPageQuery =
 
 export async function completeDutyOccurrence(occurrenceId: string, body: RegisterDutyCompleteBody): Promise<RegisterDutyCompletion> {
   return (await api.post<RegisterDutyCompletion>(`${V1}/duty-occurrences/${id(occurrenceId)}/complete`, body)).data;
+}
+
+// c8-ui-applicability-status: the legal entities an obligation spans (REG-01, D-42), and the
+// bank's active members for the owner and contact pickers.
+
+export async function listSpannedEntities(obligationId: string): Promise<RegisterSpannedEntity[]> {
+  return (await api.get<RegisterSpannedEntity[]>(`${obligation(obligationId)}/register/entities`)).data;
+}
+
+export async function listPeople(): Promise<RegisterPerson[]> {
+  return (await api.get<RegisterPerson[]>(`${V1}/reference/people`)).data;
 }

@@ -322,6 +322,21 @@ class TenantsRoutesHideAnotherBanksRecords(TenantsContractCase):
 
 class TenantsRouteStubs(TenantsContractCase):
     VERSIONED = {"updateOrgUnit", "updateLicence", "updateProduct"}
+    # c8-ten-organisation: real logic, proved in tests_org_units.py and tests_products.py.
+    BUILT = {
+        "listOrgUnits",
+        "createOrgUnit",
+        "updateOrgUnit",
+        "listLicences",
+        "createLicence",
+        "updateLicence",
+        "listProducts",
+        "createProduct",
+        "updateProduct",
+        # c8-ten-teams-people's people picker, ported by c8-ui-soa-j10 for J-10's owner picker:
+        # proved in tests_reference_people.py.
+        "listPeople",
+    }
 
     def test_an_if_match_that_is_not_a_version_is_422_on_every_versioned_write(self) -> None:
         with stub_session(self.everything()):
@@ -340,6 +355,8 @@ class TenantsRouteStubs(TenantsContractCase):
         calls = [(route, self.everything()) for route in self.records.routes()]
         calls += [(route, self.console()) for route in self.records.console_routes()]
         for (name, method, url, body, _permission, _step_up), who in calls:
+            if name in self.BUILT:
+                continue
             headers = {**AS_SESSION, "HTTP_IF_MATCH": '"1"'} if method == "patch" else AS_SESSION
             with self.subTest(operation=name), stub_session(who):
                 response = _call(self.client, method, url, body, headers)
@@ -356,12 +373,12 @@ class TenantsRouteStubs(TenantsContractCase):
                 if permission is not None:
                     continue
                 with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, 501)
+                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, 200 if name in self.BUILT else 501)
 
-    def test_a_known_permission_on_the_people_picker_reaches_the_stub(self) -> None:
+    def test_a_known_permission_on_the_people_picker_is_answered(self) -> None:
         with stub_session(self.everything(permissions=frozenset())):
             response = self.client.get(f"/api/v1/reference/people?permission={perms.CASES_SIGNOFF}", **AS_SESSION)
-        self.assertEqual(response.status_code, 501)
+        self.assertEqual(response.status_code, 200)
 
 
 class PermissionDescriptions(TestCase):

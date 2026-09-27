@@ -767,6 +767,25 @@ BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200)
 EXPORT_RETENTION_DAYS = env_int("EXPORT_RETENTION_DAYS", 7)
 
 # ---------------------------------------------------------------------------------------
+# ===== c8-reg-applicability: REG-01, AC-REG1 many answers in one call (D-75) ============
+# The most applicability answers one confirmed call stores (POST /applicability). Each row
+# is a write and an audit event in one transaction, so the cap keeps a call inside the API
+# budget; a longer call is refused whole and stores nothing.
+REGISTER_BULK_MAX = env_int("REGISTER_BULK_MAX", 100)
+
+# ---------------------------------------------------------------------------------------
+# ===== HOM-05 My work's windows (apps/home/my_work.py, c8-mywork-service, D-23, D-25) ===
+# A row is "due soon" when its next date is today or within MY_WORK_DUE_SOON_DAYS; the
+# tenant's reminder lead replaces it once COL-02 lands. A new version of an obligation stays
+# under "Changes on your items" for MY_WORK_AWARE_DAYS after it was applied: a fixed window
+# needs no write on every page load. Each is at least 1, or the app refuses to boot.
+# ---------------------------------------------------------------------------------------
+MY_WORK_DUE_SOON_DAYS = env_int("MY_WORK_DUE_SOON_DAYS", 30)
+MY_WORK_AWARE_DAYS = env_int("MY_WORK_AWARE_DAYS", 14)
+if min(MY_WORK_DUE_SOON_DAYS, MY_WORK_AWARE_DAYS) < 1:
+    raise ImproperlyConfigured("Refusing to boot: MY_WORK_DUE_SOON_DAYS and MY_WORK_AWARE_DAYS are each at least 1.")
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------
