@@ -9,32 +9,36 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: ACC, AGT.
 """
 
+import datetime
 import importlib.util
 import json
 import sys
 import tempfile
 import uuid
 from pathlib import Path
-from types import ModuleType
+from decimal import Decimal
+from types import ModuleType, SimpleNamespace
 from typing import Any
 from unittest import mock, skip
 
 import yaml
 from django.test import TestCase
 
+from apps.agents import scope as run_scope
+from apps.agents import tasks as agent_tasks
 from apps.agents import testing as agent_build, tests_flow as agent_flow
-from apps.agents.models import Agent
+from apps.agents.models import Agent, AgentRun, RunStatus, RunTrigger, TenantAgent, TenantAgentBudget
 from apps.agents.screen import EMBEDDED_INSTRUCTIONS
 from apps.agents.seeds import SHIPPED, seed_agent_definitions
 from apps.agents.seeds.definition import DEFINITIONS
 from apps.governance.models import AiGeneration
-from apps.library.models import ObligationVersion
+from apps.library.models import Jurisdiction, ObligationVersion
 from apps.proposals.models import Proposal
 from apps.shared import factories, permissions as perms, tenancy
-from apps.shared.models import AuditEvent
-from apps.shared.tenancy import library_write
+from apps.shared.models import AuditEvent, Tenant
+from apps.shared.tenancy import is_tenant_task, library_write
 from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, stub_session, user_principal
-from apps.taxonomy.models import Flag, TaxonomyTerm
+from apps.taxonomy.models import FootprintTerm, Flag, TaxonomyTerm, WatchedMarket
 from apps.taxonomy.registry import REGISTRY
 from apps.watch import registration, sources, testing as watch_build
 from apps.watch.models import ChangeDocument, RegulatoryChange, SourceCheck
@@ -359,31 +363,277 @@ class AgentsScenarioTests(TestCase):
             self.assertTrue(item["key"] and item["label"], name)
             self.assertIs(item["active"], True, name)
 
-    @skip("pending: AGT-S4 (AGT-03, chunk 11)")
     def test_agt_s4(self) -> None:
         """AGT-S4
 
         Agent definitions are versioned and owned by the platform (AGT-03).
         """
+        import datetime
 
-    @skip("pending: AGT-S5 (AGT-04, chunk 11)")
+        from django.utils import timezone
+
+        from apps.agents import tests_definitions as publishing
+        from apps.agents.models import AgentRun
+
+        _SESSION: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {SESSION_TOKEN_FOR_TESTS}"}
+
+        # Given a definition "nordic-watch" at version 3 in the console, and a run of it.
+        nordic = publishing.platform_agent("nordic-watch", versions=3)
+        key = agent_build.agent_key(agent_row=nordic, scopes=(perms.SCOPE_AGENT_RUNS_WRITE,))
+
+        def open_run() -> AgentRun:
+            body = {"agent": "nordic-watch", "model": "claude-opus-5", "pipelineVersion": "1"}
+            response = self.client.post("/api/v1/agent-runs", data=body, content_type="application/json", HTTP_X_API_KEY=key.plain_key)
+            self.assertEqual(response.status_code, 201, response.content)
+            return AgentRun.objects.get(pk=response.json()["id"])
+
+        def version_of(run: AgentRun) -> int | None:
+            return AgentRun.objects.filter(pk=run.pk).values_list("agent_version__version_number", flat=True).first()  # ordering: pk lookup
+
+        earlier = open_run()
+        self.assertEqual(version_of(earlier), 3)
+        # One test is one transaction, so the database clock stands still: the earlier run is
+        # anchored an hour back, which is what it is.
+        AgentRun.objects.filter(pk=earlier.pk).update(started_at=earlier.started_at - datetime.timedelta(hours=1))
+
+        # When a platform admin publishes version 4 with a changed prompt, from the folder the
+        # build ships, with a fresh passkey.
+        admin = factories.platform_user()
+        console = user_principal(permissions={perms.AGENT_DEFINITIONS_MANAGE}, subject_id=admin.id, step_up_at=timezone.now())
+        publish = {"versionNo": 4, "changeNote": "Reads the new FFFS index page first."}
+        with publishing.definitions_root() as root, stub_session(console):
+            folder = publishing.shipped_folder(root, "nordic-watch", 4)
+            self.assertNotEqual(folder.joinpath("prompt.md").read_text(encoding="utf-8"), (publishing.SHIPPED_FOLDER / "prompt.md").read_text(encoding="utf-8"))
+            response = self.client.post("/api/v1/agent-definitions/nordic-watch/versions", data=publish, content_type="application/json", **_SESSION)
+        self.assertEqual(response.status_code, 201, response.content)
+
+        # Then runs started after that reference version 4 and earlier runs still reference 3.
+        self.assertEqual(version_of(open_run()), 4)
+        self.assertEqual(version_of(earlier), 3)
+
+        # And a tenant admin's request to reach the definition at all answers 403 naming
+        # agent_definitions.manage: every tenant permission there is, with a fresh passkey.
+        bank = factories.tenant(slug="agt-s4-bank")
+        tenant_admin = user_principal(permissions=perms.TENANT_PERMISSIONS, tenant_id=bank.id, step_up_at=timezone.now())
+        reaches: tuple[tuple[str, str, Any], ...] = (
+            ("get", "/api/v1/agent-definitions/nordic-watch", None),
+            ("post", "/api/v1/agent-definitions/nordic-watch/versions", {**publish, "versionNo": 5}),
+            ("post", "/api/v1/agent-definitions/nordic-watch/versions/3/retire", {}),
+            ("get", "/api/v1/agent-definitions/nordic-watch/settings", None),
+            ("put", "/api/v1/agent-definitions/nordic-watch/settings", {"cadence": "daily", "jurisdictions": ["se"], "monthlyBudget": None}),
+        )
+        with stub_session(tenant_admin):
+            for method, url, body in reaches:
+                with self.subTest(method=method, url=url):
+                    refused = getattr(self.client, method)(url, data=body, content_type="application/json", **_SESSION)
+                    self.assertEqual(refused.status_code, 403, refused.content)
+                    self.assertEqual(refused.json()["requiredPermission"], perms.AGENT_DEFINITIONS_MANAGE)
+            runs_seen = self.client.get("/api/v1/agent-runs?limit=100", **_SESSION)
+        self.assertEqual(Agent.objects.get(pk=nordic.pk).current_version, 4)
+
+        # And "nordic-watch" is one of bleqq's agents: a bank's run log carries none of its
+        # runs, which the console lists.
+        self.assertEqual(runs_seen.status_code, 200, runs_seen.content)
+        self.assertEqual([row for row in runs_seen.json()["items"] if row["agent"] == "nordic-watch"], [])
+        with stub_session(console):
+            listed = self.client.get("/api/v1/console/agent-runs?limit=100", **_SESSION).json()["items"]
+        self.assertEqual([row["agentVersion"] for row in listed if row["agent"] == "nordic-watch"], [4, 3])
+
+    def _as(self, principal: Any, method: str, url: str, body: Any = None) -> Any:
+        """One session call; the tenant is cleared after it, as between two requests."""
+        extra = {} if body is None else {"data": body, "content_type": "application/json"}
+        with stub_session(principal):
+            answer = getattr(self.client, method)(url, HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}", **extra)
+        tenancy.clear_tenant()
+        return answer
+
     def test_agt_s5(self) -> None:
         """AGT-S5
 
         A tenant controls its agents without touching their instructions (AGT-04).
 
-        Built over createTenantAgent, updateTenantAgent, runTenantAgentNow, pauseTenantAgent,
-        resumeTenantAgent and interruptAgentRun (declared by c11-agents-contract).
+        Built over createTenantAgent, updateTenantAgent, runTenantAgentNow, listAgentRuns and
+        interruptAgentRun, with a runner event reporting what the run found and spent, as the
+        worker applies it. bleqq's agent is reached where a request can name it: adding it, its settings and
+        its runs; no agent of the bank's own can be made from it (AGT-S13).
         """
+        from decimal import Decimal
 
-    @skip("pending: AGT-S6 (AGT-04, chunk 11)")
+        from apps.agents import runner_events
+        from apps.shared.adapters.agent_runner import RunnerEvent
+
+        # Given a tenant admin with agents.manage and an agent the bank added for itself from
+        # a tenant-scoped definition
+        world = self._scheduler_world()
+        TenantAgent.objects.filter(pk=world.agent.pk).update(enabled=False)
+        tenancy.clear_tenant()
+        admin = user_principal(permissions={perms.AGENTS_MANAGE}, tenant_id=world.bank.id, subject_id=world.admin.id)
+        own = f"/api/v1/agents/{world.agent.id}"
+
+        # When they switch it on, set a weekly cadence within the plan limit, restrict scope
+        # to SE and FI, and choose "Run now"
+        changed = self._as(
+            admin, "patch", own, {"enabled": True, "cadence": "weekly", "scope": {"jurisdictions": ["se", "fi"], "terms": []}}
+        )
+        self.assertEqual(changed.status_code, 200, changed.content)
+        queued = self._as(admin, "post", f"{own}/runs", {})
+
+        # Then a run is queued with those settings
+        self.assertEqual(queued.status_code, 202, queued.content)
+        self.assertEqual((queued.json()["status"], queued.json()["trigger"]), ("running", "manual"))
+        [run] = self._bank_runs(world)
+        self.assertEqual([row["key"] for row in run.scope["jurisdictions"]], ["se", "fi"])
+        self.assertEqual(run.requested_by_id, world.admin.id)
+
+        # And "Recent runs" lists it with findings and cost
+        tenancy.activate(world.bank.id)
+        runner_events.apply_event(
+            RunnerEvent(run_id=run.id, status=RunStatus.RUNNING, stats={"sourcesChecked": 3, "changesRegistered": 1}, cost=Decimal("0.4200"))
+        )
+        tenancy.clear_tenant()
+        history = self._as(admin, "get", f"/api/v1/agent-runs?tenantAgentId={world.agent.id}")
+        self.assertEqual(history.status_code, 200, history.content)
+        [listed] = history.json()["items"]
+        self.assertEqual(listed["id"], str(run.id))
+        self.assertEqual(listed["stats"]["changesRegistered"], 1)
+        self.assertEqual(Decimal(listed["cost"]), Decimal("0.42"))
+
+        # When they choose "Stop run"
+        stopped = self._as(admin, "post", f"/api/v1/agent-runs/{run.id}/interrupt", {})
+
+        # Then the run is interrupted and its status says so
+        self.assertEqual(stopped.status_code, 200, stopped.content)
+        self.assertEqual(stopped.json()["status"], "interrupted")
+        [listed] = self._as(admin, "get", f"/api/v1/agent-runs?tenantAgentId={world.agent.id}").json()["items"]
+        self.assertEqual(listed["status"], "interrupted")
+        self.assertIsNotNone(listed["interruptedAt"])
+
+        # When they set a cadence above the plan limit
+        refused = self._as(admin, "patch", own, {"cadence": "daily"})
+
+        # Then the request answers 422 with code "above_plan_limit"
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "above_plan_limit")
+
+        # When they send the same calls against one of bleqq's agents
+        self._bleqqs_beat(datetime.datetime.now(datetime.UTC))
+        [library_run] = AgentRun.objects.filter(agent=world.bleqq)
+        before = Agent.objects.filter(pk=world.bleqq.pk).values().get()
+        calls: tuple[tuple[str, str, dict[str, Any]], ...] = (
+            ("post", "/api/v1/agents", {"agent": world.bleqq.key, "cadence": "weekly"}),
+            ("put", f"/api/v1/agent-definitions/{world.bleqq.key}/settings", {"cadence": "weekly", "jurisdictions": ["se", "fi"], "monthlyBudget": "1.00"}),
+            ("post", f"/api/v1/agent-runs/{library_run.id}/interrupt", {}),
+        )
+        for method, url, body in calls:
+            with self.subTest(url):
+                answer = self._as(admin, method, url, body)
+
+                # Then each answers 403 naming agent_definitions.manage
+                self.assertEqual(answer.status_code, 403, answer.content)
+                self.assertEqual(answer.json()["requiredPermission"], perms.AGENT_DEFINITIONS_MANAGE)
+
+        # And nothing about that agent changes
+        self.assertEqual(Agent.objects.filter(pk=world.bleqq.pk).values().get(), before)
+        library_run.refresh_from_db()
+        self.assertEqual(library_run.status, RunStatus.RUNNING.value)
+        self.assertFalse(TenantAgent.objects.filter(agent=world.bleqq).exists())
+
     def test_agt_s6(self) -> None:
         """AGT-S6
 
         The budget cap pauses runs and the AI off switch stops every model call (AGT-04).
 
-        Built over getAgentBudget and putAgentBudget (declared by c11-agents-contract).
+        Built over putAgentBudget, getAgentBudget, the bank's beat, runTenantAgentNow,
+        resumeTenantAgent, setTenantAi and ask. The cap pauses through the one pause
+        pauseTenantAgent uses, with no person. The clock is the test's, so "this month" never depends on
+        when the test runs.
         """
+        from decimal import Decimal
+
+        from django.utils import timezone
+
+        from apps.agents.tests_tasks import WEDNESDAY, frozen
+        from apps.collab.models import Notification
+
+        world = self._scheduler_world()
+        tenancy.clear_tenant()
+        admin = user_principal(permissions={perms.AGENTS_MANAGE}, tenant_id=world.bank.id, subject_id=world.admin.id)
+        security = user_principal(
+            permissions={perms.SECURITY_MANAGE}, tenant_id=world.bank.id, subject_id=world.admin.id, step_up_at=timezone.now()
+        )
+        reader = user_principal(permissions={perms.SEARCH_USE}, tenant_id=world.bank.id, subject_id=world.admin.id)
+
+        # Given a monthly cap on the bank's own agents set with "Set cap" and "Spend this
+        # month" close to it
+        with frozen(WEDNESDAY - datetime.timedelta(days=2)):
+            capped = self._as(admin, "put", "/api/v1/tenant/agent-budget", {"monthlyCap": "10.00"})
+            self.assertEqual(capped.status_code, 200, capped.content)
+            tenancy.activate(world.bank.id)
+            AgentRun.objects.create(
+                agent=world.definition, tenant_agent=world.agent, trigger=RunTrigger.MANUAL.value, requested_by=world.admin,
+                model="claude-opus-5", pipeline_version="1", status=RunStatus.SUCCEEDED.value, cost=Decimal("7.2000"),
+            )
+            tenancy.clear_tenant()
+            library = agent_build.platform_run()
+            AgentRun.objects.filter(pk=library.pk).update(cost=Decimal("50.0000"))
+
+        # When a run of one of the bank's own agents would exceed the cap
+        with frozen(WEDNESDAY):
+            spend = self._as(admin, "get", "/api/v1/tenant/agent-budget").json()
+            asked = self._as(admin, "post", f"/api/v1/agents/{world.agent.id}/runs", {})
+        self._bank_beat(world, WEDNESDAY)
+
+        # Then it is not started and the admin is notified
+        self.assertEqual(asked.status_code, 422, asked.content)
+        self.assertEqual(asked.json()["code"], "budget_cap_reached")
+        self.assertEqual([run.cost for run in self._bank_runs(world)], [Decimal("7.2000")])
+        tenancy.activate(world.bank.id)
+        paused = TenantAgent.objects.get(pk=world.agent.pk)
+        self.assertEqual(paused.pause_reason, "budget_cap")
+        self.assertTrue(Notification.objects.filter(user=world.admin, subject_id=world.agent.id).exists())
+        tenancy.clear_tenant()
+
+        # And "Spend this month" counts the bank's own runs only, never a run of bleqq's agents
+        library.refresh_from_db()
+        self.assertEqual((library.tenant_id, library.cost), (None, Decimal("50.0000")))
+        self.assertEqual((spend["monthlyCap"], spend["spentThisMonth"]), ("10.00", "7.20"))
+
+        # When the admin switches all AI features off
+        switched = self._as(security, "put", "/api/v1/tenant/ai", {"enabled": False})
+        self.assertEqual(switched.status_code, 200, switched.content)
+        with frozen(WEDNESDAY + datetime.timedelta(days=1)):
+            self._as(admin, "put", "/api/v1/tenant/agent-budget", {"monthlyCap": "500.00"})
+        resumed = self._as(admin, "delete", f"/api/v1/agents/{world.agent.id}/pause")
+        self.assertEqual(resumed.status_code, 200, resumed.content)
+        tenancy.activate(world.bank.id)
+        self.assertEqual(
+            TenantAgent.objects.filter(pk=world.agent.pk).update(next_run_at=WEDNESDAY + datetime.timedelta(days=6)), 1
+        )
+        tenancy.clear_tenant()
+        logged = AiGeneration.objects.filter(tenant_id=world.bank.id).count()
+        with frozen(WEDNESDAY + datetime.timedelta(days=7)):
+            asked = self._as(admin, "post", f"/api/v1/agents/{world.agent.id}/runs", {})
+        self._bank_beat(world, WEDNESDAY + datetime.timedelta(days=7))
+        platform_before = AgentRun.objects.filter(agent=world.bleqq, tenant__isnull=True).count()
+        self._bleqqs_beat(WEDNESDAY + datetime.timedelta(days=7))
+        ask = self._as(reader, "post", "/api/v1/ask", {"question": "What must we disclose about costs?", "lang": "en"})
+
+        # Then none of the bank's own agents starts a run, Ask answers 403 "feature_off" and
+        # the LLM adapter records no call for the tenant
+        self.assertEqual(asked.status_code, 422, asked.content)
+        self.assertEqual(asked.json()["code"], "feature_off")
+        self.assertEqual(len(self._bank_runs(world)), 1)
+        tenancy.activate(world.bank.id)
+        skipped = AuditEvent.objects.filter(action="agent_run.skipped", subject_id=world.definition.id).values_list("after", flat=True)
+        self.assertEqual([row["reason"] for row in skipped], ["feature_off"], "the due run was skipped, not missed")
+        tenancy.clear_tenant()
+        self.assertEqual(ask.status_code, 403, ask.content)
+        self.assertEqual(ask.json()["code"], "feature_off")
+        self.assertEqual(AiGeneration.objects.filter(tenant_id=world.bank.id).count(), logged)
+
+        # And bleqq's watch is unaffected: its agents keep their schedule, because they read
+        # public sources only
+        self.assertEqual(AgentRun.objects.filter(agent=world.bleqq, tenant__isnull=True).count(), platform_before + 1)
 
     @skip("pending: AGT-S7 (AGT-05, chunk 11)")
     def test_agt_s7(self) -> None:
@@ -395,12 +645,133 @@ class AgentsScenarioTests(TestCase):
         by c11-agents-contract).
         """
 
-    @skip("pending: AGT-S8 (AGT-06, chunk 11)")
+    # --- c11-scheduler: AGT-S8, AGT-S11 and AGT-S13 -------------------------------------
+    def _scheduler_world(self) -> SimpleNamespace:
+        """A bank operating in Sweden and watching Norway, with a cap, an admin holding
+        agents.manage and one agent of its own that is on, weekly and due; and bleqq's
+        watch-sweeper. Both definitions have a published version."""
+        from apps.agents.tests_tasks import WEDNESDAY, published
+        from apps.agents.tests_tenant_agents import tenant_definition
+        from apps.library.seeds import seed_jurisdictions, seed_languages
+        from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+        world = SimpleNamespace(definition=tenant_definition(), bleqq=agent_build.agent(key="watch-sweeper"))
+        published(world.definition)
+        published(world.bleqq)
+        world.bank = factories.tenant(slug="scheduler-scenarios")
+        world.admin = factories.member_user(world.bank, roles=("admin",))
+        tenancy.activate(world.bank.id)
+        FootprintTerm.objects.create(tenant=world.bank, term=TaxonomyTerm.objects.get(jurisdiction__key="se"))
+        WatchedMarket.objects.create(tenant=world.bank, jurisdiction=Jurisdiction.objects.get(key="no"))
+        TenantAgentBudget.objects.create(tenant=world.bank, monthly_cap="100.00")
+        world.agent = TenantAgent.objects.create(
+            tenant=world.bank,
+            agent=world.definition,
+            enabled=True,
+            run_weekday=3,
+            run_hour=6,
+            next_run_at=WEDNESDAY - datetime.timedelta(hours=1),
+        )
+        tenancy.clear_tenant()
+        return world
+
+    def _bank_beat(self, world: SimpleNamespace, at: datetime.datetime) -> Any:
+        from apps.agents.tests_tasks import Recorded, frozen, with_runner
+
+        runner = Recorded()
+        with frozen(at), with_runner(runner):
+            agent_tasks.run_due_tenant_agents(world.bank.id)
+        tenancy.clear_tenant()
+        return runner
+
+    def _bleqqs_beat(self, at: datetime.datetime) -> Any:
+        """bleqq's beat, with every way into a bank's zone refused while it runs."""
+        from apps.agents.tests_tasks import Recorded, frozen, with_runner
+
+        runner = Recorded()
+        refuse = mock.Mock(side_effect=AssertionError("bleqq's beat entered a bank's zone"))
+        tenancy.clear_tenant()
+        with (
+            frozen(at),
+            with_runner(runner),
+            mock.patch.object(tenancy, "activate", refuse),
+            mock.patch.object(run_scope, "snapshot", refuse),
+        ):
+            agent_tasks.run_platform_agents()
+        refuse.assert_not_called()
+        return runner
+
+    def _bank_runs(self, world: SimpleNamespace) -> list[AgentRun]:
+        tenancy.activate(world.bank.id)
+        runs = list(AgentRun.objects.filter(tenant_agent__isnull=False).order_by("started_at", "id"))
+        tenancy.clear_tenant()
+        return runs
+
     def test_agt_s8(self) -> None:
         """AGT-S8
 
         The runner is an adapter with a mock and the app is the scheduler of record (AGT-06).
         """
+        from django.conf import settings
+        from django.db import DEFAULT_DB_ALIAS, connections
+
+        from apps.agents import runner_events
+        from apps.agents.tests_tasks import WEDNESDAY
+        from apps.shared import tests_production_guard as boot_guard
+        from apps.shared.adapters.agent_runner import MockAgentRunner, RunHandle
+
+        # Given AGENT_RUNNER=mock
+        self.assertEqual(settings.AGENT_RUNNER, "mock")
+        world = self._scheduler_world()
+
+        # When the beat schedule fires for a tenant with one of its own agents due
+        runner = self._bank_beat(world, WEDNESDAY)
+
+        # Then the worker records the run, with its version, trigger, scope and budget limit,
+        # inside @tenant_task and before the adapter is called
+        self.assertTrue(is_tenant_task(agent_tasks.run_due_tenant_agents.run))
+        [run] = self._bank_runs(world)
+        self.assertEqual(runner.seen, [(True, world.bank.id)])
+        self.assertIsNotNone(run.agent_version_id)
+        self.assertEqual(run.trigger, RunTrigger.SCHEDULE.value)
+        self.assertEqual(run.scope["source"], "markets")
+        self.assertEqual(run.budget_limit, Decimal(settings.AGENT_RUN_BUDGET_LIMIT))
+
+        # When bleqq's beat fires
+        platform = self._bleqqs_beat(WEDNESDAY)
+
+        # Then each of bleqq's due agents gets a run with no tenant, from a task that activates none
+        self.assertFalse(is_tenant_task(agent_tasks.run_platform_agents.run))
+        self.assertEqual(platform.seen, [(True, None)])
+        [library_run] = AgentRun.objects.filter(agent=world.bleqq)
+        self.assertEqual((library_run.tenant_id, library_run.trigger), (None, RunTrigger.SCHEDULE.value))
+
+        # When the mock runner emits events
+        tenancy.activate(world.bank.id)
+        handle = RunHandle(run_id=run.id, external_id=run.external_session_id, status=RunStatus.RUNNING, started_at=None)
+        events = MockAgentRunner().poll(handle)
+        for event in events:
+            runner_events.apply_event(event)
+
+        # Then the run row is updated from them
+        run.refresh_from_db()
+        self.assertEqual(run.status, RunStatus.SUCCEEDED.value)
+        self.assertEqual((run.cost, run.tokens_in), (events[-1].cost, events[-1].tokens_in))
+        tenancy.clear_tenant()
+
+        # And booting with AGENT_RUNNER=mock in a deployed environment other than test is refused
+        guard = boot_guard.ProductionGuard()
+        test_db = connections[DEFAULT_DB_ALIAS].settings_dict["NAME"]
+        guard.app_url = boot_guard._with_database(settings.DATABASE_URL, test_db)
+        guard.migrator_url = boot_guard._with_database(settings.MIGRATOR_DATABASE_URL, test_db)
+        _case, booted = guard._boot(boot_guard.Case("prod", guard._good_deployed("prod", AGENT_RUNNER="mock"), False))
+        self.assertNotEqual(booted.returncode, 0)
+        self.assertIn("AGENT_RUNNER", booted.stderr)
 
     def test_agt_s9(self) -> None:
         """AGT-S9
@@ -436,12 +807,64 @@ class AgentsScenarioTests(TestCase):
         self.assertEqual(page["riskFlags"], [EMBEDDED_INSTRUCTIONS])
         self.assertNotIn("content", page)
 
-    @skip("pending: AGT-S11 (AGT-04, chunk 11)")
     def test_agt_s11(self) -> None:
         """AGT-S11
 
         A tenant agent's default scope is the operating markets first, then the watched ones (AGT-04).
         """
+        from apps.agents.tests_tasks import WEDNESDAY, frozen
+
+        # Given a tenant operating in Sweden and watching Norway, and an agent the bank added
+        # for itself with no scope of its own
+        world = self._scheduler_world()
+
+        # When a run starts
+        self._bank_beat(world, WEDNESDAY)
+
+        # Then the run's stored scope lists Sweden as operating, Norway as watching and the EU
+        # as reaching them, in that order
+        [first] = self._bank_runs(world)
+        markets = [
+            {"key": "se", "level": "operating"},
+            {"key": "no", "level": "watching"},
+            {"key": "eu", "level": "reaching"},
+        ]
+        self.assertEqual((first.scope["source"], first.scope["jurisdictions"]), ("markets", markets))
+
+        # And later market changes do not alter that run's scope
+        tenancy.activate(world.bank.id)
+        WatchedMarket.objects.create(tenant=world.bank, jurisdiction=Jurisdiction.objects.get(key="fi"))
+        tenancy.clear_tenant()
+        self.assertEqual(self._bank_runs(world)[0].scope["jurisdictions"], markets)
+
+        # When an admin with agents.manage restricts the agent's scope to Sweden and Finland
+        admin = user_principal(permissions={perms.AGENTS_MANAGE}, tenant_id=world.bank.id, subject_id=world.admin.id)
+        with frozen(WEDNESDAY), stub_session(admin):
+            answer = self.client.patch(
+                f"/api/v1/agents/{world.agent.id}",
+                data={"scope": {"jurisdictions": ["se", "fi"], "terms": []}},
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}",
+            )
+        self.assertEqual(answer.status_code, 200, answer.content)
+        tenancy.clear_tenant()
+        self._bank_beat(world, WEDNESDAY + datetime.timedelta(days=7))
+
+        # Then the next run's scope is Sweden and Finland only
+        first_again, second = self._bank_runs(world)
+        self.assertEqual(first_again.scope["jurisdictions"], markets)
+        self.assertEqual(
+            (second.scope["source"], second.scope["jurisdictions"]),
+            ("agent", [{"key": "se", "level": "chosen"}, {"key": "fi", "level": "chosen"}]),
+        )
+
+        # When a platform library run starts
+        self._bleqqs_beat(WEDNESDAY)
+
+        # Then it reads no tenant row and sweeps every covered jurisdiction
+        [library_run] = AgentRun.objects.filter(agent=world.bleqq)
+        covered = list(Jurisdiction.objects.filter(active=True).order_by("sort_order", "key").values_list("key", flat=True))
+        self.assertEqual(library_run.scope, {"jurisdictions": covered})
 
     def test_agt_s12(self) -> None:
         """AGT-S12
@@ -565,12 +988,61 @@ class AgentsScenarioTests(TestCase):
         self.assertFalse(RegulatoryChange.objects.filter(agent_run_id=run_id).exists())
         self.assertFalse(Proposal.objects.filter(agent_run_id=run_id).exists())
 
-    @skip("pending: AGT-S13 (AGT-03, AGT-04, chunk 11)")
     def test_agt_s13(self) -> None:
         """AGT-S13
 
         A bank cannot switch off, pause or re-scope one of bleqq's agents (AGT-03, AGT-04).
         """
+        from django.db import IntegrityError, transaction
+
+        from apps.agents.tests_tasks import WEDNESDAY
+
+        # Given a tenant admin with agents.manage and one of bleqq's base-package agents
+        world = self._scheduler_world()
+        self._bleqqs_beat(WEDNESDAY)
+        [library_run] = AgentRun.objects.filter(agent=world.bleqq)
+        before = Agent.objects.filter(pk=world.bleqq.pk).values().get()
+        admin = user_principal(permissions={perms.AGENTS_MANAGE}, tenant_id=world.bank.id, subject_id=world.admin.id)
+        settings_body = {"cadence": "monthly", "jurisdictions": ["se"], "monthlyBudget": "1.00"}
+
+        # When they add it as one of the bank's own, change its cadence, scope or budget, or
+        # stop one of its runs
+        calls = (
+            ("post", "/api/v1/agents", {"agent": world.bleqq.key}),
+            ("put", f"/api/v1/agent-definitions/{world.bleqq.key}/settings", settings_body),
+            ("post", f"/api/v1/agent-runs/{library_run.id}/interrupt", None),
+        )
+        for method, url, body in calls:
+            with self.subTest(url), stub_session(admin):
+                extra = {} if body is None else {"data": body, "content_type": "application/json"}
+                answer = getattr(self.client, method)(url, HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}", **extra)
+                tenancy.clear_tenant()
+
+                # Then each request answers 403 naming agent_definitions.manage
+                self.assertEqual(answer.status_code, 403, answer.content)
+                self.assertEqual(answer.json()["requiredPermission"], perms.AGENT_DEFINITIONS_MANAGE)
+
+        # And nothing about that agent changes
+        self.assertEqual(Agent.objects.filter(pk=world.bleqq.pk).values().get(), before)
+        library_run.refresh_from_db()
+        self.assertEqual(library_run.status, RunStatus.RUNNING.value)
+
+        # And no agent of the bank's own can be made from it, so switching off, pausing and
+        # "Run now" have nothing of bleqq's to reach
+        tenancy.activate(world.bank.id)
+        with self.assertRaisesMessage(IntegrityError, "tenant_agent refused"), transaction.atomic():
+            TenantAgent.objects.create(tenant=world.bank, agent=world.bleqq)
+        self.assertFalse(TenantAgent.objects.filter(agent=world.bleqq).exists())
+        tenancy.clear_tenant()
+
+        # When the bank's own AI off switch is set
+        Tenant.objects.filter(pk=world.bank.id).update(ai_enabled=False)
+        self._bank_beat(world, WEDNESDAY + datetime.timedelta(days=7))
+        self._bleqqs_beat(WEDNESDAY + datetime.timedelta(days=7))
+
+        # Then its own agents stop and bleqq's agents keep running
+        self.assertEqual(self._bank_runs(world), [])
+        self.assertEqual(AgentRun.objects.filter(agent=world.bleqq, tenant__isnull=True).count(), 2)
 
     @skip("pending: AGT-S14 (AGT-04, AGT-05, OWN-02, chunk 11)")
     def test_agt_s14(self) -> None:

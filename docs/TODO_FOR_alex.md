@@ -1504,3 +1504,102 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
       then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
       (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**
+## c11-definitions-platform: publishing bleqq's agent versions, their settings and runs (2026-09-25, AGT-03, ADM-02, AGT-06)
+
+**Answered by Alex on 2026-09-25 (D-102, ADR 0059): "Platform config".** The question was
+how the console may write an agent definition, while `agent` and `agent_version` read as
+library rows that only a proposal's approval may reach.
+
+- [x] **How may the console write an agent definition?** Agent definitions, agent versions
+      and platform agent settings are platform configuration, not library rows. The console
+      writes them directly through `agents/seeds/console.py`, behind
+      `agent_definitions.manage`, a fresh passkey and a person's session, with one audit row
+      carrying no tenant and the assertion. The library fence names the three in one
+      platform-configuration list (`PlatformConfigurationGuard`) and still refuses every
+      other model, route, proposal kind and watch module. CLAUDE.md section 5 gains no
+      exception line. Built by `c11-agent-config-platform`; AGT-S4 is green.
+
+Defaults taken; nothing waits on them.
+
+- [ ] **A bank's run log no longer lists bleqq's runs.** `GET /agent-runs` from a bank's
+      session returns its own runs only; the console reads bleqq's with
+      `GET /console/agent-runs` (the default "no prompts, tools, budgets, run rows or costs"
+      under "What may a bank see of bleqq's watch?"). What a bank sees of bleqq's watch is
+      `GET /agents/platform`. Row-level security still lets a bank read a library run; the
+      narrowing is the read's. `c11-run-history` (same wave) owns that read and may have
+      taken the other reading ("platform runs never carry cost to a bank"); the integrator
+      keeps this one.
+- [ ] **A run opens on the newest version still published.** When every version is
+      retired a run is refused with 409 `no_published_version`.
+
+## c11-agent-config-platform: agent definitions as platform configuration (2026-09-25, AGT-03, D-102)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **The console keeps the database's `seed` door.** The three console writers open the
+      same door as the reference seed, which the database accepts on every inventory table,
+      because a door of their own would change the database trigger, the door lint and the
+      library database guard, none of them this package's. What keeps the writers to agent
+      rows is the fence: `agents/seeds/console.py` may name no library model but `Agent`
+      and `AgentVersion`, and only the three console routes reach it. Default: keep it so.
+      The alternative is a `platform_config` door accepted only by `agent` and
+      `agent_version`, a small hardening for a later package.
+- [ ] **The AGT-S4 journey stays `fixme`.** The integration scenario is green; the console
+      screen that publishes and retires a version is not built yet, and its journey belongs
+      to the package that builds it.
+
+## c11-run-history: what a bank reads of its runs and of bleqq's watch (2026-09-25, AGT-03, AGT-04)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **A bank's run history holds its own runs only.** `GET /agent-runs` in a bank's session
+      no longer lists bleqq's library runs: they reach a bank as watch items and proposals, so
+      no platform cost, token count or model is on a bank's page (the default you took on what
+      a bank sees of bleqq's watch). The console still reads the library's runs. Default:
+      naming another bank's agent in `tenantAgentId` matches no run, as the published contract
+      says, rather than the 404 the chunk 11 brief named; say if you want the 404.
+- [ ] **bleqq's agents have no display name of their own.** `GET /agents/platform` returns the
+      agent's key as `name` and its definition's description as `purpose`; the screen renders
+      the words from its catalog by key. `nextRunAt` is one cadence after the last start, now
+      when an agent never ran or is overdue, and null for a manual one. Say if you want a
+      name column on the definition instead.
+
+## c11-fe-admin-agents: the bank's agents page (2026-09-25, AGT-03, AGT-04, AGT-05, ADM-01)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **A bank cannot list the definitions it may add.** `GET /agent-definitions` is the
+      console's (`agent_definitions.manage`), and no route lists the tenant-scoped ones to a
+      bank. Default: "Add an agent" offers the two tenant-scoped definitions bleqq ships
+      (`tenant-source-watch` as "Source checker", `scope-researcher` as "Scope research"),
+      named in the `admin-agents` catalog; the server refuses any other key with
+      `unknown_key`, which the page renders. Say if you want a bank-facing list route, so a
+      newly published definition shows without a frontend change.
+- [ ] **No name or version on a bank's agent.** The card draws "Name: ours to recognise it
+      by" and a version pill, but `TenantAgentOut` carries neither. Default: an agent is named
+      by its definition and shows no version pill; each run names nothing of its version on
+      the bank's page either. Say if a bank should name its agents.
+- [ ] **Run now, Pause, Resume, Stop run and research requests still answer 501.** The page
+      draws them against the published contract; `c11-tenant-controls-cap` and
+      `c11-research-requests` (wave 5) fill the routes. The research panel shows only once the
+      bank has an agent of its own.
+
+## c11-tenant-controls-cap: run now, pause, resume, stop, and the cap mid-run (2026-09-25, AGT-04, AGT-06)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **Run now with AI off answers 422 `feature_off`, not 403.** The chunk 11 brief named 403
+      for the control and 422 for the scheduler's opener; run now opens through that one
+      opener (`tasks.open_tenant_run`), so it answers what the opener answers. Ask keeps its
+      403. Say if the control should answer 403.
+- [ ] **Resuming is allowed while the month's cap is reached.** The agent is paused again by
+      the cap, with a notification, when its next run is due, rather than refused on resume.
+      Default: keep it, so a person can always undo their own pause.
+- [ ] **The cap stops a run mid-way only when the spend passes it.** A runner event that takes
+      the month's spend above the cap stops the run and pauses the agent; one that reaches it
+      exactly does not, the same line `at_cap` draws for a new run. A run whose final event
+      passes the cap is not reopened to be stopped; the next due run finds the cap reached.
+- [ ] **The AGT-S6 journey switches tenant B's AI off, not tenant A's.** A bank's switch is the
+      whole bank's, and tenant A's Ask journeys run in parallel. The cap half stays tenant A's.
+      The AGT-S5 journey narrows the scope to Sweden, because the screen offers only the bank's
+      own markets (Sweden and Denmark in the seed); the integration test narrows to SE and FI.
