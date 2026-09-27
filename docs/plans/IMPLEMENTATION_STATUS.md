@@ -154,7 +154,7 @@ and what runs over budget is fixed or named in HARDENING.
 - **At scale:** a slot of 3,000 obligations, 8,144 chunks, three legal entities, 415 register
   entries, 204 gaps and a 30-person department (391 rows on its My work). Hybrid search took
   5.9 s, 5.1 s of it just-in-time compilation that library 0012's child policies set off;
-  JIT is now off on every connection (D-1xx r2-perf, H105) and the search answers in 370 ms
+  JIT is now off on every connection (D-116, H105) and the search answers in 370 ms
   median, 412 ms p95 against 1.5 s. A department's My work read the title of every row;
   it now reads the page's (H106): 130 ms median, 240 to 270 ms p95. Still over: the reader's
   obligations list (270 ms median, 330 ms p95, the footprint judged twice per row through

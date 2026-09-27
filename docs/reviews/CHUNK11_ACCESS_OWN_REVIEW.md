@@ -3,7 +3,7 @@
 Package `security-review-c11-access-d89`, wave 7 of the R2 build, 2026-09-27. Requirements
 ACC-01 to ACC-09, INV-07 and OWN-01 to OWN-04, read against CLAUDE.md section 5,
 `docs/plans/briefs/AGENT_ACCESS.md`, `R2_CROSS_CUTTING.md`, ADR 0050 and ADR 0059, and the
-D-1xx rows of the acc and d89 packages. `d89-controls` (OWN-05) carries its own review.
+decision rows of the acc and d89 packages (D-110, D-112 to D-115). `d89-controls` (OWN-05) carries its own review.
 
 **Commit read:** `origin/main` (`7242ac8`) with the seven dependency branches merged:
 `acc-summary-j11`, `acc-mcp-tools`, `acc-fe-personal-grants`, `d89-private-records`,

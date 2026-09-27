@@ -1902,7 +1902,7 @@ The chunk 8 brief's `c8-home-register-feeds` is built as this package, with thes
   on its obligation; a review is left out where the answer is "does not apply".
 ## d89-private-records. The bank's own queue decided (2026-09-27, INV-07, OWN-03, OWN-04)
 
-§20's routes now answer (D-57, ADR 0050, ADR 0059; D-1xx, d89-private-records):
+§20's routes now answer (D-57, ADR 0050, ADR 0059; D-115):
 
 - `GET /private-proposals` answers the bank's own open proposals only, oldest first, as
   `PrivateProposalPage`; a decided proposal leaves it.
@@ -1998,7 +1998,7 @@ Taxonomy 0012 builds it on the regulatory scope request rather than beside it:
 `team` row, also a composite key `(tenant_id, owner_team_id)` into `team (tenant_id, id)`, so
 the database refuses another bank's team. It sits beside `owner` and never replaces it: the
 worked-case CHECK still requires a person. `triageChange` takes it as `ownerTeam`, a team key
-(the brief's `ownerTeamId`; D-1xx c9-owner-team-and-reassign), and the case answers
+(the brief's `ownerTeamId`; D-111), and the case answers
 `ownerTeam` as `{key, kind, label}`, on `CasesCase` and on the change page's `case`.
 `TenantMemberOpenWork` and the removal now count and move `case`, `action` and
 `duty_occurrence`, the kinds its contract already named: a case and an action pass to a

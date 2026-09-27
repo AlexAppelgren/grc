@@ -174,7 +174,7 @@ skeleton that lingers or a `next dev` build fails it. The medians go in the Meas
 > entry's key). Heavy calls run at their caps. `baseline.json` holds 287 rows recorded on a
 > fresh `seed_e2e` slot; four are over budget and named in HARDENING (H109 to H112). On a slot
 > scaled to 3,000 obligations and a 30-person department, search went from 5.9 s to 0.4 s
-> with just-in-time compilation off (D-1xx r2-perf) and My work for a department to about
+> with just-in-time compilation off (D-116) and My work for a department to about
 > 130 ms median; the reader's obligations list and the unbounded roadmap stay over (H107,
 > H108). The R2 screens' medians are in the UI plan.
 

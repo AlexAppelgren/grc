@@ -2069,7 +2069,7 @@ Nothing waits for these; each has the default the build took.
       are per bank, read as "ours", so no URL can name tenant A's. Default: J-8 proves B's
       security page shows B's own limits, never A's seeded 45 minutes, and that A's agent
       answers 404 to B's settings change (`PATCH /agents/{id}`) and pause.
-## d89-private-records: the bank's own queue, answered by default (2026-09-27, INV-07, OWN-03, OWN-04, D-1xx)
+## d89-private-records: the bank's own queue, answered by default (2026-09-27, INV-07, OWN-03, OWN-04, D-115)
 
 Built on these defaults; each stays yours to overrule.
 
@@ -2217,7 +2217,7 @@ unless you want one of them changed.
       about 640 ms against 250 (HARDENING H108). Default taken: unchanged, because leaving `to`
       out is documented as "everything ahead". Say if it should be paginated (CLAUDE.md
       section 6 asks for it) or take a default end date as a setting, such as eighteen months.
-- [ ] **Just-in-time compilation is off on every connection** (D-1xx r2-perf): search at scale
+- [ ] **Just-in-time compilation is off on every connection** (D-116): search at scale
       went from 5.9 s to 0.37 s. The app sends `-c jit=off` when it connects. If Railway's
       database is ever reached through a pooler that refuses startup options, run
       `ALTER ROLE cw_app SET jit = off` once instead. Default: the connection option.
