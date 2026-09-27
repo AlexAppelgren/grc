@@ -61,6 +61,10 @@ describe('presentPrivateProposal', () => {
     expect(presentPrivateProposal(agentRow, sv).map((p) => p.label)).toEqual(['Ny skyldighet', 'Väntar', 'Föreslagen av vår agent']);
     expect(presentPrivateProposal({ ...agentRow, kind: 'something_new' }, t)[0]?.label).toBe('Proposal');
   });
+
+  it('draws no status pill for a status it does not know, rather than guessing a tone', () => {
+    expect(presentPrivateProposal({ ...agentRow, status: 'withdrawn' }, t).map((p) => p.key)).toEqual(['kind:new_obligation', 'proposed-by-agent']);
+  });
 });
 
 describe('proposerLine', () => {
@@ -75,6 +79,12 @@ describe('sources', () => {
   it('numbers each distinct source once, the record\'s own first', () => {
     expect(sourcesOf(agentRow)).toEqual([RIKSDAGEN, FI]);
     expect(sourcesOf({ sourceUrl: '', fieldSources: {} })).toEqual([]);
+  });
+
+  it('reads a proposal without field sources as having only its record source, or none', () => {
+    expect(sourcesOf({ sourceUrl: RIKSDAGEN })).toEqual([RIKSDAGEN]);
+    expect(sourcesOf({ sourceUrl: '' })).toEqual([]);
+    expect(sourcesOf({ sourceUrl: '', fieldSources: { dutyType: FI } })).toEqual([FI]);
   });
 
   it('names a link by its host and never makes a link of anything but http or https', () => {
@@ -101,5 +111,14 @@ describe('payloadRows', () => {
 
   it('shows nothing for an empty payload', () => {
     expect(payloadRows({ payload: {}, fieldSources: {}, sourceUrl: '' }, t, defaultFormatContext)).toEqual([]);
+  });
+
+  it('shows nothing when the proposal carries no payload or sources at all', () => {
+    expect(payloadRows({ sourceUrl: '' }, t, defaultFormatContext)).toEqual([]);
+  });
+
+  it('skips an empty text and a text that is not a string, and leaves a field without sources unnumbered', () => {
+    const rows = payloadRows({ payload: { titles: { sv: '', en: 42, fi: 'Anna maksajalle tiedot' }, summaries: null }, sourceUrl: '' }, t, defaultFormatContext);
+    expect(rows).toEqual([{ field: 'titles.fi', label: 'Title (Finnish)', value: 'Anna maksajalle tiedot', source: null, language: 'fi' }]);
   });
 });

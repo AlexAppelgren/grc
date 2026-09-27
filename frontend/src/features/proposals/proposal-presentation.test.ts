@@ -90,6 +90,11 @@ describe('kind and status', () => {
     expect(statusLabel('open', t)).toBe('Waiting');
     expect(statusLabel('approved', t)).toBe('Approved');
   });
+
+  it('reads a status the catalog does not know as "Unknown" in the neutral information tone', () => {
+    expect(statusLabel('withdrawn', t)).toBe('Unknown');
+    expect(statusTone('withdrawn')).toBe('information');
+  });
 });
 
 describe('presentProposal', () => {
@@ -104,6 +109,10 @@ describe('presentProposal', () => {
     expect(flagged.map((p) => p.key)).toEqual(['kind', 'status', 'flagged', 'yours']);
     expect(flagged[2]).toMatchObject({ label: 'Flagged', tone: 'warning' });
     expect(presentProposal(row({ riskFlags: [] }), t).some((p) => p.key === 'flagged')).toBe(false);
+  });
+
+  it('adds no "Flagged" pill when the row carries no risk flags at all', () => {
+    expect(presentProposal(row({ riskFlags: undefined }), t).map((p) => p.key)).toEqual(['kind', 'status']);
   });
 
   it('adds a positive "Yours" pill last, only when the server says the reader filed it', () => {
@@ -225,6 +234,16 @@ describe('field sources', () => {
   it('orders rows text first, then the effective date, then scope, whatever order the API answered them in', () => {
     const rows = fieldSourceRows({ terms: 'u3', effectiveFrom: 'u2', 'summaries.sv': 'u1a', 'summaries.en': 'u1b' });
     expect(rows.map((r) => r.field)).toEqual(['summaries.en', 'summaries.sv', 'effectiveFrom', 'terms']);
+  });
+
+  it('puts a field outside the known order after scope, alphabetically among its kind', () => {
+    const rows = fieldSourceRows({ title: 'u5', terms: 'u3', body: 'u4', 'summaries.sv': 'u1' });
+    expect(rows).toEqual([
+      { field: 'summaries.sv', url: 'u1' },
+      { field: 'terms', url: 'u3' },
+      { field: 'body', url: 'u4' },
+      { field: 'title', url: 'u5' },
+    ]);
   });
 
   it('reads a field name the three known shapes do not match as itself, rather than guessing', () => {

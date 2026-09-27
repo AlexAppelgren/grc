@@ -115,6 +115,18 @@ describe('a refused write', () => {
   it('leaves a stale write, and anything without fields, to the form', () => {
     expect(fieldErrorsOf(problem(409, { code: 'stale_write', detail: 'Changed.' }), fields)).toEqual({ fields: {}, formLevel: true });
     expect(fieldErrorsOf(null, fields)).toEqual({ fields: {}, formLevel: false });
+    expect(fieldErrorsOf(undefined, fields)).toEqual({ fields: {}, formLevel: false });
+  });
+
+  it('leaves an error that is not a problem answer, such as a thrown one, to the form', () => {
+    expect(fieldErrorsOf(new Error('boom'), fields)).toEqual({ fields: {}, formLevel: true });
+  });
+
+  it('keeps for the form a 422 entry that is not an object or names no field, and still places the ones that do', () => {
+    const refused = problem(422, { code: 'validation_error', detail: 'Some fields need attention.', errors: ['Too long.', { field: 3, message: 'No name.' }, { field: 'body.body.name', message: 'Too long.' }] });
+    expect(fieldErrorsOf(refused, fields)).toEqual({ fields: { name: 'Too long.' }, formLevel: true });
+    const unnamed = problem(422, { code: 'validation_error', detail: 'Some fields need attention.', errors: [null] });
+    expect(fieldErrorsOf(unnamed, fields)).toEqual({ fields: {}, formLevel: true });
   });
 });
 

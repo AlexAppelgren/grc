@@ -234,3 +234,103 @@ describe('a proposal', () => {
     expect(screen.getByRole('link', { name: 'Our own records' })).toHaveAttribute('href', '/private-records');
   });
 });
+
+describe('the queue, edge states', () => {
+  it('names no source for a row filed without one', async () => {
+    serve([row({ sourceUrl: undefined })]);
+    renderIn(<PrivateRecordsScreen />);
+    const found = await waitFor(() => {
+      const el = document.querySelector<HTMLElement>('[data-private-proposal-id="p-1"]');
+      expect(el).not.toBeNull();
+      return el as HTMLElement;
+    });
+    expect(within(found).queryByText(/^Source:/)).toBeNull();
+    expect(within(found).getByText(row().title)).toBeInTheDocument();
+  });
+
+  it('shows the restricted screen, and no list, when the server denies the queue', async () => {
+    serve([], (s) => (s.path === QUEUE ? { status: 403, data: { code: 'permission_denied', detail: 'Not for this role.', requiredPermission: 'private_records.approve' } } : undefined));
+    renderIn(<PrivateRecordsScreen />);
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Not for this role.');
+    expect(alert).toHaveTextContent('Needs private records approve');
+    expect(screen.queryByRole('heading', { level: 1, name: 'Our own records' })).toBeNull();
+    expect(document.querySelector('[data-private-records]')).toBeNull();
+  });
+});
+
+describe('a proposal, edge states', () => {
+  it('says no source was given when the proposal names none, and numbers no field', async () => {
+    serve([row({ sourceUrl: undefined, fieldSources: undefined })]);
+    renderIn(<PrivateProposalScreen proposalId="p-1" />);
+    await screen.findByRole('heading', { level: 1, name: row().title });
+    const sources = document.querySelector('[data-private-sources]') as HTMLElement;
+    expect(sources).toHaveTextContent('No source was given.');
+    expect(sources.querySelectorAll('li')).toHaveLength(0);
+    expect(document.querySelector('[data-private-adds]')).not.toHaveTextContent(/Source \d/);
+    expect(screen.queryByText(/^Source:/)).toBeNull();
+  });
+
+  it('lists a source that is not a web address as plain text, never as a link', async () => {
+    const citation = 'SFS 2010:751, printed edition';
+    serve([row({ sourceUrl: citation, fieldSources: { 'titles.sv': citation } })]);
+    renderIn(<PrivateProposalScreen proposalId="p-1" />);
+    await screen.findByRole('heading', { level: 1, name: row().title });
+    const sources = document.querySelector('[data-private-sources]') as HTMLElement;
+    expect(within(sources).getByText(citation).tagName).toBe('SPAN');
+    expect(within(sources).queryByRole('link')).toBeNull();
+    expect(screen.queryByText(/^Source:/)).toBeNull();
+    expect(document.querySelector('[data-private-adds] [data-field="titles.sv"]')).toHaveTextContent('Source 1');
+  });
+
+  it('offers no decision on a proposal that is already decided', async () => {
+    serve([row({ origin: 'user', status: 'rejected' })]);
+    renderIn(<PrivateProposalScreen proposalId="p-1" />);
+    await screen.findByRole('heading', { level: 1, name: row().title });
+    expect(screen.getByText('Rejected')).toHaveAttribute('data-pill', 'information');
+    expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Reject' })).toBeNull();
+    expect(document.querySelector('[data-private-four-eyes]')).toBeNull();
+    expect(document.querySelector('[data-private-decision]')).toBeNull();
+  });
+
+  it('shows a refused rejection inside the dialog, and Escape clears the dialog for a fresh start', async () => {
+    const sent = serve([row()], (s) => (s.path === `${QUEUE}/p-1/reject` ? { status: 409, data: { code: 'invalid_transition', detail: 'This proposal was decided already.' } } : undefined));
+    renderIn(<PrivateProposalScreen proposalId="p-1" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Reject' }));
+    let dialog = await screen.findByRole('dialog');
+    await within(dialog).findByRole('option', { name: 'Duplicate' });
+    fireEvent.change(within(dialog).getByLabelText('Reason'), { target: { value: 'duplicate' } });
+    fireEvent.change(within(dialog).getByLabelText('What is wrong'), { target: { value: 'Held already.' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Reject' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('This proposal was decided already.');
+    expect(screen.queryByText('Rejected.')).toBeNull();
+    expect(sent.filter((s) => s.path.endsWith('/reject'))).toHaveLength(1);
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Reject' }));
+    dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByLabelText('Reason')).toHaveValue('');
+    expect(within(dialog).getByLabelText('What is wrong')).toHaveValue('');
+    expect(within(dialog).queryByRole('alert')).toBeNull();
+  });
+
+  it('shows the restricted screen when the server denies the queue behind the proposal', async () => {
+    serve([], (s) => (s.path === QUEUE ? { status: 403, data: { code: 'permission_denied', detail: '', requiredPermission: 'private_records.approve' } } : undefined));
+    renderIn(<PrivateProposalScreen proposalId="p-1" />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Needs private records approve');
+    expect(document.querySelector('[data-private-proposal]')).toBeNull();
+  });
+
+  it('offers a retry when the proposal cannot be read, and shows it once a retry succeeds', async () => {
+    let failing = true;
+    serve([row()], (s) => (s.path === QUEUE && failing ? { status: 501, data: { code: 'not_built', detail: 'Not built yet.' } } : undefined));
+    renderIn(<PrivateProposalScreen proposalId="p-1" />);
+    expect(await screen.findByRole('heading', { name: 'Could not load our own records' })).toBeInTheDocument();
+    failing = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByRole('heading', { level: 1, name: row().title })).toBeInTheDocument();
+  });
+});

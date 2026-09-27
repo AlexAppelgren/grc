@@ -24,6 +24,12 @@ describe('private records api', () => {
     ]);
   });
 
+  it('reads the route\'s default page when asked for no limit or offset', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: { items: [], total: 0 } }));
+    expect(await privateRecords.listPrivateProposals()).toEqual({ items: [], total: 0 });
+    expect(sent.map((s) => [s.path, s.params])).toEqual([['/api/v1/private-proposals', {}]]);
+  });
+
   it('finds a proposal on a later page, and answers null once the queue runs out', async () => {
     const sent = installAdapter((s) => {
       const offset = Number((s.params as { offset?: string }).offset ?? 0);
