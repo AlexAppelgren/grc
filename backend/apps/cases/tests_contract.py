@@ -172,8 +172,6 @@ ASSESSMENT_BODY = {"applies": "yes", "why": "Both advice services pay for extern
 ACTION_BODY = {"title": "Document the criteria", "ownerId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "dueDate": "2026-10-10"}
 EVIDENCE_FORM = {"kind": "link", "name": "FI decision memo", "url": "https://intranet.example.com/memo/42"}
 MULTIPART = "multipart"
-# Operations whose module is built and so no longer answer 501 (each proved in its own tests).
-BUILT = {"listEvidence", "addEvidence", "downloadEvidence", "removeEvidence"}  # c9-evidence: tests_evidence*.py
 
 
 class Route:
@@ -215,7 +213,7 @@ WORKFLOW = [
 
 
 # The operations whose module has landed: each answers for real past its gate, and its own
-# tests prove what it does.
+# tests prove what it does instead of the 501 below. One line per package.
 BUILT = frozenset(
     {
         # c9-triage: tests_triage.py and tests_close_paths.py
@@ -223,32 +221,27 @@ BUILT = frozenset(
         "dismissChange",
         "restoreChange",
         "closeWithoutAction",
+        # c9-assessment: tests_assessment.py
+        "startAssessment",
+        "saveAssessment",
+        # c9-actions: tests_actions.py
+        "listActions",
+        "addAction",
+        "updateAction",
+        "deleteAction",
+        # c9-evidence: tests_evidence*.py
+        "listEvidence",
+        "addEvidence",
+        "downloadEvidence",
+        "removeEvidence",
+        # c9-signoff: tests_signoff.py
+        "requestSignoff",
+        "approveSignoff",
+        "sendBackSignoff",
+        # c9-case-file-export: tests_case_file.py
+        "getCaseFile",
     }
 )
-
-
-# The operations whose logic has landed, one line each, so each builder adds its own. Each
-# has its own test module proving what it answers past the gates.
-BUILT = {
-    "startAssessment",  # c9-assessment: apps/cases/tests_assessment.py
-    "saveAssessment",  # c9-assessment: apps/cases/tests_assessment.py
-}
-
-
-# The operations whose module is built and answers for real, one line per package; each
-# is proved in its own module's tests instead of the 501 below.
-BUILT = {
-    "listActions",  # c9-actions: apps/cases/tests_actions.py
-    "addAction",  # c9-actions
-    "updateAction",  # c9-actions
-    "deleteAction",  # c9-actions
-}
-
-
-# The operations whose module has landed, each proved by its own tests, not by a 501.
-BUILT: set[str] = set()
-# c9-signoff (apps/cases/tests_signoff.py).
-BUILT |= {"requestSignoff", "approveSignoff", "sendBackSignoff"}
 
 
 def _send(client: Any, route: Route, url: str, headers: dict[str, Any]) -> Any:
@@ -347,16 +340,6 @@ class WorkflowContract(TestCase):
         bank = _bank_with_work()
         with stub_session(bank.principal):
             for route in (route for route in WORKFLOW if route.operation_id not in BUILT):
-                if route.operation_id in BUILT:
-                    continue
-                if route.operation_id in BUILT:
-                    continue
-                if route.operation_id in BUILT:
-                    continue
-                if route.operation_id in BUILT:
-                    continue
-                if route.operation_id == "getCaseFile":
-                    continue  # built by c9-case-file-export (apps/cases/tests_case_file.py)
                 with self.subTest(operation=route.operation_id):
                     response = _send(self.client, route, route.url(bank.change_id, bank.action_id, bank.evidence_id), AS_SESSION)
                     self.assertEqual(response.status_code, 501)
