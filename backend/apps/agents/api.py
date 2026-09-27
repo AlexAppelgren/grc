@@ -293,8 +293,6 @@ def get_agent_definition(request: HttpRequest, agent_key: str = Path(..., descri
 
     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
     `agent_definitions.manage`; `not_found` (404) for a key no definition has.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until
-    that ships.
     """
     return definitions.get_definition(agent_key=agent_key)
 
@@ -326,8 +324,7 @@ def publish_agent_version(
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
     `not_found` (404) for a key no definition has; `validation_error` (422) for a version
-    number the build does not ship or a missing note. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    number the build does not ship or a missing note.
     """
     return definitions.publish_version(who=principal(request), agent_key=agent_key, body=body)
 
@@ -357,8 +354,7 @@ def retire_agent_version(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-    `not_found` (404) for a definition or version that does not exist. Published ahead of
-    the logic that will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a definition or version that does not exist.
     """
     return definitions.retire_version(who=principal(request), agent_key=agent_key, version_no=version_no)
 
@@ -383,8 +379,6 @@ def get_platform_agent_settings(request: HttpRequest, agent_key: str = Path(...,
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `not_found` (404) for a key no platform agent has.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until
-    that ships.
     """
     return platform.get_settings(agent_key=agent_key)
 
@@ -414,8 +408,7 @@ def update_platform_agent_settings(
     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
     `not_found` (404) for a key no platform agent has; `unknown_key` (422) for a
     jurisdiction the vocabulary does not hold, with the valid keys; `validation_error`
-    (422). Published ahead of the logic that will fill it, and answering 501 `not_built`
-    until that ships.
+    (422).
     """
     return platform.update_settings(who=principal(request), agent_key=agent_key, body=body)
 
@@ -440,8 +433,7 @@ def list_platform_runs(request: HttpRequest, page: Query[PageQuery]) -> Any:
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `validation_error` (422) when `limit` is above 100 or
-    `offset` beyond the accepted depth. Published ahead of the logic that will fill it, and
-    answering 501 `not_built` until that ships.
+    `offset` beyond the accepted depth.
     """
     return platform.list_runs(limit=page.limit, offset=page.offset)
 

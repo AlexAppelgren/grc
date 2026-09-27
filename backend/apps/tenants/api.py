@@ -406,9 +406,9 @@ def create_console_tenant(request: HttpRequest, body: ConsoleTenantCreateBody) -
 # ---------------------------------------------------------------------------------------
 # c8-tenants-contract: the bank's organisation, teams and people, member removal and
 # support access (TEN-02, TEN-03, TEN-05, TEN-06, COL-04, HOM-05, ADM-01). Each route is
-# declared behind the gate it keeps and calls a named function in the module of the package
-# that builds it; until then that function loads the record the route names in the caller's
-# bank, so another bank's id answers 404, and answers 501 `not_built`.
+# declared behind the gate it keeps and calls a named function in the module that owns its
+# logic, which loads the record the route names in the caller's bank first, so another bank's
+# id answers 404.
 # ---------------------------------------------------------------------------------------
 _ORG_UNIT_ID = (
     "The unit of the bank's organisation, as a UUID. Another bank's unit answers 404, never 403."

@@ -19,9 +19,6 @@ case on one person's word; a `signed_off` reason is refused by the state machine
 through sign-off and a second person. The note stays on the case and its ledger row and
 never reaches an audit value. Restore undoes a dismissal or a one-person close and never a
 signed-off one, which the state machine decides.
-
-`start_assessment` is published ahead of its logic and answers 501 `not_built` until
-`c9-assessment` builds it.
 """
 
 from __future__ import annotations

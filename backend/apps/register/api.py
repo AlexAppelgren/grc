@@ -3,9 +3,8 @@ lists the action, no business logic (playbook 4.1).
 
 The register is one bank's judgement laid over the shared library (REG-01 to REG-05, REG-07,
 REG-08). Every chunk 8 operation is declared here once, behind the gate it keeps, and calls a
-named function in the module of the package that builds it (chunk 8 plan rule 3); until then
-that function answers 501 `not_built`. A logic package fills its own module and never this
-file.
+named function in the module that owns its logic (chunk 8 plan rule 3); a logic change goes
+in that module, never in this file.
 
 Every route takes a person's session in their own bank, except the two agent reads at the
 end: a credential of an agent access entry with `tenant:read` and tenant reach on reads the
@@ -823,8 +822,7 @@ def list_units(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for an
-    entity that is not a UUID or a page out of range. Published ahead of the logic that will
-    fill it, and answering 501 `not_built` until that ships.
+    entity that is not a UUID or a page out of range.
     """
     tenant = caller_tenant(request)
     return units.list_units(
@@ -859,8 +857,7 @@ def create_unit(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
     `not_found` (404) for an obligation or entity the bank cannot see; `validation_error`
-    (422) for an empty or over-long reference or title. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    (422) for an empty or over-long reference or title.
     """
     tenant = caller_tenant(request)
     return 201, units.create_unit(
@@ -892,8 +889,7 @@ def update_unit(request: HttpRequest, body: RegisterUnitPatch, unit_id: uuid.UUI
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
     `not_found` (404) for a unit the bank does not have; `stale_write` (409);
-    `validation_error` (422). Published ahead of the logic that will fill it, and answering
-    501 `not_built` until that ships.
+    `validation_error` (422).
     """
     tenant = caller_tenant(request)
     return units.update_unit(
@@ -924,8 +920,7 @@ def remove_unit(request: HttpRequest, unit_id: uuid.UUID = Path(..., description
     step-up. Records one audit event naming the person.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-    `not_found` (404) for a unit the bank does not have; `stale_write` (409). Published ahead
-    of the logic that will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a unit the bank does not have; `stale_write` (409).
     """
     units.remove_unit(
         tenant=caller_tenant(request), actor=actor_for(request), unit_id=unit_id, expected_version=if_match(request)

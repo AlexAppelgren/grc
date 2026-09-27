@@ -21,8 +21,7 @@ Chunk 9 declares the rest of the workflow (CAS-02 to CAS-08) below, every operat
 its final gate: triage, dismissal, restore, the assessment, the one-person close, actions,
 evidence, sign-off and the case file. Each route sends its call to the module that builds
 it (`triage.py`, `assessment.py`, `actions.py`, `evidence.py`, `signoff.py`,
-`case_file.py`), which loads the caller's case first and answers 501 `not_built` until its
-logic lands. Every write that moves a case or changes its assessment reads `If-Match`; only
+`case_file.py`), which loads the caller's case first. Every write that moves a case or changes its assessment reads `If-Match`; only
 the sign-off approval takes a step-up (playbook 4.2). No route here takes an API key,
 whatever its scopes: a case is a bank's judgement (AGT-01).
 """
@@ -261,7 +260,6 @@ _FILE_PART = (
     "stored, hashed with SHA-256, kept privately and scanned for malware before it can be "
     "downloaded. Tenant content: its contents never reach a log, the audit values or a model."
 )
-_AHEAD = "Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships."
 _IF_MATCH = (
     "Send the case's `version` in `If-Match`: without it, or with an older one, the write is "
     "refused with 409 `stale_write` carrying `currentVersion`, and nothing changes."
@@ -878,7 +876,7 @@ def send_back_signoff(request: HttpRequest, body: CasesNoteBody, change_id: uuid
         A person's session holding `cases.read` in their own bank. It changes nothing on the
         case. The same content as a downloadable file is an export job.
 
-        Errors: """ + _CASE_ERRORS + """. """ + _AHEAD
+        Errors: """ + _CASE_ERRORS + "."
     ),
     summary="Read a case's whole story as one text that stands alone",
     openapi_extra=_CASE_FILE_EXAMPLE,

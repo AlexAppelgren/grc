@@ -1,10 +1,9 @@
 """Routes of the collab app: auth class, permission or scope, step-up where playbook 4.2
 lists the action, no business logic (playbook 4.1).
 
-Eight operations, declared here at once so the inbox, the comments panel and My work can be
-built against one contract while the logic arrives (CHUNK10_TASKS rule 3). Each calls a named
-function in the module that will own it — `collab/inbox.py`, `collab/comments.py` and
-`collab/me_comments.py` — which answers 501 `not_built` until its task lands.
+Eight operations, declared at once so the inbox, the comments panel and My work were built
+against one contract (CHUNK10_TASKS rule 3). Each calls a named function in the module that
+owns it: `collab/inbox.py`, `collab/comments.py` and `collab/me_comments.py`.
 
 Every route takes a person's session in a bank, and no API key reaches any of them: a
 notification is one person's and a comment is one bank's own text. Six carry no decorator
