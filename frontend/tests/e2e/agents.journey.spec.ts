@@ -81,7 +81,7 @@ test.describe('agents journeys', () => {
 
     await signInAs(page, LOGINS.admin);
     await page.goto('/admin/agents');
-    const checked = await askOurAgent(page, { source: 'fi.se' });
+    const checked = await askOurAgent(page, { source: 'fi.se sweep (E2E)' });
     const researched = await askOurAgent(page, { topic });
     expect([checked.kind, researched.kind]).toEqual(['check_source', 'research_topic']);
     expect(researched.tenantAgentId).toBe(checked.tenantAgentId);
