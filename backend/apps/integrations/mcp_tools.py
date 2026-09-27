@@ -34,6 +34,7 @@ from django.urls import Resolver404, resolve
 from apps.governance import access_log
 from apps.integrations.schemas import McpTool
 from apps.shared import agent_access_guard
+from apps.shared.authentication import presented_api_key
 from apps.shared.errors import ProblemError
 
 
@@ -74,8 +75,13 @@ def _refused(argument: str, message: str) -> Outcome:
 
 
 def _scalar(value: object) -> str | None:
-    """A query or path value: a string, or a whole number written out; anything else is refused."""
+    """A query or path value: a string that is UTF-8 text (JSON admits a lone surrogate,
+    which is not), or a whole number written out; anything else is refused."""
     if isinstance(value, str):
+        try:
+            value.encode("utf-8")
+        except UnicodeEncodeError:
+            return None
         return value
     if isinstance(value, int) and not isinstance(value, bool):
         return str(value)
@@ -83,9 +89,14 @@ def _scalar(value: object) -> str | None:
 
 
 def _request(outer: HttpRequest, route: Route, path: str, query: dict[str, str], body: dict[str, Any] | None) -> WSGIRequest:
+    """The route's request, carrying the MCP request's credential and nothing else that could
+    name a principal: a session bearer or cookie sent beside the key would otherwise be the
+    one the route authenticates, unnarrowed and unlogged as the entry."""
     data = b"" if body is None else json.dumps(body).encode("utf-8")
+    headers = {name: value for name, value in outer.META.items() if name not in ("HTTP_AUTHORIZATION", "HTTP_COOKIE")}
     environ = {
-        **outer.META,
+        **headers,
+        "HTTP_X_API_KEY": presented_api_key(outer) or "",
         "REQUEST_METHOD": route.method,
         "SCRIPT_NAME": "",
         # WSGI carries the path as UTF-8 bytes read as Latin-1.
