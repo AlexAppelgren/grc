@@ -28,4 +28,16 @@ describe('participants api', () => {
       ['get', '/api/v1/tenant/teams', { limit: participants.PARTICIPANTS_PAGE }, null],
     ]);
   });
+
+  it('reads, adds and removes on the case’s routes, addressed by the change', async () => {
+    const sent = installAdapter((s) => ({ status: s.method === 'delete' ? 204 : 200, data: { ok: s.path } }));
+    expect(await participants.listCaseParticipants('ch 1')).toEqual({ ok: '/api/v1/changes/ch%201/participants' });
+    await participants.addCaseParticipant('ch1', { userId: 'u1' });
+    await participants.removeCaseParticipant('ch1', 'p 1');
+    expect(sent.map((s) => [s.method, s.path, s.params, s.body])).toEqual([
+      ['get', '/api/v1/changes/ch%201/participants', { limit: participants.PARTICIPANTS_PAGE }, null],
+      ['post', '/api/v1/changes/ch1/participants', null, { userId: 'u1' }],
+      ['delete', '/api/v1/changes/ch1/participants/p%201', null, null],
+    ]);
+  });
 });

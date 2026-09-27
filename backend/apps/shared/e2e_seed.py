@@ -467,6 +467,8 @@ def seed_pending_footprint_request(tenants: list[Tenant]) -> int:
 PRO_S7_OBLIGATION = "obl-gdpr-article-22"
 AUTOMATED_DECISIONS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000005")
 # --- end library-updates-frontend ---------------------------------------------------------
+
+
 # --- agent-j4-smoke (AGT-S10, J-4) -------------------------------------------------------
 # J-4's own duty: an agent minted in the console files a new version of it under a change it
 # registers, a library editor approves it, and the bank's officer reads it. Every attempt adds
@@ -476,6 +478,8 @@ AUTOMATED_DECISIONS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000005")
 # loads it; this names it as J-4's.
 J4_OBLIGATION = "obl-product-governance"
 # --- end agent-j4-smoke -------------------------------------------------------------------
+
+
 AGENT_MODEL = "agent pipeline 0.4"
 # The library editor who files PRO-S5's proposal; the second editor decides everything else.
 LIBRARY_EDITOR_EMAIL = "editor@bleqq.test"
@@ -936,18 +940,18 @@ def _seed_case(
     one (WAT-05)."""
     tenancy.activate(tenant.id)
     existed = ChangeCase.objects.filter(tenant=tenant, change=change).exists()
+    values = {
+        "urgency": django_apps.get_model("taxonomy", "Urgency").objects.get(key=urgency),
+        "footprint_match": footprint_match,
+        "so_what_text": change.so_what_draft,
+        "so_what_confirmed": so_what_confirmed_by is not None,
+        "so_what_confirmed_by": so_what_confirmed_by,
+        "so_what_confirmed_at": timezone_now_this_week(TENANT_A.timezone) if so_what_confirmed_by is not None else None,
+    }
+    # A reseed never moves a case back to `new`: a later seed (c9-fe-case-participants) works
+    # one through the real, audited moves, which a silent reset would make it repeat.
     case, _ = ChangeCase.objects.update_or_create(
-        tenant=tenant,
-        change=change,
-        defaults={
-            "status": CaseStatusCategory.NEW.value,
-            "urgency": django_apps.get_model("taxonomy", "Urgency").objects.get(key=urgency),
-            "footprint_match": footprint_match,
-            "so_what_text": change.so_what_draft,
-            "so_what_confirmed": so_what_confirmed_by is not None,
-            "so_what_confirmed_by": so_what_confirmed_by,
-            "so_what_confirmed_at": timezone_now_this_week(TENANT_A.timezone) if so_what_confirmed_by is not None else None,
-        },
+        tenant=tenant, change=change, defaults=values, create_defaults={**values, "status": CaseStatusCategory.NEW.value}
     )
     if not existed:
         record(
@@ -2106,6 +2110,8 @@ def seed_e2e() -> dict[str, int]:
         seed_participants(tenants)
         # acc-e2e-seed: a reseed leaves no entry of tenant A reaching its register (ACC-08).
         switch_reach_off()
+        # c9-fe-case-participants: after the teams and the home cases it names.
+        seed_case_participants(tenants)
 
         # INV-S14, after the logins: the re-verification names a seeded library editor.
         machine_confirmed = seed_machine_confirmed()
@@ -3314,6 +3320,8 @@ def seed_case_evidence(tenants: list[Tenant]) -> int:
     tenancy.clear_tenant()
     return len(EXPECTED_EVIDENCE)
 # --- end c9-evidence ----------------------------------------------------------------------------
+
+
 # --- c8-ui-links-history-participants (COL-04, COL-S6, COL-S7) ------------------------------
 # COL-S7: the Reader takes part in one register entry, added by the compliance officer, and
 # leaves it on their own. COL-S6: the obligation the compliance officer adds people and a
@@ -3574,3 +3582,51 @@ def seed_signoff_spot_check_link() -> None:
         confirmed_at=change.first_seen_at + datetime.timedelta(days=1),
     )
 # --- end c9-e2e-signoff-j3 -----------------------------------------------------------------------
+
+
+# --- c9-fe-case-participants (COL-04, CAS-03, COL-S9) -----------------------------------------
+# COL-S9: tenant A's case for the securities financing change, triaged to the compliance
+# officer and being assessed, through the product's own triage and assessment logic. The team
+# Legal takes part as the assessment's contributor team (D-20), and so do the owner Johan Berg,
+# whom the contributor removes, and the Reader, who leaves; the journey puts both back.
+CASE_PARTICIPATION_CHANGE = EXPECTED_HOME.later_change
+CASE_PARTICIPATION_OWNER = _SARA
+CASE_PARTICIPATION_TEAM = "legal"
+CASE_PARTICIPANTS = (_JOHAN, "reader@example-bank.test")
+
+
+def seed_case_participants(tenants: list[Tenant]) -> None:
+    """Moves the case from `new` once, as its owner would, and names each participant once. A
+    reseed finds the case assessed and each participation live and writes nothing; after
+    COL-S9 has removed one, a reseed puts it back."""
+    from apps.cases import assessment as case_assessment
+    from apps.cases import triage as case_triage
+    from apps.cases.schemas import CasesTriageBody
+
+    tenant = next(t for t in tenants if t.slug == TENANT_A_SLUG)
+    tenancy.activate(tenant.id)
+    officer = User.objects.get(email=CASE_PARTICIPATION_OWNER)
+    case = ChangeCase.objects.select_related("change").get(tenant=tenant, change__stable_key=CASE_PARTICIPATION_CHANGE)
+    if case.status == CaseStatusCategory.NEW.value:
+        actor = Actor(kind=ActorType.USER, id=officer.id, label=officer.name)
+        order = roles_logic.language_order(officer, tenant)
+        body = CasesTriageBody(urgency=case.urgency.key, owner_id=officer.id)
+        moved = case_triage.triage_change(
+            tenant=tenant, actor=actor, user=officer, order=order, change_id=case.change_id, expected_version=case.version, body=body
+        )
+        case_assessment.start_assessment(
+            tenant=tenant, actor=actor, user=officer, order=order, change_id=case.change_id, expected_version=moved.version
+        )
+    live = Participant.objects.filter(case=case, removed_at__isnull=True)
+    today = datetime.datetime.now(ZoneInfo(tenant.timezone)).date()
+    team = Team.objects.get(key=CASE_PARTICIPATION_TEAM)
+    if not live.filter(team=team).exists():
+        row = Participant.objects.create(tenant=tenant, case=case, team=team, added_by=officer, added_at=_at(today, -3, tenant.timezone))
+        _seeded(tenant, "participant", row, CASE_PARTICIPATION_CHANGE, {"caseId": str(case.id), "teamKey": team.key})
+    for email in CASE_PARTICIPANTS:
+        person = User.objects.get(email=email)
+        if not live.filter(user=person).exists():
+            row = Participant.objects.create(tenant=tenant, case=case, user=person, added_by=officer, added_at=_at(today, -2, tenant.timezone))
+            _seeded(tenant, "participant", row, CASE_PARTICIPATION_CHANGE, {"caseId": str(case.id), "userId": str(person.id)})
+    tenancy.clear_tenant()
+# --- end c9-fe-case-participants ---------------------------------------------------------------
