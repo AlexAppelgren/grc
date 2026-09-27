@@ -24,6 +24,7 @@ retired row cannot be relabelled into life, and a system row is never retired.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
 from typing import Any
 
 from django.core.exceptions import ValidationError
@@ -44,11 +45,12 @@ from apps.library.models import (
     Provision,
     ProvisionText,
     ProvisionVersion,
+    RecurringDuty,
     SubjectType,
     Verification,
     VerificationOutcome,
 )
-from apps.library.reading import active_obligation, active_provision, live_duty_type, terms_of
+from apps.library.reading import active_obligation, active_provision, active_shared_obligations, live_duty_type, obligation_scope_terms, terms_of
 from apps.proposals import standards
 from apps.proposals.logic import (
     Reviewer,
@@ -59,14 +61,17 @@ from apps.proposals.logic import (
     validated_instrument,
     validated_obligation,
     validated_provision,
+    validated_recurring_duty,
 )
-from apps.proposals.models import OriginType, Proposal, ProposalKind
+from apps.proposals.models import OriginType, Proposal, ProposalBatchRow, ProposalKind
 from apps.proposals.schemas import (
+    ObligationScopePayload,
     ProposalInstrumentPayload,
     ProposalObligationPayload,
     ProposalObligationVersionPayload,
     ProposalProvisionPayload,
     ProposalProvisionVersionPayload,
+    ProposalRecurringDutyPayload,
     ProposalTermCreatePayload,
     ProposalTermUpdatePayload,
     ProposalVocabularyCreatePayload,
@@ -86,8 +91,19 @@ from apps.taxonomy.terms_logic import refuse_mirrored
 ORIGINAL_LANGUAGE = "en"
 
 
-def apply(proposal: Proposal, *, actor: Actor, reviewer: "Reviewer | Any", step_up: uuid.UUID | None) -> None:
+def apply(
+    proposal: Proposal,
+    *,
+    actor: Actor,
+    reviewer: "Reviewer | Any",
+    step_up: uuid.UUID | None,
+    rows: Sequence[ProposalBatchRow] = (),
+) -> None:
     """Write what the approved `proposal` asks for, as the reviewer corrected it.
+
+    A batch (PRO-04) is applied row by row: `rows` are the rows of `proposal` being approved
+    now, each checked and written on its own, and a batch's other rows are left as they are.
+    A single proposal takes none.
 
     `corrected_payload` is what the reviewer approved and what the library gets; the
     proposal's own `payload` stays as it arrived, so the queue keeps both. `step_up` is the
@@ -99,7 +115,11 @@ def apply(proposal: Proposal, *, actor: Actor, reviewer: "Reviewer | Any", step_
     older caller (including this app's own tests); `as_reviewer` normalizes either.
     """
     reviewer = as_reviewer(reviewer, actor)
-    payload = parsed_payload(proposal.kind, proposal.corrected_payload or proposal.payload)
+    stored = proposal.corrected_payload or proposal.payload
+    # A batch's payload is filed by apps/proposals/batch.py, never through the single
+    # proposal's kinds, so its schema is named here rather than in `PAYLOAD_SCHEMAS`.
+    batched = proposal.kind == ProposalKind.OBLIGATION_SCOPE.value
+    payload = ObligationScopePayload.model_validate(stored) if batched else parsed_payload(proposal.kind, stored)
     with library_write(f"proposal:{proposal.id}", door="proposal"):
         if proposal.kind == ProposalKind.VOCABULARY_CREATE.value:
             assert isinstance(payload, ProposalVocabularyCreatePayload)
@@ -137,6 +157,12 @@ def apply(proposal: Proposal, *, actor: Actor, reviewer: "Reviewer | Any", step_
         elif proposal.kind == ProposalKind.NEW_PROVISION_VERSION.value:
             assert isinstance(payload, ProposalProvisionVersionPayload)
             _provision_version(payload, proposal, actor, reviewer, step_up)
+        elif proposal.kind == ProposalKind.NEW_RECURRING_DUTY.value:
+            assert isinstance(payload, ProposalRecurringDutyPayload)
+            _new_recurring_duty(payload, proposal, actor, reviewer, step_up)
+        elif proposal.kind == ProposalKind.OBLIGATION_SCOPE.value:
+            assert isinstance(payload, ObligationScopePayload)
+            _obligation_scope(payload, rows, proposal, actor, step_up)
         else:
             # Reached by a kind that enters the queue before the apply that writes it
             # exists: an approval of one is refused where the reviewer can see it, never
@@ -344,6 +370,60 @@ def _new_obligation(
     )
 
 
+def _new_recurring_duty(
+    payload: ProposalRecurringDutyPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
+) -> None:
+    """Add the recurring duty the proposal asks for to its obligation (REG-07), its only
+    door into the library.
+
+    Checked again by the function creation ran (`logic.validated_recurring_duty`), against
+    the calendar and the library as they are now: the rule still falls due within the cap
+    from today, and the obligation is still in force. Provenance names both sides, the
+    proposing agent and the confirming one, or the person who approved it, so a duty an
+    agent confirmed never reads as a person's check (INV-05, D-79). The obligation is
+    re-indexed inside this transaction, so an index that cannot be written takes the duty
+    down with it and leaves the proposal open.
+    """
+    assert proposal.target_id is not None
+    obligation = active_obligation(proposal.target_id)
+    authority = validated_recurring_duty(payload)
+    verified_origin = _verified_origin(reviewer)
+    duty = RecurringDuty.objects.create(
+        obligation=obligation,
+        title=payload.title,
+        recurrence_rule=payload.recurrence_rule,
+        due_rule_note=payload.due_rule_note,
+        recipient_authority=authority,
+        lead_days=payload.lead_days,
+        applied_by_proposal=proposal,
+        created_origin=proposal.origin,
+        created_by_agent_id=proposal.proposed_by_agent_id,
+        verified_origin=verified_origin,
+        verified_by_agent_id=reviewer.agent_id,
+        approved_by=reviewer.user,
+        approved_at=timezone.now(),
+    )
+    reindex(obligation.id)
+    record(
+        action="recurring_duty.created",
+        actor=actor,
+        subject_type="recurring_duty",
+        subject_id=duty.id,
+        subject_title=duty.title,
+        summary=f"Added a recurring duty to {obligation.stable_key} (proposal {proposal.id}).",
+        tenant_id=None,
+        after={
+            "obligation": obligation.stable_key,
+            "recurrenceRule": duty.recurrence_rule,
+            "recipientAuthority": payload.recipient_authority,
+            "leadDays": duty.lead_days,
+            "verifiedOrigin": verified_origin,
+            "proposal": str(proposal.id),
+        },
+        step_up_assertion_id=step_up,
+    )
+
+
 def _texts(texts: dict[str, str], original: str, is_machine: bool, reviewer: Reviewer) -> list[tuple[str, str, bool, bool]]:
     """`(language, text, is_original, is_machine)` per translation row (INV-05): the
     original unlabelled, the others machine-made when the payload says so, and always under
@@ -469,6 +549,60 @@ def _obligation_version(
         },
         step_up_assertion_id=step_up,
     )
+
+
+def _obligation_scope(
+    payload: ObligationScopePayload, rows: Sequence[ProposalBatchRow], proposal: Proposal, actor: Actor, step_up: uuid.UUID | None
+) -> None:
+    """Re-tag each obligation of the approved `rows` (PRO-04, AGT-05): its scope terms become
+    the row's `after`, and nothing else about it changes. A scope belongs to the obligation,
+    not to a version, so no version is filed; the audit row holds the terms before and after,
+    and the index moves in the same transaction.
+
+    Checked again under the obligations' locks, against the library as it is now: a record
+    retired, or whose scope moved since the batch previewed it, is 409 `stale_write`, and
+    the whole decision fails with it rather than writing a scope nobody previewed. A term
+    added is live and mirrors no jurisdiction, and a standard's obligation keeps exactly one
+    standard term with a link as its source (D-35), as when the batch was filed. Only the
+    links that change are written: a term the obligation keeps stays linked as it was."""
+    ids = [row.subject_id for row in rows]
+    list(Obligation.objects.select_for_update().filter(pk__in=ids).order_by("id").values_list("id", flat=True))
+    in_force = active_shared_obligations(ids)
+    live = obligation_scope_terms(ids)
+    wanted = sorted({ref for row in rows for ref in row.after["terms"] if ref not in live.get(row.subject_id, {})})
+    added = {f"{term.dimension.key}:{term.key}": term for term in (terms_of(wanted) if wanted else [])}
+    refuse_mirrored(term.dimension_id for term in added.values())
+    sources = {change.obligation_id: change.source for change in payload.changes}
+    for row in rows:
+        obligation = in_force.get(row.subject_id)
+        if obligation is None:
+            raise ValidationError("A record in this batch was retired after it was filed: reject its row.", code="stale_write")
+        before = live.get(obligation.id, {})
+        after: list[str] = row.after["terms"]
+        if sorted(before) != row.before["terms"]:
+            raise ValidationError(
+                f"The scope of {obligation.stable_key} changed after the batch was filed: reject its row and file it again.",
+                code="stale_write",
+            )
+        scope = [before[ref] if ref in before else added[ref].id for ref in after]
+        standards.check(proposal.kind, obligation.instrument, scope, {"terms": sources[obligation.id]}, source_label=proposal.source_label)
+        ObligationTerm.objects.filter(obligation=obligation, term_id__in=[term_id for ref, term_id in before.items() if ref not in after]).delete()
+        for ref in after:
+            if ref not in before:
+                ObligationTerm.objects.create(obligation=obligation, term=added[ref])
+        reindex(obligation.id)
+        record(
+            action="obligation.scope_changed",
+            actor=actor,
+            subject_type=SubjectType.OBLIGATION.value,
+            subject_id=obligation.id,
+            subject_title=obligation.stable_key,
+            summary=f"Re-tagged {obligation.stable_key} (proposal {proposal.id}).",
+            tenant_id=None,
+            before={"terms": sorted(before)},
+            after={"terms": after, "proposal": str(proposal.id), "batchRow": str(row.id), "decision": "approved"},
+            step_up_assertion_id=step_up,
+        )
 
 
 # ---------------------------------------------------------------------------------------

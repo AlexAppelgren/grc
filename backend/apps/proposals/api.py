@@ -327,7 +327,8 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     library does not hold yet, with its regime); "new_obligation" (a duty the library does
     not hold yet, under an instrument it does, with its first summary and scope);
     "new_provision" (a node of a law's text, with its first verbatim text);
-    "new_provision_version" (a provision's text in force from a date); "vocabulary_create", "vocabulary_relabel", "vocabulary_retire", "vocabulary_restore" or
+    "new_provision_version" (a provision's text in force from a date); "new_recurring_duty"
+    (a schedule an obligation in force falls due on, as an RFC 5545 rule); "vocabulary_create", "vocabulary_relabel", "vocabulary_retire", "vocabulary_restore" or
     "vocabulary_merge" (a row of a shared list); or "term_create" or "term_update" (a
     taxonomy term).
 
@@ -347,7 +348,11 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     has no provision of its own yet, and gives `sourceUrl`, the link the new record keeps
     as its own source. An instrument's `regime` is a term of the regime dimension, written
     `regime:<key>`. A new provision is sourced like a new record, and a provision version
-    like an obligation version. A standard's text is licensed, so nothing of it enters: no
+    like an obligation version. A recurring duty names its obligation as `targetType`
+    `obligation` and `targetId`, is sourced like an obligation version, field by field, and
+    carries one RRULE line at a day or coarser without DTSTART, which must fall due at least
+    once and at most `RECURRENCE_MAX_OCCURRENCES` times (120 unless the platform sets another
+    number) in the next ten years; a key bound to no agent cannot propose one. A standard's text is licensed, so nothing of it enters: no
     provision under a standard, and only https links as sources on a standard's one
     conformance obligation, which carries exactly one standard term. The proposal is
     linked to the bank it was filed in, and
@@ -378,6 +383,8 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     term of the regime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes
     an obligation with a term of a dimension that mirrors the jurisdiction list;
     `duplicate_key` (409) when a new record's key is already a record's;
+    `invalid_recurrence` (422) when a recurring duty's rule does not parse, is finer than a
+    day, never falls due, or falls due more often than the cap in ten years;
     `validation_error` (422) for a body the schema or the kind's payload refuses, a
     `sourceUrl` that is not an https link on any kind, or a summary or text longer than
     `PROPOSAL_TEXT_MAX_CHARS` (50000 unless the platform sets another number);
@@ -549,7 +556,9 @@ def approve_proposal(
     adds or renames a term of a dimension that mirrors the jurisdiction list, or scopes an
     obligation with one, which a proposal filed before that rule may still ask for;
     `standard_term_only_on_standards` (422) when the payload, as proposed or as corrected,
-    puts a standard's term on an obligation whose instrument is not a standard.
+    puts a standard's term on an obligation whose instrument is not a standard;
+    `invalid_recurrence` (422) when a recurring duty's rule, as proposed or as corrected, no
+    longer falls due between once and the cap in the ten years from today.
     """
     reviewer = require_reviewer(request)
     step_up_assertion_id = enforce_step_up(request) if reviewer.user is not None else None
@@ -791,24 +800,41 @@ def decide_proposal_batch(request: HttpRequest, body: ProposalBatchDecision, bat
     """Decide a batch: approve or reject the rows named in `rows`, and give every row still
     pending one decision in `rest`, so a reviewer rejects the few that are wrong and
     approves the others in one call. An approved row writes its record's new fields into the
-    library; a rejected one needs a reason from the "rejection_reason" list and changes
-    nothing. Every row decision and the batch's own outcome are written to the audit trail
-    in the same transaction as the library write, and a row is decided once. A stale row
-    cannot be approved. The answer is the batch as it then stands.
+    library: for a re-tag, the obligation's scope terms become the row's `after`, and the
+    search index follows. A rejected one needs a reason from the "rejection_reason" list and
+    changes nothing. Every row decision, with the record's fields before and after, and one
+    more entry naming every row's outcome are written to the audit trail in the same
+    transaction as the library write, each carrying the passkey assertion; a failure part
+    way writes nothing. A row is decided once. The batch closes when no row is left pending:
+    `approved` if any row was approved, else `rejected`. The answer is the batch as it then
+    stands.
+
+    A pending row whose record was retired or changed since the batch was filed is `stale`
+    and cannot be approved: named for approval it fails the whole call, while under an
+    approved `rest` it is left pending and the others still apply, for the reviewer to reject.
 
     Needs the platform permission `proposals.review` from a person, stepped up fresh with a
-    passkey. The reviewer is never the batch's proposer, which the database enforces.
+    passkey. No API key reaches this route, and an agent never decides a batch. The reviewer
+    is never the batch's proposer, the person who asked for the re-tag, which the database
+    enforces on every row and on the batch.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without `proposals.review`; `step_up_required` (403) without a fresh passkey
-    assertion; `not_found` (404) for a batch that does not exist, a proposal that is not a
-    batch, and anything that is not a UUID; `not_built` (501) for every batch that exists.
-    Published ahead of the logic that will fill it, and answering 501 until that ships.
+    Errors to branch on: `unauthenticated` (401) without a session, a key included;
+    `permission_denied` (403) without `proposals.review`, a bank's session included;
+    `step_up_required` (403) without a fresh passkey assertion; `not_found` (404) for a batch
+    that does not exist, a proposal that is not a batch, and anything that is not a UUID;
+    `four_eyes_violation` (409) when the reviewer proposed the batch, which decides nothing;
+    `invalid_transition` (409) when the batch or a named row is already decided;
+    `stale_write` (409) when a row named for approval is stale, or every row left to approve
+    is; `reason_required` (422) for a rejection without a live row of the rejection reason
+    list; `unknown_key` (422) for a row id that is not a row of this batch;
+    `validation_error` (422) for a decision that is not `approved` or `rejected`, a row
+    named twice, a reason on an approval, and a body that decides nothing.
     """
+    user = caller_user(request)
     proposal = batch.decide(
         proposal=batch.by_id(uuid_or_404(batch_id)),
         decision=body,
-        reviewer=caller_user(request),
+        reviewer=Reviewer(actor=actor_for(request, user), user=user),
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
     )
     return batch.read(proposal, language_order(request))

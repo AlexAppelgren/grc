@@ -252,6 +252,30 @@ class ProposalProvisionVersionPayload(WriteBody):
     effective_from_precision: str = "day"
 
 
+class ProposalRecurringDutyPayload(WriteBody):
+    """`new_recurring_duty` (REG-07, PRO-01): a duty an obligation of the library carries on
+    a schedule, a quarterly report or a yearly attestation. The obligation is the
+    proposal's target (`targetType` `obligation` and `targetId`), shared and in force.
+
+    `title` names the duty. `recurrenceRule` is one RFC 5545 RRULE line at a day or coarser,
+    such as `FREQ=YEARLY;BYMONTH=3;BYMONTHDAY=31`, without DTSTART: it must fall due at least
+    once and at most `RECURRENCE_MAX_OCCURRENCES` times in the next ten years, or the
+    proposal answers 422 `invalid_recurrence` (apps/library/recurrence.py). `dueRuleNote`
+    says how the authority sets the due date, `recipientAuthority` is the key of the
+    authority the duty goes to, when one does, and `leadDays` how many days before a due
+    date the duty starts showing, at most a year.
+
+    Every field it sets needs its source in `fieldSources`: an https link or the stable key
+    of a provision the library holds.
+    """
+
+    title: str = Field(min_length=1, max_length=300)
+    recurrence_rule: str = Field(min_length=1, max_length=500)
+    due_rule_note: str = Field(default="", max_length=settings.PROPOSAL_TEXT_MAX_CHARS)
+    recipient_authority: str | None = None
+    lead_days: int = Field(default=0, ge=0, le=366)
+
+
 class ProposalPayload(CamelSchema):
     """The union as the contract states it: every field of every kind's payload, optional,
     with the kind saying which ones are read. Ninja flattens components, so one named
@@ -302,7 +326,8 @@ class ProposalRow(CamelSchema):
             "`new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a "
             "duty under an instrument it holds, with its first version, `new_provision` adds a node of a "
             "law's text with its first verbatim text, `new_provision_version` adds a text to a provision "
-            "that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, "
+            "that exists, `new_recurring_duty` adds a duty an obligation carries on a schedule, "
+            "`vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, "
             "`vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` "
             "points a row's users at another row and retires it, and `term_create` and `term_update` do "
             "the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as "
@@ -776,7 +801,7 @@ class TenantProposalRow(CamelSchema):
             "at another row and retires it, and `term_create` and `term_update` do the same for a "
             "taxonomy term. `new_obligation_version` adds a version to a duty, and `new_instrument`, "
             "`new_obligation`, `new_provision` and `new_provision_version` bring a record or a text "
-            "the library does not hold yet."
+            "the library does not hold yet, and `new_recurring_duty` a schedule a duty falls due on."
         )
     )
     status: str = Field(
@@ -997,7 +1022,8 @@ class LibraryUpdateRow(CamelSchema):
             "fixed kind: `new_obligation_version` is a new wording of a duty, `new_obligation` is a "
             "duty new to the library with its first wording, `new_instrument` is an instrument new to "
             "the library, which names no duty and no list, `new_provision` and `new_provision_version` "
-            "are a law's verbatim text, new or amended, which name no duty and no list either, and "
+            "are a law's verbatim text, new or amended, which name no duty and no list either, "
+            "`new_recurring_duty` is a schedule a duty falls due on, which names that duty, and "
             "`vocabulary_create`, `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore`, "
             "`vocabulary_merge`, `term_create` and `term_update` are changes to a shared list or "
             "to the taxonomy every bank reads."
@@ -1249,7 +1275,8 @@ class ProposalCreateBody(WriteBody):
             "does not hold yet; `new_obligation` is a duty the library does not hold yet, under an "
             "instrument it does, with its first summary; `new_provision` is a node of a law's text with "
             "its first verbatim text, and `new_provision_version` a provision's text in force from a "
-            "date, neither ever under a standard (422 `licensed_text`); `vocabulary_create`, `vocabulary_relabel`, "
+            "date, neither ever under a standard (422 `licensed_text`); `new_recurring_duty` is a schedule "
+            "an obligation in force falls due on, as an RFC 5545 rule; `vocabulary_create`, `vocabulary_relabel`, "
             "`vocabulary_retire`, `vocabulary_restore` and `vocabulary_merge` add, reword, turn off, "
             "turn on again or fold together a row of a shared list; `term_create` and `term_update` add "
             "or reword a taxonomy term. Any other value answers 422 `unknown_key` naming the valid ones."
@@ -1302,7 +1329,7 @@ class ProposalCreateBody(WriteBody):
         max_length=64,
         description=(
             "What the proposal changes, when it changes a record that exists: `obligation` for "
-            "`new_obligation_version` and `provision` for `new_provision_version`, at most 64 "
+            "`new_obligation_version` and `new_recurring_duty` and `provision` for `new_provision_version`, at most 64 "
             "characters. Empty for every other kind; a new instrument, obligation or provision that "
             "names a target answers 422 `validation_error`, since the "
             "record does not exist until the proposal is approved."
@@ -1312,7 +1339,7 @@ class ProposalCreateBody(WriteBody):
     target_id: UUID | None = Field(
         default=None,
         description=(
-            "The record changed, as a UUID, with `targetType`. For `new_obligation_version` it must be "
+            "The record changed, as a UUID, with `targetType`. For `new_obligation_version` and `new_recurring_duty` it must be "
             "an obligation, and for `new_provision_version` a provision, the library holds and has not "
             "retired, else 422 `unknown_key`. Null for every other kind."
         ),
