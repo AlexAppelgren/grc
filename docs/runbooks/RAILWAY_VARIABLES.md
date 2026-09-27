@@ -146,6 +146,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `BULK_TAGGING_MAX_RECORDS` | api | `200` | `200` | `200` | How many distinct records one bulk tagging preview or batch may name (VOC-08). A list page holds at most 100 rows, so this covers two pages' selection, and the one audit event a batch writes stays readable. Above it both answer 422 `too_many_records` and nothing is tagged |
 | `COMMENT_MAX_CHARS` | api | `4000` | `4000` | `4000` | The longest comment a person may write on a record, in characters (COL-01). A longer one is refused with a 422 and nothing is stored. It bounds what one request stores and what a thread costs to read; lower it and a pasted paragraph that was accepted yesterday is refused today |
 | `COMMENT_EDIT_MINUTES` | api | `15` | `15` | `15` | How many minutes after writing a comment its author may still correct it (COL-01). Afterwards it can be deleted but not edited (409 `edit_window_closed`), so colleagues never find a comment rewritten under them long after they read it. Every edit keeps the text it replaced. My work stops offering the edit once the window closes |
+| `TENANT_LIST_MAX_ROWS` | api | `500` | `500` | `500` | How many rows, retired ones included, one of a bank's own vocabulary lists (tags, teams, statuses, reasons) may hold (H32). `GET /vocab/{list}` answers a whole list with its usage counts, so this keeps that read inside the API budget. Adding past it answers 422 `list_full`; the process refuses to boot below 1 |
 
 ## Web app
 

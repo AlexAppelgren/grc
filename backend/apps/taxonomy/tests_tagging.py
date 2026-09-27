@@ -126,7 +126,7 @@ class TaggingTests(TestCase):
 
     def test_refusals_name_their_code_and_write_nothing(self) -> None:
         cases = [
-            ("tenant_obligation", self.obligations[0].id, "custody", 422, "unsupported_subject"),
+            ("gap", self.obligations[0].id, "custody", 422, "unsupported_subject"),
             ("instrument", self.instrument.id, "custody", 422, "unsupported_subject"),
             ("obligation", self.obligations[0].id, "no_such_tag", 422, "unknown_key"),
             ("change_case", self.foreign_case.id, "custody", 404, "not_found"),
@@ -233,7 +233,7 @@ class TaggingTests(TestCase):
     def test_a_batch_names_one_kind_and_a_known_tag(self) -> None:
         for path in ("/taggings/preview", "/taggings/batch"):
             with self.subTest(path=path):
-                kind = self._batch(path, [self.obligations[0].id], subject_type="tenant_obligation")
+                kind = self._batch(path, [self.obligations[0].id], subject_type="gap")
                 self.assertEqual((kind.status_code, kind.json()["code"]), (422, "unsupported_subject"))
                 tag = self._batch(path, [self.obligations[0].id], tag="no_such_tag")
                 self.assertEqual((tag.status_code, tag.json()["code"]), (422, "unknown_key"))

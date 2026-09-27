@@ -821,7 +821,8 @@ CASE_EVIDENCE_MAX = env_int("CASE_EVIDENCE_MAX", 200)
 BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200)
 
 # ---------------------------------------------------------------------------------------
-# ===== REP-02 export files (apps/reports, x-exports-contract) ===========================
+# ===== REP-02 export files (apps/reports, x-exports-contract) ====================
+# ---------------------------------------------------------------------------------------
 # How long an export's file is kept after the worker built it. A file carries a bank's
 # records outside the screens that permission-check them, so it lives only long enough to
 # be downloaded; after that its download answers 409 `export_expired` and the person asks
@@ -857,6 +858,17 @@ if min(MY_WORK_DUE_SOON_DAYS, MY_WORK_AWARE_DAYS) < 1:
 # ---------------------------------------------------------------------------------------
 COMMENT_MAX_CHARS = env_int("COMMENT_MAX_CHARS", 4000)
 COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)  # also My work's `canEdit` (c10-inbox-and-my-comments)
+=======
+# ===== Tenant list cap (c8-vocab-register-usage, H32) ====================================
+# How many rows, retired ones included, one of a bank's own vocabulary lists may hold.
+# `GET /vocab/{list}` answers a whole list with its usage counts, so the list must stay a
+# size one read can serve inside the API budget. Adding past it answers 422 `list_full`.
+# `apps/taxonomy/tenant_lists_logic.py` reads it. There is no value that means "no limit",
+# so the process refuses to boot below 1.
+# ---------------------------------------------------------------------------------------
+TENANT_LIST_MAX_ROWS = env_int("TENANT_LIST_MAX_ROWS", 500)
+if TENANT_LIST_MAX_ROWS < 1:
+    raise ImproperlyConfigured("TENANT_LIST_MAX_ROWS must be at least 1.")
 
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
