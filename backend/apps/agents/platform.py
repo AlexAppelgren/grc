@@ -18,11 +18,10 @@ from typing import Any, NoReturn, cast
 from django.db.models import Count, OuterRef, QuerySet, Subquery
 from django.db.models.functions import Coalesce
 
-from apps.agents import runs
 from apps.agents.models import Agent, AgentRun, AgentScopeKind
 from apps.agents.schemas import (
-    AgentRunListItem,
     AgentRunListPage,
+    AgentRunStats,
     Cadence,
     PlatformAgentSettings,
     PlatformAgentSettingsInput,
@@ -30,7 +29,6 @@ from apps.agents.schemas import (
 from apps.shared import permissions as perms
 from apps.shared.authentication import Principal
 from apps.shared.errors import ProblemError
-from apps.taxonomy.schemas import PersonRef
 
 
 def _refused() -> ProblemError:
@@ -117,27 +115,34 @@ def list_runs(*, limit: int, offset: int) -> AgentRunListPage:
         )
         .order_by("-started_at", "-id")[offset : offset + limit]
     )
-    return AgentRunListPage(items=[_run(run) for run in page], total=platform.count())
+    # One validation of plain data for the whole page: building each row as a model and the
+    # page from models validated every row three times, most of the API budget at 100 rows.
+    return AgentRunListPage.model_validate({"items": [_run(run) for run in page], "total": platform.count()})
 
 
-def _run(run: Any) -> AgentRunListItem:
-    row = runs.row(run).model_dump()
+def _run(run: Any) -> dict[str, Any]:
     requester = run.requested_by
-    return AgentRunListItem.model_validate(
-        {
-            **row,
-            "stats": {
-                **row["stats"],
-                "sources_checked": run.counted_sources,
-                "records_rechecked": run.counted_rechecks,
-                "changes_registered": run.counted_changes,
-                "proposals_submitted": run.counted_proposals,
-            },
-            "tenant_agent_id": None,
-            "agent_version": run.agent_version.version_number if run.agent_version is not None else None,
-            "trigger": run.trigger,
-            "requested_by": PersonRef(id=requester.id, name=requester.name) if requester is not None else None,
-            "cost": run.cost,
-            "interrupted_at": run.interrupted_at,
-        }
-    )
+    return {
+        "id": run.id,
+        "agent": run.agent.key,
+        "started_at": run.started_at,
+        "finished_at": run.finished_at,
+        "status": run.status,
+        "model": run.model,
+        "pipeline_version": run.pipeline_version,
+        "stats": {
+            **AgentRunStats.model_validate(run.stats).model_dump(),
+            "sources_checked": run.counted_sources,
+            "records_rechecked": run.counted_rechecks,
+            "changes_registered": run.counted_changes,
+            "proposals_submitted": run.counted_proposals,
+        },
+        "output_ref": run.output_ref or None,
+        "error": run.error or None,
+        "tenant_agent_id": None,
+        "agent_version": run.agent_version.version_number if run.agent_version is not None else None,
+        "trigger": run.trigger,
+        "requested_by": {"id": requester.id, "name": requester.name} if requester is not None else None,
+        "cost": run.cost,
+        "interrupted_at": run.interrupted_at,
+    }
