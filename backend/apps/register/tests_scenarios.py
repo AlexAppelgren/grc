@@ -129,13 +129,51 @@ class RegisterScenarioTests(TestCase):
         Yearly attestation and waivers (REG-06).
         """
 
-    @skip("pending: REG-S10")
     def test_reg_s10(self) -> None:
         """REG-S10
 
         Recurring duties appear on the roadmap from recurrence rules (REG-07).
-        Operations: `completeDutyOccurrence`.
+        Operations: `listDuties`, `completeDutyOccurrence`.
+
+        Green up to its roadmap line: the roadmap's duty branch is c8-home-register-feeds',
+        which asserts that step. Here the quarterly duty's occurrence due 2026-12-31 reads back
+        through the duties route, and completing it generates exactly 2027-03-31.
         """
+        import datetime
+
+        from apps.register import duties
+        from apps.register.logic import ensure_register_entry
+        from apps.register.models import DutyOccurrence
+        from apps.shared import factories
+
+        seed_library()
+        a = Bank("reg-s10")
+        law = banks_duty()
+        library_build.recurring_duty(law, title="Quarterly client asset report", rule="FREQ=MONTHLY;BYMONTH=3,6,9,12;BYMONTHDAY=-1")
+        actor = factories.user_actor(label="Sara Lind", user_id=a.officer.id)
+        tenancy.activate(a.tenant.id)
+        entry = ensure_register_entry(tenant_id=a.tenant.id, obligation_id=law.id, actor=actor)
+        # The obligation began to apply at 22:30 UTC on 30 September, 1 October in Stockholm.
+        at = datetime.datetime(2026, 9, 30, 22, 30, tzinfo=datetime.UTC)
+        duties.schedule_first(tenant=a.tenant, actor=actor, targets=[(entry, None)], at=at)
+
+        headers = sign_in(a.officer, tenant=a.tenant)
+        [item] = self.client.get(f"/api/v1/obligations/{law.id}/duties", **headers).json()["items"]
+        occurrence = item["nextOccurrence"]
+        self.assertEqual((item["title"], occurrence["dueDate"], occurrence["status"]), ("Quarterly client asset report", "2026-12-31", "upcoming"))
+        # When the roadmap for Q4 2026 is read, the duty appears with "Our deadline":
+        # asserted by c8-home-register-feeds, which builds the roadmap's duty branch.
+
+        response = self.client.post(
+            f"/api/v1/duty-occurrences/{occurrence['id']}/complete", data={}, content_type="application/json", **headers
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual((response.json()["completed"]["status"], response.json()["next"]["dueDate"]), ("done", "2027-03-31"))
+        tenancy.activate(a.tenant.id)
+        self.assertEqual(
+            sorted((row.due_date.isoformat(), row.status) for row in DutyOccurrence.objects.all()),
+            [("2026-12-31", "done"), ("2027-03-31", "upcoming")],
+        )
 
     @skip("pending: REG-S11")
     def test_reg_s11(self) -> None:

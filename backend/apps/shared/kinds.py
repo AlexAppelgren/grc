@@ -309,4 +309,9 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "ACC-03: a service key or a personal access token on one api_key table; authentication, "
         "the step-up fence and the api_key CHECKs branch on it",
     ),
+    # c8-duty-occurrences (register 0004, REG-07).
+    "DutyStatus": (
+        "duty_status",
+        "REG-07: where a dated duty occurrence stands; completion, the roadmap and Today branch on it",
+    ),
 }
