@@ -203,6 +203,9 @@ CELERY_RESULT_BACKEND = None
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_ACKS_LATE = True
 CELERY_TIMEZONE = "UTC"
+# The worker keeps LOGGING's JSON handler on the root logger rather than swapping in its own
+# plain one, whose tracebacks print exception messages (security-review-c10, M2).
+CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 CELERY_BEAT_SCHEDULE: dict[str, Any] = {}
 
 # ---------------------------------------------------------------------------------------
