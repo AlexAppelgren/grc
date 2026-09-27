@@ -536,6 +536,9 @@ const FILLED: ReadonlySet<string> = new Set([
   'Tags', // c10-fe-obligation-tags
   'Applicability', // c8-ui-applicability-status
   'Status', // c8-ui-applicability-status
+  'Links', // c8-ui-links-history-participants
+  'History', // c8-ui-links-history-participants
+  'Participants', // c8-ui-links-history-participants
 ]);
 
 describe('the panel stubs', () => {
