@@ -1677,7 +1677,7 @@ Defaults taken; nothing waits on them.
 - [ ] Default taken: "Read as an agent" on the token form appears only to a member holding
       `agent_access.manage`, because `GET /agent-access` is read under that permission. A
       member without it mints tokens that name no entry, so `tenant:read` (which needs an
-      entry) is refused on the form. Say if every holder of `tokens.create` should pick an
+      entry) is disabled on the form with that reason. Say if every holder of `tokens.create` should pick an
       entry; that needs a narrow read of the bank's live entries (id and name) for them.
 - [ ] Default taken: My access tokens is in every member's account menu, not only for holders
       of `tokens.create`, because a token held stays listed and revocable after the permission

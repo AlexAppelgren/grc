@@ -94,14 +94,17 @@ function CreateDialog({ permissions, onClose, onCreated }: { permissions: readon
         <CheckGroup legend={t('me.tokens.scopes')} hint={t('me.tokens.scopesHint')} error={problem === 'scopes' ? t('me.tokens.scopesRequired') : undefined}>
           {TOKEN_SCOPES.map((scope) => {
             const held = permissions.includes(SCOPE_PERMISSION[scope]);
+            // tenant:read reads only through a named entry, which needs the entry list.
+            const reachable = scope !== 'tenant:read' || canNameEntry;
+            const hint = !held ? t('me.tokens.scopeNotHeld', { permission: humanisePermission(SCOPE_PERMISSION[scope]) }) : reachable ? t(SCOPE_HINT[scope]) : t('me.tokens.entryRequired');
             return (
               <CheckRow
                 key={scope}
                 id={`token-scope-${scope}`}
                 label={scopeLabel(scope)}
-                hint={held ? t(SCOPE_HINT[scope]) : t('me.tokens.scopeNotHeld', { permission: humanisePermission(SCOPE_PERMISSION[scope]) })}
+                hint={hint}
                 checked={scopes.includes(scope)}
-                disabled={!held}
+                disabled={!held || !reachable}
                 onChange={(on) => setScopes((current) => (on ? [...current, scope] : current.filter((s) => s !== scope)))}
               />
             );
@@ -118,10 +121,6 @@ function CreateDialog({ permissions, onClose, onCreated }: { permissions: readon
               ))}
             </Select>
           </Field>
-        ) : problem === 'entry' ? (
-          <p role="alert" className="mt-2.5 text-meta text-negative">
-            {t('me.tokens.entryRequired')}
-          </p>
         ) : null}
         <Field id="token-expires" label={t('me.tokens.expires')} hint={t('me.tokens.expiresHint')} error={problem === 'expires' ? t('me.tokens.expiresRequired') : undefined}>
           <TextInput id="token-expires" type="date" value={expires} onChange={(e) => setExpires(e.target.value)} aria-invalid={problem === 'expires' ? true : undefined} />

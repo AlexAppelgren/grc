@@ -138,6 +138,15 @@ describe('my access tokens', () => {
     expect(writes(sent)).toEqual([]);
   });
 
+  it('keeps tenant read closed to a member who can read the register but cannot name an agent', async () => {
+    server([]);
+    open([...OFFICER, 'register.read']);
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Create a token' }))[0] as HTMLElement);
+    expect(within(form()).getByLabelText(/^tenant read/)).toBeDisabled();
+    expect(form()).toHaveTextContent('Reading our register decisions needs a named agent.');
+  });
+
   it('renders the server refusal of a too distant expiry from its code', async () => {
     server([], (s) => (s.method === 'post' ? { status: 422, data: { code: 'expiry_too_late', detail: 'Server words the screen never shows.' } } : undefined));
     open(OFFICER);
