@@ -231,3 +231,122 @@ describe('the suggestions waiting on a tenant list', () => {
     expect(library.filter((s) => s.path.endsWith('/suggestions'))).toHaveLength(0);
   });
 });
+
+// The jurisdictions on the console (ADM-02, D-94): a list of fixed keys. The
+// seed files every market, so nothing is added or merged here; a library
+// editor proposes new labels, one per content language, a retirement or a
+// restore, a seeded market included, and each waits for a second editor.
+describe('the jurisdictions on the console', () => {
+  const JURISDICTIONS_PATH = '/api/v1/vocab/jurisdiction';
+  const LANGUAGES_PATH = '/api/v1/reference/languages';
+  const summary = { list: 'jurisdiction', tier: 2, kind: 'jurisdiction_kind', kinds: ['country'], count: 1, retiredCount: 1, proposable: true };
+  const denmark = {
+    key: 'dk',
+    kind: 'country',
+    label: 'Denmark',
+    labels: { en: 'Denmark', sv: 'Danmark' },
+    usageNote: '',
+    sortOrder: 2,
+    active: true,
+    isSystem: true,
+    isDefault: false,
+    usageCount: 64,
+    extra: {},
+    version: 3,
+  };
+  const iceland = { ...denmark, key: 'is', label: 'Iceland', labels: { en: 'Iceland' }, active: false, usageCount: 0, version: 1 };
+  const languages = [
+    { key: 'da', kind: null, label: 'Dansk' },
+    { key: 'en', kind: null, label: 'English' },
+    { key: 'sv', kind: null, label: 'Svenska' },
+  ];
+  const proposal = (kind: string, title: string) => ({ status: 202, data: { proposal: { id: 'p-9', kind, status: 'open', title } } });
+
+  function jurisdictionServer(write: Answer): Sent[] {
+    return installAdapter((sent) => {
+      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
+      if (sent.path === LISTS_PATH) return { status: 200, data: { items: [summary], total: 1 } };
+      if (sent.path === JURISDICTIONS_PATH && sent.method === 'get') return { status: 200, data: { items: [denmark, iceland], total: 2 } };
+      if (sent.path === LANGUAGES_PATH) return { status: 200, data: languages };
+      if (sent.method === 'post' || sent.method === 'patch') return write;
+      return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
+    });
+  }
+
+  async function renderJurisdictions(): Promise<void> {
+    const { wrapper: Query } = queryWrapper();
+    render(
+      <Query>
+        <PermissionsProvider permissions={['library_vocab.manage']}>
+          <VocabularyScreen list="jurisdiction" surface="console" />
+        </PermissionsProvider>
+      </Query>,
+    );
+    await screen.findAllByText('Denmark');
+  }
+
+  const row = (key: string) => document.querySelector(`[data-value-key="${key}"]`) as HTMLElement;
+  const writes = (sent: Sent[]) => sent.filter((s) => s.method !== 'get' && s.path !== REFRESH_PATH);
+
+  it('offers new labels and a retirement on a seeded market, and never an addition or a merge', async () => {
+    jurisdictionServer({ status: 500 });
+    await renderJurisdictions();
+    expect(screen.getByText(/A market's key never changes/)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Suggest a change' })).toBeNull();
+    expect(within(row('dk')).getByRole('button', { name: 'Edit labels' })).toBeVisible();
+    expect(within(row('dk')).getByRole('button', { name: 'Retire' })).toBeVisible();
+    expect(within(row('dk')).queryByRole('button', { name: /^Merge into/ })).toBeNull();
+    expect(within(row('dk')).queryByRole('button', { name: 'Rename' })).toBeNull();
+  });
+
+  it('proposes a label per content language, keeping the key, and says it is waiting for review', async () => {
+    const sent = jurisdictionServer(proposal('vocabulary_relabel', 'Change dk on jurisdiction'));
+    await renderJurisdictions();
+    fireEvent.click(within(row('dk')).getByRole('button', { name: 'Edit labels' }));
+    const form = (await screen.findByRole('form', { name: 'Labels for Denmark' })) as HTMLElement;
+    expect(await within(form).findByLabelText('English')).toHaveValue('Denmark');
+    expect(within(form).getByLabelText('Svenska')).toHaveValue('Danmark');
+    expect(within(form).getByLabelText('Dansk')).toHaveValue('');
+    expect(within(form).getByText('Key dk. The key never changes; only the labels do.')).toBeVisible();
+    expect(within(form).getByText(/scope term in every bank's Regulatory scope follows/)).toBeVisible();
+
+    fireEvent.change(within(form).getByLabelText('Dansk'), { target: { value: 'Kongeriget Danmark' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Send for review' }));
+    expect(await screen.findByText('Change dk on jurisdiction is waiting for review.')).toBeVisible();
+    expect(writes(sent).map((s) => [s.method, s.path, s.body])).toEqual([
+      ['patch', `${JURISDICTIONS_PATH}/dk`, { labels: { da: 'Kongeriget Danmark', en: 'Denmark', sv: 'Danmark' } }],
+    ]);
+  });
+
+  it('asks for a label before it sends anything', async () => {
+    const sent = jurisdictionServer(proposal('vocabulary_relabel', 'Change dk on jurisdiction'));
+    await renderJurisdictions();
+    fireEvent.click(within(row('dk')).getByRole('button', { name: 'Edit labels' }));
+    const form = (await screen.findByRole('form', { name: 'Labels for Denmark' })) as HTMLElement;
+    fireEvent.change(await within(form).findByLabelText('English'), { target: { value: ' ' } });
+    fireEvent.change(within(form).getByLabelText('Svenska'), { target: { value: '' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Send for review' }));
+    expect(await within(form).findByText('Give the value a label.')).toBeVisible();
+    expect(writes(sent)).toEqual([]);
+  });
+
+  it('proposes a retirement, naming what follows, and says it is waiting for review', async () => {
+    const sent = jurisdictionServer(proposal('vocabulary_retire', 'Retire dk from jurisdiction'));
+    await renderJurisdictions();
+    fireEvent.click(within(row('dk')).getByRole('button', { name: 'Retire' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Retire "Denmark"?' });
+    expect(within(dialog).getByText(/its scope term is retired with it/)).toBeVisible();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send for review' }));
+    expect(await within(dialog).findByText('Retire dk from jurisdiction is waiting for review.')).toBeVisible();
+    expect(writes(sent).map((s) => [s.path, s.body])).toEqual([[`${JURISDICTIONS_PATH}/dk/retire`, { confirm: true }]]);
+  });
+
+  it('proposes a restore of a retired market, and says it is waiting for review', async () => {
+    const sent = jurisdictionServer(proposal('vocabulary_restore', 'Restore is to jurisdiction'));
+    await renderJurisdictions();
+    fireEvent.click(screen.getByRole('button', { name: 'Retired' }));
+    fireEvent.click(within(row('is')).getByRole('button', { name: 'Restore' }));
+    expect(await within(row('is')).findByText('Restore is to jurisdiction is waiting for review.')).toBeVisible();
+    expect(writes(sent).map((s) => s.path)).toEqual([`${JURISDICTIONS_PATH}/is/restore`]);
+  });
+});

@@ -194,5 +194,11 @@
   "admin.vocabularies.suggestedBy": "Föreslaget av {name}, {date}",
   "admin.vocabularies.noSuggestionsTitle": "Inget väntar",
   "admin.vocabularies.noSuggestionsBody": "Värden som föreslås från en väljare väntar här på att du lägger till eller avböjer dem.",
-  "admin.vocabularies.suggestionsError": "Det gick inte att läsa in förslagen"
+  "admin.vocabularies.suggestionsError": "Det gick inte att läsa in förslagen",
+  "admin.vocabularies.fixedKeysLede": "En marknads nyckel ändras aldrig. Föreslå nya etiketter, en avveckling eller en återställning; en andra biblioteksredaktör godkänner det, och marknadens omfattningsterm följer med.",
+  "admin.vocabularies.editLabels": "Redigera etiketter",
+  "admin.vocabularies.labelsTitle": "Etiketter för {label}",
+  "admin.vocabularies.fixedKeyKept": "Nyckel {key}. Nyckeln ändras aldrig, bara etiketterna.",
+  "admin.vocabularies.scopeTermFollows": "När det godkänns följer omfattningstermen {label} med i varje banks Regulatorisk omfattning.",
+  "admin.vocabularies.retireFollows": "När det godkänns avvecklas dess omfattningsterm med den."
 }
