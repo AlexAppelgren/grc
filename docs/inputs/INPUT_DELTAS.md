@@ -1470,7 +1470,7 @@ forced row-level security, each child's case a composite key `(tenant_id, case_i
   has nowhere to record it. A CHECK per kind: only a file carries a storage key, and it
   carries its hash, size and type with it; a link carries a url.
 
-## 18. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
+## 19. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
 
 The designed `tenant.settings` blob is six columns on `tenant` (shared 0009):
 `reminder_days_before` and `review_reminder_days_before` (one to five day counts, each 1 to
@@ -1558,25 +1558,31 @@ Also departing from v0.3:
 
 ## acc-foundation. Agent access entries and credential kinds (2026-09-25, agents 0006, identity 0007)
 
-`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
-third column the R2 plan names (`acts_as_user`), are built with these departures:
-
-- `agent_access.owner_team_id` is required, not "null until chunk 8 lands teams": the team
-  list has landed and every bank has the system team `compliance` (ACC-01 names the team).
-  `revoked_at` and `revoked_by_id` are columns, and a CHECK keeps `active` false exactly when
-  `revoked_at` is set. An entry is revoked, never deleted (`delete()` refuses).
-- Every reference is also a composite `(tenant_id, …)` key: the team, the departments
-  (`org_unit`) and products (`tenant_product`) of the joins, the creator and revoker (into
-  `membership (tenant_id, user_id)`), and on `api_key` the entry and `acts_as_user`.
-- `api_key.kind` is the tier-one kind `credential_kind` (`service`, `personal`); every key
-  before identity 0007 is `service`. CHECKs: a personal token has a tenant, a person and an
-  expiry and no agent, and only a token acts as a person; a key bound to an entry has a
-  tenant and no agent definition (it is not one of the agents we run); an entry's key and
-  every token hold only `AGENT_ACCESS_SCOPES` (`library:read`, `search:read`,
-  `upcoming:read`, `tenant:read`), so "reads and nothing else" (ADR 0055) is the
-  database's rule as well as the code's.
-- `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
-  `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
+- Every reference to another tenant row is also a composite `(tenant_id, …)` foreign key,
+  written as SQL in the migration, because PostgreSQL checks a foreign key without
+  row-level security. `org_unit`, `licence`, `tenant_product` and `internal_item` carry
+  `UNIQUE (tenant_id, id)`, and so does `link_kind`, which `internal_item.kind` points at. A
+  head or owner (`head_user_id`, `owner_user_id`, `updated_by_id`) is a key into
+  `membership (tenant_id, user_id)`, so it is always a member of the same bank; the
+  designed `owner_id` is `owner_user_id`, beside the `owner_team_id` tenants 0003 adds.
+- `org_unit.entity_term_id` must be a term of the `legal_entity` dimension (a trigger, since
+  a CHECK cannot read another table) and only a legal entity may carry one (a CHECK).
+  `org_unit` gains `version` for `If-Match`.
+- `licence.licence_type` is a taxonomy term (`licence_type_id`), not the designed free
+  text: a type is a key, never a phrase. `service_term_ids uuid[]` is the
+  `licence_service_term` table, so each term is a real foreign key. D-43's certificate
+  columns are `issuer`, `number`, `scope_statement`, `issued_on`, `valid_until`,
+  `next_audit_on` and `owner_user_id`; none of them is a term.
+- `tenant_product_term` has its own `id` rather than the designed composite primary key,
+  like every other `TenantModel`, with `UNIQUE (product_id, term_id)`.
+- Units, licences, products and items are deactivated, withdrawn or retired, never
+  deleted: each model's `delete()` refuses, and every reference is `PROTECT`.
+- `security_policy` is one row per tenant: `credential_policy`, `allowed_authenticators`
+  (a list of AAGUIDs, schema `AllowedAuthenticators`), `device_bound_from` (a date),
+  `session_idle_minutes` and `session_absolute_hours` (null means the platform default,
+  both above zero and capped by `SESSION_IDLE_MINUTES_MAX` and `SESSION_ABSOLUTE_HOURS_MAX`
+  in the write), `updated_by_id`, `updated_at`. No row means the platform defaults.
+  `CREDENTIAL_POLICY_NOTICE_DAYS` (14) is the default notice a tightening gives.
 
 ## 18. A batch proposal and its rows (2026-09-25, c11-proposal-batches-model)
 
@@ -1678,6 +1684,7 @@ departures:
   carrying the designed `kind`: the item carries the kind. It is removed by stamping
   `removed_at` and `removed_by`, never deleted, with one live link per entry and item.
 
+
 ## 19. Chunk 9's case contract (2026-09-25, c9-case-contract)
 
 The eighteen workflow operations of `openapi.yaml`'s "Case workflow" tag, less the ticket
@@ -1716,10 +1723,15 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
 - **`Assessment` has no `contributors`** (ruling 2, section 18) and gains `version`;
   `effort` is the bank's `effort_size` row, `{key, kind, label}` on a read and a key on a
   write, rather than the enum `S`, `M`, `L`.
+- **`startAssessment` and `saveAssessment` answer `CasesCase`**, as every move above does.
+  Saving with `applies` `no` closes a case being assessed with the bank's `not_applicable`
+  close reason, only for a holder of `cases.work` (D-92). Closed by `c9-assessment`.
 - **`Action`** has no `changeTitle` or ticket fields, a required `dueDate`, and gains
   `doneBy` and `version`; `updateAction` and `deleteAction` read the action's own
   `If-Match`, and every move of the case reads the case's. `deleteAction` and
-  `removeEvidence` set `removed_at` and answer 204; nothing is deleted.
+  `removeEvidence` set `removed_at` and answer 204; nothing is deleted. `addAction`
+  answers the same `Action`, and its `ownerId` stays optional as designed: left out, the
+  case's owner owns the action (c9-actions).
 - **`Evidence`** gains `contentHash` and `scanState`; a link and a reference have no bytes
   and are recorded `clean`.
 - **The two lists page.** `listActions` and `listEvidence` answer `{items, total}` with
@@ -1734,6 +1746,7 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
   answer 204 as designed; all three are published ahead of `c9-case-file`, `c9-actions`
   and `c9-evidence` and answer 501 `not_built` until those land, so their pending lines
   are gone while the logic is still to come.
+
 ## c8-reg-gaps-risk. The gap routes as built (2026-09-25, REG-03)
 
 The register contract (`c8-register-contract`) declared the gap routes before the tables
@@ -1754,6 +1767,25 @@ existed; building them on `gap` as `c8-register-models` shaped it changes these 
   without it; closing a gap clears an acceptance still waiting on it.
 - A gap on a Statement of Applicability unit (`unitId`) answers 501 `not_built` until
   `c8-units-paste-soa` adds the column.
+`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
+third column the R2 plan names (`acts_as_user`), are built with these departures:
+
+- `agent_access.owner_team_id` is required, not "null until chunk 8 lands teams": the team
+  list has landed and every bank has the system team `compliance` (ACC-01 names the team).
+  `revoked_at` and `revoked_by_id` are columns, and a CHECK keeps `active` false exactly when
+  `revoked_at` is set. An entry is revoked, never deleted (`delete()` refuses).
+- Every reference is also a composite `(tenant_id, …)` key: the team, the departments
+  (`org_unit`) and products (`tenant_product`) of the joins, the creator and revoker (into
+  `membership (tenant_id, user_id)`), and on `api_key` the entry and `acts_as_user`.
+- `api_key.kind` is the tier-one kind `credential_kind` (`service`, `personal`); every key
+  before identity 0007 is `service`. CHECKs: a personal token has a tenant, a person and an
+  expiry and no agent, and only a token acts as a person; a key bound to an entry has a
+  tenant and no agent definition (it is not one of the agents we run); an entry's key and
+  every token hold only `AGENT_ACCESS_SCOPES` (`library:read`, `search:read`,
+  `upcoming:read`, `tenant:read`), so "reads and nothing else" (ADR 0055) is the
+  database's rule as well as the code's.
+- `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
+  `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
 
 ## c8-home-standing-roadmap. Where we stand, and our own deadlines on the roadmap (2026-09-25, HOM-01, HOM-03)
 

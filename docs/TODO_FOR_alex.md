@@ -1174,6 +1174,7 @@ to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WA
       Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
       note says only that each national body adopts the edition under its own
       reference. A person verifies them before the note names any.
+
 ## ai-log-read: a shared "So what?" reads each bank's own review state (2026-09-23, AUD-02)
 
 - [ ] **A library "So what?" in the AI log shows the reading bank's own review, not one
@@ -1250,21 +1251,6 @@ Nothing waits for these; each has the default the build took.
       cards still to be drawn above) is drawn: `design/screens/admin-footprint.html`, state 20.
       New string `footprint.noneFollowed`: "None followed." / "Ingen följs.".
 
-
-## lib-standard-e2e-seed: the first standard exists for tests and E2E only (2026-09-23, INV-08, FP-01)
-
-- [ ] Default taken until you answer "Legal, before any standard is seeded" above:
-      ISO/IEC 27001:2022 and its one conformance duty live in
-      `backend/apps/library/fixtures/e2e_standard.json`, which only `seed_e2e`
-      loads. `prototype_data.json`, which `seed_demo` loads, holds no standard,
-      and `check_prototype_data.py` refuses one there. The edition is titled by
-      its reference alone, never its official title, and the duty's wording is
-      ours. When you answer yes, moving the rows into the prototype fixture is
-      the whole change.
-- [ ] The instrument's national-adoptions note names no adoption reference: the
-      Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
-      note says only that each national body adopts the edition under its own
-      reference. A person verifies them before the note names any.
 
 ## watch-standards: a standard's term needs a standards body, and publishers are not read (2026-09-23, WAT-07, D-45)
 
@@ -1535,16 +1521,6 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       and a reach request is never withdrawn (the requester's colleague rejects it).
       Switching reach off needs one person and a step-up; on again takes a new request and
       a second person. `GET /tenant/reach` is readable with `security.manage` alone.
-
-## c8-mywork-service: how long a linked change stays on My work (2026-09-25, HOM-05, D-25, D-97)
-
-- [ ] **A confirmed link keeps its change under "Changes on your items" while the
-      case is open.** D-25 puts the 14-day window (`MY_WORK_AWARE_DAYS`) on new
-      obligation versions; it says nothing about how long a linked change stays, so
-      the default taken is: for as long as the bank's case on it is open, unless its
-      key date brings it into "Due soon" first. Default if you say nothing: it stays
-      so. The alternative is the same 14 days from the day the link was confirmed,
-      after which the change drops off My work while the case is still open.
 
 ## acc-principal-guard: how an agent access credential is fenced (2026-09-25, ACC-03, ACC-09)
 
