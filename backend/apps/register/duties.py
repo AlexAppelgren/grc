@@ -233,7 +233,6 @@ def complete_occurrence(
             before={"status": before},
             after={
                 "status": DutyStatus.DONE.value,
-                "note": occurrence.note or None,
                 "nextOccurrenceId": None if following is None else str(following.id),
                 "nextDueDate": None if following is None else following.due_date.isoformat(),
             },
