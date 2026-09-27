@@ -419,6 +419,7 @@ class SharedScenarioTests(ScenarioTestCase):
         )
         platform = user_principal(permissions=perms.PLATFORM_PERMISSIONS)
         key = agent_principal(tenant_id=tenant.id, scopes=perms.ALL_SCOPES)
+        agent_key = factories.entry_key(tenant, factories.agent_access_entry(tenant), scopes=("library:read", "tenant:read")).plain_key
 
         # Every response carries Server-Timing: app with the server time, and a request id.
         def timed(path: str, headers: dict[str, Any] | None = None) -> Any:
@@ -473,6 +474,10 @@ class SharedScenarioTests(ScenarioTestCase):
                         response = timed(url, headers)
                     if response.status_code not in (401, 403):
                         break
+                if response.status_code == 401:
+                    # A list only a bank's own agent reads takes its key, never a session
+                    # (acc-register-read's `listRegisterEntries`).
+                    response = timed(url, {"HTTP_X_API_KEY": agent_key})
                 self.assertEqual(response.status_code, 422, response.content)
                 self.assertEqual(response.json()["errors"][0]["field"], "query.limit")
                 refused += 1
