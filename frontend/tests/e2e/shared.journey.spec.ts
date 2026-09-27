@@ -199,6 +199,9 @@ test.describe('shared journeys', () => {
       // time limit grows with the samples and the screens.
       test.setTimeout(60_000 + SCREEN_SAMPLES * mine.length * 6_000);
       allowFreshContext(apiGuard);
+      // r2-j8-isolation seeds tenant A an agent of its own, which opens the Agents page's
+      // research panel; its list answers 501 until c11-research-requests builds it.
+      apiGuard.allow(/\/research-requests$/, 501, 'research requests are built by c11-research-requests');
 
       // A bank's administrator unlocks every tenant destination; the console's
       // destinations are split between a library editor and a platform admin.

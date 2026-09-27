@@ -3,6 +3,8 @@ import path from 'node:path';
 import type { Page } from '@playwright/test';
 
 import { expect, test, type ApiGuard } from './support/api-guard';
+import { openCase } from './support/cases-signoff';
+import { allowRegisterEntryPending } from './support/obligation-page';
 import { allowFreshContext, BACKEND_URL, LOGINS, mailOutbox, mailsTo, restrictedScreen, signInAs, signOut } from './support/passkeys';
 
 // tenants: the @e2e scenarios from backend/apps/tenants/app.md (playbook Appendix B).
@@ -86,6 +88,120 @@ async function setSessionLimits(page: Page, apiGuard: ApiGuard): Promise<void> {
     await saveSecurityPage(page);
     await expect(page.getByText('Saved. New limits apply to sessions from their next refresh.', { exact: true })).toBeVisible();
   }
+}
+
+// r2-j8-isolation (TEN-S7, J-8): tenant A's R2 rows the journey reaches for from tenant B, as
+// backend/apps/shared/e2e_seed.py seeds them (EXPECTED_J8_ISOLATION, EXPECTED_ORG_REGISTER,
+// EXPECTED_COMMENTS and the participants block). The fixed ids are the seed's; the rest are
+// found by name or purpose in tenant A's own session.
+const A_ONLY = {
+  sharedCase: { stableKey: 'chg-e2e-c5-timeline', title: 'FI clarifies the appropriateness assessment for complex instruments' },
+  caseComment: 'Erik, the appropriateness procedure for structured products now names the new test; the evidence is attached.',
+  evidence: 'Research payment criteria.pdf',
+  commentedObligation: 'obl-dora-ict-register',
+  obligationComment: 'Oskar, does the register also need the sub-outsourcing chain for the card processor?',
+  participationObligation: 'obl-costs-charges',
+  participant: 'Oskar Lund',
+  entity: 'Example Liv Försäkring AB',
+  department: 'Retail Banking',
+  product: 'Guided investing',
+  team: 'cards',
+  grantPurpose: "Checking why last week's briefing reached nobody at the bank.",
+  entryId: '00000000-0000-4000-a000-000000008c03',
+  entryName: 'Card settlement checker',
+  keyId: '00000000-0000-4000-a000-000000008c04',
+  tenantAgentId: '00000000-0000-4000-a000-000000008c05',
+  idleMinutes: '45',
+} as const;
+// Tenant B's own rows beside them, so every list below is not empty by accident.
+const B_OWN = {
+  obligationComment: 'The register must be complete before we file it with Finanstilsynet.',
+  participant: 'Freja Madsen',
+  entity: 'Second Bank A/S',
+  product: 'Online custody account',
+  team: 'aml_desk',
+  evidence: 'Research payment criteria (DK).pdf',
+} as const;
+
+type Named = { id: string; name: string };
+
+/** A read in the signed-in bank's own session, which must answer. */
+async function readAs<T>(page: Page, headers: Record<string, string>, path: string): Promise<T> {
+  const response = await page.request.get(`${BACKEND_URL}/api/v1${path}`, { headers });
+  expect(response.status(), path).toBe(200);
+  return (await response.json()) as T;
+}
+
+function idNamed(items: readonly Named[], name: string): string {
+  const row = items.find((item) => item.name === name);
+  if (row === undefined) throw new Error(`tenant A has no "${name}"`);
+  return row.id;
+}
+
+/**
+ * Calls the API from the signed-in page, as a person typing the URL would reach it, and
+ * expects 404 `not_found`: another bank's record is not there, never forbidden. The 404 is
+ * declared where it is expected, so any other failure still fails the journey.
+ */
+async function expectNotFound(page: Page, apiGuard: ApiGuard, headers: Record<string, string>, method: string, path: string, body?: object): Promise<void> {
+  const url = `${BACKEND_URL}/api/v1${path}`;
+  apiGuard.allow(new URL(url).pathname, 404, "tenant A's record is not there for tenant B");
+  const answer = await page.evaluate(
+    async ({ url, method, headers, body }) => {
+      const response = await fetch(url, {
+        method,
+        headers: { ...headers, ...(body === null ? {} : { 'Content-Type': 'application/json', 'If-Match': '"1"' }) },
+        body: body === null ? undefined : JSON.stringify(body),
+      });
+      return { status: response.status, code: ((await response.json()) as { code?: string }).code };
+    },
+    { url, method, headers, body: body ?? null },
+  );
+  expect(answer, `${method} ${path}`).toEqual({ status: 404, code: 'not_found' });
+}
+
+/**
+ * A real passkey step-up in the signed-in page, the ceremony the app's prompt runs, so a
+ * route behind a fresh assertion answers for the record rather than for the missing step-up.
+ */
+async function stepUp(page: Page, headers: Record<string, string>): Promise<void> {
+  const status = await page.evaluate(
+    async ({ base, headers }) => {
+      type Options = { challenge: string; rpId?: string; timeout?: number; userVerification?: UserVerificationRequirement; allowCredentials?: { id: string }[] };
+      const bytes = (value: string) => Uint8Array.from(atob(value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '=')), (c) => c.charCodeAt(0));
+      const text = (buffer: ArrayBuffer) => btoa(String.fromCharCode(...new Uint8Array(buffer))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      const post = (route: string, body: unknown) => fetch(`${base}${route}`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const answer = (await (await post('/auth/step-up/options', {})).json()) as Options | { publicKey: Options };
+      const options = 'publicKey' in answer ? answer.publicKey : answer;
+      const credential = (await navigator.credentials.get({
+        publicKey: {
+          challenge: bytes(options.challenge),
+          rpId: options.rpId,
+          timeout: options.timeout,
+          userVerification: options.userVerification,
+          allowCredentials: (options.allowCredentials ?? []).map((allowed) => ({ type: 'public-key' as const, id: bytes(allowed.id) })),
+        },
+      })) as PublicKeyCredential;
+      const signed = credential.response as AuthenticatorAssertionResponse;
+      const verified = await post('/auth/step-up/verify', {
+        credential: {
+          id: credential.id,
+          rawId: text(credential.rawId),
+          type: credential.type,
+          clientExtensionResults: {},
+          response: {
+            clientDataJSON: text(signed.clientDataJSON),
+            authenticatorData: text(signed.authenticatorData),
+            signature: text(signed.signature),
+            userHandle: signed.userHandle === null ? null : text(signed.userHandle),
+          },
+        },
+      });
+      return verified.status;
+    },
+    { base: `${BACKEND_URL}/api/v1`, headers },
+  );
+  expect(status, 'the passkey step-up').toBe(200);
 }
 
 test.describe('tenants journeys', () => {
@@ -469,30 +585,110 @@ test.describe('tenants journeys', () => {
   });
 
   test("TEN-S7 J-8 @smoke: tenant B cannot see tenant A", async ({ page, apiGuard }) => {
-    // TEN-S7 (TEN-06, J-8): members, the regulatory scope with its markets and pending
-    // request, roles and vocabulary rows. Cases, evidence, comments and participants join
-    // the journey with chunks 9 and 10 (tenants/app.md, the note under TEN-S7).
+    // TEN-S7 (NFR-01, TEN-02, TEN-03, TEN-06, COL-01, COL-02, COL-04, AGT-04, ACC-01, ID-08, J-8):
+    // tenant A's members, scope, roles and tags, and its R2 records and configuration, are not
+    // there for tenant B, by URL or in a list; B's own rows are.
+    test.slow();
     allowFreshContext(apiGuard);
+    allowRegisterEntryPending(apiGuard);
     apiGuard.allow(/\/tenant\/members\/[^/]+\/sessions$/, 404, "another tenant's member is not there, never forbidden");
+    apiGuard.allow(/\/api\/v1\/agent-access\/[^/]+(\/calls)?$/, 404, "tenant A's agent access entry is not there for tenant B");
 
+    // Tenant A: the member, role and tag exist, and so does each R2 record below, so their
+    // absence in B is not vacuous. Ids B cannot learn from its own screens are read here.
     await signInAs(page, LOGINS.admin);
     await page.goto('/admin/members');
     const memberOfA = page.locator('[data-member-id]', { hasText: LOGINS.reader });
     await expect(memberOfA).toBeVisible();
     const memberUrl = await memberOfA.getAttribute('href');
     expect(memberUrl).toMatch(/^\/admin\/members\/.+/);
-    // Tenant A's own role and tag exist, so their absence in B below is not vacuous.
     await page.goto('/admin/roles');
     await expect(page.locator(`[data-role-key="${A_ONLY_ROLE}"]`)).toBeVisible();
     await page.goto(`/admin/vocabularies/${A_ONLY_TAG_LIST}`);
     await expect(page.locator(`[data-value-key="${A_ONLY_TAG}"]`)).toBeVisible();
+    await page.goto(`/admin/agents/access/${A_ONLY.entryId}`);
+    await expect(page.getByText(A_ONLY.entryName).first()).toBeVisible();
+    await openCase(page, A_ONLY.sharedCase);
+    await expect(page.locator('[data-comments-panel="change_case"]')).toContainText(A_ONLY.caseComment);
+    const changeId = new URL(page.url()).pathname.split('/').pop() ?? '';
+    const asA = await bearerOf(page);
+    const aCaseId = (await readAs<{ case: { id: string } }>(page, asA, `/changes/${changeId}`)).case.id;
+    const aEvidenceId = idNamed((await readAs<{ items: Named[] }>(page, asA, `/changes/${changeId}/evidence`)).items, A_ONLY.evidence);
+    const aUnits = (await readAs<{ items: Named[] }>(page, asA, '/tenant/org-units?limit=100')).items;
+    const aEntityId = idNamed(aUnits, A_ONLY.entity);
+    const aDepartmentId = idNamed(aUnits, A_ONLY.department);
+    const aProductId = idNamed((await readAs<{ items: Named[] }>(page, asA, '/tenant/products?limit=100')).items, A_ONLY.product);
+    const aGrants = (await readAs<{ items: { id: string; purpose: string }[] }>(page, asA, '/tenant/support-access?limit=100')).items;
+    const aGrantId = aGrants.find((grant) => grant.purpose === A_ONLY.grantPurpose)?.id ?? '';
+    expect(aGrantId, "A's declined support request").not.toBe('');
+    const library = (await readAs<{ items: { id: string; stableKey: string }[] }>(page, asA, '/obligations?footprint=all&limit=100')).items;
+    const obligationPath = (stableKey: string): string => `/inventory/obligations/${library.find((row) => row.stableKey === stableKey)?.id ?? stableKey}`;
+    const aInbox = (await readAs<{ items: { id: string; subjectId: string }[] }>(page, asA, '/notifications?limit=100')).items;
+    const aNotificationId = aInbox.find((row) => row.subjectId === aCaseId)?.id;
+    expect(aNotificationId, "the mention on A's case is in A's inbox").toBeDefined();
     await signOut(page);
 
+    // Tenant B's compliance officer: B's own case on the change both banks work on, the
+    // obligations both discuss and take part in, and B's inbox.
+    await signInAs(page, LOGINS.secondBankComplianceOfficer);
+    await expect(page.locator('[data-who-panel]')).toContainText('Second Bank A/S');
+    const commentsRead = page.waitForResponse((r) => r.url().includes('/api/v1/comments?') && r.request().method() === 'GET');
+    await openCase(page, A_ONLY.sharedCase);
+    expect((await commentsRead).status(), "B's comments on its own case").toBe(200);
+    const caseComments = page.locator('[data-comments-panel="change_case"]');
+    await expect(caseComments).toBeVisible();
+    await expect(caseComments).not.toContainText(A_ONLY.caseComment);
+    const asB = await bearerOf(page);
+    const bEvidence = (await readAs<{ items: Named[] }>(page, asB, `/changes/${changeId}/evidence`)).items.map((row) => row.name);
+    expect(bEvidence).toContain(B_OWN.evidence);
+    expect(bEvidence).not.toContain(A_ONLY.evidence);
+    await expectNotFound(page, apiGuard, asB, 'GET', `/comments?subjectType=change_case&subjectId=${aCaseId}`);
+    await expectNotFound(page, apiGuard, asB, 'GET', `/evidence/${aEvidenceId}/download`);
+
+    // Opened by URL: neither obligation need be in B's own scope for B to discuss it.
+    await page.goto(obligationPath(A_ONLY.commentedObligation));
+    const obligationComments = page.locator('[data-comments-panel="obligation"]');
+    await expect(obligationComments).toContainText(B_OWN.obligationComment);
+    await expect(obligationComments).not.toContainText(A_ONLY.obligationComment);
+
+    await page.goto(obligationPath(A_ONLY.participationObligation));
+    const participants = page.locator('[data-participants-panel]');
+    await expect(participants.locator('[data-participant-id]').filter({ hasText: B_OWN.participant })).toHaveCount(1);
+    await expect(participants).not.toContainText(A_ONLY.participant);
+
+    const inbox = page.waitForResponse((r) => /\/api\/v1\/notifications(\?|$)/.test(r.url()) && r.request().method() === 'GET');
+    await page.goto('/notifications');
+    const bInbox = ((await (await inbox).json()) as { items: { id: string }[] }).items.map((row) => row.id);
+    await expect(page.locator('[data-notifications-list]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+    expect(bInbox).not.toContain(aNotificationId);
+    await expect(page.locator(`[data-notification-id="${aNotificationId}"]`)).toHaveCount(0);
+    await expectNotFound(page, apiGuard, asB, 'POST', `/notifications/${aNotificationId}/read`);
+    await signOut(page);
+
+    // Tenant B's administrator: A's member, agent access entry and configuration by URL, and
+    // B's own lists.
     await signInAs(page, LOGINS.secondBankAdmin);
     await expect(page.locator('[data-who-panel]')).toContainText('Second Bank A/S');
     await page.goto(memberUrl ?? '/admin/members/none');
     await expect(page.getByRole('heading', { level: 1, name: 'Not found' })).toBeVisible();
     await expect(page.getByText('This page is not available to you')).toHaveCount(0);
+    await page.goto(`/admin/agents/access/${A_ONLY.entryId}`);
+    await expect(page.getByRole('heading', { level: 1, name: 'Not found' })).toBeVisible();
+    await expect(page.getByText('This page is not available to you')).toHaveCount(0);
+    await expect(page.locator('main')).not.toContainText(A_ONLY.entryName);
+
+    const asBAdmin = await bearerOf(page);
+    await expectNotFound(page, apiGuard, asBAdmin, 'GET', `/tenant/org-units/${aEntityId}/licences`);
+    await expectNotFound(page, apiGuard, asBAdmin, 'GET', `/tenant/org-units/${aDepartmentId}/licences`);
+    await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/tenant/products/${aProductId}`, {});
+    await expectNotFound(page, apiGuard, asBAdmin, 'GET', `/tenant/teams/${A_ONLY.team}/members`);
+    await expectNotFound(page, apiGuard, asBAdmin, 'POST', `/tenant/support-access/${aGrantId}/decline`);
+    await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/agents/${A_ONLY.tenantAgentId}`, {});
+    await expectNotFound(page, apiGuard, asBAdmin, 'POST', `/agents/${A_ONLY.tenantAgentId}/pause`);
+    await expectNotFound(page, apiGuard, asBAdmin, 'GET', `/agent-access/${A_ONLY.entryId}/calls`);
+    // Revoking a key needs a fresh passkey; with it, A's key is not there either.
+    await stepUp(page, asBAdmin);
+    await expectNotFound(page, apiGuard, asBAdmin, 'POST', `/agent-access/${A_ONLY.entryId}/keys/${A_ONLY.keyId}/revoke`);
 
     await page.goto('/admin/members');
     const rows = page.locator('[data-member-id]');
@@ -503,6 +699,31 @@ test.describe('tenants journeys', () => {
       expect(text).toContain('second-bank.test');
       expect(text).not.toContain('example-bank.test');
     }
+
+    // B's organisation: its own entity, product and team, and none of A's.
+    await page.goto('/admin/organisation');
+    await expect(page.locator(`[data-org-unit="${B_OWN.entity}"]`)).toBeVisible();
+    await expect(page.locator(`[data-product="${B_OWN.product}"]`)).toBeVisible();
+    await expect(page.locator(`[data-team="${B_OWN.team}"]`)).toBeVisible();
+    await expect(page.locator(`[data-org-unit="${A_ONLY.entity}"]`)).toHaveCount(0);
+    await expect(page.locator(`[data-department="${A_ONLY.department}"]`)).toHaveCount(0);
+    await expect(page.locator(`[data-product="${A_ONLY.product}"]`)).toHaveCount(0);
+    await expect(page.locator(`[data-team="${A_ONLY.team}"]`)).toHaveCount(0);
+
+    // B's support access, agents, agent access entries and session limits are B's own.
+    await page.goto('/admin/support-access');
+    await expect(page.locator('[data-support-section="history"]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+    await expect(page.locator(`[data-grant-id="${aGrantId}"]`)).toHaveCount(0);
+    await page.goto('/admin/agents');
+    await expect(page.locator('[data-our-agents]')).toBeVisible();
+    await expect(page.locator(`[data-tenant-agent="${A_ONLY.tenantAgentId}"]`)).toHaveCount(0);
+    await page.goto('/admin/agents/access');
+    await expect(page.locator('[data-access-list]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+    await expect(page.locator(`[data-entry-id="${A_ONLY.entryId}"]`)).toHaveCount(0);
+    await page.goto('/admin/security');
+    const idle = page.getByLabel('Sign out after this long without activity, in minutes', { exact: true });
+    await expect(idle).toBeVisible();
+    await expect(idle).not.toHaveValue(A_ONLY.idleMinutes);
 
     // B's regulatory scope: Denmark, which A watches, is not watched here (FP-S8 may be
     // operating it in B right now, so only "watching" is ruled out); none of A's terms is
@@ -584,7 +805,7 @@ test.describe('tenants journeys', () => {
     await expect(page.locator('[data-platform-watch]').getByRole('button')).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Spend this month' })).toBeVisible();
     await expect(page.getByText("Our own agents only. bleqq's watch runs at bleqq's cost and is not counted here.")).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Our agents' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Our agents', exact: true })).toBeVisible();
     await expect(page.getByText('Changing agents needs agents manage.')).toHaveCount(0);
     // --- end c11-fe-admin-agents ----------------------------------------------------------
   });

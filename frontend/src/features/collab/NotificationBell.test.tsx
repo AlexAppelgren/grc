@@ -55,6 +55,7 @@ function me(unreadNotifications: number | null): Me {
     stepUpValidUntil: null,
     counts: unreadNotifications === null ? null : { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications },
     lastVisitAt: null,
+    headOf: [],
     notificationPrefs: null,
   };
 }

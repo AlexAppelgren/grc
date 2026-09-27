@@ -115,6 +115,9 @@ class AgentSchedules(TestCase):
     def test_both_agent_beats_run_every_interval_and_name_tasks_that_exist(self) -> None:
         from django.conf import settings
 
+        # Importing the module registers its tasks, whichever tests this worker ran before.
+        from apps.agents import tasks  # noqa: F401
+
         schedule = celery_app.conf.beat_schedule or {}
         for name, task in (
             ("agents-platform", "apps.agents.tasks.run_platform_agents"),
