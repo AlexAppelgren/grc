@@ -1251,21 +1251,6 @@ Nothing waits for these; each has the default the build took.
       New string `footprint.noneFollowed`: "None followed." / "Ingen följs.".
 
 
-## lib-standard-e2e-seed: the first standard exists for tests and E2E only (2026-09-23, INV-08, FP-01)
-
-- [ ] Default taken until you answer "Legal, before any standard is seeded" above:
-      ISO/IEC 27001:2022 and its one conformance duty live in
-      `backend/apps/library/fixtures/e2e_standard.json`, which only `seed_e2e`
-      loads. `prototype_data.json`, which `seed_demo` loads, holds no standard,
-      and `check_prototype_data.py` refuses one there. The edition is titled by
-      its reference alone, never its official title, and the duty's wording is
-      ours. When you answer yes, moving the rows into the prototype fixture is
-      the whole change.
-- [ ] The instrument's national-adoptions note names no adoption reference: the
-      Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
-      note says only that each national body adopts the edition under its own
-      reference. A person verifies them before the note names any.
-
 ## watch-standards: a standard's term needs a standards body, and publishers are not read (2026-09-23, WAT-07, D-45)
 
 Nothing waits for these; each has the default the build took.
@@ -1438,6 +1423,16 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       follows the app's existing terms (skyldighet, förslag, godkännande), but
       a native read of the headline and the questions is worth five minutes.
 
+## c10-fe-notifications: a case notification cannot link to its case yet (2026-09-25, COL-02)
+
+The inbox links an obligation's notification to `/inventory/obligations/{id}` and a change's to
+`/watch/{id}`. A notification about a case (`change_case`) carries the case's own id, while every
+case screen is addressed by its change (CHUNK9 ruling 1, no `/cases/{caseId}` route), so the screen
+cannot build the link. Default taken: the case's title lists without a link, never a link that would
+always land on Not found. Needs a choice before COL-S1's journey ("Erik finds the notification with a
+link back to the case"): either `notify()` names a case by its change (`subject_type` `change`, the
+change id), or the notification gains the change id, or the frontend adds a `/cases/{caseId}` page that
+redirects to its change. The second keeps the case's own read check (`cases.read`) on the row.
 ## r2-spec-d89: the bank's own regulations (PRD 0.7, 2026-09-25)
 
 - [x] **D-89: confirm PRD 0.7's OWN group.** Non-blocking: chunk 11 builds it on the
@@ -1528,16 +1523,6 @@ Built by default; nothing waits on you. Say if any should change.
 - [ ] **The 403 proof uses a case write, not the sign-off route.** Chunk 9's
       approve route does not exist on this base yet; `c10-out-of-office` or the
       sign-off package should repeat the proof there.
-## c10-fe-notifications: a case notification cannot link to its case yet (2026-09-25, COL-02)
-
-The inbox links an obligation's notification to `/inventory/obligations/{id}` and a change's to
-`/watch/{id}`. A notification about a case (`change_case`) carries the case's own id, while every
-case screen is addressed by its change (CHUNK9 ruling 1, no `/cases/{caseId}` route), so the screen
-cannot build the link. Default taken: the case's title lists without a link, never a link that would
-always land on Not found. Needs a choice before COL-S1's journey ("Erik finds the notification with a
-link back to the case"): either `notify()` names a case by its change (`subject_type` `change`, the
-change id), or the notification gains the change id, or the frontend adds a `/cases/{caseId}` page that
-redirects to its change. The second keeps the case's own read check (`cases.read`) on the row.
 ## c10-producers: participation and linked-change notices, defaults taken (2026-09-25, COL-02, COL-04, HOM-05, D-97)
 
 Built by default; nothing waits on you. Say if any should change.
@@ -1555,3 +1540,53 @@ Built by default; nothing waits on you. Say if any should change.
       Default: so.
 - [ ] **Adding yourself tells nobody, and a confirmation naming two of your obligations
       tells you twice** (once per register entry). Default: so.
+
+## c9-signoff: evidence can leave a case while it waits for sign-off (2026-09-25)
+
+- [ ] **Should the approval re-check the evidence, or should evidence lock?** A sign-off
+      request needs no open action and one piece of evidence the scanner passed. While
+      the case waits, the actions lock (`c9-actions`, `actions_locked`), but nothing in
+      the plan locks the evidence: `removeEvidence` only sets `removed_at`, and a rescan
+      could mark a file infected. The approval then closes a case whose evidence is gone,
+      because the fixed guard on `signoff → closed` checks only the second person.
+      Default taken: no change, since the guards are fixed (CLAUDE.md section 5) and this
+      package does not own `state.py` or `evidence.py`. Two ways out: (a) `c9-evidence-b`
+      refuses `removeEvidence` with 409 `actions_locked`-style `evidence_locked` while
+      the case is in `signoff`, which mirrors the actions lock; or (b) the
+      `signoff → closed` edge also carries the `no_open_action` and `clean_evidence`
+      guards. The first keeps the state machine as designed; say which.
+
+## c10-out-of-office: a member's absence with a delegate, defaults taken (2026-09-25, TEN-04, COL-02)
+
+Built by default; nothing waits on you. Say if any should change.
+
+- [ ] **Which approve permission the delegate needs.** Every four-eyes approve permission
+      (`footprint.approve`, `cases.signoff`, `risk.accept.approve`) the absent person holds;
+      a person who holds none may name any active member. Default: so.
+- [ ] **One absence at a time, changed by ending it.** A new absence while one is open
+      answers 409 `already_delegated`, so moving the last day or the delegate means ending
+      the absence first (both fields null) and setting a new one. Default: so.
+- [ ] **A delegate's sign-off names whom it was for.** The approval's audit row gains
+      `onBehalfOf`, the absent approvers holding `cases.signoff` who name that delegate
+      through the bank's today, the requester left out. The delegate still approves under
+      their own `cases.signoff`; nothing is granted. Default: so.
+- [ ] **A delegate who holds `cases.signoff` is told once, unstamped.** Since the delegate
+      must hold the absent approver's approve permissions, a sign-off request already reaches
+      them on their own account, and `c10-reminders-core`'s rule gives them one row without
+      "on behalf of". Reminders for kinds the delegate is not a candidate for carry the stamp.
+
+## c10-fe-prefs-and-ooo: the notification switches and the out-of-office screen, defaults taken (2026-09-25, COL-02, TEN-04)
+
+Built by default; nothing waits on you. Say if any should change.
+
+- [ ] **A switch saves the whole set.** Each change sends all five switches with the one
+      flipped (the package's acceptance), where the card says "that one key"; the server
+      takes either. Default: the whole set.
+- [ ] **The delegate's "You are standing in for" view (card block 7) is not built.** No
+      route names whom a member stands in for, and a notification does not yet carry
+      `onBehalfOf` in its API shape, so the inbox cannot say "For Anna Nilsson, who is
+      away" either. Both need a backend field first. Default: left out until then.
+- [ ] **The delegate picker lists names only.** `GET /reference/people` answers ids and
+      names by design, so the card's role and team line under each name is not shown.
+      The caller is left out of the list; the server refuses a delegate who cannot approve
+      and the screen says so under the field. Default: so.

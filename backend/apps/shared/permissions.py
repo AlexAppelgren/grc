@@ -551,6 +551,10 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("DELETE", "/changes/{change_id}/participants/{participant_id}"): Ungated(
         UngatedReason.LOGIC_GATE, _LOGIC_CASE_PARTICIPANT_REMOVAL
     ),
+    # c10-out-of-office (TEN-04): the caller's own absence on their own membership. The
+    # delegate check inside is the gate on what it may name (delegate_cannot_approve).
+    ("GET", "/me/out-of-office"): Ungated(UngatedReason.SELF, _SELF_ME),
+    ("PUT", "/me/out-of-office"): Ungated(UngatedReason.SELF, _SELF_ME),
 }
 
 

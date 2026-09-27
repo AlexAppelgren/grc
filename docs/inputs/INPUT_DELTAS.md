@@ -969,6 +969,7 @@ behind their real gates and answer 501 `not_built` until `collab/inbox.py`,
   `comments.write` checked by the route on the write; `PATCH` and `DELETE` carry
   `@requires_permission("comments.write")` and leave the author check to the logic. A
   platform session belongs to no bank and gets 404.
+Chunk 8 (the register contract, `c8-register-contract`), 2026-09-25:
 
 Chunk 10 (the obligation row's R2 fields, c10-tag-filters-and-limits), 2026-09-25:
 
@@ -988,6 +989,26 @@ Chunk 10 (the obligation row's R2 fields, c10-tag-filters-and-limits), 2026-09-2
 - Every string filter of `GET /obligations` and `GET /instruments` is at most 80 characters
   (`instrument`, `dutyType`, `regime`, each `term`, `tag` and `tenantTag` item), as the key
   columns are; a longer one answers 422 `validation_error` (hardening H27).
+- Applicability has no request (D-75, which supersedes D-44 and ADR 0038). The designed
+  `GET /applicability-requests` (`listApplicabilityRequests`),
+  `POST /obligations/{obligationId}/applicability-requests` (`requestApplicability`),
+  `POST /applicability-requests/{requestId}/approve` (`approveApplicability`) and
+  `POST /applicability-requests/{requestId}/reject` (`rejectApplicability`) are not built,
+  and neither is the withdraw route the chunk 8 plan once added. They are replaced by
+  `setApplicability`, `PUT /obligations/{obligationId}/applicability`, which stores one
+  confirmed answer for the obligation, one legal entity or one unit, and
+  `setApplicabilityMany`, `POST /applicability`, which stores many confirmed rows in one
+  call capped by `REGISTER_BULK_MAX`. Both take `applicability.approve`, no step-up and
+  no second approver, and write one audit event per row naming the person, the value
+  before and after, and the reason. There is no `applicability_request` table and no
+  "Waiting for approval" state for applicability; the designed `Note` body and
+  `ApplicabilityRequest` shapes go with them.
+- `PATCH /obligations/{obligationId}/register` (`updateRegister`) keeps its designed fields
+  and adds `rationale`, stored on the assessment row a status change writes (REG-04), and
+  takes the status, risk and people as keys and ids. It answers `RegisterEntry`, which
+  adds `applicabilityDecidedBy`, `entities` (one row per legal entity, D-42) and `version`
+  for `If-Match` (section 4) to the designed `Register`, and returns the status and risk
+  as `{key, kind, label}` rows of the bank's own lists (section 1).
 
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
@@ -1760,3 +1781,22 @@ real, each with the whole `CasesCase` of section 19. Where they differ from `ope
   the status before and after and the new `version`; triage adds `ownerId` and the urgency
   key, a dismissal and a close add `reasonKey`. The close's note is on the case and its
   `case_transition` row, never in an audit value.
+
+## Sign-off answers the case, and its refusals carry counts (2026-09-25, c9-signoff)
+
+- **`requestSignoff`, `approveSignoff` and `sendBackSignoff`** answer `CasesCase` (section
+  19), not the designed `Case`: no `actions`, `evidence` or `soWhat`, plus `changeId`,
+  `subStatus`, `urgencyConfirmed`, `dismissedAt` and `version`.
+- **The request's two refusals carry counts.** `open_actions` and `evidence_missing` answer
+  409 with `openActionCount` and `cleanEvidenceCount` beside the code (playbook 4.4), so
+  the screen says what is missing without a second read. Evidence the scanner has not
+  passed, or that was removed, does not count.
+- **The approver is told, not the requester.** The request notifies the bank's active
+  members holding `cases.signoff` through `notify()`, leaving the requester out: they can
+  never sign off what they asked for.
+- **The approval is the sign-off edge only.** From any category but `signoff` it answers
+  409 `invalid_transition`, although `assigned` and `assessing` reach `closed` by the
+  one-person close (D-92), which is its own route with its own reasons.
+- **Send-back clears the request.** `signoffRequestedBy` and `signoffRequestedAt` go back
+  to null, so the next request is a fresh one; the note is kept on the case's transition
+  ledger and never in the audit values.
