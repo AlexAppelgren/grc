@@ -39887,7 +39887,7 @@
     },
     "/api/v1/agent-definitions/{agent_key}": {
       "get": {
-        "description": "Returns one definition as the list shows it, with every version it has published,\nnewest first and retired ones included, so the console can show which version each past\nrun used and publish or retire the next one.\n\nA person's session in the platform console holding `agent_definitions.manage`; no\nsession inside a bank and no API key reaches a definition, in any release (AGT-03). It\nreads and writes nothing to the audit log.\n\nErrors: `unauthenticated` (401) without a session; `permission_denied` (403) without\n`agent_definitions.manage`; `not_found` (404) for a key no definition has.\nPublished ahead of the logic that will fill it, and answering 501 `not_built` until\nthat ships.",
+        "description": "Returns one definition as the list shows it, with every version it has published,\nnewest first and retired ones included, so the console can show which version each past\nrun used and publish or retire the next one.\n\nA person's session in the platform console holding `agent_definitions.manage`; no\nsession inside a bank and no API key reaches a definition, in any release (AGT-03). It\nreads and writes nothing to the audit log.\n\nErrors: `unauthenticated` (401) without a session; `permission_denied` (403) without\n`agent_definitions.manage`; `not_found` (404) for a key no definition has.",
         "operationId": "getAgentDefinition",
         "parameters": [
           {
@@ -39927,7 +39927,7 @@
     },
     "/api/v1/agent-definitions/{agent_key}/settings": {
       "get": {
-        "description": "Returns the settings one of bleqq's own agents runs with: its cadence, the\njurisdictions it sweeps and its monthly budget. They are the same for every bank and\ncarry no bank's figure.\n\nA person's session in the platform console holding `agent_definitions.manage`. It\nreads and writes nothing to the audit log.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without\n`agent_definitions.manage`; `not_found` (404) for a key no platform agent has.\nPublished ahead of the logic that will fill it, and answering 501 `not_built` until\nthat ships.",
+        "description": "Returns the settings one of bleqq's own agents runs with: its cadence, the\njurisdictions it sweeps and its monthly budget. They are the same for every bank and\ncarry no bank's figure.\n\nA person's session in the platform console holding `agent_definitions.manage`. It\nreads and writes nothing to the audit log.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without\n`agent_definitions.manage`; `not_found` (404) for a key no platform agent has.",
         "operationId": "getPlatformAgentSettings",
         "parameters": [
           {
@@ -39965,7 +39965,7 @@
         ]
       },
       "put": {
-        "description": "Replaces the cadence, jurisdictions and monthly budget of one of bleqq's own agents.\nThe change applies to every bank at once, which is why no bank can make it.\n\nA person's session in the platform console holding `agent_definitions.manage`, with a\nfresh passkey step-up. Records one audit event with the settings before and after, the\nperson and the assertion, and no bank.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without\n`agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;\n`not_found` (404) for a key no platform agent has; `unknown_key` (422) for a\njurisdiction the vocabulary does not hold, with the valid keys; `validation_error`\n(422). Published ahead of the logic that will fill it, and answering 501 `not_built`\nuntil that ships.",
+        "description": "Replaces the cadence, jurisdictions and monthly budget of one of bleqq's own agents.\nThe change applies to every bank at once, which is why no bank can make it.\n\nA person's session in the platform console holding `agent_definitions.manage`, with a\nfresh passkey step-up. Records one audit event with the settings before and after, the\nperson and the assertion, and no bank.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without\n`agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;\n`not_found` (404) for a key no platform agent has; `unknown_key` (422) for a\njurisdiction the vocabulary does not hold, with the valid keys; `validation_error`\n(422).",
         "operationId": "updatePlatformAgentSettings",
         "parameters": [
           {
@@ -40015,7 +40015,7 @@
     },
     "/api/v1/agent-definitions/{agent_key}/versions": {
       "post": {
-        "description": "Publishes the version folder this build ships for the definition, with a note of\nwhat changed. Runs opened from now on run it; a run already open keeps the version it\nopened with, and every earlier run still names the version it used. The prompt, tools\nand model come from the shipped folder and never from this request.\n\nA person's session in the platform console holding `agent_definitions.manage`, with a\nfresh passkey step-up, because a new version changes what runs for every bank at once.\nRecords one audit event naming the person, the definition, the version and the\nassertion.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without\n`agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;\n`not_found` (404) for a key no definition has; `validation_error` (422) for a version\nnumber the build does not ship or a missing note. Published ahead of the logic that\nwill fill it, and answering 501 `not_built` until that ships.",
+        "description": "Publishes the version folder this build ships for the definition, with a note of\nwhat changed. Runs opened from now on run it; a run already open keeps the version it\nopened with, and every earlier run still names the version it used. The prompt, tools\nand model come from the shipped folder and never from this request.\n\nA person's session in the platform console holding `agent_definitions.manage`, with a\nfresh passkey step-up, because a new version changes what runs for every bank at once.\nRecords one audit event naming the person, the definition, the version and the\nassertion.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without\n`agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;\n`not_found` (404) for a key no definition has; `validation_error` (422) for a version\nnumber the build does not ship or a missing note.",
         "operationId": "publishAgentVersion",
         "parameters": [
           {
@@ -40065,7 +40065,7 @@
     },
     "/api/v1/agent-definitions/{agent_key}/versions/{version_no}/retire": {
       "post": {
-        "description": "Retires one published version: no new run starts on it, and every run that used it\nkeeps pointing at it, because a published version is never rewritten or deleted.\n\nA person's session in the platform console holding `agent_definitions.manage`, with a\nfresh passkey step-up. Records one audit event naming the person, the version and the\nassertion.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without\n`agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;\n`not_found` (404) for a definition or version that does not exist. Published ahead of\nthe logic that will fill it, and answering 501 `not_built` until that ships.",
+        "description": "Retires one published version: no new run starts on it, and every run that used it\nkeeps pointing at it, because a published version is never rewritten or deleted.\n\nA person's session in the platform console holding `agent_definitions.manage`, with a\nfresh passkey step-up. Records one audit event naming the person, the version and the\nassertion.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without\n`agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;\n`not_found` (404) for a definition or version that does not exist.",
         "operationId": "retireAgentVersion",
         "parameters": [
           {
@@ -42820,7 +42820,7 @@
     },
     "/api/v1/changes/{change_id}/case-file": {
       "get": {
-        "description": "The case file as UTF-8 `text/plain`: the change, the bank's confirmed \"So what?\", the\nassessment, the actions with their completion, the evidence with hashes and scan states,\nboth sign-off names and every date. It reads without the product beside it, for an\nauditor or a file. An unconfirmed AI draft is labelled as one, never presented as the\nbank's text.\n\nA person's session holding `cases.read` in their own bank. It changes nothing on the\ncase. The same content as a downloadable file is an export job.\n\nErrors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.",
+        "description": "The case file as UTF-8 `text/plain`: the change, the bank's confirmed \"So what?\", the\nassessment, the actions with their completion, the evidence with hashes and scan states,\nboth sign-off names and every date. It reads without the product beside it, for an\nauditor or a file. An unconfirmed AI draft is labelled as one, never presented as the\nbank's text.\n\nA person's session holding `cases.read` in their own bank. It changes nothing on the\ncase. The same content as a downloadable file is an export job.\n\nErrors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key.",
         "operationId": "getCaseFile",
         "parameters": [
           {
@@ -44384,7 +44384,7 @@
     },
     "/api/v1/console/agent-runs": {
       "get": {
-        "description": "Returns the runs of bleqq's own agents, oldest first, one page at a time, with the\nversion each ran, what it cost and how it ended, for the console's agent pages. A\nplatform run reads no bank's row, so no bank's name or figure is in it.\n\nA person's session in the platform console holding `agent_definitions.manage`. It reads\nand writes nothing to the audit log. An empty list is a 200 with `total` 0.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without\n`agent_definitions.manage`; `validation_error` (422) when `limit` is above 100 or\n`offset` beyond the accepted depth. Published ahead of the logic that will fill it, and\nanswering 501 `not_built` until that ships.",
+        "description": "Returns the runs of bleqq's own agents, oldest first, one page at a time, with the\nversion each ran, what it cost and how it ended, for the console's agent pages. A\nplatform run reads no bank's row, so no bank's name or figure is in it.\n\nA person's session in the platform console holding `agent_definitions.manage`. It reads\nand writes nothing to the audit log. An empty list is a 200 with `total` 0.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without\n`agent_definitions.manage`; `validation_error` (422) when `limit` is above 100 or\n`offset` beyond the accepted depth.",
         "operationId": "listPlatformRuns",
         "parameters": [
           {
@@ -49389,7 +49389,7 @@
     },
     "/api/v1/obligations/{obligation_id}/units": {
       "get": {
-        "description": "The units the bank lists under a standard's conformance obligation, by reference, each\nwith its own applicability, reason, status and whether it has history; `entity` narrows\nthem to one legal entity. Removed units are not listed. The units are the bank's own\nwords; nothing here is indexed or sent to a model.\n\nA person's session holding `register.read`. A read. Pages with `limit` and `offset`, 20 by\ndefault and 100 at most; no units is a 200 with an empty page.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;\n`not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for an\nentity that is not a UUID or a page out of range. Published ahead of the logic that will\nfill it, and answering 501 `not_built` until that ships.",
+        "description": "The units the bank lists under a standard's conformance obligation, by reference, each\nwith its own applicability, reason, status and whether it has history; `entity` narrows\nthem to one legal entity. Removed units are not listed. The units are the bank's own\nwords; nothing here is indexed or sent to a model.\n\nA person's session holding `register.read`. A read. Pages with `limit` and `offset`, 20 by\ndefault and 100 at most; no units is a 200 with an empty page.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;\n`not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for an\nentity that is not a UUID or a page out of range.",
         "operationId": "listUnits",
         "parameters": [
           {
@@ -49487,7 +49487,7 @@
         ]
       },
       "post": {
-        "description": "Adds one unit for a legal entity under a standard's conformance obligation, by the\nbank's own reference and title. A unit exists only under a standard the library admitted,\nfor an entity whose conformance row applies. It starts undecided.\n\nA person's session holding `register.edit`. No step-up. Records one audit event naming\nthe person. Answers 201 with the unit.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;\n`not_found` (404) for an obligation or entity the bank cannot see; `validation_error`\n(422) for an empty or over-long reference or title. Published ahead of the logic that\nwill fill it, and answering 501 `not_built` until that ships.",
+        "description": "Adds one unit for a legal entity under a standard's conformance obligation, by the\nbank's own reference and title. A unit exists only under a standard the library admitted,\nfor an entity whose conformance row applies. It starts undecided.\n\nA person's session holding `register.edit`. No step-up. Records one audit event naming\nthe person. Answers 201 with the unit.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;\n`not_found` (404) for an obligation or entity the bank cannot see; `validation_error`\n(422) for an empty or over-long reference or title.",
         "operationId": "createUnit",
         "parameters": [
           {
@@ -54875,7 +54875,7 @@
     },
     "/api/v1/units/{unit_id}": {
       "delete": {
-        "description": "Removes a unit from the entity's list. A soft removal: the unit is marked removed and\nkept, never deleted, and a unit with history cannot be removed. Answers 204 with no body.\n\nA person's session holding `register.edit`. Send `If-Match` with the unit's `version`. No\nstep-up. Records one audit event naming the person.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;\n`not_found` (404) for a unit the bank does not have; `stale_write` (409). Published ahead\nof the logic that will fill it, and answering 501 `not_built` until that ships.",
+        "description": "Removes a unit from the entity's list. A soft removal: the unit is marked removed and\nkept, never deleted, and a unit with history cannot be removed. Answers 204 with no body.\n\nA person's session holding `register.edit`. Send `If-Match` with the unit's `version`. No\nstep-up. Records one audit event naming the person.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;\n`not_found` (404) for a unit the bank does not have; `stale_write` (409).",
         "operationId": "removeUnit",
         "parameters": [
           {
@@ -54907,7 +54907,7 @@
         ]
       },
       "patch": {
-        "description": "Changes a unit's reference or title. Once the unit has an applicability decision, a\nstatus or a gap, both are fixed, so a decision can never be moved to another control by a\nrename.\n\nA person's session holding `register.edit`. Send `If-Match` with the unit's `version`. No\nstep-up. Records one audit event naming the person with the values before and after.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;\n`not_found` (404) for a unit the bank does not have; `stale_write` (409);\n`validation_error` (422). Published ahead of the logic that will fill it, and answering\n501 `not_built` until that ships.",
+        "description": "Changes a unit's reference or title. Once the unit has an applicability decision, a\nstatus or a gap, both are fixed, so a decision can never be moved to another control by a\nrename.\n\nA person's session holding `register.edit`. Send `If-Match` with the unit's `version`. No\nstep-up. Records one audit event naming the person with the values before and after.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;\n`not_found` (404) for a unit the bank does not have; `stale_write` (409);\n`validation_error` (422).",
         "operationId": "updateUnit",
         "parameters": [
           {

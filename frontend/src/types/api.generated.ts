@@ -335,8 +335,6 @@ export interface paths {
          *
          *     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
          *     `agent_definitions.manage`; `not_found` (404) for a key no definition has.
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until
-         *     that ships.
          */
         get: operations["getAgentDefinition"];
         put?: never;
@@ -365,8 +363,6 @@ export interface paths {
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without
          *     `agent_definitions.manage`; `not_found` (404) for a key no platform agent has.
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until
-         *     that ships.
          */
         get: operations["getPlatformAgentSettings"];
         /**
@@ -382,8 +378,7 @@ export interface paths {
          *     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
          *     `not_found` (404) for a key no platform agent has; `unknown_key` (422) for a
          *     jurisdiction the vocabulary does not hold, with the valid keys; `validation_error`
-         *     (422). Published ahead of the logic that will fill it, and answering 501 `not_built`
-         *     until that ships.
+         *     (422).
          */
         put: operations["updatePlatformAgentSettings"];
         post?: never;
@@ -417,8 +412,7 @@ export interface paths {
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without
          *     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
          *     `not_found` (404) for a key no definition has; `validation_error` (422) for a version
-         *     number the build does not ship or a missing note. Published ahead of the logic that
-         *     will fill it, and answering 501 `not_built` until that ships.
+         *     number the build does not ship or a missing note.
          */
         post: operations["publishAgentVersion"];
         delete?: never;
@@ -447,8 +441,7 @@ export interface paths {
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without
          *     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-         *     `not_found` (404) for a definition or version that does not exist. Published ahead of
-         *     the logic that will fill it, and answering 501 `not_built` until that ships.
+         *     `not_found` (404) for a definition or version that does not exist.
          */
         post: operations["retireAgentVersion"];
         delete?: never;
@@ -2313,7 +2306,7 @@ export interface paths {
          *     A person's session holding `cases.read` in their own bank. It changes nothing on the
          *     case. The same content as a downloadable file is an export job.
          *
-         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key. Published ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+         *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key.
          */
         get: operations["getCaseFile"];
         put?: never;
@@ -3220,8 +3213,7 @@ export interface paths {
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without
          *     `agent_definitions.manage`; `validation_error` (422) when `limit` is above 100 or
-         *     `offset` beyond the accepted depth. Published ahead of the logic that will fill it, and
-         *     answering 501 `not_built` until that ships.
+         *     `offset` beyond the accepted depth.
          */
         get: operations["listPlatformRuns"];
         put?: never;
@@ -5756,8 +5748,7 @@ export interface paths {
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
          *     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for an
-         *     entity that is not a UUID or a page out of range. Published ahead of the logic that will
-         *     fill it, and answering 501 `not_built` until that ships.
+         *     entity that is not a UUID or a page out of range.
          */
         get: operations["listUnits"];
         put?: never;
@@ -5772,8 +5763,7 @@ export interface paths {
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
          *     `not_found` (404) for an obligation or entity the bank cannot see; `validation_error`
-         *     (422) for an empty or over-long reference or title. Published ahead of the logic that
-         *     will fill it, and answering 501 `not_built` until that ships.
+         *     (422) for an empty or over-long reference or title.
          */
         post: operations["createUnit"];
         delete?: never;
@@ -9183,8 +9173,7 @@ export interface paths {
          *     step-up. Records one audit event naming the person.
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-         *     `not_found` (404) for a unit the bank does not have; `stale_write` (409). Published ahead
-         *     of the logic that will fill it, and answering 501 `not_built` until that ships.
+         *     `not_found` (404) for a unit the bank does not have; `stale_write` (409).
          */
         delete: operations["removeUnit"];
         options?: never;
@@ -9200,8 +9189,7 @@ export interface paths {
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
          *     `not_found` (404) for a unit the bank does not have; `stale_write` (409);
-         *     `validation_error` (422). Published ahead of the logic that will fill it, and answering
-         *     501 `not_built` until that ships.
+         *     `validation_error` (422).
          */
         patch: operations["updateUnit"];
         trace?: never;
