@@ -101,4 +101,6 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # tenant A, so the obligation itself is invisible to tenant B.
     ("GET", "/obligations/{obligation_id}/participants", "collab.Participant", "obligation_participant"),
     ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}", "collab.Participant", "obligation_participant"),
+    # c11-tenant-agents-budget-scope (AGT-04)
+    ("PATCH", "/agents/{tenant_agent_id}", "agents.TenantAgent", "tenant_agent"),
 ]
