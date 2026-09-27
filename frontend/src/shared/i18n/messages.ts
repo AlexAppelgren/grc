@@ -97,6 +97,9 @@ import svAdminSecurity from '@/messages/admin-security/sv.json';
 // c8-ui-mywork: My work.
 import enWork from '@/messages/work/en.json';
 import svWork from '@/messages/work/sv.json';
+// acc-fe-admin
+import enAgentAccess from '@/messages/agent-access/en.json';
+import svAgentAccess from '@/messages/agent-access/sv.json';
 
 // One catalog per UI language (playbook 6.5), stored as one file pair per
 // feature namespace under src/messages/<namespace>/ so that packages owning
@@ -156,6 +159,8 @@ const en = {
   ...enAdminSecurity,
   // c8-ui-mywork
   ...enWork,
+  // acc-fe-admin
+  ...enAgentAccess,
 };
 
 const sv = {
@@ -210,6 +215,8 @@ const sv = {
   ...svAdminSecurity,
   // c8-ui-mywork
   ...svWork,
+  // acc-fe-admin
+  ...svAgentAccess,
 };
 
 export const locales = ['en', 'sv'] as const;

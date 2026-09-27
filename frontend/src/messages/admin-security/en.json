@@ -1,7 +1,7 @@
 {
   "nav.admin.security": "Security",
   "admin.security.title": "Security",
-  "admin.security.lede": "How long a session lasts for the members of your organisation.",
+  "admin.security.lede": "How long a session lasts for the members of your organisation, and whether our own agents may read our register.",
   "admin.security.errorTitle": "Could not load the security policy",
   "admin.security.sessions.title": "Sessions",
   "admin.security.sessions.idle": "Sign out after this long without activity, in minutes",

@@ -1,7 +1,7 @@
 {
   "nav.admin.security": "Säkerhet",
   "admin.security.title": "Säkerhet",
-  "admin.security.lede": "Hur länge en session varar för medlemmarna i er organisation.",
+  "admin.security.lede": "Hur länge en session varar för medlemmarna i er organisation, och om våra egna agenter får läsa vårt register.",
   "admin.security.errorTitle": "Kunde inte hämta säkerhetspolicyn",
   "admin.security.sessions.title": "Sessioner",
   "admin.security.sessions.idle": "Logga ut efter så här lång tid utan aktivitet, i minuter",
