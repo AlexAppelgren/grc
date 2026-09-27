@@ -33,8 +33,12 @@ const PER_ROUTE = RECORD ? 20 : 1;
 // The demo person reads everything and changes nothing.
 const DEMO_LOGIN = LOGINS.reader;
 
-// Every tenant screen in the navigation except administration and the person's own settings.
-const SCREENS = destinations.filter((d) => d.surface === 'tenant' && d.group !== 'admin' && d.group !== 'account').map((d) => d.href);
+// Every tenant screen in the navigation except administration and the person's own settings
+// and work: My work reads `/me/work` and `/me/comments`, a person's own answers, which the
+// demo never records.
+const SCREENS = destinations
+  .filter((d) => d.surface === 'tenant' && d.group !== 'admin' && d.group !== 'account' && d.id !== 'my-work')
+  .map((d) => d.href);
 
 // Grants that open only administration, which the demo leaves out: the demo
 // person's /me is recorded without them, so the app's own rules hide Admin.

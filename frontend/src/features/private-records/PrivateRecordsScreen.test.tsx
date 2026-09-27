@@ -124,6 +124,35 @@ describe('the queue', () => {
     expect(sent.filter((s) => s.path === QUEUE).map((s) => s.params)).toEqual([{ limit: '20' }, { limit: '20', offset: '20' }]);
   });
 
+  it('pages back to the first page, with Previous closed there and Next closed on the last', async () => {
+    installAdapter((s) => {
+      if (s.path === '/api/v1/me') return { status: 200, data: officer };
+      const offset = Number((s.params as { offset?: string } | null)?.offset ?? 0);
+      return { status: 200, data: { items: [row({ id: `p-${offset}` })], total: 25 } };
+    });
+    renderIn(<PrivateRecordsScreen />);
+    expect(await screen.findByRole('button', { name: 'Previous' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await waitFor(() => expect(document.querySelector('[data-private-proposal-id="p-20"]')).not.toBeNull());
+    expect(screen.getByText('21–21 of 25')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
+    await waitFor(() => expect(document.querySelector('[data-private-proposal-id="p-0"]')).not.toBeNull());
+    expect(document.querySelector('[data-private-proposal-id="p-20"]')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
+  });
+
+  it('reads the queue again from the retry', async () => {
+    let failing = true;
+    serve([row()], (s) => (s.path === QUEUE && failing ? { status: 501, data: { code: 'not_built', detail: 'Not built yet.' } } : undefined));
+    renderIn(<PrivateRecordsScreen />);
+    expect(await screen.findByRole('heading', { name: 'Could not load our own records' })).toBeInTheDocument();
+    failing = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(document.querySelector('[data-private-proposal-id="p-1"]')).not.toBeNull());
+  });
+
   it('offers a retry when the queue cannot be read', async () => {
     serve([], (s) => (s.path === QUEUE ? { status: 501, data: { code: 'not_built', detail: 'Not built yet.' } } : undefined));
     renderIn(<PrivateRecordsScreen />);
@@ -225,6 +254,36 @@ describe('a proposal', () => {
     await approve();
     expect(await screen.findByText('Someone else decided this first.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reload to see the decision' })).toBeInTheDocument();
+  });
+
+  it('reloads the proposal from the decided-first refusal and shows the decision someone else took', async () => {
+    let decided = false;
+    const sent = serve([], (s) => {
+      if (s.path === `${QUEUE}/p-1/approve`) return { status: 409, data: { code: 'invalid_transition', detail: 'no' } };
+      if (s.path === QUEUE) return { status: 200, data: { items: [row({ status: decided ? 'approved' : 'open' })], total: 1 } };
+      return undefined;
+    });
+    renderIn(<PrivateProposalScreen proposalId="p-1" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Approve' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Approve with passkey' }));
+    const reload = await screen.findByRole('button', { name: 'Reload to see the decision' });
+    decided = true;
+    const reads = sent.filter((s) => s.path === QUEUE).length;
+    fireEvent.click(reload);
+
+    await waitFor(() => expect(document.querySelector('[data-private-decision]')).toBeNull());
+    expect(sent.filter((s) => s.path === QUEUE).length).toBe(reads + 1);
+    expect(document.querySelector('[data-private-drafted]')).toBeNull();
+  });
+
+  it('cancels the approval from its confirmation without a call', async () => {
+    const sent = serve([row()]);
+    renderIn(<PrivateProposalScreen proposalId="p-1" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Approve' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByRole('button', { name: 'Approve' })).toBeInTheDocument();
+    expect(sent.some((s) => s.path.endsWith('/approve'))).toBe(false);
   });
 
   it('renders Not found for a proposal the queue does not hold, such as another bank\'s', async () => {

@@ -314,3 +314,11 @@ description = "E2E passkey private key for the seeded user compliance_officer@se
 condition = "AND"
 regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg7d5yrQMesPB4k5S6aJ2nmPg2VzE661vKG4wBp56GI16hRANCAAQEsdbpdWp1AGnebDyIhRofHTtzIJgALNjW7qNbAr2a1_YB0nB2P7RH_cPUH4FuzVGv7y5BlY9zRRI063bTJRM7$''']
 paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
+
+# --- r2 waves 5 to 7 integration: the API keys screen test's made-up key, which the screen shows
+# and copies once. It names no key the product ever minted.
+[[allowlists]]
+description = "A made-up plain key in the API keys screen's unit test (frontend), shown and copied by the screen under test. Test fixture only: no server ever minted it."
+condition = "AND"
+regexes = ['''cw_a1b2c3d4_secretpart''']
+paths = ['''^frontend/src/features/tenant-admin/api-keys/ApiKeysScreen\.test\.tsx$''']

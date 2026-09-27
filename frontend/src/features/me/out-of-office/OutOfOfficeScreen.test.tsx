@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -10,6 +10,7 @@ import { REFRESH_PATH } from '@/shared/utils/api-client';
 import { defaultFormatContext, formatLongDate } from '@/shared/utils/format';
 
 import type { OutOfOffice } from './api';
+import { outOfOfficeKeys } from './hooks';
 import { todayIn } from './OutOfOfficeScreen';
 
 // Out of office (design/screens/me-out-of-office.html): the last day away on
@@ -49,6 +50,7 @@ interface Script {
   start?: OutOfOffice;
   get?: Answer;
   put?: Answer;
+  people?: Answer;
 }
 
 /** GET answers the stored absence; PUT stores what it is sent, or answers `put` once. */
@@ -58,7 +60,7 @@ function server(script: Script = {}): Sent[] {
   return installAdapter((sent) => {
     if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ME_PATH) return { status: 200, data: me() };
-    if (sent.path === PEOPLE_PATH) return { status: 200, data: [ERIK, ERIKA, SELF] };
+    if (sent.path === PEOPLE_PATH) return script.people ?? { status: 200, data: [ERIK, ERIKA, SELF] };
     if (sent.path === OOO_PATH && sent.method === 'get') return script.get ?? { status: 200, data: stored };
     if (sent.path === OOO_PATH && sent.method === 'put') {
       if (refusal !== undefined) {
@@ -183,5 +185,156 @@ describe('out of office', () => {
     renderIn(<OutOfOfficePage />);
     expect(await screen.findByText('Could not load your out of office')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+  });
+
+  it('moves through the people with the arrow keys, wrapping, and Enter chooses', async () => {
+    server();
+    renderIn(<OutOfOfficePage />);
+    fireEvent.change(await screen.findByLabelText('Away until'), { target: { value: todayIn(TZ) } });
+    const input = delegate();
+    // Enter while the list is closed chooses nothing.
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(input).toHaveValue('');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(input).not.toHaveAttribute('aria-activedescendant');
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    const listbox = await screen.findByRole('listbox', { name: 'People' });
+    const selected = () => within(listbox).getByRole('option', { selected: true });
+    expect(selected()).toHaveTextContent(ERIKA.name);
+    expect(input).toHaveAttribute('aria-activedescendant', selected().id);
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+    expect(selected()).toHaveTextContent(ERIK.name);
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+    expect(selected()).toHaveTextContent(ERIKA.name);
+
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(input).toHaveValue(ERIKA.name);
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Set out of office' })).toBeEnabled();
+
+    // Typing again drops the choice, so the form cannot be sent until someone is chosen.
+    fireEvent.change(input, { target: { value: 'Erik' } });
+    expect(screen.getByRole('button', { name: 'Set out of office' })).toBeDisabled();
+    expect(screen.getByRole('listbox', { name: 'People' })).toBeInTheDocument();
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(screen.queryByRole('listbox')).toBeNull();
+    fireEvent.focus(input);
+    expect(screen.getByRole('listbox', { name: 'People' })).toBeInTheDocument();
+    fireEvent.blur(input);
+    expect(screen.queryByRole('listbox')).toBeNull();
+  });
+
+  it('keeps the arrow keys on nothing when no one matches, and Enter chooses no one', async () => {
+    server();
+    renderIn(<OutOfOfficePage />);
+    await screen.findByLabelText('Away until');
+    fireEvent.change(delegate(), { target: { value: 'zz' } });
+    fireEvent.keyDown(delegate(), { key: 'ArrowDown' });
+    fireEvent.keyDown(delegate(), { key: 'Enter' });
+    expect(screen.getByText('No one in your organisation matches "zz".')).toBeInTheDocument();
+    expect(delegate()).toHaveValue('zz');
+    expect(delegate()).not.toHaveAttribute('aria-activedescendant');
+    // Other keys leave the list as it is.
+    fireEvent.keyDown(delegate(), { key: 'a' });
+    expect(screen.getByRole('status')).toHaveTextContent('No one in your organisation matches "zz".');
+  });
+
+  it('puts a validation error naming the delegate under the delegate, skipping entries that name nothing', async () => {
+    server({ put: { status: 422, data: { code: 'validation_error', detail: 'x', errors: ['untilDate', null, { message: 'x' }, { field: 'delegateId', message: 'x' }] } } });
+    renderIn(<OutOfOfficePage />);
+    await fillForm(todayIn(TZ), ERIK.name);
+    fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));
+    expect(await screen.findByText('Choose another active member of your organisation.')).toHaveAttribute('id', 'ooo-delegate-error');
+    expect(until()).toHaveAttribute('aria-invalid', 'false');
+    // The field's error is the only alert: no form-level alert as well.
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('shows a validation error that names no field of the form as the form’s alert', async () => {
+    server({ put: { status: 422, data: { code: 'validation_error', detail: 'The request was not valid.', errors: [{ field: 'other', message: 'x' }] } } });
+    renderIn(<OutOfOfficePage />);
+    await fillForm(todayIn(TZ), ERIK.name);
+    fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('The request was not valid.');
+    expect(until()).toHaveAttribute('aria-invalid', 'false');
+    expect(delegate()).toHaveAttribute('aria-invalid', 'false');
+  });
+
+  it('shows any other refusal as the form’s alert, by its code', async () => {
+    server({ put: { status: 503, data: { code: 'unavailable', detail: 'Try later.' } } });
+    renderIn(<OutOfOfficePage />);
+    await fillForm(todayIn(TZ), ERIK.name);
+    fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));
+    expect(await screen.findByRole('alert')).toHaveAttribute('data-problem-code', 'unavailable');
+    expect(screen.queryByRole('button', { name: 'Show it' })).toBeNull();
+  });
+
+  it('shows why the people cannot be read in place of the delegate', async () => {
+    server({ people: { status: 503, data: { code: 'unavailable', detail: 'People are down.' } } });
+    renderIn(<OutOfOfficePage />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('People are down.');
+    expect(screen.queryByRole('combobox', { name: 'Delegate' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Set out of office' })).toBeDisabled();
+  });
+
+  it('keeps you away and says why when End now is refused', async () => {
+    server({ start: { untilDate: '2026-10-02', delegate: ERIK, away: true }, put: { status: 503, data: { code: 'unavailable', detail: 'Could not end it.' } } });
+    renderIn(<OutOfOfficePage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'End now' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not end it.');
+    expect(screen.getByRole('heading', { name: 'You are away' })).toBeInTheDocument();
+    expect(screen.queryByText('You are back. Approval requests and reminders come to you again.')).toBeNull();
+  });
+
+  it('reads the absence again from Try again', async () => {
+    const sent = server({ get: { status: 503, data: { code: 'unavailable', detail: 'Down.' } } });
+    renderIn(<OutOfOfficePage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(sent.filter((s) => s.path === OOO_PATH && s.method === 'get')).toHaveLength(2));
+  });
+
+  it('sends nothing when the form is submitted without a day or a delegate', async () => {
+    const sent = server();
+    renderIn(<OutOfOfficePage />);
+    const form = (await screen.findByLabelText('Away until')).closest('form');
+    expect(form).not.toBeNull();
+    fireEvent.submit(form as HTMLFormElement);
+    fireEvent.change(until(), { target: { value: todayIn(TZ) } });
+    fireEvent.submit(form as HTMLFormElement);
+    expect(puts(sent)).toEqual([]);
+  });
+
+  it('shows a validation error without field entries as the form’s alert', async () => {
+    server({ put: { status: 422, data: { code: 'validation_error', detail: 'Not valid.' } } });
+    renderIn(<OutOfOfficePage />);
+    await fillForm(todayIn(TZ), ERIK.name);
+    fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));
+    expect(await screen.findByRole('alert')).toHaveAttribute('data-problem-code', 'validation_error');
+    expect(until()).toHaveAttribute('aria-invalid', 'false');
+  });
+
+  it('still keeps delegate_cannot_approve under the delegate when they left the people list meanwhile', async () => {
+    let people = [ERIK, ERIKA, SELF];
+    installAdapter((sent) => {
+      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
+      if (sent.path === ME_PATH) return { status: 200, data: me() };
+      if (sent.path === PEOPLE_PATH) return { status: 200, data: people };
+      if (sent.path === OOO_PATH && sent.method === 'get') return { status: 200, data: NOT_AWAY };
+      return { status: 422, data: { code: 'delegate_cannot_approve', detail: 'x' } };
+    });
+    const { wrapper: Query, queryClient } = queryWrapper();
+    render(
+      <Query>
+        <OutOfOfficePage />
+      </Query>,
+    );
+    await fillForm(todayIn(TZ), ERIKA.name);
+    people = [ERIK, SELF];
+    await act(() => queryClient.refetchQueries({ queryKey: outOfOfficeKeys.people }));
+    fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));
+    const error = await screen.findByText(/cannot approve, so they cannot stand in for you\./);
+    expect(error).toHaveAttribute('id', 'ooo-delegate-error');
+    expect(error.textContent?.startsWith(' cannot approve')).toBe(true);
   });
 });

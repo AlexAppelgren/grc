@@ -69,6 +69,10 @@ describe('workWhen', () => {
     expect(workWhen(dated('aware', '2026-09-18', 'linked'), TODAY, ctx, en).days).toBe('1 day ago');
   });
 
+  it('counts no days on a change dated ahead of the bank today', () => {
+    expect(workWhen(dated('aware', '2026-09-25', 'version_applied'), TODAY, ctx, en)).toEqual({ date: 'New version applied 25 Sept 2026', days: null });
+  });
+
   it('never counts days on a date the source gave only to the month', () => {
     expect(workWhen(dated('open', '2026-12-01', 'key_date', 'month'), TODAY, ctx, en)).toEqual({ date: 'Key date December 2026', days: null });
   });
@@ -126,6 +130,12 @@ describe('workReasons', () => {
     expect(workReasons({ reasons: [reason('owner', 'team')] }, 'unit', sv)).toEqual(['Retail compliance ansvarar']);
   });
 
+  it('names nobody in a department view when the reason carries neither a person nor a team', () => {
+    const nobody: WorkReason = { reason: 'owner', who: { person: null, team: null }, via: null };
+    expect(workReasons({ reasons: [nobody] }, 'unit', en)).toEqual([' is responsible']);
+    expect(workReasons({ reasons: [nobody] }, 'unit', sv)).toEqual([' ansvarar']);
+  });
+
   it('names the obligation a change is linked through, once', () => {
     const via = { obligationId: 'ob-1', title: 'Pay for third-party research only under the permitted models' };
     const reasons = [reason('owner', 'person', via), reason('owner', 'team', via)];
@@ -157,6 +167,12 @@ describe('presentWorkItem', () => {
     ]);
     expect(presentWorkItem({ status: null, urgency: null })).toEqual([]);
   });
+
+  it('draws a status that arrives without a kind the same as one whose kind is null', () => {
+    const withoutKind = presentWorkItem({ status: { key: 'partly_ok', label: 'Partly compliant' }, urgency: null });
+    expect(withoutKind).toEqual(presentWorkItem({ status: { key: 'partly_ok', kind: null, label: 'Partly compliant' }, urgency: null }));
+    expect(withoutKind).toEqual([expect.objectContaining({ label: 'Partly compliant' })]);
+  });
 });
 
 describe('links', () => {
@@ -170,5 +186,7 @@ describe('links', () => {
   it('send a comment to the record it was written on', () => {
     expect(myCommentHref({ subjectType: 'obligation', subjectId: 'ob-1', changeId: null })).toBe('/inventory/obligations/ob-1');
     expect(myCommentHref({ subjectType: 'change_case', subjectId: 'case-1', changeId: 'ch-1' })).toBe('/watch/ch-1');
+    // A comment on a record that is neither an obligation nor tied to a change has no page to open.
+    expect(myCommentHref({ subjectType: 'internal_item', subjectId: 'ii-1', changeId: null })).toBeNull();
   });
 });
