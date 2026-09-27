@@ -125,7 +125,9 @@ class PublishingAVersion(DefinitionCase):
         self.assertEqual((version.model, version.prompt_path, tuple(version.tools)), (definition.model, definition.prompt, definition.tools))
         self.assertEqual(Agent.objects.get(pk=self.agent.pk).current_version, 4)
 
-    def test_every_publish_leaves_one_audit_row_with_no_bank_the_note_and_the_assertion(self) -> None:
+    def test_every_publish_leaves_one_audit_row_with_no_bank_and_the_assertion_and_the_note_on_the_version(self) -> None:
+        """The change note is text a person typed, so it lives on the version row and never
+        in the audit values (R2_CROSS_CUTTING rule m, the record-content lint)."""
         with definitions_root() as root:
             shipped_folder(root, self.agent.key, 4)
             self.publish(4)
@@ -135,7 +137,8 @@ class PublishingAVersion(DefinitionCase):
         self.assertEqual(event.step_up_assertion_id, self.assertion)
         self.assertEqual(event.before, {"currentVersion": 3})
         self.assertEqual(event.after["versionNo"], 4)
-        self.assertEqual(event.after["changeNote"], "Reads the new FFFS index page.")
+        self.assertNotIn("changeNote", event.after)
+        self.assertEqual(AgentVersion.objects.get(agent=self.agent, version_number=4).change_note, "Reads the new FFFS index page.")
 
     def test_a_version_that_already_exists_is_409_and_changes_nothing(self) -> None:
         with definitions_root() as root:
