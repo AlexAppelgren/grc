@@ -225,6 +225,14 @@ BUILT = frozenset(
 )
 
 
+# The operations whose logic has landed, one line each, so each builder adds its own. Each
+# has its own test module proving what it answers past the gates.
+BUILT = {
+    "startAssessment",  # c9-assessment: apps/cases/tests_assessment.py
+    "saveAssessment",  # c9-assessment: apps/cases/tests_assessment.py
+}
+
+
 def _send(client: Any, route: Route, url: str, headers: dict[str, Any]) -> Any:
     if route.body is MULTIPART:
         return client.post(url, data=EVIDENCE_FORM, **headers)
@@ -321,6 +329,8 @@ class WorkflowContract(TestCase):
         bank = _bank_with_work()
         with stub_session(bank.principal):
             for route in WORKFLOW:
+                if route.operation_id in BUILT:
+                    continue
                 if route.operation_id in BUILT:
                     continue
                 with self.subTest(operation=route.operation_id):
