@@ -288,7 +288,9 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     decided the duty applies, how it judges its compliance where it applies, and who owns it
     — beside the bank's own tags and whether the record is the bank's own rather than a
     shared fact. The overlay filters (applicability, complianceStatus, owner, ownerTeam)
-    narrow on those.
+    narrow on those. The overlay is the bank's register, so only a person holding
+    `register.read` reads it; for anyone else, an agent's key included, every row reads
+    under_assessment with no status and no owner.
 
     Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
     quietly trimmed, and rows ordered by their stable key so paging is repeatable. Nothing
@@ -298,7 +300,8 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     markets the bank watches add, each row naming its jurisdiction.
 
     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-    (403) without library.read or the library:read scope; `unknown_filter` (422) when a
+    (403) without library.read or the library:read scope, or for an overlay filter sent by a
+    caller in a bank who does not hold `register.read`; `unknown_filter` (422) when a
     caller that belongs to no bank, such as a platform key, sends tenantTag or an overlay
     filter, since it has no tags or register of its own; `not_found` (404) when such a caller
     reads the list at all; `validation_error` (422) when a term filter is not written
@@ -313,10 +316,12 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-03, AGT-02).
     require_library_read(request)
-    reading.refuse_bank_filters(principal(request).tenant_id, query)
+    who = principal(request)
+    register_reader = who.has_permission(perms.REGISTER_READ)
+    reading.refuse_bank_filters(who.tenant_id, query, register_reader=register_reader)
     tenant = caller_tenant(request)
     order = language_order(request, tenant=tenant)
-    items, total = reading.obligation_page(tenant, order, query, limit=page.limit, offset=page.offset)
+    items, total = reading.obligation_page(tenant, order, query, limit=page.limit, offset=page.offset, register_reader=register_reader)
     return ObligationPage(items=items, total=total)
 
 
@@ -345,7 +350,8 @@ def get_obligation(
     `library.read` in their bank, or an agent's key carrying the `library:read` scope.
     The record says what the rule is. Beside it the answer carries the bank's own register
     overlay, the same as the duty's row in the list: whether the bank decided it applies, how
-    it judges its compliance where it applies, and who owns it. No other bank sees it.
+    it judges its compliance where it applies, and who owns it. No other bank sees it, and
+    only a person holding `register.read` reads it; anyone else reads it empty.
 
     A library record is never overwritten, so this read carries no `If-Match` and can answer
     no stale write: a correction arrives as a new version through an approved proposal, and
@@ -362,7 +368,8 @@ def get_obligation(
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-03, AGT-02).
     require_library_read(request)
     tenant = caller_tenant(request)
-    return reading.obligation_detail(tenant, language_order(request, tenant=tenant), obligation_id, query)
+    register_reader = principal(request).has_permission(perms.REGISTER_READ)
+    return reading.obligation_detail(tenant, language_order(request, tenant=tenant), obligation_id, query, register_reader=register_reader)
 
 
 @router.get(

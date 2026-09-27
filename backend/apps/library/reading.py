@@ -127,6 +127,7 @@ from apps.library.schemas import (
     VersionDiff,
     VersionDiffQuery,
 )
+from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy import matching, terms_logic
 from apps.taxonomy.models import (
@@ -318,10 +319,11 @@ def _tag_ids(tags: QuerySet[Any], keys: list[str], unknown_detail: str) -> list[
     return [found[key] for key in dict.fromkeys(keys)]
 
 
-def refuse_bank_filters(tenant_id: uuid.UUID | None, query: ObligationQuery) -> None:
+def refuse_bank_filters(tenant_id: uuid.UUID | None, query: ObligationQuery, *, register_reader: bool) -> None:
     """A caller that belongs to no bank, a platform key or session, has no tags of its own
     (VOC-08), so its `tenantTag` is refused by name rather than read against nobody's
-    list."""
+    list. A caller in a bank who may not read its register may not narrow by it either, or
+    the filters would answer what the overlay withholds (security-review-c8 M3)."""
     if tenant_id is None and query.tenant_tag:
         raise ValidationError("tenantTag filters by a bank's own tags, and this caller belongs to no bank.", code="unknown_filter")
     if tenant_id is None and any(value is not None for value in _overlay_filters(query)):
@@ -329,6 +331,12 @@ def refuse_bank_filters(tenant_id: uuid.UUID | None, query: ObligationQuery) -> 
             "applicability, complianceStatus, owner and ownerTeam filter by a bank's own register, "
             "and this caller belongs to no bank.",
             code="unknown_filter",
+        )
+    if not register_reader and any(value is not None for value in _overlay_filters(query)):
+        raise ProblemError(
+            status=403,
+            code="permission_denied",
+            detail="applicability, complianceStatus, owner and ownerTeam filter by the bank's register, which needs register.read.",
         )
 
 
@@ -725,10 +733,13 @@ def upcoming(versions: Iterable[ObligationVersion], on: datetime.date) -> Obliga
     return min(later, key=lambda v: (v.effective_from, v.version_number), default=None)
 
 
-def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *, limit: int, offset: int) -> tuple[list[ObligationRow], int]:
+def obligation_page(
+    tenant: Tenant, order: list[str], query: ObligationQuery, *, limit: int, offset: int, register_reader: bool
+) -> tuple[list[ObligationRow], int]:
     """The obligations the tenant sees (INV-03), filtered, as of a date (INV-04), inside
     its footprint unless `footprint` asks for everything or for what the watched markets
-    add (FP-03, FP-04). The same number of queries whatever the page size (NFR-02)."""
+    add (FP-03, FP-04). The same number of queries whatever the page size (NFR-02). The
+    bank's register overlay only for a `register_reader`; anyone else reads each row empty."""
     as_of = query.as_of or today_for(tenant)
     footprint = matching.footprint_of(tenant.id)
     restricting = matching.restricting_dimensions()
@@ -766,7 +777,7 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
     for obligation_id, tag_id in tag_pairs:
         tags_of.setdefault(obligation_id, []).append(tag_refs[tag_id])
     bank_tags = tenant_tags(tenant, ids, order)
-    judged = overlay.overlay(tenant, ids, order)
+    judged = overlay.overlay(tenant, ids, order) if register_reader else {}
     dimensions = footprint_dimensions(order)
     rows: list[ObligationRow] = []
     for obligation in page:
@@ -891,7 +902,9 @@ def _related_obligations(obligation: Obligation, order: list[str]) -> list[Relat
     ]
 
 
-def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID, query: ObligationAsOfQuery) -> ObligationDetail:
+def obligation_detail(
+    tenant: Tenant, order: list[str], obligation_id: uuid.UUID, query: ObligationAsOfQuery, *, register_reader: bool
+) -> ObligationDetail:
     """One obligation as of a date (INV-03, INV-04) in the caller's language order (INV-05),
     with the footprint verdict the list gives it (FP-03) and its provenance (INV-06). The
     queries fan out: their number does not grow with the versions, terms, tags, provisions
@@ -920,7 +933,7 @@ def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID
     verifier = obligation.verified_by
     # The provenance repeats who confirmed the version in force; the row already says it.
     in_force_row = rows[current.version_number] if current is not None else None
-    bank = overlay.overlay(tenant, [obligation.id], order).get(obligation.id, overlay.EMPTY)
+    bank = overlay.overlay(tenant, [obligation.id], order).get(obligation.id, overlay.EMPTY) if register_reader else overlay.EMPTY
     return ObligationDetail(
         id=obligation.id,
         stable_key=obligation.stable_key,
