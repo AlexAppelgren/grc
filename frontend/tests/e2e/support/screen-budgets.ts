@@ -53,6 +53,7 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   'me-passkeys': { ready: '[data-passkey-id]' },
   'me-sessions': { ready: '[data-session-id]' },
   'me-calendar-feeds': { ready: `[data-feeds-list] [data-feed-id]${OR_EMPTY}` },
+  'me-tokens': { ready: `[data-tokens-list] [data-token-id]${OR_EMPTY}` },
   'console-queue': { ready: `[data-proposal-rows] [data-proposal-id]${OR_EMPTY}` },
   'console-vocabularies': { ready: '[data-vocabulary-lists] [data-vocabulary-list]' },
   'console-change-facts': { ready: `[data-change-facts-list] [data-change-id]${OR_EMPTY}` },
