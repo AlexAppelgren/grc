@@ -172,7 +172,12 @@ class CollabRouteGates(TestCase):
 
 class CollabContractShape(TestCase):
     def test_the_eight_operations_are_published_with_their_ids_and_gates(self) -> None:
-        collab = {op.operation_id: op for op in iter_operations(api) if op.view_func.__module__ == "apps.collab.api"}
+        # The participant routes (c8-participants) are gated and pinned in tests_participants.py.
+        collab = {
+            op.operation_id: op
+            for op in iter_operations(api)
+            if op.view_func.__module__ == "apps.collab.api" and "/participants" not in op.path
+        }
         self.assertEqual(set(collab), {name for name, _, _, _ in ROUTES})
         gated = {name for name, op in collab.items() if perms.gate_of(op.view_func) is not None}
         self.assertEqual(gated, {"editComment", "deleteComment"})

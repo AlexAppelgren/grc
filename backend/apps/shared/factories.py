@@ -197,6 +197,15 @@ def vocabulary_suggestion(tenant: Tenant) -> SimpleNamespace:
     return SimpleNamespace(id=row.id, params={"list_name": "tenant_tag"})
 
 
+def obligation_participant(tenant: Tenant) -> SimpleNamespace:
+    """The tenant-isolation guard's record for the register-entry participant routes: a
+    person taking part in `tenant`'s register entry for an obligation private to `tenant`.
+    The obligation is built by `apps/collab/testing.py`, which the library fence exempts."""
+    from apps.collab import testing as collab_testing
+
+    return collab_testing.participant_on_private_obligation(tenant)
+
+
 def user_actor(*, label: str = "Test Person", user_id: uuid.UUID | None = None) -> Actor:
     return Actor(kind=ActorType.USER, id=user_id or uuid.uuid4(), label=label)
 
@@ -258,6 +267,21 @@ def case_evidence(tenant: Tenant) -> SimpleNamespace:
             scanned_at=timezone.now(),
         )
     return SimpleNamespace(id=evidence.id, case=row)
+
+
+def case_participant(tenant: Tenant) -> SimpleNamespace:
+    """c9-case-participants: a member of `tenant` taking part in a case of `tenant`, for a
+    change no other bank has a case for. `.id` is the participation, `.params` names the
+    change, as the case participant routes address it."""
+    from apps.collab.models import Participant
+
+    row = case_change(tenant).case
+    officer = member_user(tenant, roles=("compliance_officer",))
+    person = member_user(tenant)
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        participation = Participant.objects.create(tenant=tenant, case=row, user=person, added_by=officer)
+    return SimpleNamespace(id=participation.id, params={"change_id": row.change_id})
 
 
 # ---------------------------------------------------------------------------------------
@@ -364,6 +388,38 @@ def closed_case(tenant: Tenant, *, actions: int = 2, evidence: int = 3, so_what_
     return SimpleNamespace(case=row, change_id=row.change_id, owner=owner, approver=approver, step_up=step_up)
 
 
+# ---------------------------------------------------------------------------------------
+# c8-reg-links-history (REG-05): the tenant-isolation guard's record for DELETE /internal-links/{id}.
+def internal_link(tenant: Tenant) -> SimpleNamespace:
+    """A live link of `tenant` to a fresh library obligation, with the item it points at.
+    The obligation comes from apps/library/testing.py, the one place a test writes the
+    library; the reference rows it needs are seeded idempotently first."""
+    from apps.library import testing as library_testing
+    from apps.library.seeds import seed_jurisdictions, seed_languages
+    from apps.register.logic import ensure_register_entry
+    from apps.register.models import InternalLink
+    from apps.taxonomy.models import LinkKind
+    from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+    from apps.tenants.models import InternalItem
+
+    n = next(_counter)
+    with transaction.atomic():
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_taxonomy_terms()
+    act = library_testing.instrument(key=f"factory-act-{n}", regime="regime:securities")
+    duty = library_testing.obligation(act, key=f"factory-act-{n}/1")
+    person = member_user(tenant, roles=("compliance_officer",))
+    actor = Actor(kind=ActorType.USER, id=person.id, label=person.name)
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=duty.id, actor=actor)
+        item = InternalItem.objects.create(tenant=tenant, kind=LinkKind.objects.get(key="policy"), name=f"Policy {n}")
+        link = InternalLink.objects.create(
+            tenant=tenant, tenant_obligation=entry, internal_item=item, label=item.name, created_by=person
+        )
+    return SimpleNamespace(id=link.id, link=link)
 # ---------------------------------------------------------------------------------------
 # c8-tenants-contract: the tenant-isolation guard's records for the chunk 8 tenants routes
 # (TEN-02, TEN-03, TEN-06). A licence's type is a library term this file may not write;

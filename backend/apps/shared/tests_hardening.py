@@ -318,6 +318,19 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/proposals/batch.py record(logic.SUBJECT_TYPE) tenant_id=None actor=proposer.actor title=existing.title": (
         "The retry of the same platform-only batch filing: the same platform proposer and the title it filed."
     ),
+    # c9-case-participants (COL-04): the one add and the one removal both subjects share.
+    "apps/collab/participants.py record(subject.audit_type) tenant_id=tenant_id actor=actor title=subject.title": (
+        "A person or a team joining or leaving a bank's register entry or case: the subject type "
+        "is `tenant_obligation` or `change_case`, never a library type, `tenant_id` is the "
+        "caller's bank and never None, and the title is the library's own title of the "
+        "obligation or the change."
+    ),
+    # c8-seed-org-register
+    "apps/shared/e2e_seed.py record(subject_type) tenant_id=tenant.id actor=Actor.system('seed_e2e') title=title": (
+        "The E2E seed's one audit row per seeded organisation and register row: the tenant id is "
+        "always the activated seeded bank's, never None, so the row stays in that bank's zone; the "
+        "subject types are tenant tables and the title is a seed fixture's name or stable key."
+    ),
 }
 
 

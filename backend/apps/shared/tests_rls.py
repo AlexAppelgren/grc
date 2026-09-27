@@ -221,6 +221,10 @@ TENANT_ONLY_TABLES = [
     "agent_access",
     "agent_access_department",
     "agent_access_product",
+    # c8-participants (collab 0002, COL-04): a person or a team taking part in a register
+    # entry or a case. Every key is composite (apps/collab/tests_participants.py proves the
+    # database refuses a cross-tenant user, team, entry or case).
+    "participant",
 ]
 
 # The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the

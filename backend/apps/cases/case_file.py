@@ -3,8 +3,9 @@
 An auditor reads it without the product beside it, so it says everything in words: the
 change and where it came from, the bank's "So what?", the assessment, every action and
 what became of it, every piece of evidence with its hash and scan, the sign-off with both
-people and the step-up that confirmed it, the dismissal or the close, and every move. A
-removed action or piece of evidence is printed and marked, never left out: nothing is
+people and the step-up that confirmed it, the dismissal or the close, every move, and
+everyone who took part, with the contributing teams on the assessment (D-20). A removed
+action, piece of evidence or participation is printed and marked, never left out: nothing is
 overwritten (playbook 4.3). An unconfirmed "So what?" is the AI's draft and is labelled
 as one, never presented as the bank's text (WAT-05).
 
@@ -15,8 +16,9 @@ own time zone with the offset spelled out.
 
 One builder serves both the screen and the export (`apps/reports/exporters/case_file.py`),
 so the two cannot drift. It reads a fixed number of queries whatever the case holds — the
-case with its people and reasons, one label query per reason it carries, the assessment,
-the actions, the evidence, the moves and the sign-off's step-up — so a case at its caps
+case with its people and reasons, one label query per reason it carries, the participants
+and their teams' labels, the assessment, the actions, the evidence, the moves and the
+sign-off's step-up — so a case at its caps
 stays inside the request budget. It reads and never writes.
 """
 
@@ -29,6 +31,7 @@ from typing import Any
 
 from apps.cases import logic
 from apps.cases.models import Action, CaseTransition, ChangeCase, Evidence, EvidenceKind, ImpactAssessment
+from apps.collab.models import Participant
 from apps.shared.audit import Actor
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import AuditEvent, Tenant
@@ -64,8 +67,15 @@ _TEXTS: dict[str, dict[str, str]] = {
         "what_must_change": "What must change: {value}",
         "deadline": "Internal deadline: {value}",
         "effort": "Effort: {value}",
+        "contributors": "Contributing teams: {value}",
         "assessment_saved": "Saved by {name} on {at}.",
         "assessment_none": "No assessment has been saved.",
+        "participants": "Participants",
+        "participant_person": "- {name}",
+        "participant_team": "- {name} (team)",
+        "participant_added": "  Added by {name} on {at}.",
+        "participant_removed": "  Took part until {at}, removed by {name}.",
+        "participants_none": "Nobody was named as taking part.",
         "actions": "Actions",
         "action_line": "- {title}",
         "action_owner": "  Owner: {name}. Due: {due}.",
@@ -141,8 +151,15 @@ _TEXTS: dict[str, dict[str, str]] = {
         "what_must_change": "Vad som måste ändras: {value}",
         "deadline": "Intern tidsgräns: {value}",
         "effort": "Arbetsinsats: {value}",
+        "contributors": "Bidragande team: {value}",
         "assessment_saved": "Sparad av {name} {at}.",
         "assessment_none": "Ingen bedömning har sparats.",
+        "participants": "Deltagare",
+        "participant_person": "- {name}",
+        "participant_team": "- {name} (team)",
+        "participant_added": "  Tillagd av {name} {at}.",
+        "participant_removed": "  Deltog till {at}, borttagen av {name}.",
+        "participants_none": "Ingen har angetts som deltagare.",
         "actions": "Åtgärder",
         "action_line": "- {title}",
         "action_owner": "  Ansvarig: {name}. Klar senast: {due}.",
@@ -214,7 +231,9 @@ def compose(*, tenant: Tenant, case_id: uuid.UUID, order: list[str]) -> str:
     writer = _Writer(texts, zone)
     _change(writer, case, order)
     _so_what(writer, case)
-    _assessment(writer, case, order)
+    taking_part = logic.participations(case)
+    _assessment(writer, case, order, taking_part)
+    _participants(writer, taking_part, order)
     _actions(writer, case)
     _evidence(writer, case)
     _signoff(writer, case, tenant)
@@ -285,22 +304,38 @@ def _so_what(writer: _Writer, case: ChangeCase) -> None:
         writer.say("so_what_draft")
 
 
-def _assessment(writer: _Writer, case: ChangeCase, order: list[str]) -> None:
+def _assessment(writer: _Writer, case: ChangeCase, order: list[str], taking_part: list[Participant]) -> None:
     writer.section("assessment")
     assessment = (
         ImpactAssessment.objects.select_related("saved_by", "effort")
         .filter(case=case, saved=True)
         .first()  # ordering: one per case
     )
-    if assessment is None or assessment.saved_at is None:
+    if assessment is not None and assessment.saved_at is not None:
+        writer.say("applies", value=writer.word(assessment.applies))
+        writer.say("why", value=assessment.why)
+        writer.say("what_must_change", value=assessment.what_must_change or writer.texts["none"])
+        writer.say("deadline", value=_day(assessment.internal_deadline, writer))
+        writer.say("effort", value=writer.texts["none"] if assessment.effort is None else label_for(assessment.effort, order))
+        writer.say("assessment_saved", name=writer.name(assessment.saved_by), at=writer.at(assessment.saved_at))
+    else:
         writer.say("assessment_none")
-        return
-    writer.say("applies", value=writer.word(assessment.applies))
-    writer.say("why", value=assessment.why)
-    writer.say("what_must_change", value=assessment.what_must_change or writer.texts["none"])
-    writer.say("deadline", value=_day(assessment.internal_deadline, writer))
-    writer.say("effort", value=writer.texts["none"] if assessment.effort is None else label_for(assessment.effort, order))
-    writer.say("assessment_saved", name=writer.name(assessment.saved_by), at=writer.at(assessment.saved_at))
+    teams = [label_for(team, order) for team in logic.contributor_teams(taking_part)]
+    writer.say("contributors", value=", ".join(teams) or writer.texts["none"])
+
+
+def _participants(writer: _Writer, taking_part: list[Participant], order: list[str]) -> None:
+    writer.section("participants")
+    if not taking_part:
+        writer.say("participants_none")
+    for row in taking_part:
+        if row.team is not None:
+            writer.say("participant_team", name=label_for(row.team, order))
+        else:
+            writer.say("participant_person", name=writer.name(row.user))
+        writer.say("participant_added", name=writer.name(row.added_by), at=writer.at(row.added_at))
+        if row.removed_at is not None:
+            writer.say("participant_removed", at=writer.at(row.removed_at), name=writer.name(row.removed_by))
 
 
 def _actions(writer: _Writer, case: ChangeCase) -> None:

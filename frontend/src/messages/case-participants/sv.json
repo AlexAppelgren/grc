@@ -1,3 +1,18 @@
 {
-  "caseParticipants.heading": "Deltagare"
+  "caseParticipants.heading": "Deltagare",
+  "caseParticipants.empty": "Ingen deltar ännu.",
+  "caseParticipants.errorTitle": "Deltagarna kunde inte hämtas",
+  "caseParticipants.owner": "Ägare",
+  "caseParticipants.grantsNothing": "Att delta listar förändringen under personens Mitt arbete och ger aviseringar. Det ger ingen behörighet. Teamen här är bedömningens bidragande team.",
+  "caseParticipants.alreadyParticipant": "{name} deltar redan i det här ärendet.",
+  "caseParticipants.cannotRead": "{name}s roller kan inte öppna ärenden, så att lägga till personen skulle inte säga den något.",
+  "caseParticipants.tooMany": "Det här ärendet har redan så många deltagare som tillåts. Ta bort en innan du lägger till en till.",
+  "caseParticipants.closed": "Ärendet är stängt, så dess deltagare ändras inte längre.",
+  "caseParticipants.contributorTeams": "Bidragande team",
+  "caseParticipants.contributorTeamsNone": "Inget team ännu",
+  "caseParticipants.contributorTeamsHint": "Varje team läggs till eller tas bort för sig och syns under Deltagare.",
+  "caseParticipants.addTeam": "Lägg till ett team",
+  "caseParticipants.addTeamTitle": "Lägg till ett bidragande team",
+  "caseParticipants.findTeam": "Team",
+  "caseParticipants.removeTeam": "Ta bort {name}"
 }
