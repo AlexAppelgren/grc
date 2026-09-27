@@ -309,6 +309,12 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "A bank's own tag going on or off one record: `tenant.id` is a bank's id and never "
         "None, so the row stays in that bank's zone even when the record is a library one."
     ),
+    # c8-seed-org-register
+    "apps/shared/e2e_seed.py record(subject_type) tenant_id=tenant.id actor=Actor.system('seed_e2e') title=title": (
+        "The E2E seed's one audit row per seeded organisation and register row: the tenant id is "
+        "always the activated seeded bank's, never None, so the row stays in that bank's zone; the "
+        "subject types are tenant tables and the title is a seed fixture's name or stable key."
+    ),
     # c11-proposal-batches-create (PRO-04, AGT-05).
     "apps/proposals/batch.py record(logic.SUBJECT_TYPE) tenant_id=None actor=proposer.actor title=proposal.title": (
         "A batch is filed only by platform staff holding proposals.review or a platform agent's key "
@@ -337,12 +343,6 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/shared/e2e_seed.py record(comment.subject_type) tenant_id=comment.tenant_id actor=Actor.system('seed_e2e') title=title": (
         "A seeded comment added, edited or deleted: the row carries the comment's own bank, "
         "the actor is the seed, and the title is the record's own title, never the comment's text."
-    ),
-    # c8-seed-org-register
-    "apps/shared/e2e_seed.py record(subject_type) tenant_id=tenant.id actor=Actor.system('seed_e2e') title=title": (
-        "The E2E seed's one audit row per seeded organisation and register row: the tenant id is "
-        "always the activated seeded bank's, never None, so the row stays in that bank's zone; the "
-        "subject types are tenant tables and the title is a seed fixture's name or stable key."
     ),
     # c11-proposal-batches-decide (PRO-04, PRO-S8).
     "apps/proposals/batch.py record(logic.SUBJECT_TYPE) tenant_id=None actor=reviewer.actor title=proposal.title": (

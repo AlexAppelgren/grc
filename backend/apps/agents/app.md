@@ -101,6 +101,20 @@ screen gains a second tab for them, and each tab says in one line what that kind
 agent does, because a reader who confuses the two will assume a bank's coding agent
 can change the register. The full design is `docs/plans/briefs/AGENT_ACCESS.md`.
 
+What an entry's credentials read is narrowed where it is read (acc-scoped-reads): every
+library list and addressed read, `POST /search` and `GET /upcoming` keep an agent access
+credential to shared records inside the bank's footprint and inside its entry's scope
+(`apps/library/reading.py`, `Reader`), and a record beyond them is the 404 another bank
+gets. `footprint` cannot be lifted, the card answers by stable key, and the bank's overlay
+and tags ride the register's tenant reach gate. ACC-S1 runs as an integration scenario and
+as a journey beside ACC-S6 and J-11 (ACC-S13).
+
+What applies carries a short summary above its list (acc-summary-j11, ACC-06): drafted by
+bleqq's model from the description and library facts only, labelled AI-drafted with a fixed
+sentence, citing by stable key, logged under the purpose `what_applies` and costed against
+the bank's monthly cap. When the model fails or is late, the AI switch is off or the cap is
+reached, the list is answered whole and the slot says why (`what_applies_summary.py`).
+
 PRD 0.7 (D-89, Alex 2026-09-24; details answered by default in D-91, ADR 0059,
 `docs/plans/briefs/SCOPE_ITEMS.md`) adds group OWN, the bank's own regulations. Alex's
 words:
@@ -129,15 +143,15 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 | built |
 | AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | built |
-| AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | pending |
+| AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | in_progress |
 | AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. Such an agent writes only in its own tenant's zone (D-61); what it files for a scope item is OWN-02 | M | R2 | in_progress |
 | AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console (D-61); an approved scope item opens a research request (OWN-02) | S | R2 | in_progress |
-| AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | pending |
+| AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | in_progress |
 | AGT-07 | Fetched content screened for embedded instructions | M | R1 | built |
 | AGT-08 | Agents stay inside the sector scope: an out-of-scope document is a counted source check and nothing else; a standard's text is never fetched, quoted, summarised, translated or restated; a blocked page is a failed check; a law that cites a standard never carries its term | M | R1 | built |
-| ACC-01 | A tenant registers each agent it runs itself: name, purpose, owning team, and the departments and products it serves. `agent_access.manage` and a step-up; revoking stops every credential under it on the next request | M | R2 | in_progress |
-| ACC-06 | One call takes a description of what is being built and returns a labelled, logged summary above the deterministic full list of register entries and obligations in scope; the model never shortens the list and the list survives the model failing or AI being switched off | M | R2 | pending |
-| ACC-07 | A narrowed entry never narrows silently: every answer states the scope it was answered in, and an answer touching the footprint outside that scope names the dimensions and terms it could not see, from labels and never from records | M | R2 | pending |
+| ACC-01 | A tenant registers each agent it runs itself: name, purpose, owning team, and the departments and products it serves. `agent_access.manage` and a step-up; revoking stops every credential under it on the next request | M | R2 | built |
+| ACC-06 | One call takes a description of what is being built and returns a labelled, logged summary above the deterministic full list of register entries and obligations in scope; the model never shortens the list and the list survives the model failing or AI being switched off | M | R2 | built |
+| ACC-07 | A narrowed entry never narrows silently: every answer states the scope it was answered in, and an answer touching the footprint outside that scope names the dimensions and terms it could not see, from labels and never from records | M | R2 | built |
 | ACC-10 | An entry records that a named application or system touches a register entry and how, as a linked internal item under REG-05 | C | R3 | pending |
 | OWN-02 | The bank's own agent researches an approved scope item from public sources and files the bank's own instruments and obligations as proposals, a source per field, only as runner events applied in the worker; never the shared library, never the regulatory scope, never reading the bank's own records back; a duplicate by official reference answers 409 `already_in_our_library` (D-89, D-91) | M | R2 | pending |
 
@@ -196,11 +210,17 @@ And a new term arrives only as a proposal, never as free text
 ### AGT-S4 — Agent definitions are versioned and owned by the platform `@integration` `@e2e` (AGT-03)
 ```gherkin
 Given a definition "nordic-watch" at version 3 in the console
-When a platform admin publishes version 4 with a changed prompt
+When a platform admin publishes version 4 with a changed prompt, from the folder the build ships, with a fresh passkey
 Then runs started after that reference version 4 and earlier runs still reference 3
-And a tenant admin's request to edit the prompt answers 403
-And "nordic-watch" is one of bleqq's agents, so a bank sees it read-only with its history
+And a tenant admin's request to reach the definition at all, to read, publish, retire or set it, answers 403 naming agent_definitions.manage
+And "nordic-watch" is one of bleqq's agents, so a bank's run log carries none of its runs, which the console lists
 ```
+
+A version is published only from its shipped folder, read by the seed's reader: 409
+`version_exists` for a number already published, 422 `definition_unreadable` for a folder
+the reader refuses or one that changes the agent's id, kind, scope or zone, and 409
+`last_version` for retiring the last published version of an active agent. A run pins the
+newest published version when it opens, and a trigger keeps it there.
 
 ### AGT-S5 — A tenant controls its agents without touching their instructions `@integration` `@e2e` (AGT-04)
 ```gherkin
@@ -237,12 +257,19 @@ And the re-tag request produces one batch proposal with a preview, never direct 
 ### AGT-S8 — The runner is an adapter with a mock and the app is the scheduler of record `@integration` (AGT-06)
 ```gherkin
 Given AGENT_RUNNER=mock
-When the beat schedule fires for a tenant
-Then the worker starts a run through the adapter inside @tenant_task and records it before the runner answers
+When the beat schedule fires for a tenant with one of its own agents due
+Then the worker records the run, with its version, trigger, scope and budget limit, inside @tenant_task and before the adapter is called
+When bleqq's beat fires
+Then each of bleqq's due agents gets a run with no tenant, from a task that activates none
 When the mock runner emits events
 Then the run row is updated from them
 And booting with AGENT_RUNNER=mock in a deployed environment other than test is refused
 ```
+
+The app schedules through `apps/agents/tasks.py` (c11-scheduler): one opener records every
+run before the runner is asked; bleqq's beat is not a `@tenant_task` and reads no tenant row
+or setting; a bank's beat asks the AI switch and the cap before a run of its own opens. What
+polls a real runner for its events arrives with that runner.
 
 ### AGT-S9 — Fetched content is screened for embedded instructions `@integration` (AGT-07)
 ```gherkin
@@ -292,12 +319,19 @@ Then the run history shows two source checks, no change and no proposal from the
 ### AGT-S13 — A bank cannot switch off, pause or re-scope one of bleqq's agents `@integration` `@e2e` (AGT-03, AGT-04)
 ```gherkin
 Given a tenant admin with agents.manage and one of bleqq's base-package agents
-When they switch it off, pause it, change its cadence, scope or budget cap, or ask for a run now
-Then each request answers 403 and nothing about that agent changes
+When they add it as one of the bank's own, change its cadence, scope or budget, or stop one of its runs
+Then each request answers 403 naming agent_definitions.manage and nothing about that agent changes
+And no agent of the bank's own can be made from it, so switching off, pausing and "Run now" have nothing of bleqq's to reach
 And the agents screen shows it under bleqq's agents, read-only, with its recent runs
 When the bank's own AI off switch is set
 Then its own agents stop and bleqq's agents keep running, because they read public sources only
 ```
+
+Reworded by c11-scheduler: a bank's controls address its own agents by their row, and the
+database refuses such a row on one of bleqq's definitions, so the fence is proved where a
+request can name bleqq's agent: adding it, its console settings and its runs. The screen
+line is the `@e2e` half's; the integration test proves the rest, the AI off line through
+both beats.
 
 ### AGT-S14 — A bank's own agent writes only in its own zone `@integration` (AGT-04, AGT-05, OWN-02)
 ```gherkin

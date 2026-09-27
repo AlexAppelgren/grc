@@ -57,6 +57,9 @@ APPEND_ONLY_TRIGGERS = {
     # A published agent version (AGT-03, agents 0004): append-only but for retiring it once,
     # so a guard of its own, with the same schema owner's hatch (apps/agents/tests_models.py).
     "agent_version": "cw_agent_version_guard",
+    # Every call a bank's own agent made, which nothing may rewrite afterwards (ACC-08,
+    # acc-entries-and-log).
+    "agent_access_call": "cw_append_only_guard",
     "audit_event": "cw_append_only_guard",
     # What a week's briefing told a bank, which nothing may rewrite afterwards: a later
     # change to the feed leaves a sent briefing exactly as it was sent (HOM-02, HOM-S3).

@@ -304,7 +304,7 @@ class ResearchRequest(models.Model):
 
 class TenantAgentBudget(TenantModel):
     """The bank's one monthly cap on its own agents (AGT-04, ruling 3): one row per tenant.
-    Spend is summed from the month's `agent_run.cost`; there is no second ledger."""
+    Spend is summed from the month's `agent_run.cost` and the AI log's `what_applies` costs (ACC-09)."""
 
     monthly_cap = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default="EUR")

@@ -15,6 +15,12 @@ the entry or any of its legal entities' rows says so, so a gap can never hide be
 entry's own answer; a status is shown only where it applies, and it is the worst of the
 applying entities' statuses by `WORST_FIRST`, else the entry's own. Answering "does not
 apply" hides the status and changes nothing: turning it back shows it again (REG-S4).
+
+The overlay is the bank's judgement, so a bank's own agent reads it only through the gate the
+register read has (ACC-04, ACC-08, D-76): `shown_to()` is true for a person and for a bank's
+key bound to no entry, and for an agent access credential only while tenant reach is on for
+the bank and for the entry it reads as. Without it the inventory answers such a credential
+the library's facts alone (`library.reading.Reader`).
 """
 
 from __future__ import annotations
@@ -28,10 +34,13 @@ from django.db.models import CharField, Case, Exists, F, IntegerField, OuterRef,
 from django.db.models.functions import Coalesce, JSONObject
 from pydantic import BaseModel
 
+from apps.agents.agent_access import reach_allowed
 from apps.register.models import Applicability, TenantObligation, TenantObligationScope
 from apps.register.schemas import Applicability as ApplicabilityAnswer
 from apps.register.schemas import RegisterPersonRef, RegisterVocabRef
+from apps.shared import permissions as perms
 from apps.shared.errors import ProblemError
+from apps.shared.authentication import Principal
 from apps.shared.models import Tenant
 from apps.taxonomy.models import ComplianceCategory, ComplianceStatus, ComplianceStatusLabel, TeamLabel
 from apps.taxonomy.reading import label_of
@@ -59,6 +68,13 @@ class Overlay(NamedTuple):
 
 
 EMPTY = Overlay(NOT_ASSESSED, None, None, None)
+
+
+def shown_to(principal: Principal) -> bool:
+    """Whether the bank's overlay, and the bank's own tags beside it, may be answered to this
+    caller: always to anyone but an agent access credential, and to one of those only while
+    `reach_allowed` (the bank's tenant reach and the entry's own toggle, both on)."""
+    return not principal.is_agent_access or reach_allowed(principal)
 
 
 class OverlayFilters(NamedTuple):
@@ -161,6 +177,13 @@ def _ref(key: str, kind: str | None, labels: list[dict[str, Any]], order: list[s
 # person holding register.read reads it or narrows by it.
 # ---------------------------------------------------------------------------------------
 _Carrier = TypeVar("_Carrier", bound=BaseModel)
+
+
+def reads_register(principal: Principal) -> bool:
+    """Whether `principal` is answered the overlay as the bank's register: a person or key
+    holding register.read. An agent access credential is answered by its reader's bank layer
+    instead (`shown_to`, ACC-04), so it is never withheld here."""
+    return principal.is_agent_access or principal.has_permission(perms.REGISTER_READ)
 
 
 def withheld(carrier: _Carrier) -> _Carrier:

@@ -45,6 +45,7 @@ describe('navigation registry (playbook 6.2)', () => {
       'console-sources',
       'console-tenants',
       'console-agent-keys',
+      'console-agents',
       'console-evaluation',
       'console-support-access',
     ]);
@@ -57,7 +58,7 @@ describe('navigation registry (playbook 6.2)', () => {
     // other's. Queue and Change facts share proposals.review (chunk4-T14).
     expect(visibleDestinations('console', ['proposals.review']).map((d) => d.id)).toEqual(['console-queue', 'console-change-facts']);
     expect(visibleDestinations('console', ['sources.manage']).map((d) => d.id)).toEqual(['console-sources']);
-    expect(visibleDestinations('console', ['agent_definitions.manage']).map((d) => d.id)).toEqual(['console-agent-keys']);
+    expect(visibleDestinations('console', ['agent_definitions.manage']).map((d) => d.id)).toEqual(['console-agent-keys', 'console-agents']);
     expect(visibleDestinations('console', ['eval.manage']).map((d) => d.id)).toEqual(['console-evaluation']);
   });
 
@@ -107,7 +108,7 @@ describe('navigation registry (playbook 6.2)', () => {
   it('puts every visible destination that is not a tab in More, and never promotes an unranked one', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(moreDestinations('tenant', all).map((d) => d.id)).toEqual(['my-work', 'roadmap', 'gaps', 'admin']);
-    expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys', 'console-evaluation', 'console-support-access']);
+    expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys', 'console-agents', 'console-evaluation', 'console-support-access']);
 
     expect(dockDestinations('tenant', []).map((d) => d.id)).toEqual(['today']);
     // My work needs no permission (HOM-05), so even an empty list has it in More.
@@ -150,6 +151,7 @@ describe('navigation registry (playbook 6.2)', () => {
       'admin-api-keys',
       'admin-security-log',
       'admin-support-access',
+      'admin-security',
     ]);
     // Chunk 2: the vocabulary screen needs vocab.manage; the footprint screen
     // opens for either footprint grant and is read-only without the first.

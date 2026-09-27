@@ -13,7 +13,7 @@ const translate = (key: Parameters<typeof t>[0], vars?: Parameters<typeof t>[1])
 
 describe('AI log presentation', () => {
   it('offers the purposes a bank can see, never the platform-only agent review', () => {
-    expect(AI_PURPOSES).toEqual(['so_what', 'change_summary', 'scope_suggestion', 'link_suggestion', 'translation', 'answer']);
+    expect(AI_PURPOSES).toEqual(['so_what', 'change_summary', 'scope_suggestion', 'link_suggestion', 'translation', 'answer', 'what_applies']);
     expect(AI_PURPOSES).not.toContain('agent_review');
     expect(AI_REVIEW_STATES).toEqual(['draft', 'confirmed', 'edited', 'rejected']);
   });
