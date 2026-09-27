@@ -1588,3 +1588,21 @@ Built on these defaults; each stays yours to overrule.
       seconds, over the 250 ms budget (a logged warning, not an error). Default if you say
       nothing: it stays in one transaction, as PRO-02 asks; a background job is the change if
       it is felt.
+
+## security-review-c8: two questions from the chunk 8 security review (2026-09-27)
+
+The review is `docs/reviews/CHUNK8_REVIEW.md`. Its medium findings are fixed; these two are
+policy, each built on a default you may overrule.
+
+- [ ] **A Statement of Applicability unit's title in the audit trail (HARDENING H50).** A unit's
+      reference and title are in the bank's own words and are written into the before and
+      after values of its audit rows, as a name. R2_CROSS_CUTTING (m) keeps a person's typed
+      text out of audit values and names no exception for a title. Default if you say nothing:
+      the next package in `apps/register` keeps the reference and names the title as edited,
+      as `updateGap` does for its typed fields. The alternative is to accept a record's own
+      name in its audit values, as org units, products and gaps' `subject_title` already are.
+- [ ] **Link rows deleted when a link ends (HARDENING H62).** `team_member`,
+      `licence_service_term` and `tenant_product_term` rows are deleted when a membership or a
+      link ends, each with its before and after in the audit row. Section 5 says nothing is
+      overwritten; R2_CROSS_CUTTING (l) lists actions, internal links and units as never
+      deleted and does not list these. Default: link rows may go, the audit keeps them.
