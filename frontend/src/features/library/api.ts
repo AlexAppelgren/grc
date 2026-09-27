@@ -282,6 +282,44 @@ export async function untagObligation(obligationId: string, tagKey: string): Pro
   return (await api.post<Schemas['TaggingRecordTags']>(`${TAGGINGS}/remove`, body)).data.tags.map(tenantTagOf);
 }
 
+/** Records and how many, as the server counted them; a screen shows the count, never recounts the ids. */
+export interface TaggingIds {
+  count: number;
+  ids: string[];
+}
+
+/**
+ * What tagging a selection would do (the preview) or did (the commit), in one shape.
+ * Records the reader may not read are only counted: the server never names them.
+ */
+export interface TaggingBatch {
+  tag: LibraryRef;
+  gained: TaggingIds;
+  alreadyTagged: TaggingIds;
+  skipped: number;
+}
+
+function batchOf(raw: Schemas['TaggingBatchOutcome']): TaggingBatch {
+  return {
+    tag: tenantTagOf(raw.tag),
+    gained: { count: raw.gained.count, ids: raw.gained.ids },
+    alreadyTagged: { count: raw.alreadyTagged.count, ids: raw.alreadyTagged.ids },
+    skipped: raw.skipped.count,
+  };
+}
+
+/** VOC-08: what one tag on many obligations would do. A read with a body: nothing is written. */
+export async function previewObligationTagging(tagKey: string, obligationIds: readonly string[]): Promise<TaggingBatch> {
+  const body: Schemas['TaggingBatchBody'] = { tagKey, subjectType: 'obligation', subjectIds: [...obligationIds] };
+  return batchOf((await api.post<Schemas['TaggingBatchOutcome']>(`${TAGGINGS}/preview`, body)).data);
+}
+
+/** VOC-08: one tag on many obligations in one transaction, audited once by the server. */
+export async function tagObligations(tagKey: string, obligationIds: readonly string[]): Promise<TaggingBatch> {
+  const body: Schemas['TaggingBatchBody'] = { tagKey, subjectType: 'obligation', subjectIds: [...obligationIds] };
+  return batchOf((await api.post<Schemas['TaggingBatchOutcome']>(`${TAGGINGS}/batch`, body)).data);
+}
+
 // Instruments (INV-01, INV-06): the Instruments tab, the instrument filter and the
 // instrument card. Reads only, like every obligation read above; "This looks wrong" is
 // the one write, and it stays inside the reader's own bank.

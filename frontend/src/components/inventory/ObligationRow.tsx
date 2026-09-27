@@ -58,11 +58,19 @@ export function metaOf(obligation: Obligation, t: Translate, ctx: FormatContext,
   return meta;
 }
 
-export function ObligationRow({ obligation, watched = false }: { obligation: Obligation; watched?: boolean }) {
+/** A row's checkbox, for a holder of vocab.manage selecting rows to tag (VOC-08). */
+export interface RowSelection {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}
+
+export function ObligationRow({ obligation, watched = false, selection }: { obligation: Obligation; watched?: boolean; selection?: RowSelection }) {
   const t = useT();
   const ctx = useFormatContext();
   const dashed = !obligation.inFootprint && !watched;
-  return (
+  const title = obligation.title === null ? obligation.refLabel : obligation.title.text;
+  const frame = cn('rounded-card border px-4 py-3.5', dashed ? 'border-dashed border-line-control' : 'border-line');
+  const link = (
     <Link
       href={`/inventory/obligations/${obligation.id}`}
       // A page of rows would otherwise prefetch a page of obligation cards
@@ -72,10 +80,10 @@ export function ObligationRow({ obligation, watched = false }: { obligation: Obl
       data-obligation={obligation.stableKey}
       data-outside-footprint={dashed ? '' : undefined}
       data-watched-market={watched ? obligation.jurisdiction.key : undefined}
-      className={cn('block rounded-card border bg-surface px-4 py-3.5 hover:border-fg', dashed ? 'border-dashed border-line-control' : 'border-line')}
+      className={selection === undefined ? cn('block bg-surface hover:border-fg', frame) : 'block min-w-0'}
     >
       <PillRow pills={presentObligation(factsOf(obligation), 'row', t)} />
-      <h3 className="my-1.5 font-semibold">{obligation.title === null ? obligation.refLabel : obligation.title.text}</h3>
+      <h3 className="my-1.5 font-semibold">{title}</h3>
       <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-meta text-muted">
         <span className="font-mono">{obligation.refLabel}</span>
         {metaOf(obligation, t, ctx, watched).map((line, index) => (
@@ -84,5 +92,20 @@ export function ObligationRow({ obligation, watched = false }: { obligation: Obl
         ))}
       </p>
     </Link>
+  );
+  if (selection === undefined) return link;
+  // The checkbox sits beside the link, never inside it, so no control is nested in a link.
+  return (
+    <div className={cn('grid grid-cols-[28px_minmax(0,1fr)] items-start gap-x-2.5 hover:border-fg', frame, selection.checked ? 'border-fg bg-subtle' : 'bg-surface')}>
+      <input
+        type="checkbox"
+        className="mt-0.5 size-5 accent-button"
+        checked={selection.checked}
+        onChange={(event) => selection.onChange(event.target.checked)}
+        aria-label={t('inventory.bulk.selectRow', { title })}
+        data-obligation-select={obligation.stableKey}
+      />
+      {link}
+    </div>
   );
 }
