@@ -1585,3 +1585,21 @@ Built on these defaults; each stays yours to overrule.
       agent builds from is never withheld.
 - [ ] Default taken: the bank's own private obligations are counted (`ownRecordsLeftOut`) and never
       listed (D-57).
+
+## d89-private-records: the bank's own queue, answered by default (2026-09-27, INV-07, OWN-03, OWN-04, D-1xx)
+
+Built on these defaults; each stays yours to overrule.
+
+- [ ] **The queue lists what waits, and nothing decided.** `GET /private-proposals` answers
+      the bank's open proposals, oldest first. Default: a decided proposal leaves the list
+      (its audit rows keep the decision). Say if the bank wants a decided tab as the
+      console has.
+- [ ] **A bank's own obligation sits under a bank's own instrument.** A private obligation
+      naming a shared instrument, or a shared one naming the bank's own, is refused (422).
+      Default: so, so that nothing of one zone ever hangs under the other. The alternative
+      is a bank's own duty under a shared law, which ADR 0059 does not ask for.
+- [ ] **A version of a bank's own obligation is not proposed in R2.** Its later wording
+      waits for a scenario that needs it; today a version is always of a shared record.
+- [ ] **Support sessions read the shared library only.** Platform support under a grant
+      never sees the bank's own records: lists leave them out and their addresses are 404,
+      as for another bank (OWN-04).

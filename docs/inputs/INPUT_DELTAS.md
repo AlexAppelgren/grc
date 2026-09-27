@@ -1820,6 +1820,22 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
   `approvePrivateProposal` as the third route that may reach `apply`. `proposal_four_eyes`
   is unchanged.
 
+## d89-private-records. The bank's own queue decided (2026-09-27, INV-07, OWN-03, OWN-04)
+
+§20's routes now answer (D-57, ADR 0050, ADR 0059; D-1xx, d89-private-records):
+
+- `GET /private-proposals` answers the bank's own open proposals only, oldest first, as
+  `PrivateProposalPage`; a decided proposal leaves it.
+- `POST /private-proposals/{proposalId}/approve` and `/reject` answer `PrivateProposalRow`
+  and add the errors the shared queue's decisions answer: `four_eyes_violation` and
+  `invalid_transition` (409), `reason_required` (422) on a rejection, and on approval
+  `duplicate_key` (409) and `unknown_key` or `validation_error` (422) from the apply.
+- New code `private_provisions_not_supported` (422): a provision under a bank's own
+  instrument, or filed as the bank's own. A bank's own obligation names a bank's own
+  instrument, and a shared one a shared instrument, else 422 `validation_error`.
+- A support session's library reads leave the bank's own records out and answer 404 for
+  their addresses. No schema changes.
+
 ## c8-support-session-guard. The support session (2026-09-25, identity 0009)
 
 ADR 0042's tranche 2 is built with these departures from `CHUNK8_TASKS.md`:

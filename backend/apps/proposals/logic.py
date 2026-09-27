@@ -60,6 +60,7 @@ from apps.library import recurrence
 from apps.library.models import DatePrecision, SubjectType
 from apps.library.reading import (
     InstrumentRefs,
+    active_instrument,
     active_obligation,
     active_provision,
     authority_of,
@@ -67,7 +68,6 @@ from apps.library.reading import (
     live_duty_type,
     live_provision_kind,
     parent_provision,
-    shared_instrument,
     stable_key_taken,
     terms_of,
     unknown_provision_keys,
@@ -148,8 +148,10 @@ NEW_RECORD_KINDS = frozenset(
 )
 NEW_RECORD_PAYLOADS = (ProposalInstrumentPayload, ProposalObligationPayload, ProposalProvisionPayload)
 # The kinds a bank may file as a record of its own (INV-07, OWN-02): what does not exist in
-# the library yet. A version of a record follows its target's owner instead.
+# the library yet. A version always targets a shared record, so it is never the bank's own.
 PRIVATE_RECORD_KINDS = frozenset({ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value})
+# Why a provision is refused under a bank's own instrument, filed privately or not.
+PRIVATE_PROVISIONS = "An instrument of your organisation's own holds no provisions: propose its duties as obligations."
 # The two uniqueness constraints on a proposer's retry key (models.py).
 IDEMPOTENCY_CONSTRAINTS = frozenset({"proposal_idempotency_per_user", "proposal_idempotency_per_key"})
 # The kinds a reviewer may correct: each carries sourced facts from an authority, which a
@@ -246,16 +248,17 @@ def parsed_payload(kind: str, payload: dict[str, Any]) -> pydantic.BaseModel:
         raise ValidationError(f"Fix these payload fields: {fields}.", code="validation_error") from exc
 
 
-def validated_payload(kind: str, payload: dict[str, Any]) -> pydantic.BaseModel:
+def validated_payload(kind: str, payload: dict[str, Any], owner_tenant_id: uuid.UUID | None = None) -> pydantic.BaseModel:
     """The payload as its kind's named schema, checked as the vocabulary routes check it. A
     malformed payload is refused when the proposal is made, never when it is approved, so
-    the queue holds nothing unappliable."""
+    the queue holds nothing unappliable. `owner_tenant_id` is the zone the proposal files
+    into: the bank whose own record it is, or None for the shared library (INV-07)."""
     parsed = parsed_payload(kind, payload)
-    _validate_target(kind, parsed)
+    _validate_target(kind, parsed, owner_tenant_id)
     return parsed
 
 
-def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
+def _validate_target(kind: str, payload: pydantic.BaseModel, owner_tenant_id: uuid.UUID | None) -> None:
     """A vocabulary proposal names a library list that can be proposed to; a term proposal
     names a dimension. Tenant lists never enter the queue: their admin writes them. An
     editor or an agent can post a payload without the vocabulary routes, so their checks
@@ -296,7 +299,7 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
     elif isinstance(payload, ProposalInstrumentPayload):
         validated_instrument(payload)
     elif isinstance(payload, ProposalObligationPayload):
-        validated_obligation(payload)
+        validated_obligation(payload, owner_tenant_id)
     elif isinstance(payload, ProposalProvisionPayload):
         validated_provision(payload)
     elif isinstance(payload, ProposalProvisionVersionPayload):
@@ -464,12 +467,31 @@ def validated_instrument(payload: ProposalInstrumentPayload) -> tuple[Instrument
     return refs, regime_term(payload.regime)
 
 
-def validated_obligation(payload: ProposalObligationPayload) -> tuple[Any, list[Any]]:
-    """A new obligation (INV-03): a key no record carries, a shared instrument in force, a
-    live duty type, a title and a first summary in real content languages written in the
-    same original (INV-05), and a scope as a version's is checked. Returns the instrument
-    and the scope's terms, resolved, so the apply and the standards check read the same
-    rows the creation check did."""
+def instrument_in_zone(key: str, owner_tenant_id: uuid.UUID | None) -> Any:
+    """The instrument in force `key` a new obligation is broken out of, in the obligation's
+    own zone (INV-07): a shared instrument for the shared library, the bank's own for a
+    record of the bank's own. A shared record never sits under a bank's own and a bank's own
+    never under a shared one, so the other zone's instrument is 422 `validation_error`."""
+    instrument = active_instrument(key)
+    if instrument.owner_tenant_id is not None and owner_tenant_id is None:
+        raise ValidationError(
+            f"{key!r} is your organisation's own instrument, and the shared library holds nothing under it.",
+            code="validation_error",
+        )
+    if instrument.owner_tenant_id != owner_tenant_id:
+        raise ValidationError(
+            f"{key!r} is the shared library's: a record of your organisation's own sits under an instrument of its own.",
+            code="validation_error",
+        )
+    return instrument
+
+
+def validated_obligation(payload: ProposalObligationPayload, owner_tenant_id: uuid.UUID | None = None) -> tuple[Any, list[Any]]:
+    """A new obligation (INV-03): a key no record carries, an instrument in force in the
+    obligation's own zone (`instrument_in_zone`), a live duty type, a title and a first
+    summary in real content languages written in the same original (INV-05), and a scope as
+    a version's is checked. Returns the instrument and the scope's terms, resolved, so the
+    apply and the standards check read the same rows the creation check did."""
     from apps.taxonomy import tenant_lists_logic as lists
 
     payload.titles = lists.validated_labels(payload.titles, max_chars=None)
@@ -477,7 +499,7 @@ def validated_obligation(payload: ProposalObligationPayload) -> tuple[Any, list[
     terms = _validate_obligation_payload(payload)
     if stable_key_taken(SubjectType.OBLIGATION.value, payload.key):
         raise ValidationError(f"{payload.key!r} is already an obligation's key.", code="duplicate_key")
-    instrument = shared_instrument(payload.instrument)
+    instrument = instrument_in_zone(payload.instrument, owner_tenant_id)
     live_duty_type(payload.duty_type)
     return instrument, terms
 
@@ -497,11 +519,14 @@ def validated_provision(payload: ProposalProvisionPayload) -> tuple[Any, Any, An
     """A new provision (INV-02): a key no provision carries, a shared instrument in force, a
     parent that is a provision of that same instrument, a live provision kind, and its text
     checked as a version's is. Returns the instrument, the parent (or None) and the kind,
-    resolved, for the apply and the standards check."""
+    resolved, for the apply and the standards check. A bank's own instrument holds no
+    provisions (ADR 0050's stated cut): 422 `private_provisions_not_supported`."""
     _validate_text_payload(payload)
     if stable_key_taken(SubjectType.PROVISION.value, payload.key):
         raise ValidationError(f"{payload.key!r} is already a provision's key.", code="duplicate_key")
-    instrument = shared_instrument(payload.instrument)
+    instrument = active_instrument(payload.instrument)
+    if instrument.owner_tenant_id is not None:
+        raise ValidationError(PRIVATE_PROVISIONS, code="private_provisions_not_supported")
     parent = parent_provision(instrument, payload.parent) if payload.parent else None
     return instrument, parent, live_provision_kind(payload.provision_kind)
 
@@ -518,41 +543,44 @@ def validated_recurring_duty(payload: ProposalRecurringDutyPayload) -> Any:
     return authority_of(payload.recipient_authority) if payload.recipient_authority else None
 
 
-def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUID | None) -> uuid.UUID | None:
+def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUID | None) -> None:
     """A version proposal says which obligation or provision it versions, and that record
-    is here and in force. A proposal nobody could ever apply never enters the queue. A new
-    record names no target: it does not exist until the proposal is approved.
-
-    Returns the bank that owns the target, or None for a shared record and for no target:
-    a version of a bank's own record is that bank's own proposal (D-57)."""
+    is here, in force and the shared library's (a bank's own record is never a target, so
+    nothing crosses from one zone to the other, INV-07). A proposal nobody could ever apply
+    never enters the queue. A new record names no target: it does not exist until the
+    proposal is approved."""
     if kind in NEW_RECORD_KINDS and (target_type or target_id is not None):
         raise ValidationError(
             "A new record names no target: leave targetType and targetId out.", code="validation_error"
         )
     expected = RECORD_TARGETS.get(kind)
     if expected is None:
-        return None
+        return
     if target_type != expected or target_id is None:
         raise ValidationError(
             f"Say which {expected} this proposal is for: targetType {expected!r} and its id.",
             code="validation_error",
         )
     if expected == OBLIGATION_TARGET:
-        return active_obligation(target_id).owner_tenant_id
-    return active_provision(target_id).instrument.owner_tenant_id
+        active_obligation(target_id)
+    else:
+        active_provision(target_id)
 
 
-def owner_of(kind: str, *, private: bool, target_owner: uuid.UUID | None, tenant_id: uuid.UUID | None) -> uuid.UUID | None:
+def owner_of(kind: str, *, private: bool, tenant_id: uuid.UUID | None) -> uuid.UUID | None:
     """The bank a new proposal belongs to, or None for the shared library (INV-07, D-57).
 
     Decided by the server alone. A proposal the server files as `private` is a new record of
     the bank the database is scoped to, which is the filing session's bank or, in the
-    worker, the bank of the run (`@tenant_task`); anything else follows its target, so a
-    shared record's proposal stays shared whoever filed it and still reaches the console.
-    A private filing with no bank, or of a kind that is not a new record, is refused rather
-    than quietly filed as shared."""
+    worker, the bank of the run (`@tenant_task`); anything else is the shared library's,
+    whoever filed it, and still reaches the console, since a target is always a shared
+    record. A private filing with no bank, or of a kind that is not a new instrument or
+    obligation, is refused rather than quietly filed as shared: a provision with 422
+    `private_provisions_not_supported`, anything else with 422 `validation_error`."""
     if not private:
-        return target_owner
+        return None
+    if tenant_id is not None and kind == ProposalKind.NEW_PROVISION.value:
+        raise ValidationError(PRIVATE_PROVISIONS, code="private_provisions_not_supported")
     if tenant_id is None or kind not in PRIVATE_RECORD_KINDS:
         raise ValidationError(
             "Only a new instrument or a new obligation filed inside an organisation can be its own record.",
@@ -752,8 +780,12 @@ def create(
             "A recurring duty is proposed by a person or an agent, never by a key bound to no agent.",
             code="validation_error",
         )
-    parsed = validated_payload(kind, payload)
-    target_owner = _validate_obligation_target(kind, target_type, target_id)
+    # What the database itself is scoped to, not a process-local mirror: this is the tenant
+    # whose rows this transaction may write, so it is the tenant the link row can carry.
+    tenant_id = tenancy.database_tenant_id()
+    owner_tenant_id = owner_of(kind, private=private, tenant_id=tenant_id)
+    parsed = validated_payload(kind, payload, owner_tenant_id)
+    _validate_obligation_target(kind, target_type, target_id)
     sources = {field: value.strip() for field, value in (field_sources or {}).items()}
     # Before the source check, so a standard's clause pasted as a source answers
     # `licensed_text`, the rule it breaks, rather than a generic refusal (D-35).
@@ -776,10 +808,6 @@ def create(
     title = title.strip()
     if not title:
         raise ValidationError("Give the proposal a title.", code="validation_error")
-    # What the database itself is scoped to, not a process-local mirror: this is the tenant
-    # whose rows this transaction may write, so it is the tenant the link row can carry.
-    tenant_id = tenancy.database_tenant_id()
-    owner_tenant_id = owner_of(kind, private=private, target_owner=target_owner, tenant_id=tenant_id)
     if idempotency_key:
         if len(idempotency_key) > IDEMPOTENCY_KEY_MAX_CHARS:
             raise ValidationError(
@@ -1189,7 +1217,7 @@ def corrected(
             code="validation_error",
         )
     merged = {**proposal.payload, **overrides}
-    parsed = validated_payload(proposal.kind, merged)
+    parsed = validated_payload(proposal.kind, merged, proposal.owner_tenant_id)
     stored = payload_dict(parsed)
     fresh = {field: source.strip() for field, source in (field_sources or {}).items()}
     sources = {**proposal.field_sources, **fresh}
@@ -1265,6 +1293,11 @@ def approve(
     provision's new text, is refused to an agent with 409 `person_review_required` and waits
     for a person. Rejecting writes no library row, so an agent may reject any kind.
 
+    A bank's own proposal (`owner_tenant_id`, INV-07, OWN-03) is approved the same way, here,
+    by a person of that bank holding `private_records.approve`
+    (apps/proposals/private_approval.py): never by an agent, whatever its kind (ADR 0059),
+    and its audit and outbox rows are written in that bank's zone, as its record is.
+
     `reviewer` is a `Reviewer` from the API's dual-principal gate, or a bare `User` from an
     older caller; `as_reviewer` normalizes either into the same shape below.
     """
@@ -1272,6 +1305,11 @@ def approve(
 
     _not_a_batch(proposal)
     reviewer = as_reviewer(reviewer, actor)
+    if reviewer.user is None and proposal.owner_tenant_id is not None:
+        raise ValidationError(
+            "A record of an organisation's own is approved by a person there, never by an agent.",
+            code="person_review_required",
+        )
     with transaction.atomic():
         run = _decision_run(reviewer, decision, agent_run_id)
         _decidable(proposal, reviewer)
@@ -1309,7 +1347,7 @@ def approve(
             subject_id=proposal.id,
             subject_title=proposal.title,
             summary=f"Approved: {proposal.title}",
-            tenant_id=None,
+            tenant_id=proposal.owner_tenant_id,
             before={"status": ProposalStatus.OPEN.value, **({"fieldSources": replaced} if field_sources else {})},
             after={
                 "status": proposal.status,
@@ -1335,7 +1373,8 @@ def reject(
     """A rejection needs a reason (PRO-01): a code the proposer's screen can branch on and a
     sentence they can read. The code is a live row of the `rejection_reason` library list, an
     admin's to extend and retire, so a code from an older screen or a retired row is refused
-    rather than stored as a reason nobody can look up. The outbox event is what tells them.
+    rather than stored as a reason nobody can look up. The outbox event is what tells them. A
+    bank's own proposal is rejected in that bank's zone, where its audit and outbox rows go.
 
     It runs in one transaction of its own, as `approve` does, and an agent's rejection carries
     the model call behind it and the open run it was made in, logged and named the same way
@@ -1389,7 +1428,7 @@ def reject(
             subject_id=proposal.id,
             subject_title=proposal.title,
             summary=f"Rejected: {proposal.title}",
-            tenant_id=None,
+            tenant_id=proposal.owner_tenant_id,
             before={"status": ProposalStatus.OPEN.value},
             # The note stays on the proposal row, as an approval's does.
             after={"status": proposal.status, "rejectionCode": code, **_reviewer_facts(reviewer, run)},

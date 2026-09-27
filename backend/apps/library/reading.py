@@ -28,7 +28,7 @@ and the diffs between two versions. Nothing here writes.
   which rows a page holds beyond its own filters; `in_view()` stays the one scope rule.
 - `active_obligation()` and `unknown_provision_keys()` are what a proposal points at and
   cites; they live here because the library fence keeps library models out of the
-  proposals app (PRO-01). `instrument_refs()`, `shared_instrument()`, `live_duty_type()`
+  proposals app (PRO-01). `instrument_refs()`, `active_instrument()`, `live_duty_type()`
   and `stable_key_taken()` are what a new instrument or obligation names, for the same
   reason.
 - `Reader` is how far past the shared library's facts one caller reads (ACC-02, ACC-04,
@@ -436,10 +436,12 @@ def authority_of(key: str) -> Authority:
     return found
 
 
-def shared_instrument(key: str) -> Instrument:
-    """The active shared instrument `key`, which a new obligation is broken out of, or 422
-    `unknown_key`. A bank's private instrument is never one (INV-07)."""
-    instrument = Instrument.objects.filter(stable_key=key, owner_tenant__isnull=True).first()  # ordering: a unique key
+def active_instrument(key: str) -> Instrument:
+    """The active instrument `key` a new obligation or provision is filed under, or 422
+    `unknown_key`. Row-level security shows the caller the shared library and its own bank's
+    records, so this may be either; which zone a new record may sit in is the proposal's
+    rule to check (`apps.proposals.logic.instrument_in_zone`, INV-07)."""
+    instrument = Instrument.objects.filter(stable_key=key).first()  # ordering: a unique key
     if instrument is None:
         raise ValidationError(f"{key!r} is not an instrument the library holds.", code="unknown_key")
     if instrument.status != RecordStatus.ACTIVE.value:
@@ -656,15 +658,22 @@ class Reader(NamedTuple):
     three is the same 404 another bank gets, never a filtered 200 (ACC-07). It reads the
     bank's overlay and tags only while `bank_layer`, the register's own gate (tenant reach on
     for the bank and the entry, ACC-04, ACC-08), and never on a record under a standard,
-    whose register rows never reach a model (REG-08, AC-REG2)."""
+    whose register rows never reach a model (REG-08, AC-REG2).
+
+    `shared_only` leaves out the bank's own private records and nothing else: every confined
+    reader reads that way, and so does a support session, platform support reading the bank
+    under a grant it approved, which is never shown a record the bank keeps as its own
+    (OWN-04, INV-07, TEN-06)."""
 
     confined: bool = False
     tenant_id: uuid.UUID | None = None
     entry_id: uuid.UUID | None = None
     bank_layer: bool = True
+    shared_only: bool = False
 
 
 OPEN = Reader()
+SHARED_ONLY = Reader(shared_only=True)
 
 # The entry's guard for the second pass (taxonomy 0011's `taxonomy_entry_admits`, taken apart
 # so each piece is an uncorrelated subquery PostgreSQL runs once per query, not once per row).
@@ -678,11 +687,19 @@ _ENTRY_NOT_EMPTY = "NOT (SELECT s.narrowed AND cardinality(s.terms) = 0 FROM tax
 
 
 def reader_of(principal: Principal) -> Reader:
-    """The reader a request's principal is. Only an agent access credential is confined."""
+    """The reader a request's principal is. Only an agent access credential is confined, and
+    a support session reads the shared library and the bank's layer but none of the bank's
+    own records."""
+    if principal.support_access_id is not None:
+        return SHARED_ONLY
     if not principal.is_agent_access:
         return OPEN
     return Reader(
-        confined=True, tenant_id=principal.tenant_id, entry_id=principal.agent_access_id, bank_layer=overlay.shown_to(principal)
+        confined=True,
+        tenant_id=principal.tenant_id,
+        entry_id=principal.agent_access_id,
+        bank_layer=overlay.shown_to(principal),
+        shared_only=True,
     )
 
 
@@ -714,11 +731,12 @@ def in_reach(reader: Reader, term_ids: Func | ArraySubquery) -> list[Any]:
 
 def confined(queryset: _Listed, reader: Reader, term_ids: Func | ArraySubquery) -> _Listed:
     """What `reader` may address among the obligations or instruments of `queryset`, whose
-    scope term ids `term_ids` is: everything for an open reader; for a confined one the shared
-    records inside the footprint and inside its entry's scope."""
-    if not reader.confined:
-        return queryset
-    return queryset.filter(owner_tenant__isnull=True).filter(*in_reach(reader, term_ids))
+    scope term ids `term_ids` is: everything for an open reader; the shared records alone for
+    a shared-only one; for a confined one the shared records inside the footprint and inside
+    its entry's scope."""
+    if reader.shared_only:
+        queryset = queryset.filter(owner_tenant__isnull=True)
+    return queryset.filter(*in_reach(reader, term_ids))
 
 
 def readable_obligations(reader: Reader) -> QuerySet[Obligation]:
