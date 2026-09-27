@@ -103,6 +103,9 @@ export const destinations: readonly Destination[] = [
   { id: 'me-out-of-office', href: '/me/out-of-office', labelKey: 'nav.me.outOfOffice', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-passkeys', href: '/me/passkeys', labelKey: 'nav.me.passkeys', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-sessions', href: '/me/sessions', labelKey: 'nav.me.sessions', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
+  // A person's own access tokens (ACC-03): every member's, since a token held stays
+  // listed and revocable after tokens.create is gone; the page says why there is no Create.
+  { id: 'me-tokens', href: '/me/tokens', labelKey: 'nav.me.tokens', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   // A person's own calendar feeds (HOM-04): the grant the roadmap itself
   // needs, because a feed is the roadmap in another app.
   { id: 'me-calendar-feeds', href: '/me/calendar-feeds', labelKey: 'nav.me.calendarFeeds', surface: 'tenant', anyOfPermissions: ['roadmap.read'], group: 'account', parent: ACCOUNT_PARENT },

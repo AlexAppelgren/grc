@@ -1,10 +1,12 @@
-import type { Locator, Page } from '@playwright/test';
+import type { APIRequestContext, Locator, Page } from '@playwright/test';
 
+import { allowAgentAccessStepUps, confirmWithPasskey, issueEntryKey, registerEntry, revokeEntry } from './support/agent-access-screens';
 import { mintAgentKey, revokeAgentKey } from './support/agent-key';
 import { expect, test } from './support/api-guard';
 import {
   allowFreshContext,
   ANNA_INVITE_TOKEN,
+  BACKEND_URL,
   E2E_FIXED_CODE,
   installAuthenticator,
   inviteLink,
@@ -31,6 +33,14 @@ import {
 // retry re-runs the whole serial group against a spent invitation, so ID-S4
 // failed its retry with a 410 whenever a later link failed (playbook 8.3 rule
 // 4). The group therefore never retries; the first failure is the real one.
+
+/** The tenant-local day (Europe/Stockholm) plus `days`, as YYYY-MM-DD. */
+function stockholmDayPlus(days: number): string {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Stockholm', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const date = new Date(`${today}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
 
 // The invitation path: the link's token names the account, so the code step
 // asks for the code alone (no address) and submits once all six digits are in.
@@ -415,7 +425,8 @@ test.describe('identity journeys', () => {
       await expect(page.getByText(plain)).toHaveCount(0);
 
       await row.getByRole('button', { name: 'Revoke' }).click();
-      await row.getByRole('button', { name: 'Revoke' }).click();
+      await page.getByRole('dialog', { name: 'Revoke GRC export sync?' }).getByRole('button', { name: 'Revoke key' }).click();
+      await expect(row).toContainText('Key revoked.');
       await expect(row).toContainText('Revoked');
       await expect(row.getByRole('button', { name: 'Revoke' })).toHaveCount(0);
     } finally {
@@ -424,7 +435,7 @@ test.describe('identity journeys', () => {
       await expect(row).toBeVisible();
       if ((await row.getByRole('button', { name: 'Revoke' }).count()) > 0) {
         await row.getByRole('button', { name: 'Revoke' }).click();
-        await row.getByRole('button', { name: 'Revoke' }).click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Revoke key' }).click();
         await expect(row).toContainText('Revoked');
       }
     }
@@ -476,7 +487,127 @@ test.describe('identity journeys', () => {
     await expect(alert).toContainText('Needs security manage');
   });
 
-  test.fixme("ACC-S3: A service key acts as the entry and a personal token acts as the person", async () => {
-    // pending: ACC-S3 (ACC-03, chunk 11)
+  test("ACC-S3: A service key acts as the entry and a personal token acts as the person", async ({ page, browser, playwright, apiGuard }, testInfo) => {
+    // ACC-03: an administrator issues an entry's service key, a compliance officer mints a
+    // personal token that reads as them, each is used and logged with its own method, the
+    // administrator sees both with their kind and who each reads as, and revokes the token.
+    test.setTimeout(180_000);
+    allowFreshContext(apiGuard);
+    allowAgentAccessStepUps(apiGuard);
+    apiGuard.allow(/\/api\/v1\/me\/tokens$/, 403, 'minting a token answers step_up_required first and opens the prompt');
+    const attempt = `${Date.now()}`;
+    const entryName = `ACC-S3 order router ${attempt}`;
+    const tokenName = `ACC-S3 laptop ${attempt}`;
+    let entryId: string | null = null;
+    let tokenId: string | null = null;
+    const agents: APIRequestContext[] = [];
+    const callWith = async (plainKey: string): Promise<APIRequestContext> => {
+      const agent = await playwright.request.newContext({ baseURL: BACKEND_URL, extraHTTPHeaders: { 'X-API-Key': plainKey } });
+      agents.push(agent);
+      return agent;
+    };
+
+    // The administrator works on this page, the member in a context of their own.
+    await signInAs(page, LOGINS.admin);
+    const member = await browser.newContext({ baseURL: testInfo.project.use.baseURL });
+    const memberPage = await member.newPage();
+    apiGuard.watch(memberPage);
+
+    try {
+      // The administrator issues the entry's service key behind a passkey.
+      entryId = await registerEntry(page, entryName);
+      const serviceKey = await issueEntryKey(page, entryId, { name: `${entryName} CI`, scopes: ['library:read'] });
+
+      // The member mints a token with a passkey; it shows once, with its expiry.
+      await signInAs(memberPage, LOGINS.tokens);
+      await memberPage.goto('/me/tokens');
+      await memberPage.getByRole('button', { name: 'Create a token' }).first().click();
+      const form = memberPage.locator('[data-token-form]');
+      await form.getByLabel('Name', { exact: true }).fill(tokenName);
+      await form.getByLabel(/^library read/).check();
+      await form.getByLabel('Expires', { exact: true }).fill(stockholmDayPlus(30));
+      const minted = memberPage.waitForResponse((r) => r.url().endsWith('/api/v1/me/tokens') && r.request().method() === 'POST' && r.status() === 201);
+      await form.getByRole('button', { name: 'Create token' }).click();
+      const panel = memberPage.locator('[data-new-key]');
+      await confirmWithPasskey(memberPage, panel);
+      tokenId = ((await (await minted).json()) as { id: string }).id;
+      await expect(panel.getByRole('heading', { name: 'Copy your token now' })).toBeVisible();
+      const plainToken = (await panel.locator('[data-plain-key]').textContent())?.trim() ?? '';
+      expect(plainToken).toMatch(/^cw_/);
+      await panel.getByRole('button', { name: 'Done' }).click();
+      const tokenRow = memberPage.locator(`[data-token-id="${tokenId}"]`);
+      await expect(tokenRow).toContainText(tokenName);
+      await expect(tokenRow).toContainText('reads as me');
+      await expect(tokenRow).toContainText('library read');
+
+      // Never again: the member's list holds their token by its prefix only.
+      await memberPage.reload();
+      await expect(tokenRow).toBeVisible();
+      await expect(memberPage.getByText(plainToken)).toHaveCount(0);
+
+      // Both credentials read the library: the key as its entry, the token as its person.
+      const asEntry = await callWith(serviceKey);
+      const asMember = await callWith(plainToken);
+      expect((await asEntry.get('/api/v1/obligations', { params: { limit: 1 } })).status()).toBe(200);
+      expect((await asMember.get('/api/v1/obligations', { params: { limit: 1 } })).status()).toBe(200);
+
+      // Each use is in the security log with its own method.
+      await page.goto('/admin/security-log');
+      const tokenUse = page.locator('[data-event="token_used"]', { hasText: LOGINS.tokens }).first();
+      await expect(tokenUse).toContainText('Token used');
+      await expect(tokenUse).toContainText('Personal access token');
+      await expect(page.locator('[data-event="key_used"]').first()).toContainText('API key');
+
+      // The administrator sees both, with their kind and who each reads as.
+      await page.goto('/admin/api-keys');
+      const tokenListed = page.locator(`[data-key-id="${tokenId}"]`);
+      await expect(tokenListed).toContainText('Personal');
+      await expect(tokenListed).toContainText('Acts as Elsa Hansson');
+      const keyListed = page.locator('[data-key-kind="service"]', { hasText: `${entryName} CI` });
+      await expect(keyListed).toContainText('Service');
+      await expect(keyListed).toContainText(`Reads as ${entryName}`);
+
+      // Revoking the token needs no passkey; its next request answers 401.
+      await tokenListed.getByRole('button', { name: 'Revoke' }).click();
+      const confirm = page.getByRole('dialog', { name: `Revoke Elsa Hansson's token "${tokenName}"?` });
+      await confirm.getByRole('button', { name: 'Revoke token' }).click();
+      await expect(tokenListed.getByText('Token revoked.')).toBeVisible();
+      await expect(tokenListed).toContainText('Revoked');
+      expect((await asMember.get('/api/v1/obligations', { params: { limit: 1 } })).status()).toBe(401);
+      await page.goto('/admin/security-log');
+      // The revocation is logged as a token's, under the administrator who revoked it.
+      await expect(page.locator('[data-event="token_revoked"]', { hasText: LOGINS.admin }).first()).toContainText('Personal access token');
+
+      // The member sees it revoked on their own list.
+      await memberPage.reload();
+      await expect(tokenRow).toContainText('Revoked');
+      await expect(tokenRow.getByRole('button', { name: 'Revoke' })).toHaveCount(0);
+    } finally {
+      // Teardown that runs on failure too: no credential of this attempt stays live.
+      await Promise.all(agents.map((agent) => agent.dispose()));
+      if (tokenId !== null) {
+        await page.goto('/admin/api-keys');
+        const row = page.locator(`[data-key-id="${tokenId}"]`);
+        await expect(row).toBeVisible();
+        if ((await row.getByRole('button', { name: 'Revoke' }).count()) > 0) {
+          await row.getByRole('button', { name: 'Revoke' }).click();
+          await page.getByRole('dialog').getByRole('button', { name: 'Revoke token' }).click();
+          await expect(row.getByText('Token revoked.')).toBeVisible();
+        }
+      }
+      if (entryId !== null) await revokeEntry(page, entryId);
+      await member.close();
+    }
+  });
+
+  test("ACC-S3: A member without tokens.create is told why and mints nothing", async ({ page, apiGuard }) => {
+    // ACC-03: the page is every member's own; without the permission it lists what they
+    // hold, offers no Create, and says which permission creating needs.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.reader);
+    await page.goto('/me/tokens');
+    await expect(page.getByRole('heading', { level: 1, name: 'My access tokens' })).toBeVisible();
+    await expect(page.getByText('Creating tokens needs tokens create, which your role does not include. Ask your administrator if you need one.').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Create a token' })).toHaveCount(0);
   });
 });

@@ -1,5 +1,5 @@
 import { AdminGate } from '@/components/admin/AdminGate';
-import { ApiKeysScreen } from '@/components/admin/ApiKeysScreen';
+import { ApiKeysScreen } from '@/features/tenant-admin/api-keys/ApiKeysScreen';
 
 export default function ApiKeysPage() {
   return (
