@@ -457,7 +457,10 @@ def update_gap(request: HttpRequest, body: RegisterGapPatch, gap_id: uuid.UUID =
     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
     `not_found` (404) for a gap the bank does not have; `stale_write` (409) for an `If-Match`
     that is absent or not the current version; `invalid_transition` (409) for a status the gap
-    cannot move to here; `unknown_key` (422) for a key the bank's list does not hold;
+    cannot move to here, or for a change to the title, description, plan, severity or target
+    date of a gap whose risk was accepted (reopen it first; its owner may still change);
+    `request_pending` (409) for such a change while a risk acceptance waits for approval, so
+    the approver decides on the gap as it was asked for; `unknown_key` (422) for a key the bank's list does not hold;
     `unknown_member` (422) for an owner who is not an active member; `validation_error`
     (422) for a body the schema refuses or a person and a team as owner together.
     """

@@ -55,6 +55,8 @@ PATCH_TARGETS = MOVABLE | {GapCategory.CLOSED.value}
 REOPENABLE = {GapCategory.CLOSED.value, GapCategory.RISK_ACCEPTED.value}
 # The fields a person types. An audit row names which of them changed, never their text.
 TYPED_FIELDS = ("title", "description", "remediation")
+# What a risk acceptance is given on (security-review-c8 M2).
+ACCEPTED_FACTS = (*TYPED_FIELDS, "severity", "target_date")
 
 _RELATED = (
     "tenant_obligation",
@@ -341,6 +343,16 @@ def update_gap(
     if expected_version != gap.version:
         raise ValidationError("Someone changed this gap since you read it. Reload it and try again.", code="stale_write")
     sent = body.model_dump(exclude_none=True)
+    # A risk acceptance holds the facts the second person saw: they cannot change while it
+    # waits or after it is given; reopening, then asking again, takes a second person again.
+    if any(name in sent for name in ACCEPTED_FACTS):
+        if _category(gap) == GapCategory.RISK_ACCEPTED.value:
+            raise _invalid("The risk on this gap was accepted as it stands. Reopen the gap to change it.")
+        if gap.acceptance_requested_by_id is not None:
+            raise ValidationError(
+                "A risk acceptance is waiting for approval on this gap as it stands. Close the gap or wait for the decision.",
+                code="request_pending",
+            )
     changes: dict[str, Any] = {name: sent[name] for name in (*TYPED_FIELDS, "target_date") if name in sent}
     if "severity" in sent:
         changes["severity_id"] = _row(RiskRating, sent["severity"], "risk_rating").id

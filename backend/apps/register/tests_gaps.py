@@ -517,6 +517,36 @@ class AcceptingARisk(GapTestCase):
         self.assertEqual(self.approve(gap, self.world.second_officer).status_code, 200)
         self.assert_problem(self.approve(gap, self.world.second_officer), 409, "invalid_transition")
 
+    def test_an_accepted_risk_keeps_the_facts_the_approver_accepted(self) -> None:
+        """What a second person accepted cannot be rewritten afterwards: the severity, the
+        text, the plan and the target stay until the gap is reopened, and a new acceptance
+        takes a second person again. The owner may still change, so ownership survives a
+        person leaving (security-review-c8 M2)."""
+        gap = self.gap()
+        self.ask(gap)
+        accepted = self.approve(gap, self.world.second_officer).json()
+        for body in ({"severity": "low"}, {"title": "Something smaller"}, {"description": "Other words"}, {"remediation": "None"}, {"targetDate": "2031-01-01"}):
+            with self.subTest(body=body):
+                self.assert_problem(self.patch(accepted, body), 409, "invalid_transition")
+        stored = self.stored(gap)
+        self.assertEqual((stored.version, stored.severity.key, stored.status.key), (accepted["version"], "high", "risk_accepted"))
+        moved = self.patch(accepted, {"ownerTeam": "compliance"})
+        self.assertEqual(moved.status_code, 200, moved.content)
+        self.assertEqual(moved.json()["status"]["key"], "risk_accepted")
+
+    def test_a_waiting_acceptance_is_approved_on_the_facts_it_was_asked_for(self) -> None:
+        """While an acceptance waits, the facts it was asked on cannot change under the
+        approver; closing the gap, which drops the request, still can (security-review-c8 M2)."""
+        gap = self.gap()
+        waiting = self.ask(gap).json()
+        for body in ({"severity": "low"}, {"description": "Other words"}, {"targetDate": "2031-01-01"}):
+            with self.subTest(body=body):
+                self.assert_problem(self.patch(waiting, body), 409, "request_pending")
+        self.assertEqual(self.stored(gap).version, waiting["version"])
+        closed = self.patch(waiting, {"status": "closed"})
+        self.assertEqual(closed.status_code, 200, closed.content)
+        self.assertIsNone(closed.json()["riskAcceptance"])
+
     def test_the_database_refuses_the_requester_as_approver(self) -> None:
         gap = self.gap()
         self.ask(gap)
