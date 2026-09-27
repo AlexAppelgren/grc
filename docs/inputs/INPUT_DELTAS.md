@@ -385,6 +385,9 @@ here names it with its backticked `METHOD /path`.
   contentLanguages?}` as keys. Reminder, escalation, digest-day and triage settings land
   with the workflow policy (chunk 10, `c10-workflow-policy`, section 19) as columns of their
   own, not chunk 9's (CHUNK9_TASKS ruling 6); retention is chunk 12's.
+  contentLanguages?}` as keys. Reminder, escalation and retention settings land with
+  the workflow policy as columns of their own: `c10-workflow-policy`, not chunk 9
+  (CHUNK9_TASKS ruling 6), which also adds `change_case.triage_due_at`.
 - `GET /tenant/members` answers a page `{items, total}` (playbook 10: every list
   paginates) of `{userId, email, name, status, roles[{key,kind,label}], title,
   lastSeenAt, passkeyCount, activeSessions}` rather than a bare array of the designed
@@ -1754,3 +1757,4 @@ existed; building them on `gap` as `c8-register-models` shaped it changes these 
   without it; closing a gap clears an acceptance still waiting on it.
 - A gap on a Statement of Applicability unit (`unitId`) answers 501 `not_built` until
   `c8-units-paste-soa` adds the column.
+- Not built: `triage_due_at` (`c10-workflow-policy`, ruling 6) and `owner_team`

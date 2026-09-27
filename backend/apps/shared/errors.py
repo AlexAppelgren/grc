@@ -45,6 +45,9 @@ STATUS_BY_CODE: dict[str, int] = {
     # A conflict with what they hold and not a field they can fix: the screen offers
     # the revoke that makes room, which is why this is not a plain 422.
     "feed_limit_reached": 409,
+    # The person or team already takes part in the record (COL-04, D-18): a conflict with
+    # what the record holds, and a 409 because a 2xx write must leave an audit row.
+    "already_participant": 409,
 }
 
 

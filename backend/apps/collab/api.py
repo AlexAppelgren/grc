@@ -16,6 +16,12 @@ which the subject registry decides per record (`logic-gate`); the write also nee
 `comments.write`, and the author check is the logic's.
 
 No collab write asks for a step-up: playbook 4.2 lists none of them (CHUNK10_TASKS).
+
+Three more list, add and remove the participants of a register entry (COL-04), in
+`collab/participants.py`. Reading needs `register.read` and adding `register.edit`;
+removing is `logic-gate`, because a person may always leave their own row and removing
+anyone else needs `register.edit` (D-19). Participation approves nothing and grants nothing,
+so none of them asks for a step-up.
 """
 
 import uuid
@@ -24,7 +30,7 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.collab import comments, inbox, me_comments
+from apps.collab import comments, inbox, me_comments, participants
 from apps.collab.schemas import (
     CollabComment,
     CollabCommentCreated,
@@ -36,11 +42,16 @@ from apps.collab.schemas import (
     CollabMyCommentQuery,
     CollabNotificationPage,
     CollabNotificationQuery,
+    CollabParticipant,
+    CollabParticipantInput,
+    CollabParticipantPage,
 )
 from apps.shared import permissions as perms
 from apps.shared.authentication import SessionAuth
 from apps.shared.permissions import requires_permission
-from apps.taxonomy.http import answers_problems, caller_tenant, caller_user, require_any
+from apps.shared.schemas import PageQuery
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, principal, require_any
+from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Collab"])
 
@@ -49,6 +60,16 @@ SESSION = SessionAuth()
 _NOTIFICATION_ID = (
     "The notification to mark read, as a uuid from `GET /notifications`. Another person's "
     "notification, or one in another bank, answers 404, never 403, so no id can be probed."
+)
+_OBLIGATION_ID = (
+    "The obligation, as a uuid from the inventory. The participants are this bank's own, on its "
+    "register entry for the obligation. An obligation the bank cannot see, such as another "
+    "bank's private one, answers 404, never 403, so no id can be probed."
+)
+_PARTICIPANT_ID = (
+    "The participation, as a uuid from `GET /obligations/{obligationId}/participants`. One on "
+    "another bank's register, one that has already ended and one on another obligation answer "
+    "404, never 403, so no id can be probed."
 )
 _COMMENT_ID = (
     "The comment, as a uuid from `GET /comments`. A comment in another bank answers 404, never "
@@ -341,3 +362,136 @@ def list_my_comments(request: HttpRequest, query: Query[CollabMyCommentQuery]) -
     # Ungated by design: self (the caller's own comments and mentions).
     _member(request)
     return me_comments.list_my_comments()
+
+
+# ---------------------------------------------------------------------------------------
+# Participants of a register entry (COL-04, D-18, D-19)
+# ---------------------------------------------------------------------------------------
+@router.get(
+    "/obligations/{obligation_id}/participants",
+    response=CollabParticipantPage,
+    auth=SESSION,
+    operation_id="listObligationParticipants",
+    by_alias=True,
+    summary="See who takes part in an obligation",
+)
+@requires_permission(perms.REGISTER_READ)
+@answers_problems
+def list_obligation_participants(
+    request: HttpRequest, page: Query[PageQuery], obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID)
+) -> Any:
+    """The people and teams taking part in the bank's register entry for an obligation, in
+    the order they were added, for the obligation page's participants panel.
+
+    A read: it changes nothing, writes no audit row and never creates a register entry. Needs
+    a person's session in a bank holding `register.read`; no API key reaches it. Taking part
+    grants nothing, so the list says who is involved and nothing about what they may do.
+
+    Pages with `limit` and `offset`, 20 rows by default and 100 at most. An obligation nobody
+    takes part in, or that the bank has not worked on yet, is a 200 with an empty `items`.
+
+    Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+    finish enrolling, `permission_denied` without `register.read` (naming it in
+    `requiredPermission`), `not_found` for a platform session and for an obligation the bank
+    cannot see, and `validation_error` for a `limit` outside 1 to 100.
+    """
+    tenant = caller_tenant(request)
+    caller_user(request)
+    return participants.list_participants(
+        obligation_id=obligation_id,
+        order=language_order(request, tenant=tenant),
+        limit=page.limit,
+        offset=page.offset,
+    )
+
+
+@router.post(
+    "/obligations/{obligation_id}/participants",
+    response={201: CollabParticipant},
+    auth=SESSION,
+    operation_id="addObligationParticipant",
+    by_alias=True,
+    summary="Add a person or a team to an obligation",
+)
+@requires_permission(perms.REGISTER_EDIT)
+@answers_problems
+def add_obligation_participant(
+    request: HttpRequest, body: CollabParticipantInput, obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID)
+) -> Any:
+    """Name a person or a team on the bank's register entry for an obligation, so it reaches
+    their My work and their notifications. It grants them nothing: a participant still gets
+    403 on anything their role lacks.
+
+    Needs a person's session in a bank holding `register.edit`; no API key reaches it, and no
+    step-up is asked, because taking part approves nothing. The first add on an obligation the
+    bank has not worked on creates its register entry, with its own audit event. Records one
+    audit event holding the participation's, the person's or the team's ids and never a name.
+    A shared obligation lands on this bank's own entry and changes nothing another bank sees.
+    Answers 201 with the participant.
+
+    Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+    finish enrolling, `permission_denied` without `register.edit` (naming it in
+    `requiredPermission`), `not_found` for a platform session and for an obligation the bank
+    cannot see, `validation_error` for a body naming both or neither of `userId` and
+    `teamKey`, or a field it does not name, `unknown_member` for a person who is not an active
+    member of this bank, whether from another bank, deactivated or unknown, `unknown_key` for
+    a team the bank has no active row for, `participant_cannot_read` for a member whose roles
+    cannot read the register, `already_participant` (409) when they already take part, and
+    `too_many_participants` when the entry already holds as many as the deployment allows (50
+    unless configured otherwise).
+    """
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    return 201, participants.add_participant(
+        tenant_id=tenant.id,
+        obligation_id=obligation_id,
+        user_id=body.user_id,
+        team_key=body.team_key,
+        caller_id=user.id,
+        actor=actor_for(request, user),
+        order=language_order(request, tenant=tenant),
+    )
+
+
+@router.delete(
+    "/obligations/{obligation_id}/participants/{participant_id}",
+    response={204: None},
+    auth=SESSION,
+    operation_id="removeObligationParticipant",
+    by_alias=True,
+    summary="Remove a participant, or leave an obligation",
+)
+@answers_problems
+def remove_obligation_participant(
+    request: HttpRequest,
+    obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID),
+    participant_id: uuid.UUID = Path(..., description=_PARTICIPANT_ID),
+) -> Any:
+    """End one participation on the bank's register entry for an obligation: "Leave" on the
+    caller's own row, or "Remove" on anyone else's.
+
+    Any person's session in a bank may leave their own participation, whatever their role,
+    and the audit event is `participant.left`; removing anyone else, a team included, needs
+    `register.edit`, and the audit event is `participant.removed`. Either holds ids only. The
+    participation is ended with its time and who ended it, never deleted, so the record's
+    history still shows who took part until when. No API key reaches it and no step-up is
+    asked. Answers 204 with no body.
+
+    Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+    finish enrolling, `permission_denied` for removing someone else without `register.edit`
+    (naming it in `requiredPermission`), and `not_found` for a platform session, for an
+    obligation the bank cannot see and for a participation that is not live on this bank's
+    entry for it.
+    """
+    # Ungated by design: logic-gate (register.edit, or the person on their own row).
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    participants.remove_participant(
+        tenant_id=tenant.id,
+        obligation_id=obligation_id,
+        participant_id=participant_id,
+        caller_id=user.id,
+        actor=actor_for(request, user),
+        can_edit=principal(request).has_permission(perms.REGISTER_EDIT),
+    )
+    return 204, None

@@ -97,4 +97,8 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # c8-reg-units (REG-08): a Statement of Applicability unit, addressed by its id.
     ("PATCH", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
     ("DELETE", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
+    # c8-participants (COL-04): a participant on a register entry for an obligation private to
+    # tenant A, so the obligation itself is invisible to tenant B.
+    ("GET", "/obligations/{obligation_id}/participants", "collab.Participant", "obligation_participant"),
+    ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}", "collab.Participant", "obligation_participant"),
 ]
