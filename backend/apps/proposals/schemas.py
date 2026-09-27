@@ -276,6 +276,24 @@ class ProposalRecurringDutyPayload(WriteBody):
     lead_days: int = Field(default=0, ge=0, le=366)
 
 
+class ProposalControlPayload(WriteBody):
+    """`new_control` (OWN-05, REG-05, D-99): a control of one of the bank's own obligations,
+    which approval adds as a linked internal item of the `control` link kind, linked to that
+    obligation's register entry. Only ever a record of the bank's own, filed by its own
+    agent's research and decided in its own queue.
+
+    `obligation` is the stable key of an obligation of the bank's own, in force. `name` is
+    how the control is known, the internal item's name; `reference` is the identifier the
+    authority or the bank's framework gives it, when one exists.
+
+    `name` and `reference` need their source, an https link, in `fieldSources`.
+    """
+
+    obligation: str = Field(max_length=120, pattern=STABLE_KEY_PATTERN)
+    name: str = Field(min_length=1, max_length=200)
+    reference: str = Field(default="", max_length=200)
+
+
 class ProposalPayload(CamelSchema):
     """The union as the contract states it: every field of every kind's payload, optional,
     with the kind saying which ones are read. Ninja flattens components, so one named
@@ -1279,7 +1297,9 @@ class ProposalCreateBody(WriteBody):
             "an obligation in force falls due on, as an RFC 5545 rule; `vocabulary_create`, `vocabulary_relabel`, "
             "`vocabulary_retire`, `vocabulary_restore` and `vocabulary_merge` add, reword, turn off, "
             "turn on again or fold together a row of a shared list; `term_create` and `term_update` add "
-            "or reword a taxonomy term. Any other value answers 422 `unknown_key` naming the valid ones."
+            "or reword a taxonomy term. `new_control` is never filed here and answers 422 `validation_error`: "
+            "a control is a record of a bank's own, filed only by that bank's own agent. Any other value "
+            "answers 422 `unknown_key` naming the valid ones."
         ),
         examples=["new_obligation_version"],
     )
@@ -2058,7 +2078,7 @@ _PRIVATE_ROW_EXAMPLE: dict[str, Any] = {
 
 class PrivateProposalRow(CamelSchema):
     """One proposal in this bank's own queue: a record of the bank's own, an instrument or an
-    obligation the shared library does not hold, waiting for a person here to decide it
+    obligation the shared library does not hold or a control of one of those obligations, waiting for a person here to decide it
     (OWN-03). It belongs to this bank alone. The console never lists it, no other bank reads
     it, and no platform reviewer decides it.
 
@@ -2075,7 +2095,9 @@ class PrivateProposalRow(CamelSchema):
         description=(
             "What the proposal adds or changes. A fixed kind, not a vocabulary row: `new_instrument` adds an "
             "instrument of the bank's own, `new_obligation` adds a duty of its own with its first version, "
-            "and `new_obligation_version` adds a version to a duty the bank already holds as its own."
+            "`new_obligation_version` adds a version to a duty the bank already holds as its own, and "
+            "`new_control` adds a control of one of the bank's own duties, which approval links to that duty "
+            "as an internal item of the `control` link kind."
         )
     )
     status: str = Field(

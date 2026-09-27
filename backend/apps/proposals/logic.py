@@ -72,11 +72,12 @@ from apps.library.reading import (
     terms_of,
     unknown_provision_keys,
 )
-from apps.proposals import standards
+from apps.proposals import private_controls, standards
 from apps.proposals.models import OriginType, Proposal, ProposalKind, ProposalStatus, ProposalTenant
 from apps.proposals.schemas import (
     ProposalActorRef,
     ProposalAgentRef,
+    ProposalControlPayload,
     ProposalInstrumentPayload,
     ProposalObligationPayload,
     ProposalObligationVersionPayload,
@@ -121,6 +122,7 @@ PAYLOAD_SCHEMAS: dict[str, type[pydantic.BaseModel]] = {
     ProposalKind.NEW_PROVISION.value: ProposalProvisionPayload,
     ProposalKind.NEW_PROVISION_VERSION.value: ProposalProvisionVersionPayload,
     ProposalKind.NEW_RECURRING_DUTY.value: ProposalRecurringDutyPayload,
+    ProposalKind.NEW_CONTROL.value: ProposalControlPayload,
 }
 VOCABULARY_KINDS = frozenset(
     kind.value
@@ -148,9 +150,21 @@ NEW_RECORD_KINDS = frozenset(
     {ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value, ProposalKind.NEW_PROVISION.value}
 )
 NEW_RECORD_PAYLOADS = (ProposalInstrumentPayload, ProposalObligationPayload, ProposalProvisionPayload)
-# The kinds a bank may file as a record of its own (INV-07, OWN-02): what does not exist in
-# the library yet. A version always targets a shared record, so it is never the bank's own.
-PRIVATE_RECORD_KINDS = frozenset({ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value})
+# The kinds a bank may file as a record of its own (INV-07, OWN-02, OWN-05): what does not
+# exist in the library yet, and a control of one of the bank's own obligations. A version
+# always targets a shared record, so it is never the bank's own.
+PRIVATE_RECORD_KINDS = frozenset(
+    {ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value, ProposalKind.NEW_CONTROL.value}
+)
+# The kinds that are only ever a record of a bank's own: a control (OWN-05, D-99) is never
+# a proposal to the shared library.
+PRIVATE_ONLY_KINDS = frozenset({ProposalKind.NEW_CONTROL.value})
+# The kinds that name no target: a new record, and a control, which names its bank's own
+# obligation by key in its payload.
+UNTARGETED_KINDS = NEW_RECORD_KINDS | PRIVATE_ONLY_KINDS
+# The payloads whose sources are https links only: a new record has no provision of its own
+# to cite, and a control is read from a public page.
+LINK_SOURCED_PAYLOADS = (*NEW_RECORD_PAYLOADS, ProposalControlPayload)
 # Why a provision is refused under a bank's own instrument, filed privately or not.
 PRIVATE_PROVISIONS = "An instrument of your organisation's own holds no provisions: propose its duties as obligations."
 # The two uniqueness constraints on a proposer's retry key (models.py).
@@ -307,6 +321,8 @@ def _validate_target(kind: str, payload: pydantic.BaseModel, owner_tenant_id: uu
         _validate_text_payload(payload)
     elif isinstance(payload, ProposalRecurringDutyPayload):
         validated_recurring_duty(payload)
+    elif isinstance(payload, ProposalControlPayload):
+        private_controls.validated_control(payload, owner_tenant_id)
     else:
         from apps.taxonomy.terms_logic import dimension_by_key, refuse_mirrored
 
@@ -550,7 +566,7 @@ def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUI
     nothing crosses from one zone to the other, INV-07). A proposal nobody could ever apply
     never enters the queue. A new record names no target: it does not exist until the
     proposal is approved."""
-    if kind in NEW_RECORD_KINDS and (target_type or target_id is not None):
+    if kind in UNTARGETED_KINDS and (target_type or target_id is not None):
         raise ValidationError(
             "A new record names no target: leave targetType and targetId out.", code="validation_error"
         )
@@ -577,14 +593,19 @@ def owner_of(kind: str, *, private: bool, tenant_id: uuid.UUID | None) -> uuid.U
     whoever filed it, and still reaches the console, since a target is always a shared
     record. A private filing with no bank, or of a kind that is not a new instrument or
     obligation, is refused rather than quietly filed as shared: a provision with 422
-    `private_provisions_not_supported`, anything else with 422 `validation_error`."""
+    `private_provisions_not_supported`, anything else with 422 `validation_error`. A control
+    is only ever the bank's own (OWN-05), so one filed to the shared library is refused too."""
     if not private:
+        if kind in PRIVATE_ONLY_KINDS:
+            raise ValidationError(
+                "A control is only ever a record of an organisation's own, filed by its own agent.", code="validation_error"
+            )
         return None
     if tenant_id is not None and kind == ProposalKind.NEW_PROVISION.value:
         raise ValidationError(PRIVATE_PROVISIONS, code="private_provisions_not_supported")
     if tenant_id is None or kind not in PRIVATE_RECORD_KINDS:
         raise ValidationError(
-            "Only a new instrument or a new obligation filed inside an organisation can be its own record.",
+            "Only a new instrument, a new obligation or a control filed inside an organisation can be its own record.",
             code="validation_error",
         )
     return tenant_id
@@ -606,6 +627,9 @@ def sourced_fields(payload: pydantic.BaseModel) -> list[str]:
         return fields
     if isinstance(payload, ProposalRecurringDutyPayload):
         return list(payload.model_dump(by_alias=True, exclude_none=True, exclude_defaults=True))
+    if isinstance(payload, ProposalControlPayload):
+        # The obligation it serves is the bank's own record, named by key: not a sourced fact.
+        return ["name", *(["reference"] if payload.reference else [])]
     if isinstance(payload, ProposalProvisionVersionPayload):
         fields = [f"texts.{language}" for language in sorted(payload.texts)]
     elif isinstance(payload, ProposalObligationVersionPayload):
@@ -624,7 +648,7 @@ def sourceable_fields(payload: pydantic.BaseModel) -> list[str]:
     are exactly the fields that need a source; for a vocabulary payload, whose wording a
     person writes, they are the payload's own fields and none of them is required. A key
     naming anything else is a source for nothing, so it is refused rather than stored."""
-    if isinstance(payload, (ProposalObligationVersionPayload, ProposalProvisionVersionPayload, ProposalRecurringDutyPayload, *NEW_RECORD_PAYLOADS)):
+    if isinstance(payload, (ProposalObligationVersionPayload, ProposalProvisionVersionPayload, ProposalRecurringDutyPayload, *LINK_SOURCED_PAYLOADS)):
         return sourced_fields(payload)
     return sorted(payload.model_dump(by_alias=True, exclude_none=True))
 
@@ -667,9 +691,9 @@ def check_field_sources(payload: pydantic.BaseModel, field_sources: dict[str, st
             f"A source is at most {settings.PROPOSAL_SOURCE_MAX_CHARS} characters. Too long: {', '.join(long)}.",
             code="validation_error",
         )
-    if isinstance(payload, NEW_RECORD_PAYLOADS):
-        # A record that does not exist yet has no provision of its own to cite: its facts
-        # come from the authority's page.
+    if isinstance(payload, LINK_SOURCED_PAYLOADS):
+        # A record that does not exist yet has no provision of its own to cite, and a
+        # control none of the bank's own: their facts come from the authority's page.
         unlinked = sorted(field for field, source in field_sources.items() if not is_link(source))
         if unlinked:
             raise ValidationError(
@@ -794,7 +818,7 @@ def create(
     standards.check_payload(kind, target_id, parsed, sources, source_label)
     check_field_sources(parsed, sources)
     source_url = source_url.strip()
-    if kind in NEW_RECORD_KINDS and not is_link(source_url):
+    if kind in UNTARGETED_KINDS and not is_link(source_url):
         # The link the new record itself carries as its source (INV-06); a proposal keeps its
         # sources field by field, and the record keeps this one.
         raise ValidationError(

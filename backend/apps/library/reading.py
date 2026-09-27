@@ -478,6 +478,17 @@ def held_as_own(tenant_id: uuid.UUID, *, instrument: bool, key: str, reference: 
     ).exists()
 
 
+def own_obligation(tenant_id: uuid.UUID, key: str) -> Obligation:
+    """Bank `tenant_id`'s own obligation `key` while it is in force, or 422 `unknown_key`
+    (OWN-05): what a control of the bank's own is filed against and linked to. A shared
+    obligation, another bank's and a retired one are all the same refusal, so a finding
+    learns nothing of what another zone holds."""
+    obligation = Obligation.objects.filter(owner_tenant_id=tenant_id, stable_key=key, status=RecordStatus.ACTIVE.value).first()  # ordering: unique key, at most one row
+    if obligation is None:
+        raise ValidationError(f"{key!r} is not an obligation of your organisation's own in force.", code="unknown_key")
+    return obligation
+
+
 # ---------------------------------------------------------------------------------------
 # What a provision proposal names (PRO-01, INV-02)
 # ---------------------------------------------------------------------------------------

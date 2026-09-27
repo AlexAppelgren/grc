@@ -2025,3 +2025,10 @@ item open research by the bank's own agent (D-89, D-91, ADR 0059). Agents 0009 a
   into `scope_item`; the check `research_request_scope_item_kind` sets it exactly on a
   `scope_item` request, and the partial unique index `research_request_one_per_scope_item`
   researches an item once.
+## d89-controls. A control of the bank's own obligation is a proposal kind (2026-09-27, proposals 0011)
+
+Schema v0.3 has no control inventory: PRD 0.7's OWN-05 and D-99 make a control a REG-05
+internal item of the control kind. Proposals 0011 adds `new_control` to `proposal.kind`
+(choices only, no column). Its approval writes no library row: it creates, or reuses by name,
+an `internal_item` of the bank's `control` link kind and an `internal_link` to the bank's
+register entry on the obligation, in the bank's zone. No table changes.

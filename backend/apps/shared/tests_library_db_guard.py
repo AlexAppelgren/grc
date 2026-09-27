@@ -99,8 +99,10 @@ from apps.library.models import (
 )
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import seed_authorities
-from apps.proposals import apply, logic as proposals
+from apps.proposals import apply, logic as proposals, private_approval
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
+from apps.proposals.tests_private_controls import CONTROL, control_body, own_duty
+from apps.register.models import InternalLink
 from apps.proposals.tests_kinds import (
     INSTRUMENT_KEY,
     OBLIGATION_KEY,
@@ -558,6 +560,36 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
                 step_up_assertion_id=uuid.uuid4(),
             )
 
+    def _approved_control(self, bank: Any, approver: Any) -> Proposal:
+        """d89-controls (OWN-05, D-99): a control of `bank`'s own obligation, filed by its own
+        agent and approved by `approver` in the bank's zone as the private queue does; it
+        writes the bank's internal item and link, never a library row."""
+        body = control_body()
+        with transaction.atomic():
+            tenancy.activate(bank.id)
+            proposal, _ = proposals.create(
+                kind=body["kind"],
+                title=body["title"],
+                payload=body["payload"],
+                proposer=proposals.Proposer(actor=factories.agent_actor(label="Scope researcher")),
+                field_sources=body["fieldSources"],
+                source_label=body["sourceLabel"],
+                source_url=body["sourceUrl"],
+                private=True,
+            )
+        with transaction.atomic():
+            tenancy.activate(bank.id)
+            actor = factories.user_actor(user_id=approver.id)
+            approved = proposals.approve(
+                proposal=private_approval.by_id(proposal.id),
+                reviewer=proposals.Reviewer(actor=actor, user=approver),
+                actor=actor,
+                note="",
+                step_up_assertion_id=uuid.uuid4(),
+            )
+            self.assertTrue(InternalLink.objects.filter(internal_item__kind__key="control", internal_item__name=CONTROL).exists())
+        return approved
+
     def _approved_body(self, body: dict[str, Any]) -> Proposal:
         """`_approved()` for a body as apps/proposals/tests_kinds.py builds one: a new record
         with its own source link, or a version of a record named by type and id."""
@@ -587,6 +619,11 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
     def test_every_proposal_kind_is_approved_through_the_real_path_as_the_app_role(self) -> None:
         self.proposer = factories.platform_user(roles=("library_editor",), email="door-proposer@bleqq.test")
         self.reviewer = factories.platform_user(roles=("library_editor",), email="door-reviewer@bleqq.test")
+        # d89-controls: a bank with an obligation of its own, for the control approved below.
+        control_bank = factories.tenant(slug="door-control-bank")
+        control_approver = factories.member_user(control_bank, roles=("approver",))
+        with transaction.atomic():
+            own_duty(control_bank)
         effective_from = timezone.localdate() + datetime.timedelta(days=30)
         decided: list[Proposal] = []
         with as_the_app_role():
@@ -627,6 +664,7 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
                 provision = Provision.objects.get(stable_key=PROVISION_KEY)
             decided.append(self._approved_body(provision_version_body(provision)))
             decided.append(self._approved_body(duty_body(self.obligation)))
+            decided.append(self._approved_control(control_bank, control_approver))
         # The census: a kind added to ProposalKind fails here until it is approved above. A
         # member added ahead of its payload schema (`obligation_scope`, PRO-04) cannot be
         # filed, which is proven below; it joins the census the moment its schema lands.

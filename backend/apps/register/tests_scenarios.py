@@ -28,6 +28,7 @@ from apps.proposals import logic as proposals_logic
 from apps.proposals.models import Proposal
 from apps.proposals.tests_apply_private import filing
 from apps.proposals.tests_kinds import instrument_body, obligation_body
+from apps.proposals.tests_private_controls import control_body
 from apps.register.applicability import APPLICABILITY_SET, entities_spanned
 from apps.register.logic import ensure_register_entry
 from apps.register.models import Applicability, ComplianceAssessment, Gap, TenantObligation, TenantObligationScope
@@ -721,9 +722,9 @@ class RegisterScenarioTests(TestCase):
 
         d89-private-records proves the register half: the obligation the bank's own agent
         found and a second person approved takes applicability and status as a shared one
-        does. The controls half, the control kind the agent files beside the obligation and
-        its approval into a linked internal item, is d89-controls' (wave 7, D-99), which
-        extends this test when it lands.
+        does. The controls half is d89-controls' (D-99): the control the agent files beside the
+        obligation waits in the bank's own queue and its approval with a passkey links it to
+        the obligation's register entry as an internal item of the control kind.
         """
         seed_library()
         seed_term_dimensions()
@@ -780,9 +781,22 @@ class RegisterScenarioTests(TestCase):
         scope.refresh_from_db()
         self.assertEqual((scope.applicability, scope.compliance_status.key), (Applicability.APPLIES.value, "compliant"))
 
+        # d89-controls: the bank's own agent files the obligation's control, which waits in the
+        # bank's own queue until an approver approves it with a passkey.
+        tenancy.clear_tenant()
+        control = file_finding(bank.tenant.id, control_body(obligation="reg-s17-duty", name="Monthly branch rule check"))
+        waiting = self.client.get("/api/v1/private-proposals", **sign_in(approver, tenant=bank.tenant)).json()["items"]
+        self.assertIn((str(control.id), "new_control"), [(row["id"], row["kind"]) for row in waiting])
+        approved = self.client.post(
+            f"/api/v1/private-proposals/{control.id}/approve", data={}, content_type="application/json", **sign_in(approver, tenant=bank.tenant, step_up=True)
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+        links = self.client.get(f"/api/v1/obligations/{duty.id}/internal-links", **officer).json()["items"]
+        self.assertEqual([(link["label"], link["kind"]["key"]) for link in links], [("Monthly branch rule check", "control")])
+
         # Nothing of it reaches the search index, and tenant B's fetch answers 404.
         self.assertFalse(SearchChunk.objects.filter(source_id=duty.id).exists())
         other = Bank("reg-s17-b")
-        for path in (f"/api/v1/obligations/{duty.id}", f"/api/v1/obligations/{duty.id}/register"):
+        for path in (f"/api/v1/obligations/{duty.id}", f"/api/v1/obligations/{duty.id}/register", f"/api/v1/obligations/{duty.id}/internal-links"):
             refused = self.client.get(path, **sign_in(other.officer, tenant=other.tenant))
             self.assertEqual((refused.status_code, refused.json()["code"]), (404, "not_found"), path)

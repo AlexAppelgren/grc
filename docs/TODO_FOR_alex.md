@@ -2227,3 +2227,19 @@ unless you want one of them changed.
       (HARDENING H109). Default: kept, as a person does it rarely and the answer is still
       under a second. The fix, if you want it, is one savepoint and batched inserts inside
       `record()`'s mechanics.
+
+## d89-controls: a control of the bank's own obligation (2026-09-27, OWN-05, REG-05, D-99)
+
+Built on these defaults; nothing waits on them.
+
+- [ ] **A control names an obligation the bank already holds.** The agent files a control
+      against one of the bank's own obligations in force, by its stable key; a control of an
+      obligation still waiting in the queue is refused (422 `unknown_key`) and the agent files
+      it on a later run. Default: so, because a link needs the register entry of a record
+      that exists. The alternative is a control that rides on its obligation's proposal.
+- [ ] **One control may serve several duties.** Approving a control whose name the bank
+      already holds as a live control links that item rather than making a second one; a
+      retired one of the same name is refused until it is restored.
+- [ ] **What a control holds.** A name and an optional reference, the fields REG-05's internal
+      item has that a public source can give; owner, team, review dates and the bank's own
+      links stay the bank's to set on the item afterwards.
