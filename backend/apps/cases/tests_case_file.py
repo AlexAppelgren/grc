@@ -208,9 +208,9 @@ class CaseFileText(ScenarioTestCase):
                     case_file.compose(tenant=self.bank, case_id=built.case.id, order=["en"])
             counts.append(len(queries))
         self.assertEqual(counts[0], counts[1])
-        # The case with its people, the urgency, effort and close reason labels, the
-        # participants, the assessment, the actions, the evidence, the moves and the
-        # sign-off's step-up.
+        # The case with the sign-off's step-up, its people's names, the urgency, effort and
+        # close reason labels, the participants, the assessment, the actions, the evidence
+        # and the moves.
         self.assertEqual(counts[0], 10)
 
     def test_a_case_at_both_caps_is_served_inside_the_budget(self) -> None:

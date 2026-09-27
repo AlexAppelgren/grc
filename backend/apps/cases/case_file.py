@@ -16,10 +16,11 @@ own time zone with the offset spelled out.
 
 One builder serves both the screen and the export (`apps/reports/exporters/case_file.py`),
 so the two cannot drift. It reads a fixed number of queries whatever the case holds — the
-case with its people and reasons, one label query per reason it carries, the participants
-and their teams' labels, the assessment, the actions, the evidence, the moves and the
-sign-off's step-up — so a case at its caps
-stays inside the request budget. It reads and never writes.
+case with its reasons and the sign-off's step-up, its people's names, one label query per
+reason it carries, the participants and their teams' labels, the assessment, the actions,
+the evidence and the moves — and reads the actions, the evidence and the moves as plain
+values rather than models, so a case at its caps stays inside the request budget. It reads
+and never writes.
 """
 
 from __future__ import annotations
@@ -29,18 +30,24 @@ import uuid
 import zoneinfo
 from typing import Any
 
+from django.db.models import F, OuterRef, QuerySet, Subquery
+
 from apps.cases import logic
 from apps.cases.models import Action, CaseTransition, ChangeCase, Evidence, EvidenceKind, ImpactAssessment
 from apps.collab.models import Participant
+from apps.identity.models import User
 from apps.shared.audit import Actor
+from apps.shared.errors import ProblemError
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.vocabulary import label_for
 
 FALLBACK_LANGUAGE = "en"
 
-# What the file joins beside the case, so naming every person costs no query of its own.
-JOINS = (*logic.CASE_JOINS, "so_what_confirmed_by")
+# What the file joins beside the case. The people it names are read by name in one query
+# of their own: a case joined to a dozen tables costs the planner longer to order than the
+# whole file takes to read.
+JOINS = ("change", "urgency", "sub_status", "dismissed_reason", "close_reason")
 
 _TEXTS: dict[str, dict[str, str]] = {
     "en": {
@@ -218,17 +225,35 @@ _STAGE = {"signoff": "signoff_stage", "closed": "closed_stage", "dismissed": "di
 
 def case_file(*, tenant: Tenant, actor: Actor, user: Any, order: list[str], change_id: uuid.UUID) -> str:
     """The caller's case for this change as its file. Another bank's case, and a change
-    the bank has no case for, answer the same 404 before anything else is read."""
-    return compose(tenant=tenant, case_id=logic.load_case(tenant, change_id).id, order=order)
+    the bank has no case for, answer the same 404 before anything else is read. The case is
+    read once, with everything the file joins beside it."""
+    case = _cases(tenant).filter(change_id=change_id).first()  # ordering: unique (tenant, change)
+    if case is None:
+        raise ProblemError(status=404, code="not_found", detail="Not found.")
+    return _write(tenant, case, order)
 
 
 def compose(*, tenant: Tenant, case_id: uuid.UUID, order: list[str]) -> str:
     """The file of this bank's case with this id, in the first language of `order` the
     catalog holds."""
+    return _write(tenant, _cases(tenant).get(pk=case_id), order)
+
+
+def _cases(tenant: Tenant) -> QuerySet[ChangeCase]:
+    """This bank's cases with what the file joins, and as `step_up` the passkey assertion
+    its latest step-up audit row names: a sign-off's approval (ID-06)."""
+    step_up = AuditEvent.objects.filter(
+        tenant=OuterRef("tenant"), subject_type=logic.SUBJECT_TYPE, subject_id=OuterRef("pk"), step_up_assertion_id__isnull=False
+    ).order_by("-created", "-id")
+    return ChangeCase.objects.select_related(*JOINS).filter(tenant=tenant).annotate(step_up=Subquery(step_up.values("step_up_assertion_id")[:1]))
+
+
+def _write(tenant: Tenant, case: ChangeCase, order: list[str]) -> str:
     texts = next((_TEXTS[code] for code in order if code in _TEXTS), _TEXTS[FALLBACK_LANGUAGE])
     zone = zoneinfo.ZoneInfo(tenant.timezone)
-    case = ChangeCase.objects.select_related(*JOINS).get(tenant=tenant, pk=case_id)
-    writer = _Writer(texts, zone)
+    people = (case.owner_id, case.triaged_by_id, case.so_what_confirmed_by_id, case.dismissed_by_id, case.signoff_requested_by_id, case.signed_off_by_id)
+    names = dict(User.objects.filter(pk__in=[person for person in people if person is not None]).values_list("id", "name"))
+    writer = _Writer(texts, zone, names)
     _change(writer, case, order)
     _so_what(writer, case)
     taking_part = logic.participations(case)
@@ -236,18 +261,20 @@ def compose(*, tenant: Tenant, case_id: uuid.UUID, order: list[str]) -> str:
     _participants(writer, taking_part, order)
     _actions(writer, case)
     _evidence(writer, case)
-    _signoff(writer, case, tenant)
+    _signoff(writer, case)
     _outcome(writer, case, order)
     _history(writer, case)
     return "\n".join(writer.lines) + "\n"
 
 
 class _Writer:
-    """The lines of one file, the catalog and the bank's clock."""
+    """The lines of one file, the catalog, the bank's clock and the names of the case's
+    people by id."""
 
-    def __init__(self, texts: dict[str, str], zone: zoneinfo.ZoneInfo) -> None:
+    def __init__(self, texts: dict[str, str], zone: zoneinfo.ZoneInfo, names: dict[uuid.UUID, str]) -> None:
         self.texts = texts
         self.zone = zone
+        self.names = names
         self.lines: list[str] = []
 
     def say(self, key: str, **values: str) -> None:  # compliance: allow-kwargs the catalog's named placeholders
@@ -262,8 +289,15 @@ class _Writer:
     def at(self, moment: datetime.datetime) -> str:
         return moment.astimezone(self.zone).strftime("%Y-%m-%d %H:%M UTC%:z")
 
-    def name(self, user: Any) -> str:
-        return self.texts["nobody"] if user is None else str(user.name)
+    def name(self, name: str | None) -> str:
+        return self.texts["nobody"] if name is None else name
+
+    def person(self, user_id: uuid.UUID | None) -> str:
+        return self.name(None if user_id is None else self.names[user_id])
+
+
+def _of(user: Any) -> str | None:
+    return None if user is None else str(user.name)
 
 
 def _day(value: datetime.date | None, writer: _Writer) -> str:
@@ -286,10 +320,10 @@ def _change(writer: _Writer, case: ChangeCase, order: list[str]) -> None:
         writer.say("stage_detail", value=stage, detail=label_for(case.sub_status, order))
     urgency = label_for(case.urgency, order)
     writer.say("urgency" if case.urgency_confirmed else "urgency_suggested", value=urgency)
-    if case.owner is not None:
-        writer.say("owner", name=case.owner.name)
+    if case.owner_id is not None:
+        writer.say("owner", name=writer.person(case.owner_id))
     if case.triaged_at is not None:
-        writer.say("triaged", name=writer.name(case.triaged_by), at=writer.at(case.triaged_at))
+        writer.say("triaged", name=writer.person(case.triaged_by_id), at=writer.at(case.triaged_at))
 
 
 def _so_what(writer: _Writer, case: ChangeCase) -> None:
@@ -299,7 +333,7 @@ def _so_what(writer: _Writer, case: ChangeCase) -> None:
         return
     writer.lines.append(case.so_what_text)
     if case.so_what_confirmed and case.so_what_confirmed_at is not None:
-        writer.say("so_what_confirmed", name=writer.name(case.so_what_confirmed_by), at=writer.at(case.so_what_confirmed_at))
+        writer.say("so_what_confirmed", name=writer.person(case.so_what_confirmed_by_id), at=writer.at(case.so_what_confirmed_at))
     else:
         writer.say("so_what_draft")
 
@@ -317,7 +351,7 @@ def _assessment(writer: _Writer, case: ChangeCase, order: list[str], taking_part
         writer.say("what_must_change", value=assessment.what_must_change or writer.texts["none"])
         writer.say("deadline", value=_day(assessment.internal_deadline, writer))
         writer.say("effort", value=writer.texts["none"] if assessment.effort is None else label_for(assessment.effort, order))
-        writer.say("assessment_saved", name=writer.name(assessment.saved_by), at=writer.at(assessment.saved_at))
+        writer.say("assessment_saved", name=writer.name(_of(assessment.saved_by)), at=writer.at(assessment.saved_at))
     else:
         writer.say("assessment_none")
     teams = [label_for(team, order) for team in logic.contributor_teams(taking_part)]
@@ -332,68 +366,67 @@ def _participants(writer: _Writer, taking_part: list[Participant], order: list[s
         if row.team is not None:
             writer.say("participant_team", name=label_for(row.team, order))
         else:
-            writer.say("participant_person", name=writer.name(row.user))
-        writer.say("participant_added", name=writer.name(row.added_by), at=writer.at(row.added_at))
+            writer.say("participant_person", name=writer.name(_of(row.user)))
+        writer.say("participant_added", name=writer.name(_of(row.added_by)), at=writer.at(row.added_at))
         if row.removed_at is not None:
-            writer.say("participant_removed", at=writer.at(row.removed_at), name=writer.name(row.removed_by))
+            writer.say("participant_removed", at=writer.at(row.removed_at), name=writer.name(_of(row.removed_by)))
 
 
 def _actions(writer: _Writer, case: ChangeCase) -> None:
     writer.section("actions")
-    actions = list(Action.objects.select_related("owner", "done_by", "removed_by").filter(case=case))
+    # Plain values, not models: a case at its cap holds hundreds, and the file only reads them.
+    actions = Action.objects.filter(case=case).values(
+        "title", "due_date", "done_at", "removed_at", owner_name=F("owner__name"), done_by_name=F("done_by__name"), removed_by_name=F("removed_by__name")
+    )
     if not actions:
         writer.say("actions_none")
     for action in actions:
-        writer.say("action_line", title=action.title)
-        writer.say("action_owner", name=action.owner.name, due=action.due_date.isoformat())
-        if action.done_at is not None:
-            writer.say("action_done", name=writer.name(action.done_by), at=writer.at(action.done_at))
+        writer.say("action_line", title=action["title"])
+        writer.say("action_owner", name=action["owner_name"], due=action["due_date"].isoformat())
+        if action["done_at"] is not None:
+            writer.say("action_done", name=writer.name(action["done_by_name"]), at=writer.at(action["done_at"]))
         else:
             writer.say("action_open")
-        if action.removed_at is not None:
-            writer.say("action_removed", name=writer.name(action.removed_by), at=writer.at(action.removed_at))
+        if action["removed_at"] is not None:
+            writer.say("action_removed", name=writer.name(action["removed_by_name"]), at=writer.at(action["removed_at"]))
 
 
 def _evidence(writer: _Writer, case: ChangeCase) -> None:
     writer.section("evidence")
-    pieces = list(Evidence.objects.select_related("uploaded_by").filter(case=case).order_by("uploaded_at", "id"))
+    pieces = (
+        Evidence.objects.filter(case=case)
+        .order_by("uploaded_at", "id")
+        .values("name", "kind", "uploaded_at", "content_hash", "url", "scan_state", "scanned_at", "removed_at", uploader=F("uploaded_by__name"))
+    )
     if not pieces:
         writer.say("evidence_none")
     for piece in pieces:
-        writer.say("evidence_line", name=piece.name, kind=writer.word(piece.kind))
-        writer.say("evidence_added", name=writer.name(piece.uploaded_by), at=writer.at(piece.uploaded_at))
-        if piece.content_hash:
-            writer.say("evidence_hash", value=piece.content_hash)
-        if piece.url:
-            writer.say("evidence_url", value=piece.url)
-        if piece.kind == EvidenceKind.FILE.value:
-            scan = writer.word(piece.scan_state)
-            if piece.scanned_at is None:
+        writer.say("evidence_line", name=piece["name"], kind=writer.word(piece["kind"]))
+        writer.say("evidence_added", name=writer.name(piece["uploader"]), at=writer.at(piece["uploaded_at"]))
+        if piece["content_hash"]:
+            writer.say("evidence_hash", value=piece["content_hash"])
+        if piece["url"]:
+            writer.say("evidence_url", value=piece["url"])
+        if piece["kind"] == EvidenceKind.FILE.value:
+            scan = writer.word(piece["scan_state"])
+            if piece["scanned_at"] is None:
                 writer.say("evidence_scan", value=scan)
             else:
-                writer.say("evidence_scan_at", value=scan, at=writer.at(piece.scanned_at))
-        if piece.removed_at is not None:
-            writer.say("evidence_removed", at=writer.at(piece.removed_at))
+                writer.say("evidence_scan_at", value=scan, at=writer.at(piece["scanned_at"]))
+        if piece["removed_at"] is not None:
+            writer.say("evidence_removed", at=writer.at(piece["removed_at"]))
 
 
-def _signoff(writer: _Writer, case: ChangeCase, tenant: Tenant) -> None:
+def _signoff(writer: _Writer, case: ChangeCase) -> None:
     writer.section("signoff")
     if case.signoff_requested_at is None:
         writer.say("signoff_none")
         return
-    writer.say("signoff_requested", name=writer.name(case.signoff_requested_by), at=writer.at(case.signoff_requested_at))
-    if case.signed_off_by is None or case.closed_at is None:
+    writer.say("signoff_requested", name=writer.person(case.signoff_requested_by_id), at=writer.at(case.signoff_requested_at))
+    if case.signed_off_by_id is None or case.closed_at is None:
         return
-    writer.say("signoff_by", name=case.signed_off_by.name, at=writer.at(case.closed_at))
-    # The approval's audit row names the passkey assertion that confirmed it (ID-06).
-    step_up = (
-        AuditEvent.objects.filter(
-            tenant=tenant, subject_type=logic.SUBJECT_TYPE, subject_id=case.id, step_up_assertion_id__isnull=False
-        )
-        .order_by("-created", "-id")
-        .values_list("step_up_assertion_id", flat=True)
-        .first()
-    )
+    writer.say("signoff_by", name=writer.person(case.signed_off_by_id), at=writer.at(case.closed_at))
+    step_up = case.step_up  # type: ignore[attr-defined]  # annotated by _cases
     if step_up is not None:
         writer.say("signoff_step_up", value=str(step_up))
 
@@ -403,7 +436,7 @@ def _outcome(writer: _Writer, case: ChangeCase, order: list[str]) -> None:
     if case.dismissed_reason is not None and case.dismissed_at is not None and case.status == CaseStatusCategory.DISMISSED.value:
         writer.say(
             "dismissed",
-            name=writer.name(case.dismissed_by),
+            name=writer.person(case.dismissed_by_id),
             at=writer.at(case.dismissed_at),
             reason=label_for(case.dismissed_reason, order),
         )
@@ -418,16 +451,17 @@ def _outcome(writer: _Writer, case: ChangeCase, order: list[str]) -> None:
 
 def _history(writer: _Writer, case: ChangeCase) -> None:
     writer.section("history")
-    for move in CaseTransition.objects.select_related("by_user").filter(case=case):
-        if move.from_status:
+    moves = CaseTransition.objects.filter(case=case).values("from_status", "to_status", "at", "note", by=F("by_user__name"))
+    for move in moves:
+        if move["from_status"]:
             writer.say(
                 "move",
-                at=writer.at(move.at),
-                from_stage=writer.word(move.from_status),
-                to_stage=writer.word(move.to_status),
-                name=writer.name(move.by_user),
+                at=writer.at(move["at"]),
+                from_stage=writer.word(move["from_status"]),
+                to_stage=writer.word(move["to_status"]),
+                name=writer.name(move["by"]),
             )
         else:
-            writer.say("move_first", at=writer.at(move.at), to_stage=writer.word(move.to_status))
-        if move.note:
-            writer.say("move_note", value=move.note)
+            writer.say("move_first", at=writer.at(move["at"]), to_stage=writer.word(move["to_status"]))
+        if move["note"]:
+            writer.say("move_note", value=move["note"])
