@@ -1582,6 +1582,7 @@ third column the R2 plan names (`acts_as_user`), are built with these departures
   `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
 
 ## 18. A batch proposal and its rows (2026-09-25, c11-proposal-batches-model)
+## 19. A batch proposal and its rows (2026-09-25, c11-proposal-batches-model)
 
 Version 0.3 of the schema has no batch: PRD PRO-04 and AGT-05 ask for one proposal that
 changes many library records, previewed and approved whole or row by row. Proposals 0008
