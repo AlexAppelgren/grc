@@ -104,6 +104,28 @@ describe('useAsk', () => {
     await waitFor(() => expect(result.current.state.phase).toBe('failed'));
   });
 
+  it('shows only the latest question: the one it left never overwrites it', async () => {
+    asking();
+    stubFetch(async (request) => {
+      const { question } = (await request.clone().json()) as { question: string };
+      if (question === 'second') return sseResponse(framesOf([{ event: 'answer', answer: ANSWER, stopReason: null }]));
+      // A real network rejects the request it was told to abandon.
+      return new Promise<Response>((_resolve, reject) => {
+        const abandon = () => reject(new DOMException('aborted', 'AbortError'));
+        if (request.signal.aborted) abandon();
+        request.signal.addEventListener('abort', abandon);
+      });
+    });
+    const { result } = renderHook(() => useAsk());
+    act(() => result.current.ask({ question: 'first' }));
+    act(() => result.current.ask({ question: 'second' }));
+    await waitFor(() => expect(result.current.state).toEqual({ phase: 'answered', answer: ANSWER, stopReason: null }));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    expect(result.current.state.phase).toBe('answered');
+  });
+
   it('stops reading the stream it left when the reader leaves', async () => {
     asking();
     const signals: AbortSignal[] = [];

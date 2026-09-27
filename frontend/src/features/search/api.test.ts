@@ -87,4 +87,31 @@ describe('askQuestion', () => {
     expect(isAxiosError(failure)).toBe(true);
     expect(isAxiosError(failure) ? failure.response?.data : null).toEqual({ code: 'feature_off', detail: 'Switched off.', status: 403 });
   });
+
+  it('skips a frame that carries no data, such as a keep-alive comment', async () => {
+    const answer = { event: 'problem', code: 'model_unavailable', detail: 'Ask again.' };
+    stubFetch(() => sseResponse([': keep-alive\n\n', `data: ${JSON.stringify(answer)}\n\n`]));
+
+    const seen: AskEvent[] = [];
+    await search.askQuestion({ question: 'q' }, (event) => seen.push(event), new AbortController().signal);
+
+    expect(seen).toEqual([answer]);
+  });
+
+  it('keeps a refusal whose body is not JSON as its text', async () => {
+    stubFetch(() => new Response('Bad gateway', { status: 502, headers: { 'Content-Type': 'text/plain' } }));
+
+    const failure = await search.askQuestion({ question: 'q' }, () => undefined, new AbortController().signal).catch((error: unknown) => error);
+
+    expect(isAxiosError(failure) ? failure.response?.data : null).toBe('Bad gateway');
+  });
+
+  it('passes on a failure that never reached the server unchanged', async () => {
+    stubFetch(() => Promise.reject(new TypeError('Failed to fetch')));
+
+    const failure = await search.askQuestion({ question: 'q' }, () => undefined, new AbortController().signal).catch((error: unknown) => error);
+
+    expect(isAxiosError(failure)).toBe(true);
+    expect(isAxiosError(failure) ? failure.response : 'not axios').toBeUndefined();
+  });
 });

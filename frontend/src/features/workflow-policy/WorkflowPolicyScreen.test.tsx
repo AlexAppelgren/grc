@@ -195,6 +195,29 @@ describe('the workflow policy page', () => {
     expect(within(field('reminderDaysBefore')).getByRole('alert')).toHaveTextContent('Each list holds 1 to 5 reminders, each 1 to 90 days.');
   });
 
+  it('adds a reminder day only on Enter or Add, never on another key', async () => {
+    server();
+    await renderScreen();
+    const input = screen.getByLabelText('Days before a due date');
+    fireEvent.change(input, { target: { value: '14' } });
+    expect(fireEvent.keyDown(input, { key: 'Tab' })).toBe(true);
+    expect(within(field('reminderDaysBefore')).queryByText('14 days')).toBeNull();
+    expect(input).toHaveValue(14);
+    expect(fireEvent.keyDown(input, { key: 'Enter' })).toBe(false);
+    expect(within(field('reminderDaysBefore')).getByText('14 days')).toBeInTheDocument();
+  });
+
+  it('names a platform default weekday it has no word for by its key', async () => {
+    installAdapter((sent) => {
+      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
+      if (sent.path === ROLES_PATH) return { status: 200, data: [role(admin), role(officer)] };
+      if (sent.path === TENANT_PATH) return { status: 200, data: { ...tenant, workflowDefaults: { ...defaults, digestWeekday: 'someday' } } };
+      return { status: 404, data: { code: 'not_found', detail: 'Not for this test.' } };
+    });
+    await renderScreen();
+    expect(within(field('digestWeekday')).getByText(/Platform default: someday\.$/)).toBeInTheDocument();
+  });
+
   it('keeps a retired target role among the choices so the form still shows what it points at', () => {
     const retired = { key: 'old_role', kind: null, label: 'Old role' };
     const options = roleOptions(undefined, { ...tenant, workflow: { ...tenant.workflow, escalateToRole: retired } });

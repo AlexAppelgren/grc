@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { AxiosAdapter, InternalAxiosRequestConfig } from 'axios';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getMe } from '@/features/identity/api';
 import { identityKeys } from '@/features/identity/hooks';
@@ -300,5 +300,34 @@ describe('collab hooks: comments', () => {
     act(() => remove.result.current.mutate('c-1'));
     await waitFor(() => expect(remove.result.current.isSuccess).toBe(true));
     expect(reads()).toBe(10);
+  });
+});
+
+describe('collab hooks: an optimistic step that fails before any call', () => {
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+  });
+
+  it('sends nothing and leaves the inbox, the bell and the switches exactly as they were', async () => {
+    const sent = installAdapter(server());
+    const { wrapper, queryClient } = queryWrapper();
+    const view = renderHook(() => useInboxAndMe(), { wrapper });
+    await waitFor(() => expect(view.result.current.me.data).toBeDefined());
+    await waitFor(() => expect(readIds(view.result)).toEqual(['n-3']));
+    const hooks = renderHook(() => ({ one: useMarkNotificationRead(), all: useMarkAllNotificationsRead(), prefs: useUpdateNotificationPrefs() }), { wrapper });
+    const cancel = vi.spyOn(queryClient, 'cancelQueries').mockRejectedValue(new Error('cache busy'));
+
+    await act(async () => {
+      await Promise.allSettled([hooks.result.current.one.mutateAsync('n-1'), hooks.result.current.all.mutateAsync(), hooks.result.current.prefs.mutateAsync({ mentions: false })]);
+    });
+
+    expect(cancel).toHaveBeenCalled();
+    await waitFor(() => expect(hooks.result.current.prefs.isError).toBe(true));
+    expect(hooks.result.current.one.isError).toBe(true);
+    expect(hooks.result.current.all.isError).toBe(true);
+    expect(sent.filter((s) => s.method !== 'get')).toEqual([]);
+    expect(readIds(view.result)).toEqual(['n-3']);
+    expect(queryClient.getQueryData<Me>(identityKeys.me)).toEqual(me);
   });
 });

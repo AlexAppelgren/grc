@@ -1,4 +1,4 @@
-import type { AxiosAdapter, InternalAxiosRequestConfig } from 'axios';
+import { AxiosError, isAxiosError, type AxiosAdapter, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { resetApiForTests } from '@/shared/testing/api-adapter';
@@ -137,5 +137,45 @@ describe('cases api', () => {
     const calls = record({});
     await cases.getCaseFile('a/b');
     expect(calls[0]?.path).toBe('/api/v1/changes/a%2Fb/case-file');
+  });
+});
+
+describe('a refused download', () => {
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+  });
+
+  function refuse(data: unknown): void {
+    api.defaults.adapter = async (config) => {
+      const response = { data, status: 403, statusText: '403', headers: {}, config } as AxiosResponse;
+      throw new AxiosError('status 403', '403', config, undefined, response);
+    };
+  }
+
+  const failureOf = (evidenceId: string) => cases.downloadEvidence(evidenceId).catch((error: unknown) => error);
+
+  it('reads a problem that arrived as bytes back into JSON, so the panel branches on its code', async () => {
+    refuse(new Blob([JSON.stringify({ code: 'scan_pending', detail: 'Still being checked.' })], { type: 'application/problem+json' }));
+    const failure = await failureOf('e-1');
+    expect(isAxiosError(failure) ? failure.response?.data : null).toEqual({ code: 'scan_pending', detail: 'Still being checked.' });
+  });
+
+  it('reads bytes that are not JSON as an empty problem, never as a crash', async () => {
+    refuse(new Blob(['<html>Bad gateway</html>'], { type: 'text/html' }));
+    const failure = await failureOf('e-1');
+    expect(isAxiosError(failure) ? failure.response?.data : null).toEqual({});
+  });
+
+  it('passes on a refusal already read as JSON, and an error that never reached the server, unchanged', async () => {
+    refuse({ code: 'permission_denied' });
+    const refused = await failureOf('e-1');
+    expect(isAxiosError(refused) ? refused.response?.data : null).toEqual({ code: 'permission_denied' });
+
+    const offline = new TypeError('Failed to fetch');
+    api.defaults.adapter = async () => {
+      throw offline;
+    };
+    expect(await failureOf('e-1')).toBe(offline);
   });
 });

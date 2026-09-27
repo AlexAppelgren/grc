@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
@@ -8,6 +8,7 @@ import {
   INSTRUMENT_PAGE,
   libraryKeys,
   OBLIGATION_PAGE,
+  useChangeObligationTag,
   useInstrument,
   useInstrumentProvisions,
   useInstruments,
@@ -181,5 +182,47 @@ describe('library hooks', () => {
     await waitFor(() => expect(on.result.current.data?.toVersion).toBe(2));
     expect(sent.map((s) => [s.path, s.params])).toEqual([['/api/v1/provisions/pr-6/diff', { lang: 'en' }]]);
     expect(libraryKeys.provisionDiff('pr-6', 'en')).not.toEqual(libraryKeys.provisionDiff('pr-6', 'sv'));
+  });
+});
+
+describe('tagging one obligation', () => {
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+  });
+
+  it("writes the answer's tags into every cached read of the obligation, leaves its diff and a failed read alone, and re-reads the lists", async () => {
+    const custody = { key: 'custody', kind: null, label: 'Custody' };
+    const sent = installAdapter((s) => {
+      if (s.method === 'post') return { status: 200, data: { tags: s.path.endsWith('/remove') ? [] : [custody] } };
+      if (s.path === '/api/v1/obligations') return { status: 200, data: { items: [], total: 0 } };
+      if ((s.params as { asOf?: string } | null)?.asOf === '2026-01-01') return { status: 500 };
+      if (s.path.endsWith('/diff')) return { status: 200, data: diff };
+      return { status: 200, data: detail };
+    });
+    const { wrapper, queryClient } = queryWrapper();
+    // Each read's tags are taken during render, as a screen would, so the render follows them.
+    const reads = renderHook(
+      () => {
+        const [today, june, failed, changes, list] = [useObligation('ob-1'), useObligation('ob-1', '2026-06-30'), useObligation('ob-1', '2026-01-01'), useObligationDiff('ob-1', 'en', true), useObligations({})];
+        return { today: today.data?.tenantTags, june: june.data?.tenantTags, failed: failed.isError ? failed.data : 'pending', settled: changes.isSuccess && list.isSuccess };
+      },
+      { wrapper },
+    );
+    await waitFor(() => expect(reads.result.current).toEqual({ today: [], june: [], failed: undefined, settled: true }));
+    const diffBefore = queryClient.getQueryData(libraryKeys.obligationDiff('ob-1', 'en'));
+    const tag = renderHook(() => useChangeObligationTag('ob-1'), { wrapper });
+
+    await act(() => tag.result.current.mutateAsync({ tagKey: 'custody', on: true }));
+    await waitFor(() => expect(reads.result.current).toEqual({ today: [custody], june: [custody], failed: undefined, settled: true }));
+    expect(queryClient.getQueryData(libraryKeys.obligationDiff('ob-1', 'en'))).toBe(diffBefore);
+    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/obligations')).toHaveLength(2));
+
+    await act(() => tag.result.current.mutateAsync({ tagKey: 'custody', on: false }));
+    await waitFor(() => expect(reads.result.current.today).toEqual([]));
+    expect(sent.filter((s) => s.method === 'post').map((s) => [s.path, s.body])).toEqual([
+      ['/api/v1/taggings', { tagKey: 'custody', subjectType: 'obligation', subjectId: 'ob-1' }],
+      ['/api/v1/taggings/remove', { tagKey: 'custody', subjectType: 'obligation', subjectId: 'ob-1' }],
+    ]);
   });
 });

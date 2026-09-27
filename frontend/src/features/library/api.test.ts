@@ -212,6 +212,13 @@ describe('library api', () => {
     expect(library.complianceOf({ key: 'invented', kind: null, label: 'Invented' })).toBeNull();
   });
 
+  it('names the person who verified a row, and nobody when the server leaves the field out', async () => {
+    const { verifiedBy: _left, ...unnamed } = serverRow;
+    installAdapter(() => ({ status: 200, data: { items: [{ ...serverRow, verifiedBy: { id: 'u-1', name: 'Johan Ek' } }, unnamed], total: 2 } }));
+    const page = await library.listObligations();
+    expect(page.items.map((row) => row.verifiedBy)).toEqual([{ id: 'u-1', name: 'Johan Ek' }, null]);
+  });
+
   it('reads a row with no title, no versions, no tags and a footprint reason', async () => {
     const outside = {
       ...serverRow,
@@ -565,5 +572,12 @@ describe('library provisions api', () => {
     }));
     expect(await library.getProvisionDiff('pr-6', 'en')).toMatchObject({ fromVersion: 1, toVersion: 2, language: 'en' });
     expect(sent.map((s) => [s.path, s.params])).toEqual([['/api/v1/provisions/pr-6/diff', { lang: 'en' }]]);
+  });
+
+  it('asks for the provision diff without a language when the screen has none to give', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: { fromVersion: 1, toVersion: 2, fromEffective: null, toEffective: null, language: 'sv', isMachine: false, segments: [] } }));
+    await library.getProvisionDiff('pr-6');
+    await library.getProvisionDiff('pr-6', '');
+    expect(sent.map((s) => s.params)).toEqual([{}, {}]);
   });
 });

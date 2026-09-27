@@ -4,10 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { homeKeys } from '@/features/home/hooks';
 import { useChange, watchKeys } from '@/features/watch/hooks';
 import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
-import { tokenStore } from '@/shared/utils/api-client';
+import { api, tokenStore } from '@/shared/utils/api-client';
 
 import {
   caseKeys,
+  refusedFieldsOf,
   staleWriteOf,
   useAddAction,
   useAddEvidence,
@@ -147,5 +148,47 @@ describe('cases hooks', () => {
       'post /api/v1/changes/c-1/signoff/approve',
       'post /api/v1/changes/c-1/signoff/send-back',
     ]);
+  });
+});
+
+describe('evidence upload progress', () => {
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+  });
+
+  it('hears the share of the bytes sent, and 0 while the size is not known', async () => {
+    api.defaults.adapter = async (config) => {
+      config.onUploadProgress?.({ loaded: 50, total: 200, bytes: 50, lengthComputable: true });
+      config.onUploadProgress?.({ loaded: 80, total: undefined, bytes: 30, lengthComputable: false });
+      return { data: { evidence: { id: 'e-1' } }, status: 201, statusText: '201', headers: {}, config };
+    };
+    const heard: number[] = [];
+    const { wrapper } = queryWrapper();
+    const hooks = renderHook(() => ({ withProgress: useAddEvidence('c-1', (sent) => heard.push(sent)), without: useAddEvidence('c-1') }), { wrapper });
+    const file = new Blob(['%PDF-1.7'], { type: 'application/pdf' });
+
+    await hooks.result.current.withProgress.mutateAsync({ kind: 'file', name: 'criteria.pdf', file });
+    expect(heard).toEqual([0.25, 0]);
+    await hooks.result.current.without.mutateAsync({ kind: 'file', name: 'criteria.pdf', file });
+    expect(heard).toEqual([0.25, 0]);
+  });
+});
+
+describe('refusedFieldsOf', () => {
+  const refusal = (data: unknown) => ({ isAxiosError: true, response: { status: 422, data } });
+
+  it('names each refused field by its last segment, skipping entries that name none', () => {
+    const error = refusal({
+      code: 'validation_error',
+      errors: [{ field: 'body.ownerId', message: 'x' }, { field: 'dueDate' }, { message: 'no field' }, { field: 7 }, null, 'body.title'],
+    });
+    expect(refusedFieldsOf(error)).toEqual(['ownerId', 'dueDate']);
+  });
+
+  it('names nothing for a validation error without a list, another code, or an error that is not a refusal', () => {
+    expect(refusedFieldsOf(refusal({ code: 'validation_error' }))).toEqual([]);
+    expect(refusedFieldsOf(refusal({ code: 'stale_write', errors: [{ field: 'ownerId' }] }))).toEqual([]);
+    expect(refusedFieldsOf(new Error('boom'))).toEqual([]);
   });
 });

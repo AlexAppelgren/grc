@@ -297,3 +297,96 @@ describe('the obligation page and the change page', () => {
     expect(reads(sent)).toEqual([]);
   });
 });
+
+describe('CommentsPanel edges', () => {
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('reads without a composer where no permissions are known yet', async () => {
+    serve([comment('c-1')]);
+    const { wrapper } = queryWrapper();
+    const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
+    render(
+      <Wrapper>
+        <LocaleProvider locale="en">
+          <CommentsPanel subject={SUBJECT} />
+        </LocaleProvider>
+      </Wrapper>,
+    );
+
+    expect(await screen.findByText('You can read comments here but not add them.')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).toBeNull();
+  });
+
+  it('drops the not-notified line once the next comment reaches everyone it mentions', async () => {
+    let thread: Comment[] = [];
+    serve([], (s) => {
+      if (s.path === '/api/v1/comments' && s.method === 'get') return { status: 200, data: { items: thread, total: thread.length } };
+      if (s.method === 'post') {
+        const posted = comment(`c-${thread.length + 1}`, { author: SARA, body: (s.body as { body: string }).body });
+        thread = [...thread, posted];
+        return { status: 201, data: { ...posted, undeliveredMentions: thread.length === 1 ? [JOHAN] : [] } };
+      }
+      return undefined;
+    });
+    renderIn(<CommentsPanel subject={SUBJECT} />);
+
+    const box = await screen.findByRole('combobox', { name: 'Add a comment' });
+    fireEvent.change(box, { target: { value: 'First', selectionStart: 5 } });
+    fireEvent.click(screen.getByRole('button', { name: 'Comment' }));
+    await waitFor(() => expect(within(rowOf('c-1')).getByText('Not notified: Johan Berg.')).toBeInTheDocument());
+
+    fireEvent.change(box, { target: { value: 'Second', selectionStart: 6 } });
+    fireEvent.click(screen.getByRole('button', { name: 'Comment' }));
+    await screen.findByText('Second');
+    expect(document.querySelector('[data-not-notified]')).toBeNull();
+  });
+
+  it('offers Edit alone where the server allows only editing, and Cancel leaves the text as it was', async () => {
+    const sent = serve([comment('c-1', { author: SARA, canEdit: true })]);
+    renderIn(<CommentsPanel subject={SUBJECT} />);
+
+    await screen.findByText('Body of c-1');
+    expect(within(rowOf('c-1')).queryByRole('button', { name: 'Delete' })).toBeNull();
+    fireEvent.click(within(rowOf('c-1')).getByRole('button', { name: 'Edit' }));
+    const box = screen.getByRole('textbox', { name: 'Edit' });
+    expect(box).toHaveValue('Body of c-1');
+    fireEvent.change(box, { target: { value: 'Changed my mind' } });
+    fireEvent.click(within(rowOf('c-1')).getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByRole('textbox', { name: 'Edit' })).toBeNull();
+    expect(within(rowOf('c-1')).getByText('Body of c-1')).toBeInTheDocument();
+    expect(sent.some((s) => s.method === 'patch')).toBe(false);
+  });
+
+  it('reads a comment the server sent without text as empty, and edits it from empty', async () => {
+    serve([comment('c-1', { author: SARA, body: null, canEdit: true })]);
+    renderIn(<CommentsPanel subject={SUBJECT} />);
+
+    await waitFor(() => expect(rowOf('c-1')).not.toBeNull());
+    expect(within(rowOf('c-1')).queryByText('Comment deleted')).toBeNull();
+    expect(rowOf('c-1').querySelector('p.whitespace-pre-wrap')?.textContent).toBe('');
+    fireEvent.click(within(rowOf('c-1')).getByRole('button', { name: 'Edit' }));
+    expect(screen.getByRole('textbox', { name: 'Edit' })).toHaveValue('');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('keeps the comment when the delete is cancelled', async () => {
+    const sent = serve([comment('c-1', { author: SARA, canDelete: true })]);
+    renderIn(<CommentsPanel subject={SUBJECT} />);
+
+    await screen.findByText('Body of c-1');
+    fireEvent.click(within(rowOf('c-1')).getByRole('button', { name: 'Delete' }));
+    const confirm = within(rowOf('c-1')).getByRole('group', { name: 'Delete this comment?' });
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Cancel' }));
+
+    expect(within(rowOf('c-1')).queryByRole('group')).toBeNull();
+    expect(within(rowOf('c-1')).getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+    expect(sent.some((s) => s.method === 'delete')).toBe(false);
+  });
+});

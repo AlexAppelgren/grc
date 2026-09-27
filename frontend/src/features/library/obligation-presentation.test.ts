@@ -326,4 +326,9 @@ describe('machineConfirmedLabel', () => {
     expect(machineConfirmedLabel(seeded, null, t, defaultFormatContext)).toBeNull();
     expect(machineConfirmedLabel(null, null, t, defaultFormatContext)).toBeNull();
   });
+
+  it('still reads as machine-confirmed when the confirming agent is no longer named', () => {
+    const label = machineConfirmedLabel({ ...byAgents, confirmedByAgent: null }, null, t, defaultFormatContext);
+    expect(label).toBe('Machine-confirmed 17 Aug 2026: proposed by watch-sweeper, confirmed by ');
+  });
 });

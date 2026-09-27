@@ -69,6 +69,10 @@ describe('gap pills', () => {
     ]);
   });
 
+  it('reads a severity without a kind as low rather than guessing from its label', () => {
+    expect(gapPills(gap({ severity: { key: 'critical', kind: null, label: 'Critical' } }))[1]).toMatchObject({ label: 'Critical', tone: 'information' });
+  });
+
   it('reads a status without a kind as open work rather than guessing from its label', () => {
     expect(gapKind(gap({ status: { key: 'closed', kind: null, label: 'Closed' } }))).toBe('open');
   });
@@ -130,6 +134,18 @@ describe('the target line', () => {
     expect(late.text).toMatch(/^Target 15 Sept? 2026, 10 days overdue$/);
     expect(targetLine(gap({ targetDate: '2026-09-15', status: { key: 'closed', kind: 'closed', label: 'Closed' } }), today, en, defaultFormatContext).overdue).toBe(false);
     expect(targetLine(gap({ targetDate: null }), today, en, defaultFormatContext).text).toBe('No target date');
+  });
+
+  it("says today on the day itself, and only the date once a finished gap's target has passed", () => {
+    expect(targetLine(gap({ targetDate: '2026-09-25' }), today, en, defaultFormatContext)).toEqual({ text: 'Target 25 Sept 2026, today', overdue: false });
+    const closed = { key: 'closed', kind: 'closed', label: 'Closed' };
+    const passed = targetLine(gap({ targetDate: '2026-09-15', status: closed }), today, en, defaultFormatContext);
+    expect(passed.overdue).toBe(false);
+    expect(passed.text).toMatch(/^15 Sept? 2026$/);
+  });
+
+  it('reads a target it cannot place on the calendar as due today, never as overdue', () => {
+    expect(targetLine(gap({ targetDate: 'soon' }), today, en, defaultFormatContext)).toEqual({ text: 'Target soon, today', overdue: false });
   });
 
   it('names a team that owns the gap, or says nobody does yet', () => {

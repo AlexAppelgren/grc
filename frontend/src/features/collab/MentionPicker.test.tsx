@@ -99,4 +99,47 @@ describe('MentionPicker', () => {
     fireEvent.blur(screen.getByRole('combobox'));
     expect(screen.queryByRole('listbox')).toBeNull();
   });
+
+  it('leaves the keys alone while no list is open', () => {
+    const sent = renderPicker();
+    type('Hello');
+    const box = screen.getByRole('combobox');
+    expect(fireEvent.keyDown(box, { key: 'Enter' })).toBe(true);
+    expect(fireEvent.keyDown(box, { key: 'ArrowDown' })).toBe(true);
+    expect(box).toHaveValue('Hello');
+    expect(sent).toEqual([]);
+  });
+
+  it('lets Enter through when nobody matches, and keeps the list open saying so', async () => {
+    const picked: PersonRef[] = [];
+    renderPicker(picked);
+    type('@zz');
+    await screen.findByText("No one in your organisation matches 'zz'");
+    const box = screen.getByRole('combobox');
+    expect(fireEvent.keyDown(box, { key: 'Enter' })).toBe(true);
+    expect(box).toHaveValue('@zz');
+    expect(picked).toEqual([]);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+  });
+
+  it('keeps the focus in the text when an option is pressed', async () => {
+    renderPicker();
+    type('@an');
+    const option = await screen.findByRole('option', { name: 'Anna Ek' });
+    // The press is cancelled so the text keeps its focus and the list stays open for the click.
+    expect(fireEvent.mouseDown(option)).toBe(false);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+  });
+
+  it('writes the name over the letters at the end of the text when the browser reports no caret', async () => {
+    const picked: PersonRef[] = [];
+    renderPicker(picked);
+    type('Ask @jo');
+    await screen.findByRole('option', { name: 'Johan Berg' });
+    const box = screen.getByRole('combobox');
+    Object.defineProperty(box, 'selectionStart', { configurable: true, get: () => null });
+    fireEvent.keyDown(box, { key: 'Enter' });
+    expect(box).toHaveValue('Ask Johan Berg ');
+    expect(picked).toEqual([PEOPLE[1]]);
+  });
 });
