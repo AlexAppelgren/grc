@@ -1,6 +1,7 @@
 import type { Download, Locator, Page } from '@playwright/test';
 
 import { expect, type ApiGuard } from './api-guard';
+import { openCase as openWorkCase } from './cases-work';
 
 // Helpers for the sign-off journeys and J-3 (c9-e2e-signoff-j3; CAS-S8 to CAS-S11,
 // CAS-S15). Each journey spends a case of its own from apps/shared/e2e_seed.py
@@ -37,17 +38,12 @@ export function casePanels(page: Page): Locator {
 }
 
 /**
- * Opens the change page of a seeded case from Search, which finds every registered change by
- * its title. The feed would be the natural way in, but its "In progress" tab lists assigned
- * cases only, so a case being implemented or waiting for sign-off is on no tab of it.
+ * Opens the change page of a seeded case. Search reads the library only since D-104, and the
+ * feed's "In progress" tab lists assigned cases only, so a case being implemented or waiting
+ * for sign-off is found as cases-work.ts finds one: by its stable key on `GET /changes`.
  */
 export async function openCase(page: Page, seeded: SeededCase): Promise<void> {
-  await page.goto('/search');
-  await page.getByRole('searchbox', { name: 'Search' }).fill(seeded.title);
-  await page.getByRole('button', { name: 'Search', exact: true }).click();
-  await page.locator('a[data-hit-type="change"]').filter({ hasText: seeded.title }).first().click();
-  await expect(page.locator(`[data-change="${seeded.stableKey}"]`)).toBeVisible();
-  await expect(casePanels(page)).toBeVisible();
+  await openWorkCase(page, seeded.stableKey);
 }
 
 /** Tenant A's own date `days` from today, as a date input takes it (tenant A keeps Stockholm time). */
