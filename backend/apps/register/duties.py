@@ -233,6 +233,8 @@ def complete_occurrence(
             tenant_id=tenant.id,
             before={"status": before},
             after={
+                # The note is the person's own words: it stays on the occurrence and never
+                # reaches the audit value (R2 cross-cutting rule m, CHUNK10 rule 13).
                 "status": DutyStatus.DONE.value,
                 # The note is the bank's own words: the row says one was left, never what it
                 # says (R2_CROSS_CUTTING (m); security-review-c8 M1).

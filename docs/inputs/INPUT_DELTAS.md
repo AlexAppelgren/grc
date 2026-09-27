@@ -970,29 +970,6 @@ behind their real gates and answer 501 `not_built` until `collab/inbox.py`,
   `comments.write` checked by the route on the write; `PATCH` and `DELETE` carry
   `@requires_permission("comments.write")` and leave the author check to the logic. A
   platform session belongs to no bank and gets 404.
-Chunk 8 (the register contract, `c8-register-contract`), 2026-09-25:
-
-- Applicability has no request (D-75, which supersedes D-44 and ADR 0038). The designed
-  `GET /applicability-requests` (`listApplicabilityRequests`),
-  `POST /obligations/{obligationId}/applicability-requests` (`requestApplicability`),
-  `POST /applicability-requests/{requestId}/approve` (`approveApplicability`) and
-  `POST /applicability-requests/{requestId}/reject` (`rejectApplicability`) are not built,
-  and neither is the withdraw route the chunk 8 plan once added. They are replaced by
-  `setApplicability`, `PUT /obligations/{obligationId}/applicability`, which stores one
-  confirmed answer for the obligation, one legal entity or one unit, and
-  `setApplicabilityMany`, `POST /applicability`, which stores many confirmed rows in one
-  call capped by `REGISTER_BULK_MAX`. Both take `applicability.approve`, no step-up and
-  no second approver, and write one audit event per row naming the person, the value
-  before and after, and the reason. There is no `applicability_request` table and no
-  "Waiting for approval" state for applicability; the designed `Note` body and
-  `ApplicabilityRequest` shapes go with them.
-- `PATCH /obligations/{obligationId}/register` (`updateRegister`) keeps its designed fields
-  and adds `rationale`, stored on the assessment row a status change writes (REG-04), and
-  takes the status, risk and people as keys and ids. It answers `RegisterEntry`, which
-  adds `applicabilityDecidedBy`, `entities` (one row per legal entity, D-42) and `version`
-  for `If-Match` (section 4) to the designed `Register`, and returns the status and risk
-  as `{key, kind, label}` rows of the bank's own lists (section 1).
-
 
 acc-register-read (ACC-04, ACC-08, D-76), 2026-09-25:
 
@@ -1706,6 +1683,7 @@ enabled and forced row-level security, with these departures on purpose:
 - `GET /exports/{exportId}/download` streams the file itself (section 4, section 7), with
   `Content-Disposition: attachment` and `Cache-Control: no-store`, and records every
   download in the audit log. There is no `DownloadLink`.
+
 ## acc-entries-and-log. The access log of a bank's own agents (2026-09-25, governance 0005)
 
 `schema.sql` has no table for AGENT_ACCESS.md section 9's access log. `agent_access_call` is
@@ -1891,7 +1869,7 @@ ADR 0042's tranche 2 is built with these departures from `CHUNK8_TASKS.md`:
   a handler that rolls a refused request back (`answers_problems`, a 404) takes the row with
   it, so the log holds every read that answered.
 
-## 18. A proposal owned by a bank, and the bank's own queue declared (2026-09-25, d89-proposal-owner)
+## 20. A proposal owned by a bank, and the bank's own queue declared (2026-09-25, d89-proposal-owner)
 
 §5's private-records row, built for INV-07 and OWN-03 (D-57, D-89, ADR 0050, ADR 0059):
 
@@ -1986,3 +1964,18 @@ topic, as `change_document.risk_flags` carries them. Both default to empty. The 
 start it); after that a read answers its run's state (`succeeded` as `done`, `failed` and
 `interrupted` as `failed`), so no second writer keeps the two in step. `completed_at` is
 written when a re-tag's run files its batch.
+## d89-private-records. The bank's own queue decided (2026-09-27, INV-07, OWN-03, OWN-04)
+
+§20's routes now answer (D-57, ADR 0050, ADR 0059; D-1xx, d89-private-records):
+
+- `GET /private-proposals` answers the bank's own open proposals only, oldest first, as
+  `PrivateProposalPage`; a decided proposal leaves it.
+- `POST /private-proposals/{proposalId}/approve` and `/reject` answer `PrivateProposalRow`
+  and add the errors the shared queue's decisions answer: `four_eyes_violation` and
+  `invalid_transition` (409), `reason_required` (422) on a rejection, and on approval
+  `duplicate_key` (409) and `unknown_key` or `validation_error` (422) from the apply.
+- New code `private_provisions_not_supported` (422): a provision under a bank's own
+  instrument, or filed as the bank's own. A bank's own obligation names a bank's own
+  instrument, and a shared one a shared instrument, else 422 `validation_error`.
+- A support session's library reads leave the bank's own records out and answer 404 for
+  their addresses. No schema changes.

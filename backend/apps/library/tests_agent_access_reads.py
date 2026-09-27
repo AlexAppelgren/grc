@@ -93,7 +93,8 @@ class TradingBank:
         build.provision_version(chapter, texts={"en": "Card payments are authenticated."})
         build.provision_version(chapter, version_no=2, texts={"en": "Card payments are strongly authenticated."})
         self.chapter = chapter
-        with build.library_write(build.REASON):
+        # The shared library's own links, written from no bank as its door writes them (library 0012).
+        with tenancy.platform_zone(), build.library_write(build.REASON):
             self.cards.provisions.add(chapter)
             self.untagged.provisions.add(chapter)
         self.trading = self.bank.entry(departments=[trading], name="Trading platform coding agent")

@@ -280,9 +280,18 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "a new obligation applied from an approved proposal: the actor is platform staff or "
         "a platform agent, and the title is the obligation's stable key, a library fact."
     ),
-    "apps/proposals/apply.py record(SubjectType.INSTRUMENT.value) tenant_id=None actor=actor title=instrument.stable_key": (
-        "A new instrument applied from an approved proposal: the actor is platform staff or a "
-        "platform agent, and the title is the instrument's stable key, a library fact."
+    # d89-private-records: the two creates now name the proposal's owner. With none they are
+    # the shared library's, as the rows above; with one the row is that bank's own, never read
+    # by another tenant.
+    "apps/proposals/apply.py record(SubjectType.INSTRUMENT.value) tenant_id=proposal.owner_tenant_id actor=actor title=instrument.stable_key": (
+        "A new instrument applied from an approved proposal: for the shared library the actor is "
+        "platform staff or a platform agent; for a bank's own record the row is written in that "
+        "bank's zone. The title is the instrument's stable key either way."
+    ),
+    "apps/proposals/apply.py record(SubjectType.OBLIGATION.value) tenant_id=owner actor=actor title=obligation.stable_key": (
+        "A new obligation applied from an approved proposal: for the shared library the actor is "
+        "platform staff or a platform agent; for a bank's own record the row is written in that "
+        "bank's zone. The title is the obligation's stable key either way."
     ),
     "apps/proposals/apply.py record(SubjectType.PROVISION.value) tenant_id=None actor=actor title=provision.stable_key": (
         "A new provision or a new text of one applied from an approved proposal: the actor is "

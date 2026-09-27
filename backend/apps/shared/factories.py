@@ -833,3 +833,5 @@ def notification(tenant: Tenant) -> SimpleNamespace:
             candidates=[(person.id, "mention")],
         )
     return SimpleNamespace(id=told.id)
+
+

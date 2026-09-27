@@ -1588,6 +1588,17 @@ Built by default; nothing waits on you. Say if any should change.
       and a reach request is never withdrawn (the requester's colleague rejects it).
       Switching reach off needs one person and a step-up; on again takes a new request and
       a second person. `GET /tenant/reach` is readable with `security.manage` alone.
+## c11-proposal-batches-decide: deciding a batch row by row (2026-09-25, PRO-04, D-1xx)
+
+- [ ] **Who decides a re-tag batch an agent files.** Built: a second person holding
+      `proposals.review`, with a passkey, and never the proposer. An agent reviewer is
+      refused (409 `person_review_required`) and no API key reaches the route. Default if you
+      say nothing: it stays person-only.
+- [ ] **A large batch is slow to approve.** Each approved row re-indexes its obligation in the
+      same transaction, about 25 ms a row, so approving a full batch of 100 takes a couple of
+      seconds, over the 250 ms budget (a logged warning, not an error). Default if you say
+      nothing: it stays in one transaction, as PRO-02 asks; a background job is the change if
+      it is felt.
 
 ## acc-principal-guard: how an agent access credential is fenced (2026-09-25, ACC-03, ACC-09)
 
@@ -1686,18 +1697,6 @@ Defaults taken; nothing waits on them.
 - [ ] **The AGT-S4 journey stays `fixme`.** The integration scenario is green; the console
       screen that publishes and retires a version is not built yet, and its journey belongs
       to the package that builds it.
-
-## c11-proposal-batches-decide: deciding a batch row by row (2026-09-25, PRO-04, D-1xx)
-
-- [ ] **Who decides a re-tag batch an agent files.** Built: a second person holding
-      `proposals.review`, with a passkey, and never the proposer. An agent reviewer is
-      refused (409 `person_review_required`) and no API key reaches the route. Default if you
-      say nothing: it stays person-only.
-- [ ] **A large batch is slow to approve.** Each approved row re-indexes its obligation in the
-      same transaction, about 25 ms a row, so approving a full batch of 100 takes a couple of
-      seconds, over the 250 ms budget (a logged warning, not an error). Default if you say
-      nothing: it stays in one transaction, as PRO-02 asks; a background job is the change if
-      it is felt.
 
 ## security-review-c8: two questions from the chunk 8 security review (2026-09-27)
 
@@ -2040,3 +2039,20 @@ Defaults taken; nothing waits on them.
 - [ ] **A run stopped from outside reads as `failed`**, on a research request and in "What
       bleqq watches" (whose read broke on the `interrupted` status two merged packages
       brought together; fixed here).
+## d89-private-records: the bank's own queue, answered by default (2026-09-27, INV-07, OWN-03, OWN-04, D-1xx)
+
+Built on these defaults; each stays yours to overrule.
+
+- [ ] **The queue lists what waits, and nothing decided.** `GET /private-proposals` answers
+      the bank's open proposals, oldest first. Default: a decided proposal leaves the list
+      (its audit rows keep the decision). Say if the bank wants a decided tab as the
+      console has.
+- [ ] **A bank's own obligation sits under a bank's own instrument.** A private obligation
+      naming a shared instrument, or a shared one naming the bank's own, is refused (422).
+      Default: so, so that nothing of one zone ever hangs under the other. The alternative
+      is a bank's own duty under a shared law, which ADR 0059 does not ask for.
+- [ ] **A version of a bank's own obligation is not proposed in R2.** Its later wording
+      waits for a scenario that needs it; today a version is always of a shared record.
+- [ ] **Support sessions read the shared library only.** Platform support under a grant
+      never sees the bank's own records: lists leave them out and their addresses are 404,
+      as for another bank (OWN-04).
