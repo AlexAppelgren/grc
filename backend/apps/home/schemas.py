@@ -41,14 +41,15 @@ from __future__ import annotations
 
 import datetime
 import uuid
-from typing import Literal
+from typing import Literal, Self
 
 from ninja import Field
-from pydantic import ConfigDict
+from pydantic import ConfigDict, model_validator
 from pydantic.json_schema import JsonDict
 
 from apps.library.schemas import LibraryRef
 from apps.shared.schemas import CamelSchema, PageQuery, WriteBody
+from apps.taxonomy.schemas import PersonRef, TermRef
 from apps.watch.schemas import (
     CHANGE_ROW_EXAMPLE,
     SOURCE_EXAMPLE,
@@ -764,4 +765,420 @@ class HomeCalendarFeedCreated(CamelSchema):
             "prefix and a hash of the secret."
         ),
         examples=["https://app.bleqq.com/api/v1/calendar/feed.ics?token=<prefix>.<secret-shown-once>"],
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# My work (HOM-05, TEN-03, D-23, D-24, D-97; c8-mywork-service). `apps/home/my_work.py`
+# computes every value below and `GET /me/work` returns these shapes; nothing here is
+# stored. Keys, kinds, dates and record names only, never a phrase: the screen writes
+# "You're responsible" or "12 days overdue" from its own catalog.
+# ---------------------------------------------------------------------------------------
+# Four tier-one kinds (apps/shared/kinds.py). The screen draws a section per bucket and a
+# phrase per reason and date kind, so each is a kind the code branches on, not a list an
+# admin curates. `commented`, `duty_due`, `internal_deadline` and `action_due` are declared
+# now, although this service fills none of them yet, so a client written today does not
+# change when comments (chunk 10), duties and cases (chunk 9) add their sources.
+WorkBucket = Literal["overdue", "due_soon", "aware", "open"]
+WorkReason = Literal["owner", "participant"]
+WorkDateKind = Literal[
+    "review",
+    "gap_target",
+    "duty_due",
+    "internal_deadline",
+    "action_due",
+    "key_date",
+    "linked",
+    "version_applied",
+    "commented",
+]
+# The audit subject type of the record a row is about, the same key the audit log and a
+# comment's subject carry.
+WorkItemKind = Literal["tenant_obligation", "internal_item", "change_case"]
+WorkScope = Literal["mine", "unit"]
+
+_WORK_BUCKET = (
+    "Which section of My work the row is in, a fixed kind, in this order: `overdue` (its next "
+    "date is before the bank's own today), `due_soon` (its next date is today or within the "
+    "`MY_WORK_DUE_SOON_DAYS` setting, 30 days by default), `aware` (a change on the item: an "
+    "open case whose change has a confirmed link to it, or a new version of the obligation "
+    "applied within the `MY_WORK_AWARE_DAYS` setting, 14 days by default) and `open` "
+    "(everything else the person is responsible for or takes part in). A row sits in the "
+    "first section it qualifies for and appears once."
+)
+
+WORK_ITEM_EXAMPLE: JsonDict = {
+    "bucket": "overdue",
+    "itemKind": "tenant_obligation",
+    "subject": {
+        "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+        "changeId": None,
+        "internalItemId": None,
+        "title": "Assess the quality of investment research paid for",
+    },
+    "entity": {"id": "3b8e2f10-6c4d-4a95-b7e1-0d2c9f5a8e36", "name": "Fund AB"},
+    "date": {"value": "2026-09-22", "kind": "review", "precision": "day"},
+    "reasons": [
+        {
+            "reason": "owner",
+            "who": {"person": {"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Erik Holm"}, "team": None},
+            "via": None,
+        }
+    ],
+    "status": {"key": "compliant", "kind": "compliant", "label": "Compliant"},
+    "urgency": None,
+    "openChangeCount": 1,
+}
+
+
+class HomeWorkQuery(PageQuery, CamelSchema):
+    """What `GET /me/work` reads from its query string: whose work, which section, and the
+    shared paging — 20 rows by default and 100 at most through `limit` and `offset`, where a
+    larger `limit` answers 422 rather than being clamped.
+
+    `scope=unit` needs `unit`, and `scope=mine` refuses one, each with a 422: a department
+    view without a department, or a personal view that names one, is a mistake in the call,
+    never something to guess at. The department view is a filter and never a grant: any
+    member may open any department, and every row still needs its own read permission."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={"examples": [{"scope": "mine", "limit": 20, "offset": 0}]},
+    )
+
+    scope: WorkScope = Field(
+        default="mine",
+        description=(
+            "Whose work to list, a fixed kind: `mine` (the default) is what the caller or one "
+            "of the caller's teams is responsible for or takes part in; `unit` is what the "
+            "teams of the department named by `unit`, and of every unit below it, are "
+            "responsible for, together with those teams' active members."
+        ),
+        examples=["mine"],
+    )
+    unit: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "The department to list, as the uuid of one of the bank's organisation units; "
+            "required with `scope=unit` and refused with `scope=mine`. A unit the bank does not "
+            "have answers 404 `not_found`, exactly as another bank's unit does."
+        ),
+        examples=["5d2a9c7e-1f3b-4e80-a6d4-9b0c2e7f1a35"],
+    )
+    bucket: WorkBucket | None = Field(
+        default=None,
+        description=(
+            f"Only the rows of one section, or every section when left out. {_WORK_BUCKET} "
+            "The counts always cover every section, whatever this filter is."
+        ),
+        examples=["overdue"],
+    )
+
+    @model_validator(mode="after")
+    def _unit_goes_with_its_scope(self) -> Self:
+        if (self.scope == "unit") != (self.unit is not None):
+            raise ValueError("Name a unit with scope=unit, and only then.")
+        return self
+
+
+class HomeWorkWho(CamelSchema):
+    """Who a reason names: one person or one team, never both and never neither."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"person": None, "team": {"key": "retail_compliance", "kind": None, "label": "Retail compliance"}}]
+        }
+    )
+
+    person: PersonRef | None = Field(
+        description=(
+            "The person the reason names, as id and name, or null when it names a team. In the "
+            "caller's own view this is the caller; in a department view it is whichever member "
+            "is responsible, so the row can say 'Anna is responsible'."
+        )
+    )
+    team: TermRef | None = Field(
+        description=(
+            "The team the reason names, as `{key, kind, label}` from the bank's own `team` "
+            "vocabulary, or null when it names a person. Its rows carry no kind, so `kind` is "
+            "null. The bank's admin may add, relabel or retire a team without a deploy, so read "
+            "`GET /vocab/team` for the live set and match on the key, never on the label."
+        )
+    )
+
+
+class HomeWorkVia(CamelSchema):
+    """The obligation that put a change on My work: the change has a confirmed link to it,
+    and the person or team named beside it is involved in it."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17", "title": "Assess the quality of investment research paid for"}
+            ]
+        }
+    )
+
+    obligation_id: uuid.UUID = Field(
+        description="The obligation's identifier in the shared library, as a uuid; the obligation page opens on it.",
+        examples=["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"],
+    )
+    title: str = Field(
+        description=(
+            "The obligation's title from the library, in the reader's language where the library "
+            "has it and in its original language otherwise. A library fact, never the bank's own text."
+        ),
+        examples=["Assess the quality of investment research paid for"],
+    )
+
+
+class HomeWorkReason(CamelSchema):
+    """Why a row is on My work. A row carries every reason that applies, each once."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "reason": "owner",
+                    "who": {"person": {"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Anna Berg"}, "team": None},
+                    "via": None,
+                }
+            ]
+        }
+    )
+
+    reason: WorkReason = Field(
+        description=(
+            "How `who` is involved, a fixed kind: `owner` (a first-line owner, the compliance "
+            "contact, the owner of one legal entity's row, of a gap or of an internal item, or "
+            "an owning team) or `participant` (takes part without owning). Neither grants "
+            "anything: a row still needs its own read permission."
+        ),
+        examples=["owner"],
+    )
+    who: HomeWorkWho = Field(description="The person or the team this reason names.")
+    via: HomeWorkVia | None = Field(
+        description=(
+            "On a change's row, the obligation `who` is involved in that the change has a "
+            "confirmed link to; null on every other row. A link counts once a person, or an "
+            "agent other than the one that suggested it, has confirmed it (D-97); an "
+            "unconfirmed suggestion never puts a change here."
+        )
+    )
+
+
+class HomeWorkSubject(CamelSchema):
+    """The record a row is about. Exactly one of the three identifiers is set, matching the
+    row's `itemKind`."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [WORK_ITEM_EXAMPLE["subject"]]})
+
+    obligation_id: uuid.UUID | None = Field(
+        description=(
+            "On a `tenant_obligation` row, the obligation's identifier in the shared library, as "
+            "a uuid, which the obligation page and its register entry open on; null otherwise."
+        ),
+        examples=["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"],
+    )
+    change_id: uuid.UUID | None = Field(
+        description=(
+            "On a `change_case` row, the regulatory change's identifier in the shared library, as "
+            "a uuid, which the change page opens on; null otherwise."
+        ),
+        examples=[None],
+    )
+    internal_item_id: uuid.UUID | None = Field(
+        description="On an `internal_item` row, the bank's internal item's identifier, as a uuid; null otherwise.",
+        examples=[None],
+    )
+    title: str = Field(
+        description=(
+            "The record's name: an obligation's or a change's title from the library, in the "
+            "reader's language where the library has it, or the bank's own name for an internal item."
+        ),
+        examples=["Assess the quality of investment research paid for"],
+    )
+
+
+class HomeWorkEntity(CamelSchema):
+    """The legal entity a row's date belongs to, where the date is one entity's own."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [WORK_ITEM_EXAMPLE["entity"]]})
+
+    id: uuid.UUID = Field(
+        description="The organisation unit's identifier, as a uuid.",
+        examples=["3b8e2f10-6c4d-4a95-b7e1-0d2c9f5a8e36"],
+    )
+    name: str = Field(
+        description="The bank's own name for the unit, for display only; it may change.",
+        examples=["Fund AB"],
+    )
+
+
+class HomeWorkDate(CamelSchema):
+    """The date that placed a row in its section, and what produced it."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [WORK_ITEM_EXAMPLE["date"]]})
+
+    value: datetime.date = Field(
+        description=(
+            "A plain calendar date (`2026-09-22`), never a timestamp, compared with the bank's "
+            "own today in its own time zone. In `overdue`, `due_soon` and `open` it is the "
+            "row's next open date; in `aware` it is the day the change on the item happened."
+        ),
+        examples=["2026-09-22"],
+    )
+    kind: WorkDateKind = Field(
+        description=(
+            "What the date is, a fixed kind: `review` (a next review, of the entry, of one "
+            "legal entity's row or of an internal item), `gap_target` (an open gap's target "
+            "date), `duty_due` (a recurring duty's due date), `internal_deadline` and "
+            "`action_due` (a case's own dates), `key_date` (a change's key date, which counts "
+            "only while it is still ahead), `linked` (the day a link to the item was "
+            "confirmed), `version_applied` (the day a new version of the obligation was "
+            "applied) and `commented` (a comment on the item)."
+        ),
+        examples=["review"],
+    )
+    precision: DatePrecision = Field(
+        description=(
+            "How exact the date is, a fixed kind: `day`, `month`, `quarter` or `year`. A bank's "
+            "own dates are always `day`; a change's key date carries the source's precision, "
+            "and a reader must never print a day the source did not state."
+        ),
+        examples=["day"],
+    )
+
+
+class HomeWorkItem(CamelSchema):
+    """One row of My work: a record a person or a team is responsible for or takes part
+    in, the section it is in, the date that put it there and every reason it is listed.
+    The bank's own zone: rows come from the bank's register, organisation and cases under
+    row-level security, each shown only when the reader holds its read permission. The
+    regulatory scope never hides a row (D-24)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [WORK_ITEM_EXAMPLE]})
+
+    bucket: WorkBucket = Field(description=_WORK_BUCKET, examples=["overdue"])
+    item_kind: WorkItemKind = Field(
+        description=(
+            "What kind of record the row is about, a fixed kind and the same key the audit log "
+            "names it by: `tenant_obligation` (the bank's register entry on an obligation), "
+            "`internal_item` (a policy, procedure, control or other internal item of the bank) "
+            "or `change_case` (the bank's case on a regulatory change)."
+        ),
+        examples=["tenant_obligation"],
+    )
+    subject: HomeWorkSubject = Field(description="The record the row is about: its identifier and its name.")
+    entity: HomeWorkEntity | None = Field(
+        description=(
+            "The legal entity whose own date or gap placed the row, or null when the date is "
+            "the record's own or there is none."
+        )
+    )
+    date: HomeWorkDate | None = Field(
+        description=(
+            "The date that placed the row in its section, or null on an `open` row with no date "
+            "at all, which sorts after every dated one."
+        )
+    )
+    reasons: list[HomeWorkReason] = Field(
+        description=(
+            "Every reason the row is listed, each once and never empty: owner or participant, "
+            "and who. A row reached through a person and through one of their teams carries both."
+        )
+    )
+    status: TermRef | None = Field(
+        description=(
+            "On a `tenant_obligation` row, the register entry's compliance status as `{key, "
+            "kind, label}` from the bank's own `compliance_status` vocabulary; null on other "
+            "rows. `kind` is the fixed category the pill's tone reads: `compliant`, `partly`, "
+            "`gap` or `not_assessed`. The bank's admin may add, relabel or "
+            "retire a status inside those categories without a deploy, so read "
+            "`GET /vocab/compliance_status` for the live set and match on the key. Whether an "
+            "obligation applies is a separate fact and never read from this."
+        )
+    )
+    urgency: LibraryRef | None = Field(
+        description=f"On a `change_case` row, the case's urgency; null on other rows. {_URGENCY}"
+    )
+    open_change_count: int = Field(
+        ge=0,
+        description=(
+            "On a `tenant_obligation` row, how many of the bank's open cases are on changes with a "
+            "confirmed link to the obligation, 0 or more; 0 on other rows and whenever the reader "
+            "may not read cases."
+        ),
+        examples=[1],
+    )
+
+
+class HomeWorkCounts(CamelSchema):
+    """How many rows each section holds, from the same permission-filtered rows the list
+    shows: a count never includes a record the reader may not read."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"overdue": 2, "dueSoon": 3, "aware": 1, "open": 14}]})
+
+    overdue: int = Field(ge=0, description="Rows whose next date is before the bank's own today, 0 or more.", examples=[2])
+    due_soon: int = Field(
+        ge=0,
+        description="Rows due today or within the `MY_WORK_DUE_SOON_DAYS` setting (30 days by default), 0 or more.",
+        examples=[3],
+    )
+    aware: int = Field(ge=0, description="Rows with a change on the item and no nearer date, 0 or more.", examples=[1])
+    open: int = Field(ge=0, description="Every other row, 0 or more.", examples=[14])
+
+
+class HomeWorkPage(CamelSchema):
+    """`GET /me/work` (HOM-05, D-23): one page of My work, the counts of every section and
+    the kinds of record the reader may not see. An empty list is a 200 with zero counts;
+    kinds the reader may not read are named in `permissionLimited`, so a screen says so
+    instead of 'Nothing to do', and the page never answers 403 as a whole."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "scope": "mine",
+                    "unit": None,
+                    "counts": {"overdue": 1, "dueSoon": 0, "aware": 0, "open": 0},
+                    "permissionLimited": [],
+                    "items": [WORK_ITEM_EXAMPLE],
+                    "total": 1,
+                }
+            ]
+        }
+    )
+
+    scope: WorkScope = Field(
+        description="Whose work this is, echoing the query: `mine` (the caller's) or `unit` (a department's).",
+        examples=["mine"],
+    )
+    unit: uuid.UUID | None = Field(
+        description="The department listed, as the uuid of the bank's organisation unit, or null with `scope=mine`.",
+        examples=[None],
+    )
+    counts: HomeWorkCounts = Field(
+        description="How many rows each section holds, whatever `bucket` and the paging are."
+    )
+    permission_limited: list[WorkItemKind] = Field(
+        description=(
+            "The kinds of record left out because the reader's roles may not read them, each "
+            "once: `tenant_obligation` and `internal_item` without `register.read`, "
+            "`change_case` without `cases.read`. Empty when nothing is left out. It says a kind "
+            "is hidden, never how many rows of it there are."
+        ),
+        examples=[[]],
+    )
+    items: list[HomeWorkItem] = Field(
+        description=(
+            "The rows of this page, at most `limit` of them, in section order and then by date "
+            "— oldest overdue first, soonest due first, undated rows last — then by urgency and "
+            "identifier, so two reads never swap rows."
+        )
+    )
+    total: int = Field(
+        ge=0,
+        description="How many rows match `scope` and `bucket` in all, before paging, 0 or more.",
+        examples=[1],
     )

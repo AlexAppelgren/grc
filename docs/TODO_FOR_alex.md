@@ -1488,3 +1488,13 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
       then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
       (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**
+
+## c8-mywork-service: how long a linked change stays on My work (2026-09-25, HOM-05, D-25, D-97)
+
+- [ ] **A confirmed link keeps its change under "Changes on your items" while the
+      case is open.** D-25 puts the 14-day window (`MY_WORK_AWARE_DAYS`) on new
+      obligation versions; it says nothing about how long a linked change stays, so
+      the default taken is: for as long as the bank's case on it is open, unless its
+      key date brings it into "Due soon" first. Default if you say nothing: it stays
+      so. The alternative is the same 14 days from the day the link was confirmed,
+      after which the change drops off My work while the case is still open.
