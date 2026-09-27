@@ -333,6 +333,12 @@ RESEARCH_URL_MAX_BYTES = env_int("RESEARCH_URL_MAX_BYTES", 1_000_000)
 RESEARCH_URL_MAX_REDIRECTS = env_int("RESEARCH_URL_MAX_REDIRECTS", 3)
 if min(RESEARCH_REQUESTS_PER_MONTH, RESEARCH_URL_TIMEOUT_SECONDS, RESEARCH_URL_MAX_BYTES) < 1 or RESEARCH_URL_MAX_REDIRECTS < 0:
     raise ImproperlyConfigured("The RESEARCH_* settings must be positive, and RESEARCH_URL_MAX_REDIRECTS at least 0")
+# d89-agent-research (OWN-02, D-98, ADR 0061): the longest each of a scope item's text fields
+# (its name, official reference and source address) may be when it reaches the bank's own
+# agent; each is cut to it before it leaves the worker.
+SCOPE_RESEARCH_TEXT_MAX_CHARS = env_int("SCOPE_RESEARCH_TEXT_MAX_CHARS", 2000)
+if SCOPE_RESEARCH_TEXT_MAX_CHARS < 1:
+    raise ImproperlyConfigured("SCOPE_RESEARCH_TEXT_MAX_CHARS must be at least 1")
 
 MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp
 MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")

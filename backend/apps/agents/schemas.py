@@ -919,12 +919,15 @@ class ResearchRequestOut(CamelSchema):
     model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_REQUEST]})
 
     id: uuid.UUID = Field(description="The request's identifier, a UUID. Another bank's request answers 404.")
-    kind: Literal["run_now", "check_source", "check_url", "research_topic", "retag"] = Field(
+    kind: Literal["run_now", "check_source", "check_url", "research_topic", "retag", "scope_item"] = Field(
         description=(
             "What was asked. `run_now`: run the agent once now. `check_source`: check one "
             "registered source now. `check_url`: check one web address now. `research_topic`: "
             "research the topic named. `retag`: the console's request to re-tag library "
-            "records, answered by a batch proposal and never a direct edit."
+            "records, answered by a batch proposal and never a direct edit. `scope_item`: "
+            "research a scope item a second person approved into the regulatory scope, opened "
+            "by the server and never asked for here; what it finds waits in the organisation's "
+            "own queue as proposals a person decides."
         )
     )
     tenant_agent_id: uuid.UUID | None = Field(

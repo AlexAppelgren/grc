@@ -1707,3 +1707,27 @@ Defaults taken; nothing waits on them.
       whole bank's, and tenant A's Ask journeys run in parallel. The cap half stays tenant A's.
       The AGT-S5 journey narrows the scope to Sweden, because the screen offers only the bank's
       own markets (Sweden and Denmark in the seed); the integration test narrows to SE and FI.
+
+## d89-agent-research: the bank's own agent researches an approved scope item (2026-09-27, OWN-02, AGT-04, AGT-05, D-98)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **An item that cannot be researched when it is approved waits.** With no
+      `scope-researcher` of the bank's own switched on and unpaused, the bank's AI off, or its
+      cap reached, the approval opens nothing and one `scope_item.research_waiting` audit row
+      names why; the item reads "waiting for your agent". Switching the agent on later does
+      not open research on items already in scope. Default: keep it; the follow-up is a
+      "research now" action on a waiting item, or opening waiting items when the agent is
+      switched on.
+- [ ] **A duplicate is refused by stable key as well as by official reference**, each against
+      the bank's own records only (409 `already_in_our_library`). Another bank's record, and
+      the shared library's, are no duplicate of the bank's own.
+- [ ] **A duty is filed under an instrument the library already holds.** A new obligation
+      names an existing instrument, so a duty of an instrument the same run proposes cannot be
+      filed until that instrument is approved; the creation check this package reuses decides
+      which instruments a bank's own duty may name. AGT-S16's two obligations sit under a
+      shared instrument.
+- [ ] **What reaches the model is ADR 0061's three fields, each cut to
+      `SCOPE_RESEARCH_TEXT_MAX_CHARS` (2000).** The item's description never does. The runner
+      leg that calls the model (AGT-06's Agent SDK runner) reads them from
+      `scope_research.run_input` and sends them only through `apps/shared/ai.py`.
