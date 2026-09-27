@@ -7,8 +7,8 @@ Every request opens a run with the trigger `request` and the request on it
 is its run's. A bank's request is checked in this order, each refusal writing nothing:
 an agent of its own at all (409 `no_tenant_agent`, since no bank commands one of bleqq's),
 the agent named (404 another bank's, 403 one it may not steer), the fields its kind takes,
-the plan's monthly number (429 `plan_limit_reached`), the address or source, the AI switch
-(422 `feature_off`) and the cap (422 `budget_cap_reached`, read as `budget.at_cap`: a
+the source or the address, the plan's monthly number (429 `plan_limit_reached`), the AI
+switch (422 `feature_off`) and the cap (422 `budget_cap_reached`, read as `budget.at_cap`: a
 request inherits the cap the bank set).
 
 **What a bank writes stays in the bank (D-98).** The topic is the bank's own text: length
@@ -181,7 +181,11 @@ def create_request(*, who: Principal, tenant: Tenant, body: ResearchRequestInput
         )
     tenant_agent = own_agent(body.tenant_agent_id)
     _checked_fields(body)
+    if body.source_id is not None:
+        _checked_source(body.source_id)
     user, actor = _person(who)
+    # Fetched before the bank's requests are serialized below, so a slow page holds no lock.
+    fetched_text = _fetch(body.url) if body.url is not None else ""
     with transaction.atomic():
         lock_tenant(tenant, "research_requests")
         start, end = budget.month(tenant)
@@ -192,9 +196,6 @@ def create_request(*, who: Principal, tenant: Tenant, body: ResearchRequestInput
                 code="plan_limit_reached",
                 detail=f"Your organisation has made its {settings.RESEARCH_REQUESTS_PER_MONTH} research requests for this month.",
             )
-        if body.source_id is not None:
-            _checked_source(body.source_id)
-        fetched_text = _fetch(body.url) if body.url is not None else ""
         try:
             ai.ensure_enabled()
         except ProblemError as off:
