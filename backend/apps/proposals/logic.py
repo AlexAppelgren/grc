@@ -90,6 +90,7 @@ from apps.proposals.schemas import (
 )
 from apps.shared import tenancy
 from apps.shared.audit import Actor, record
+from apps.shared.errors import ProblemError
 from apps.shared.schemas import AgentDecision
 
 SUBJECT_TYPE = "proposal"
@@ -718,6 +719,10 @@ def create(
     injection screen (AGT-07, H40) and stored exactly as it arrived; what the screen finds
     is kept on the proposal, which the queue shows, and keeps the approval for a person."""
     run = None
+    if proposer.user is not None and agent_run_id is not None:
+        # A person files under no run. Runs the worker opens carry no key, so without this a
+        # keyless lookup would find one (d89-agent-research): answered as it always was.
+        raise ProblemError(status=404, code="not_found", detail="Not found.")
     if proposer.agent_id is not None or agent_run_id is not None:
         run = runs.require_open_run_of_key(proposer.api_key_id, agent_run_id)
     validated_kind(kind)
@@ -757,7 +762,13 @@ def create(
         # The key is the proposer's own: another bank or agent sending the same value files
         # its own proposal and is never answered this one (playbook 4.3). The same person in
         # another bank is the same proposer, so there it is a conflict, never a replay.
-        own = Q(proposed_by_user=proposer.user) if proposer.user is not None else Q(proposed_by_api_key_id=proposer.api_key_id)
+        # A keyless agent is the worker filing for a bank's own run (proposals/tenant_agent.py):
+        # its key never matches a person's.
+        own = (
+            Q(proposed_by_user=proposer.user)
+            if proposer.user is not None
+            else Q(proposed_by_api_key_id=proposer.api_key_id, proposed_by_user__isnull=True)
+        )
         existing = Proposal.objects.filter(own, idempotency_key=idempotency_key).order_by("created_at", "id").first()
         if existing is not None:
             same_zone = (
