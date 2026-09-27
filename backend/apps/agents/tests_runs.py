@@ -13,7 +13,7 @@ a run may *not* do:
   never becomes a second run or a reopened one;
 - every open and close writes its audit row and its outbox row in the same transaction,
   with the agent behind the key as the actor and not the key's id;
-- a tenant reads its own runs, never the library's (ADR 0053) and never another bank's.
+- a tenant reads its own runs, never the library's and never another bank's.
 
 The requests carry a real key (`X-API-Key`), never a stubbed principal, so the resolver,
 row-level security and the mixed write rule all run exactly as they do in production.
@@ -282,7 +282,8 @@ class TheProvenanceAnchor(AgentRunCase):
 
 
 class ReadingTheRunLog(TestCase):
-    """A bank reads its own runs and no library run (ADR 0053); the console reads the library's."""
+    """A bank reads its own runs and never the library's (`c11-run-history`, ruling 9); the
+    console reads the library's."""
 
     def setUp(self) -> None:
         seed_languages()
@@ -299,7 +300,8 @@ class ReadingTheRunLog(TestCase):
         with stub_session(principal):
             return self.client.get(f"{RUNS}{query}", HTTP_AUTHORIZATION="Bearer test-session-token")
 
-    def test_a_bank_sees_no_library_run(self) -> None:
+    def test_a_bank_never_reads_a_library_run(self) -> None:
+        """bleqq's runs reach a bank as watch items and proposals, never as run rows."""
         response = self.read(user_principal(permissions={perms.AGENTS_MANAGE}, tenant_id=self.tenant.id))
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json(), {"items": [], "total": 0})
@@ -331,9 +333,9 @@ class ReadingTheRunLog(TestCase):
         principal = user_principal(permissions={perms.SYSTEM_HEALTH})
         first_page = self.read(principal, "?limit=1").json()
         self.assertEqual(first_page["total"], 2, "total counts what the caller may see, not the page")
-        self.assertEqual(first_page["items"][0]["id"], str(self.platform_run.id))
+        self.assertEqual(first_page["items"][0]["id"], str(later.id), "newest first")
         second_page = self.read(principal, "?limit=1&offset=1").json()
-        self.assertEqual(second_page["items"][0]["id"], str(later.id))
+        self.assertEqual(second_page["items"][0]["id"], str(self.platform_run.id))
 
     def test_a_page_size_above_the_maximum_is_refused(self) -> None:
         response = self.read(user_principal(permissions={perms.SYSTEM_HEALTH}), "?limit=1000")
