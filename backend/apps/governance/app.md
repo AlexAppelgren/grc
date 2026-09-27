@@ -204,15 +204,20 @@ Then the proposal queue, its detail, approve and reject answer to the library ed
 And the tenants list, creating a tenant and re-issuing an administrator's enrolment answer to the platform admin and 403 the library editor with the permission each wanted
 And the search evaluation set's questions, adding one, its runs and its baseline answer to the library editor and 403 the platform admin with requiredPermission "eval.manage"
 And the library editor filters the evaluation set by language, reads each baseline metric as "Unrecorded" until one is recorded, and adds a question the page marks as not yet in the release gate
+And a batch proposal's preview and its decision answer to the library editor and 403 the platform admin with requiredPermission "proposals.review"
+And the agent definitions, one definition, publishing and retiring its versions, its settings and bleqq's runs answer to the platform admin and 403 the library editor with requiredPermission "agent_definitions.manage"
 And creating a proposal, whose caller a logic gate decides, 403s the platform admin with requiredPermission named
 And each console destination the other role holds is absent from that role's navigation
 ```
 
 The console the two platform roles now divide between them: a library editor reaches
-the proposal queue, the library vocabularies, Change facts, Sources and Evaluation; a
-platform admin reaches tenants and Agent keys. Each of the seven is walked by both roles, so a
-destination one role holds is proved absent from the other's navigation and its
-endpoints are proved to answer 403 with `requiredPermission` named.
+the proposal queue (a batch's review screen included), the library vocabularies, Change
+facts, Sources and Evaluation; a platform admin reaches tenants, Agent keys and Agent
+definitions. Each of the eight is walked by both roles, so a destination one role holds is
+proved absent from the other's navigation and its endpoints are proved to answer 403 with
+`requiredPermission` named. The journey reads the eight from the navigation registry, and
+also proves the server's own 403 on the agent definitions to the library editor and on a
+batch to the platform admin (c11-e2e-console).
 
 **A problem report is not a console surface** (Alex, 2026-09-20, item 3). A bank's
 report that a library record looks wrong stays inside that bank: no bleqq editor, no

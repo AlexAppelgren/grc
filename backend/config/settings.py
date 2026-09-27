@@ -71,6 +71,10 @@ MOCKS_ALLOWED_DEPLOYED_ENVIRONMENT = "test"
 # The E2E flag makes emailed codes deterministic and unlocks nothing else. Refused when
 # deployed on two independent legs: here at boot and again in the code-issuing logic.
 E2E_MODE = env_bool("E2E_MODE", False)
+# Where the agent definitions this build ships are read (AGT-03): `backend/agents/`. Only the
+# E2E stack may point it elsewhere, at a copy that also holds the fixture version folders
+# AGT-S4's journey publishes; outside E2E_MODE, which a deploy refuses, the variable is ignored.
+AGENT_DEFINITIONS_DIR = Path(env_str("AGENT_DEFINITIONS_DIR")) if E2E_MODE and env_str("AGENT_DEFINITIONS_DIR") else BASE_DIR / "agents"
 
 DEBUG = env_bool("DEBUG", False)
 DEFAULT_INSECURE_SECRET_KEY = "django-insecure-dev-only-change-me"  # noqa: S105 dev-only, allowlisted in .gitleaks.toml

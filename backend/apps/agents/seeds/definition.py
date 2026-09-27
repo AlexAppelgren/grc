@@ -21,7 +21,8 @@ from apps.agents.models import AgentScopeKind, AgentWritesTo
 
 # `backend/agents/`, which is `/app/agents/` in the API image: the image builds from
 # `backend/` alone, so a definition anywhere else never reaches the deploy that seeds it.
-DEFINITIONS: Path = settings.BASE_DIR / "agents"
+# The E2E stack alone reads a copy of it (settings.AGENT_DEFINITIONS_DIR).
+DEFINITIONS: Path = settings.AGENT_DEFINITIONS_DIR
 
 FIELD = re.compile(r"[a-z][a-z0-9_]*")
 # One entry of the `tools:` list, `  - name: <tool>`, and the names a tool may have.
