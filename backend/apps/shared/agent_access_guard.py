@@ -12,6 +12,10 @@ credential (apps/shared/authentication.py), before any route sees it:
 3. Writes. Every other method than a read answers 403 `read_only_credential`, except the
    reads that take a body, in `READ_ONLY_ALLOWED`.
 
+Once past its rate, the call is begun in the access log (ACC-08,
+apps/governance/access_log.py), so a refused write or step-up is logged with its 403 and the
+row is written after the response.
+
 Every other key passes untouched: a bank's unbound key and bleqq's own agent keys keep
 the scopes and routes they had.
 """
@@ -79,6 +83,9 @@ def check(request: HttpRequest, principal: Principal) -> None:
         return
     _limit_rate(principal)
     operation = operation_of(request)
+    from apps.governance import access_log
+
+    access_log.begin(request, principal, operation.operation_id if operation is not None else "unmatched")
     if operation is not None and step_up_of(operation.view_func):
         raise ProblemError(
             status=403, code="step_up_required", detail="A person must confirm this with a passkey; a key or token cannot."
