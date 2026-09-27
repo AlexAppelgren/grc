@@ -30,7 +30,7 @@ whatever its scopes: a case is a bank's judgement (AGT-01).
 import uuid
 from inspect import cleandoc
 
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from ninja import File, Form, Path, Query, Router, UploadedFile
 from typing import Any
 
@@ -785,7 +785,9 @@ def remove_evidence(request: HttpRequest, evidence_id: uuid.UUID = Path(..., des
 
         Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `open_actions` while an
         action is not done; `evidence_missing` without at least one piece of evidence that passed
-        the scan. """ + _AHEAD
+        the scan. Both of those answer 409 and carry `openActionCount` (how many live actions
+        are not done) and `cleanEvidenceCount` (how many live pieces of evidence passed the
+        scan) beside the code, so the screen can say what is missing."""
     ),
     summary="Ask a second person to sign off a case",
 )
@@ -815,7 +817,7 @@ def request_signoff(request: HttpRequest, change_id: uuid.UUID = Path(..., descr
         Errors: """ + _CASE_ERRORS + """; `step_up_required` without a fresh passkey assertion,
         answered before anything is read; """ + _MOVE_ERRORS + """; `four_eyes_violation` when
         the caller asked for the sign-off themself; `validation_error` for a body the schema
-        refuses. """ + _AHEAD
+        refuses."""
     ),
     summary="Sign off a case someone else worked, confirming with your passkey",
 )
@@ -844,7 +846,7 @@ def approve_signoff(request: HttpRequest, body: CasesNoteBody, change_id: uuid.U
         the note. """ + _IF_MATCH + """
 
         Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `validation_error` for a body
-        the schema refuses. """ + _AHEAD
+        the schema refuses."""
     ),
     summary="Send a case back for more work instead of signing it off",
 )
@@ -882,10 +884,11 @@ def send_back_signoff(request: HttpRequest, body: CasesNoteBody, change_id: uuid
 @answers_problems
 def get_case_file(request: HttpRequest, change_id: uuid.UUID = Path(..., description=_CHANGE_ID)) -> Any:
     tenant = caller_tenant(request)
-    return case_file.case_file(
+    text = case_file.case_file(
         tenant=tenant,
         actor=actor_for(request),
         user=caller_user(request),
         order=language_order(request, tenant=tenant),
         change_id=change_id,
     )
+    return HttpResponse(text, content_type="text/plain; charset=utf-8")

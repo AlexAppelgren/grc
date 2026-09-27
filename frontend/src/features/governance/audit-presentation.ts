@@ -24,7 +24,6 @@ export const AUDIT_SUBJECT_TYPES: readonly string[] = [
   'api_key',
   'authority',
   'auth_challenge',
-  'case',
   'change_case',
   'evidence',
   'footprint',

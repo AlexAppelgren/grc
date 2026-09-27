@@ -1,3 +1,26 @@
 {
-  "caseSignoff.heading": "Godkännande"
+  "caseSignoff.heading": "Godkännande",
+  "caseSignoff.ready": "Alla åtgärder är klara och det finns underlag som har kontrollerats. Någon annan som får godkänna stänger sedan ärendet.",
+  "caseSignoff.notReady.openActions": "{count, plural, one {# åtgärd är fortfarande öppen.} other {# åtgärder är fortfarande öppna.}}",
+  "caseSignoff.notReady.evidence": "Inget underlag har kontrollerats än.",
+  "caseSignoff.request": "Begär godkännande",
+  "caseSignoff.refused.openActions": "{count, plural, one {# åtgärd är fortfarande öppen. Slutför eller ta bort den och begär sedan godkännande.} other {# åtgärder är fortfarande öppna. Slutför eller ta bort dem och begär sedan godkännande.}}",
+  "caseSignoff.refused.evidenceMissing": "Bifoga minst ett underlag och vänta tills en fil har kontrollerats, begär sedan godkännande.",
+  "caseSignoff.waiting.approver": "{name} begärde godkännande {time}. Läs bedömningen, åtgärderna och underlaget ovan. När du godkänner stängs ärendet i ditt namn.",
+  "caseSignoff.waiting.self": "Du begärde godkännande {time}. Någon annan som får godkänna måste ge det.",
+  "caseSignoff.waiting.viewer": "{name} begärde godkännande {time}. Någon som får godkänna tar hand om det.",
+  "caseSignoff.note": "Anteckning (valfri)",
+  "caseSignoff.noteHint": "Anteckningen sparas på ärendet och i dess ärendeakt.",
+  "caseSignoff.approve": "Godkänn och stäng",
+  "caseSignoff.sendBack": "Skicka tillbaka",
+  "caseSignoff.fourEyes": "Du begärde det här godkännandet, så du kan inte ge det. En andra person måste godkänna.",
+  "caseSignoff.stepUpCancelled": "Ärendet godkändes inte. Godkänn och stäng kräver din passkey.",
+  "caseSignoff.sendBackTitle": "Skicka tillbaka för mer arbete?",
+  "caseSignoff.sendBackBody": "Ärendet går tillbaka till genomförande och dess åtgärder kan ändras igen. {name} kan begära godkännande igen när det är klart.",
+  "caseSignoff.sendBackNote": "Vad behöver ändras",
+  "caseSignoff.sendBackNoteRequired": "Skriv vad som behöver ändras.",
+  "caseSignoff.closedHeading": "Stängt",
+  "caseSignoff.signedOffBy": "Godkänt av",
+  "caseSignoff.askedBy": "Begärt av",
+  "caseSignoff.personOn": "{name}, {date}"
 }

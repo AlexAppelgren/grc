@@ -224,6 +224,12 @@ BUILT = frozenset(
         # c9-assessment: tests_assessment.py
         "startAssessment",
         "saveAssessment",
+        # c9-signoff: tests_signoff.py
+        "requestSignoff",
+        "approveSignoff",
+        "sendBackSignoff",
+        # c9-case-file-export: tests_case_file.py
+        "getCaseFile",
         # c9-actions: tests_actions.py
         "listActions",
         "addAction",
