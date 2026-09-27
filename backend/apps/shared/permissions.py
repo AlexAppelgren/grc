@@ -370,6 +370,7 @@ _SELF_NOTIFICATIONS = "Acts only on the caller's own notification rows; no param
 _SELF_MY_COMMENTS = "Returns the caller's own comments and mentions, filtered afterwards by each subject's read permission (COL-01)."
 _LOGIC_PARTICIPANT_REMOVAL = "A person may always leave their own participation; removing anyone else's needs register.edit, which the logic checks on the row (D-19, COL-04)."
 _LOGIC_MY_WORK = "Any member's session opens My work, their own or any department's; the service applies register.read to register entries and internal items and cases.read to cases, row by row and count by count, and names a kind it left out in permissionLimited rather than refusing the page (HOM-05, D-23). The department view is a filter and never a grant."
+_LOGIC_CASE_PARTICIPANT_REMOVAL = "A person may always leave their own participation in a case; removing anyone else's needs cases.contribute, which the logic checks on the row (D-19, COL-04)."
 _LOGIC_COMMENT_SUBJECT = "The gate is the read permission of the subject's kind, which `collab/subjects.py` decides per record; the write also needs `comments.write` (COL-01)."
 
 # (METHOD, path as Ninja registers it under /api/v1) -> why it needs no permission gate.
@@ -554,6 +555,11 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # register.edit; removal is the one gated in logic, because leaving needs no permission.
     ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}"): Ungated(
         UngatedReason.LOGIC_GATE, _LOGIC_PARTICIPANT_REMOVAL
+    ),
+    # c9-case-participants (chunk 9, COL-04, CAS-03). Listing and adding carry cases.read and
+    # cases.contribute; removal is gated in logic, because leaving needs no permission.
+    ("DELETE", "/changes/{change_id}/participants/{participant_id}"): Ungated(
+        UngatedReason.LOGIC_GATE, _LOGIC_CASE_PARTICIPANT_REMOVAL
     ),
 }
 

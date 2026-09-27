@@ -490,12 +490,20 @@ class CasesScenarioTests(ScenarioTestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json()["status"], "signoff")
 
-    @skip("pending: CAS-S17 (CAS-03, COL-04, chunk 9)")
+
+class CaseParticipantScenarioTests(ScenarioTestCase):
+    """Contributor teams as the case's team participants (c9-case-participants), through the
+    scenario client, which fails any write that leaves no audit row."""
+
     def test_cas_s17(self) -> None:
         """CAS-S17
 
         Contributor teams are the case's team participants (CAS-03, COL-04).
+        Operations: `addCaseParticipant`, `removeCaseParticipant`.
         """
+        from apps.collab.tests_case_participants import run_cas_s17
+
+        run_cas_s17(self)
 
 
 class TriageScenarioTests(CaseMoves, ScenarioTestCase):
