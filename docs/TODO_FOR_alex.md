@@ -1582,3 +1582,19 @@ Defaults taken; nothing waits on them.
       keeps this one.
 - [ ] **A run opens on the newest version still published.** When every version is
       retired a run is refused with 409 `no_published_version`.
+
+## c11-run-history: what a bank reads of its runs and of bleqq's watch (2026-09-25, AGT-03, AGT-04)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **A bank's run history holds its own runs only.** `GET /agent-runs` in a bank's session
+      no longer lists bleqq's library runs: they reach a bank as watch items and proposals, so
+      no platform cost, token count or model is on a bank's page (the default you took on what
+      a bank sees of bleqq's watch). The console still reads the library's runs. Default:
+      naming another bank's agent in `tenantAgentId` matches no run, as the published contract
+      says, rather than the 404 the chunk 11 brief named; say if you want the 404.
+- [ ] **bleqq's agents have no display name of their own.** `GET /agents/platform` returns the
+      agent's key as `name` and its definition's description as `purpose`; the screen renders
+      the words from its catalog by key. `nextRunAt` is one cadence after the last start, now
+      when an agent never ran or is overdue, and null for a manual one. Say if you want a
+      name column on the definition instead.
