@@ -99,6 +99,7 @@ BUILT: set[str] = {
     "updateRegister",
     "updateRegisterEntity",
     "setApplicability", "setApplicabilityMany",  # c8-reg-applicability, tests_applicability.py
+    "listDuties", "completeDutyOccurrence",  # c8-duty-occurrences, tests_duties.py
 }
 # acc-register-read: the two reads of an agent access credential, key-only and outside the
 # session table below; apps/register/tests_agent_read.py proves their gates.
@@ -207,13 +208,6 @@ IF_MATCH_ROUTES = {
     "saveInterpretation",
     "updateUnit",
     "removeUnit",
-}
-
-
-# The operations whose logic has landed, each proved in its package's own tests.
-BUILT = {
-    "setApplicability", "setApplicabilityMany",  # c8-reg-applicability, tests_applicability.py
-    "listDuties", "completeDutyOccurrence",  # c8-duty-occurrences, tests_duties.py
 }
 
 

@@ -30,7 +30,8 @@ from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.shared.tests_support_session import grant
 from config.api import api
 
-PARAM = re.compile(r"\{(\w+)\}")
+# A path parameter, with or without a converter (`{uuidstr:entry_id}`, acc-entries-and-log).
+PARAM = re.compile(r"\{(?:\w+:)?(\w+)\}")
 
 planted = NinjaAPI(urls_namespace="planted-support-probe")
 

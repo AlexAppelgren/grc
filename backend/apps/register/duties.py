@@ -232,8 +232,9 @@ def complete_occurrence(
             tenant_id=tenant.id,
             before={"status": before},
             after={
+                # The note is the person's own words: it stays on the occurrence and never
+                # reaches the audit value (R2 cross-cutting rule m, CHUNK10 rule 13).
                 "status": DutyStatus.DONE.value,
-                "note": occurrence.note or None,
                 "nextOccurrenceId": None if following is None else str(following.id),
                 "nextDueDate": None if following is None else following.due_date.isoformat(),
             },
