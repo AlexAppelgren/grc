@@ -16,7 +16,14 @@ from django.http import HttpRequest
 from django.utils import timezone
 
 from apps.identity import api_keys_logic, invitation_logic, roles_logic, session_logic
-from apps.identity.models import Invitation, InvitationKind, Membership, MembershipRole, User, UserSession
+from apps.identity.models import (
+    Invitation,
+    InvitationKind,
+    Membership,
+    MembershipRole,
+    User,
+    UserSession,
+)
 from apps.shared import permissions as perms
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
@@ -223,7 +230,7 @@ def deactivate_member(
     membership.deactivated_at = now
     membership.save(update_fields=["deactivated_at"])
     revoked = session_logic.revoke_all(membership.user, tenant_id=tenant.id, reason="member_deactivated", actor=actor, request=request)
-    remover = User.objects.filter(pk=actor.id).first()  # ordering: pk lookup, at most one row
+    remover = None if actor.id is None else User.objects.filter(pk=actor.id).first()  # ordering: pk lookup, at most one row
     tokens_revoked = api_keys_logic.revoke_person_tokens(
         tenant_id=tenant.id, person=membership.user, revoked_by=remover or membership.user, now=now
     )

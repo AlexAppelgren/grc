@@ -56,14 +56,15 @@ from apps.identity.models import (
     WebAuthnCredential,
 )
 from apps.identity.tests_webauthn_support import SoftwareAuthenticator
-from apps.shared import factories, permissions as perms, tenancy
+from apps.shared import factories, tenancy
+from apps.shared import permissions as perms
 from apps.shared.adapters.mailer import MockMailer, OutgoingMail
 from apps.shared.authentication import ApiKeyAuth, Principal, PrincipalKind
 from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent, Tenant
-from config.api import api
 from apps.shared.permissions import enforce_step_up
 from apps.shared.testing import sign_in, user_principal
+from config.api import api
 
 
 class TokenHashing(TestCase):

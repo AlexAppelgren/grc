@@ -18,7 +18,8 @@ from apps.agents.models import Agent, AgentKind
 from apps.agents.seeds import seed_agent_definitions
 from apps.identity import api_keys_logic
 from apps.identity.models import ApiKey, LoginEvent, LoginEventKind
-from apps.shared import factories, permissions as perms, tenancy
+from apps.shared import factories, tenancy
+from apps.shared import permissions as perms
 from apps.shared.models import AuditEvent
 from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in

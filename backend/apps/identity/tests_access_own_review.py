@@ -10,6 +10,8 @@ had minted working again, with no revocation in the security log.
 
 from __future__ import annotations
 
+from typing import Any
+
 from django.test import TestCase
 
 from apps.identity import invitation_logic, members_logic
@@ -32,7 +34,7 @@ class ATokenDiesWithItsPerson(TestCase):
         self.actor = Actor(kind=ActorType.USER, id=self.admin.id, label=self.admin.name)
         self.assertEqual(self.read().status_code, 200)
 
-    def read(self):  # type: ignore[no-untyped-def]
+    def read(self) -> Any:
         return self.client.get(READ, HTTP_X_API_KEY=self.token.plain_key)
 
     def assert_revoked(self, action: str) -> None:

@@ -18,10 +18,19 @@ from typing import Any
 from django.core.cache import cache
 
 from apps.identity import tokens
-from apps.identity.models import LoginEvent, LoginEventKind, StepUpAssertion, TenantRole, User, UserSession, WebAuthnCredential
+from apps.identity.models import (
+    LoginEvent,
+    LoginEventKind,
+    StepUpAssertion,
+    TenantRole,
+    User,
+    UserSession,
+    WebAuthnCredential,
+)
 from apps.identity.tests_webauthn_support import SoftwareAuthenticator
 from apps.library.seeds import seed_languages
-from apps.shared import factories, permissions as perms
+from apps.shared import factories
+from apps.shared import permissions as perms
 from apps.shared.models import AuditEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
 

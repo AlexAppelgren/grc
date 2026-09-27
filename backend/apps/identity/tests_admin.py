@@ -15,7 +15,8 @@ from apps.identity import session_logic
 from apps.identity.models import Invitation, LoginEventKind, LoginMethod, SessionKind, TenantRole
 from apps.identity.security_log import log_event
 from apps.library.seeds import seed_languages
-from apps.shared import factories, permissions as perms
+from apps.shared import factories
+from apps.shared import permissions as perms
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.testing import ScenarioTestCase, sign_in
 
