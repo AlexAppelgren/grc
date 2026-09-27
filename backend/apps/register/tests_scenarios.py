@@ -9,9 +9,90 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: ACC, REG.
 """
 
+from typing import Any
 from unittest import skip
 
+from django.db import transaction
 from django.test import TestCase
+from django.utils import timezone
+
+from apps.library import testing as library_testing
+from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.shared import factories, tenancy
+from apps.shared import permissions as perms
+from apps.register.logic import ensure_register_entry
+from apps.register.models import Applicability, TenantObligation, TenantObligationScope
+from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, stub_session, user_principal
+from apps.taxonomy.models import ComplianceStatus
+from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+from apps.tenants.models import OrgUnit, OrgUnitKind
+
+
+class StatusWorld:
+    """c8-reg-status: one bank, its legal entities and a shared obligation, with an owner
+    holding `register.read` and `register.edit`. Applicability is set on the rows directly,
+    as c8-reg-applicability's route leaves them; everything else goes through the API."""
+
+    def __init__(self, case: Any, *, entities: tuple[str, ...]) -> None:
+        self.case = case
+        with transaction.atomic():
+            seed_languages()
+            seed_jurisdictions()
+            seed_library_vocabularies()
+            seed_taxonomy_terms()
+        act = library_testing.instrument(key="scenario-act", regime="regime:securities")
+        self.obligation = library_testing.obligation(act, key="scenario-duty")
+        self.tenant = factories.tenant(slug="scenario-register")
+        self.owner = factories.member_user(self.tenant, roles=("compliance_officer",))
+        tenancy.activate(self.tenant.id)
+        self.entities = [
+            OrgUnit.objects.create(tenant=self.tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name=name) for name in entities
+        ]
+        self.principal = user_principal(
+            permissions={perms.REGISTER_READ, perms.REGISTER_EDIT}, tenant_id=self.tenant.id, subject_id=self.owner.id
+        )
+
+    def _entry(self) -> Any:
+        tenancy.activate(self.tenant.id)
+        return ensure_register_entry(
+            tenant_id=self.tenant.id, obligation_id=self.obligation.id, actor=factories.user_actor(user_id=self.owner.id)
+        )
+
+    def entry_at_version(self, version: int) -> None:
+        TenantObligation.objects.filter(pk=self._entry().pk).update(version=version)
+
+    def applies(self, entity: Any, *, reason: str) -> str:
+        TenantObligationScope.objects.create(
+            tenant=self.tenant,
+            tenant_obligation=self._entry(),
+            org_unit=entity,
+            applicability=Applicability.APPLIES.value,
+            applicability_reason=reason,
+            applicability_decided_at=timezone.now(),
+            applicability_decided_by=self.owner,
+            compliance_status=ComplianceStatus.objects.get(is_default=True),
+        )
+        return reason
+
+    def _patch(self, url: str, body: dict[str, Any], version: int) -> Any:
+        with stub_session(self.principal):
+            return self.case.client.patch(
+                url, data=body, content_type="application/json", HTTP_IF_MATCH=f'"{version}"', HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}"
+            )
+
+    def patch_entry(self, body: dict[str, Any], *, version: int) -> Any:
+        return self._patch(f"/api/v1/obligations/{self.obligation.id}/register", body, version)
+
+    def patch_entity(self, entity: Any, body: dict[str, Any], *, version: int) -> Any:
+        return self._patch(f"/api/v1/obligations/{self.obligation.id}/register/entities/{entity.id}", body, version)
+
+    def read(self) -> Any:
+        with stub_session(self.principal):
+            response = self.case.client.get(
+                f"/api/v1/obligations/{self.obligation.id}/register", HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}"
+            )
+        self.case.assertEqual(response.status_code, 200, response.content)
+        return response.json()
 
 from apps.library import testing as library_build
 from apps.register.applicability import APPLICABILITY_SET, entities_spanned
@@ -75,13 +156,69 @@ class RegisterScenarioTests(TestCase):
         self.assertFalse(TenantObligation.objects.exists())
         self.assertFalse(AuditEvent.objects.filter(action=APPLICABILITY_SET).exists())
 
-    @skip("pending: REG-S3")
     def test_reg_s3(self) -> None:
         """REG-S3
 
         Compliance status and its details are kept per legal entity (REG-02).
         Operations: `updateRegisterEntity`.
         """
+        # c8-reg-status: each entity row holds its own status and details, and the
+        # obligation's pill is the worse of the two.
+        world = StatusWorld(self, entities=("Bank AB", "Bank Finance AB"))
+        bank, finance = world.entities
+        decided = {entity.id: world.applies(entity, reason=f"{entity.name} holds client assets") for entity in world.entities}
+        first = world.patch_entity(
+            bank,
+            {
+                "complianceStatus": "compliant",
+                "riskRating": "low",
+                "ownerId": str(world.owner.id),
+                "process": "Client asset reconciliation",
+                "system": "Custody ledger",
+                "evidenceLocation": "Compliance share / Bank AB",
+                "nextReviewDate": "2027-03-31",
+            },
+            version=1,
+        )
+        self.assertEqual(first.status_code, 200, first.content)
+        second = world.patch_entity(
+            finance,
+            {
+                "complianceStatus": "partly_compliant",
+                "statusNote": "The evidence log is still manual.",
+                "riskRating": "high",
+                "ownerTeam": "compliance",
+                "process": "Fund reconciliation",
+                "system": "Fund ledger",
+                "evidenceLocation": "Compliance share / Finance AB",
+                "nextReviewDate": "2026-12-31",
+            },
+            version=1,
+        )
+        self.assertEqual(second.status_code, 200, second.content)
+
+        read = world.read()
+        rows = {row["orgUnitId"]: row for row in read["entities"]}
+        self.assertEqual(set(rows), {str(bank.id), str(finance.id)})
+        expected = {
+            bank.id: ("compliant", None, "low", str(world.owner.id), None, "Client asset reconciliation", "Custody ledger", "Compliance share / Bank AB", "2027-03-31"),
+            finance.id: ("partly_compliant", "The evidence log is still manual.", "high", None, "compliance", "Fund reconciliation", "Fund ledger", "Compliance share / Finance AB", "2026-12-31"),
+        }
+        for entity_id, (status, note, risk, owner, team, process, system, evidence, review) in expected.items():
+            row = rows[str(entity_id)]
+            with self.subTest(entity=row["orgUnitName"]):
+                self.assertEqual(row["complianceStatus"]["key"], status)
+                self.assertEqual(row["statusNote"], note)
+                self.assertEqual(row["riskRating"]["key"], risk)
+                self.assertEqual(row["owner"] and row["owner"]["id"], owner)
+                self.assertEqual(row["ownerTeam"] and row["ownerTeam"]["key"], team)
+                self.assertEqual((row["process"], row["system"], row["evidenceLocation"]), (process, system, evidence))
+                self.assertEqual(row["nextReviewDate"], review)
+                self.assertEqual(row["applicability"], "applies")
+                self.assertEqual(row["applicabilityReason"], decided[entity_id])
+                self.assertIsNotNone(row["applicabilityDecidedAt"])
+        self.assertEqual(read["complianceStatus"]["key"], "partly_compliant")
+        self.assertEqual(read["complianceStatus"]["kind"], "partly")
 
     @skip("pending: REG-S4")
     def test_reg_s4(self) -> None:
@@ -137,13 +274,26 @@ class RegisterScenarioTests(TestCase):
         Operations: `completeDutyOccurrence`.
         """
 
-    @skip("pending: REG-S11")
     def test_reg_s11(self) -> None:
         """REG-S11
 
         A stale write on a register row is refused (REG-02).
         Operations: `updateRegister`.
         """
+        # c8-reg-status: two owners loaded the entry at version 3; the first save wins and
+        # the second is refused with nothing merged.
+        world = StatusWorld(self, entities=())
+        world.entry_at_version(3)
+        first = world.patch_entry({"statusNote": "First owner's note.", "process": "Reconciliation"}, version=3)
+        self.assertEqual(first.status_code, 200, first.content)
+        self.assertEqual(first.json()["version"], 4)
+        second = world.patch_entry({"statusNote": "Second owner's note.", "system": "Ledger"}, version=3)
+        self.assertEqual(second.status_code, 409)
+        self.assertEqual(second.json()["code"], "stale_write")
+        read = world.read()
+        self.assertEqual(read["version"], 4)
+        self.assertEqual(read["statusNote"], "First owner's note.")
+        self.assertIsNone(read["system"])
 
     def test_reg_s12(self) -> None:
         """REG-S12
