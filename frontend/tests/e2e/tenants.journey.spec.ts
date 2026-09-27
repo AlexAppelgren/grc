@@ -1,3 +1,6 @@
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+
 import type { Page } from '@playwright/test';
 
 import { expect, test, type ApiGuard } from './support/api-guard';
@@ -120,16 +123,142 @@ test.describe('tenants journeys', () => {
     }
   });
 
-  test.fixme("TEN-S2: Legal entities and products are scoped like obligations", async () => {
-    // pending: TEN-S2 (TEN-02, chunk 8)
+  // c8-ui-organisation (TEN-02). An entity and a product carry library terms from the
+  // dimensions obligations are scoped with, as brand pills; a member without vocab.manage
+  // reads them and gets no Edit or Add. The register line (a status per entity) is the
+  // register's to prove (c8-reg-entity-status). Units and products are never deleted, so the
+  // journey names its rows by run and deactivates and retires them on the way out.
+  test("TEN-S2: Legal entities and products are scoped like obligations", async ({ page, apiGuard }, testInfo) => {
+    allowFreshContext(apiGuard);
+    const run = `${Date.now()}-${testInfo.retry}`;
+    const entityName = `Bank AB ${run}`;
+    const productName = `Custody ${run}`;
+    await signInAs(page, LOGINS.admin);
+    await page.goto('/admin/organisation');
+    const entities = page.locator('[data-org-section="entities"]');
+    await expect(entities.locator('[data-org-unit="Example Bank AB"]')).toBeVisible();
+
+    try {
+      await entities.getByRole('button', { name: 'Add a legal entity' }).click();
+      let dialog = page.getByRole('dialog');
+      await dialog.getByLabel('Name').fill(entityName);
+      await dialog.getByLabel('Sits under').selectOption({ label: 'Example Group' });
+      await dialog.getByLabel('Country').fill('SE');
+      await dialog.getByLabel('Legal-entity term').selectOption('bank');
+      await dialog.getByRole('button', { name: 'Save' }).click();
+      await expect(dialog).toBeHidden();
+      const entity = entities.locator(`[data-org-unit="${entityName}"]`);
+      await expect(entity.locator('[data-pill="brand"]')).toHaveCount(1);
+
+      // The licence: its type and its services are terms of the same dimensions.
+      const licences = page.locator(`[data-licences-of="${entityName}"]`);
+      await expect(licences.getByText('No licences or certificates recorded.')).toBeVisible();
+      await licences.getByRole('button', { name: `Add a licence or certificate to ${entityName}` }).click();
+      dialog = page.getByRole('dialog');
+      await dialog.getByLabel('Type').selectOption('bank');
+      await dialog.getByLabel('Reference').fill(`FI ${run}`);
+      await dialog.getByLabel('Services').selectOption('custody');
+      await dialog.getByRole('button', { name: 'Save' }).click();
+      await expect(dialog).toBeHidden();
+      const licence = licences.locator('[data-licence="bank"]');
+      await expect(licence).toContainText(`FI ${run}`);
+      await expect(licence.locator('[data-pill="brand"]')).toHaveCount(1);
+
+      // The product: its entity and its scope terms, all brand pills.
+      const products = page.locator('[data-org-section="products"]');
+      await products.getByRole('button', { name: 'Add a product' }).click();
+      dialog = page.getByRole('dialog');
+      await dialog.getByLabel('Name').fill(productName);
+      await dialog.getByLabel('Legal entity').selectOption({ label: entityName });
+      await dialog.getByLabel('Scope').selectOption('custody');
+      await dialog.getByRole('button', { name: 'Save' }).click();
+      await expect(dialog).toBeHidden();
+      const product = products.locator(`[data-product="${productName}"]`);
+      await expect(product.locator('[data-pill="brand"]').first()).toHaveText(entityName);
+      await expect(product.locator('[data-pill="brand"]')).toHaveCount(2);
+      await expect(product.locator('[data-pill]:not([data-pill="brand"])')).toHaveCount(0);
+      await signOut(page);
+
+      // A reader sees the same rows and nothing to change them with.
+      await signInAs(page, LOGINS.reader);
+      await page.goto('/admin/organisation');
+      await expect(page.locator(`[data-product="${productName}"]`)).toBeVisible();
+      await expect(page.locator(`[data-org-unit="${entityName}"]`)).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Add a legal entity' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Add a product' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: `Edit ${productName}` })).toHaveCount(0);
+      await signOut(page);
+    } finally {
+      // Retire the product and deactivate the entity: neither is ever deleted.
+      await signInAs(page, LOGINS.admin);
+      await page.goto('/admin/organisation');
+      const product = page.locator(`[data-product="${productName}"]`);
+      if ((await product.count()) > 0) {
+        await page.getByRole('button', { name: `Edit ${productName}` }).click();
+        await page.getByRole('dialog').getByLabel('Status').selectOption('retired');
+        await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
+        await expect(page.getByRole('dialog')).toBeHidden();
+      }
+      const entity = page.locator(`[data-org-unit="${entityName}"]`);
+      if ((await entity.count()) > 0) {
+        await page.getByRole('button', { name: `Edit ${entityName}` }).click();
+        await page.getByRole('dialog').getByLabel('State').selectOption('inactive');
+        await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
+        await expect(page.getByRole('dialog')).toBeHidden();
+        await expect(entity).toContainText('Inactive');
+      }
+    }
   });
 
   test.fixme("TEN-S4: An out-of-office delegate receives approvals and reminders", async () => {
     // pending: TEN-S4 (TEN-04, chunk 8)
   });
 
-  test.fixme("TEN-S5: Removing a member with open work offers bulk reassignment", async () => {
-    // pending: TEN-S5 (TEN-05, chunk 8)
+  // c8-ui-departments-teams-removal (TEN-05). The seeded leaver owns three obligations and a
+  // gap (backend/apps/shared/e2e_seed.py, LEAVER); the case kinds join with chunk 9. One
+  // transaction with one audit event per item is proven on the server
+  // (apps/tenants/tests_reassignment.py); this journey proves the screen, and puts the
+  // leaver back afterwards, on failure too.
+  test("TEN-S5: Removing a member with open work offers bulk reassignment", async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    apiGuard.allow(/\/tenant\/members\/[^/]+\/remove$/, 403, 'the first removal answers step_up_required and opens the passkey prompt');
+    apiGuard.allow(/\/tenant\/members\/[^/]+\/remove$/, 422, 'confirming with no new owner for a kind is refused with reassignment_required');
+    try {
+      await signInAs(page, LOGINS.admin);
+      await page.goto('/admin/members');
+      await page.locator('[data-member-id]', { hasText: LOGINS.leaver }).click();
+      await expect(page.getByRole('heading', { level: 1, name: 'Gustav Sjöberg' })).toBeVisible();
+      await page.getByRole('button', { name: 'Deactivate' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Deactivate Gustav Sjöberg' });
+      await expect(dialog.locator('[data-removal-kind="register_entry"]')).toContainText('3 obligations');
+      await expect(dialog.locator('[data-removal-kind="gap"]')).toContainText('1 gap');
+
+      // Confirming with no new owner changes nothing, and the refusal names what is still owned.
+      await dialog.getByRole('button', { name: 'Deactivate' }).click();
+      const prompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
+      const refused = dialog.getByRole('alert');
+      await expect(prompt.or(refused).first()).toBeVisible();
+      if (await prompt.isVisible()) await prompt.getByRole('button', { name: 'Use passkey' }).click();
+      await expect(refused).toContainText('Gustav Sjöberg still owns open work');
+      await expect(refused).toContainText('3 obligations');
+      await dialog.getByRole('button', { name: 'Cancel' }).click();
+      await expect(dialog).toBeHidden();
+      await expect(page.locator('[data-pill]', { hasText: 'Deactivated' })).toHaveCount(0);
+
+      // A new owner per kind: the obligations to a person, everything else to a team.
+      await page.getByRole('button', { name: 'Deactivate' }).click();
+      await expect(dialog.locator('[data-removal-kind="register_entry"]')).toBeVisible();
+      for (const kind of await dialog.locator('[data-removal-kind]').evaluateAll((rows) => rows.map((row) => row.getAttribute('data-removal-kind')))) {
+        await dialog.locator(`[data-removal-kind="${kind}"] select`).selectOption({ label: kind === 'register_entry' ? A_REQUESTER : 'Retail compliance' });
+      }
+      await dialog.getByRole('button', { name: 'Deactivate' }).click();
+      await expect(prompt.or(page.getByRole('heading', { level: 1, name: 'Members' })).first()).toBeVisible();
+      if (await prompt.isVisible()) await prompt.getByRole('button', { name: 'Use passkey' }).click();
+      await expect(page.getByRole('heading', { level: 1, name: 'Members' })).toBeVisible();
+      await expect(page.locator('[data-member-id]', { hasText: LOGINS.leaver })).toContainText('Deactivated');
+    } finally {
+      restoreLeaver();
+    }
   });
 
   test.fixme("TEN-S6: Support access is requested by the platform, approved by the bank and time-boxed", async () => {
@@ -303,7 +432,7 @@ test.describe('tenants journeys', () => {
       await page.getByRole('tab', { name: 'Members' }).click();
       await page.locator('[data-member-id]', { hasText: LOGINS.reissue }).click();
       await page.locator('label', { hasText: /^Reader/ }).getByRole('checkbox').check();
-      await page.getByRole('button', { name: 'Save' }).click();
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
       const prompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
       await expect(prompt).toBeVisible();
       await prompt.getByRole('button', { name: 'Use passkey' }).click();
@@ -349,11 +478,130 @@ test.describe('tenants journeys', () => {
 // certificates on a legal entity (TEN-02, AC-TEN1). Each stays test.fixme
 // until the task in docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
 test.describe('departments, teams and certificates', () => {
-  test.fixme("TEN-S8: A department has a head and teams, and team membership is set on the member row", async () => {
-    // pending: TEN-S8 (TEN-02, TEN-03)
+  // c8-ui-departments-teams-removal (TEN-02, TEN-03). Karin heads the new department; a
+  // team is added to the bank's team list and the reserved member is put in it on the member
+  // row, then taken out again, on failure too. GET /me's departments, one audit event per
+  // call, the refusal of another bank's member and the database's composite keys are proven
+  // on the server (apps/tenants/tests_scenarios.py). No route yet puts a team in a
+  // department, so the seeded Retail compliance shows it.
+  test("TEN-S8: A department has a head and teams, and team membership is set on the member row", async ({ page, apiGuard }, testInfo) => {
+    allowFreshContext(apiGuard);
+    const run = `${Date.now()}-${testInfo.retry}`;
+    const department = `Private Banking ${run}`;
+    const team = `Private banking compliance ${run}`;
+    const memberTeams = page.locator('fieldset', { hasText: 'Teams' });
+    const saveTeams = async (checked: boolean) => {
+      await page.goto('/admin/members');
+      await page.locator('[data-member-id]', { hasText: LOGINS.teamMember }).click();
+      await expect(page.getByRole('heading', { level: 1, name: 'Linnea Forsberg' })).toBeVisible();
+      await memberTeams.getByRole('checkbox', { name: team, exact: true }).setChecked(checked);
+      await page.getByRole('button', { name: 'Save teams' }).click();
+      await expect(page.getByText('Teams saved.', { exact: true })).toBeVisible();
+    };
+
+    await signInAs(page, LOGINS.admin);
+    await page.goto('/admin/organisation');
+    const departments = page.locator('[data-org-section="departments"]');
+    await expect(departments.locator('[data-department="Retail Banking"]')).toContainText('Head: Karin Ek');
+    await departments.getByRole('button', { name: 'Add a department' }).click();
+    const addDepartment = page.getByRole('dialog', { name: 'Add a department' });
+    await addDepartment.getByLabel('Kind').selectOption('business_area');
+    await addDepartment.getByLabel('Name', { exact: true }).fill(department);
+    await addDepartment.getByLabel('Sits under').selectOption({ label: 'Example Bank AB' });
+    await addDepartment.getByLabel('Head', { exact: true }).selectOption({ label: 'Karin Ek' });
+    await addDepartment.getByRole('button', { name: 'Save' }).click();
+    await expect(addDepartment).toBeHidden();
+    const added = departments.locator(`[data-department="${department}"]`);
+    await expect(added).toContainText('Business area');
+    await expect(added).toContainText('In Example Bank AB');
+    await expect(added).toContainText('Head: Karin Ek');
+
+    const teams = page.locator('[data-org-section="teams"]');
+    await expect(teams.locator('[data-team="retail_compliance"]')).toContainText('Retail Banking');
+    await teams.getByRole('button', { name: 'Add a team' }).click();
+    const addTeam = page.getByRole('dialog', { name: 'Add a team' });
+    await addTeam.getByLabel('Name', { exact: true }).fill(team);
+    await addTeam.getByRole('button', { name: 'Save' }).click();
+    await expect(addTeam).toBeHidden();
+    await expect(teams.locator('[data-team]', { hasText: team })).toContainText('0 members');
+
+    try {
+      await saveTeams(true);
+      await page.goto('/admin/organisation');
+      await expect(page.locator('[data-org-section="teams"] [data-team]', { hasText: team })).toContainText('1 member');
+    } finally {
+      await saveTeams(false);
+    }
+    await signOut(page);
+
+    // Team membership is members.manage: without it, the member screens are not there.
+    await signInAs(page, LOGINS.complianceOfficer);
+    await page.goto('/admin/members');
+    await expect(restrictedScreen(page)).toContainText('Needs members manage');
   });
 
-  test.fixme("TEN-S10: A legal entity records a certificate it holds", async () => {
-    // pending: TEN-S10 (TEN-02, AC-TEN1)
+  // c8-ui-organisation (TEN-02, AC-TEN1). The certificate is a licence row with a
+  // certificate's fields and an owner; its dates are anchored to the tenant-local day. The
+  // audit rows before and after and "no obligation, scope row or applicability changes" are
+  // proven on the server (apps/tenants/tests_organisation.py); this journey proves the screen.
+  test("TEN-S10: A legal entity records a certificate it holds", async ({ page, apiGuard }, testInfo) => {
+    allowFreshContext(apiGuard);
+    const number = `EC-27001-${Date.now()}-${testInfo.retry}`;
+    const day = (days: number) => {
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Stockholm', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+      const date = new Date(`${today}T00:00:00Z`);
+      date.setUTCDate(date.getUTCDate() + days);
+      return date.toISOString().slice(0, 10);
+    };
+    const shown = (iso: string) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`));
+    const [issued, validUntil, nextAudit] = [day(-200), day(900), day(165)];
+
+    await signInAs(page, LOGINS.admin);
+    await page.goto('/admin/organisation');
+    const licences = page.locator('[data-licences-of="Example Bank AB"]');
+    await expect(licences.locator('[data-licence]').first()).toBeVisible();
+
+    await licences.getByRole('button', { name: 'Add a licence or certificate to Example Bank AB' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Add a licence or certificate to Example Bank AB' });
+    await dialog.getByLabel('Kind').selectOption('certificate');
+    await dialog.getByLabel('Type').selectOption('iso_iec_27001');
+    await dialog.getByLabel('Issuer').fill('Example Certification AB');
+    await dialog.getByLabel('Certificate number').fill(number);
+    await dialog.getByLabel('Scope statement').fill('The information security management system for retail banking IT operations');
+    await dialog.getByLabel('Issued').fill(issued);
+    await dialog.getByLabel('Valid until').fill(validUntil);
+    await dialog.getByLabel('Next audit').fill(nextAudit);
+    await dialog.getByLabel('Owner').selectOption({ label: 'Sara Lindqvist' });
+    await dialog.getByRole('button', { name: 'Save' }).click();
+    await expect(dialog).toBeHidden();
+
+    // Listed under the entity with its validity and next audit, and no term pill of its own.
+    const certificate = licences.locator('[data-licence]').filter({ hasText: number });
+    await expect(certificate).toContainText('Certificate');
+    await expect(certificate).toContainText('Example Certification AB');
+    await expect(certificate.getByRole('definition').filter({ hasText: shown(validUntil) })).toHaveCount(1);
+    await expect(certificate.getByRole('definition').filter({ hasText: shown(nextAudit) })).toHaveCount(1);
+    await expect(certificate).toContainText('Sara Lindqvist');
+    await expect(certificate.locator('[data-pill]')).toHaveCount(0);
+
+    // Withdrawn: it reads as withdrawn and stays in the history, behind Show withdrawn.
+    const withdrawnOn = day(0);
+    await certificate.getByRole('button', { name: /^Edit / }).click();
+    const edit = page.getByRole('dialog');
+    await edit.getByLabel('Withdrawn').fill(withdrawnOn);
+    await edit.getByRole('button', { name: 'Save' }).click();
+    await expect(edit).toBeHidden();
+    await expect(certificate).toHaveCount(0);
+    await licences.getByRole('button', { name: /^Show \d+ withdrawn$/ }).click();
+    await expect(certificate).toHaveAttribute('data-withdrawn', '');
+    await expect(certificate).toContainText(`Withdrawn ${shown(withdrawnOn)}`);
+    await expect(certificate.getByRole('button')).toHaveCount(0);
   });
 });
+
+/** TEN-S5's teardown: the E2E-only `manage.py e2e_restore_leaver` puts the removed member back as seeded. */
+function restoreLeaver(): void {
+  // Forward slashes: bash opens the script by this path, and a Windows checkout hands path.join backslashes.
+  const script = path.join(test.info().project.testDir, 'support', 'start-backend.sh').split(path.sep).join('/');
+  execFileSync('bash', [script, 'manage', 'e2e_restore_leaver'], { encoding: 'utf8' });
+}

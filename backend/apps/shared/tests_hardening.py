@@ -332,6 +332,18 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "A seeded comment added, edited or deleted: the row carries the comment's own bank, "
         "the actor is the seed, and the title is the record's own title, never the comment's text."
     ),
+    # c8-ten-reassignment (TEN-05): the subject type is one of four tenant tables, picked per kind.
+    "apps/tenants/reassignment.py record(_SUBJECT_TYPE[kind]) tenant_id=tenant.id actor=actor title=_title(kind, row, headings)": (
+        "A member's removal moving a register entry, an entity's row, a gap or an internal item: "
+        "the subject is one of those four tenant tables, never a library one, and the row is "
+        "written in the removing bank's zone under its own tenant id, by the bank's administrator."
+    ),
+    # c8-seed-org-register
+    "apps/shared/e2e_seed.py record(subject_type) tenant_id=tenant.id actor=Actor.system('seed_e2e') title=title": (
+        "The E2E seed's one audit row per seeded organisation and register row: the tenant id is "
+        "always the activated seeded bank's, never None, so the row stays in that bank's zone; the "
+        "subject types are tenant tables and the title is a seed fixture's name or stable key."
+    ),
 }
 
 

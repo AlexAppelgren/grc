@@ -1799,3 +1799,24 @@ gains `assessment` (`CasesAssessment`, null before the case reaches assessing) a
 `closedNote`, as `CasesCase` names them. The assessment is joined to the case in the block's
 one case query, so the read costs one label query more only when the assessment names an
 effort. Both are tenant content in the bank's own zone.
+## c8-reg-gaps-risk. The gap routes as built (2026-09-25, REG-03)
+
+The register contract (`c8-register-contract`) declared the gap routes before the tables
+existed; building them on `gap` as `c8-register-models` shaped it changes these points:
+
+- A gap's `source` is a row of the bank's own `gap_source` list, as the column is: written
+  as a key and answered as `{key, kind, label}`, not the fixed five-value enum the contract
+  first published. The five seeded keys are unchanged.
+- `RegisterGap`, `RegisterGapBody` and `RegisterGapPatch` gain `ownerTeam`, a key of the
+  bank's `team` list (TEN-03): a gap is owned by a person or a team, never both, as the
+  `gap_one_owner_kind` CHECK says.
+- Four eyes on risk acceptance compare the approver with the person who asked for the
+  acceptance (`gap_four_eyes`), not with the person who recorded the gap; REG-S6 is amended
+  to match.
+- `createGap` answers 409 `does_not_apply` for an obligation, or a legal entity's answer on
+  it, that does not apply; `requestRiskAcceptance` answers 409 `request_pending` while an
+  acceptance already waits; `updateGap` requires `If-Match` and answers 409 `stale_write`
+  without it; closing a gap clears an acceptance still waiting on it.
+- A gap on a Statement of Applicability unit (`unitId`) answers 501 `not_built` until
+  `c8-units-paste-soa` adds the column.
+
