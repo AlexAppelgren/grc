@@ -23,7 +23,6 @@
   "console.tenants.errorTitle": "Could not load the tenants",
   "console.tenants.emptyTitle": "No tenants yet",
   "console.tenants.emptyBody": "Create the first tenant and invite its administrator.",
-
   "console.queue.title": "Queue",
   "console.queue.lede": "Proposals waiting for a second pair of eyes",
   "console.queue.tab.waiting": "Waiting",
@@ -70,7 +69,6 @@
   "console.queue.more.newest": "{from} to {to} of {total}, newest first.",
   "console.queue.previous": "Previous",
   "console.queue.next": "Next",
-
   "console.queue.detail.back": "Queue",
   "console.queue.detail.notFoundBody": "There is no such proposal, or it is one you may not review.",
   "console.queue.detail.errorTitle": "Could not load the proposal",
@@ -104,7 +102,6 @@
   "console.queue.detail.vocabulary.before": "Before",
   "console.queue.detail.vocabulary.after": "After",
   "console.queue.detail.vocabulary.mergeInto": "Merges into {label}",
-
   "console.queue.correct.title": "Correct before approving",
   "console.queue.correct.hint": "Only fields this proposal already sources can be corrected.",
   "console.queue.correct.scopeHint": "Add or remove a term this proposal already sources.",
@@ -115,7 +112,6 @@
   "console.queue.approve": "Approve and apply",
   "console.queue.approveHint": "Writes the version, the audit entry and the re-index at once. Your passkey will be asked.",
   "console.queue.reject": "Reject",
-
   "console.queue.rejectDialog.title": "Reject this proposal",
   "console.queue.rejectDialog.reason": "Reason",
   "console.queue.rejectDialog.reasonPlaceholder": "Choose a reason",
@@ -123,7 +119,6 @@
   "console.queue.rejectDialog.notePlaceholder": "e.g. The excerpt is from the consultation draft, not the adopted text",
   "console.queue.rejectDialog.hint": "Goes back to the agent run and the problem report, if one started it.",
   "console.queue.rejectDialog.submit": "Reject",
-
   "console.evaluation.title": "Evaluation",
   "console.evaluation.lede": "The questions search is scored against, the scores it is held to, and how each recorded run went.",
   "console.evaluation.errorTitle": "Could not load the evaluation set",
@@ -182,7 +177,6 @@
   "console.evaluation.add.duplicateKey": "The set already has a question with that key. Keys are never reused.",
   "console.evaluation.add.submit": "Add question",
   "console.evaluation.add.added": "Added {key}. It is not yet in the release gate.",
-
   "console.queue.kind.retag": "Re-tag",
   "console.queue.rowCount": "{count, plural, one {# record} other {# records}}",
   "console.batch.lede": "Every row shows the record as it is and as it would be. Decide each one, or the rest at once.",
@@ -252,5 +246,32 @@
   "console.retag.status.working": "Sent. The batch is being prepared.",
   "console.retag.status.ready": "The re-tag is in the queue as a batch.",
   "console.retag.status.openBatch": "Open the batch",
-  "console.retag.status.noBatch": "The request ended without a batch."
+  "console.retag.status.noBatch": "The request ended without a batch.",
+  "nav.console.supportAccess": "Support access",
+  "console.supportAccess.title": "Support access",
+  "console.supportAccess.lede": "Ask a bank to let you read its organisation for a while. Nothing opens until one of its administrators approves, and every page you open is in the bank's audit log.",
+  "console.supportAccess.ask": "Ask for access",
+  "console.supportAccess.askBody": "The bank's administrators decide. Entering an approved grant asks for your passkey.",
+  "console.supportAccess.bank": "Bank",
+  "console.supportAccess.bankPlaceholder": "Choose a bank",
+  "console.supportAccess.bankRequired": "Choose the bank you need to read.",
+  "console.supportAccess.purposeHint": "The bank's administrators read this before they decide. Keep their data out of it.",
+  "console.supportAccess.purposePlaceholder": "e.g. what is wrong and what you need to look at",
+  "console.supportAccess.purposeRequired": "Say why you need access.",
+  "console.supportAccess.ticketHint": "Optional.",
+  "console.supportAccess.ticketPlaceholder": "e.g. SUP-2291",
+  "console.supportAccess.hoursLabel": "How long, in hours",
+  "console.supportAccess.hoursHint": "From the moment they approve.",
+  "console.supportAccess.grantsNothing": "This grants nothing yet. The bank's administrators are emailed, and the request lapses if nobody decides.",
+  "console.supportAccess.asked": "Asked. {tenant}'s administrators have been emailed.",
+  "console.supportAccess.hoursFromApproval": "{hours, plural, one {# hour} other {# hours}}, starting when they approve",
+  "console.supportAccess.enterHint": "Entering asks for your passkey. You can read, never change, and cannot search, ask or download files.",
+  "console.supportAccess.enter": "Enter",
+  "console.supportAccess.entering": "Entering…",
+  "console.supportAccess.stepUpCancelled": "Nothing opened. Entering needs your passkey.",
+  "console.supportAccess.notOpen": "This access is no longer open. Reload to see where it stands.",
+  "console.supportAccess.inside": "Your console session has ended. Every page you read in {tenant} is in its audit log, and Leave signs you out.",
+  "console.supportAccess.errorTitle": "Could not load your support access",
+  "console.supportAccess.emptyTitle": "You have not asked for access",
+  "console.supportAccess.emptyBody": "Ask a bank when a problem needs you to see what they see."
 }

@@ -1804,3 +1804,20 @@ Defaults taken; nothing waits on them.
 - [ ] **The AGT-S4 journey stays `fixme`.** The integration scenario is green; the console
       screen that publishes and retires a version is not built yet, and its journey belongs
       to the package that builds it.
+## c8-ui-support-console: what a support session can open in the browser (2026-09-25, TEN-06)
+
+- [ ] **A support session has no tenant screens yet.** Enter on `/console/support-access`
+      opens the support session and the screen then shows the read-only banner, the bank
+      and the end of the window, and Leave. It opens no tenant screen, because every one
+      of them starts with `GET /me`, which is not on the support session's route list
+      (`SUPPORT_READ_ROUTES`, `apps/shared/routes.py`), so it answers 403
+      `support_read_only`; the banner is also not yet mounted in the tenant shell. TEN-S6
+      proves the reads, the logged `support_access.read` rows, the 403 on a write and the
+      401 after a revoke with that session's own requests. Default if you say nothing: a
+      later package adds `GET /me` (the platform person's own profile and the bank's name,
+      nothing of its members) to the list under `tests_support_routes.py`'s review and
+      mounts the banner, so the allowed reads open in the tenant screens.
+- [ ] **The console's own list was built here.** `GET /console/support-access`
+      (`c8-support-access-console-list` in `CHUNK8_TASKS.md`) was in no R2 wave and still
+      answered 501, which the screen needs, so this package built it on that brief:
+      the own-grants policy, no bank active, the bank by name, no member ever named.

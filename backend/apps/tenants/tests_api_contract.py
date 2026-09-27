@@ -351,6 +351,8 @@ class TenantsRouteStubs(TenantsContractCase):
         "revokeSupportAccess",
         # c8-support-session-guard (TEN-06): apps/shared/tests_support_session.py.
         "enterConsoleSupportAccess",
+        # c8-ui-support-console (TEN-06): tests_support_access.py, ConsoleList.
+        "listConsoleSupportAccess",
     }
     # c8-ten-reassignment: built, and proven in tests_reassignment.py.
     BUILT |= {"getMemberOpenWork", "removeMember"}
