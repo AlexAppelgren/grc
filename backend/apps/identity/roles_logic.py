@@ -78,31 +78,37 @@ def _labels_dict(role: TenantRole | PlatformRole) -> dict[str, str]:
 def ensure_system_roles(tenant: Tenant) -> int:
     """Create or refresh the system roles of one tenant. Permissions follow the code (a
     PRD bump changes the matrix); labels and usage notes are written once and left to
-    the tenant afterwards. Must run with the tenant activated."""
-    count = 0
+    the tenant afterwards. Must run with the tenant activated. One read, then the missing
+    roles and their labels go in as one INSERT each, since a new bank has none (NFR-02)."""
+    keys = [key for key in perms.SYSTEM_ROLES if key not in perms.PLATFORM_PERMISSIONS and key not in PLATFORM_ROLE_LABELS]
+    existing = {role.key: role for role in TenantRole.objects.filter(tenant=tenant, key__in=keys)}
+    created: list[TenantRole] = []
     for sort_order, key in enumerate(perms.SYSTEM_ROLES):
-        if key in perms.PLATFORM_PERMISSIONS or key in PLATFORM_ROLE_LABELS:
+        if key not in keys:
             continue
-        role, created = TenantRole.objects.update_or_create(
-            tenant=tenant,
-            key=key,
-            defaults={
-                "permissions": sorted(perms.SYSTEM_ROLES[key]),
-                "is_system": True,
-                "active": True,
-                "sort_order": sort_order,
-                "is_default": key == DEFAULT_TENANT_ROLE,
-            },
-        )
-        if created:
-            role.usage_note = TENANT_ROLE_USAGE.get(key, "")
-            role.save(update_fields=["usage_note"])
-            for language, text in TENANT_ROLE_LABELS[key].items():
-                TenantRoleLabel.objects.create(
-                    tenant=tenant, vocabulary=role, language=language, text=text, is_original=language == "en"
-                )
-        count += 1
-    return count
+        refreshed = {
+            "permissions": sorted(perms.SYSTEM_ROLES[key]),
+            "is_system": True,
+            "active": True,
+            "sort_order": sort_order,
+            "is_default": key == DEFAULT_TENANT_ROLE,
+        }
+        role = existing.get(key)
+        if role is None:
+            created.append(TenantRole(tenant=tenant, key=key, usage_note=TENANT_ROLE_USAGE.get(key, ""), **refreshed))
+        elif any(getattr(role, name) != value for name, value in refreshed.items()):
+            for name, value in refreshed.items():
+                setattr(role, name, value)
+            role.save(update_fields=list(refreshed))
+    TenantRole.objects.bulk_create(created)
+    TenantRoleLabel.objects.bulk_create(
+        [
+            TenantRoleLabel(tenant=tenant, vocabulary=role, language=language, text=text, is_original=language == "en")
+            for role in created
+            for language, text in TENANT_ROLE_LABELS[role.key].items()
+        ]
+    )
+    return len(keys)
 
 
 def ensure_platform_roles() -> int:

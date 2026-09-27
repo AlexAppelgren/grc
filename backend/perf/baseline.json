@@ -140,9 +140,9 @@
     "queries": 40
   },
   "createConsoleTenant": {
-    "medianMs": 244.9,
-    "p95Ms": 280.0,
-    "queries": 521
+    "medianMs": 98.4,
+    "p95Ms": 104.3,
+    "queries": 74
   },
   "createEvalQuestion": {
     "medianMs": 10.1,

@@ -19,6 +19,7 @@ from unittest import mock
 
 from django.db import DEFAULT_DB_ALIAS, IntegrityError, connection, connections, transaction
 from django.test import TransactionTestCase
+from django.test.utils import CaptureQueriesContext
 
 from apps.identity.models import Invitation, PlatformRole, PlatformRoleAssignment, TenantRole
 from apps.library.seeds import seed_languages
@@ -28,10 +29,15 @@ from apps.shared.audit import Actor
 from apps.shared.models import AuditEvent, Tenant, TenantContentLanguage
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy.models import ComplianceStatus
+from apps.taxonomy.registry import TENANT_LISTS
+from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
 from apps.tenants import logic
 
 V1 = "/api/v1"
 WAIT_SECONDS = 10
+# Everything createConsoleTenant does besides the bank's lists: the session, the tenant, its
+# roles, the invitation and the audit and outbox INSERTs (37 when pinned).
+FIXED_QUERIES = 40
 
 
 def body(**overrides: Any) -> dict[str, Any]:
@@ -92,6 +98,24 @@ class ConsoleTenants(ScenarioTestCase):
     def test_a_missing_title_is_allowed(self) -> None:
         response = self._create(body(firstAdminTitle=""))
         self.assertEqual(response.status_code, 201, response.content)
+
+    def test_the_banks_lists_and_roles_go_in_by_the_list_not_by_the_row(self) -> None:
+        """NFR-02: a read, the rows' INSERT and the labels' INSERT per list, and the rest of the
+        call a fixed cost, so the queries no longer grow with the rows it seeds (row by row it
+        was 521 queries and 245-400 ms, over API_BUDGET_MS). Every row still gets its labels
+        and its own `vocabulary.created` audit row."""
+        seeded = sum(len(rows) for _, rows in TENANT_SYSTEM_ROWS.values())
+        with CaptureQueriesContext(connection) as queries:
+            response = self._create()
+        self.assertEqual(response.status_code, 201, response.content)
+        self.assertLessEqual(len(queries), 3 * len(TENANT_LISTS) + FIXED_QUERIES)
+        tenant = Tenant.objects.get(slug="example-bank-oyj")
+        self.activate(tenant)
+        self.assertEqual(AuditEvent.objects.filter(tenant_id=tenant.id, action="vocabulary.created").count(), seeded)
+        for status in ComplianceStatus.objects.filter(tenant=tenant).prefetch_related("labels"):
+            self.assertEqual({label.language for label in status.labels.all()}, {"en", "sv"})
+        for role in TenantRole.objects.filter(tenant=tenant).prefetch_related("labels"):
+            self.assertTrue(role.labels.all(), role.key)
 
     def test_every_audit_row_the_call_writes_belongs_to_the_new_tenant(self) -> None:
         """Platform staff have no bypass: the call activates only what it has just written."""

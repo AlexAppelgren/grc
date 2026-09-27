@@ -25,7 +25,7 @@ from typing import Any
 
 from django.core.exceptions import ValidationError
 
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor, batched, record
 from apps.shared.models import Tenant
 from apps.taxonomy.models import CaseStatusCategory, CloseReason, ComplianceCategory, GapCategory, RiskLevel
 from apps.taxonomy.registry import REGISTRY, TENANT_LISTS
@@ -156,28 +156,71 @@ TENANT_SYSTEM_ROWS: dict[str, tuple[str, list[SystemRow]]] = {
 def ensure_tenant_vocabularies(tenant: Tenant, *, actor: Actor) -> int:
     """Create the system rows of every tenant list this tenant does not have yet, and put
     back a system row's kind. `actor` is whoever is seeding: the deploy's `seed_reference`,
-    the E2E seed, the test factory or, later, the console creating the tenant. Must run
-    with the tenant activated, inside a transaction. Returns the number of rows ensured."""
+    the E2E seed, the test factory or the console creating the tenant. Must run with the
+    tenant activated, inside a transaction. Returns the number of rows ensured.
+
+    One read per list, and the missing rows, their labels and every audit row each go in
+    as one INSERT: a new bank gets some fifty rows here, and one by one they spent most
+    of the console's 250 ms creating it (NFR-02, TEN-02)."""
     count = 0
-    for list_name in TENANT_LISTS:
-        entry = REGISTRY[list_name]
-        default_key, rows = TENANT_SYSTEM_ROWS[list_name]
-        for sort_order, spec in enumerate(rows):
-            defaults: dict[str, Any] = {
-                "kind": spec.kind,
-                "is_system": True,
-                "active": True,
-                "sort_order": sort_order,
-                "is_default": spec.key == default_key,
-                "usage_note": spec.usage_note,
-                **spec.extra,
-            }
-            row, created = entry.model._default_manager.get_or_create(tenant=tenant, key=spec.key, defaults=defaults)
-            if created:
-                for language, text in spec.labels.items():
-                    entry.label_model._default_manager.create(
+    with batched():
+        for list_name in TENANT_LISTS:
+            entry = REGISTRY[list_name]
+            default_key, specs = TENANT_SYSTEM_ROWS[list_name]
+            manager = entry.model._default_manager
+            existing = {row.key: row for row in manager.filter(tenant=tenant, key__in=[spec.key for spec in specs])}
+            created: list[tuple[Any, SystemRow]] = []
+            for sort_order, spec in enumerate(specs):
+                row = existing.get(spec.key)
+                if row is None:
+                    row = entry.model(
+                        tenant=tenant,
+                        key=spec.key,
+                        kind=spec.kind,
+                        is_system=True,
+                        active=True,
+                        sort_order=sort_order,
+                        is_default=spec.key == default_key,
+                        usage_note=spec.usage_note,
+                        **spec.extra,
+                    )
+                    created.append((row, spec))
+                elif not row.is_system:
+                    raise ValidationError(
+                        f"{list_name}:{spec.key} is already one of this organisation's own values, so the "
+                        f"system value cannot be added. Give that value another key first (tenant {tenant.id}).",
+                        code="system_key_taken",
+                    )
+                elif row.kind != spec.kind:
+                    before = row.kind
+                    row.kind = spec.kind
+                    row.version += 1
+                    row.save(update_fields=["kind", "version"])
+                    record(
+                        action="vocabulary.updated",
+                        actor=actor,
+                        subject_type=SUBJECT_TYPE,
+                        subject_id=row.id,
+                        subject_title=f"{list_name}:{spec.key}",
+                        summary=f"Put the kind of {spec.key} on {list_name} back.",
+                        tenant_id=tenant.id,
+                        before={"kind": before},
+                        after={"kind": spec.kind},
+                    )
+                count += 1
+            if not created:
+                continue
+            manager.bulk_create([row for row, _ in created])
+            entry.label_model._default_manager.bulk_create(
+                [
+                    entry.label_model(
                         tenant=tenant, vocabulary=row, language=language, text=text, is_original=language == ORIGINAL_LANGUAGE
                     )
+                    for row, spec in created
+                    for language, text in spec.labels.items()
+                ]
+            )
+            for row, spec in created:
                 record(
                     action="vocabulary.created",
                     actor=actor,
@@ -188,27 +231,4 @@ def ensure_tenant_vocabularies(tenant: Tenant, *, actor: Actor) -> int:
                     tenant_id=tenant.id,
                     after={"list": list_name, "key": spec.key, "labels": spec.labels, "kind": spec.kind},
                 )
-            elif not row.is_system:
-                raise ValidationError(
-                    f"{list_name}:{spec.key} is already one of this organisation's own values, so the "
-                    f"system value cannot be added. Give that value another key first (tenant {tenant.id}).",
-                    code="system_key_taken",
-                )
-            elif row.kind != spec.kind:
-                before = row.kind
-                row.kind = spec.kind
-                row.version += 1
-                row.save(update_fields=["kind", "version"])
-                record(
-                    action="vocabulary.updated",
-                    actor=actor,
-                    subject_type=SUBJECT_TYPE,
-                    subject_id=row.id,
-                    subject_title=f"{list_name}:{spec.key}",
-                    summary=f"Put the kind of {spec.key} on {list_name} back.",
-                    tenant_id=tenant.id,
-                    before={"kind": before},
-                    after={"kind": spec.kind},
-                )
-            count += 1
     return count
