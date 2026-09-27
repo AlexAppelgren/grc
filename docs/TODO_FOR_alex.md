@@ -1488,3 +1488,46 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
       then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
       (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**
+## c11-definitions-platform: publishing bleqq's agent versions, their settings and runs (2026-09-25, AGT-03, ADM-02, AGT-06)
+
+**Answered by Alex on 2026-09-25 (D-102, ADR 0059): "Platform config".** The question was
+how the console may write an agent definition, while `agent` and `agent_version` read as
+library rows that only a proposal's approval may reach.
+
+- [x] **How may the console write an agent definition?** Agent definitions, agent versions
+      and platform agent settings are platform configuration, not library rows. The console
+      writes them directly through `agents/seeds/console.py`, behind
+      `agent_definitions.manage`, a fresh passkey and a person's session, with one audit row
+      carrying no tenant and the assertion. The library fence names the three in one
+      platform-configuration list (`PlatformConfigurationGuard`) and still refuses every
+      other model, route, proposal kind and watch module. CLAUDE.md section 5 gains no
+      exception line. Built by `c11-agent-config-platform`; AGT-S4 is green.
+
+Defaults taken; nothing waits on them.
+
+- [ ] **A bank's run log no longer lists bleqq's runs.** `GET /agent-runs` from a bank's
+      session returns its own runs only; the console reads bleqq's with
+      `GET /console/agent-runs` (the default "no prompts, tools, budgets, run rows or costs"
+      under "What may a bank see of bleqq's watch?"). What a bank sees of bleqq's watch is
+      `GET /agents/platform`. Row-level security still lets a bank read a library run; the
+      narrowing is the read's. `c11-run-history` (same wave) owns that read and may have
+      taken the other reading ("platform runs never carry cost to a bank"); the integrator
+      keeps this one.
+- [ ] **A run opens on the newest version still published.** When every version is
+      retired a run is refused with 409 `no_published_version`.
+
+## c11-agent-config-platform: agent definitions as platform configuration (2026-09-25, AGT-03, D-102)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **The console keeps the database's `seed` door.** The three console writers open the
+      same door as the reference seed, which the database accepts on every inventory table,
+      because a door of their own would change the database trigger, the door lint and the
+      library database guard, none of them this package's. What keeps the writers to agent
+      rows is the fence: `agents/seeds/console.py` may name no library model but `Agent`
+      and `AgentVersion`, and only the three console routes reach it. Default: keep it so.
+      The alternative is a `platform_config` door accepted only by `agent` and
+      `agent_version`, a small hardening for a later package.
+- [ ] **The AGT-S4 journey stays `fixme`.** The integration scenario is green; the console
+      screen that publishes and retires a version is not built yet, and its journey belongs
+      to the package that builds it.

@@ -18,7 +18,7 @@ need one live in the app's own `testing.py`, which the fence exempts:
 |---|---|
 | An instrument, a provision, an obligation | `apps/library/testing.py` |
 | A source, a source check, a change with its timeline, pages, flags, scope terms and obligation links | `apps/watch/testing.py` |
-| An agent, a platform key bound to it, a platform run | `apps/agents/testing.py` |
+| An agent, a platform key bound to it, a platform run, a definition a bank may add | `apps/agents/testing.py` |
 | A bank's case, its obligation-link decision, two banks with different footprints | `apps/cases/testing.py` |
 """
 
@@ -306,3 +306,14 @@ def case_evidence(tenant: Tenant) -> SimpleNamespace:
             scanned_at=timezone.now(),
         )
     return SimpleNamespace(id=evidence.id, case=row)
+# c11-tenant-agents-budget-scope (AGT-04)
+def tenant_agent(tenant: Tenant) -> object:
+    """The tenant-isolation guard's record for `PATCH /agents/{tenant_agent_id}`: one of the
+    bank's own agents, on a tenant-scoped definition shared by every bank that asks."""
+    from apps.agents.models import TenantAgent
+    from apps.agents.testing import tenant_definition
+
+    definition = tenant_definition("isolation-bank-watch")
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantAgent.objects.create(tenant=tenant, agent=definition)

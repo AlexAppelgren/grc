@@ -44,9 +44,22 @@ def _change_case(tenant: Tenant) -> Any:
     return cases_build.case(tenant, watch_build.change(title=CHANGE_TITLE))
 
 
+def _tenant_agent(tenant: Tenant) -> Any:
+    # c11-scheduler: one of the bank's own agents, the subject a cap pause notifies about.
+    from apps.agents.models import TenantAgent
+    from apps.agents.tests_tenant_agents import tenant_definition
+
+    tenancy.activate(tenant.id)
+    return TenantAgent.objects.create(tenant=tenant, agent=tenant_definition(f"bank-notify-{uuid.uuid4().hex[:6]}"))
+
+
 # One builder per registered subject kind: a registry row without one fails the registry
 # test, so a kind cannot be added without proving its lookup and its title.
-BUILDERS: dict[str, Callable[[Tenant], Any]] = {"obligation": _obligation, "change_case": _change_case}
+BUILDERS: dict[str, Callable[[Tenant], Any]] = {
+    "obligation": _obligation,
+    "change_case": _change_case,
+    "tenant_agent": _tenant_agent,
+}
 
 
 class NotifyTestCase(TestCase):

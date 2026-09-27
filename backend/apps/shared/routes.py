@@ -85,4 +85,6 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("DELETE", "/actions/{action_id}", "cases.Action", "case_action"),
     ("GET", "/evidence/{evidence_id}/download", "cases.Evidence", "case_evidence"),
     ("DELETE", "/evidence/{evidence_id}", "cases.Evidence", "case_evidence"),
+    # c11-tenant-agents-budget-scope (AGT-04)
+    ("PATCH", "/agents/{tenant_agent_id}", "agents.TenantAgent", "tenant_agent"),
 ]
