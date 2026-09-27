@@ -116,6 +116,9 @@ class ResearchRequestKind(enum.StrEnum):
     CHECK_URL = "check_url"
     RESEARCH_TOPIC = "research_topic"
     RETAG = "retag"
+    # d89-agent-research (OWN-02, ADR 0059): an approved scope item, opened by the worker for
+    # the bank's own scope-researcher, never asked for through a route.
+    SCOPE_ITEM = "scope_item"
 
 
 class ResearchRequestStatus(enum.StrEnum):
@@ -284,6 +287,10 @@ class ResearchRequest(models.Model):
     fetched_text = models.TextField(blank=True)
     risk_flags = ArrayField(models.CharField(max_length=40), default=list, blank=True)
     batch_proposal_id = models.UUIDField(null=True, blank=True)
+    # d89-agent-research (OWN-02): the bank's own scope item a `scope_item` request researches.
+    # A composite `(tenant_id, scope_item_id)` key too (agents 0009), so it is always the
+    # request's own bank's item.
+    scope_item = models.ForeignKey("taxonomy.ScopeItem", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
@@ -299,6 +306,16 @@ class ResearchRequest(models.Model):
                     & models.Q(tenant__isnull=False, tenant_agent__isnull=False)
                 ),
                 name="research_request_zone",
+            ),
+            # A scope item is researched by a `scope_item` request, and only by one.
+            models.CheckConstraint(
+                condition=models.Q(kind=ResearchRequestKind.SCOPE_ITEM.value, scope_item__isnull=False)
+                | (~models.Q(kind=ResearchRequestKind.SCOPE_ITEM.value) & models.Q(scope_item__isnull=True)),
+                name="research_request_scope_item_kind",
+            ),
+            # One research per item, so a redelivered `scope_item.added` opens nothing twice.
+            models.UniqueConstraint(
+                fields=["scope_item"], condition=models.Q(scope_item__isnull=False), name="research_request_one_per_scope_item"
             ),
         ]
         indexes = [models.Index(fields=["tenant", "-created_at"], name="research_request_tenant_idx")]
