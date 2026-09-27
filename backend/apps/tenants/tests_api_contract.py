@@ -337,6 +337,12 @@ class TenantsRouteStubs(TenantsContractCase):
         "listTeams",
         "listTeamMembers",
         "listPeople",
+        # c8-ten-support-grants (TEN-06): tests_support_access.py.
+        "requestConsoleSupportAccess",
+        "listTenantSupportAccess",
+        "approveSupportAccess",
+        "declineSupportAccess",
+        "revokeSupportAccess",
     }
 
     def test_an_if_match_that_is_not_a_version_is_422_on_every_versioned_write(self) -> None:
