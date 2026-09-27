@@ -263,6 +263,22 @@ def record_read(*, principal: Principal, method: str, route: str, path_ids: dict
     )
 
 
+def waiting_count(*, exclude_user_id: uuid.UUID | None) -> int:
+    """The active bank's requests waiting for a decision, as `state_of` reads them: a
+    read-level request whose time to be decided has not run out, leaving out one the
+    person asked for themselves. The count behind "Decide now" on `GET /me`. Grants are
+    loaded here and nowhere else (tests_support_session's fence)."""
+    return (
+        SupportAccess.objects.filter(
+            status=SupportAccessStatus.REQUESTED.value,
+            access_level=SupportAccessLevel.READ.value,
+            request_expires_at__gt=timezone.now(),
+        )
+        .exclude(platform_user_id=exclude_user_id)
+        .count()
+    )
+
+
 def list_for_tenant(*, tenant: Tenant, limit: int, offset: int) -> SupportAccessPage:
     """`GET /tenant/support-access`: every request the bank has had, newest first."""
     grants = SupportAccess.objects.filter(tenant=tenant).select_related("platform_user", "approved_by", "ended_by")
