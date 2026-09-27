@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,6 +23,7 @@ const RECORDINGS = fileURLToPath(new URL('../../src/features/demo/recordings.jso
 const RECORDED_AT = fileURLToPath(new URL('../../src/features/demo/recorded-at.json', import.meta.url));
 const OPENAPI = fileURLToPath(new URL('../../../openapi.json', import.meta.url));
 const TENANT_APP = fileURLToPath(new URL('../../src/app/(tenant)', import.meta.url));
+const PICTURES = fileURLToPath(new URL('../../public/demo', import.meta.url));
 
 const RECORD = process.env.DEMO_RECORD === '1';
 // Recording keeps every record a list shows on its first page (the API pages by
@@ -201,13 +202,19 @@ test.describe('public page demo', () => {
       if (request.frame().name() === DEMO_FRAME_NAME && request.url().includes('/api/')) fromDemo.push(request.url());
     });
     await page.goto('/welcome');
-    await page.getByRole('region', { name: 'Demo' }).scrollIntoViewIfNeeded();
+    // Nothing of the app loads before the visitor asks for it.
+    await expect(page.locator(`iframe[name="${DEMO_FRAME_NAME}"]`)).toHaveCount(0);
+    await page.getByRole('button', { name: 'Try out our demo' }).click();
     const app = page.frameLocator(`iframe[name="${DEMO_FRAME_NAME}"]`);
     await app.getByRole('link', { name: 'Watch', exact: true }).first().click();
     await expect(app.getByRole('tab', { selected: true })).toBeVisible();
     await app.getByRole('link', { name: 'Inventory', exact: true }).first().click();
     await expect(app.getByRole('tab', { selected: true })).toBeVisible();
     expect(fromDemo, 'requests from the demo frame to the API').toEqual([]);
+
+    // Start over takes the demo back to Today.
+    await page.getByRole('button', { name: 'Start over' }).click();
+    await expect.poll(() => new URL(page.frame({ name: DEMO_FRAME_NAME })?.url() ?? 'http://x/none').pathname).toBe('/');
   });
 
   test.describe('on a phone', () => {
@@ -217,12 +224,43 @@ test.describe('public page demo', () => {
       allowFreshContext(apiGuard);
       await page.goto('/welcome');
       await expect(page.locator(`iframe[name="${DEMO_FRAME_NAME}"]`)).toHaveCount(0);
-      await page.getByRole('button', { name: 'Open the demo' }).click();
+      await page.getByRole('button', { name: 'Try out our demo' }).click();
       const dialog = page.getByRole('dialog', { name: 'Demo' });
       const app = page.frameLocator(`iframe[name="${DEMO_FRAME_NAME}"]`);
       await expect(app.locator('main')).toBeVisible();
-      await dialog.getByRole('button', { name: 'Close the demo' }).click();
+      await dialog.getByRole('button', { name: 'Close' }).click();
       await expect(dialog).toHaveCount(0);
     });
+  });
+
+  // The page shows a picture of the demo until a visitor asks for it. It is taken
+  // of the demo itself, so `npm run demo:record` takes it in a second pass, on a
+  // build that already carries the recordings the first pass wrote.
+  test('pictures of the demo for the public page, taken when it records', async ({ browser, baseURL }) => {
+    test.skip(!RECORD, 'taken by npm run demo:record');
+    mkdirSync(PICTURES, { recursive: true });
+    const forms = [
+      // Tall enough for the whole frame, which the picture must fill exactly.
+      ['desktop', { width: 1440, height: 1200 }, 1.5],
+      ['phone', { width: 390, height: 844 }, 2],
+    ] as const;
+    for (const [form, viewport, deviceScaleFactor] of forms) {
+      for (const colorScheme of ['light', 'dark'] as const) {
+        const context = await browser.newContext({ baseURL, viewport, deviceScaleFactor, colorScheme, isMobile: form === 'phone', hasTouch: form === 'phone' });
+        const page = await context.newPage();
+        await page.goto('/welcome');
+        await page.getByRole('button', { name: 'Try out our demo' }).click();
+        const app = page.frameLocator(`iframe[name="${DEMO_FRAME_NAME}"]`);
+        await expect(app.locator('main h1').first()).toBeVisible();
+        await page.frame({ name: DEMO_FRAME_NAME })?.evaluate(() => document.fonts.ready.then(() => undefined));
+        await page.locator(`iframe[name="${DEMO_FRAME_NAME}"]`).scrollIntoViewIfNeeded();
+        const box = await page.locator(`iframe[name="${DEMO_FRAME_NAME}"]`).boundingBox();
+        if (box === null) throw new Error('the demo frame has no box');
+        // The phone's picture is the top of the screen, which is all its card shows.
+        const clip = form === 'phone' ? { ...box, height: Math.min(box.height, 290) } : box;
+        await page.screenshot({ path: join(PICTURES, `today-${form}-${colorScheme}.jpg`), type: 'jpeg', quality: 72, clip });
+        await context.close();
+      }
+    }
   });
 });

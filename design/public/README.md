@@ -168,12 +168,23 @@ linear.app the same day); ours is the app itself.
   recordings by API path template and field shape, never by value. A screen
   asking for something unrecorded, or an answer that gained, lost or retyped a
   field, fails the journey with the command that fixes it:
-  `npm run demo:record` in `frontend/`, then commit the two files it writes.
-- **Phones and desktops.** On a desktop the frame sits in the page and loads
-  when it scrolls near. On a phone a button opens it full screen, because a
-  frame inside a scrolling page traps the thumb, and nothing of the app loads
-  before that. The recordings are their own chunk (about 30 KB compressed), so
-  the page itself never carries them.
+  `npm run demo:record` in `frontend/`, then commit what it writes: the two
+  recording files and the four pictures below.
+- **What a visitor sees first** (Alex, 2026-09-27, proposal A of the canvas
+  "Demo on the public page: proposals"). A picture of the demo's Today and one
+  button, "Try out our demo", with "Example Bank AB is made up, and nothing
+  you do in it is saved." Nothing of the app loads before the press. On a
+  desktop the live app then replaces the picture in place and takes focus, with
+  a "Skip the demo" link for keyboard users; on a phone it opens full screen,
+  because a frame inside a scrolling page traps the thumb. Either way a sand bar
+  above it names the demo and the bank and offers Start over (and Close, on a
+  phone), so nobody takes it for the real product.
+- **The pictures** (`frontend/public/demo/today-{desktop,phone}-{light,dark}.jpg`)
+  are taken of the demo itself by the recorder's second pass, on a build that
+  already carries the new recordings, so they show the same sample bank as the
+  live demo. A change to the look alone does not fail the gate, so re-record
+  after a visible change to Today. The recordings are their own chunk, so the
+  page itself never carries them.
 - **Framing.** The app answers every page with `Content-Security-Policy:
   frame-ancestors 'self'` and `X-Frame-Options: SAMEORIGIN` (`next.config.ts`),
   so only its own public page can frame it and no other site can put it under a

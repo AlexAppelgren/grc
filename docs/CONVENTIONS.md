@@ -402,7 +402,9 @@ runs everything; every chunk runs against a freshly seeded backend.
 recordings of this stack (`design/public/README.md` "The demo"). Its journey
 fails when a screen asks for something the recordings cannot answer or an
 answer has changed shape; run `npm run demo:record` in `frontend/` and commit
-`src/features/demo/recordings.json` and `recorded-at.json` with the change.
+`src/features/demo/recordings.json`, `recorded-at.json` and the pictures in
+`public/demo/` with the change. Re-record after a visible change to Today too,
+since the page shows a picture of it.
 
 ## 6. CI and quality gates (playbook 9)
 
