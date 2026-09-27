@@ -156,10 +156,11 @@ describe('navigation registry (playbook 6.2)', () => {
     expect(childDestinations('admin', ['footprint.approve']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-footprint']);
     // An approver who holds nothing else still reaches /admin to find it.
     expect(visibleDestinations('tenant', ['footprint.approve']).map((d) => d.id)).toEqual(['today', 'admin']);
-    expect(childDestinations(ACCOUNT_PARENT, []).map((d) => d.href)).toEqual(['/me/passkeys', '/me/sessions']);
+    // A member's own access tokens (ACC-03) are every member's: a token held stays revocable.
+    expect(childDestinations(ACCOUNT_PARENT, []).map((d) => d.href)).toEqual(['/me/passkeys', '/me/sessions', '/me/tokens']);
     // Calendar feeds needs the grant the roadmap needs (HOM-04), so it joins the
     // account links only for a reader who holds it, and never unlocks anything else.
-    expect(childDestinations(ACCOUNT_PARENT, ['roadmap.read']).map((d) => d.href)).toEqual(['/me/passkeys', '/me/sessions', '/me/calendar-feeds']);
+    expect(childDestinations(ACCOUNT_PARENT, ['roadmap.read']).map((d) => d.href)).toEqual(['/me/passkeys', '/me/sessions', '/me/tokens', '/me/calendar-feeds']);
     expect(visibleDestinations('tenant', ['roadmap.read']).map((d) => d.id)).toEqual(['today', 'roadmap']);
     // Children never reach the rail or the dock.
     const all = destinations.flatMap((d) => d.anyOfPermissions);
