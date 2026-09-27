@@ -9,6 +9,11 @@ stands in the run's zone, a platform run's with no tenant or a bank's own under
 `@tenant_task`, and anything else is refused, so one bank's worker cannot move a platform run
 that every bank reads, nor another bank's.
 
+The cap's second point is here (AGT-04): an event that leaves a bank's own run open with the
+month's spend past the bank's monthly cap stops the run through the runner and pauses the
+agent with the reason `budget_cap`, notifying the people who hold `agents.manage`, as the
+scheduler does before a run starts. A platform run has no cap of a bank's to meet.
+
 A finished run is a finished account and takes no more events. `cost` and the token counts
 are totals so far, so they never go down. The error text is stored on the run for the
 people who operate the agents, and never logged or written to an audit or outbox row.
@@ -23,11 +28,14 @@ from django.db import transaction
 from django.utils import timezone
 from pydantic import ValidationError as SchemaError
 
+from apps.agents import budget, control, tenant_agents
 from apps.agents.models import AgentRun, RunStatus
+from apps.agents.tasks import _notify_cap as notify_cap  # the scheduler's own notice, never a copy
 from apps.agents.schemas import AgentRunFinish, AgentRunStats
 from apps.shared import tenancy
 from apps.shared.adapters.agent_runner import RunnerEvent
 from apps.shared.audit import Actor, record
+from apps.shared.models import Tenant
 
 ACTOR = Actor.system("agent_runner")
 # The columns' own bounds: `cost` is numeric(10, 4) and the token counts are bigint.
@@ -35,7 +43,11 @@ COST_PLACES = 4
 COST_CEILING = Decimal("1000000")
 TOKENS_CEILING = 2**63 - 1
 # The longest error a run keeps, the same as a run closed through the API may carry.
-ERROR_MAX = next(rule.max_length for rule in AgentRunFinish.model_fields["error"].metadata if hasattr(rule, "max_length"))
+ERROR_MAX = next(
+    rule.max_length
+    for rule in AgentRunFinish.model_fields["error"].metadata
+    if hasattr(rule, "max_length")
+)
 
 
 def apply_event(event: RunnerEvent) -> AgentRun:
@@ -47,10 +59,19 @@ def apply_event(event: RunnerEvent) -> AgentRun:
         if not zones:
             raise ValidationError("No run has that id.", code="not_found")
         if zones[0] != tenancy.active_tenant_id():
-            raise ValidationError("That run belongs to another zone than the one applying its event.", code="wrong_zone")
-        run = AgentRun.objects.select_for_update(of=("self",)).select_related("agent").get(pk=event.run_id)
+            raise ValidationError(
+                "That run belongs to another zone than the one applying its event.",
+                code="wrong_zone",
+            )
+        run = (
+            AgentRun.objects.select_for_update(of=("self",))
+            .select_related("agent")
+            .get(pk=event.run_id)
+        )
         if run.status != RunStatus.RUNNING.value:
-            raise ValidationError("That run has finished, so it takes no more events.", code="run_finished")
+            raise ValidationError(
+                "That run has finished, so it takes no more events.", code="run_finished"
+            )
         status, stats = _validated(run, event)
         before = _state(run)
         run.status = status.value
@@ -62,7 +83,16 @@ def apply_event(event: RunnerEvent) -> AgentRun:
         if status is RunStatus.INTERRUPTED:
             run.interrupted_at = run.finished_at
         run.save(
-            update_fields=["status", "stats", "cost", "tokens_in", "tokens_out", "error", "finished_at", "interrupted_at"]
+            update_fields=[
+                "status",
+                "stats",
+                "cost",
+                "tokens_in",
+                "tokens_out",
+                "error",
+                "finished_at",
+                "interrupted_at",
+            ]
         )
         record(
             action="agent_run.runner_event",
@@ -75,7 +105,24 @@ def apply_event(event: RunnerEvent) -> AgentRun:
             before=before,
             after=_state(run),
         )
+        if run.status == RunStatus.RUNNING.value:
+            _hold_to_the_cap(run)
     return run
+
+
+def _hold_to_the_cap(run: AgentRun) -> None:
+    """Stop an open run of a bank's own agent whose cost has taken the month's spend past the
+    bank's cap, and pause the agent. Reaching the cap is not passing it."""
+    tenant_agent = run.tenant_agent
+    if tenant_agent is None:
+        return
+    tenant = Tenant.objects.get(pk=tenant_agent.tenant_id)
+    cap = budget.cap_of(tenant)
+    if cap is not None and budget.spend(tenant) <= cap:
+        return
+    control.stop(run, by=None, reason=budget.CAP_REASON)
+    tenant_agents.pause(tenant_agent, budget.CAP_REASON)
+    notify_cap(tenant_agent)
 
 
 def _validated(run: AgentRun, event: RunnerEvent) -> tuple[RunStatus, dict[str, int]]:
@@ -85,18 +132,27 @@ def _validated(run: AgentRun, event: RunnerEvent) -> tuple[RunStatus, dict[str, 
         status = RunStatus(event.status)
         stats = AgentRunStats.model_validate(event.stats).model_dump(mode="json", by_alias=True)
     except (ValueError, SchemaError):
-        raise ValidationError("The runner reported a status or counters a run does not have.", code="invalid_runner_event") from None
+        raise ValidationError(
+            "The runner reported a status or counters a run does not have.",
+            code="invalid_runner_event",
+        ) from None
     if set(event.stats) - set(stats):
-        raise ValidationError("The runner reported a counter a run does not keep.", code="invalid_runner_event")
+        raise ValidationError(
+            "The runner reported a counter a run does not keep.", code="invalid_runner_event"
+        )
     if event.cost is not None and not (
         event.cost.is_finite()
         and Decimal(0) <= event.cost < COST_CEILING
         and event.cost == event.cost.quantize(Decimal(1).scaleb(-COST_PLACES))
     ):
-        raise ValidationError("The runner reported a cost a run cannot have.", code="invalid_runner_event")
+        raise ValidationError(
+            "The runner reported a cost a run cannot have.", code="invalid_runner_event"
+        )
     for tokens in (event.tokens_in, event.tokens_out):
         if tokens is not None and not 0 <= tokens <= TOKENS_CEILING:
-            raise ValidationError("The runner reported a token count a run cannot have.", code="invalid_runner_event")
+            raise ValidationError(
+                "The runner reported a token count a run cannot have.", code="invalid_runner_event"
+            )
     spent: tuple[tuple[Decimal | int | None, Decimal | int | None], ...] = (
         (event.cost, run.cost),
         (event.tokens_in, run.tokens_in),
@@ -104,9 +160,14 @@ def _validated(run: AgentRun, event: RunnerEvent) -> tuple[RunStatus, dict[str, 
     )
     for reported, stored in spent:
         if stored is not None and (reported is None or reported < stored):
-            raise ValidationError("The runner reported less spent than it already had.", code="invalid_runner_event")
+            raise ValidationError(
+                "The runner reported less spent than it already had.", code="invalid_runner_event"
+            )
     if len(event.error) > ERROR_MAX:
-        raise ValidationError(f"The runner reported an error longer than {ERROR_MAX} characters.", code="invalid_runner_event")
+        raise ValidationError(
+            f"The runner reported an error longer than {ERROR_MAX} characters.",
+            code="invalid_runner_event",
+        )
     return status, stats
 
 
