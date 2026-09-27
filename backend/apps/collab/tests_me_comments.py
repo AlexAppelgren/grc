@@ -121,6 +121,7 @@ class Written(MyCommentsTestCase):
         self.assertEqual(row["subjectId"], str(self.second.id))
         self.assertEqual(row["subjectTitle"], "Keep records of advice")
         self.assertEqual(second["items"][0]["subjectTitle"], TITLES["sv"])
+        self.assertIsNone(row["changeId"])
         self.assertEqual(row["body"], SECRET)
         self.assertEqual(row["author"], {"id": str(self.anna.id), "name": self.anna.name})
         self.assertEqual(row["mentions"], [{"id": str(self.erik.id), "name": self.erik.name}])
@@ -154,6 +155,8 @@ class Mentioned(MyCommentsTestCase):
         [row] = page["items"]
         self.assertEqual(row["id"], str(on_case.id))
         self.assertEqual((row["subjectType"], row["subjectId"], row["subjectTitle"]), ("change_case", str(self.case.id), CHANGE_TITLE))
+        # The change page opens on the change, not the case, so the row carries it for the link.
+        self.assertEqual(row["changeId"], str(self.case.change_id))
         self.assertEqual(row["author"]["id"], str(self.erik.id))
         self.assertFalse(row["canEdit"])
         self.assertFalse(row["canDelete"])
