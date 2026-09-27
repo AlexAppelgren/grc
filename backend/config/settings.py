@@ -118,6 +118,8 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # c8-support-session-guard: a support session reads its allow-list and nothing else.
+    "apps.shared.middleware.SupportReadOnlyMiddleware",
     # Timing last so the measurement is the application's own time (playbook 10), not
     # the middleware stack above it.
     "apps.shared.middleware.ServerTimingMiddleware",
@@ -836,6 +838,13 @@ REFRESH_COOKIE_SECURE = not DEBUG
 # An API key's last_used_at (and its key_used security-log row) is written at most this
 # often, so a busy agent does not turn every call into a write (ID-10).
 API_KEY_LAST_USED_THROTTLE_SECONDS = env_int("API_KEY_LAST_USED_THROTTLE_SECONDS", 60)
+# ===== c8-ten-support-grants: TEN-06 support access (D-49, ADR 0042) =====
+# The longest window platform support may ask a bank for, in hours; a longer request answers
+# 422. The window starts when the bank approves.
+SUPPORT_ACCESS_MAX_HOURS = env_int("SUPPORT_ACCESS_MAX_HOURS", 4)
+# How long a request nobody decides stays open before it reads as lapsed, in hours.
+SUPPORT_ACCESS_REQUEST_TTL_HOURS = env_int("SUPPORT_ACCESS_REQUEST_TTL_HOURS", 24)
+
 # ===== acc-foundation: agent access credentials (ACC-03, ACC-09, ADRs 0055 and 0056) =====
 # The longest a service key of an agent access entry, and a personal access token, may live;
 # a token cannot be minted without an expiry. And the requests one such credential may make
