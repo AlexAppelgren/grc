@@ -2068,3 +2068,18 @@ Built on these defaults; each stays yours to overrule.
 - [ ] Default taken: the expiry hint names no day count. The maximum is the server setting
       `PERSONAL_TOKEN_MAX_DAYS`, which no route exposes; a date beyond it renders the server's
       `expiry_too_late` in place. Say if the screen should state the number.
+
+## r2-j8-isolation: what J-8 proves by URL, answered by default (2026-09-27, TEN-S7, NFR-01)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **Revoking another bank's key asks for the passkey before it says "not found".**
+      `POST /agent-access/{entryId}/keys/{keyId}/revoke` checks the caller's fresh step-up
+      before it looks the key up, so tenant B without a fresh passkey gets 403
+      `step_up_required` for tenant A's key, the same answer it gets for any id at all; with
+      one it gets 404. Nothing of A's leaks either way. Default: the gate order stays, and the
+      journey steps up for real before it asks. Say if a record lookup should come first.
+- [ ] **A security policy and a bank's agent settings have no address of their own.** Both
+      are per bank, read as "ours", so no URL can name tenant A's. Default: J-8 proves B's
+      security page shows B's own limits, never A's seeded 45 minutes, and that A's agent
+      answers 404 to B's settings change (`PATCH /agents/{id}`) and pause.
