@@ -64,7 +64,10 @@ class AiPurpose(enum.StrEnum):
     check constraint holds, and no bank reads it: a decision on a proposal is about the
     queue, where a bank sees only what it filed itself, and a curation confirmation follows
     the same one rule, so the library read policy leaves it to the platform. A machine's approval is never logged as one of the drafting purposes above,
-    so the log can tell a draft from a decision."""
+    so the log can tell a draft from a decision.
+
+    `what_applies` is the short summary bleqq's model drafts above what applies to a bank's
+    own agent (ACC-06): one bank's row, its cost counted against that bank's monthly cap."""
 
     SO_WHAT = "so_what"
     CHANGE_SUMMARY = "change_summary"
@@ -73,6 +76,7 @@ class AiPurpose(enum.StrEnum):
     TRANSLATION = "translation"
     ANSWER = "answer"
     AGENT_REVIEW = "agent_review"
+    WHAT_APPLIES = "what_applies"
 
 
 class AiStatus(enum.StrEnum):

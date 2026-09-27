@@ -201,9 +201,10 @@ class TheFullList(TestCase):
         self.assertEqual(row["title"]["text"], "Best execution of client orders")
         self.assertEqual(row["version"]["versionNumber"], 1)
 
-    def test_the_summary_slot_says_it_holds_no_summary(self) -> None:
+    def test_a_bank_with_no_cap_set_gets_the_list_and_no_summary(self) -> None:
+        # The drafted summary and every other reason are tests_what_applies_summary.py's.
         body = self.bank.ask(self.client, self.bank.trading_key).json()
-        self.assertEqual(body["summary"], {"status": "not_drafted", "text": None})
+        self.assertEqual((body["summary"]["status"], body["summary"]["reason"], body["total"]), ("not_drafted", "budget_cap", 3))
 
 
 class TheRegisterBesideIt(TestCase):

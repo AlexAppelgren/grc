@@ -14,11 +14,12 @@ building, buying or reviewing and answers, in one response:
 - the scope it was answered in (`agent_access_guard.scope_statement`, the same statement
   every answer to such a credential carries in its header);
 - what the description touches outside that scope, by label (out_of_scope.py);
-- the summary slot, which says it holds no summary: the drafted summary is ACC-S5's.
+- the summary above it, labelled AI-drafted, or why there is none (what_applies_summary.py);
+  it never shortens the list.
 
 The description is compared and dropped: it is never stored, never in an audit row, and
 the access log keeps its name alone. It is capped at `AGENT_ACCESS_DESCRIPTION_MAX_CHARS`.
-Nothing here writes.
+Nothing here writes but the summary's AI log row.
 """
 
 from __future__ import annotations
@@ -31,12 +32,12 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
+from apps.agents import what_applies_summary
 from apps.agents.out_of_scope import outside_terms, words
 from apps.agents.schemas import (
     WhatAppliesAnswer,
     WhatAppliesItem,
     WhatAppliesOutsideScope,
-    WhatAppliesSummary,
 )
 from apps.library.logic import in_force
 from apps.library.models import Obligation, ObligationTitle
@@ -160,10 +161,11 @@ def _items(ids: list[uuid.UUID], order: list[str], on: datetime.date, decisions:
 
 
 def answer(*, tenant: Tenant, principal: Principal, description: str, order: list[str], limit: int, offset: int) -> WhatAppliesAnswer:
-    """The full list with its scope, what lies outside it, and the summary slot."""
+    """The full list with its scope, what lies outside it, and the summary above it."""
     if not principal.is_agent_access:
         raise ProblemError(status=403, code="permission_denied", detail="Only a key or token of an agent your bank runs itself asks this.")
-    asked = words(_description(description))
+    described = _description(description)
+    asked = words(described)
     on = today_for(tenant)
     scope = None if principal.agent_access_id is None else entry_scope.scope_of(tenant.id, principal.agent_access_id)
     ranked = _ranked(_in_scope(tenant, scope), asked, on)
@@ -171,7 +173,7 @@ def answer(*, tenant: Tenant, principal: Principal, description: str, order: lis
     outside = [] if scope is None else outside_terms(tenant.id, scope, description, order)
     return WhatAppliesAnswer(
         scope=agent_access_guard.scope_statement(principal, tenant),
-        summary=WhatAppliesSummary(status="not_drafted", text=None),
+        summary=what_applies_summary.draft(tenant=tenant, description=described, ranked=ranked, order=order, first_page=offset == 0),
         items=_items(ranked[offset : offset + limit], order, on, decisions),
         total=len(ranked),
         register_read=register,

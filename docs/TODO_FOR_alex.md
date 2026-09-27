@@ -1671,3 +1671,21 @@ Defaults taken; nothing waits on them.
 - [ ] Default taken: the bank's own private obligations are counted (`ownRecordsLeftOut`) and never
       listed (D-57).
 
+## acc-summary-j11: the summary above what applies, answered by default (2026-09-27, ACC-06, ACC-09)
+
+Nothing waits for these; each has the default the build took (D-1xx, acc-summary-j11).
+
+- [ ] **The description reaches the model.** The summary's prompt holds the agent's description
+      the way Ask's prompt holds the question, with library facts (instrument, place, title) and
+      nothing of the register or the bank's own records. The bank's AI switch and its monthly cap
+      stop it. Say if the description should stay out, which leaves a summary of the list alone.
+- [ ] **The price is the USD list price read as the cap's currency.** `LLM_PRICE_INPUT_MINOR_PER_MTOK`
+      500 and `LLM_PRICE_OUTPUT_MINOR_PER_MTOK` 2500 are the provider's list price for
+      `claude-opus-5` in cents per million tokens (fetched 2026-09-27), and the cap is in euros.
+      Set both to your contracted price in euro cents on Railway, or say if a conversion rate should
+      be a setting.
+- [ ] **No cap set means no summary** (`budget_cap`), as it means no run of the bank's own agents.
+      Say if a bank that never set a cap should get summaries.
+- [ ] **One summary per question.** It is drafted with the first page only; later pages say
+      `later_page`.
+

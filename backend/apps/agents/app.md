@@ -106,8 +106,14 @@ library list and addressed read, `POST /search` and `GET /upcoming` keep an agen
 credential to shared records inside the bank's footprint and inside its entry's scope
 (`apps/library/reading.py`, `Reader`), and a record beyond them is the 404 another bank
 gets. `footprint` cannot be lifted, the card answers by stable key, and the bank's overlay
-and tags ride the register's tenant reach gate. ACC-S1 runs as an integration scenario; its
-journey arrives with J-11.
+and tags ride the register's tenant reach gate. ACC-S1 runs as an integration scenario and
+as a journey beside ACC-S6 and J-11 (ACC-S13).
+
+What applies carries a short summary above its list (acc-summary-j11, ACC-06): drafted by
+bleqq's model from the description and library facts only, labelled AI-drafted with a fixed
+sentence, citing by stable key, logged under the purpose `what_applies` and costed against
+the bank's monthly cap. When the model fails or is late, the AI switch is off or the cap is
+reached, the list is answered whole and the slot says why (`what_applies_summary.py`).
 
 PRD 0.7 (D-89, Alex 2026-09-24; details answered by default in D-91, ADR 0059,
 `docs/plans/briefs/SCOPE_ITEMS.md`) adds group OWN, the bank's own regulations. Alex's
@@ -144,7 +150,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | AGT-07 | Fetched content screened for embedded instructions | M | R1 | built |
 | AGT-08 | Agents stay inside the sector scope: an out-of-scope document is a counted source check and nothing else; a standard's text is never fetched, quoted, summarised, translated or restated; a blocked page is a failed check; a law that cites a standard never carries its term | M | R1 | built |
 | ACC-01 | A tenant registers each agent it runs itself: name, purpose, owning team, and the departments and products it serves. `agent_access.manage` and a step-up; revoking stops every credential under it on the next request | M | R2 | built |
-| ACC-06 | One call takes a description of what is being built and returns a labelled, logged summary above the deterministic full list of register entries and obligations in scope; the model never shortens the list and the list survives the model failing or AI being switched off | M | R2 | in_progress |
+| ACC-06 | One call takes a description of what is being built and returns a labelled, logged summary above the deterministic full list of register entries and obligations in scope; the model never shortens the list and the list survives the model failing or AI being switched off | M | R2 | built |
 | ACC-07 | A narrowed entry never narrows silently: every answer states the scope it was answered in, and an answer touching the footprint outside that scope names the dimensions and terms it could not see, from labels and never from records | M | R2 | built |
 | ACC-10 | An entry records that a named application or system touches a register entry and how, as a linked internal item under REG-05 | C | R3 | pending |
 | OWN-02 | The bank's own agent researches an approved scope item from public sources and files the bank's own instruments and obligations as proposals, a source per field, only as runner events applied in the worker; never the shared library, never the regulatory scope, never reading the bank's own records back; a duplicate by official reference answers 409 `already_in_our_library` (D-89, D-91) | M | R2 | pending |

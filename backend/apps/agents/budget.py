@@ -1,6 +1,8 @@
 """The bank's one monthly cap on its own agents (AGT-04, ruling 3). bleqq's agents run at
 bleqq's cost and no figure here includes them (D-61): the spend is the sum of what the
-bank's own agents' runs cost in the current calendar month of the bank's own time zone.
+bank's own agents' runs cost in the current calendar month of the bank's own time zone,
+plus what the summaries drafted for the agents it runs itself cost (ACC-09, the AI log's
+`what_applies` rows, in minor units).
 
 `spend`, `at_cap` and `cap_of` are what the scheduler, the controls and research requests
 read before a run starts. The cap row is created on the first write. A cap at or below the
@@ -20,6 +22,7 @@ from django.utils import timezone
 
 from apps.agents.models import AgentRun, TenantAgent, TenantAgentBudget
 from apps.agents.schemas import AgentBudgetInput
+from apps.governance.models import AiGeneration, AiPurpose
 from apps.agents.tenant_agents import lock_tenant, pause
 from apps.identity.models import User
 from apps.shared.audit import Actor, ActorType, record
@@ -44,13 +47,17 @@ def _month(tenant: Tenant) -> tuple[datetime.datetime, datetime.datetime]:
 
 
 def spend(tenant: Tenant) -> Decimal:
-    """What the bank's own agents' runs cost this month. Only a run of one of the bank's own
-    agents counts: a platform run has no `tenant_agent`, so it is never in it."""
+    """What the bank's own agents' runs cost this month, and the summaries drafted for the
+    agents it runs itself. Only a run of one of the bank's own agents counts: a platform run
+    has no `tenant_agent`, so it is never in it."""
     start, end = _month(tenant)
-    total = AgentRun.objects.filter(
+    runs = AgentRun.objects.filter(
         tenant_id=tenant.id, tenant_agent__isnull=False, started_at__gte=start, started_at__lt=end
     ).aggregate(total=Sum("cost"))["total"]
-    return ZERO if total is None else Decimal(total).quantize(ZERO)
+    summaries = AiGeneration.objects.filter(
+        tenant_id=tenant.id, purpose=AiPurpose.WHAT_APPLIES.value, created_at__gte=start, created_at__lt=end
+    ).aggregate(total=Sum("cost_minor"))["total"]
+    return (Decimal(runs or 0) + Decimal(summaries or 0) / 100).quantize(ZERO)
 
 
 def cap_of(tenant: Tenant) -> Decimal | None:
