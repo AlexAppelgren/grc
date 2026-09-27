@@ -49,25 +49,33 @@ describe('PublicPage', () => {
     expect(within(hero).queryByRole('article')).toBeNull();
   });
 
-  it('shows the demo right under the headline, and on a phone loads nothing until it is opened', async () => {
+  it('shows a picture of the demo under the headline, and on a phone opens it full screen only when asked', async () => {
     const { container } = await renderPage();
     const demo = screen.getByRole('region', { name: 'Demo' });
+    expect(within(demo).getAllByRole('img', { name: "The demo's Today screen, with what is coming for Example Bank AB" }).length).toBeGreaterThan(0);
     expect(container.querySelector('iframe')).toBeNull();
-    fireEvent.click(within(demo).getByRole('button', { name: 'Open the demo' }));
+    fireEvent.click(within(demo).getAllByRole('button', { name: 'Try out our demo' })[0]!);
     const dialog = await screen.findByRole('dialog', { name: 'Demo' });
     const frame = dialog.querySelector('iframe');
     expect(frame).toHaveAttribute('name', 'bleqq-demo');
     expect(frame).toHaveAttribute('src', '/');
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Close the demo' }));
+    expect(within(dialog).getByText('Example Bank AB')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start over' }));
+    expect(dialog.querySelector('iframe')).not.toBe(frame);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('frames the app in the page on a wide screen, loading as it scrolls near', async () => {
+  it('on a wide screen swaps the picture for the live app in place, and moves focus into it', async () => {
     stubWidth(true);
-    await renderPage();
+    const { container } = await renderPage();
+    expect(container.querySelector('iframe')).toBeNull();
+    const wide = screen.getAllByRole('button', { name: 'Try out our demo' }).at(-1)!;
+    fireEvent.click(wide);
     const frame = await screen.findByTitle("Compliance Watch with a sample bank's data");
     expect(frame).toHaveAttribute('name', 'bleqq-demo');
-    expect(frame).toHaveAttribute('loading', 'lazy');
+    expect(frame).toHaveFocus();
+    expect(screen.getByRole('link', { name: 'Skip the demo' })).toHaveAttribute('href', '#case');
   });
 
   it('keeps Sign in as the primary of the two actions in the top bar, on the right', async () => {
