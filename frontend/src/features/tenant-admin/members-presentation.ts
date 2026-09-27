@@ -110,6 +110,11 @@ export const loginEventTone: Record<string, PillTone> = {
   key_revoked: 'information',
   key_created: 'information',
   key_scopes_withheld: 'warning',
+  // ACC-03: a personal access token's own events; a credential over its rate is a refusal.
+  token_created: 'information',
+  token_used: 'information',
+  token_revoked: 'information',
+  credential_rate_limited: 'warning',
 };
 
 const loginEventLabel: Record<string, MessageKey> = {
@@ -129,12 +134,17 @@ const loginEventLabel: Record<string, MessageKey> = {
   key_revoked: 'admin.securityLog.event.key_revoked',
   key_created: 'admin.securityLog.event.key_created',
   key_scopes_withheld: 'admin.securityLog.event.key_scopes_withheld',
+  token_created: 'admin.securityLog.event.token_created',
+  token_used: 'admin.securityLog.event.token_used',
+  token_revoked: 'admin.securityLog.event.token_revoked',
+  credential_rate_limited: 'admin.securityLog.event.credential_rate_limited',
 };
 
 const loginMethodLabel: Record<string, MessageKey> = {
   email_code: 'admin.securityLog.method.email_code',
   passkey: 'admin.securityLog.method.passkey',
   api_key: 'admin.securityLog.method.api_key',
+  personal_token: 'admin.securityLog.method.personal_token',
   oidc: 'admin.securityLog.method.oidc',
   saml: 'admin.securityLog.method.saml',
 };

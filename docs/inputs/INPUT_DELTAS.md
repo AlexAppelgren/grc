@@ -1683,6 +1683,45 @@ enabled and forced row-level security, with these departures on purpose:
 - `GET /exports/{exportId}/download` streams the file itself (section 4, section 7), with
   `Content-Disposition: attachment` and `Cache-Control: no-store`, and records every
   download in the audit log. There is no `DownloadLink`.
+## Sign-off answers the case, and its refusals carry counts (2026-09-25, c9-signoff)
+
+- **`requestSignoff`, `approveSignoff` and `sendBackSignoff`** answer `CasesCase` (section
+  19), not the designed `Case`: no `actions`, `evidence` or `soWhat`, plus `changeId`,
+  `subStatus`, `urgencyConfirmed`, `dismissedAt` and `version`.
+- **The request's two refusals carry counts.** `open_actions` and `evidence_missing` answer
+  409 with `openActionCount` and `cleanEvidenceCount` beside the code (playbook 4.4), so
+  the screen says what is missing without a second read. Evidence the scanner has not
+  passed, or that was removed, does not count.
+- **The approver is told, not the requester.** The request notifies the bank's active
+  members holding `cases.signoff` through `notify()`, leaving the requester out: they can
+  never sign off what they asked for.
+- **The approval is the sign-off edge only.** From any category but `signoff` it answers
+  409 `invalid_transition`, although `assigned` and `assessing` reach `closed` by the
+  one-person close (D-92), which is its own route with its own reasons.
+- **Send-back clears the request.** `signoffRequestedBy` and `signoffRequestedAt` go back
+  to null, so the next request is a fresh one; the note is kept on the case's transition
+  ledger and never in the audit values.
+## c8-reg-gaps-risk. The gap routes as built (2026-09-25, REG-03)
+
+The register contract (`c8-register-contract`) declared the gap routes before the tables
+existed; building them on `gap` as `c8-register-models` shaped it changes these points:
+
+- A gap's `source` is a row of the bank's own `gap_source` list, as the column is: written
+  as a key and answered as `{key, kind, label}`, not the fixed five-value enum the contract
+  first published. The five seeded keys are unchanged.
+- `RegisterGap`, `RegisterGapBody` and `RegisterGapPatch` gain `ownerTeam`, a key of the
+  bank's `team` list (TEN-03): a gap is owned by a person or a team, never both, as the
+  `gap_one_owner_kind` CHECK says.
+- Four eyes on risk acceptance compare the approver with the person who asked for the
+  acceptance (`gap_four_eyes`), not with the person who recorded the gap; REG-S6 is amended
+  to match.
+- `createGap` answers 409 `does_not_apply` for an obligation, or a legal entity's answer on
+  it, that does not apply; `requestRiskAcceptance` answers 409 `request_pending` while an
+  acceptance already waits; `updateGap` requires `If-Match` and answers 409 `stale_write`
+  without it; closing a gap clears an acceptance still waiting on it.
+- A gap on a Statement of Applicability unit (`unitId`) answers 501 `not_built` until
+  `c8-units-paste-soa` adds the column.
+
 ## acc-entries-and-log. The access log of a bank's own agents (2026-09-25, governance 0005)
 
 `schema.sql` has no table for AGENT_ACCESS.md section 9's access log. `agent_access_call` is

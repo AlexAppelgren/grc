@@ -29,11 +29,12 @@ import uuid
 from datetime import timedelta
 from collections.abc import Iterable
 from types import SimpleNamespace
+from typing import Any
 
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, Team, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, Team, TeamLabel, VocabularySuggestion
 from apps.governance.models import TenantReachRequest
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
@@ -57,7 +58,7 @@ from apps.library.seeds import LANGUAGES
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
-from apps.tenants.models import Licence, OrgUnit, OrgUnitKind, SupportAccess, TenantProduct
+from apps.tenants.models import Licence, OrgUnit, OrgUnitKind, SupportAccess, TeamMember, TenantProduct
 from apps.tenants.testing import entity_term, licence_type_term
 
 _counter = itertools.count(1)
@@ -282,7 +283,6 @@ def tenant_reach_request(tenant: Tenant) -> TenantReachRequest:
         return TenantReachRequest.objects.create(tenant=tenant, requested_by=requester)
 
 
-
 # c11-tenant-agents-budget-scope (AGT-04)
 def tenant_agent(tenant: Tenant) -> object:
     """The tenant-isolation guard's record for `PATCH /agents/{tenant_agent_id}`: one of the
@@ -341,6 +341,10 @@ def support_access(tenant: Tenant) -> SupportAccess:
         return SupportAccess.objects.create(
             tenant=tenant, platform_user=requester, reason="The bank's watch feed stopped updating.", started_at=timezone.now()
         )
+def member_personal_token(tenant: Tenant) -> SimpleNamespace:
+    """The tenant-isolation guard's record for the token routes (acc-personal-grants): a
+    token of a new compliance officer of `tenant`."""
+    return personal_token(tenant, member_user(tenant, roles=("compliance_officer",)))
 
 
 # ---------------------------------------------------------------------------------------
@@ -396,6 +400,62 @@ def case_evidence(tenant: Tenant) -> SimpleNamespace:
             scanned_at=timezone.now(),
         )
     return SimpleNamespace(id=evidence.id, case=row)
+
+
+# --- c8-reg-gaps-risk (REG-03) ----------------------------------------------------------
+def gap(tenant: Tenant) -> Any:
+    """The tenant-isolation guard's record for gap routes: an open gap of `tenant`, with a
+    waiting risk acceptance so the approval has something to decide, on a library obligation
+    built for it by the library's own builders (this file writes no library model)."""
+    from apps.library import testing as library_testing
+    from apps.library.seeds import seed_jurisdictions, seed_languages
+    from apps.register.models import Gap
+    from apps.register.logic import ensure_register_entry
+    from apps.taxonomy.models import GapSource, GapStatus, RiskAcceptanceReason, RiskRating
+    from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+
+    n = next(_counter)
+    with transaction.atomic():
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_taxonomy_terms()
+        act = library_testing.instrument(key=f"gap-act-{n}", regime="regime:securities")
+        duty = library_testing.obligation(act, key=f"gap-duty-{n}")
+    person = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=duty.id, actor=user_actor(user_id=person.id))
+        return Gap.objects.create(
+            tenant=tenant,
+            tenant_obligation=entry,
+            title=f"Gap {n}",
+            severity=RiskRating.objects.get(key="high"),
+            source=GapSource.objects.get(key="audit"),
+            status=GapStatus.objects.get(key="open"),
+            identified_by=person,
+            acceptance_reason=RiskAcceptanceReason.objects.get(key="other"),
+            acceptance_requested_by=person,
+            acceptance_requested_at=timezone.now(),
+        )
+
+
+# c8-ten-teams-people (TEN-02, TEN-03): a named team with its English label and department,
+# the people in it, and a department with a head.
+def team(tenant: Tenant, *, key: str, label: str, org_unit: OrgUnit | None = None, members: Iterable[User] = ()) -> Team:
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        row = Team.objects.create(tenant=tenant, key=key, org_unit=org_unit)
+        TeamLabel.objects.create(tenant=tenant, vocabulary=row, language="en", text=label, is_original=True)
+        for person in members:
+            TeamMember.objects.create(tenant=tenant, team=row, user=person)
+    return row
+
+
+def named_department(tenant: Tenant, *, name: str, head: User | None, kind: OrgUnitKind = OrgUnitKind.BUSINESS_AREA) -> OrgUnit:
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return OrgUnit.objects.create(tenant=tenant, kind=kind.value, name=name, head_user=head)
 
 
 # c8-reg-status: the tenant-isolation guard's record for a legal entity's register row.

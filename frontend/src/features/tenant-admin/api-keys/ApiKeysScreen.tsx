@@ -6,21 +6,27 @@ import { BackLink } from '@/components/admin/AdminGate';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CheckGroup, CheckRow, Field, TextInput } from '@/components/ui/Field';
+import { Modal } from '@/components/ui/Modal';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from '@/features/tenant-admin/hooks';
-import { humaniseKey, presentApiKey } from '@/features/tenant-admin/members-presentation';
+import { isExpired, isLive, presentCredential } from '@/features/agent-access/presentation';
+import { readsAs } from '@/features/tenant-admin/api-keys/presentation';
+import { humaniseKey } from '@/features/tenant-admin/members-presentation';
 import type { ApiKey, ApiKeyCreated } from '@/features/tenant-admin/types';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { formatDate, formatDateTime } from '@/shared/utils/format';
 
-// API keys (design/screens/admin-api-keys.html, ID-10): the plain key
-// appears once, straight after creation, and never again. Creation asks
-// for a passkey through the api client's step-up prompt.
+// API keys (design/screens/admin-api-keys.html, ID-10, ACC-03): every
+// credential of the bank in one list, our integrations' keys, our agent access
+// entries' keys and our members' personal tokens, each with its kind and who
+// it reads as, and each revocable here without a passkey. Create a key stays an
+// integration's key: its plain value appears once, and creating it asks for a
+// passkey through the api client's step-up prompt.
 
 // The scopes a bank's key may hold (TENANT_KEY_SCOPES in
 // backend/apps/shared/permissions.py), in the design card's order. None
@@ -148,43 +154,65 @@ function KeyRow({ apiKey }: { apiKey: ApiKey }) {
   const ctx = useFormatContext();
   const revoke = useRevokeApiKey();
   const [confirming, setConfirming] = useState(false);
+  const [revoked, setRevoked] = useState(false);
   const now = new Date();
-  const live = apiKey.revokedAt === null && (apiKey.expiresAt === null || new Date(apiKey.expiresAt) > now);
-  const prefix = `${apiKey.keyPrefix}…`;
+  const prefix = `cw_${apiKey.keyPrefix}…`;
+  const person = apiKey.person;
+  const facts = [
+    t('admin.apiKeys.created', { date: formatDate(apiKey.createdAt, ctx) }),
+    ...(apiKey.expiresAt !== null ? [isExpired(apiKey, now) ? t('admin.apiKeys.expiredOn', { date: formatDate(apiKey.expiresAt, ctx) }) : t('admin.apiKeys.expires', { date: formatDate(apiKey.expiresAt, ctx) })] : []),
+    apiKey.lastUsedAt === null ? t('admin.apiKeys.neverUsed') : t('admin.apiKeys.lastUsed', { date: formatDateTime(apiKey.lastUsedAt, ctx) }),
+    ...(apiKey.revokedAt !== null ? [t('admin.apiKeys.revokedOn', { date: formatDate(apiKey.revokedAt, ctx) })] : []),
+  ];
   return (
-    <Row data-key-id={apiKey.id}>
-      <h3 className="mb-1 font-semibold">{apiKey.name}</h3>
+    <Row data-key-id={apiKey.id} data-key-kind={apiKey.kind}>
+      <div className="mb-1 flex flex-wrap items-center gap-2">
+        <h3 className="font-semibold">{apiKey.name}</h3>
+      </div>
       <Meta>
+        <span>{readsAs(apiKey, t)}</span>
         <code className="font-mono">{prefix}</code>
-        <span>{t('admin.apiKeys.created', { date: formatDateTime(apiKey.createdAt, ctx) })}</span>
-        {apiKey.expiresAt !== null ? (
-          <span>{new Date(apiKey.expiresAt) > now ? t('admin.apiKeys.expires', { date: formatDate(apiKey.expiresAt, ctx) }) : t('admin.apiKeys.expiredOn', { date: formatDate(apiKey.expiresAt, ctx) })}</span>
-        ) : null}
-        <span>{apiKey.lastUsedAt === null ? t('admin.apiKeys.neverUsed') : t('admin.apiKeys.lastUsed', { date: formatDateTime(apiKey.lastUsedAt, ctx) })}</span>
-        {apiKey.revokedAt !== null ? <span>{t('admin.apiKeys.revokedOn', { date: formatDateTime(apiKey.revokedAt, ctx) })}</span> : null}
       </Meta>
       <div className="mt-2">
-        <PillRow pills={presentApiKey(apiKey, t, now)} />
+        <PillRow pills={presentCredential(apiKey, t, now)} />
       </div>
-      {revoke.isError ? <ProblemAlert error={revoke.error} /> : null}
-      {confirming ? <StatusLine>{t('admin.apiKeys.revokeConfirm')}</StatusLine> : null}
-      {live ? (
+      <Meta className="mt-1">{facts.join(' · ')}</Meta>
+      {revoked ? <StatusLine>{person === null ? t('admin.apiKeys.revokedDone') : t('admin.credentials.tokenRevoked')}</StatusLine> : null}
+      {isLive(apiKey, now) ? (
         <ButtonBar>
-          {confirming ? (
-            <>
-              <Button variant="outline" size="small" onClick={() => setConfirming(false)}>
-                {t('common.cancel')}
-              </Button>
-              <Button variant="danger" size="small" disabled={revoke.isPending} onClick={() => revoke.mutate(apiKey.id, { onSettled: () => setConfirming(false) })}>
-                {t('admin.apiKeys.revoke')}
-              </Button>
-            </>
-          ) : (
-            <Button variant="danger" size="small" onClick={() => setConfirming(true)}>
-              {t('admin.apiKeys.revoke')}
-            </Button>
-          )}
+          <Button variant="danger" size="small" onClick={() => setConfirming(true)}>
+            {t('admin.apiKeys.revoke')}
+          </Button>
         </ButtonBar>
+      ) : null}
+      {confirming ? (
+        <Modal
+          open
+          onOpenChange={(next) => (next ? undefined : setConfirming(false))}
+          title={person === null ? t('admin.credentials.revokeKeyTitle', { name: apiKey.name }) : t('admin.credentials.revokeTokenTitle', { person: person.name, name: apiKey.name })}
+          description={person === null ? t('admin.credentials.revokeKeyBody') : t('admin.credentials.revokeTokenBody', { person: person.name })}
+        >
+          {revoke.isError ? <ProblemAlert error={revoke.error} /> : null}
+          <ButtonBar>
+            <Button variant="outline" onClick={() => setConfirming(false)} disabled={revoke.isPending}>
+              {t('admin.credentials.keep')}
+            </Button>
+            <Button
+              variant="danger"
+              disabled={revoke.isPending}
+              onClick={() =>
+                revoke.mutate(apiKey.id, {
+                  onSuccess: () => {
+                    setConfirming(false);
+                    setRevoked(true);
+                  },
+                })
+              }
+            >
+              {person === null ? t('admin.credentials.revokeKey') : t('admin.credentials.revokeToken')}
+            </Button>
+          </ButtonBar>
+        </Modal>
       ) : null}
     </Row>
   );
@@ -199,7 +227,7 @@ export function ApiKeysScreen() {
   return (
     <>
       <BackLink href="/admin" label={t('admin.back')} />
-      <PageHead title={t('admin.apiKeys.title')} lede={t('admin.apiKeys.lede')} actions={<Button onClick={() => setCreating(true)}>{t('admin.apiKeys.create')}</Button>} />
+      <PageHead title={t('admin.apiKeys.title')} lede={t('admin.credentials.lede')} actions={<Button onClick={() => setCreating(true)}>{t('admin.apiKeys.create')}</Button>} />
       {created !== null ? <NewKeyPanel created={created} onDone={() => setCreated(null)} /> : null}
       {creating ? <CreateForm onCreated={setCreated} onClose={() => setCreating(false)} /> : null}
       {keys.isPending ? (
@@ -207,7 +235,7 @@ export function ApiKeysScreen() {
       ) : keys.isError ? (
         <ErrorState title={t('admin.apiKeys.errorTitle')} onRetry={() => void keys.refetch()} />
       ) : keys.data.items.length === 0 ? (
-        <EmptyState title={t('admin.apiKeys.emptyTitle')} body={t('admin.apiKeys.emptyBody')} />
+        <EmptyState title={t('admin.apiKeys.emptyTitle')} body={t('admin.credentials.emptyBody')} />
       ) : (
         <Rows data-keys-list="">
           {keys.data.items.map((apiKey) => (

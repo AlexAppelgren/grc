@@ -1267,21 +1267,6 @@ Nothing waits for these; each has the default the build took.
       New string `footprint.noneFollowed`: "None followed." / "Ingen följs.".
 
 
-## lib-standard-e2e-seed: the first standard exists for tests and E2E only (2026-09-23, INV-08, FP-01)
-
-- [ ] Default taken until you answer "Legal, before any standard is seeded" above:
-      ISO/IEC 27001:2022 and its one conformance duty live in
-      `backend/apps/library/fixtures/e2e_standard.json`, which only `seed_e2e`
-      loads. `prototype_data.json`, which `seed_demo` loads, holds no standard,
-      and `check_prototype_data.py` refuses one there. The edition is titled by
-      its reference alone, never its official title, and the duty's wording is
-      ours. When you answer yes, moving the rows into the prototype fixture is
-      the whole change.
-- [ ] The instrument's national-adoptions note names no adoption reference: the
-      Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
-      note says only that each national body adopts the edition under its own
-      reference. A person verifies them before the note names any.
-
 ## watch-standards: a standard's term needs a standards body, and publishers are not read (2026-09-23, WAT-07, D-45)
 
 Nothing waits for these; each has the default the build took.
@@ -1533,6 +1518,20 @@ Built on these defaults; each stays yours to overrule.
       answer 403 `agent_access_only` on `/mcp`; they keep the REST API.
 - [ ] **No caching of the tool list.** `ttlMs` is 0 and `cacheScope` `private`, because
       reach can be switched off at any moment and the list must follow it at once.
+## c9-signoff: evidence can leave a case while it waits for sign-off (2026-09-25)
+
+- [ ] **Should the approval re-check the evidence, or should evidence lock?** A sign-off
+      request needs no open action and one piece of evidence the scanner passed. While
+      the case waits, the actions lock (`c9-actions`, `actions_locked`), but nothing in
+      the plan locks the evidence: `removeEvidence` only sets `removed_at`, and a rescan
+      could mark a file infected. The approval then closes a case whose evidence is gone,
+      because the fixed guard on `signoff → closed` checks only the second person.
+      Default taken: no change, since the guards are fixed (CLAUDE.md section 5) and this
+      package does not own `state.py` or `evidence.py`. Two ways out: (a) `c9-evidence-b`
+      refuses `removeEvidence` with 409 `actions_locked`-style `evidence_locked` while
+      the case is in `signoff`, which mirrors the actions lock; or (b) the
+      `signoff → closed` edge also carries the `no_open_action` and `clean_evidence`
+      guards. The first keeps the state machine as designed; say which.
 ## acc-scope-and-reach: an entry's scope and tenant reach, answered by default (2026-09-25, ACC-02, ACC-08, D-70, D-72)
 
 - [ ] Default taken: an opt-in dimension keeps its rule inside an entry's scope too. The
@@ -1745,3 +1744,34 @@ Built on these defaults; each stays yours to overrule.
 - [ ] **The access log names the tool.** A tool call's row carries the tool's name
       (`get_obligation`, not `mcpMessage`) with the route's status, filters and record
       count; `tools/list` and the handshake stay logged as `mcpMessage`.
+## acc-personal-grants: personal access tokens and the one credential list, answered by default (2026-09-25, ACC-03, ACC-09)
+
+- [ ] Default taken: a member lists and revokes their own tokens (`GET /me/tokens`,
+      `DELETE /me/tokens/{id}`) with a session alone, without `tokens.create`, so a person
+      who lost the permission can still stop what they minted. Minting keeps
+      `tokens.create` and a passkey step-up.
+- [ ] Default taken: a scope the member's own permissions do not back is refused at mint
+      (`scope_not_held`) rather than minted and refused on first use, and `tenant:read`
+      without an entry is refused (`entry_required`) rather than minted to no effect.
+      A bank's unbound key keeps its old rule: `tenant:read` is withheld when used.
+- [ ] Default taken: any member holding `tokens.create` may name any live agent access
+      entry of their bank on their token; the entry only narrows what the token reads, and
+      its reach toggle still bounds `tenant:read`. Say if naming an entry should need the
+      entry's owning team or `agent_access.manage`.
+- [ ] Default taken: the bank-wide list and revoke stay on `/tenant/api-keys` under
+      `integrations.manage`, now showing every key and token with its kind and the entry or
+      person behind it; revoking needs no step-up, because it only takes power away.
+
+## acc-fe-personal-grants: the tokens screen and the credential list, answered by default (2026-09-27, ACC-03, ACC-08)
+
+- [ ] Default taken: "Read as an agent" on the token form appears only to a member holding
+      `agent_access.manage`, because `GET /agent-access` is read under that permission. A
+      member without it mints tokens that name no entry, so `tenant:read` (which needs an
+      entry) is disabled on the form with that reason. Say if every holder of `tokens.create` should pick an
+      entry; that needs a narrow read of the bank's live entries (id and name) for them.
+- [ ] Default taken: My access tokens is in every member's account menu, not only for holders
+      of `tokens.create`, because a token held stays listed and revocable after the permission
+      goes, and the design card gives the page no denied state.
+- [ ] Default taken: the expiry hint names no day count. The maximum is the server setting
+      `PERSONAL_TOKEN_MAX_DAYS`, which no route exposes; a date beyond it renders the server's
+      `expiry_too_late` in place. Say if the screen should state the number.

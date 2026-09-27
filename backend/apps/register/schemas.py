@@ -47,7 +47,6 @@ UNIT_TITLE_MAX = 300
 PASTE_FIELD_MAX = 1000
 
 Applicability = Literal["applies", "not_applicable", "under_assessment"]
-GapSource = Literal["assessment", "change_case", "audit", "incident", "regulator"]
 AssessmentMethod = Literal["self_assessment", "second_line_review", "internal_audit", "external_audit", "regulator"]
 DutyStatus = Literal["upcoming", "in_progress", "done", "missed", "not_applicable"]
 PasteOutcome = Literal["will_create", "created", "refused"]
@@ -539,9 +538,17 @@ class RegisterApplicabilityMany(CamelSchema):
 # Gaps and risk acceptance (REG-03)
 # ---------------------------------------------------------------------------------------
 _GAP_SOURCE = (
-    "Where the gap was found: `assessment` in the bank's own status assessment, "
+    "The key of a row in the bank's own `gap_source` vocabulary, at most 64 characters: "
+    "where the gap was found. Seeded as `assessment` in the bank's own status assessment, "
     "`change_case` while working a regulatory change, `audit` by internal or external audit, "
-    "`incident` after something went wrong, `regulator` raised by a supervisor. A fixed kind."
+    "`incident` after something went wrong and `regulator` raised by a supervisor; the bank's "
+    "admin may add or relabel rows, so read `GET /vocab/gap_source` for the live set."
+)
+_TEAM_KEY = (
+    "The key of a row in the bank's own `team` vocabulary, at most 64 characters, for a gap "
+    "a team owns rather than one person. A gap has one owner kind: sending a team clears the "
+    "person and sending a person clears the team, and sending both is refused. Read "
+    "`GET /vocab/team` for the live set; null or absent leaves the owner as it is on a patch."
 )
 _GAP_STATUS_KEY = (
     "The key of a row in the bank's own `gap_status` vocabulary, at most 64 characters, "
@@ -551,7 +558,7 @@ _GAP_STATUS_KEY = (
 )
 
 _RISK_ACCEPTANCE_EXAMPLE: dict[str, Any] = {
-    "reason": {"key": "cost_exceeds_benefit", "kind": None, "label": "Cost exceeds benefit"},
+    "reason": {"key": "compensating_control", "kind": None, "label": "Compensating control"},
     "note": "Automation is planned with the ledger replacement in 2027.",
     "requestedBy": _PERSON_EXAMPLE,
     "requestedAt": "2026-09-20T10:00:00Z",
@@ -566,9 +573,10 @@ _GAP_EXAMPLE: dict[str, Any] = {
     "title": "Evidence of reconciliation is manual",
     "description": "The daily reconciliation is run, but its evidence is a hand-kept log.",
     "severity": {"key": "high", "kind": None, "label": "High"},
-    "source": "assessment",
+    "source": {"key": "assessment", "kind": None, "label": "Assessment"},
     "status": _GAP_STATUS_EXAMPLE,
     "owner": _PERSON_EXAMPLE,
+    "ownerTeam": None,
     "targetDate": "2026-12-31",
     "remediation": "Automate the daily reconciliation report.",
     "identifiedAt": "2026-09-18T13:05:00Z",
@@ -593,7 +601,7 @@ class RegisterRiskAcceptance(CamelSchema):
     approved_by: RegisterPersonRef | None = Field(
         description=(
             "The second person who approved it with a passkey step-up, never the person who "
-            "identified the gap. Null while the acceptance is waiting for approval."
+            "asked for it. Null while the acceptance is waiting for approval."
         )
     )
     approved_at: datetime.datetime | None = Field(description="The UTC timestamp of the approval, null while waiting for approval.")
@@ -618,7 +626,12 @@ class RegisterGap(CamelSchema):
             "its admin may extend; read `GET /vocab/risk_rating` for the live set."
         )
     )
-    source: GapSource = Field(description=_GAP_SOURCE)
+    source: RegisterVocabRef = Field(
+        description=(
+            "Where the gap was found, as a row of the bank's own `gap_source` vocabulary, which "
+            "its admin may extend; read `GET /vocab/gap_source` for the live set."
+        )
+    )
     status: RegisterVocabRef = Field(
         description=(
             "Where the gap stands, as a row of the bank's own `gap_status` vocabulary, which its "
@@ -626,13 +639,22 @@ class RegisterGap(CamelSchema):
             "`remediating`, `risk_accepted` or `closed` and decides the pill's tone."
         )
     )
-    owner: RegisterPersonRef | None = Field(description="The member who owns closing the gap; null when nobody does yet.")
+    owner: RegisterPersonRef | None = Field(
+        description="The member who owns closing the gap; null when a team owns it or nobody does yet."
+    )
+    owner_team: RegisterVocabRef | None = Field(
+        description=(
+            "The team that owns closing the gap, as a row of the bank's own `team` vocabulary, "
+            "which its admin may extend; read `GET /vocab/team` for the live set. Null when a "
+            "person owns it or nobody does yet; never set together with `owner`."
+        )
+    )
     target_date: datetime.date | None = Field(
         description="The plain date the bank means to close the gap by, shown on the roadmap as our own deadline; null when not set."
     )
     remediation: str | None = Field(description="The bank's plan for closing the gap, in its own words; null when none was written.")
     identified_at: datetime.datetime = Field(description="The UTC timestamp at which the gap was recorded, set by the server.")
-    identified_by: RegisterPersonRef = Field(description="The person who recorded the gap; they can never approve its risk acceptance.")
+    identified_by: RegisterPersonRef = Field(description="The person who recorded the gap.")
     risk_acceptance: RegisterRiskAcceptance | None = Field(
         description="The request to accept the gap's risk and its approval, null when nobody has asked."
     )
@@ -670,7 +692,7 @@ class RegisterGapBody(WriteBody):
     title: str = Field(min_length=1, max_length=TITLE_MAX, description=f"What falls short, 1 to {TITLE_MAX} characters.")
     description: str | None = Field(default=None, max_length=NOTE_MAX, description=f"The longer account, at most {NOTE_MAX} characters.")
     severity: str = Field(max_length=KEY_MAX, description=f"How serious the gap is. {_RISK_KEY}")
-    source: GapSource = Field(description=_GAP_SOURCE)
+    source: str = Field(max_length=KEY_MAX, description=_GAP_SOURCE)
     org_unit_id: uuid.UUID | None = Field(
         default=None, description="The legal entity the gap is in, as a UUID; absent for the obligation as a whole."
     )
@@ -678,6 +700,7 @@ class RegisterGapBody(WriteBody):
         default=None, description="The Statement of Applicability unit the gap is in, as a UUID; absent when it is not about one unit."
     )
     owner_id: uuid.UUID | None = Field(default=None, description=f"The gap's owner. {_PERSON_ID}")
+    owner_team: str | None = Field(default=None, max_length=KEY_MAX, description=f"The team that owns the gap. {_TEAM_KEY}")
     target_date: datetime.date | None = Field(default=None, description="The plain date the bank means to close the gap by.")
     remediation: str | None = Field(default=None, max_length=NOTE_MAX, description=f"The plan, at most {NOTE_MAX} characters.")
 
@@ -694,6 +717,7 @@ class RegisterGapPatch(WriteBody):
     severity: str | None = Field(default=None, max_length=KEY_MAX, description=f"How serious the gap is. {_RISK_KEY}")
     status: str | None = Field(default=None, max_length=KEY_MAX, description=_GAP_STATUS_KEY)
     owner_id: uuid.UUID | None = Field(default=None, description=f"The gap's owner. {_PERSON_ID}")
+    owner_team: str | None = Field(default=None, max_length=KEY_MAX, description=f"The team that owns the gap. {_TEAM_KEY}")
     target_date: datetime.date | None = Field(default=None, description="The plain date the bank means to close the gap by.")
     remediation: str | None = Field(default=None, max_length=NOTE_MAX, description=f"The plan, at most {NOTE_MAX} characters.")
 
@@ -701,7 +725,7 @@ class RegisterGapPatch(WriteBody):
 class RegisterRiskAcceptanceBody(WriteBody):
     """`POST /gaps/{gapId}/accept-risk`: ask for the gap's risk to be accepted."""
 
-    model_config = ConfigDict(json_schema_extra={"examples": [{"reason": "cost_exceeds_benefit", "note": "Automation comes with the 2027 ledger."}]})
+    model_config = ConfigDict(json_schema_extra={"examples": [{"reason": "compensating_control", "note": "The weekly custody review covers the risk until 2027."}]})
 
     reason: str = Field(
         max_length=KEY_MAX,
