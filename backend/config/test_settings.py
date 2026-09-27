@@ -36,6 +36,8 @@ DATABASES = {
     "app": dj_database_url.parse(DATABASE_URL, conn_max_age=0),  # noqa: F405
 }
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
+for _alias in DATABASES.values():
+    _alias["OPTIONS"] = {**_alias.get("OPTIONS", {}), **JIT_OFF}  # noqa: F405  as the app runs
 # Not ATOMIC_REQUESTS on `app`: Django would open the cw_app connection on every request,
 # and only the isolation proofs use it, explicitly, through transaction.atomic(using="app").
 DATABASES["app"]["ATOMIC_REQUESTS"] = False

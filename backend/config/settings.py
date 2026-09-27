@@ -165,6 +165,12 @@ DATABASES: dict[str, Any] = {
     "default": dj_database_url.parse(DATABASE_URL, conn_max_age=DATABASE_CONN_MAX_AGE_S),
 }
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
+# Just-in-time compilation off (r2-perf, NFR-02): the row-level security subqueries lift a
+# search's estimated cost far above `jit_above_cost`, and at 3,000 obligations a hybrid
+# search spent 5.1 s of 5.9 s compiling a plan whose rows took under 400 ms. The app's
+# queries are short reads JIT never pays back. Not a setting: nothing wants it on.
+JIT_OFF = {"options": "-c jit=off"}
+DATABASES["default"]["OPTIONS"] = {**DATABASES["default"].get("OPTIONS", {}), **JIT_OFF}
 
 # The boot guard for the database role (playbook 11.1, AC-NFR2) runs from
 # apps.shared.apps.SharedConfig.ready() through apps.shared.db_role_guard. Commands that
