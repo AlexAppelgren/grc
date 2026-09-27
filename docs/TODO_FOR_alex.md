@@ -1495,6 +1495,20 @@ Built on these defaults; each stays yours to overrule.
       the security log, not one per refused request, so a runaway agent cannot flood
       the log.
 
+## c9-signoff: evidence can leave a case while it waits for sign-off (2026-09-25)
+
+- [ ] **Should the approval re-check the evidence, or should evidence lock?** A sign-off
+      request needs no open action and one piece of evidence the scanner passed. While
+      the case waits, the actions lock (`c9-actions`, `actions_locked`), but nothing in
+      the plan locks the evidence: `removeEvidence` only sets `removed_at`, and a rescan
+      could mark a file infected. The approval then closes a case whose evidence is gone,
+      because the fixed guard on `signoff → closed` checks only the second person.
+      Default taken: no change, since the guards are fixed (CLAUDE.md section 5) and this
+      package does not own `state.py` or `evidence.py`. Two ways out: (a) `c9-evidence-b`
+      refuses `removeEvidence` with 409 `actions_locked`-style `evidence_locked` while
+      the case is in `signoff`, which mirrors the actions lock; or (b) the
+      `signoff → closed` edge also carries the `no_open_action` and `clean_evidence`
+      guards. The first keeps the state machine as designed; say which.
 ## acc-scope-and-reach: an entry's scope and tenant reach, answered by default (2026-09-25, ACC-02, ACC-08, D-70, D-72)
 
 - [ ] Default taken: an opt-in dimension keeps its rule inside an entry's scope too. The
@@ -1640,3 +1654,20 @@ Defaults taken; nothing waits on them.
 - [ ] **The AGT-S4 journey stays `fixme`.** The integration scenario is green; the console
       screen that publishes and retires a version is not built yet, and its journey belongs
       to the package that builds it.
+## acc-personal-grants: personal access tokens and the one credential list, answered by default (2026-09-25, ACC-03, ACC-09)
+
+- [ ] Default taken: a member lists and revokes their own tokens (`GET /me/tokens`,
+      `DELETE /me/tokens/{id}`) with a session alone, without `tokens.create`, so a person
+      who lost the permission can still stop what they minted. Minting keeps
+      `tokens.create` and a passkey step-up.
+- [ ] Default taken: a scope the member's own permissions do not back is refused at mint
+      (`scope_not_held`) rather than minted and refused on first use, and `tenant:read`
+      without an entry is refused (`entry_required`) rather than minted to no effect.
+      A bank's unbound key keeps its old rule: `tenant:read` is withheld when used.
+- [ ] Default taken: any member holding `tokens.create` may name any live agent access
+      entry of their bank on their token; the entry only narrows what the token reads, and
+      its reach toggle still bounds `tenant:read`. Say if naming an entry should need the
+      entry's owning team or `agent_access.manage`.
+- [ ] Default taken: the bank-wide list and revoke stay on `/tenant/api-keys` under
+      `integrations.manage`, now showing every key and token with its kind and the entry or
+      person behind it; revoking needs no step-up, because it only takes power away.

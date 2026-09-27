@@ -10,7 +10,7 @@ import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { useCurrentBriefing, useHome } from '@/features/home/hooks';
-import { presentLead } from '@/features/home/today-presentation';
+import { decideNowLines, presentLead } from '@/features/home/today-presentation';
 import type { Briefing, Home } from '@/features/home/types';
 import { authorityAndDate } from '@/features/watch/change-presentation';
 import type { Translate } from '@/shared/i18n';
@@ -76,10 +76,9 @@ export function TodayScreen() {
   const home = query.data;
   const kicker = formatLongDate(home.date, ctx);
   const counts = me?.counts ?? null;
-  const nothingToDecide = counts === null || (counts.triage === 0 && counts.proposals === 0 && counts.assignedToMe === 0);
+  const lines = counts === null ? [] : decideNowLines(counts, permissions);
+  const nothingToDecide = lines.every((line) => line.count === 0);
   const nothingAtAll = home.comingUp.length === 0 && home.lead === null && home.sources === null && nothingToDecide;
-  const canTriage = permissions.includes('cases.triage');
-  const canSeeProposals = permissions.includes('proposals.create');
   // The way to the regulatory scope shows only to someone the scope page opens for.
   const scope = findDestination('admin-footprint');
   const scopeAction = scope !== undefined && unlocks(scope.anyOfPermissions, permissions) ? { label: t('today.empty.action'), href: scope.href } : undefined;
@@ -99,19 +98,19 @@ export function TodayScreen() {
           {counts !== null ? (
             <Panel title={t('today.decideNow.title')} data-decide-now="">
               <div className="grid gap-1.5">
-                {canTriage ? (
-                  <p>
-                    <Link href="/watch" className="underline underline-offset-2">
-                      {t('today.decideNow.triage', { count: counts.triage })}
-                    </Link>
-                  </p>
-                ) : null}
-                <p>
-                  <Link href="/watch" className="underline underline-offset-2">
-                    {t('today.decideNow.assignedToMe', { count: counts.assignedToMe })}
-                  </Link>
-                </p>
-                {canSeeProposals ? <p className="text-muted">{t('today.decideNow.proposals', { count: counts.proposals })}</p> : null}
+                {lines.map((line) =>
+                  line.href === null ? (
+                    <p key={line.key} className="text-muted">
+                      {t(line.message, { count: line.count })}
+                    </p>
+                  ) : (
+                    <p key={line.key}>
+                      <Link href={line.href} className="underline underline-offset-2" data-decide={line.key}>
+                        {t(line.message, { count: line.count })}
+                      </Link>
+                    </p>
+                  ),
+                )}
               </div>
             </Panel>
           ) : null}

@@ -1471,6 +1471,7 @@ forced row-level security, each child's case a composite key `(tenant_id, case_i
   carries its hash, size and type with it; a link carries a url.
 
 ## 19. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
+## 18. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
 
 The designed `tenant.settings` blob is six columns on `tenant` (shared 0009):
 `reminder_days_before` and `review_reminder_days_before` (one to five day counts, each 1 to
@@ -1632,6 +1633,64 @@ enabled and forced row-level security, with these departures on purpose:
 - `GET /exports/{exportId}/download` streams the file itself (section 4, section 7), with
   `Content-Disposition: attachment` and `Cache-Control: no-store`, and records every
   download in the audit log. There is no `DownloadLink`.
+## Sign-off answers the case, and its refusals carry counts (2026-09-25, c9-signoff)
+
+- **`requestSignoff`, `approveSignoff` and `sendBackSignoff`** answer `CasesCase` (section
+  19), not the designed `Case`: no `actions`, `evidence` or `soWhat`, plus `changeId`,
+  `subStatus`, `urgencyConfirmed`, `dismissedAt` and `version`.
+- **The request's two refusals carry counts.** `open_actions` and `evidence_missing` answer
+  409 with `openActionCount` and `cleanEvidenceCount` beside the code (playbook 4.4), so
+  the screen says what is missing without a second read. Evidence the scanner has not
+  passed, or that was removed, does not count.
+- **The approver is told, not the requester.** The request notifies the bank's active
+  members holding `cases.signoff` through `notify()`, leaving the requester out: they can
+  never sign off what they asked for.
+- **The approval is the sign-off edge only.** From any category but `signoff` it answers
+  409 `invalid_transition`, although `assigned` and `assessing` reach `closed` by the
+  one-person close (D-92), which is its own route with its own reasons.
+- **Send-back clears the request.** `signoffRequestedBy` and `signoffRequestedAt` go back
+  to null, so the next request is a fresh one; the note is kept on the case's transition
+  ledger and never in the audit values.
+## c8-reg-gaps-risk. The gap routes as built (2026-09-25, REG-03)
+
+The register contract (`c8-register-contract`) declared the gap routes before the tables
+existed; building them on `gap` as `c8-register-models` shaped it changes these points:
+
+- A gap's `source` is a row of the bank's own `gap_source` list, as the column is: written
+  as a key and answered as `{key, kind, label}`, not the fixed five-value enum the contract
+  first published. The five seeded keys are unchanged.
+- `RegisterGap`, `RegisterGapBody` and `RegisterGapPatch` gain `ownerTeam`, a key of the
+  bank's `team` list (TEN-03): a gap is owned by a person or a team, never both, as the
+  `gap_one_owner_kind` CHECK says.
+- Four eyes on risk acceptance compare the approver with the person who asked for the
+  acceptance (`gap_four_eyes`), not with the person who recorded the gap; REG-S6 is amended
+  to match.
+- `createGap` answers 409 `does_not_apply` for an obligation, or a legal entity's answer on
+  it, that does not apply; `requestRiskAcceptance` answers 409 `request_pending` while an
+  acceptance already waits; `updateGap` requires `If-Match` and answers 409 `stale_write`
+  without it; closing a gap clears an acceptance still waiting on it.
+- A gap on a Statement of Applicability unit (`unitId`) answers 501 `not_built` until
+  `c8-units-paste-soa` adds the column.
+`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
+third column the R2 plan names (`acts_as_user`), are built with these departures:
+
+- `agent_access.owner_team_id` is required, not "null until chunk 8 lands teams": the team
+  list has landed and every bank has the system team `compliance` (ACC-01 names the team).
+  `revoked_at` and `revoked_by_id` are columns, and a CHECK keeps `active` false exactly when
+  `revoked_at` is set. An entry is revoked, never deleted (`delete()` refuses).
+- Every reference is also a composite `(tenant_id, …)` key: the team, the departments
+  (`org_unit`) and products (`tenant_product`) of the joins, the creator and revoker (into
+  `membership (tenant_id, user_id)`), and on `api_key` the entry and `acts_as_user`.
+- `api_key.kind` is the tier-one kind `credential_kind` (`service`, `personal`); every key
+  before identity 0007 is `service`. CHECKs: a personal token has a tenant, a person and an
+  expiry and no agent, and only a token acts as a person; a key bound to an entry has a
+  tenant and no agent definition (it is not one of the agents we run); an entry's key and
+  every token hold only `AGENT_ACCESS_SCOPES` (`library:read`, `search:read`,
+  `upcoming:read`, `tenant:read`), so "reads and nothing else" (ADR 0055) is the
+  database's rule as well as the code's.
+- `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
+  `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
+
 ## acc-entries-and-log. The access log of a bank's own agents (2026-09-25, governance 0005)
 
 `schema.sql` has no table for AGENT_ACCESS.md section 9's access log. `agent_access_call` is

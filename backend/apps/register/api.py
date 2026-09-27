@@ -296,8 +296,7 @@ def list_obligation_gaps(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
-    page out of range. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    page out of range.
     """
     tenant = caller_tenant(request)
     return gaps.list_obligation_gaps(
@@ -322,19 +321,24 @@ def list_obligation_gaps(
 def create_gap(
     request: HttpRequest, body: RegisterGapBody, obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID)
 ) -> Any:
-    """Records how the bank falls short of an obligation, on the obligation as a whole, one
-    legal entity or one unit, with its title, severity, source, owner, target date and
-    remediation plan. The gap starts in the gap status list's open row, and its target date
-    appears on the roadmap as our own deadline.
+    """Records how the bank falls short of an obligation, on the obligation as a whole or one
+    legal entity, with its title, severity, source, owner (a person or a team), target date
+    and remediation plan. The gap starts in the gap status list's open row, and its target
+    date appears on the roadmap as our own deadline. The bank's register entry on the
+    obligation is created with it when nobody has worked on the obligation yet.
 
     A person's session holding `gaps.edit`. No step-up. Records one audit event naming the
-    person. Answers 201 with the gap.
+    person, with ids and keys and never the text they typed. Answers 201 with the gap.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
-    `not_found` (404) for an obligation, entity or unit the bank cannot see; `unknown_key`
-    (422) for a severity key the bank's list does not hold; `validation_error` (422) for a
-    body the schema refuses. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    `not_found` (404) for an obligation or legal entity the bank cannot see;
+    `does_not_apply` (409) when the obligation, or its answer for that legal entity, is
+    "does not apply": a gap is a fact about how the bank complies with a rule that applies;
+    `unknown_key` (422) for a severity, source or team key the bank's list does not hold;
+    `unknown_member` (422) for an owner who is not an active member of the bank;
+    `validation_error` (422) for a body the schema refuses or a person and a team as owner
+    together; `not_built` (501) for a gap on a Statement of Applicability unit, which is not
+    built yet.
     """
     tenant = caller_tenant(request)
     return 201, gaps.create_gap(
@@ -367,8 +371,7 @@ def list_register_gaps(request: HttpRequest, filters: Query[RegisterGapQuery], p
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
     `validation_error` (422) for an owner or entity that is not a UUID, a date that is not a
-    date, a key longer than 64 characters or a page out of range. Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    date, a key longer than 64 characters or a page out of range.
     """
     tenant = caller_tenant(request)
     return gaps.list_gaps(
@@ -388,17 +391,20 @@ def list_register_gaps(request: HttpRequest, filters: Query[RegisterGapQuery], p
 @answers_problems
 def update_gap(request: HttpRequest, body: RegisterGapPatch, gap_id: uuid.UUID = Path(..., description=_GAP_ID)) -> Any:
     """Changes the fields the body sends on a gap: title, description, severity, owner, target
-    date, plan, or its status, such as from open to remediating to closed. Accepting a risk is
-    not a status change here; it has its own routes and its four eyes.
+    date, plan, or its status, between the open and remediating categories and on to closed.
+    Closing a gap clears a risk acceptance still waiting on it. Accepting a risk is not a
+    status change here, and neither is reopening a closed gap; each has its own route.
 
-    A person's session holding `gaps.edit`. Send `If-Match` with the gap's `version`. No
-    step-up. Records one audit event naming the person with the fields before and after.
+    A person's session holding `gaps.edit`. Send `If-Match` with the gap's `version`; it is
+    required. No step-up. Records one audit event naming the person with the keys, ids and
+    dates before and after, and the names (never the text) of the typed fields it changed.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
-    `not_found` (404) for a gap the bank does not have; `stale_write` (409);
-    `invalid_transition` (409) for a status the gap cannot move to; `unknown_key` (422) for a
-    key the bank's list does not hold; `validation_error` (422). Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a gap the bank does not have; `stale_write` (409) for an `If-Match`
+    that is absent or not the current version; `invalid_transition` (409) for a status the gap
+    cannot move to here; `unknown_key` (422) for a key the bank's list does not hold;
+    `unknown_member` (422) for an owner who is not an active member; `validation_error`
+    (422) for a body the schema refuses or a person and a team as owner together.
     """
     tenant = caller_tenant(request)
     return gaps.update_gap(
@@ -429,13 +435,13 @@ def request_risk_acceptance(
     does not move until a second person approves.
 
     A person's session holding `gaps.edit`. No step-up. Records one audit event naming the
-    person and the reason.
+    person and the reason key; the note stays on the gap and never enters the audit row.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
     `not_found` (404) for a gap the bank does not have; `invalid_transition` (409) for a gap
-    that is closed or already accepted; `unknown_key` (422) for a reason the bank's list does
-    not hold; `validation_error` (422). Published ahead of the logic that will fill it, and
-    answering 501 `not_built` until that ships.
+    that is closed or already accepted; `request_pending` (409) when an acceptance is already
+    waiting for approval; `unknown_key` (422) for a reason the bank's list does not hold,
+    naming the keys it does; `validation_error` (422) for a body the schema refuses.
     """
     tenant = caller_tenant(request)
     return gaps.request_risk_acceptance(
@@ -457,18 +463,17 @@ def request_risk_acceptance(
 def approve_risk_acceptance(request: HttpRequest, gap_id: uuid.UUID = Path(..., description=_GAP_ID)) -> Any:
     """Approves a waiting risk acceptance, which moves the gap to the gap status list's
     risk-accepted row and stores the approver and the time. Four eyes: the approver is never
-    the person who identified the gap.
+    the person who asked for the acceptance, which a check constraint enforces as well.
 
     A person's session holding `risk.accept.approve`, with a passkey step-up younger than the
-    configured freshness window. No body. Records one audit event naming both people and the
-    step-up assertion.
+    configured freshness window. No body. Records one audit event naming both people, the
+    reason key and the step-up assertion, and never the requester's note.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `risk.accept.approve`; `step_up_required` (403) without a fresh step-up, which the screen
     answers by opening the passkey prompt and retrying; `not_found` (404) for a gap the bank
-    does not have; `four_eyes_violation` (409) when the caller identified the gap;
-    `invalid_transition` (409) when no acceptance is waiting. Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    does not have; `four_eyes_violation` (409) when the caller asked for the acceptance,
+    before anything is written; `invalid_transition` (409) when no acceptance is waiting.
     """
     tenant = caller_tenant(request)
     return gaps.approve_risk_acceptance(
@@ -499,8 +504,7 @@ def reopen_gap(request: HttpRequest, gap_id: uuid.UUID = Path(..., description=_
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
     `not_found` (404) for a gap the bank does not have; `invalid_transition` (409) for a gap
-    that is already open. Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    that is open or remediating.
     """
     tenant = caller_tenant(request)
     return gaps.reopen_gap(

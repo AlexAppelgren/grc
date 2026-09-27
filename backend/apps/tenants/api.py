@@ -22,7 +22,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import Principal, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, caller_tenant, if_match
+from apps.taxonomy.http import actor_for, caller_tenant, caller_user, if_match
 from apps.taxonomy.reading import language_order
 from apps.taxonomy.schemas import PersonRef
 from apps.tenants import logic, organisation, people, products, reassignment, security_policy, support_access, teams
@@ -720,8 +720,7 @@ def list_teams(request: HttpRequest, page: PageQuery = Query(...)) -> Any:
     Any member of the bank may call it. It changes nothing and writes no audit event.
 
     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a
-    session that belongs to no bank; `unauthenticated` (401). Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    session that belongs to no bank; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     tenant = caller_tenant(request)
@@ -746,8 +745,7 @@ def list_team_members(
     with nobody in it is a 200 with `total` 0.
 
     Errors: `not_found` (404) for a team key the bank does not have; `validation_error` (422)
-    for a page size above 100; `unauthenticated` (401). Published ahead of the logic that will
-    fill it, and answering 501 `not_built` until that ships.
+    for a page size above 100; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     return teams.list_team_members(tenant=caller_tenant(request), key=key, limit=page.limit, offset=page.offset)
@@ -785,9 +783,8 @@ def list_people(
 
     Errors: `unknown_key` (422) for a permission that is not one of a bank's;
     `validation_error` (422) for a permission longer than 64 characters; `not_found` (404) for
-    a session that belongs to no bank; `unauthenticated` (401) without a member session.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    a session that belongs to no bank; `unauthenticated` (401) without a member session;
+    `enrolment_only` (403) from an enrolment session.
     """
     # Ungated by design: capability (a member session, never an enrolment session).
     return people.list_people(tenant=caller_tenant(request), permission=permission)
@@ -879,8 +876,7 @@ def list_tenant_support_access(request: HttpRequest, page: PageQuery = Query(...
     never asked is a 200 with `total` 0.
 
     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a
-    session that belongs to no bank; `unauthenticated` (401). Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    session that belongs to no bank; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     return support_access.list_for_tenant(tenant=caller_tenant(request), limit=page.limit, offset=page.offset)
@@ -907,10 +903,10 @@ def approve_support_access(request: HttpRequest, grant_id: uuid.UUID = Path(...,
     assertion, in the same transaction.
 
     Errors: `not_found` (404) for a request that is not the bank's own; `four_eyes_violation`
-    (409) when the approver is the person who asked; `step_up_required` (403) without a fresh
-    passkey assertion;
-    `permission_denied` (403) without `security.manage`; `unauthenticated` (401). Published
-    ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+    (409) when the approver is the person who asked; `invalid_transition` (422) for a request
+    that is no longer pending, because it was decided or lapsed; `step_up_required` (403)
+    without a fresh passkey assertion; `permission_denied` (403) without `security.manage`;
+    `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return support_access.approve(
@@ -936,10 +932,9 @@ def decline_support_access(request: HttpRequest, grant_id: uuid.UUID = Path(...,
 
     Needs `security.manage`. Recorded in the audit log as `support_access.declined`.
 
-    Errors: `not_found` (404) for a request that is not the bank's own;
-    `permission_denied` (403) without `security.manage`;
-    `unauthenticated` (401). Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    Errors: `not_found` (404) for a request that is not the bank's own; `invalid_transition`
+    (422) for a request that is no longer pending, because it was decided or lapsed;
+    `permission_denied` (403) without `security.manage`; `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return support_access.decline(tenant=tenant, actor=actor_for(request), grant_id=grant_id)
@@ -961,10 +956,10 @@ def revoke_support_access(request: HttpRequest, grant_id: uuid.UUID = Path(..., 
 
     Needs `security.manage`. Recorded in the audit log as `support_access.revoked`.
 
-    Errors: `not_found` (404) for a request that is not the bank's own;
-    `permission_denied` (403) without `security.manage`;
-    `unauthenticated` (401). Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    Errors: `not_found` (404) for a request that is not the bank's own; `invalid_transition`
+    (422) for a grant that is not open, because it is still pending, was declined or revoked,
+    or its window passed; `permission_denied` (403) without `security.manage`;
+    `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return support_access.revoke(tenant=tenant, actor=actor_for(request), grant_id=grant_id)
@@ -999,10 +994,11 @@ def request_console_support_access(
     Errors: `validation_error` (422) for a blank purpose, a window under an hour or above the
     maximum, or a field the body does not name; `not_found` (404) for a bank that does not
     exist; `permission_denied` (403) without `support_access.grant`; `unauthenticated` (401).
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return support_access.request_access(tenant_id=tenant_id, actor=actor_for(request), body=body)
+    requester = caller_user(request)
+    return support_access.request_access(
+        tenant_id=tenant_id, requester=requester, actor=actor_for(request, requester), body=body
+    )
 
 
 @router.get(
