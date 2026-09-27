@@ -348,26 +348,8 @@ def case_evidence(tenant: Tenant) -> SimpleNamespace:
             scanned_at=timezone.now(),
         )
     return SimpleNamespace(id=evidence.id, case=row)
-# --- c8-reg-applicability ---------------------------------------------------------------
-def legal_entity(tenant: Tenant, *, name: str = "Example Bank AB", entity_term_id: uuid.UUID | None = None, active: bool = True) -> OrgUnit:
-    """An org unit of the legal-entity kind in `tenant`, carrying the entity term whose id is
-    given (a `legal_entity` dimension term, by id so this file names no library model)."""
-    with transaction.atomic():
-        tenancy.activate(tenant.id)
-        return OrgUnit.objects.create(
-            tenant=tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name=name, entity_term_id=entity_term_id, active=active
-        )
-# c8-reg-status: the tenant-isolation guard's record for a legal entity's register row.
-def register_entity(tenant: Tenant) -> SimpleNamespace:
-    """A legal entity of `tenant`. The route reads the entity under row-level security before
-    it looks at the obligation, so another bank asking for it is refused as if it never
-    existed; apps/register/tests_status.py proves the same under a real shared obligation."""
-    from apps.tenants.models import OrgUnit, OrgUnitKind
 
-    with transaction.atomic():
-        tenancy.activate(tenant.id)
-        entity = OrgUnit.objects.create(tenant=tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name=f"Example Entity {next(_counter)} AB")
-    return SimpleNamespace(id=entity.id, params={"obligation_id": uuid.uuid4()})
+
 # --- c8-reg-gaps-risk (REG-03) ----------------------------------------------------------
 def gap(tenant: Tenant) -> Any:
     """The tenant-isolation guard's record for gap routes: an open gap of `tenant`, with a

@@ -1889,3 +1889,10 @@ gains `assessment` (`CasesAssessment`, null before the case reaches assessing) a
 `closedNote`, as `CasesCase` names them. The assessment is joined to the case in the block's
 one case query, so the read costs one label query more only when the assessment names an
 effort. Both are tenant content in the bank's own zone.
+
+## c10-digest-content. The weekly digest is keyed to its week (2026-09-25)
+
+- `email_message.sent_on` of a `weekly_digest` row is the first day (Monday) of the bank's
+  local week rather than the day of the send, so the same unique key that stops a second
+  reminder in a day stops a second digest in a week (COL-02: "one email per user per
+  week"). Every other template keeps the day of the send.

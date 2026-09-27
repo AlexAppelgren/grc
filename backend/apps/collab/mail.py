@@ -27,6 +27,7 @@ import datetime
 import logging
 import string
 import uuid
+from collections.abc import Sequence
 from typing import Literal, get_args
 
 from django.conf import settings
@@ -119,23 +120,44 @@ def _string(language: str, key: str) -> str:
     return CATALOGS[FALLBACK_LANGUAGE][key]
 
 
-def compose(membership: Membership, template: Template, context: MailContext) -> OutgoingMail:
+def compose(
+    membership: Membership,
+    template: Template,
+    context: MailContext,
+    *,
+    sections: Sequence[Sequence[tuple[str, MailContext]]] = (),
+) -> OutgoingMail:
     """One recipient's copy of one mail, in their language: the header, the template's body
     and the footer, under the template's subject. A recipient with no language, or one the
-    catalog does not hold, reads English."""
+    catalog does not hold, reads English.
+
+    `sections` are paragraphs between the body and the footer, one line per entry: a catalog
+    key of the template's own filled with its own typed context (the digest's buckets and
+    rows), so a section can say no more than the body can."""
     if template not in TEMPLATES:
         raise ValueError(f"unknown collab mail template {template!r}")
     user = membership.user
     language = user.locale.key if user.locale else FALLBACK_LANGUAGE
-    values = {key: value for key, value in dataclasses.asdict(context).items() if value is not None}
-    values["recipient"] = user.name
-    values["product"] = settings.PRODUCT_NAME
+
+    def render(key: str, values: MailContext) -> str:
+        filled = {name: value for name, value in dataclasses.asdict(values).items() if value is not None}
+        filled["recipient"] = user.name
+        filled["product"] = settings.PRODUCT_NAME
+        return _string(language, key).format(**filled)
+
+    for section in sections:
+        for key, _values in section:
+            if not key.startswith(f"{template}."):
+                raise ValueError(f"{key!r} is not a string of the {template!r} mail")
     parts = [
-        _string(language, key).format(**values) for key in ("header", f"{template}.body", "footer")
+        render("header", context),
+        render(f"{template}.body", context),
+        *("\n".join(render(key, values) for key, values in section) for section in sections),
+        render("footer", context),
     ]
     return OutgoingMail(
         to=user.email,
-        subject=_string(language, f"{template}.subject").format(**values),
+        subject=render(f"{template}.subject", context),
         body="\n\n".join(parts),
     )
 
