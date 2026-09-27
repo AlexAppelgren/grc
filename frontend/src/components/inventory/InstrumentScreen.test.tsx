@@ -167,6 +167,18 @@ describe('InstrumentScreen', () => {
     ]);
   });
 
+  it('leads the head of the bank\'s own instrument with "Private to us", its short name outlined (OWN-04)', async () => {
+    serve({ ...fffs, privateToUs: true });
+    renderIn(<InstrumentScreen instrumentId="in-1" />);
+    await screen.findByRole('heading', { level: 1, name: 'FFFS 2017:2 om värdepappersrörelse' });
+    const header = document.querySelectorAll('[data-header-pills] [data-pill]');
+    expect([...header].slice(0, 3).map((pill) => [pill.textContent, pill.getAttribute('data-pill'), pill.hasAttribute('data-outlined')])).toEqual([
+      ['Private to us', 'information', true],
+      ['FFFS 2017:2', 'information', true],
+      ['Supervisory regulation', 'information', false],
+    ]);
+  });
+
   it('shows the header pills, the identity panel, the source link and the obligations from this instrument', async () => {
     serve(fffs);
     renderIn(<InstrumentScreen instrumentId="in-1" />);

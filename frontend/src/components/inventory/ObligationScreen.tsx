@@ -150,6 +150,7 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
       regime: { key: record.regime.key, label: record.regime.label },
       binding: record.binding,
       levelKind: record.bindingLevel.kind,
+      privateToUs: record.privateToUs,
     },
     'header',
     t,

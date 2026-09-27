@@ -230,6 +230,12 @@ export const slotTone = {
   // CAS-04 (c9-fe-cases-shell): an open action past its due date, computed
   // against the tenant-local today. A due date still ahead shows no pill.
   overdue: 'negative',
+  // d89-fe-private (OWN-03, OWN-04; design/screens/tenant-private-records.html). What
+  // belongs to the bank itself reads outlined information, as a tenant tag does, never
+  // brand, which means the shared library. A proposal the bank's own agent filed wears the
+  // tone of an agent version until a person here decides it.
+  privateToUs: 'information',
+  ownAgentProposal: 'brand',
 } as const satisfies Record<string, PillTone>;
 
 // ---------------------------------------------------------------------------

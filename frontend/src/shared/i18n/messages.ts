@@ -52,6 +52,9 @@ import enObligationHistory from '@/messages/obligation-history/en.json';
 import svObligationHistory from '@/messages/obligation-history/sv.json';
 import enObligationTags from '@/messages/obligation-tags/en.json';
 import svObligationTags from '@/messages/obligation-tags/sv.json';
+// d89-fe-private: the bank's own queue.
+import enPrivateRecords from '@/messages/private-records/en.json';
+import svPrivateRecords from '@/messages/private-records/sv.json';
 import enPublic from '@/messages/public/en.json';
 import svPublic from '@/messages/public/sv.json';
 import enRoadmap from '@/messages/roadmap/en.json';
@@ -127,6 +130,8 @@ const en = {
   ...enObligationUnits,
   ...enObligationHistory,
   ...enObligationTags,
+  // d89-fe-private
+  ...enPrivateRecords,
   ...enPublic,
   ...enRoadmap,
   ...enSearch,
@@ -177,6 +182,8 @@ const sv = {
   ...svObligationUnits,
   ...svObligationHistory,
   ...svObligationTags,
+  // d89-fe-private
+  ...svPrivateRecords,
   ...svPublic,
   ...svRoadmap,
   ...svSearch,
