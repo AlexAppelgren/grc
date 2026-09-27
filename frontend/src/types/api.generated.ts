@@ -91,6 +91,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/agent-access/what-applies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask what applies to what your agent is building, buying or reviewing
+         * @description Takes a description of what the agent is building, buying or reviewing and answers the full list of what applies to it, one page at a time: every shared obligation in the bank's footprint and in the entry's scope, each with its citation and the version in force today, and with the bank's own register decision on it when the credential holds `tenant:read` and tenant reach is on for the bank and the entry. The list is deterministic and ranked by how many of the description's words each obligation's library text holds, then by stable key; nothing but paging shortens it. The bank's own private records are never in it, and `ownRecordsLeftOut` counts them.
+         *
+         *     Every answer states the scope it was given in (`scope`: the entry, its departments and products, and the date), and a narrowed entry never narrows silently: `outsideScope` names, by label, each footprint term outside the entry's scope that the description touches, compared against the terms' labels and usage notes and never against records, and its `advice` tells the agent to send its user to compliance about them. This needs no model, so it answers with AI switched off. Above the list, `summary` holds a short summary a model drafted from the description and the list's first shared obligations, never from the bank's register or its own records, labelled AI-drafted with a fixed `notice` that the bank's confirmed applicability is the decision, and citing obligations by stable key. It is drafted with the first page only, logged in the AI log with its model and version, and its cost counts against the bank's monthly cap on its own agents. It never shortens the list: when the model fails, does not answer within `WHAT_APPLIES_SUMMARY_DEADLINE_MS`, the bank switched its AI off or its cap is reached, the list is answered whole and `summary.reason` says why there is none.
+         *
+         *     A key of an agent access entry, or a personal access token, holding `library:read`; a person's session and any other key are refused. A read that takes a body: it writes nothing but the summary's AI log row, and the access log records the call with the description's name alone, never its text. Pages with `limit` and `offset`, 20 by default and 100 at most.
+         *
+         *     Errors: `description_required` (422) for a description of spaces alone; `description_too_long` (422) beyond `AGENT_ACCESS_DESCRIPTION_MAX_CHARS` characters; `validation_error` (422) for a body the schema refuses or a page out of range; `permission_denied` (403) for a key that is not an agent access credential or one without `library:read`; `rate_limited` (429) over the credential's rate; `unauthenticated` (401) without a live key or token.
+         */
+        post: operations["whatApplies"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/agent-access/{entry_id}": {
         parameters: {
             query?: never;
@@ -309,6 +335,8 @@ export interface paths {
          *
          *     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
          *     `agent_definitions.manage`; `not_found` (404) for a key no definition has.
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until
+         *     that ships.
          */
         get: operations["getAgentDefinition"];
         put?: never;
@@ -336,17 +364,15 @@ export interface paths {
          *     reads and writes nothing to the audit log.
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without
-         *     `agent_definitions.manage`; `not_found` (404) for a key no platform agent has,
-         *     including a definition a bank adds for itself, which has no platform settings. An
-         *     empty `jurisdictions` list means none has been set.
+         *     `agent_definitions.manage`; `not_found` (404) for a key no platform agent has.
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until
+         *     that ships.
          */
         get: operations["getPlatformAgentSettings"];
         /**
          * Change how one of bleqq's agents runs, for every bank
          * @description Replaces the cadence, jurisdictions and monthly budget of one of bleqq's own agents.
-         *     The change applies to every bank at once, which is why no bank can make it. The
-         *     jurisdictions are checked against the live jurisdiction list, where a retired one is
-         *     not valid, and a key sent twice is stored once. It reads no bank's data.
+         *     The change applies to every bank at once, which is why no bank can make it.
          *
          *     A person's session in the platform console holding `agent_definitions.manage`, with a
          *     fresh passkey step-up. Records one audit event with the settings before and after, the
@@ -355,9 +381,9 @@ export interface paths {
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without
          *     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
          *     `not_found` (404) for a key no platform agent has; `unknown_key` (422) for a
-         *     jurisdiction the vocabulary does not hold or has retired, with the valid keys in
-         *     `validKeys`; `validation_error` (422) for an empty or overlong list or a negative
-         *     budget.
+         *     jurisdiction the vocabulary does not hold, with the valid keys; `validation_error`
+         *     (422). Published ahead of the logic that will fill it, and answering 501 `not_built`
+         *     until that ships.
          */
         put: operations["updatePlatformAgentSettings"];
         post?: never;
@@ -379,12 +405,9 @@ export interface paths {
         /**
          * Publish a new version of one of the platform's agents
          * @description Publishes the version folder this build ships for the definition, with a note of
-         *     what changed, and makes it the definition's current version. Runs opened from now on
-         *     run it; a run already open keeps the version it opened with, and every earlier run
-         *     still names the version it used. The prompt, tools and model come from the shipped
-         *     folder, read exactly as the deploy's seed reads it, and never from this request; the
-         *     folder must be the definition's own and keep its kind, its scope and the zone it writes
-         *     to. Publish the versions in order: the next number is one above the highest published.
+         *     what changed. Runs opened from now on run it; a run already open keeps the version it
+         *     opened with, and every earlier run still names the version it used. The prompt, tools
+         *     and model come from the shipped folder and never from this request.
          *
          *     A person's session in the platform console holding `agent_definitions.manage`, with a
          *     fresh passkey step-up, because a new version changes what runs for every bank at once.
@@ -393,12 +416,9 @@ export interface paths {
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without
          *     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-         *     `not_found` (404) for a key no definition has; `version_exists` (409) for a number
-         *     already published; `version_not_next` (422) for a number that is not one above the
-         *     highest published; `definition_unreadable` (422) when this build ships no such folder,
-         *     its definition file cannot be read, its prompt is missing, or it names another agent,
-         *     number, kind, scope or zone, with the folder named and nothing created;
-         *     `validation_error` (422) for a missing or overlong note.
+         *     `not_found` (404) for a key no definition has; `validation_error` (422) for a version
+         *     number the build does not ship or a missing note. Published ahead of the logic that
+         *     will fill it, and answering 501 `not_built` until that ships.
          */
         post: operations["publishAgentVersion"];
         delete?: never;
@@ -419,9 +439,7 @@ export interface paths {
         /**
          * Retire a version so no new run starts on it
          * @description Retires one published version: no new run starts on it, and every run that used it
-         *     keeps pointing at it, because a published version is never rewritten or deleted. A new
-         *     run opens on the newest version still published. Retiring a version already retired
-         *     answers it as it is and records nothing.
+         *     keeps pointing at it, because a published version is never rewritten or deleted.
          *
          *     A person's session in the platform console holding `agent_definitions.manage`, with a
          *     fresh passkey step-up. Records one audit event naming the person, the version and the
@@ -429,9 +447,8 @@ export interface paths {
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without
          *     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-         *     `not_found` (404) for a definition or version that does not exist; `last_version`
-         *     (409) for the last version still published of an active agent, which would leave it
-         *     nothing to run.
+         *     `not_found` (404) for a definition or version that does not exist. Published ahead of
+         *     the logic that will fill it, and answering 501 `not_built` until that ships.
          */
         post: operations["retireAgentVersion"];
         delete?: never;
@@ -680,17 +697,19 @@ export interface paths {
         put?: never;
         /**
          * Stop a run of your bank's agent
-         * @description Stops an open run of one of the bank's own agents. What it filed before the stop
-         *     stays, and the run reads as interrupted, with when and by whom. bleqq's library runs
-         *     appear in the bank's run log but are never the bank's to stop.
+         * @description Stops an open run of one of the bank's own agents through the runner and returns the
+         *     run. What it filed and what it cost before the stop stay, and the run reads as
+         *     `interrupted`, with when (`interruptedAt`) and by whom. bleqq's runs are never the bank's
+         *     to stop. The monthly cap stops a run the same way, with no person, when what the run
+         *     reports it has spent takes the month's spend past the cap.
          *
          *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
          *     event naming the person.
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
          *     naming `agent_definitions.manage` for a run of one of bleqq's agents; `not_found` (404)
-         *     for a run the bank cannot see. Published ahead of the logic that will fill it, and
-         *     answering 501 `not_built` until that ships.
+         *     for a run the bank cannot see; `run_finished` (409) for a run that has already ended,
+         *     which changes nothing.
          */
         post: operations["interruptAgentRun"];
         delete?: never;
@@ -874,27 +893,30 @@ export interface paths {
          * Pause your bank's agent
          * @description Pauses one of the bank's own agents: it starts no run until someone resumes it, and
          *     it keeps its settings and its history. A run already open is not stopped; use
-         *     `POST /agent-runs/{runId}/interrupt` for that.
+         *     `POST /agent-runs/{runId}/interrupt` for that. Returns the agent, with `pausedAt`,
+         *     `pausedBy` naming the person and no `nextRunAt`. Pausing an agent that is already paused
+         *     changes nothing and returns it as it is.
          *
          *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
          *     event naming the person.
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-         *     `not_found` (404) for an agent the bank does not have. Published ahead of the logic that
-         *     will fill it, and answering 501 `not_built` until that ships.
+         *     `not_found` (404) for an agent the bank does not have.
          */
         post: operations["pauseTenantAgent"];
         /**
          * Resume your bank's paused agent
-         * @description Lifts the pause on one of the bank's own agents, so it runs on its cadence again.
-         *     Nothing is deleted: the pause stays in the audit log.
+         * @description Lifts the pause on one of the bank's own agents, whether a person or the monthly cap
+         *     paused it, so it runs on its cadence again, and returns it with its next run. Nothing is
+         *     deleted: the pause stays in the audit log. Resuming an agent that is not paused changes
+         *     nothing and returns it as it is. An agent resumed while the month's cap is still reached
+         *     is paused again by the cap when its next run is due.
          *
          *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
          *     event naming the person.
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-         *     `not_found` (404) for an agent the bank does not have. Published ahead of the logic that
-         *     will fill it, and answering 501 `not_built` until that ships.
+         *     `not_found` (404) for an agent the bank does not have.
          */
         delete: operations["resumeTenantAgent"];
         options?: never;
@@ -913,16 +935,22 @@ export interface paths {
         put?: never;
         /**
          * Run your bank's agent now
-         * @description Queues one run of the bank's own agent now, outside its cadence, and returns it; the
-         *     run is a job, so follow it in `GET /agent-runs`. It counts against the bank's monthly
-         *     cap like any other run.
+         * @description Queues one run of the bank's own agent now, outside its cadence, and returns it with
+         *     the status `running`; the run is a job, so follow it in `GET /agent-runs`. The run keeps
+         *     a copy of the agent's scope as it is now, so a later change of scope does not alter it,
+         *     and it counts against the bank's monthly cap like any other run: it starts only when the
+         *     month's spend plus the most one run may spend still fits under the cap.
          *
-         *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
-         *     event naming the person.
+         *     A person's session in a bank holding `agents.manage`; no API key. Records the run's
+         *     opening in the audit log, naming the person, before the runner is asked to start it; a
+         *     runner that cannot start it leaves the run recorded as failed.
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-         *     `not_found` (404) for an agent the bank does not have. Published ahead of the logic that
-         *     will fill it, and answering 501 `not_built` until that ships.
+         *     `not_found` (404) for an agent the bank does not have; `agent_disabled` (409) for an
+         *     agent switched off; `agent_paused` (409) for a paused one; `no_published_version` (409)
+         *     when every version of its definition is retired; `feature_off` (422) while the bank's AI
+         *     features are off; `budget_cap_reached` (422) when the run could take the month's spend
+         *     past the cap. A refused run writes nothing.
          */
         post: operations["runTenantAgentNow"];
         delete?: never;
@@ -2670,7 +2698,8 @@ export interface paths {
          *     file part missing for `file` or sent for another kind, a file type outside the allowed
          *     list or a file over the size limit — each refused before anything is stored; a link must
          *     be a full https address. `evidence_limit_reached` (409) when the case already holds as
-         *     many live pieces as a case may; `case_closed` (409) when the case is closed or dismissed.
+         *     many live pieces as a case may; `case_closed` (409) when the case is closed or dismissed;
+         *     `evidence_locked` (409) while the case waits for sign-off (send it back to add more).
          *     `scanner_unavailable` (503) when the malware scanner is unavailable, and nothing is
          *     stored.
          */
@@ -3072,8 +3101,9 @@ export interface paths {
          *     "Comments" panel. The record is named by its kind and id in the query string.
          *
          *     A read: it changes nothing and writes no audit row. Any person's session in a bank whose
-         *     role can read that kind of record (`register.read` for the inventory's records,
-         *     `cases.read` for a case and its actions); no API key reaches it. A deleted comment keeps
+         *     role can read that kind of record (`library.read` for an obligation of the library,
+         *     `register.read` for the bank's own register entry on one, `cases.read` for a case and its
+         *     actions); no API key reaches it. A deleted comment keeps
          *     its place without its text, and `canEdit` and `canDelete` say what the caller may do with
          *     each one.
          *
@@ -3181,20 +3211,17 @@ export interface paths {
         };
         /**
          * Read what bleqq's own agents have been doing
-         * @description Returns the runs of bleqq's own agents, newest first, one page at a time, with the
-         *     version each ran, what it cost, how it ended and what it filed: the sources it swept
-         *     and the records it re-checked, counted from the coverage log, and the changes and
-         *     proposals it filed, counted from those records rather than from the run's own report.
-         *     A platform run reads no bank's row, so no bank's run, name or figure is in it, and
-         *     `tenantAgentId` is always null here. Link a run's sources to the console's Sources
-         *     page.
+         * @description Returns the runs of bleqq's own agents, oldest first, one page at a time, with the
+         *     version each ran, what it cost and how it ended, for the console's agent pages. A
+         *     platform run reads no bank's row, so no bank's name or figure is in it.
          *
          *     A person's session in the platform console holding `agent_definitions.manage`. It reads
          *     and writes nothing to the audit log. An empty list is a 200 with `total` 0.
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without
          *     `agent_definitions.manage`; `validation_error` (422) when `limit` is above 100 or
-         *     `offset` beyond the accepted depth.
+         *     `offset` beyond the accepted depth. Published ahead of the logic that will fill it, and
+         *     answering 501 `not_built` until that ships.
          */
         get: operations["listPlatformRuns"];
         put?: never;
@@ -3256,12 +3283,13 @@ export interface paths {
          *     independent reviewer approves it. The request itself is a job: read its status later.
          *
          *     A person's session in the platform console holding `proposals.review`; a bank asks its
-         *     own agents with `POST /research-requests` and never re-tags the library. Records one
-         *     audit event naming the person.
+         *     own agents with `POST /research-requests` and never re-tags the library. It opens one
+         *     run of bleqq's agent in no bank's zone and reads no bank's record. Records one audit
+         *     event naming the person, and one more when the run files its batch.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`;
-         *     `validation_error` (422) for a topic that is empty or too long. Published ahead of the
-         *     logic that will fill it, and answering 501 `not_built` until that ships.
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`,
+         *     and for every bank's session; `validation_error` (422) for a topic that is empty or too
+         *     long; `no_published_version` (409) when bleqq's agent has no version to run.
          */
         post: operations["createRetagRequest"];
         delete?: never;
@@ -3288,8 +3316,7 @@ export interface paths {
          *     the audit log.
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`;
-         *     `not_found` (404) for a request that is not a re-tag. Published ahead of the logic that
-         *     will fill it, and answering 501 `not_built` until that ships.
+         *     `not_found` (404) for a request that is not a re-tag.
          */
         get: operations["getRetagRequest"];
         put?: never;
@@ -3317,8 +3344,7 @@ export interface paths {
          *     audit event. A caller who never asked is a 200 with `total` 0.
          *
          *     Errors: `validation_error` (422) for a page size above 100; `permission_denied` (403)
-         *     without `support_access.grant`; `unauthenticated` (401). Published ahead of the logic that
-         *     will fill it, and answering 501 `not_built` until that ships.
+         *     without `support_access.grant`; `unauthenticated` (401).
          */
         get: operations["listConsoleSupportAccess"];
         put?: never;
@@ -3701,8 +3727,10 @@ export interface paths {
          *     evidence row and one audit row naming the person, and answers 204 with no content.
          *
          *     Errors: `not_found` when no live evidence of this bank has that id; `case_closed` (409)
-         *     when the case is closed or dismissed, whose evidence stays as it was; `permission_denied`
-         *     without `cases.work`; `unauthenticated` without a session, including any API key.
+         *     when the case is closed or dismissed, whose evidence stays as it was; `evidence_locked`
+         *     (409) while the case waits for sign-off, whose evidence is what the second person signs
+         *     off (send the case back to change it); `permission_denied` without `cases.work`;
+         *     `unauthenticated` without a session, including any API key.
          */
         delete: operations["removeEvidence"];
         options?: never;
@@ -3913,7 +3941,10 @@ export interface paths {
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
          *     `not_found` (404) for a gap the bank does not have; `stale_write` (409) for an `If-Match`
          *     that is absent or not the current version; `invalid_transition` (409) for a status the gap
-         *     cannot move to here; `unknown_key` (422) for a key the bank's list does not hold;
+         *     cannot move to here, or for a change to the title, description, plan, severity or target
+         *     date of a gap whose risk was accepted (reopen it first; its owner may still change);
+         *     `request_pending` (409) for such a change while a risk acceptance waits for approval, so
+         *     the approver decides on the gap as it was asked for; `unknown_key` (422) for a key the bank's list does not hold;
          *     `unknown_member` (422) for an owner who is not an active member; `validation_error`
          *     (422) for a body the schema refuses or a person and a team as owner together.
          */
@@ -4074,7 +4105,10 @@ export interface paths {
          *     `library:read` scope. The list is read against that bank's footprint, so a platform
          *     key, such as the one bleqq's own watch agents run with, belongs to no bank and answers
          *     404 even when it carries `library:read`. The rows are shared library facts, the same
-         *     for every bank and changed only through an approved proposal.
+         *     for every bank and changed only through an approved proposal. An agent the bank runs
+         *     itself, through an agent access entry's key or token, lists only shared instruments
+         *     inside the bank's footprint and its entry's scope, and counts only the duties it could
+         *     open.
          *
          *     Paginated: 20 rows by default and 100 at most, ordered by stable key so paging is
          *     repeatable. `footprint` is one value: `in` by default, `all` for every instrument, or
@@ -4086,7 +4120,8 @@ export interface paths {
          *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
          *     (403) without library.read or the library:read scope, which is checked first, so a
          *     platform key without the scope gets this; `not_found` (404) when the caller is a
-         *     platform key carrying the scope, since it belongs to no bank; `validation_error` (422)
+         *     platform key carrying the scope, since it belongs to no bank; `unknown_filter` (422)
+         *     when an agent access credential sends footprint all or watched; `validation_error` (422)
          *     when footprint is not in, all or watched, when the retired outsideFootprint is sent,
          *     when regime is longer than 80 characters, when the phrase is longer than 200 characters
          *     or the page size or offset is out of range.
@@ -4119,7 +4154,10 @@ export interface paths {
          *     holding `library.read` in their bank, or a bank's own API key carrying the
          *     `library:read` scope; a platform key belongs to no bank and answers 404 even when it
          *     carries `library:read`. The designed `GET /instruments/{instrumentId}/relations` is
-         *     served here as `lineage`, and the provision tree is its own read.
+         *     served here as `lineage`, and the provision tree is its own read. An agent access
+         *     entry's key or token opens only a shared instrument inside the bank's footprint and its
+         *     entry's scope, and its lineage names only instruments it could open; any other is the
+         *     404 of an instrument that does not exist.
          *
          *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
          *     (403) without library.read or the library:read scope, which is checked first;
@@ -4193,7 +4231,9 @@ export interface paths {
          *
          *     Answered as a plain array of root nodes rather than a page, because a tree has no
          *     natural page boundary; an instrument with no provisions yet is a 200 with an empty
-         *     array. The number of queries does not grow with the tree's size.
+         *     array. The number of queries does not grow with the tree's size. An agent access
+         *     entry's key or token reads the tree of an instrument it could open, and each node names
+         *     only the citing duties it could open itself.
          *
          *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
          *     (403) without library.read or the library:read scope, which is checked first;
@@ -4352,8 +4392,23 @@ export interface paths {
          *     The tool list follows the credential: search needs `search:read`; list_obligations,
          *     get_obligation and what_applies need `library:read`; list_upcoming_changes needs
          *     `upcoming:read`; list_register_entries needs `tenant:read` and an entry whose tenant
-         *     reach is on, so a credential without both is not offered it. Calling a tool
-         *     (`tools/call`) is not offered yet and answers -32601.
+         *     reach is on, so a credential without both is not offered it.
+         *
+         *     Calling a tool (`tools/call`, both eras) runs the REST route behind it as a request of
+         *     its own, with the same credential: search is `POST /search` (`query` is its `q`),
+         *     list_obligations `GET /obligations`, get_obligation `GET /obligations/{obligationId}`
+         *     by stable key, list_upcoming_changes `GET /upcoming`, list_register_entries
+         *     `GET /register-entries` and what_applies `POST /agent-access/what-applies`. The same
+         *     authentication, scope gate, entry scope and pagination apply (`limit` 20 unless given,
+         *     100 at most), and `structuredContent` is exactly the body that route answers, with the
+         *     same JSON in one text block; an earlier revision gets a list as `{"items": [...]}`. A
+         *     route's refusal comes back as a result with `isError` true and the route's problem
+         *     details, `code` included (`permission_denied`, `not_found`, `tenant_reach_off`,
+         *     `read_only_credential`, `validation_error`), as does an argument the tool does not
+         *     declare, a missing required one, or a query or path value that is not a string or a
+         *     whole number. A tool name this server does not have, or `arguments` that are not an
+         *     object, is -32602. A call is one request of the credential's rate, and the access log
+         *     records it under the tool's name with the route's status and record count.
          *
          *     Errors: HTTP-level refusals come as RFC 9457 problem details (`unauthenticated`,
          *     `agent_access_only`, `rate_limited`); everything about the message itself comes as a
@@ -4652,6 +4707,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See the personal access tokens you have minted
+         * @description Returns the caller's own personal access tokens in the bank this session is signed in
+         *     to, one page at a time, newest first: what each may read, the agent access entry it
+         *     names, when it expires and when it was last used. Revoked and expired tokens stay in the
+         *     list. The secret is never shown again after minting: a row carries its prefix alone.
+         *
+         *     Self-service: needs a full session and no permission, so a member who no longer holds
+         *     `tokens.create` still sees what they minted. A token cannot list tokens. It changes
+         *     nothing and writes no audit event. An empty page is a 200 with `total` 0.
+         *
+         *     Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
+         *     depth; `not_found` (404) on a platform session, which has no bank; `unauthenticated` (401)
+         *     without a live session.
+         */
+        get: operations["listMyTokens"];
+        put?: never;
+        /**
+         * Mint a personal access token that acts as you, for an agent you run
+         * @description Mints a personal access token for the caller and answers it once, with 201. The token
+         *     acts as the caller: the audit and access logs name them, and it reads with the scopes it
+         *     is given, each one a read the caller's own permissions back, so it never reads more than
+         *     they could. Naming an agent access entry narrows it to the entry's scope and lets
+         *     `tenant:read` reach the bank's register while tenant reach is on. Put `plainKey` straight
+         *     into the agent's secret store: the server keeps only a hash and never shows it again.
+         *
+         *     A token reads and nothing else. It cannot open a session, it cannot step up, so every
+         *     action that asks for a passkey refuses it, and it stops on the next request when the
+         *     caller is deactivated, leaves the bank or loses a permission one of its scopes stands on.
+         *     It must expire, no later than 90 days from now.
+         *
+         *     Needs `tokens.create` and a passkey step-up on this session younger than 5
+         *     minutes; a token cannot mint a token. Writes "token_created" to the security log and the
+         *     audit event `personal_token.created` with the prefix, scopes, entry and expiry, never the
+         *     secret, and with the step-up assertion.
+         *
+         *     Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
+         *     opening the passkey prompt and retrying, and always to a key or token; `unknown_key`
+         *     (422) for a scope a token may not hold, the message naming the valid ones, or for an
+         *     entry the bank has not got or has revoked; `scope_not_held` (422) for a scope the caller's
+         *     permissions do not back; `entry_required` (422) for `tenant:read` without an entry;
+         *     `expiry_in_past` (422) for an expiry that is not in the future; `expiry_too_late` (422)
+         *     for one beyond 90 days; `name_required` (422) for a name of spaces alone;
+         *     `validation_error` (422) for a missing expiry, an empty scope list, a name over 200
+         *     characters or a field the body does not take; `permission_denied` (403) without
+         *     `tokens.create`; `unauthenticated` (401) without a live session.
+         */
+        post: operations["createMyToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/tokens/{token_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Stop one of your personal access tokens working for good; a repeat revoke answers 204 again
+         * @description Revokes one of the caller's own personal access tokens at once: from this moment every
+         *     call made with it answers `unauthenticated`. Call it when a token may have leaked or its
+         *     agent is retired. A revoked token cannot be turned back on; mint a new one instead. It
+         *     stays listed with its revocation time.
+         *
+         *     Revoking a token already revoked changes nothing and answers 204 again, so a retry is
+         *     safe; the retry is audited too but writes no second security-log entry.
+         *
+         *     Self-service: needs a full session and no permission and no step-up, because stopping a
+         *     token only takes power away, and a member who lost `tokens.create` can still stop theirs.
+         *     Writes "token_revoked" to the security log the first time and the audit event
+         *     `personal_token.revoked` each time.
+         *
+         *     Errors: `not_found` (404) when the caller has no token with that identifier in this bank,
+         *     one answer for someone else's token, a service key and an unknown identifier;
+         *     `unauthenticated` (401) without a live session.
+         */
+        delete: operations["revokeMyToken"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/visit": {
         parameters: {
             query?: never;
@@ -4850,7 +5001,16 @@ export interface paths {
          *     decided the duty applies, how it judges its compliance where it applies, and who owns it
          *     — beside the bank's own tags and whether the record is the bank's own rather than a
          *     shared fact. The overlay filters (applicability, complianceStatus, owner, ownerTeam)
-         *     narrow on those.
+         *     narrow on those. The overlay is the bank's register, so only a person holding
+         *     `register.read` reads it; for anyone else, an agent's key included, every row reads
+         *     under_assessment with no status and no owner.
+         *
+         *     An agent the bank runs itself, whose key or personal token belongs to an agent access
+         *     entry, reads narrower: only shared duties, never the bank's own; only inside the bank's
+         *     footprint, so footprint stays in; and only inside the departments and products its entry
+         *     names. Its rows carry the bank's overlay and tags only when it holds `tenant:read` and
+         *     tenant reach is on for the bank and for the entry, and never on a duty under a standard; otherwise they read as not
+         *     assessed, with no status, owner or tag.
          *
          *     Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
          *     quietly trimmed, and rows ordered by their stable key so paging is repeatable. Nothing
@@ -4860,10 +5020,14 @@ export interface paths {
          *     markets the bank watches add, each row naming its jurisdiction.
          *
          *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-         *     (403) without library.read or the library:read scope; `unknown_filter` (422) when a
+         *     (403) without library.read or the library:read scope, or for an overlay filter sent by a
+         *     caller in a bank who does not hold `register.read`; `unknown_filter` (422) when a
          *     caller that belongs to no bank, such as a platform key, sends tenantTag or an overlay
          *     filter, since it has no tags or register of its own; `not_found` (404) when such a caller
-         *     reads the list at all; `validation_error` (422) when a term filter is not written
+         *     reads the list at all; `unknown_filter` (422) when an agent access credential sends
+         *     footprint all or watched; `tenant_reach_off` (403) when one sends an overlay or tenantTag
+         *     filter while it may not read the bank's register (it lacks `tenant:read`, or tenant reach
+         *     is off for the bank or its entry); `validation_error` (422) when a term filter is not written
          *     dimension:key, when instrument, dutyType, complianceStatus, ownerTeam or any term, tag or
          *     tenantTag value is longer than 80 characters, when applicability is not applies,
          *     not_applicable or under_assessment, when owner is not a UUID, when more than 20 terms, tags or
@@ -4902,7 +5066,15 @@ export interface paths {
          *     `library.read` in their bank, or an agent's key carrying the `library:read` scope.
          *     The record says what the rule is. Beside it the answer carries the bank's own register
          *     overlay, the same as the duty's row in the list: whether the bank decided it applies, how
-         *     it judges its compliance where it applies, and who owns it. No other bank sees it.
+         *     it judges its compliance where it applies, and who owns it. No other bank sees it, and
+         *     only a person holding `register.read` reads it; anyone else reads it empty.
+         *
+         *     The duty is addressed by its id or by its stable key, which never changes and is what an
+         *     agent cites. An agent the bank runs itself, whose key or personal token belongs to an
+         *     agent access entry, opens only a shared duty inside the bank's footprint and inside the
+         *     departments and products its entry names; any other answers the same 404 as a duty that
+         *     does not exist, never a filtered answer. Its related duties are only ones it could open
+         *     itself, and the overlay and tags are answered to it on the terms the list gives.
          *
          *     A library record is never overwritten, so this read carries no `If-Match` and can answer
          *     no stale write: a correction arrives as a new version through an approved proposal, and
@@ -4912,9 +5084,10 @@ export interface paths {
          *
          *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
          *     (403) without library.read or the library:read scope; `not_found` (404) when no
-         *     obligation has that id or it is one this caller may not see, the two answering alike so
-         *     that no id can be probed for; `validation_error` (422) when the path segment is not a
-         *     UUID or asOf is not a date.
+         *     obligation has that id or key or it is one this caller may not see, the two answering
+         *     alike so that nothing can be probed for; `validation_error` (422) when the path segment
+         *     is neither a UUID nor a key (letters, digits, hyphens and underscores, at most 120
+         *     characters) or asOf is not a date.
          */
         get: operations["getObligation"];
         put?: never;
@@ -5054,7 +5227,8 @@ export interface paths {
          *     library's own content. It takes a person's session holding `library.read` in their bank,
          *     or an agent's key carrying the `library:read` scope. A sentence shown as removed is a
          *     change to the wording of the rule, never a decision that this bank may stop doing
-         *     something.
+         *     something. An agent access entry's key or token reads the diff of a duty it could open
+         *     itself, and gets the 404 of a missing duty for any other.
          *
          *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
          *     (403) without library.read or the library:read scope; `not_found` (404) when no
@@ -5314,16 +5488,17 @@ export interface paths {
          * @description End one participation on the bank's register entry for an obligation: "Leave" on the
          *     caller's own row, or "Remove" on anyone else's.
          *
-         *     Any person's session in a bank may leave their own participation, whatever their role,
-         *     and the audit event is `participant.left`; removing anyone else, a team included, needs
+         *     Needs a person's session in a bank holding `register.read`, which every participant held
+         *     when they were added. With it, a person may always leave their own participation, and
+         *     the audit event is `participant.left`; removing anyone else, a team included, also needs
          *     `register.edit`, and the audit event is `participant.removed`. Either holds ids only. The
          *     participation is ended with its time and who ended it, never deleted, so the record's
          *     history still shows who took part until when. No API key reaches it and no step-up is
          *     asked. Answers 204 with no body.
          *
          *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
-         *     finish enrolling, `permission_denied` for removing someone else without `register.edit`
-         *     (naming it in `requiredPermission`), and `not_found` for a platform session, for an
+         *     finish enrolling, `permission_denied` without `register.read`, or for removing someone
+         *     else without `register.edit` (naming the permission in `requiredPermission`), and `not_found` for a platform session, for an
          *     obligation the bank cannot see and for a participation that is not live on this bank's
          *     entry for it.
          */
@@ -5512,6 +5687,8 @@ export interface paths {
          *     principal, and never a direct edit (PRO-01). A page whose hash has changed means the page
          *     moved, never that the record is wrong.
          *
+         *     An agent access entry's key or token reads the sources of a duty it could open itself.
+         *
          *     A record with no field-level citation yet is a 200 with an empty `items`, not a 404; the
          *     record's own `provenance` on `GET /obligations/{obligationId}` still names where it came
          *     from. Errors: `not_found` when no obligation has that id or the caller may not see it;
@@ -5680,12 +5857,12 @@ export interface paths {
         };
         /**
          * Read your organisation's own queue of records waiting for a decision
-         * @description Every proposal of this organisation's own records: the instruments and obligations the
-         *     shared library does not hold, filed by a person here or found by the organisation's own
-         *     research agent for a regulation it added to its scope. Call it for the organisation's own
-         *     queue, where a second person decides each one. Nothing here is the shared library's, and
-         *     nothing here ever reaches the platform console or another organisation: row-level security
-         *     keeps each organisation's rows its own.
+         * @description Every proposal of this organisation's own records still waiting for a decision (`status`
+         *     `open`): the instruments and obligations the shared library does not hold, filed by a
+         *     person here or found by the organisation's own research agent for a regulation it added to
+         *     its scope. Call it for the organisation's own queue, where a second person decides each
+         *     one. Nothing here is the shared library's, and nothing here ever reaches the platform
+         *     console or another organisation: row-level security keeps each organisation's rows its own.
          *
          *     Reading it changes nothing and records nothing. Paginated: 20 rows by default and 100 at
          *     most, with a larger limit refused rather than quietly trimmed, oldest first so the queue is
@@ -5698,8 +5875,7 @@ export interface paths {
          *
          *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
          *     without `private_records.approve`; `validation_error` (422) when the page size or offset is
-         *     out of range; `not_built` (501) for every call. Published ahead of the logic that will fill
-         *     it, and answering 501 until that ships.
+         *     out of range.
          */
         get: operations["listPrivateProposals"];
         put?: never;
@@ -5730,16 +5906,19 @@ export interface paths {
          *     proposal as it then stands, with `status` `approved`.
          *
          *     Needs `private_records.approve`, stepped up fresh with a passkey; the assertion's id is
-         *     written on the audit rows. The approver is never the proposer: the four-eyes constraint
-         *     refuses that row on its own. An agent never approves here.
+         *     written on the audit rows, which never carry the note. The approver is never the proposer:
+         *     the four-eyes constraint refuses that row on its own. An agent never approves here, so a
+         *     record an agent found reads as found by the agent and approved by this person.
          *
          *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
          *     without `private_records.approve`; `step_up_required` (403) without a fresh passkey
          *     assertion; `not_found` (404) for another organisation's proposal, a proposal to the shared
-         *     library, one that does not exist and anything that is not a UUID; `validation_error` (422)
-         *     for a field the body does not name or a note longer than 2000 characters; `not_built`
-         *     (501) for every proposal of this organisation's own. Published ahead of the logic that
-         *     will fill it, and answering 501 until that ships.
+         *     library, one that does not exist and anything that is not a UUID; `four_eyes_violation`
+         *     (409) when the caller filed the proposal; `invalid_transition` (409) when it is already
+         *     decided; `duplicate_key` (409) when its key was taken while it waited; `unknown_key` (422)
+         *     when a row it names was retired while it waited; `validation_error` (422) for a field the
+         *     body does not name, a note longer than 2000 characters, or a record whose instrument is
+         *     not the organisation's own.
          */
         post: operations["approvePrivateProposal"];
         delete?: never;
@@ -5767,14 +5946,16 @@ export interface paths {
          *     proposal as it then stands, with `status` `rejected`.
          *
          *     Needs `private_records.approve`, with no step-up, since a rejection adds nothing. The
-         *     person rejecting is never the proposer.
+         *     person rejecting is never the proposer. The audit and outbox rows carry the reason's key
+         *     and never the note.
          *
          *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
          *     without `private_records.approve`; `not_found` (404) for another organisation's proposal, a
          *     proposal to the shared library, one that does not exist and anything that is not a UUID;
-         *     `validation_error` (422) for a field the body does not name or a note longer than 2000
-         *     characters; `not_built` (501) for every proposal of this organisation's own. Published ahead
-         *     of the logic that will fill it, and answering 501 until that ships.
+         *     `four_eyes_violation` (409) when the caller filed the proposal; `invalid_transition` (409)
+         *     when it is already decided; `reason_required` (422) without a live row of the rejection
+         *     reason list or without a note; `validation_error` (422) for a field the body does not name
+         *     or a note longer than 2000 characters.
          */
         post: operations["rejectPrivateProposal"];
         delete?: never;
@@ -5966,14 +6147,15 @@ export interface paths {
          *
          *     Needs the platform permission `proposals.review` from a person, stepped up fresh with a
          *     passkey. No API key reaches this route, and an agent never decides a batch. The reviewer
-         *     is never the batch's proposer, the person who asked for the re-tag, which the database
-         *     enforces on every row and on the batch.
+         *     is never the batch's proposer, which the database enforces on every row and on the
+         *     batch, nor the person who asked for the re-tag whose agent run filed it.
          *
          *     Errors to branch on: `unauthenticated` (401) without a session, a key included;
          *     `permission_denied` (403) without `proposals.review`, a bank's session included;
          *     `step_up_required` (403) without a fresh passkey assertion; `not_found` (404) for a batch
          *     that does not exist, a proposal that is not a batch, and anything that is not a UUID;
-         *     `four_eyes_violation` (409) when the reviewer proposed the batch, which decides nothing;
+         *     `four_eyes_violation` (409) when the reviewer proposed the batch or asked for the
+         *     re-tag that filed it, which decides nothing;
          *     `invalid_transition` (409) when the batch or a named row is already decided;
          *     `stale_write` (409) when a row named for approval is stale, or every row left to approve
          *     is; `reason_required` (422) for a rejection without a live row of the rejection reason
@@ -6324,7 +6506,8 @@ export interface paths {
          *     A read: it changes nothing, writes no audit row and logs none of the text, which is
          *     the library's own content. It takes a person's session holding `library.read` in
          *     their bank, or a bank's own API key carrying the `library:read` scope; a platform key
-         *     belongs to no bank and answers 404 even when it carries `library:read`.
+         *     belongs to no bank and answers 404 even when it carries `library:read`. An agent access
+         *     entry's key or token reads only a provision of an instrument it could open.
          *
          *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
          *     (403) without library.read or the library:read scope, which is checked first;
@@ -6584,25 +6767,36 @@ export interface paths {
          *     nothing to the audit log.
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-         *     `validation_error` (422) when `limit` is above 100. Published ahead of the logic that
-         *     will fill it, and answering 501 `not_built` until that ships.
+         *     `validation_error` (422) when `limit` is above 100.
          */
         get: operations["listResearchRequests"];
         put?: never;
         /**
          * Ask your bank's agent to check a source or research a topic
          * @description Asks one of the bank's own agents to run now, check a registered source or a web
-         *     address now, or research a topic. The request is a job: it is queued and returned at
-         *     once, and its run follows. It counts against the bank's monthly cap, and what the agent
-         *     finds stays in the bank's own zone.
+         *     address now, or research a topic. The request is a job: its run opens at once and the
+         *     request is returned with it; read its status from `GET /research-requests/{requestId}`.
+         *     It runs under the bank's monthly cap, and what the agent finds stays in the bank's own
+         *     zone. A web address is fetched once, here, over https from a public host, and what came
+         *     back is kept as text for the agent, never shown as a page. The topic is the bank's own
+         *     text: it is never logged and reaches a model only through the bank's own agent.
          *
          *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
-         *     event naming the person and the kind, never the topic's text.
+         *     event naming the person and the kind, never the topic's text or the address.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-         *     `not_found` (404) for an agent the bank does not have; `validation_error` (422) for a
-         *     topic or address that is empty, too long or missing for its kind. Published ahead of
-         *     the logic that will fill it, and answering 501 `not_built` until that ships.
+         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
+         *     for an agent the bank may not steer; `not_found` (404) for an agent or source the bank
+         *     does not have; `no_tenant_agent` (409) when the bank has no agent of its own, since
+         *     bleqq's agents take no requests; `no_published_version` (409) when the agent has no
+         *     version to run; `validation_error` (422) for a topic or address that is empty, too long,
+         *     missing for its kind or sent for another kind; `source_not_checked` (422) for a source
+         *     the agents do not check; `url_not_allowed` (422) for an address that is not https on the
+         *     standard port, carries a user name, is a standards publisher's, or is or redirects to a
+         *     host off the public internet; `url_unreachable` (422) when the address answers no page
+         *     within `RESEARCH_URL_MAX_REDIRECTS` redirects; `feature_off` (422) when the bank has
+         *     switched its AI features off; `budget_cap_reached` (422) when the bank has set no cap or
+         *     this month's spend has reached it; `plan_limit_reached` (429) past the bank's
+         *     `RESEARCH_REQUESTS_PER_MONTH` requests this month.
          */
         post: operations["createResearchRequest"];
         delete?: never;
@@ -6627,8 +6821,7 @@ export interface paths {
          *     nothing to the audit log.
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-         *     `not_found` (404) for a request the bank does not have. Published ahead of the logic
-         *     that will fill it, and answering 501 `not_built` until that ships.
+         *     `not_found` (404) for a request the bank does not have.
          */
         get: operations["getResearchRequest"];
         put?: never;
@@ -6660,13 +6853,16 @@ export interface paths {
          *
          *     A regulatory item is here while all three are true: the bank's case for the change is
          *     open (a `closed` or `dismissed` case has left), the change is inside the bank's regulatory
-         *     scope, and its date is today or later in the bank's own time zone. The bank's own
+         *     scope, and its date is today or later in the bank's own time zone; a date the source
+         *     stated as a month, a quarter or a year stays until that period has ended. The bank's own
          *     deadlines, each with its owner, are the next reviews of register entries and entity rows
-         *     that are not marked as not applying and the target dates of open or remediating gaps, on
-         *     obligations inside the regulatory scope and only for a reader holding `register.read`, and
-         *     a certificate's expiry and next audit until its licence row is withdrawn. A date that has gone leaves
-         *     the roadmap and stays on the change itself, so a `from` earlier than the bank's today
-         *     widens nothing. The quarter key on every item is computed in that same time zone, which
+         *     that are not marked as not applying, the target dates of open or remediating gaps and the
+         *     open occurrences of recurring duties, on obligations inside the regulatory scope and only
+         *     for a reader holding `register.read`; an open in-scope case's internal deadline and the due
+         *     dates of its actions that are neither done nor removed, only for a reader holding
+         *     `cases.read`; and a certificate's expiry and next audit until its licence row is
+         *     withdrawn. A date that has gone leaves the roadmap and stays on the change itself, so a
+         *     `from` earlier than the bank's today widens nothing. The quarter key on every item is computed in that same time zone, which
          *     is why two banks an hour apart can open the same day in two quarters.
          *
          *     A window with nothing in it is a 200 with an empty `items` and an empty `quarters`, never
@@ -6704,8 +6900,13 @@ export interface paths {
          * @description Find obligations, provisions and registered changes in the shared library, by
          *     identifier or by concept, as they stood on a chosen date (SRC-01, SRC-02).
          *
-         *     Who may call it: a person with `search.use`, on their own session. An API key is
-         *     refused; agents use `POST /search/similar`.
+         *     Who may call it: a person with `search.use`, on their own session, or a bank's own key
+         *     holding the `search:read` scope, which is how an agent the bank runs itself searches. A
+         *     key of an agent access entry finds only what that entry may open: the bank's scope and
+         *     then the entry's own, its departments' and products' terms, so a trading agent never
+         *     finds a card rule, and it cannot ask for what the scope holds back (`footprint`
+         *     `all` or `watched`). A platform key belongs to no bank and gets 404; bleqq's watch agents use
+         *     `POST /search/similar`.
          *
          *     What comes back: one ranked page, best first. `limit` defaults to 20 and may not
          *     exceed 100; a larger number answers 422 naming the field and is never clamped. The
@@ -6725,12 +6926,14 @@ export interface paths {
          *     writes no audit row, because nothing changed. It is a POST so the query never travels
          *     in a URL: what a reader types is the bank's own text.
          *
-         *     Errors: `rate_limited` when that reader has searched more than the limit above in the
-         *     last minute, which is a 429 to wait out and retry rather than a call to change;
+         *     Errors: `rate_limited` when that reader or key has searched more than the limit above
+         *     in the last minute, which is a 429 to wait out and retry rather than a call to change;
          *     `unknown_key` for a `lang` that is not one of the library's language rows;
          *     `validation_error` for a query over the cap, a `limit` above 100 or a filter the
-         *     contract does not name; `not_found` when the session belongs to no bank;
-         *     `permission_denied` without `search.use`; `unauthenticated` without a session.
+         *     contract does not name; `unknown_filter` (422) when an agent access credential sends
+         *     `footprint` `all` or `watched`; `not_found` when the session or the key belongs to no bank;
+         *     `permission_denied` without `search.use`, or a key without `search:read`;
+         *     `unauthenticated` without a session or a key.
          */
         post: operations["search"];
         delete?: never;
@@ -6811,8 +7014,9 @@ export interface paths {
          *
          *     The whole registry comes back in one answer, ordered by name; it is tens of rows, not
          *     thousands, so it does not page. An empty registry is a 200 with an empty list, never a
-         *     404. Errors: `permission_denied` without one of those three, `unauthenticated` without a
-         *     credential.
+         *     404. Errors: `permission_denied` without one of those three, or to a bank's own agent (an
+         *     agent access credential, which reads the library and not the registry); `unauthenticated`
+         *     without a credential.
          */
         get: operations["listSources"];
         put?: never;
@@ -6881,7 +7085,8 @@ export interface paths {
          *
          *     One row per registered source, ordered by name, and no paging. A registry with nothing
          *     in it is a 200 with an empty list. Errors: `permission_denied` without `watch.read`,
-         *     `sources.manage` or the `library:read` scope; `unauthenticated` without a credential.
+         *     `sources.manage` or the `library:read` scope, or to a bank's own agent (an agent access
+         *     credential); `unauthenticated` without a credential.
          */
         get: operations["getSourceCoverage"];
         put?: never;
@@ -7327,11 +7532,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * See your bank's API keys and whether each still works
-         * @description Returns the bank's own API keys one page at a time, newest first: what each may do,
-         *     when it was last used, and whether it has expired or been revoked. Revoked and expired
-         *     keys stay in the list, so it is the whole history. The secret of a key is never shown
-         *     again after creation: a row carries its eight-character prefix and nothing more. The
+         * See every key and personal access token of your bank and whether each still works
+         * @description Returns every credential of the bank one page at a time, newest first: its own keys,
+         *     the service keys of its agent access entries and every member's personal access token.
+         *     Each row says which kind it is, the entry it is bound to and the member a token acts as,
+         *     what it may do, when it was last used, and whether it has expired or been revoked. Revoked
+         *     and expired credentials stay in the list, so it is the whole history. The secret is never
+         *     shown again after creation: a row carries its eight-character prefix and nothing more. The
          *     platform's agent keys are never here.
          *
          *     Needs `integrations.manage` on a person's session in the bank; an API key cannot list
@@ -7386,21 +7593,23 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Stop one of your bank's API keys working for good; a repeat revoke answers 204 again
-         * @description Revokes one of the bank's own keys at once: from this moment every call made with it
-         *     answers `unauthenticated`. Call it when a key may have leaked, when an integration is
-         *     retired, or when a key is replaced. There is no way to turn a revoked key back on; create
-         *     a new one instead. The key stays listed with its revocation time.
+         * Stop one of your bank's keys or personal access tokens working for good; a repeat revoke answers 204 again
+         * @description Revokes one credential of the bank at once, any of those `GET /tenant/api-keys` lists:
+         *     one of its own keys, a service key of one of its agent access entries or a member's
+         *     personal access token. From this moment every call made with it answers
+         *     `unauthenticated`. Call it when a credential may have leaked, when an integration is
+         *     retired, or when a key is replaced. There is no way to turn a revoked credential back on;
+         *     create a new one instead. It stays listed with its revocation time.
          *
          *     Revoking a key that is already revoked changes nothing and answers 204 again, so a retry
          *     is safe; the retry is recorded in the audit log too, but writes no second security-log
          *     entry.
          *
          *     Needs `integrations.manage`, and no step-up: stopping a key only takes power away. Writes
-         *     "key_revoked" to the security log the first time and the audit event `api_key.revoked`
-         *     each time.
+         *     "key_revoked" to the security log the first time, "token_revoked" for a personal access
+         *     token, and the audit event `api_key.revoked` each time.
          *
-         *     Errors: `not_found` (404) when the bank has no key with that identifier;
+         *     Errors: `not_found` (404) when the bank has no credential with that identifier;
          *     `permission_denied` (403) without `integrations.manage`; `unauthenticated` (401) without
          *     a live session.
          */
@@ -7484,25 +7693,39 @@ export interface paths {
         put?: never;
         /**
          * Preview a change to our regulatory scope, or send it for approval
-         * @description Ask for terms to be put into or taken out of the organisation's regulatory scope.
-         *     Nothing in the scope changes here: the change waits for a second person, who approves it
-         *     with a passkey (`POST /tenant/footprint/requests/{requestId}/approve`) or rejects it.
+         * @description Ask for terms, and scope items, to be put into or taken out of the organisation's
+         *     regulatory scope. Nothing in the scope changes here: the change waits for a second
+         *     person, who approves it with a passkey (`POST /tenant/footprint/requests/{requestId}/approve`)
+         *     or rejects it.
+         *
+         *     A scope item is a regulation the shared library does not cover yet: a name, a
+         *     description, a jurisdiction, a regime term, an official reference where one exists and a
+         *     public https page, for the organisation's own agent to research once it is approved. It
+         *     is stored with the request as `requested`, with a key derived from its name; it changes
+         *     no term and moves no count in the preview. Only a person asks for, approves or removes
+         *     one: no API key and no agent reaches it.
          *
          *     With `dryRun=true` it only previews: a 200 with what the change would hide and reveal
-         *     among the obligations and the open cases, with nothing stored, no audit event and no
-         *     approval started. Without it, a 201 with the new pending request, its preview counted
-         *     now, and one `footprint.change_requested` audit event naming every term added and
-         *     removed. An organisation has one pending request at a time; withdraw or decide it first.
+         *     among the obligations and the open cases, and the scope items as they would be stored,
+         *     with nothing stored, no audit event and no approval started. Without it, a 201 with the
+         *     new pending request, its preview counted now, and one `footprint.change_requested` audit
+         *     event naming every term and every scope item (by id and key) added and removed. An
+         *     organisation has one pending request at a time; withdraw or decide it first.
+         *
+         *     Each of the four lists holds at most the configured number of entries
+         *     (`FOOTPRINT_CHANGE_MAX_TERMS`, 50 by default); a longer one is refused with 422.
          *
          *     Needs `footprint.request` in the caller's organisation and a person's session; an API
          *     key is refused. No passkey step-up: the approval carries it.
          *
          *     Errors to branch on: `request_pending` (409) when a change already waits for a decision;
-         *     `unknown_key` (422) for a dimension or term that is not an active one, with the valid
-         *     keys in `detail`; `validation_error` (422) for a change with no term, a term both added
-         *     and removed, a term named twice, or a body the schema refuses; `permission_denied` (403) without
-         *     `footprint.request`; `unauthenticated` (401) without a session; `not_found` (404) for a
-         *     principal in no organisation.
+         *     `unknown_key` (422) for a dimension, term, jurisdiction or regime term that is not an
+         *     active one, or a scope item to remove that is not in scope, with the valid keys in
+         *     `detail`; `source_not_public` (422) for a scope item's address that is not a public https
+         *     page; `validation_error` (422) for a change with nothing in it, a term both added and
+         *     removed, a term or scope item named twice, a list over its cap, or a body the schema
+         *     refuses; `permission_denied` (403) without `footprint.request`; `unauthenticated` (401)
+         *     without a session; `not_found` (404) for a principal in no organisation.
          */
         post: operations["createFootprintRequest"];
         delete?: never;
@@ -7523,7 +7746,9 @@ export interface paths {
         /**
          * Approve a change to our regulatory scope as the second person
          * @description Approve a pending change: its terms enter and leave the regulatory scope at once, and
-         *     every list, the watch feed and search follow from the next read. The approver must be
+         *     every list, the watch feed and search follow from the next read. Its scope items enter
+         *     or leave the scope at the same moment, and an item that entered waits for the
+         *     organisation's own agent to research it. The approver must be
          *     someone other than the requester, which the database enforces too. The answer is the
          *     request, now `approved`, with the counts it was approved against.
          *
@@ -7532,19 +7757,21 @@ export interface paths {
          *     `POST /auth/step-up/verify`); an API key is refused. Send `If-Match` with the version
          *     last read to be told when the request moved on.
          *
-         *     Writes one `footprint.change_approved` audit event with the note and the counts, and one
-         *     `footprint.term_added` or `footprint.term_removed` event per term that changed, each
-         *     carrying the step-up that authorised it.
+         *     Writes one `footprint.change_approved` audit event with the counts (the note stays on
+         *     the request), one `footprint.term_added` or `footprint.term_removed` event per term that
+         *     changed, and one `scope_item.added` or `scope_item.removed` event per scope item, whose
+         *     outbox row names the item by id and key only; each carries the step-up that authorised
+         *     it.
          *
          *     Errors to branch on: `four_eyes_violation` (409) when the requester approves their own
          *     change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
          *     `stale_write` (409) when `If-Match` names an old version, or when a term the change
-         *     adds was retired while it waited, which the approver rejects so the requester can ask
-         *     again; `step_up_required` (403) without a fresh passkey step-up; `permission_denied`
-         *     (403) without `footprint.approve`;
+         *     adds, or a scope item's jurisdiction or regime term, was retired while it waited, which
+         *     the approver rejects so the requester can ask again; `step_up_required` (403) without a
+         *     fresh passkey step-up; `permission_denied` (403) without `footprint.approve`;
          *     `not_found` (404) for a request that is not here; `validation_error` (422) for an
-         *     `If-Match` that is not a version or a body the schema refuses; `unauthenticated` (401)
-         *     without a session.
+         *     `If-Match` that is not a version, a note longer than 2000 characters or a body the
+         *     schema refuses; `unauthenticated` (401) without a session.
          */
         post: operations["approveFootprintRequest"];
         delete?: never;
@@ -7571,15 +7798,18 @@ export interface paths {
          *
          *     Needs `footprint.approve` in the caller's organisation and a person's session; an API
          *     key is refused. No passkey step-up, because nothing in the scope changes. Send
-         *     `If-Match` with the version last read to be told when the request moved on. Writes one
-         *     `footprint.change_rejected` audit event with the note and the counts.
+         *     `If-Match` with the version last read to be told when the request moved on. The scope
+         *     items it asked for read `declined` and never enter the scope. Writes one
+         *     `footprint.change_rejected` audit event with the counts and the declined items' ids and
+         *     keys; the note stays on the request.
          *
          *     Errors to branch on: `four_eyes_violation` (409) when the requester rejects their own
          *     change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
          *     `stale_write` (409) when `If-Match` names an old version; `permission_denied` (403)
          *     without `footprint.approve`; `not_found` (404) for a request that is not here;
-         *     `validation_error` (422) for an `If-Match` that is not a version or a body the schema
-         *     refuses; `unauthenticated` (401) without a session.
+         *     `validation_error` (422) for an `If-Match` that is not a version, a note longer than
+         *     2000 characters or a body the schema refuses; `unauthenticated` (401) without a
+         *     session.
          */
         post: operations["rejectFootprintRequest"];
         delete?: never;
@@ -7606,7 +7836,8 @@ export interface paths {
          *
          *     Needs `footprint.request` in the caller's organisation and a person's session; an API
          *     key is refused. Send `If-Match` with the version last read to be told when the request
-         *     moved on. Writes one `footprint.change_withdrawn` audit event.
+         *     moved on. The scope items it asked for read `declined`. Writes one
+         *     `footprint.change_withdrawn` audit event, naming the declined items by id and key.
          *
          *     Errors to branch on: `permission_denied` (403) without `footprint.request`, and for a
          *     request someone else sent; `invalid_transition` (409) when it was already approved,
@@ -7615,6 +7846,37 @@ export interface paths {
          *     `If-Match` that is not a version; `unauthenticated` (401) without a session.
          */
         post: operations["withdrawFootprintRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/footprint/scope-items/{scope_item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See one regulation we added to our regulatory scope
+         * @description One scope item of the organisation's own, whatever its status: a regulation the
+         *     shared library does not cover that someone asked to put into the regulatory scope, with
+         *     where its request stands and how its research stands. Call it to open an item from the
+         *     Regulatory scope screen or from a request in its history.
+         *
+         *     A read: it changes nothing and writes no audit event. Any member may call it, as any
+         *     member reads the regulatory scope; it needs a person's session and no permission beyond
+         *     membership, and an API key is refused. Another organisation's item answers 404, exactly
+         *     as one that does not exist.
+         *
+         *     Errors to branch on: `not_found` (404) for an item that is not this organisation's or
+         *     not an id; `unauthenticated` (401) without a session.
+         */
+        get: operations["getScopeItem"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8963,7 +9225,10 @@ export interface paths {
          *     this app a key reaches, because it is the only one with no bank in it. Library facts
          *     exactly: no case, no footprint verdict, no owner and no "So what?", so two banks calling
          *     it receive identical answers and nothing here may be read as any bank's judgement or
-         *     compliance position.
+         *     compliance position. The one narrower caller is an agent the bank runs itself, whose key
+         *     or token reads only the changes inside the bank's regulatory scope and inside the
+         *     departments and products its agent access entry names; every row it gets is still the
+         *     row everyone gets.
          *
          *     A change is here while all three are true: the shared library holds it as active (a
          *     withdrawn or superseded reform has left, whatever its date still says), it carries a key
@@ -9038,16 +9303,19 @@ export interface paths {
          *
          *     A library list is read by any person's session and by an API key with the
          *     `library:read` scope, which is how an agent reads the values it may submit. An
-         *     organisation's own list is read the same ways from inside that organisation only.
+         *     organisation's own list is read the same ways from inside that organisation only, and by
+         *     a bank's own agent (an agent access credential) only when it may read the bank's
+         *     register: it holds `tenant:read` and tenant reach is on for the bank and its entry.
          *
          *     Not paginated: a list is short enough to arrive whole, and a list with no values is a
          *     200 with an empty list. A read: it changes nothing and writes no audit event.
          *
          *     Errors to branch on: `unauthenticated` (401) without a session or a key;
          *     `permission_denied` (403) for a key without `library:read`, or an organisation's list
-         *     read from outside any organisation; `not_found` (404) for a name that is not a
-         *     vocabulary list, with the valid names in `detail`; `validation_error` (422) when
-         *     `includeRetired` is not a boolean.
+         *     read from outside any organisation; `tenant_reach_off` (403) for an organisation's list
+         *     read by an agent access credential that may not read the bank's register; `not_found`
+         *     (404) for a name that is not a vocabulary list, with the valid names in `detail`;
+         *     `validation_error` (422) when `includeRetired` is not a boolean.
          */
         get: operations["listVocabularyRows"];
         put?: never;
@@ -9257,11 +9525,14 @@ export interface paths {
          *     can show what it was.
          *
          *     Read like the list: a library value by any person's session or an API key with
-         *     `library:read`, an organisation's value from inside that organisation only. A read: it
+         *     `library:read`, an organisation's value from inside that organisation only, and by a
+         *     bank's own agent only when it may read the bank's register, as the list. A read: it
          *     changes nothing and writes no audit event.
          *
          *     Errors to branch on: `unauthenticated` (401) without a session or a key;
-         *     `permission_denied` (403) for a key without `library:read`; `not_found` (404) for a name
+         *     `permission_denied` (403) for a key without `library:read`; `tenant_reach_off` (403) for
+         *     an organisation's value read by an agent access credential that may not read the bank's
+         *     register; `not_found` (404) for a name
          *     that is not a vocabulary list, a key the list does not hold, or an organisation's list
          *     read from outside any organisation.
          */
@@ -10048,6 +10319,54 @@ export interface components {
              * @description True lets the entry's `tenant:read` credentials read the bank's register decisions while the bank's own switch is on; false keeps the entry to the shared library.
              */
             enabled: boolean;
+        };
+        /**
+         * AgentAccessScopeStatement
+         * @description The scope an answer to an agent access credential was given in (ACC-07). Every answer
+         *     to such a credential carries it as the JSON of its `Agent-Access-Scope` header, errors
+         *     included; what applies carries it in its body as well.
+         * @example {
+         *       "asOf": "2026-09-25",
+         *       "departments": [
+         *         {
+         *           "id": "0f6c2d8e-3b1a-4e7f-a5c9-7d2e8b1f4a63",
+         *           "name": "Trading"
+         *         }
+         *       ],
+         *       "entry": {
+         *         "id": "5b0e7a52-8d61-4c1e-9f3a-2a6d1c4e8b90",
+         *         "name": "Trading platform coding agent"
+         *       },
+         *       "narrowed": true,
+         *       "products": []
+         *     }
+         */
+        AgentAccessScopeStatement: {
+            /**
+             * Asof
+             * Format: date
+             * @description The date the answer is true on, `YYYY-MM-DD`, today where the bank is: the library's versions in force and the register as it stands that day.
+             * @example 2026-09-25
+             */
+            asOf: string;
+            /**
+             * Departments
+             * @description The departments the entry serves, by name; its scope is the terms of their products and of every unit below them, within the bank's footprint.
+             */
+            departments: components["schemas"]["AgentAccessUnitRef"][];
+            /** @description The agent access entry the credential reads as, by id and name; null for a personal access token that names no entry and reads as its person. */
+            entry: components["schemas"]["AgentAccessUnitRef"] | null;
+            /**
+             * Narrowed
+             * @description True when the departments or products narrow what the credential reads to their terms; false when it reads the bank's whole footprint. A narrowed answer names what it could not see rather than stay silent about it.
+             * @example true
+             */
+            narrowed: boolean;
+            /**
+             * Products
+             * @description The products the entry serves, by name, narrowing as the departments do.
+             */
+            products: components["schemas"]["AgentAccessUnitRef"][];
         };
         /**
          * AgentAccessTeamRef
@@ -11141,7 +11460,7 @@ export interface components {
         AiGenerationQuery: {
             /**
              * Purpose
-             * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank) and `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
+             * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank), `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one), and `what_applies` (the short summary drafted above what applies to one bank's own agent, its cost counted against the bank's monthly cap). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
              * @example so_what
              */
             purpose?: string | null;
@@ -11296,7 +11615,7 @@ export interface components {
             promptTemplate: string;
             /**
              * Purpose
-             * @description What the call was for, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank) and `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one).
+             * @description What the call was for, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank), `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one), and `what_applies` (the short summary drafted above what applies to one bank's own agent, its cost counted against the bank's monthly cap).
              * @example so_what
              */
             purpose: string;
@@ -11645,15 +11964,19 @@ export interface components {
         };
         /**
          * ApiKeyOut
-         * @description One of the bank's own API keys as the keys screen lists it. The secret is never here,
-         *     only its prefix.
+         * @description One credential of the bank as the keys screen lists it: a key of its own, a service key
+         *     of one of its agent access entries, or a member's personal access token. The secret is
+         *     never here, only its prefix.
          * @example {
+         *       "agentAccess": null,
          *       "createdAt": "2026-09-15T09:30:00Z",
          *       "expiresAt": "2027-09-15T23:59:59Z",
          *       "id": "c4a81e5f-3b92-4d07-8e6a-2f1b9d5c7a30",
          *       "keyPrefix": "9a1f3c7e",
+         *       "kind": "service",
          *       "lastUsedAt": "2026-09-22T05:00:12Z",
          *       "name": "Policy portal sync",
+         *       "person": null,
          *       "revokedAt": null,
          *       "scopes": [
          *         "library:read",
@@ -11662,6 +11985,8 @@ export interface components {
          *     }
          */
         ApiKeyOut: {
+            /** @description The agent access entry the credential is bound to, whose scope narrows what it reads: an entry's service key, or a token that names the entry. Null for a key or token bound to no entry. */
+            agentAccess: components["schemas"]["CredentialEntryRef"] | null;
             /**
              * Createdat
              * Format: date-time
@@ -11685,6 +12010,12 @@ export interface components {
              */
             keyPrefix: string;
             /**
+             * Kind
+             * @description Which of the two credential kinds this is. `service`: a key that belongs to the bank or to one of its agent access entries, acting as the integration or the entry. `personal`: a personal access token a member minted for themselves, acting as that member and never reading more than they could.
+             * @enum {string}
+             */
+            kind: "service" | "personal";
+            /**
              * Lastusedat
              * @description When the key last authenticated a call, as a UTC timestamp in ISO 8601. It moves at most once every 60 seconds by default (a setting), so it says a key is in use rather than counting its calls. Null for a key that has never been used.
              */
@@ -11694,6 +12025,8 @@ export interface components {
              * @description The name an administrator gave the key, such as `Policy portal sync`, to tell keys apart on screen. A label only; nothing reads it.
              */
             name: string;
+            /** @description The member a personal access token acts as. Null for a service key, which acts as no person. */
+            person: components["schemas"]["PersonRef"] | null;
             /**
              * Revokedat
              * @description When an administrator revoked the key, as a UTC timestamp in ISO 8601; from that moment every call with it answers `unauthenticated`. A revoked key stays listed and cannot be turned back on. Null while it is live.
@@ -11711,12 +12044,15 @@ export interface components {
          * @example {
          *       "items": [
          *         {
+         *           "agentAccess": null,
          *           "createdAt": "2026-09-15T09:30:00Z",
          *           "expiresAt": "2027-09-15T23:59:59Z",
          *           "id": "c4a81e5f-3b92-4d07-8e6a-2f1b9d5c7a30",
          *           "keyPrefix": "9a1f3c7e",
+         *           "kind": "service",
          *           "lastUsedAt": "2026-09-22T05:00:12Z",
          *           "name": "Policy portal sync",
+         *           "person": null,
          *           "revokedAt": null,
          *           "scopes": [
          *             "library:read",
@@ -11730,7 +12066,7 @@ export interface components {
         ApiKeysPage: {
             /**
              * Items
-             * @description The bank's own keys on this page, newest first, revoked and expired ones included so that the list is the whole history. The platform's agent keys are never here. An empty list is a 200 and means the bank has no key yet.
+             * @description The bank's credentials on this page, newest first: its own keys, the service keys of its agent access entries and every member's personal access token, revoked and expired ones included so that the list is the whole history. The platform's agent keys are never here. An empty list is a 200 and means the bank has no credential yet.
              */
             items: components["schemas"]["ApiKeyOut"][];
             /**
@@ -12494,6 +12830,11 @@ export interface components {
          *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
          *         "name": "Sara Lind"
          *       },
+         *       "ownerTeam": {
+         *         "key": "cards",
+         *         "kind": null,
+         *         "label": "Cards compliance"
+         *       },
          *       "signedOffBy": null,
          *       "signoffRequestedAt": null,
          *       "signoffRequestedBy": null,
@@ -12583,6 +12924,8 @@ export interface components {
             openActionCount: number;
             /** @description Who owns the case, named at triage. A person in this bank, as their id and display name; the only personal data a case carries about them. Null before triage. */
             owner: components["schemas"]["PersonRef"] | null;
+            /** @description The team of the bank that owns the case beside its owner, never instead of one, from the bank's own `team` vocabulary, whose rows its admin may extend at `GET /vocab/team`; `kind` is always null, because teams have no kinds. The team stays when the owner changes or leaves the bank. Null when no team was named. */
+            ownerTeam: components["schemas"]["CasesVocabularyRef"] | null;
             /** @description The second person who signed the case off with a passkey. A person in this bank, as their id and display name; the only personal data a case carries about them. Never the person who asked, which the database itself refuses. Null until it is signed off. */
             signedOffBy: components["schemas"]["PersonRef"] | null;
             /**
@@ -13023,6 +13366,7 @@ export interface components {
          *     and who owns it.
          * @example {
          *       "ownerId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *       "ownerTeam": "cards",
          *       "subStatus": null,
          *       "urgency": "within_3_months"
          *     }
@@ -13035,6 +13379,12 @@ export interface components {
              * @example 8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60
              */
             ownerId: string;
+            /**
+             * Ownerteam
+             * @description An optional team that owns the case beside the owner, as the key of an active row of the bank's `team` vocabulary, such as `compliance`. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. At most 64 characters. Null or left out for none; a key that is not an active team of this bank answers 422 `unknown_key` with the valid keys.
+             * @example cards
+             */
+            ownerTeam?: string | null;
             /**
              * Substatus
              * @description An optional sub-status inside `assigned`, as a key of the bank's `case_sub_status` vocabulary, whose rows the bank's admin may extend. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. At most 64 characters. Null or left out for none; an unknown key, or one of another category, answers 422 `unknown_key`.
@@ -13448,6 +13798,7 @@ export interface components {
          *       "body": "@Erik Holm can you check the custody angle before Friday?",
          *       "canDelete": true,
          *       "canEdit": true,
+         *       "changeId": "b41c7e2a-9d3f-4e61-8a05-2f7d6c1e9b48",
          *       "createdAt": "2026-09-24T08:15:00Z",
          *       "deletedAt": null,
          *       "editedAt": null,
@@ -13484,6 +13835,12 @@ export interface components {
              * @example true
              */
             canEdit: boolean;
+            /**
+             * Changeid
+             * @description On a comment on a `change_case`, the regulatory change the case is on, as a uuid: the change page opens on the change, not on the case, so the row's link needs it. Null on a comment on any other kind of record.
+             * @example b41c7e2a-9d3f-4e61-8a05-2f7d6c1e9b48
+             */
+            changeId: string | null;
             /**
              * Createdat
              * Format: date-time
@@ -13549,6 +13906,7 @@ export interface components {
          *           "body": "@Erik Holm can you check the custody angle before Friday?",
          *           "canDelete": true,
          *           "canEdit": true,
+         *           "changeId": "b41c7e2a-9d3f-4e61-8a05-2f7d6c1e9b48",
          *           "createdAt": "2026-09-24T08:15:00Z",
          *           "deletedAt": null,
          *           "editedAt": null,
@@ -14178,6 +14536,23 @@ export interface components {
              * @description Whether the organisation is open for business: `active` means its members can sign in, `deactivated` means no session will open for it. It says nothing about the data inside, which stays whole until a tenant exit has been approved by two people and executed.
              */
             status: string;
+        };
+        /**
+         * CredentialEntryRef
+         * @description The agent access entry a credential is bound to: its id and name.
+         */
+        CredentialEntryRef: {
+            /**
+             * Id
+             * Format: uuid
+             * @description The entry's permanent identifier, a UUID, as `GET /agent-access` lists it.
+             */
+            id: string;
+            /**
+             * Name
+             * @description What the bank calls the agent, such as `Trading platform coding agent`.
+             */
+            name: string;
         };
         /**
          * DiffSegment
@@ -14876,7 +15251,8 @@ export interface components {
         };
         /**
          * FootprintDecisionBody
-         * @description What the second person sends with an approval or a rejection.
+         * @description What the second person sends with an approval or a rejection. A field it does not
+         *     name answers 422.
          * @example {
          *       "note": "Matches the new insurance distribution licence."
          *     }
@@ -14884,7 +15260,7 @@ export interface components {
         FootprintDecisionBody: {
             /**
              * Note
-             * @description Why the change was approved or rejected, kept on the request and in its audit event for whoever reads the history; empty by default. The organisation's own text, never shared outside it.
+             * @description Why the change was approved or rejected, at most 2000 characters, kept on the request for whoever reads the history; empty by default. The organisation's own text, never shared outside it and never written into the audit log.
              * @default
              * @example Matches the new insurance distribution licence.
              */
@@ -14951,7 +15327,31 @@ export interface components {
          *           "kind": null,
          *           "label": "Advice"
          *         }
-         *       ]
+         *       ],
+         *       "scopeItemAdds": [
+         *         {
+         *           "description": "Finansinspektionen's rules for crypto-asset service providers, before MiCA's library entry.",
+         *           "id": null,
+         *           "jurisdiction": {
+         *             "key": "se",
+         *             "kind": "country",
+         *             "label": "Sweden"
+         *           },
+         *           "key": "local_crypto_asset_rules",
+         *           "name": "Local crypto-asset rules",
+         *           "officialReference": "FFFS 2026:1",
+         *           "regimeTerm": {
+         *             "dimension": "regime",
+         *             "key": "securities",
+         *             "kind": null,
+         *             "label": "Securities"
+         *           },
+         *           "research": null,
+         *           "sourceUrl": "https://www.fi.se/sv/vara-register/",
+         *           "status": "requested"
+         *         }
+         *       ],
+         *       "scopeItemRemoves": []
          *     }
          */
         FootprintDryRun: {
@@ -14974,6 +15374,16 @@ export interface components {
              * @description The terms the change would take out of the regulatory scope, as sent, each with its label and dimension; empty by default. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal.
              */
             removes?: components["schemas"]["FootprintTermRef"][];
+            /**
+             * Scopeitemadds
+             * @description The scope items the change would put into the regulatory scope, as they would be stored: each with the key it would get, `requested`, and a null `id`, since nothing is stored. Empty by default.
+             */
+            scopeItemAdds?: components["schemas"]["ScopeItemRow"][];
+            /**
+             * Scopeitemremoves
+             * @description The scope items in scope now that the change would take out, as they stand; empty by default.
+             */
+            scopeItemRemoves?: components["schemas"]["ScopeItemRow"][];
         };
         /**
          * FootprintPreview
@@ -15013,8 +15423,9 @@ export interface components {
         };
         /**
          * FootprintRequestBody
-         * @description `POST /tenant/footprint/requests`: the terms to put into and take out of the
-         *     organisation's regulatory scope, previewed with `dryRun=true` or sent for approval.
+         * @description `POST /tenant/footprint/requests`: the terms and the scope items to put into and take
+         *     out of the organisation's regulatory scope, previewed with `dryRun=true` or sent for
+         *     approval. A field it does not name answers 422.
          * @example {
          *       "adds": [
          *         {
@@ -15027,20 +15438,43 @@ export interface components {
          *           "dimension": "service_type",
          *           "key": "advice"
          *         }
-         *       ]
+         *       ],
+         *       "scopeItemAdds": [
+         *         {
+         *           "jurisdiction": "se",
+         *           "name": "Local crypto-asset rules",
+         *           "officialReference": "FFFS 2026:1",
+         *           "regimeTerm": "securities",
+         *           "sourceUrl": "https://www.fi.se/sv/vara-register/"
+         *         }
+         *       ],
+         *       "scopeItemRemoves": []
          *     }
          */
         FootprintRequestBody: {
             /**
              * Adds
-             * @description The terms to put into the regulatory scope; empty by default. A term already in the scope changes nothing when approved. With `removes`, at least one term in all, and no term in both; otherwise 422 `validation_error`.
+             * @description The terms to put into the regulatory scope, at most 50 (a setting); empty by default. A term already in the scope changes nothing when approved. With the other lists, at least one term or scope item in all, and no term in both `adds` and `removes`; otherwise 422 `validation_error`.
              */
             adds?: components["schemas"]["FootprintTermSelector"][];
             /**
              * Removes
-             * @description The terms to take out of the regulatory scope; empty by default. A term not in the scope changes nothing when approved. With `adds`, at least one term in all, and no term in both; otherwise 422 `validation_error`.
+             * @description The terms to take out of the regulatory scope, at most 50 (a setting); empty by default. A term not in the scope changes nothing when approved. With the other lists, at least one term or scope item in all, and no term in both `adds` and `removes`; otherwise 422 `validation_error`.
              */
             removes?: components["schemas"]["FootprintTermSelector"][];
+            /**
+             * Scopeitemadds
+             * @description Regulations the shared library does not cover, to put into the regulatory scope for the organisation's own agent to research, at most 50 (a setting); empty by default. Each is stored with the request as `requested` and enters the scope only when a second person approves it with a passkey. It changes no term and moves no count in the preview.
+             */
+            scopeItemAdds?: components["schemas"]["ScopeItemInput"][];
+            /**
+             * Scopeitemremoves
+             * @description The keys of scope items to take out of the regulatory scope, at most 50 (a setting), each at most 80 characters; empty by default. Each must be an item in scope now (`scopeItems` of `GET /tenant/footprint`); any other key answers 422 `unknown_key` with the keys that would work. A key named twice answers 422 `validation_error`.
+             * @example [
+             *       "local_crypto_asset_rules"
+             *     ]
+             */
+            scopeItemRemoves?: string[];
         };
         /**
          * FootprintRequestPage
@@ -15200,6 +15634,30 @@ export interface components {
          *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
          *         "name": "Sara Lindqvist"
          *       },
+         *       "scopeItemAdds": [
+         *         {
+         *           "description": "Finansinspektionen's rules for crypto-asset service providers, before MiCA's library entry.",
+         *           "id": "0d9e3b52-7c41-4f8a-b6e2-5a1c9d0e7f34",
+         *           "jurisdiction": {
+         *             "key": "se",
+         *             "kind": "country",
+         *             "label": "Sweden"
+         *           },
+         *           "key": "local_crypto_asset_rules",
+         *           "name": "Local crypto-asset rules",
+         *           "officialReference": "FFFS 2026:1",
+         *           "regimeTerm": {
+         *             "dimension": "regime",
+         *             "key": "securities",
+         *             "kind": null,
+         *             "label": "Securities"
+         *           },
+         *           "research": null,
+         *           "sourceUrl": "https://www.fi.se/sv/vara-register/",
+         *           "status": "requested"
+         *         }
+         *       ],
+         *       "scopeItemRemoves": [],
          *       "status": "pending",
          *       "version": 1
          *     }
@@ -15248,6 +15706,16 @@ export interface components {
             requestedAt: string;
             /** @description The member who asked for the change, by id and name. Every request has one, so the default of null never reaches a reader. */
             requestedBy?: components["schemas"]["PersonRef"] | null;
+            /**
+             * Scopeitemadds
+             * @description The scope items the change puts into the regulatory scope: regulations the shared library does not cover, for the organisation's own agent to research. Empty by default. Each reads `requested` while the change waits, `in_scope` once approved and `declined` when rejected or withdrawn. An item hides and reveals nothing, so it never moves `preview`.
+             */
+            scopeItemAdds?: components["schemas"]["ScopeItemRow"][];
+            /**
+             * Scopeitemremoves
+             * @description The scope items the change takes out of the regulatory scope; empty by default. Each stays `in_scope` until the change is approved and reads `removed` after; its research stops, and what its agent already filed stays in the organisation's own queue and library.
+             */
+            scopeItemRemoves?: components["schemas"]["ScopeItemRow"][];
             /**
              * Status
              * @description Where the request stands, one of four fixed values. `pending`: waiting for a second person; the scope is unchanged, and an organisation has at most one pending request. `approved`: a second person approved it with a passkey and the scope changed at that moment. `rejected`: a second person turned it down and the scope is unchanged. `withdrawn`: the requester took it back before anyone decided and the scope is unchanged. Only `pending` can still change; the other three are final. A kind in code, never extended by an administrator.
@@ -15406,9 +15874,56 @@ export interface components {
          *           "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
          *           "name": "Sara Lindqvist"
          *         },
+         *         "scopeItemAdds": [
+         *           {
+         *             "description": "Finansinspektionen's rules for crypto-asset service providers, before MiCA's library entry.",
+         *             "id": "0d9e3b52-7c41-4f8a-b6e2-5a1c9d0e7f34",
+         *             "jurisdiction": {
+         *               "key": "se",
+         *               "kind": "country",
+         *               "label": "Sweden"
+         *             },
+         *             "key": "local_crypto_asset_rules",
+         *             "name": "Local crypto-asset rules",
+         *             "officialReference": "FFFS 2026:1",
+         *             "regimeTerm": {
+         *               "dimension": "regime",
+         *               "key": "securities",
+         *               "kind": null,
+         *               "label": "Securities"
+         *             },
+         *             "research": null,
+         *             "sourceUrl": "https://www.fi.se/sv/vara-register/",
+         *             "status": "requested"
+         *           }
+         *         ],
+         *         "scopeItemRemoves": [],
          *         "status": "pending",
          *         "version": 1
-         *       }
+         *       },
+         *       "scopeItems": [
+         *         {
+         *           "description": "Finansinspektionen's rules for crypto-asset service providers, before MiCA's library entry.",
+         *           "id": "0d9e3b52-7c41-4f8a-b6e2-5a1c9d0e7f34",
+         *           "jurisdiction": {
+         *             "key": "se",
+         *             "kind": "country",
+         *             "label": "Sweden"
+         *           },
+         *           "key": "local_crypto_asset_rules",
+         *           "name": "Local crypto-asset rules",
+         *           "officialReference": "FFFS 2026:1",
+         *           "regimeTerm": {
+         *             "dimension": "regime",
+         *             "key": "securities",
+         *             "kind": null,
+         *             "label": "Securities"
+         *           },
+         *           "research": "waiting_for_agent",
+         *           "sourceUrl": "https://www.fi.se/sv/vara-register/",
+         *           "status": "in_scope"
+         *         }
+         *       ]
          *     }
          */
         FootprintView: {
@@ -15424,6 +15939,11 @@ export interface components {
             markets?: components["schemas"]["MarketRow"][];
             /** @description The change to the scope waiting for a second person, with a preview counted against today's library; null by default, when none waits. There is at most one at a time, and the scope above does not include it until it is approved. */
             pendingRequest?: components["schemas"]["FootprintRequestRow"] | null;
+            /**
+             * Scopeitems
+             * @description The scope items in the organisation's regulatory scope, oldest first, each with how its research stands: the regulations the shared library does not cover that a second person approved. Empty by default. An item asked for and still waiting is in `pendingRequest`, not here. Items narrow and widen nothing above: they are researched, never matched.
+             */
+            scopeItems?: components["schemas"]["ScopeItemRow"][];
         };
         /**
          * Home
@@ -16105,9 +16625,11 @@ export interface components {
          *     (REG-01, REG-02).
          *
          *     An `internal` row is a date the bank set for itself, entirely its own zone: a next
-         *     review, a gap's target date, or a certificate's expiry or next audit, each with its
-         *     owner and the record it belongs to. It carries no case, so `status`, `urgency`,
-         *     `changeId`, `label` and `sourceLabel` are null on it and `obligations` is empty.
+         *     review, a gap's target date, a certificate's expiry or next audit, a duty's open
+         *     occurrence, an open case's internal deadline or an action's due date, each with its
+         *     owner and the record it belongs to. `status`, `urgency`, `label` and `sourceLabel` are
+         *     null on it and `obligations` is empty; `changeId` is set only on a case's deadline and
+         *     its actions.
          * @example {
          *       "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
          *       "date": "2026-10-01",
@@ -16143,14 +16665,14 @@ export interface components {
         HomeRoadmapItem: {
             /**
              * Changeid
-             * @description The library change behind the item, as a uuid, so the card can link to the change page. The same identifier for every bank. Null on an internal item, whose record is the bank's own; null is not 'the change was deleted'.
+             * @description The library change behind the item, as a uuid, so the card can link to the change page. The same identifier for every bank. On an `internal_deadline` or `action_due` item, the change whose case set the date, whose page is the bank's case. Null on every other internal item, whose record is in `subject`; null is not 'the change was deleted'.
              * @example c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19
              */
             changeId: string | null;
             /**
              * Date
              * Format: date
-             * @description The day the item falls on, as a plain calendar date (`2026-10-01`) and never a timestamp, because a legal date is a date and not a moment, and only as exact as `datePrecision` says. The roadmap shows today and the future; a date that has passed leaves the roadmap and stays on the change itself.
+             * @description The day the item falls on, as a plain calendar date (`2026-10-01`) and never a timestamp, because a legal date is a date and not a moment, and only as exact as `datePrecision` says. The roadmap shows today and the future; a date that has passed leaves the roadmap and stays on the change itself, and a date stated as a month, a quarter or a year stays until that period has ended.
              * @example 2026-10-01
              */
             date: string;
@@ -16169,11 +16691,11 @@ export interface components {
             id: string;
             /**
              * Itemtype
-             * @description What produced the date, a fixed kind the screen and the calendar builder branch on: `change_date` (a regulatory change's key date, the one `regulatory` type); and, all `internal`, `review_due` (the next review of a register entry or of one legal entity's row, a compliant one included), `gap_target` (the target date of a gap that is open or being remediated), `certificate_expiry` (the last day a certificate is valid), `certificate_audit` (a certificate's next audit), `internal_deadline` (a deadline the bank set on a case) and `action_due` (an action's due date). The last two arrive with the case workflow (chunk 9) and are not produced yet.
+             * @description What produced the date, a fixed kind the screen and the calendar builder branch on: `change_date` (a regulatory change's key date, the one `regulatory` type); and, all `internal`, `review_due` (the next review of a register entry or of one legal entity's row, a compliant one included), `gap_target` (the target date of a gap that is open or being remediated), `certificate_expiry` (the last day a certificate is valid), `certificate_audit` (a certificate's next audit), `duty_due` (the open occurrence of a duty the law repeats, such as a quarterly report, which leaves when it is completed), `internal_deadline` (the deadline an open case's impact assessment set) and `action_due` (the due date of a case's action that is neither done nor removed).
              * @example change_date
              * @enum {string}
              */
-            itemType: "change_date" | "internal_deadline" | "action_due" | "review_due" | "gap_target" | "certificate_expiry" | "certificate_audit";
+            itemType: "change_date" | "internal_deadline" | "action_due" | "review_due" | "gap_target" | "certificate_expiry" | "certificate_audit" | "duty_due";
             /**
              * Kind
              * @description What the item is about, a fixed kind the screen branches on: `regulatory` (a date the outside world set, such as a reform coming into force) or `internal` (a date this bank set for itself, which the screen marks 'Our deadline'). An `internal` item never reaches a calendar subscription.
@@ -16192,7 +16714,7 @@ export interface components {
              * @description The library obligations a regulatory item touches, as the watch feed answers them, most confident first. Only links a library editor has confirmed appear here, so a reader may treat each as checked. An empty list means no obligation has been linked yet, never that the change affects none; always empty on an `internal` item, whose obligation, where it has one, is in `subject`.
              */
             obligations: components["schemas"]["WatchObligationLink"][];
-            /** @description Who answers for an `internal` item's date, a person, a team or, on a register entry, both: the entry's first-line owner and owning team, the owner of one legal entity's row, of a gap or of a certificate. Null on a regulatory item, and on an internal one nobody owns yet. The bank's own zone. */
+            /** @description Who answers for an `internal` item's date, a person, a team or, on a register entry, both: the entry's first-line owner and owning team, the owner of one legal entity's row, of a gap, of a duty's occurrence or of a certificate, the case's owner for its internal deadline and the action's owner for an action. Null on a regulatory item, and on an internal one nobody owns yet. The bank's own zone. */
             owner: components["schemas"]["HomeRoadmapOwner"] | null;
             /**
              * Quarter
@@ -16212,11 +16734,11 @@ export interface components {
              * @example new
              */
             status: ("new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed") | null;
-            /** @description The bank's own record an `internal` item's date belongs to, so the card can say what it is about and link to it. Null on a regulatory item, whose record is `changeId`. */
+            /** @description The bank's own record an `internal` item's date belongs to, so the card can say what it is about and link to it. Null on a regulatory item and on a case's `internal_deadline` and `action_due` items, whose record is `changeId`. */
             subject: components["schemas"]["HomeRoadmapSubject"] | null;
             /**
              * Title
-             * @description What the item is called, at most 300 characters. On a regulatory item it is the reform's title from the shared library, in the source's words, and holds no bank's judgement. On an internal item it names the bank's own record: the obligation's library title for a review, the gap's title as the bank wrote it for a gap target, and the certificate's type, from the taxonomy in the reader's language, for a certificate's expiry or audit.
+             * @description What the item is called, at most 500 characters. On a regulatory item it is the reform's title from the shared library, in the source's words, and holds no bank's judgement. On an internal item it names the bank's own record: the obligation's library title for a review, the gap's title as the bank wrote it for a gap target, the certificate's type, from the taxonomy in the reader's language, for a certificate's expiry or audit, the duty's library title for a duty due, the change's library title for a case's internal deadline, and the action's title as the bank wrote it for an action due.
              * @example FI adopts amended rules on paying for investment research
              */
             title: string;
@@ -16281,8 +16803,9 @@ export interface components {
         /**
          * HomeRoadmapSubject
          * @description The bank's own record behind an internal roadmap item: an obligation's register
-         *     entry, a gap or a certificate, and the legal entity the date belongs to where it is one
-         *     entity's own.
+         *     entry, a gap, a duty's occurrence or a certificate, and the legal entity the date belongs
+         *     to where it is one entity's own. A case's deadline and its actions name their record by
+         *     the item's `changeId` instead.
          * @example {
          *       "entity": {
          *         "id": "3b8e2f10-6c4d-4a95-b7e1-0d2c9f5a8e36",
@@ -16294,7 +16817,7 @@ export interface components {
          *     }
          */
         HomeRoadmapSubject: {
-            /** @description The legal entity the date belongs to: the entity a review row or a gap is for, or the entity holding the certificate. Null when the date is the whole register entry's own. */
+            /** @description The legal entity the date belongs to: the entity a review row, a gap or a duty's occurrence is for, or the entity holding the certificate. Null when the date is the whole register entry's own. */
             entity: components["schemas"]["HomeRoadmapEntity"] | null;
             /**
              * Gapid
@@ -16310,7 +16833,7 @@ export interface components {
             licenceId: string | null;
             /**
              * Obligationid
-             * @description On a `review_due` or `gap_target` item, the library obligation the register entry is on, as a uuid, which the obligation page opens on; null on a certificate's date.
+             * @description On a `review_due`, `gap_target` or `duty_due` item, the library obligation the register entry is on, as a uuid, which the obligation page opens on; null on a certificate's date.
              * @example 7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17
              */
             obligationId: string | null;
@@ -16871,7 +17394,7 @@ export interface components {
         HomeWorkReason: {
             /**
              * Reason
-             * @description How `who` is involved, a fixed kind: `owner` (a first-line owner, the compliance contact, the owner of one legal entity's row, of a gap or of an internal item, or an owning team) or `participant` (takes part without owning). Neither grants anything: a row still needs its own read permission.
+             * @description How `who` is involved, a fixed kind: `owner` (a first-line owner, the compliance contact, the owner of one legal entity's row, of a gap, of a duty occurrence, of an internal item, of a case or of one of its actions, or an owning team) or `participant` (takes part in a register entry or a case without owning it). Neither grants anything: a row still needs its own read permission.
              * @example owner
              * @enum {string}
              */
@@ -17568,6 +18091,7 @@ export interface components {
              */
             total: number;
         };
+        JsonValue: unknown;
         /**
          * JurisdictionRow
          * @description `GET /reference/jurisdictions` (I18N-01). A reference read: a short fixed list that
@@ -18232,8 +18756,9 @@ export interface components {
          * McpResult
          * @description The result of a request. Which fields it carries depends on the method: `initialize`
          *     answers protocolVersion, capabilities, serverInfo and instructions; `server/discover`
-         *     answers supportedVersions, capabilities and instructions; `tools/list` answers tools; a
-         *     `ping` answers an empty object.
+         *     answers supportedVersions, capabilities and instructions; `tools/list` answers tools;
+         *     `tools/call` answers content, structuredContent and isError; a `ping` answers an empty
+         *     object.
          */
         McpResult: {
             /** @description On a result of revision 2026-07-28: the protocol metadata, which names the server. */
@@ -18246,10 +18771,20 @@ export interface components {
             /** @description On `initialize` and `server/discover`: the features this server offers, tools only. */
             capabilities?: components["schemas"]["McpServerCapabilities"] | null;
             /**
+             * Content
+             * @description On a `tools/call` result only: the answer as one text block holding the same JSON as `structuredContent`.
+             */
+            content?: components["schemas"]["McpTextContent"][] | null;
+            /**
              * Instructions
              * @description On `initialize` and `server/discover`: a paragraph telling the model what this server is for and what it will not do.
              */
             instructions?: string | null;
+            /**
+             * Iserror
+             * @description On a `tools/call` result only: true when the route refused the call or an argument was wrong, false when it answered.
+             */
+            isError?: boolean | null;
             /**
              * Protocolversion
              * @description On an `initialize` result only: the protocol revision this server speaks with the client, the one it asked for when this server supports it and otherwise the latest revision this server supports that uses `initialize`.
@@ -18262,6 +18797,8 @@ export interface components {
             resultType?: "complete" | null;
             /** @description On an `initialize` result only: the server's name and version. */
             serverInfo?: components["schemas"]["McpImplementation"] | null;
+            /** @description On a `tools/call` result only: exactly the body the REST route behind the tool answers, the same gates, scope and pagination included; when `isError` is true, the route's problem details, whose `code` is the one to branch on (`permission_denied`, `not_found`, `tenant_reach_off`, `read_only_credential`, `validation_error` and the others the route names). On revision 2025-11-25 and 2025-06-18 an answer that is a list arrives as the object `{"items": [...]}`, because those revisions take only an object here. */
+            structuredContent?: components["schemas"]["JsonValue"];
             /**
              * Supportedversions
              * @description On a `server/discover` result only: every protocol revision this server accepts, newest first.
@@ -18293,6 +18830,23 @@ export interface components {
         McpServerCapabilities: {
             /** @description The server offers tools, the only feature it has; there are no resources or prompts. */
             tools: components["schemas"]["McpToolsCapability"];
+        };
+        /**
+         * McpTextContent
+         * @description One block of a tool's answer, as text.
+         */
+        McpTextContent: {
+            /**
+             * Text
+             * @description The tool's answer as JSON text, the same JSON as `structuredContent`, for a client that reads only text.
+             */
+            text: string;
+            /**
+             * Type
+             * @description Always `text`: every tool answers one text block.
+             * @constant
+             */
+            type: "text";
         };
         /**
          * McpTool
@@ -20698,6 +21252,222 @@ export interface components {
             name: string;
         };
         /**
+         * PersonalTokenCreate
+         * @description `POST /me/tokens`: a new personal access token for the caller.
+         * @example {
+         *       "agentAccessId": "0f9e8d7c-6b5a-4c3d-9e2f-1a0b9c8d7e6f",
+         *       "expiresAt": "2026-12-24T09:30:00Z",
+         *       "name": "Laptop coding agent",
+         *       "scopes": [
+         *         "library:read",
+         *         "search:read"
+         *       ]
+         *     }
+         */
+        PersonalTokenCreate: {
+            /**
+             * Agentaccessid
+             * @description Optional: the id of a live agent access entry of the bank, a UUID as `GET /agent-access` lists it, whose scope then narrows what the token reads. Leave it out or send null (the default) for a token bound to no entry. An entry the bank has not got, or one revoked, is refused with `unknown_key`.
+             */
+            agentAccessId?: string | null;
+            /**
+             * Expiresat
+             * Format: date-time
+             * @description When the token stops working on its own, required, as a UTC timestamp in ISO 8601. It must lie in the future (`expiry_in_past`) and no more than `PERSONAL_TOKEN_MAX_DAYS` days from now, 90 by default (`expiry_too_late`).
+             */
+            expiresAt: string;
+            /**
+             * Name
+             * @description A name to tell the token apart on screen, at most 200 characters, such as `Laptop coding agent`. Surrounding spaces are trimmed, and a name of spaces alone is refused with `name_required`.
+             */
+            name: string;
+            /**
+             * Scopes
+             * @description What the token may read, at least one scope key, each counted once. A token reads and nothing else, and each scope must be one the member's own permissions back: `library:read` (needs `library.read`) reads the shared library's records; `search:read` (needs `search.use`) searches them; `upcoming:read` (needs `roadmap.read`) reads the public regulatory dates coming up; `tenant:read` (needs `register.read`) reads the bank's own register decisions, only through a named agent access entry and only while tenant reach is on for the bank and for the entry. A scope that is not one of these four is refused with `unknown_key`; one the caller's permissions do not back with `scope_not_held`; `tenant:read` without `agentAccessId` with `entry_required`.
+             */
+            scopes: string[];
+        };
+        /**
+         * PersonalTokenCreated
+         * @description The secret appears here and nowhere else: no log, no audit value, no outbox payload.
+         * @example {
+         *       "agentAccess": {
+         *         "id": "0f9e8d7c-6b5a-4c3d-9e2f-1a0b9c8d7e6f",
+         *         "name": "Trading platform coding agent"
+         *       },
+         *       "createdAt": "2026-09-25T09:30:00Z",
+         *       "expiresAt": "2026-12-24T09:30:00Z",
+         *       "id": "5d2b7e91-0c4a-4f38-b6e1-9a7c3d2f8e14",
+         *       "keyPrefix": "3e7a1c90",
+         *       "lastUsedAt": "2026-09-25T10:02:41Z",
+         *       "name": "Laptop coding agent",
+         *       "plainKey": "cw_3e7a1c90_<secret-shown-once>",
+         *       "revokedAt": null,
+         *       "scopes": [
+         *         "library:read",
+         *         "search:read"
+         *       ]
+         *     }
+         */
+        PersonalTokenCreated: {
+            /** @description The agent access entry the token names, whose scope narrows what it reads; null for a token that names none. */
+            agentAccess: components["schemas"]["CredentialEntryRef"] | null;
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When the token was minted, as a UTC timestamp in ISO 8601, set by the server.
+             */
+            createdAt: string;
+            /**
+             * Expiresat
+             * Format: date-time
+             * @description When the token stops working on its own, as a UTC timestamp in ISO 8601; every token has one, and every call after it answers `unauthenticated` (401).
+             */
+            expiresAt: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The token's permanent identifier, a UUID: pass it to `DELETE /me/tokens/{token_id}`. It is not the token and cannot sign a request.
+             */
+            id: string;
+            /**
+             * Keyprefix
+             * @description The eight hexadecimal characters the token begins with after `cw_`, kept in the clear so a token found in a log or a vault can be matched to this row. Not enough to call the API.
+             */
+            keyPrefix: string;
+            /**
+             * Lastusedat
+             * @description When the token last authenticated a call, as a UTC timestamp in ISO 8601. It moves at most once every 60 seconds by default (a setting). Null for a token never used.
+             */
+            lastUsedAt: string | null;
+            /**
+             * Name
+             * @description The name the member gave the token, such as `Laptop coding agent`. A label only; nothing reads it.
+             */
+            name: string;
+            /**
+             * Plainkey
+             * @description The token itself, `cw_<prefix>_<secret>`, to be sent as `X-API-Key` or as a bearer token. This answer is the only time it exists outside the caller: the server keeps only a hash of the secret and never shows it again, so put it straight into the agent's secret store. A lost token is revoked and replaced, not recovered.
+             */
+            plainKey: string;
+            /**
+             * Revokedat
+             * @description When the token was revoked, by its member or an administrator, as a UTC timestamp in ISO 8601; null while it works. A revoked token never works again.
+             */
+            revokedAt: string | null;
+            /**
+             * Scopes
+             * @description What the token may read, as scope keys, sorted. A token reads and nothing else, and each scope must be one the member's own permissions back: `library:read` (needs `library.read`) reads the shared library's records; `search:read` (needs `search.use`) searches them; `upcoming:read` (needs `roadmap.read`) reads the public regulatory dates coming up; `tenant:read` (needs `register.read`) reads the bank's own register decisions, only through a named agent access entry and only while tenant reach is on for the bank and for the entry.
+             */
+            scopes: string[];
+        };
+        /**
+         * PersonalTokenOut
+         * @description One of the caller's own personal access tokens. The secret is never here, only its prefix.
+         * @example {
+         *       "agentAccess": {
+         *         "id": "0f9e8d7c-6b5a-4c3d-9e2f-1a0b9c8d7e6f",
+         *         "name": "Trading platform coding agent"
+         *       },
+         *       "createdAt": "2026-09-25T09:30:00Z",
+         *       "expiresAt": "2026-12-24T09:30:00Z",
+         *       "id": "5d2b7e91-0c4a-4f38-b6e1-9a7c3d2f8e14",
+         *       "keyPrefix": "3e7a1c90",
+         *       "lastUsedAt": "2026-09-25T10:02:41Z",
+         *       "name": "Laptop coding agent",
+         *       "revokedAt": null,
+         *       "scopes": [
+         *         "library:read",
+         *         "search:read"
+         *       ]
+         *     }
+         */
+        PersonalTokenOut: {
+            /** @description The agent access entry the token names, whose scope narrows what it reads; null for a token that names none. */
+            agentAccess: components["schemas"]["CredentialEntryRef"] | null;
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When the token was minted, as a UTC timestamp in ISO 8601, set by the server.
+             */
+            createdAt: string;
+            /**
+             * Expiresat
+             * Format: date-time
+             * @description When the token stops working on its own, as a UTC timestamp in ISO 8601; every token has one, and every call after it answers `unauthenticated` (401).
+             */
+            expiresAt: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The token's permanent identifier, a UUID: pass it to `DELETE /me/tokens/{token_id}`. It is not the token and cannot sign a request.
+             */
+            id: string;
+            /**
+             * Keyprefix
+             * @description The eight hexadecimal characters the token begins with after `cw_`, kept in the clear so a token found in a log or a vault can be matched to this row. Not enough to call the API.
+             */
+            keyPrefix: string;
+            /**
+             * Lastusedat
+             * @description When the token last authenticated a call, as a UTC timestamp in ISO 8601. It moves at most once every 60 seconds by default (a setting). Null for a token never used.
+             */
+            lastUsedAt: string | null;
+            /**
+             * Name
+             * @description The name the member gave the token, such as `Laptop coding agent`. A label only; nothing reads it.
+             */
+            name: string;
+            /**
+             * Revokedat
+             * @description When the token was revoked, by its member or an administrator, as a UTC timestamp in ISO 8601; null while it works. A revoked token never works again.
+             */
+            revokedAt: string | null;
+            /**
+             * Scopes
+             * @description What the token may read, as scope keys, sorted. A token reads and nothing else, and each scope must be one the member's own permissions back: `library:read` (needs `library.read`) reads the shared library's records; `search:read` (needs `search.use`) searches them; `upcoming:read` (needs `roadmap.read`) reads the public regulatory dates coming up; `tenant:read` (needs `register.read`) reads the bank's own register decisions, only through a named agent access entry and only while tenant reach is on for the bank and for the entry.
+             */
+            scopes: string[];
+        };
+        /**
+         * PersonalTokensPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "agentAccess": {
+         *             "id": "0f9e8d7c-6b5a-4c3d-9e2f-1a0b9c8d7e6f",
+         *             "name": "Trading platform coding agent"
+         *           },
+         *           "createdAt": "2026-09-25T09:30:00Z",
+         *           "expiresAt": "2026-12-24T09:30:00Z",
+         *           "id": "5d2b7e91-0c4a-4f38-b6e1-9a7c3d2f8e14",
+         *           "keyPrefix": "3e7a1c90",
+         *           "lastUsedAt": "2026-09-25T10:02:41Z",
+         *           "name": "Laptop coding agent",
+         *           "revokedAt": null,
+         *           "scopes": [
+         *             "library:read",
+         *             "search:read"
+         *           ]
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        PersonalTokensPage: {
+            /**
+             * Items
+             * @description The caller's own tokens in the bank this session is signed in to, newest first, revoked and expired ones included. Nobody else's token is here. An empty list is a 200 and means the caller has minted none.
+             */
+            items: components["schemas"]["PersonalTokenOut"][];
+            /**
+             * Total
+             * @description How many tokens the caller has in this bank in total, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
          * PlatformAgentSettings
          * @description What one of bleqq's agents runs with (AGT-03): the same for every bank, and carrying
          *     no tenant figure. A platform agent's settings live on its definition row.
@@ -20978,7 +21748,7 @@ export interface components {
         /**
          * PrivateProposalRow
          * @description One proposal in this bank's own queue: a record of the bank's own, an instrument or an
-         *     obligation the shared library does not hold, waiting for a person here to decide it
+         *     obligation the shared library does not hold or a control of one of those obligations, waiting for a person here to decide it
          *     (OWN-03). It belongs to this bank alone. The console never lists it, no other bank reads
          *     it, and no platform reviewer decides it.
          *
@@ -21042,7 +21812,7 @@ export interface components {
             isMine: boolean;
             /**
              * Kind
-             * @description What the proposal adds or changes. A fixed kind, not a vocabulary row: `new_instrument` adds an instrument of the bank's own, `new_obligation` adds a duty of its own with its first version, and `new_obligation_version` adds a version to a duty the bank already holds as its own.
+             * @description What the proposal adds or changes. A fixed kind, not a vocabulary row: `new_instrument` adds an instrument of the bank's own, `new_obligation` adds a duty of its own with its first version, `new_obligation_version` adds a version to a duty the bank already holds as its own, and `new_control` adds a control of one of the bank's own duties, which approval links to that duty as an internal item of the `control` link kind.
              */
             kind: string;
             /**
@@ -22063,7 +22833,7 @@ export interface components {
             };
             /**
              * Kind
-             * @description What is asked for, which decides the shape of `payload`. A fixed kind, not a vocabulary: `new_obligation_version` is a new summary of one duty in force from a date, with its scope terms; `new_instrument` is a law, regulation, guideline or standard edition the library does not hold yet; `new_obligation` is a duty the library does not hold yet, under an instrument it does, with its first summary; `new_provision` is a node of a law's text with its first verbatim text, and `new_provision_version` a provision's text in force from a date, neither ever under a standard (422 `licensed_text`); `new_recurring_duty` is a schedule an obligation in force falls due on, as an RFC 5545 rule; `vocabulary_create`, `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore` and `vocabulary_merge` add, reword, turn off, turn on again or fold together a row of a shared list; `term_create` and `term_update` add or reword a taxonomy term. Any other value answers 422 `unknown_key` naming the valid ones.
+             * @description What is asked for, which decides the shape of `payload`. A fixed kind, not a vocabulary: `new_obligation_version` is a new summary of one duty in force from a date, with its scope terms; `new_instrument` is a law, regulation, guideline or standard edition the library does not hold yet; `new_obligation` is a duty the library does not hold yet, under an instrument it does, with its first summary; `new_provision` is a node of a law's text with its first verbatim text, and `new_provision_version` a provision's text in force from a date, neither ever under a standard (422 `licensed_text`); `new_recurring_duty` is a schedule an obligation in force falls due on, as an RFC 5545 rule; `vocabulary_create`, `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore` and `vocabulary_merge` add, reword, turn off, turn on again or fold together a row of a shared list; `term_create` and `term_update` add or reword a taxonomy term. `new_control` is never filed here and answers 422 `validation_error`: a control is a record of a bank's own, filed only by that bank's own agent. Any other value answers 422 `unknown_key` naming the valid ones.
              * @example new_obligation_version
              */
             kind: string;
@@ -25874,10 +26644,10 @@ export interface components {
             id: string;
             /**
              * Kind
-             * @description What was asked. `run_now`: run the agent once now. `check_source`: check one registered source now. `check_url`: check one web address now. `research_topic`: research the topic named. `retag`: the console's request to re-tag library records, answered by a batch proposal and never a direct edit.
+             * @description What was asked. `run_now`: run the agent once now. `check_source`: check one registered source now. `check_url`: check one web address now. `research_topic`: research the topic named. `retag`: the console's request to re-tag library records, answered by a batch proposal and never a direct edit. `scope_item`: research a scope item a second person approved into the regulatory scope, opened by the server and never asked for here; what it finds waits in the organisation's own queue as proposals a person decides.
              * @enum {string}
              */
-            kind: "run_now" | "check_source" | "check_url" | "research_topic" | "retag";
+            kind: "run_now" | "check_source" | "check_url" | "research_topic" | "retag" | "scope_item";
             /** @description The person who made the request, by id and name. */
             requestedBy: components["schemas"]["PersonRef"];
             /**
@@ -26160,6 +26930,144 @@ export interface components {
              * @description The terms this record carries in that dimension, in the picker's order. An empty list means the record puts no restriction on this facet and so reaches every bank in it — never that the facet is unknown. The terms are vocabulary rows a platform admin may extend or retire without a deploy, and a member of a bank may propose a new one, so read `GET /taxonomy/terms` for the live set and match on the key. A term's `kind` is null: its dimension is its kind. In the `jurisdiction` dimension the terms are not stored on the record: they are derived each time it is read, from its instrument's jurisdiction, as the term of that jurisdiction plus the term of every jurisdiction its rules reach. So a European Union instrument's duty lists `eu`, `se`, `dk`, `no` and `fi`, a Swedish one lists `se` alone, and an international standard's lists none.
              */
             terms: components["schemas"]["LibraryRef"][];
+        };
+        /**
+         * ScopeItemInput
+         * @description A scope item to add to the regulatory scope: a regulation or area the shared library
+         *     does not cover, for the organisation's own agent to research once a second person
+         *     approves it (OWN-01, D-91).
+         * @example {
+         *       "description": "Finansinspektionen's rules for crypto-asset service providers, before MiCA's library entry.",
+         *       "jurisdiction": "se",
+         *       "name": "Local crypto-asset rules",
+         *       "officialReference": "FFFS 2026:1",
+         *       "regimeTerm": "securities",
+         *       "sourceUrl": "https://www.fi.se/sv/vara-register/"
+         *     }
+         */
+        ScopeItemInput: {
+            /**
+             * Description
+             * @description What the regulation covers and why it matters, at most 2000 characters (a setting); empty by default. The organisation's own text, never shared outside it and never sent to a model.
+             * @default
+             * @example Finansinspektionen's rules for crypto-asset service providers, before MiCA's library entry.
+             */
+            description: string;
+            /**
+             * Jurisdiction
+             * @description The key of the jurisdiction the regulation comes from, at most 80 characters, such as `se` for Sweden or `eu` for the European Union. A row of the jurisdiction vocabulary the platform seeds; `GET /reference/jurisdictions` lists the live set. An unknown or retired key answers 422 `unknown_key`.
+             * @example se
+             */
+            jurisdiction: string;
+            /**
+             * Name
+             * @description What the organisation calls the regulation or area, 1 to 200 characters on one line: a line break, a tab or an invisible formatting character answers 422 `validation_error`. The item's key is derived from it. The organisation's own text, never shared outside it and never sent to a model.
+             * @example Local crypto-asset rules
+             */
+            name: string;
+            /**
+             * Officialreference
+             * @description The regulation's official reference where it has one, such as `FFFS 2026:1`, at most 200 characters on one line; empty by default.
+             * @default
+             * @example FFFS 2026:1
+             */
+            officialReference: string;
+            /**
+             * Regimeterm
+             * @description The key of the regime the regulation belongs to, at most 80 characters, such as `securities`: a term of the shared library's `regime` dimension, which an administrator may extend through an approved proposal; `GET /taxonomy/terms?dimension=regime` lists them. An unknown or retired term answers 422 `unknown_key` with the valid keys. It puts no term into the regulatory scope.
+             * @example securities
+             */
+            regimeTerm: string;
+            /**
+             * Sourceurl
+             * @description The public page the organisation's agent should research, at most 2000 characters: an https address on a public host. Another scheme, a user name or password, a port other than 443, a private or local address, `localhost`, a one-label name or a private suffix such as `.internal` answers 422 `source_not_public`.
+             * @example https://www.fi.se/sv/vara-register/
+             */
+            sourceUrl: string;
+        };
+        /**
+         * ScopeItemRow
+         * @description A regulation or area the shared library does not cover yet, which this organisation
+         *     put into its regulatory scope for its own agent to research (OWN-01, D-89, D-91). It is
+         *     the organisation's own, never shared with another, and never a term: it hides and
+         *     reveals nothing in any list. Only people ask for, approve and remove one.
+         * @example {
+         *       "description": "Finansinspektionen's rules for crypto-asset service providers, before MiCA's library entry.",
+         *       "id": "0d9e3b52-7c41-4f8a-b6e2-5a1c9d0e7f34",
+         *       "jurisdiction": {
+         *         "key": "se",
+         *         "kind": "country",
+         *         "label": "Sweden"
+         *       },
+         *       "key": "local_crypto_asset_rules",
+         *       "name": "Local crypto-asset rules",
+         *       "officialReference": "FFFS 2026:1",
+         *       "regimeTerm": {
+         *         "dimension": "regime",
+         *         "key": "securities",
+         *         "kind": null,
+         *         "label": "Securities"
+         *       },
+         *       "research": "waiting_for_agent",
+         *       "sourceUrl": "https://www.fi.se/sv/vara-register/",
+         *       "status": "in_scope"
+         *     }
+         */
+        ScopeItemRow: {
+            /**
+             * Description
+             * @description What the requester wrote about it, at most 2000 characters; empty by default. The organisation's own text, never shared outside it and never sent to a model.
+             * @default
+             * @example Finansinspektionen's rules for crypto-asset service providers, before MiCA's library entry.
+             */
+            description: string;
+            /**
+             * Id
+             * @description The scope item's identifier, a UUID that never changes; `GET /tenant/footprint/scope-items/{scopeItemId}` takes it. Null by default only in a dry run's preview, where nothing is stored yet.
+             * @example 0d9e3b52-7c41-4f8a-b6e2-5a1c9d0e7f34
+             */
+            id?: string | null;
+            /** @description Where the regulation comes from: a jurisdiction by key, kind and label. A row of the jurisdiction vocabulary, whose kinds are `supranational` (the European Union), `country` (one national market) and `international` (a standards body); the platform seeds it, an administrator may add more without a deploy, and `GET /reference/jurisdictions` lists the live set. */
+            jurisdiction: components["schemas"]["TermRef"];
+            /**
+             * Key
+             * @description The scope item's stable key, at most 80 characters of lower-case letters, digits and underscores, such as `local_crypto_asset_rules`. The server derives it from the name when the item is asked for, adding `_2`, `_3` and so on when the organisation already used it, and it never changes or passes to another item, a declined or removed one included.
+             * @example local_crypto_asset_rules
+             */
+            key: string;
+            /**
+             * Name
+             * @description What the organisation calls the regulation or area, as the requester wrote it, at most 200 characters on one line. The organisation's own text, never shared outside it and never sent to a model.
+             * @example Local crypto-asset rules
+             */
+            name: string;
+            /**
+             * Officialreference
+             * @description The regulation's official reference where it has one, such as `FFFS 2026:1`, at most 200 characters; empty by default, when it has none yet.
+             * @default
+             * @example FFFS 2026:1
+             */
+            officialReference: string;
+            /** @description The regime the regulation belongs to: a term of the shared library's `regime` dimension, with its label and dimension. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/terms?dimension=regime` lists them. Naming it here puts no term into the regulatory scope. */
+            regimeTerm: components["schemas"]["FootprintTermRef"];
+            /**
+             * Research
+             * @description How the organisation's own agent's research of the item stands, computed by the server. `waiting_for_agent`: the item is in scope and no research of it has started, because no agent of the organisation is switched on for it yet. Null by default, when the item is not in scope and nothing researches it. What an agent finds reaches the organisation's own queue as proposals a person decides, never the item itself.
+             * @example waiting_for_agent
+             */
+            research?: string | null;
+            /**
+             * Sourceurl
+             * @description The public https page the organisation's agent researches, at most 2000 characters. Always an https address on a public host; the server refused anything else when the item was asked for, and the fetch checks the host again, because the page is untrusted content.
+             * @example https://www.fi.se/sv/vara-register/
+             */
+            sourceUrl: string;
+            /**
+             * Status
+             * @description Where the item stands, one of four fixed values. `requested`: a regulatory scope request that adds it waits for a second person, and it is not in scope yet. `in_scope`: a second person approved it with a passkey, and the organisation's own agent may research it. `declined`: the request that asked for it was rejected or withdrawn, so it never entered the scope. `removed`: an approved request took it out again. A kind in code, never extended by an administrator. Being in scope says nothing about whether the organisation complies with anything.
+             * @example in_scope
+             */
+            status: string;
         };
         /**
          * SearchFilters
@@ -26577,7 +27485,7 @@ export interface components {
             sessionAbsoluteHours: number | null;
             /**
              * Sessionidleminutes
-             * @description How many whole minutes a session may go without being refreshed before it ends, at least 1 and at most the platform maximum that `GET /tenant/security-policy` returns as `sessionIdleMinutesMax`, or null for the platform default. A JSON number, never a string. Above the maximum is refused with `above_platform_maximum`; below 1 with `validation_error`.
+             * @description How many whole minutes a session may go without being refreshed before it ends, at least the platform floor (15 minutes by default, always longer than an access token lives, so a person who is working is never signed out as idle) and at most the platform maximum that `GET /tenant/security-policy` returns as `sessionIdleMinutesMax`, or null for the platform default. A JSON number, never a string. Above the maximum is refused with `above_platform_maximum`; below the floor with `validation_error`, naming this field.
              */
             sessionIdleMinutes: number | null;
         };
@@ -28885,12 +29793,12 @@ export interface components {
             kind: "register_entry" | "register_entity" | "gap" | "duty_occurrence" | "internal_item" | "case" | "action";
             /**
              * Teamkey
-             * @description The new owning team, at most 80 characters, the key of a row of the bank's `team` vocabulary, which an administrator may extend at `GET /vocab/team`; null by default. Send this or `userId`, never both.
+             * @description The new owning team, at most 80 characters, the key of a row of the bank's `team` vocabulary, which an administrator may extend at `GET /vocab/team`; null by default. Send this or `userId`, never both. A `case` or an `action` passes to a person only, so a team for either answers 422 `validation_error`.
              */
             teamKey?: string | null;
             /**
              * Userid
-             * @description The new owner, a UUID of another active member of the same bank; null by default. Send this or `teamKey`, never both.
+             * @description The new owner, a UUID of another active member of the same bank; for `case`, a member who may work cases (`cases.work`), or 422 `unknown_member`. Null by default. Send this or `teamKey`, never both.
              */
             userId?: string | null;
         };
@@ -30265,6 +31173,11 @@ export interface components {
          *         "name": "Sara Lind"
          *       },
          *       "ownerId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *       "ownerTeam": {
+         *         "key": "cards",
+         *         "kind": null,
+         *         "label": "Cards compliance"
+         *       },
          *       "signedOffBy": null,
          *       "signoffRequestedAt": null,
          *       "signoffRequestedBy": null,
@@ -30368,6 +31281,8 @@ export interface components {
              * @example null
              */
             ownerId: string | null;
+            /** @description The team of the bank that owns the case beside its owner, never instead of one, from the bank's own `team` vocabulary, whose rows its admin may extend at `GET /vocab/team`; `kind` is always null, because teams have no kinds. The team stays when the owner changes or leaves the bank. Null when no team was named. */
+            ownerTeam: components["schemas"]["CasesVocabularyRef"] | null;
             /** @description The second person who signed the case off with a passkey, never the one who asked. A person in this bank, as their id and display name; the only personal data this read carries about them. Null until then. */
             signedOffBy: components["schemas"]["PersonRef"] | null;
             /**
@@ -30831,6 +31746,11 @@ export interface components {
          *           "name": "Sara Lind"
          *         },
          *         "ownerId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "ownerTeam": {
+         *           "key": "cards",
+         *           "kind": null,
+         *           "label": "Cards compliance"
+         *         },
          *         "signedOffBy": null,
          *         "signoffRequestedAt": null,
          *         "signoffRequestedBy": null,
@@ -33397,6 +34317,213 @@ export interface components {
              */
             name: string;
         };
+        /**
+         * WhatAppliesAnswer
+         * @description What applies to what the agent described (ACC-06, ACC-07): the scope it was answered
+         *     in, the summary slot, the full list one page at a time, and what lies outside the scope.
+         * @example {
+         *       "items": [],
+         *       "outsideScope": {
+         *         "advice": "ask_compliance",
+         *         "terms": [
+         *           {
+         *             "dimension": {
+         *               "key": "licensed_activity",
+         *               "kind": "scope",
+         *               "label": "Licensed activity"
+         *             },
+         *             "term": {
+         *               "key": "card_issuing",
+         *               "kind": null,
+         *               "label": "Card issuing"
+         *             }
+         *           }
+         *         ]
+         *       },
+         *       "ownRecordsLeftOut": 0,
+         *       "registerRead": "included",
+         *       "scope": {
+         *         "asOf": "2026-09-25",
+         *         "departments": [
+         *           {
+         *             "id": "0f6c2d8e-3b1a-4e7f-a5c9-7d2e8b1f4a63",
+         *             "name": "Trading"
+         *           }
+         *         ],
+         *         "entry": {
+         *           "id": "5b0e7a52-8d61-4c1e-9f3a-2a6d1c4e8b90",
+         *           "name": "Trading platform coding agent"
+         *         },
+         *         "narrowed": true,
+         *         "products": []
+         *       },
+         *       "summary": {
+         *         "aiGenerated": true,
+         *         "citations": [
+         *           "mifid2-best-execution"
+         *         ],
+         *         "notice": "AI-drafted guidance only: your bank's own confirmed applicability is the decision.",
+         *         "reason": null,
+         *         "status": "drafted",
+         *         "text": "Best execution applies to order routing for professional clients [mifid2-best-execution]."
+         *       },
+         *       "total": 0
+         *     }
+         */
+        WhatAppliesAnswer: {
+            /**
+             * Items
+             * @description This page of the full list: every shared obligation in the bank's footprint and the entry's scope, those whose library text holds more of the description's words first, then by stable key. Nothing but paging shortens it, so read every page.
+             */
+            items: components["schemas"]["WhatAppliesItem"][];
+            /** @description What the description touches outside the entry's scope, by label, and the advice to ask compliance. */
+            outsideScope: components["schemas"]["WhatAppliesOutsideScope"];
+            /**
+             * Ownrecordsleftout
+             * @description How many of the bank's own private obligations exist and are left out of this answer, because a bank's own records never reach an agent. Ask compliance about them.
+             * @example 0
+             */
+            ownRecordsLeftOut: number;
+            /**
+             * Registerread
+             * @description Whether `decision` carries the bank's register: `included` when it does; `tenant_reach_off` when the credential holds `tenant:read` but the bank's tenant reach or the entry's own toggle is off; `not_granted` when the credential does not hold `tenant:read` or names no entry.
+             * @example included
+             * @enum {string}
+             */
+            registerRead: "included" | "tenant_reach_off" | "not_granted";
+            /** @description The scope this answer was given in: the entry, its departments and products, and the date. */
+            scope: components["schemas"]["AgentAccessScopeStatement"];
+            /** @description The model-drafted summary above the list, labelled as AI-drafted, or why there is none. */
+            summary: components["schemas"]["WhatAppliesSummary"];
+            /**
+             * Total
+             * @description How many obligations the whole list holds, not how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * WhatAppliesInput
+         * @description `POST /agent-access/what-applies`: what the agent is building, buying or reviewing.
+         * @example {
+         *       "description": "A new order-routing service for professional clients"
+         *     }
+         */
+        WhatAppliesInput: {
+            /**
+             * Description
+             * @description What is being built, bought or reviewed, in the agent's own words and any language, such as `A new order-routing service for professional clients`. At most `AGENT_ACCESS_DESCRIPTION_MAX_CHARS` characters (2000 unless the operator sets it), refused beyond that with `description_too_long` (422); one of spaces alone is refused with `description_required` (422). It ranks the list and finds what lies outside the scope, and is then dropped: never stored, and never in the access log.
+             */
+            description: string;
+        };
+        /**
+         * WhatAppliesItem
+         * @description One obligation in scope, with the bank's decision on it when the register is read.
+         */
+        WhatAppliesItem: {
+            /** @description The bank's own decision on this obligation, exactly as `GET /register-entries` answers it: applicability and its reason, compliance status and note, how the bank reads the rule, owner and the rest. Null when the register is not read (see `registerRead`), when nobody has decided on it yet, and always for an obligation under a standard. */
+            decision: components["schemas"]["RegisterDecision"] | null;
+            /** @description The instrument the duty was broken out of, by key and short name, the rest of its citation. */
+            instrument: components["schemas"]["ObligationInstrumentRef"];
+            /**
+             * Obligationid
+             * Format: uuid
+             * @description The obligation's identifier in the shared library, a UUID that never changes.
+             */
+            obligationId: string;
+            /**
+             * Reflabel
+             * @description Where the duty sits in its instrument, such as `Art. 27(1)`, printed beside the instrument's short name as its citation.
+             * @example Art. 27(1)
+             */
+            refLabel: string;
+            /**
+             * Stablekey
+             * @description The obligation's stable key, issued once and never changed; `GET /obligations/{obligationId}` reads the whole record.
+             * @example mifid2-best-execution
+             */
+            stableKey: string;
+            /** @description The duty's title in the reader's language order, with whether a machine translated it; null when it has none. */
+            title: components["schemas"]["LocalizedText"] | null;
+            /** @description The version in force on the answer's `asOf` date, with who confirmed it, so a version an independent agent confirmed never reads as a person's verification. Null when every version starts later. */
+            version: components["schemas"]["ObligationVersionRef"] | null;
+        };
+        /**
+         * WhatAppliesOutsideScope
+         * @description What the description touches outside the entry's scope (ACC-07). Compared against the
+         *     labels and usage notes of the bank's footprint terms outside that scope, never against
+         *     records, so it works with AI switched off and leaks nothing the entry may not read.
+         */
+        WhatAppliesOutsideScope: {
+            /**
+             * Advice
+             * @description `ask_compliance` whenever `terms` is not empty: the agent should tell its user to ask the bank's compliance function about those terms, because this answer cannot see them. Null when there is nothing outside the scope to ask about.
+             * @example ask_compliance
+             */
+            advice: "ask_compliance" | null;
+            /**
+             * Terms
+             * @description Every footprint term outside the entry's scope that the description touches, in the footprint's order. Empty when it touches none, and always empty for a credential that is not narrowed. A term here means rules may apply that this answer cannot show.
+             */
+            terms: components["schemas"]["WhatAppliesOutsideTerm"][];
+        };
+        /**
+         * WhatAppliesOutsideTerm
+         * @description One term of the bank's footprint that the description touches and the entry's scope
+         *     leaves out, named by label and never by any record carrying it.
+         */
+        WhatAppliesOutsideTerm: {
+            /** @description The taxonomy dimension the term sits in, as `{key, kind, label}`, such as `licensed_activity`, Licensed activity. Dimensions are vocabulary rows, not a closed enum: a platform admin may extend, relabel or retire them without a deploy, so read `GET /taxonomy/dimensions` for the live set and match on the key, never the label. The `kind` is one of three kinds fixed in code: `scope`, `classification` or `opt_in`. */
+            dimension: components["schemas"]["LibraryRef"];
+            /** @description The term itself, as `{key, kind, label}`, such as `card_issuing`, Card issuing. Terms are vocabulary rows, not a closed enum: a platform admin may add one through an approved proposal, and relabel or retire one, without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key, never the label. A term has no kind of its own, so `kind` is always null: its dimension is its kind. */
+            term: components["schemas"]["LibraryRef"];
+        };
+        /**
+         * WhatAppliesSummary
+         * @description The short summary a model drafts above the list (ACC-06), or why there is none. The list
+         *     below it is the answer and is never shortened by it: a summary is guidance, and the bank's
+         *     confirmed applicability is the decision.
+         */
+        WhatAppliesSummary: {
+            /**
+             * Aigenerated
+             * @description True when `text` was drafted by a model: show it labelled as AI-drafted, beside `notice`, and never as the bank's decision. False when there is no summary.
+             * @example true
+             */
+            aiGenerated: boolean;
+            /**
+             * Citations
+             * @description The stable keys of the obligations the summary cites, in the order first cited, each one on the list below. Empty when there is no summary.
+             * @example [
+             *       "mifid2-best-execution"
+             *     ]
+             */
+            citations: string[];
+            /**
+             * Notice
+             * @description A fixed sentence, the same on every answer, to show with any summary: it is guidance, and the bank's own confirmed applicability is the decision.
+             * @example AI-drafted guidance only: your bank's own confirmed applicability is the decision.
+             */
+            notice: string;
+            /**
+             * Reason
+             * @description Why there is no summary, null when there is one: `model_failed` (the model could not answer), `timeout` (it did not answer within `WHAT_APPLIES_SUMMARY_DEADLINE_MS`, 2000 milliseconds unless the operator sets it), `ai_off` (the bank switched its AI features off, so no model was asked), `budget_cap` (the bank's monthly cap on its own agents is reached, or none is set, so no model was asked), `nothing_to_summarise` (no shared obligation a model may read is in the list) or `later_page` (a summary is drafted with the first page only, `offset` 0).
+             * @example null
+             */
+            reason: ("model_failed" | "timeout" | "ai_off" | "budget_cap" | "nothing_to_summarise" | "later_page") | null;
+            /**
+             * Status
+             * @description `drafted` when `text` holds a summary a model drafted; `not_drafted` when there is none, which leaves the list whole and unchanged, and `reason` says why.
+             * @example drafted
+             * @enum {string}
+             */
+            status: "drafted" | "not_drafted";
+            /**
+             * Text
+             * @description The drafted summary, in English, citing obligations by stable key in square brackets, such as `[mifid2-best-execution]`. Null when not drafted.
+             * @example Best execution applies to order routing for professional clients [mifid2-best-execution].
+             */
+            text: string | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -33505,6 +34632,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentAccessOut"];
+                };
+            };
+        };
+    };
+    whatApplies: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "description": "A new order-routing service for professional clients"
+                 *     }
+                 */
+                "application/json": components["schemas"]["WhatAppliesInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatAppliesAnswer"];
                 };
             };
         };
@@ -34258,7 +35425,7 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank) and `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
+                 * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank), `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one), and `what_applies` (the short summary drafted above what applies to one bank's own agent, its cost counted against the bank's monthly cap). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
                  * @example so_what
                  */
                 purpose?: string | null;
@@ -37441,6 +38608,82 @@ export interface operations {
             };
         };
     };
+    listMyTokens: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonalTokensPage"];
+                };
+            };
+        };
+    };
+    createMyToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalTokenCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonalTokenCreated"];
+                };
+            };
+        };
+    };
+    revokeMyToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The identifier of one of the caller's own personal access tokens, the UUID `GET /me/tokens` lists as `id`, never the token itself. Someone else's token, a service key or an unknown identifier answers `not_found`. */
+                token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     markVisit: {
         parameters: {
             query?: never;
@@ -37695,7 +38938,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description The obligation to read, by its identifier (a UUID), which is the `id` a row of `GET /obligations` carries. A record this caller cannot see answers 404 exactly as an identifier that names nothing does, so no id can be probed for. */
+                /** @description The obligation to read, either by its identifier (a UUID), which is the `id` a row of `GET /obligations` carries, or by its stable key, the `stableKey` of that row, which never changes and is what an agent cites. A value written as a UUID is always read as the identifier. At most 120 characters of letters, digits, hyphens and underscores. A record this caller cannot see answers 404 exactly as an identifier or a key that names nothing does, so neither can be probed for. */
                 obligation_id: string;
             };
             cookie?: never;
@@ -39944,7 +41187,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description The identifier of one of this bank's own API keys, the UUID `GET /tenant/api-keys` lists as `id`, never the key itself. A platform key, another bank's key or an unknown identifier answers `not_found`. */
+                /** @description The identifier of one of this bank's credentials, a key or a member's personal access token, the UUID `GET /tenant/api-keys` lists as `id`, never the key itself. A platform key, another bank's credential or an unknown identifier answers `not_found`. */
                 key_id: string;
             };
             cookie?: never;
@@ -40120,6 +41363,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FootprintRequestRow"];
+                };
+            };
+        };
+    };
+    getScopeItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The `id` of the scope item, a UUID as `GET /tenant/footprint` or a regulatory scope change request returns it. One of another organisation, one that does not exist, or anything that is not a UUID answers 404 `not_found`. */
+                scope_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "description": "",
+                     *       "id": "0d9e3b52-7c41-4f8a-b6e2-5a1c9d0e7f34",
+                     *       "jurisdiction": {
+                     *         "key": "se",
+                     *         "kind": "country",
+                     *         "label": "Sweden"
+                     *       },
+                     *       "key": "local_crypto_asset_rules",
+                     *       "name": "Local crypto-asset rules",
+                     *       "officialReference": "FFFS 2026:1",
+                     *       "regimeTerm": {
+                     *         "dimension": "regime",
+                     *         "key": "securities",
+                     *         "kind": null,
+                     *         "label": "Securities"
+                     *       },
+                     *       "research": "waiting_for_agent",
+                     *       "sourceUrl": "https://www.fi.se/sv/vara-register/",
+                     *       "status": "in_scope"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ScopeItemRow"];
                 };
             };
         };
