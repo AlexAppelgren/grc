@@ -56,6 +56,7 @@ function me(unreadNotifications: number | null): Me {
     counts: unreadNotifications === null ? null : { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 0 },
     lastVisitAt: null,
     notificationPrefs: null,
+    headOf: [],
   };
 }
 
