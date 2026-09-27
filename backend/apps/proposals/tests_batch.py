@@ -7,7 +7,7 @@ library row, and is refused unless every rule a proposal's scope answers to pass
 shared obligations, live terms, no mirrored jurisdiction term and the standards rule. The
 queue lists a batch once. It is the platform's: a library editor files one, and so does a
 platform agent's key naming its own open run, while no bank's session or key reaches it.
-Deciding is declared behind its real gate and answers 501 until the decision half lands.
+Deciding it is apps/proposals/tests_batch_decide.py's.
 """
 
 from __future__ import annotations
@@ -278,17 +278,3 @@ class ReadingABatch(BatchTestCase):
             sys.settrace(tracer)
         self.assertLess(min(spent), settings.API_BUDGET_MS)
 
-
-class DecidingIsDeclared(BatchTestCase):
-    def test_decide_answers_behind_its_gate_and_then_not_built(self) -> None:
-        filed = self._file(body(change(self.obligations[0]))).json()
-        reviewer = factories.platform_user(roles=("library_editor",), email="reviewer@bleqq.test")
-        path = f"/proposal-batches/{filed['id']}/decide"
-        decision = {"rest": "approved"}
-        self._refused(self._post(path, decision, sign_in(factories.platform_user(roles=("platform_admin",)), step_up=True)), 403, "permission_denied")
-        self._refused(self._post(path, decision, sign_in(reviewer)), 403, "step_up_required")
-        self._refused(self._post(f"/proposal-batches/{uuid.uuid4()}/decide", decision, sign_in(reviewer, step_up=True)), 404, "not_found")
-        self._refused(self._post(path, decision, sign_in(reviewer, step_up=True)), 501, "not_built")
-        key = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_REVIEW,))
-        self.assertEqual(self._post(path, decision, {"HTTP_X_API_KEY": key.plain_key}).status_code, 401)
-        self.assertEqual(ProposalBatchRow.objects.get(proposal_id=filed["id"]).decision, "pending")

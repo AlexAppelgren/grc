@@ -1735,7 +1735,7 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
   and `c9-evidence` and answer 501 `not_built` until those land, so their pending lines
   are gone while the logic is still to come.
 
-## 18. A proposal owned by a bank, and the bank's own queue declared (2026-09-25, d89-proposal-owner)
+## 20. A proposal owned by a bank, and the bank's own queue declared (2026-09-25, d89-proposal-owner)
 
 §5's private-records row, built for INV-07 and OWN-03 (D-57, D-89, ADR 0050, ADR 0059):
 

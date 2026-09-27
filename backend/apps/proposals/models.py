@@ -62,7 +62,8 @@ class ProposalKind(enum.StrEnum):
     `new_provision_version`, a law's verbatim text, never a standard's (INV-02, INV-08).
     R2 adds `obligation_scope`, the scope terms of existing obligations changed without a
     new summary: the re-tag a batch carries (PRO-04, AGT-05). A backfill is a batch of an
-    existing kind, not a kind of its own."""
+    existing kind, not a kind of its own. `new_recurring_duty` adds the schedule a duty of an
+    obligation in force falls due on, its only door into the library (REG-07)."""
 
     VOCABULARY_CREATE = "vocabulary_create"
     VOCABULARY_RELABEL = "vocabulary_relabel"
@@ -77,6 +78,7 @@ class ProposalKind(enum.StrEnum):
     NEW_PROVISION = "new_provision"
     NEW_PROVISION_VERSION = "new_provision_version"
     OBLIGATION_SCOPE = "obligation_scope"
+    NEW_RECURRING_DUTY = "new_recurring_duty"
 
 
 class ProposalStatus(enum.StrEnum):
