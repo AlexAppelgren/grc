@@ -53,3 +53,21 @@ class TheBanksOwnListsFollowTheSameGate(AgentReadCase):
                     else:
                         self.assertEqual((answer.status_code, answer.json()["code"]), (403, "tenant_reach_off"))
             self.assertEqual(self.get(key, "/api/v1/vocab/duty_type").status_code, 200, "a library list stays readable")
+
+
+class TheSourceRegistryIsNotAnAgentAccessRead(AgentReadCase):
+    """M5: the source registry and its coverage log (`GET /sources`, `/sources/coverage`) are
+    for the platform's own runs and the bank's people with `watch.read` (WAT-01, AGT-02). A
+    bank's own agent reads the library, search, the upcoming list and the register
+    (AGENT_ACCESS.md section 5), yet any agent access credential with `library:read` read
+    them, so a personal token read what its person's own session was refused."""
+
+    def test_an_agent_access_credential_is_refused_the_registry(self) -> None:
+        w = self.world
+        reader = factories.member(w.tenant, roles=("reader",)).user
+        token = factories.personal_token(w.tenant, reader, scopes=("library:read",)).plain_key
+        for key in (w.trading_key, token):
+            for url in ("/api/v1/sources", "/api/v1/sources/coverage"):
+                with self.subTest(url=url):
+                    answer = self.get(key, url)
+                    self.assertEqual((answer.status_code, answer.json()["code"]), (403, "permission_denied"))
