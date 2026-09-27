@@ -65,8 +65,91 @@ test.describe('tenants journeys', () => {
     }
   });
 
-  test.fixme("TEN-S2: Legal entities and products are scoped like obligations", async () => {
-    // pending: TEN-S2 (TEN-02, chunk 8)
+  // c8-ui-organisation (TEN-02). An entity and a product carry library terms from the
+  // dimensions obligations are scoped with, as brand pills; a member without vocab.manage
+  // reads them and gets no Edit or Add. The register line (a status per entity) is the
+  // register's to prove (c8-reg-entity-status). Units and products are never deleted, so the
+  // journey names its rows by run and deactivates and retires them on the way out.
+  test("TEN-S2: Legal entities and products are scoped like obligations", async ({ page, apiGuard }, testInfo) => {
+    allowFreshContext(apiGuard);
+    const run = `${Date.now()}-${testInfo.retry}`;
+    const entityName = `Bank AB ${run}`;
+    const productName = `Custody ${run}`;
+    await signInAs(page, LOGINS.admin);
+    await page.goto('/admin/organisation');
+    const entities = page.locator('[data-org-section="entities"]');
+    await expect(entities.locator('[data-org-unit="Example Bank AB"]')).toBeVisible();
+
+    try {
+      await entities.getByRole('button', { name: 'Add a legal entity' }).click();
+      let dialog = page.getByRole('dialog');
+      await dialog.getByLabel('Name').fill(entityName);
+      await dialog.getByLabel('Sits under').selectOption({ label: 'Example Group' });
+      await dialog.getByLabel('Country').fill('SE');
+      await dialog.getByLabel('Legal-entity term').selectOption('bank');
+      await dialog.getByRole('button', { name: 'Save' }).click();
+      await expect(dialog).toBeHidden();
+      const entity = entities.locator(`[data-org-unit="${entityName}"]`);
+      await expect(entity.locator('[data-pill="brand"]')).toHaveCount(1);
+
+      // The licence: its type and its services are terms of the same dimensions.
+      const licences = page.locator(`[data-licences-of="${entityName}"]`);
+      await expect(licences.getByText('No licences or certificates recorded.')).toBeVisible();
+      await licences.getByRole('button', { name: `Add a licence or certificate to ${entityName}` }).click();
+      dialog = page.getByRole('dialog');
+      await dialog.getByLabel('Type').selectOption('bank');
+      await dialog.getByLabel('Reference').fill(`FI ${run}`);
+      await dialog.getByLabel('Services').selectOption('custody');
+      await dialog.getByRole('button', { name: 'Save' }).click();
+      await expect(dialog).toBeHidden();
+      const licence = licences.locator('[data-licence="bank"]');
+      await expect(licence).toContainText(`FI ${run}`);
+      await expect(licence.locator('[data-pill="brand"]')).toHaveCount(1);
+
+      // The product: its entity and its scope terms, all brand pills.
+      const products = page.locator('[data-org-section="products"]');
+      await products.getByRole('button', { name: 'Add a product' }).click();
+      dialog = page.getByRole('dialog');
+      await dialog.getByLabel('Name').fill(productName);
+      await dialog.getByLabel('Legal entity').selectOption({ label: entityName });
+      await dialog.getByLabel('Scope').selectOption('custody');
+      await dialog.getByRole('button', { name: 'Save' }).click();
+      await expect(dialog).toBeHidden();
+      const product = products.locator(`[data-product="${productName}"]`);
+      await expect(product.locator('[data-pill="brand"]').first()).toHaveText(entityName);
+      await expect(product.locator('[data-pill="brand"]')).toHaveCount(2);
+      await expect(product.locator('[data-pill]:not([data-pill="brand"])')).toHaveCount(0);
+      await signOut(page);
+
+      // A reader sees the same rows and nothing to change them with.
+      await signInAs(page, LOGINS.reader);
+      await page.goto('/admin/organisation');
+      await expect(page.locator(`[data-product="${productName}"]`)).toBeVisible();
+      await expect(page.locator(`[data-org-unit="${entityName}"]`)).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Add a legal entity' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Add a product' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: `Edit ${productName}` })).toHaveCount(0);
+      await signOut(page);
+    } finally {
+      // Retire the product and deactivate the entity: neither is ever deleted.
+      await signInAs(page, LOGINS.admin);
+      await page.goto('/admin/organisation');
+      const product = page.locator(`[data-product="${productName}"]`);
+      if ((await product.count()) > 0) {
+        await page.getByRole('button', { name: `Edit ${productName}` }).click();
+        await page.getByRole('dialog').getByLabel('Status').selectOption('retired');
+        await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
+        await expect(page.getByRole('dialog')).toBeHidden();
+      }
+      const entity = page.locator(`[data-org-unit="${entityName}"]`);
+      if ((await entity.count()) > 0) {
+        await page.getByRole('button', { name: `Edit ${entityName}` }).click();
+        await page.getByRole('dialog').getByLabel('State').selectOption('inactive');
+        await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
+        await expect(page.getByRole('dialog')).toBeHidden();
+        await expect(entity).toContainText('Inactive');
+      }
+    }
   });
 
   test.fixme("TEN-S4: An out-of-office delegate receives approvals and reminders", async () => {
@@ -258,7 +341,61 @@ test.describe('departments, teams and certificates', () => {
     // pending: TEN-S8 (TEN-02, TEN-03)
   });
 
-  test.fixme("TEN-S10: A legal entity records a certificate it holds", async () => {
-    // pending: TEN-S10 (TEN-02, AC-TEN1)
+  // c8-ui-organisation (TEN-02, AC-TEN1). The certificate is a licence row with a
+  // certificate's fields and an owner; its dates are anchored to the tenant-local day. The
+  // audit rows before and after and "no obligation, scope row or applicability changes" are
+  // proven on the server (apps/tenants/tests_organisation.py); this journey proves the screen.
+  test("TEN-S10: A legal entity records a certificate it holds", async ({ page, apiGuard }, testInfo) => {
+    allowFreshContext(apiGuard);
+    const number = `EC-27001-${Date.now()}-${testInfo.retry}`;
+    const day = (days: number) => {
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Stockholm', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+      const date = new Date(`${today}T00:00:00Z`);
+      date.setUTCDate(date.getUTCDate() + days);
+      return date.toISOString().slice(0, 10);
+    };
+    const shown = (iso: string) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`));
+    const [issued, validUntil, nextAudit] = [day(-200), day(900), day(165)];
+
+    await signInAs(page, LOGINS.admin);
+    await page.goto('/admin/organisation');
+    const licences = page.locator('[data-licences-of="Example Bank AB"]');
+    await expect(licences.locator('[data-licence]').first()).toBeVisible();
+
+    await licences.getByRole('button', { name: 'Add a licence or certificate to Example Bank AB' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Add a licence or certificate to Example Bank AB' });
+    await dialog.getByLabel('Kind').selectOption('certificate');
+    await dialog.getByLabel('Type').selectOption('iso_iec_27001');
+    await dialog.getByLabel('Issuer').fill('Example Certification AB');
+    await dialog.getByLabel('Certificate number').fill(number);
+    await dialog.getByLabel('Scope statement').fill('The information security management system for retail banking IT operations');
+    await dialog.getByLabel('Issued').fill(issued);
+    await dialog.getByLabel('Valid until').fill(validUntil);
+    await dialog.getByLabel('Next audit').fill(nextAudit);
+    await dialog.getByLabel('Owner').selectOption({ label: 'Sara Lindqvist' });
+    await dialog.getByRole('button', { name: 'Save' }).click();
+    await expect(dialog).toBeHidden();
+
+    // Listed under the entity with its validity and next audit, and no term pill of its own.
+    const certificate = licences.locator('[data-licence]').filter({ hasText: number });
+    await expect(certificate).toContainText('Certificate');
+    await expect(certificate).toContainText('Example Certification AB');
+    await expect(certificate.getByRole('definition').filter({ hasText: shown(validUntil) })).toHaveCount(1);
+    await expect(certificate.getByRole('definition').filter({ hasText: shown(nextAudit) })).toHaveCount(1);
+    await expect(certificate).toContainText('Sara Lindqvist');
+    await expect(certificate.locator('[data-pill]')).toHaveCount(0);
+
+    // Withdrawn: it reads as withdrawn and stays in the history, behind Show withdrawn.
+    const withdrawnOn = day(0);
+    await certificate.getByRole('button', { name: /^Edit / }).click();
+    const edit = page.getByRole('dialog');
+    await edit.getByLabel('Withdrawn').fill(withdrawnOn);
+    await edit.getByRole('button', { name: 'Save' }).click();
+    await expect(edit).toBeHidden();
+    await expect(certificate).toHaveCount(0);
+    await licences.getByRole('button', { name: /^Show \d+ withdrawn$/ }).click();
+    await expect(certificate).toHaveAttribute('data-withdrawn', '');
+    await expect(certificate).toContainText(`Withdrawn ${shown(withdrawnOn)}`);
+    await expect(certificate.getByRole('button')).toHaveCount(0);
   });
 });
