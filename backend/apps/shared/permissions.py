@@ -538,6 +538,10 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/me/comments"): Ungated(UngatedReason.SELF, _SELF_MY_COMMENTS),
     ("GET", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
     ("POST", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
+    # c10-out-of-office (TEN-04): the caller's own absence on their own membership. The
+    # delegate check inside is the gate on what it may name (delegate_cannot_approve).
+    ("GET", "/me/out-of-office"): Ungated(UngatedReason.SELF, _SELF_ME),
+    ("PUT", "/me/out-of-office"): Ungated(UngatedReason.SELF, _SELF_ME),
 }
 
 

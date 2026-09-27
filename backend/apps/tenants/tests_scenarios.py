@@ -4,7 +4,8 @@ and ADM-S3; TEN-S2 to S6 stay skipped (R2, chunk 8). Never delete a scenario wit
 updating app.md.
 
 Operations exercised (the audit-on-write guard reads these names): updateTenant,
-setTenantAi (its branches in tests_organisation.py),
+setTenantAi (its branches in tests_organisation.py), putMyOutOfOffice (TEN-S4, its
+refusals in tests_out_of_office.py),
 consoleReissueEnrolment (proven in identity ID-S13).
 
 Prefixes hosted: ADM, TEN.
@@ -12,16 +13,30 @@ Prefixes hosted: ADM, TEN.
 
 from __future__ import annotations
 
+import datetime
 from typing import Any
-from unittest import skip
+from unittest import mock, skip
+from zoneinfo import ZoneInfo
 
-from apps.identity.models import TenantRole
+from django.db import transaction
+
+from apps.cases import testing as case_build
+from apps.cases import tests_signoff as signoff_build
+from apps.cases.models import ChangeCase
+from apps.collab import reminders
+from apps.collab.models import Notification
+
+from apps.identity.models import Membership, TenantRole
+from apps.library.reading import today_for
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, permissions as perms
+from apps.shared.kinds import CaseStatusCategory
+from apps.shared.models import AuditEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy import tenant_lists_logic
 from apps.taxonomy.models import FootprintTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+from apps.watch import testing as watch_build
 
 
 class TenantsScenarioTests(ScenarioTestCase):
@@ -105,12 +120,69 @@ class TenantsScenarioTests(ScenarioTestCase):
         A team can own work and the ownership survives a member leaving (TEN-03).
         """
 
-    @skip("pending: TEN-S4 (TEN-04, chunk 8)")
     def test_ten_s4(self) -> None:
         """TEN-S4
 
-        An out-of-office delegate receives approvals and reminders (TEN-04).
+        An out-of-office delegate receives approvals and reminders (TEN-04, COL-02).
+        Reworded to a sign-off request and a triage reminder (app.md).
+        Operations: `putMyOutOfOffice`, `requestSignoff`, `approveSignoff`.
         """
+        bank = signoff_build.Bank()
+        tenant = bank.tenant
+        absent = factories.member_user(tenant, roles=("compliance_officer", "approver"))
+        delegate = factories.member_user(tenant, roles=("approver",))
+        today = today_for(tenant)
+        next_friday = today + datetime.timedelta(days=(4 - today.weekday()) % 7 or 7)
+        # Given an approver who set out-of-office until next Friday with a delegate
+        response = self.client.put(
+            "/api/v1/me/out-of-office",
+            data={"untilDate": next_friday.isoformat(), "delegateId": str(delegate.id)},
+            content_type="application/json",
+            **sign_in(absent, tenant=tenant),
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+
+        # When a sign-off request names that approver
+        bank.ready_for_signoff(self.client)
+        # Then the delegate is notified and the approver is not. The delegate holds
+        # `cases.signoff` themself, so they are told once, on their own account (collab).
+        self.activate(tenant)
+        told = set(Notification.objects.filter(kind="signoff_requested").values_list("user_id", flat=True))
+        self.assertIn(delegate.id, told)
+        self.assertNotIn(absent.id, told)
+        # And the approver's reminders reach the delegate too
+        waiting = case_build.case(tenant, watch_build.change())
+        with transaction.atomic():
+            self.activate(tenant)
+            ChangeCase.objects.filter(pk=waiting.pk).update(
+                triage_due_at=datetime.datetime.combine(
+                    today + datetime.timedelta(days=3), datetime.time(12), tzinfo=ZoneInfo(tenant.timezone)
+                )
+            )
+            reminded = {(row.user_id, row.on_behalf_of_id) for row in reminders.send_triage_reminders(tenant)}
+        self.assertIn((delegate.id, absent.id), reminded)
+        self.assertNotIn(absent.id, {user_id for user_id, _ in reminded})
+        # And may sign off, the audit event naming the delegate as actor and the approver as delegated
+        response = bank.post(self.client, "approve", delegate, step_up=True)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.activate(tenant)
+        approval = AuditEvent.objects.get(subject_id=bank.case.id, after__status="closed")
+        self.assertEqual(approval.actor_id, delegate.id)
+        self.assertEqual(approval.after["onBehalfOf"], [str(absent.id)])
+
+        # When the window closes
+        bank.case = case_build.case(tenant, watch_build.change(), owner=bank.owner)
+        case_build.in_category(bank.case, CaseStatusCategory.IMPLEMENTING)
+        the_day_after = datetime.datetime.combine(
+            next_friday + datetime.timedelta(days=1), datetime.time(9), tzinfo=ZoneInfo(tenant.timezone)
+        )
+        with mock.patch("django.utils.timezone.now", return_value=the_day_after.astimezone(datetime.UTC)):
+            bank.ready_for_signoff(self.client)
+        # Then the approver receives requests again
+        self.activate(tenant)
+        told = set(Notification.objects.filter(kind="signoff_requested", subject_id=bank.case.id).values_list("user_id", flat=True))
+        self.assertIn(absent.id, told)
+        self.assertIn(delegate.id, told)
 
     @skip("pending: TEN-S5 (TEN-05, chunk 8)")
     def test_ten_s5(self) -> None:
@@ -188,13 +260,51 @@ class TenantsScenarioTests(ScenarioTestCase):
         allowed = self.client.patch("/api/v1/tenant/workflow", data={"escalateAfterDays": 7}, content_type="application/json", **config_admin)
         self.assertEqual((allowed.status_code, allowed.json()["workflow"]["escalateAfterDays"]), (200, 7))
 
-    @skip("pending: TEN-S8 (TEN-02, TEN-03, chunk 8)")
     def test_ten_s8(self) -> None:
         """TEN-S8
 
         A department has a head and teams, and team membership is set on the member row (TEN-02, TEN-03).
-        Operations: `createOrgUnit`, `updateOrgUnit`.
+        Operations: `createOrgUnit`, `updateOrgUnit`, `setMemberTeams`.
+
+        c8-ten-teams-people: the department and its team are rows here, because adding them
+        through `createOrgUnit` and `/vocab/team` is TEN-S2's and VOC-02's to prove; the
+        database's refusal of another bank's member, department or head is proven as `cw_app`
+        in tests_team_models.py and tests_models.py.
         """
+        karin = factories.member(self.tenant, user_row=factories.user(name="Karin Holm")).user
+        anna = factories.member(self.tenant, user_row=factories.user(name="Anna Berg")).user
+        johan = factories.member(self.tenant, user_row=factories.user(name="Johan Ek")).user
+        retail = factories.department(self.tenant, name="Retail Banking", head=karin)
+        factories.team(self.tenant, key="retail-compliance", label="Retail compliance", org_unit=retail)
+
+        me = self.client.get("/api/v1/me", **sign_in(karin, tenant=self.tenant)).json()
+        self.assertIn({"id": str(retail.id), "name": "Retail Banking"}, me["headOf"])
+
+        admin = sign_in(self.admin, tenant=self.tenant)
+        for person in (anna, johan):
+            url = f"/api/v1/tenant/members/{person.id}/teams"
+            response = self.client.put(url, data={"teams": ["retail-compliance"]}, content_type="application/json", **admin)
+            self.assertEqual(response.status_code, 200, response.content)
+            self.assertEqual(response.json()["teams"], ["retail-compliance"])
+            self.activate(self.tenant)
+            membership = Membership.objects.get(tenant=self.tenant, user=person)
+            event = AuditEvent.objects.get(action="member.teams_changed", subject_id=membership.id)
+            self.assertEqual((event.before, event.after), ({"teams": []}, {"teams": ["retail-compliance"]}))
+        members = self.client.get("/api/v1/tenant/teams/retail-compliance/members", **admin).json()
+        self.assertEqual([row["name"] for row in members["items"]], ["Anna Berg", "Johan Ek"])
+
+        other = factories.tenant(slug="elsewhere")
+        stranger = factories.member_user(other)
+        refused = self.client.put(
+            f"/api/v1/tenant/members/{stranger.id}/teams", data={"teams": ["retail-compliance"]}, content_type="application/json", **admin
+        )
+        self.assertEqual((refused.status_code, refused.json()["code"]), (422, "unknown_member"))
+
+        without = self._member_with(perms.CASES_READ)
+        denied = self.client.put(
+            f"/api/v1/tenant/members/{anna.id}/teams", data={"teams": []}, content_type="application/json", **without
+        )
+        self.assertEqual(denied.status_code, 403)
 
     @skip("pending: TEN-S9 (TEN-05, COL-04, chunk 8)")
     def test_ten_s9(self) -> None:

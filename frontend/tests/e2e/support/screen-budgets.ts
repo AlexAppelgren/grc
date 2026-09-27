@@ -45,6 +45,8 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   'admin-workflow': { ready: '[data-workflow-form] [data-workflow-field]' },
   // c11 (AGT-03): what bleqq watches, the first thing every member reads there.
   'admin-agents': { ready: `[data-platform-watch] [data-platform-agent]${OR_EMPTY}` },
+  // The seed may hold no notification for the reader measured: the empty inbox is an answer too.
+  notifications: { ready: `[data-notifications-list] [data-notification-id]${OR_EMPTY}` },
   'me-passkeys': { ready: '[data-passkey-id]' },
   'me-sessions': { ready: '[data-session-id]' },
   'me-calendar-feeds': { ready: `[data-feeds-list] [data-feed-id]${OR_EMPTY}` },

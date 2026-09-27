@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test';
+
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, LOGINS, restrictedScreen, signInAs, signOut } from './support/passkeys';
 
@@ -69,8 +71,88 @@ test.describe('tenants journeys', () => {
     // pending: TEN-S2 (TEN-02, chunk 8)
   });
 
-  test.fixme("TEN-S4: An out-of-office delegate receives approvals and reminders", async () => {
-    // pending: TEN-S4 (TEN-04, chunk 8)
+  test("TEN-S4: An out-of-office delegate receives approvals and reminders", async ({ page, apiGuard }) => {
+    // TEN-S4 (TEN-04, COL-02): the absent approver's own screen. Henrik Wallin sets his
+    // last day away on the bank's calendar and a delegate who holds his approve
+    // permissions; a delegate who cannot approve is refused under the field, a second
+    // absence set meanwhile from another tab is refused as already_delegated, and End now
+    // brings the work back. Where the notices then go is proved by the integration
+    // scenario (tenants/tests_scenarios.py, collab/tests_delegation.py): no screen yet
+    // requests a sign-off or sends a reminder on demand.
+    allowFreshContext(apiGuard);
+    apiGuard.allow(/\/api\/v1\/me\/out-of-office$/, 422, 'a contributor cannot approve, so cannot stand in');
+    apiGuard.allow(/\/api\/v1\/me\/out-of-office$/, 409, 'the absence was set meanwhile from another tab');
+    // The seeded approver roles (backend/apps/shared/e2e_logins.py): Maria Ek holds what
+    // Henrik approves; Karin Nyström, a contributor, holds none of it.
+    const DELEGATE = 'Maria Ek';
+    const CANNOT_APPROVE = 'Karin Nyström';
+    // A week from the bank's today (Europe/Stockholm), never a literal date.
+    const bankToday = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Stockholm' }).format(new Date());
+    const lastDay = new Date(`${bankToday}T12:00:00Z`);
+    lastDay.setUTCDate(lastDay.getUTCDate() + 7);
+    const untilDate = lastDay.toISOString().slice(0, 10);
+
+    const pickDelegate = async (target: Page, name: string) => {
+      const combo = target.getByRole('combobox', { name: 'Delegate' });
+      await combo.fill(name.slice(0, 4));
+      await target.getByRole('listbox', { name: 'People' }).getByRole('option', { name, exact: true }).click();
+      await expect(combo).toHaveValue(name);
+    };
+    const endNow = page.getByRole('button', { name: 'End now' });
+    const setButton = page.getByRole('button', { name: 'Set out of office' });
+
+    await signInAs(page, LOGINS.awayApprover);
+    await page.goto('/me/out-of-office');
+    await expect(page.getByRole('heading', { level: 1, name: 'Out of office' })).toBeVisible();
+    // Settle before branching: a failed earlier run may have left him away.
+    await expect(endNow.or(setButton).first()).toBeVisible();
+    if (await endNow.isVisible()) {
+      await endNow.click();
+      await expect(setButton).toBeVisible();
+    }
+    await expect(page.getByLabel('Away until')).toHaveAttribute('min', bankToday);
+    try {
+      // A second tab of the same person, open on the form before the absence exists.
+      const other = await page.context().newPage();
+      apiGuard.watch(other);
+      await other.goto('/me/out-of-office');
+      await expect(other.getByRole('button', { name: 'Set out of office' })).toBeVisible();
+
+      await page.getByLabel('Away until').fill(untilDate);
+      await pickDelegate(page, CANNOT_APPROVE);
+      await setButton.click();
+      await expect(page.getByText(`${CANNOT_APPROVE} cannot approve, so they cannot stand in for you. Choose someone whose role can approve.`)).toBeVisible();
+      await expect(page.getByRole('combobox', { name: 'Delegate' })).toHaveAttribute('aria-invalid', 'true');
+
+      await pickDelegate(page, DELEGATE);
+      await setButton.click();
+      const away = page.locator('[data-away]');
+      await expect(away.getByRole('heading', { name: 'You are away' })).toBeVisible();
+      await expect(away).toContainText(`${DELEGATE} receives your approval requests and reminders.`);
+      await page.reload();
+      await expect(away).toContainText(`${DELEGATE} receives your approval requests and reminders.`);
+
+      // The other tab still shows the form; its absence is refused by its code.
+      await other.getByLabel('Away until').fill(untilDate);
+      await pickDelegate(other, DELEGATE);
+      await other.getByRole('button', { name: 'Set out of office' }).click();
+      await expect(other.getByText('You are already away. End that first to set a new one.')).toBeVisible();
+      await other.getByRole('button', { name: 'Show it' }).click();
+      await expect(other.locator('[data-away]')).toContainText(DELEGATE);
+      await other.close();
+
+      await endNow.click();
+      await expect(page.getByText('You are back. Approval requests and reminders come to you again.')).toBeVisible();
+      await expect(setButton).toBeVisible();
+    } finally {
+      // Leave Henrik at home whatever happened above.
+      await page.goto('/me/out-of-office');
+      await expect(endNow.or(setButton).first()).toBeVisible();
+      if (await endNow.isVisible()) {
+        await endNow.click();
+        await expect(setButton).toBeVisible();
+      }
+    }
   });
 
   test.fixme("TEN-S5: Removing a member with open work offers bulk reassignment", async () => {

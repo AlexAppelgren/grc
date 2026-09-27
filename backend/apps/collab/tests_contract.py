@@ -62,6 +62,9 @@ COMMENT_WRITES = [
     ("deleteComment", "delete", f"/api/v1/comments/{THING}", None),
 ]
 ROUTES = READS + OWN_WRITES + COMMENT_WRITES
+# c10-inbox-and-my-comments: what a built route answers a member past every gate (THING is
+# nobody's notification, so marking it is 404).
+BUILT = {"listNotifications": 200, "markNotificationRead": 404, "markAllNotificationsRead": 204, "listMyComments": 200}
 
 
 def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
@@ -124,7 +127,7 @@ class CollabRouteGates(TestCase):
         with self._member(set()):
             for name, method, url, body in READS + OWN_WRITES:
                 with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, 501)
+                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, BUILT.get(name, 501))
 
     def test_a_platform_session_belongs_to_no_bank_and_gets_404(self) -> None:
         with stub_session(user_principal(permissions={perms.COMMENTS_WRITE}, subject_id=self.person.id)):
@@ -164,6 +167,9 @@ class CollabRouteGates(TestCase):
             for name, method, url, body in ROUTES:
                 with self.subTest(operation=name):
                     response = _call(self.client, method, url, body, AS_SESSION)
+                    if name in BUILT:
+                        self.assertEqual(response.status_code, BUILT[name])
+                        continue
                     self.assertEqual(response.status_code, 501)
                     self.assertEqual(response.json()["code"], "not_built")
                     self.assertEqual(response.headers["Content-Type"], "application/problem+json")

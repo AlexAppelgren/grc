@@ -86,9 +86,11 @@ Then each user receives one digest in their language listing their open items as
 
 ### COL-S3 — Schedules run in the tenant's timezone `@integration` (COL-02)
 ```gherkin
-Given a tenant in Europe/Helsinki and a digest scheduled for Monday 08:00
-When the worker's beat fires in UTC
-Then the digest is sent at 08:00 Helsinki time, across a daylight saving change too
+Given a tenant in Europe/Helsinki, reminders sent at the REMINDER_SEND_HOUR of 07:00 and a lead of three days
+And a case awaiting triage, due three days after the tenant-local date
+When the worker's beat fires every hour of that local day in UTC
+Then the triage reminder is sent once, at 07:00 Helsinki time, and at no other hour
+And on the day before a daylight saving change and on the day of it, in both directions, it still arrives at 07:00 local, one UTC hour apart
 And the fixture anchors to the tenant-local date, never to "now plus hours"
 ```
 
