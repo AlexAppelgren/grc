@@ -10,6 +10,9 @@ Three things are enumerated and demanded:
 3. `record()` writes the audit event and the outbox event in the same transaction,
    refuses to run outside one, and the append-only rule holds in Python and in the
    database (trigger), with the `cw.maintenance` escape hatch working as documented.
+4. `batched()` writes, for many `record()` calls, the very rows those calls write one by
+   one, in two INSERTs, in the order recorded, under the same triggers, and nothing when
+   its block fails.
 
 Proven to fail 2026-09-19 by making the throwaway "audited" view skip record(): the
 client raised naming the route and AC-AUD1.
@@ -23,11 +26,12 @@ from pathlib import Path
 from django.db import DEFAULT_DB_ALIAS, DatabaseError, connections, transaction
 from django.http import HttpRequest, JsonResponse
 from django.test import TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.urls import path
 from django.views.decorators.csrf import csrf_exempt
 
 from apps.shared import factories, tenancy
-from apps.shared.audit import Actor, ActorType, AppendOnlyRefused, NotInTransaction, record
+from apps.shared.audit import Actor, ActorType, AppendOnlyRefused, NotInTransaction, batched, record
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.routes import iter_operations
 from apps.shared.testing import AuditAssertingClient
@@ -217,3 +221,115 @@ class AppendOnlyHolds(TestCase):
                 with transaction.atomic():
                     cursor.execute("DELETE FROM outbox_event WHERE id = %s", [str(outbox.id)])
         self.assertIsNotNone(OutboxEvent.objects.get(pk=outbox.pk).published_at)
+
+
+class BatchedRecordWritesTheSameRows(TestCase):
+    """`batched()` is `record()` for many subjects at once: the rows are the ones each call
+    writes alone, and every guarantee of the single path holds for them."""
+
+    def setUp(self) -> None:
+        self.tenant = factories.tenant()
+        self.actor = factories.user_actor(label="Ada")
+        self.step_up = uuid.uuid4()
+
+    def _calls(self) -> list[dict[str, object]]:
+        """A tenant row, a library row written from the tenant's session (it crosses the
+        zones), and one with its own topic and payload."""
+        return [
+            {"action": "case.triaged", "subject_type": "case", "tenant_id": self.tenant.id, "before": {"status": "new"}, "after": {"status": "assigned"}},
+            {"action": "library.probe", "subject_type": "probe", "tenant_id": None, "step_up_assertion_id": self.step_up},
+            {"action": "case.closed", "subject_type": "case", "tenant_id": self.tenant.id, "topic": "case.done", "payload": {"caseId": "c-1"}},
+        ]
+
+    def _record(self, call: dict[str, object], subject: uuid.UUID) -> None:
+        record(actor=self.actor, subject_id=subject, subject_title="Case 1", summary="Changed.", **call)  # type: ignore[arg-type]
+
+    def _rows(self, subjects: list[uuid.UUID]) -> list[tuple[dict[str, object], dict[str, object]]]:
+        """Each subject's audit and outbox row, every column but the rows' own ids, times and
+        subject, each of which must point at its own. A library row is read by every zone."""
+        rows = []
+        for subject in subjects:
+            event = AuditEvent.objects.get(subject_id=subject)
+            outbox = OutboxEvent.objects.get(audit_event=event)
+            payload = dict(outbox.payload)
+            if "auditEventId" in payload:
+                self.assertEqual((payload.pop("auditEventId"), payload.pop("subjectId")), (str(event.id), str(subject)))
+            skip = {"id", "created", "audit_event_id", "payload", "subject_id"}
+            rows.append(
+                (
+                    {f.attname: getattr(event, f.attname) for f in AuditEvent._meta.concrete_fields if f.attname not in skip},
+                    {f.attname: getattr(outbox, f.attname) for f in OutboxEvent._meta.concrete_fields if f.attname not in skip} | {"payload": payload},
+                )
+            )
+        return rows
+
+    def test_the_rows_are_the_ones_record_writes_one_by_one(self) -> None:
+        tenancy.activate(self.tenant.id)
+        alone = [uuid.uuid4() for _ in self._calls()]
+        together = [uuid.uuid4() for _ in self._calls()]
+        for call, subject in zip(self._calls(), alone, strict=True):
+            self._record(call, subject)
+        with batched():
+            for call, subject in zip(self._calls(), together, strict=True):
+                self._record(call, subject)
+        self.assertEqual(self._rows(together), self._rows(alone))
+
+    def test_many_events_are_one_audit_insert_and_one_outbox_insert_in_the_order_recorded(self) -> None:
+        tenancy.activate(self.tenant.id)
+        subjects = [uuid.uuid4() for _ in range(50)]
+        with CaptureQueriesContext(connections[DEFAULT_DB_ALIAS]) as captured:
+            with batched():
+                for subject in subjects:
+                    self.assertIsNone(record(actor=self.actor, subject_id=subject, subject_title="", summary="", action="probe.many", subject_type="probe", tenant_id=self.tenant.id))
+                self.assertEqual(captured.captured_queries, [])
+        inserts = [query["sql"].split('"')[1] for query in captured.captured_queries if query["sql"].startswith("INSERT")]
+        self.assertEqual(inserts, ["audit_event", "outbox_event"])
+        self.assertEqual([event.subject_id for event in AuditEvent.objects.filter(action="probe.many").order_by("created", "id")], subjects)
+        self.assertEqual(
+            [outbox.audit_event.subject_id for outbox in OutboxEvent.objects.filter(topic="probe.many").select_related("audit_event").order_by("created", "id")],
+            subjects,
+        )
+
+    def test_a_block_that_raises_writes_nothing(self) -> None:
+        tenancy.activate(self.tenant.id)
+        before = (AuditEvent.objects.count(), OutboxEvent.objects.count())
+        with self.assertRaises(RuntimeError):
+            with transaction.atomic(), batched():
+                self._record(self._calls()[0], uuid.uuid4())
+                raise RuntimeError("the write after the audit row failed")
+        self.assertEqual((AuditEvent.objects.count(), OutboxEvent.objects.count()), before)
+
+    def test_a_block_inside_another_joins_it(self) -> None:
+        tenancy.activate(self.tenant.id)
+        subjects = [uuid.uuid4(), uuid.uuid4()]
+        with batched():
+            self._record(self._calls()[0], subjects[0])
+            with batched():
+                self._record(self._calls()[0], subjects[1])
+            self.assertFalse(AuditEvent.objects.filter(subject_id__in=subjects).exists())
+        self.assertEqual(AuditEvent.objects.filter(subject_id__in=subjects).count(), 2)
+
+    def test_batched_rows_are_append_only_in_the_database(self) -> None:
+        tenancy.activate(self.tenant.id)
+        subject = uuid.uuid4()
+        with batched():
+            self._record(self._calls()[0], subject)
+        event = AuditEvent.objects.get(subject_id=subject)
+        outbox = OutboxEvent.objects.get(audit_event=event)
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            for statement, row in (("UPDATE audit_event SET summary = 'x' WHERE id = %s", event.id), ("UPDATE outbox_event SET topic = 'x' WHERE id = %s", outbox.id)):
+                with self.assertRaises(DatabaseError) as caught:
+                    with transaction.atomic():
+                        cursor.execute(statement, [str(row)])
+                self.assertIn("append-only", str(caught.exception))
+
+    def test_a_block_that_ends_outside_a_transaction_is_refused(self) -> None:
+        connection = connections[DEFAULT_DB_ALIAS]
+        original = connection.in_atomic_block
+        try:
+            with self.assertRaises(NotInTransaction):
+                with batched():
+                    self._record(self._calls()[0], uuid.uuid4())
+                    connection.in_atomic_block = False
+        finally:
+            connection.in_atomic_block = original

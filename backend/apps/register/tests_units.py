@@ -528,8 +528,8 @@ class PasteCommit(UnitWorld):
         self.assertEqual(self._events(units.UNIT_CREATED), [])
 
     def test_93_decided_lines_stay_inside_the_budget_with_a_fixed_cost_per_line(self) -> None:
-        """AC-REG1 at its size. Every lookup is once per call; only each unit's insert share,
-        its events and its decision are per line, so the step between two sizes is fixed."""
+        """AC-REG1 at its size. Every lookup is once per call, and so are the units' insert,
+        their decisions and their audit events, so the step between two sizes is fixed."""
         batch = iter(range(10_000))
 
         def lines(count: int) -> list[dict[str, Any]]:
@@ -561,10 +561,10 @@ class PasteCommit(UnitWorld):
         self.assertEqual(len(self._events(applicability.APPLICABILITY_SET)), 4 + 5 * 93)
 
 
-# Each pasted line: its unit's audit event (savepoint, audit row, outbox row, release) and
-# its decision's audit event (four again). The units are one INSERT for the whole paste and
-# their decisions one UPDATE, so neither grows with the paste.
-PASTE_LINE_QUERIES = 8
+# Nothing a pasted line needs is a query of its own: the units are one INSERT for the whole
+# paste, their decisions one UPDATE, and every audit and outbox row of the paste one INSERT
+# each (`audit.batched()`), so no query grows with the paste.
+PASTE_LINE_QUERIES = 0
 
 
 class UnitDecisions(UnitWorld):

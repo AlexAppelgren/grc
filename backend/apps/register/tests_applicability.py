@@ -308,8 +308,8 @@ class SettingManyAnswers(ApplicabilityTestCase):
         self.assertEqual(self.counts(), before)
 
     def test_the_query_count_is_pinned_and_grows_by_a_fixed_step_per_row(self) -> None:
-        """Every lookup is one query for the whole call; only each row's write and its audit
-        event are per row. Measured on answers to rows that exist, so no creation is counted,
+        """Every lookup, and every audit event, is one query for the whole call; only each
+        row's write is per row. Measured on answers to rows that exist, so no creation is counted,
         and net of what the session and the route cost before the logic runs, which a call
         refused over the cap measures."""
         entities = [factories.legal_entity(self.a.tenant, name=f"Example Entity {n} AB") for n in range(4)]
@@ -333,12 +333,13 @@ class SettingManyAnswers(ApplicabilityTestCase):
         self.assertEqual(two - gate, BATCH_QUERIES + 2 * ROW_QUERIES)
 
 
-# Each row: its UPDATE, then record()'s savepoint, audit row, outbox row and release.
-ROW_QUERIES = 5
+# Each row: its UPDATE. Its audit event joins the call's batch below.
+ROW_QUERIES = 1
 # Once per call, whatever its length: the obligations and their titles (2), the legal
-# entities (1) and the scope rule (5), and the locking reads of the entries and the scope
-# rows (2). Pinned so a lookup that turns per-row shows up here.
-BATCH_QUERIES = 10
+# entities (1) and the scope rule (5), the locking reads of the entries and the scope rows
+# (2), and every audit event of the call (`audit.batched()`: savepoint, one audit INSERT,
+# one outbox INSERT, release). Pinned so a lookup that turns per-row shows up here.
+BATCH_QUERIES = 14
 
 
 # c8-ui-applicability-status: the legal entities an answer can be given for, read before any
