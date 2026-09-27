@@ -82,6 +82,8 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `WHAT_APPLIES_SUMMARY_MAX_TOKENS` | api | `400` | `400` | `400` | The what-applies summary's own token ceiling, beneath `LLM_MAX_TOKENS` (ACC-06). At least 1 or the app refuses to boot |
 | `LLM_PRICE_INPUT_MINOR_PER_MTOK` | api | `500` | `500` | `500` | A model call's input price in minor units per million tokens, the provider's list price for `LLM_MODEL`; a what-applies summary's cost is computed from it and counted against the bank's monthly cap (ACC-09). At least 0 or the app refuses to boot |
 | `LLM_PRICE_OUTPUT_MINOR_PER_MTOK` | api | `2500` | `2500` | `2500` | A model call's output price in minor units per million tokens, as above (ACC-09). At least 0 or the app refuses to boot |
+| `SCOPE_ITEM_DESCRIPTION_MAX_CHARS` | api | `2000` | `2000` | `2000` | The longest description a bank may give a scope item, the regulation it asks its own agent to research; a longer one is refused at the request (OWN-01, D-91). At least 1 or the app refuses to boot |
+| `FOOTPRINT_CHANGE_MAX_TERMS` | api | `50` | `50` | `50` | The most terms, and the most scope items, one regulatory scope request may add or remove, each list on its own; a longer list is refused with 422 (FP-02, OWN-01, H24). At least 1 or the app refuses to boot |
 | `ASK_RETRIEVAL_DEPTH` | api | `6` | `6` | `6` | How many passages of the reader's own ranking Ask gives the model, best first: the whole of what an answer may rest on, each one a numbered citation. From 1 to `AI_GENERATION_CITATIONS_MAX`, or the app refuses to boot (SRC-03) |
 | `ASK_MAX_TOKENS` | api | `1024` | `1024` | `1024` | The most one Ask answer may write, beneath the `LLM_MAX_TOKENS` ceiling: an answer is a few cited sentences. At least 1, or the app refuses to boot (SRC-03) |
 | `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |
@@ -92,6 +94,11 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `AGENT_BEAT_INTERVAL_MINUTES` | worker, beat | `15` | `15` | `15` | How often the two agent beats fire, in minutes: bleqq's agents and the banks' own; below 1 the app refuses to boot (AGT-06, c11-scheduler) |
 | `AGENT_RUNS_PER_BEAT` | worker | `5` | `5` | `5` | The most runs of bleqq's agents one beat starts, the longest-waiting first; the rest start on the next beat, and below 1 the app refuses to boot (AGT-03, c11-scheduler) |
 | `AGENT_RUN_BUDGET_LIMIT` | api, worker | `5.00` | `5.00` | `5.00` | The most one run of a bank's own agent may spend, in EUR, stored on the run; a run starts only when the month's spend plus this fits under the bank's cap, and anything but an amount above zero refuses the boot (AGT-04, c11-scheduler) |
+| `RESEARCH_REQUESTS_PER_MONTH` | api | `30` | `30` | `30` | How many research requests a bank may make in a calendar month of its own time zone; past it a request answers 429 `plan_limit_reached` (AGT-05, c11-research-requests) |
+| `SCOPE_RESEARCH_TEXT_MAX_CHARS` | worker | `2000` | `2000` | `2000` | The longest each of a scope item's text fields (its name, official reference and source address) may be when it reaches the bank's own research agent; each is cut to it before it leaves the worker (OWN-02, D-98, ADR 0061). At least 1 or the app refuses to boot |
+| `RESEARCH_URL_TIMEOUT_SECONDS` | api | `5` | `5` | `5` | The seconds one connection of a `check_url` request's fetch may take (AGT-05, c11-research-requests) |
+| `RESEARCH_URL_MAX_BYTES` | api | `1000000` | `1000000` | `1000000` | The most bytes of a fetched page a `check_url` request keeps (AGT-05, c11-research-requests) |
+| `RESEARCH_URL_MAX_REDIRECTS` | api | `3` | `3` | `3` | How many redirects a `check_url` fetch follows, each checked for a public https host first; past it the request answers 422 `url_unreachable` (AGT-05, c11-research-requests) |
 
 ## Testing, observability, budgets
 

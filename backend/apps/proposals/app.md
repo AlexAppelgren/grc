@@ -177,6 +177,16 @@ asked for the re-tag, is refused with 409 `four_eyes_violation`, and an agent wi
 `person_review_required`; no API key reaches the route. The console screen and PRO-S8's
 journey are `c11-fe-console-batch-retag`'s and the console journey package's.
 
+OWN-03 is `in_progress` (d89-proposal-owner, 2026-09-25): a proposal carries `owner_tenant_id`,
+set by `logic.create` from its target or, for the bank's own new instrument or obligation,
+from the bank the database is scoped to, never from a body; `proposal` is under forced
+row-level security in the split shape, so the console reads no owned row
+(apps/shared/tests_rls.py); `private_records.approve` belongs to Compliance officer and
+Approver; and the bank's own queue, `GET /private-proposals` and `POST
+/private-proposals/{proposalId}/approve` and `/reject`, is declared and answers 501 after
+loading under row-level security (apps/proposals/tests_private_contract.py). Deciding, and
+PRO-S12 whole, are d89-private-records'.
+
 PRO-S13's journey (pro-s13-journey) runs end to end: the console mints a `library-confirmer`
 key with `agent-runs:write` and `proposals:review`, which opens a run, reads the queue and
 the detail of the proposal `watch-sweeper` filed through its own key (seeded on

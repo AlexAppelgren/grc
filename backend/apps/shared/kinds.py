@@ -290,7 +290,9 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "ResearchRequestKind": (
         "research_request_kind",
         "AGT-05: what a request asks for; `retag` is the console's, has no tenant and produces "
-        "one batch proposal with a preview, never direct edits, and the worker branches on the rest",
+        "one batch proposal with a preview, never direct edits; `scope_item` is opened by the "
+        "worker for an approved scope item (OWN-02, d89-agent-research), and its run alone files "
+        "the bank's own proposals; the worker branches on the rest",
     ),
     "ResearchRequestStatus": (
         "research_request_status",
@@ -314,5 +316,11 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "DutyStatus": (
         "duty_status",
         "REG-07: where a dated duty occurrence stands; completion, the roadmap and Today branch on it",
+    ),
+    # d89-scope-items-model (taxonomy 0012, OWN-01, D-91).
+    "ScopeItemStatus": (
+        "scope_item_status",
+        "OWN-01: a scope item is requested, in scope, declined or removed; the request logic and "
+        "the bank's own agent's research branch on it, and no admin adds a state",
     ),
 }

@@ -15,20 +15,33 @@ The preview counts per record kind: the obligations this bank can see and its op
 each by the one scope rule (apps/taxonomy/matching.py). A count carries `available`, because
 "not counted" and "none" are different answers and a screen that cannot tell them apart
 would lie to the person deciding (playbook 4.4); both kinds are counted, so both say true.
+
+A request may also add and remove scope items (OWN-01, D-89, D-91): regulations the shared
+library does not cover, which the bank's own agent researches once a second person approved
+them. An item rides on the same request, so the same one-waiting rule, four-eyes check and
+passkey decide it, and only a person's session reaches it: no key and no agent path writes a
+scope item (`tests_scope_items.NoOtherWriter`). An item is not a term: it moves no count in
+the preview and FP-01's matching never reads it. Its approval writes a history row and one
+`scope_item.added` or `scope_item.removed` audit and outbox row carrying ids and keys only,
+which is what the research worker listens for; the name and description a person typed stay
+on the item row (R2_CROSS_CUTTING rule m).
 """
 
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
 from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Prefetch, prefetch_related_objects
 from django.utils import timezone
+from django.utils.text import slugify
 
 from apps.cases import reading as case_reading
 from apps.library import reading
+from apps.library.models import Jurisdiction, JurisdictionLabel
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
 from apps.taxonomy import markets_logic, matching, terms_logic
@@ -38,10 +51,16 @@ from apps.taxonomy.models import (
     FootprintChangeAdd,
     FootprintChangeRemove,
     FootprintChangeRequest,
+    FootprintChangeScopeItem,
     FootprintHistory,
     FootprintTerm,
+    ScopeItem,
+    ScopeItemStatus,
     TermDimensionKind,
+    validate_public_https_url,
+    validate_scope_item_description,
 )
+from apps.taxonomy.reading import Labels, label_of
 from apps.taxonomy.schemas import (
     FootprintDimension,
     FootprintDryRun,
@@ -50,11 +69,20 @@ from apps.taxonomy.schemas import (
     FootprintRequestRow,
     FootprintView,
     PersonRef,
+    ScopeItemInput,
+    ScopeItemRow,
     TermRef,
 )
 
 SUBJECT_TYPE = "footprint"
 REQUEST_SUBJECT_TYPE = "footprint_change_request"
+SCOPE_ITEM_SUBJECT_TYPE = "scope_item"
+# The dimension a scope item's regime term comes from (the model's `regime_term`).
+REGIME_DIMENSION = "regime"
+SCOPE_ITEM_KEY_MAX_CHARS = 80
+# How a scope item's research stands (OWN-02). Until the bank's own agent opens research
+# on an item (d89-agent-research), an item in scope waits for it.
+WAITING_FOR_AGENT = "waiting_for_agent"
 
 
 # ---------------------------------------------------------------------------------------
@@ -84,6 +112,10 @@ def view(tenant_id: uuid.UUID, order: list[str]) -> FootprintView:
         dimensions=dimensions,
         pending_request=pending_row(tenant_id, order),
         markets=markets_logic.markets_of(tenant_id, order),
+        scope_items=scope_item_rows(
+            list(_scope_items().filter(tenant_id=tenant_id, status=ScopeItemStatus.IN_SCOPE.value).order_by("created_at", "id")),
+            order,
+        ),
     )
 
 
@@ -126,6 +158,9 @@ def request_rows(requests: list[FootprintChangeRequest], order: list[str]) -> li
     changes = _changes_of(requests)
     terms = {term.id: term for adds, removes in changes for term in (*adds, *removes)}
     labelled = dict(zip(terms, terms_logic.labelled_term_refs(list(terms.values()), order), strict=True))
+    item_changes = _scope_item_changes_of(requests)
+    items = {item.id: item for adds, removes in item_changes for item in (*adds, *removes)}
+    item_rows = dict(zip(items, scope_item_rows(list(items.values()), order), strict=True))
     return [
         FootprintRequestRow(
             id=request.id,
@@ -134,14 +169,168 @@ def request_rows(requests: list[FootprintChangeRequest], order: list[str]) -> li
             requested_at=request.requested_at,
             adds=[labelled[term.id] for term in adds],
             removes=[labelled[term.id] for term in removes],
+            scope_item_adds=[item_rows[item.id] for item in item_adds],
+            scope_item_removes=[item_rows[item.id] for item in item_removes],
             preview=_preview_now(request, adds, removes),
             decided_by=_person(request.decided_by),
             decided_at=request.decided_at,
             decision_note=request.decision_note,
             version=request.version,
         )
-        for request, (adds, removes) in zip(requests, changes, strict=True)
+        for request, (adds, removes), (item_adds, item_removes) in zip(requests, changes, item_changes, strict=True)
     ]
+
+
+# ---------------------------------------------------------------------------------------
+# Scope items (OWN-01, D-91)
+# ---------------------------------------------------------------------------------------
+def _scope_items() -> Any:
+    return ScopeItem.objects.select_related("jurisdiction", "regime_term__dimension")
+
+
+def scope_item(tenant_id: uuid.UUID, item_id: uuid.UUID) -> ScopeItem:
+    """One of this bank's scope items, under row-level security and by its id; another
+    bank's answers 404 exactly as one that does not exist."""
+    found: ScopeItem | None = _scope_items().filter(tenant_id=tenant_id, pk=item_id).first()  # ordering: pk lookup, at most one row
+    if found is None:
+        raise ValidationError("That scope item is not here.", code="not_found")
+    return found
+
+
+def _research(item: ScopeItem) -> str | None:
+    return WAITING_FOR_AGENT if item.status == ScopeItemStatus.IN_SCOPE.value else None
+
+
+def scope_item_rows(items: list[ScopeItem], order: list[str]) -> list[ScopeItemRow]:
+    """Scope items as the screen reads them, labelled in two queries however many there
+    are: the jurisdictions' labels and the regime terms' labels."""
+    jurisdictions = list({item.jurisdiction_id: item.jurisdiction for item in items}.values())
+    labels = Labels.for_rows(JurisdictionLabel, jurisdictions)
+    terms = list({item.regime_term_id: item.regime_term for item in items}.values())
+    regimes = dict(zip((term.id for term in terms), terms_logic.labelled_term_refs(terms, order), strict=True))
+    return [
+        ScopeItemRow(
+            id=None if item._state.adding else item.id,
+            key=item.key,
+            name=item.name,
+            description=item.description,
+            jurisdiction=TermRef(
+                key=item.jurisdiction.key,
+                kind=item.jurisdiction.kind,
+                label=label_of(
+                    labels.texts(item.jurisdiction_id),
+                    order,
+                    original=labels.original(item.jurisdiction_id),
+                    key=item.jurisdiction.key,
+                ),
+            ),
+            regime_term=regimes[item.regime_term_id],
+            official_reference=item.official_reference,
+            source_url=item.source_url,
+            status=item.status,
+            research=_research(item),
+        )
+        for item in items
+    ]
+
+
+def _scope_item_changes_of(requests: list[FootprintChangeRequest]) -> list[tuple[list[ScopeItem], list[ScopeItem]]]:
+    """The scope items each request adds and removes, in one query for any number of
+    requests, in the order they were asked for."""
+    prefetch_related_objects(
+        requests,
+        Prefetch(
+            "scope_item_links",
+            FootprintChangeScopeItem.objects.select_related(
+                "scope_item__jurisdiction", "scope_item__regime_term__dimension"
+            ).order_by("created_at", "id"),
+        ),
+    )
+    changes = []
+    for request in requests:
+        links = list(request.scope_item_links.all())
+        changes.append(
+            (
+                [link.scope_item for link in links if link.action == FootprintAction.ADDED.value],
+                [link.scope_item for link in links if link.action == FootprintAction.REMOVED.value],
+            )
+        )
+    return changes
+
+
+def _jurisdiction(key: str) -> Jurisdiction:
+    found = Jurisdiction.objects.filter(key=key, active=True).first()  # ordering: key is unique, so there is at most one row
+    if found is None:
+        valid = ", ".join(Jurisdiction.objects.filter(active=True).order_by("sort_order", "key").values_list("key", flat=True))
+        raise ValidationError(f"{key!r} is not an active jurisdiction. Valid keys: {valid}.", code="unknown_key")
+    return found
+
+
+def _key_base(name: str) -> str:
+    return slugify(name).replace("-", "_")[:SCOPE_ITEM_KEY_MAX_CHARS].rstrip("_") or SCOPE_ITEM_SUBJECT_TYPE
+
+
+def scope_item_drafts(tenant_id: uuid.UUID, inputs: list[ScopeItemInput]) -> list[ScopeItem]:
+    """The items a request would add, validated and keyed but not stored (OWN-01): the
+    jurisdiction and the regime term by key, the address as a public https page, the
+    description within its cap. A key is derived from the name and never reused, a declined
+    or removed item's included (playbook 4.3), so a taken one gets `_2`, `_3` and so on."""
+    drafts: list[ScopeItem] = []
+    bases = {_key_base(entry.name) for entry in inputs}
+    taken = set(
+        ScopeItem.objects.filter(tenant_id=tenant_id, key__regex=r"^(" + "|".join(bases) + r")(_[0-9]+)?$").values_list("key", flat=True)
+    ) if bases else set()
+    for entry in inputs:
+        try:
+            validate_public_https_url(entry.source_url)
+        except ValidationError as exc:
+            raise ValidationError(
+                "sourceUrl: give the address of a public https page.", code="source_not_public"
+            ) from exc
+        validate_scope_item_description(entry.description)
+        base = _key_base(entry.name)
+        key, number = base, 1
+        while key in taken:
+            number += 1
+            suffix = f"_{number}"
+            key = base[: SCOPE_ITEM_KEY_MAX_CHARS - len(suffix)].rstrip("_") + suffix
+        taken.add(key)
+        drafts.append(
+            ScopeItem(
+                tenant_id=tenant_id,
+                key=key,
+                name=entry.name,
+                description=entry.description,
+                jurisdiction=_jurisdiction(entry.jurisdiction),
+                regime_term=terms_logic.term_by_ref(REGIME_DIMENSION, entry.regime_term),
+                official_reference=entry.official_reference,
+                source_url=entry.source_url,
+            )
+        )
+    return drafts
+
+
+def scope_items_in_scope(tenant_id: uuid.UUID, keys: list[str]) -> list[ScopeItem]:
+    """The items a request would take out, by key, in the order given: each must be in
+    scope now, or 422 `unknown_key` naming the keys that would have worked."""
+    if len(set(keys)) < len(keys):
+        raise ValidationError("Name each scope item once in a change.", code="validation_error")
+    found = {
+        item.key: item
+        for item in _scope_items().filter(tenant_id=tenant_id, key__in=keys, status=ScopeItemStatus.IN_SCOPE.value)
+    }
+    missing = [key for key in keys if key not in found]
+    if missing:
+        valid = ", ".join(
+            ScopeItem.objects.filter(tenant_id=tenant_id, status=ScopeItemStatus.IN_SCOPE.value)
+            .order_by("key")
+            .values_list("key", flat=True)
+        )
+        raise ValidationError(
+            f"{missing[0]!r} is not a scope item in the regulatory scope. Valid keys: {valid or 'none'}.",
+            code="unknown_key",
+        )
+    return [found[key] for key in keys]
 
 
 # ---------------------------------------------------------------------------------------
@@ -216,22 +405,33 @@ def _preview_now(request: FootprintChangeRequest, adds: list[Any], removes: list
     return FootprintPreview(**request.preview) if request.preview else FootprintPreview()
 
 
-def dry_run(tenant_id: uuid.UUID, adds: list[Any], removes: list[Any], order: list[str]) -> FootprintDryRun:
+def dry_run(
+    tenant_id: uuid.UUID,
+    adds: list[Any],
+    removes: list[Any],
+    order: list[str],
+    *,
+    item_adds: Sequence[ScopeItem] = (),
+    item_removes: Sequence[ScopeItem] = (),
+) -> FootprintDryRun:
     """The requester's preview before sending (playbook 15: dry run, preview, commit). The
     same validation as a real request, the same preview, and nothing written: no request
-    row, no audit event, no approval started. A preview is a read that needs a body."""
-    _validate_change(tenant_id, adds, removes)
+    row, no scope item, no audit event, no approval started. A preview is a read that needs
+    a body. Scope items move no count: they are researched, never matched."""
+    _validate_change(adds, removes, item_adds, item_removes)
     return FootprintDryRun(
         adds=terms_logic.labelled_term_refs(adds, order),
         removes=terms_logic.labelled_term_refs(removes, order),
+        scope_item_adds=scope_item_rows(list(item_adds), order),
+        scope_item_removes=scope_item_rows(list(item_removes), order),
         preview=preview_of(tenant_id, adds, removes),
         dry_run=True,
     )
 
 
-def _validate_change(tenant_id: uuid.UUID, adds: list[Any], removes: list[Any]) -> None:
-    if not adds and not removes:
-        raise ValidationError("Choose at least one term to add or remove.", code="validation_error")
+def _validate_change(adds: list[Any], removes: list[Any], item_adds: Sequence[ScopeItem], item_removes: Sequence[ScopeItem]) -> None:
+    if not adds and not removes and not item_adds and not item_removes:
+        raise ValidationError("Choose at least one term or scope item to add or remove.", code="validation_error")
     if len({term.id for term in adds}) < len(adds) or len({term.id for term in removes}) < len(removes):
         raise ValidationError("Name each term once in a change.", code="validation_error")
     both = {term.id for term in adds} & {term.id for term in removes}
@@ -352,13 +552,16 @@ def create_request(
     actor: Actor,
     adds: list[Any],
     removes: list[Any],
+    item_adds: Sequence[ScopeItem] = (),
+    item_removes: Sequence[ScopeItem] = (),
 ) -> FootprintChangeRequest:
     """One pending request at a time (409 `request_pending`): two people editing the same
     footprint from two previews would each approve a change the other's preview never
     counted. The partial unique constraint `footprint_change_request_one_pending` decides,
     so two requests sent at the same moment cannot both wait; the savepoint keeps the
-    caller's transaction usable after the refusal."""
-    _validate_change(tenant.id, adds, removes)
+    caller's transaction usable after the refusal. The scope items it adds are stored with
+    it as `requested`, so the approver decides on exactly what was asked (D-91)."""
+    _validate_change(adds, removes, item_adds, item_removes)
     try:
         with transaction.atomic():
             request = FootprintChangeRequest.objects.create(
@@ -378,20 +581,86 @@ def create_request(
         FootprintChangeAdd.objects.create(tenant=tenant, request=request, term=term)
     for term in removes:
         FootprintChangeRemove.objects.create(tenant=tenant, request=request, term=term)
+    for item in item_adds:
+        item.tenant = tenant
+        item.status = ScopeItemStatus.REQUESTED.value
+        item.save()
+        FootprintChangeScopeItem.objects.create(tenant=tenant, request=request, scope_item=item, action=FootprintAction.ADDED.value)
+    for item in item_removes:
+        FootprintChangeScopeItem.objects.create(tenant=tenant, request=request, scope_item=item, action=FootprintAction.REMOVED.value)
+    # Keys and ids only: the name and description a person typed stay on the item row.
     record(
         action="footprint.change_requested",
         actor=actor,
         subject_type=REQUEST_SUBJECT_TYPE,
         subject_id=request.id,
-        subject_title=f"{len(adds)} added, {len(removes)} removed",
+        subject_title=f"{len(adds) + len(item_adds)} added, {len(removes) + len(item_removes)} removed",
         summary="Requested a regulatory scope change.",
         tenant_id=tenant.id,
         after={
             "adds": [f"{term.dimension.key}:{term.key}" for term in adds],
             "removes": [f"{term.dimension.key}:{term.key}" for term in removes],
+            "scopeItemAdds": [_item_state(item, None) for item in item_adds],
+            "scopeItemRemoves": [_item_state(item, None) for item in item_removes],
         },
     )
     return request
+
+
+def _item_state(item: ScopeItem, request: FootprintChangeRequest | None) -> dict[str, str]:
+    """A scope item as an audit value or an outbox payload carries it: ids and keys, never
+    the text a person typed (R2_CROSS_CUTTING rule m)."""
+    state = {
+        "scopeItemId": str(item.id),
+        "key": item.key,
+        "jurisdiction": item.jurisdiction.key,
+        "regimeTerm": item.regime_term.key,
+    }
+    if request is not None:
+        state["request"] = str(request.id)
+    return state
+
+
+def _switch_items(
+    *,
+    tenant: Tenant,
+    actor: Actor,
+    items: list[ScopeItem],
+    action: FootprintAction,
+    request: FootprintChangeRequest,
+    step_up_assertion_id: uuid.UUID,
+    changed_by: Any,
+) -> None:
+    """An approved request's scope items enter or leave the scope: the item's status, one
+    history row and one `scope_item.added` or `scope_item.removed` audit and outbox row
+    each, with the step-up that authorised it. The outbox row is what the bank's own
+    agent's research listens for (OWN-02), so its payload names the item by id and key."""
+    added = action is FootprintAction.ADDED
+    for item in items:
+        item.status = (ScopeItemStatus.IN_SCOPE if added else ScopeItemStatus.REMOVED).value
+        item.save(update_fields=["status"])
+        FootprintHistory.objects.create(
+            tenant=tenant,
+            scope_item=item,
+            action=action.value,
+            request=request,
+            changed_by=changed_by,
+            step_up_assertion_id=step_up_assertion_id,
+        )
+        state = _item_state(item, request)
+        record(
+            action=f"scope_item.{action.value}",
+            actor=actor,
+            subject_type=SCOPE_ITEM_SUBJECT_TYPE,
+            subject_id=item.id,
+            subject_title=item.key,
+            summary=f"{'Added' if added else 'Removed'} scope item {item.key} {'to' if added else 'from'} the regulatory scope.",
+            tenant_id=tenant.id,
+            after=state if added else None,
+            before=None if added else state,
+            step_up_assertion_id=step_up_assertion_id,
+            payload={**state, "tenantId": str(tenant.id)},
+        )
 
 
 def _decidable(request: FootprintChangeRequest, expected_version: int | None) -> None:
@@ -427,9 +696,13 @@ def approve(
             code="four_eyes_violation",
         )
     adds, removes = _changes(request)
+    item_adds, item_removes = _scope_item_changes_of([request])[0]
     # A term retired while the request waited is not the library's any more: nobody may
-    # switch it on, so the approver rejects the change and the requester asks again.
-    if any(not term.active or not term.dimension.active for term in adds):
+    # switch it on, so the approver rejects the change and the requester asks again. The
+    # same holds for a scope item's jurisdiction or regime term.
+    if any(not term.active or not term.dimension.active for term in adds) or any(
+        not item.jurisdiction.active or not item.regime_term.active for item in item_adds
+    ):
         raise ValidationError(
             "A term in this change was retired after it was asked for. Reject the change so it can be asked for again.",
             code="stale_write",
@@ -452,6 +725,16 @@ def approve(
         step_up_assertion_id=step_up_assertion_id,
         changed_by=decider,
     )
+    for items, action in ((item_adds, FootprintAction.ADDED), (item_removes, FootprintAction.REMOVED)):
+        _switch_items(
+            tenant=tenant,
+            actor=actor,
+            items=items,
+            action=action,
+            request=request,
+            step_up_assertion_id=step_up_assertion_id,
+            changed_by=decider,
+        )
     return _decide(
         tenant=tenant,
         request=request,
@@ -543,6 +826,20 @@ def _decide(
     # The note a person typed stays on the request row; the audit value carries no tenant
     # text (CHUNK10_TASKS rule 13).
     after: dict[str, Any] = {"status": status.value, "version": request.version, "preview": request.preview}
+    if status is not ApprovalStatus.APPROVED:
+        # The items this request asked for never entered the scope; the decision's audit
+        # row names them by id and key.
+        declined = list(
+            ScopeItem.objects.filter(
+                tenant=tenant,
+                request_links__request=request,
+                request_links__action=FootprintAction.ADDED.value,
+                status=ScopeItemStatus.REQUESTED.value,
+            ).order_by("created_at", "id")
+        )
+        ScopeItem.objects.filter(pk__in=[item.pk for item in declined]).update(status=ScopeItemStatus.DECLINED.value)
+        if declined:
+            after["scopeItemsDeclined"] = [{"scopeItemId": str(item.id), "key": item.key} for item in declined]
     record(
         action=action,
         actor=actor,

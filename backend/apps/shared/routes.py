@@ -112,6 +112,8 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("PATCH", "/obligations/{obligation_id}/register/entities/{org_unit_id}", "register.TenantObligationScope", "register_entity"),
     # c8-reg-links-history (REG-05): a link is removed by id.
     ("DELETE", "/internal-links/{link_id}", "register.InternalLink", "internal_link"),
+    # d89-scope-items-logic (OWN-01): one of the bank's own scope items.
+    ("GET", "/tenant/footprint/scope-items/{scope_item_id}", "taxonomy.ScopeItem", "scope_item"),
 ]
 
 

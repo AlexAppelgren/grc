@@ -34,7 +34,7 @@ from typing import Any
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import ApprovalStatus, ComplianceStatus, FootprintChangeRequest, Team, TeamLabel, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, ComplianceStatus, FootprintChangeRequest, ScopeItem, Team, TeamLabel, VocabularySuggestion
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.governance.models import TenantReachRequest
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
@@ -188,6 +188,30 @@ def footprint_request(tenant: Tenant) -> FootprintChangeRequest:
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return FootprintChangeRequest.objects.create(tenant=tenant, requested_by=requester)
+
+
+def scope_item(tenant: Tenant) -> ScopeItem:
+    """The tenant-isolation guard's record for the scope item route (d89-scope-items-logic,
+    OWN-01): one of the bank's own scope items, on the reference jurisdictions and terms,
+    which it seeds when they are missing (the seeds are idempotent)."""
+    from apps.library.models import Jurisdiction
+    from apps.library.seeds import seed_jurisdictions, seed_languages
+    from apps.taxonomy import terms_logic
+    from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+
+    for seed in (seed_languages, seed_jurisdictions, seed_library_vocabularies, seed_term_dimensions, seed_taxonomy_terms):
+        seed()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        item: ScopeItem = ScopeItem.objects.create(
+            tenant=tenant,
+            key=f"scope-item-{uuid.uuid4().hex[:8]}",
+            name="Local crypto-asset rules",
+            jurisdiction=Jurisdiction.objects.get(key="se"),
+            regime_term=terms_logic.term_by_ref("regime", "securities"),
+            source_url="https://www.fi.se/sv/vara-register/",
+        )
+    return item
 
 
 def vocabulary_suggestion(tenant: Tenant) -> SimpleNamespace:
@@ -598,3 +622,8 @@ def department(tenant: Tenant, *, parent: OrgUnit | None = None, head: User | No
         return OrgUnit.objects.create(
             tenant=tenant, kind=OrgUnitKind.BUSINESS_UNIT.value, name=f"Unit {next(_counter)}", parent=parent, head_user=head
         )
+# acc-scope-and-reach (ACC-08): the tenant-isolation guard's record for tenant reach routes.
+
+
+# c11-tenant-agents-budget-scope (AGT-04). The definition is a library row, so
+# `apps/agents/testing.py` (the fence exempts it) builds it, as the case builders above do.

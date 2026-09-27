@@ -2,9 +2,11 @@ import type { APIRequestContext, APIResponse } from '@playwright/test';
 
 import { agentWith, allowAccessStepUps, enableEntryReach, entriesReachOff, issueEntryKey, registerEntry, revokeEntry, switchTenantReachOff, switchTenantReachOn } from './support/agent-access';
 import { mintAgentKey, revokeAgentKey } from './support/agent-key';
+import { askForRetag, askOurAgent } from './support/agent-requests';
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, BACKEND_URL, LOGINS, signInAs, signOut } from './support/passkeys';
 import { approveQueueProposal } from './support/watch';
+import { agentCard, changeSchedule, openAgents, restoreSeededAgent, SEEDED_CAP, setBankAi, setCap } from './support/agent-controls';
 
 // agents: the @e2e scenarios from backend/apps/agents/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
@@ -74,20 +76,169 @@ test.describe('agents journeys', () => {
     // pending: AGT-S4 (AGT-03, chunk 11)
   });
 
-  test.fixme("AGT-S5: A tenant controls its agents without touching their instructions", async () => {
-    // pending: AGT-S5 (AGT-04, chunk 11)
+  // AGT-S5 and AGT-S6 steer tenant A's one seeded agent and its cap, and AGT-S7's requests
+  // open runs of that agent, so they run one after the other rather than beside each other.
+  test.describe('a bank steers its own agent', () => {
+    test.describe.configure({ mode: 'serial' });
+
+    test("AGT-S5: A tenant controls its agents without touching their instructions", async ({ page, apiGuard }) => {
+      // AGT-04: tenant A's admin steers the bank's own agent; bleqq's watch has no control.
+      // The screen offers the bank's own markets (Sweden operating, Denmark watched), so the
+      // scope is narrowed to Sweden; the integration test narrows it to SE and FI by the API.
+      allowFreshContext(apiGuard);
+      apiGuard.allow(/\/api\/v1\/agents\/[^/]+$/, 422, 'a cadence above the plan limit answers above_plan_limit');
+      apiGuard.allow(/\/api\/v1\/research-requests$/, 501, 'the list of research requests is not built yet; the screen shows its error state beside the controls');
+      await signInAs(page, LOGINS.admin);
+      try {
+        const card = await openAgents(page);
+
+        // What bleqq watches carries no control and no spend.
+        const watch = page.locator('[data-platform-watch]');
+        await expect(watch.getByRole('heading', { name: 'What bleqq watches' })).toBeVisible();
+        await expect(watch.getByRole('button')).toHaveCount(0);
+        await expect(watch).not.toContainText('€');
+
+        // Switch it on, weekly within the plan, over Sweden alone, with room under the cap.
+        await card.getByRole('button', { name: 'Switch off' }).click();
+        await expect(card.getByText('Switched off. Nothing runs until it is switched on again.')).toBeVisible();
+        await card.getByRole('button', { name: 'Switch on' }).click();
+        await expect(card.getByText('Switched on.')).toBeVisible();
+        await changeSchedule(card, 'Weekly', ['Sweden']);
+        await expect(card.getByText('Saved.')).toBeVisible();
+        await expect(card.locator('dd').filter({ hasText: /^Sweden$/ })).toBeVisible();
+        await setCap(page, '40.00');
+
+        // "Run now" queues a run, and Recent runs lists it beside the runs before it with what
+        // each found and cost.
+        const runs = card.locator('[data-run-id]');
+        const before = await runs.evaluateAll((rows) => rows.map((row) => row.getAttribute('data-run-id')));
+        const queued = page.waitForResponse((r) => /\/api\/v1\/agents\/[^/]+\/runs$/.test(r.url()) && r.request().method() === 'POST');
+        await card.getByRole('button', { name: 'Run now' }).click();
+        const run = (await (await queued).json()) as { id: string; status: string };
+        expect(run.status).toBe('running');
+        expect(before).not.toContain(run.id);
+        await expect(card.getByText('Run started. It is at the top of Recent runs.')).toBeVisible();
+        const row = card.locator(`[data-run-id="${run.id}"]`);
+        await expect(row).toHaveAttribute('data-run-state', 'running');
+        await expect(card.locator('[data-next-run]')).toHaveText('Running now');
+        await expect(runs.filter({ hasText: /\d+ findings?|no findings/ }).first()).toBeVisible();
+        await expect(runs.filter({ hasText: /€\s?\d/ }).first()).toBeVisible();
+
+        // "Stop run" interrupts it, and its status says so.
+        await card.getByRole('button', { name: 'Stop run' }).click();
+        await card.getByRole('button', { name: 'Stop the run' }).click();
+        await expect(card.getByText('Stopped. The run shows as stopped under Recent runs.')).toBeVisible();
+        await expect(row).not.toHaveAttribute('data-run-state', 'running');
+        await expect(card.getByRole('button', { name: 'Stop run' })).toHaveCount(0);
+
+        // A cadence above the plan limit is refused and nothing changes.
+        await changeSchedule(card, 'Daily', ['Sweden']);
+        await expect(card.getByText('Our plan does not allow this, so nothing changed.')).toBeVisible();
+        await page.reload();
+        await expect(agentCard(page).locator('dd').first()).toContainText('Weekly');
+      } finally {
+        await restoreSeededAgent(page);
+      }
+    });
+
+    test("AGT-S6: The budget cap pauses runs and the AI off switch stops every model call", async ({ page, apiGuard }) => {
+      // AGT-04. The cap half is tenant A's, whose seeded runs put the month's spend just under
+      // its cap; the AI half switches tenant B's AI off, because tenant A's Ask journeys run in
+      // parallel and a bank's switch is the whole bank's. That the admins are notified when the
+      // beat pauses an agent is the integration test's: no journey waits for the beat.
+      allowFreshContext(apiGuard);
+      apiGuard.allow(/\/api\/v1\/agents\/[^/]+\/runs$/, 422, 'a run that could pass the monthly cap answers budget_cap_reached');
+      apiGuard.allow(/\/api\/v1\/research-requests$/, 501, 'the list of research requests is not built yet; the screen shows its error state beside the controls');
+      apiGuard.allow(/\/api\/v1\/tenant\/ai$/, 403, 'switching AI answers step_up_required first and opens the passkey prompt');
+      apiGuard.allow(/\/api\/v1\/ask$/, 403, 'Ask answers feature_off while the bank has AI off');
+      await signInAs(page, LOGINS.admin);
+      try {
+        const card = await openAgents(page);
+
+        // "Spend this month" is the bank's own runs, 6.25 of the 7.00 cap: bleqq's runs, which
+        // cost 7.47 this month, are not in it.
+        const spend = page.locator('[data-spend]');
+        await expect(spend).toContainText('6.25');
+        await expect(spend).toContainText('7.00');
+        await expect(page.locator('[data-agent-budget]')).toContainText("bleqq's watch runs at bleqq's cost and is not counted here.");
+        await setCap(page, SEEDED_CAP);
+
+        // A run that could take the month past the cap is not started.
+        const runs = card.locator('[data-run-id]');
+        await expect(runs.first()).toBeVisible();
+        const before = await runs.count();
+        const refused = page.waitForResponse((r) => /\/api\/v1\/agents\/[^/]+\/runs$/.test(r.url()) && r.request().method() === 'POST');
+        await card.getByRole('button', { name: 'Run now' }).click();
+        expect(((await (await refused).json()) as { code: string }).code).toBe('budget_cap_reached');
+        await expect(card.getByText("This month's cap is reached, so nothing more runs until next month or until the cap is raised.")).toBeVisible();
+        await expect(card.locator('[data-run-state="running"]')).toHaveCount(0);
+        await expect(runs).toHaveCount(before);
+        await expect(spend).toContainText('6.25');
+      } finally {
+        await restoreSeededAgent(page);
+      }
+      await signOut(page);
+
+      // Tenant B switches all AI features off.
+      await signInAs(page, LOGINS.secondBankAdmin);
+      try {
+        await setBankAi(page, false);
+
+        // None of the bank's own agents runs, and bleqq's watch keeps running.
+        await page.goto('/admin/agents');
+        await expect(page.locator('[data-ai-enabled="false"]')).toContainText('so our own agents do not run. What bleqq watches keeps running.');
+
+        // Ask answers feature_off before a model is asked.
+        await page.goto('/ask');
+        const asked = page.waitForResponse((r) => r.url().endsWith('/api/v1/ask') && r.request().method() === 'POST');
+        await page.getByRole('searchbox', { name: 'Question' }).fill('What must we disclose about costs and charges?');
+        await page.getByRole('button', { name: 'Ask', exact: true }).click();
+        const answer = await asked;
+        expect(answer.status()).toBe(403);
+        expect(((await answer.json()) as { code: string }).code).toBe('feature_off');
+        await expect(page.locator('[data-ask-feature-off]')).toContainText('Ask is switched off for your organisation. Search in the inventory still works.');
+      } finally {
+        await setBankAi(page, true);
+      }
+    });
+
+    test("AGT-S7: Research requests ask an agent to check, research or re-tag", async ({ page, apiGuard }) => {
+      // AGT-05, reworded to the split: tenant A's admin (agents.manage) asks the bank's own
+      // agent to check a source and to research a topic; a library editor asks bleqq's agent
+      // for a re-tag in the console. Each is a job whose run opens at once. The mock runner
+      // files no batch, so the re-tag stays "being prepared" here; the batch it files is
+      // proven by AGT-S7's integration test. The topic is the attempt's own, so a retry never
+      // reads an earlier attempt's request.
+      test.setTimeout(120_000);
+      allowFreshContext(apiGuard);
+      const attempt = `${Date.now()}`;
+      const topic = `DORA subcontracting ${attempt}`;
+
+      await signInAs(page, LOGINS.admin);
+      await page.goto('/admin/agents');
+      const checked = await askOurAgent(page, { source: 'fi.se sweep (E2E)' });
+      const researched = await askOurAgent(page, { topic });
+      expect([checked.kind, researched.kind]).toEqual(['check_source', 'research_topic']);
+      expect(researched.tenantAgentId).toBe(checked.tenantAgentId);
+      const ours = page.locator('[data-research-list]');
+      await expect(ours.locator(`[data-research-request="${checked.id}"]`)).toContainText('Check this source now');
+      await expect(ours.locator(`[data-research-request="${researched.id}"]`)).toContainText(topic);
+      // Each request opened a run of tenant A's one seeded agent: stop them, so the agent is
+      // as seeded for the journeys that steer it.
+      await restoreSeededAgent(page);
+      await signOut(page);
+
+      await signInAs(page, LOGINS.editor);
+      await page.goto('/console/queue');
+      const retag = await askForRetag(page, { term: 'Custody', records: `Custody records that hold client money, attempt ${attempt}` });
+      expect([retag.kind, retag.tenantAgentId]).toEqual(['retag', null]);
+      await expect(page.locator('[data-retag-form]').getByText('Sent. The batch is being prepared.')).toBeVisible();
+      await signOut(page);
+    });
   });
 
   test.fixme("AGT-S13: A bank cannot switch off, pause or re-scope one of bleqq's agents", async () => {
     // pending: AGT-S13 (AGT-03, AGT-04, chunk 11)
-  });
-
-  test.fixme("AGT-S6: The budget cap pauses runs and the AI off switch stops every model call", async () => {
-    // pending: AGT-S6 (AGT-04, chunk 11)
-  });
-
-  test.fixme("AGT-S7: Research requests ask an agent to check, research or re-tag", async () => {
-    // pending: AGT-S7 (AGT-05, chunk 11)
   });
 
   test("AGT-S10 J-4 @smoke: an agent registers a change and a proposal, an editor approves, the tenant sees what changed", async ({ page, browser, playwright, apiGuard }, testInfo) => {

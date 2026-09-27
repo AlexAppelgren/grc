@@ -165,6 +165,8 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
     # editor, deciding behind a passkey too, so a platform admin is refused both.
     "getProposalBatch": ("GET", f"/proposal-batches/{_ANY_ID}", None),
     "decideProposalBatch": ("POST", f"/proposal-batches/{_ANY_ID}/decide", {"rest": "approved"}),
+    # c11-fe-console-batch-retag: the re-tag form follows its request to the batch.
+    "getRetagRequest": ("GET", f"/console/research-requests/{_ANY_ID}", None),
 }
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a

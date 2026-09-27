@@ -106,6 +106,7 @@
   "adminAgents.research.kind.researchTopic": "Research a topic",
   "adminAgents.research.kind.runNow": "Run now",
   "adminAgents.research.kind.retag": "Re-tag library records",
+  "adminAgents.research.kind.scopeItem": "Research a regulation we added",
   "adminAgents.research.agent": "Which agent",
   "adminAgents.research.source": "Source",
   "adminAgents.research.sourcePick": "Choose a source",

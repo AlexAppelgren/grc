@@ -475,14 +475,46 @@ def create_retag_request(request: HttpRequest, body: RetagRequestInput) -> Any:
     independent reviewer approves it. The request itself is a job: read its status later.
 
     A person's session in the platform console holding `proposals.review`; a bank asks its
-    own agents with `POST /research-requests` and never re-tags the library. Records one
-    audit event naming the person.
+    own agents with `POST /research-requests` and never re-tags the library. It opens one
+    run of bleqq's agent in no bank's zone and reads no bank's record. Records one audit
+    event naming the person, and one more when the run files its batch.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`;
-    `validation_error` (422) for a topic that is empty or too long. Published ahead of the
-    logic that will fill it, and answering 501 `not_built` until that ships.
+    Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`,
+    and for every bank's session; `validation_error` (422) for a topic that is empty or too
+    long; `no_published_version` (409) when bleqq's agent has no version to run.
     """
     return requests.create_retag(who=principal(request), body=body)
+
+
+@router.get(
+    "/console/research-requests/{request_id}",
+    response=ResearchRequestOut,
+    auth=SESSION,
+    operation_id="getRetagRequest",
+    by_alias=True,
+    summary="See where a re-tag request stands, and the batch it produced",
+)
+@requires_permission(perms.PROPOSALS_REVIEW)
+@answers_problems
+def get_retag_request(
+    request: HttpRequest,
+    request_id: uuid.UUID = Path(
+        ...,
+        description="The re-tag request, as the UUID `POST /console/research-requests` returned. A bank's own request answers 404.",
+    ),
+) -> Any:
+    """Returns one re-tag request with its status, for the console's re-tag form following
+    it until its run has filed the batch: `batchProposalId` then names the batch to open
+    and decide in the queue. Poll it while `status` is `queued` or `running`.
+
+    A person's session in the platform console holding `proposals.review`; a bank reads its
+    own requests with `GET /research-requests/{requestId}`. It reads and writes nothing to
+    the audit log.
+
+    Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`;
+    `not_found` (404) for a request that is not a re-tag.
+    """
+    return requests.get_retag(request_id=request_id)
 
 
 # ---------------------------------------------------------------------------------------
@@ -620,16 +652,22 @@ def update_tenant_agent(
 @requires_permission(perms.AGENTS_MANAGE)
 @answers_problems
 def run_tenant_agent_now(request: HttpRequest, tenant_agent_id: uuid.UUID = Path(..., description=_TENANT_AGENT_ID)) -> Any:
-    """Queues one run of the bank's own agent now, outside its cadence, and returns it; the
-    run is a job, so follow it in `GET /agent-runs`. It counts against the bank's monthly
-    cap like any other run.
+    """Queues one run of the bank's own agent now, outside its cadence, and returns it with
+    the status `running`; the run is a job, so follow it in `GET /agent-runs`. The run keeps
+    a copy of the agent's scope as it is now, so a later change of scope does not alter it,
+    and it counts against the bank's monthly cap like any other run: it starts only when the
+    month's spend plus the most one run may spend still fits under the cap.
 
-    A person's session in a bank holding `agents.manage`; no API key. Records one audit
-    event naming the person.
+    A person's session in a bank holding `agents.manage`; no API key. Records the run's
+    opening in the audit log, naming the person, before the runner is asked to start it; a
+    runner that cannot start it leaves the run recorded as failed.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `not_found` (404) for an agent the bank does not have. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for an agent the bank does not have; `agent_disabled` (409) for an
+    agent switched off; `agent_paused` (409) for a paused one; `no_published_version` (409)
+    when every version of its definition is retired; `feature_off` (422) while the bank's AI
+    features are off; `budget_cap_reached` (422) when the run could take the month's spend
+    past the cap. A refused run writes nothing.
     """
     tenant = caller_tenant(request)
     return control.run_now(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id)
@@ -648,14 +686,15 @@ def run_tenant_agent_now(request: HttpRequest, tenant_agent_id: uuid.UUID = Path
 def pause_tenant_agent(request: HttpRequest, tenant_agent_id: uuid.UUID = Path(..., description=_TENANT_AGENT_ID)) -> Any:
     """Pauses one of the bank's own agents: it starts no run until someone resumes it, and
     it keeps its settings and its history. A run already open is not stopped; use
-    `POST /agent-runs/{runId}/interrupt` for that.
+    `POST /agent-runs/{runId}/interrupt` for that. Returns the agent, with `pausedAt`,
+    `pausedBy` naming the person and no `nextRunAt`. Pausing an agent that is already paused
+    changes nothing and returns it as it is.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
     event naming the person.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `not_found` (404) for an agent the bank does not have. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for an agent the bank does not have.
     """
     tenant = caller_tenant(request)
     return control.pause(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id)
@@ -672,15 +711,17 @@ def pause_tenant_agent(request: HttpRequest, tenant_agent_id: uuid.UUID = Path(.
 @requires_permission(perms.AGENTS_MANAGE)
 @answers_problems
 def resume_tenant_agent(request: HttpRequest, tenant_agent_id: uuid.UUID = Path(..., description=_TENANT_AGENT_ID)) -> Any:
-    """Lifts the pause on one of the bank's own agents, so it runs on its cadence again.
-    Nothing is deleted: the pause stays in the audit log.
+    """Lifts the pause on one of the bank's own agents, whether a person or the monthly cap
+    paused it, so it runs on its cadence again, and returns it with its next run. Nothing is
+    deleted: the pause stays in the audit log. Resuming an agent that is not paused changes
+    nothing and returns it as it is. An agent resumed while the month's cap is still reached
+    is paused again by the cap when its next run is due.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
     event naming the person.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `not_found` (404) for an agent the bank does not have. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for an agent the bank does not have.
     """
     tenant = caller_tenant(request)
     return control.resume(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id)
@@ -702,17 +743,19 @@ def interrupt_agent_run(
         ..., description="The run to stop, as a UUID. Another bank's run answers 404; one of bleqq's runs answers 403."
     ),
 ) -> Any:
-    """Stops an open run of one of the bank's own agents. What it filed before the stop
-    stays, and the run reads as interrupted, with when and by whom. bleqq's library runs
-    appear in the bank's run log but are never the bank's to stop.
+    """Stops an open run of one of the bank's own agents through the runner and returns the
+    run. What it filed and what it cost before the stop stay, and the run reads as
+    `interrupted`, with when (`interruptedAt`) and by whom. bleqq's runs are never the bank's
+    to stop. The monthly cap stops a run the same way, with no person, when what the run
+    reports it has spent takes the month's spend past the cap.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
     event naming the person.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
     naming `agent_definitions.manage` for a run of one of bleqq's agents; `not_found` (404)
-    for a run the bank cannot see. Published ahead of the logic that will fill it, and
-    answering 501 `not_built` until that ships.
+    for a run the bank cannot see; `run_finished` (409) for a run that has already ended,
+    which changes nothing.
     """
     tenant = caller_tenant(request)
     return control.interrupt(who=principal(request), tenant=tenant, run_id=run_id)
@@ -785,8 +828,7 @@ def list_research_requests(request: HttpRequest, page: Query[PageQuery]) -> Any:
     nothing to the audit log.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `validation_error` (422) when `limit` is above 100. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `validation_error` (422) when `limit` is above 100.
     """
     tenant = caller_tenant(request)
     return requests.list_requests(tenant=tenant, limit=page.limit, offset=page.offset)
@@ -804,17 +846,29 @@ def list_research_requests(request: HttpRequest, page: Query[PageQuery]) -> Any:
 @answers_problems
 def create_research_request(request: HttpRequest, body: ResearchRequestInput) -> Any:
     """Asks one of the bank's own agents to run now, check a registered source or a web
-    address now, or research a topic. The request is a job: it is queued and returned at
-    once, and its run follows. It counts against the bank's monthly cap, and what the agent
-    finds stays in the bank's own zone.
+    address now, or research a topic. The request is a job: its run opens at once and the
+    request is returned with it; read its status from `GET /research-requests/{requestId}`.
+    It runs under the bank's monthly cap, and what the agent finds stays in the bank's own
+    zone. A web address is fetched once, here, over https from a public host, and what came
+    back is kept as text for the agent, never shown as a page. The topic is the bank's own
+    text: it is never logged and reaches a model only through the bank's own agent.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
-    event naming the person and the kind, never the topic's text.
+    event naming the person and the kind, never the topic's text or the address.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `not_found` (404) for an agent the bank does not have; `validation_error` (422) for a
-    topic or address that is empty, too long or missing for its kind. Published ahead of
-    the logic that will fill it, and answering 501 `not_built` until that ships.
+    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
+    for an agent the bank may not steer; `not_found` (404) for an agent or source the bank
+    does not have; `no_tenant_agent` (409) when the bank has no agent of its own, since
+    bleqq's agents take no requests; `no_published_version` (409) when the agent has no
+    version to run; `validation_error` (422) for a topic or address that is empty, too long,
+    missing for its kind or sent for another kind; `source_not_checked` (422) for a source
+    the agents do not check; `url_not_allowed` (422) for an address that is not https on the
+    standard port, carries a user name, is a standards publisher's, or is or redirects to a
+    host off the public internet; `url_unreachable` (422) when the address answers no page
+    within `RESEARCH_URL_MAX_REDIRECTS` redirects; `feature_off` (422) when the bank has
+    switched its AI features off; `budget_cap_reached` (422) when the bank has set no cap or
+    this month's spend has reached it; `plan_limit_reached` (429) past the bank's
+    `RESEARCH_REQUESTS_PER_MONTH` requests this month.
     """
     tenant = caller_tenant(request)
     return requests.create_request(who=principal(request), tenant=tenant, body=body)
@@ -841,8 +895,7 @@ def get_research_request(
     nothing to the audit log.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `not_found` (404) for a request the bank does not have. Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a request the bank does not have.
     """
     return requests.get_request(tenant=caller_tenant(request), request_id=request_id)
 

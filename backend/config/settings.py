@@ -330,6 +330,24 @@ CELERY_BEAT_SCHEDULE["agents-tenant"] = {
     "schedule": AGENT_BEAT_INTERVAL_MINUTES * 60,
 }
 
+# --- c11-research-requests (AGT-05) -------------------------------------------------------
+# How many research requests a bank may make in a calendar month of its own time zone,
+# until plans exist (R3); past it a request is 429 `plan_limit_reached`. A `check_url` fetch:
+# the seconds one connection may take, the most bytes of a page kept, and how many
+# redirects are followed, each hop checked for a public https host first.
+RESEARCH_REQUESTS_PER_MONTH = env_int("RESEARCH_REQUESTS_PER_MONTH", 30)
+RESEARCH_URL_TIMEOUT_SECONDS = env_int("RESEARCH_URL_TIMEOUT_SECONDS", 5)
+RESEARCH_URL_MAX_BYTES = env_int("RESEARCH_URL_MAX_BYTES", 1_000_000)
+RESEARCH_URL_MAX_REDIRECTS = env_int("RESEARCH_URL_MAX_REDIRECTS", 3)
+if min(RESEARCH_REQUESTS_PER_MONTH, RESEARCH_URL_TIMEOUT_SECONDS, RESEARCH_URL_MAX_BYTES) < 1 or RESEARCH_URL_MAX_REDIRECTS < 0:
+    raise ImproperlyConfigured("The RESEARCH_* settings must be positive, and RESEARCH_URL_MAX_REDIRECTS at least 0")
+# d89-agent-research (OWN-02, D-98, ADR 0061): the longest each of a scope item's text fields
+# (its name, official reference and source address) may be when it reaches the bank's own
+# agent; each is cut to it before it leaves the worker.
+SCOPE_RESEARCH_TEXT_MAX_CHARS = env_int("SCOPE_RESEARCH_TEXT_MAX_CHARS", 2000)
+if SCOPE_RESEARCH_TEXT_MAX_CHARS < 1:
+    raise ImproperlyConfigured("SCOPE_RESEARCH_TEXT_MAX_CHARS must be at least 1")
+
 MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp
 MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")
 MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")
@@ -935,6 +953,20 @@ if min(WHAT_APPLIES_SUMMARY_DEADLINE_MS, WHAT_APPLIES_SUMMARY_FACTS, WHAT_APPLIE
         "Refusing to boot: WHAT_APPLIES_SUMMARY_DEADLINE_MS, WHAT_APPLIES_SUMMARY_FACTS and "
         "WHAT_APPLIES_SUMMARY_MAX_TOKENS must each be at least 1, and the LLM prices at least 0."
     )
+
+# ===== d89-scope-items-model: the bank's own scope items (OWN-01, D-91) =====
+# The longest description a scope item may carry; the boundary refuses a longer one.
+SCOPE_ITEM_DESCRIPTION_MAX_CHARS = env_int("SCOPE_ITEM_DESCRIPTION_MAX_CHARS", 2000)
+if SCOPE_ITEM_DESCRIPTION_MAX_CHARS < 1:
+    raise ImproperlyConfigured("Refusing to boot: SCOPE_ITEM_DESCRIPTION_MAX_CHARS must be at least 1.")
+
+# ===== d89-scope-items-logic: the regulatory scope request's caps (FP-02, OWN-01, H24) =====
+# The most terms, and the most scope items, one regulatory scope request may add or remove,
+# each list on its own: every entry costs lookups, a link row and, on approval, a history
+# and an audit row, so the list is bounded at the boundary rather than by the body size.
+FOOTPRINT_CHANGE_MAX_TERMS = env_int("FOOTPRINT_CHANGE_MAX_TERMS", 50)
+if FOOTPRINT_CHANGE_MAX_TERMS < 1:
+    raise ImproperlyConfigured("Refusing to boot: FOOTPRINT_CHANGE_MAX_TERMS must be at least 1.")
 
 # ---------------------------------------------------------------------------------------
 # ===== Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ===========

@@ -1039,6 +1039,19 @@ acc-scoped-reads (ACC-02, ACC-04, ACC-05, ACC-07), 2026-09-25:
   `inFootprint` false on search, answer 422 `unknown_filter`, and an overlay or `tenantTag`
   filter answers 403 `tenant_reach_off` unless tenant reach is on for the bank and the
   entry. No schema changes.
+- No API key reaches any of the eight: a notification is one person's and a comment is one
+  bank's own text. `GET /notifications`, the two mark-read routes and `GET /me/comments` are
+  `UNGATED_BY_DESIGN` `self`; `GET` and `POST /comments` are `logic-gate`, with
+  `comments.write` checked by the route on the write; `PATCH` and `DELETE` carry
+  `@requires_permission("comments.write")` and leave the author check to the logic. A
+  platform session belongs to no bank and gets 404.
+
+Chunk 10 (the obligation row's R2 fields, c10-tag-filters-and-limits), 2026-09-25:
+
+- Every string filter of `GET /obligations` and `GET /instruments` is at most 80 characters
+  (`instrument`, `dutyType`, `regime`, each `term`, `tag` and `tenantTag` item), as the key
+  columns are; a longer one answers 422 `validation_error` (hardening H27).
+
 
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
@@ -1895,3 +1908,51 @@ ADR 0042's tranche 2 is built with these departures from `CHUNK8_TASKS.md`:
 - The `support_access.read` row is written in the request's transaction, as the brief says;
   a handler that rolls a refused request back (`answers_problems`, a 404) takes the row with
   it, so the log holds every read that answered.
+
+## d89-scope-items-model. Scope items on the regulatory scope request (2026-09-25, taxonomy 0012, OWN-01, D-91)
+
+Version 0.3 of the schema has no scope item: PRD 0.7's OWN-01 adds one (D-89, ADR 0059).
+Taxonomy 0012 builds it on the regulatory scope request rather than beside it:
+
+- `scope_item` is new, a tenant table under enabled and forced row-level security: `key`
+  (stable, unique per bank), `name`, `description` (capped by
+  `SCOPE_ITEM_DESCRIPTION_MAX_CHARS`), `jurisdiction_id`, `regime_term_id`,
+  `official_reference`, `source_url` and `status`. The address is an https page on a public
+  host, checked by the model's validator at the boundary and its scheme again by the check
+  `scope_item_source_https`. One jurisdiction and one regime term per item, and one address:
+  a bank that needs more asks for a second item.
+- `scope_item_status` is a new tier-one kind (§1): `requested` while the request that adds
+  the item waits, `in_scope` once approved, `declined` when that request is rejected or
+  withdrawn, `removed` once an approved request takes it out. The item row is written with
+  its request, so the request carries what the approver sees; it is in scope only after the
+  approval.
+- `footprint_change_scope_item` is new: the request, the item and `action` (`added` or
+  `removed`, `footprint_action`), unique per request and item. The decision stays the
+  request's, so `footprint_change_request_four_eyes` and the one-waiting-request rule cover
+  it unchanged.
+- `footprint_history.term_id` becomes nullable and `scope_item_id` is added; the check
+  `footprint_history_term_or_scope_item` demands exactly one. The table stays append-only.
+- Every reference to a tenant row is also a composite `(tenant_id, …)` key, so
+  `footprint_change_request` and `scope_item` gain `UNIQUE (tenant_id, id)`.
+## c11-research-requests. A research request keeps what it fetched (2026-09-27, agents 0008)
+
+`research_request` (schema v0.3 PART 3) gains two columns: `fetched_text`, the page a
+`check_url` request fetched, kept as text for the bank's agent and never rendered or
+followed, and `risk_flags`, the content screen's flags (AGT-07) on that text or on the
+topic, as `change_document.risk_flags` carries them. Both default to empty. The request's
+`status` is written when its run opens (`running`, or `failed` when the runner could not
+start it); after that a read answers its run's state (`succeeded` as `done`, `failed` and
+`interrupted` as `failed`), so no second writer keeps the two in step. `completed_at` is
+written when a re-tag's run files its batch.
+
+## d89-agent-research. A research request names the scope item it researches (2026-09-27, agents 0009)
+
+Schema v0.3's `research_request` has no scope item: PRD 0.7's OWN-02 has an approved scope
+item open research by the bank's own agent (D-89, D-91, ADR 0059). Agents 0009 adds:
+
+- `research_request_kind` gains `scope_item`, which only the worker opens, from the outbox
+  event of the item's approval; the route a bank asks through refuses it.
+- `research_request.scope_item_id`, nullable, a composite `(tenant_id, scope_item_id)` key
+  into `scope_item`; the check `research_request_scope_item_kind` sets it exactly on a
+  `scope_item` request, and the partial unique index `research_request_one_per_scope_item`
+  researches an item once.

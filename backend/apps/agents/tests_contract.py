@@ -210,6 +210,8 @@ CONSOLE_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("updatePlatformAgentSettings", "put", f"{DEFINITIONS}/{AGENT_KEY}/settings", SETTINGS_BODY, perms.AGENT_DEFINITIONS_MANAGE, True),
     ("listPlatformRuns", "get", CONSOLE_RUNS, None, perms.AGENT_DEFINITIONS_MANAGE, False),
     ("createRetagRequest", "post", "/api/v1/console/research-requests", {"topic": "Re-tag custody records with Client money."}, perms.PROPOSALS_REVIEW, False),
+    # c11-fe-console-batch-retag: the console's re-tag form follows its request to the batch.
+    ("getRetagRequest", "get", f"/api/v1/console/research-requests/{KEY}", None, perms.PROPOSALS_REVIEW, False),
 ]
 # (name, method, url, body, permission). `{id}` is filled with a record of the caller's own
 # bank, of another bank, or with nothing, by the test that needs one.
@@ -230,7 +232,20 @@ TENANT_ROUTES: list[tuple[str, str, str, Any, str]] = [
 ]
 # The operations served for real, which answer from their logic and no longer 501:
 # `c11-tenant-agents-budget-scope` (tests_tenant_agents.py, tests_budget.py).
-SERVED = {"listTenantAgents", "createTenantAgent", "updateTenantAgent", "getAgentBudget", "putAgentBudget"}
+SERVED = {
+    "listTenantAgents",
+    "createTenantAgent",
+    "updateTenantAgent",
+    "getAgentBudget",
+    "putAgentBudget",
+    # `c11-tenant-controls-cap` (tests_control.py).
+    "runTenantAgentNow",
+    "pauseTenantAgent",
+    "resumeTenantAgent",
+    "interruptAgentRun",
+}
+# c11-research-requests (tests_requests.py).
+SERVED |= {"listResearchRequests", "createResearchRequest", "getResearchRequest"}
 # Which record each id route addresses: a bank's own agent, its run, or its request.
 ID_KIND = {
     "updateTenantAgent": "agent",
@@ -356,6 +371,9 @@ class ConsoleAgentRouteGates(TestCase):
             "getPlatformAgentSettings",
             "updatePlatformAgentSettings",
             "listPlatformRuns",
+            # c11-research-requests: tests_requests.py.
+            "createRetagRequest",
+            "getRetagRequest",
         }
         for name, method, url, body, permission, _ in CONSOLE_ROUTES:
             if name in built:
