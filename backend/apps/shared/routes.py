@@ -122,6 +122,10 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("GET", "/agent-access/{uuidstr:entry_id}/calls", "agents.AgentAccess", "agent_access_entry"),
     # d89-scope-items-logic (OWN-01): one of the bank's own scope items.
     ("GET", "/tenant/footprint/scope-items/{scope_item_id}", "taxonomy.ScopeItem", "scope_item"),
+    # security-review-c10: the two chunk 10 id routes that take no body, a comment of tenant A
+    # on its own case and a notification of one of its members.
+    ("DELETE", "/comments/{comment_id}", "collab.Comment", "comment"),
+    ("POST", "/notifications/{notification_id}/read", "collab.Notification", "notification"),
 ]
 
 

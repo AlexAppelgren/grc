@@ -79,6 +79,7 @@ def request_signoff(
         subject_type=logic.SUBJECT_TYPE,
         subject_id=case.id,
         candidates=_approvers(case, user.id),
+        actor_id=user.id,
     )
     return case_response(case, reader=user.id, order=order)
 

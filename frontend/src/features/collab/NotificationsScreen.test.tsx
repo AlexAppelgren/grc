@@ -48,7 +48,6 @@ function me(unreadNotifications: number): Me {
     lastVisitAt: null,
     headOf: [],
     notificationPrefs: null,
-    headOf: [],
   };
 }
 
