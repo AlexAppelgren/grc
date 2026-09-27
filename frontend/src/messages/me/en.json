@@ -91,5 +91,10 @@
   "admin.credentials.keep": "Keep it",
   "admin.credentials.revokeKey": "Revoke key",
   "admin.credentials.revokeToken": "Revoke token",
-  "admin.credentials.tokenRevoked": "Token revoked."
+  "admin.credentials.tokenRevoked": "Token revoked.",
+  "admin.securityLog.event.token_created": "Token created",
+  "admin.securityLog.event.token_used": "Token used",
+  "admin.securityLog.event.token_revoked": "Token revoked",
+  "admin.securityLog.event.credential_rate_limited": "Credential over its rate",
+  "admin.securityLog.method.personal_token": "Personal access token"
 }

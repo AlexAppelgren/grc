@@ -91,5 +91,10 @@
   "admin.credentials.keep": "Behåll den",
   "admin.credentials.revokeKey": "Återkalla nyckel",
   "admin.credentials.revokeToken": "Återkalla token",
-  "admin.credentials.tokenRevoked": "Token återkallad."
+  "admin.credentials.tokenRevoked": "Token återkallad.",
+  "admin.securityLog.event.token_created": "Token skapad",
+  "admin.securityLog.event.token_used": "Token använd",
+  "admin.securityLog.event.token_revoked": "Token återkallad",
+  "admin.securityLog.event.credential_rate_limited": "Autentiseringsuppgift över sin gräns",
+  "admin.securityLog.method.personal_token": "Personlig åtkomsttoken"
 }

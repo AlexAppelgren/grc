@@ -1671,3 +1671,17 @@ Defaults taken; nothing waits on them.
 - [ ] Default taken: the bank-wide list and revoke stay on `/tenant/api-keys` under
       `integrations.manage`, now showing every key and token with its kind and the entry or
       person behind it; revoking needs no step-up, because it only takes power away.
+
+## acc-fe-personal-grants: the tokens screen and the credential list, answered by default (2026-09-27, ACC-03, ACC-08)
+
+- [ ] Default taken: "Read as an agent" on the token form appears only to a member holding
+      `agent_access.manage`, because `GET /agent-access` is read under that permission. A
+      member without it mints tokens that name no entry, so `tenant:read` (which needs an
+      entry) is refused on the form. Say if every holder of `tokens.create` should pick an
+      entry; that needs a narrow read of the bank's live entries (id and name) for them.
+- [ ] Default taken: My access tokens is in every member's account menu, not only for holders
+      of `tokens.create`, because a token held stays listed and revocable after the permission
+      goes, and the design card gives the page no denied state.
+- [ ] Default taken: the expiry hint names no day count. The maximum is the server setting
+      `PERSONAL_TOKEN_MAX_DAYS`, which no route exposes; a date beyond it renders the server's
+      `expiry_too_late` in place. Say if the screen should state the number.

@@ -137,7 +137,7 @@ test.describe('governance journeys', () => {
       await expect(keyRow).toBeVisible();
       if ((await keyRow.getByRole('button', { name: 'Revoke' }).count()) > 0) {
         await keyRow.getByRole('button', { name: 'Revoke' }).click();
-        await keyRow.getByRole('button', { name: 'Revoke' }).click();
+        await page.getByRole('dialog', { name: 'Revoke Audit log evidence?' }).getByRole('button', { name: 'Revoke key' }).click();
         await expect(keyRow).toContainText('Revoked');
       }
     }
