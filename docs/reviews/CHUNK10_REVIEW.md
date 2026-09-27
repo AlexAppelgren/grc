@@ -179,6 +179,15 @@ fixed) or accepted.
   Ran 68 tests in 24.567s
   OK
   ```
+- **The whole backend suite** after the fixes: `manage.py test apps --parallel 4`, 3033
+  tests, OK (87 skipped as pending scenarios).
+- **Frontend.** lint, typecheck, `vitest run` (149 files, 1473 tests), `check:messages`
+  and `check:copy-drift`, all green.
+- **E2E** for the journeys the merged collaboration code and the two fixes touch: COL-S1,
+  COL-S2, COL-S6, COL-S7, COL-S12, TEN-S4, HOM-S7, HOM-S9, HOM-S13 (J-9) and VOC-S12 all
+  pass. VOC-S12 first failed on the pending register-entry read, which it now declares like
+  the other obligation-page journeys. CAS-S2 and CAS-S10 are still `test.fixme` on this
+  tree.
 - **Static checks.** ruff; mypy; `compliance_check.py --all`; `requirements_coverage.py`;
   `api_docs_gate.py`; `contract_drift.py`.
 - **Migrations.** `makemigrations --check` answers "No changes detected", and
