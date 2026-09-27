@@ -34,6 +34,7 @@ const fffs: InstrumentDetail = {
   sourceUrl: 'https://www.fi.se/en/published/regulations/2017/fffs-20172/',
   lastVerifiedAt: '2026-06-30T07:12:44Z',
   verifiedBy: null,
+  privateToUs: false,
   lineage: [
     {
       relation: { key: 'amends', kind: null, label: 'Amends' },
@@ -71,7 +72,8 @@ const researchObligation: Obligation = {
   lastVerifiedAt: null,
   verifiedBy: null,
   openChangeCount: 0,
-  pendingApplicability: null,
+  tenantTags: [],
+  privateToUs: false,
   complianceStatus: null,
 };
 

@@ -15,6 +15,15 @@
       "reason": "hash_token hashes only random 256-bit secrets from secrets.token_urlsafe (invitation tokens, refresh tokens, API key secrets). A fast hash is the standard and correct choice for high-entropy random tokens; slow password hashing protects low-entropy human secrets, and the product has none (no passwords, ID-03). The low-entropy six-digit code uses a keyed HMAC instead (hash_code). Security review F30, docs/security/CHUNK1_AUTH_REVIEW_2026-09-19.md.",
       "acceptedOn": "2026-09-19",
       "acceptedBy": "Main build agent as a default, 2026-09-19 (owner may revert; see F30)"
+    },
+    {
+      "language": "python",
+      "ruleId": "py/clear-text-storage-sensitive-data",
+      "fingerprint": "a6ba8ac839efa77d:1",
+      "path": "backend/apps/identity/session_logic.py",
+      "reason": "set_refresh_cookie writes the refresh token into its cookie, which is the session design (D-06, ADR 0006): the cookie is HttpOnly, Secure, SameSite=Strict and scoped to the auth path; the token is a random 256-bit secret the database keeps only as a hash, and it rotates on every refresh with replay detection (ID-S9). CodeQL reports the flow since c11-session-policy (ID-08) made the cookie's lifetime follow the session's absolute end.",
+      "acceptedOn": "2026-09-25",
+      "acceptedBy": "Alex, 2026-09-25 (in chat, R2 wave 2 integration)"
     }
   ]
 }

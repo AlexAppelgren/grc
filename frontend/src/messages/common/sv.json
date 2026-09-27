@@ -36,7 +36,6 @@
   "pill.guidanceComplyOrExplain": "Vägledning, följ eller förklara",
   "pill.binding": "Bindande",
   "pill.standard": "Standard",
-  "pill.changeWaitingForApproval": "Ändring väntar på godkännande",
   "pill.waitingForApproval": "Väntar på godkännande",
   "pill.openChanges": "{count, plural, one {# öppen ändring} other {# öppna ändringar}}",
   "pill.changePending": "Ändring på väg: {date}",

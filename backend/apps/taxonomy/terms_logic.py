@@ -65,6 +65,15 @@ def refuse_mirrored(dimension_ids: Iterable[Any]) -> None:
         raise ValidationError(MIRRORED_REFUSAL, code="jurisdiction_term_mirrored")
 
 
+def refuse_mirrored_row(model: Any, keys: Iterable[str]) -> None:
+    """`refuse_mirrored` for a vocabulary proposal on the dimension rows themselves (H28): a
+    change to the row whose terms mirror the jurisdictions, its footprint rule, its
+    retirement or a merge, is refused as a change to one of its terms is. Any other list's
+    rows are no dimension, so nothing is read for them."""
+    if model is TermDimension:
+        refuse_mirrored(TermDimension.objects.filter(key__in=list(keys)).values_list("id", flat=True))
+
+
 def dimension_by_key(key: str) -> TermDimension:
     dimension = TermDimension.objects.filter(key=key, active=True).order_by("sort_order", "key").first()
     if dimension is None:

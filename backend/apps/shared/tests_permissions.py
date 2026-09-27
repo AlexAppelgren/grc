@@ -28,6 +28,8 @@ PRD_TENANT_PERMISSIONS = {
     "applicability.approve", "risk.accept.approve", "proposals.create",
     "exports.create", "ai_log.read", "members.manage", "roles.manage", "security.manage", "vocab.manage",
     "workflow.manage", "agents.manage", "integrations.manage",
+    # PRD 0.5 (ACC-01, ACC-03): a bank's own agents and personal access tokens.
+    "agent_access.manage", "tokens.create",
 }  # fmt: skip
 PRD_PLATFORM_PERMISSIONS = {
     "proposals.review", "library_vocab.manage", "sources.manage", "eval.manage",
@@ -63,6 +65,20 @@ class Matrix(SimpleTestCase):
         # One compliance person sets applicability (D-75): the officer holds it, the owner does not.
         self.assertIn("applicability.approve", p.SYSTEM_ROLES["compliance_officer"])
         self.assertNotIn("applicability.approve", p.SYSTEM_ROLES["owner"])
+
+    def test_agent_access_and_tokens_follow_the_prd_columns(self) -> None:
+        """acc-foundation (PRD 0.5, ACC-01, ACC-03): an admin manages entries; an admin, a
+        compliance officer and an owner mint tokens; every role may be granted either."""
+        holders = {role for role, grants in p.SYSTEM_ROLES.items() if "agent_access.manage" in grants}
+        self.assertEqual(holders, {"admin"})
+        holders = {role for role, grants in p.SYSTEM_ROLES.items() if "tokens.create" in grants}
+        self.assertEqual(holders, {"admin", "compliance_officer", "owner"})
+        self.assertTrue({"agent_access.manage", "tokens.create"} <= p.PERMISSION_DESCRIPTIONS.keys())
+
+    def test_an_agent_access_credential_reads_and_nothing_else(self) -> None:
+        """ADR 0055: the scopes an entry's key or a token may hold are the four reads."""
+        self.assertEqual(p.AGENT_ACCESS_SCOPES, {"library:read", "search:read", "upcoming:read", "tenant:read"})
+        self.assertTrue(p.AGENT_ACCESS_SCOPES <= p.TENANT_KEY_SCOPES)
 
     def test_applicability_request_is_retired(self) -> None:
         """D-75 retired the request: no constant, no role and no description names it."""

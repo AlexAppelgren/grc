@@ -13,7 +13,10 @@ becomes exactly one piece of work in each bank and nothing in anyone else's:
 - the agent's suggestion is carried and labelled: the urgency is a suggestion until a
   person triages, and the library's drafted "So what?" is copied unconfirmed;
 - a case is written inside its own bank, with its audit row and its outbox row in the same
-  transaction, and a deactivated bank gets nothing at all.
+  transaction, and a deactivated bank gets nothing at all;
+- a case knows when triage is due, from its own bank's triage target, and cases 0004's
+  backfill gives the same answer to a `new` case that predates the column and none to a
+  case that already left `new` (COL-02).
 
 The events are written the only way an event is ever written, through `record()`, and
 delivered by the one cursor, so what runs here is the production path and not a call to
@@ -26,10 +29,12 @@ should have been outside.
 
 from __future__ import annotations
 
+import importlib
 import uuid
+from datetime import timedelta
 from typing import Any
 
-from django.db import transaction
+from django.db import connection, transaction
 from django.test import TestCase, override_settings
 
 from apps.cases import creation, testing as case_build
@@ -37,7 +42,7 @@ from apps.cases.models import ChangeCase
 from apps.search import tasks as search_tasks
 from apps.shared import factories, outbox, tenancy
 from apps.shared.audit import Actor, record
-from apps.shared.models import AuditEvent, OutboxEvent, TenantStatus
+from apps.shared.models import AuditEvent, OutboxEvent, Tenant, TenantStatus
 from apps.shared.tenancy import library_write
 from apps.taxonomy.models import CaseStatusCategory, TermDimension, Urgency
 from apps.watch import testing as watch_build
@@ -253,6 +258,55 @@ class TheHandlerOnTheCursor(CaseCreationCase):
         with transaction.atomic():
             tenancy.activate(self.banks.inside.id)
             self.assertEqual(ChangeCase.objects.count(), 0)
+
+
+class TriageIsDueByTheBanksOwnTarget(CaseCreationCase):
+    """COL-02: `triage_due_at` is the case's opening time plus its bank's own triage
+    target, so two banks with different targets get different due times for one change."""
+
+    # The gap between the due time's clock read and `created_at`'s, both inside one insert.
+    SAME_MOMENT = timedelta(seconds=5)
+
+    def set_target(self, bank: Tenant, hours: int) -> None:
+        Tenant.objects.filter(pk=bank.pk).update(triage_target_hours=hours)
+
+    def assertDueAfter(self, case: ChangeCase, hours: int) -> None:
+        self.assertIsNotNone(case.triage_due_at)
+        assert case.triage_due_at is not None
+        expected = case.created_at + timedelta(hours=hours)
+        self.assertLessEqual(abs(case.triage_due_at - expected), self.SAME_MOMENT)
+
+    def test_each_case_is_due_for_triage_after_its_own_banks_target(self) -> None:
+        self.set_target(self.banks.inside, 4)
+        self.set_target(self.banks.outside, 720)
+        change = watch_build.change_with_timeline(terms=(SECURITIES,))
+        self.deliver(change)
+        self.assertDueAfter(cases_of(self.banks.inside)[0], 4)
+        self.assertDueAfter(cases_of(self.banks.outside)[0], 720)
+
+    def test_the_backfill_gives_a_waiting_case_its_due_time_and_leaves_a_worked_case_alone(self) -> None:
+        self.set_target(self.banks.inside, 6)
+        waiting = case_build.case(self.banks.inside, watch_build.change_with_timeline(terms=(SECURITIES,)))
+        worked = case_build.case(self.banks.inside, watch_build.change_with_timeline(terms=(SECURITIES,)))
+        case_build.in_category(worked, CaseStatusCategory.ASSESSING)
+        elsewhere = case_build.case(self.banks.outside, watch_build.change_with_timeline(terms=(SECURITIES,)))
+        backfill = importlib.import_module("apps.cases.migrations.0004_triage_due_at").BACKFILL_SQL
+        with transaction.atomic(), connection.cursor() as cursor:
+            cursor.execute(backfill)
+        rows = {row.id: row for row in cases_of(self.banks.inside) + cases_of(self.banks.outside)}
+        self.assertDueAfter(rows[waiting.id], 6)
+        self.assertDueAfter(rows[elsewhere.id], self.banks.outside.triage_target_hours)
+        self.assertIsNone(rows[worked.id].triage_due_at, "reminders read the due time only while a case is new")
+
+    def test_the_backfill_keeps_a_due_time_already_set(self) -> None:
+        change = watch_build.change_with_timeline(terms=(SECURITIES,))
+        self.deliver(change)
+        before = cases_of(self.banks.inside)[0].triage_due_at
+        self.set_target(self.banks.inside, 1)
+        backfill = importlib.import_module("apps.cases.migrations.0004_triage_due_at").BACKFILL_SQL
+        with transaction.atomic(), connection.cursor() as cursor:
+            cursor.execute(backfill)
+        self.assertEqual(cases_of(self.banks.inside)[0].triage_due_at, before)
 
 
 @override_settings(CASE_CREATION_BATCH=2)

@@ -11,15 +11,17 @@ the transaction-local setting the doors set names a door that table accepts: the
 the seven watch tables only (D-64), the index door `search_chunk` only (D-65), the
 evaluation door the search evaluation set's two platform tables only (search 0003), the
 re-verification stamp `obligation` and `verification` only, a reference seed alone the
-library app's reference rows (`language`, `jurisdiction`, `jurisdiction_label`), and an
-approved proposal or a reference seed every other library table. The schema owner passes by
+library app's one seed-only reference table (`language`), and an approved proposal or a
+reference seed every other library table, the jurisdiction rows and their labels included
+since shared 0010 (D-94). The schema owner passes by
 `session_user`, so a migration, the E2E seed and this runner's own `default` connection are
 let through.
 
 What is proven here:
 
 - **The census.** Every concrete `LibraryModel`'s table, plus `search_chunk`, the two
-  evaluation tables and the three reference tables, read from the app registry and not from the migration's list, carries
+  evaluation tables and the three reference tables (`language`, `jurisdiction`,
+  `jurisdiction_label`), read from the app registry and not from the migration's list, carries
   the trigger with exactly the doors above, and no other table carries it. A new library
   table without it fails here, and so does a new shared row (one with no tenant) in a
   library-zone app that is neither a `LibraryModel` nor named here.
@@ -143,10 +145,12 @@ INDEX_DOORS = ("index",)
 EVAL_DOORS = ("eval",)
 REFERENCE_DOORS = ("seed",)
 STAMPED_TABLES = frozenset({Obligation._meta.db_table, Verification._meta.db_table})
-# The library app's reference rows: shared by every bank, written by no proposal (the
-# jurisdiction list is not proposable), and not `LibraryModel`s, so the Python fence never
-# sees them and the database is the only thing holding them.
-REFERENCE_TABLES = frozenset(model._meta.db_table for model in (Language, Jurisdiction, JurisdictionLabel))
+# The library app's reference rows: shared by every bank and not `LibraryModel`s, so the
+# Python fence never sees them and the database is the only thing holding them. A language is
+# written by the reference seed alone; a jurisdiction and its labels also by an approved
+# proposal, which relabels, retires and restores one (shared 0010, D-94).
+REFERENCE_TABLES = frozenset({Language._meta.db_table})
+JURISDICTION_TABLES = frozenset(model._meta.db_table for model in (Jurisdiction, JurisdictionLabel))
 # The search evaluation set and its runs: platform rows no proposal carries and no bank reads
 # (search 0002's platform_only policy), written by eval_sets.py alone through their own door.
 EVAL_TABLES = frozenset(model._meta.db_table for model in (EvalQuestion, EvalRun))
@@ -195,6 +199,7 @@ def library_zone_tables() -> dict[str, tuple[str, ...]]:
     tables[SearchChunk._meta.db_table] = INDEX_DOORS
     tables.update(dict.fromkeys(EVAL_TABLES, EVAL_DOORS))
     tables.update(dict.fromkeys(REFERENCE_TABLES, REFERENCE_DOORS))
+    tables.update(dict.fromkeys(JURISDICTION_TABLES, INVENTORY_DOORS))
     return tables
 
 
@@ -272,14 +277,18 @@ class EveryLibraryTableCarriesTheDoorTrigger(TestCase):
         self.assertEqual(tables["verification"], STAMPED_DOORS)
         self.assertEqual(tables["regulatory_change"], WATCH_DOORS)
         self.assertEqual(tables["authority"], INVENTORY_DOORS)
-        self.assertEqual(REFERENCE_TABLES, {"language", "jurisdiction", "jurisdiction_label"})
-        self.assertEqual(tables["jurisdiction"], REFERENCE_DOORS)
+        self.assertEqual(REFERENCE_TABLES, {"language"})
+        self.assertEqual(tables["language"], REFERENCE_DOORS)
+        self.assertEqual(JURISDICTION_TABLES, {"jurisdiction", "jurisdiction_label"})
+        self.assertEqual(tables["jurisdiction"], INVENTORY_DOORS)
+        self.assertEqual(tables["jurisdiction_label"], INVENTORY_DOORS)
 
     def test_every_shared_row_of_a_library_zone_app_is_in_the_census(self) -> None:
         # A model with no tenant column in an app that holds library rows is a row every bank
         # shares. The Python fence sees only `LibraryModel`s, so one that is not has nothing
         # in front of it unless the trigger is: a new one fails here until it is a
-        # LibraryModel, or is named in REFERENCE_TABLES and given the trigger.
+        # LibraryModel, or is named in REFERENCE_TABLES or JURISDICTION_TABLES and given the
+        # trigger.
         shared = {
             model._meta.db_table
             for model in production_models()
@@ -445,7 +454,7 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
             self.assertFalse(connections[DEFAULT_DB_ALIAS].in_atomic_block)
             provision = library_testing.provision(self.instrument, key="door-guard-act/9")
             # The reference seeds a deploy re-runs: every row exists, so each is an UPDATE of a
-            # reference table the seed door alone opens.
+            # reference table the seed door opens.
             self.assertEqual((seed_languages(), seed_jurisdictions()), (Language.objects.count(), Jurisdiction.objects.count()))
             with transaction.atomic():
                 tenancy.activate(self.bank.id)
@@ -957,3 +966,71 @@ class RecurringDutyWritesOnlyThroughTheProposalDoor(TransactionTestCase):
             ):
                 with self.subTest(case), self.assertRaises(IntegrityError), transaction.atomic():
                     self._duty(**fields)
+
+
+class JurisdictionsWriteThroughTheProposalDoor(TransactionTestCase):
+    """D-94, shared 0010 (x-jurisdictions-by-proposal): the jurisdiction rows and their
+    labels accept the proposal door beside the seed door, so an approved relabel, retire and
+    restore write the row, its labels and the mirrored term as cw_app; a write outside every
+    door is still refused, and the watch and index doors still do not reach them. `language`
+    keeps the seed door alone (the census above)."""
+
+    databases = {DEFAULT_DB_ALIAS, APP}
+
+    def setUp(self) -> None:
+        with transaction.atomic():
+            seed_languages()
+            seed_jurisdictions()
+            seed_library_vocabularies()
+            seed_taxonomy_terms()
+        self.bank = factories.tenant(slug="jurisdiction-door-bank")
+        self.proposer = factories.platform_user(roles=("library_editor",), email="jurisdiction-proposer@bleqq.test")
+        self.reviewer = factories.platform_user(roles=("library_editor",), email="jurisdiction-reviewer@bleqq.test")
+
+    def _approved(self, kind: str, payload: dict[str, Any]) -> Proposal:
+        """Filed and approved as two editors' console requests do it, each in a transaction
+        of its own, in no bank's zone, on the cw_app connection."""
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            proposal, _ = proposals.create(
+                kind=kind,
+                title=f"Proven as the app role: {kind}",
+                payload=payload,
+                proposer=proposals.Proposer(actor=factories.user_actor(user_id=self.proposer.id), user=self.proposer),
+            )
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            return proposals.approve(
+                proposal=proposals.by_id(proposal.id),
+                reviewer=self.reviewer,
+                actor=factories.user_actor(user_id=self.reviewer.id),
+                note="",
+                step_up_assertion_id=uuid.uuid4(),
+            )
+
+    def test_an_approved_relabel_retire_and_restore_write_the_row_its_labels_and_its_term_as_the_app_role(self) -> None:
+        with as_the_app_role():
+            relabel = self._approved("vocabulary_relabel", {"list": "jurisdiction", "key": "no", "labels": {"sv": "Konungariket Norge"}})
+            retire = self._approved("vocabulary_retire", {"list": "jurisdiction", "key": "no"})
+            self.assertEqual((relabel.status, retire.status), (ProposalStatus.APPROVED.value, ProposalStatus.APPROVED.value))
+            self.assertEqual(
+                (Jurisdiction.objects.get(key="no").active, TaxonomyTerm.objects.get(jurisdiction__key="no").active), (False, False)
+            )
+            self._approved("vocabulary_restore", {"list": "jurisdiction", "key": "no"})
+        row = Jurisdiction.objects.get(key="no")
+        self.assertEqual((row.active, row.version, row.applied_by_proposal_id), (True, 4, relabel.id))
+        self.assertEqual(JurisdictionLabel.objects.get(vocabulary=row, language="sv").text, "Konungariket Norge")
+        term = TaxonomyTerm.objects.get(jurisdiction=row)
+        self.assertEqual((term.active, term.labels.get(language="sv").text), (True, "Konungariket Norge"))
+
+    def test_a_write_outside_the_proposal_and_seed_doors_is_still_refused(self) -> None:
+        with as_the_app_role(), transaction.atomic():
+            tenancy.activate(self.bank.id)
+            with self.assertRaises(DatabaseError) as refused, transaction.atomic():
+                models.QuerySet.update(JurisdictionLabel.objects.filter(language="sv"), text="a bank's rewrite")
+            self.assertIn("UPDATE on jurisdiction_label refused: the door open is none", str(refused.exception))
+            with self.assertRaises(DatabaseError) as refused, transaction.atomic(), tenancy.library_door("index"):
+                models.QuerySet.update(Jurisdiction.objects.filter(key="se"), active=False)
+            self.assertIn("the door open is index", str(refused.exception))
+        self.assertTrue(Jurisdiction.objects.get(key="se").active)
+        self.assertFalse(JurisdictionLabel.objects.filter(text="a bank's rewrite").exists())

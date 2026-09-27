@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Screen card: our own records (/private-records, /private-records/[proposalId])</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Noto+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Serves OWN-03, OWN-04, OWN-05, INV-07, PRO-03, AC-OWN1 and the screens of PRO-S15,
+   INV-S15 and J-12 (D-89, D-91, ADR 0050, ADR 0059). The bank's own half of the
+   proposal door: what the bank's own agent found for a regulation the shared library
+   does not cover, decided inside the bank by a person holding private_records.approve.
+   The console queue (console-queue.html) never lists these, and nothing on this card
+   offers, names or waits for a platform reviewer.
+
+   States 1 to 14 are the queue and its refusals; state 15 is the "Private to us"
+   marker in place on the inventory, the obligation page and the instrument page;
+   state 16 is both pill rows in fixed light and dark swatches, whatever the viewer's
+   theme. Values follow design/system/foundations.md (14px base, 36px buttons at a
+   6px radius, hairline cards at 8px, dialogs at 12px, the sand AI-drafted callout)
+   and design/system/pills-and-labels.md; the build maps them to Green tokens. The
+   whole card follows the viewer's theme, or data-theme on the root. Copy is the
+   string table in the last note. Names, counts, dates and references are sample
+   data. */
+:root{
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --sand:#f6f3ec;--sand-line:#ece5d6;--brass:#6a5730;
+  --negative:#b92f13;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --warning:#8f530a;--warning-soft:#fce8cf;--warning-pill:#fce8cf;
+  --notice:#005fb3;--notice-pill:#e6f3ff;
+  --positive:#026436;--positive-pill:#dcefdc;
+  --brand-pill:#ece5d6;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+}
+/* Dark: the four status tones take Green's -03 step on pills (pills-and-labels.md). */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --sand:#251e13;--sand-line:#33291a;--brass:#d9cba9;
+  --negative:#f08975;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --warning:#f5b970;--warning-soft:#774508;--warning-pill:#5f3707;
+  --notice:#66b8ff;--notice-pill:#003666;
+  --positive:#8ae58d;--positive-pill:#003d26;
+  --brand-pill:#33291a;
+}}
+:root[data-theme="dark"]{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --sand:#251e13;--sand-line:#33291a;--brass:#d9cba9;
+  --negative:#f08975;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --warning:#f5b970;--warning-soft:#774508;--warning-pill:#5f3707;
+  --notice:#66b8ff;--notice-pill:#003666;
+  --positive:#8ae58d;--positive-pill:#003d26;
+  --brand-pill:#33291a;
+}
+/* Fixed-theme swatches (state 16), so both themes can be read side by side. */
+.swatch{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--page);color:var(--text)}
+.swatch.light{--page:#ffffff;--line:#dfe1e1;--text:#0a0b0b;--muted:#636967;--accent:#eaebeb;--warning:#8f530a;--warning-pill:#fce8cf;--notice:#005fb3;--notice-pill:#e6f3ff;--positive:#026436;--positive-pill:#dcefdc;--brass:#6a5730;--brand-pill:#ece5d6}
+.swatch.dark{--page:#0a0b0b;--line:#282a29;--text:#f7f8f7;--muted:#abb0ae;--accent:#313533;--warning:#f5b970;--warning-pill:#5f3707;--notice:#66b8ff;--notice-pill:#003666;--positive:#8ae58d;--positive-pill:#003d26;--brass:#d9cba9;--brand-pill:#33291a}
+.swatch .meta{margin-left:4px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--text);text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px;font-weight:500}
+p{margin:0 0 8px}
+b{font-weight:600}
+main{padding:24px max(32px,env(safe-area-inset-right)) 64px max(32px,env(safe-area-inset-left));max-width:1200px;width:100%;margin:0 auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.meta{color:var(--muted);font-size:13px;line-height:18px}
+.mono{font-family:var(--mono);font-size:13px}
+.microlabel{font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+
+/* State labels. They belong to the card, not to the screen. */
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-of-type{margin-top:24px}
+.cap{color:var(--muted);font-size:13px;line-height:18px;margin:0 0 10px;max-width:72ch}
+
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 16px;margin-bottom:20px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+.head .acts{margin-left:auto}
+.back{display:inline-block;margin-bottom:12px;font-weight:500}
+.status{margin:0 0 12px;font-weight:500}
+.status:empty{display:none}
+
+.notice{background:var(--subtle);color:var(--text);border-radius:6px;padding:10px 12px;margin:0 0 16px}
+.notice.warn{background:var(--warning-soft)}
+.notice.bad{background:var(--negative-soft)}
+.notice p:last-child{margin-bottom:0}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
+.panel>h2{margin-bottom:12px}
+
+/* Tabs: underline, the current one in the text colour. */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;color:var(--muted);white-space:nowrap;font-weight:500}
+.tabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--text)}
+.tabs .n{color:var(--muted);font-weight:400;margin-left:4px}
+
+/* Rows: one hairline card per proposal, the whole row is the link. */
+.rows{display:grid;gap:8px}
+.row{display:block;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;text-decoration:none;min-width:0}
+a.row:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.row h3{margin:6px 0 4px;font-weight:500}
+.pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.line{display:flex;flex-wrap:wrap;gap:4px 12px;color:var(--muted);font-size:13px;line-height:18px}
+
+/* Pill: fully rounded, 20px, 13px at 500, no border. Tone by slot or kind only. */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+/* .notice is also the banner class, so the pill resets its padding and margin. */
+.pill.notice{background:var(--notice-pill);color:var(--notice);padding:0 8px;margin:0;border-radius:999px}
+.pill.positive{background:var(--positive-pill);color:var(--positive)}
+.pill.warning{background:var(--warning-pill);color:var(--warning)}
+.pill.brand{background:var(--brand-pill);color:var(--brass)}
+/* Outlined information: what belongs to the bank itself (tenant tags, "Private to us"). */
+.pill.outlined{background:transparent;box-shadow:inset 0 0 0 1px var(--text)}
+
+/* The AI-drafted callout: the one sand fill (foundations.md). */
+.drafted{background:var(--sand);border:1px solid var(--sand-line);border-radius:6px;padding:10px 12px;margin:0 0 16px}
+.drafted .microlabel{display:block;color:var(--brass);margin-bottom:2px}
+.drafted p:last-child{margin-bottom:0}
+
+.side-by-side{display:grid;gap:16px;grid-template-columns:1fr}
+@media (min-width:1024px){.side-by-side{grid-template-columns:1fr 1fr}}
+.quote{background:var(--subtle);border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin:0 0 12px}
+.quote:last-child{margin-bottom:0}
+.quote .n{font-weight:600;margin-right:6px}
+.quote cite{display:block;color:var(--muted);font-style:normal;font-size:13px;line-height:18px;margin-top:6px;overflow-wrap:anywhere}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:8px 16px;margin:0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;min-width:0}
+.kv .src{color:var(--muted);font-size:13px;white-space:nowrap}
+
+/* Legal text block: the brass margin, as on the obligation page. */
+.lagrum{display:grid;grid-template-columns:72px 1fr;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:0 0 12px}
+.lagrum .margin{background:var(--sand);color:var(--brass);padding:12px 8px;text-align:center;font-family:var(--mono);font-size:24px;line-height:32px}
+.lagrum .body{padding:12px 16px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap;text-decoration:none}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.ghost{background:transparent;color:var(--text);border-color:transparent}
+.btn.danger{background:var(--surface);color:var(--negative);border-color:var(--line-control)}
+.btn.small{height:32px;padding:0 12px}
+.btn.outline:hover,.btn.ghost:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.btn.danger:hover{background:var(--negative-hover)}
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+.bar .btn{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.barwrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px 12px;margin-top:16px}
+.barwrap .bar{margin-top:0}
+
+.field{display:grid;gap:4px;margin-bottom:12px}
+.field label{font-weight:500}
+.field textarea{min-height:76px;padding:8px 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;resize:vertical}
+.field textarea[aria-invalid="true"]{border-color:var(--negative)}
+.field .hint,.field .err{font-size:13px;line-height:18px}
+.field .hint{color:var(--muted)}
+.field .err{color:var(--negative)}
+
+.modal{display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,11,11,.6);border-radius:8px}
+.modal .box{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.modal .box>h2{margin-bottom:12px}
+
+.skeleton{height:84px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.empty,.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.empty h2,.errorstate h2{color:var(--text)}
+.empty p,.errorstate p{margin:8px auto 16px;max-width:60ch}
+.restricted{max-width:60ch;margin:0 auto;padding:64px 0;text-align:center}
+.restricted p{margin:12px 0 0;color:var(--muted)}
+
+/* Inventory row and record heads (state 15), cut from tenant-inventory.html and
+   tenant-obligation.html at the foundations proportions. */
+.obrow{border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.obrow h3{margin:6px 0 4px}
+.recordhead{margin-bottom:12px}
+.recordhead h1{margin:6px 0 4px}
+.prov{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+
+.phone{width:375px;max-width:100%;padding:12px;background:var(--page);border:1px solid var(--line);border-radius:8px}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
+  .kv{grid-template-columns:1fr;gap:2px 0}
+  .kv dd{margin-bottom:10px}
+  .lagrum{grid-template-columns:1fr}
+  .lagrum .margin{text-align:left;padding:4px 12px;font-size:16px;line-height:24px}
+}
+</style>
+</head>
+<body>
+<main>
+
+<h2 class="k">1 · The list, Waiting — an approver (private records approve)</h2>
+<div class="head">
+  <div>
+    <h1>Our own records</h1>
+    <p class="lede">What our agent found for the regulations we research ourselves, waiting for someone here to decide</p>
+  </div>
+</div>
+<p class="status" role="status" tabindex="-1"></p>
+<div class="tabs" role="tablist">
+  <button role="tab" aria-selected="true">Waiting<span class="n">3</span></button>
+  <button role="tab" aria-selected="false">Approved</button>
+  <button role="tab" aria-selected="false">Rejected</button>
+</div>
+<div class="rows" data-private-proposals>
+  <a class="row" href="#">
+    <div class="pills"><span class="pill notice">New instrument</span><span class="pill warning">Waiting</span><span class="pill brand">Proposed by our agent</span></div>
+    <h3>Add instrument: Lag (2010:751) om betaltjänster</h3>
+    <div class="line"><span>For: Payment Services Act (SFS 2010:751)</span><span>Scope researcher 1.0</span><span>25 Sep 2026 06:04</span><span>Source: riksdagen.se</span></div>
+  </a>
+  <a class="row" href="#">
+    <div class="pills"><span class="pill notice">New obligation</span><span class="pill warning">Waiting</span><span class="pill brand">Proposed by our agent</span></div>
+    <h3>Add obligation: give the payer the prescribed information before a single payment</h3>
+    <div class="line"><span>For: Payment Services Act (SFS 2010:751)</span><span>Scope researcher 1.0</span><span>25 Sep 2026 06:04</span><span>Source: riksdagen.se</span></div>
+  </a>
+  <a class="row" href="#">
+    <div class="pills"><span class="pill notice">New control</span><span class="pill warning">Waiting</span><span class="pill brand">Proposed by our agent</span></div>
+    <h3>Add control: check the pre-payment information in the payment app every quarter</h3>
+    <div class="line"><span>For the obligation: Give the payer the prescribed information before a single payment</span><span>Scope researcher 1.0</span><span>25 Sep 2026 06:05</span></div>
+  </a>
+</div>
+
+<h2 class="k">2 · A proposal filed by a colleague, and one you filed yourself</h2>
+<p class="cap">A person's proposal carries no agent pill: the proposer is meta text. Your own row says so, because you cannot approve it (state 9).</p>
+<div class="rows">
+  <a class="row" href="#">
+    <div class="pills"><span class="pill notice">New obligation</span><span class="pill warning">Waiting</span></div>
+    <h3>Add obligation: report a major payment incident to Finansinspektionen without undue delay</h3>
+    <div class="line"><span>For: Payment Services Act (SFS 2010:751)</span><span>Proposed by Erik Holm</span><span>24 Sep 2026 15:40</span><span>Source: fi.se</span></div>
+  </a>
+  <a class="row" href="#">
+    <div class="pills"><span class="pill notice">New obligation</span><span class="pill warning">Waiting</span></div>
+    <h3>Add obligation: keep a record of every refused payment order</h3>
+    <div class="line"><span>For: Payment Services Act (SFS 2010:751)</span><span>Proposed by you</span><span>24 Sep 2026 14:12</span><span>Source: riksdagen.se</span></div>
+  </a>
+</div>
+
+<h2 class="k">3 · Approved and Rejected tabs</h2>
+<div class="rows">
+  <a class="row" href="#">
+    <div class="pills"><span class="pill notice">New instrument</span><span class="pill positive">Approved</span><span class="pill brand">Proposed by our agent</span></div>
+    <h3>Add instrument: Lag (2010:751) om betaltjänster</h3>
+    <div class="line"><span>Approved by Maria Ek, 25 Sep 2026 09:12</span><span>Scope researcher 1.0</span></div>
+  </a>
+  <a class="row" href="#">
+    <div class="pills"><span class="pill notice">New obligation</span><span class="pill">Rejected</span><span class="pill brand">Proposed by our agent</span></div>
+    <h3>Add obligation: publish the interchange fee on the website</h3>
+    <div class="line"><span>Rejected by Maria Ek, 25 Sep 2026 09:20: "This is the interchange regulation, not the Payment Services Act."</span></div>
+  </a>
+</div>
+
+<h2 class="k">4 · Detail — the agent's draft, each field beside its source</h2>
+<a class="back" href="#">← Our own records</a>
+<div class="pills" style="margin-bottom:6px"><span class="pill notice">New obligation</span><span class="pill warning">Waiting</span><span class="pill brand">Proposed by our agent</span></div>
+<h1 style="margin-bottom:4px">Add obligation: give the payer the prescribed information before a single payment</h1>
+<p class="line" style="margin-bottom:16px"><span>For: Payment Services Act (SFS 2010:751)</span><span>Under: Lag (2010:751) om betaltjänster <span class="pill outlined">Private to us</span></span></p>
+<div class="drafted">
+  <span class="microlabel">Drafted by our agent</span>
+  <p>Scope researcher 1.0 drafted every field below from the public pages it fetched. Check each one against its source before you decide.</p>
+  <p class="meta">Run 25 Sep 2026 06:02 · model eu-large-2026-07 · 2 pages fetched</p>
+</div>
+<div class="side-by-side">
+  <div class="panel">
+    <h2>Sources</h2>
+    <div class="quote" lang="sv"><span class="n">1</span>"Innan en betaltjänstanvändare blir bunden av ett avtal om en enstaka betalningstransaktion ska betaltjänstleverantören lämna information om villkoren för transaktionen."<cite>Riksdagen, SFS 2010:751, 4 kap. · fetched 25 Sep 2026 06:01 · <a href="#" rel="noopener noreferrer">riksdagen.se</a></cite></div>
+    <div class="quote"><span class="n">2</span>"The payment service provider shall make the information available before the payer is bound."<cite>Finansinspektionen, the payment services page · fetched 25 Sep 2026 06:02 · <a href="#" rel="noopener noreferrer">fi.se</a></cite></div>
+  </div>
+  <div class="panel">
+    <h2>What it adds</h2>
+    <div class="lagrum"><div class="margin" aria-hidden="true">§</div><div class="body" lang="sv">Innan betalaren blir bunden av ett avtal om en enstaka betalningstransaktion ska betaltjänstleverantören lämna information om villkoren för transaktionen. <span class="meta" lang="en">Source 1</span></div></div>
+    <dl class="kv">
+      <dt>Title</dt><dd>Give the payer the prescribed information before a single payment <span class="src">Source 1</span></dd>
+      <dt>Original language</dt><dd>Swedish</dd>
+      <dt>Duty type</dt><dd>Disclosure <span class="src">Source 1</span></dd>
+      <dt>Jurisdiction</dt><dd>Sweden <span class="src">Source 1</span></dd>
+      <dt>Regime</dt><dd>Payments <span class="src">Source 2</span></dd>
+      <dt>In force from</dt><dd>1 May 2010 <span class="src">Source 1</span></dd>
+    </dl>
+  </div>
+</div>
+<div class="barwrap">
+  <span class="meta">Approving puts it in the inventory as Private to us. Your passkey will be asked.</span>
+  <div class="bar"><button class="btn danger">Reject</button><button class="btn">Approve</button></div>
+</div>
+
+<h2 class="k">5 · Detail — a control proposed for one of our own obligations</h2>
+<div class="pills" style="margin-bottom:6px"><span class="pill notice">New control</span><span class="pill warning">Waiting</span><span class="pill brand">Proposed by our agent</span></div>
+<h1 style="margin-bottom:4px">Add control: check the pre-payment information in the payment app every quarter</h1>
+<p class="line" style="margin-bottom:16px"><span>For the obligation: Give the payer the prescribed information before a single payment <span class="pill outlined">Private to us</span></span></p>
+<div class="drafted"><span class="microlabel">Drafted by our agent</span><p>Scope researcher 1.0 drafted this control from the obligation's source. Check it against how we work before you decide.</p></div>
+<div class="panel">
+  <dl class="kv">
+    <dt>Control</dt><dd>Check the pre-payment information in the payment app every quarter</dd>
+    <dt>Linked to</dt><dd>Give the payer the prescribed information before a single payment</dd>
+    <dt>Source</dt><dd>Riksdagen, SFS 2010:751, 4 kap. · <a href="#" rel="noopener noreferrer">riksdagen.se</a></dd>
+  </dl>
+</div>
+<div class="bar"><button class="btn danger">Reject</button><button class="btn">Approve</button></div>
+
+<h2 class="k">6 · Approve, behind the passkey step-up</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="ap" aria-describedby="apd">
+    <h2 id="ap">Approve "Give the payer the prescribed information before a single payment"?</h2>
+    <p id="apd" class="meta">It goes into our inventory as Private to us, beside the shared library, where the register can decide it.</p>
+    <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Approve with passkey</button></div>
+  </div>
+</div>
+
+<h2 class="k">7 · The status line after approving (focus moves to it)</h2>
+<p class="status" role="status" tabindex="-1">Approved. It is in our inventory as Private to us. <a href="#">Open the obligation</a></p>
+
+<h2 class="k">8 · Reject, with a reason that was left blank</h2>
+<div class="modal">
+  <form class="box" aria-labelledby="rj">
+    <h2 id="rj">Reject this proposal</h2>
+    <div class="field">
+      <label for="rr">Reason</label>
+      <textarea id="rr" aria-describedby="rrh rre" aria-invalid="true" aria-required="true" placeholder="e.g. This is the interchange regulation, not the Payment Services Act"></textarea>
+      <span class="hint" id="rrh">Kept with the proposal and in the audit log.</span>
+      <span class="err" id="rre" role="alert">Give a reason.</span>
+    </div>
+    <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn danger" type="submit">Reject</button></div>
+  </form>
+</div>
+<p class="status" role="status" tabindex="-1" style="margin-top:12px">Rejected.</p>
+
+<h2 class="k">9 · The four-eyes refusal — your own proposal (no decision buttons; the server's 409 renders the same)</h2>
+<div class="notice bad" role="alert">You proposed this, so someone else has to approve it.</div>
+
+<h2 class="k">10 · Decided by someone else first (409, rendered above the buttons)</h2>
+<div class="notice bad" role="alert">Maria Ek decided this at 09:12. <a href="#">Reload to see the decision</a></div>
+
+<h2 class="k">11 · Empty — nothing waiting</h2>
+<div class="empty">
+  <h2>Nothing waiting</h2>
+  <p>What our agent finds for the regulations we research ourselves lands here.</p>
+  <a href="#">See the regulatory scope</a>
+</div>
+
+<h2 class="k">12 · Loading, and the error with Try again</h2>
+<div role="status" aria-busy="true" style="display:grid;gap:8px;margin-bottom:16px"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+<div class="errorstate" role="alert">
+  <h2>Could not load our own records</h2>
+  <p>Check your connection and try again.</p>
+  <button class="btn outline small">Try again</button>
+</div>
+
+<h2 class="k">13 · A member without private records approve, at /private-records</h2>
+<p class="cap">No rail or More entry for them, and the client gate and the server's 403 look the same.</p>
+<div class="restricted" role="alert">
+  <h1>This page is not available to you</h1>
+  <p>Your role does not include what this page needs. Ask your administrator if you think it should.</p>
+  <p class="meta">Needs private records approve</p>
+</div>
+
+<h2 class="k">14 · Another organisation's proposal, or an address that does not exist (404)</h2>
+<div class="restricted">
+  <h1>Not found</h1>
+  <p>There is nothing at this address in your organisation.</p>
+  <a href="#">Back to our own records</a>
+</div>
+
+<h2 class="k">15 · "Private to us" in place — the inventory row, the obligation page, the instrument page</h2>
+<p class="cap">The marker leads the row and the head. An own instrument's short name is outlined too, because a brand pill means the shared library.</p>
+<div class="obrow">
+  <div class="pills"><span class="pill outlined">Private to us</span><span class="pill outlined">Betaltjänstlagen</span><span class="pill positive">Applies</span><span class="pill warning">Partly compliant</span></div>
+  <h3>Give the payer the prescribed information before a single payment</h3>
+  <div class="line"><span>SFS 2010:751, 4 kap.</span><span>Sweden</span></div>
+</div>
+<div class="obrow" style="margin-top:8px">
+  <div class="pills"><span class="pill brand">MiFID II</span><span class="pill positive">Applies</span><span class="pill positive">Compliant</span></div>
+  <h3>Assess suitability when giving investment advice</h3>
+  <div class="line"><span>LVM 9 kap.</span><span>Sweden</span></div>
+</div>
+<p class="cap" style="margin-top:8px">A shared obligation beside it, for comparison: the brand instrument pill, no marker.</p>
+<div class="panel" style="margin-top:16px">
+  <div class="recordhead">
+    <div class="pills"><span class="pill outlined">Private to us</span><span class="pill outlined">Betaltjänstlagen</span><span class="pill">Payments</span><span class="pill">Binding</span><span class="pill warning">Partly compliant</span></div>
+    <h1>Give the payer the prescribed information before a single payment</h1>
+    <p class="meta">SFS 2010:751, 4 kap. · in force from 1 May 2010</p>
+  </div>
+  <div class="prov meta">Proposed by our agent, Scope researcher 1.0, from riksdagen.se, and approved by Maria Ek on 25 Sep 2026.</div>
+</div>
+<div class="panel" style="margin-top:16px">
+  <div class="recordhead">
+    <div class="pills"><span class="pill outlined">Private to us</span><span class="pill outlined">Betaltjänstlagen</span><span class="pill">Law</span><span class="pill">Binding</span><span class="pill brand">Sweden</span><span class="pill">Payments</span></div>
+    <h1>Lag (2010:751) om betaltjänster</h1>
+    <p class="meta">SFS 2010:751 · 3 of our own obligations</p>
+  </div>
+</div>
+
+<h2 class="k">16 · Both pill rows, fixed light and fixed dark</h2>
+<div style="display:grid;gap:8px">
+  <div class="swatch light"><span class="pill notice">New obligation</span><span class="pill warning">Waiting</span><span class="pill brand">Proposed by our agent</span><span class="pill outlined">Private to us</span><span class="meta">light</span></div>
+  <div class="swatch dark"><span class="pill notice">New obligation</span><span class="pill warning">Waiting</span><span class="pill brand">Proposed by our agent</span><span class="pill outlined">Private to us</span><span class="meta">dark</span></div>
+  <div class="swatch light"><span class="pill notice">New control</span><span class="pill positive">Approved</span><span class="pill">Rejected</span><span class="meta">light</span></div>
+  <div class="swatch dark"><span class="pill notice">New control</span><span class="pill positive">Approved</span><span class="pill">Rejected</span><span class="meta">dark</span></div>
+</div>
+
+<h2 class="k">17 · A row and the decision bar in Swedish, 375 px wide</h2>
+<div class="phone" lang="sv">
+  <a class="row" href="#">
+    <div class="pills"><span class="pill notice">Ny skyldighet</span><span class="pill warning">Väntar</span><span class="pill brand">Föreslagen av vår agent</span></div>
+    <h3>Lägg till skyldighet: ge betalaren den föreskrivna informationen före en enstaka betalning</h3>
+    <div class="line"><span>För: Betaltjänstlagen (SFS 2010:751)</span><span>Scope researcher 1.0</span><span>25 sep 2026 06:04</span></div>
+  </a>
+  <div class="bar"><button class="btn danger">Avvisa</button><button class="btn">Godkänn</button></div>
+  <div class="obrow" style="margin-top:12px"><div class="pills"><span class="pill outlined">Privat för oss</span><span class="pill outlined">Betaltjänstlagen</span></div><h3>Ge betalaren den föreskrivna informationen före en enstaka betalning</h3></div>
+</div>
+
+<p class="note">Our own records card (/private-records, /private-records/[proposalId]; OWN-03,
+OWN-04, OWN-05, INV-07, PRO-03). The page is for holders of private records approve, which
+Compliance officer and Approver carry and no platform role or key scope does; everyone else
+gets state 13. It lists the bank's own proposals, those its own agent filed through runner
+events for an approved scope item (admin-footprint.html, states 21 to 29) and those a
+colleague filed, under Waiting, Approved and Rejected, newest first. A row's pills are, in
+order, the proposal kind (notice), the status (Waiting warning, Approved positive, Rejected
+information) and, when the proposer's kind is agent, "Proposed by our agent" (brand, the
+tone of an agent version); a person proposer is meta text. Then the title, and as meta the
+scope item it answers, the agent and its version or the person, the time and the source's
+host. The detail puts the AI-drafted callout above the fields (sand, "Drafted by our agent"
+as a microlabel in brass, naming the agent, its version, the run and the model the run
+reported) and each field beside the numbered source it came from, since the door takes no
+field without one. The callout stays until a person decides, so
+AI output is labelled until it is confirmed. There are no corrections before approving:
+the reviewer approves what the agent drafted or rejects it with a reason, and the agent
+may file again. Approve opens the dialog in state 6 and then the passkey step-up
+(auth-step-up.html, the server's 403 step_up_required retries once), and the proposer,
+person or agent, never approves: a person sees state 9 and the server answers 409
+four_eyes_violation. An agent never approves here either, since no key reaches these
+routes. Reject needs a reason and no step-up, because it applies nothing. A decision that
+came second renders state 10. Another bank's proposal, a platform session and a
+support session all answer 404 and render state 14, which is the shared not-found state
+and never says the record exists. A control (OWN-05) is a linked internal item of the
+control kind (REG-05, D-99) and says which of our obligations it serves. Two buttons share a
+row on a phone, the primary on the right.</p>
+
+<p class="note">"Private to us" (state 15; OWN-04, INV-S15, J-12). A record whose owner kind is
+the tenant wears the marker as the first pill of its inventory row, its obligation head and
+its instrument head, as an outlined information pill: outlined because that is what the
+bank's own things wear (tenant tags), never brand, which means the shared library. The own
+instrument's short name follows outlined for the same reason. The register's applicability
+and compliance pills follow as on any obligation (D-75), because the register decides an own
+record exactly as a shared one. The provenance line names the proposing agent and its
+version, the source host and the person who approved it, so the record reads machine-proposed
+and verified by a person, never machine-confirmed. The marker says only who sees the record;
+it is not a link and not a filter. When the shared library later covers the same regulation,
+both rows show side by side and nothing links or merges them. The marker is the one sentence
+this card adds to the inventory, obligation and instrument cards; those cards keep their
+own slot order after it.</p>
+
+<p class="note">Strings and their catalog keys, for frontend/src/messages/private-records/en.json
+and sv.json: <b>privateRecords.title</b> "Our own records" (sv "Våra egna poster");
+<b>privateRecords.lede</b> "What our agent found for the regulations we research ourselves,
+waiting for someone here to decide"; <b>privateRecords.tab.waiting</b> "Waiting",
+<b>.approved</b> "Approved", <b>.rejected</b> "Rejected"; <b>privateRecords.kind.newInstrument</b>
+"New instrument", <b>.newObligation</b> "New obligation" (sv "Ny skyldighet"), <b>.newControl</b>
+"New control"; <b>privateRecords.title.addInstrument</b> "Add instrument: {name}",
+<b>.addObligation</b> "Add obligation: {title}", <b>.addControl</b> "Add control: {title}";
+<b>privateRecords.proposedByAgent</b> "Proposed by our agent" (sv "Föreslagen av vår agent");
+<b>privateRecords.proposedBy</b> "Proposed by {name}"; <b>privateRecords.proposedByYou</b>
+"Proposed by you"; <b>privateRecords.forItem</b> "For: {item}"; <b>privateRecords.forObligation</b>
+"For the obligation: {title}"; <b>privateRecords.under</b> "Under: {instrument}";
+<b>privateRecords.source</b> "Source: {host}"; <b>privateRecords.drafted.label</b> "Drafted by our
+agent"; <b>privateRecords.drafted.body</b> "{agent} drafted every field below from the public
+pages it fetched. Check each one against its source before you decide.";
+<b>privateRecords.drafted.run</b> "Run {time} · model {model} · {count, plural, one {# page}
+other {# pages}} fetched"; <b>privateRecords.sources</b> "Sources"; <b>privateRecords.adds</b>
+"What it adds"; <b>privateRecords.approveHint</b> "Approving puts it in the inventory as Private
+to us. Your passkey will be asked."; <b>privateRecords.approve.title</b> "Approve "{title}"?";
+<b>privateRecords.approve.body</b> "It goes into our inventory as Private to us, beside the
+shared library, where the register can decide it."; <b>privateRecords.approved</b> "Approved.
+It is in our inventory as Private to us."; <b>privateRecords.reject.title</b> "Reject this
+proposal"; <b>privateRecords.reject.hint</b> "Kept with the proposal and in the audit log.";
+<b>privateRecords.rejected</b> "Rejected."; <b>privateRecords.fourEyes</b> "You proposed this, so
+someone else has to approve it."; <b>privateRecords.decidedFirst</b> "{name} decided this at
+{time}."; <b>privateRecords.empty.title</b> "Nothing waiting"; <b>privateRecords.empty.body</b>
+"What our agent finds for the regulations we research ourselves lands here.";
+<b>privateRecords.loadError</b> "Could not load our own records"; <b>library.privateToUs</b>
+"Private to us" (sv "Privat för oss"); <b>library.provenance.ownAgent</b> "Proposed by our agent,
+{agent}, from {host}, and approved by {name} on {date}.". Agent names, record titles and hosts are data, never strings.</p>
+
+</main>
+</body>
+</html>

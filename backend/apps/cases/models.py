@@ -87,6 +87,23 @@ class _RemovedNotDeletedQuerySet(models.QuerySet):
         raise RemovedNotDeleted(f"{self.model.__name__} rows are removed with removed_at, never deleted")
 
 
+# What a workflow read and write joins beside the case, so naming the people and the
+# reasons costs no query of its own. Field names, kept beside the model they name (a logic
+# module may hold no string that reads as a role key, ID-S18).
+CASE_JOINS = (
+    "change",
+    "urgency",
+    "sub_status",
+    "owner",
+    "triaged_by",
+    "dismissed_reason",
+    "dismissed_by",
+    "signoff_requested_by",
+    "signed_off_by",
+    "close_reason",
+)
+
+
 class ChangeCase(TenantModel):
     """One bank's case for one regulatory change (CAS-01).
 
@@ -148,6 +165,10 @@ class ChangeCase(TenantModel):
     )
     closed_note = models.TextField(blank=True)
     closed_at = models.DateTimeField(null=True, blank=True)
+    # When triage is due: creation plus the bank's `triage_target_hours`, set once when the
+    # case opens (COL-02, `schema.sql` §13). Reminders read it only while the case is `new`.
+    # Null on a case that left `new` before the column existed.
+    triage_due_at = models.DateTimeField(null=True, blank=True)
     version = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

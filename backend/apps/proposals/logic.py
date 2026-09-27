@@ -256,6 +256,7 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
                 f"{name!r} is not a library list a proposal can change. Valid lists: {', '.join(valid)}.",
                 code="unknown_key",
             )
+        refuse_vocabulary_change(entry, kind, [getattr(payload, "key", ""), getattr(payload, "into", "")])
         if isinstance(payload, ProposalVocabularyCreatePayload):
             lists.validated_kind(entry, payload.kind)
         if isinstance(payload, ProposalVocabularyMergePayload):
@@ -293,6 +294,27 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
         )
 
 
+def refuse_vocabulary_change(entry: Any, kind: str, keys: list[str]) -> None:
+    """The two rules a change to a library list's rows obeys beyond its payload's shape,
+    checked when it is proposed and again when it is applied, for the list as it is then.
+
+    A list of fixed keys (the jurisdictions, D-94) is filed by the reference seed with the
+    facts only the seed knows, a kind, a parent and a legal language, so no proposal adds a
+    value to it or merges one away: 422 `validation_error`. A proposal on a dimension row
+    whose terms mirror the jurisdiction list (FP-04, hardening H28) would change what the
+    mirror is, its footprint rule or its existence, which no deploy puts back: 422
+    `jurisdiction_term_mirrored`, as a proposal on one of its terms is."""
+    from apps.taxonomy.terms_logic import refuse_mirrored_row
+
+    if entry.fixed_keys and kind in (ProposalKind.VOCABULARY_CREATE.value, ProposalKind.VOCABULARY_MERGE.value):
+        raise ValidationError(
+            f"The keys of {entry.name!r} are fixed: a proposal relabels, retires or restores a value, and never adds "
+            "one or merges one away.",
+            code="validation_error",
+        )
+    refuse_mirrored_row(entry.model, keys)
+
+
 def merge_pair(entry: Any, key: str, into: str, *, lock: bool = False) -> tuple[Any, Any]:
     """The two rows a merge joins, checked against the list as it is now, when the merge is
     proposed and again when it is applied (VOC-02, INV-08, D-36). A value merges only into
@@ -319,6 +341,14 @@ def merge_pair(entry: Any, key: str, into: str, *, lock: bool = False) -> tuple[
     if (getattr(source, "kind", None) or "") != (getattr(target, "kind", None) or ""):
         raise ValidationError(
             f"{key} and {into} are values of different kinds, so the records carrying {key} cannot take {into}.",
+            code="invalid_transition",
+        )
+    # A merge moves only what the list's links name. A list that counts its uses some other
+    # way (a dimension's terms) would retire a value still in use and move none of it (H28).
+    in_use = entry.usage(entry.model._default_manager.filter(pk=source.pk)).values_list("usage_count", flat=True).first()  # ordering: pk lookup, at most one row
+    if in_use and not entry.links:
+        raise ValidationError(
+            f"{key} is in use and a merge on {entry.name!r} moves none of what uses it: move or retire those first.",
             code="invalid_transition",
         )
     return source, target
@@ -904,6 +934,8 @@ def row(proposal: Proposal) -> ProposalRow:
         rejection_code=proposal.rejection_code,
         review_note=proposal.review_note,
         applied_at=proposal.applied_at,
+        is_batch=proposal.is_batch,
+        row_count=proposal.row_count,
         created_at=proposal.created_at,
     )
 
@@ -949,6 +981,17 @@ def _decidable(proposal: Proposal, reviewer: Reviewer) -> None:
         raise ValidationError(
             "A proposal is decided by someone other than the person, key or agent who made it.",
             code="four_eyes_violation",
+        )
+
+
+def _not_a_batch(proposal: Proposal) -> None:
+    """A batch (PRO-04) is decided row by row through apps/proposals/batch.py, never as one
+    proposal here: approving it whole would apply no row, and rejecting it would leave its
+    rows pending under a closed proposal. 409 `invalid_transition`."""
+    if proposal.is_batch:
+        raise ValidationError(
+            "This proposal is a batch: decide its rows through POST /proposal-batches/{batchId}/decide.",
+            code="invalid_transition",
         )
 
 
@@ -1146,6 +1189,7 @@ def approve(
     """
     from apps.proposals import apply
 
+    _not_a_batch(proposal)
     reviewer = as_reviewer(reviewer, actor)
     with transaction.atomic():
         run = _decision_run(reviewer, decision, agent_run_id)
@@ -1220,6 +1264,7 @@ def reject(
     older caller; `as_reviewer` normalizes either into the same shape below."""
     from apps.taxonomy.registry import REGISTRY
 
+    _not_a_batch(proposal)
     reviewer = as_reviewer(reviewer, actor)
     with transaction.atomic():
         run = _decision_run(reviewer, decision, agent_run_id)

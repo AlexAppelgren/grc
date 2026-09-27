@@ -115,8 +115,8 @@ def _recipients() -> list[Membership]:
     Permissions, never role names — a bank that builds its own role gets the same answer as
     one using the seeded ones. A deactivated member and a person whose account is not active
     are both left out: neither may open the briefing the mail links to, so sending it would
-    be telling somebody what they may no longer read. Per-person opt-out arrives with the
-    notification preferences in chunk 10 (D-34), which owns the recipient check from there.
+    be telling somebody what they may no longer read. A member who switched
+    `weeklyBriefing` off is left out too (COL-02); a member who never set it gets the mail.
     """
     return list(
         Membership.objects.filter(
@@ -124,6 +124,7 @@ def _recipients() -> list[Membership]:
             user__status=UserStatus.ACTIVE.value,
             roles__permissions__contains=[perms.WATCH_READ],
         )
+        .exclude(notification_prefs__contains={"weeklyBriefing": False})
         .select_related("user__locale")
         .distinct()
     )

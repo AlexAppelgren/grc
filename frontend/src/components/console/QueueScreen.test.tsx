@@ -64,6 +64,8 @@ function proposal(overrides: Partial<ProposalQueueRow>): ProposalQueueRow {
     rejectionCode: '',
     reviewNote: '',
     appliedAt: null,
+    isBatch: false,
+    rowCount: 0,
     createdAt: '2026-09-16T07:12:00Z',
     target: null,
     isMine: false,

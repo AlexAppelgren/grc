@@ -395,4 +395,8 @@ test.describe('governance journeys', () => {
   test.fixme("ACC-S11: Tenant reach needs two people, and off means off", async () => {
     // pending: ACC-S11 (ACC-08, AC-ACC2, chunk 11)
   });
+
+  test.fixme("ADM-S18: A jurisdiction is relabelled, retired and restored by proposal, and the market that mirrors it follows", async () => {
+    // pending: ADM-S18 (ADM-02, VOC-07, FP-04, I18N-01); x-console-jurisdictions-fe builds the screen
+  });
 });

@@ -242,9 +242,10 @@ LIBRARY_DOOR_SETTING = "cw.library_door"
 # rows and nothing else (INV-06); the watch door reaches the seven watch tables only (D-64);
 # the index door reaches the search index only (D-65); the evaluation door reaches the
 # search evaluation set and its runs only, the platform staff's own test of search that no
-# proposal carries (search 0003). The library app's reference rows —
-# `language`, `jurisdiction` and its labels, which every bank reads and no proposal writes
-# (the jurisdiction list is not proposable) — change through a reference seed alone.
+# proposal carries (search 0003). The library app's reference rows change through a
+# reference seed alone: `language`, which every bank reads and no proposal writes. The
+# jurisdiction rows and their labels take the inventory's doors since shared 0010, because a
+# jurisdiction is relabelled, retired and restored through a proposal (D-94).
 INVENTORY_DOORS = ("proposal", "seed")
 STAMPED_DOORS = ("proposal", "reverification", "seed")
 WATCH_DOORS = ("watch",)

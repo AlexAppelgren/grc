@@ -166,8 +166,9 @@ test.describe('library journeys', () => {
     await expect(duty.getByText('Type')).toBeVisible();
     await expect(duty.getByText('Record retention')).toBeVisible();
     await expect(page.locator('[data-scope-panel] [data-pill]').first()).toHaveAttribute('data-pill', 'brand');
-    // Being on this card is not the judgement that the duty reaches this bank.
-    await expect(page.locator('[data-pending-panel="register"]')).toBeVisible();
+    // Being on this card is not the judgement that the duty reaches this bank:
+    // the header above carries no compliance status, and nothing reads "Applies".
+    await expect(page.getByText('Applies', { exact: true })).toHaveCount(0);
 
     // Every service selected reads "All services"; an empty list is no
     // restriction and says so in words, never as an empty row.

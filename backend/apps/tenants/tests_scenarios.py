@@ -95,6 +95,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S2
 
         Legal entities and products are scoped like obligations (TEN-02).
+        Operations: `createOrgUnit`, `createLicence`, `createProduct`, `updateProduct`.
         """
 
     @skip("pending: TEN-S3 (TEN-03, chunk 8)")
@@ -116,6 +117,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S5
 
         Removing a member with open work offers bulk reassignment (TEN-05).
+        Operations: `removeMember`.
         """
 
     @skip("pending: TEN-S6 (TEN-06, chunk 8)")
@@ -123,6 +125,8 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S6
 
         Support access is requested by the platform, approved by the bank and time-boxed (TEN-06).
+        Operations: `requestConsoleSupportAccess`, `approveSupportAccess`, `declineSupportAccess`,
+        `revokeSupportAccess`, `enterConsoleSupportAccess`.
         """
 
     def test_adm_s1(self) -> None:
@@ -189,6 +193,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S8
 
         A department has a head and teams, and team membership is set on the member row (TEN-02, TEN-03).
+        Operations: `createOrgUnit`, `updateOrgUnit`.
         """
 
     @skip("pending: TEN-S9 (TEN-05, COL-04, chunk 8)")
@@ -203,6 +208,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S10
 
         A legal entity records a certificate it holds (TEN-02, AC-TEN1).
+        Operations: `createLicence`, `updateLicence`.
         """
 
     @skip("pending: TEN-S11 (TEN-06, chunk 8)")

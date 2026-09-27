@@ -120,3 +120,52 @@ covers a case (agent version `brand`, a finished run `positive`, a running agent
 | Jurisdiction row: the label, "Retired", "Rename waiting for review" | `brand`, `information`, `warning` | The label is a scope facet; Retired is a neutral fact; waiting for review is computed from the open proposal, like "Waiting for approval" (`admin-vocabulary.html` console variant) |
 
 `admin-security.html` adds no pill: every state there is a sentence.
+
+## Agent access: entries, credentials and reach (acc-cards)
+
+From the record's own facts, never chosen by a person. Revoked and Expired reuse the chunk 1
+API keys card's tones.
+
+| Pill | Tone | Slot or kind, and why |
+|---|---|---|
+| Entry state: "Active", "Revoked" | `positive`, `information` | Kind (an agent access entry). Active is the working state; Revoked is a neutral fact, since a revoked entry is kept, read-only, and never comes back (`admin-agent-access.html`) |
+| What an entry reads now: "Reads our register", "Library only" | `notice`, `information` | Computed from both halves of tenant reach (ACC-08): on only when the organisation's switch and the entry's own toggle are both on. Reads our register is `notice`, a fact worth seeing because the bank's own judgement leaves the zone; Library only is the neutral default. With the organisation's switch off every entry reads Library only, whatever its own toggle says |
+| Department and product on an entry | `brand` | Slot: scope facets, as the scope block above. Naming none renders plain text "All of our regulatory scope", because empty means no narrowing |
+| Credential kind: "Service", "Personal" | `information` | Kind (`api_key.kind`), a neutral fact about who the credential reads as: an entry or an integration, or a person (`admin-agent-access.html`, `admin-api-keys.html`). `me-tokens.html` shows none, since every row there is personal |
+| Credential state: "Revoked", "Expired" | `information`, `warning` | From the credential's facts, as on the chunk 1 API keys card |
+| Scope on a credential: "library read", … | `information` | Slot: a neutral fact, as on the chunk 1 API keys card |
+
+`admin-security.html`'s tenant reach panel adds no pill: every state there is a sentence, and a
+request waiting for its second person is a warning banner naming who asked.
+
+## The bank's own records and scope items (D-89)
+
+Drawn on `design/screens/tenant-private-records.html` and `admin-footprint.html`
+(states 21 to 29); OWN-01, OWN-03, OWN-04, INV-07. Each tone comes from a kind
+the API sends, never from a person.
+
+| Kind | Value | Label | Tone |
+|---|---|---|---|
+| Record owner | `tenant` | "Private to us" | `information`, outlined, the tenant-tag shape: the bank's own, never `brand`, which means the shared library |
+| Record owner | `shared` | no pill | |
+| Proposer, on a bank's own proposal | `agent` | "Proposed by our agent" | `brand`, the tone of an agent version |
+| Proposer, on a bank's own proposal | `person` | no pill; "Proposed by {name}" or "Proposed by you" as meta text | |
+| Scope item research state | `waiting_for_agent` | "Waiting for your agent" | `warning`, needs attention (the reason is meta text) |
+| Scope item research state | `researching` | "Our agent is researching" | `notice`, a running agent |
+| Scope item research state | `proposals_waiting` | "N proposals waiting" | `notice`, a count |
+| Scope item research state | `researched` | "Researched" | `positive`, a finished run |
+
+A bank's own proposal takes the proposal kinds and statuses the shared queue
+has ("New control" is the kind of OWN-05's control, D-99). A scope item in a
+pending request wears "Added when approved" or "Removed when approved" as a
+term does.
+
+| Record | Order |
+|---|---|
+| A bank's own obligation row and header | "Private to us", then the instrument's short name outlined, then the slots of the shared record in their order |
+| A bank's own instrument header and row | "Private to us", short name outlined, then level, binding level, jurisdiction, regime |
+| A bank's own proposal row and header | Kind, status, "Proposed by our agent" when the proposer is an agent |
+| Scope item | Research state, then its meta line |
+
+The "Drafted by our agent" callout on a bank's own proposal is the AI-drafted
+callout (foundations.md), not a pill, and it stays until a person decides.

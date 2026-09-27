@@ -2,6 +2,34 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## Provision clamd on Railway (2026-09-25, `c9-scanner-adapter`, D-101)
+
+Evidence upload scans every file with clamd before anyone can download it. Until these steps
+are done, a deployed environment refuses the first scan (`SCANNER_PROVIDER=mock` is refused on
+every deployed environment, `test` included), so attaching a file answers 503 and nothing is
+stored. Nothing else waits on it. Default if you say nothing: evidence files stay refused on
+Railway; links and references still work.
+
+- [ ] **Add the clamd service, in the project's EU West region.**
+      1. In the Railway project, environment `test`: New, Docker Image, `clamav/clamav:stable`
+         (the official image; `clamav/clamav:1.4` if you would rather pin the release). Name
+         the service `clamav`, so its private host is `clamav.railway.internal`.
+      2. Settings of `clamav`: region **EU West**, the same as `api` and `worker`. **No public
+         networking and no domain**: clamd has no authentication and must be reachable only on
+         the private network. It listens on TCP **3310**.
+      3. Memory: at least **3 GiB**, 4 GiB preferred (ClamAV's own figure for loading the
+         signatures). Add a volume mounted at `/var/lib/clamav` so the signature database
+         survives a redeploy; freshclam inside the container updates it once a day.
+      4. Variables on **both `api` and `worker`**: `SCANNER_PROVIDER=clamd`,
+         `SCANNER_HOST=clamav.railway.internal`, `SCANNER_PORT=3310`. Leave
+         `SCANNER_TIMEOUT_SECONDS` at its default of `60.0` unless scans of the largest file
+         (25 MB) time out.
+      5. Deploy `clamav` first and wait until its log shows clamd listening on 3310 (the first
+         start downloads the signatures and takes a few minutes), then redeploy `api` and
+         `worker`.
+      6. Check: attach the EICAR test file (eicar.org) to a test case; it ends refused as
+         infected, and an ordinary PDF ends downloadable.
+
 ## R2 starts: what waits for you (2026-09-25, `r2-plan-docs`)
 
 R2 is planned and its first wave is running. `docs/plans/briefs/R2_CROSS_CUTTING.md` holds
@@ -31,7 +59,7 @@ default the packages take, and each answer changes a task, not an invariant alre
 - [x] **Search scope in R2 (D-10).** D-10 kept tenant content out of search in R1 and put the
       question at R2. (Default: still library only; no tenant text is embedded.) **Answered (Alex, 2026-09-25): default taken: library only through R2 (D-10).**
 - [x] **ADM-02's languages (D-94).** Which content languages the console's jurisdiction and
-      translation surfaces carry. (Default: as `x-jurisdictions-by-proposal` sets it in D-94.) **Answered (Alex, 2026-09-25): default taken (D-94).**
+      translation surfaces carry. (Default: as `x-jurisdictions-by-proposal` sets it in D-94.) **Answered (Alex, 2026-09-25): default taken (D-94).** Languages stay a read-only seeded list; jurisdictions are relabelled, retired and restored by proposal.
 - [x] **Evidence upload and the scanner.** That evidence arrives by multipart through the API
       rather than a presigned PUT (`CHUNK9_TASKS.md` ruling 4), and that the R2 deploy needs a
       `clamd` service (`PARALLEL_PLAN.md` §7.3). (Default: multipart; a deployed environment
@@ -61,6 +89,41 @@ default the packages take, and each answer changes a task, not an invariant alre
       still says J-1 to J-8. (The PRD on `main` stops at J-11; J-12 arrives with PRD 0.7 from
       `r2-spec-d89`.) The journey titles for J-9 (HOM-S13), J-10 (REG-S16) and J-11
       (ACC-S13) already carry `@smoke`.
+
+## `r2-banking-groups-brief`: a banking group's scope per legal entity (2026-09-25)
+
+The planning pass D-69 asked for is written: `docs/plans/briefs/BANKING_GROUPS.md`. Nothing
+is built. D-96 records the schedule, the build after R2, which you took as the plan's default
+on 2026-09-25; the item "When a banking group's scope is built" above and the 2026-09-22
+item "A banking group with several regulated companies" below are answered by it.
+
+**Your call** (default taken in brackets):
+- [ ] **Promote the build into R2?** (Default: no, after R2. Section 12 of the brief lists its
+      packages; it needs chunk 8 done, and chunk 11 for agent access.)
+- [ ] **A read wall between entities.** Should a member scoped to one company be unable to
+      read another company's register rows, gaps and evidence (an insurer kept apart from its
+      bank sister, say)? (Default: no wall. A member's entity scope narrows where their
+      permissions act and sets their default view; any member reads any entity, as D-21
+      treats a department. A wall later adds a filter, not a column.)
+- [ ] **"Whole group" in the switcher for everyone.** (Default: yes, because reads are not
+      walled. It goes if the wall comes.)
+
+**Chunk 8 rows, so the build stays additive** (the brief's section 11; each is chunk 8's own
+correctness too, and none needs you unless you disagree):
+- [ ] **(a) `c8-reg-applicability`:** the span ("which entities an obligation spans") is one
+      named function that also exposes the entity's terms as a dimension map, and every
+      reader of the span calls it.
+- [ ] **(b) `c8-ten-organisation`:** `PATCH /tenant/org-units/{id}` refuses changing `kind`
+      to or from `legal_entity` while a licence, a per-entity scope row, a gap or a duty
+      occurrence names the unit (409).
+- [ ] **(c) The writers of `TenantObligationScope`, `Gap.org_unit` and
+      `DutyOccurrence.org_unit`** (`c8-reg-applicability`, `c8-reg-status`,
+      `c8-reg-gaps-risk`, `c8-duty-occurrences`) check that the unit is an active legal
+      entity (422 `not_a_legal_entity`), with a test each.
+
+**Not a question:** a narrowing is a footprint change, so it keeps FP-02's request, second
+person and passkey, both ways (CLAUDE.md section 5, D-89). The brief says so to stop a
+lighter gate being proposed for entities.
 
 ## R1 is closed: what waits for you (2026-09-24, `r1-close-and-readiness`)
 
@@ -608,7 +671,7 @@ section. Copied here as chunk3-rest-T20 requires.
       scope is one more reader of the footprint this reshapes (D-70).
 
 ## Inventory search and filters (2026-09-25, `inventory-search-filters`)
-- [x] **Approve the chosen design** (D-103). Taken from your "Go ahead" of 2026-09-25, whose
+- [x] **Approve the chosen design** (D-104). Taken from your "Go ahead" of 2026-09-25, whose
       message was cut off after those words; say if you meant something else. The part that
       needs no R2 work is built: the search bar, the Filters sheet, the three quick filters,
       filter values bounded by the scope, and Ask at `/ask`.
@@ -1409,7 +1472,7 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
          confirms one, unlike the shared library (D-62). Say if a bank may switch on a
          confirming agent for its own queue. **Answered (Alex, 2026-09-25): 1 as D-98 (the typed name may reach the bank's own agent, guarded), 2 as D-99, 3 default taken.**
 
-## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-102)
+## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-103)
 
 - [ ] **The console's correction form gained one field.** A reviewer who changes a
       proposal's wording, date or scope before approving now gives "Source of your
@@ -1419,7 +1482,7 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       form's existing style below the scope. Default if you say nothing: it stays. The
       proposer's replaced source is kept in the approval's audit row, not beside the
       reviewer's on the queue screen; say if the queue should show both (a column on
-      `proposal`, D-102).
+      `proposal`, D-103).
 - [ ] **The confirming agent's next version should name its correction's source.**
       `backend/agents/library-confirmer/v2/prompt.md` says a correction goes through
       `payloadOverrides` and does not mention `fieldSources`; a shipped version is never
@@ -1427,3 +1490,17 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       changed value in", an agent's correction without one answers 422 `source_missing`
       and applies nothing (fails safe; it can still approve as proposed or reject).
       Default if you say nothing: v3 carries that line when the confirmer next changes.
+
+## R2 wave 2 integration: one CodeQL finding needs your triage (2026-09-25)
+
+- [x] **CodeQL `py/clear-text-storage-sensitive-data` at `backend/apps/identity/session_logic.py`
+      `set_refresh_cookie` (fingerprint `a6ba8ac839efa77d:1`).** CodeQL now reports the refresh
+      token written into its cookie. That write is the session design (D-06, ADR 0006): the
+      cookie is HttpOnly, Secure, SameSite=Strict and scoped to the auth path, the token is a
+      random 256-bit secret the database keeps only as a hash, and it rotates on every refresh
+      with replay detection (ID-S9). The same flow is on main unreported; CodeQL sees it since
+      `c11-session-policy` (ID-08) made the cookie's lifetime follow the session's absolute
+      end, whose test builds a concrete `HttpResponse`. The integration did not accept it on
+      its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
+      then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
+      (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**

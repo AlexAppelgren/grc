@@ -34,8 +34,8 @@ class TermRef(CamelSchema):
             "The value's immutable key, such as `advice` for a taxonomy term, `no` for Norway or `sv` for "
             "Swedish, and the only part of this reference to store, compare or send back. It is a row of "
             "a vocabulary: a taxonomy term (the shared library's terms, which an administrator may extend "
-            "through an approved proposal; `GET /taxonomy/terms`), a jurisdiction (which the platform's "
-            "library editors may add; `GET /reference/jurisdictions`), a language (the platform's own "
+            "through an approved proposal; `GET /taxonomy/terms`), a jurisdiction (which the platform seeds "
+            "and its library editors relabel, retire and restore by proposal; `GET /reference/jurisdictions`), a language (the platform's own "
             "list, which no bank admin can extend) or an urgency (the shared library's `urgency` "
             "vocabulary, which an administrator may extend through an approved proposal; "
             "`GET /vocab/urgency`). A key you have not seen before is new data, not an error. A key never "
@@ -379,9 +379,10 @@ class VocabularyListEntry(CamelSchema):
     proposable: bool = Field(
         description=(
             "False for a library list that is reference data, seeded with every deploy and never changed "
-            "through the API (`instrument_level` and `jurisdiction`): a create, suggestion, change, retire, "
-            "restore or merge on it answers 422 `validation_error`. True for every other list, a bank's own "
-            "lists included, which change directly rather than by proposal."
+            "through the API: a create, suggestion, change, retire, restore or merge on it answers 422 "
+            "`validation_error`. True for every other list, a bank's own lists included, which change "
+            "directly rather than by proposal. `jurisdiction` is true with fixed keys: a proposal relabels, "
+            "retires or restores a jurisdiction, and a create or a merge on it answers 422 `validation_error`."
         ),
         examples=[True],
     )

@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Screen card: agent access (/admin/agents/access)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Noto+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Serves ACC-01, ACC-03, ACC-07 and ACC-08 (chunk 11; ACC-S1, ACC-S3, ACC-S6, ACC-S12 and
+   J-11), from docs/plans/briefs/AGENT_ACCESS.md, for an admin holding agent_access.manage.
+   The prototype is silent; designed in the language of admin-agents.html, whose second
+   tab this is.
+
+   Agents is two tabs, and each says in one line what its kind of agent does, because a
+   reader who confuses them will assume a bank's coding agent can change the register:
+   "Watch and research" (admin-agents.html) finds and writes; "Access" (this card) lists
+   the agents the bank runs on its own systems, which only read.
+
+   An entry is a name, a purpose, the team that answers for it, and the departments and
+   products it serves. Naming none narrows nothing; the entry never reads beyond our
+   regulatory scope. An entry holds service keys; a member's personal token may name it
+   (me-tokens.html). Every write here asks for a passkey: register, edit, revoke, the
+   reach toggle, issuing and revoking a key. Revoking is never deleting: the entry, its
+   credentials and its access log stay, read-only.
+
+   Tenant reach: the organisation's switch lives on Security (admin-security.html) and
+   needs two people. This card shows its state in a sentence with a link, never a second
+   switch. While it is off every entry reads the shared library only, and the per-entry
+   toggle is disabled with that reason beside it.
+
+   The access log shows what was called, never what was asked or answered: no question
+   text, no record content.
+
+   Values follow design/system/foundations.md and design/system/pills-and-labels.md; the
+   build maps them to Green tokens. Names, figures and dates are sample data. */
+/* Values: design/system/foundations.md (14px base, 36px buttons at a 6px radius,
+   hairline cards at 8px, dialogs at 12px) and design/system/pills-and-labels.md.
+   Every colour is a Green token from green-tokens 3.1.8, with the brand pair as
+   frontend/src/styles/brand.css overrides it, never SEB's values. */
+:root{
+  --page:#ffffff;            /* l1-neutral-01 */
+  --surface:#ffffff;         /* l2-neutral-02 */
+  --subtle:#f4f5f5;          /* l1-neutral-02 */
+  --accent:#eaebeb;          /* l3-neutral-02 */
+  --hover:rgba(0,0,0,.06);   /* state-neutral-05 */
+  --line:#dfe1e1;            /* border-neutral-02 */
+  --line-control:#dfe1e1;    /* border-neutral-02 */
+  --line-strong:#777e7c;     /* border-neutral-01 */
+  --text:#0a0b0b;            /* content-neutral-01 */
+  --muted:#636967;           /* content-neutral-02 */
+  --primary:#0a0b0b;         /* l3-neutral-03 */
+  --on-primary:#ffffff;      /* content-neutral-03 */
+  --focus:#005fb3;           /* content-notice-01 */
+  --notice:#005fb3;--notice-pill:#e6f3ff;          /* content-notice-01 on l3-notice-02 */
+  --positive:#026436;--positive-pill:#dcefdc;      /* content-positive-03 on l3-positive-02 */
+  --warning:#8f530a;--warning-pill:#fce8cf;--warning-soft:#fce8cf;  /* l3-warning-02 */
+  --negative:#b92f13;--negative-pill:#fdebe8;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --brand:#6a5730;--brand-pill:#ece5d6;--meter:#0a3a2a;            /* brand.css content-brand-02 on l3-brand-02 */
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+}
+/* Dark: the four status tones take Green's -03 step on pills; a warn or bad
+   banner keeps the -02 step and puts every word in the text colour. */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --notice:#66b8ff;--notice-pill:#003666;
+  --positive:#8ae58d;--positive-pill:#003d26;
+  --warning:#f5b970;--warning-pill:#5f3707;--warning-soft:#774508;
+  --negative:#f08975;--negative-pill:#5c170a;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --brand:#d9cba9;--brand-pill:#33291a;--meter:#d9cba9;
+}}
+/* Fixed-theme frames, so one card shows a state in light AND dark whatever the
+   viewer's system is set to. They carry the same aliases, so nothing inside
+   needs to know which theme it is in. */
+.theme{border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--page);color:var(--text)}
+.theme.light{
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --notice:#005fb3;--notice-pill:#e6f3ff;--positive:#026436;--positive-pill:#dcefdc;
+  --warning:#8f530a;--warning-pill:#fce8cf;--warning-soft:#fce8cf;
+  --negative:#b92f13;--negative-pill:#fdebe8;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --brand:#6a5730;--brand-pill:#ece5d6;--meter:#0a3a2a;
+}
+.theme.dark{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --notice:#66b8ff;--notice-pill:#003666;--positive:#8ae58d;--positive-pill:#003d26;
+  --warning:#f5b970;--warning-pill:#5f3707;--warning-soft:#774508;
+  --negative:#f08975;--negative-pill:#5c170a;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --brand:#d9cba9;--brand-pill:#33291a;--meter:#d9cba9;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px;font-weight:500}
+p{margin:0 0 8px}
+b{font-weight:600}
+a{color:inherit;text-underline-offset:3px}
+main{padding:24px max(32px,env(safe-area-inset-right)) 64px max(32px,env(safe-area-inset-left));max-width:1200px;width:100%;margin:0 auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.meta{color:var(--muted);font-size:13px;line-height:18px}
+.mono{font-family:var(--mono);font-size:13px}
+.microlabel{font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+/* State labels. They belong to the card, not to the screen. */
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-of-type{margin-top:24px}
+.cap{color:var(--muted);font-size:13px;line-height:18px;margin:0 0 10px}
+
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 16px;margin-bottom:20px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+.head .acts{margin-left:auto}
+.back{background:none;border:0;padding:0;margin:0 0 8px;color:var(--muted);font-size:13px;line-height:18px;text-decoration:underline;text-underline-offset:3px}
+.status{margin:0 0 12px;font-weight:500}
+.status:empty{display:none}
+
+/* Notice (banner): a tone fill, no coloured edge, 6px radius. Every word inside
+   a warn or bad notice is the text colour (foundations.md). */
+.notice{background:var(--subtle);color:var(--text);border-radius:6px;padding:10px 12px;margin:0 0 16px}
+.notice.warn{background:var(--warning-soft)}
+.notice.bad{background:var(--negative-soft)}
+.notice p:last-child{margin-bottom:0}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+.panel>h2{margin-bottom:12px}
+.panel>.cap{margin-top:-6px}
+.cols{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.cols>*{min-width:0}
+@media (min-width:768px){.cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Pill: fully rounded, 20px, 13px at 500, no border. Tone comes from the slot
+   or the kind, never from a person (pills-and-labels.md). */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+.pill.notice{background:var(--notice-pill);color:var(--notice)}
+.pill.positive{background:var(--positive-pill);color:var(--positive)}
+.pill.warning{background:var(--warning-pill);color:var(--warning)}
+.pill.negative{background:var(--negative-pill);color:var(--negative)}
+.pill.brand{background:var(--brand-pill);color:var(--brand)}
+.pill .x{margin-left:6px;font-weight:400}
+.pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pills.line{gap:6px 10px}
+
+/* Button: 36px, 6px radius, body at 500. Primary is neutral; danger is an
+   outline button with negative text. */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.ghost{background:transparent;color:var(--text);border-color:transparent}
+.btn.danger{background:var(--surface);color:var(--negative);border-color:var(--line-control)}
+.btn.small{height:32px;padding:0 12px}
+.btn.outline:hover,.btn.ghost:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.btn.danger:hover{background:var(--negative-hover)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* Actions right, two per row on a phone, the primary last and so on the right. */
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+.bar.left{justify-content:flex-start}
+.bar .btn{min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* List rows: 12 by 16px, a hairline card at 8px. */
+.rows{display:grid;gap:8px}
+.row{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;text-decoration:none;color:inherit}
+a.row:hover,button.row:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.row h3{margin:6px 0 4px;font-weight:600}
+.row .meta{display:flex;flex-wrap:wrap;gap:4px 12px}
+
+.field{display:grid;gap:4px;margin-bottom:12px}
+.field label{font-weight:500}
+.field input,.field select,.field textarea{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;color:var(--text)}
+.field textarea{height:auto;min-height:76px;padding:8px 10px;resize:vertical}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted);font-style:italic}
+.field input[aria-invalid="true"],.field select[aria-invalid="true"]{border-color:var(--negative)}
+.field .hint,.field .err{font-size:13px;line-height:18px}
+.field .hint{color:var(--muted)}
+.field .err{color:var(--negative)}
+.pair{display:grid;gap:0 16px;grid-template-columns:minmax(0,1fr)}
+.pair>*{min-width:0}
+@media (min-width:768px){.pair{grid-template-columns:repeat(2,minmax(0,1fr))}}
+fieldset{border:0;margin:0;padding:0}
+legend{padding:0;font-weight:500}
+.check{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{width:16px;height:16px;height:16px;margin:2px 0 0;accent-color:var(--primary);flex:none}
+.check small{display:block;color:var(--muted);font-size:13px;line-height:18px}
+
+/* Dialog: 12px radius, at most 560px, over the scrim. */
+.modal{display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,11,11,.6);border-radius:8px;margin-bottom:16px}
+.modal .box{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.modal .box>h2{margin-bottom:12px}
+
+.skeleton{height:72px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.empty,.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.empty h2,.errorstate h2{color:var(--text)}
+.empty p,.errorstate p{margin:8px auto 16px;max-width:60ch}
+.restricted{max-width:60ch;margin:0 auto;padding:48px 0;text-align:center}
+.restricted p{margin:12px 0 0;color:var(--muted)}
+/* Grid items must be allowed to shrink, or the 375px phone frame inside one
+   widens its track and the page scrolls sideways. */
+.statebox{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.statebox>*{min-width:0}
+@media (min-width:768px){.statebox{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* A 375px frame, so the narrow layout can be read on a wide screen. */
+.phone{width:375px;max-width:100%;padding:12px;background:var(--page);border:1px solid var(--line);border-radius:8px}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
+}
+
+/* The plain key, shown once: monospace, wrapping, on the subtle surface. */
+.secret{font-family:var(--mono);font-size:13px;line-height:20px;word-break:break-all;background:var(--subtle);border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin:0 0 8px}
+/* Key facts under a row title: label, then value. */
+.kv{display:grid;grid-template-columns:1fr;gap:2px 16px;margin:8px 0 0}
+@media (min-width:768px){.kv{grid-template-columns:132px minmax(0,1fr)}}
+.kv dt{color:var(--muted);font-size:13px;line-height:18px}
+.kv dd{margin:0 0 6px}
+@media (min-width:768px){.kv dd{margin-bottom:2px}}
+
+/* Shared by the chunk 11 cards. */
+.kv{grid-template-columns:1fr}
+@media (min-width:768px){.kv.wide{grid-template-columns:132px minmax(0,1fr)}}
+/* Meter: brand green is for meters and the timeline alone (design/README.md). */
+.meter{height:8px;border-radius:999px;background:var(--accent);overflow:hidden;margin:8px 0}
+.meter i{display:block;height:100%;background:var(--meter)}
+.figure{font-size:24px;line-height:32px;font-weight:600;letter-spacing:-.02em;margin:0}
+.figure small{font-size:14px;font-weight:400;color:var(--muted);letter-spacing:0}
+/* A run or a version line: facts left, figure right, wrapping on a phone. */
+.lines{margin:8px 0 0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.lines li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.lines li:last-child{border-bottom:0}
+.lines .grow{flex:1 1 180px;min-width:0}
+.lines .fig{margin-left:auto;font-variant-numeric:tabular-nums}
+.inline{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.inline .field{margin:0;flex:0 1 200px;min-width:0}
+.sub{margin:16px 0 4px;font-size:14px;font-weight:600}
+/* A select shrinks with its column; a long option never widens the page. */
+.field select,.kv select{max-width:100%;min-width:0}
+/* Shared by the agent access cards (acc-cards). */
+/* Underline tabs: 14px at 500, muted until selected, then the text colour and a 2px rule. */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 16px;overflow-x:auto}
+.tabs a{padding:8px 12px;color:var(--muted);font-weight:500;text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs a[aria-current="page"]{color:var(--text);border-bottom-color:var(--text)}
+/* Switch: a 6px-radius control like the toggle; on is the primary. */
+.switchrow{display:flex;align-items:flex-start;gap:12px}
+.switch{flex:none;width:36px;height:20px;border-radius:999px;border:1px solid var(--line-strong);background:var(--accent);padding:0;position:relative}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--surface);border:1px solid var(--line-strong)}
+.switch[aria-checked="true"]{background:var(--primary);border-color:var(--primary)}
+.switch[aria-checked="true"]::after{left:18px;border-color:var(--primary)}
+.switch:disabled{opacity:.5;cursor:not-allowed}
+/* Table: 36px rows, 8px cells, meta size, a hairline between rows, head cells 500 muted.
+   Below 768px each row stacks as label and value, so the page never scrolls sideways. */
+.tablewrap{overflow-x:auto}
+table.log{width:100%;border-collapse:collapse;font-size:13px;line-height:18px}
+table.log th{color:var(--muted);font-weight:500;text-align:left;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.log td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.log tr:last-child td{border-bottom:0}
+table.log td.num{text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:767px){
+  table.log thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  table.log tr{display:block;padding:8px 0;border-bottom:1px solid var(--line)}
+  table.log td{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;padding:2px 0;border:0}
+  table.log td.num{text-align:left}
+  table.log td::before{content:attr(data-label);color:var(--muted)}
+}
+.phone table.log thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.phone table.log tr{display:block;padding:8px 0;border-bottom:1px solid var(--line)}
+.phone table.log td{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;padding:2px 0;border:0}
+.phone table.log td.num{text-align:left}
+.phone table.log td::before{content:attr(data-label);color:var(--muted)}
+.pager{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:12px}
+.row h3.t{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 4px}
+.cred{border-top:1px solid var(--line);padding:12px 0}
+.cred:first-of-type{border-top:0;padding-top:0}
+.cred h3{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 4px;font-weight:600}
+.cred .bar{margin-top:8px}
+</style>
+</head>
+<body>
+<main>
+
+<h2 class="k">1 · The Access tab (an admin holding agent access manage), tenant reach on</h2>
+<button class="back">Admin</button>
+<div class="head">
+  <div>
+    <h1>Agents</h1>
+  </div>
+</div>
+<nav class="tabs" aria-label="Agents"><a href="admin-agents.html">Watch and research</a><a href="#" aria-current="page">Access</a></nav>
+<p class="lede meta" style="margin:0 0 12px;max-width:72ch">Agents we run on our own systems. They read what applies to them here and change nothing.</p>
+<p class="status" role="status" tabindex="-1"></p>
+<p class="meta">Our register decisions can be read by entries that allow it. <a href="admin-security.html">Change it under Security</a></p>
+
+<div class="rows" aria-label="Agent access entries">
+  <a class="row" href="#entry">
+    <h3 class="t">Trading platform coding agent <span class="pill positive">Active</span><span class="pill notice">Reads our register</span></h3>
+    <p class="meta">Designs and reviews the order-routing service.</p>
+    <dl class="kv wide">
+      <dt>Owned by</dt><dd>Trading platform team</dd>
+      <dt>Departments</dt><dd><div class="pills"><span class="pill brand">Trading</span></div></dd>
+      <dt>Products</dt><dd><div class="pills"><span class="pill brand">Derivatives</span><span class="pill brand">Securities</span><span class="pill brand">Order routing</span></div></dd>
+      <dt>Credentials</dt><dd>2 keys, 1 personal token · last used 25 Sep 2026 08:41</dd>
+    </dl>
+  </a>
+  <a class="row" href="#entry">
+    <h3 class="t">Supplier contract reader <span class="pill positive">Active</span><span class="pill">Library only</span></h3>
+    <p class="meta">Reads outsourcing and supplier contracts before procurement signs.</p>
+    <dl class="kv wide">
+      <dt>Owned by</dt><dd>Procurement</dd>
+      <dt>Departments</dt><dd><div class="pills"><span class="pill brand">Procurement</span></div></dd>
+      <dt>Products</dt><dd>None named</dd>
+      <dt>Credentials</dt><dd>1 key · last used 22 Sep 2026 14:03</dd>
+    </dl>
+  </a>
+  <a class="row" href="#entry">
+    <h3 class="t">Staff assistant <span class="pill positive">Active</span><span class="pill">Library only</span></h3>
+    <p class="meta">Answers staff questions about which rules apply to their work.</p>
+    <dl class="kv wide">
+      <dt>Owned by</dt><dd>Compliance</dd>
+      <dt>Reads</dt><dd>All of our regulatory scope</dd>
+      <dt>Credentials</dt><dd>1 key · never used</dd>
+    </dl>
+  </a>
+  <a class="row" href="#revoked">
+    <h3 class="t">Card pilot agent <span class="pill">Revoked</span></h3>
+    <p class="meta">Prototype for the virtual card feature.</p>
+    <dl class="kv wide">
+      <dt>Owned by</dt><dd>Cards team</dd>
+      <dt>Products</dt><dd><div class="pills"><span class="pill brand">Card issuing</span></div></dd>
+      <dt>Revoked</dt><dd>19 Sep 2026 by Erik Holm</dd>
+    </dl>
+  </a>
+</div>
+<div class="bar"><button class="btn">Register an agent</button></div>
+<p class="meta" style="margin:8px 0 0;text-align:right">Registering asks for your passkey.</p>
+
+<h2 class="k">2 · Tenant reach off: every entry reads the library only</h2>
+<p class="cap">The line replaces the one above; the reach pill on every row reads Library only, whatever the entry's own setting.</p>
+<div class="notice" role="status"><p>Our register decisions stay in bleqq: every entry reads the shared library only. Switching this on needs two people holding security manage. <a href="admin-security.html">Go to Security</a></p></div>
+
+<h2 class="k">3 · Register an agent (dialog)</h2>
+<div class="modal">
+  <form class="box" aria-labelledby="reg">
+    <h2 id="reg">Register an agent</h2>
+    <div class="field"><label for="rn">Name</label><input id="rn" placeholder="e.g. Trading platform coding agent"><span class="hint">What we call it. It shows in the access log.</span></div>
+    <div class="field"><label for="rp">Purpose</label><textarea id="rp" placeholder="e.g. Designs and reviews the order-routing service"></textarea><span class="hint">One sentence on what it builds, buys or reviews.</span></div>
+    <div class="field"><label for="rt">Owned by</label><select id="rt"><option>Choose a team</option><option selected>Trading platform team</option><option>Procurement</option><option>Compliance</option></select><span class="hint">The team that answers for it.</span></div>
+    <fieldset class="field">
+      <legend>Departments it serves</legend>
+      <label class="check" for="d1"><input type="checkbox" id="d1" checked><span>Trading<small>Derivatives, Securities, Order routing</small></span></label>
+      <label class="check" for="d2"><input type="checkbox" id="d2"><span>Cards<small>Card issuing, Card acquiring</small></span></label>
+      <label class="check" for="d3"><input type="checkbox" id="d3"><span>Procurement<small>No products</small></span></label>
+    </fieldset>
+    <fieldset class="field">
+      <legend>Products it serves</legend>
+      <label class="check" for="p1"><input type="checkbox" id="p1"><span>Payments<small>Retail payments</small></span></label>
+      <label class="check" for="p2"><input type="checkbox" id="p2"><span>Savings account<small>Retail banking</small></span></label>
+    </fieldset>
+    <p class="meta">It reads what these departments and products touch, within our regulatory scope. Name none and it reads all of our regulatory scope.</p>
+    <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Register</button></div>
+    <p class="meta" style="margin:8px 0 0;text-align:right">Registering asks for your passkey.</p>
+  </form>
+</div>
+
+<h2 class="k">4 · Register, with a missing name and a department whose products we do not cover</h2>
+<div class="modal">
+  <form class="box" aria-labelledby="reg2">
+    <h2 id="reg2">Register an agent</h2>
+    <div class="field"><label for="rn2">Name</label><input id="rn2" aria-invalid="true" aria-describedby="rn2e"><span class="err" id="rn2e" role="alert">Give it a name.</span></div>
+    <fieldset class="field">
+      <legend>Departments it serves</legend>
+      <label class="check" for="d4"><input type="checkbox" id="d4" checked><span>Procurement<small>No products</small></span></label>
+    </fieldset>
+    <p class="notice warn" role="status" style="margin:0 0 12px">Procurement names nothing in our regulatory scope, so this agent would read nothing. Name a product too, or name nothing to read all of our regulatory scope.</p>
+    <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Register</button></div>
+  </form>
+</div>
+
+<h2 class="k">5 · The passkey step-up on Register (and on every write on this card)</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="su" aria-describedby="sud">
+    <h2 id="su">Use your passkey to register this agent</h2>
+    <p id="sud" class="meta">Trading platform coding agent · Trading · reads the shared library until you allow more</p>
+    <p>An agent reads what applies to our work, so we ask for your passkey first.</p>
+    <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Continue with passkey</button></div>
+  </div>
+</div>
+<p class="status" role="status" tabindex="-1">Registered. Issue it a key to let it read.</p>
+
+<h2 class="k" id="entry">6 · The entry page (/admin/agents/access/[entryId])</h2>
+<button class="back">Access</button>
+<div class="head">
+  <div>
+    <h1>Trading platform coding agent</h1>
+    <div class="pills" style="margin-top:6px"><span class="pill positive">Active</span><span class="pill notice">Reads our register</span></div>
+    <p class="lede">Designs and reviews the order-routing service.</p>
+  </div>
+  <div class="acts bar" style="margin-top:0"><button class="btn danger">Revoke</button><button class="btn outline">Edit</button></div>
+</div>
+
+<div class="cols">
+<section class="panel" aria-labelledby="sc">
+  <h2 id="sc">What it reads</h2>
+  <dl class="kv wide">
+    <dt>Owned by</dt><dd>Trading platform team</dd>
+    <dt>Departments</dt><dd><div class="pills"><span class="pill brand">Trading</span></div></dd>
+    <dt>Products</dt><dd><div class="pills"><span class="pill brand">Derivatives</span><span class="pill brand">Securities</span><span class="pill brand">Order routing</span></div></dd>
+    <dt>Registered</dt><dd>12 Sep 2026 by Erik Holm</dd>
+  </dl>
+  <p class="meta" style="margin:8px 0 0">Obligations that name none of our products or activities stay in view; one about cards alone does not. When an answer touches what it cannot see, it says so and tells the agent to ask compliance.</p>
+</section>
+
+<section class="panel" aria-labelledby="rc">
+  <h2 id="rc">Our register</h2>
+  <div class="switchrow">
+    <button class="switch" role="switch" aria-checked="true" aria-labelledby="rcl" aria-describedby="rcd"></button>
+    <div><p id="rcl" style="margin:0;font-weight:500">Reads our register decisions</p>
+    <p id="rcd" class="meta" style="margin:2px 0 0">Applicability and its reason, compliance status, how we read each rule, owners and linked items, for the obligations in its scope. Never gaps, cases, comments or evidence.</p></div>
+  </div>
+  <p class="meta" style="margin:8px 0 0">Changing it asks for your passkey.</p>
+</section>
+</div>
+
+<section class="panel" aria-labelledby="cr">
+  <h2 id="cr">Credentials</h2>
+  <p class="cap">Keys read as this agent. A member's personal token that names it reads as that member, within this agent's scope.</p>
+  <div class="cred">
+    <h3>Order router CI <span class="pill">Service</span></h3>
+    <p class="meta"><span class="mono">cw_7c1e40aa…</span> · library read, search read, upcoming read, tenant read</p>
+    <p class="meta">Issued 12 Sep 2026 by Erik Holm · expires 11 Dec 2026 · last used 25 Sep 2026 08:41</p>
+    <div class="bar left"><button class="btn danger small">Revoke</button></div>
+  </div>
+  <div class="cred">
+    <h3>Local development <span class="pill">Service</span><span class="pill warning">Expired</span></h3>
+    <p class="meta"><span class="mono">cw_02b9dd31…</span> · library read, search read</p>
+    <p class="meta">Issued 20 Jun 2026 by Erik Holm · expired 18 Sep 2026 · last used 17 Sep 2026 16:20</p>
+  </div>
+  <div class="cred">
+    <h3>Anna Berg's token <span class="pill">Personal</span></h3>
+    <p class="meta"><span class="mono">cw_b44f0e92…</span> · library read, tenant read · acts as Anna Berg</p>
+    <p class="meta">Created 20 Sep 2026 · expires 19 Dec 2026 · last used 24 Sep 2026 11:02</p>
+    <div class="bar left"><button class="btn danger small">Revoke</button></div>
+  </div>
+  <div class="bar"><button class="btn outline">Issue a key</button></div>
+</section>
+
+<section class="panel" aria-labelledby="lg">
+  <h2 id="lg">Access log</h2>
+  <p class="cap">Every call, newest first. What was asked and what was answered are never kept.</p>
+  <div class="tablewrap">
+  <table class="log">
+    <thead><tr><th scope="col">When</th><th scope="col">Credential</th><th scope="col">Person</th><th scope="col">Tool</th><th scope="col">Filters</th><th scope="col">Records</th><th scope="col">Scope</th><th scope="col">Took</th></tr></thead>
+    <tbody>
+      <tr><td data-label="When">25 Sep 2026 08:41</td><td data-label="Credential">Order router CI</td><td data-label="Person">—</td><td data-label="Tool">What applies</td><td data-label="Filters">—</td><td class="num" data-label="Records">11</td><td data-label="Scope">Trading · 3 products · register</td><td class="num" data-label="Took">412 ms</td></tr>
+      <tr><td data-label="When">25 Sep 2026 08:40</td><td data-label="Credential">Order router CI</td><td data-label="Person">—</td><td data-label="Tool">Obligation</td><td data-label="Filters">—</td><td class="num" data-label="Records">0, not found</td><td data-label="Scope">Trading · 3 products · register</td><td class="num" data-label="Took">38 ms</td></tr>
+      <tr><td data-label="When">24 Sep 2026 11:02</td><td data-label="Credential">Anna Berg's token</td><td data-label="Person">Anna Berg</td><td data-label="Tool">Register entries</td><td data-label="Filters">Status</td><td class="num" data-label="Records">20</td><td data-label="Scope">Trading · 3 products · register</td><td class="num" data-label="Took">96 ms</td></tr>
+      <tr><td data-label="When">23 Sep 2026 09:15</td><td data-label="Credential">Order router CI</td><td data-label="Person">—</td><td data-label="Tool">Search</td><td data-label="Filters">Jurisdiction, binding</td><td class="num" data-label="Records">8</td><td data-label="Scope">Trading · 3 products · library</td><td class="num" data-label="Took">540 ms</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="pager"><span class="meta">1 to 20 of 146</span><button class="btn outline small" disabled>Newer</button><button class="btn outline small">Older</button></div>
+</section>
+
+<h2 class="k">7 · The entry's own reach while tenant reach is off</h2>
+<section class="panel" aria-labelledby="rc2">
+  <h2 id="rc2">Our register</h2>
+  <div class="switchrow">
+    <button class="switch" role="switch" aria-checked="true" disabled aria-labelledby="rc2l" aria-describedby="rc2d"></button>
+    <div><p id="rc2l" style="margin:0;font-weight:500">Reads our register decisions</p>
+    <p id="rc2d" class="meta" style="margin:2px 0 0">On for this agent, but our register stays in bleqq until two people holding security manage allow it. Until then it reads the shared library only. <a href="admin-security.html">Go to Security</a></p></div>
+  </div>
+</section>
+
+<h2 class="k">8 · Edit (the Register dialog, filled; a stale version answers 409)</h2>
+<div class="modal">
+  <form class="box" aria-labelledby="ed">
+    <h2 id="ed">Edit Trading platform coding agent</h2>
+    <p class="notice warn" role="alert">Someone else changed this agent while you were editing. Your changes are not saved. <a href="#">Load the latest</a></p>
+    <div class="field"><label for="en">Name</label><input id="en" value="Trading platform coding agent"></div>
+    <div class="field"><label for="ep">Purpose</label><textarea id="ep">Designs and reviews the order-routing service.</textarea></div>
+    <div class="field"><label for="et">Owned by</label><select id="et"><option selected>Trading platform team</option><option>Procurement</option><option>Compliance</option></select></div>
+    <p class="meta">Departments and products as in the Register dialog. A change applies to its next call.</p>
+    <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Save</button></div>
+    <p class="meta" style="margin:8px 0 0;text-align:right">Saving asks for your passkey.</p>
+  </form>
+</div>
+
+<h2 class="k">9 · Issue a key (dialog)</h2>
+<div class="modal">
+  <form class="box" aria-labelledby="ik">
+    <h2 id="ik">Issue a key for Trading platform coding agent</h2>
+    <div class="field"><label for="kn">Name</label><input id="kn" placeholder="e.g. Order router CI"><span class="hint">Where the key will live, so you know which to revoke.</span></div>
+    <fieldset class="field">
+      <legend>What it may read</legend>
+      <label class="check" for="s1"><input type="checkbox" id="s1" checked><span>library read<small>Instruments and obligations in its scope</small></span></label>
+      <label class="check" for="s2"><input type="checkbox" id="s2" checked><span>search read<small>Search the library in its scope</small></span></label>
+      <label class="check" for="s3"><input type="checkbox" id="s3" checked><span>upcoming read<small>Dated changes that touch its scope</small></span></label>
+      <label class="check" for="s4"><input type="checkbox" id="s4"><span>tenant read<small>Our register decisions, while our register is readable</small></span></label>
+    </fieldset>
+    <div class="field"><label for="kx">Expires</label><input id="kx" type="date" value="2026-12-24" aria-describedby="kxh"><span class="hint" id="kxh">At most 90 days, so 24 Dec 2026 at the latest.</span></div>
+    <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Issue key</button></div>
+    <p class="meta" style="margin:8px 0 0;text-align:right">Issuing asks for your passkey.</p>
+  </form>
+</div>
+
+<h2 class="k">10 · An expiry past the limit (422, rendered under the field)</h2>
+<div class="panel">
+  <div class="field" style="margin:0"><label for="kx2">Expires</label><input id="kx2" type="date" value="2027-03-01" aria-invalid="true" aria-describedby="kx2e"><span class="err" id="kx2e" role="alert">At most 90 days. Choose 24 Dec 2026 or earlier.</span></div>
+</div>
+
+<h2 class="k">11 · The new key, shown once</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="once">
+    <h2 id="once">Copy the key now</h2>
+    <p class="secret">cw_7c1e40aa_5d2f9b81c6e3a4970f1d8b2c5e6a7f90d3c1b8e4a2f6097d5c3e1b</p>
+    <p class="meta">It is not shown again. Store it where the agent keeps its secrets. It reads as Trading platform coding agent until 24 Dec 2026.</p>
+    <div class="bar"><button class="btn outline">Done</button><button class="btn">Copy key</button></div>
+  </div>
+</div>
+
+<h2 class="k">12 · Revoke a key</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="rk" aria-describedby="rkd">
+    <h2 id="rk">Revoke Order router CI?</h2>
+    <p id="rkd">Its next call is refused. The key stays on the list as revoked, and its calls stay in the access log.</p>
+    <div class="bar"><button class="btn outline">Keep it</button><button class="btn danger">Revoke key</button></div>
+  </div>
+</div>
+
+<h2 class="k">13 · Revoke the entry</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="re" aria-describedby="red">
+    <h2 id="re">Revoke Trading platform coding agent?</h2>
+    <p id="red">Its 2 keys and Anna Berg's token stop working on their next call. The entry and its access log are kept, and it cannot be switched back on: register it again if it is needed.</p>
+    <div class="bar"><button class="btn outline">Keep it</button><button class="btn danger">Revoke the agent</button></div>
+    <p class="meta" style="margin:8px 0 0;text-align:right">Revoking asks for your passkey.</p>
+  </div>
+</div>
+<p class="status" role="status" tabindex="-1">Revoked. Its credentials stopped working.</p>
+
+<h2 class="k" id="revoked">14 · A revoked entry: read-only, its log kept</h2>
+<div class="head">
+  <div>
+    <h1>Card pilot agent</h1>
+    <div class="pills" style="margin-top:6px"><span class="pill">Revoked</span></div>
+    <p class="lede">Prototype for the virtual card feature. Revoked 19 Sep 2026 by Erik Holm.</p>
+  </div>
+</div>
+<section class="panel"><h2>Credentials</h2>
+  <div class="cred"><h3>Card prototype <span class="pill">Service</span><span class="pill">Revoked</span></h3><p class="meta"><span class="mono">cw_c4rd0001…</span> · issued 2 Sep 2026 · revoked 19 Sep 2026 · last used 18 Sep 2026 17:44</p></div>
+</section>
+<p class="meta">The access log stays below, unchanged.</p>
+
+<h2 class="k">15 · No calls yet</h2>
+<section class="panel"><h2>Access log</h2><div class="empty"><h2>No calls yet</h2><p>Calls appear here once the agent uses a key. Issue one above if it has none.</p></div></section>
+
+<h2 class="k">16 · A member without agent access manage</h2>
+<p class="cap">The Access tab is not offered. Opening its address shows the Restricted screen; opening another organisation's entry shows Not found.</p>
+
+<h2 class="k">17 · Empty, loading, error, denied and not found, in both themes</h2>
+<p class="cap">The same markup with the light and the dark aliases fixed.</p>
+<div class="statebox">
+  <div class="theme light">
+    <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Light</p>
+    <div class="empty"><h2>No agents registered</h2><p>Register an agent we run ourselves so it can read what applies to its work.</p><button class="btn outline small">Register an agent</button></div>
+    <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:16px 0"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+    <div class="errorstate" role="alert"><h2>Could not load the agents</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+    <div class="restricted" role="alert" style="padding:24px 0"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p class="meta">Needs agent access manage</p></div>
+    <div class="restricted" style="padding:24px 0"><h1>Not found</h1><p>There is nothing at this address in your organisation.</p><a href="#">Back to Access</a></div>
+  </div>
+  <div class="theme dark">
+    <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Dark</p>
+    <div class="empty"><h2>No agents registered</h2><p>Register an agent we run ourselves so it can read what applies to its work.</p><button class="btn outline small">Register an agent</button></div>
+    <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:16px 0"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+    <div class="errorstate" role="alert"><h2>Could not load the agents</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+    <div class="restricted" role="alert" style="padding:24px 0"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p class="meta">Needs agent access manage</p></div>
+    <div class="restricted" style="padding:24px 0"><h1>Not found</h1><p>There is nothing at this address in your organisation.</p><a href="#">Back to Access</a></div>
+  </div>
+</div>
+
+<h2 class="k">18 · At 375 px, light and dark: an entry row, a credential and the access log</h2>
+<div class="statebox">
+  <div class="theme light" style="padding:0;border:0">
+    <div class="phone">
+      <nav class="tabs" aria-label="Agents"><a href="admin-agents.html">Watch and research</a><a href="#" aria-current="page">Access</a></nav>
+      <a class="row" href="#entry"><h3 class="t">Trading platform coding agent <span class="pill positive">Active</span><span class="pill notice">Reads our register</span></h3><dl class="kv"><dt>Departments</dt><dd><div class="pills"><span class="pill brand">Trading</span></div></dd><dt>Products</dt><dd><div class="pills"><span class="pill brand">Derivatives</span><span class="pill brand">Securities</span><span class="pill brand">Order routing</span></div></dd></dl></a>
+      <section class="panel" style="margin:12px 0"><h2>Credentials</h2><div class="cred"><h3>Order router CI <span class="pill">Service</span></h3><p class="meta">Expires 11 Dec 2026 · last used 25 Sep 2026 08:41</p><div class="bar"><button class="btn danger small">Revoke</button></div></div></section>
+      <section class="panel" style="margin:0"><h2>Access log</h2><table class="log"><thead><tr><th>When</th><th>Credential</th><th>Tool</th><th>Records</th><th>Took</th></tr></thead><tbody><tr><td data-label="When">25 Sep 2026 08:41</td><td data-label="Credential">Order router CI</td><td data-label="Tool">What applies</td><td class="num" data-label="Records">11</td><td class="num" data-label="Took">412 ms</td></tr><tr><td data-label="When">24 Sep 2026 11:02</td><td data-label="Credential">Anna Berg's token</td><td data-label="Tool">Register entries</td><td class="num" data-label="Records">20</td><td class="num" data-label="Took">96 ms</td></tr></tbody></table></section>
+    </div>
+  </div>
+  <div class="theme dark" style="padding:0;border:0">
+    <div class="phone">
+      <nav class="tabs" aria-label="Agents"><a href="admin-agents.html">Watch and research</a><a href="#" aria-current="page">Access</a></nav>
+      <a class="row" href="#entry"><h3 class="t">Trading platform coding agent <span class="pill positive">Active</span><span class="pill notice">Reads our register</span></h3><dl class="kv"><dt>Departments</dt><dd><div class="pills"><span class="pill brand">Trading</span></div></dd><dt>Products</dt><dd><div class="pills"><span class="pill brand">Derivatives</span><span class="pill brand">Securities</span><span class="pill brand">Order routing</span></div></dd></dl></a>
+      <section class="panel" style="margin:12px 0"><h2>Credentials</h2><div class="cred"><h3>Order router CI <span class="pill">Service</span></h3><p class="meta">Expires 11 Dec 2026 · last used 25 Sep 2026 08:41</p><div class="bar"><button class="btn danger small">Revoke</button></div></div></section>
+      <section class="panel" style="margin:0"><h2>Access log</h2><table class="log"><thead><tr><th>When</th><th>Credential</th><th>Tool</th><th>Records</th><th>Took</th></tr></thead><tbody><tr><td data-label="When">25 Sep 2026 08:41</td><td data-label="Credential">Order router CI</td><td data-label="Tool">What applies</td><td class="num" data-label="Records">11</td><td class="num" data-label="Took">412 ms</td></tr><tr><td data-label="When">24 Sep 2026 11:02</td><td data-label="Credential">Anna Berg's token</td><td data-label="Tool">Register entries</td><td class="num" data-label="Records">20</td><td class="num" data-label="Took">96 ms</td></tr></tbody></table></section>
+    </div>
+  </div>
+</div>
+
+<p class="note">Agent access card (/admin/agents/access and /admin/agents/access/[entryId]), the
+Access tab of Agents, for agent access manage alone: without it the tab is not offered and its
+address is Restricted, and another organisation's entry is Not found, the same answer as a missing
+one. The tab's one line says these agents read and change nothing; the first tab's line says what
+ours do. An entry row carries its state (Active positive, Revoked information) and what it reads
+now (Reads our register notice, Library only information): the pill is the effective state, so
+with tenant reach off every entry reads Library only. Departments and products are brand pills,
+the scope facets; naming none reads "All of our regulatory scope" as plain text, because empty
+means no narrowing. A credential carries its kind (Service, Personal: information) and Expired
+(warning) or Revoked (information) from its facts. Every write asks for a passkey: register,
+edit (If-Match, a stale version renders the 409 in place), revoke, the reach toggle, issuing a key
+and revoking one. A key names what it may read from the four read scopes and an expiry of at
+most 90 days, and its plain value shows once. The reach toggle is the entry's half of the switch;
+while the organisation's half is off it is disabled with that reason and a link to Security, never
+a second organisation switch. The access log names the credential, the person for a personal
+token, the tool, the filter names, the record count, the scope and the time taken, and never what
+was asked or answered; below 768 px each row stacks as label and value. Revoking an entry stops
+every credential under it on the next call and deletes nothing. Two buttons per row on a phone,
+the primary on the right.</p>
+
+</main>
+</body>
+</html>

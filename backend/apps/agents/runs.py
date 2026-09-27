@@ -43,7 +43,7 @@ from django.http import HttpRequest
 from django.utils import timezone
 
 from apps.agents.models import AgentRun, RunStatus
-from apps.agents.schemas import AgentRunFinish, AgentRunInput, AgentRunOut, AgentRunPage, AgentRunStats
+from apps.agents.schemas import AgentRunFinish, AgentRunInput, AgentRunOut, AgentRunStats
 from apps.identity.models import ApiKey
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.authentication import Principal
@@ -51,8 +51,8 @@ from apps.shared.errors import ProblemError
 
 SUBJECT_TYPE = "agent_run"
 
-# The three values `RunStatus` fixes, as the schema publishes them.
-RunState = Literal["running", "succeeded", "failed"]
+# The four values `RunStatus` fixes, as the schema publishes them.
+RunState = Literal["running", "succeeded", "failed", "interrupted"]
 
 
 # ---------------------------------------------------------------------------------------
@@ -66,8 +66,8 @@ def row(run: AgentRun) -> AgentRunOut:
         agent=run.agent.key,
         started_at=run.started_at,
         finished_at=run.finished_at,
-        # A kind in code (`RunStatus`): the column holds one of its three values and the
-        # schema publishes the same three, so the cast states what the choices already fix.
+        # A kind in code (`RunStatus`): the column holds one of its four values and the
+        # schema publishes the same four, so the cast states what the choices already fix.
         status=cast(RunState, run.status),
         model=run.model,
         pipeline_version=run.pipeline_version,
@@ -380,18 +380,3 @@ def _counted(run: AgentRun, stats: dict[str, Any]) -> dict[str, Any]:
         "changesRegistered": run.changes.count(),
         "proposalsSubmitted": Proposal.objects.filter(agent_run_id=run.id).count(),
     }
-
-
-# ---------------------------------------------------------------------------------------
-# GET /agent-runs
-# ---------------------------------------------------------------------------------------
-def list_runs(*, limit: int, offset: int) -> AgentRunPage:
-    """The runs this caller may see, oldest first, one page at a time.
-
-    Row-level security is what decides "may see": a bank's session reads the library's runs
-    and its own, a console session reads the library's, and no session reads another bank's.
-    The order is the model's own and is the order the sweeps happened in.
-    """
-    queryset = AgentRun.objects.select_related("agent").order_by("started_at", "id")
-    total = queryset.count()
-    return AgentRunPage(items=[row(run) for run in queryset[offset : offset + limit]], total=total)

@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Screen card: my access tokens (/me/tokens)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Noto+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Serves ACC-03 (chunk 11; ACC-S3, ACC-S9), from docs/plans/briefs/AGENT_ACCESS.md
+   section 8, for a member. Reached from the account menu beside My passkeys and My
+   sessions (rail and the More sheet), shown only to a member holding tokens.create or
+   one who still holds a token. The prototype is silent; designed in the language of
+   me-passkeys.html at the foundations' proportions.
+
+   A personal access token lets an agent the person runs read bleqq as that person:
+   never more than their own permissions, narrowed further by the scopes they pick and,
+   when they name one, by an agent access entry's scope. It is fenced, and the card says
+   so where it matters rather than as policy: it reads only, it cannot sign in or confirm
+   anything with a passkey, it must expire (at most 90 days), and it stops when the
+   person leaves or loses the permission behind a scope. Creating one asks for a passkey
+   and shows the token once. Revoking one's own token needs no passkey: it only takes
+   access away.
+
+   Values follow design/system/foundations.md and design/system/pills-and-labels.md; the
+   build maps them to Green tokens. Names, figures and dates are sample data. */
+/* Values: design/system/foundations.md (14px base, 36px buttons at a 6px radius,
+   hairline cards at 8px, dialogs at 12px) and design/system/pills-and-labels.md.
+   Every colour is a Green token from green-tokens 3.1.8, with the brand pair as
+   frontend/src/styles/brand.css overrides it, never SEB's values. */
+:root{
+  --page:#ffffff;            /* l1-neutral-01 */
+  --surface:#ffffff;         /* l2-neutral-02 */
+  --subtle:#f4f5f5;          /* l1-neutral-02 */
+  --accent:#eaebeb;          /* l3-neutral-02 */
+  --hover:rgba(0,0,0,.06);   /* state-neutral-05 */
+  --line:#dfe1e1;            /* border-neutral-02 */
+  --line-control:#dfe1e1;    /* border-neutral-02 */
+  --line-strong:#777e7c;     /* border-neutral-01 */
+  --text:#0a0b0b;            /* content-neutral-01 */
+  --muted:#636967;           /* content-neutral-02 */
+  --primary:#0a0b0b;         /* l3-neutral-03 */
+  --on-primary:#ffffff;      /* content-neutral-03 */
+  --focus:#005fb3;           /* content-notice-01 */
+  --notice:#005fb3;--notice-pill:#e6f3ff;          /* content-notice-01 on l3-notice-02 */
+  --positive:#026436;--positive-pill:#dcefdc;      /* content-positive-03 on l3-positive-02 */
+  --warning:#8f530a;--warning-pill:#fce8cf;--warning-soft:#fce8cf;  /* l3-warning-02 */
+  --negative:#b92f13;--negative-pill:#fdebe8;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --brand:#6a5730;--brand-pill:#ece5d6;--meter:#0a3a2a;            /* brand.css content-brand-02 on l3-brand-02 */
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+}
+/* Dark: the four status tones take Green's -03 step on pills; a warn or bad
+   banner keeps the -02 step and puts every word in the text colour. */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --notice:#66b8ff;--notice-pill:#003666;
+  --positive:#8ae58d;--positive-pill:#003d26;
+  --warning:#f5b970;--warning-pill:#5f3707;--warning-soft:#774508;
+  --negative:#f08975;--negative-pill:#5c170a;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --brand:#d9cba9;--brand-pill:#33291a;--meter:#d9cba9;
+}}
+/* Fixed-theme frames, so one card shows a state in light AND dark whatever the
+   viewer's system is set to. They carry the same aliases, so nothing inside
+   needs to know which theme it is in. */
+.theme{border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--page);color:var(--text)}
+.theme.light{
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --notice:#005fb3;--notice-pill:#e6f3ff;--positive:#026436;--positive-pill:#dcefdc;
+  --warning:#8f530a;--warning-pill:#fce8cf;--warning-soft:#fce8cf;
+  --negative:#b92f13;--negative-pill:#fdebe8;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --brand:#6a5730;--brand-pill:#ece5d6;--meter:#0a3a2a;
+}
+.theme.dark{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --notice:#66b8ff;--notice-pill:#003666;--positive:#8ae58d;--positive-pill:#003d26;
+  --warning:#f5b970;--warning-pill:#5f3707;--warning-soft:#774508;
+  --negative:#f08975;--negative-pill:#5c170a;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --brand:#d9cba9;--brand-pill:#33291a;--meter:#d9cba9;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px;font-weight:500}
+p{margin:0 0 8px}
+b{font-weight:600}
+a{color:inherit;text-underline-offset:3px}
+main{padding:24px max(32px,env(safe-area-inset-right)) 64px max(32px,env(safe-area-inset-left));max-width:1200px;width:100%;margin:0 auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.meta{color:var(--muted);font-size:13px;line-height:18px}
+.mono{font-family:var(--mono);font-size:13px}
+.microlabel{font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+/* State labels. They belong to the card, not to the screen. */
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-of-type{margin-top:24px}
+.cap{color:var(--muted);font-size:13px;line-height:18px;margin:0 0 10px}
+
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 16px;margin-bottom:20px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+.head .acts{margin-left:auto}
+.back{background:none;border:0;padding:0;margin:0 0 8px;color:var(--muted);font-size:13px;line-height:18px;text-decoration:underline;text-underline-offset:3px}
+.status{margin:0 0 12px;font-weight:500}
+.status:empty{display:none}
+
+/* Notice (banner): a tone fill, no coloured edge, 6px radius. Every word inside
+   a warn or bad notice is the text colour (foundations.md). */
+.notice{background:var(--subtle);color:var(--text);border-radius:6px;padding:10px 12px;margin:0 0 16px}
+.notice.warn{background:var(--warning-soft)}
+.notice.bad{background:var(--negative-soft)}
+.notice p:last-child{margin-bottom:0}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+.panel>h2{margin-bottom:12px}
+.panel>.cap{margin-top:-6px}
+.cols{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.cols>*{min-width:0}
+@media (min-width:768px){.cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Pill: fully rounded, 20px, 13px at 500, no border. Tone comes from the slot
+   or the kind, never from a person (pills-and-labels.md). */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+.pill.notice{background:var(--notice-pill);color:var(--notice)}
+.pill.positive{background:var(--positive-pill);color:var(--positive)}
+.pill.warning{background:var(--warning-pill);color:var(--warning)}
+.pill.negative{background:var(--negative-pill);color:var(--negative)}
+.pill.brand{background:var(--brand-pill);color:var(--brand)}
+.pill .x{margin-left:6px;font-weight:400}
+.pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pills.line{gap:6px 10px}
+
+/* Button: 36px, 6px radius, body at 500. Primary is neutral; danger is an
+   outline button with negative text. */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.ghost{background:transparent;color:var(--text);border-color:transparent}
+.btn.danger{background:var(--surface);color:var(--negative);border-color:var(--line-control)}
+.btn.small{height:32px;padding:0 12px}
+.btn.outline:hover,.btn.ghost:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.btn.danger:hover{background:var(--negative-hover)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* Actions right, two per row on a phone, the primary last and so on the right. */
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+.bar.left{justify-content:flex-start}
+.bar .btn{min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* List rows: 12 by 16px, a hairline card at 8px. */
+.rows{display:grid;gap:8px}
+.row{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;text-decoration:none;color:inherit}
+a.row:hover,button.row:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.row h3{margin:6px 0 4px;font-weight:600}
+.row .meta{display:flex;flex-wrap:wrap;gap:4px 12px}
+
+.field{display:grid;gap:4px;margin-bottom:12px}
+.field label{font-weight:500}
+.field input,.field select,.field textarea{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;color:var(--text)}
+.field textarea{height:auto;min-height:76px;padding:8px 10px;resize:vertical}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted);font-style:italic}
+.field input[aria-invalid="true"],.field select[aria-invalid="true"]{border-color:var(--negative)}
+.field .hint,.field .err{font-size:13px;line-height:18px}
+.field .hint{color:var(--muted)}
+.field .err{color:var(--negative)}
+.pair{display:grid;gap:0 16px;grid-template-columns:minmax(0,1fr)}
+.pair>*{min-width:0}
+@media (min-width:768px){.pair{grid-template-columns:repeat(2,minmax(0,1fr))}}
+fieldset{border:0;margin:0;padding:0}
+legend{padding:0;font-weight:500}
+.check{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{width:16px;height:16px;height:16px;margin:2px 0 0;accent-color:var(--primary);flex:none}
+.check small{display:block;color:var(--muted);font-size:13px;line-height:18px}
+
+/* Dialog: 12px radius, at most 560px, over the scrim. */
+.modal{display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,11,11,.6);border-radius:8px;margin-bottom:16px}
+.modal .box{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.modal .box>h2{margin-bottom:12px}
+
+.skeleton{height:72px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.empty,.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.empty h2,.errorstate h2{color:var(--text)}
+.empty p,.errorstate p{margin:8px auto 16px;max-width:60ch}
+.restricted{max-width:60ch;margin:0 auto;padding:48px 0;text-align:center}
+.restricted p{margin:12px 0 0;color:var(--muted)}
+/* Grid items must be allowed to shrink, or the 375px phone frame inside one
+   widens its track and the page scrolls sideways. */
+.statebox{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.statebox>*{min-width:0}
+@media (min-width:768px){.statebox{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* A 375px frame, so the narrow layout can be read on a wide screen. */
+.phone{width:375px;max-width:100%;padding:12px;background:var(--page);border:1px solid var(--line);border-radius:8px}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
+}
+
+/* The plain key, shown once: monospace, wrapping, on the subtle surface. */
+.secret{font-family:var(--mono);font-size:13px;line-height:20px;word-break:break-all;background:var(--subtle);border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin:0 0 8px}
+/* Key facts under a row title: label, then value. */
+.kv{display:grid;grid-template-columns:1fr;gap:2px 16px;margin:8px 0 0}
+@media (min-width:768px){.kv{grid-template-columns:132px minmax(0,1fr)}}
+.kv dt{color:var(--muted);font-size:13px;line-height:18px}
+.kv dd{margin:0 0 6px}
+@media (min-width:768px){.kv dd{margin-bottom:2px}}
+
+/* Shared by the chunk 11 cards. */
+.kv{grid-template-columns:1fr}
+@media (min-width:768px){.kv.wide{grid-template-columns:132px minmax(0,1fr)}}
+/* Meter: brand green is for meters and the timeline alone (design/README.md). */
+.meter{height:8px;border-radius:999px;background:var(--accent);overflow:hidden;margin:8px 0}
+.meter i{display:block;height:100%;background:var(--meter)}
+.figure{font-size:24px;line-height:32px;font-weight:600;letter-spacing:-.02em;margin:0}
+.figure small{font-size:14px;font-weight:400;color:var(--muted);letter-spacing:0}
+/* A run or a version line: facts left, figure right, wrapping on a phone. */
+.lines{margin:8px 0 0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.lines li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.lines li:last-child{border-bottom:0}
+.lines .grow{flex:1 1 180px;min-width:0}
+.lines .fig{margin-left:auto;font-variant-numeric:tabular-nums}
+.inline{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.inline .field{margin:0;flex:0 1 200px;min-width:0}
+.sub{margin:16px 0 4px;font-size:14px;font-weight:600}
+/* A select shrinks with its column; a long option never widens the page. */
+.field select,.kv select{max-width:100%;min-width:0}
+/* Shared by the agent access cards (acc-cards). */
+/* Underline tabs: 14px at 500, muted until selected, then the text colour and a 2px rule. */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 16px;overflow-x:auto}
+.tabs a{padding:8px 12px;color:var(--muted);font-weight:500;text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs a[aria-current="page"]{color:var(--text);border-bottom-color:var(--text)}
+/* Switch: a 6px-radius control like the toggle; on is the primary. */
+.switchrow{display:flex;align-items:flex-start;gap:12px}
+.switch{flex:none;width:36px;height:20px;border-radius:999px;border:1px solid var(--line-strong);background:var(--accent);padding:0;position:relative}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--surface);border:1px solid var(--line-strong)}
+.switch[aria-checked="true"]{background:var(--primary);border-color:var(--primary)}
+.switch[aria-checked="true"]::after{left:18px;border-color:var(--primary)}
+.switch:disabled{opacity:.5;cursor:not-allowed}
+/* Table: 36px rows, 8px cells, meta size, a hairline between rows, head cells 500 muted.
+   Below 768px each row stacks as label and value, so the page never scrolls sideways. */
+.tablewrap{overflow-x:auto}
+table.log{width:100%;border-collapse:collapse;font-size:13px;line-height:18px}
+table.log th{color:var(--muted);font-weight:500;text-align:left;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.log td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.log tr:last-child td{border-bottom:0}
+table.log td.num{text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:767px){
+  table.log thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  table.log tr{display:block;padding:8px 0;border-bottom:1px solid var(--line)}
+  table.log td{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;padding:2px 0;border:0}
+  table.log td.num{text-align:left}
+  table.log td::before{content:attr(data-label);color:var(--muted)}
+}
+.phone table.log thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.phone table.log tr{display:block;padding:8px 0;border-bottom:1px solid var(--line)}
+.phone table.log td{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;padding:2px 0;border:0}
+.phone table.log td.num{text-align:left}
+.phone table.log td::before{content:attr(data-label);color:var(--muted)}
+.pager{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:12px}
+.row h3.t{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 4px}
+.cred{border-top:1px solid var(--line);padding:12px 0}
+.cred:first-of-type{border-top:0;padding-top:0}
+.cred h3{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 4px;font-weight:600}
+.cred .bar{margin-top:8px}
+</style>
+</head>
+<body>
+<main>
+
+<h2 class="k">1 · The page (a member holding tokens create)</h2>
+<div class="head">
+  <div>
+    <h1>My access tokens</h1>
+    <p class="lede">A token lets an agent you run read bleqq as you. It reads only, never more than you can, and it cannot sign in or approve anything.</p>
+  </div>
+  <div class="acts"><button class="btn">Create a token</button></div>
+</div>
+<p class="status" role="status" tabindex="-1"></p>
+
+<div class="rows" aria-label="My access tokens">
+  <div class="row">
+    <h3 class="t">Order router, my laptop</h3>
+    <p class="meta"><span class="mono">cw_b44f0e92…</span> · reads as me within Trading platform coding agent</p>
+    <div class="pills" style="margin:8px 0 0"><span class="pill">library read</span><span class="pill">tenant read</span></div>
+    <p class="meta" style="margin:8px 0 0">Created 20 Sep 2026 · expires 19 Dec 2026 · last used 24 Sep 2026 11:02</p>
+    <div class="bar"><button class="btn danger small">Revoke</button></div>
+  </div>
+  <div class="row">
+    <h3 class="t">Policy drafting assistant</h3>
+    <p class="meta"><span class="mono">cw_91aa03c7…</span> · reads as me</p>
+    <div class="pills" style="margin:8px 0 0"><span class="pill">library read</span><span class="pill">search read</span><span class="pill">upcoming read</span></div>
+    <p class="meta" style="margin:8px 0 0">Created 25 Sep 2026 · expires 24 Oct 2026 · never used</p>
+    <div class="bar"><button class="btn danger small">Revoke</button></div>
+  </div>
+  <div class="row">
+    <h3 class="t">Spreadsheet sync <span class="pill warning">Expired</span></h3>
+    <p class="meta"><span class="mono">cw_5e0c7712…</span> · reads as me</p>
+    <p class="meta" style="margin:8px 0 0">Created 1 Jun 2026 · expired 30 Aug 2026 · last used 29 Aug 2026 18:10</p>
+  </div>
+  <div class="row">
+    <h3 class="t">Old notebook <span class="pill">Revoked</span></h3>
+    <p class="meta"><span class="mono">cw_77d1e0b4…</span> · reads as me</p>
+    <p class="meta" style="margin:8px 0 0">Created 2 Sep 2026 · revoked 10 Sep 2026 by Erik Holm · last used 9 Sep 2026 12:30</p>
+  </div>
+</div>
+
+<h2 class="k">2 · Create a token (dialog)</h2>
+<div class="modal">
+  <form class="box" aria-labelledby="ct">
+    <h2 id="ct">Create a token</h2>
+    <div class="field"><label for="tn">Name</label><input id="tn" placeholder="e.g. Order router, my laptop"><span class="hint">Where the token will live, so you know which to revoke.</span></div>
+    <fieldset class="field">
+      <legend>What it may read</legend>
+      <span class="hint">Only what you can read yourself.</span>
+      <label class="check" for="s1"><input type="checkbox" id="s1" checked><span>library read<small>Instruments and obligations</small></span></label>
+      <label class="check" for="s2"><input type="checkbox" id="s2"><span>search read<small>Search the library</small></span></label>
+      <label class="check" for="s3"><input type="checkbox" id="s3"><span>upcoming read<small>Dated changes ahead</small></span></label>
+      <label class="check" for="s4"><input type="checkbox" id="s4" disabled><span>tenant read<small>Our register decisions. Needs register read, which your role does not include.</small></span></label>
+    </fieldset>
+    <div class="field"><label for="te">Read as an agent</label><select id="te"><option selected>None: it reads what I can read</option><option>Trading platform coding agent</option><option>Staff assistant</option></select><span class="hint">Optional. Naming one narrows the token to that agent's scope as well as yours.</span></div>
+    <div class="field"><label for="tx">Expires</label><input id="tx" type="date" value="2026-10-25" aria-describedby="txh"><span class="hint" id="txh">Required. At most 90 days, so 24 Dec 2026 at the latest.</span></div>
+    <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Create token</button></div>
+    <p class="meta" style="margin:8px 0 0;text-align:right">Creating a token asks for your passkey.</p>
+  </form>
+</div>
+
+<h2 class="k">3 · Create, with no scope and no expiry (422, rendered in place)</h2>
+<div class="panel">
+  <p class="err" role="alert" style="color:var(--negative);margin:0 0 12px">Pick at least one thing it may read.</p>
+  <div class="field" style="margin:0"><label for="tx2">Expires</label><input id="tx2" type="date" aria-invalid="true" aria-describedby="tx2e"><span class="err" id="tx2e" role="alert">Choose when it expires, 24 Dec 2026 at the latest.</span></div>
+</div>
+
+<h2 class="k">4 · The passkey step-up on Create</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="su" aria-describedby="sud">
+    <h2 id="su">Use your passkey to create this token</h2>
+    <p id="sud" class="meta">Order router, my laptop · library read, tenant read · until 19 Dec 2026</p>
+    <p>Anything holding the token reads as you, so we ask for your passkey first.</p>
+    <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Continue with passkey</button></div>
+  </div>
+</div>
+
+<h2 class="k">5 · The new token, shown once</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="once">
+    <h2 id="once">Copy your token now</h2>
+    <p class="secret">cw_b44f0e92_3a9c1d7e5b2f80c4a6e9d1b3f7c05a8e2d4b6c9f1a3e7d0b5c2</p>
+    <p class="meta">It is not shown again. Keep it where your agent keeps its secrets, never in code. It stops working on 19 Dec 2026, or sooner if you revoke it.</p>
+    <div class="bar"><button class="btn outline">Done</button><button class="btn">Copy token</button></div>
+  </div>
+</div>
+
+<h2 class="k">6 · Revoke</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="rv" aria-describedby="rvd">
+    <h2 id="rv">Revoke Order router, my laptop?</h2>
+    <p id="rvd">Its next call is refused. It stays on the list as revoked.</p>
+    <div class="bar"><button class="btn outline">Keep it</button><button class="btn danger">Revoke token</button></div>
+  </div>
+</div>
+<p class="status" role="status" tabindex="-1">Revoked. The token no longer works.</p>
+
+<h2 class="k">7 · A member without tokens create</h2>
+<p class="cap">No Create button. Tokens the member still holds stay listed, and revoking them stays open.</p>
+<div class="head">
+  <div>
+    <h1>My access tokens</h1>
+    <p class="lede">A token lets an agent you run read bleqq as you. It reads only, never more than you can, and it cannot sign in or approve anything.</p>
+  </div>
+</div>
+<div class="notice" role="status"><p>Creating tokens needs tokens create, which your role does not include. Ask your administrator if you need one.</p></div>
+
+<h2 class="k">8 · Empty, loading and error, in both themes</h2>
+<p class="cap">The same markup with the light and the dark aliases fixed. The page is every member's own, so it has no denied state: without tokens create it renders state 7.</p>
+<div class="statebox">
+  <div class="theme light">
+    <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Light</p>
+    <div class="empty"><h2>No tokens</h2><p>Create one when an agent you run needs to read bleqq as you.</p><button class="btn outline small">Create a token</button></div>
+    <div class="empty" style="margin-top:16px"><h2>No tokens</h2><p>Creating tokens needs tokens create, which your role does not include.</p></div>
+    <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:16px 0"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+    <div class="errorstate" role="alert"><h2>Could not load your tokens</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+  </div>
+  <div class="theme dark">
+    <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Dark</p>
+    <div class="empty"><h2>No tokens</h2><p>Create one when an agent you run needs to read bleqq as you.</p><button class="btn outline small">Create a token</button></div>
+    <div class="empty" style="margin-top:16px"><h2>No tokens</h2><p>Creating tokens needs tokens create, which your role does not include.</p></div>
+    <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:16px 0"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+    <div class="errorstate" role="alert"><h2>Could not load your tokens</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+  </div>
+</div>
+
+<h2 class="k">9 · At 375 px, light and dark: a token and the shown-once value</h2>
+<div class="statebox">
+  <div class="theme light" style="padding:0;border:0">
+    <div class="phone">
+      <div class="row"><h3 class="t">Order router, my laptop</h3><p class="meta">Reads as me within Trading platform coding agent</p><div class="pills" style="margin:8px 0 0"><span class="pill">library read</span><span class="pill">tenant read</span></div><p class="meta" style="margin:8px 0 0">Expires 19 Dec 2026 · last used 24 Sep 2026 11:02</p><div class="bar"><button class="btn danger small">Revoke</button></div></div>
+      <div class="panel" style="margin:12px 0 0"><h2>Copy your token now</h2><p class="secret">cw_b44f0e92_3a9c1d7e5b2f80c4a6e9d1b3f7c05a8e2d4b6c9f1a3e7d0b5c2</p><p class="meta">It is not shown again.</p><div class="bar"><button class="btn outline">Done</button><button class="btn">Copy token</button></div></div>
+    </div>
+  </div>
+  <div class="theme dark" style="padding:0;border:0">
+    <div class="phone">
+      <div class="row"><h3 class="t">Order router, my laptop</h3><p class="meta">Reads as me within Trading platform coding agent</p><div class="pills" style="margin:8px 0 0"><span class="pill">library read</span><span class="pill">tenant read</span></div><p class="meta" style="margin:8px 0 0">Expires 19 Dec 2026 · last used 24 Sep 2026 11:02</p><div class="bar"><button class="btn danger small">Revoke</button></div></div>
+      <div class="panel" style="margin:12px 0 0"><h2>Copy your token now</h2><p class="secret">cw_b44f0e92_3a9c1d7e5b2f80c4a6e9d1b3f7c05a8e2d4b6c9f1a3e7d0b5c2</p><p class="meta">It is not shown again.</p><div class="bar"><button class="btn outline">Done</button><button class="btn">Copy token</button></div></div>
+    </div>
+  </div>
+</div>
+
+<p class="note">My access tokens card (/me/tokens), in the account menu beside My passkeys and My
+sessions. The list is the member's own tokens: prefix, what it reads as (me, or me within a named
+agent), its scopes as information pills, created, expires and last use, with Expired (warning) and
+Revoked (information) from the row's facts; no kind pill, since every row here is personal.
+Create needs tokens create and a passkey: a name, at least one of the four read scopes, where a
+scope the member's own permissions do not back is disabled with its reason, an optional agent
+access entry, and a required expiry of at most 90 days. The plain token shows once. Revoke asks
+once and needs no passkey. Without tokens create there is no Create button and a sentence says
+why; tokens already held stay listed and revocable. An administrator sees and revokes every
+token in API keys (admin-api-keys.html). Two buttons per row on a phone, the primary on the
+right.</p>
+
+</main>
+</body>
+</html>

@@ -76,6 +76,9 @@ export const destinations: readonly Destination[] = [
   { id: 'admin-security-log', href: '/admin/security-log', labelKey: 'nav.admin.securityLog', surface: 'tenant', anyOfPermissions: ['security.manage'], group: 'admin', parent: 'admin' },
   { id: 'admin-audit-log', href: '/admin/audit-log', labelKey: 'nav.admin.auditLog', surface: 'tenant', anyOfPermissions: ['audit.read'], group: 'admin', parent: 'admin' },
   { id: 'admin-ai-log', href: '/admin/ai-log', labelKey: 'nav.admin.aiLog', surface: 'tenant', anyOfPermissions: ['ai_log.read'], group: 'admin', parent: 'admin' },
+  // The bank's workflow policy (COL-02, TEN-01): its own section, gated by
+  // workflow.manage rather than by the organisation profile's grants.
+  { id: 'admin-workflow', href: '/admin/workflow', labelKey: 'nav.admin.workflow', surface: 'tenant', anyOfPermissions: ['workflow.manage'], group: 'admin', parent: 'admin' },
   // Account: any signed-in person, from the who panel.
   { id: 'me-passkeys', href: '/me/passkeys', labelKey: 'nav.me.passkeys', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-sessions', href: '/me/sessions', labelKey: 'nav.me.sessions', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },

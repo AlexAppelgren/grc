@@ -2,18 +2,22 @@
 
 `Home` carries no `decideNow` field (chunk 6 ruling 1): the queue counts Today's "Decide
 now" panel reads live here instead, so a number has one source. These tests prove the
-three counts are independently permission-filtered (0, never a 403), that they read under
+four counts are independently permission-filtered (0, never a 403), that they read under
 row-level security so a second tenant's rows never reach them, that the read writes
-nothing, and that the three reads cost a fixed, pinned number of queries.
+nothing, and that the four reads cost a fixed, pinned number of queries.
 """
 
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 from django.test import TestCase
+from django.utils import timezone
 
 from apps.cases import testing as cases_build
+from apps.collab.logic import notify
+from apps.collab.models import Notification, NotificationKind
 from apps.identity import me_logic
 from apps.identity.models import Membership, User
 from apps.proposals.models import OriginType, Proposal, ProposalKind, ProposalStatus, ProposalTenant
@@ -25,9 +29,10 @@ from apps.shared.testing import sign_in
 from apps.watch import testing as watch_build
 
 V1 = "/api/v1"
-# `_counts()`'s own three independent reads: pinned so a future one that chains a fourth
-# behind another has to look at this number rather than drift past it.
-COUNTS_QUERIES = 3
+# `_counts()`'s own four independent reads, the unread notifications one query of them:
+# pinned so a future one that chains a fifth behind another has to look at this number
+# rather than drift past it.
+COUNTS_QUERIES = 4
 
 
 def _open_proposal(*, tenant: Tenant, proposer: User) -> Proposal:
@@ -45,6 +50,17 @@ def _open_proposal(*, tenant: Tenant, proposer: User) -> Proposal:
     tenancy.activate(tenant.id)
     ProposalTenant.objects.create(tenant=tenant, proposal=proposal)
     return proposal
+
+
+def _notify(tenant: Tenant, case_id: uuid.UUID, *people: User) -> None:
+    tenancy.activate(tenant.id)
+    notify(
+        tenant_id=tenant.id,
+        kind=NotificationKind.ASSIGNED,
+        subject_type="change_case",
+        subject_id=case_id,
+        candidates=[(person.id, "owner") for person in people],
+    )
 
 
 class MeCounts(TestCase):
@@ -74,7 +90,7 @@ class MeCounts(TestCase):
 
     def test_a_member_with_no_open_work_reads_zeros_not_a_403(self) -> None:
         body = self.me(self.reader)
-        self.assertEqual(body["counts"], {"triage": 0, "proposals": 0, "assignedToMe": 0})
+        self.assertEqual(body["counts"], {"triage": 0, "proposals": 0, "assignedToMe": 0, "unreadNotifications": 0})
 
     def test_triage_counts_new_cases_and_needs_cases_triage(self) -> None:
         change = watch_build.change(stable_key="chg-me-counts-triage")
@@ -113,7 +129,22 @@ class MeCounts(TestCase):
         cases_build.case(self.other_tenant, other_change, owner=other_officer)
         _open_proposal(tenant=self.other_tenant, proposer=other_officer)
 
-        self.assertEqual(self.me(self.officer)["counts"], {"triage": 0, "proposals": 0, "assignedToMe": 0})
+        self.assertEqual(self.me(self.officer)["counts"], {"triage": 0, "proposals": 0, "assignedToMe": 0, "unreadNotifications": 0})
+
+    def test_unread_notifications_counts_the_callers_own_unread_rows_in_this_bank(self) -> None:
+        case = cases_build.case(self.tenant, watch_build.change(stable_key="chg-me-counts-unread"))
+        _notify(self.tenant, case.id, self.reader, self.officer)
+        _notify(self.tenant, case.id, self.reader)
+        # Another bank's notification of the same person never reaches this count.
+        factories.member(self.other_tenant, user_row=self.reader)
+        other_case = cases_build.case(self.other_tenant, watch_build.change(stable_key="chg-me-counts-unread-other"))
+        _notify(self.other_tenant, other_case.id, self.reader)
+
+        self.assertEqual(self.me(self.reader)["counts"]["unreadNotifications"], 2)
+        tenancy.activate(self.tenant.id)
+        Notification.objects.filter(user=self.reader).update(read_at=timezone.now())
+        self.assertEqual(self.me(self.reader)["counts"]["unreadNotifications"], 0, "a read notification leaves the count")
+        self.assertEqual(self.me(self.officer)["counts"]["unreadNotifications"], 1, "one person's reads are their own")
 
     def test_the_read_writes_nothing(self) -> None:
         headers = sign_in(self.reader, tenant=self.tenant)
@@ -133,13 +164,14 @@ class MeCounts(TestCase):
         tenancy.activate(self.tenant.id)
         self.assertIsNone(Membership.objects.get(tenant=self.tenant, user=self.officer).last_visit_at, "one person's visit moves only their own bookmark")
 
-    def test_the_three_reads_fan_out_at_a_fixed_query_count(self) -> None:
-        """None chained behind another: the same three queries whether the caller has open
+    def test_the_four_reads_fan_out_at_a_fixed_query_count(self) -> None:
+        """None chained behind another: the same four queries whether the caller has open
         work or not, called the way `me()` calls it rather than through the whole route, so
         this pin only moves when `_counts()` itself changes shape."""
         change = watch_build.change(stable_key="chg-me-counts-cost")
-        cases_build.case(self.tenant, change, owner=self.officer)
+        case = cases_build.case(self.tenant, change, owner=self.officer)
         _open_proposal(tenant=self.tenant, proposer=self.officer)
+        _notify(self.tenant, case.id, self.officer)
         principal = Principal(
             kind=PrincipalKind.USER,
             subject_id=self.officer.id,
@@ -150,5 +182,5 @@ class MeCounts(TestCase):
         tenancy.activate(self.tenant.id)
         with self.assertNumQueries(COUNTS_QUERIES):
             counts = me_logic._counts(principal)  # noqa: SLF001 the module's own test
-        self.assertEqual(counts, {"triage": 1, "proposals": 1, "assignedToMe": 1})
+        self.assertEqual(counts, {"triage": 1, "proposals": 1, "assignedToMe": 1, "unreadNotifications": 1})
 

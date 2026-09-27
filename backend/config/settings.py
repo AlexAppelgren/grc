@@ -274,6 +274,11 @@ EMBEDDER_PROVIDER = env_str("EMBEDDER_PROVIDER", "mock")  # mock | none | <chose
 EMBEDDER_API_KEY = env_str("EMBEDDER_API_KEY", "")
 EMBEDDING_DIMENSIONS = env_int("EMBEDDING_DIMENSIONS", 1024)  # DECISIONS D-09
 AGENT_RUNNER = env_str("AGENT_RUNNER", "mock")  # mock | managed_agents
+
+# --- c11-agents-contract (AGT-05) ------------------------------------------------------
+# The longest topic a research or re-tag request may carry, in characters: the text is a
+# bank's own (or the console's) and is validated at the boundary before anything reads it.
+AGENT_RESEARCH_TOPIC_MAX_CHARS = env_int("AGENT_RESEARCH_TOPIC_MAX_CHARS", 500)
 MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp
 MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")
 MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")
@@ -559,6 +564,15 @@ PROPOSAL_SCOPE_MAX_TERMS = env_int("PROPOSAL_SCOPE_MAX_TERMS", 20)
 PROPOSAL_TEXT_MAX_CHARS = env_int("PROPOSAL_TEXT_MAX_CHARS", 50000)
 
 # ---------------------------------------------------------------------------------------
+# ===== PRO-04 how many rows one batch proposal may hold (c11-proposal-batches-create) ====
+# A batch is one proposal with a row per library record it would change, each carrying its
+# preview, and a reviewer reads the whole batch in one answer. The cap keeps that read one
+# page (the API's own maximum page is 100) and inside the 250 ms budget; a larger re-tag is
+# filed as more than one batch, and above the cap creation answers 422 `batch_too_large`.
+# ---------------------------------------------------------------------------------------
+PROPOSAL_BATCH_MAX_ROWS = env_int("PROPOSAL_BATCH_MAX_ROWS", 100)
+
+# ---------------------------------------------------------------------------------------
 # ===== PRO-03 how far back "what changed in the library" looks ===========================
 # A reader who has never marked the library as seen has no bookmark to read from, so the
 # list falls back to this many days. Long enough that a first visit is not empty and a
@@ -721,6 +735,18 @@ CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
 # into a write every time and fill the security log with one bank's polling.
 CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
 
+# ===== CAS-05 the malware scanner (apps/shared/adapters/scanner.py, c9-scanner-adapter) ==
+# `mock` answers from the EICAR string and marker names and is refused at first use on
+# every deployed environment, `test` included; `clamd` streams the bytes over INSTREAM to
+# a clamd service on the private network (D-101). A timeout, a refused connection or an
+# unreadable reply is a failed scan, never a clean one.
+SCANNER_PROVIDER = env_str("SCANNER_PROVIDER", "mock")  # mock | clamd
+SCANNER_HOST = env_str("SCANNER_HOST", "localhost")
+SCANNER_PORT = env_int("SCANNER_PORT", 3310)  # clamd's TCPSocket in the official image
+# Bounds the connect, each send, and the scan with its whole reply. clamd reads the whole
+# stream before it answers, so this must cover scanning the largest evidence file.
+SCANNER_TIMEOUT_SECONDS = float(env_str("SCANNER_TIMEOUT_SECONDS", "60.0"))
+
 # ---------------------------------------------------------------------------------------
 # ===== VOC-08 bulk tagging's cap (c10-tagging-routes) ====================================
 # How many distinct records one tagging preview or batch may name. A list page holds at
@@ -793,6 +819,18 @@ REFRESH_COOKIE_SECURE = not DEBUG
 # An API key's last_used_at (and its key_used security-log row) is written at most this
 # often, so a busy agent does not turn every call into a write (ID-10).
 API_KEY_LAST_USED_THROTTLE_SECONDS = env_int("API_KEY_LAST_USED_THROTTLE_SECONDS", 60)
+# ===== acc-foundation: agent access credentials (ACC-03, ACC-09, ADRs 0055 and 0056) =====
+# The longest a service key of an agent access entry, and a personal access token, may live;
+# a token cannot be minted without an expiry. And the requests one such credential may make
+# per minute, whatever it reads.
+AGENT_ACCESS_KEY_MAX_DAYS = env_int("AGENT_ACCESS_KEY_MAX_DAYS", 90)
+PERSONAL_TOKEN_MAX_DAYS = env_int("PERSONAL_TOKEN_MAX_DAYS", 90)
+AGENT_ACCESS_RATE_PER_MINUTE = env_int("AGENT_ACCESS_RATE_PER_MINUTE", 60)
+if min(AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS, AGENT_ACCESS_RATE_PER_MINUTE) < 1:
+    raise ImproperlyConfigured(
+        "Refusing to boot: AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS and "
+        "AGENT_ACCESS_RATE_PER_MINUTE must each be at least 1."
+    )
 
 # ---------------------------------------------------------------------------------------
 # ===== Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ===========

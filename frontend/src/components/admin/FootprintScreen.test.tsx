@@ -42,8 +42,9 @@ function meOf(user: { id: string; name: string }, permissions: readonly string[]
     enrolmentPending: false,
     passkeyCount: 1,
     stepUpValidUntil: null,
-    counts: { triage: 0, proposals: 0, assignedToMe: 0 },
+    counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0 },
     lastVisitAt: null,
+    notificationPrefs: null,
   } as Me;
 }
 

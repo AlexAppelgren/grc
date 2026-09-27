@@ -28,6 +28,13 @@ The zone is the database's own setting, the one row-level security reads, and no
 Python-side mirror of it, which outlives the transaction that set it on a thread that
 serves one request after another. A bank whose row cannot be read is treated as switched
 off, because the switch is what decides whether a bank's own words leave it for a model.
+
+**A bank's own record is never a model input** (INV-07, OWN-04, D-57). A call whose subject
+is a library record is made only when that record reads, in the call's own zone, as shared:
+owned by no bank and under an instrument no bank owns. Anything else — a bank's own
+instrument, obligation or provision, or an id the zone cannot read as shared, which is what
+another bank's record is — raises before any model is asked, and no row is written. The
+guard is here, in the one door, and not in each caller's good manners.
 """
 
 from __future__ import annotations
@@ -43,6 +50,7 @@ from django.db import transaction
 from apps.governance.ai_log import log_generation
 from apps.governance.models import AiGeneration, AiPurpose
 from apps.governance.schemas import AiCitation
+from apps.library.models import Instrument, Obligation, Provision, SubjectType
 from apps.shared import tenancy
 from apps.shared.adapters.llm import Completion, LlmAdapter, get_llm
 from apps.shared.adapters.llm import LlmError as LlmError
@@ -71,6 +79,28 @@ def prompt_hash(system: str, prompt: str) -> str:
     calls hash alike and nothing of a bank's own words can be read back out of the log
     (NFR-04, D-07)."""
     return hashlib.sha256(f"{system}\n\n{prompt}".encode()).hexdigest()
+
+
+class PrivateRecordRefused(RuntimeError):
+    """A model call named a bank's own library record, or one it could not read as shared,
+    as its subject (INV-07, D-57)."""
+
+
+def refuse_private(subject_type: str, subject_id: uuid.UUID | None) -> None:
+    """Refuse a call about a library record unless it reads as a shared one. A subject
+    outside the library (a registered change, an answer) is not this rule's to judge."""
+    shared = {
+        SubjectType.INSTRUMENT.value: Instrument.objects.filter(owner_tenant__isnull=True),
+        SubjectType.OBLIGATION.value: Obligation.objects.filter(
+            owner_tenant__isnull=True, instrument__owner_tenant__isnull=True
+        ),
+        SubjectType.PROVISION.value: Provision.objects.filter(instrument__owner_tenant__isnull=True),
+    }.get(subject_type)
+    if shared is not None and (subject_id is None or not shared.filter(pk=subject_id).exists()):
+        raise PrivateRecordRefused(
+            f"A model call about {subject_type} {subject_id} was refused: a bank's own record, "
+            "and anything not readable as a shared one, never reaches a model (INV-07, D-57)."
+        )
 
 
 def ensure_enabled() -> None:
@@ -108,7 +138,11 @@ def generate(
     transaction, which the caller keeps or rolls back as that failure decides for its own
     work. The model and the version on the row are the provider's own, read off the
     response, which is what `modelMetadataReportedByAgent = False` means to a reader.
+
+    A subject that is a bank's own library record is refused before anything else
+    (`refuse_private`).
     """
+    refuse_private(subject_type, subject_id)
     ensure_enabled()
     engine = llm if llm is not None else get_llm()
     completion = engine.complete(

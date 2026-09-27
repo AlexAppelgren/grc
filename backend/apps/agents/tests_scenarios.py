@@ -371,6 +371,9 @@ class AgentsScenarioTests(TestCase):
         """AGT-S5
 
         A tenant controls its agents without touching their instructions (AGT-04).
+
+        Built over createTenantAgent, updateTenantAgent, runTenantAgentNow, pauseTenantAgent,
+        resumeTenantAgent and interruptAgentRun (declared by c11-agents-contract).
         """
 
     @skip("pending: AGT-S6 (AGT-04, chunk 11)")
@@ -378,6 +381,8 @@ class AgentsScenarioTests(TestCase):
         """AGT-S6
 
         The budget cap pauses runs and the AI off switch stops every model call (AGT-04).
+
+        Built over getAgentBudget and putAgentBudget (declared by c11-agents-contract).
         """
 
     @skip("pending: AGT-S7 (AGT-05, chunk 11)")
@@ -385,6 +390,9 @@ class AgentsScenarioTests(TestCase):
         """AGT-S7
 
         Research requests ask an agent to check, research or re-tag (AGT-05).
+
+        Built over createResearchRequest, getResearchRequest and createRetagRequest (declared
+        by c11-agents-contract).
         """
 
     @skip("pending: AGT-S8 (AGT-06, chunk 11)")
