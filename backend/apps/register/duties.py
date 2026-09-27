@@ -18,12 +18,12 @@ import uuid
 from collections.abc import Sequence
 from zoneinfo import ZoneInfo
 
-from dateutil.rrule import rrulestr
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import F
 from django.utils import timezone
 
+from apps.library import recurrence
 from apps.library.models import RecordStatus
 from apps.library.reading import DutyRule, obligation_headings, recurring_duties
 from apps.register.models import DutyOccurrence, DutyStatus, TenantObligation, TenantObligationScope
@@ -54,16 +54,17 @@ def local_day(tenant: Tenant, at: datetime.datetime) -> datetime.date:
 
 def next_due(rule: str, start: datetime.date, *, inclusive: bool) -> datetime.date | None:
     """The first date of `rule`, its series anchored at `start`: on or after `start` when
-    `inclusive`, else strictly after it. None when the rule has ended or does not parse; the
-    library's proposal validates a rule before it is stored, so the second is logged."""
-    anchor = datetime.datetime.combine(start, datetime.time())
+    `inclusive`, else strictly after it, within the library's ten-year horizon. None when the
+    rule has ended, has no date in that span from this start, or is refused; the library's
+    proposal validates a rule before it is stored, so the last is logged. Expanded through
+    `recurrence.expand`, which bounds the walk, never dateutil directly: a rule validated
+    from another day can match nothing from this one (security-review-c8 M4)."""
     try:
-        series = rrulestr(rule, dtstart=anchor)
-    except (ValueError, TypeError):
-        logger.warning("recurring duty rule does not parse")
+        days = recurrence.expand(rule, start, start + recurrence.HORIZON)
+    except ValidationError:
+        logger.warning("recurring duty rule is refused")
         return None
-    found = series.after(anchor if inclusive else datetime.datetime.combine(start, datetime.time.max), inc=inclusive)
-    return None if found is None else found.date()
+    return next((due for due in days if inclusive or due > start), None)
 
 
 # ---------------------------------------------------------------------------------------
