@@ -212,3 +212,46 @@ requirement reads `verified` until he exercises it on the test deployment.
 - **Owner-blocked:** the D-07 model key, the D-09 embedding key and the retrieval baseline
   (the retrieval track of the release gate is **not recorded**), the test deployment, and
   legal on standard titles; listed first in `docs/TODO_FOR_alex.md`.
+
+## R2 close (`r2-close-and-readiness`, 2026-09-27)
+
+R2 (chunks 8 to 11) is implemented and tested on `claude/r2w8-r2-close-and-readiness`, which
+starts from `main` at 85fe808 (every wave-1 to wave-7 R2 package, shipped green through CI)
+and adds status, ledger and floor changes, and the removal of stale "answers 501" sentences
+from the published descriptions. Verified is left to Alex: no requirement reads `verified`
+until he exercises it on the test deployment.
+
+- **Gates, in one cloud session, not in parallel with any other suite:** `prepush.sh --all`
+  green through gitleaks over every origin branch, CI tiers, osv-scanner, `npm audit`,
+  licences, CodeQL for Python and JavaScript with the accepted fingerprints, migration drift
+  and the graph from zero, the backend suite under coverage (4104 tests, 4068 run, 36 R3 and
+  named-cut stubs skipped; aggregate 97.9% over 28864 statements) and every floor, ruff,
+  mypy, compliance lint, requirements coverage, contract drift, the API documentation gate
+  and search evaluation. It then stops, as the plan expects, at "OpenAPI/TS: artefacts match
+  the contract": the only drift is the regenerated descriptions of this package's edits,
+  which the integrator commits (a cloud session never does). The gates after it were run by
+  hand on the regenerated tree: RESULTS_AFTER_OPENAPI. The two container builds and their
+  Trivy scans need Docker, which the session does not have; CI runs them on `candidate`.
+- **No R2 route answers 501:** the only `not_built` left in production code is `POST
+  /exports` for the kinds chunk 12 builds (R3); the case file export is built. Descriptions
+  that still said a built route answered 501 are corrected.
+- **No R2 scenario skipped, no R2 journey fixme, except named cuts:** the 36 skipped
+  integration scenarios are R3's, plus REG-S9 (chunk 13), ACC-S10 (chunk 13), COL-S4 (R3) and
+  ID-S16 and ID-S29 (out of R2 by D-100). The `test.fixme` journeys are R3's (ADM-S5, WAT-S8, SRC-S7, REP-S1, REP-S2, REP-S4, REP-S5, INT-S1, INT-S3, INT-S4, NFR-S17, NFR-S19), REG-S9 (chunk 13) and COL-S4.
+  Requirements coverage is green.
+- **API documentation:** `backend/scripts/api_docs_pending.txt` has no entry line.
+- **Contract drift:** the 22 pending lines are all chunk 12 to 14 (R3); the internal-link
+  operations moved to `INPUT_DELTAS.md` as a deliberate shape.
+- **Status cells:** every R2 requirement reads `built`, except TEN-02 (no route puts a team
+  in a department, found at the close), ID-07 (out of R2 by D-100), and ADM-01 and ADM-02,
+  whose R3 parts are named in their `app.md`.
+- **Coverage floors:** 51 R2 modules join `coverage_gate.py` at the file's margins; no
+  earlier floor moved. **Test weights:** `test_module_seconds.json` re-measured over the whole
+  suite on four workers, per module (each TestCase class timed in its worker, set-up
+  included), 3404 worker-seconds over 261 modules; dealt to the ten CI shards they come out even at about 340 seconds each.
+- **Hardening:** H1, H2, H3, H4, H8, H12, H38 and H100 checked against code and test and
+  marked fixed. Open at medium or higher: H80 (high when a real runner is switched on;
+  latent, since only the mock runs), H107 and H108 (performance, H108 waits on Alex).
+- **Owner-blocked:** clamd on Railway (D-101), the D-07 model key and EU path, the D-09
+  embedding key and retrieval baseline, the test deployment and legal on standard titles;
+  listed first in `docs/TODO_FOR_alex.md` ("R2 is closed").
