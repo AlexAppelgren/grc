@@ -175,8 +175,9 @@ test.describe('cold start', () => {
     // of the reads behind them answered 400 or above, or if a page threw.
     await admin.goto('/inventory');
     await expect(admin.locator('[data-empty-state]')).toBeVisible();
+    // Today's timeline and, since R2, "Where we stand" each say they have nothing yet.
     await admin.goto('/');
-    await expect(admin.locator('[data-empty-state]')).toBeVisible();
+    await expect(admin.locator('[data-empty-state]').first()).toBeVisible();
     // The watch feed on a library no agent has ever written to: its triage tab says there
     // is nothing to triage, rather than a feed that failed to load.
     await admin.goto('/watch');
