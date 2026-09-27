@@ -416,7 +416,7 @@ test.describe('register journeys', () => {
       await expect(page.locator('[data-gaps-panel]')).toBeVisible();
     } finally {
       // On a failure too: the recorded gap leaves no open work behind, from its obligation's page.
-      if ((await page.locator('[data-gaps-panel]').count()) === 0) await openObligation(page, ESMA_INSTRUMENT, ESMA);
+      if ((await page.locator('[data-gaps-panel]').count()) === 0) await openGapObligation(page, ESMA_INSTRUMENT, ESMA);
       await closeGap(gap);
     }
   });

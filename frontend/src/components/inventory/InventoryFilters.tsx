@@ -5,7 +5,7 @@ import { useState, type ReactNode } from 'react';
 import { NavIcon } from '@/components/shell/NavIcon';
 import { Button } from '@/components/ui/Button';
 import { Chip, ChipRow } from '@/components/ui/Chip';
-import { TextInput } from '@/components/ui/Field';
+import { Select, TextInput } from '@/components/ui/Field';
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useFootprint, useTerms } from '@/features/footprint/hooks';
 import type { TaxonomyTerm } from '@/features/footprint/types';

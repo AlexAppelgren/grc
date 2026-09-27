@@ -56,11 +56,10 @@ export async function restoreSeededAgent(page: Page): Promise<void> {
   // and holds its budget against the cap until it is stopped.
   const stop = card.getByRole('button', { name: 'Stop run' });
   const open = card.locator('[data-run-state="running"]');
-  for (let left = 5; left > 0 && (await stop.isVisible()); left -= 1) {
+  for (let left = SEEDED_RUNS_AT_MOST; left > 0 && (await stop.isVisible()); left -= 1) {
     const before = await open.count();
     await stop.click();
     await card.getByRole('button', { name: 'Stop the run' }).click();
-    const runId = /agent-runs\/([^/]+)\/interrupt$/.exec((await stopped).url())?.[1] ?? '';
     await expect(card.getByText('Stopped. The run shows as stopped under Recent runs.')).toBeVisible();
     await expect(open).toHaveCount(before - 1);
   }

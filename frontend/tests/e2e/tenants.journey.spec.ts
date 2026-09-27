@@ -78,6 +78,8 @@ async function setSessionLimits(page: Page, apiGuard: ApiGuard): Promise<void> {
     await saveSecurityPage(page);
     await expect(page.getByText('Saved. New limits apply to sessions from their next refresh.', { exact: true })).toBeVisible();
   }
+}
+
 // TEN-S6's people (backend/apps/shared/e2e_logins.py): tenant A by its organisation name,
 // its administrator, whose name the console must never show, and the platform admin.
 const BANK = 'Example Bank AB';
