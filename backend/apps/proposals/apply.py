@@ -59,6 +59,7 @@ from apps.proposals.logic import (
     parsed_payload,
     refuse_vocabulary_change,
     validated_instrument,
+    PRIVATE_RECORD_KINDS,
     validated_obligation,
     validated_provision,
     validated_recurring_duty,
@@ -120,6 +121,10 @@ def apply(
     # proposal's kinds, so its schema is named here rather than in `PAYLOAD_SCHEMAS`.
     batched = proposal.kind == ProposalKind.OBLIGATION_SCOPE.value
     payload = ObligationScopePayload.model_validate(stored) if batched else parsed_payload(proposal.kind, stored)
+    if proposal.owner_tenant_id is not None and proposal.kind not in PRIVATE_RECORD_KINDS:
+        # Creation files nothing else as a bank's own (`logic.owner_of`); a row that says
+        # otherwise is refused rather than written into either zone.
+        raise ValidationError(f"{proposal.kind!r} is never a record of an organisation's own.", code="validation_error")
     with library_write(f"proposal:{proposal.id}", door="proposal"):
         if proposal.kind == ProposalKind.VOCABULARY_CREATE.value:
             assert isinstance(payload, ProposalVocabularyCreatePayload)
@@ -244,9 +249,13 @@ def _new_instrument(
     found in) and who confirmed it (`verified_origin`, and the confirming agent when an
     agent did). An instrument is not indexed on its own; its obligations and provisions
     are, when they arrive.
+
+    A bank's own instrument (INV-07, OWN-03) takes its owner from the proposal, never from
+    the payload, and its audit row is written in that bank's zone.
     """
     refs, regime = validated_instrument(payload)
     instrument = Instrument.objects.create(
+        owner_tenant_id=proposal.owner_tenant_id,
         stable_key=payload.key,
         short_name=payload.short_name,
         official_ref=payload.official_ref,
@@ -278,7 +287,7 @@ def _new_instrument(
         subject_id=instrument.id,
         subject_title=instrument.stable_key,
         summary=f"Added the instrument {instrument.stable_key} (proposal {proposal.id}).",
-        tenant_id=None,
+        tenant_id=proposal.owner_tenant_id,
         after={
             "stableKey": instrument.stable_key,
             "regime": payload.regime,
@@ -305,14 +314,20 @@ def _new_obligation(
     The standards check runs here too (INV-08, D-35): a standard holds one conformance
     obligation with one standard term, and a law's obligation none. The instrument's row is
     locked first, so two approvals under one standard cannot both find it empty.
+
+    A bank's own obligation (INV-07, OWN-03, OWN-04) takes its owner from the proposal and
+    sits under an instrument of the same bank's own; it is never indexed, and its audit row
+    is written in that bank's zone.
     """
-    instrument, terms = validated_obligation(payload)
+    owner = proposal.owner_tenant_id
+    instrument, terms = validated_obligation(payload, owner)
     instrument = Instrument.objects.select_for_update().get(pk=instrument.pk)
     standards.check(
         proposal.kind, instrument, [term.id for term in terms], proposal.field_sources, payload.ref_label, proposal.source_label
     )
     verified_origin = _verified_origin(reviewer)
     obligation = Obligation.objects.create(
+        owner_tenant_id=owner,
         stable_key=payload.key,
         instrument=instrument,
         ref_label=payload.ref_label,
@@ -345,7 +360,8 @@ def _new_obligation(
     )
     for language, text, is_original, is_machine in _texts(payload.summaries, payload.original_language, payload.is_machine, reviewer):
         ObligationSummary.objects.create(version=version, language_id=language, text=text, is_original=is_original, is_machine=is_machine)
-    reindex(obligation.id)
+    if owner is None:
+        reindex(obligation.id)
     record(
         action="obligation.created",
         actor=actor,
@@ -353,7 +369,7 @@ def _new_obligation(
         subject_id=obligation.id,
         subject_title=obligation.stable_key,
         summary=f"Added the obligation {obligation.stable_key} under {instrument.stable_key} (proposal {proposal.id}).",
-        tenant_id=None,
+        tenant_id=owner,
         after={
             "stableKey": obligation.stable_key,
             "instrument": instrument.stable_key,

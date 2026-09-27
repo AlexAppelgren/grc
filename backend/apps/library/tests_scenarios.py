@@ -36,24 +36,42 @@ import ast
 import contextlib
 import datetime
 import io
+import json
 import logging
 import uuid
 from collections.abc import Iterator
 from typing import Any
-from unittest import mock, skip
+from unittest import mock
 
 from django.conf import settings
 from django.db import DatabaseError, connection, transaction
+from django.db.models import Q
+from django.test import Client
 
 from apps.identity.models import User
 from apps.library import reading, testing as build
-from apps.library.models import Instrument, Obligation, ObligationTitle, ObligationVersion, ProblemReport, Provision, Verification
+from apps.library.models import (
+    Instrument,
+    InstrumentRelation,
+    Obligation,
+    ObligationTitle,
+    ObligationVersion,
+    ProblemReport,
+    Provision,
+    Verification,
+)
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import load_library, seed_authorities
+from apps.proposals import logic as proposals_logic
+from apps.proposals.models import Proposal
+from apps.proposals.tests_apply_private import filing
+from apps.proposals.tests_kinds import instrument_body, obligation_body
+from apps.register.models import TenantObligation
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.models import AuditEvent, OutboxEvent, Tenant
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.shared.tests_library_fence import LibraryWriteCalls, _is_allowed
+from apps.shared.tests_support_session import grant
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 
 V1 = "/api/v1"
@@ -92,6 +110,16 @@ def captured_logs() -> Iterator[io.StringIO]:
     finally:
         root.removeHandler(handler)
         root.setLevel(was)
+
+
+def new_instrument(*, key: str, official_ref: str) -> dict[str, Any]:
+    """A new instrument as `logic.create` takes it, every fact sourced."""
+    return filing(instrument_body(key=key, officialRef=official_ref, shortName=key.upper()))
+
+
+def new_obligation(*, instrument: str, key: str) -> dict[str, Any]:
+    """A new obligation under `instrument` as `logic.create` takes it, every fact sourced."""
+    return filing(obligation_body(instrument=instrument, key=key))
 
 
 class LibraryScenarioTests(ScenarioTestCase):
@@ -153,6 +181,14 @@ class LibraryScenarioTests(ScenarioTestCase):
 
     def _post(self, path: str, body: dict[str, Any], headers: dict[str, Any]) -> Any:
         return self.client.post(f"{V1}{path}", data=body, content_type="application/json", **headers)
+
+    def _support_session(self, bank: Tenant) -> dict[str, Any]:
+        """A support session into `bank`, on a grant one of its admins approved (TEN-06)."""
+        platform = factories.platform_user()
+        row = grant(bank, platform, factories.member_user(bank, roles=("admin",)))
+        entered = self._post(f"/console/support-access/{row.id}/enter", {}, sign_in(platform, tenant=None, step_up=True))
+        self.assertEqual(entered.status_code, 200, entered.content)
+        return {"HTTP_AUTHORIZATION": f"Bearer {entered.json()['accessToken']}"}
 
     def _report(self, **fields: object) -> dict[str, Any]:  # compliance: allow-kwargs test helper forwarding one body's fields
         body: dict[str, Any] = {"description": SENTINEL}
@@ -532,11 +568,11 @@ class LibraryScenarioTests(ScenarioTestCase):
 
         Tenant-private records are visible to their owner only (INV-07).
 
-        `other` owns `private`, and `tenant` is the other bank. The Given's approval inside
-        the bank and the support-grant clause are d89-private-records' (the approval route
-        answers 501 until then), so the record is the one setUpTestData writes in its owner's
-        zone, as that approval will. The database refuses the child writes on this
-        connection too: the migrator owns the tables and row-level security is forced on it.
+        `other` owns `private`, and `tenant` is the other bank. The record is the one
+        setUpTestData writes in its owner's zone, as the approval inside the bank does: that
+        approval, by the bank's own agent's proposal and a second person, is PRO-S15 and
+        INV-S15. The database refuses the child writes on this connection too: the migrator
+        owns the tables and row-level security is forced on it.
         """
         both = [self.obligation.pk, self.private.pk]
         self.activate(self.other)
@@ -557,6 +593,15 @@ class LibraryScenarioTests(ScenarioTestCase):
         tenancy.clear_tenant()
         self.assertEqual(list(Obligation.objects.filter(pk__in=both).values_list("pk", flat=True)), [self.obligation.pk])
         self.assertFalse(ObligationTitle.objects.filter(obligation_id=self.private.pk).exists())
+        # Under a support grant the owner approved, platform support reads the owner's
+        # library and never its own record (d89-private-records).
+        support = self._support_session(self.other)
+        listed = self.client.get(URL, {"footprint": "all", "limit": "100"}, **support)
+        self.assertEqual(listed.status_code, 200, listed.content)
+        self.assertIn(str(self.obligation.id), [row["id"] for row in listed.json()["items"]])
+        self.assertNotIn(str(self.private.id), [row["id"] for row in listed.json()["items"]])
+        response = self.client.get(f"{URL}/{self.private.id}", **support)
+        self.assertEqual((response.status_code, response.json()["code"]), (404, "not_found"), response.content)
 
         for parent in both:
             with self.subTest(parent=str(parent)), self.assertRaises(DatabaseError) as refused, transaction.atomic():
@@ -842,9 +887,106 @@ class LibraryScenarioTests(ScenarioTestCase):
             self.assertEqual(confirmation["verifiedOrigin"], "agent")
             self.assertEqual(confirmation["confirmedByAgent"]["key"], confirmer.agent.key)
 
-    @skip("pending: INV-S15 (OWN-04, INV-07, AC-OWN1, chunk 11)")
     def test_inv_s15(self) -> None:
         """INV-S15
 
         The bank's own records read "Private to us", and nothing changes when the library catches up (OWN-04, INV-07, AC-OWN1).
+
+        The bank's own agent files through the worker with no key, as d89-agent-research's
+        runner events do (ADR 0059), and a second person approves each record in the bank's
+        own queue with a passkey.
         """
+        officer = factories.member_user(self.tenant, roles=("compliance_officer",))
+        approver = factories.member_user(self.tenant, roles=("approver",))
+        reference = "FFFS 2031:1"
+        act = self._found_and_approved(new_instrument(key="inv-s15-own-act", official_ref=reference), approver)
+        duty = self._found_and_approved(new_obligation(instrument="inv-s15-own-act", key="inv-s15-own-duty"), approver)
+        self.activate(self.tenant)
+        own = Obligation.objects.get(stable_key="inv-s15-own-duty")
+        self.assertEqual((own.owner_tenant_id, own.instrument.stable_key), (self.tenant.id, "inv-s15-own-act"))
+        self.assertEqual({act.status, duty.status}, {"approved"})
+        entry = self._register_entry(own, officer)
+
+        # Tenant A's inventory lists it beside the shared library, labelled "Private to us".
+        mine = self.read(URL, {"footprint": "all", "limit": "100"})["items"]
+        self.assertIn(str(self.obligation.id), [row["id"] for row in mine])
+        row = next(row for row in mine if row["id"] == str(own.id))
+        self.assertTrue(row["privateToUs"])
+        self.assertTrue(self.card("inv-s15-own-duty")["privateToUs"])
+
+        # Tenant B never lists it and its address is a 404; a support session never returns it.
+        other = sign_in(factories.member_user(self.other, roles=("reader",)), tenant=self.other)
+        for headers in (other, self._support_session(self.tenant)):
+            listed = self.client.get(URL, {"footprint": "all", "limit": "100"}, **headers)
+            self.assertNotIn(str(own.id), [item["id"] for item in listed.json()["items"]])
+            addressed = self.client.get(f"{URL}/{own.id}", **headers)
+            self.assertEqual((addressed.status_code, addressed.json()["code"]), (404, "not_found"))
+
+        # An agent access entry of tenant A asking what applies is answered without it, and
+        # told how many of the bank's own records were left out.
+        entry_row = factories.agent_access_entry(self.tenant)
+        key = factories.entry_key(self.tenant, entry_row, scopes=("library:read", "tenant:read")).plain_key
+        # A read over POST: it writes the entry's access-log row (ACC-08), not an audit row,
+        # so it goes through a plain client rather than the audit-asserting one.
+        asked = Client().post(
+            f"{V1}/agent-access/what-applies",
+            json.dumps({"description": "A service that keeps records of client orders"}),
+            content_type="application/json",
+            HTTP_X_API_KEY=key,
+        )
+        self.assertEqual(asked.status_code, 200, asked.content)
+        self.assertNotIn(str(own.id), asked.content.decode())
+        self.assertNotIn("inv-s15-own", asked.content.decode())
+        self.activate(self.tenant)
+        self.assertEqual(asked.json()["ownRecordsLeftOut"], Obligation.objects.filter(owner_tenant=self.tenant).count())
+
+        # The shared library later approves an instrument with the same official reference:
+        # tenant A's record, its register row and its label are unchanged, and nothing links.
+        before = (own.instrument_id, own.stable_key, own.owner_tenant_id)
+        second_editor = factories.platform_user(roles=("library_editor",), email="inv-s15-editor2@bleqq.test")
+        tenancy.clear_tenant()
+        filed, _ = proposals_logic.create(
+            proposer=proposals_logic.Proposer(actor=factories.user_actor(user_id=self.editor.id), user=self.editor),
+            **new_instrument(key="inv-s15-shared-act", official_ref=reference),
+        )
+        actor = factories.user_actor(user_id=second_editor.id)
+        proposals_logic.approve(proposal=filed, reviewer=second_editor, actor=actor, note="", step_up_assertion_id=None)
+        shared = Instrument.objects.get(stable_key="inv-s15-shared-act")
+        self.assertIsNone(shared.owner_tenant_id)
+        self.activate(self.tenant)
+        own.refresh_from_db()
+        self.assertEqual((own.instrument_id, own.stable_key, own.owner_tenant_id), before)
+        self.assertEqual(TenantObligation.objects.get(pk=entry.pk).obligation_id, own.id)
+        self.assertFalse(InstrumentRelation.objects.filter(Q(from_instrument=shared) | Q(to_instrument=shared)).exists())
+        self.assertTrue(self.card("inv-s15-own-duty")["privateToUs"])
+
+    def _found_and_approved(self, filing: dict[str, Any], approver: User) -> Any:
+        """`filing` found by the bank's own agent in the worker, then approved in the bank's
+        own queue by `approver` with a passkey."""
+
+        @tenancy.tenant_task
+        def file_finding(tenant_id: uuid.UUID) -> Any:
+            proposal, _ = proposals_logic.create(
+                proposer=proposals_logic.Proposer(actor=factories.agent_actor(label="Scope researcher")), private=True, **filing
+            )
+            return proposal
+
+        tenancy.clear_tenant()
+        proposal = file_finding(self.tenant.id)
+        approved = self._post(f"/private-proposals/{proposal.id}/approve", {}, sign_in(approver, tenant=self.tenant, step_up=True))
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.activate(self.tenant)
+        return Proposal.objects.get(pk=proposal.id)
+
+    def _register_entry(self, obligation: Obligation, officer: User) -> Any:
+        """The bank's register row on `obligation`, answered "applies" through the register."""
+        applied = self.client.put(
+            f"{URL}/{obligation.id}/applicability",
+            data={"applicability": "applies", "reason": "Our own rule"},
+            content_type="application/json",
+            HTTP_IF_MATCH='"0"',
+            **sign_in(officer, tenant=self.tenant),
+        )
+        self.assertEqual(applied.status_code, 200, applied.content)
+        self.activate(self.tenant)
+        return TenantObligation.objects.get(obligation=obligation)
