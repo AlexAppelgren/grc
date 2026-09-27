@@ -10,7 +10,8 @@ import { RoadmapScreen } from './RoadmapScreen';
 
 // /roadmap (design/screens/tenant-roadmap.html): the quarter roster in the
 // API's own order, the chips storing `kind` as a key in the URL, a card
-// expanding in place to the pill, the date and the days left, and the
+// expanding in place to the pill, the date and the days left, our own
+// deadlines with what produced them, their owner and their record, and the
 // states the design card names.
 
 const nav = { search: '', replace: vi.fn() };
@@ -53,6 +54,32 @@ const later: Roadmap['items'][number] = {
 };
 
 const roadmap: Roadmap = { items: [soon, later], quarters: ['2026-Q4', '2027-Q1'] };
+
+const internal = { label: null, status: null, urgency: null, sourceLabel: null, changeId: null, obligations: [] };
+const review: Roadmap['items'][number] = {
+  ...internal,
+  id: 'review_due:r-1',
+  kind: 'internal',
+  itemType: 'review_due',
+  date: '2026-11-02',
+  datePrecision: 'day',
+  quarter: '2026-Q4',
+  title: 'Pay for third-party research only under the permitted models',
+  owner: { person: { id: 'u-1', name: 'Johan Berg' }, team: { key: 'retail_compliance', kind: null, label: 'Retail compliance' } },
+  subject: { obligationId: 'o-1', gapId: null, licenceId: null, entity: null },
+};
+const audit: Roadmap['items'][number] = {
+  ...internal,
+  id: 'certificate_audit:l-1',
+  kind: 'internal',
+  itemType: 'certificate_audit',
+  date: '2027-03-15',
+  datePrecision: 'day',
+  quarter: '2027-Q1',
+  title: 'ISO/IEC 27001',
+  owner: { person: { id: 'u-2', name: 'Sara Lind' }, team: null },
+  subject: { obligationId: null, gapId: null, licenceId: 'l-1', entity: { id: 'e-1', name: 'Example Bank AB' } },
+};
 
 function shell(children: ReactNode): ReactNode {
   const { wrapper: Query } = queryWrapper();
@@ -116,6 +143,33 @@ describe('RoadmapScreen', () => {
     }
   });
 
+  it('our own deadline reads Our deadline in the brand tone and names what it is, its owner and its record', async () => {
+    serve({ items: [review, audit], quarters: ['2026-Q4', '2027-Q1'] });
+    render(shell(<RoadmapScreen />));
+
+    const card = await screen.findByRole('button', { name: /Pay for third-party research/ });
+    expect(card).toHaveTextContent('Our deadline · Next review · Johan Berg, Retail compliance');
+    card.click();
+    const detail = (await screen.findByRole('heading', { level: 2, name: 'Pay for third-party research only under the permitted models' })).parentElement as HTMLElement;
+    expect(detail.querySelector('[data-pill="brand"]')).toHaveTextContent('Our deadline');
+    expect(detail).toHaveTextContent('WhatNext review');
+    expect(detail).toHaveTextContent('OwnerJohan Berg, Retail compliance');
+    expect(screen.getByRole('link', { name: 'Open obligation' })).toHaveAttribute('href', '/inventory/obligations/o-1');
+    expect(screen.queryByRole('link', { name: 'Open change' })).not.toBeInTheDocument();
+  });
+
+  it("a certificate's audit names the legal entity it belongs to and links nowhere", async () => {
+    serve({ items: [review, audit], quarters: ['2026-Q4', '2027-Q1'] });
+    render(shell(<RoadmapScreen />));
+
+    (await screen.findByRole('button', { name: /ISO\/IEC 27001/ })).click();
+    const detail = (await screen.findByRole('heading', { level: 2, name: 'ISO/IEC 27001' })).parentElement as HTMLElement;
+    expect(detail).toHaveTextContent('WhatCertificate audit');
+    expect(detail).toHaveTextContent('OwnerSara Lind');
+    expect(detail).toHaveTextContent('Legal entityExample Bank AB');
+    expect(screen.queryByRole('link', { name: 'Open obligation' })).not.toBeInTheDocument();
+  });
+
   it('a chip stores the kind as a key in the URL', async () => {
     serve(roadmap);
     render(shell(<RoadmapScreen />));
@@ -132,7 +186,9 @@ describe('RoadmapScreen', () => {
 
     expect(await screen.findByText('No deadlines of our own yet')).toBeInTheDocument();
     // When they appear, never which part of the product is still to be built.
-    expect(screen.getByText('Review dates, gap targets, assessment deadlines and action due dates appear here once they are set.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Review dates, gap targets, certificate expiries and audits, assessment deadlines and action due dates appear here once they are set.'),
+    ).toBeInTheDocument();
   });
 
   it('links from its head to the calendar feeds of the person reading it', async () => {

@@ -90,7 +90,11 @@ Where the bank stands is the note below.
 > behind the obligation's pill), and the gaps that are open or being remediated. It is null for
 > a reader without `register.read`, never a 403. A standard's one conformance obligation counts
 > once however many entities follow it. What needs a decision is the `counts` object on
-> `GET /me` (D-23), so one number has one source. The screen's panel is a UI package's.
+> `GET /me` (D-23), so one number has one source. Today draws it as "Where we stand"
+> (`c8-ui-home-register`): each category leads to the inventory filtered to the obligations
+> that apply in the bank's status of that category, the open gaps to `/gaps`, and a bank
+> with nothing in its register sees a sentence and the way to the inventory. HOM-S1's
+> journey follows the links.
 
 ### HOM-S2 — The same short list appears on a phone `@e2e` (HOM-01)
 ```gherkin
@@ -137,8 +141,8 @@ Given a regulatory date with urgency "6+ months"
 When the roadmap renders it
 Then it shows "6+ months" as a notice pill, followed by the date and days left as text
 ```
-The "Our deadline" half is the note below; `roadmap-presentation.test.ts` already pins
-that pill's tone, so the rule is proved before a branch produces a row for it.
+The "Our deadline" half is the note below; `roadmap-presentation.test.ts` pins that pill's
+tone, and HOM-S6's journey shows it in the brand tone on the seeded gap's target.
 
 > **Note — our own deadlines on the roadmap.** A roadmap item is either a date the outside
 > world set or one this bank set for itself. `c8-home-standing-roadmap` built four internal
@@ -147,7 +151,10 @@ that pill's tone, so the rule is proved before a branch produces a row for it.
 > remediating gaps, both inside the regulatory scope and only for a reader holding
 > `register.read`; and a certificate's expiry and next audit, left out once withdrawn (D-43,
 > AC-TEN1, HOM-S15). None reaches the calendar feed. The case workflow's internal deadlines
-> and actions are chunk 9's, so HOM-03 stays `in_progress`.
+> and actions are chunk 9's, so HOM-03 stays `in_progress`. The roadmap screen
+> (`c8-ui-home-register`) shows each as "Our deadline", with what produced the date, its
+> owner, its legal entity and the obligation it opens; HOM-S4's journey reads the seeded
+> gap's target under "Our deadlines".
 
 ### HOM-S7 — My work lists what I'm responsible for or take part in, most urgent first `@integration` `@e2e` (HOM-05, AC-HOM1)
 ```gherkin
@@ -261,3 +268,7 @@ And the user's calendar feed contains neither item
 When the licence is withdrawn
 Then neither date appears on the roadmap
 ```
+The journey reads the seeded certificate of Example Bank AB, its dates anchored to the bank's
+today, on the roadmap and in a new calendar feed (`c8-ui-home-register`). Withdrawing it is
+proved by `@integration` only: no screen withdraws a certificate yet, and a journey never
+writes around the UI.

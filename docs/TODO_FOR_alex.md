@@ -1804,6 +1804,7 @@ Defaults taken; nothing waits on them.
 - [ ] **The AGT-S4 journey stays `fixme`.** The integration scenario is green; the console
       screen that publishes and retires a version is not built yet, and its journey belongs
       to the package that builds it.
+
 ## c8-ui-support-console: what a support session can open in the browser (2026-09-25, TEN-06)
 
 - [ ] **A support session has no tenant screens yet.** Enter on `/console/support-access`
@@ -1821,3 +1822,19 @@ Defaults taken; nothing waits on them.
       (`c8-support-access-console-list` in `CHUNK8_TASKS.md`) was in no R2 wave and still
       answered 501, which the screen needs, so this package built it on that brief:
       the own-grants policy, no bank active, the bank by name, no member ever named.
+
+## c8-ui-home-register: where Today's standing lines lead (2026-09-25, HOM-01, HOM-03)
+
+- [ ] **Each compliance category opens the inventory through one status key.** `GET /home`
+      counts per fixed category, but the inventory filters by one status key
+      (`complianceStatus`, c8-inventory-overlay). Default taken: a category's line opens
+      `/inventory?applicability=applies&complianceStatus=<key>` with the bank's system
+      status of that category (or the first it added, if the system row was retired). A
+      bank that adds a second status under a category sees the obligations in the system
+      one only. The alternative is a category filter on `GET /obligations`, a contract
+      change for another package.
+- [ ] **The open gaps open the whole gap list.** The count is gaps open or in
+      remediation, and `/gaps` filters by one status key, so "See the gaps" opens `/gaps`
+      unfiltered rather than a list that would hold fewer gaps than the count said.
+      Default if you say nothing: it stays so; a two-status filter on `/gaps` would make
+      it exact.

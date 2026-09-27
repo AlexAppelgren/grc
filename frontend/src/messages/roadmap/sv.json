@@ -12,5 +12,16 @@
   "roadmap.empty.title": "Inget daterat framöver",
   "roadmap.empty.body": "Datum visas när en ändring har ett datum eller en egen deadline är satt.",
   "roadmap.empty.internal.title": "Inga egna deadlines ännu",
-  "roadmap.empty.internal.body": "Granskningsdatum, gapmål, bedömningsdeadlines och åtgärdsdatum visas här när de är satta."
+  "roadmap.empty.internal.body": "Granskningsdatum, måldatum för brister, certifikatens slutdatum och revisioner, bedömningsdeadlines och åtgärdsdatum visas här när de är satta.",
+  "roadmap.what.reviewDue": "Nästa granskning",
+  "roadmap.what.gapTarget": "Måldatum för brist",
+  "roadmap.what.certificateExpiry": "Certifikatet löper ut",
+  "roadmap.what.certificateAudit": "Certifikatrevision",
+  "roadmap.what.internalDeadline": "Deadline i ärendet",
+  "roadmap.what.actionDue": "Åtgärd förfaller",
+  "roadmap.owner.nobody": "Ingen ännu",
+  "roadmap.detail.what": "Vad",
+  "roadmap.detail.owner": "Ägare",
+  "roadmap.detail.entity": "Juridisk person",
+  "roadmap.openObligation": "Öppna skyldigheten"
 }

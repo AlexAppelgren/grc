@@ -12,5 +12,16 @@
   "roadmap.empty.title": "No dated items ahead",
   "roadmap.empty.body": "Dates appear when a change has an effective date or one of our own deadlines is set.",
   "roadmap.empty.internal.title": "No deadlines of our own yet",
-  "roadmap.empty.internal.body": "Review dates, gap targets, assessment deadlines and action due dates appear here once they are set."
+  "roadmap.empty.internal.body": "Review dates, gap targets, certificate expiries and audits, assessment deadlines and action due dates appear here once they are set.",
+  "roadmap.what.reviewDue": "Next review",
+  "roadmap.what.gapTarget": "Gap target date",
+  "roadmap.what.certificateExpiry": "Certificate expires",
+  "roadmap.what.certificateAudit": "Certificate audit",
+  "roadmap.what.internalDeadline": "Case deadline",
+  "roadmap.what.actionDue": "Action due",
+  "roadmap.owner.nobody": "Nobody yet",
+  "roadmap.detail.what": "What",
+  "roadmap.detail.owner": "Owner",
+  "roadmap.detail.entity": "Legal entity",
+  "roadmap.openObligation": "Open obligation"
 }

@@ -10,8 +10,11 @@ import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { useCurrentBriefing, useHome } from '@/features/home/hooks';
+import { presentStanding, type Standing } from '@/features/home/standing-presentation';
 import { decideNowLines, presentLead } from '@/features/home/today-presentation';
 import type { Briefing, Home } from '@/features/home/types';
+import { useVocabularyValues } from '@/features/vocabularies/hooks';
+import type { VocabularyRow } from '@/features/vocabularies/types';
 import { authorityAndDate } from '@/features/watch/change-presentation';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -23,8 +26,9 @@ import { formatLongDate, type FormatContext } from '@/shared/utils/format';
 // same short list on a phone and on a desktop; the lead card marks the
 // week's most urgent open change with the brand pill "Lead" and carries
 // "Read the briefing" (c6-briefing-screen); "Decide now" reads the queue
-// counts on GET /me (D-23), never a second source; the foot names how the
-// source watching is going.
+// counts on GET /me (D-23), never a second source; "Where we stand" reads
+// `standing` on GET /home, each line leading to the list it counts; the foot
+// names how the source watching is going.
 
 function LeadCard({ home, briefing, t, ctx }: { home: Home; briefing: Briefing | undefined; t: Translate; ctx: FormatContext }) {
   if (home.lead === null) return null;
@@ -57,6 +61,57 @@ function LeadCard({ home, briefing, t, ctx }: { home: Home; briefing: Briefing |
   );
 }
 
+function StandingPanel({ standing, statuses, t }: { standing: Standing; statuses: readonly VocabularyRow[] | undefined; t: Translate }) {
+  const presented = presentStanding(standing, statuses);
+  return (
+    <Panel title={t('today.standing.title')} data-standing="">
+      {presented.empty ? (
+        <p className="text-muted" data-empty-state="">
+          {t('today.standing.empty')}{' '}
+          <Link href="/inventory" className="text-fg underline underline-offset-2">
+            {t('today.standing.emptyAction')}
+          </Link>
+        </p>
+      ) : (
+        <>
+          <Link href={presented.applyingHref} className="text-meta text-muted underline underline-offset-2" data-standing-applying="">
+            {t('today.standing.applying', { count: standing.applying })}
+          </Link>
+          {/* The bar repeats the counts below in their category tones, so a screen reader skips it. */}
+          <div aria-hidden="true" className="mb-2 mt-1 flex gap-0.5">
+            {presented.lines
+              .filter((line) => line.count > 0)
+              .map((line) => (
+                <i key={line.key} className="block h-2 rounded-sm" style={{ flex: `${line.count} 1 0`, background: line.color }} />
+              ))}
+          </div>
+          {presented.lines.map((line) => (
+            <p key={line.key} className="mb-0 flex justify-between gap-3 py-0.5" data-standing-line={line.key}>
+              {line.href === null ? (
+                <span>{t(line.message)}</span>
+              ) : (
+                <Link href={line.href} className="underline-offset-2 hover:underline">
+                  {t(line.message)}
+                </Link>
+              )}
+              <span className="font-medium tabular-nums">{line.count}</span>
+            </p>
+          ))}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <span className="text-meta text-muted">{t('today.standing.openGaps', { count: standing.openGaps })}</span>
+            <Link
+              href={presented.gapsHref}
+              className="inline-flex h-8 items-center rounded-control border border-line-control bg-surface px-3 font-medium no-underline hover:hover-fill"
+            >
+              {t('today.standing.seeGaps')}
+            </Link>
+          </div>
+        </>
+      )}
+    </Panel>
+  );
+}
+
 export function TodayScreen() {
   const t = useT();
   const ctx = useFormatContext();
@@ -68,6 +123,9 @@ export function TodayScreen() {
   // lead card's "Read the briefing" and "N more items this week" read the
   // running week, which a reader without watch.read cannot see either.
   const briefingQuery = useCurrentBriefing(query.data?.lead !== null && query.data?.lead !== undefined);
+  // The statuses the standing lines filter the inventory by, fetched beside GET /home and
+  // never after it: the reader's own permission says whether the panel can show.
+  const statuses = useVocabularyValues('compliance_status', false, permissions.includes('register.read'));
 
   if (query.isPending) return <LoadingState rows={3} />;
   if (forbidden !== null) return <RestrictedScreen {...forbidden} />;
@@ -78,7 +136,7 @@ export function TodayScreen() {
   const counts = me?.counts ?? null;
   const lines = counts === null ? [] : decideNowLines(counts, permissions);
   const nothingToDecide = lines.every((line) => line.count === 0);
-  const nothingAtAll = home.comingUp.length === 0 && home.lead === null && home.sources === null && nothingToDecide;
+  const nothingAtAll = home.comingUp.length === 0 && home.lead === null && home.sources === null && home.standing === null && nothingToDecide;
   // The way to the regulatory scope shows only to someone the scope page opens for.
   const scope = findDestination('admin-footprint');
   const scopeAction = scope !== undefined && unlocks(scope.anyOfPermissions, permissions) ? { label: t('today.empty.action'), href: scope.href } : undefined;
@@ -95,25 +153,28 @@ export function TodayScreen() {
             <LeadCard home={home} briefing={briefingQuery.data} t={t} ctx={ctx} />
           </div>
 
-          {counts !== null ? (
-            <Panel title={t('today.decideNow.title')} data-decide-now="">
-              <div className="grid gap-1.5">
-                {lines.map((line) =>
-                  line.href === null ? (
-                    <p key={line.key} className="text-muted">
-                      {t(line.message, { count: line.count })}
-                    </p>
-                  ) : (
-                    <p key={line.key}>
-                      <Link href={line.href} className="underline underline-offset-2" data-decide={line.key}>
+          <div className="grid gap-x-4 md:grid-cols-2">
+            {counts !== null ? (
+              <Panel title={t('today.decideNow.title')} data-decide-now="">
+                <div className="grid gap-1.5">
+                  {lines.map((line) =>
+                    line.href === null ? (
+                      <p key={line.key} className="text-muted">
                         {t(line.message, { count: line.count })}
-                      </Link>
-                    </p>
-                  ),
-                )}
-              </div>
-            </Panel>
-          ) : null}
+                      </p>
+                    ) : (
+                      <p key={line.key}>
+                        <Link href={line.href} className="underline underline-offset-2" data-decide={line.key}>
+                          {t(line.message, { count: line.count })}
+                        </Link>
+                      </p>
+                    ),
+                  )}
+                </div>
+              </Panel>
+            ) : null}
+            {home.standing !== null ? <StandingPanel standing={home.standing} statuses={statuses.data} t={t} /> : null}
+          </div>
 
           {home.sources !== null ? (
             <p className="mt-1 flex flex-wrap items-center justify-between gap-3 text-meta text-muted" data-source-health="">
