@@ -253,3 +253,18 @@ description = "E2E passkey private key for the seeded user head@example-bank.tes
 condition = "AND"
 regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgqa9Ivpb5XXlmirMlbzbohNontuLf7D4Fl3XDlS6BYPyhRANCAAQJbOyzHVQEODjoP3JAx13yUasZ49sf0Qmlkp5b8dpf3vYH1z8w4DJHhqyL2fgC23fTxDnkiXCdtzijJOfIAIFx$''']
 paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
+
+# acc-e2e-seed: two library stable keys built from public CELEX numbers, which the
+# generic-api-key rule reads as keys because the field is named `stable_key`.
+[[allowlists]]
+description = "Library stable keys of Commission Delegated Regulations (EU) 2017/565 and 2017/589, their public CELEX numbers (32017R0565, 32017R0589) in the E2E-only J-11 fixture. Identifiers of published EU law, not secrets."
+condition = "AND"
+regexes = ['''^celex-32017r0565$''', '''^celex-32017r0589$''']
+paths = ['''^backend/apps/library/fixtures/e2e_trading\.json$''']
+
+# --- acc-summary-j11: J-11's second holder of security.manage (the roster's security login) ---
+[[allowlists]]
+description = "E2E passkey private key for the seeded user security@example-bank.test: E2E virtual authenticator test keys, playbook 8.3. Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."
+condition = "AND"
+regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgg1kUBoO5_m0c7zOY4kr50wOr2FSyQrNHGxCPBHPbtrihRANCAASvryEB2X0sX6NPh4_KCL1e9ZdxMt3ZLocRd3LYmFnpKFIds0MFn9PLguJvYfzOGe9T0t39UxBNuPTpfR9QykB4$''']
+paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']

@@ -40,6 +40,7 @@ guard is here, in the one door, and not in each caller's good manners.
 from __future__ import annotations
 
 import hashlib
+import math
 import uuid
 from collections.abc import Callable, Generator, Sequence
 from dataclasses import dataclass
@@ -103,6 +104,13 @@ def refuse_private(subject_type: str, subject_id: uuid.UUID | None) -> None:
         )
 
 
+def cost_minor(input_tokens: int, output_tokens: int) -> int:
+    """What a call cost, in minor units, at `LLM_PRICE_*_MINOR_PER_MTOK`, rounded up so a call
+    that spent anything never reads as free."""
+    spent = input_tokens * settings.LLM_PRICE_INPUT_MINOR_PER_MTOK + output_tokens * settings.LLM_PRICE_OUTPUT_MINOR_PER_MTOK
+    return math.ceil(spent / 1_000_000)
+
+
 def ensure_enabled() -> None:
     """Refuse a model call for a bank that switched its own AI features off, before any
     model is reached. With no bank in the transaction's zone this is a platform call, and
@@ -130,6 +138,7 @@ def generate(
     subject_id: uuid.UUID | None = None,
     max_tokens: int | None = None,
     llm: LlmAdapter | None = None,
+    deadline_s: float | None = None,
 ) -> Generation:
     """Ask the model, then write the row, in the caller's transaction.
 
@@ -140,13 +149,14 @@ def generate(
     response, which is what `modelMetadataReportedByAgent = False` means to a reader.
 
     A subject that is a bank's own library record is refused before anything else
-    (`refuse_private`).
+    (`refuse_private`). `deadline_s` shortens the adapter's own deadline for a caller
+    somebody is waiting on. The row carries the call's cost (`cost_minor`).
     """
     refuse_private(subject_type, subject_id)
     ensure_enabled()
     engine = llm if llm is not None else get_llm()
     completion = engine.complete(
-        system=system, prompt=prompt, max_tokens=max_tokens or settings.LLM_MAX_TOKENS
+        system=system, prompt=prompt, max_tokens=max_tokens or settings.LLM_MAX_TOKENS, deadline_s=deadline_s
     )
     row = log_generation(
         purpose=purpose,
@@ -162,6 +172,7 @@ def generate(
         prompt_hash=prompt_hash(system, prompt),
         input_tokens=completion.input_tokens,
         output_tokens=completion.output_tokens,
+        cost_minor=cost_minor(completion.input_tokens, completion.output_tokens),
         metadata_reported_by_agent=False,
         stop_reason=completion.stop_reason,
     )

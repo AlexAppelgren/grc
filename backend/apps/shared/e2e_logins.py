@@ -149,7 +149,7 @@ SEED_LOGINS: tuple[SeedLogin, ...] = (
     # COL-S2: the Swedish-speaking team member whose reminders arrive in sv.
     SeedLogin(_id(24), "sv-member@example-bank.test", "Ingrid Bergström", TENANT_A_SLUG, ("owner",), title="Obligation owner, pensions", locale="sv", reserved_for=("COL-S2",)),
     # ACC-S11: the second member holding security.manage, so tenant reach keeps four eyes.
-    SeedLogin(_id(25), "security@example-bank.test", "Magnus Öberg", TENANT_A_SLUG, ("admin",), title="Administrator, information security", reserved_for=("ACC-S11",)),
+    SeedLogin(_id(25), "security@example-bank.test", "Magnus Öberg", TENANT_A_SLUG, ("admin",), title="Administrator, information security", reserved_for=("ACC-S11", "ACC-S13")),
     # ACC-S3: the compliance officer who mints a personal access token.
     SeedLogin(_id(26), "tokens@example-bank.test", "Elsa Hansson", TENANT_A_SLUG, ("compliance_officer",), title="Compliance officer, reporting", reserved_for=("ACC-S3",)),
     # HOM-S10, COL-S12 and COL-S8: a member whose one role reads neither the register nor

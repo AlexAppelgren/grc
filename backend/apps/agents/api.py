@@ -20,8 +20,16 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Header, Path, Query, Router
 
-from apps.agents import budget, control, definitions, platform, platform_read, requests, runs, runs_read, tenant_agents
+from apps.agents import agent_access, budget, control, definitions, platform, platform_read, requests, runs, runs_read, tenant_agents, what_applies
 from apps.agents.schemas import (
+    AgentAccessInput,
+    AgentAccessKeyCreated,
+    AgentAccessKeyInput,
+    AgentAccessKeyOut,
+    AgentAccessOut,
+    AgentAccessPage,
+    AgentAccessReachInput,
+    AgentAccessUpdate,
     AgentBudget,
     AgentBudgetInput,
     AgentDefinitionDetail,
@@ -45,12 +53,16 @@ from apps.agents.schemas import (
     TenantAgentPage,
     TenantAgentUpdate,
     TenantRunQuery,
+    WhatAppliesAnswer,
+    WhatAppliesInput,
 )
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_scope, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import answers_problems, caller_tenant, principal, require_any
+from apps.governance import access_log
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, if_match, principal, require_any
+from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Agents"])
 
@@ -191,24 +203,23 @@ def finish_agent_run(
 )
 @answers_problems
 def list_agent_runs(request: HttpRequest, query: Query[TenantRunQuery]) -> Any:
-    """Returns the agent runs the caller may see, oldest first, one page at a time: when
+    """Returns the agent runs the caller may see, newest first, one page at a time: when
     each ran, which agent, which version and which model, what started it and who asked,
-    how it ended, what it counted and what it cost. Call it to show a bank that its watch is
-    alive — that its sources were swept last night, and what came of it — to show the
-    history of one of the bank's own agents with `tenantAgentId`, the runs a person asked for
-    with `mine`, and to investigate a run whose findings are being questioned.
+    how it ended, what it counted and what it cost. Call it to show a bank what its own
+    agents have done and what that cost, the history of one of them with `tenantAgentId`,
+    the runs a person asked for with `mine`, and to investigate a run whose findings are
+    being questioned.
 
     A person's session only; an API key cannot read this, so an agent cannot read its own
     history. Inside a bank it needs `agents.manage`, in the platform console
-    `system.health`; a member with neither is refused. A bank sees the platform's own
-    library runs, because those are what feed the shared inventory it relies on, and its
-    own runs. It never sees another bank's runs, and no run of any bank is visible to
-    another; the two filters only narrow that, and naming another bank's agent matches no
-    run rather than answering an error.
-
-    bleqq's own agents are part of the base package: a bank reads their history here but
-    cannot switch one off, pause it, or change its cadence, scope or budget. A bank's own
-    agents, which it does control, appear in the same list. It changes nothing and writes
+    `system.health`; a member with neither is refused. A bank sees its own runs and nothing
+    else; the platform console sees the runs of bleqq's own agents. bleqq's runs reach a
+    bank as watch items and proposals rather than as run rows, so no platform cost, token
+    count or model is ever on a bank's page: `GET /agents/platform` shows what bleqq's
+    agents watch, when each next runs and how its last run ended. No bank sees another
+    bank's runs; the two filters only narrow that, and naming another bank's agent matches
+    no run rather than answering an error. Runs that started in the same instant keep one
+    stable order, so paging never skips or repeats one. It changes nothing and writes
     nothing to the audit log. An empty list is a 200 with `total` 0 and means nothing has
     run yet, not that something is wrong.
 
@@ -282,8 +293,6 @@ def get_agent_definition(request: HttpRequest, agent_key: str = Path(..., descri
 
     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
     `agent_definitions.manage`; `not_found` (404) for a key no definition has.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until
-    that ships.
     """
     return definitions.get_definition(agent_key=agent_key)
 
@@ -303,9 +312,12 @@ def publish_agent_version(
     request: HttpRequest, body: AgentVersionInput, agent_key: str = Path(..., description=_AGENT_KEY)
 ) -> Any:
     """Publishes the version folder this build ships for the definition, with a note of
-    what changed. Runs opened from now on run it; a run already open keeps the version it
-    opened with, and every earlier run still names the version it used. The prompt, tools
-    and model come from the shipped folder and never from this request.
+    what changed, and makes it the definition's current version. Runs opened from now on
+    run it; a run already open keeps the version it opened with, and every earlier run
+    still names the version it used. The prompt, tools and model come from the shipped
+    folder, read exactly as the deploy's seed reads it, and never from this request; the
+    folder must be the definition's own and keep its kind, its scope and the zone it writes
+    to. Publish the versions in order: the next number is one above the highest published.
 
     A person's session in the platform console holding `agent_definitions.manage`, with a
     fresh passkey step-up, because a new version changes what runs for every bank at once.
@@ -314,9 +326,12 @@ def publish_agent_version(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-    `not_found` (404) for a key no definition has; `validation_error` (422) for a version
-    number the build does not ship or a missing note. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a key no definition has; `version_exists` (409) for a number
+    already published; `version_not_next` (422) for a number that is not one above the
+    highest published; `definition_unreadable` (422) when this build ships no such folder,
+    its definition file cannot be read, its prompt is missing, or it names another agent,
+    number, kind, scope or zone, with the folder named and nothing created;
+    `validation_error` (422) for a missing or overlong note.
     """
     return definitions.publish_version(who=principal(request), agent_key=agent_key, body=body)
 
@@ -338,7 +353,9 @@ def retire_agent_version(
     version_no: int = Path(..., description="The number of the version to retire, counting from 1 within its definition."),
 ) -> Any:
     """Retires one published version: no new run starts on it, and every run that used it
-    keeps pointing at it, because a published version is never rewritten or deleted.
+    keeps pointing at it, because a published version is never rewritten or deleted. A new
+    run opens on the newest version still published. Retiring a version already retired
+    answers it as it is and records nothing.
 
     A person's session in the platform console holding `agent_definitions.manage`, with a
     fresh passkey step-up. Records one audit event naming the person, the version and the
@@ -346,8 +363,9 @@ def retire_agent_version(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-    `not_found` (404) for a definition or version that does not exist. Published ahead of
-    the logic that will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a definition or version that does not exist; `last_version`
+    (409) for the last version still published of an active agent, which would leave it
+    nothing to run.
     """
     return definitions.retire_version(who=principal(request), agent_key=agent_key, version_no=version_no)
 
@@ -371,9 +389,9 @@ def get_platform_agent_settings(request: HttpRequest, agent_key: str = Path(...,
     reads and writes nothing to the audit log.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
-    `agent_definitions.manage`; `not_found` (404) for a key no platform agent has.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until
-    that ships.
+    `agent_definitions.manage`; `not_found` (404) for a key no platform agent has,
+    including a definition a bank adds for itself, which has no platform settings. An
+    empty `jurisdictions` list means none has been set.
     """
     return platform.get_settings(agent_key=agent_key)
 
@@ -393,7 +411,9 @@ def update_platform_agent_settings(
     request: HttpRequest, body: PlatformAgentSettingsInput, agent_key: str = Path(..., description=_AGENT_KEY)
 ) -> Any:
     """Replaces the cadence, jurisdictions and monthly budget of one of bleqq's own agents.
-    The change applies to every bank at once, which is why no bank can make it.
+    The change applies to every bank at once, which is why no bank can make it. The
+    jurisdictions are checked against the live jurisdiction list, where a retired one is
+    not valid, and a key sent twice is stored once. It reads no bank's data.
 
     A person's session in the platform console holding `agent_definitions.manage`, with a
     fresh passkey step-up. Records one audit event with the settings before and after, the
@@ -402,9 +422,9 @@ def update_platform_agent_settings(
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
     `not_found` (404) for a key no platform agent has; `unknown_key` (422) for a
-    jurisdiction the vocabulary does not hold, with the valid keys; `validation_error`
-    (422). Published ahead of the logic that will fill it, and answering 501 `not_built`
-    until that ships.
+    jurisdiction the vocabulary does not hold or has retired, with the valid keys in
+    `validKeys`; `validation_error` (422) for an empty or overlong list or a negative
+    budget.
     """
     return platform.update_settings(who=principal(request), agent_key=agent_key, body=body)
 
@@ -420,17 +440,20 @@ def update_platform_agent_settings(
 @requires_permission(perms.AGENT_DEFINITIONS_MANAGE)
 @answers_problems
 def list_platform_runs(request: HttpRequest, page: Query[PageQuery]) -> Any:
-    """Returns the runs of bleqq's own agents, oldest first, one page at a time, with the
-    version each ran, what it cost and how it ended, for the console's agent pages. A
-    platform run reads no bank's row, so no bank's name or figure is in it.
+    """Returns the runs of bleqq's own agents, newest first, one page at a time, with the
+    version each ran, what it cost, how it ended and what it filed: the sources it swept
+    and the records it re-checked, counted from the coverage log, and the changes and
+    proposals it filed, counted from those records rather than from the run's own report.
+    A platform run reads no bank's row, so no bank's run, name or figure is in it, and
+    `tenantAgentId` is always null here. Link a run's sources to the console's Sources
+    page.
 
     A person's session in the platform console holding `agent_definitions.manage`. It reads
     and writes nothing to the audit log. An empty list is a 200 with `total` 0.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `validation_error` (422) when `limit` is above 100 or
-    `offset` beyond the accepted depth. Published ahead of the logic that will fill it, and
-    answering 501 `not_built` until that ships.
+    `offset` beyond the accepted depth.
     """
     return platform.list_runs(limit=page.limit, offset=page.offset)
 
@@ -491,9 +514,12 @@ def list_platform_watch(request: HttpRequest, page: Query[PageQuery]) -> Any:
     A person's session in a bank holding `watch.read`, which every member has; no API key.
     It reads and writes nothing to the audit log.
 
+    Only active agents whose current version is not retired are listed, by key. `nextRunAt`
+    is a cadence after the last run started, or now when the agent has never run or is
+    overdue, and null for an agent that runs only when asked. An empty list is a 200.
+
     Errors: `unauthenticated` (401); `permission_denied` (403) without `watch.read`;
-    `validation_error` (422) when `limit` is above 100. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `validation_error` (422) when `limit` is above 100.
     """
     return platform_read.list_platform_watch(limit=page.limit, offset=page.offset)
 
@@ -516,8 +542,7 @@ def list_tenant_agents(request: HttpRequest, page: Query[PageQuery]) -> Any:
     nothing to the audit log. An empty list is a 200 and means the bank has added none.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `validation_error` (422) when `limit` is above 100. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `validation_error` (422) when `limit` is above 100.
     """
     tenant = caller_tenant(request)
     return tenant_agents.list_tenant_agents(tenant=tenant, limit=page.limit, offset=page.offset)
@@ -536,7 +561,8 @@ def list_tenant_agents(request: HttpRequest, page: Query[PageQuery]) -> Any:
 def create_tenant_agent(request: HttpRequest, body: TenantAgentInput) -> Any:
     """Adds an agent of the bank's own from a definition bleqq offers banks, with its
     cadence and scope; it starts switched off. What it finds stays in the bank's own zone:
-    it never writes the shared library.
+    it never writes the shared library. The plan limits are the most frequent cadence and
+    how many agents of its own a bank may add.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
     event naming the person and the definition.
@@ -544,11 +570,13 @@ def create_tenant_agent(request: HttpRequest, body: TenantAgentInput) -> Any:
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
     naming `agent_definitions.manage` when the definition is one of bleqq's own agents,
     which no bank adds or steers; `unknown_key` (422) for a definition key that does not
-    exist; `validation_error` (422). Published ahead of the logic that will fill it, and
-    answering 501 `not_built` until that ships.
+    exist, or a scope key the vocabulary does not hold, with the valid keys in `validKeys`;
+    `above_plan_limit` (422) for a cadence more frequent than the plan allows, or one agent
+    more than it allows; `duplicate_key` (409) when the bank has already added this
+    definition; `validation_error` (422).
     """
     tenant = caller_tenant(request)
-    return tenant_agents.create_tenant_agent(who=principal(request), tenant=tenant, body=body)
+    return 201, tenant_agents.create_tenant_agent(who=principal(request), tenant=tenant, body=body)
 
 
 @router.patch(
@@ -566,15 +594,16 @@ def update_tenant_agent(
 ) -> Any:
     """Changes what the body sends on one of the bank's own agents: its switch, cadence,
     run day and hour, or scope, and nothing else. Its instructions and tools are never the
-    bank's to change.
+    bank's to change. Switching an agent on needs the bank's monthly cap to be set first.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
     event with the fields before and after.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
     `not_found` (404) for an agent the bank does not have; `unknown_key` (422) for a scope
-    key the vocabulary does not hold; `validation_error` (422). Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    key the vocabulary does not hold, with the valid keys in `validKeys`; `above_plan_limit`
+    (422) for a cadence more frequent than the plan allows; `budget_cap_required` (422) when
+    switching on before the bank has set its monthly cap; `validation_error` (422).
     """
     tenant = caller_tenant(request)
     return tenant_agents.update_tenant_agent(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id, body=body)
@@ -708,8 +737,6 @@ def get_agent_budget(request: HttpRequest) -> Any:
     nothing to the audit log.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until
-    that ships.
     """
     return budget.get_budget(tenant=caller_tenant(request))
 
@@ -725,16 +752,16 @@ def get_agent_budget(request: HttpRequest) -> Any:
 @requires_permission(perms.AGENTS_MANAGE)
 @answers_problems
 def put_agent_budget(request: HttpRequest, body: AgentBudgetInput) -> Any:
-    """Sets the bank's monthly cap on its own agents. A run that would pass the cap does not
-    start, and a cap set below this month's spend pauses the bank's agents until the month
-    turns or the cap rises.
+    """Sets the bank's monthly cap on its own agents; the first time, it creates it. A run
+    that would pass the cap does not start, and a cap at or below this month's spend is
+    accepted and pauses every running agent of the bank's own at once, since a bank must
+    always be able to stop spending. A person resumes them.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
-    event with the cap before and after.
+    event with the cap before and after, and one more for each agent the cap pauses.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `validation_error` (422) for a negative or malformed amount. Published ahead of the
-    logic that will fill it, and answering 501 `not_built` until that ships.
+    `validation_error` (422) for a negative or malformed amount.
     """
     tenant = caller_tenant(request)
     return budget.put_budget(who=principal(request), tenant=tenant, body=body)
@@ -818,3 +845,394 @@ def get_research_request(
     that will fill it, and answering 501 `not_built` until that ships.
     """
     return requests.get_request(tenant=caller_tenant(request), request_id=request_id)
+
+
+# ---------------------------------------------------------------------------------------
+# acc-entries-and-log (ACC-01, ACC-03, ACC-08): the agents a bank runs itself, registered
+# as agent access entries, and their service keys. Every route is an admin's, under
+# `agent_access.manage` on a person's session; every write also needs a passkey step-up and
+# is recorded in the audit log. The path takes a UUID converter, so `what-applies` beside
+# it is never read as an entry.
+# ---------------------------------------------------------------------------------------
+_ENTRY_ID = (
+    "The entry's identifier, a UUID as `GET /agent-access` lists it. An entry of another bank, "
+    "or none, answers `not_found` (404)."
+)
+_ACCESS_GATE = (
+    "Needs `agent_access.manage` on a person's session in the bank and a passkey step-up on it "
+    "younger than the step-up window; an API key or a personal access token is refused, since "
+    "neither can step up."
+)
+_ACCESS_GATE_ERRORS = (
+    "`step_up_required` (403) without a fresh step-up, which the screen answers by opening the "
+    "passkey prompt and retrying; `permission_denied` (403) without `agent_access.manage`; "
+    "`unauthenticated` (401) without a live session"
+)
+_ACCESS_WHAT = (
+    "An agent access entry is an agent the bank runs on its own infrastructure, registered so "
+    "it can read Compliance Watch through the REST API or the MCP server. It is not one of the "
+    "agents we run: it holds a name, a purpose, a scope and credentials, and every credential "
+    "under it reads and nothing else."
+)
+
+
+def _access_views(request: HttpRequest, tenant: Any, rows: list[Any]) -> list[AgentAccessOut]:
+    return agent_access.views(rows, language_order(request, tenant=tenant))
+
+
+def _access_view(request: HttpRequest, tenant: Any, entry_id: uuid.UUID) -> AgentAccessOut:
+    return _access_views(request, tenant, [agent_access.entry(tenant.id, entry_id)])[0]
+
+
+@router.get(
+    "/agent-access",
+    response=AgentAccessPage,
+    auth=SESSION,
+    operation_id="listAgentAccess",
+    by_alias=True,
+    summary="See the agents your bank runs itself and the keys each holds",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Answers the bank's entries one page at a time, by name, revoked ones included, each "
+        "with its team, departments, products, tenant reach toggle and every credential bound "
+        "to it (never a secret). An empty page is a 200 with `total` 0.\n\n"
+        "A read: it changes nothing and writes no audit row. Needs `agent_access.manage` on a "
+        "person's session in the bank.\n\n"
+        "Errors: `validation_error` (422) when `limit` is above 100; `permission_denied` (403) "
+        "without `agent_access.manage`; `unauthenticated` (401) without a live session."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+def list_agent_access(request: HttpRequest, page: PageQuery = Query(...)) -> AgentAccessPage:
+    tenant = caller_tenant(request)
+    rows, total = agent_access.list_entries(tenant.id, limit=page.limit, offset=page.offset)
+    return AgentAccessPage(items=_access_views(request, tenant, rows), total=total)
+
+
+@router.post(
+    "/agent-access",
+    response={201: AgentAccessOut},
+    auth=SESSION,
+    operation_id="registerAgentAccess",
+    by_alias=True,
+    summary="Register an agent your bank runs itself so it can read",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Registers the agent with its name, purpose, the team that answers for it, and the "
+        "departments and products it serves, which narrow what it reads to their terms within the "
+        "bank's footprint; naming neither narrows nothing. Answers 201 with the entry, active, "
+        "tenant reach off and no credential yet: issue one with `POST /agent-access/{entryId}/keys`.\n\n"
+        f"{_ACCESS_GATE} Records `agent_access.registered` in the audit log with the team, "
+        "department and product ids and the step-up assertion, never the purpose.\n\n"
+        "Errors: `unknown_key` (422) for a team, department or product the bank has not got; "
+        "`name_required` or `purpose_required` (422) for one of spaces alone; `validation_error` "
+        f"(422) for a body the schema refuses; {_ACCESS_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@requires_step_up
+@answers_problems
+def register_agent_access(request: HttpRequest, body: AgentAccessInput) -> Any:
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    row = agent_access.register(
+        tenant=tenant,
+        user=user,
+        actor=actor_for(request, user),
+        name=body.name,
+        purpose=body.purpose,
+        owner_team=body.owner_team,
+        department_ids=body.department_ids,
+        product_ids=body.product_ids,
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return 201, _access_view(request, tenant, row.id)
+
+
+@router.get(
+    "/agent-access/{uuid:entry_id}",
+    response=AgentAccessOut,
+    auth=SESSION,
+    operation_id="getAgentAccess",
+    by_alias=True,
+    summary="See one agent your bank runs itself and its keys",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Answers the entry with its team, departments, products, tenant reach toggle, version and "
+        "every credential bound to it, newest first, revoked ones included; never a secret.\n\n"
+        "A read: it changes nothing and writes no audit row. Needs `agent_access.manage` on a "
+        "person's session in the bank.\n\n"
+        "Errors: `not_found` (404) for an entry the bank has not got; `permission_denied` (403) "
+        "without `agent_access.manage`; `unauthenticated` (401) without a live session."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@answers_problems
+def get_agent_access(request: HttpRequest, entry_id: uuid.UUID = Path(..., description=_ENTRY_ID)) -> Any:
+    return _access_view(request, caller_tenant(request), entry_id)
+
+
+@router.patch(
+    "/agent-access/{uuid:entry_id}",
+    response=AgentAccessOut,
+    auth=SESSION,
+    operation_id="updateAgentAccess",
+    by_alias=True,
+    summary="Rename, re-purpose or re-scope an agent your bank runs itself",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Changes what the body sends and nothing else; a list sent replaces the whole list, so "
+        "sending an empty `departmentIds` stops narrowing by department. The new scope counts "
+        "from the entry's next call. Send `If-Match` with the version last read to be told when "
+        "someone changed it first. Answers the entry, its version raised by one.\n\n"
+        f"{_ACCESS_GATE} Records `agent_access.updated` with the ids and keys before and after, "
+        "and whether the purpose changed, never its text.\n\n"
+        "Errors: `invalid_transition` (409) for a revoked entry; `stale_write` (409) when "
+        "`If-Match` names an old version; `unknown_key` (422) for a team, department or product "
+        "the bank has not got; `name_required` or `purpose_required` (422) for one of spaces "
+        "alone; `validation_error` (422) for a body the schema refuses or an `If-Match` that is "
+        f"not a version; `not_found` (404) for an entry the bank has not got; {_ACCESS_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@requires_step_up
+@answers_problems
+def update_agent_access(request: HttpRequest, body: AgentAccessUpdate, entry_id: uuid.UUID = Path(..., description=_ENTRY_ID)) -> Any:
+    tenant = caller_tenant(request)
+    agent_access.update(
+        tenant=tenant,
+        entry_id=entry_id,
+        actor=actor_for(request),
+        name=body.name,
+        purpose=body.purpose,
+        owner_team=body.owner_team,
+        department_ids=body.department_ids,
+        product_ids=body.product_ids,
+        expected_version=if_match(request),
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return _access_view(request, tenant, entry_id)
+
+
+@router.post(
+    "/agent-access/{uuid:entry_id}/revoke",
+    response=AgentAccessOut,
+    auth=SESSION,
+    operation_id="revokeAgentAccess",
+    by_alias=True,
+    summary="Stop an agent your bank runs itself, and every key it holds, for good",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Revokes the entry and, in the same moment, every credential bound to it: its service "
+        "keys and any personal access token naming it. From the next call each answers "
+        "`unauthenticated` (401). An entry is never deleted and never switched back on; register "
+        "a new one instead. Takes no body; send `If-Match` with the version last read. Answers "
+        "the entry, inactive.\n\n"
+        f"{_ACCESS_GATE} Records `agent_access.revoked` with the prefixes of the credentials it "
+        "revoked, and one row per revoked credential in the security log.\n\n"
+        "Errors: `invalid_transition` (409) for an entry already revoked; `stale_write` (409) "
+        "when `If-Match` names an old version; `validation_error` (422) for an `If-Match` that is "
+        f"not a version; `not_found` (404) for an entry the bank has not got; {_ACCESS_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@requires_step_up
+@answers_problems
+def revoke_agent_access(request: HttpRequest, entry_id: uuid.UUID = Path(..., description=_ENTRY_ID)) -> Any:
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    agent_access.revoke(
+        tenant=tenant,
+        entry_id=entry_id,
+        user=user,
+        actor=actor_for(request, user),
+        expected_version=if_match(request),
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return _access_view(request, tenant, entry_id)
+
+
+@router.put(
+    "/agent-access/{uuid:entry_id}/tenant-reach",
+    response=AgentAccessOut,
+    auth=SESSION,
+    operation_id="setAgentAccessReach",
+    by_alias=True,
+    summary="Let an agent your bank runs itself read your register, or stop it",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Sets the entry's own half of tenant reach. With it on, the entry's credentials holding "
+        "`tenant:read` read the bank's register decisions, but only while the bank's own switch "
+        "(`GET /tenant/reach`, turned on by two people) is on as well; with the bank's switch "
+        "off, every entry reads the shared library only, whatever this says. Send `If-Match` with "
+        "the version last read. Answers the entry, its version raised by one.\n\n"
+        f"{_ACCESS_GATE} Records `agent_access.reach_set` with the toggle before and after.\n\n"
+        "Errors: `invalid_transition` (409) for a revoked entry; `stale_write` (409) when "
+        "`If-Match` names an old version; `validation_error` (422) for a body the schema refuses "
+        "or an `If-Match` that is not a version; `not_found` (404) for an entry the bank has not "
+        f"got; {_ACCESS_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@requires_step_up
+@answers_problems
+def set_agent_access_reach(request: HttpRequest, body: AgentAccessReachInput, entry_id: uuid.UUID = Path(..., description=_ENTRY_ID)) -> Any:
+    tenant = caller_tenant(request)
+    agent_access.set_tenant_reach(
+        tenant=tenant,
+        entry_id=entry_id,
+        actor=actor_for(request),
+        enabled=body.enabled,
+        expected_version=if_match(request),
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return _access_view(request, tenant, entry_id)
+
+
+@router.post(
+    "/agent-access/{uuid:entry_id}/keys",
+    response={201: AgentAccessKeyCreated},
+    auth=SESSION,
+    operation_id="createAgentAccessKey",
+    by_alias=True,
+    summary="Issue a key to an agent your bank runs itself",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Issues a service key bound to the entry and answers it once, with 201. The key acts as "
+        "the entry and reads within its scope; put `plainKey` straight into the agent's secret "
+        "store, because the server keeps only a hash of the secret and never shows it again. It "
+        "holds only the reading scopes, and it expires no later than `AGENT_ACCESS_KEY_MAX_DAYS` "
+        "days from now, which is also its expiry when none is sent.\n\n"
+        f"{_ACCESS_GATE} Records `api_key.created` with the prefix, scopes and expiry, never the "
+        "secret, and a row for the new key in the security log.\n\n"
+        "Errors: `invalid_transition` (409) for a revoked entry; `unknown_key` (422) for a scope "
+        "an entry's key may not hold, the message naming the valid ones; `expiry_in_past` (422) "
+        "for an expiry that is not in the future; `expiry_too_late` (422) for one beyond the "
+        "longest a key may live; `name_required` (422) for a name of spaces alone; "
+        "`validation_error` (422) for a body the schema refuses; `not_found` (404) for an entry "
+        f"the bank has not got; {_ACCESS_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@requires_step_up
+@answers_problems
+def create_agent_access_key(request: HttpRequest, body: AgentAccessKeyInput, entry_id: uuid.UUID = Path(..., description=_ENTRY_ID)) -> Any:
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    key, plain = agent_access.create_key(
+        tenant=tenant,
+        entry_id=entry_id,
+        user=user,
+        actor=actor_for(request, user),
+        name=body.name,
+        scopes=body.scopes,
+        expires_at=body.expires_at,
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return 201, AgentAccessKeyCreated(**agent_access.key_out(key).model_dump(), plain_key=plain)
+
+
+@router.post(
+    "/agent-access/{uuid:entry_id}/keys/{uuid:key_id}/revoke",
+    response=AgentAccessKeyOut,
+    auth=SESSION,
+    operation_id="revokeAgentAccessKey",
+    by_alias=True,
+    summary="Stop one key of an agent your bank runs itself, for good",
+    description=(
+        f"{_ACCESS_WHAT}\n\n"
+        "Revokes one credential bound to the entry, a service key or a personal access token "
+        "naming it: from its next call it answers `unauthenticated` (401), and it never works "
+        "again. Revoking one already revoked changes nothing and answers the same, so a retry is "
+        "safe. Takes no body. Answers the credential with its revocation time.\n\n"
+        f"{_ACCESS_GATE} Records `api_key.revoked` in the audit log every time, and a row "
+        "in the security log the first time.\n\n"
+        "Errors: `not_found` (404) for an entry the bank has not got or a credential not bound to "
+        f"it; {_ACCESS_GATE_ERRORS}."
+    ),
+)
+@requires_permission(perms.AGENT_ACCESS_MANAGE)
+@requires_step_up
+@answers_problems
+def revoke_agent_access_key(
+    request: HttpRequest,
+    entry_id: uuid.UUID = Path(..., description=_ENTRY_ID),
+    key_id: uuid.UUID = Path(..., description="The credential's identifier, a UUID as the entry's `keys` list shows it; one not bound to this entry answers `not_found` (404)."),
+) -> Any:
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    key = agent_access.revoke_key(
+        tenant=tenant,
+        entry_id=entry_id,
+        key_id=key_id,
+        user=user,
+        actor=actor_for(request, user),
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return agent_access.key_out(key)
+
+
+# ---------------------------------------------------------------------------------------
+# acc-what-applies (ACC-06, ACC-07): what applies to what a bank's own agent is building.
+# ---------------------------------------------------------------------------------------
+@router.post(
+    "/agent-access/what-applies",
+    response=WhatAppliesAnswer,
+    auth=KEY,
+    operation_id="whatApplies",
+    by_alias=True,
+    summary="Ask what applies to what your agent is building, buying or reviewing",
+    description=(
+        "Takes a description of what the agent is building, buying or reviewing and answers the "
+        "full list of what applies to it, one page at a time: every shared obligation in the "
+        "bank's footprint and in the entry's scope, each with its citation and the version in "
+        "force today, and with the bank's own register decision on it when the credential "
+        "holds `tenant:read` and tenant reach is on for the bank and the entry. The list is "
+        "deterministic and ranked by how many of the description's words each obligation's "
+        "library text holds, then by stable key; nothing but paging shortens it. The bank's own "
+        "private records are never in it, and `ownRecordsLeftOut` counts them.\n\n"
+        "Every answer states the scope it was given in (`scope`: the entry, its departments and "
+        "products, and the date), and a narrowed entry never narrows silently: `outsideScope` "
+        "names, by label, each footprint term outside the entry's scope that the description "
+        "touches, compared against the terms' labels and usage notes and never against records, "
+        "and its `advice` tells the agent to send its user to compliance about them. This needs no "
+        "model, so it answers with AI switched off. "
+        "Above the list, `summary` holds a short summary a model drafted from the description and "
+        "the list's first shared obligations, never from the bank's register or its own records, "
+        "labelled AI-drafted with a fixed `notice` that the bank's confirmed applicability is the "
+        "decision, and citing obligations by stable key. It is drafted with the first page only, "
+        "logged in the AI log with its model and version, and its cost counts against the bank's "
+        "monthly cap on its own agents. It never shortens the list: when the model fails, does not "
+        "answer within `WHAT_APPLIES_SUMMARY_DEADLINE_MS`, the bank switched its AI off or its cap "
+        "is reached, the list is answered whole and `summary.reason` says why there is none.\n\n"
+        "A key of an agent access entry, or a personal access token, holding `library:read`; a "
+        "person's session and any other key are refused. A read that takes a body: it writes "
+        "nothing but the summary's AI log row, and the access log records the call with the description's name alone, never "
+        "its text. Pages with `limit` and `offset`, 20 by default and 100 at most.\n\n"
+        "Errors: `description_required` (422) for a description of spaces alone; "
+        "`description_too_long` (422) beyond `AGENT_ACCESS_DESCRIPTION_MAX_CHARS` characters; "
+        "`validation_error` (422) for a body the schema refuses or a page out of range; "
+        "`permission_denied` (403) for a key that is not an agent access credential or one "
+        "without `library:read`; `rate_limited` (429) over the credential's rate; "
+        "`unauthenticated` (401) without a live key or token."
+    ),
+    openapi_extra={
+        "requestBody": {
+            "content": {"application/json": {"example": {"description": "A new order-routing service for professional clients"}}}
+        }
+    },
+)
+@requires_scope(perms.SCOPE_LIBRARY_READ)
+@answers_problems
+def what_applies_route(request: HttpRequest, body: WhatAppliesInput, page: PageQuery = Query(...)) -> Any:
+    tenant = caller_tenant(request)
+    result = what_applies.answer(
+        tenant=tenant,
+        principal=principal(request),
+        description=body.description,
+        order=language_order(request, tenant=tenant),
+        limit=page.limit,
+        offset=page.offset,
+    )
+    access_log.note(request, filters={"description": []}, record_count=len(result.items))
+    return result

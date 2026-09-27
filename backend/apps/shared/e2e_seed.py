@@ -34,6 +34,14 @@ from django.db import transaction
 
 from apps.agents.models import AgentRun, RunStatus
 from apps.agents.seeds import seed_agent_definitions
+# c11-e2e-seed
+from decimal import Decimal
+from apps.agents.models import AgentCadence, RunTrigger, TenantAgent, TenantAgentBudget
+# acc-e2e-seed
+from apps.agents.models import AgentAccess
+from apps.agents.seeds.e2e import publish_e2e_version
+from apps.proposals import batch as proposal_batch
+from apps.proposals.schemas import ObligationScopeChange, ObligationScopePayload
 from apps.cases import matching as case_matching
 from apps.cases.creation import CHANGE_REGISTERED
 from apps.cases.models import Action, AssessmentApplies, CaseTransition, ChangeCase, ImpactAssessment
@@ -79,6 +87,11 @@ from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, Footpri
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, switch_on_term
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.tenants.logic import set_content_languages
+# c8-seed-org-register
+from apps.register import logic as register_logic
+from apps.register.models import ComplianceAssessment, Gap, InternalLink, Interpretation, TenantObligation, TenantObligationScope
+from apps.taxonomy.models import ComplianceStatus, GapSource, GapStatus, LinkKind, RiskRating, Team
+from apps.tenants.models import InternalItem, Licence, LicenceServiceTerm, OrgUnit, TeamMember, TenantProduct, TenantProductTerm
 
 
 @dataclass(frozen=True)
@@ -144,6 +157,15 @@ EXPECTED_FOOTPRINTS: dict[str, tuple[str, ...]] = {
         # have it, so a Danish record is outside this scope and "Markets we watch" has
         # something to add. Union rules reach Sweden, so none of them moves.
         "jurisdiction:se",
+        # acc-e2e-seed (J-11): trading, cards and card issuing, `EXPECTED_J11.footprint`. No
+        # record but the J-11 fixture carries a product type or a licensed activity, so none moves.
+        "product_type:shares",
+        "product_type:derivatives",
+        "product_type:cards",
+        "licensed_activity:card_issuing",
+        # acc-summary-j11: the licence Trading trades under, so a Trading entry's scope narrows
+        # licensed activities too and names card issuing as outside it (ACC-07).
+        "licensed_activity:investment_services",
     ),
     TENANT_B_SLUG: (
         "regime:securities",
@@ -191,9 +213,10 @@ class SeedLibrary:
 # tax-nordic-seed (FP-04): plus Kapitalmarkedsloven and verdipapirhandelloven with one
 # obligation each, the Danish one for Custody and the Norwegian one for Advice.
 # Plus the one standard below (E2E_STANDARD): ISO/IEC 27001:2022 and its conformance duty.
+# acc-e2e-seed: plus J-11's three EU instruments with one duty each (E2E_TRADING).
 EXPECTED_LIBRARY = SeedLibrary(
-    instruments=18 + 1,
-    obligations=18 + 1,
+    instruments=18 + 1 + 3,
+    obligations=18 + 1 + 3,
     research_obligation=RESEARCH_OBLIGATION,
     advice_only_obligation="obl-suitability-statement",
     anchor_date=datetime.date(2026, 9, 16),
@@ -1754,6 +1777,198 @@ def seed_ask_pending_link() -> None:
     )
 
 
+# --- c11-e2e-seed (AGT-03, AGT-04, AGT-05, PRO-04) ------------------------------------------
+@dataclass(frozen=True)
+class SeedChunk11:
+    """What the chunk 11 journeys find: the sweeper published at two versions with a
+    scheduled platform run on each (AGT-S4); tenant A's own source watch, weekly with a scope,
+    whose runs over the recent weeks put the month's spend just under its one cap (AGT-S5,
+    AGT-S6); tenant B with no agent and no cap of its own; and one open re-tag of twelve
+    obligations waiting in the console (PRO-S8), filed by the second library editor so the
+    first can decide it.
+
+    Every run is dated from the seed's clock in tenant A's zone, at midnight (the fixed wall
+    time, never after "now"): a run this month is on today's date less whole weeks, but never
+    before the first of the month, and a run of the month before is whole weeks before the
+    first. So the month's spend is the sum of `month_costs` on any day, a month boundary
+    included (apps/agents/tests_seed.py). The re-tag adds a lifecycle stage, a dimension that
+    never narrows a footprint, so deciding it moves no bank's scope under another journey."""
+
+    platform_agent: str
+    platform_versions: tuple[int, ...]
+    confirming_agent: str
+    tenant_agent: str
+    tenant_slug: str
+    scope: dict[str, list[str]]
+    monthly_cap: Decimal
+    currency: str
+    month_costs: tuple[Decimal, ...]
+    earlier_costs: tuple[Decimal, ...]
+    batch_title: str
+    batch_term: str
+    batch_source: str
+    batch_obligations: tuple[str, ...]
+    batch_proposer_email: str
+    updated_by_email: str
+
+
+# The prototype's weekly run costs (prototype_data.json `agent_runs`), and a cap one more
+# such run would pass.
+EXPECTED_CHUNK11 = SeedChunk11(
+    platform_agent="watch-sweeper",
+    platform_versions=(1, 2),
+    confirming_agent=CONFIRMING_AGENT,
+    tenant_agent="tenant-source-watch",
+    tenant_slug=TENANT_A_SLUG,
+    scope={"jurisdictions": ["se", "dk"]},
+    monthly_cap=Decimal("7.00"),
+    currency="EUR",
+    month_costs=(Decimal("2.1000"), Decimal("1.8500"), Decimal("2.3000")),
+    earlier_costs=(Decimal("1.9500"), Decimal("2.0500")),
+    batch_title="Add the reporting stage to twelve obligations whose duty ends in a report",
+    batch_term="lifecycle_stage:reporting",
+    batch_source="https://www.fi.se/en/our-registers/reporting/",
+    # Twelve obligations without the term, none with a proposal of its own waiting on its
+    # scope, and not the advice-only one J-6 hides.
+    batch_obligations=(
+        "obl-dk-csd-registration",
+        "obl-dora-ict-register",
+        "obl-esma-warnings",
+        "obl-gdpr-article-22",
+        "obl-idd-demands-needs",
+        "obl-isk-approved-assets",
+        "obl-no-suitability",
+        "obl-pension-transfer-right",
+        "obl-priips-kid",
+        "obl-product-governance",
+        "obl-suitability",
+        "obl-switch-documentation",
+    ),
+    batch_proposer_email="editor2@bleqq.test",
+    updated_by_email="admin@example-bank.test",
+)
+# Fixed ids, so a reseed finds each run rather than opening another.
+C11_PLATFORM_RUNS: tuple[uuid.UUID, ...] = tuple(uuid.UUID(f"00000000-0000-4000-8000-00000c110{n:03d}") for n in range(3))
+C11_TENANT_RUNS: tuple[uuid.UUID, ...] = tuple(
+    uuid.UUID(f"00000000-0000-4000-8000-00000c111{n:03d}")
+    for n in range(len(EXPECTED_CHUNK11.month_costs) + len(EXPECTED_CHUNK11.earlier_costs))
+)
+C11_RUN_MINUTES = 14
+
+
+def c11_run_starts(now: datetime.datetime) -> tuple[list[datetime.datetime], list[datetime.datetime]]:
+    """The start of each of tenant A's runs of this month and of the month before, newest
+    first, at midnight in its zone: never after `now`, and never on the other side of the
+    first of the month from where `month_costs` and `earlier_costs` say."""
+    zone = ZoneInfo(TENANT_A.timezone)
+    today = now.astimezone(zone).date()
+    first = today.replace(day=1)
+
+    def midnight(day: datetime.date) -> datetime.datetime:
+        return datetime.datetime.combine(day, datetime.time(0, 0), tzinfo=zone)
+
+    this_month = [midnight(max(today - datetime.timedelta(weeks=n), first)) for n in range(len(EXPECTED_CHUNK11.month_costs))]
+    earlier = [midnight(first - datetime.timedelta(weeks=n + 1)) for n in range(len(EXPECTED_CHUNK11.earlier_costs))]
+    return this_month, earlier
+
+
+def _c11_run(pk: uuid.UUID, started: datetime.datetime, now: datetime.datetime, **fields: Any) -> None:  # compliance: allow-kwargs one run's columns
+    """One closed run, found by its fixed id or opened once, then dated from the clock: the
+    date is the one column a reseed on another day moves, and `update()` leaves every other
+    column, `updated_at`s included, as it was."""
+    AgentRun.objects.get_or_create(pk=pk, defaults={"status": RunStatus.SUCCEEDED.value, "pipeline_version": "0.4", **fields})
+    AgentRun.objects.filter(pk=pk).update(started_at=started, finished_at=min(started + datetime.timedelta(minutes=C11_RUN_MINUTES), now))
+
+
+def seed_chunk11_agents(tenants: list[Tenant], now: datetime.datetime | None = None) -> None:
+    """The chunk 11 rows (EXPECTED_CHUNK11), anchored to `now` (the real clock unless a test
+    moves it). Idempotent: a reseed on the same clock changes nothing, and on another day it
+    moves the runs' dates and the next run and nothing else."""
+    now = now or datetime.datetime.now(datetime.UTC)
+    spec = EXPECTED_CHUNK11
+    seed_agent_definitions()
+    tenancy.clear_tenant()
+
+    # AGT-S4: the sweeper at two versions, a scheduled platform run on each, and one of the
+    # confirmer, so the console lists runs no bank owns.
+    first_version = _agent(spec.platform_agent).versions.get(version_number=spec.platform_versions[0])
+    second_version = publish_e2e_version(
+        key=spec.platform_agent,
+        version_no=spec.platform_versions[1],
+        change_note="Version 1's prompt and tools, published again so the journeys find a version history.",
+    )
+    confirmer = _agent(spec.confirming_agent)
+    zone = ZoneInfo(TENANT_A.timezone)
+    today = datetime.datetime.combine(now.astimezone(zone).date(), datetime.time(0, 0), tzinfo=zone)
+    with tenancy.platform_zone():
+        for pk, agent, version, weeks, cost in (
+            (C11_PLATFORM_RUNS[0], _agent(spec.platform_agent), first_version, 3, Decimal("3.4000")),
+            (C11_PLATFORM_RUNS[1], _agent(spec.platform_agent), second_version, 1, Decimal("3.1500")),
+            (C11_PLATFORM_RUNS[2], confirmer, confirmer.versions.get(version_number=confirmer.current_version), 1, Decimal("0.9200")),
+        ):
+            _c11_run(
+                pk, today - datetime.timedelta(weeks=weeks), now,
+                agent=agent, agent_version=version, trigger=RunTrigger.SCHEDULE.value, model=version.model, cost=cost,
+                stats={"modelCalls": 18, "fetches": 40, "sourcesChecked": 12, "changesRegistered": 2, "proposalsSubmitted": 1},
+            )
+
+    # AGT-S5, AGT-S6: tenant A's own agent, its runs and its one cap. Tenant B gets none.
+    tenant = next(t for t in tenants if t.slug == spec.tenant_slug)
+    tenancy.activate(tenant.id)
+    admin = User.objects.get(email=spec.updated_by_email)
+    definition = _agent(spec.tenant_agent)
+    this_month, earlier = c11_run_starts(now)
+    tenant_agent, created = TenantAgent.objects.get_or_create(
+        tenant=tenant,
+        agent=definition,
+        defaults={"enabled": True, "cadence": AgentCadence.WEEKLY.value, "run_hour": 0, "scope": spec.scope, "updated_by": admin},
+    )
+    TenantAgent.objects.filter(pk=tenant_agent.pk).update(next_run_at=this_month[0] + datetime.timedelta(weeks=1))
+    budget, budget_created = TenantAgentBudget.objects.get_or_create(
+        tenant=tenant, defaults={"monthly_cap": spec.monthly_cap, "currency": spec.currency, "updated_by": admin}
+    )
+    if created:
+        record(
+            action="tenant_agent.seeded", actor=SEED_ACTOR, subject_type="tenant_agent", subject_id=tenant_agent.pk,
+            subject_title=definition.key, summary="Seeded for E2E journeys.", tenant_id=tenant.id,
+            after={"agent": definition.key, "enabled": True, "cadence": AgentCadence.WEEKLY.value, "scope": spec.scope},
+        )
+    if budget_created:
+        record(
+            action="tenant_agent_budget.seeded", actor=SEED_ACTOR, subject_type="tenant_agent_budget", subject_id=budget.pk,
+            subject_title=tenant.slug, summary="Seeded for E2E journeys.", tenant_id=tenant.id,
+            after={"monthlyCap": str(spec.monthly_cap), "currency": spec.currency},
+        )
+    version = definition.versions.get(version_number=definition.current_version)
+    for pk, started, cost in zip(C11_TENANT_RUNS, [*this_month, *earlier], [*spec.month_costs, *spec.earlier_costs], strict=True):
+        _c11_run(
+            pk, started, now,
+            agent=definition, agent_version=version, tenant_agent=tenant_agent, trigger=RunTrigger.SCHEDULE.value,
+            model=version.model, scope=spec.scope, cost=cost, tokens_in=41_000, tokens_out=3_200,
+            stats={"modelCalls": 6, "fetches": 9, "sourcesChecked": 4},
+        )
+
+    # PRO-S8: the open re-tag, through the one function that files a batch.
+    tenancy.clear_tenant()
+    if Proposal.objects.filter(is_batch=True, title=spec.batch_title, status=ProposalStatus.OPEN.value).exists():
+        return
+    editor = User.objects.get(email=spec.batch_proposer_email)
+    proposal_batch.create_batch(
+        kind=ProposalKind.OBLIGATION_SCOPE.value,
+        title=spec.batch_title,
+        payload=ObligationScopePayload(
+            changes=[
+                ObligationScopeChange(obligation_id=_obligation_id(key), add=[spec.batch_term], remove=[], source=spec.batch_source)
+                for key in spec.batch_obligations
+            ]
+        ),
+        proposer=Proposer(actor=Actor(kind=ActorType.USER, id=editor.id, label=editor.name), user=editor),
+        source_label="Finansinspektionen, reporting",
+        source_url=spec.batch_source,
+    )
+# --- end c11-e2e-seed -------------------------------------------------------------------------
+
+
 def seed_e2e() -> dict[str, int]:
     """Run the whole seed. Returns counts the command prints and the guard asserts."""
     refuse_when_deployed()
@@ -1769,6 +1984,10 @@ def seed_e2e() -> dict[str, int]:
         library = load_library()
         # lib-standard-e2e-seed: the one standard, added to the counts the command prints.
         for name, count in load_library(E2E_STANDARD).items():
+            library[name] += count
+        # acc-e2e-seed (J-11): the product types, then the trading and card duties that carry them.
+        seed_taxonomy_terms(list(EXPECTED_J11.terms))
+        for name, count in load_library(E2E_TRADING).items():
             library[name] += count
         # std-journeys: the standard's term on, so FP-S16 can follow it (E2E_STANDARD_TERM).
         switch_on_term(*E2E_STANDARD_TERM)
@@ -1807,6 +2026,12 @@ def seed_e2e() -> dict[str, int]:
         case_journeys = seed_case_journeys(tenants)
         seed_watched_market_change()
         seed_standard_change()
+        # c8-seed-org-register: after the logins and chunk 5's links.
+        seed_org_register(tenants)
+        # c11-e2e-seed: after the logins and the platform runs, before the search index.
+        seed_chunk11_agents(tenants)
+        # acc-e2e-seed: a reseed leaves no entry of tenant A reaching its register (ACC-08).
+        switch_reach_off()
 
         # INV-S14, after the logins: the re-verification names a seeded library editor.
         machine_confirmed = seed_machine_confirmed()
@@ -2223,3 +2448,704 @@ def _seed_record(case: ChangeCase, action: str, after: dict[str, Any], before: d
         after=after,
     )
 # --- end c9-e2e-seed ----------------------------------------------------------------------------
+
+
+# --- c8-seed-org-register (TEN-02, TEN-03, TEN-05, HOM-05, REG-01 to REG-05) -------------
+# Each bank's organisation and register, from the prototype fixture (`tenant`,
+# `tenant_obligations`, `gaps`, `internal_links`) and the organisation card
+# (design/screens/admin-organisation.html). People are named by their login's email; an
+# org unit, a team or an obligation by its name, key or stable key. Dates are day offsets
+# from the bank's local today, and every timestamp is that day at `SEED_WALL_TIME`.
+SEED_WALL_TIME = datetime.time(9, 0)
+
+
+@dataclass(frozen=True)
+class SeedOrgUnit:
+    name: str
+    kind: str
+    parent: str | None = None
+    org_number: str = ""
+    entity_term: str | None = None
+    head: str | None = None
+
+
+@dataclass(frozen=True)
+class SeedLicence:
+    org_unit: str
+    licence_type: str
+    scope_note: str
+    services: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class SeedProduct:
+    name: str
+    org_unit: str
+    status: str
+    owner: str
+    terms: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class SeedTeam:
+    key: str
+    labels: dict[str, str]
+    org_unit: str | None
+    members: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class SeedEntry:
+    obligation: str
+    applicability: str
+    reason: str
+    status: str
+    risk: str
+    owner: str | None
+    contact: str
+    process: str
+    system: str
+    evidence: str
+    review_in_days: int
+    status_note: str = ""
+    owner_team: str | None = None
+
+
+@dataclass(frozen=True)
+class SeedEntityScope:
+    obligation: str
+    org_unit: str
+    status: str
+    risk: str
+    owner: str
+    process: str
+    system: str
+    evidence: str
+    review_in_days: int
+    status_note: str = ""
+
+
+@dataclass(frozen=True)
+class SeedAssessment:
+    obligation: str
+    days_ago: int
+    method: str
+    status: str
+    risk: str
+    rationale: str
+    assessed_by: str
+
+
+@dataclass(frozen=True)
+class SeedReading:
+    obligation: str
+    version_number: int
+    days_ago: int
+    body: str
+    author: str
+
+
+@dataclass(frozen=True)
+class SeedGap:
+    obligation: str
+    title: str
+    description: str
+    severity: str
+    source: str
+    status: str
+    owner: str
+    identified_by: str
+    identified_days_ago: int
+    target_in_days: int
+    remediation: str = ""
+
+
+@dataclass(frozen=True)
+class SeedInternalItem:
+    kind: str
+    name: str
+    reference: str
+    owner: str
+    linked_to: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class SeedOrgRegister:
+    tenant_slug: str
+    units: tuple[SeedOrgUnit, ...]
+    licences: tuple[SeedLicence, ...]
+    products: tuple[SeedProduct, ...]
+    teams: tuple[SeedTeam, ...]
+    entries: tuple[SeedEntry, ...]
+    entity_scopes: tuple[SeedEntityScope, ...]
+    assessments: tuple[SeedAssessment, ...]
+    readings: tuple[SeedReading, ...]
+    gaps: tuple[SeedGap, ...]
+    items: tuple[SeedInternalItem, ...]
+
+
+_SARA = "compliance_officer@example-bank.test"
+_JOHAN = "owner@example-bank.test"
+_MARIA = "approver@example-bank.test"
+
+# The rows the chunk 8 journeys name, so the guard and the journeys read one value.
+# J-9 (HOM-S13): the owner's overdue review, and the obligation whose change an independent
+# agent confirmed (chunk 5's WAT-S6 link, which counts for My work under D-97).
+J9_OWNER = _JOHAN
+J9_OVERDUE_OBLIGATION = "obl-research-payments"
+J9_CHANGED_OBLIGATION = CONFIRMED_LINK_OBLIGATION
+# HOM-S9, HOM-S13, TEN-S8: the department its head sees, and its team.
+RETAIL_DEPARTMENT = "Retail Banking"
+RETAIL_TEAM = "retail_compliance"
+# TEN-S5: the member the journey removes, who owns register work.
+LEAVER = "leaver@example-bank.test"
+# REG-S3: the obligation kept per legal entity, with a different status on each.
+SPANNING_OBLIGATION = "obl-product-governance"
+# REG-S7: the obligation assessed twice over a year, read in two versions.
+HISTORY_OBLIGATION = "obl-appropriateness"
+# REG-01: the obligation that does not apply, with the status it had before kept.
+NOT_APPLYING_OBLIGATION = "obl-gdpr-article-22"
+
+
+# --- acc-e2e-seed (ACC-01, ACC-02, ACC-04, ACC-07, ACC-08, J-11): the trading world ----------
+@dataclass(frozen=True)
+class SeedJ11:
+    """What J-11 reads in tenant A: a Trading department whose products derive the scope
+    an agent access entry is narrowed to (ACC-02), the card issuing department beside it,
+    both inside the bank's footprint; the bank's decisions on two trading duties (ACC-04);
+    a duty only a card issuer carries, which a Trading entry answers 404 for and names as
+    outside its scope by the card issuing term's label (ACC-07). The journey registers the
+    entry itself, so the seed holds none, and reach starts off (ACC-08)."""
+
+    tenant_slug: str
+    terms: tuple[dict[str, Any], ...]
+    footprint: tuple[str, ...]
+    department: str
+    team: str
+    products: tuple[str, ...]
+    order_routing_product: str
+    card_department: str
+    card_product: str
+    trading_obligations: tuple[str, ...]
+    card_obligation: str
+    outside_scope_term: str
+    outside_scope_label: str
+
+
+# The product types no deployed library holds yet: E2E only, filed by seed_e2e.
+_J11_TERM_NOTE = "E2E only: the product types J-11's trading and card products carry."
+EXPECTED_J11 = SeedJ11(
+    tenant_slug=TENANT_A_SLUG,
+    terms=(
+        {"dimension": "product_type", "key": "shares", "label_en": "Shares", "label_sv": "Aktier", "sort_order": 1, "usage_note": _J11_TERM_NOTE},
+        {"dimension": "product_type", "key": "derivatives", "label_en": "Derivatives", "label_sv": "Derivat", "sort_order": 2, "usage_note": _J11_TERM_NOTE},
+        {"dimension": "product_type", "key": "cards", "label_en": "Cards", "label_sv": "Kort", "sort_order": 3, "usage_note": _J11_TERM_NOTE},
+        # acc-summary-j11: the licence Trading's products are sold under.
+        {"dimension": "licensed_activity", "key": "investment_services", "label_en": "Investment services", "label_sv": "Investeringstjänster", "sort_order": 3, "usage_note": "E2E only: the licence J-11's Trading department sells under."},
+    ),
+    footprint=("product_type:shares", "product_type:derivatives", "product_type:cards", "licensed_activity:card_issuing", "licensed_activity:investment_services"),
+    department="Trading",
+    team="trading",
+    products=("Equity derivatives", "Cash equities", "Smart order routing"),
+    order_routing_product="Smart order routing",
+    card_department="Cards and payments",
+    card_product="Consumer debit card",
+    trading_obligations=("obl-trading-order-routing-best-result", "obl-trading-algo-pre-trade-controls"),
+    card_obligation="obl-cards-interchange-caps",
+    outside_scope_term="licensed_activity:card_issuing",
+    outside_scope_label="Card issuing",
+)
+E2E_TRADING = Path(__file__).resolve().parents[1] / "library" / "fixtures" / "e2e_trading.json"
+# --- end acc-e2e-seed constants ------------------------------------------------------------
+
+EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
+    SeedOrgRegister(
+        tenant_slug=TENANT_A_SLUG,
+        units=(
+            SeedOrgUnit("Example Group", "group"),
+            SeedOrgUnit("Example Bank AB", "legal_entity", "Example Group", "556000-0001", "legal_entity:bank"),
+            SeedOrgUnit("Example Liv Försäkring AB", "legal_entity", "Example Group", "516000-0002", "legal_entity:insurer"),
+            SeedOrgUnit("Example Fonder AB", "legal_entity", "Example Group", "556000-0003", "legal_entity:fund_company"),
+            SeedOrgUnit(RETAIL_DEPARTMENT, "business_area", "Example Bank AB", head="head@example-bank.test"),
+            SeedOrgUnit("Cards and payments", "business_unit", RETAIL_DEPARTMENT, head="owner-approver@example-bank.test"),
+            SeedOrgUnit("Risk control", "function", "Example Group", head=_SARA),
+            # acc-e2e-seed (J-11): the department a trading agent access entry is narrowed to.
+            SeedOrgUnit(EXPECTED_J11.department, "business_area", "Example Bank AB"),
+        ),
+        licences=(
+            SeedLicence("Example Bank AB", "legal_entity:bank", "Banking business", ("service_type:custody",)),
+            SeedLicence(
+                "Example Bank AB",
+                "legal_entity:investment_firm",
+                "Securities business, LVM 2 kap.",
+                ("service_type:advice", "service_type:non_advised", "service_type:execution_only", "service_type:portfolio_management"),
+            ),
+            SeedLicence("Example Liv Försäkring AB", "legal_entity:insurer", "Life insurance business"),
+            SeedLicence("Example Liv Försäkring AB", "legal_entity:insurer", "Insurance distribution", ("service_type:insurance_distribution",)),
+            SeedLicence("Example Fonder AB", "legal_entity:fund_company", "Fund operations, LVF", ("service_type:portfolio_management",)),
+        ),
+        products=(
+            SeedProduct(
+                "Self-directed trading",
+                "Example Bank AB",
+                "live",
+                _JOHAN,
+                ("account_type:isk", "account_type:af", "account_type:depa", "service_type:non_advised", "service_type:execution_only", "service_type:custody"),
+            ),
+            SeedProduct("Guided investing", "Example Bank AB", "planned", _JOHAN, ("account_type:isk", "service_type:advice", "service_type:portfolio_management")),
+            SeedProduct("Kapitalförsäkring", "Example Liv Försäkring AB", "live", _JOHAN, ("account_type:kf", "service_type:insurance_distribution", "service_type:advice")),
+            SeedProduct("Pension insurance", "Example Liv Försäkring AB", "live", _SARA, ("account_type:pension", "service_type:insurance_distribution", "service_type:advice")),
+            # acc-e2e-seed (J-11): Trading's three products and card issuing's one.
+            SeedProduct("Equity derivatives", EXPECTED_J11.department, "live", _SARA, ("product_type:derivatives", "service_type:execution_only", "licensed_activity:investment_services")),
+            SeedProduct("Cash equities", EXPECTED_J11.department, "live", _SARA, ("product_type:shares", "service_type:execution_only", "licensed_activity:investment_services")),
+            SeedProduct(
+                EXPECTED_J11.order_routing_product, EXPECTED_J11.department, "planned", _SARA,
+                ("product_type:shares", "product_type:derivatives", "service_type:execution_only"),
+            ),
+            SeedProduct(EXPECTED_J11.card_product, EXPECTED_J11.card_department, "live", _SARA, ("product_type:cards", "licensed_activity:card_issuing")),
+        ),
+        teams=(
+            SeedTeam(
+                RETAIL_TEAM,
+                {"en": "Retail compliance", "sv": "Compliance privatmarknad"},
+                RETAIL_DEPARTMENT,
+                (_JOHAN, "contributor@example-bank.test", "sv-member@example-bank.test", _SARA),
+            ),
+            SeedTeam("cards", {"en": "Cards", "sv": "Kort"}, "Cards and payments", ("owner-approver@example-bank.test", "admin@example-bank.test", "contributor@example-bank.test")),
+            SeedTeam("legal", {"en": "Legal", "sv": "Juridik"}, "Risk control", ("reader@example-bank.test", _MARIA)),
+            # acc-e2e-seed (J-11): the team that answers for the trading agent and its duties.
+            SeedTeam(EXPECTED_J11.team, {"en": "Trading", "sv": "Handel"}, EXPECTED_J11.department, ()),
+        ),
+        entries=(
+            SeedEntry(
+                HISTORY_OBLIGATION, "applies", "We offer execution in complex instruments in digital channels.", "compliant", "high",
+                _JOHAN, _MARIA, "Digital trading onboarding", "Knowledge test service", "Test result store", 76,
+            ),
+            SeedEntry(
+                "obl-suitability", "applies", "Advised services are offered in branch and private banking.", "compliant", "high",
+                None, _MARIA, "Investment advice", "Advice tool", "Suitability report per session", 76, owner_team=RETAIL_TEAM,
+            ),
+            SeedEntry(
+                "obl-esma-warnings", "applies", "Warnings are shown in the digital order flow.", "gap", "medium",
+                _JOHAN, _MARIA, "Digital trading onboarding", "Order flow", "Order flow release notes", 19,
+                status_note="The warning can be dismissed with one tap and the choice is not logged.",
+            ),
+            SeedEntry(
+                "obl-costs-charges", "applies", "Applies to all securities services to retail clients.", "partly_compliant", "medium",
+                _SARA, _MARIA, "Order flow and annual statements", "Cost engine", "Ex ante and ex post statements", 19,
+                status_note="Currency exchange cost is missing from the ex ante view for foreign shares.",
+            ),
+            SeedEntry(
+                J9_OVERDUE_OBLIGATION, "applies", "External research is bought for house view and model portfolios.", "not_assessed", "medium",
+                _JOHAN, _MARIA, "Research procurement", "", "Research budget decisions", -5, status_note="New version not yet assessed.",
+            ),
+            SeedEntry(
+                SPANNING_OBLIGATION, "applies", "We both manufacture and distribute instruments.", "partly_compliant", "medium",
+                _SARA, _MARIA, "Product approval", "Product register", "Target market decisions and reviews", 127,
+            ),
+            SeedEntry(
+                "obl-client-assets", "applies", "Custody is part of every account.", "compliant", "high",
+                _SARA, _MARIA, "Custody operations", "Securities ledger", "Reconciliation reports", 50,
+            ),
+            SeedEntry(
+                "obl-isk-approved-assets", "applies", "Every ISK holds only instruments the eligibility flag allows.", "compliant", "medium",
+                LEAVER, _MARIA, "Instrument set-up", "Instrument master data", "Eligibility flag per instrument", 156,
+            ),
+            SeedEntry(
+                "obl-isk-control-statements", "applies", "We report standard income for every ISK we keep.", "compliant", "medium",
+                LEAVER, _MARIA, "Year-end tax reporting", "Tax reporting engine", "Submitted control statements", 75,
+            ),
+            SeedEntry(
+                "obl-priips-kid", "applies", "Kapitalförsäkring is a packaged insurance-based investment product.", "compliant", "low",
+                LEAVER, _MARIA, "Insurance sales", "Document service", "Delivery log", 227,
+            ),
+            SeedEntry(
+                "obl-switch-documentation", "applies", "Sanction practice shows this is enforced for assets inside insurance wrappers.", "compliant", "high",
+                _JOHAN, _MARIA, "Insurance advice", "Advice tool", "Switch cost-benefit notes", 152,
+            ),
+            SeedEntry(
+                J9_CHANGED_OBLIGATION, "applies", "Includes AI coding tools and model providers used in delivery.", "partly_compliant", "medium",
+                _JOHAN, _MARIA, "Third-party risk management", "Supplier register", "Register of information", 36,
+                status_note="AI coding tools and model providers are not yet in the register.",
+            ),
+            SeedEntry(
+                NOT_APPLYING_OBLIGATION, "does_not_apply",
+                "A person reviews every appropriateness outcome before it takes effect, so no decision is solely automated.",
+                "partly_compliant", "medium", _SARA, _MARIA, "Digital trading onboarding", "Knowledge test service", "Review log", 6,
+            ),
+            # acc-e2e-seed (J-11): the decisions a Trading entry reads when reach is on. Each
+            # reason is one sentence, so the mock model quotes it whole (the J-11 summary).
+            SeedEntry(
+                EXPECTED_J11.trading_obligations[0], "applies", "We route retail and professional client orders in shares and derivatives to other brokers for execution.",
+                "compliant", "high", None, _MARIA, "Order routing", "Smart order router", "Venue and broker quality reviews", 140,
+                owner_team=EXPECTED_J11.team,
+            ),
+            SeedEntry(
+                EXPECTED_J11.trading_obligations[1], "applies", "Our trading desk runs algorithms that enter orders on trading venues.",
+                "partly_compliant", "medium", None, _MARIA, "Algorithmic trading", "Pre-trade risk gateway", "Limit configuration log", 110,
+                status_note="Maximum message limits are not yet set for the newest venue.", owner_team=EXPECTED_J11.team,
+            ),
+        ),
+        entity_scopes=(
+            SeedEntityScope(
+                SPANNING_OBLIGATION, "Example Bank AB", "compliant", "medium", _SARA,
+                "Product approval", "Product register", "Target market decisions and reviews", 127,
+            ),
+            SeedEntityScope(
+                SPANNING_OBLIGATION, "Example Fonder AB", "partly_compliant", "medium", _JOHAN,
+                "Fund launch approval", "Fund register", "Fund target market decisions", 35,
+                status_note="Negative target markets are not yet set for the two newest funds.",
+            ),
+        ),
+        assessments=(
+            SeedAssessment(
+                HISTORY_OBLIGATION, 330, "self_assessment", "partly_compliant", "high",
+                "The knowledge test covers most complex instruments, but warrants and certificates are not yet in it.", _JOHAN,
+            ),
+            SeedAssessment(
+                HISTORY_OBLIGATION, 30, "second_line_review", "compliant", "high",
+                "Every complex instrument now triggers the knowledge test, and the sampled orders all show a stored result.", _SARA,
+            ),
+            SeedAssessment(
+                NOT_APPLYING_OBLIGATION, 200, "self_assessment", "partly_compliant", "medium",
+                "Safeguards exist, but the right to a human review is not described to the client.", _SARA,
+            ),
+        ),
+        readings=(
+            SeedReading(
+                HISTORY_OBLIGATION, 1, 330,
+                "Complex instruments are those ESMA lists; we read warrants as outside the list until FI says otherwise.", _JOHAN,
+            ),
+            SeedReading(
+                HISTORY_OBLIGATION, 2, 30,
+                "Every instrument outside the non-complex list in FFFS 2017:2 is complex for us, warrants and certificates included.", _SARA,
+            ),
+            # acc-e2e-seed (J-11): how the bank reads each trading duty.
+            SeedReading(
+                EXPECTED_J11.trading_obligations[0], 1, 90,
+                "Every order the smart order router passes to another broker is a routed order, including orders split across brokers.", _SARA,
+            ),
+            SeedReading(
+                EXPECTED_J11.trading_obligations[1], 1, 90,
+                "The smart order router is an algorithm for us, so its orders pass the same pre-trade controls as the desk's.", _SARA,
+            ),
+        ),
+        gaps=(
+            SeedGap(
+                "obl-esma-warnings", "The warning can be dismissed with one tap and the choice is not logged",
+                "ESMA expects warnings to be prominent and the client's choice to be recorded. Today the order flow lets the client tap past the warning, and nothing is stored.",
+                "medium", "assessment", "remediating", _JOHAN, _SARA, 36, 60,
+                remediation="Add a confirmation step to the order flow and store the client's choice with the order.",
+            ),
+            SeedGap(
+                J9_OVERDUE_OBLIGATION, "No documented research budget per strategy",
+                "The new rules allow joint payment for research and execution only with a documented budget and a yearly quality assessment. Neither exists yet.",
+                "medium", "change_case", "open", _JOHAN, _SARA, 15, 35,
+            ),
+            SeedGap(
+                "obl-costs-charges", "Currency exchange cost is missing from the ex ante view",
+                "The ex ante cost view for foreign shares leaves out the currency exchange cost the client pays on every order.",
+                "high", "assessment", "open", _SARA, _SARA, 20, 45,
+            ),
+            SeedGap(
+                "obl-isk-control-statements", "Corrections after the filing date are sent by hand",
+                "A corrected control statement after the filing date is keyed in by hand, and the corrections are not logged.",
+                "low", "audit", "open", LEAVER, _SARA, 40, 120,
+            ),
+        ),
+        items=(
+            SeedInternalItem("procedure", "Knowledge test in digital onboarding", "PRO-031", _JOHAN, (HISTORY_OBLIGATION,)),
+            SeedInternalItem("policy", "Investment advice", "POL-007", _SARA, ("obl-suitability",)),
+            SeedInternalItem("procedure", "Research procurement", "PRO-044", _JOHAN, (J9_OVERDUE_OBLIGATION,)),
+            SeedInternalItem("control", "Switch documentation sample test", "CTL-112", _JOHAN, ("obl-switch-documentation",)),
+            # REG-S8 links these two itself, so they wait here unlinked.
+            SeedInternalItem("policy", "Client asset policy", "POL-014", _SARA),
+            SeedInternalItem("control", "Daily reconciliation", "CTL-203", _SARA),
+            # acc-e2e-seed (J-11): one internal item on each trading duty.
+            SeedInternalItem("policy", "Order execution and routing policy", "POL-021", _SARA, (EXPECTED_J11.trading_obligations[0],)),
+            SeedInternalItem("control", "Pre-trade limit checks", "CTL-310", _SARA, (EXPECTED_J11.trading_obligations[1],)),
+        ),
+    ),
+    # Tenant B's small register (J-8): one entity, one team, two entries and a gap, so an
+    # isolation journey has something of the other bank's to be refused.
+    SeedOrgRegister(
+        tenant_slug=TENANT_B_SLUG,
+        units=(SeedOrgUnit("Second Bank A/S", "legal_entity", None, "DK-31000001", "legal_entity:bank", head="admin@second-bank.test"),),
+        licences=(SeedLicence("Second Bank A/S", "legal_entity:bank", "Banking licence", ("service_type:custody", "service_type:execution_only")),),
+        products=(SeedProduct("Online custody account", "Second Bank A/S", "live", "compliance_officer@second-bank.test", ("account_type:depa", "service_type:custody")),),
+        teams=(SeedTeam("aml_desk", {"en": "AML desk", "da": "Hvidvaskteam"}, "Second Bank A/S", ("compliance_officer@second-bank.test", "approver@second-bank.test")),),
+        entries=(
+            SeedEntry(
+                "obl-client-assets", "applies", "Every online account holds its securities in our custody.", "partly_compliant", "high",
+                "compliance_officer@second-bank.test", "approver@second-bank.test", "Custody", "Depot system", "Reconciliation log", 40,
+                owner_team=None,
+            ),
+            SeedEntry(
+                "obl-costs-charges", "applies", "Execution-only trading for retail clients.", "compliant", "medium",
+                None, "approver@second-bank.test", "Order flow", "Trading platform", "Cost statements", 90, owner_team="aml_desk",
+            ),
+        ),
+        entity_scopes=(),
+        assessments=(),
+        readings=(),
+        gaps=(
+            SeedGap(
+                "obl-client-assets", "Reconciliation breaks are closed without a record",
+                "Daily breaks between the depot system and the custodian are corrected, but the correction is not recorded.",
+                "medium", "audit", "open", "compliance_officer@second-bank.test", "approver@second-bank.test", 10, 50,
+            ),
+        ),
+        items=(),
+    ),
+)
+def _at(today: datetime.date, days: int, tz: str) -> datetime.datetime:
+    """`days` from the bank's local today, at the seed's wall time in its zone."""
+    return datetime.datetime.combine(today + datetime.timedelta(days=days), SEED_WALL_TIME, ZoneInfo(tz))
+
+
+def _term(ref: str) -> Any:
+    return terms_logic.term_by_ref(*ref.split(":"))
+
+
+def _seeded(tenant: Tenant, subject_type: str, row: Any, title: str, after: dict[str, Any]) -> None:
+    """The one audit row each seeded row leaves: ids, keys and dates, never typed text."""
+    record(
+        action=f"{subject_type}.seeded",
+        actor=SEED_ACTOR,
+        subject_type=subject_type,
+        subject_id=row.id,
+        subject_title=title,
+        summary="Seeded for E2E journeys.",
+        tenant_id=tenant.id,
+        after=after,
+    )
+
+
+def _seed_organisation(tenant: Tenant, spec: SeedOrgRegister, people: dict[str, User]) -> dict[str, Any]:
+    """Units, licences, products and teams; each created once, found by its name on a reseed."""
+    units: dict[str, Any] = {}
+    for unit in spec.units:
+        row = OrgUnit.objects.filter(kind=unit.kind, name=unit.name).first()  # ordering: Meta.ordering; one per name
+        if row is None:
+            row = OrgUnit.objects.create(
+                tenant=tenant,
+                kind=unit.kind,
+                name=unit.name,
+                parent=units[unit.parent] if unit.parent else None,
+                org_number=unit.org_number,
+                country_code="SE" if tenant.slug == TENANT_A_SLUG else "DK",
+                entity_term=_term(unit.entity_term) if unit.entity_term else None,
+                head_user=people[unit.head] if unit.head else None,
+            )
+            _seeded(tenant, "org_unit", row, unit.name, {"kind": unit.kind, "parentId": str(row.parent_id) if row.parent_id else None})
+        units[unit.name] = row
+    authority = django_apps.get_model("library", "Authority").objects.get(
+        key="fi" if tenant.slug == TENANT_A_SLUG else "finanstilsynet-dk"
+    )
+    for licence in spec.licences:
+        if Licence.objects.filter(org_unit=units[licence.org_unit], scope_note=licence.scope_note).exists():
+            continue
+        licence_row = Licence.objects.create(
+            tenant=tenant,
+            org_unit=units[licence.org_unit],
+            authority=authority,
+            licence_type=_term(licence.licence_type),
+            scope_note=licence.scope_note,
+        )
+        for service in licence.services:
+            LicenceServiceTerm.objects.create(tenant=tenant, licence=licence_row, term=_term(service))
+        _seeded(tenant, "licence", licence_row, licence.scope_note, {"orgUnitId": str(licence_row.org_unit_id), "licenceType": licence.licence_type, "services": list(licence.services)})
+    for product in spec.products:
+        if TenantProduct.objects.filter(name=product.name).exists():
+            continue
+        product_row = TenantProduct.objects.create(
+            tenant=tenant, org_unit=units[product.org_unit], name=product.name, status=product.status, owner_user=people[product.owner]
+        )
+        for term in product.terms:
+            TenantProductTerm.objects.create(tenant=tenant, product=product_row, term=_term(term))
+        _seeded(tenant, "product", product_row, product.name, {"status": product.status, "terms": list(product.terms)})
+    teams: dict[str, Any] = {}
+    for team in spec.teams:
+        team_row = Team.objects.filter(key=team.key).first()  # ordering: unique per bank
+        if team_row is None:
+            tenant_lists_logic.create_row(list_name="team", tenant=tenant, actor=SEED_ACTOR, labels=team.labels, key=team.key)
+            team_row = Team.objects.get(key=team.key)
+            team_row.org_unit = units[team.org_unit] if team.org_unit else None
+            team_row.save(update_fields=["org_unit"])
+            _seeded(tenant, "team", team_row, f"team:{team.key}", {"orgUnitId": str(team_row.org_unit_id) if team_row.org_unit_id else None})
+        for email in team.members:
+            if not TeamMember.objects.filter(team=team_row, user=people[email]).exists():
+                member = TeamMember.objects.create(tenant=tenant, team=team_row, user=people[email])
+                _seeded(tenant, "team_member", member, f"team:{team.key}", {"team": team.key, "userId": str(member.user_id)})
+        teams[team.key] = team_row
+    return {"units": units, "teams": teams}
+
+
+def _seed_register(tenant: Tenant, spec: SeedOrgRegister, people: dict[str, User], org: dict[str, Any]) -> None:
+    """Entries, entity rows, history, readings, gaps and internal items. An entry already
+    there is left as it is, with everything seeded on it."""
+    today = datetime.datetime.now(ZoneInfo(tenant.timezone)).date()
+    decided_by = people["approver@example-bank.test" if tenant.slug == TENANT_A_SLUG else "approver@second-bank.test"]
+    fresh: dict[str, Any] = {}
+    for entry in spec.entries:
+        obligation_id = _obligation_id(entry.obligation)
+        if TenantObligation.objects.filter(obligation_id=obligation_id).exists():
+            continue
+        row = register_logic.ensure_register_entry(tenant_id=tenant.id, obligation_id=obligation_id, actor=SEED_ACTOR)
+        row.applicability = entry.applicability
+        row.applicability_reason = entry.reason
+        row.applicability_decided_at = _at(today, -20, tenant.timezone)
+        row.applicability_decided_by = decided_by
+        row.compliance_status = ComplianceStatus.objects.get(key=entry.status)
+        row.risk_rating = RiskRating.objects.get(key=entry.risk)
+        row.status_note = entry.status_note
+        row.first_line_owner = people[entry.owner] if entry.owner else None
+        row.compliance_contact = people[entry.contact]
+        row.owner_team = org["teams"][entry.owner_team] if entry.owner_team else None
+        row.process, row.system, row.evidence_location = entry.process, entry.system, entry.evidence
+        review = today + datetime.timedelta(days=entry.review_in_days)
+        row.next_review_date = review
+        row.save()
+        _seeded(tenant, "tenant_obligation", row, entry.obligation, {
+            "applicability": entry.applicability, "complianceStatus": entry.status, "riskRating": entry.risk,
+            "nextReviewDate": review.isoformat(),
+        })
+        fresh[entry.obligation] = row
+    for scope in spec.entity_scopes:
+        if scope.obligation not in fresh:
+            continue
+        scope_row = TenantObligationScope.objects.create(
+            tenant=tenant,
+            tenant_obligation=fresh[scope.obligation],
+            org_unit=org["units"][scope.org_unit],
+            applicability="applies",
+            applicability_reason=fresh[scope.obligation].applicability_reason,
+            applicability_decided_at=_at(today, -20, tenant.timezone),
+            applicability_decided_by=decided_by,
+            compliance_status=ComplianceStatus.objects.get(key=scope.status),
+            risk_rating=RiskRating.objects.get(key=scope.risk),
+            status_note=scope.status_note,
+            owner=people[scope.owner],
+            process=scope.process,
+            system=scope.system,
+            evidence_location=scope.evidence,
+            next_review_date=today + datetime.timedelta(days=scope.review_in_days),
+        )
+        _seeded(tenant, "tenant_obligation_scope", scope_row, scope.obligation, {"orgUnitId": str(scope_row.org_unit_id), "complianceStatus": scope.status})
+    for assessment in spec.assessments:
+        if assessment.obligation not in fresh:
+            continue
+        assessment_row = ComplianceAssessment.objects.create(
+            tenant=tenant,
+            tenant_obligation=fresh[assessment.obligation],
+            method=assessment.method,
+            status=ComplianceStatus.objects.get(key=assessment.status),
+            risk_rating=RiskRating.objects.get(key=assessment.risk),
+            rationale=assessment.rationale,
+            assessed_by=people[assessment.assessed_by],
+            assessed_at=_at(today, -assessment.days_ago, tenant.timezone),
+        )
+        _seeded(tenant, "compliance_assessment", assessment_row, assessment.obligation, {"method": assessment.method, "status": assessment.status})
+    for reading in spec.readings:
+        if reading.obligation not in fresh:
+            continue
+        later = [r for r in spec.readings if r.obligation == reading.obligation and r.version_number == reading.version_number + 1]
+        reading_row = Interpretation.objects.create(
+            tenant=tenant,
+            tenant_obligation=fresh[reading.obligation],
+            version_number=reading.version_number,
+            body=reading.body,
+            author=people[reading.author],
+            created_at=_at(today, -reading.days_ago, tenant.timezone),
+            superseded_at=_at(today, -later[0].days_ago, tenant.timezone) if later else None,
+        )
+        _seeded(tenant, "interpretation", reading_row, reading.obligation, {"versionNumber": reading.version_number})
+    for gap in spec.gaps:
+        if gap.obligation not in fresh:
+            continue
+        gap_row = Gap.objects.create(
+            tenant=tenant,
+            tenant_obligation=fresh[gap.obligation],
+            title=gap.title,
+            description=gap.description,
+            severity=RiskRating.objects.get(key=gap.severity),
+            source=GapSource.objects.get(key=gap.source),
+            status=GapStatus.objects.get(key=gap.status),
+            identified_by=people[gap.identified_by],
+            identified_at=_at(today, -gap.identified_days_ago, tenant.timezone),
+            owner=people[gap.owner],
+            target_date=today + datetime.timedelta(days=gap.target_in_days),
+            remediation=gap.remediation,
+        )
+        _seeded(tenant, "gap", gap_row, gap.obligation, {
+            "severity": gap.severity, "source": gap.source, "status": gap.status, "targetInDays": gap.target_in_days,
+        })
+    for item in spec.items:
+        kind = LinkKind.objects.get(key=item.kind)
+        item_row = InternalItem.objects.filter(kind=kind, name=item.name).first()  # ordering: unique per bank, kind and name
+        if item_row is None:
+            item_row = InternalItem.objects.create(tenant=tenant, kind=kind, name=item.name, reference=item.reference, owner_user=people[item.owner])
+            _seeded(tenant, "internal_item", item_row, item.name, {"kind": item.kind, "reference": item.reference})
+        for obligation in item.linked_to:
+            if obligation not in fresh:
+                continue
+            link = InternalLink.objects.create(
+                tenant=tenant,
+                tenant_obligation=fresh[obligation],
+                internal_item=item_row,
+                label=item.name,
+                external_ref=item.reference,
+                created_by=people[item.owner],
+                created_at=_at(today, -60, tenant.timezone),
+            )
+            _seeded(tenant, "internal_link", link, obligation, {"internalItemId": str(item_row.id), "externalRef": item.reference})
+
+
+def seed_org_register(tenants: list[Tenant]) -> None:
+    """Each bank's organisation and register, after the logins (every person named is a
+    member) and after chunk 5's links (J-9's changed obligation). Tenant rows only, each
+    with its audit row through record(); a reseed finds every row and writes nothing."""
+    people = {user.email: user for user in User.objects.filter(email__in=[login.email for login in SEED_LOGINS])}
+    for spec in EXPECTED_ORG_REGISTER:
+        tenant = next(t for t in tenants if t.slug == spec.tenant_slug)
+        tenancy.activate(tenant.id)
+        org = _seed_organisation(tenant, spec, people)
+        _seed_register(tenant, spec, people, org)
+    tenancy.clear_tenant()
+# --- end c8-seed-org-register -------------------------------------------------------------
+
+
+# --- acc-e2e-seed (ACC-08, J-11): reach off, for the seed and a journey's teardown ------------
+def switch_reach_off() -> int:
+    """Every agent access entry of tenant A stops reaching the bank's register: the seed's
+    state, and what J-11's teardown restores on failure too (`manage.py e2e_reach_off`).
+    One version bump and one audit row per entry switched; an entry already off is left
+    alone, so a reseed writes nothing. Refused when deployed. Returns the entries switched.
+
+    The tenant-wide switch of D-72 (`governance.TenantReach`) reads off while it has no
+    row, which is how a fresh E2E database starts; the package that lands it beside this
+    one extends this function to switch that row off too."""
+    refuse_when_deployed("e2e_reach_off")
+    tenant = Tenant.objects.get(slug=EXPECTED_J11.tenant_slug)
+    switched = 0
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        for entry in AgentAccess.objects.select_for_update().filter(tenant_reach=True):
+            entry.tenant_reach = False
+            entry.version += 1
+            entry.save(update_fields=["tenant_reach", "version"])
+            record(
+                action="agent_access.reach_switched_off",
+                actor=SEED_ACTOR,
+                subject_type="agent_access",
+                subject_id=entry.id,
+                subject_title=entry.name,
+                summary="Switched tenant reach off for this agent access entry.",
+                tenant_id=tenant.id,
+                before={"tenantReach": True},
+                after={"tenantReach": False},
+            )
+            switched += 1
+        tenancy.clear_tenant()
+    return switched
+# --- end acc-e2e-seed ----------------------------------------------------------------------

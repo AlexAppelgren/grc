@@ -118,6 +118,12 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # acc-entries-and-log (ACC-08): the access log row of an agent access credential's call,
+    # written after the response.
+    "apps.governance.access_log.AccessLogMiddleware",
+    # acc-what-applies (ACC-07): the scope statement on every answer to an agent access
+    # credential.
+    "apps.shared.agent_access_guard.ScopeStatementMiddleware",
     # Timing last so the measurement is the application's own time (playbook 10), not
     # the middleware stack above it.
     "apps.shared.middleware.ServerTimingMiddleware",
@@ -279,6 +285,49 @@ AGENT_RUNNER = env_str("AGENT_RUNNER", "mock")  # mock | managed_agents
 # The longest topic a research or re-tag request may carry, in characters: the text is a
 # bank's own (or the console's) and is validated at the boundary before anything reads it.
 AGENT_RESEARCH_TOPIC_MAX_CHARS = env_int("AGENT_RESEARCH_TOPIC_MAX_CHARS", 500)
+
+# --- c11-tenant-agents-budget-scope (AGT-04) ---------------------------------------------
+# Plan limits on a bank's own agents, until plans exist (R3): the most frequent cadence a
+# bank may set (`daily`, `weekly` or `monthly`; `manual` is always allowed), and how many
+# agents of its own a bank may add. The hour, in the bank's own time zone, a scheduled run
+# starts when the bank names none.
+AGENT_MIN_CADENCE = env_str("AGENT_MIN_CADENCE", "weekly")
+if AGENT_MIN_CADENCE not in ("daily", "weekly", "monthly"):
+    raise ImproperlyConfigured(f"AGENT_MIN_CADENCE must be daily, weekly or monthly, got {AGENT_MIN_CADENCE!r}")
+AGENTS_PER_TENANT_MAX = env_int("AGENTS_PER_TENANT_MAX", 3)
+AGENT_DEFAULT_RUN_HOUR = env_int("AGENT_DEFAULT_RUN_HOUR", 6)
+if not 0 <= AGENT_DEFAULT_RUN_HOUR <= 23:
+    raise ImproperlyConfigured(f"AGENT_DEFAULT_RUN_HOUR must be an hour from 0 to 23, got {AGENT_DEFAULT_RUN_HOUR}")
+
+# --- c11-scheduler (AGT-03, AGT-04, AGT-06) ----------------------------------------------
+# How often the two agent beats fire, in minutes: bleqq's (apps.agents.tasks.
+# run_platform_agents) and the banks' (schedule_tenant_agents). The most runs of bleqq's
+# agents one beat starts, so a beat never starts the whole library at once; the rest start
+# on the next beat. The most one run of a bank's own agent may spend, in EUR: a run starts
+# only when the month's spend plus this still fits under the bank's cap, and it is stored
+# on the run as its `budget_limit`.
+from decimal import Decimal, InvalidOperation  # noqa: E402 this block's own import, kept beside it
+
+AGENT_BEAT_INTERVAL_MINUTES = env_int("AGENT_BEAT_INTERVAL_MINUTES", 15)
+AGENT_RUNS_PER_BEAT = env_int("AGENT_RUNS_PER_BEAT", 5)
+AGENT_RUN_BUDGET_LIMIT = env_str("AGENT_RUN_BUDGET_LIMIT", "5.00")
+if AGENT_BEAT_INTERVAL_MINUTES < 1 or AGENT_RUNS_PER_BEAT < 1:
+    raise ImproperlyConfigured("AGENT_BEAT_INTERVAL_MINUTES and AGENT_RUNS_PER_BEAT must each be at least 1")
+try:
+    _run_budget_limit = Decimal(AGENT_RUN_BUDGET_LIMIT)
+except InvalidOperation:
+    _run_budget_limit = Decimal(0)
+if not (_run_budget_limit.is_finite() and Decimal(0) < _run_budget_limit < Decimal(100_000_000)):
+    raise ImproperlyConfigured(f"AGENT_RUN_BUDGET_LIMIT must be an amount in EUR above zero, got {AGENT_RUN_BUDGET_LIMIT!r}")
+CELERY_BEAT_SCHEDULE["agents-platform"] = {
+    "task": "apps.agents.tasks.run_platform_agents",
+    "schedule": AGENT_BEAT_INTERVAL_MINUTES * 60,
+}
+CELERY_BEAT_SCHEDULE["agents-tenant"] = {
+    "task": "apps.agents.tasks.schedule_tenant_agents",
+    "schedule": AGENT_BEAT_INTERVAL_MINUTES * 60,
+}
+
 MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp
 MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")
 MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")
@@ -767,6 +816,13 @@ BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200)
 EXPORT_RETENTION_DAYS = env_int("EXPORT_RETENTION_DAYS", 7)
 
 # ---------------------------------------------------------------------------------------
+# ===== c8-reg-applicability: REG-01, AC-REG1 many answers in one call (D-75) ============
+# The most applicability answers one confirmed call stores (POST /applicability). Each row
+# is a write and an audit event in one transaction, so the cap keeps a call inside the API
+# budget; a longer call is refused whole and stores nothing.
+REGISTER_BULK_MAX = env_int("REGISTER_BULK_MAX", 100)
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------
@@ -830,6 +886,35 @@ if min(AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS, AGENT_ACCESS_RATE_PER
     raise ImproperlyConfigured(
         "Refusing to boot: AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS and "
         "AGENT_ACCESS_RATE_PER_MINUTE must each be at least 1."
+    )
+# ===== acc-what-applies: what applies to a bank's own agent (ACC-06, ACC-07) =====
+# The longest description `POST /agent-access/what-applies` takes, in characters, and how
+# many words a footprint term's usage note must share with it to be named as outside the
+# entry's scope (a label matches when all its words are in the description).
+AGENT_ACCESS_DESCRIPTION_MAX_CHARS = env_int("AGENT_ACCESS_DESCRIPTION_MAX_CHARS", 2000)
+AGENT_ACCESS_NOTE_MATCH_WORDS = env_int("AGENT_ACCESS_NOTE_MATCH_WORDS", 2)
+if min(AGENT_ACCESS_DESCRIPTION_MAX_CHARS, AGENT_ACCESS_NOTE_MATCH_WORDS) < 1:
+    raise ImproperlyConfigured(
+        "Refusing to boot: AGENT_ACCESS_DESCRIPTION_MAX_CHARS and AGENT_ACCESS_NOTE_MATCH_WORDS must each be at least 1."
+    )
+# ===== acc-summary-j11: the drafted summary above what applies (ACC-06, ACC-09) =====
+# How long what-applies waits for the model before it answers the list without a summary
+# (`timeout`), how many of the list's first obligations the model is shown, and the
+# summary's own ceiling beneath LLM_MAX_TOKENS. The price of a model call in minor units
+# per million tokens (the provider's list price for LLM_MODEL, Verification_Log), which a
+# summary's cost on its AI log row is computed from and counted against the bank's
+# monthly cap on its own agents.
+WHAT_APPLIES_SUMMARY_DEADLINE_MS = env_int("WHAT_APPLIES_SUMMARY_DEADLINE_MS", 2000)
+WHAT_APPLIES_SUMMARY_FACTS = env_int("WHAT_APPLIES_SUMMARY_FACTS", 20)
+WHAT_APPLIES_SUMMARY_MAX_TOKENS = env_int("WHAT_APPLIES_SUMMARY_MAX_TOKENS", 400)
+LLM_PRICE_INPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_INPUT_MINOR_PER_MTOK", 500)
+LLM_PRICE_OUTPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_OUTPUT_MINOR_PER_MTOK", 2500)
+if min(WHAT_APPLIES_SUMMARY_DEADLINE_MS, WHAT_APPLIES_SUMMARY_FACTS, WHAT_APPLIES_SUMMARY_MAX_TOKENS) < 1 or min(
+    LLM_PRICE_INPUT_MINOR_PER_MTOK, LLM_PRICE_OUTPUT_MINOR_PER_MTOK
+) < 0:
+    raise ImproperlyConfigured(
+        "Refusing to boot: WHAT_APPLIES_SUMMARY_DEADLINE_MS, WHAT_APPLIES_SUMMARY_FACTS and "
+        "WHAT_APPLIES_SUMMARY_MAX_TOKENS must each be at least 1, and the LLM prices at least 0."
     )
 
 # ---------------------------------------------------------------------------------------

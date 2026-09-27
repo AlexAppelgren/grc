@@ -226,6 +226,7 @@
   "admin.aiLog.purpose.link_suggestion": "Förslag på koppling",
   "admin.aiLog.purpose.translation": "Översättning",
   "admin.aiLog.purpose.answer": "Svar från Fråga",
+  "admin.aiLog.purpose.what_applies": "Sammanfattning av vad som gäller",
   "admin.aiLog.review.draft": "Inte granskat ännu",
   "admin.aiLog.review.confirmed": "Bekräftat",
   "admin.aiLog.review.edited": "Omskrivet",

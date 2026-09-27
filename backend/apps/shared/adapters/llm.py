@@ -86,14 +86,17 @@ class LlmAdapter(ABC):
     name: str
 
     @abstractmethod
-    def stream(self, *, system: str, prompt: str, max_tokens: int) -> Iterator[str | Completion]:
+    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
         """Yield each text delta as it arrives, then one `Completion` carrying the whole
         answer, its usage and its stop reason. The `Completion` is always the last event;
         a stream that cannot end in one raises `LlmError` instead, and the deltas already
-        yielded are then not a whole answer: the caller never treats them as one."""
+        yielded are then not a whole answer: the caller never treats them as one.
 
-    def complete(self, *, system: str, prompt: str, max_tokens: int) -> Completion:
-        for event in self.stream(system=system, prompt=prompt, max_tokens=max_tokens):
+        `deadline_s` is a caller's own shorter deadline beneath `LLM_DEADLINE_S`, for a call
+        somebody waits on inside one request (what-applies' summary)."""
+
+    def complete(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Completion:
+        for event in self.stream(system=system, prompt=prompt, max_tokens=max_tokens, deadline_s=deadline_s):
             if isinstance(event, Completion):
                 return event
         raise LlmError("the model stream ended before the answer was complete")
@@ -136,7 +139,7 @@ class MockLlm(LlmAdapter):
     def asked_model(self) -> tuple[str, str]:
         return "mock", "0"
 
-    def stream(self, *, system: str, prompt: str, max_tokens: int) -> Iterator[str | Completion]:
+    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
         statements = [f"{_first_sentence(text)} [{number}]" for number, text in CONTEXT_LINE.findall(prompt)]
         for index, statement in enumerate(statements):
             yield statement if index == len(statements) - 1 else f"{statement} "
@@ -303,8 +306,9 @@ class AnthropicLlm(LlmAdapter):
     def asked_model(self) -> tuple[str, str]:
         return settings.LLM_MODEL, ANTHROPIC_API_VERSION
 
-    def stream(self, *, system: str, prompt: str, max_tokens: int) -> Iterator[str | Completion]:
-        deadline = time.monotonic() + settings.LLM_DEADLINE_S
+    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
+        limit = settings.LLM_DEADLINE_S if deadline_s is None else min(deadline_s, settings.LLM_DEADLINE_S)
+        deadline = time.monotonic() + limit
         body = {
             "model": settings.LLM_MODEL,
             # A setting is the ceiling, so no caller can spend more than the budget allows.
@@ -321,7 +325,7 @@ class AnthropicLlm(LlmAdapter):
         )
         # Never copied onto a redirected request, should an opener ever follow one.
         request.add_unredirected_header("x-api-key", self._api_key)
-        with self._open_with_retries(request, deadline) as response:
+        with self._open_with_retries(request, deadline, min(limit, settings.LLM_TIMEOUT_S)) as response:
             try:
                 yield from _read_events(response, deadline)
             except _UNREADABLE as exc:
@@ -329,13 +333,13 @@ class AnthropicLlm(LlmAdapter):
                 # deltas, and a second answer would be spliced onto the first.
                 raise LlmError(f"the model API sent a stream that could not be read ({type(exc).__name__})") from exc
 
-    def _open_with_retries(self, request: urllib.request.Request, deadline: float) -> Any:
+    def _open_with_retries(self, request: urllib.request.Request, deadline: float, timeout: float) -> Any:
         """Retries happen here, before the body starts, and nowhere else: a transient
         status, or a connection that failed, was reset or answered with a broken status."""
         attempt = 0
         while True:
             try:
-                return _open(request, settings.LLM_TIMEOUT_S)
+                return _open(request, timeout)
             except urllib.error.HTTPError as exc:
                 delay = _delay(attempt, exc.headers.get("retry-after"))
                 if exc.code not in RETRYABLE_STATUSES or not _may_retry(attempt, delay, deadline):
@@ -352,7 +356,7 @@ class AnthropicLlm(LlmAdapter):
 class BedrockLlm(LlmAdapter):
     name = "bedrock"
 
-    def stream(self, *, system: str, prompt: str, max_tokens: int) -> Iterator[str | Completion]:
+    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
         raise NotImplementedError("Bedrock provider lands when D-07's EU path is contracted")
 
 

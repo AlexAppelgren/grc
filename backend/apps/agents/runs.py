@@ -42,6 +42,7 @@ from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.utils import timezone
 
+from apps.agents import definitions
 from apps.agents.models import AgentRun, RunStatus
 from apps.agents.schemas import AgentRunFinish, AgentRunInput, AgentRunOut, AgentRunStats
 from apps.identity.models import ApiKey
@@ -157,7 +158,8 @@ def refuses_tenant_keys(view: F) -> F:
 def open_run(*, who: Principal, body: AgentRunInput, idempotency_key: str | None) -> AgentRunOut:
     """`POST /agent-runs`: open a run for the key's agent and return it.
 
-    A bank's key is refused here as well as at key creation (`refuse_tenant_key`).
+    A bank's key is refused here as well as at key creation (`refuse_tenant_key`). The run
+    pins the version it opens with (AGT-06); a later publish never moves it.
     """
     refuse_tenant_key(who)
     key, agent_id = _key_for(who, body.agent)
@@ -168,6 +170,8 @@ def open_run(*, who: Principal, body: AgentRunInput, idempotency_key: str | None
     with transaction.atomic():
         run = AgentRun.objects.create(
             agent_id=agent_id,
+            # Written once, here: the version this run runs, whatever is published later.
+            agent_version_id=definitions.version_to_run(agent_id),
             api_key=key,
             model=body.model,
             pipeline_version=body.pipeline_version,
