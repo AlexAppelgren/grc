@@ -95,4 +95,9 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/support-access/{grant_id}/approve", "tenants.SupportAccess", "support_access"),
     ("POST", "/tenant/support-access/{grant_id}/decline", "tenants.SupportAccess", "support_access"),
     ("POST", "/tenant/support-access/{grant_id}/revoke", "tenants.SupportAccess", "support_access"),
+    # c8-reg-units (REG-08): a Statement of Applicability unit, addressed by its id.
+    ("PATCH", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
+    ("DELETE", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
+    # c8-duty-occurrences (REG-07): a dated duty occurrence, addressed by its id.
+    ("POST", "/duty-occurrences/{occurrence_id}/complete", "register.DutyOccurrence", "duty_occurrence"),
 ]

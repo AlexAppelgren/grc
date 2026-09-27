@@ -206,7 +206,10 @@ class ParticipantLogic(ScenarioTestCase):
 
 
 class ParticipantRouteGates(TestCase):
-    def test_reading_needs_register_read_adding_register_edit_and_removal_is_the_logics(self) -> None:
+    def test_reading_and_leaving_need_register_read_and_adding_register_edit(self) -> None:
+        """Every write under /obligations carries a gate (ID-S21), so removal is gated on
+        `register.read`, which every participant held when added; the logic still asks
+        `register.edit` for anyone else's row (c8-ten-reassignment, on merging with ID-S21)."""
         routes = {op.operation_id: op for op in iter_operations(api) if "/participants" in op.path and op.path.startswith("/obligations/")}
         gates = {name: perms.gate_of(op.view_func) for name, op in routes.items()}
         self.assertEqual(
@@ -214,10 +217,10 @@ class ParticipantRouteGates(TestCase):
             {
                 "listObligationParticipants": ("permission", perms.REGISTER_READ),
                 "addObligationParticipant": ("permission", perms.REGISTER_EDIT),
-                "removeObligationParticipant": None,
+                "removeObligationParticipant": ("permission", perms.REGISTER_READ),
             },
         )
-        self.assertIn(("DELETE", routes["removeObligationParticipant"].path), perms.UNGATED_BY_DESIGN)
+        self.assertNotIn(("DELETE", routes["removeObligationParticipant"].path), perms.UNGATED_BY_DESIGN)
         for name, op in routes.items():
             with self.subTest(operation=name):
                 self.assertFalse(perms.step_up_of(op.view_func), "participation approves nothing")

@@ -85,6 +85,7 @@ from apps.library.models import (
     ProvisionVersion,
     RecordStatus,
     SubjectType,
+    RecurringDuty,
     Translation,
 )
 from apps.library.schemas import (
@@ -126,6 +127,7 @@ from apps.shared.models import Tenant
 from apps.taxonomy import matching, terms_logic
 from apps.taxonomy.models import (
     DutyTypeLabel,
+    InstrumentLevelKind,
     InstrumentLevelLabel,
     LibraryTag,
     LibraryTagLabel,
@@ -209,6 +211,16 @@ def obligation_headings(obligation_ids: Collection[uuid.UUID], order: list[str])
             instrument_short_name=row.instrument.short_name,
         )
     return headings
+
+
+def under_standard(obligation_id: uuid.UUID) -> bool | None:
+    """Whether a duty sits under a standard-level instrument (D-41), in one query: the only
+    place a Statement of Applicability unit may exist. None for a duty the caller cannot
+    see, exactly as for an id that never existed."""
+    kinds = list(Obligation.objects.filter(pk=obligation_id).values_list("instrument__level__kind", flat=True))
+    if not kinds:
+        return None
+    return kinds[0] == InstrumentLevelKind.STANDARD.value
 
 
 def instrument_headings(instrument_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, RecordHeading]:
@@ -1323,3 +1335,21 @@ def obligation_scope_terms(obligation_ids: Collection[uuid.UUID]) -> dict[uuid.U
     for link in links:
         scopes.setdefault(link.obligation_id, {})[f"{link.term.dimension.key}:{link.term.key}"] = link.term_id
     return scopes
+
+
+# c8-duty-occurrences (REG-07): what the register's occurrences are dated from.
+class DutyRule(NamedTuple):
+    """A library recurring duty as the register reads it: its title, its RFC 5545 rule and
+    the note on how its due date is set."""
+
+    id: uuid.UUID
+    obligation_id: uuid.UUID
+    title: str
+    rule: str
+    note: str
+
+
+def recurring_duties(obligation_ids: Collection[uuid.UUID]) -> list[DutyRule]:
+    """The active recurring duties of these obligations, in one query, in the library's order."""
+    rows = RecurringDuty.objects.filter(obligation_id__in=obligation_ids, status=RecordStatus.ACTIVE.value)
+    return [DutyRule(row.id, row.obligation_id, row.title, row.recurrence_rule, row.due_rule_note) for row in rows]

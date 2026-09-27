@@ -382,6 +382,14 @@ PERF_SAMPLES = env_int("PERF_SAMPLES", 20)
 PERF_REGRESSION_PCT = env_int("PERF_REGRESSION_PCT", 20)
 
 # ---------------------------------------------------------------------------------------
+# ===== c10-inbox-and-my-comments: the comment edit window (COL-01) ======================
+# How long after writing a comment its author may still edit it; afterwards it can only be
+# deleted. My work's panel reads it for `canEdit`. The same setting as c10-comments-mentions
+# declares for the edit itself: on merge, keep one declaration.
+# ---------------------------------------------------------------------------------------
+COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)
+
+# ---------------------------------------------------------------------------------------
 # ===== SRC-01..03 search and ask input caps (apps/search/schemas.py) =====================
 # What a caller may send to search, to the similarity read and to Ask. Each is a cap at a
 # trust boundary: the text reaches a text-search query, the embedder and, for Ask, a model
@@ -785,7 +793,8 @@ EVIDENCE_SCAN_RETRIES = env_int("EVIDENCE_SCAN_RETRIES", 2)
 CASE_EVIDENCE_MAX = env_int("CASE_EVIDENCE_MAX", 200)
 
 # ---------------------------------------------------------------------------------------
-# ===== VOC-08 bulk tagging's cap (c10-tagging-routes) ====================================
+# ===== VOC-08 bulk tagging's cap (c10-tagging-routes) =============================
+# ---------------------------------------------------------------------------------------
 # How many distinct records one tagging preview or batch may name. A list page holds at
 # most 100 rows, so two pages' worth covers every selection a screen makes, and the one
 # audit event a batch writes stays a size a reviewer can read. Above it the preview and
@@ -802,6 +811,25 @@ BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200)
 # for a new one. The job row stays. A bank's policy may be stricter, so it is a setting.
 # ---------------------------------------------------------------------------------------
 EXPORT_RETENTION_DAYS = env_int("EXPORT_RETENTION_DAYS", 7)
+
+# ---------------------------------------------------------------------------------------
+# ===== HOM-05 My work's windows (apps/home/my_work.py, c8-mywork-service, D-23, D-25) ===
+# A row is "due soon" when its next date is today or within MY_WORK_DUE_SOON_DAYS; the
+# tenant's reminder lead replaces it once COL-02 lands. A new version of an obligation stays
+# under "Changes on your items" for MY_WORK_AWARE_DAYS after it was applied: a fixed window
+# needs no write on every page load. Each is at least 1, or the app refuses to boot.
+# ---------------------------------------------------------------------------------------
+MY_WORK_DUE_SOON_DAYS = env_int("MY_WORK_DUE_SOON_DAYS", 30)
+MY_WORK_AWARE_DAYS = env_int("MY_WORK_AWARE_DAYS", 14)
+if min(MY_WORK_DUE_SOON_DAYS, MY_WORK_AWARE_DAYS) < 1:
+    raise ImproperlyConfigured("Refusing to boot: MY_WORK_DUE_SOON_DAYS and MY_WORK_AWARE_DAYS are each at least 1.")
+
+# ---------------------------------------------------------------------------------------
+# ===== c8-reg-applicability: REG-01, AC-REG1 many answers in one call (D-75) ============
+# The most applicability answers one confirmed call stores (POST /applicability). Each row
+# is a write and an audit event in one transaction, so the cap keeps a call inside the API
+# budget; a longer call is refused whole and stores nothing.
+REGISTER_BULK_MAX = env_int("REGISTER_BULK_MAX", 100)
 
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
