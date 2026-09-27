@@ -551,11 +551,6 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
 
     # c8-mywork-routes (chunk 8, HOM-05).
     ("GET", "/me/work"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_MY_WORK),
-    # c8-participants (chunk 8, COL-04). Listing and adding carry register.read and
-    # register.edit; removal is the one gated in logic, because leaving needs no permission.
-    ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}"): Ungated(
-        UngatedReason.LOGIC_GATE, _LOGIC_PARTICIPANT_REMOVAL
-    ),
     # c9-case-participants (chunk 9, COL-04, CAS-03). Listing and adding carry cases.read and
     # cases.contribute; removal is gated in logic, because leaving needs no permission.
     ("DELETE", "/changes/{change_id}/participants/{participant_id}"): Ungated(

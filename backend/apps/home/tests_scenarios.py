@@ -25,6 +25,7 @@ from apps.shared.tenancy import library_write
 from apps.taxonomy.models import ComplianceStatus, TaxonomyTerm, TaxonomyTermLabel
 from apps.tenants.models import Licence, OrgUnit
 from apps.tenants.testing import licence_type_term
+from apps.home.tests_my_work_cases import run_hom_s14
 from apps.shared import factories, permissions as perms
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.models import AuditEvent
@@ -384,12 +385,12 @@ class HomeScenarioTests(TestCase):
         """
         run_hom_s12(self)
 
-    @skip("pending: HOM-S14 (HOM-05, chunk 9)")
     def test_hom_s14(self) -> None:
         """HOM-S14
 
         Case work reaches My work (HOM-05).
         """
+        run_hom_s14(self)
 
     def test_hom_s15(self) -> None:
         """HOM-S15
