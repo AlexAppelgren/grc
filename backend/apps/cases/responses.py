@@ -16,7 +16,7 @@ from apps.cases.models import ChangeCase, ImpactAssessment
 from apps.cases.schemas import CaseCategory, CasesAssessment, CasesCase, CasesVocabularyRef
 from apps.library.reading import vocabulary_refs
 from apps.shared.kinds import CaseStatusCategory
-from apps.taxonomy.models import CaseSubStatusLabel, ClosureReasonLabel, DismissalReasonLabel, EffortSizeLabel
+from apps.taxonomy.models import CaseSubStatusLabel, ClosureReasonLabel, DismissalReasonLabel, EffortSizeLabel, TeamLabel
 from apps.taxonomy.schemas import PersonRef
 from apps.watch.reading import urgency_refs
 
@@ -63,6 +63,7 @@ def case_response(case: ChangeCase, *, reader: uuid.UUID | None, order: list[str
         urgency_confirmed=case.urgency_confirmed,
         footprint_match=case.footprint_match,
         owner=_person(case.owner),
+        owner_team=_ref(TeamLabel, case.owner_team, order),
         triaged_by=_person(case.triaged_by),
         triaged_at=case.triaged_at,
         dismissed_reason=_ref(DismissalReasonLabel, case.dismissed_reason, order),

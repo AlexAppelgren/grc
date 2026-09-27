@@ -557,16 +557,6 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
         "pickers need the bank's active members, as ids and names only; `GET /tenant/members` "
         "stays under members.manage (COL-04, TEN-03).",
     ),
-    # c10-collab-contract (chunk 10, COL-01, COL-02, HOM-05). The three inbox routes and
-    # GET /me/comments act on the caller's own rows; the comment reads and writes are gated
-    # per record by the subject registry (collab/subjects.py). PATCH and DELETE
-    # /comments/{comment_id} carry comments.write and are not listed here.
-    ("GET", "/notifications"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
-    ("POST", "/notifications/{notification_id}/read"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
-    ("POST", "/notifications/read-all"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
-    ("GET", "/me/comments"): Ungated(UngatedReason.SELF, _SELF_MY_COMMENTS),
-    ("GET", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
-    ("POST", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
     # c9-case-participants (chunk 9, COL-04, CAS-03). Listing and adding carry cases.read and
     # cases.contribute; removal is gated in logic, because leaving needs no permission.
     ("DELETE", "/changes/{change_id}/participants/{participant_id}"): Ungated(
