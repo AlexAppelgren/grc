@@ -4,7 +4,10 @@ AGT-S4's journey needs a definition with a version history, and earlier runs nam
 earlier version. `seed_e2e` asks for it here because `agent_version` is a library row that
 only a reference seed's directory may write (apps/shared/tests_library_fence.py). The
 version repeats the one before it (model, prompt file, tools) with its own change note, as
-publishing does in the console, and moves the agent onto it. Refused on a deployed
+publishing does in the console. It does not move the agent onto it: `current_version` names
+the version folder the build ships (apps/agents/models.py), and a key is minted only for a
+definition whose shipped file is active or a draft (H43, D-93), so pointing it at a version
+with no folder would refuse every key the journeys mint for it. Refused on a deployed
 environment: a deploy never publishes a version (`apps/agents/seeds/__init__.py`).
 """
 
@@ -39,9 +42,6 @@ def publish_e2e_version(*, key: str, version_no: int, change_note: str) -> Agent
             tools=previous.tools,
             change_note=change_note,
         )
-        before = agent.current_version
-        agent.current_version = version_no
-        agent.save(update_fields=["current_version"])
         record(
             action="agent_version.published",
             actor=Actor.system(SEED_REASON),
@@ -50,7 +50,6 @@ def publish_e2e_version(*, key: str, version_no: int, change_note: str) -> Agent
             subject_title=f"{agent.key} v{version_no}",
             summary=f"Version {version_no} of agent {agent.key} published for the E2E journeys.",
             tenant_id=None,
-            before={"currentVersion": before},
-            after={"agent": agent.key, "versionNo": version_no, "currentVersion": version_no},
+            after={"agent": agent.key, "versionNo": version_no, "currentVersion": agent.current_version},
         )
     return version
