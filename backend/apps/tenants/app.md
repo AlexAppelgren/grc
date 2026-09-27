@@ -57,8 +57,8 @@ legal entities' rows, gaps and internal items, end the member's participations a
 memberships, and deactivate them in one step-up transaction (`c8-ten-reassignment`, TEN-S5,
 TEN-S9, and TEN-S3's register half). The case halves of TEN-S3, TEN-S5 and TEN-S9 — cases,
 actions and case participations — are `c9-owner-team-and-reassign`'s; dated duties join when
-`duty_occurrence` exists (`c8-reg-duty-occurrences`); the removal dialog and TEN-S5's journey
-are `c8-ui-member-removal`'s.
+`duty_occurrence` exists (`c8-reg-duty-occurrences`). The removal dialog on the member
+screen and TEN-S5's journey came with `c8-ui-departments-teams-removal`.
 
 **ADM-01 is built in part, which is why it stays `in_progress`.** The R1 slice on `main`:
 the organisation profile with its onboarding checklist (TEN-S1); members and invitations,
@@ -66,7 +66,9 @@ roles, and each admin screen gated by its own permission (ADM-S1 to ADM-S3); an 
 passkey re-enrolment of a member and the sessions a person sees and revokes (ID-S12,
 ID-S11); the bank's own API keys; the security log; the audit log; the regulatory scope with
 its change requests and its markets panel (FP-S10); and the vocabularies. What remains, each
-with the Build_Plan.md chunk that delivers it: teams and team membership on the member row (TEN-03, chunk 8; departments with a head and the rest of the organisation came with c8-ten-organisation); the
+with the Build_Plan.md chunk that delivers it: putting a team in a department, which no
+route writes yet (TEN-02, chunk 8; departments with their heads, teams and team membership on
+the member row came with c8-ten-organisation and c8-ui-departments-teams-removal); the
 workflow policy's reminders and escalation (COL-02, chunk 10); the agents a bank adds for
 itself (AGT-04, chunk 11); data, meaning exports, import, retention and tenant exit (REP-02
 to REP-04, AUD-04, chunk 12); and integrations beyond the API keys, with the security
