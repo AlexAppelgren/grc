@@ -15,6 +15,11 @@ apps/shared/testing.py when a scenario needs a principal without a ceremony.
 
 Tokens are compared by hash lookup in chunk 1 (stored hashed, playbook 4.2); nothing here
 logs a token, and nothing here uses `random` (playbook 9: security modules use `secrets`).
+
+An agent access credential (ACC-03, ADR 0056) is an `api_key` row, so it reaches a route
+only through `ApiKeyAuth`. `SessionAuth` never accepts one, but it still hands a live one
+to the agent access guard, so a session-only step-up or write route answers the same 403
+to a token as a route that takes keys does (apps/shared/agent_access_guard.py).
 """
 
 from __future__ import annotations
@@ -52,6 +57,10 @@ class Principal:
     adding or removing a passkey accepts a session younger than the window (F9).
     `agent_id` and `agent_label` name the agent the key is bound to (ID-10, AGT-01), so
     `record()` writes the agent as the actor rather than the key's id.
+    `agent_access_id` and `agent_access_label` name the agent access entry a service key is
+    bound to; `acting_user_id` and `acting_user_label` name the person a personal access
+    token acts as (ACC-03). Either makes the principal an agent access credential, which
+    reads and nothing else and can never step up (`is_agent_access`).
     """
 
     kind: PrincipalKind
@@ -66,6 +75,14 @@ class Principal:
     session_created_at: datetime | None = None
     agent_id: uuid.UUID | None = None
     agent_label: str = ""
+    agent_access_id: uuid.UUID | None = None
+    agent_access_label: str = ""
+    acting_user_id: uuid.UUID | None = None
+    acting_user_label: str = ""
+
+    @property
+    def is_agent_access(self) -> bool:
+        return self.kind is PrincipalKind.AGENT and (self.agent_access_id is not None or self.acting_user_id is not None)
 
     def has_permission(self, permission: str) -> bool:
         return self.kind is PrincipalKind.USER and permission in self.permissions
@@ -103,11 +120,57 @@ resolve_api_key: Resolver = _resolve_api_key
 resolve_enrolment_token: Resolver = _resolve_enrolment_token
 
 API_KEY_PREFIX = "cw_"
+API_KEY_HEADER = "X-API-Key"
+
+
+def _bearer(request: HttpRequest) -> str | None:
+    scheme, _, credential = request.headers.get("Authorization", "").partition(" ")
+    if scheme.lower() != "bearer":
+        return None
+    return credential.strip() or None
+
+
+def presented_api_key(request: HttpRequest) -> str | None:
+    """The API key or token the request carries: `X-API-Key`, or a bearer that starts with
+    the key prefix (chunk 1 brief)."""
+    header_key = request.headers.get(API_KEY_HEADER, "").strip()
+    if header_key:
+        return header_key
+    bearer = _bearer(request)
+    return bearer if bearer and bearer.startswith(API_KEY_PREFIX) else None
+
+
+def credential_principal(request: HttpRequest, key: str) -> Principal | None:
+    """Resolve the presented key, then let the agent access guard refuse a rate, a step-up
+    or a write before any route sees it (ACC-03, ACC-09)."""
+    from apps.shared import agent_access_guard
+
+    principal = resolve_api_key(key)
+    if principal is None or principal.kind is not PrincipalKind.AGENT:
+        return None
+    agent_access_guard.check(request, principal)
+    return principal
 
 
 class SessionAuth(HttpBearer):
     """People. Accepts only a user principal, so a stubbed resolver that returns the wrong
-    kind is refused rather than let through."""
+    kind is refused rather than let through. It never accepts an API key or a personal
+    access token (ACC-03): a request that presents one and no session is handed to the
+    agent access guard and then answered as unauthenticated. On a route that also takes
+    `ApiKeyAuth`, that class resolves it instead, so a credential is resolved and counted
+    once per request."""
+
+    def __call__(self, request: HttpRequest) -> Principal | None:
+        from apps.shared import agent_access_guard
+
+        bearer = _bearer(request)
+        if bearer is None or bearer.startswith(API_KEY_PREFIX):
+            key = presented_api_key(request)
+            if key is not None:
+                if not agent_access_guard.route_takes_keys(request):
+                    credential_principal(request, key)
+                return None
+        return super().__call__(request)
 
     def authenticate(self, request: HttpRequest, token: str) -> Principal | None:
         principal = resolve_session_token(token)
@@ -120,25 +183,29 @@ class ApiKeyAuth(APIKeyHeader):
     """Agents and integrations. `X-API-Key`, or `Authorization: Bearer cw_<prefix>_<secret>`
     (chunk 1 brief); scopes checked by `@requires_scope`."""
 
-    param_name = "X-API-Key"
+    param_name = API_KEY_HEADER
+    # The security scheme's description in openapi.json: the one place the fence around an
+    # agent access credential is documented for every operation that takes a key.
+    openapi_description = (
+        "An API key or a personal access token, `cw_<prefix>_<secret>`, sent as `X-API-Key` or as a "
+        "bearer token. A key of an agent access entry and every personal access token read and "
+        "nothing else: any write other than `POST /search`, `POST /agent-access/what-applies` and "
+        "`POST /mcp` answers 403 `read_only_credential`, a route that needs a passkey step-up "
+        "answers 403 `step_up_required`, and more requests in a minute than "
+        "`AGENT_ACCESS_RATE_PER_MINUTE` allows (60 unless the operator sets it) answer 429 "
+        "`rate_limited`. A token stops working the moment its person, their membership or a "
+        "permission behind one of its scopes is gone, and an entry's key the moment the entry is "
+        "revoked; either then answers 401 `unauthenticated`. `tenant:read` counts only on a "
+        "credential bound to an entry."
+    )
 
     def _get_key(self, request: HttpRequest) -> str | None:
-        header_key = super()._get_key(request)
-        if header_key:
-            return header_key
-        authorization = request.headers.get("Authorization", "")
-        scheme, _, credential = authorization.partition(" ")
-        if scheme.lower() == "bearer" and credential.strip().startswith(API_KEY_PREFIX):
-            return credential.strip()
-        return None
+        return presented_api_key(request)
 
     def authenticate(self, request: HttpRequest, key: str | None) -> Principal | None:
         if not key:
             return None
-        principal = resolve_api_key(key)
-        if principal is None or principal.kind is not PrincipalKind.AGENT:
-            return None
-        return principal
+        return credential_principal(request, key)
 
 
 class EnrolmentAuth(HttpBearer):

@@ -20,6 +20,7 @@ from typing import Any
 from django.db import connection, models, transaction
 
 from apps.shared import tenancy
+from apps.shared.authentication import Principal
 from apps.shared.middleware import current_request_id
 
 
@@ -43,6 +44,19 @@ class Actor:
     @classmethod
     def system(cls, label: str = "system") -> Actor:
         return cls(kind=ActorType.SYSTEM, id=None, label=label)
+
+
+def key_actor(principal: Principal) -> Actor:
+    """Who a key's request acts as in the audit log. A personal access token names its
+    person and a key of an agent access entry names the entry (ACC-03); a key bound to one
+    of our agents names the agent (ID-10); any other key is named by its own id."""
+    if principal.acting_user_id is not None:
+        return Actor(kind=ActorType.USER, id=principal.acting_user_id, label=principal.acting_user_label)
+    if principal.agent_access_id is not None:
+        return Actor(kind=ActorType.AGENT, id=principal.agent_access_id, label=principal.agent_access_label)
+    if principal.agent_id is not None:
+        return Actor(kind=ActorType.AGENT, id=principal.agent_id, label=principal.agent_label)
+    return Actor(kind=ActorType.AGENT, id=principal.subject_id, label=f"api key {principal.subject_id}")
 
 
 class AppendOnlyRefused(RuntimeError):
