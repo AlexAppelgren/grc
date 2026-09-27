@@ -33,14 +33,16 @@ from apps.agents import testing as agent_build
 from apps.agents.models import RunStatus
 from apps.identity.models import ApiKey
 from apps.library import testing as library_build
-from apps.library.models import Instrument, Jurisdiction, Obligation, ObligationVersion, Provision, RecordStatus
+from apps.library.models import Instrument, Jurisdiction, Obligation, ObligationVersion, Provision, RecordStatus, RecurringDuty
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals import apply, logic
 from apps.proposals.models import Proposal, ProposalTenant
 from apps.proposals.schemas import ProposalObligationVersionPayload
 from apps.shared import factories, tenancy
+from apps.shared.audit import Actor, ActorType
 from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent
+from apps.shared.schemas import AgentDecision
 from apps.shared.tenancy import library_write
 from apps.taxonomy.models import DutyType, InstrumentLevel, ProvisionKind, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
@@ -553,3 +555,221 @@ class ProposalInputAtTheBoundary(TestCase):
         self.assertEqual(self._version(self.conformance).source_label, "")
         # A law's label names its source in words, as before.
         self.assertEqual(self._version(self.law, source_label=pasted).source_label, pasted)
+
+
+# ---------------------------------------------------------------------------------------
+# A recurring duty enters the library by proposal (REG-07, c8-recurring-duty-proposal)
+# ---------------------------------------------------------------------------------------
+DUTY_SOURCE = "https://www.fi.se/sv/rapportering/"
+
+
+def duty_payload(**overrides: Any) -> dict[str, Any]:  # compliance: allow-kwargs test helper building a payload
+    body: dict[str, Any] = {
+        "title": "Quarterly report of outsourced functions",
+        "recurrenceRule": "rrule:freq=monthly;interval=3;bymonthday=-1",
+        "dueRuleNote": "Due on the last day of the month after each quarter.",
+        "recipientAuthority": "fi-duty",
+        "leadDays": 30,
+    }
+    body.update(overrides)
+    return body
+
+
+DUTY_SOURCES = dict.fromkeys(("title", "recurrenceRule", "dueRuleNote", "recipientAuthority", "leadDays"), DUTY_SOURCE)
+
+
+class RecurringDutyProposal(TestCase):
+    """`new_recurring_duty`: the duty's only door into the library. A source per field at
+    creation and again over a reviewer's correction; a rule the recurrence wrapper accepts
+    (422 `invalid_recurrence`); applied in one transaction with its audit row and the
+    obligation's re-index; and an agent's confirmation names both agents."""
+
+    def setUp(self) -> None:
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        self.authority = library_build.authority(key="fi-duty", short_name="FI")
+        self.obligation = library_build.obligation(library_build.instrument(key="fffs-2018-10", regime="regime:securities"), key="obl-duty-parent")
+        self.editor = factories.platform_user(roles=("library_editor",), email="duty-editor@bleqq.test")
+        self.reviewer = factories.platform_user(roles=("library_editor",), email="duty-reviewer@bleqq.test")
+        self.person = logic.Proposer(actor=factories.user_actor(user_id=self.editor.id), user=self.editor)
+
+    def _create(self, proposer: logic.Proposer | None = None, **overrides: Any) -> Proposal:  # compliance: allow-kwargs test helper forwarding create() arguments
+        arguments: dict[str, Any] = {
+            "kind": "new_recurring_duty",
+            "title": "A quarterly report",
+            "payload": duty_payload(),
+            "proposer": proposer or self.person,
+            "target_type": "obligation",
+            "target_id": self.obligation.id,
+            "field_sources": dict(DUTY_SOURCES),
+        }
+        arguments.update(overrides)
+        proposal, _ = logic.create(**arguments)
+        return proposal
+
+    def _refused(self, code: str, proposer: logic.Proposer | None = None, **overrides: Any) -> ValidationError:  # compliance: allow-kwargs test helper forwarding create() arguments
+        with self.assertRaises(ValidationError) as caught:
+            self._create(proposer, **overrides)
+        self.assertEqual(caught.exception.code, code)
+        self.assertFalse(Proposal.objects.exists(), "a refused proposal is never queued")
+        return caught.exception
+
+    def _approve(self, proposal: Proposal, **overrides: Any) -> Proposal:  # compliance: allow-kwargs test helper forwarding approve() arguments
+        return logic.approve(
+            proposal=logic.by_id(proposal.id),
+            reviewer=self.reviewer,
+            actor=factories.user_actor(user_id=self.reviewer.id),
+            note="",
+            step_up_assertion_id=uuid.uuid4(),
+            **overrides,
+        )
+
+    # --- creation -------------------------------------------------------------------------
+    def test_the_proposal_is_queued_with_the_rule_in_its_one_spelling(self) -> None:
+        proposal = self._create()
+        self.assertEqual((proposal.kind, proposal.target_id, proposal.owner_tenant_id), ("new_recurring_duty", self.obligation.id, None))
+        self.assertEqual(proposal.payload["recurrenceRule"], "FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=-1")
+        self.assertEqual(proposal.field_sources, DUTY_SOURCES)
+        self.assertFalse(RecurringDuty.objects.exists(), "nothing reaches the library before approval")
+
+    def test_every_field_it_sets_needs_a_source(self) -> None:
+        for field in DUTY_SOURCES:
+            with self.subTest(field=field):
+                sources = {name: source for name, source in DUTY_SOURCES.items() if name != field}
+                self.assertIn(field, self._refused("source_missing", field_sources=sources).message)
+        # A field left at its default is not set, so it needs no source and takes none.
+        payload = duty_payload()
+        del payload["dueRuleNote"], payload["recipientAuthority"], payload["leadDays"]
+        self._refused("validation_error", payload=payload)
+        # A source is a link or a provision the library holds, as on a version.
+        library_build.provision(self.obligation.instrument, key="fffs-2018-10-5-kap")
+        proposal = self._create(payload=payload, field_sources={"title": DUTY_SOURCE, "recurrenceRule": "fffs-2018-10-5-kap"})
+        self.assertEqual(set(proposal.field_sources), {"title", "recurrenceRule"})
+
+    def test_a_rule_the_wrapper_refuses_is_422_invalid_recurrence(self) -> None:
+        for rule in ("every quarter", "FREQ=HOURLY", "FREQ=WEEKLY", "FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=30"):
+            with self.subTest(rule=rule):
+                self._refused("invalid_recurrence", payload=duty_payload(recurrenceRule=rule))
+
+    def test_the_duty_is_on_a_shared_obligation_in_force(self) -> None:
+        self._refused("validation_error", target_type="", target_id=None)
+        self._refused("unknown_key", target_id=uuid.uuid4())
+        tenant = factories.tenant(slug="duty-bank")
+        own = library_build.obligation(library_build.instrument(key="bank-own-duty", regime="regime:securities", owner_tenant=tenant), key="obl-bank-own", owner_tenant=tenant)
+        self._refused("unknown_key", target_id=own.id)
+        with library_write("test"):
+            Obligation.objects.filter(pk=self.obligation.pk).update(status=RecordStatus.RETIRED.value)
+        self._refused("unknown_key")
+
+    def test_the_recipient_is_an_authority_the_library_holds_and_the_title_is_real(self) -> None:
+        self._refused("unknown_key", payload=duty_payload(recipientAuthority="nobody"))
+        self._refused("validation_error", payload=duty_payload(title="   "))
+        self._refused("validation_error", payload=duty_payload(leadDays=400))
+        self._refused("validation_error", payload=duty_payload(colour="red"))
+
+    def test_a_key_bound_to_no_agent_cannot_propose_one(self) -> None:
+        tenant = factories.tenant(slug="duty-key-bank")
+        key = agent_build.tenant_key(tenant, scopes=("proposals:write",))
+        self._refused("validation_error", logic.Proposer(actor=factories.user_actor(), api_key_id=key.id))
+
+    def test_the_route_answers_422_invalid_recurrence(self) -> None:
+        key = agent_build.agent_key(scopes=("proposals:write",))
+        run = agent_build.platform_run(key=key)
+        body = {
+            "kind": "new_recurring_duty",
+            "title": "A daily report",
+            "payload": duty_payload(recurrenceRule="FREQ=DAILY"),
+            "targetType": "obligation",
+            "targetId": str(self.obligation.id),
+            "fieldSources": DUTY_SOURCES,
+            "agentRunId": str(run.id),
+        }
+        answer = self.client.post("/api/v1/proposals", data=body, content_type="application/json", HTTP_X_API_KEY=key.plain_key)
+        self.assertEqual(answer.status_code, 422, answer.content)
+        self.assertEqual(answer.json()["code"], "invalid_recurrence")
+        self.assertFalse(Proposal.objects.exists())
+
+    # --- approval -------------------------------------------------------------------------
+    def test_approval_writes_the_duty_its_audit_row_and_the_re_index_together(self) -> None:
+        proposal = self._create()
+        with mock.patch("apps.proposals.apply.reindex") as reindex:
+            self._approve(proposal)
+        reindex.assert_called_once_with(self.obligation.id)
+        duty = RecurringDuty.objects.get(applied_by_proposal=proposal)
+        self.assertEqual(
+            (duty.obligation_id, duty.title, duty.recurrence_rule, duty.recipient_authority_id, duty.lead_days),
+            (self.obligation.id, "Quarterly report of outsourced functions", "FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=-1", self.authority.id, 30),
+        )
+        self.assertEqual(
+            (duty.created_origin, duty.created_by_agent_id, duty.verified_origin, duty.verified_by_agent_id, duty.approved_by_id),
+            ("user", None, "user", None, self.reviewer.id),
+        )
+        event = AuditEvent.objects.get(action="recurring_duty.created", subject_id=duty.id)
+        self.assertEqual(event.after["recurrenceRule"], duty.recurrence_rule)
+        self.assertEqual((event.after["proposal"], event.after["verifiedOrigin"], event.tenant_id), (str(proposal.id), "user", None))
+        self.assertNotIn("dueRuleNote", event.after, "typed text stays out of the audit value")
+        self.assertTrue(AuditEvent.objects.filter(action="proposal.approved", subject_id=proposal.id).exists())
+
+    def test_a_failure_halfway_leaves_nothing(self) -> None:
+        proposal = self._create()
+        with mock.patch("apps.proposals.apply.reindex", side_effect=RuntimeError("index down")), self.assertRaises(RuntimeError):
+            self._approve(proposal)
+        self.assertFalse(RecurringDuty.objects.exists())
+        self.assertFalse(AuditEvent.objects.filter(action__in=("recurring_duty.created", "proposal.approved")).exists())
+        self.assertEqual(logic.by_id(proposal.id).status, "open")
+
+    def test_the_rule_is_checked_again_at_approval(self) -> None:
+        proposal = self._create()
+        # A stored rule that no longer passes, as one queued before a lower cap would.
+        with self.settings(RECURRENCE_MAX_OCCURRENCES=4), self.assertRaises(ValidationError) as caught:
+            self._approve(proposal)
+        self.assertEqual(caught.exception.code, "invalid_recurrence")
+        self.assertFalse(RecurringDuty.objects.exists())
+
+    def test_a_correction_names_the_source_of_what_it_changes(self) -> None:
+        proposal = self._create()
+        yearly = {"recurrenceRule": "FREQ=YEARLY;BYMONTH=3;BYMONTHDAY=31"}
+        with self.assertRaises(ValidationError) as caught:
+            self._approve(proposal, payload_overrides=yearly)
+        self.assertEqual(caught.exception.code, "source_missing")
+        with self.assertRaises(ValidationError) as caught:
+            self._approve(proposal, payload_overrides={"recurrenceRule": "FREQ=DAILY"}, field_sources={"recurrenceRule": DUTY_SOURCE + "rule"})
+        self.assertEqual(caught.exception.code, "invalid_recurrence")
+        self.assertFalse(RecurringDuty.objects.exists())
+        self._approve(proposal, payload_overrides=yearly, field_sources={"recurrenceRule": DUTY_SOURCE + "rule"})
+        duty = RecurringDuty.objects.get(applied_by_proposal=proposal)
+        self.assertEqual(duty.recurrence_rule, yearly["recurrenceRule"])
+        self.assertEqual(logic.by_id(proposal.id).field_sources["recurrenceRule"], DUTY_SOURCE + "rule")
+
+    def test_an_agents_confirmation_names_both_agents(self) -> None:
+        proposing = agent_build.agent_key(scopes=("proposals:write",))
+        confirming = agent_build.reviewer_api_key()
+        agent = proposing.agent
+        proposal = self._create(
+            logic.Proposer(actor=Actor(kind=ActorType.AGENT, id=agent.id, label=agent.key), api_key_id=proposing.id, agent_id=agent.id),
+            agent_run_id=agent_build.platform_run(key=proposing).id,
+        )
+        reviewer = logic.Reviewer(
+            actor=Actor(kind=ActorType.AGENT, id=confirming.agent.id, label=confirming.agent.key),
+            api_key_id=confirming.id,
+            agent_id=confirming.agent.id,
+        )
+        logic.approve(
+            proposal=logic.by_id(proposal.id),
+            reviewer=reviewer,
+            actor=reviewer.actor,
+            note="",
+            step_up_assertion_id=None,
+            decision=AgentDecision.model_validate(agent_build.DECISION),
+            agent_run_id=agent_build.platform_run(key=confirming).id,
+        )
+        duty = RecurringDuty.objects.get(applied_by_proposal=proposal)
+        self.assertEqual(
+            (duty.created_origin, duty.created_by_agent_id, duty.verified_origin, duty.verified_by_agent_id, duty.approved_by_id),
+            ("agent", agent.id, "agent", confirming.agent.id, None),
+        )
+        self.assertIn("new_recurring_duty", logic.AGENT_CONFIRMABLE_KINDS)

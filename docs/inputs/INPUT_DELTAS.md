@@ -1833,3 +1833,65 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
   answer 204 as designed; all three are published ahead of `c9-case-file`, `c9-actions`
   and `c9-evidence` and answer 501 `not_built` until those land, so their pending lines
   are gone while the logic is still to come.
+
+## 20. A proposal owned by a bank, and the bank's own queue declared (2026-09-25, d89-proposal-owner)
+
+§5's private-records row, built for INV-07 and OWN-03 (D-57, D-89, ADR 0050, ADR 0059):
+
+- `proposal` gains `owner_tenant_id` (proposals 0009), null for the shared library and every
+  existing row. `apps/proposals/logic.create` sets it and nothing else does: a version takes
+  its target's owner, and a new instrument or obligation the server files as the bank's own
+  (`private=True`) takes the bank the database is scoped to, the filing session's or, in the
+  worker, the run's. A request body naming it is refused (422 `validation_error`).
+- `proposal` is a mixed table under forced row-level security in the split shape (H15):
+  `tenant_isolation` FOR ALL on the session's own zone and `library_rows_visible` FOR SELECT
+  on the shared rows, so the console, with no tenant, reads no owned row. "Insert shared or
+  own" is one extra policy, FOR INSERT only: `shared_proposal_filed` lets a bank's session
+  insert a shared row filed inside a bank, single, open and undecided, and nothing else of
+  the shared zone. The RLS guard pins its text.
+- `private_records.approve` is a tenant permission of Compliance officer and Approver, in the
+  approve set, never a platform grant or an API key scope. `GET /private-proposals`
+  (`listPrivateProposals`), `POST /private-proposals/{proposalId}/approve`
+  (`approvePrivateProposal`, step-up) and `/reject` (`rejectPrivateProposal`) are declared
+  and answer 501 until d89-private-records; approve and reject load the proposal under
+  row-level security first, so another bank's answers 404. The library fence names
+  `approvePrivateProposal` as the third route that may reach `apply`. `proposal_four_eyes`
+  is unchanged.
+
+## d89-private-records. The bank's own queue decided (2026-09-27, INV-07, OWN-03, OWN-04)
+
+§20's routes now answer (D-57, ADR 0050, ADR 0059; D-1xx, d89-private-records):
+
+- `GET /private-proposals` answers the bank's own open proposals only, oldest first, as
+  `PrivateProposalPage`; a decided proposal leaves it.
+- `POST /private-proposals/{proposalId}/approve` and `/reject` answer `PrivateProposalRow`
+  and add the errors the shared queue's decisions answer: `four_eyes_violation` and
+  `invalid_transition` (409), `reason_required` (422) on a rejection, and on approval
+  `duplicate_key` (409) and `unknown_key` or `validation_error` (422) from the apply.
+- New code `private_provisions_not_supported` (422): a provision under a bank's own
+  instrument, or filed as the bank's own. A bank's own obligation names a bank's own
+  instrument, and a shared one a shared instrument, else 422 `validation_error`.
+- A support session's library reads leave the bank's own records out and answer 404 for
+  their addresses. No schema changes.
+
+## c8-support-session-guard. The support session (2026-09-25, identity 0009)
+
+ADR 0042's tranche 2 is built with these departures from `CHUNK8_TASKS.md`:
+
+- `user_session.kind` gains `support`, beside the `support_access` column the brief names,
+  so the signed access token carries the kind and the read-only guard
+  (`SupportReadOnlyMiddleware`) refuses a route off the allow-list before any row is read,
+  whatever auth class the route takes. A CHECK keeps the kind and the grant together, and
+  `(tenant_id, support_access_id)` is a composite key to `support_access (tenant_id, id)`,
+  which gains that unique constraint; no policy is added anywhere.
+- Beside `SUPPORT_READ_ROUTES`, `SUPPORT_SESSION_ROUTES` lets the session call
+  `POST /auth/refresh` and `POST /auth/sign-out`, which act on its refresh cookie alone; the
+  web client sends its bearer on sign-out. A refresh on an ended grant revokes the session
+  and answers 401 `support_access_ended`.
+- Entering signs the console session out ("replaces" it), so "the ones after that answer
+  404" in TEN-S6 is the platform person's next console session.
+- The route sweep accepts 501 `not_built` on a listed read whose logic has not landed
+  (chunk 9's `listActions`, `listEvidence`, `getCaseFile`), beside 2xx and 404.
+- The `support_access.read` row is written in the request's transaction, as the brief says;
+  a handler that rolls a refused request back (`answers_problems`, a 404) takes the row with
+  it, so the log holds every read that answered.

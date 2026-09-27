@@ -79,6 +79,15 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ACC-04 | An agent access credential holding `tenant:read`, under an entry with tenant reach on, reads the register decisions on the obligations in its scope. Never gaps, cases, comments, evidence, the audit log or a private record | M | R2 | built |
 | OWN-05 | The bank's own agent may propose a private obligation's controls as linked internal items of the control kind (REG-05), approved in the bank's own queue; waits for Alex's answer on what a control inventory is (D-91) | S | R2 | pending |
 
+REG-07 is `in_progress` (c8-recurring-duty-proposal, 2026-09-25): the library half is built. A
+recurring duty is a shared library row (library 0010) whose only door is the
+`new_recurring_duty` proposal, sourced field by field at creation and over a reviewer's
+correction, applied with its audit row and the obligation's re-index in one transaction, and
+stamped with both agents when an agent confirms it. Its RRULE goes through
+`apps/library/recurrence.py`, which refuses a rule it cannot parse, one finer than a day, one
+that never falls due, and one over `RECURRENCE_MAX_OCCURRENCES` in ten years (422
+`invalid_recurrence`). The tenant occurrences and REG-S10 are `c8-reg-duty-occurrences`'.
+
 ## 3. Acceptance criteria (from PRD, condensed)
 
 The PRD states no lettered criterion for this module. The criteria below are
@@ -226,6 +235,11 @@ Then the duty appears with "Our deadline"
 When it is completed
 Then the next occurrence 2027-03-31 is generated in the tenant's timezone
 ```
+`@integration` is green up to its roadmap line (c8-duty-occurrences): the occurrence due
+2026-12-31 reads back through `listDuties`, and completing it generates exactly 2027-03-31 in
+the tenant's timezone. The roadmap line ("the duty appears with 'Our deadline'") is the
+roadmap's duty branch, which `c8-home-register-feeds` builds and asserts in this test. The
+first occurrence is written when applicability becomes "applies", never on a read.
 
 ### REG-S11 — A stale write on a register row is refused `@integration` (REG-02)
 ```gherkin

@@ -11,8 +11,19 @@ apps/proposals/apply.py, which applies an approved payload inside `library_write
 reviewer decides on, written once and decided once.
 
 `ProposalTenant` is the tenant half: a proposal a bank's own person or agent made is
-linked to that bank in its own tenant table under forced row-level security, never by a
-column on `proposal`.
+linked to that bank in its own tenant table under forced row-level security. A proposal to
+the shared library names no bank on its own row.
+
+`owner_tenant` is the one exception, and it is not a link but a zone (INV-07, OWN-03, D-57,
+ADR 0050): a proposal of the bank's own record belongs to that bank, is decided inside it
+under `private_records.approve`, and never reaches the console. The server sets it in
+`logic.create` from the target, the filing session's bank for a private record or a worker
+run's bank, never from a request body. Since proposals 0009 `proposal` is a mixed table
+under forced row-level security in the split shape (H15): reads are the shared rows and
+the session's own, updates and deletes stay in the session's own zone, and beside the
+session's own zone a bank's session may insert one thing only, a shared proposal it files
+(`shared_proposal_filed`). The console, which has no tenant, reads no owned row at all:
+the database hides it, not a filter.
 
 `kind` and `status` are tier-one kinds (apps/shared/kinds.py). The payload's shape is
 named per kind in apps/proposals/schemas.py and validated when the proposal is created.
@@ -51,7 +62,8 @@ class ProposalKind(enum.StrEnum):
     `new_provision_version`, a law's verbatim text, never a standard's (INV-02, INV-08).
     R2 adds `obligation_scope`, the scope terms of existing obligations changed without a
     new summary: the re-tag a batch carries (PRO-04, AGT-05). A backfill is a batch of an
-    existing kind, not a kind of its own."""
+    existing kind, not a kind of its own. `new_recurring_duty` adds the schedule a duty of an
+    obligation in force falls due on, its only door into the library (REG-07)."""
 
     VOCABULARY_CREATE = "vocabulary_create"
     VOCABULARY_RELABEL = "vocabulary_relabel"
@@ -66,6 +78,7 @@ class ProposalKind(enum.StrEnum):
     NEW_PROVISION = "new_provision"
     NEW_PROVISION_VERSION = "new_provision_version"
     OBLIGATION_SCOPE = "obligation_scope"
+    NEW_RECURRING_DUTY = "new_recurring_duty"
 
 
 class ProposalStatus(enum.StrEnum):
@@ -121,6 +134,9 @@ class Proposal(models.Model):
     # together.
     is_batch = models.BooleanField(default=False)
     row_count = models.PositiveIntegerField(default=0)
+    # The bank whose own record this proposes (INV-07, OWN-03), or null for the shared
+    # library. Set by the server only (`logic.create`); row-level security reads it.
+    owner_tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

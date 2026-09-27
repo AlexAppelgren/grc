@@ -9,6 +9,7 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: ACC, REG.
 """
 
+import uuid
 from typing import Any
 from unittest import skip
 
@@ -21,6 +22,12 @@ from apps.library import testing as library_testing
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, tenancy
 from apps.shared import permissions as perms
+from apps.library.models import Obligation
+from apps.library.seeds.library import seed_authorities
+from apps.proposals import logic as proposals_logic
+from apps.proposals.models import Proposal
+from apps.proposals.tests_apply_private import filing
+from apps.proposals.tests_kinds import instrument_body, obligation_body
 from apps.register.applicability import APPLICABILITY_SET, entities_spanned
 from apps.register.logic import ensure_register_entry
 from apps.register.models import Applicability, ComplianceAssessment, Gap, TenantObligation, TenantObligationScope
@@ -28,7 +35,8 @@ from apps.register.tests_applicability import Bank, banks_duty, seed_library
 from apps.shared.models import AuditEvent
 from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, sign_in, stub_session, user_principal
 from apps.taxonomy.models import ComplianceStatus, FootprintTerm, GapSource, GapStatus, RiskRating
-from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+from apps.search.models import SearchChunk
+from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.tenants.models import OrgUnit, OrgUnitKind
 
 
@@ -422,13 +430,51 @@ class RegisterScenarioTests(TestCase):
         Yearly attestation and waivers (REG-06).
         """
 
-    @skip("pending: REG-S10")
     def test_reg_s10(self) -> None:
         """REG-S10
 
         Recurring duties appear on the roadmap from recurrence rules (REG-07).
-        Operations: `completeDutyOccurrence`.
+        Operations: `listDuties`, `completeDutyOccurrence`.
+
+        Green up to its roadmap line: the roadmap's duty branch is c8-home-register-feeds',
+        which asserts that step. Here the quarterly duty's occurrence due 2026-12-31 reads back
+        through the duties route, and completing it generates exactly 2027-03-31.
         """
+        import datetime
+
+        from apps.register import duties
+        from apps.register.logic import ensure_register_entry
+        from apps.register.models import DutyOccurrence
+        from apps.shared import factories
+
+        seed_library()
+        a = Bank("reg-s10")
+        law = banks_duty()
+        library_build.recurring_duty(law, title="Quarterly client asset report", rule="FREQ=MONTHLY;BYMONTH=3,6,9,12;BYMONTHDAY=-1")
+        actor = factories.user_actor(label="Sara Lind", user_id=a.officer.id)
+        tenancy.activate(a.tenant.id)
+        entry = ensure_register_entry(tenant_id=a.tenant.id, obligation_id=law.id, actor=actor)
+        # The obligation began to apply at 22:30 UTC on 30 September, 1 October in Stockholm.
+        at = datetime.datetime(2026, 9, 30, 22, 30, tzinfo=datetime.UTC)
+        duties.schedule_first(tenant=a.tenant, actor=actor, targets=[(entry, None)], at=at)
+
+        headers = sign_in(a.officer, tenant=a.tenant)
+        [item] = self.client.get(f"/api/v1/obligations/{law.id}/duties", **headers).json()["items"]
+        occurrence = item["nextOccurrence"]
+        self.assertEqual((item["title"], occurrence["dueDate"], occurrence["status"]), ("Quarterly client asset report", "2026-12-31", "upcoming"))
+        # When the roadmap for Q4 2026 is read, the duty appears with "Our deadline":
+        # asserted by c8-home-register-feeds, which builds the roadmap's duty branch.
+
+        response = self.client.post(
+            f"/api/v1/duty-occurrences/{occurrence['id']}/complete", data={}, content_type="application/json", **headers
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual((response.json()["completed"]["status"], response.json()["next"]["dueDate"]), ("done", "2027-03-31"))
+        tenancy.activate(a.tenant.id)
+        self.assertEqual(
+            sorted((row.due_date.isoformat(), row.status) for row in DutyOccurrence.objects.all()),
+            [("2026-12-31", "done"), ("2027-03-31", "upcoming")],
+        )
 
     def test_reg_s11(self) -> None:
         """REG-S11
@@ -540,9 +586,75 @@ class RegisterScenarioTests(TestCase):
         for duty in (world.outside, world.private):
             self.assertEqual(world.get(self.client, f"{ENTRIES}/{duty.id}", world.narrow_key).status_code, 404)
 
-    @skip("pending: REG-S17 (OWN-04, OWN-05, REG-01, REG-02, REG-05, chunk 11)")
     def test_reg_s17(self) -> None:
         """REG-S17
 
         The register decides the bank's own obligations as it decides shared ones, and links their controls (OWN-04, OWN-05, REG-01, REG-02, REG-05).
+
+        d89-private-records proves the register half: the obligation the bank's own agent
+        found and a second person approved takes applicability and status as a shared one
+        does. The controls half, the control kind the agent files beside the obligation and
+        its approval into a linked internal item, is d89-controls' (wave 7, D-99), which
+        extends this test when it lands.
         """
+        seed_library()
+        seed_term_dimensions()
+        seed_authorities()
+        bank = Bank("reg-s17")
+        approver = factories.member_user(bank.tenant, roles=("approver",))
+
+        @tenancy.tenant_task
+        def file_finding(tenant_id: uuid.UUID, body: dict[str, Any]) -> Proposal:
+            proposal, _ = proposals_logic.create(
+                proposer=proposals_logic.Proposer(actor=factories.agent_actor(label="Scope researcher")), private=True, **filing(body)
+            )
+            return proposal
+
+        for body in (instrument_body(key="reg-s17-act", officialRef="REG-S17", shortName="REG-S17"), obligation_body(instrument="reg-s17-act", key="reg-s17-duty")):
+            tenancy.clear_tenant()
+            proposal = file_finding(bank.tenant.id, body)
+            approved = self.client.post(
+                f"/api/v1/private-proposals/{proposal.id}/approve", data={}, content_type="application/json", **sign_in(approver, tenant=bank.tenant, step_up=True)
+            )
+            self.assertEqual(approved.status_code, 200, approved.content)
+        tenancy.activate(bank.tenant.id)
+        duty = Obligation.objects.get(stable_key="reg-s17-duty")
+        self.assertEqual(duty.owner_tenant_id, bank.tenant.id)
+
+        # One officer holding applicability.approve sets "Applies" for a legal entity, with a
+        # reason and no second approver or step-up; it is stored and audited at once.
+        officer = sign_in(bank.officer, tenant=bank.tenant)
+        answered = self.client.put(
+            f"/api/v1/obligations/{duty.id}/applicability",
+            data={"orgUnitId": str(bank.bank_ab.id), "applicability": "applies", "reason": "Our own branch rule"},
+            content_type="application/json",
+            HTTP_IF_MATCH='"0"',
+            **officer,
+        )
+        self.assertEqual(answered.status_code, 200, answered.content)
+        tenancy.activate(bank.tenant.id)
+        scope = TenantObligationScope.objects.get(tenant_obligation__obligation=duty, org_unit=bank.bank_ab)
+        self.assertEqual((scope.applicability, scope.applicability_reason), (Applicability.APPLIES.value, "Our own branch rule"))
+        event = AuditEvent.objects.get(action=APPLICABILITY_SET, subject_id=scope.tenant_obligation_id)
+        self.assertEqual((event.tenant_id, event.actor_id, event.step_up_assertion_id), (bank.tenant.id, bank.officer.id, None))
+
+        # Its compliance status is set per legal entity, as a separate fact.
+        self.assertEqual(scope.compliance_status.key, "not_assessed")
+        stated = self.client.patch(
+            f"/api/v1/obligations/{duty.id}/register/entities/{bank.bank_ab.id}",
+            data={"complianceStatus": "compliant"},
+            content_type="application/json",
+            HTTP_IF_MATCH=f'"{scope.version}"',
+            **officer,
+        )
+        self.assertEqual(stated.status_code, 200, stated.content)
+        tenancy.activate(bank.tenant.id)
+        scope.refresh_from_db()
+        self.assertEqual((scope.applicability, scope.compliance_status.key), (Applicability.APPLIES.value, "compliant"))
+
+        # Nothing of it reaches the search index, and tenant B's fetch answers 404.
+        self.assertFalse(SearchChunk.objects.filter(source_id=duty.id).exists())
+        other = Bank("reg-s17-b")
+        for path in (f"/api/v1/obligations/{duty.id}", f"/api/v1/obligations/{duty.id}/register"):
+            refused = self.client.get(path, **sign_in(other.officer, tenant=other.tenant))
+            self.assertEqual((refused.status_code, refused.json()["code"]), (404, "not_found"), path)

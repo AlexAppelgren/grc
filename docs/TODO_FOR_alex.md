@@ -1475,6 +1475,32 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       changed value in", an agent's correction without one answers 422 `source_missing`
       and applies nothing (fails safe; it can still approve as proposed or reject).
       Default if you say nothing: v3 carries that line when the confirmer next changes.
+
+## R2 wave 2 integration: one CodeQL finding needs your triage (2026-09-25)
+
+- [x] **CodeQL `py/clear-text-storage-sensitive-data` at `backend/apps/identity/session_logic.py`
+      `set_refresh_cookie` (fingerprint `a6ba8ac839efa77d:1`).** CodeQL now reports the refresh
+      token written into its cookie. That write is the session design (D-06, ADR 0006): the
+      cookie is HttpOnly, Secure, SameSite=Strict and scoped to the auth path, the token is a
+      random 256-bit secret the database keeps only as a hash, and it rotates on every refresh
+      with replay detection (ID-S9). The same flow is on main unreported; CodeQL sees it since
+      `c11-session-policy` (ID-08) made the cookie's lifetime follow the session's absolute
+      end, whose test builds a concrete `HttpResponse`. The integration did not accept it on
+      its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
+      then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
+      (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**
+## c11-proposal-batches-decide: deciding a batch row by row (2026-09-25, PRO-04, D-1xx)
+
+- [ ] **Who decides a re-tag batch an agent files.** Built: a second person holding
+      `proposals.review`, with a passkey, and never the proposer. An agent reviewer is
+      refused (409 `person_review_required`) and no API key reaches the route. Default if you
+      say nothing: it stays person-only.
+- [ ] **A large batch is slow to approve.** Each approved row re-indexes its obligation in the
+      same transaction, about 25 ms a row, so approving a full batch of 100 takes a couple of
+      seconds, over the 250 ms budget (a logged warning, not an error). Default if you say
+      nothing: it stays in one transaction, as PRO-02 asks; a background job is the change if
+      it is felt.
+
 ## acc-principal-guard: how an agent access credential is fenced (2026-09-25, ACC-03, ACC-09)
 
 Built on these defaults; each stays yours to overrule.
@@ -1620,20 +1646,6 @@ Nothing waits for these; each has the default the build took.
       "Reads our register" or "Library only" pill, rather than a guess. Every seeded admin
       holds both. Say if the entry should carry the effective reach itself.
 
-## R2 wave 2 integration: one CodeQL finding needs your triage (2026-09-25)
-
-- [x] **CodeQL `py/clear-text-storage-sensitive-data` at `backend/apps/identity/session_logic.py`
-      `set_refresh_cookie` (fingerprint `a6ba8ac839efa77d:1`).** CodeQL now reports the refresh
-      token written into its cookie. That write is the session design (D-06, ADR 0006): the
-      cookie is HttpOnly, Secure, SameSite=Strict and scoped to the auth path, the token is a
-      random 256-bit secret the database keeps only as a hash, and it rotates on every refresh
-      with replay detection (ID-S9). The same flow is on main unreported; CodeQL sees it since
-      `c11-session-policy` (ID-08) made the cookie's lifetime follow the session's absolute
-      end, whose test builds a concrete `HttpResponse`. The integration did not accept it on
-      its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
-      then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
-      (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**
-
 ## c11-definitions-platform: publishing bleqq's agent versions, their settings and runs (2026-09-25, AGT-03, ADM-02, AGT-06)
 
 **Answered by Alex on 2026-09-25 (D-102, ADR 0059): "Platform config".** The question was
@@ -1775,3 +1787,20 @@ Built on these defaults; each stays yours to overrule.
 - [ ] Default taken: the expiry hint names no day count. The maximum is the server setting
       `PERSONAL_TOKEN_MAX_DAYS`, which no route exposes; a date beyond it renders the server's
       `expiry_too_late` in place. Say if the screen should state the number.
+## d89-private-records: the bank's own queue, answered by default (2026-09-27, INV-07, OWN-03, OWN-04, D-1xx)
+
+Built on these defaults; each stays yours to overrule.
+
+- [ ] **The queue lists what waits, and nothing decided.** `GET /private-proposals` answers
+      the bank's open proposals, oldest first. Default: a decided proposal leaves the list
+      (its audit rows keep the decision). Say if the bank wants a decided tab as the
+      console has.
+- [ ] **A bank's own obligation sits under a bank's own instrument.** A private obligation
+      naming a shared instrument, or a shared one naming the bank's own, is refused (422).
+      Default: so, so that nothing of one zone ever hangs under the other. The alternative
+      is a bank's own duty under a shared law, which ADR 0059 does not ask for.
+- [ ] **A version of a bank's own obligation is not proposed in R2.** Its later wording
+      waits for a scenario that needs it; today a version is always of a shared record.
+- [ ] **Support sessions read the shared library only.** Platform support under a grant
+      never sees the bank's own records: lists leave them out and their addresses are 404,
+      as for another bank (OWN-04).

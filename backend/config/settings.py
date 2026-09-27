@@ -118,6 +118,8 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # c8-support-session-guard: a support session reads its allow-list and nothing else.
+    "apps.shared.middleware.SupportReadOnlyMiddleware",
     # acc-entries-and-log (ACC-08): the access log row of an agent access credential's call,
     # written after the response.
     "apps.governance.access_log.AccessLogMiddleware",
@@ -620,6 +622,16 @@ PROPOSAL_TEXT_MAX_CHARS = env_int("PROPOSAL_TEXT_MAX_CHARS", 50000)
 # filed as more than one batch, and above the cap creation answers 422 `batch_too_large`.
 # ---------------------------------------------------------------------------------------
 PROPOSAL_BATCH_MAX_ROWS = env_int("PROPOSAL_BATCH_MAX_ROWS", 100)
+
+# ---------------------------------------------------------------------------------------
+# ===== REG-07 how often a recurring duty may recur (c8-recurring-duty-proposal) ==========
+# A recurring duty's rule is an RFC 5545 RRULE a proposer writes, and every bank's
+# occurrences are expanded from it (apps/library/recurrence.py). A rule that would fall due
+# more often than this in ten years is refused when it is proposed (422
+# `invalid_recurrence`), so a bad rule cannot become a denial of service. 120 is monthly
+# for ten years; a regulatory duty recurs yearly, quarterly or monthly.
+# ---------------------------------------------------------------------------------------
+RECURRENCE_MAX_OCCURRENCES = env_int("RECURRENCE_MAX_OCCURRENCES", 120)
 
 # ---------------------------------------------------------------------------------------
 # ===== PRO-03 how far back "what changed in the library" looks ===========================

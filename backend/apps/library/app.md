@@ -77,9 +77,17 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 | built |
 | INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 | built |
 | INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 | built |
-| INV-07 | Tenant-private instruments and obligations, proposed by the bank's own agents or its compliance officers and approved inside that bank by a second person; never seen by platform staff, a model, the search index or another tenant (D-57). OWN's minimum; a bank's own private sources are WAT-06, R3 (D-89) | M | R2 | pending |
+| INV-07 | Tenant-private instruments and obligations, proposed by the bank's own agents or its compliance officers and approved inside that bank by a second person; never seen by platform staff, a model, the search index or another tenant (D-57). OWN's minimum; a bank's own private sources are WAT-06, R3 (D-89) | M | R2 | built |
 | INV-08 | Standards as instruments, one per edition: publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link and exactly one conformance duty in our own words carrying the standard's term; no standard text, clause or control title, or paraphrase, anywhere. Built for tests and E2E: the first standard is seeded by `seed_e2e` only until the publishers' terms are cleared (TODO_FOR_alex, legal) | M | R1 | built |
-| OWN-04 | The bank's own records read "Private to us", only to that bank; never indexed, never a model input, never agent access (whose answer says how many it left out), never a support session; the register decides them as shared obligations; nothing changes automatically when the library later covers the item (D-89, D-91) | M | R2 | pending |
+| OWN-04 | The bank's own records read "Private to us", only to that bank; never indexed, never a model input, never agent access (whose answer says how many it left out), never a support session; the register decides them as shared obligations; nothing changes automatically when the library later covers the item (D-89, D-91) | M | R2 | in_progress |
+
+> **Note — the bank's own records (d89-private-records, 2026-09-27).** INV-07 is built: a
+> bank's own instrument and obligation are applied from its own queue with the owner the
+> proposal carries, read beside the shared library by that bank alone ("Private to us"), and
+> never by another bank, the console, an agent access credential or a support session, whose
+> lists leave them out and whose addresses answer 404 (`reading.Reader.shared_only`). INV-S9
+> and INV-S15 prove it at the integration level. OWN-04 stays in progress for its screens:
+> the "Private to us" marker is d89-fe-private's and INV-S15's journey d89-e2e-journey's.
 
 > **Note — what the standard clauses still lack (2026-09-23).** Built: the `standard`
 > instrument level with its tier-one kind (D-37), the seeded International jurisdiction of

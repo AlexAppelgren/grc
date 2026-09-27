@@ -103,8 +103,62 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("PATCH", "/gaps/{gap_id}", "register.Gap", "gap"),
     ("POST", "/gaps/{gap_id}/accept-risk/approve", "register.Gap", "gap"),
     ("POST", "/gaps/{gap_id}/reopen", "register.Gap", "gap"),
+    # c8-reg-units (REG-08): a Statement of Applicability unit, addressed by its id.
+    ("PATCH", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
+    ("DELETE", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
+    # c8-duty-occurrences (REG-07): a dated duty occurrence, addressed by its id.
+    ("POST", "/duty-occurrences/{occurrence_id}/complete", "register.DutyOccurrence", "duty_occurrence"),
     # c8-reg-status: a legal entity's register row (REG-02).
     ("PATCH", "/obligations/{obligation_id}/register/entities/{org_unit_id}", "register.TenantObligationScope", "register_entity"),
     # c8-reg-links-history (REG-05): a link is removed by id.
     ("DELETE", "/internal-links/{link_id}", "register.InternalLink", "internal_link"),
 ]
+
+
+# c8-support-session-guard (TEN-06, D-49, ADR 0042): every route a support session may call,
+# as (method, path as Ninja registers it under /api/v1). The reads the seven support
+# permissions cover, written out one by one, and nothing else: every other route, a GET
+# added later as much as any write, answers 403 `support_read_only` from
+# `SupportReadOnlyMiddleware` until someone adds it here, under
+# apps/shared/tests_support_routes.py. Deliberately left off: evidence and export downloads,
+# search, Ask, the person's own calendar feeds, member, role, team and key lists, the
+# tenant's profile, footprint and support-access list, proposals, agent runs and the AI log.
+SUPPORT_READ_ROUTES: frozenset[tuple[str, str]] = frozenset(
+    {
+        # library.read: the shared library and its reference lists.
+        ("GET", "/authorities"),
+        ("GET", "/instruments"),
+        ("GET", "/instruments/{instrument_id}"),
+        ("GET", "/instruments/{instrument_id}/provisions"),
+        ("GET", "/obligations"),
+        ("GET", "/obligations/{obligation_id}"),
+        ("GET", "/obligations/{obligation_id}/diff"),
+        ("GET", "/obligations/{obligation_id}/sources"),
+        ("GET", "/provisions/{provision_id}/diff"),
+        ("GET", "/library-updates"),
+        ("GET", "/sources"),
+        ("GET", "/sources/coverage"),
+        ("GET", "/taxonomy/dimensions"),
+        ("GET", "/taxonomy/terms"),
+        # watch.read: the feed, a change and the weekly briefing.
+        ("GET", "/changes"),
+        ("GET", "/changes/{change_id}"),
+        ("GET", "/obligations/{obligation_id}/changes"),
+        ("GET", "/briefings/current"),
+        ("GET", "/briefings/{week_start}"),
+        # roadmap.read: the timeline home, the roadmap and what is coming up.
+        ("GET", "/home"),
+        ("GET", "/roadmap"),
+        ("GET", "/upcoming"),
+        # cases.read: a case's actions, its evidence list and its case file; never a download.
+        ("GET", "/changes/{change_id}/actions"),
+        ("GET", "/changes/{change_id}/evidence"),
+        ("GET", "/changes/{change_id}/case-file"),
+        # audit.read: the bank's audit log, where every one of these reads is written.
+        ("GET", "/audit-events"),
+    }
+)
+# The support session's own two calls, which read nothing of the bank: turning its refresh
+# cookie into the next access token, never past the grant's window, and signing out. Both
+# act on the refresh cookie alone.
+SUPPORT_SESSION_ROUTES: frozenset[tuple[str, str]] = frozenset({("POST", "/auth/refresh"), ("POST", "/auth/sign-out")})
