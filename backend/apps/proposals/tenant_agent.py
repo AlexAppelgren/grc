@@ -12,14 +12,16 @@ shared door uses: the payload's schema, a source per field, the https source, th
 screen (AGT-07) and the run's proposal budget. Here, before it:
 
 - **Only a new record of the bank's own.** A `new_instrument` or `new_obligation` naming no
-  target. A finding that names a shared record, any other kind (a re-tag, a version of a
+  target, or a `new_control` of one of the bank's own obligations (OWN-05, D-99), which names
+  that obligation by key and no target. A finding that names a shared record, any other kind (a re-tag, a version of a
   shared duty, a vocabulary row) or anything of the regulatory scope is refused with
   `not_own_record` and nothing is stored.
 - **Owned by the run's bank.** `private=True` makes `logic.owner_of()` take the bank the
   database is scoped to, which is the run's; the finding never names an owner, and the
   result is checked against the run all the same.
 - **Never a duplicate of what the bank holds.** A record the bank already holds as its own,
-  by stable key or official reference, is 409 `already_in_our_library`, answered by a
+  by stable key or official reference, or a control of that name already linked to that
+  obligation (`private_controls.held`), is 409 `already_in_our_library`, answered by a
   database lookup (`library.reading.held_as_own`), so the agent never reads the bank's
   records back (D-57).
 - **Once per run and event.** The event's id is the proposal's idempotency key within the
@@ -40,9 +42,9 @@ from django.core.exceptions import ValidationError
 
 from apps.agents.models import AgentRun
 from apps.library import reading
-from apps.proposals import logic
+from apps.proposals import logic, private_controls
 from apps.proposals.models import Proposal
-from apps.proposals.schemas import ProposalInstrumentPayload, ProposalObligationPayload
+from apps.proposals.schemas import ProposalControlPayload, ProposalInstrumentPayload, ProposalObligationPayload
 from apps.shared.audit import Actor, ActorType
 from apps.shared.errors import ProblemError
 
@@ -83,7 +85,7 @@ def _checked(finding: Finding) -> None:
     if finding.target_type or finding.target_id is not None:
         raise _not_own_record("A bank's own agent never proposes a change to a shared record.")
     if finding.kind not in logic.PRIVATE_RECORD_KINDS:
-        raise _not_own_record("A bank's own agent files only a new instrument or a new obligation of the bank's own.")
+        raise _not_own_record("A bank's own agent files only a new instrument, a new obligation or a control of the bank's own.")
 
 
 def _held(run: AgentRun, finding: Finding) -> bool:
@@ -97,6 +99,8 @@ def _held(run: AgentRun, finding: Finding) -> bool:
         return reading.held_as_own(bank, instrument=True, key=parsed.key, reference=parsed.official_ref)
     if isinstance(parsed, ProposalObligationPayload):
         return reading.held_as_own(bank, instrument=False, key=parsed.key, reference=parsed.ref_label, instrument_key=parsed.instrument)
+    if isinstance(parsed, ProposalControlPayload):
+        return private_controls.held(bank, parsed)
     return False
 
 

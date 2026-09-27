@@ -51,7 +51,7 @@ from apps.library.models import (
     VerificationOutcome,
 )
 from apps.library.reading import active_obligation, active_provision, active_shared_obligations, live_duty_type, obligation_scope_terms, terms_of
-from apps.proposals import standards
+from apps.proposals import private_controls, standards
 from apps.proposals.logic import (
     Reviewer,
     as_reviewer,
@@ -67,6 +67,7 @@ from apps.proposals.logic import (
 from apps.proposals.models import OriginType, Proposal, ProposalBatchRow, ProposalKind
 from apps.proposals.schemas import (
     ObligationScopePayload,
+    ProposalControlPayload,
     ProposalInstrumentPayload,
     ProposalObligationPayload,
     ProposalObligationVersionPayload,
@@ -125,6 +126,14 @@ def apply(
         # Creation files nothing else as a bank's own (`logic.owner_of`); a row that says
         # otherwise is refused rather than written into either zone.
         raise ValidationError(f"{proposal.kind!r} is never a record of an organisation's own.", code="validation_error")
+    if proposal.kind == ProposalKind.NEW_CONTROL.value:
+        # A control writes no library row (OWN-05, D-99): it is the bank's own internal item,
+        # written in the bank's zone outside the library's door, and decided by a person.
+        assert isinstance(payload, ProposalControlPayload)
+        if reviewer.user is None:
+            raise ValidationError("A control is approved by a person, never by an agent.", code="person_review_required")
+        private_controls.apply_control(proposal, payload, actor=actor, reviewer_id=reviewer.user.id, step_up=step_up)
+        return
     with library_write(f"proposal:{proposal.id}", door="proposal"):
         if proposal.kind == ProposalKind.VOCABULARY_CREATE.value:
             assert isinstance(payload, ProposalVocabularyCreatePayload)

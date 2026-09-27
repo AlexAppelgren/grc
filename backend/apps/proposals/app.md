@@ -177,6 +177,20 @@ asked for the re-tag, is refused with 409 `four_eyes_violation`, and an agent wi
 `person_review_required`; no API key reaches the route. The console screen and PRO-S8's
 journey are `c11-fe-console-batch-retag`'s and the console journey package's.
 
+OWN-05 is `built` (d89-controls, 2026-09-27; D-99): `new_control` is a control of one of the
+bank's own obligations in force, named by its stable key, with a name and an optional
+reference, each sourced by an https link. It is only ever the bank's own (`owner_of` refuses
+it on the shared door with 422 `validation_error`), names no target, and is filed by the
+bank's own agent through the runner beside the obligation (`tenant_agent`; a control of that
+name already linked to that obligation is 409 `already_in_our_library`). The bank's own queue
+decides it like any record of its own: a person holding `private_records.approve`, a fresh
+passkey, never the proposer, never an agent. Approval writes no library row: in the bank's
+zone it creates the internal item of the `control` link kind, or reuses the bank's live one of
+that name, and links it to the obligation's register entry, each with the register's own
+audit row naming the assertion (`private_controls.apply_control`); a live link already there
+is 409 `already_linked`, a retired control kind 422 `unknown_key`, and the proposal stays
+open. Proven by apps/proposals/tests_private_controls.py and REG-S17.
+
 PRO-S13's journey (pro-s13-journey) runs end to end: the console mints a `library-confirmer`
 key with `agent-runs:write` and `proposals:review`, which opens a run, reads the queue and
 the detail of the proposal `watch-sweeper` filed through its own key (seeded on

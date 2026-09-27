@@ -1904,3 +1904,11 @@ ADR 0042's tranche 2 is built with these departures from `CHUNK8_TASKS.md`:
 - The `support_access.read` row is written in the request's transaction, as the brief says;
   a handler that rolls a refused request back (`answers_problems`, a 404) takes the row with
   it, so the log holds every read that answered.
+
+## d89-controls. A control of the bank's own obligation is a proposal kind (2026-09-27, proposals 0011)
+
+Schema v0.3 has no control inventory: PRD 0.7's OWN-05 and D-99 make a control a REG-05
+internal item of the control kind. Proposals 0011 adds `new_control` to `proposal.kind`
+(choices only, no column). Its approval writes no library row: it creates, or reuses by name,
+an `internal_item` of the bank's `control` link kind and an `internal_link` to the bank's
+register entry on the obligation, in the bank's zone. No table changes.

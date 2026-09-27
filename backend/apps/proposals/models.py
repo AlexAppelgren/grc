@@ -63,7 +63,10 @@ class ProposalKind(enum.StrEnum):
     R2 adds `obligation_scope`, the scope terms of existing obligations changed without a
     new summary: the re-tag a batch carries (PRO-04, AGT-05). A backfill is a batch of an
     existing kind, not a kind of its own. `new_recurring_duty` adds the schedule a duty of an
-    obligation in force falls due on, its only door into the library (REG-07)."""
+    obligation in force falls due on, its only door into the library (REG-07). `new_control`
+    is a control of one of a bank's own obligations (OWN-05, D-99): never a library row, but
+    a REG-05 internal item of the control link kind in the bank's zone, linked to that
+    obligation by the same private approval (apps/proposals/private_controls.py)."""
 
     VOCABULARY_CREATE = "vocabulary_create"
     VOCABULARY_RELABEL = "vocabulary_relabel"
@@ -79,6 +82,7 @@ class ProposalKind(enum.StrEnum):
     NEW_PROVISION_VERSION = "new_provision_version"
     OBLIGATION_SCOPE = "obligation_scope"
     NEW_RECURRING_DUTY = "new_recurring_duty"
+    NEW_CONTROL = "new_control"
 
 
 class ProposalStatus(enum.StrEnum):
