@@ -212,6 +212,38 @@ WORKFLOW = [
 ]
 
 
+# The operations whose module has landed: each answers for real past its gate, and its own
+# tests prove what it does.
+BUILT = frozenset(
+    {
+        # c9-triage: tests_triage.py and tests_close_paths.py
+        "triageChange",
+        "dismissChange",
+        "restoreChange",
+        "closeWithoutAction",
+        # c9-assessment: tests_assessment.py
+        "startAssessment",
+        "saveAssessment",
+        # c9-signoff: tests_signoff.py
+        "requestSignoff",
+        "approveSignoff",
+        "sendBackSignoff",
+        # c9-case-file-export: tests_case_file.py
+        "getCaseFile",
+        # c9-actions: tests_actions.py
+        "listActions",
+        "addAction",
+        "updateAction",
+        "deleteAction",
+        # c9-evidence: tests_evidence*.py
+        "listEvidence",
+        "addEvidence",
+        "downloadEvidence",
+        "removeEvidence",
+    }
+)
+
+
 def _send(client: Any, route: Route, url: str, headers: dict[str, Any]) -> Any:
     if route.body is MULTIPART:
         return client.post(url, data=EVIDENCE_FORM, **headers)
@@ -307,7 +339,7 @@ class WorkflowContract(TestCase):
     def test_past_every_gate_each_answers_501_not_built(self) -> None:
         bank = _bank_with_work()
         with stub_session(bank.principal):
-            for route in WORKFLOW:
+            for route in (route for route in WORKFLOW if route.operation_id not in BUILT):
                 with self.subTest(operation=route.operation_id):
                     response = _send(self.client, route, route.url(bank.change_id, bank.action_id, bank.evidence_id), AS_SESSION)
                     self.assertEqual(response.status_code, 501)

@@ -30,7 +30,7 @@ whatever its scopes: a case is a bank's judgement (AGT-01).
 import uuid
 from inspect import cleandoc
 
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from ninja import File, Form, Path, Query, Router, UploadedFile
 from typing import Any
 
@@ -58,7 +58,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, if_match
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, if_match, principal
 from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Cases"])
@@ -347,9 +347,11 @@ def _stated_in_language(request: HttpRequest) -> dict[str, Any]:
         No library row moves. An optional `subStatus` places the case inside `assigned`.
         """ + _IF_MATCH + """
 
-        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `owner_required` when no
-        owner is named; `unknown_key` for an urgency or sub-status key the lists do not hold;
-        `validation_error` for a body the schema refuses. """ + _AHEAD
+        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `owner_required` when the
+        owner named is not an active member of this bank whose roles hold `cases.work`;
+        `unknown_key` for an urgency or sub-status key the lists do not hold, with the valid
+        keys in `validKeys`; `validation_error` for a body the schema refuses, including a
+        missing `ownerId`, which the error names."""
     ),
     summary="Decide how urgent a change is for your bank and who owns it",
 )
@@ -376,8 +378,8 @@ def triage_change(request: HttpRequest, body: CasesTriageBody, change_id: uuid.U
         which is a separate fact in the register. """ + _IF_MATCH + """
 
         Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `reason_required` when no
-        reason is given; `unknown_key` for a reason key the list does not hold;
-        `validation_error` for a body the schema refuses. """ + _AHEAD
+        reason is given; `unknown_key` for a reason key the list does not hold, with the valid
+        keys in `validKeys`; `validation_error` for a body the schema refuses."""
     ),
     summary="Set a change aside as not relevant to your bank, with a reason",
 )
@@ -403,7 +405,7 @@ def dismiss_change(request: HttpRequest, body: CasesReasonBody, change_id: uuid.
         earlier decision stays in the case's history. """ + _IF_MATCH + """
 
         Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """, including a case that was
-        signed off. """ + _AHEAD
+        signed off."""
     ),
     summary="Bring a dismissed change back to triage",
 )
@@ -431,14 +433,14 @@ def restore_change(request: HttpRequest, change_id: uuid.UUID = Path(..., descri
         that bank's case and its assessment, one row in the case's transition ledger and one audit row naming
         the person. """ + _IF_MATCH + """
 
-        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """. """ + _AHEAD
+        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """."""
     ),
     summary="Start working out what a change means for your bank",
 )
 @requires_permission(perms.CASES_WORK)
 @answers_problems
 def start_assessment(request: HttpRequest, change_id: uuid.UUID = Path(..., description=_CHANGE_ID)) -> Any:
-    return triage.start_assessment(**_stated_in_language(request), change_id=change_id)
+    return assessment.start_assessment(**_stated_in_language(request), change_id=change_id)
 
 
 @router.put(
@@ -455,22 +457,29 @@ def start_assessment(request: HttpRequest, change_id: uuid.UUID = Path(..., desc
 
         A person's session holding `cases.contribute` in their own bank. It writes that bank's
         assessment and one audit row naming the person, never the texts, which are tenant
-        content and never reach a log or a model. `applies: no` records the verdict; closing on
-        it is `POST /changes/{changeId}/close`. An optional `subStatus` places the case inside
-        its category. """ + _IF_MATCH + """
+        content and never reach a log or a model. `applies: no` closes a case being assessed on
+        this one person's word, with the bank's close reason of the "not_applicable" kind, and
+        only for a person who also holds `cases.work` (D-92); the close writes one row in the
+        case's transition ledger and can be undone with `POST /changes/{changeId}/restore`. An
+        optional `subStatus` places the case inside the category it is in after the save.
+        """ + _IF_MATCH + """
 
-        Errors: """ + _CASE_ERRORS + """; `invalid_transition` when the case is not being
-        assessed or implemented; `stale_write` for a missing or old `If-Match`, which is what the
-        second of two people saving the same version gets; `unknown_key` for an effort or
-        sub-status key the lists do not hold; `validation_error` for a body the schema refuses,
-        including an empty `why`. """ + _AHEAD
+        Errors: """ + _CASE_ERRORS + """; `permission_denied` naming `cases.work` in
+        `requiredPermission` for `applies: no` without it; `invalid_transition` when the case is
+        not being assessed or implemented, or for `applies: no` on a case being implemented;
+        `stale_write` for a missing or old `If-Match`, which is what the second of two people
+        saving the same version gets, and nothing is merged; `unknown_key` for an effort or
+        sub-status key the lists do not hold, or a sub-status of another category, with the
+        valid keys in `validKeys`; `validation_error` for a body the schema refuses, including
+        an empty `why`."""
     ),
     summary="Save whether a change applies to your bank, why, and what must change",
 )
 @requires_permission(perms.CASES_CONTRIBUTE)
 @answers_problems
 def save_assessment(request: HttpRequest, body: CasesAssessmentBody, change_id: uuid.UUID = Path(..., description=_CHANGE_ID)) -> Any:
-    return assessment.save_assessment(**_stated_in_language(request), change_id=change_id, body=body)
+    may_close = principal(request).has_permission(perms.CASES_WORK)
+    return assessment.save_assessment(**_stated_in_language(request), change_id=change_id, body=body, may_close=may_close)
 
 
 @router.post(
@@ -490,10 +499,11 @@ def save_assessment(request: HttpRequest, body: CasesAssessmentBody, change_id: 
         reason's key, never the note. The close can be undone with
         `POST /changes/{changeId}/restore`. """ + _IF_MATCH + """
 
-        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `four_eyes_violation` for a
-        reason of the "signed_off" kind, which needs a second person; `reason_required` when no
-        reason is given; `unknown_key` for a reason key the list does not hold;
-        `validation_error` for a body the schema refuses. """ + _AHEAD
+        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """, including a case waiting for
+        sign-off, which only a second person closes; `four_eyes_violation` for a reason of the
+        "signed_off" kind, which needs a second person; `reason_required` when no reason is
+        given; `unknown_key` for a reason key the list does not hold, with the valid keys in
+        `validKeys`; `validation_error` for a body the schema refuses."""
     ),
     summary="Close a case that needs no work, with a reason",
 )
@@ -521,7 +531,7 @@ def close_without_action(request: HttpRequest, body: CasesCloseBody, change_id: 
         file. A case with no actions answers 200 with an empty page.
 
         Errors: """ + _CASE_ERRORS + """; `validation_error` for a page size or offset outside
-        its limits. """ + _AHEAD
+        its limits."""
     ),
     summary="See what must be done for a case, and by whom",
 )
@@ -539,16 +549,20 @@ def list_actions(request: HttpRequest, page: Query[PageQuery], change_id: uuid.U
     by_alias=True,
     description=cleandoc(
         """Adds an action to the case. The first action added to an assessing case moves it to
-        `implementing`, which needs the assessment's `why` saved. Actions cannot be added while
-        the case waits for sign-off.
+        `implementing`, which needs the assessment's `why` saved; an implementing case takes more.
+        Without an `ownerId` the case's owner owns the action. Actions cannot be added while the
+        case waits for sign-off or once it is closed.
 
         A person's session holding `cases.work` in their own bank. It writes one action and one
         audit row naming the person, and a row in the case's transition ledger when the case moves. Answers
         201 with the stored action. """ + _IF_MATCH + """
 
-        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `why_required` when the move
-        to implementing finds no saved `why`; `validation_error` for a body the schema refuses or
-        an owner who is not a member of this bank. """ + _AHEAD
+        Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """ (actions are added in
+        `assessing` and `implementing` only); `actions_locked` (409) while the case waits for
+        sign-off or once it is closed; `too_many_actions` (409) when the case already holds its
+        maximum of live actions, 200 by default (`CASE_ACTIONS_MAX`); `why_required` (422) when
+        the move to implementing finds no saved `why`; `unknown_member` (422) for an owner who is
+        not an active member of this bank; `validation_error` for a body the schema refuses."""
     ),
     summary="Add something that must be done for a case, with an owner and a due date",
 )
@@ -567,7 +581,7 @@ def add_action(request: HttpRequest, body: CasesActionBody, change_id: uuid.UUID
     description=cleandoc(
         """Changes the fields sent and leaves the rest: the title, the owner, the due date, or
         `done` to complete or reopen it. Call it from the actions panel. Actions cannot be
-        changed while the case waits for sign-off.
+        changed while the case waits for sign-off or once it is closed.
 
         A person's session holding `cases.contribute` in their own bank. It writes the action and
         one audit row naming the person. Send the action's own `version` in `If-Match`: without
@@ -575,8 +589,10 @@ def add_action(request: HttpRequest, body: CasesActionBody, change_id: uuid.UUID
 
         Errors: `not_found` when no live action of this bank has that id; `permission_denied`
         without `cases.contribute`; `unauthenticated` without a session, including any API key;
-        `stale_write` for a missing or old `If-Match`; `validation_error` for a body the schema
-        refuses or an owner who is not a member of this bank. """ + _AHEAD
+        `stale_write` for a missing or old `If-Match`; `actions_locked` (409) while the case waits
+        for sign-off or once it is closed; `invalid_transition` (409) while the case is not being
+        worked; `unknown_member` (422) for an owner who is not an active member of this bank;
+        `validation_error` for a body the schema refuses."""
     ),
     summary="Change, complete or reopen an action",
 )
@@ -596,7 +612,7 @@ def update_action(request: HttpRequest, body: CasesActionPatch, action_id: uuid.
         """Removes an action from the case's work. Despite the method nothing is deleted: the
         action is marked removed with the person and the time, drops out of the list and the open
         count, and stays in the case file and the audit trail. Actions cannot be removed while the
-        case waits for sign-off.
+        case waits for sign-off or once it is closed.
 
         A person's session holding `cases.work` in their own bank. No request body. It writes the
         action and one audit row naming the person, and answers 204 with no content. Send the
@@ -605,7 +621,9 @@ def update_action(request: HttpRequest, body: CasesActionPatch, action_id: uuid.
 
         Errors: `not_found` when no live action of this bank has that id; `permission_denied`
         without `cases.work`; `unauthenticated` without a session, including any API key;
-        `stale_write` for a missing or old `If-Match`. """ + _AHEAD
+        `stale_write` for a missing or old `If-Match`; `actions_locked` (409) while the case waits
+        for sign-off or once it is closed; `invalid_transition` (409) while the case is not being
+        worked."""
     ),
     summary="Remove an action that is no longer needed",
 )
@@ -633,7 +651,7 @@ def delete_action(request: HttpRequest, action_id: uuid.UUID = Path(..., descrip
         with its hash. A case with no evidence answers 200 with an empty page.
 
         Errors: """ + _CASE_ERRORS + """; `validation_error` for a page size or offset outside
-        its limits. """ + _AHEAD
+        its limits."""
     ),
     summary="See the evidence attached to a case, and whether each file passed the scan",
 )
@@ -663,9 +681,11 @@ def list_evidence(request: HttpRequest, page: Query[PageQuery], change_id: uuid.
 
         Errors: """ + _CASE_ERRORS + """; `validation_error` for fields the schema refuses, a
         file part missing for `file` or sent for another kind, a file type outside the allowed
-        list or a file over the size limit — each refused before anything is stored. When the
-        malware scanner is unavailable the request is refused with 503 and nothing is stored.
-        """ + _AHEAD
+        list or a file over the size limit — each refused before anything is stored; a link must
+        be a full https address. `evidence_limit_reached` (409) when the case already holds as
+        many live pieces as a case may; `case_closed` (409) when the case is closed or dismissed.
+        `scanner_unavailable` (503) when the malware scanner is unavailable, and nothing is
+        stored."""
     ),
     summary="Attach a file, a link or a reference to a case as evidence",
     openapi_extra=_EVIDENCE_FORM_EXAMPLE,
@@ -698,9 +718,12 @@ def add_evidence(
         reader and an auditor download like everyone else. Every download writes one audit row
         naming the person and the evidence. A file whose scan is still running is refused with
         409, one that failed the scan with 422, and a link or a reference has no bytes to download.
+        A refusal writes no audit row.
 
-        Errors: `not_found` when no live evidence of this bank has that id; `permission_denied`
-        without `cases.read`; `unauthenticated` without a session, including any API key. """ + _AHEAD
+        Errors: `not_found` when no live evidence of this bank has that id, or it is a link or a
+        reference; `scan_pending` (409) while the malware scan runs; `scan_failed` (422) when the
+        file was found infected or could not be scanned; `permission_denied` without
+        `cases.read`; `unauthenticated` without a session, including any API key."""
     ),
     summary="Download a file attached to a case as evidence",
     openapi_extra=_DOWNLOAD_EXAMPLE,
@@ -727,8 +750,9 @@ def download_evidence(request: HttpRequest, evidence_id: uuid.UUID = Path(..., d
         A person's session holding `cases.work` in their own bank. No request body. It writes the
         evidence row and one audit row naming the person, and answers 204 with no content.
 
-        Errors: `not_found` when no live evidence of this bank has that id; `permission_denied`
-        without `cases.work`; `unauthenticated` without a session, including any API key. """ + _AHEAD
+        Errors: `not_found` when no live evidence of this bank has that id; `case_closed` (409)
+        when the case is closed or dismissed, whose evidence stays as it was; `permission_denied`
+        without `cases.work`; `unauthenticated` without a session, including any API key."""
     ),
     summary="Remove a piece of evidence from a case",
 )
@@ -761,7 +785,9 @@ def remove_evidence(request: HttpRequest, evidence_id: uuid.UUID = Path(..., des
 
         Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `open_actions` while an
         action is not done; `evidence_missing` without at least one piece of evidence that passed
-        the scan. """ + _AHEAD
+        the scan. Both of those answer 409 and carry `openActionCount` (how many live actions
+        are not done) and `cleanEvidenceCount` (how many live pieces of evidence passed the
+        scan) beside the code, so the screen can say what is missing."""
     ),
     summary="Ask a second person to sign off a case",
 )
@@ -791,7 +817,7 @@ def request_signoff(request: HttpRequest, change_id: uuid.UUID = Path(..., descr
         Errors: """ + _CASE_ERRORS + """; `step_up_required` without a fresh passkey assertion,
         answered before anything is read; """ + _MOVE_ERRORS + """; `four_eyes_violation` when
         the caller asked for the sign-off themself; `validation_error` for a body the schema
-        refuses. """ + _AHEAD
+        refuses."""
     ),
     summary="Sign off a case someone else worked, confirming with your passkey",
 )
@@ -820,7 +846,7 @@ def approve_signoff(request: HttpRequest, body: CasesNoteBody, change_id: uuid.U
         the note. """ + _IF_MATCH + """
 
         Errors: """ + _CASE_ERRORS + """; """ + _MOVE_ERRORS + """; `validation_error` for a body
-        the schema refuses. """ + _AHEAD
+        the schema refuses."""
     ),
     summary="Send a case back for more work instead of signing it off",
 )
@@ -858,10 +884,11 @@ def send_back_signoff(request: HttpRequest, body: CasesNoteBody, change_id: uuid
 @answers_problems
 def get_case_file(request: HttpRequest, change_id: uuid.UUID = Path(..., description=_CHANGE_ID)) -> Any:
     tenant = caller_tenant(request)
-    return case_file.case_file(
+    text = case_file.case_file(
         tenant=tenant,
         actor=actor_for(request),
         user=caller_user(request),
         order=language_order(request, tenant=tenant),
         change_id=change_id,
     )
+    return HttpResponse(text, content_type="text/plain; charset=utf-8")

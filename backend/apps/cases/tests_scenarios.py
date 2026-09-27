@@ -15,17 +15,31 @@ closeWithoutAction, CAS-S6 addAction, updateAction and deleteAction, CAS-S7 addE
 removeEvidence, CAS-S8 requestSignoff, CAS-S10 approveSignoff, CAS-S18 sendBackSignoff.
 """
 
+from typing import Any
 from unittest import skip
 
-from django.test import TestCase
+from django.db import transaction
+from django.utils import timezone
 
-from apps.cases import creation, testing as case_build
+from apps.cases import creation, logic, state, testing as case_build
+from apps.cases import tests_signoff as signoff_build
+from apps.cases.models import Action, CaseTransition, ChangeCase, Evidence
 from apps.cases.tests_creation import cases_of, drain, registered
-from apps.taxonomy.models import CaseStatusCategory
+from apps.cases.tests_triage import CaseMoves, triage_bank
+from apps.shared import factories, permissions as perms, tenancy
+from apps.shared.models import AuditEvent
+from apps.shared.testing import (
+    SESSION_TOKEN_FOR_TESTS,
+    ScenarioTestCase,
+    sign_in,
+    stub_session,
+    user_principal,
+)
+from apps.taxonomy.models import CaseStatusCategory, Urgency
 from apps.watch import testing as watch_build
 
 
-class CasesScenarioTests(TestCase):
+class CasesScenarioTests(ScenarioTestCase):
     """Scenario tests for apps.cases, one method per @integration scenario."""
 
     def test_cas_s1(self) -> None:
@@ -62,96 +76,421 @@ class CasesScenarioTests(TestCase):
             "registering the same change again leaves each bank with the one case it had",
         )
 
-    @skip("pending: CAS-S2")
-    def test_cas_s2(self) -> None:
-        """CAS-S2
-
-        Triage needs an urgency and an owner (CAS-02).
-        """
-
-    @skip("pending: CAS-S3")
-    def test_cas_s3(self) -> None:
-        """CAS-S3
-
-        Dismissal needs a reason and can be restored (CAS-02).
-        """
-
-    @skip("pending: CAS-S4")
     def test_cas_s4(self) -> None:
         """CAS-S4
 
         The impact assessment records what applies and what must change (CAS-03).
         """
+        from apps.cases.tests_assessment import AssessmentClient, bank_with_a_case, body
 
-    @skip("pending: CAS-S5")
+        bank = bank_with_a_case(CaseStatusCategory.ASSIGNED)
+        calls = AssessmentClient(self, bank)
+
+        started = calls.start()
+        self.assertEqual(started.status_code, 200, started.content)
+        self.assertEqual(started.json()["status"], CaseStatusCategory.ASSESSING.value)
+        self.assertEqual(started.json()["assessment"]["version"], 1)
+
+        saved = calls.save(body())
+        self.assertEqual(saved.status_code, 200, saved.content)
+        answer = saved.json()
+        self.assertEqual(answer["status"], CaseStatusCategory.ASSESSING.value, "saving moves no state")
+        stored = answer["assessment"]
+        self.assertEqual(
+            {name: stored[name] for name in ("applies", "why", "whatMustChange", "internalDeadline")},
+            {name: body()[name] for name in ("applies", "why", "whatMustChange", "internalDeadline")},
+        )
+        self.assertEqual(stored["effort"]["key"], "m", "the effort is a key of the bank's list")
+
+        without_why = calls.save(body(why=""))
+        self.assertEqual(without_why.status_code, 422)
+
+        refused = calls.save(body(applies="no"), bank.contributor)
+        self.assertEqual(refused.status_code, 403)
+        self.assertEqual(refused.json()["requiredPermission"], "cases.work")
+
+        closed = calls.save(body(applies="no"))
+        self.assertEqual(closed.status_code, 200, closed.content)
+        self.assertEqual(closed.json()["status"], CaseStatusCategory.CLOSED.value)
+        self.assertEqual(closed.json()["closeReason"]["kind"], "not_applicable")
+        self.assertIn(CaseStatusCategory.NEW.value, closed.json()["allowedTransitions"], "restorable to triage")
+
     def test_cas_s5(self) -> None:
         """CAS-S5
 
         Two people saving the same assessment: the second receives stale_write (CAS-03, CAS-08, AC-CAS2).
         """
+        from apps.cases.tests_assessment import OTHER_WHY, WHY, AssessmentClient, bank_with_a_case, body
 
-    @skip("pending: CAS-S6")
+        bank = bank_with_a_case(CaseStatusCategory.ASSESSING)
+        calls = AssessmentClient(self, bank)
+        loaded = calls.version()  # the owner and the contributor both read this version
+
+        first = calls.save(body(), bank.owner, if_match=loaded)
+        self.assertEqual(first.status_code, 200, first.content)
+        self.assertEqual(first.json()["version"], loaded + 1)
+
+        second = calls.save(body(why=OTHER_WHY), bank.contributor, if_match=loaded)
+        self.assertEqual(second.status_code, 409)
+        self.assertEqual(second.json()["code"], "stale_write")
+        self.assertEqual(second.json()["currentVersion"], loaded + 1, "the screen reloads to this version")
+        self.assertEqual(calls.assessment().why, WHY, "never merged")
+
     def test_cas_s6(self) -> None:
         """CAS-S6
 
-        Actions have an owner and due date, lock during sign-off and export as tickets (CAS-04).
+        Actions have an owner and a due date, are locked in sign-off and are removed softly
+        (CAS-04, CAS-08). The ticket export is chunk 13's (INT-S3). c9-actions.
         """
+        import datetime
+        from typing import Any
 
-    @skip("pending: CAS-S7")
+        from django.utils import timezone
+
+        from apps.cases import logic
+        from apps.cases.models import Action, ChangeCase, Evidence, EvidenceKind
+        from apps.cases.tests_actions import assessing
+        from apps.shared import factories, tenancy
+        from apps.shared.audit import Actor, ActorType
+        from apps.shared.models import AuditEvent
+        from apps.shared.testing import sign_in
+        from apps.taxonomy.models import CaseSubStatus
+
+        tenant = factories.tenant()
+        owner = factories.member(tenant, roles=("compliance_officer",)).user
+        case = assessing(tenant, owner)
+        actions_url = f"/api/v1/changes/{case.change_id}/actions"
+        due = timezone.localdate() + datetime.timedelta(days=10)
+
+        def add(body: dict[str, object]) -> Any:
+            tenancy.activate(tenant.id)
+            version = ChangeCase.objects.get(pk=case.pk).version
+            return self.client.post(
+                actions_url, data=body, content_type="application/json", HTTP_IF_MATCH=str(version), **sign_in(owner, tenant=tenant)
+            )
+
+        def open_count() -> int:
+            tenancy.activate(tenant.id)
+            return logic.case_facts(ChangeCase.objects.get(pk=case.pk), actor=None).open_action_count
+
+        # "Add action" with a title and a due date and no owner.
+        first = add({"title": "Document the research quality criteria", "dueDate": due.isoformat()})
+        self.assertEqual(first.status_code, 201, first.content)
+        listed = self.client.get(actions_url, **sign_in(owner, tenant=tenant)).json()["items"]
+        self.assertEqual([(row["id"], row["dueDate"], row["owner"]["id"]) for row in listed], [(first.json()["id"], due.isoformat(), str(owner.id))])
+        tenancy.activate(tenant.id)
+        self.assertEqual(ChangeCase.objects.get(pk=case.pk).status, CaseStatusCategory.IMPLEMENTING.value)
+
+        # Without a title, or for someone outside the bank.
+        self.assertEqual(add({"title": "", "dueDate": due.isoformat()}).status_code, 422)
+        stranger = add({"title": "Train the desk", "dueDate": due.isoformat(), "ownerId": str(factories.user().id)})
+        self.assertEqual((stranger.status_code, stranger.json()["code"]), (422, "unknown_member"))
+        second = add({"title": "Train the desk", "dueDate": due.isoformat()}).json()
+
+        # The case moves to waiting for sign-off, through the real move, under a sub-status.
+        tenancy.activate(tenant.id)
+        Action.objects.filter(case=case).update(done_at=timezone.now(), done_by=owner)
+        Evidence.objects.create(
+            tenant=tenant, case=case, kind=EvidenceKind.LINK.value, name="Criteria memo",
+            url="https://intranet.example.com/memo/7", uploaded_by=owner, scan_state="clean", scanned_at=timezone.now(),
+        )
+        moving = logic.load_case(tenant, case.change_id, for_update=True)
+        moving.signoff_requested_by, moving.signoff_requested_at = owner, timezone.now()
+        who = Actor(kind=ActorType.USER, id=owner.id, label=owner.name)
+        logic.transition(moving, CaseStatusCategory.SIGNOFF, actor=who, user=owner)
+        ChangeCase.objects.filter(pk=case.pk).update(sub_status=CaseSubStatus.objects.get(tenant=tenant, key="signoff"))
+        headers = {**sign_in(owner, tenant=tenant), "HTTP_IF_MATCH": "1"}
+        for response in (
+            add({"title": "Late", "dueDate": due.isoformat()}),
+            self.client.patch(f"/api/v1/actions/{second['id']}", data={"done": False}, content_type="application/json", **headers),
+            self.client.delete(f"/api/v1/actions/{second['id']}", **headers),
+        ):
+            self.assertEqual((response.status_code, response.json()["code"]), (409, "actions_locked"))
+        self.assertEqual(self.client.get(actions_url, **sign_in(owner, tenant=tenant)).status_code, 200)
+
+        # Sent back, the owner reopens one action and removes it.
+        tenancy.activate(tenant.id)
+        back = logic.load_case(tenant, case.change_id, for_update=True)
+        logic.transition(back, CaseStatusCategory.IMPLEMENTING, actor=who, user=owner)
+        reopened = self.client.patch(f"/api/v1/actions/{second['id']}", data={"done": False}, content_type="application/json", **headers)
+        self.assertEqual(reopened.status_code, 200)
+        self.assertEqual(open_count(), 1)
+        removed = self.client.delete(f"/api/v1/actions/{second['id']}", **{**sign_in(owner, tenant=tenant), "HTTP_IF_MATCH": "2"})
+        self.assertEqual(removed.status_code, 204)
+        self.assertEqual(open_count(), 0)
+        listed = self.client.get(actions_url, **sign_in(owner, tenant=tenant)).json()
+        self.assertEqual([row["id"] for row in listed["items"]], [first.json()["id"]])
+        tenancy.activate(tenant.id)
+        row = Action.objects.get(pk=second["id"])
+        self.assertEqual((row.removed_by_id, row.removed_at is not None), (owner.id, True), "the row stays for the case file")
+        self.assertTrue(AuditEvent.objects.filter(action="case.action_removed", subject_id=row.id, actor_id=owner.id).exists())
+
     def test_cas_s7(self) -> None:
         """CAS-S7
 
         Evidence is scanned, hashed and streamed through permission checks (CAS-05).
         """
+        # --- c9-evidence: CAS-S7 ---
+        import hashlib
+        import tempfile
 
-    @skip("pending: CAS-S8")
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.db import transaction
+        from django.test import override_settings
+
+        from apps.cases import evidence as evidence_logic
+        from apps.cases.tests_evidence import AS_SESSION, PDF, bank_with_case
+        from apps.shared import permissions as perms
+        from apps.shared import tenancy
+        from apps.shared.models import AuditEvent
+        from apps.shared.testing import AuditAssertingClient, stub_session, user_principal
+
+        media = tempfile.TemporaryDirectory()
+        self.addCleanup(media.cleanup)
+        self.enterContext(override_settings(MEDIA_ROOT=media.name, STORAGE_BACKEND="local", SCANNER_PROVIDER="mock"))
+        client = AuditAssertingClient()
+        bank = bank_with_case(CaseStatusCategory.IMPLEMENTING)
+        url = f"/api/v1/changes/{bank.change_id}/evidence"
+
+        # The owner attaches a PDF, a link and a reference; the PDF waits for its scan.
+        with stub_session(bank.principal), self.captureOnCommitCallbacks(execute=False) as queued:
+            pdf = client.post(url, data={"kind": "file", "name": "Research criteria", "file": SimpleUploadedFile("criteria.pdf", PDF, content_type="application/pdf")}, **AS_SESSION)
+        with stub_session(bank.principal):
+            link = client.post(url, data={"kind": "link", "name": "FI decision memo", "url": "https://intranet.example.com/memo/42"}, **AS_SESSION)
+            reference = client.post(url, data={"kind": "reference", "name": "Credit policy, section 4"}, **AS_SESSION)
+        self.assertEqual((pdf.status_code, link.status_code, reference.status_code), (201, 201, 201))
+        stored = pdf.json()["evidence"]
+        self.assertEqual(stored["contentHash"], "sha256:" + hashlib.sha256(PDF).hexdigest())
+        self.assertEqual(stored["scanState"], "pending")
+
+        def download(principal: Any) -> Any:
+            with stub_session(principal):
+                return client.get(f"/api/v1/evidence/{stored['id']}/download", **AS_SESSION)
+
+        self.assertEqual(download(bank.principal).status_code, 409, "invisible until the scan passes")
+
+        # A file outside the size or type allow-list answers 422 and stores nothing.
+        with stub_session(bank.principal), override_settings(EVIDENCE_MAX_BYTES=len(PDF) - 1):
+            too_large = client.post(url, data={"kind": "file", "name": "Big", "file": SimpleUploadedFile("big.pdf", PDF, content_type="application/pdf")}, **AS_SESSION)
+        with stub_session(bank.principal):
+            wrong_type = client.post(url, data={"kind": "file", "name": "Page", "file": SimpleUploadedFile("page.html", b"<html></html>", content_type="text/html")}, **AS_SESSION)
+        self.assertEqual((too_large.status_code, wrong_type.status_code), (422, 422))
+
+        # The scan passes; a reader downloads through the API, checked and audited.
+        for run in queued:
+            run()
+        reader = user_principal(subject_id=bank.person.id, tenant_id=bank.tenant.id, permissions={perms.CASES_READ})
+        downloaded = download(reader)
+        self.assertEqual(downloaded.status_code, 200)
+        self.assertEqual(downloaded.content, PDF)
+        with transaction.atomic():
+            tenancy.activate(bank.tenant.id)
+            self.assertEqual(AuditEvent.objects.filter(action=evidence_logic.DOWNLOADED, subject_id=stored["id"]).count(), 1)
+        without_read = user_principal(subject_id=bank.person.id, tenant_id=bank.tenant.id, permissions={perms.CASES_CONTRIBUTE})
+        self.assertEqual(download(without_read).status_code, 403, "the permission is checked on every download")
+        # --- end c9-evidence: CAS-S7 ---
+
     def test_cas_s8(self) -> None:
         """CAS-S8
 
         Sign-off is refused while actions are open or evidence is missing (CAS-06, AC-CAS1).
         """
+        bank = signoff_build.Bank()
+        action = bank.action(done=False)
+        response = bank.post(self.client, "request", bank.owner)
+        self.assertEqual((response.status_code, response.json()["code"]), (409, "open_actions"))
 
-    @skip("pending: CAS-S9")
+        with transaction.atomic():
+            tenancy.activate(bank.tenant.id)
+            Action.objects.filter(pk=action.pk).update(done_at=timezone.now(), done_by=bank.owner)
+        response = bank.post(self.client, "request", bank.owner)
+        self.assertEqual((response.status_code, response.json()["code"]), (409, "evidence_missing"))
+
+        bank.evidence("clean")
+        response = bank.post(self.client, "request", bank.owner)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "signoff", "the category that reads \"Waiting for sign-off\"")
+
     def test_cas_s9(self) -> None:
         """CAS-S9
 
         The requester cannot sign off their own case (CAS-06, AC-CAS1).
         """
+        bank = signoff_build.Bank()
+        bank.ready_for_signoff(self.client)
+        response = bank.post(self.client, "approve", bank.owner, body={"note": ""}, step_up=True)
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["code"], "four_eyes_violation")
+        self.assertEqual(response.json()["detail"], "A second person must sign off.")
+        self.assertEqual(bank.fresh().status, CaseStatusCategory.SIGNOFF.value)
 
-    @skip("pending: CAS-S10")
     def test_cas_s10(self) -> None:
         """CAS-S10
 
         A second person signs off with step-up and the inventory is untouched (CAS-06).
         """
+        bank = signoff_build.Bank()
+        bank.ready_for_signoff(self.client)
+        response = bank.post(self.client, "approve", bank.approver, body={"note": ""}, step_up=False)
+        self.assertEqual((response.status_code, response.json()["code"]), (403, "step_up_required"))
 
-    @skip("pending: CAS-S11")
+        before = signoff_build.inventory_snapshot()
+        response = bank.post(self.client, "approve", bank.approver, body={"note": "Checked."}, step_up=True)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "closed")
+        case = bank.fresh()
+        audit = AuditEvent.objects.filter(subject_id=case.id, after__status="closed").get()
+        self.assertIsNotNone(audit.step_up_assertion_id, "the audit event carries the assertion")
+        self.assertEqual(signoff_build.inventory_snapshot(), before, "no library or register row changed")
+
     def test_cas_s11(self) -> None:
         """CAS-S11
 
         The case file stands alone as text and as an export (CAS-07).
         """
+        bank = factories.tenant()
+        officer = factories.member_user(bank, roles=("compliance_officer",))
+        built = factories.closed_case(bank)
+        headers = sign_in(officer, tenant=bank)
+        shown = self.client.get(f"/api/v1/changes/{built.change_id}/case-file", **headers)
+        self.assertEqual(shown.status_code, 200)
+        text = shown.content.decode("utf-8")
+        tenancy.activate(bank.id)
+        for part in (
+            built.case.change.title,
+            built.case.so_what_text,
+            "Assessment",
+            "Done by",
+            f"{0:064x}",
+            f"Requested by {built.owner.name}",
+            f"Signed off by {built.approver.name}",
+        ):
+            with self.subTest(part=part):
+                self.assertIn(part, text)
 
-    @skip("pending: CAS-S12")
+        with self.captureOnCommitCallbacks(execute=True):
+            asked = self.client.post(
+                "/api/v1/exports",
+                data={"kind": "case_file", "subjectId": str(built.case.id), "format": "txt"},
+                content_type="application/json",
+                **sign_in(officer, tenant=bank, step_up=True),
+            )
+        self.assertEqual(asked.status_code, 202)
+        download = f"/api/v1/exports/{asked.json()['id']}/download"
+        exported = self.client.get(download, **headers)
+        self.assertEqual(b"".join(exported.streaming_content), shown.content, "the export is the same document")  # type: ignore[attr-defined]
+        self.assertTrue(
+            AuditEvent.objects.filter(action="export.downloaded", subject_id=asked.json()["id"]).exists(),
+            "the download is recorded",
+        )
+        without_cases = user_principal(
+            subject_id=officer.id, tenant_id=bank.id, permissions=perms.TENANT_PERMISSIONS - {perms.CASES_READ}
+        )
+        with stub_session(without_cases):
+            refused = self.client.get(download, HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}")
+        self.assertEqual(refused.status_code, 403, "the download is permission-checked")
+
     def test_cas_s12(self) -> None:
         """CAS-S12
 
         Every response lists allowed transitions and an invalid one is refused (CAS-08).
         """
+        bank = signoff_build.Bank()
+        case_build.in_category(bank.case, CaseStatusCategory.ASSESSING)
+        read = self.client.get(f"/api/v1/changes/{bank.case.change_id}", **sign_in(bank.approver, tenant=bank.tenant))
+        self.assertEqual(read.status_code, 200)
+        case = bank.fresh()
+        machine = state.allowed_transitions(CaseStatusCategory.ASSESSING, logic.case_facts(case, actor=bank.approver.id))
+        self.assertEqual(read.json()["case"]["allowedTransitions"], [category.value for category in machine])
 
-    @skip("pending: CAS-S13")
+        response = bank.post(self.client, "approve", bank.approver, body={"note": ""}, step_up=True)
+        self.assertEqual((response.status_code, response.json()["code"]), (409, "invalid_transition"))
+        self.assertEqual(bank.fresh().status, CaseStatusCategory.ASSESSING.value)
+
     def test_cas_s13(self) -> None:
         """CAS-S13
 
         Sub-statuses inside a category leave the guards untouched (CAS-02, VOC-04).
         """
+        from apps.cases.tests_assessment import AssessmentClient, bank_with_a_case, body, sub_status
 
-    @skip("pending: CAS-S16")
+        bank = bank_with_a_case(CaseStatusCategory.ASSESSING)
+        sub_status(bank.tenant, "waiting_for_legal", CaseStatusCategory.ASSESSING, "Waiting for legal")
+        calls = AssessmentClient(self, bank)
+        plain = calls.save(body())
+        self.assertEqual(plain.status_code, 200, plain.content)
+
+        placed = calls.save(body(subStatus="waiting_for_legal"))
+
+        self.assertEqual(placed.status_code, 200, placed.content)
+        answer = placed.json()
+        self.assertEqual(answer["status"], CaseStatusCategory.ASSESSING.value, "the machine still reads assessing")
+        self.assertEqual(answer["allowedTransitions"], plain.json()["allowedTransitions"], "the guards are untouched")
+        self.assertNotIn(CaseStatusCategory.SIGNOFF.value, answer["allowedTransitions"])
+        self.assertFalse(answer["canRequestSignoff"], "sign-off rules apply unchanged")
+        # The pill's tone comes from the kind, the category; its text is the bank's label.
+        self.assertEqual(answer["subStatus"], {"key": "waiting_for_legal", "kind": "assessing", "label": "Waiting for legal"})
+
     def test_cas_s16(self) -> None:
         """CAS-S16
 
         Another tenant's case and evidence answer 404 (CAS-05, CAS-07, NFR-01).
+
+        Reworded (c9-case-file-export): a case is addressed by its change, so bank B asking
+        for the case file of A's change gets its own case's file, holding none of A's work.
         """
+        a, b = factories.tenant(), factories.tenant()
+        theirs = factories.closed_case(a)
+        tenancy.activate(a.id)
+        change = theirs.case.change
+        a_action = Action.objects.filter(case=theirs.case).first()  # ordering: Meta.ordering
+        a_evidence = Evidence.objects.filter(case=theirs.case).first()  # ordering: Meta.ordering
+        assert a_action is not None and a_evidence is not None
+        case_build.case(b, change)
+        reader = factories.member_user(b, roles=("compliance_officer",))
+        headers = sign_in(reader, tenant=b)
+        audit_before = AuditEvent.objects.count()
+
+        own = self.client.get(f"/api/v1/changes/{change.id}/case-file", **headers)
+        self.assertEqual(own.status_code, 200)
+        text = own.content.decode("utf-8")
+        self.assertIn(change.title, text, "B reads the change, a library fact")
+        for secret in (theirs.case.so_what_text, a_action.title, a_evidence.name, theirs.owner.name, theirs.approver.name):
+            with self.subTest(secret=secret):
+                self.assertNotIn(secret, text)
+
+        for method, url, data in (
+            ("get", f"/api/v1/evidence/{a_evidence.id}/download", None),
+            ("delete", f"/api/v1/evidence/{a_evidence.id}", None),
+            ("patch", f"/api/v1/actions/{a_action.id}", {"done": True}),
+            ("delete", f"/api/v1/actions/{a_action.id}", None),
+        ):
+            with self.subTest(method=method, url=url):
+                extra = {"data": data, "content_type": "application/json"} if data else {}
+                response = getattr(self.client, method)(url, HTTP_IF_MATCH="1", **extra, **headers)
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json()["code"], "not_found")
+        self.assertEqual(AuditEvent.objects.count(), audit_before, "no refusal writes an audit row")
+
+    def test_cas_s18(self) -> None:
+        """CAS-S18
+
+        Send-back returns a case to implementing and a fresh request is possible (CAS-06, CAS-08).
+        """
+        bank = signoff_build.Bank()
+        bank.action(done=True)
+        bank.ready_for_signoff(self.client)
+        response = bank.post(self.client, "send-back", bank.approver, body={"note": "Attach the desk's signature."})
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "implementing", "the actions' lock reads this category, so they unlock")
+        case = bank.fresh()
+        self.assertIsNone(case.signoff_requested_by_id)
+        moved = CaseTransition.objects.filter(case=case, to_status="implementing", from_status="signoff").get()
+        self.assertEqual(moved.note, "Attach the desk's signature.", "the note is on the case's trail")
+
+        response = bank.post(self.client, "request", bank.owner)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "signoff")
 
     @skip("pending: CAS-S17 (CAS-03, COL-04, chunk 9)")
     def test_cas_s17(self) -> None:
@@ -159,3 +498,85 @@ class CasesScenarioTests(TestCase):
 
         Contributor teams are the case's team participants (CAS-03, COL-04).
         """
+
+
+class TriageScenarioTests(CaseMoves, ScenarioTestCase):
+    """Triage, dismissal, restore and the one-person close (c9-triage), through the
+    scenario client, which fails any write that leaves no audit row."""
+
+    def test_cas_s2(self) -> None:
+        """CAS-S2
+
+        Triage needs an urgency and an owner (CAS-02).
+        """
+        bank = triage_bank()
+        no_owner = self.move(bank, "triage", {"urgency": "within_3_months"})
+        self.assertEqual(no_owner.status_code, 422, no_owner.content)
+        self.assertTrue(any(error["field"].endswith("ownerId") for error in no_owner.json()["errors"]))
+
+        triaged = self.move(bank, "triage", {"urgency": "within_3_months", "ownerId": str(bank.owner.id)})
+        self.assertEqual(triaged.status_code, 200, triaged.content)
+        self.assertEqual(triaged.json()["status"], "assigned")
+        self.assertEqual(triaged.json()["owner"]["id"], str(bank.owner.id))
+        self.assertEqual(self.told(bank), [bank.owner.id], "the owner is notified, once")
+        # The pill's tone follows the key's fixed severity ordinal, never the response.
+        urgency = triaged.json()["urgency"]
+        self.assertIsNone(urgency["kind"])
+        self.assertEqual(Urgency.objects.get(key=urgency["key"]).kind, "warning")
+
+    def test_cas_s3(self) -> None:
+        """CAS-S3
+
+        Dismissal needs a reason and can be restored (CAS-02).
+        """
+        bank = triage_bank()
+        self.assertEqual(self.move(bank, "dismiss", {}).status_code, 422)
+
+        dismissed = self.move(bank, "dismiss", {"reasonKey": "out_of_scope"})
+        self.assertEqual(dismissed.status_code, 200, dismissed.content)
+        self.assertEqual(dismissed.json()["status"], "dismissed")
+        self.assertEqual(dismissed.json()["dismissedReason"]["label"], "Out of scope")
+        self.assertFalse(state.is_open(CaseStatusCategory(dismissed.json()["status"])), "absent from the open list")
+
+        restored = self.move(bank, "restore", None)
+        self.assertEqual(restored.status_code, 200, restored.content)
+        self.assertEqual(restored.json()["status"], "new")
+        trail = self.moves_audited(bank)
+        self.assertEqual([(row.before["status"], row.after["status"]) for row in trail], [("new", "dismissed"), ("dismissed", "new")])
+        self.assertEqual({row.actor_id for row in trail}, {bank.officer.id})
+
+    def test_cas_s19(self) -> None:
+        """CAS-S19
+
+        One person closes a case that needs no work, audited, and can restore it (CAS-02; D-92).
+        """
+        bank = triage_bank()
+        case_build.in_category(bank.case, CaseStatusCategory.ASSIGNED)
+        note = "Covered by the 2025 research policy review."
+
+        refused = self.move(bank, "close", {"reasonKey": "signed_off"}, who=bank.owner)
+        self.assertEqual(refused.status_code, 409, refused.content)
+        self.assertEqual(refused.json()["code"], "four_eyes_violation")
+
+        closed = self.move(bank, "close", {"reasonKey": "no_action", "note": note}, who=bank.owner)
+        self.assertEqual(closed.status_code, 200, closed.content)
+        self.assertEqual(closed.json()["status"], "closed")
+        self.assertEqual(closed.json()["closeReason"]["key"], "no_action")
+        self.assertEqual(closed.json()["closedNote"], note)
+        [audited] = self.moves_audited(bank)
+        self.assertEqual((audited.actor_id, audited.after["reasonKey"]), (bank.owner.id, "no_action"))
+        self.assertNotIn(note, str(audited.after), "the note never reaches the audit values")
+
+        restored = self.move(bank, "restore", None)
+        self.assertEqual(restored.status_code, 200, restored.content)
+        self.assertEqual(restored.json()["status"], "new")
+        self.assertEqual(self.ledger(bank), [("assigned", "closed", bank.owner.id), ("closed", "new", bank.officer.id)])
+
+        waiting = triage_bank()
+        case_build.in_category(waiting.case, CaseStatusCategory.SIGNOFF)
+        with transaction.atomic():
+            tenancy.activate(waiting.tenant.id)
+            ChangeCase.objects.filter(pk=waiting.case.id).update(signoff_requested_by=waiting.owner)
+        door = self.move(waiting, "close", {"reasonKey": "no_action"})
+        self.assertEqual(door.status_code, 409, door.content)
+        self.assertEqual(door.json()["code"], "invalid_transition")

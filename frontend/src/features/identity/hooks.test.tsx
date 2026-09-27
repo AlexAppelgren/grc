@@ -43,6 +43,7 @@ const me: Me = {
   counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0 },
   lastVisitAt: null,
   notificationPrefs: null,
+  headOf: [],
 };
 
 function stubCredentials() {

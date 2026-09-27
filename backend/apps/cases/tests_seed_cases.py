@@ -182,3 +182,25 @@ class SeededCaseJourneys(TestCase):
         last_week = {case.change.stable_key for case in week_cases(tenant, week_start_of(today) - datetime.timedelta(days=7), limit=100)}
         self.assertFalse(keys & (on_roadmap | this_week | last_week))
         self.assertFalse(ChangeCase.objects.filter(change__stable_key=_spec("CAS-S14").stable_key).exists())
+
+
+# --- c9-e2e-signoff-j3 (CAS-S10) ----------------------------------------------------------------
+@override_settings(E2E_MODE=True)
+class SeededSignoffSpotCheck(TestCase):
+    """CAS-S10 proves a sign-off leaves the inventory alone by reading one obligation before and
+    after: the obligation its change links to, confirmed, and named by no other journey."""
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        seed_e2e()
+
+    def test_cas_s10_change_links_the_obligation_its_journey_reads(self) -> None:
+        from apps.shared.e2e_seed import SIGNOFF_SPOT_CHECK_OBLIGATION
+        from apps.watch.models import ChangeObligation
+
+        tenancy.clear_tenant()
+        link = ChangeObligation.objects.get(change__stable_key=_spec("CAS-S10").stable_key)
+        self.assertEqual(link.obligation.stable_key, SIGNOFF_SPOT_CHECK_OBLIGATION)
+        self.assertIsNotNone(link.confirmed_at, "a confirmed link, so the change page shows it as settled")
+        linked_from = ChangeObligation.objects.filter(obligation=link.obligation).values_list("change__stable_key", flat=True)
+        self.assertEqual(list(linked_from), [_spec("CAS-S10").stable_key], "no other seeded change names it")
