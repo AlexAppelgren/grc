@@ -94,7 +94,6 @@ from apps.proposals.schemas import (
 )
 from apps.shared import tenancy
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
 from apps.shared.schemas import AgentDecision
 
 SUBJECT_TYPE = "proposal"

@@ -31,9 +31,7 @@ from apps.cases.models import Action, ChangeCase
 from apps.collab.models import Participant
 from apps.identity.models import Membership, TenantRole
 from apps.library.models import Obligation
-from apps.cases import testing as case_build
 from apps.cases import tests_signoff as signoff_build
-from apps.cases.models import ChangeCase
 from apps.collab import reminders
 from apps.collab.models import Notification
 from apps.library.reading import today_for

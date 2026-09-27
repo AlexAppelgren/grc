@@ -66,7 +66,7 @@ from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
 from apps.tenants.models import Licence, OrgUnit, OrgUnitKind, SupportAccess, TeamMember, TenantProduct
-from apps.tenants.testing import licence_type_term
+from apps.tenants.testing import entity_term, licence_type_term
 
 _counter = itertools.count(1)
 
@@ -499,7 +499,16 @@ def seeded_legal_entity(tenant: Tenant, *, parent: OrgUnit | None = None, head: 
         )
 
 
-def department(tenant: Tenant, *, parent: OrgUnit | None = None, head: User | None = None) -> OrgUnit:
+def department(
+    tenant: Tenant, *, name: str | None = None, parent: OrgUnit | None = None, head: User | None = None, kind: OrgUnitKind = OrgUnitKind.BUSINESS_AREA
+) -> OrgUnit:
+    """A department of `tenant` with a head, under `parent` (c8-ten-organisation, c8-ten-teams-people)."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return OrgUnit.objects.create(tenant=tenant, kind=kind.value, name=name or f"Unit {next(_counter)}", parent=parent, head_user=head)
+
+
+def business_unit(tenant: Tenant, *, parent: OrgUnit | None = None, head: User | None = None) -> OrgUnit:
     """A business unit of `tenant` with a head, under `parent`."""
     with transaction.atomic():
         tenancy.activate(tenant.id)
@@ -652,7 +661,6 @@ def tenant_agent(tenant: Tenant) -> object:
     bank's own agents, on a tenant-scoped definition shared by every bank that asks."""
     from apps.agents import testing as agent_build
     from apps.agents.models import TenantAgent
-    from apps.agents import testing as agent_build
 
     definition = agent_build.tenant_definition("isolation-bank-watch")
     with transaction.atomic():

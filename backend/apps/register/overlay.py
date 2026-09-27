@@ -39,7 +39,6 @@ from apps.shared import permissions as perms
 from apps.register.models import Applicability, TenantObligation, TenantObligationScope
 from apps.register.schemas import Applicability as ApplicabilityAnswer
 from apps.register.schemas import RegisterPersonRef, RegisterVocabRef
-from apps.shared import permissions as perms
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant

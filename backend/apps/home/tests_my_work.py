@@ -51,7 +51,6 @@ from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.permissions import CASES_READ, REGISTER_READ
 from apps.shared.tenancy import library_write
 from apps.taxonomy.models import (
-    DismissalReason,
     CaseStatusCategory,
     ComplianceStatus,
     DismissalReason,

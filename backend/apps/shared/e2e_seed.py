@@ -37,9 +37,8 @@ from apps.agents.models import AgentAccess, AgentRun, RunStatus, TenantAgent
 from apps.agents.seeds import seed_agent_definitions
 # c11-e2e-seed
 from decimal import Decimal
-from apps.agents.models import AgentCadence, RunTrigger, TenantAgent, TenantAgentBudget
+from apps.agents.models import AgentCadence, RunTrigger, TenantAgentBudget
 # acc-e2e-seed
-from apps.agents.models import AgentAccess
 from apps.agents.seeds.e2e import publish_e2e_version
 from apps.proposals import batch as proposal_batch
 from apps.proposals.schemas import ObligationScopeChange, ObligationScopePayload
