@@ -338,6 +338,7 @@ class TenantsRoutesHideAnotherBanksRecords(TenantsContractCase):
 class TenantsRouteStubs(TenantsContractCase):
     VERSIONED = {"updateOrgUnit", "updateLicence", "updateProduct"}
     # c8-ten-organisation: real logic, proved in tests_org_units.py and tests_products.py.
+    # c8-ten-teams-people: built, and proven in tests_teams.py and tests_reference_people.py.
     BUILT = {
         "listOrgUnits",
         "createOrgUnit",

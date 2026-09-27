@@ -36,6 +36,7 @@ from django.utils import timezone
 
 from apps.taxonomy.models import ApprovalStatus, ComplianceStatus, FootprintChangeRequest, Team, TeamLabel, VocabularySuggestion
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+from apps.governance.models import TenantReachRequest
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -532,6 +533,21 @@ def case_evidence(tenant: Tenant) -> SimpleNamespace:
     return SimpleNamespace(id=evidence.id, case=row)
 
 
+# acc-scope-and-reach (ACC-08): the tenant-isolation guard's record for tenant reach routes.
+def tenant_reach_request(tenant: Tenant) -> TenantReachRequest:
+    """The tenant's pending request for tenant reach, reused when one waits, because a
+    second cannot."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        waiting = TenantReachRequest.objects.filter(tenant=tenant, status=ApprovalStatus.PENDING.value).first()  # ordering: at most one pending row per tenant, by constraint
+    if waiting is not None:
+        return waiting
+    requester = member_user(tenant, roles=("admin",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantReachRequest.objects.create(tenant=tenant, requested_by=requester)
+
+
 # c8-ten-organisation (TEN-02): a seeded organisation tree. A legal entity with the seeded
 # `legal_entity:bank` term passes `entity_term_id=entity_term().id` to `legal_entity` above,
 # which needs seed_term_dimensions() and seed_taxonomy_terms().
@@ -550,3 +566,12 @@ def department(
         return OrgUnit.objects.create(
             tenant=tenant, kind=kind.value, name=name or f"Unit {next(_counter)}", parent=parent, head_user=head
         )
+
+
+def department(
+    tenant: Tenant, *, name: str | None = None, parent: OrgUnit | None = None, head: User | None = None, kind: OrgUnitKind = OrgUnitKind.BUSINESS_AREA
+) -> OrgUnit:
+    """A department of `tenant` with a head, under `parent` (c8-ten-organisation, c8-ten-teams-people)."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return OrgUnit.objects.create(tenant=tenant, kind=kind.value, name=name or f"Unit {next(_counter)}", parent=parent, head_user=head)

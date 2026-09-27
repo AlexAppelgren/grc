@@ -1491,6 +1491,38 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
       then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
       (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**
+
+## c9-signoff: evidence can leave a case while it waits for sign-off (2026-09-25)
+
+- [ ] **Should the approval re-check the evidence, or should evidence lock?** A sign-off
+      request needs no open action and one piece of evidence the scanner passed. While
+      the case waits, the actions lock (`c9-actions`, `actions_locked`), but nothing in
+      the plan locks the evidence: `removeEvidence` only sets `removed_at`, and a rescan
+      could mark a file infected. The approval then closes a case whose evidence is gone,
+      because the fixed guard on `signoff → closed` checks only the second person.
+      Default taken: no change, since the guards are fixed (CLAUDE.md section 5) and this
+      package does not own `state.py` or `evidence.py`. Two ways out: (a) `c9-evidence-b`
+      refuses `removeEvidence` with 409 `actions_locked`-style `evidence_locked` while
+      the case is in `signoff`, which mirrors the actions lock; or (b) the
+      `signoff → closed` edge also carries the `no_open_action` and `clean_evidence`
+      guards. The first keeps the state machine as designed; say which.
+## acc-scope-and-reach: an entry's scope and tenant reach, answered by default (2026-09-25, ACC-02, ACC-08, D-70, D-72)
+
+- [ ] Default taken: an opt-in dimension keeps its rule inside an entry's scope too. The
+      second pass is FP-01 unchanged against the entry's terms, so an entry narrowed to
+      Trading sees a standard's records (ISO/IEC 27001) only when a Trading product names
+      that standard. Say if a narrowed entry should instead inherit every standard the bank
+      follows.
+- [ ] Default taken: a department brings its own products and those of every active unit
+      below it; a deactivated unit cuts its branch, and a retired product derives nothing.
+      An entry that names departments or products deriving no term reads nothing
+      (`entry_scope_empty`), and an entry the session cannot see, or one revoked, fails
+      closed the same way rather than reading the whole footprint.
+- [ ] Default taken: rejecting a reach request needs a passkey step-up like approving it,
+      and a reach request is never withdrawn (the requester's colleague rejects it).
+      Switching reach off needs one person and a step-up; on again takes a new request and
+      a second person. `GET /tenant/reach` is readable with `security.manage` alone.
+
 ## c8-mywork-service: how long a linked change stays on My work (2026-09-25, HOM-05, D-25, D-97)
 
 - [ ] **A confirmed link keeps its change under "Changes on your items" while the
@@ -1539,3 +1571,19 @@ Built on these defaults; each stays yours to overrule.
       (`c8-support-access-console-list` in `CHUNK8_TASKS.md`) was in no R2 wave and still
       answered 501, which the screen needs, so this package built it on that brief:
       the own-grants policy, no bank active, the bank by name, no member ever named.
+
+## c8-ui-home-register: where Today's standing lines lead (2026-09-25, HOM-01, HOM-03)
+
+- [ ] **Each compliance category opens the inventory through one status key.** `GET /home`
+      counts per fixed category, but the inventory filters by one status key
+      (`complianceStatus`, c8-inventory-overlay). Default taken: a category's line opens
+      `/inventory?applicability=applies&complianceStatus=<key>` with the bank's system
+      status of that category (or the first it added, if the system row was retired). A
+      bank that adds a second status under a category sees the obligations in the system
+      one only. The alternative is a category filter on `GET /obligations`, a contract
+      change for another package.
+- [ ] **The open gaps open the whole gap list.** The count is gaps open or in
+      remediation, and `/gaps` filters by one status key, so "See the gaps" opens `/gaps`
+      unfiltered rather than a list that would hold fewer gaps than the count said.
+      Default if you say nothing: it stays so; a two-status filter on `/gaps` would make
+      it exact.

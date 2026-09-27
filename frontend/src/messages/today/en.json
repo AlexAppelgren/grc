@@ -14,7 +14,21 @@
   "today.decideNow.triage": "{count, plural, one {# change needs triage.} other {# changes need triage.}}",
   "today.decideNow.assignedToMe": "{count, plural, one {# case assigned to you.} other {# cases assigned to you.}}",
   "today.decideNow.proposals": "{count, plural, one {# of your proposals pending review.} other {# of your proposals pending review.}}",
+  "today.decideNow.signoffs": "{count, plural, one {# case waiting for your sign-off.} other {# cases waiting for your sign-off.}}",
+  "today.decideNow.riskAcceptances": "{count, plural, one {# risk acceptance to approve.} other {# risk acceptances to approve.}}",
+  "today.decideNow.supportAccessRequests": "{count, plural, one {# support access request to decide.} other {# support access requests to decide.}}",
+  "today.decideNow.tenantReachRequests": "{count, plural, one {# tenant reach request to decide.} other {# tenant reach requests to decide.}}",
   "today.sources.summary": "Sources: {checked} of {total} checked.",
   "today.sources.failed": "{name} failed.",
-  "today.sources.coverageLink": "See coverage log"
+  "today.sources.coverageLink": "See coverage log",
+  "today.standing.title": "Where we stand",
+  "today.standing.applying": "{count, plural, one {# obligation applies to us.} other {# obligations apply to us.}}",
+  "today.standing.compliant": "Compliant",
+  "today.standing.partly": "Partly compliant",
+  "today.standing.gap": "Gap",
+  "today.standing.notAssessed": "Not assessed",
+  "today.standing.openGaps": "{count, plural, one {# gap open or in remediation} other {# gaps open or in remediation}}",
+  "today.standing.seeGaps": "See the gaps",
+  "today.standing.empty": "Nothing is recorded in the register yet. The count starts once someone decides that an obligation applies to us.",
+  "today.standing.emptyAction": "Open the inventory"
 }

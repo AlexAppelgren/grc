@@ -14,7 +14,21 @@
   "today.decideNow.triage": "{count, plural, one {# ändring behöver triage.} other {# ändringar behöver triage.}}",
   "today.decideNow.assignedToMe": "{count, plural, one {# ärende tilldelat dig.} other {# ärenden tilldelade dig.}}",
   "today.decideNow.proposals": "{count, plural, one {# av era förslag väntar på granskning.} other {# av era förslag väntar på granskning.}}",
+  "today.decideNow.signoffs": "{count, plural, one {# ärende väntar på ditt godkännande.} other {# ärenden väntar på ditt godkännande.}}",
+  "today.decideNow.riskAcceptances": "{count, plural, one {# riskacceptans att godkänna.} other {# riskacceptanser att godkänna.}}",
+  "today.decideNow.supportAccessRequests": "{count, plural, one {# begäran om supportåtkomst att besluta om.} other {# begäranden om supportåtkomst att besluta om.}}",
+  "today.decideNow.tenantReachRequests": "{count, plural, one {# begäran om organisationsräckvidd att besluta om.} other {# begäranden om organisationsräckvidd att besluta om.}}",
   "today.sources.summary": "Källor: {checked} av {total} kontrollerade.",
   "today.sources.failed": "{name} misslyckades.",
-  "today.sources.coverageLink": "Se bevakningsloggen"
+  "today.sources.coverageLink": "Se bevakningsloggen",
+  "today.standing.title": "Var vi står",
+  "today.standing.applying": "{count, plural, one {# skyldighet gäller för oss.} other {# skyldigheter gäller för oss.}}",
+  "today.standing.compliant": "Uppfyller",
+  "today.standing.partly": "Uppfyller delvis",
+  "today.standing.gap": "Brist",
+  "today.standing.notAssessed": "Inte bedömd",
+  "today.standing.openGaps": "{count, plural, one {# brist öppen eller under åtgärd} other {# brister öppna eller under åtgärd}}",
+  "today.standing.seeGaps": "Visa bristerna",
+  "today.standing.empty": "Inget är registrerat i registret ännu. Räkningen börjar när någon beslutar att en skyldighet gäller för oss.",
+  "today.standing.emptyAction": "Öppna inventeringen"
 }

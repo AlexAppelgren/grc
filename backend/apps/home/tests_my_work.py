@@ -53,6 +53,7 @@ from apps.shared.tenancy import library_write
 from apps.taxonomy.models import (
     CaseStatusCategory,
     ComplianceStatus,
+    DismissalReason,
     FootprintTerm,
     GapSource,
     GapStatus,
@@ -667,7 +668,9 @@ class ChangesOnYourItems(TestCase):
     def test_a_finished_case_is_not_a_change_on_your_items(self) -> None:
         change, case = self.linked_case()
         self.confirm(change, confirmed_by=self.bank.officer)
-        ChangeCase.objects.filter(pk=case.pk).update(status=CaseStatusCategory.DISMISSED.value)
+        # A dismissal names its reason (the `change_case_dismissal_needs_a_reason` CHECK).
+        reason = DismissalReason.objects.get(tenant=self.bank.tenant, key="out_of_scope")
+        ChangeCase.objects.filter(pk=case.pk).update(status=CaseStatusCategory.DISMISSED.value, dismissed_reason=reason)
         self.assertNotIn(change.id, ids(self.bank.read(self.bank.anna)))
         self.assertEqual(row(self.bank.read(self.bank.anna), self.duty.id).open_change_count, 0)
 

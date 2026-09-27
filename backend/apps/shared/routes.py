@@ -101,6 +101,9 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # tenant A, so the obligation itself is invisible to tenant B.
     ("GET", "/obligations/{obligation_id}/participants", "collab.Participant", "obligation_participant"),
     ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}", "collab.Participant", "obligation_participant"),
+    # acc-scope-and-reach (ACC-08): deciding a request for tenant reach.
+    ("POST", "/tenant/reach/requests/{request_id}/approve", "governance.TenantReachRequest", "tenant_reach_request"),
+    ("POST", "/tenant/reach/requests/{request_id}/reject", "governance.TenantReachRequest", "tenant_reach_request"),
 ]
 
 
