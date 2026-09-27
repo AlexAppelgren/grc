@@ -106,7 +106,7 @@ describe('navigation registry (playbook 6.2)', () => {
 
   it('puts every visible destination that is not a tab in More, and never promotes an unranked one', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
-    expect(moreDestinations('tenant', all).map((d) => d.id)).toEqual(['roadmap', 'gaps', 'admin']);
+    expect(moreDestinations('tenant', all).map((d) => d.id)).toEqual(['my-work', 'roadmap', 'gaps', 'admin']);
     expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys', 'console-evaluation', 'console-support-access']);
 
     expect(dockDestinations('tenant', []).map((d) => d.id)).toEqual(['today']);
@@ -117,7 +117,7 @@ describe('navigation registry (playbook 6.2)', () => {
     // and the empty slot stays empty rather than taking Roadmap or Admin.
     const noWatch = all.filter((p) => p !== 'watch.read');
     expect(dockDestinations('tenant', noWatch).map((d) => d.id)).toEqual(['today', 'inventory', 'search']);
-    expect(moreDestinations('tenant', noWatch).map((d) => d.id)).toEqual(['roadmap', 'gaps', 'admin']);
+    expect(moreDestinations('tenant', noWatch).map((d) => d.id)).toEqual(['my-work', 'roadmap', 'gaps', 'admin']);
   });
 
   it('knows when the current page lives in More, account pages included', () => {
@@ -175,7 +175,7 @@ describe('navigation registry (playbook 6.2)', () => {
   // AUD-01: audit.read is in every system role, so the audit log is the one
   // admin section a reader reaches, and it is what puts Admin in their rail.
   it('lets any member reach Admin for the audit log and the organisation profile', () => {
-    expect(visibleDestinations('tenant', ['audit.read']).map((d) => d.id)).toEqual(['today', 'admin']);
+    expect(visibleDestinations('tenant', ['audit.read']).map((d) => d.id)).toEqual(['today', 'my-work', 'admin']);
     expect(childDestinations('admin', ['audit.read']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-support-access', 'admin-audit-log']);
     expect(findDestination('admin-audit-log')?.href).toBe('/admin/audit-log');
     expect(existsSync(join(import.meta.dirname, '..', '..', 'app', '(tenant)', 'admin', 'audit-log', 'page.tsx'))).toBe(true);
