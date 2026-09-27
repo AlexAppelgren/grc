@@ -1590,3 +1590,21 @@ Built by default; nothing waits on you. Say if any should change.
       names by design, so the card's role and team line under each name is not shown.
       The caller is left out of the list; the server refuses a delegate who cannot approve
       and the screen says so under the field. Default: so.
+
+## security-review-c10: two questions from the chunk 10 review (2026-09-27, COL-02, D-54)
+
+The review is `docs/reviews/CHUNK10_REVIEW.md`. Both medium findings are fixed; nothing waits on you.
+
+- [ ] **D-54's mail-host guard ships in R3, after chunk 10 starts mailing every member.**
+      A deployed environment boots with whatever `MAIL_SMTP_HOST` it is given; the reviewed
+      list D-54 asks for is `c14-eu-data-location`'s (R3). Reminders, escalations and the
+      weekly digest (R2) carry names, addresses and record titles. Default: unchanged, the
+      guard stays in c14 and the relay is chosen by hand until then (HARDENING H54). The
+      alternative is to bring the mail-host half of c14 into R2.
+- [ ] **A bank's own record title in a mail.** `collab/mail.py` allows a bank's own record
+      title in a mail (CHUNK10_TASKS finding 4), and the digest mails an internal item's
+      typed name; reminders and escalations deliberately use the change's library title
+      instead of an action's typed one. Default: as built, a bank's own record title may
+      leave by mail to that bank's own members. The alternative is library titles only,
+      with an internal item named by its kind.
+
