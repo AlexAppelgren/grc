@@ -33,8 +33,7 @@ from types import SimpleNamespace
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, Team, VocabularySuggestion
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, ScopeItem, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, ScopeItem, Team, VocabularySuggestion
 from apps.governance.models import TenantReachRequest
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
