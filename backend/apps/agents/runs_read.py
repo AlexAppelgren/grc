@@ -2,12 +2,12 @@
 chunk 11 filters and fields.
 
 A caller reads the runs of its own zone and no other: a bank's session its own runs, a
-console session the library's. bleqq's runs reach a bank as watch items and proposals,
-never as run rows, so no platform cost, token count or model is on a bank's page (the
-TODO default on what a bank sees of bleqq's watch). Row-level security already keeps
-another bank's runs out; the zone filter narrows a bank's session further, past the library
-rows security lets it read. `tenantAgentId` narrows to one of the bank's agents and `mine`
-to the runs the caller asked for; neither can widen what the zone allows.
+console session the library's (ADR 0053). bleqq's runs reach a bank as watch items and
+proposals, never as run rows, so no platform cost, token count or model is on a bank's
+page. Row-level security already keeps another bank's runs out; the zone filter narrows a
+bank's session further, past the library rows security lets it read. `tenantAgentId`
+narrows to one of the bank's agents and `mine` to the runs the caller asked for; neither
+can widen what the zone allows.
 """
 
 from __future__ import annotations
