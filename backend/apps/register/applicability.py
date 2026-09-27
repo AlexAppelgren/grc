@@ -207,7 +207,8 @@ def _store(
     _write_units(units.values(), person, decided_at)
     if applied:
         # REG-07 (c8-duty-occurrences): an answer "applies" writes the first occurrence of
-        # each recurring duty that has none, in this transaction.
+        # each recurring duty that has none, in this transaction. A Statement of
+        # Applicability unit carries no duty of its own, so its answer schedules none.
         duties.schedule_first(tenant=tenant, actor=actor, targets=applied, at=decided_at)
     return stored
 

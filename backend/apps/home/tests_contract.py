@@ -329,8 +329,8 @@ class CalendarFeedRouteGates(TestCase):
         are — `tests_roadmap.py` calls both functions on one bank and demands the same first
         items — and what is left here is the structural half: the function is in the roadmap
         module and takes the roadmap's own arguments, the reader's `register.read` included
-        since c8-home-standing-roadmap, so a later task cannot answer Today from a query of
-        its own.
+        since c8-home-standing-roadmap and `cases.read` since x-roadmap-case-deadlines, so a
+        later task cannot answer Today from a query of its own.
         """
         import inspect
 
@@ -338,7 +338,7 @@ class CalendarFeedRouteGates(TestCase):
 
         self.assertEqual(
             list(inspect.signature(roadmap.coming_up).parameters),
-            ["tenant", "order", "limit", "register_reader"],
+            ["tenant", "order", "limit", "register_reader", "cases_reader"],
         )
 
     def test_a_token_longer_than_the_limit_is_422_before_any_lookup(self) -> None:
