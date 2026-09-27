@@ -6,6 +6,8 @@ import enBriefing from '@/messages/briefing/en.json';
 import svBriefing from '@/messages/briefing/sv.json';
 import enCalendarFeeds from '@/messages/calendar-feeds/en.json';
 import svCalendarFeeds from '@/messages/calendar-feeds/sv.json';
+import enCollab from '@/messages/collab/en.json';
+import svCollab from '@/messages/collab/sv.json';
 import enCommon from '@/messages/common/en.json';
 import svCommon from '@/messages/common/sv.json';
 import enConsole from '@/messages/console/en.json';
@@ -99,6 +101,7 @@ const en = {
   ...enAuth,
   ...enBriefing,
   ...enCalendarFeeds,
+  ...enCollab,
   ...enCommon,
   ...enConsole,
   ...enConsoleAgentKeys,
@@ -147,6 +150,7 @@ const sv = {
   ...svAuth,
   ...svBriefing,
   ...svCalendarFeeds,
+  ...svCollab,
   ...svCommon,
   ...svConsole,
   ...svConsoleAgentKeys,
