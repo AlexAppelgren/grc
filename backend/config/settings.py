@@ -393,13 +393,6 @@ ASK_FIRST_TOKEN_BUDGET_MS = env_int("ASK_FIRST_TOKEN_BUDGET_MS", 2000)
 PERF_SAMPLES = env_int("PERF_SAMPLES", 20)
 PERF_REGRESSION_PCT = env_int("PERF_REGRESSION_PCT", 20)
 
-# ---------------------------------------------------------------------------------------
-# ===== c10-inbox-and-my-comments: the comment edit window (COL-01) ======================
-# How long after writing a comment its author may still edit it; afterwards it can only be
-# deleted. My work's panel reads it for `canEdit`. The same setting as c10-comments-mentions
-# declares for the edit itself: on merge, keep one declaration.
-# ---------------------------------------------------------------------------------------
-COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)
 
 # ---------------------------------------------------------------------------------------
 # ===== SRC-01..03 search and ask input caps (apps/search/schemas.py) =====================
@@ -861,7 +854,7 @@ if min(MY_WORK_DUE_SOON_DAYS, MY_WORK_AWARE_DAYS) < 1:
 # (CHUNK10_TASKS ruling 10). Both are settings because neither number is a rule.
 # ---------------------------------------------------------------------------------------
 COMMENT_MAX_CHARS = env_int("COMMENT_MAX_CHARS", 4000)
-COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)
+COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)  # also My work's `canEdit` (c10-inbox-and-my-comments)
 
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================

@@ -385,9 +385,6 @@ here names it with its backticked `METHOD /path`.
   contentLanguages?}` as keys. Reminder, escalation, digest-day and triage settings land
   with the workflow policy (chunk 10, `c10-workflow-policy`, section 19) as columns of their
   own, not chunk 9's (CHUNK9_TASKS ruling 6); retention is chunk 12's.
-  contentLanguages?}` as keys. Reminder, escalation and retention settings land with
-  the workflow policy as columns of their own: `c10-workflow-policy`, not chunk 9
-  (CHUNK9_TASKS ruling 6), which also adds `change_case.triage_due_at`.
 - `GET /tenant/members` answers a page `{items, total}` (playbook 10: every list
   paginates) of `{userId, email, name, status, roles[{key,kind,label}], title,
   lastSeenAt, passkeyCount, activeSessions}` rather than a bare array of the designed
@@ -1505,7 +1502,6 @@ that already left `new` keeps a null, since reminders read the column only while
 two facts already on record, not a decision.
 
 ## 18. Chunk 11's agent tables (2026-09-25, c11-agent-models)
-## 19. Chunk 11's agent tables (2026-09-25, c11-agent-models)
 
 Agents migrations 0004 and 0005 build schema v0.3 PART 3's agent tables with three rulings
 of `docs/plans/briefs/CHUNK11_TASKS.md` and the fence of ADR 0053 in the database:
@@ -1583,7 +1579,6 @@ third column the R2 plan names (`acts_as_user`), are built with these departures
   `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
 
 ## 18. A batch proposal and its rows (2026-09-25, c11-proposal-batches-model)
-## 19. A batch proposal and its rows (2026-09-25, c11-proposal-batches-model)
 
 Version 0.3 of the schema has no batch: PRD PRO-04 and AGT-05 ask for one proposal that
 changes many library records, previewed and approved whole or row by row. Proposals 0008
@@ -1611,8 +1606,6 @@ builds it on the existing table rather than beside it:
   cut (parallel-plan ruling 14); a backfill is a batch of an existing kind, not a kind. And
   `proposal_batch_decision` (`pending`, `approved`, `rejected`) is new: the trigger and apply
   branch on it and no admin adds one.
-## 18. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
-
 ## 18. Export jobs move into R2 and carry their file's checksum (2026-09-25, x-exports-contract)
 
 The case file must export (CAS-07, R2), so the export mechanism of chunk 12 moves ahead of
@@ -1807,7 +1800,6 @@ real, each with the whole `CasesCase` of section 19. Where they differ from `ope
   to null, so the next request is a fresh one; the note is kept on the case's transition
   ledger and never in the audit values.
 
-## 20. Export jobs move into R2 and carry their file's checksum (2026-09-25, x-exports-contract)
 ## 18. A proposal owned by a bank, and the bank's own queue declared (2026-09-25, d89-proposal-owner)
 
 §5's private-records row, built for INV-07 and OWN-03 (D-57, D-89, ADR 0050, ADR 0059):

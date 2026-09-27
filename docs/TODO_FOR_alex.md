@@ -1457,8 +1457,6 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
          confirming agent for its own queue. **Answered (Alex, 2026-09-25): 1 as D-98 (the typed name may reach the bank's own agent, guarded), 2 as D-99, 3 default taken.**
 
 ## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-103)
-         confirming agent for its own queue.
-## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-9x)
 
 - [ ] **The console's correction form gained one field.** A reviewer who changes a
       proposal's wording, date or scope before approving now gives "Source of your
@@ -1601,7 +1599,7 @@ Nothing waits for these; each has the default the build took.
       when an agent never ran or is overdue, and null for a manual one. Say if you want a
       name column on the definition instead.
 
-## c11-proposal-batches-decide: deciding a batch row by row (2026-09-25, PRO-04, D-1xx)
+## c11-proposal-batches-decide: deciding a batch row by row (2026-09-25, PRO-04, D-105)
 
 - [ ] **Who decides a re-tag batch an agent files.** Built: a second person holding
       `proposals.review`, with a passkey, and never the proposer. An agent reviewer is
