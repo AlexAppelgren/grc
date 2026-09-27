@@ -57,6 +57,8 @@ class IntegrationsScenarioTests(TestCase):
         """ACC-S7
 
         The MCP server is one router over the same gates, and every credential is read-only (ACC-05, AC-ACC4).
+        Its endpoint is `mcpMessage` (POST /mcp); the transport and the tool list are pinned in
+        tests_mcp_transport.py (acc-mcp-transport), the tool calls land with acc-mcp-tools.
         """
 
     @skip("pending: ACC-S8 (ACC-09, chunk 11)")
