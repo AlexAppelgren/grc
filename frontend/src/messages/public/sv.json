@@ -61,7 +61,7 @@
   "public.zones.door.body": "Den enda vägen in, prövad av en andra granskare",
   "public.zones.yours.title": "Er zon",
   "public.zones.yours.body": "Tillämplighet, efterlevnadsstatus, gap, underlag och godkännanden tillhör er bank och syns aldrig utanför den.",
-  "public.zones.footnote": "Er banks innehåll hålls borta från loggar och felrapporter, och vi skickar inget av det till en modell utom de frågor era medarbetare skriver i Fråga, som er bank kan stänga av.",
+  "public.zones.footnote": "Er banks innehåll hålls borta från loggar och felrapporter. Vi skickar inget av det till en modell utom de frågor era medarbetare skriver i Fråga och det er bank ber sina egna agenter att undersöka, och er bank kan stänga av båda.",
   "public.coverage.title": "Nordiska källor och EU-källor, på de språk de publiceras på",
   "public.coverage.head.jurisdiction": "Jurisdiktion",
   "public.coverage.head.sources": "Myndigheter och källor",
