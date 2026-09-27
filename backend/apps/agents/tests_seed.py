@@ -85,7 +85,9 @@ class ChunkElevenSeed(TestCase):
         tenancy.clear_tenant()
         sweeper = Agent.objects.get(key=EXPECTED_CHUNK11.platform_agent)
         self.assertEqual(sorted(sweeper.versions.values_list("version_number", flat=True)), list(EXPECTED_CHUNK11.platform_versions))
-        self.assertEqual(sweeper.current_version, EXPECTED_CHUNK11.platform_versions[-1])
+        # The current version stays the one the build ships a file for, so keys can be bound
+        # to the sweeper (H43); the seeded later version is history the runs pin.
+        self.assertEqual(sweeper.current_version, EXPECTED_CHUNK11.platform_versions[0])
         scheduled = AgentRun.objects.filter(tenant__isnull=True, api_key__isnull=True, trigger=RunTrigger.SCHEDULE.value)
         self.assertEqual(
             set(scheduled.filter(agent=sweeper).values_list("agent_version__version_number", flat=True)),
