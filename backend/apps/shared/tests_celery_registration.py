@@ -76,7 +76,6 @@ class WeeklyBriefingSchedule(TestCase):
         self.assertEqual(list(inspect.signature(tasks.send_weekly_briefing.run).parameters)[0], "tenant_id")
 
 
-
 class CollabMailDelivery(TestCase):
     """`c10-mail-catalog`: the one door a collab mail leaves through writes one bank's
     `email_message` rows, so it must activate that bank inside its own transaction."""

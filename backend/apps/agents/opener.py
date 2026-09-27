@@ -24,7 +24,7 @@ from typing import Any
 from django.utils import timezone
 
 from apps.agents import scope as run_scope
-from apps.agents.models import AgentRun, RunStatus, RunTrigger, TenantAgent
+from apps.agents.models import AgentRun, ResearchRequest, RunStatus, RunTrigger, TenantAgent
 from apps.identity.models import User
 from apps.shared.adapters.agent_runner import get_agent_runner
 from apps.shared.audit import Actor, record
@@ -65,6 +65,7 @@ def open_run(
     requested_by: User | None = None,
     budget_limit: Decimal | None = None,
     scope: dict[str, Any] | None = None,
+    research_request: ResearchRequest | None = None,
 ) -> AgentRun:
     """Record the run, then hand it to the runner. The row and its audit row are written
     before the runner is called, in the caller's transaction."""
@@ -78,6 +79,7 @@ def open_run(
         pipeline_version=str(pinned.version_no),
         budget_limit=budget_limit,
         scope=scope or {},
+        research_request=research_request,
     )
     if tenant_agent is not None:
         run_scope.snapshot(run)
@@ -96,6 +98,7 @@ def open_run(
             "budgetLimit": None if budget_limit is None else str(budget_limit),
             "scope": run.scope,
             **schedule_of(tenant_agent),
+            **({"researchRequest": str(research_request.id)} if research_request is not None else {}),
         },
     )
     _hand_over(run, pinned, actor)

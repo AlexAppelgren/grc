@@ -85,6 +85,10 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `AGENT_BEAT_INTERVAL_MINUTES` | worker, beat | `15` | `15` | `15` | How often the two agent beats fire, in minutes: bleqq's agents and the banks' own; below 1 the app refuses to boot (AGT-06, c11-scheduler) |
 | `AGENT_RUNS_PER_BEAT` | worker | `5` | `5` | `5` | The most runs of bleqq's agents one beat starts, the longest-waiting first; the rest start on the next beat, and below 1 the app refuses to boot (AGT-03, c11-scheduler) |
 | `AGENT_RUN_BUDGET_LIMIT` | api, worker | `5.00` | `5.00` | `5.00` | The most one run of a bank's own agent may spend, in EUR, stored on the run; a run starts only when the month's spend plus this fits under the bank's cap, and anything but an amount above zero refuses the boot (AGT-04, c11-scheduler) |
+| `RESEARCH_REQUESTS_PER_MONTH` | api | `30` | `30` | `30` | How many research requests a bank may make in a calendar month of its own time zone; past it a request answers 429 `plan_limit_reached` (AGT-05, c11-research-requests) |
+| `RESEARCH_URL_TIMEOUT_SECONDS` | api | `5` | `5` | `5` | The seconds one connection of a `check_url` request's fetch may take (AGT-05, c11-research-requests) |
+| `RESEARCH_URL_MAX_BYTES` | api | `1000000` | `1000000` | `1000000` | The most bytes of a fetched page a `check_url` request keeps (AGT-05, c11-research-requests) |
+| `RESEARCH_URL_MAX_REDIRECTS` | api | `3` | `3` | `3` | How many redirects a `check_url` fetch follows, each checked for a public https host first; past it the request answers 422 `url_unreachable` (AGT-05, c11-research-requests) |
 
 ## Testing, observability, budgets
 

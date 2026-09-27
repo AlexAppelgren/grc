@@ -1734,3 +1734,14 @@ export, are declared in `apps/cases/api.py` behind their final gates and answer 
   answer 204 as designed; all three are published ahead of `c9-case-file`, `c9-actions`
   and `c9-evidence` and answer 501 `not_built` until those land, so their pending lines
   are gone while the logic is still to come.
+
+## c11-research-requests. A research request keeps what it fetched (2026-09-27, agents 0008)
+
+`research_request` (schema v0.3 PART 3) gains two columns: `fetched_text`, the page a
+`check_url` request fetched, kept as text for the bank's agent and never rendered or
+followed, and `risk_flags`, the content screen's flags (AGT-07) on that text or on the
+topic, as `change_document.risk_flags` carries them. Both default to empty. The request's
+`status` is written when its run opens (`running`, or `failed` when the runner could not
+start it); after that a read answers its run's state (`succeeded` as `done`, `failed` and
+`interrupted` as `failed`), so no second writer keeps the two in step. `completed_at` is
+written when a re-tag's run files its batch.

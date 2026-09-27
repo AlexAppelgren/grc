@@ -169,6 +169,7 @@ term does.
 
 The "Drafted by our agent" callout on a bank's own proposal is the AI-drafted
 callout (foundations.md), not a pill, and it stays until a person decides.
+
 ### Chunk 11: research requests (c11-fe-console-agents)
 
 | Pill | Tone | Slot or kind, and why |

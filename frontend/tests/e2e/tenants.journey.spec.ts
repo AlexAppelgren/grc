@@ -190,7 +190,7 @@ test.describe('tenants journeys', () => {
     await expect(page.locator('[data-platform-watch]').getByRole('button')).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Spend this month' })).toBeVisible();
     await expect(page.getByText("Our own agents only. bleqq's watch runs at bleqq's cost and is not counted here.")).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Our agents' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Our agents', exact: true })).toBeVisible();
     await expect(page.getByText('Changing agents needs agents manage.')).toHaveCount(0);
     // --- end c11-fe-admin-agents ----------------------------------------------------------
   });

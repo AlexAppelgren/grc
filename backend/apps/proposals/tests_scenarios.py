@@ -677,12 +677,47 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.activate(self.tenant)
         self.assertEqual(ProblemReport.objects.filter(subject_id=obligation.id).count(), 1, "no platform session filed one either")
 
-    @skip("pending: PRO-S8 (PRO-04, chunk 11)")
     def test_pro_s8(self) -> None:
         """PRO-S8
 
         A batch proposal previews and is approved whole or row by row (PRO-04).
         """
+        # Given a re-tag request that would add a term to twelve obligations.
+        seed_authorities()
+        tenancy.clear_tenant()
+        law = library_build.instrument(key="fffs-2017-2", short_name="FFFS 2017:2", regime="regime:securities")
+        obligations = [library_build.obligation(law, key=f"obl-client-money-{n:02d}", terms=("client_category:retail",)) for n in range(12)]
+        source = "https://www.fi.se/en/published/news/2026/client-money/"
+        changes = [{"obligationId": str(o.id), "add": ["service_type:custody"], "source": source} for o in obligations]
+        filed = self._post("/proposal-batches", {"kind": "obligation_scope", "title": "Re-tag the client money duties", "payload": {"changes": changes}}, sign_in(self.editor))
+        self.assertEqual(filed.status_code, 201, filed.content)
+        tenancy.clear_tenant()
+
+        # When the second editor opens it, the preview lists the twelve rows with before and after.
+        reviewer = sign_in(self.second_editor, step_up=True)
+        preview = self.client.get(f"{V1}/proposal-batches/{filed.json()['id']}", **reviewer).json()
+        self.assertEqual({row["subjectId"] for row in preview["rows"]}, {str(o.id) for o in obligations})
+        for row in preview["rows"]:
+            self.assertEqual((row["before"]["terms"], row["after"]["terms"]), (["client_category:retail"], ["client_category:retail", "service_type:custody"]))
+
+        # When they reject two rows and approve the rest.
+        rejected = preview["rows"][:2]
+        decided = self._post(
+            f"/proposal-batches/{preview['id']}/decide",
+            {"rows": [{"rowId": row["id"], "decision": "rejected", "rejectionCode": "wrong_scope"} for row in rejected], "rest": "approved"},
+            reviewer,
+        )
+        self.assertEqual(decided.status_code, 200, decided.content)
+        tenancy.clear_tenant()
+
+        # Then ten obligations change, two do not.
+        custody = set(ObligationTerm.objects.filter(term__dimension__key="service_type", term__key="custody").values_list("obligation_id", flat=True))
+        self.assertEqual(custody, {o.id for o in obligations} - {uuid.UUID(row["subjectId"]) for row in rejected})
+        # And one audit event records the batch with each row's outcome.
+        (event,) = AuditEvent.objects.filter(action="proposal.batch_decided", subject_id=preview["id"])
+        outcomes = {row["subjectId"]: row["decision"] for row in event.after["rows"]}
+        self.assertEqual(sorted(outcomes.values()), ["approved"] * 10 + ["rejected"] * 2)
+        self.assertEqual({outcomes[row["subjectId"]] for row in rejected}, {"rejected"})
 
     def test_pro_s9(self) -> None:
         """PRO-S9

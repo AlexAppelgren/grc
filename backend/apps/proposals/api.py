@@ -787,24 +787,41 @@ def decide_proposal_batch(request: HttpRequest, body: ProposalBatchDecision, bat
     """Decide a batch: approve or reject the rows named in `rows`, and give every row still
     pending one decision in `rest`, so a reviewer rejects the few that are wrong and
     approves the others in one call. An approved row writes its record's new fields into the
-    library; a rejected one needs a reason from the "rejection_reason" list and changes
-    nothing. Every row decision and the batch's own outcome are written to the audit trail
-    in the same transaction as the library write, and a row is decided once. A stale row
-    cannot be approved. The answer is the batch as it then stands.
+    library: for a re-tag, the obligation's scope terms become the row's `after`, and the
+    search index follows. A rejected one needs a reason from the "rejection_reason" list and
+    changes nothing. Every row decision, with the record's fields before and after, and one
+    more entry naming every row's outcome are written to the audit trail in the same
+    transaction as the library write, each carrying the passkey assertion; a failure part
+    way writes nothing. A row is decided once. The batch closes when no row is left pending:
+    `approved` if any row was approved, else `rejected`. The answer is the batch as it then
+    stands.
+
+    A pending row whose record was retired or changed since the batch was filed is `stale`
+    and cannot be approved: named for approval it fails the whole call, while under an
+    approved `rest` it is left pending and the others still apply, for the reviewer to reject.
 
     Needs the platform permission `proposals.review` from a person, stepped up fresh with a
-    passkey. The reviewer is never the batch's proposer, which the database enforces.
+    passkey. No API key reaches this route, and an agent never decides a batch. The reviewer
+    is never the batch's proposer, the person who asked for the re-tag, which the database
+    enforces on every row and on the batch.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without `proposals.review`; `step_up_required` (403) without a fresh passkey
-    assertion; `not_found` (404) for a batch that does not exist, a proposal that is not a
-    batch, and anything that is not a UUID; `not_built` (501) for every batch that exists.
-    Published ahead of the logic that will fill it, and answering 501 until that ships.
+    Errors to branch on: `unauthenticated` (401) without a session, a key included;
+    `permission_denied` (403) without `proposals.review`, a bank's session included;
+    `step_up_required` (403) without a fresh passkey assertion; `not_found` (404) for a batch
+    that does not exist, a proposal that is not a batch, and anything that is not a UUID;
+    `four_eyes_violation` (409) when the reviewer proposed the batch, which decides nothing;
+    `invalid_transition` (409) when the batch or a named row is already decided;
+    `stale_write` (409) when a row named for approval is stale, or every row left to approve
+    is; `reason_required` (422) for a rejection without a live row of the rejection reason
+    list; `unknown_key` (422) for a row id that is not a row of this batch;
+    `validation_error` (422) for a decision that is not `approved` or `rejected`, a row
+    named twice, a reason on an approval, and a body that decides nothing.
     """
+    user = caller_user(request)
     proposal = batch.decide(
         proposal=batch.by_id(uuid_or_404(batch_id)),
         decision=body,
-        reviewer=caller_user(request),
+        reviewer=Reviewer(actor=actor_for(request, user), user=user),
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
     )
     return batch.read(proposal, language_order(request))
