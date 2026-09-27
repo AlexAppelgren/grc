@@ -566,6 +566,13 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # delegate check inside is the gate on what it may name (delegate_cannot_approve).
     ("GET", "/me/out-of-office"): Ungated(UngatedReason.SELF, _SELF_ME),
     ("PUT", "/me/out-of-office"): Ungated(UngatedReason.SELF, _SELF_ME),
+    # acc-mcp-transport (ACC-05): one endpoint for every tool, so no single scope fits it.
+    ("POST", "/mcp"): Ungated(
+        UngatedReason.LOGIC_GATE,
+        "Only the key of an agent access entry or a personal access token, through ApiKeyAuth; any other key "
+        "answers 403 agent_access_only. The gate is apps/integrations/mcp.py:handle, and the tool list offers a "
+        "tool only when the credential holds the scope its route needs, the register tool only with reach too.",
+    ),
     # acc-scoped-reads (SRC-01, ACC-04, ACC-05): a bank's own agent searches the library in its scope.
     ("POST", "/search"): Ungated(
         UngatedReason.LOGIC_GATE,

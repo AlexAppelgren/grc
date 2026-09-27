@@ -1771,6 +1771,28 @@ The review is `docs/reviews/CHUNK10_REVIEW.md`. Both medium findings are fixed; 
       instead of an action's typed one. Default: as built, a bank's own record title may
       leave by mail to that bank's own members. The alternative is library titles only,
       with an internal item named by its kind.
+## acc-mcp-transport: the MCP server's transport (2026-09-25, ACC-05)
+
+Built on these defaults; each stays yours to overrule.
+
+- [ ] **Both protocol eras, statelessly.** The plan named `initialize` and `ping`, which
+      the current MCP revision (2026-07-28, fetched today) removed along with sessions:
+      every request now carries its version in `params._meta`, and `server/discover`
+      replaces the handshake. `POST /mcp` serves both: 2026-07-28 (`server/discover`,
+      `tools/list`) and 2025-11-25 and 2025-06-18 (`initialize`, `ping`, `tools/list`),
+      never minting a session in either. Default: so, because most agent clients still
+      speak 2025-11-25. The alternative is to drop the earlier revisions.
+- [ ] **The register tool follows the entry's half of reach only, for now.** It is
+      offered to a credential holding `tenant:read` whose entry has tenant reach on. The
+      bank's own switch (`tenant_reach_on`, acc-scope-and-reach) was not on this branch's
+      base, so the tool list does not read it yet; the register route checks both on
+      every call (acc-register-read), so a listed tool still answers 403
+      `tenant_reach_off` with the switch off. The integrator adds the switch to
+      `apps/integrations/mcp.py:reaches_register` once both are merged.
+- [ ] **Only agent access credentials.** A bank's other keys and bleqq's own agent keys
+      answer 403 `agent_access_only` on `/mcp`; they keep the REST API.
+- [ ] **No caching of the tool list.** `ttlMs` is 0 and `cacheScope` `private`, because
+      reach can be switched off at any moment and the list must follow it at once.
 ## acc-entries-and-log: entries, their keys and the access log, answered by default (2026-09-25, ACC-01, ACC-03, ACC-08)
 
 - [ ] Default taken: a call an agent access credential makes is logged whatever its answer,
@@ -1934,3 +1956,21 @@ Nothing waits for these; each has the default the build took (D-1xx, acc-summary
 - [ ] **One summary per question.** It is drafted with the first page only; later pages say
       `later_page`.
 
+## acc-mcp-tools: how the MCP server's tools call the API (2026-09-25, ACC-05, ACC-08, ACC-09)
+Built on these defaults; each stays yours to overrule.
+- [ ] **A tool is its REST route, run as a request of its own.** `tools/call` builds the
+      request to the route behind the tool with the caller's own credential and lets Django
+      route it, so the authentication class, the agent access fence, the scope gate, the
+      logic and the pagination are the route's, and the structured content is its body.
+      The one thing not repeated is the rate: a tool call is one request of the
+      credential's `AGENT_ACCESS_RATE_PER_MINUTE`, not two. Default: so.
+- [ ] **A tool the list did not offer still reaches its route.** A credential calling a tool
+      its scopes do not reach gets the route's own refusal (`permission_denied`,
+      `tenant_reach_off`) as a tool error, rather than the protocol's "unknown tool", so the
+      answer is the one the REST API gives. Only a name the server has no tool for is -32602.
+- [ ] **An earlier revision gets a list inside an object.** Revision 2025-11-25 takes only an
+      object as structured content, so `list_upcoming_changes` answers `{"items": [...]}`
+      there; revision 2026-07-28 gets the route's array as it is.
+- [ ] **The access log names the tool.** A tool call's row carries the tool's name
+      (`get_obligation`, not `mcpMessage`) with the route's status, filters and record
+      count; `tools/list` and the handshake stay logged as `mcpMessage`.
