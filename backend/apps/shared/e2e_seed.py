@@ -163,6 +163,9 @@ EXPECTED_FOOTPRINTS: dict[str, tuple[str, ...]] = {
         "product_type:derivatives",
         "product_type:cards",
         "licensed_activity:card_issuing",
+        # acc-summary-j11: the licence Trading trades under, so a Trading entry's scope narrows
+        # licensed activities too and names card issuing as outside it (ACC-07).
+        "licensed_activity:investment_services",
     ),
     TENANT_B_SLUG: (
         "regime:securities",
@@ -2637,8 +2640,10 @@ EXPECTED_J11 = SeedJ11(
         {"dimension": "product_type", "key": "shares", "label_en": "Shares", "label_sv": "Aktier", "sort_order": 1, "usage_note": _J11_TERM_NOTE},
         {"dimension": "product_type", "key": "derivatives", "label_en": "Derivatives", "label_sv": "Derivat", "sort_order": 2, "usage_note": _J11_TERM_NOTE},
         {"dimension": "product_type", "key": "cards", "label_en": "Cards", "label_sv": "Kort", "sort_order": 3, "usage_note": _J11_TERM_NOTE},
+        # acc-summary-j11: the licence Trading's products are sold under.
+        {"dimension": "licensed_activity", "key": "investment_services", "label_en": "Investment services", "label_sv": "Investeringstjänster", "sort_order": 3, "usage_note": "E2E only: the licence J-11's Trading department sells under."},
     ),
-    footprint=("product_type:shares", "product_type:derivatives", "product_type:cards", "licensed_activity:card_issuing"),
+    footprint=("product_type:shares", "product_type:derivatives", "product_type:cards", "licensed_activity:card_issuing", "licensed_activity:investment_services"),
     department="Trading",
     team="trading",
     products=("Equity derivatives", "Cash equities", "Smart order routing"),
@@ -2691,8 +2696,8 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
             SeedProduct("Kapitalförsäkring", "Example Liv Försäkring AB", "live", _JOHAN, ("account_type:kf", "service_type:insurance_distribution", "service_type:advice")),
             SeedProduct("Pension insurance", "Example Liv Försäkring AB", "live", _SARA, ("account_type:pension", "service_type:insurance_distribution", "service_type:advice")),
             # acc-e2e-seed (J-11): Trading's three products and card issuing's one.
-            SeedProduct("Equity derivatives", EXPECTED_J11.department, "live", _SARA, ("product_type:derivatives", "service_type:execution_only")),
-            SeedProduct("Cash equities", EXPECTED_J11.department, "live", _SARA, ("product_type:shares", "service_type:execution_only")),
+            SeedProduct("Equity derivatives", EXPECTED_J11.department, "live", _SARA, ("product_type:derivatives", "service_type:execution_only", "licensed_activity:investment_services")),
+            SeedProduct("Cash equities", EXPECTED_J11.department, "live", _SARA, ("product_type:shares", "service_type:execution_only", "licensed_activity:investment_services")),
             SeedProduct(
                 EXPECTED_J11.order_routing_product, EXPECTED_J11.department, "planned", _SARA,
                 ("product_type:shares", "product_type:derivatives", "service_type:execution_only"),
