@@ -2,8 +2,8 @@ import type { Browser, Locator, Page, TestInfo } from '@playwright/test';
 
 import { expect, test, type ApiGuard } from './support/api-guard';
 import { allowRegisterEntryPending } from './support/obligation-page';
-import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
 import { approveOwnProposal, reportDuties, reportInstrument } from './support/own-records';
+import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
 import { lockTenantAScope, unlockTenantAScope } from './support/tenant-scope';
 import { approveQueueProposal } from './support/watch';
 
