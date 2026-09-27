@@ -1696,9 +1696,8 @@ it was written.
 
 ## c8-register-models. The register as tables (2026-09-25, register 0001 and 0002)
 
-Sections 7 and 19 of `schema.sql` (`tenant_obligation`, `tenant_obligation_scope`,
-`compliance_assessment`, `gap`, `interpretation`, `internal_link`) are built with these
-departures:
+`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
+third column the R2 plan names (`acts_as_user`), are built with these departures:
 
 - `applicability` is the tier-one kind `Applicability` with `applies`, `does_not_apply`
   and `not_assessed` (the designed `not_applicable` and `under_assessment` renamed to the
