@@ -272,9 +272,18 @@ def download_evidence(*, tenant: Tenant, actor: Actor, user: Any, evidence_id: u
 
 
 def remove_evidence(*, tenant: Tenant, actor: Actor, user: Any, evidence_id: uuid.UUID) -> None:
-    """Remove a piece of evidence: `removed_at` is set, and the row and its hash stay."""
+    """Remove a piece of evidence: `removed_at` is set, and the row and its hash stay. The
+    case's row is locked first, so a removal and a sign-off request queue, and evidence is
+    locked while the case waits for sign-off, as its actions are (CAS-06)."""
     evidence = logic.load_evidence(tenant, evidence_id)
+    evidence.case = logic.load_case(tenant, evidence.case.change_id, for_update=True)
     _refuse_when_closed(evidence.case)
+    if evidence.case.status == CaseStatusCategory.SIGNOFF.value:
+        raise ProblemError(
+            status=409,
+            code="evidence_locked",
+            detail="The evidence is locked while the case waits for sign-off. Send it back to change it.",
+        )
     evidence.removed_at = timezone.now()
     evidence.save(update_fields=["removed_at"])
     record(

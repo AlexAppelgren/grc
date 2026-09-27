@@ -751,8 +751,10 @@ def download_evidence(request: HttpRequest, evidence_id: uuid.UUID = Path(..., d
         evidence row and one audit row naming the person, and answers 204 with no content.
 
         Errors: `not_found` when no live evidence of this bank has that id; `case_closed` (409)
-        when the case is closed or dismissed, whose evidence stays as it was; `permission_denied`
-        without `cases.work`; `unauthenticated` without a session, including any API key."""
+        when the case is closed or dismissed, whose evidence stays as it was; `evidence_locked`
+        (409) while the case waits for sign-off, whose evidence is what the second person signs
+        off (send the case back to change it); `permission_denied` without `cases.work`;
+        `unauthenticated` without a session, including any API key."""
     ),
     summary="Remove a piece of evidence from a case",
 )
