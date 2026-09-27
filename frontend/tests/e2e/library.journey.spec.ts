@@ -1,7 +1,8 @@
 import type { Page } from '@playwright/test';
 
 import { expect, test } from './support/api-guard';
-import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
+import { SEEDED_OWN_INSTRUMENT, SEEDED_OWN_OBLIGATION } from './support/own-records';
+import { allowFreshContext, LOGINS, signInAs, signOut } from './support/passkeys';
 
 // library: the @e2e scenarios from backend/apps/library/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
@@ -402,9 +403,35 @@ test.describe('machine-confirmed provenance', () => {
   });
 });
 
-// The bank's own records (PRD 0.7, OWN-04): stays test.fixme until chunk 11 builds it.
+// The bank's own records (PRD 0.7, OWN-04): the duty tenant A's own agent filed for the seeded
+// regulation and the approver approved (e2e_seed.py, EXPECTED_OWN_RECORDS). Read only, so
+// nothing here needs restoring.
 test.describe("the bank's own records", () => {
-  test.fixme("INV-S15: The bank's own records read Private to us, and nothing changes when the library catches up", async () => {
-    // pending: INV-S15 (OWN-04, INV-07, AC-OWN1, chunk 11)
+  test("INV-S15: The bank's own records read Private to us, and nothing changes when the library catches up", async ({ page, apiGuard }) => {
+    // OWN-04, INV-07, AC-OWN1, on screen: tenant A's inventory lists the duty beside the
+    // shared library as "Private to us", on its row and on its page, and tenant B finds
+    // nothing at its address. The support session, what-applies and the library catching
+    // up are the integration test's (test_inv_s15).
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.reader);
+    await page.goto(`/inventory?instrument=${SEEDED_OWN_INSTRUMENT}`);
+    const own = page.locator(`[data-obligation="${SEEDED_OWN_OBLIGATION}"]`);
+    await expect(own.getByText('Private to us', { exact: true })).toBeVisible();
+    // The row is the link to its page, whose header carries the same marker.
+    await own.click();
+    await expect(page).toHaveURL(/\/inventory\/obligations\/[^/]+$/);
+    await expect(page.locator(`[data-obligation="${SEEDED_OWN_OBLIGATION}"] [data-header-pills]`).getByText('Private to us', { exact: true })).toBeVisible();
+    const address = new URL(page.url()).pathname;
+    // Beside the shared library: a shared duty still reads in the same inventory, unmarked.
+    await page.goto('/inventory?instrument=fffs-2017-2');
+    await expect(page.locator(`[data-obligation="${RESEARCH}"]`)).toBeVisible();
+    await expect(page.locator(`[data-obligation="${RESEARCH}"]`).getByText('Private to us', { exact: true })).toHaveCount(0);
+    await signOut(page);
+
+    const obligationId = address.split('/').pop() ?? '';
+    apiGuard.allow(new RegExp(`/api/v1/[^?]*${obligationId}`), 404, "tenant A's own record is not found from tenant B");
+    await signInAs(page, LOGINS.secondBankAdmin);
+    await page.goto(address);
+    await expect(page.locator('[data-not-found]')).toBeVisible();
   });
 });

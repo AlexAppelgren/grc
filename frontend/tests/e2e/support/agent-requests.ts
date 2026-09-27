@@ -25,6 +25,8 @@ async function answered(page: Page, path: string, submit: () => Promise<void>): 
 /** Asks the bank's own agent on /admin/agents: check the source labelled `source`, or research `topic`. */
 export async function askOurAgent(page: Page, ask: { source: string } | { topic: string }): Promise<AskedRequest> {
   const panel = page.locator('[data-research-panel]');
+  // Tenant A runs two agents of its own; these requests are the source checker's.
+  await panel.getByLabel('Which agent').selectOption({ label: 'Source checker' });
   if ('source' in ask) {
     await panel.getByLabel('Check this source now').check();
     await panel.getByLabel('Source', { exact: true }).selectOption({ label: ask.source });
